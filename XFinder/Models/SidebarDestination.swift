@@ -19,7 +19,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     // FINDER & TÌM KIẾM
     case finderKeyboard
     case finderActions
-    case commandPalette
     case finderSearch
     case aiSearch
     // CÔNG CỤ
@@ -62,7 +61,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .menuIcons: return "Biểu tượng thanh menu"
         case .finderKeyboard: return "Bàn phím Finder"
         case .finderActions: return "Thao tác Finder"
-        case .commandPalette: return "Command Palette"
         case .finderSearch: return "Tìm kiếm"
         case .aiSearch: return "Tìm kiếm AI"
         case .batchRename: return "Đổi tên hàng loạt"
@@ -77,7 +75,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .sync: return "Đồng bộ"
         case .remoteConnect: return "Kết nối từ xa"
         case .quickShare: return "Chia sẻ nhanh"
-        case .settingsClipboard: return "Clipboard"   // settings-only page now
+        case .settingsClipboard: return "Cài đặt Clipboard"
         case .about: return "Giới thiệu"
         }
     }
@@ -98,7 +96,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .menuIcons: return "menubar.rectangle"
         case .finderKeyboard: return "keyboard.fill"
         case .finderActions: return "contextualmenu.and.cursorarrow"
-        case .commandPalette: return "command"
         case .finderSearch: return "magnifyingglass"
         // `sparkles.magnifyingglass` does NOT exist on this macOS — the row
         // rendered with no icon at all. Verified with NSImage(systemSymbolName:).
@@ -115,7 +112,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .sync: return "arrow.triangle.2.circlepath"
         case .remoteConnect: return "display.2"
         case .quickShare: return "square.and.arrow.up"
-        case .settingsClipboard: return "doc.on.clipboard.fill"
+        case .settingsClipboard: return "gearshape"
         case .about: return "info.circle"
         }
     }
@@ -130,8 +127,10 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     static var groups: [(header: String, items: [SidebarDestination])] {
         [
-            // Clipboard content lives in the ⌘⇧V floating shelf and notes in the
-            // screen-edge panel, so the sidebar carries only their settings.
+            // Clipboard: hàng `clipboard` là trang nội dung (deck), hàng
+            // `settingsClipboard` ("Cài đặt Clipboard") là tuỳ chỉnh + quyền
+            // Trợ năng. Không còn kiểu "sidebar chỉ có settings" — khi chưa
+            // cấp AX, ⌘⇧V không mở được và cả tính năng đọc như đã chết.
             // No CÀI ĐẶT group at all: every page owns its own settings, and a
             // catch-all bucket only duplicated them.
             //
@@ -143,9 +142,9 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             // integration surfaces.
             ("CHUNG", [.dashboard, .quickControls, .antiSleep, .system, .network, .storage, .pin]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .menuIcons]),
-            ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .commandPalette, .finderSearch, .aiSearch,
+            ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .actionHistory]),
-            ("CÔNG CỤ", [.settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
+            ("CÔNG CỤ", [.clipboard, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare]),
             ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat]),
         ]

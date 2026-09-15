@@ -2,15 +2,20 @@ import Foundation
 import AppKit
 
 /// Tính toán biểu thức số học đơn giản
-final class Calculator {
+/// `Sendable`: không có trạng thái dùng chung, chỉ dùng an toàn từ mọi luồng.
+final class Calculator: Sendable {
     static let shared = Calculator()
 
     private init() {}
 
-    func evaluate(query: String) -> CommandResult? {
-        // Chỉ xử lý nếu query có số và toán tử
+    func evaluate(query: String) -> QuickSearchResult? {
+        // Chỉ xử lý khi có cả số VÀ toán tử — "123" đơn thuần là người ta
+        // đang tìm tên file chứ không phải tính toán.
         let mathPattern = #"^[\d\s\+\-\*\/\.\(\)]+$"#
-        guard query.range(of: mathPattern, options: .regularExpression) != nil else {
+        let hasDigit = query.contains(where: \.isNumber)
+        let hasOperator = query.contains { "+-*/".contains($0) }
+        guard query.range(of: mathPattern, options: .regularExpression) != nil,
+              hasDigit, hasOperator else {
             return nil
         }
 
@@ -23,7 +28,7 @@ final class Calculator {
         let resultValue = result.doubleValue
         let formatted = formatNumber(resultValue)
 
-        return CommandResult(
+        return QuickSearchResult(
             type: .calculator,
             title: "= \(formatted)",
             subtitle: query,

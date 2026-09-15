@@ -62,7 +62,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ClipboardShelfController.shared.applySettings()
         FinderKeyboardController.shared.applySettings()
         NotchDropController.shared.applySettings()
-        CommandPaletteController.shared.setup()
+        QuickSearchPanelController.shared.applySettings()
     }
 
     /// Theme + Dock visibility persist in UserDefaults; apply at launch so

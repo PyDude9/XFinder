@@ -2,22 +2,25 @@ import Foundation
 import AppKit
 
 /// Tìm file qua Spotlight (mdfind)
-final class FileSearch {
+/// `Sendable`: không có trạng thái dùng chung.
+final class FileSearch: Sendable {
     static let shared = FileSearch()
 
     private init() {}
 
-    func search(query: String) -> [CommandResult] {
+    func search(query: String) -> [QuickSearchResult] {
         guard !query.isEmpty, query.count >= 2 else { return [] }
 
-        // mdfind với limit 10 kết quả, tìm trong home + /Applications
+        // mdfind KHÔNG có option -limit (đã đo: "Unknown option -limit", tiến
+        // trình fail → luôn trả rỗng — đây là bug Tìm nhanh không ra file).
+        // Giới hạn số lượng bằng prefix() bên dưới.
         let homeDir = NSHomeDirectory()
+        let escaped = query.replacingOccurrences(of: "'", with: "\\'")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/mdfind")
         process.arguments = [
             "-onlyin", homeDir,
-            "-limit", "10",
-            "kMDItemFSName == '*\(query)*'c"
+            "kMDItemFSName == '*\(escaped)*'c"
         ]
 
         let pipe = Pipe()
@@ -43,7 +46,7 @@ final class FileSearch {
                 let name = url.lastPathComponent
                 let icon = NSWorkspace.shared.icon(forFile: path)
 
-                return CommandResult(
+                return QuickSearchResult(
                     type: .file,
                     title: name,
                     subtitle: path,

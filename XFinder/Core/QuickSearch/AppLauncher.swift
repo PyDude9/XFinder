@@ -2,10 +2,13 @@ import Foundation
 import AppKit
 
 /// Tìm kiếm và mở ứng dụng với fuzzy search
-final class AppLauncher {
+/// `@unchecked Sendable`: bộ đếm `cachedApps` chỉ ghi một lần trong init và
+/// được khóa bằng lock; search chỉ đọc.
+final class AppLauncher: @unchecked Sendable {
     static let shared = AppLauncher()
 
     private var cachedApps: [AppInfo] = []
+    private let cacheLock = NSLock()
     private let workspace = NSWorkspace.shared
 
     struct AppInfo {
@@ -38,17 +41,24 @@ final class AppLauncher {
             }
         }
 
+        cacheLock.lock()
         cachedApps = apps.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        cacheLock.unlock()
     }
 
-    func search(query: String) -> [CommandResult] {
+    func search(query: String) -> [QuickSearchResult] {
         guard !query.isEmpty else { return [] }
 
-        let scored = cachedApps.compactMap { app -> SearchScore? in
+        // Snapshot dưới lock — search có thể chạy trên background task.
+        cacheLock.lock()
+        let apps = cachedApps
+        cacheLock.unlock()
+
+        let scored = apps.compactMap { app -> SearchScore? in
             guard let score = fuzzyMatch(query: query.lowercased(), target: app.name.lowercased()) else {
                 return nil
             }
-            let result = CommandResult(
+            let result = QuickSearchResult(
                 type: .app,
                 title: app.name,
                 subtitle: app.path,
