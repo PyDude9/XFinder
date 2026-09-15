@@ -15,9 +15,8 @@ struct QuickControlsDetailView: View {
     @State private var appearanceError: String? = nil
     @State private var appearanceBusy = false
     @State private var brightDenied = false
-    /// XFinder's own record of where the brightness slider sits. NOT a reading
-    /// of the system value — none is available — so it starts centred.
-    @State private var brightnessPosition: Double = 0.5
+    /// Real brightness, polled from IOKit (see `ScreenBrightness`).
+    @State private var brightness = ScreenBrightness.shared
     @State private var caffeine = CaffeineController.shared
 
     @AppStorage("windowPreview.hoverEnabled") private var hoverEnabled = true
@@ -50,9 +49,17 @@ struct QuickControlsDetailView: View {
         .onAppear {
             appearance = SystemControls.currentAppearance()
             dockAutohide = DockPrefs.autohide()
+            brightDenied = !WindowManager.isTrusted
             volumeObserver.retain()
+            // Polls IOKit while this page is visible so the slider follows the
+            // keyboard brightness keys; released on disappear so idle CPU
+            // stays at zero.
+            brightness.retain()
         }
-        .onDisappear { volumeObserver.release() }
+        .onDisappear {
+            volumeObserver.release()
+            brightness.release()
+        }
     }
 
     // MARK: - Hệ thống
@@ -101,6 +108,10 @@ struct QuickControlsDetailView: View {
                 // notch of travel — and the position is XFinder's own memory
                 // of what it has sent. It deliberately starts centred rather
                 // than pretending to know the real level.
+                // Brightness now shows the REAL value from IOKit and tracks the
+                // keyboard keys, because `ScreenBrightness` polls the registry.
+                // The previous version had no reader at all, which is why the
+                // control never moved and felt decorative.
                 HStack(spacing: 12) {
                     Label {
                         Text("Độ sáng màn hình").font(.system(size: 13))
@@ -109,27 +120,28 @@ struct QuickControlsDetailView: View {
                     }
                     .frame(width: 130, alignment: .leading)
 
-                    Slider(value: $brightnessPosition, in: 0...1)
+                    Slider(value: Binding(get: { brightness.level ?? 0.5 },
+                                          set: { brightness.setLevel($0) }),
+                           in: 0...1)
                         .tint(.blue)
-                        .onChange(of: brightnessPosition) { old, new in
-                            applyBrightnessDelta(from: old, to: new)
-                        }
+                        .disabled(brightness.level == nil)
 
-                    // No % label: the number would be XFinder's own guess, not
-                    // the system's real brightness.
-                    Image(systemName: "sun.max.fill")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
+                    Text(brightness.level.map { "\(Int($0 * 100))%" } ?? "—")
+                        .font(.system(size: 11, design: .monospaced))
                         .frame(width: 38, alignment: .trailing)
                 }
 
                 if brightDenied {
                     permissionNote(
-                        "Chưa có quyền Trợ năng — thanh trượt độ sáng sẽ không có tác dụng.",
+                        "Chưa có quyền Trợ năng — kéo thanh trượt sẽ không đổi được độ sáng.",
                         button: "Mở Cài đặt quyền Trợ năng",
                         action: { WindowManager.openAccessibilityPane() })
+                } else if brightness.level == nil {
+                    Text("Không đọc được độ sáng — máy này có thể chỉ dùng màn hình ngoài.")
+                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    Text("macOS không cho đọc % độ sáng, nên thanh này chỉnh theo mức tương đối (giống phím độ sáng trên bàn phím) và không hiện số.")
+                    Text("Giá trị đọc trực tiếp từ IOKit nên thanh trượt cập nhật cả khi bạn bấm phím độ sáng. macOS không cho đặt chính xác một mức, nên XFinder gửi từng nấc như phím bấm.")
                         .font(.system(size: 11)).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -240,21 +252,6 @@ struct QuickControlsDetailView: View {
         }
     }
 
-    /// Converts slider travel into brightness key presses.
-    ///
-    /// macOS has ~16 brightness notches, so one full sweep of the slider maps
-    /// to 16 steps. Sending them in a burst matches what holding the keyboard
-    /// key does. Rounding means tiny drags send nothing rather than jittering.
-    private func applyBrightnessDelta(from old: Double, to new: Double) {
-        brightDenied = !WindowManager.isTrusted
-        guard !brightDenied else { return }
-        let notches = 16.0
-        let steps = Int((new - old) * notches)
-        guard steps != 0 else { return }
-        for _ in 0..<abs(steps) {
-            SystemControls.adjustBrightness(up: steps > 0)
-        }
-    }
 }
 
 /// Dock preferences that macOS exposes publicly and readably.

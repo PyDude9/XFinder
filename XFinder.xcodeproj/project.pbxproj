@@ -66,6 +66,7 @@
 				7F1A0041 /* SystemMonitor/PowerManager.swift */,
 				7F1A0042 /* SystemMonitor/DiskManager.swift */,
 				7F1A0043 /* Services/SystemControls.swift */,
+				7F1A00D0 /* Services/ScreenBrightness.swift */,
 				7F1A0066 /* NoteStore.swift */,
 				7F1A0067 /* ActionHistoryStore.swift */,
 				7F1A0068 /* BatchRenameEngine.swift */,
@@ -271,6 +272,7 @@
 		7F1A0041 /* SystemMonitor/PowerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SystemMonitor/PowerManager.swift"; sourceTree = "<group>"; };
 		7F1A0042 /* SystemMonitor/DiskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SystemMonitor/DiskManager.swift"; sourceTree = "<group>"; };
 		7F1A0043 /* Services/SystemControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/SystemControls.swift"; sourceTree = "<group>"; };
+		7F1A00D0 /* Services/ScreenBrightness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/ScreenBrightness.swift"; sourceTree = "<group>"; };
 		7F1A0044 /* Components/SettingsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/SettingsCard.swift"; sourceTree = "<group>"; };
 		7F1A00A0 /* Components/PageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/PageHeader.swift"; sourceTree = "<group>"; };
 		7F1A00CE /* Components/PageWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/PageWidth.swift"; sourceTree = "<group>"; };
@@ -353,6 +355,7 @@
 				7F1A004A,
 				7F1A004B,
 				7F1A004C,
+				7F1A00D1,
 				7F1A004D,
 				7F1A00A1,
 				7F1A00CF,
@@ -434,6 +437,7 @@
 		7F1A004A /* PowerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0041; };
 		7F1A004B /* DiskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0042; };
 		7F1A004C /* SystemControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0043; };
+		7F1A00D1 /* ScreenBrightness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D0; };
 		7F1A004D /* SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0044; };
 		7F1A00A1 /* PageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A0; };
 		7F1A00CF /* PageWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00CE; };

@@ -53,25 +53,53 @@ struct PinDetailView: View {
 
                     SettingsCard(title: "Sức khỏe pin") {
                         VStack(spacing: 10) {
-                            row(label: "Sức khỏe", value: info.healthPercent.map { String(format: "%.0f%%", $0) } ?? "—")
-                            row(label: "Số chu kỳ", value: info.cycleCount.map(String.init) ?? "—")
-                            row(label: "Công suất", value: info.watts.map { String(format: "%.1f W", $0) } ?? "—")
-                            if let d = info.designCapacity, let mx = info.maxCapacity {
-                                row(label: "Dung lượng", value: "\(mx) / \(d) mAh")
+                            // Health = NominalChargeCapacity / DesignCapacity.
+                            // It used to divide MaxCapacity (a 0-100 PERCENT on
+                            // Apple Silicon) by mAh, which is what rendered 1%.
+                            row(label: "Sức khỏe",
+                                value: info.healthPercent.map { String(format: "%.0f%%", $0) } ?? "—")
+
+                            if let c = info.cycleCount {
+                                row(label: "Số chu kỳ",
+                                    value: info.designCycleCount.map { "\(c) / \($0)" } ?? "\(c)")
+                            } else {
+                                row(label: "Số chu kỳ", value: "—")
                             }
+
+                            if let n = info.nominalCapacity, let d = info.designCapacity {
+                                row(label: "Dung lượng", value: "\(n) / \(d) mAh")
+                            }
+
+                            row(label: "Công suất",
+                                value: info.watts.map { String(format: "%.1f W", $0) } ?? "—")
+
+                            if let v = info.voltage {
+                                row(label: "Điện áp", value: String(format: "%.2f V", v))
+                            }
+                            if let a = info.amperage {
+                                row(label: "Dòng điện", value: "\(a) mA")
+                            }
+
                             Divider().opacity(0.5)
-                            HStack {
-                                Text("Nhiệt độ pin").font(.system(size: 11)).foregroundColor(.secondary)
-                                Spacer()
-                                Text("Đang thu thập…").font(.system(size: 11, design: .monospaced)).foregroundColor(.secondary)
+
+                            // Battery temperature IS available after all — it
+                            // lives in AppleSmartBatteryPack/BatteryData, not
+                            // AppleSmartBattery, and is centi-Celsius
+                            // (3469 -> 34.7 °C). Twice reported here as "no
+                            // public API" because only the latter was checked.
+                            if let t = info.temperatureC {
+                                row(label: "Nhiệt độ pin", value: String(format: "%.1f °C", t))
+                                if let mx = info.lifetimeMaxTempC, let mn = info.lifetimeMinTempC {
+                                    row(label: "Nhiệt độ đã ghi nhận",
+                                        value: String(format: "%.0f – %.0f °C", mn, mx))
+                                }
+                            } else {
+                                row(label: "Nhiệt độ pin", value: "—")
                             }
-                            // Verified on macOS 27, not assumed: a full key dump
-                            // of AppleSmartBattery (and IOPMPowerSource) has no
-                            // temperature key at all. Reading it needs the SMC,
-                            // which is private. So this stays a placeholder.
-                            Text("Đã kiểm tra trên máy này: IOKit không cung cấp khóa nhiệt độ pin nào. Đọc được giá trị này cần SMC (API riêng tư), nên XFinder không hiển thị số.")
-                                .font(.system(size: 11)).foregroundColor(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
+
+                            if let s = info.serial {
+                                row(label: "Số sê-ri", value: s)
+                            }
                         }
                     }
                     .padding(.horizontal, 20)
