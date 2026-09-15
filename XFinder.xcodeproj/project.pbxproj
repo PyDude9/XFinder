@@ -115,6 +115,7 @@
 				7F1A0039 /* Detail/PlaceholderDetailView.swift */,
 				7F1A0044 /* Components/SettingsCard.swift */,
 				7F1A00A0 /* Components/PageHeader.swift */,
+				7F1A00CE /* Components/PageWidth.swift */,
 				7F1A0045 /* Components/MetricBigNumber.swift */,
 				7F1A0046 /* Components/StatBarView.swift */,
 				7F1A0047 /* Components/SparklineView.swift */,
@@ -272,6 +273,7 @@
 		7F1A0043 /* Services/SystemControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/SystemControls.swift"; sourceTree = "<group>"; };
 		7F1A0044 /* Components/SettingsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/SettingsCard.swift"; sourceTree = "<group>"; };
 		7F1A00A0 /* Components/PageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/PageHeader.swift"; sourceTree = "<group>"; };
+		7F1A00CE /* Components/PageWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/PageWidth.swift"; sourceTree = "<group>"; };
 		7F1A0045 /* Components/MetricBigNumber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/MetricBigNumber.swift"; sourceTree = "<group>"; };
 		7F1A0046 /* Components/StatBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/StatBarView.swift"; sourceTree = "<group>"; };
 		7F1A0047 /* Components/SparklineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/SparklineView.swift"; sourceTree = "<group>"; };
@@ -353,6 +355,7 @@
 				7F1A004C,
 				7F1A004D,
 				7F1A00A1,
+				7F1A00CF,
 				7F1A004E,
 				7F1A004F,
 				7F1A0050,
@@ -433,6 +436,7 @@
 		7F1A004C /* SystemControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0043; };
 		7F1A004D /* SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0044; };
 		7F1A00A1 /* PageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A0; };
+		7F1A00CF /* PageWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00CE; };
 		7F1A004E /* MetricBigNumber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0045; };
 		7F1A004F /* StatBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0046; };
 		7F1A0050 /* SparklineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0047; };

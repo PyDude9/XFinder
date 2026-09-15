@@ -47,12 +47,27 @@ struct BatchRenameDetailView: View {
 
                 SettingsCard(title: "Kiểu đổi tên") {
                     VStack(alignment: .leading, spacing: 10) {
+                        // THE recurring window-resize culprit on this page.
+                        //
+                        // A 6-segment `.segmented` picker sums the intrinsic
+                        // width of every label — "Thêm tiền tố", "Đánh số thứ
+                        // tự", … — and reports that as its IDEAL width. The
+                        // split view honours it, so the detail pane demanded
+                        // ~900pt and shoved the sidebar off-screen. Earlier
+                        // fixes targeted the preview rows, which is why the bug
+                        // survived: it reproduces with zero files selected,
+                        // when no preview row exists at all.
+                        //
+                        // A menu picker has a small fixed ideal width, so the
+                        // page can finally shrink to the window.
                         Picker("Kiểu", selection: $options.mode) {
                             ForEach(BatchRenameEngine.Mode.allCases) { m in
                                 Text(m.titleVI).tag(m)
                             }
                         }
-                        .pickerStyle(.segmented)
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                        .frame(maxWidth: 240, alignment: .leading)
 
                         switch options.mode {
                         case .prefix, .suffix:
@@ -148,6 +163,10 @@ struct BatchRenameDetailView: View {
                     Spacer().padding(.bottom, 20)
                 }
             }
+            // Standing rule (CLAUDE.md): every detail page clamps its ideal
+            // width so no single control can push the split view wider than
+            // the window. This page is why the rule exists.
+            .pageWidthSafe()
         }
         .background(Color(.windowBackgroundColor))
     }
