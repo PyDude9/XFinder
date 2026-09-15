@@ -19,6 +19,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     // FINDER & TÌM KIẾM
     case finderKeyboard
     case finderActions
+    case commandPalette
     case finderSearch
     case aiSearch
     // CÔNG CỤ
@@ -61,6 +62,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .menuIcons: return "Biểu tượng thanh menu"
         case .finderKeyboard: return "Bàn phím Finder"
         case .finderActions: return "Thao tác Finder"
+        case .commandPalette: return "Command Palette"
         case .finderSearch: return "Tìm kiếm"
         case .aiSearch: return "Tìm kiếm AI"
         case .batchRename: return "Đổi tên hàng loạt"
@@ -96,6 +98,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .menuIcons: return "menubar.rectangle"
         case .finderKeyboard: return "keyboard.fill"
         case .finderActions: return "contextualmenu.and.cursorarrow"
+        case .commandPalette: return "command"
         case .finderSearch: return "magnifyingglass"
         // `sparkles.magnifyingglass` does NOT exist on this macOS — the row
         // rendered with no icon at all. Verified with NSImage(systemSymbolName:).
@@ -140,7 +143,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             // integration surfaces.
             ("CHUNG", [.dashboard, .quickControls, .antiSleep, .system, .network, .storage, .pin]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .menuIcons]),
-            ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
+            ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .commandPalette, .finderSearch, .aiSearch,
                                    .batchRename, .actionHistory]),
             ("CÔNG CỤ", [.settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare]),

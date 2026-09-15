@@ -53,6 +53,8 @@ struct DetailHostView: View {
                 FinderActionsDetailView()
             case .finderKeyboard:
                 FinderKeyboardDetailView()
+            case .commandPalette:
+                CommandPaletteDetailView()
             case .folderLock:
                 FolderLockDetailView()
             case .sync:

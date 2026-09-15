@@ -89,6 +89,12 @@
 				7F1A00AC /* ClipboardShelfController.swift */,
 				7F1A0092 /* NetworkTools.swift */,
 				7F1A0094 /* EdgeNotesController.swift */,
+				88AD9932 /* CommandResult.swift */,
+				95421592 /* AppLauncher.swift */,
+				0F2B7B75 /* FileSearch.swift */,
+				1EC78A7D /* Calculator.swift */,
+				E38D74CB /* Quicklinks.swift */,
+				FC278FC2 /* CommandPaletteController.swift */,
 			);
 			path = XFinder/Core;
 			sourceTree = SOURCE_ROOT;
@@ -149,6 +155,8 @@
 				7F1A00BA /* Detail/FolderSyncDetailView.swift */,
 				7F1A00B6 /* Detail/FolderLockDetailView.swift */,
 				7F1A00B0 /* Detail/FinderKeyboardDetailView.swift */,
+				92B0D8E7 /* Detail/CommandPaletteDetailView.swift */,
+				1725C1DA /* CommandPaletteView.swift */,
 			);
 			path = XFinder/Views;
 			sourceTree = SOURCE_ROOT;
@@ -310,6 +318,14 @@
 		7F1A00AC /* ClipboardShelfController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardShelfController.swift; sourceTree = "<group>"; };
 		7F1A0092 /* NetworkTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkTools.swift; sourceTree = "<group>"; };
 		7F1A0094 /* EdgeNotesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeNotesController.swift; sourceTree = "<group>"; };
+		88AD9932 /* CommandResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandResult.swift; sourceTree = "<group>"; };
+		95421592 /* AppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLauncher.swift; sourceTree = "<group>"; };
+		0F2B7B75 /* FileSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearch.swift; sourceTree = "<group>"; };
+		1EC78A7D /* Calculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calculator.swift; sourceTree = "<group>"; };
+		E38D74CB /* Quicklinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Quicklinks.swift; sourceTree = "<group>"; };
+		FC278FC2 /* CommandPaletteController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPaletteController.swift; sourceTree = "<group>"; };
+		1725C1DA /* CommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPaletteView.swift; sourceTree = "<group>"; };
+		92B0D8E7 /* Detail/CommandPaletteDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/CommandPaletteDetailView.swift"; sourceTree = "<group>"; };
 		7F1A006B /* Detail/NotesDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/NotesDetailView.swift"; sourceTree = "<group>"; };
 		7F1A006C /* Detail/BatchRenameDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/BatchRenameDetailView.swift"; sourceTree = "<group>"; };
 		7F1A006D /* Detail/ActionHistoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/ActionHistoryDetailView.swift"; sourceTree = "<group>"; };
@@ -413,6 +429,16 @@
 				7F1A00B1,
 				7F1A0093,
 				7F1A0095,
+				47391D8F,
+				8F7A94C3,
+				D066FCC9,
+				96F26CAC,
+				FEDF1419,
+				2BE39F5C,
+				2535B74A,
+				7D841599,
+				873F0324,
+				3CEEE1C8,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -495,6 +521,14 @@
 		7F1A00B1 /* Detail/FinderKeyboardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B0; };
 		7F1A0093 /* NetworkTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0092; };
 		7F1A0095 /* EdgeNotesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0094; };
+		D066FCC9 /* CommandResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88AD9932; };
+		96F26CAC /* AppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95421592; };
+		FEDF1419 /* FileSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2B7B75; };
+		2BE39F5C /* Calculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC78A7D; };
+		2535B74A /* Quicklinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = E38D74CB; };
+		7D841599 /* CommandPaletteController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC278FC2; };
+		873F0324 /* CommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1725C1DA; };
+		3CEEE1C8 /* Detail/CommandPaletteDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B0D8E7; };
 		7F1A0004 /* XFinder */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7F1A0030;
