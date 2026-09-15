@@ -90,13 +90,21 @@ final class ScreenBrightness {
 
             guard let raw = IORegistryEntryCreateCFProperty(
                     service, "IODisplayParameters" as CFString, kCFAllocatorDefault, 0)?
-                    .takeRetainedValue() as? [String: Any],
-                  let b = raw["brightness"] as? [String: Any],
-                  let value = b["value"] as? Int,
-                  let max = b["max"] as? Int, max > 0
+                    .takeRetainedValue() as? [String: Any]
             else { continue }
 
-            return Double(value) / Double(max)
+            // `brightness` (16-bit) LUÔN đứng yên ở 32768 = max/2 trên Apple
+            // Silicon — đã đo: value/max = 0.5 bất chấp độ sáng thật, chính là
+            // bug "% luôn 50". Nguồn bám theo phím tăng/giảm là `rawBrightness`
+            // (PWM 0–2047). Ưu tiên rawBrightness, fallback brightness.
+            for key in ["rawBrightness", "brightness"] {
+                guard let b = raw[key] as? [String: Any],
+                      let value = b["value"] as? Int,
+                      let max = b["max"] as? Int, max > 0
+                else { continue }
+                let min = b["min"] as? Int ?? 0
+                return Double(value - min) / Double(max - min)
+            }
         }
         return nil
     }
