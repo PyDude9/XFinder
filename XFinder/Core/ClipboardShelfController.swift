@@ -449,6 +449,7 @@ private struct ShelfCard: View {
         switch record.type {
         case .text:  return "text.alignleft"
         case .code:  return "chevron.left.forwardslash.chevron.right"
+        case .markdown: return "doc.richtext"
         case .image: return "photo"
         case .link:  return "link"
         case .color: return "paintpalette"

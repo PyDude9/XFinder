@@ -3,6 +3,7 @@ import Foundation
 enum ContentType: String, Codable, Sendable {
     case text
     case code
+    case markdown
     case image
     case link
     case color

@@ -3,7 +3,7 @@ import SwiftUI
 
 struct Pinboard: Identifiable, Codable, Sendable {
     let id: UUID
-    let name: String
+    var name: String
     let color: CodableColor
     let icon: String
     var itemIDs: [UUID]

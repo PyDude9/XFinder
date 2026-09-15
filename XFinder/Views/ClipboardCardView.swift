@@ -49,6 +49,10 @@ struct ClipboardCardView: View {
                     Text(fullText ?? record.displayPreview)
                         .font(.system(size: 13))
                         .lineLimit(6)
+                case .markdown:
+                    Text(fullText ?? record.displayPreview)
+                        .font(.system(size: 12))
+                        .lineLimit(7)
                 case .code:
                     Text(fullText ?? record.displayPreview)
                         .font(.system(size: 11, design: .monospaced))
@@ -149,6 +153,7 @@ struct ClipboardCardView: View {
         switch t {
         case .text: return "doc.text"
         case .code: return "curlybraces"
+        case .markdown: return "doc.richtext"
         case .image: return "photo"
         case .link: return "link"
         case .color: return "paintpalette"

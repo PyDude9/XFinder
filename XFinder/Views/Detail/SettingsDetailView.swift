@@ -53,6 +53,9 @@ private struct ClipboardSettingsBody: View {
     /// ⌘⇧V global shelf hotkey — read by `ClipboardShelfController.applySettings`.
     @AppStorage("clipboard.globalHotkey") private var globalHotkey = true
     @State private var cloud = CloudSyncController.shared
+    @State private var clipboard = ClipboardManager.shared
+    @State private var editingBoard: Pinboard? = nil
+    @State private var showRenameBoard = false
 
     private static func time(_ d: Date) -> String {
         let f = DateFormatter(); f.dateStyle = .short; f.timeStyle = .short
@@ -133,6 +136,35 @@ private struct ClipboardSettingsBody: View {
                 }
             }
 
+            SettingsCard(title: "Bảng ghim (Categories)",
+                         subtitle: "\(clipboard.pinboards.count) bảng — sửa tên hoặc xóa") {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(clipboard.pinboards) { board in
+                        HStack(spacing: 10) {
+                            Circle().fill(board.color.color).frame(width: 10, height: 10)
+                            Image(systemName: board.icon).font(.caption).foregroundColor(.secondary)
+                            Text(board.name).font(.system(size: 12))
+                            if board.isBuiltIn {
+                                Text("mặc định").font(.caption2).foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Button("Sửa") {
+                                editingBoard = board
+                                showRenameBoard = true
+                            }
+                            .buttonStyle(.link).font(.system(size: 11))
+                            if !board.isBuiltIn {
+                                Button("Xóa", role: .destructive) {
+                                    clipboard.deletePinboard(board.id)
+                                }
+                                .buttonStyle(.link).font(.system(size: 11))
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+
             SettingsCard(title: "Lịch sử") {
                 VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -149,6 +181,9 @@ private struct ClipboardSettingsBody: View {
             }
         }
         .onAppear { cloud.applySettings() }
+        .sheet(isPresented: $showRenameBoard) {
+            RenameBoardSheet(isPresented: $showRenameBoard, board: editingBoard)
+        }
     }
 }
 
@@ -175,5 +210,35 @@ enum AppearanceController {
 enum DockController {
     static func apply(_ show: Bool) {
         NSApp.setActivationPolicy(show ? .regular : .accessory)
+    }
+}
+
+/// Sheet đổi tên bảng ghim (Category) — sửa từ trang Cài đặt Clipboard.
+private struct RenameBoardSheet: View {
+    @Binding var isPresented: Bool
+    let board: Pinboard?
+    @State private var name = ""
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Text("Đổi tên bảng ghim")
+                .font(.system(size: 15, weight: .semibold))
+            TextField("Tên bảng", text: $name)
+                .textFieldStyle(.roundedBorder)
+            HStack {
+                Button("Hủy") { isPresented = false }
+                    .keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("Lưu") {
+                    if let board { ClipboardManager.shared.renamePinboard(board.id, name: name) }
+                    isPresented = false
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(20)
+        .frame(width: 320)
+        .onAppear { name = board?.name ?? "" }
     }
 }

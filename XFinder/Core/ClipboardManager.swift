@@ -312,6 +312,14 @@ final class ClipboardManager {
         savePinboards()
     }
 
+    func renamePinboard(_ pinboardID: UUID, name: String) {
+        guard let i = pinboards.firstIndex(where: { $0.id == pinboardID }) else { return }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        pinboards[i].name = trimmed
+        savePinboards()
+    }
+
     func addItemToPinboard(_ itemID: UUID, pinboardID: UUID) {
         if let i = pinboards.firstIndex(where: { $0.id == pinboardID }),
            !pinboards[i].itemIDs.contains(itemID) {

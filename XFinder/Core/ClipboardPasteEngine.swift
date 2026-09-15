@@ -30,7 +30,7 @@ enum ClipboardPasteEngine {
         let pb = NSPasteboard.general
         pb.clearContents()
         switch record.type {
-        case .text, .code, .color:
+        case .text, .code, .markdown, .color:
             guard let s = record.textSnippet ?? record.ocrText else { return false }
             return pb.setString(s, forType: .string)
         case .link:
@@ -144,8 +144,26 @@ enum ClipboardClassifier {
            let scheme = u.scheme?.lowercased(), ["http", "https"].contains(scheme) {
             return .link
         }
+        if looksLikeMarkdown(t) { return .markdown }
         if looksLikeCode(t) { return .code }
         return .text
+    }
+
+    /// Markdown — tiêu đề #, list -, blockquote >, bảng |, ```, **đậm**,
+    /// link [..](..). Đủ nhạy để phân biệt với text thuần nhưng không bắt
+    /// nhầm code (code trả về ở looksLikeCode, chạy sau).
+    private static func looksLikeMarkdown(_ t: String) -> Bool {
+        var score = 0
+        for rawLine in t.split(separator: "\n").prefix(20) {
+            let s = String(rawLine).trimmingCharacters(in: .whitespaces)
+            if s.hasPrefix("#") { score += 2 }
+            if s.hasPrefix("- ") || s.hasPrefix("* ") || s.hasPrefix("> ") { score += 1 }
+            if s.contains("|") { score += 1 }
+            if s.contains("```") { score += 2 }
+            if s.contains("**") { score += 1 }
+            if s.contains("](") { score += 1 }
+        }
+        return score >= 2
     }
 
     private static func looksLikeCode(_ t: String) -> Bool {
