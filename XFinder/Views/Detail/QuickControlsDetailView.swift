@@ -17,6 +17,13 @@ struct QuickControlsDetailView: View {
     @State private var brightDenied = false
     /// Real brightness, polled from IOKit (see `ScreenBrightness`).
     @State private var brightness = ScreenBrightness.shared
+    /// Vị trí con trượt LUÔN là trạng thái kéo cục bộ: macOS không đặt được
+    /// độ sáng chính xác (chỉ ~16 nấc phần cứng), nên nếu binding bám thẳng
+    /// giá trị registry, giữa lúc kéo con trượt liên tục bị giật về nấc cũ
+    /// — đó chính là bug "slider không trượt". Chỉ gửi phím khi buông tay
+    /// (onEditingChanged), sau đó poll đồng bộ lại từ phần cứng.
+    @State private var brightnessSlider: Double = 0.5
+    @State private var brightnessDragging = false
     @State private var caffeine = CaffeineController.shared
 
     @AppStorage("windowPreview.hoverEnabled") private var hoverEnabled = true
@@ -50,6 +57,7 @@ struct QuickControlsDetailView: View {
             appearance = SystemControls.currentAppearance()
             dockAutohide = DockPrefs.autohide()
             brightDenied = !WindowManager.isTrusted
+            brightnessSlider = brightness.level ?? 0.5
             volumeObserver.retain()
             // Polls IOKit while this page is visible so the slider follows the
             // keyboard brightness keys; released on disappear so idle CPU
@@ -120,22 +128,33 @@ struct QuickControlsDetailView: View {
                     }
                     .frame(width: 130, alignment: .leading)
 
-                    Slider(value: Binding(get: { brightness.level ?? 0.5 },
-                                          set: { brightness.setLevel($0) }),
-                           in: 0...1)
+                    // Slider bám trạng thái kéo cục bộ; buông tay mới gửi
+                    // phím rồi đọc lại nấc thật (xem note ở brightnessSlider).
+                    Slider(value: $brightnessSlider, in: 0...1) { editing in
+                        brightnessDragging = editing
+                        if !editing { brightness.setLevel(brightnessSlider) }
+                    }
                         .tint(.blue)
-                        .disabled(brightness.level == nil)
+                        .disabled(brightDenied || brightness.level == nil)
 
                     Text(brightness.level.map { "\(Int($0 * 100))%" } ?? "—")
                         .font(.system(size: 11, design: .monospaced))
                         .frame(width: 38, alignment: .trailing)
                 }
+                .onChange(of: brightness.level) { _, newValue in
+                    // Phím tăng/giảm phần cứng → đồng bộ slider (khi không kéo).
+                    if !brightnessDragging, let v = newValue { brightnessSlider = v }
+                }
 
                 if brightDenied {
                     permissionNote(
                         "Chưa có quyền Trợ năng — kéo thanh trượt sẽ không đổi được độ sáng.",
-                        button: "Mở Cài đặt quyền Trợ năng",
-                        action: { WindowManager.openAccessibilityPane() })
+                        button: "Cấp quyền Trợ năng…",
+                        action: {
+                            if !WindowManager.requestAccessibilityTrust() {
+                                WindowManager.openAccessibilityPane()
+                            }
+                        })
                 } else if brightness.level == nil {
                     Text("Không đọc được độ sáng — máy này có thể chỉ dùng màn hình ngoài.")
                         .font(.system(size: 11)).foregroundColor(.secondary)
