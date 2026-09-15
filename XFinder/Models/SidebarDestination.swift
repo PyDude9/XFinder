@@ -36,7 +36,9 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case remoteConnect
     case quickShare
     // CÀI ĐẶT
-    case settingsGeneral
+    // `settingsGeneral` was removed: "Cài đặt chung" only held theme + Dock
+    // icon, both of which already live on Tổng quan / Điều khiển nhanh. A
+    // catch-all settings bucket duplicated pages that own their own settings.
     case settingsClipboard
     case settingsMenubar
     // Footer
@@ -74,7 +76,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .sync: return "Đồng bộ"
         case .remoteConnect: return "Kết nối từ xa"
         case .quickShare: return "Chia sẻ nhanh"
-        case .settingsGeneral: return "Cài đặt chung"
         case .settingsClipboard: return "Clipboard"   // settings-only page now
         case .settingsMenubar: return "Bảng menubar"
         case .about: return "Giới thiệu"
@@ -113,7 +114,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .sync: return "arrow.triangle.2.circlepath"
         case .remoteConnect: return "display.2"
         case .quickShare: return "square.and.arrow.up"
-        case .settingsGeneral: return "gearshape.fill"
         case .settingsClipboard: return "doc.on.clipboard.fill"
         case .settingsMenubar: return "menubar.dock.rectangle"
         case .about: return "info.circle"
@@ -132,16 +132,22 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         [
             // Clipboard content lives in the ⌘⇧V floating shelf and notes in the
             // screen-edge panel, so the sidebar carries only their settings.
-            // No separate CÀI ĐẶT group: each page owns its own settings, so a
-            // catch-all bucket only duplicated them. `settingsGeneral` sits in
-            // CHUNG (app-level prefs) and `settingsMenubar` next to the other
-            // menu-bar page; privacy merged into the Clipboard page.
-            ("CHUNG", [.dashboard, .settingsGeneral, .quickControls, .antiSleep, .system, .network, .storage, .pin]),
-            ("CLIPBOARD & GHI CHÚ", [.settingsClipboard, .notes]),
+            // No CÀI ĐẶT group at all: every page owns its own settings, and a
+            // catch-all bucket only duplicated them.
+            //
+            // Grouping follows the reference screenshots. The two file-name
+            // tools (Đổi tên hàng loạt, Lịch sử thao tác) sit under
+            // FINDER & TÌM KIẾM, not CÔNG CỤ — they act on the Finder selection
+            // and belong beside the search rows the user reaches them from.
+            // CÔNG CỤ keeps the content tools; TIỆN ÍCH keeps the Finder
+            // integration surfaces.
+            ("CHUNG", [.dashboard, .quickControls, .antiSleep, .system, .network, .storage, .pin]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .menuIcons, .settingsMenubar]),
-            ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch]),
-            ("CÔNG CỤ", [.batchRename, .actionHistory, .dropTray, .compress, .pdfTools, .folderLock, .quickLookPage, .mediaCompat, .finderUtils]),
+            ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
+                                   .batchRename, .actionHistory]),
+            ("CÔNG CỤ", [.settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare]),
+            ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat]),
         ]
     }
 }

@@ -74,7 +74,6 @@
 				7F1A0074 /* ClipboardPayloadStore.swift */,
 				7F1A006A /* WindowManager.swift */,
 				7F1A00C8 /* UpdateChecker.swift */,
-				7F1A00CA /* ProcessSampler.swift */,
 				7F1A0090 /* DockPreviewController.swift */,
 				7F1A00A2 /* CommandTabController.swift */,
 				7F1A00A4 /* SnapZoneController.swift */,
@@ -140,6 +139,7 @@
 				7F1A0075 /* Views/ClipboardCardView.swift */,
 				7F1A00C4 /* Views/EdgeNotesViews.swift */,
 				7F1A0072 /* Detail/FinderToolDetailViews.swift */,
+				7F1A00CC /* Detail/FinderUtilsDetailView.swift */,
 				7F1A00A8 /* Detail/FinderActionsDetailView.swift */,
 				7F1A00A6 /* Detail/MenuIconsDetailView.swift */,
 				7F1A00C2 /* Detail/QuickShareDetailView.swift */,
@@ -292,7 +292,6 @@
 		7F1A0069 /* FileSearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchEngine.swift; sourceTree = "<group>"; };
 		7F1A006A /* WindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowManager.swift; sourceTree = "<group>"; };
 		7F1A00C8 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
-		7F1A00CA /* ProcessSampler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessSampler.swift; sourceTree = "<group>"; };
 		7F1A0090 /* DockPreviewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewController.swift; sourceTree = "<group>"; };
 		7F1A00A2 /* CommandTabController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandTabController.swift; sourceTree = "<group>"; };
 		7F1A00A4 /* SnapZoneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapZoneController.swift; sourceTree = "<group>"; };
@@ -319,6 +318,7 @@
 		7F1A0075 /* Views/ClipboardCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ClipboardCardView.swift"; sourceTree = "<group>"; };
 		7F1A00C4 /* Views/EdgeNotesViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EdgeNotesViews.swift"; sourceTree = "<group>"; };
 		7F1A0072 /* Detail/FinderToolDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FinderToolDetailViews.swift"; sourceTree = "<group>"; };
+		7F1A00CC /* Detail/FinderUtilsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FinderUtilsDetailView.swift"; sourceTree = "<group>"; };
 		7F1A00A8 /* Detail/FinderActionsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FinderActionsDetailView.swift"; sourceTree = "<group>"; };
 		7F1A00A6 /* Detail/MenuIconsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/MenuIconsDetailView.swift"; sourceTree = "<group>"; };
 		7F1A00C2 /* Detail/QuickShareDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/QuickShareDetailView.swift"; sourceTree = "<group>"; };
@@ -373,7 +373,6 @@
 				7F1A0083,
 				7F1A0084,
 				7F1A00C9,
-				7F1A00CB,
 				7F1A0085,
 				7F1A0086,
 				7F1A0087,
@@ -385,6 +384,7 @@
 				7F1A7F1A008E,
 				7F1A7F1A008F,
 				7F1A008C,
+				7F1A00CD,
 				7F1A0091,
 				7F1A00A3,
 				7F1A00A5,
@@ -453,7 +453,6 @@
 		7F1A0083 /* FileSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0069; };
 		7F1A0084 /* WindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006A; };
 		7F1A00C9 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00C8; };
-		7F1A00CB /* ProcessSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00CA; };
 		7F1A0085 /* NotesDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006B; };
 		7F1A0086 /* BatchRenameDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006C; };
 		7F1A0087 /* ActionHistoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006D; };
@@ -465,6 +464,7 @@
 		7F1A7F1A008E /* ClipboardPayloadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0074 /* ClipboardPayloadStore.swift */; };
 		7F1A7F1A008F /* Views/ClipboardCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0075 /* Views/ClipboardCardView.swift */; };
 		7F1A008C /* FinderToolDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0072; };
+		7F1A00CD /* FinderUtilsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00CC; };
 		7F1A0091 /* DockPreviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0090; };
 		7F1A00A3 /* CommandTabController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A2; };
 		7F1A00A5 /* SnapZoneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A4; };

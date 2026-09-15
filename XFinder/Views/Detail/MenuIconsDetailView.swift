@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// Biểu tượng thanh menu — the Bartender-style hidden tray.
-/// Copy and structure follow the reference screenshot; the mechanism is
-/// described honestly in `MenuBarHiderController` (a user-performed ⌘-drag
-/// across XFinder's own separator item, no permission required).
+/// Biểu tượng thanh menu.
+///
+/// This page used to advertise Bartender-style hiding of *other* apps' icons.
+/// Measured on macOS 27.0 (26A428), that mechanism no longer works — see the
+/// probe results recorded in `MenuBarHiderController`. Rather than leave a
+/// toggle that quietly does nothing, the page now states what macOS actually
+/// supports and links to the pane that does it.
 struct MenuIconsDetailView: View {
-    @AppStorage("menubar.hiderEnabled") private var enabled = true
-    @AppStorage("menubar.autoHide") private var autoHide = true
-    @AppStorage("menubar.autoHideDelay") private var autoHideDelay = 5.0
     @State private var hider = MenuBarHiderController.shared
 
     var body: some View {
@@ -16,91 +16,62 @@ struct MenuIconsDetailView: View {
                 PageHeader(
                     icon: "menubar.rectangle",
                     title: "Biểu tượng thanh menu",
-                    subtitle: "Ẩn và hiện các biểu tượng ít dùng trên thanh menu macOS.",
-                    trailing: AnyView(
-                        HStack(spacing: 6) {
-                            Text(enabled ? "Bật" : "Tắt")
-                                .font(.system(size: 12)).foregroundColor(.secondary)
-                            Toggle("", isOn: $enabled)
-                                .labelsHidden()
-                                .onChange(of: enabled) { hider.applySettings() }
-                        }
-                    ))
+                    subtitle: "Sắp xếp và ẩn biểu tượng trên thanh menu macOS.")
 
-                SectionHeader(icon: "menubar.dock.rectangle",
-                              title: "Thanh biểu tượng ẩn",
-                              subtitle: "Gom các biểu tượng ít dùng sau một mũi tên trên thanh menu, giống như Bartender.")
+                SectionHeader(icon: "gearshape",
+                              title: "macOS quản lý thanh menu",
+                              subtitle: "Từ macOS 26, việc ẩn/hiện biểu tượng nằm trong Cài đặt hệ thống.")
 
                 VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Tự động ẩn lại sau khi hiện").font(.system(size: 13))
-                        Spacer()
-                        Toggle("", isOn: $autoHide)
-                            .labelsHidden()
-                            .disabled(!enabled)
-                        Picker("", selection: $autoHideDelay) {
-                            Text("3 giây").tag(3.0)
-                            Text("5 giây").tag(5.0)
-                            Text("10 giây").tag(10.0)
-                            Text("30 giây").tag(30.0)
-                        }
-                        .labelsHidden()
-                        .frame(width: 110)
-                        .disabled(!enabled || !autoHide)
-                    }
+                    Text("Mở Cài đặt hệ thống → Trung tâm điều khiển để chọn biểu tượng nào hiện trên thanh menu, biểu tượng nào ẩn đi.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                    HStack(spacing: 8) {
-                        Button("Hiện biểu tượng ẩn ngay") { hider.revealNow() }
-                            .buttonStyle(.bordered).controlSize(.small)
-                            .disabled(!enabled)
-                        Button("Đặt lại bố cục") { hider.resetLayout() }
-                            .buttonStyle(.bordered).controlSize(.small)
-                            .disabled(!enabled)
+                    Button("Mở Cài đặt thanh menu của macOS") {
+                        hider.openSystemMenuBarSettings()
                     }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
 
-                    Text("Đặt lại bố cục chỉ sửa mũi tên và vạch ngăn của XFinder, không sắp xếp lại các ứng dụng khác.")
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                    Text("Bạn cũng có thể giữ ⌘ rồi kéo để đổi thứ tự biểu tượng ngay trên thanh menu.")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
                 }
                 .padding(.horizontal, 20)
 
                 Divider().padding(.horizontal, 20)
 
-                SectionHeader(icon: "hand.point.up.left",
-                              title: "Cách chọn biểu tượng để ẩn",
-                              subtitle: "Ẩn biểu tượng không cần cấp quyền.")
+                SectionHeader(icon: "exclamationmark.triangle",
+                              title: "Vì sao XFinder không tự ẩn giúp bạn",
+                              subtitle: "Đo đạc thật trên macOS 27, không phải phỏng đoán.")
 
                 VStack(alignment: .leading, spacing: 8) {
-                    step(1, "XFinder thêm một mũi tên ‹ và một vạch ngăn mảnh vào thanh menu.")
-                    step(2, "Giữ ⌘ và kéo những biểu tượng muốn giấu sang bên trái vạch ngăn.")
-                    step(3, "Giữ những biểu tượng luôn muốn thấy ở bên phải vạch ngăn.")
-                    step(4, "Bấm mũi tên để hiện hoặc ẩn nhóm.")
-                }
-                .padding(.horizontal, 20)
+                    bullet("Cách cũ (giống Bartender) là dùng một vạch ngăn rộng 10.000 pt để đẩy các biểu tượng bên trái ra khỏi màn hình.")
+                    bullet("macOS 27 giới hạn vạch ngăn còn ~5.016 pt — vẫn rộng hơn màn hình 1.728 pt, nên bề rộng không phải vấn đề.")
+                    bullet("Nhưng biểu tượng bên cạnh không hề bị đẩy đi: nó dịch sang phải (x=952 → 988) và vẫn nằm trên thanh menu sau 7 giây.")
+                    bullet("macOS cũng không cho ứng dụng nhìn thấy biểu tượng của ứng dụng khác, nên không có cách nào lách.")
 
-                Divider().padding(.horizontal, 20)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Ứng dụng mới mở có thể xuất hiện bên trái vạch ngăn và nằm sẵn trong nhóm bị ẩn.")
-                        .font(.system(size: 12)).foregroundColor(.secondary)
-                    Text("Cách này dùng chính các mục trạng thái của XFinder nên không cần quyền Trợ năng hay Ghi màn hình. macOS không có API cho phép một ứng dụng ẩn biểu tượng của ứng dụng khác, nên thao tác ⌘-kéo phải do bạn thực hiện.")
-                        .font(.system(size: 12)).foregroundColor(.secondary)
+                    Text("Vì vậy XFinder không thêm biểu tượng nào vào thanh menu cho chức năng này nữa — một nút bấm không làm được việc nó hứa thì tệ hơn là không có nút.")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, 2)
                 }
                 .padding(.horizontal, 20)
             }
             .padding(.bottom, 20)
         }
         .background(Color(.windowBackgroundColor))
-        .onAppear { hider.applySettings() }
     }
 
-    private func step(_ n: Int, _ text: String) -> some View {
+    private func bullet(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            Text("\(n)")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(.white)
-                .frame(width: 18, height: 18)
-                .background(Circle().fill(Color.accentColor))
-            Text(text).font(.system(size: 12))
+            Text("•").font(.system(size: 12)).foregroundColor(.secondary)
+            Text(text)
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
     }

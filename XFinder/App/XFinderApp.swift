@@ -23,7 +23,7 @@ struct XFinderApp: App {
 
             CommandGroup(replacing: .appSettings) {
                 Button("Settings") {
-                    AppState.shared.navigate(to: .settingsGeneral)
+                    AppState.shared.navigate(to: .quickControls)
                 }
                 .keyboardShortcut(",", modifiers: .command)
             }

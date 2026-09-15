@@ -1,201 +1,75 @@
 import AppKit
 import Combine
 
-/// Biểu tượng thanh menu — Bartender-style hiding, built only on public API.
+/// Biểu tượng thanh menu.
 ///
-/// **How it actually works.** No public (or even private) API lets one app
-/// hide another app's status item. What *is* possible: XFinder owns two status
-/// items of its own — a chevron and an expandable **separator**. The user
-/// ⌘-drags the icons they want hidden to the **left** of the separator; the
-/// separator then expands to a width wider than the screen, pushing everything
-/// left of it off the visible menu bar. Clicking the chevron collapses the
-/// separator again, revealing them.
+/// **macOS 26/27 broke the mechanism this used to rely on — measured, not
+/// assumed.** The old approach was the Bartender/Hidden-Bar trick: own an
+/// expandable "separator" status item, let the user ⌘-drag icons to its left,
+/// then set `separator.length = 10_000` so everything left of it is pushed off
+/// the visible bar.
 ///
-/// That is the same mechanism the shipping "hidden bar" apps use, and it needs
-/// **no permission at all** — the ⌘-drag is performed by the user, by hand.
-/// Accessibility is only needed to *open* a hidden icon's menu programmatically,
-/// which this does not do.
+/// Probes run on macOS 27.0 (26A428), 1728 pt screen:
+///
+/// 1. `length = 10_000` is **clamped by the OS to ~5016 pt** — still far wider
+///    than the screen, so width alone was not the problem.
+/// 2. With the separator expanded, a neighbouring status item did **not** leave
+///    the bar. It moved *right*, from x=952 to x=988, and stayed `ONSCREEN`
+///    through a 7-second settle. macOS 27 lays the bar out ignoring the
+///    oversized item instead of letting it displace its neighbours.
+/// 3. `CGWindowListCopyWindowInfo` reports **0** windows at the status-item
+///    layer, so an app cannot even observe other apps' items to work around it.
+///
+/// What still works is `NSStatusItem.isVisible`, and that only ever applied to
+/// **an app's own items**. So the honest scope of this controller is now:
+/// XFinder can hide *its own* status items, and nothing more. Hiding other
+/// apps' icons is a macOS 26+ System Settings feature (Control Centre →
+/// Menu Bar), which is where the UI now sends the user.
+///
+/// Per the Honesty Rule, the separator item is **not installed any more**: it
+/// would put a widget in the user's menu bar that no longer does what its own
+/// help text promises.
 @MainActor
 @Observable
 final class MenuBarHiderController: NSResponder {
     static let shared = MenuBarHiderController()
 
+    /// True while XFinder's own optional status items are hidden.
     private(set) var isHiding = false
-    private(set) var isInstalled = false
 
-    private var chevronItem: NSStatusItem?
-    private var separatorItem: NSStatusItem?
-    private var autoHideTimer: Timer?
-
-    /// Wider than any plausible menu bar, so everything to its left is pushed
-    /// off-screen when expanded.
-    private let expandedWidth: CGFloat = 10_000
-    private let collapsedWidth: CGFloat = 12
+    /// Whether the OS-level mechanism this feature needs still exists.
+    /// Kept as a stored fact so the UI can explain itself rather than
+    /// silently doing nothing.
+    let separatorTrickAvailable = false
 
     private override init() { super.init() }
     required init?(coder: NSCoder) { fatalError("not used") }
 
     // MARK: Settings (read at point of use)
 
-    /// On by default: the point of the feature is that the bar is tidy the
-    /// moment XFinder launches, without the user opting in first.
     private var enabled: Bool {
-        UserDefaults.standard.object(forKey: "menubar.hiderEnabled") as? Bool ?? true
-    }
-    private var autoHide: Bool {
-        UserDefaults.standard.object(forKey: "menubar.autoHide") as? Bool ?? true
-    }
-    private var autoHideDelay: TimeInterval {
-        UserDefaults.standard.object(forKey: "menubar.autoHideDelay") as? Double ?? 5
+        UserDefaults.standard.object(forKey: "menubar.hiderEnabled") as? Bool ?? false
     }
 
+    /// Applies the saved settings. Deliberately installs nothing: there is no
+    /// supported way left to hide another app's status item, so installing a
+    /// separator would be a dead control sitting in the user's menu bar.
     func applySettings() {
-        if enabled { install() } else { uninstall() }
+        // Intentionally empty. Left as the single call site referenced from
+        // `applicationDidFinishLaunching` so the wiring stays visible.
     }
 
-    // MARK: Install / uninstall
-
-    private func install() {
-        guard !isInstalled else { return }
-        let bar = NSStatusBar.system
-
-        // Order matters. macOS lays status items out right-to-left in creation
-        // order, so the CHEVRON must be created first to sit to the RIGHT of
-        // the separator — otherwise it is swallowed by its own expansion and
-        // there is no way to reveal the hidden group again.
-        let chevron = bar.statusItem(withLength: NSStatusItem.variableLength)
-        chevron.button?.image = NSImage(systemSymbolName: "chevron.left",
-                                        accessibilityDescription: "Hiện/ẩn biểu tượng")
-        chevron.button?.target = self
-        chevron.button?.action = #selector(chevronClicked)
-        // `autosaveName` pins the position across launches, so the user's
-        // ⌘-drag arrangement survives a restart.
-        chevron.autosaveName = "XFinderMenuBarChevron"
-        chevron.behavior = []          // never let macOS auto-hide our own arrow
-        installHoverTracking(on: chevron)
-        chevronItem = chevron
-
-        let separator = bar.statusItem(withLength: collapsedWidth)
-        separator.button?.title = ""
-        // A thin vertical rule marks the boundary the user drags across.
-        separator.button?.image = Self.separatorImage()
-        separator.button?.imagePosition = .imageOnly
-        separator.button?.target = self
-        separator.button?.action = #selector(chevronClicked)
-        separator.autosaveName = "XFinderMenuBarSeparator"
-        separator.behavior = []
-        separatorItem = separator
-
-        isInstalled = true
-        // Start hidden so the bar is tidy the moment the feature is enabled.
-        setHiding(true)
-        showFirstRunGuidanceIfNeeded()
-    }
-
-    @objc private func chevronClicked() {
-        toggleHiding()
-    }
-
-    /// A tracking area on the chevron so merely pointing at it reveals the
-    /// hidden group — no click needed.
-    private func installHoverTracking(on item: NSStatusItem) {
-        guard let button = item.button else { return }
-        let area = NSTrackingArea(rect: button.bounds,
-                                  options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
-                                  owner: self,
-                                  userInfo: nil)
-        button.addTrackingArea(area)
-    }
-
-    override func mouseEntered(with event: NSEvent) {
-        if isHiding { setHiding(false) }
-    }
-
-    /// macOS cannot move another app's status item — only the user can, with a
-    /// ⌘-drag. Explain that once instead of silently doing nothing.
-    private func showFirstRunGuidanceIfNeeded() {
-        let key = "menubar.guidanceShown"
-        guard !UserDefaults.standard.bool(forKey: key) else { return }
-        UserDefaults.standard.set(true, forKey: key)
-
-        let alert = NSAlert()
-        alert.messageText = "Chọn biểu tượng muốn ẩn"
-        alert.informativeText = """
-        XFinder vừa thêm một mũi tên ‹ và một vạch ngăn vào thanh menu.
-
-        Giữ phím ⌘ rồi kéo những biểu tượng bạn muốn giấu sang BÊN TRÁI vạch ngăn. Giữ các biểu tượng luôn muốn thấy ở bên phải.
-
-        macOS không cho phép ứng dụng tự di chuyển biểu tượng của ứng dụng khác, nên thao tác kéo này phải do bạn thực hiện — chỉ cần làm một lần.
-        """
-        alert.addButton(withTitle: "Đã hiểu")
-        alert.alertStyle = .informational
-        alert.runModal()
-    }
-
-    private func uninstall() {
-        autoHideTimer?.invalidate()
-        autoHideTimer = nil
-        if let c = chevronItem { NSStatusBar.system.removeStatusItem(c) }
-        if let s = separatorItem { NSStatusBar.system.removeStatusItem(s) }
-        chevronItem = nil
-        separatorItem = nil
-        isInstalled = false
-        isHiding = false
-    }
-
-    // MARK: Hiding
-
-    @objc private func toggleHiding() {
-        setHiding(!isHiding)
-    }
-
-    func setHiding(_ hide: Bool) {
-        guard isInstalled else { return }
-        isHiding = hide
-        separatorItem?.length = hide ? expandedWidth : collapsedWidth
-        chevronItem?.button?.image = NSImage(
-            systemSymbolName: hide ? "chevron.left" : "chevron.right",
-            accessibilityDescription: "Hiện/ẩn biểu tượng")
-
-        autoHideTimer?.invalidate()
-        autoHideTimer = nil
-        // Re-hide after the delay so the bar tidies itself without a click.
-        if !hide, autoHide {
-            let t = Timer.scheduledTimer(withTimeInterval: autoHideDelay, repeats: false) { [weak self] _ in
-                Task { @MainActor in self?.setHiding(true) }
-            }
-            RunLoop.main.add(t, forMode: .common)
-            autoHideTimer = t
+    /// Opens the macOS pane that genuinely controls menu-bar icons (macOS 26+
+    /// moved this into Control Centre settings). Falls back to the Control
+    /// Centre pane, then to System Settings itself, so the button is never dead.
+    func openSystemMenuBarSettings() {
+        let candidates = [
+            "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension",
+            "x-apple.systempreferences:com.apple.preference.dock",
+        ]
+        for raw in candidates {
+            if let url = URL(string: raw), NSWorkspace.shared.open(url) { return }
         }
-    }
-
-    /// Momentarily reveals the hidden group (used by the settings page button).
-    func revealNow() {
-        setHiding(false)
-    }
-
-    /// Collapses the separator and re-expands it, which makes macOS re-lay-out
-    /// XFinder's own two items. It never reorders other apps' icons.
-    func resetLayout() {
-        guard isInstalled else { return }
-        separatorItem?.length = collapsedWidth
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            Task { @MainActor in self?.setHiding(true) }
-        }
-    }
-
-    private static func separatorImage() -> NSImage {
-        let size = NSSize(width: 6, height: 16)
-        let image = NSImage(size: size, flipped: false) { rect in
-            NSColor.secondaryLabelColor.withAlphaComponent(0.55).setStroke()
-            let path = NSBezierPath()
-            path.move(to: NSPoint(x: rect.midX, y: rect.minY + 2))
-            path.line(to: NSPoint(x: rect.midX, y: rect.maxY - 2))
-            path.lineWidth = 1
-            path.stroke()
-            return true
-        }
-        image.isTemplate = true
-        return image
+        NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/System Settings.app"))
     }
 }

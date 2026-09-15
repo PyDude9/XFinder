@@ -352,7 +352,9 @@ struct MenubarFlyoutView: View {
 
     private var footer: some View {
         HStack(spacing: 8) {
-            Button { navigate(.settingsGeneral) } label: {
+            // "Cài đặt chung" no longer exists; Điều khiển nhanh is the page
+            // that actually holds the app-level switches.
+            Button { navigate(.quickControls) } label: {
                 Label("Cài đặt XFinder", systemImage: "gearshape")
                     .font(.system(size: 12))
                     .frame(maxWidth: .infinity)

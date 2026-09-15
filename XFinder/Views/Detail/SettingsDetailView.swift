@@ -19,7 +19,6 @@ struct SettingsDetailView: View {
 
                 Group {
                     switch destination {
-                    case .settingsGeneral:    GeneralSettingsBody()
                     case .settingsClipboard:  ClipboardSettingsBody()
                     case .settingsMenubar:    MenubarSettingsBody()
                     default:                  EmptyView()
@@ -33,38 +32,11 @@ struct SettingsDetailView: View {
     }
 }
 
-// MARK: - General
-
-private struct GeneralSettingsBody: View {
-    @AppStorage("AppTheme") private var theme = "System"
-    @AppStorage("ShowDockIcon") private var showDockIcon = true
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SettingsCard(title: "Giao diện") {
-                Picker("Chủ đề", selection: $theme) {
-                    Text("Theo hệ thống").tag("System")
-                    Text("Sáng").tag("Light")
-                    Text("Tối").tag("Dark")
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: theme) { AppearanceController.apply(theme) }
-            }
-
-            SettingsCard(title: "Biểu tượng Dock",
-                         subtitle: showDockIcon
-                             ? "Ẩn để dùng XFinder thuần menubar."
-                             : "Đang ẩn — mở từ icon menubar.") {
-                ToggleRow(title: "Hiện trong Dock", isOn: $showDockIcon)
-                    .onChange(of: showDockIcon) { DockController.apply($0) }
-            }
-        }
-        .onAppear {
-            AppearanceController.apply(theme)
-            DockController.apply(showDockIcon)
-        }
-    }
-}
+// `GeneralSettingsBody` was deleted along with the `settingsGeneral`
+// destination. Its two controls were duplicates: the theme picker is on
+// Điều khiển nhanh (which applies it system-wide, not just to XFinder) and the
+// Dock-icon toggle is on Tổng quan. `AppearanceController`/`DockController`
+// below are still used — by launch-time restore and by those pages.
 
 // MARK: - Clipboard
 

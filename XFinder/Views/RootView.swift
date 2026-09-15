@@ -96,7 +96,7 @@ struct DetailHostView: View {
             case .pin:
                 PinDetailView()
                     .environment(systemMonitorManager)
-            case .settingsGeneral, .settingsClipboard, .settingsMenubar:
+            case .settingsClipboard, .settingsMenubar:
                 SettingsDetailView(destination: selection)
             case .compress:
                 CompressDetailView()
