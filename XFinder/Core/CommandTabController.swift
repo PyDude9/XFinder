@@ -135,15 +135,17 @@ final class CommandTabController {
         refreshPanel()
     }
 
+    /// Every switchable **window**, not one row per app.
+    ///
+    /// This used to dedupe by pid, which made the switcher an app switcher —
+    /// and a preview list of one icon per app shows the user nothing they did
+    /// not already know. With per-window rows plus a live thumbnail, ⌘-Tab can
+    /// pick "the second Safari window" directly, which is the whole point.
+    /// Capped so a machine with dozens of windows still renders a sane panel.
     private func switchableWindows() -> [WindowManager.WindowInfo] {
-        var seen = Set<pid_t>()
-        // One entry per app keeps the switcher readable; ⌘-Tab is an app
-        // switcher first, and per-window switching is what the Dock preview does.
-        return WindowManager.listWindows().filter { win in
-            guard !seen.contains(win.ownerPID) else { return false }
-            seen.insert(win.ownerPID)
-            return true
-        }
+        Array(WindowManager.listWindows()
+            .filter { $0.bounds.width > 80 && $0.bounds.height > 80 }
+            .prefix(12))
     }
 
     private func showPanel() {
@@ -179,7 +181,9 @@ final class CommandTabController {
 
     private func dismiss(activate: Bool) {
         if activate, entries.indices.contains(selection) {
-            WindowManager.activate(pid: entries[selection].ownerPID)
+            // Raise the chosen WINDOW, not the whole app — otherwise picking
+            // one of several windows of the same app raises an arbitrary one.
+            WindowManager.raiseWindow(entries[selection])
         }
         isActive = false
         entries = []
@@ -188,36 +192,74 @@ final class CommandTabController {
     }
 }
 
+/// ⌘-Tab switcher showing a live thumbnail per **window**.
+///
+/// Previously this rendered only the app icon, which is why the user reported
+/// "no preview": there was never a thumbnail here at all. Thumbnails come from
+/// ScreenCaptureKit (`CGWindowListCreateImage` is unavailable on macOS 26/27),
+/// loaded in one batched round trip and cached by window id so stepping through
+/// the list does not re-capture.
 private struct CommandTabSwitcherView: View {
     let entries: [WindowManager.WindowInfo]
     let selection: Int
 
+    @State private var thumbs: [CGWindowID: NSImage] = [:]
+
     var body: some View {
-        HStack(spacing: 10) {
-            ForEach(Array(entries.enumerated()), id: \.element.id) { index, win in
-                VStack(spacing: 6) {
-                    Group {
+        VStack(alignment: .leading, spacing: 8) {
+            // Name of the highlighted window, like the system switcher.
+            if entries.indices.contains(selection) {
+                let win = entries[selection]
+                Text(win.title.isEmpty ? win.ownerName : "\(win.ownerName) — \(win.title)")
+                    .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+                    .frame(maxWidth: 760, alignment: .center)
+            }
+
+            HStack(spacing: 10) {
+                ForEach(Array(entries.enumerated()), id: \.element.id) { index, win in
+                    VStack(spacing: 5) {
+                        ZStack {
+                            if let img = thumbs[win.id] {
+                                Image(nsImage: img)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            } else {
+                                // Honest placeholder while the capture lands —
+                                // never a blank box with no explanation.
+                                RoundedRectangle(cornerRadius: 5)
+                                    .fill(Color(.controlBackgroundColor))
+                                    .overlay(Image(systemName: "macwindow")
+                                        .foregroundColor(.secondary))
+                            }
+                        }
+                        .frame(width: 132, height: 84)
+                        .clipShape(RoundedRectangle(cornerRadius: 5))
+
+                        // Small app icon under each thumbnail identifies the
+                        // owner when two windows look alike.
                         if let icon = NSRunningApplication(processIdentifier: win.ownerPID)?.icon {
-                            Image(nsImage: icon).resizable()
-                        } else {
-                            Image(systemName: "macwindow").resizable().scaledToFit()
+                            Image(nsImage: icon)
+                                .resizable()
+                                .frame(width: 22, height: 22)
                         }
                     }
-                    .frame(width: 64, height: 64)
-                    Text(win.ownerName)
-                        .font(.system(size: 10))
-                        .lineLimit(1)
-                        .frame(width: 84)
+                    .padding(7)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(index == selection ? Color.accentColor.opacity(0.28) : .clear)
+                    )
                 }
-                .padding(8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(index == selection ? Color.accentColor.opacity(0.28) : .clear)
-                )
             }
         }
         .padding(14)
         .background(RoundedRectangle(cornerRadius: 14).fill(Color(.windowBackgroundColor).opacity(0.96)))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color(.separatorColor), lineWidth: 1))
+        .task(id: entries.map(\.id)) {
+            let ids = entries.map(\.id).filter { thumbs[$0] == nil }
+            guard !ids.isEmpty else { return }
+            let made = await WindowManager.thumbnails(windowIDs: ids, maxSize: 260)
+            for (id, img) in made { thumbs[id] = img }
+        }
     }
 }

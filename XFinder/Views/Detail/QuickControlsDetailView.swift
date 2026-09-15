@@ -22,7 +22,6 @@ struct QuickControlsDetailView: View {
     // default that disagrees with the reader silently turns the feature on for
     // anyone who has never touched the switch.
     @AppStorage("windowPreview.commandTabEnabled") private var commandTabEnabled = false
-    @AppStorage("AppTheme") private var appTheme = "System"
 
     /// Dock auto-hide is a real, readable/writable public preference, so it is
     /// a genuine two-way toggle rather than a fire-and-forget button.
@@ -41,9 +40,6 @@ struct QuickControlsDetailView: View {
 
                 windowSection
 
-                Divider().padding(.horizontal, 20)
-
-                appSection
             }
             .padding(.bottom, 20)
         }
@@ -195,39 +191,6 @@ struct QuickControlsDetailView: View {
                           subtitle: "Thay trình chuyển ứng dụng của macOS bằng bản có ảnh thu nhỏ.",
                           isOn: $commandTabEnabled)
                     .onChange(of: commandTabEnabled) { CommandTabController.shared.applySettings() }
-            }
-            .padding(.horizontal, 20)
-        }
-    }
-
-    // MARK: - Ứng dụng
-
-    private var appSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(icon: "app.badge",
-                          title: "Ứng dụng",
-                          subtitle: "Cài đặt của riêng XFinder.")
-
-            VStack(spacing: 10) {
-                HStack(spacing: 12) {
-                    Text("Giao diện XFinder").font(.system(size: 13))
-                        .frame(width: 180, alignment: .leading)
-                    Spacer()
-                    Picker("", selection: $appTheme) {
-                        Text("Hệ thống").tag("System")
-                        Text("Sáng").tag("Light")
-                        Text("Tối").tag("Dark")
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .frame(width: 230)
-                    .onChange(of: appTheme) { _, t in AppearanceController.apply(t) }
-                }
-
-                // No Dock-icon toggle here: Tổng quan already owns
-                // `ShowDockIcon`. Two switches bound to one key is the
-                // duplicate-control trap — the second one looks broken the
-                // moment the first is used.
             }
             .padding(.horizontal, 20)
         }

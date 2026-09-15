@@ -273,6 +273,11 @@ final class NotchDropController {
         p.backgroundColor = .clear
         p.hasShadow = true
         p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        // The tray holds files the user is about to drag somewhere, and the
+        // destination window is often underneath it. A borderless panel is
+        // immovable by default, which trapped the tray wherever it opened —
+        // so let it be dragged by its background like a real utility window.
+        p.isMovableByWindowBackground = true
 
         let container = DropAcceptingView(frame: NSRect(origin: .zero, size: size))
         container.autoresizingMask = [.width, .height]
@@ -317,6 +322,18 @@ final class NotchDropController {
 /// `performDragOperation`. This view hosts the SwiftUI content and accepts the
 /// file drag on its behalf.
 private final class DropAcceptingView: NSView {
+    /// `isMovableByWindowBackground` alone is not enough: the `NSHostingView`
+    /// on top consumes the mouse-down, so AppKit never sees a background drag.
+    /// Forwarding it here makes the whole tray a drag handle, which is what
+    /// lets the user carry the tray to wherever they want to drop the files.
+    override func mouseDown(with event: NSEvent) {
+        window?.performDrag(with: event)
+    }
+
+    /// Without this the first click only focuses the panel and the tray does
+    /// not start moving until a second drag.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation { .copy }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {

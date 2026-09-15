@@ -297,28 +297,15 @@ struct DockPreviewView: View {
         .onAppear { load() }
     }
 
-    /// Nonisolated so it can run off the main thread and return one finished,
-    /// immutable value — no shared mutable state crosses the boundary.
-    private nonisolated static func renderThumbnails(ids: [CGWindowID]) -> [(CGWindowID, NSImage)] {
-        var out: [(CGWindowID, NSImage)] = []
-        for id in ids {
-            if let img = WindowManager.thumbnail(windowID: id, maxSize: 220) {
-                out.append((id, img))
-            }
-        }
-        return out
-    }
-
     private func load() {
         windows = WindowManager.listWindows().filter { $0.ownerPID == pid }
         let ids = windows.map(\.id)
-        Task.detached(priority: .userInitiated) {
-            // Build the array in a nonisolated helper and hand the finished
-            // value across the actor boundary. Capturing a `var` in the
-            // closure and reading it from `MainActor.run` was a real race:
-            // the background thread kept mutating it after the hop.
-            let made = Self.renderThumbnails(ids: ids)
-            await MainActor.run { for (id, img) in made { thumbs[id] = img } }
+        Task {
+            // One batched ScreenCaptureKit round trip for the whole panel.
+            // `thumbnails(windowIDs:)` queries shareable content once and then
+            // captures each window, instead of re-querying per window.
+            let made = await WindowManager.thumbnails(windowIDs: ids, maxSize: 220)
+            for (id, img) in made { thumbs[id] = img }
         }
     }
 }

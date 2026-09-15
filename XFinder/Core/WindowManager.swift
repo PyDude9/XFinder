@@ -1,9 +1,14 @@
 import Foundation
 import AppKit
 import Combine
+import ScreenCaptureKit
 
 /// Window operations on public APIs only:
-/// - Listing + thumbnails: `CGWindowListCopyWindowInfo` / `CGWindowListCreateImage` (public, no entitlement).
+/// - Listing: `CGWindowListCopyWindowInfo` (public, no entitlement).
+/// - Thumbnails: **ScreenCaptureKit** (`SCScreenshotManager`). The old
+///   `CGWindowListCreateImage` is *unavailable* on the macOS 26/27 SDK and
+///   returns nil at runtime there — that was the cause of the blank Dock
+///   preview and blank ⌘-Tab switcher. Requires Screen Recording permission.
 /// - Moving/resizing: AXUIElement (public ApplicationServices framework, but
 ///   requires the user to grant Accessibility trust — the UI gates on
 ///   `AXIsProcessTrusted()` and links straight to the Privacy pane instead of
@@ -52,15 +57,75 @@ enum WindowManager {
 
     // MARK: - Thumbnail (public, no entitlement)
 
-    static func thumbnail(windowID: CGWindowID, maxSize: CGFloat = 320) -> NSImage? {
-        guard let cg = CGWindowListCreateImage(.null, .optionIncludingWindow,
-                                               windowID, [.bestResolution]) else { return nil }
-        let img = NSImage(cgImage: cg, size: .zero)
-        let w = CGFloat(cg.width), h = CGFloat(cg.height)
-        guard w > 0, h > 0 else { return nil }
-        let scale = min(1, maxSize / max(w, h))
-        img.size = NSSize(width: w * scale, height: h * scale)
-        return img
+    /// Window thumbnail via **ScreenCaptureKit**.
+    ///
+    /// `CGWindowListCreateImage` — what this used to call — is now marked
+    /// *unavailable* by the macOS 26/27 SDK ("Please use ScreenCaptureKit
+    /// instead"). The app kept compiling only because the deployment target is
+    /// 14.0, but at runtime it returned nil, which is exactly why the Dock
+    /// hover preview and the ⌘-Tab switcher both rendered empty placeholders.
+    ///
+    /// Verified with a probe on macOS 27.0 (26A428): SCK captured 3/3 windows.
+    /// Needs Screen Recording permission, same as before.
+    static func thumbnail(windowID: CGWindowID, maxSize: CGFloat = 320) async -> NSImage? {
+        do {
+            let content = try await SCShareableContent.excludingDesktopWindows(
+                true, onScreenWindowsOnly: true)
+            guard let win = content.windows.first(where: { $0.windowID == windowID }),
+                  win.frame.width > 1, win.frame.height > 1 else { return nil }
+
+            let cfg = SCStreamConfiguration()
+            cfg.width = Int(win.frame.width)
+            cfg.height = Int(win.frame.height)
+            cfg.showsCursor = false
+            let filter = SCContentFilter(desktopIndependentWindow: win)
+
+            let cg = try await SCScreenshotManager.captureImage(contentFilter: filter,
+                                                               configuration: cfg)
+            let w = CGFloat(cg.width), h = CGFloat(cg.height)
+            guard w > 0, h > 0 else { return nil }
+            let img = NSImage(cgImage: cg, size: .zero)
+            let scale = min(1, maxSize / max(w, h))
+            img.size = NSSize(width: w * scale, height: h * scale)
+            return img
+        } catch {
+            return nil
+        }
+    }
+
+    /// Capture several windows in one `SCShareableContent` round trip.
+    ///
+    /// Calling `thumbnail(windowID:)` in a loop re-queries the shareable
+    /// content for every window, which is the slow part — one query plus N
+    /// captures is markedly faster for a Dock preview holding several windows.
+    static func thumbnails(windowIDs: [CGWindowID],
+                           maxSize: CGFloat = 320) async -> [(CGWindowID, NSImage)] {
+        guard !windowIDs.isEmpty else { return [] }
+        do {
+            let content = try await SCShareableContent.excludingDesktopWindows(
+                true, onScreenWindowsOnly: true)
+            let wanted = Set(windowIDs)
+            var out: [(CGWindowID, NSImage)] = []
+            for win in content.windows where wanted.contains(win.windowID) {
+                guard win.frame.width > 1, win.frame.height > 1 else { continue }
+                let cfg = SCStreamConfiguration()
+                cfg.width = Int(win.frame.width)
+                cfg.height = Int(win.frame.height)
+                cfg.showsCursor = false
+                let filter = SCContentFilter(desktopIndependentWindow: win)
+                guard let cg = try? await SCScreenshotManager.captureImage(
+                    contentFilter: filter, configuration: cfg) else { continue }
+                let w = CGFloat(cg.width), h = CGFloat(cg.height)
+                guard w > 0, h > 0 else { continue }
+                let img = NSImage(cgImage: cg, size: .zero)
+                let scale = min(1, maxSize / max(w, h))
+                img.size = NSSize(width: w * scale, height: h * scale)
+                out.append((win.windowID, img))
+            }
+            return out
+        } catch {
+            return []
+        }
     }
 
     // MARK: - Activate (public)
@@ -69,6 +134,50 @@ enum WindowManager {
     static func activate(pid: pid_t) -> Bool {
         guard let app = NSRunningApplication(processIdentifier: pid) else { return false }
         return app.activate(options: [.activateAllWindows])
+    }
+
+    /// Raise ONE window, not the whole app.
+    ///
+    /// `NSRunningApplication.activate` brings every window of the app forward,
+    /// which is wrong for a per-window switcher: picking the 3rd Safari window
+    /// would raise all of them and leave an arbitrary one on top. AX can raise a
+    /// single window, so match the CoreGraphics window by title+position and
+    /// send it `AXRaise`. Falls back to app activation when AX is unavailable,
+    /// so the switcher still works without the permission — just less precisely.
+    @discardableResult
+    static func raiseWindow(_ info: WindowInfo) -> Bool {
+        guard isTrusted else { return activate(pid: info.ownerPID) }
+        let appEl = AXUIElementCreateApplication(info.ownerPID)
+        var windowsRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appEl, kAXWindowsAttribute as CFString,
+                                            &windowsRef) == .success,
+              let axWindows = windowsRef as? [AXUIElement], !axWindows.isEmpty
+        else { return activate(pid: info.ownerPID) }
+
+        // CoreGraphics bounds are top-left origin, and so is AXPosition, so the
+        // two can be compared directly here without a flip.
+        let target = axWindows.first { el in
+            var titleRef: CFTypeRef?
+            let title = AXUIElementCopyAttributeValue(el, kAXTitleAttribute as CFString,
+                                                      &titleRef) == .success
+                ? (titleRef as? String ?? "") : ""
+            if !info.title.isEmpty, title == info.title { return true }
+
+            var posRef: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(el, kAXPositionAttribute as CFString,
+                                                &posRef) == .success, let posVal = posRef
+            else { return false }
+            var point = CGPoint.zero
+            guard AXValueGetValue(posVal as! AXValue, .cgPoint, &point) else { return false }
+            return abs(point.x - info.bounds.origin.x) < 4
+                && abs(point.y - info.bounds.origin.y) < 4
+        } ?? axWindows[0]
+
+        AXUIElementPerformAction(target, kAXRaiseAction as CFString)
+        // Raising alone does not move keyboard focus to the app.
+        NSRunningApplication(processIdentifier: info.ownerPID)?
+            .activate(options: [])
+        return true
     }
 
     // MARK: - Accessibility-gated move/resize

@@ -13,7 +13,6 @@ struct DashboardDetailView: View {
 
     @AppStorage("general.launchAtLogin") private var launchAtLogin = false
     @AppStorage("ShowDockIcon") private var showDockIcon = true
-    @AppStorage("general.colorfulIcon") private var colorfulIcon = false
     @AppStorage("notes.edgeEnabled") private var edgeNotesEnabled = false
     @AppStorage("windowPreview.hoverEnabled") private var hoverEnabled = true
 
@@ -99,12 +98,33 @@ struct DashboardDetailView: View {
                 actionTitle: automationOK ? nil : "Mở…",
                 action: automationOK ? nil : { SystemControls.openAutomationPane() })
 
+            // Hover preview needs BOTH the toggle and Screen Recording: the
+            // thumbnails come from ScreenCaptureKit. Reporting "Đã bật" while
+            // the permission is missing would be a lie — the panel would open
+            // with blank boxes, which is exactly the bug the user reported.
             StatusChecklistRow(
-                state: hoverEnabled ? .ok : .neutral,
+                state: hoverEnabled ? (canRecord ? .ok : .warning) : .neutral,
                 title: "Xem trước cửa sổ từ Dock",
-                status: hoverEnabled ? "Đã bật" : "Đang tắt",
+                status: !hoverEnabled ? "Đang tắt"
+                    : (canRecord ? "Đã bật" : "Thiếu quyền Ghi màn hình"),
                 actionTitle: "Mở…",
                 action: { appState.navigate(to: .windowPreview) })
+
+            StatusChecklistRow(
+                state: .ok,
+                title: "Quick Look nâng cao",
+                status: "Đã sẵn sàng",
+                actionTitle: "Mở…",
+                action: { appState.navigate(to: .quickLookPage) })
+
+            // Honest: Finder context-menu items and Quick Actions need a Finder
+            // Sync/Action extension target this app does not ship.
+            StatusChecklistRow(
+                state: .warning,
+                title: "Tác vụ nhanh trong Finder",
+                status: "Chưa có",
+                actionTitle: "Mở…",
+                action: { appState.navigate(to: .finderUtils) })
 
             StatusChecklistRow(
                 state: clipboardManager.history.isEmpty ? .neutral : .ok,
@@ -139,6 +159,7 @@ struct DashboardDetailView: View {
             shortcutLine("⌘⇧V", "Mở khay Clipboard nổi ở bất kỳ đâu")
             shortcutLine("⌘⇧C", "Bắt đầu Paste Stack")
             shortcutLine("⌃⌥ ←→↑↓", "Bắt dính cửa sổ đang focus")
+            shortcutLine("⌘⇥", "Chuyển cửa sổ kèm ảnh xem trước")
             Text("Di chuột lên icon app trên Dock để xem trước cửa sổ; lắc chuột khi kéo file hoặc trỏ vào tai thỏ để mở Khay thả.")
                 .font(.system(size: 12)).foregroundColor(.secondary)
             HStack(spacing: 8) {
