@@ -226,6 +226,20 @@ enum WindowManager {
         NSWorkspace.shared.open(url)
     }
 
+    /// Nhắc macOS đưa XFinder vào danh sách Trợ năng (System Settings →
+    /// Privacy → Accessibility hiện sẵn dòng XFinder, người dùng chỉ bật
+    /// công tắc). Trả về trạng thái tin cậy *hiện tại*.
+    ///
+    /// Dùng literal "AXTrustedCheckOptionPrompt" thay vì hằng
+    /// `kAXTrustedCheckOptionPrompt`: hằng đó là global var cũ kiểu Carbon
+    /// (`Unmanaged<CFString>`), bị Swift 6 chặn ở chính tham chiếu — còn giá
+    /// trị của nó chỉ là chuỗi này.
+    @discardableResult
+    static func requestAccessibilityTrust() -> Bool {
+        let key = "AXTrustedCheckOptionPrompt" as CFString
+        return AXIsProcessTrustedWithOptions([key: true] as CFDictionary)
+    }
+
     // MARK: - Screen Recording (needed for live thumbnails on macOS 10.15+)
 
     /// `CGPreflightScreenCaptureAccess` is the public check; on older systems

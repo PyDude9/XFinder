@@ -50,6 +50,8 @@ private struct ClipboardSettingsBody: View {
     /// a property of *what the clipboard records*, not a separate feature.
     @AppStorage("privacy.excludePasswordManagers") private var excludePW = true
     @AppStorage("sync.icloudClipboard") private var icloudSync = false
+    /// ⌘⇧V global shelf hotkey — read by `ClipboardShelfController.applySettings`.
+    @AppStorage("clipboard.globalHotkey") private var globalHotkey = true
     @State private var cloud = CloudSyncController.shared
 
     private static func time(_ d: Date) -> String {
@@ -59,6 +61,32 @@ private struct ClipboardSettingsBody: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            SettingsCard(title: "Phím tắt & quyền",
+                         subtitle: "⌘⇧V mở khay clipboard nổi trên mọi ứng dụng") {
+                VStack(alignment: .leading, spacing: 8) {
+                    ToggleRow(title: "Phím tắt toàn cục ⌘⇧V", isOn: $globalHotkey)
+                        .onChange(of: globalHotkey) {
+                            ClipboardShelfController.shared.applySettings()
+                        }
+
+                    if !WindowManager.isTrusted {
+                        Text("XFinder chưa được cấp quyền Trợ năng — ⌘⇧V sẽ không mở được khay. Cấp quyền một lần là mọi tính năng cần Trợ năng (khay clipboard, dán phím, bảng lệnh ⌘K, đổi độ sáng) cùng sống lại.")
+                            .font(.system(size: 11)).foregroundColor(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                        HStack {
+                            Button("Cấp quyền Trợ năng…") {
+                                _ = WindowManager.requestAccessibilityTrust()
+                            }
+                            Button("Mở Cài đặt") { WindowManager.openAccessibilityPane() }
+                        }
+                        .controlSize(.small)
+                    } else {
+                        Text("Đã có quyền Trợ năng — ⌘⇧V hoạt động ở mọi ứng dụng.")
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                    }
+                }
+            }
+
             SettingsCard(title: "Riêng tư",
                          subtitle: "Ứng dụng không bao giờ được ghi vào Clipboard.") {
                 VStack(alignment: .leading, spacing: 8) {
