@@ -43,8 +43,8 @@ struct FinderSearchDetailView: View {
     @State private var palette = QuickSearchPanelController.shared
     @State private var showQuicklinkSheet = false
     @State private var editingQuicklink: Quicklinks.Quicklink? = nil
-    /// Bật/tắt hotkey toàn cục — controller đọc cùng key này.
-    @AppStorage("quickSearch.globalHotkey") private var paletteHotkey = true
+    /// Bật/tắt Quick Search — controller đọc cùng key này (quickSearch.enabled).
+    @AppStorage("quickSearch.enabled") private var quickSearchEnabled = true
 
     var body: some View {
         ScrollView {
@@ -53,8 +53,10 @@ struct FinderSearchDetailView: View {
                     .font(.system(size: 22, weight: .bold))
                     .padding(.horizontal, 20).padding(.top, 16)
 
-                quickSearchCard
-                    .padding(.horizontal, 20)
+                if quickSearchEnabled {
+                    quickSearchCard
+                        .padding(.horizontal, 20)
+                }
 
                 paletteCard
                     .padding(.horizontal, 20)
@@ -219,50 +221,50 @@ struct FinderSearchDetailView: View {
         }
     }
 
-    /// Cấu hình bảng lệnh toàn cục — trang Tìm kiếm là trang Settings
-    /// duy nhất của tính năng này, không có trang riêng.
+    /// Phím tắt toàn cục — công tắc bật/tắt Quick Search + ô ghi hotkey.
     private var paletteCard: some View {
-        SettingsCard(title: "Bảng lệnh toàn cục",
-                     subtitle: "\(palette.hotkeyLabel) mở bảng tìm nổi kiểu Spotlight / Raycast / TinyCast") {
+        SettingsCard(title: "Phím tắt toàn cục",
+                     subtitle: "\(palette.hotkeyLabel) mở bảng lệnh nổi kiểu Spotlight / Raycast / TinyCast") {
             VStack(alignment: .leading, spacing: 8) {
-                ToggleRow(title: "Bật phím tắt toàn cục",
-                          subtitle: "Hotkey kiểu Carbon — hoạt động mọi nơi, không cần quyền Trợ năng",
-                          isOn: $paletteHotkey)
-                    .onChange(of: paletteHotkey) {
+                ToggleRow(title: "Bật Tìm nhanh (Quick Search)",
+                          subtitle: "Bảng lệnh toàn cục + ô tìm nhanh trong trang này",
+                          isOn: $quickSearchEnabled)
+                    .onChange(of: quickSearchEnabled) {
                         QuickSearchPanelController.shared.applySettings()
                     }
 
-                // Ô phím tắt: hiển thị tổ hợp hiện tại + nút ghi tổ hợp mới.
-                HStack(spacing: 10) {
-                    Text("Phím tắt")
-                        .font(.system(size: 12))
-                    Text(palette.hotkeyLabel)
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(Color(.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
-                        .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.primary.opacity(0.08)))
-                    Button {
-                        if palette.isRecording {
-                            palette.cancelRecording()
-                        } else {
-                            palette.beginRecording()
+                if quickSearchEnabled {
+                    // Ô phím tắt: hiển thị tổ hợp hiện tại + nút ghi tổ hợp mới.
+                    HStack(spacing: 10) {
+                        Text("Phím tắt")
+                            .font(.system(size: 12))
+                        Text(palette.hotkeyLabel)
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(Color(.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
+                            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.primary.opacity(0.08)))
+                        Button {
+                            if palette.isRecording {
+                                palette.cancelRecording()
+                            } else {
+                                palette.beginRecording()
+                            }
+                        } label: {
+                            Text(palette.isRecording ? "Hủy ghi" : "Đổi phím…")
                         }
-                    } label: {
-                        Text(palette.isRecording ? "Hủy ghi" : "Đổi phím…")
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(!paletteHotkey)
-                }
 
-                if palette.isRecording {
-                    Text("Đang ghi — nhấn tổ hợp phím mới (phải có ⌘/⌥/⌃, ví dụ ⌘Space). Esc để hủy.")
-                        .font(.system(size: 11)).foregroundColor(.orange)
-                        .fixedSize(horizontal: false, vertical: true)
-                } else {
-                    Text("Chọn phím theo thói quen — ví dụ ⌘Space hoặc ⌥Space. Nếu chọn ⌘Space, hãy tắt ⌘Space của Spotlight trong Cài đặt → Bàn phím → Phím tắt để tránh mở cả hai cùng lúc.")
-                        .font(.system(size: 11)).foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    if palette.isRecording {
+                        Text("Đang ghi — nhấn tổ hợp phím mới (phải có ⌘/⌥/⌃, ví dụ ⌘Space). Esc để hủy.")
+                            .font(.system(size: 11)).foregroundColor(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        Text("Chọn phím theo thói quen — ví dụ ⌘Space hoặc ⌥Space. Nếu chọn ⌘Space, hãy tắt ⌘Space của Spotlight trong Cài đặt → Bàn phím → Phím tắt để tránh mở cả hai cùng lúc.")
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }

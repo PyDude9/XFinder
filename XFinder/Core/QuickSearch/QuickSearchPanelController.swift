@@ -42,7 +42,7 @@ final class QuickSearchPanelController {
     private init() {}
 
     private var hotkeyEnabled: Bool {
-        UserDefaults.standard.object(forKey: "quickSearch.globalHotkey") as? Bool ?? true
+        UserDefaults.standard.object(forKey: "quickSearch.enabled") as? Bool ?? true
     }
 
     func applySettings() {
