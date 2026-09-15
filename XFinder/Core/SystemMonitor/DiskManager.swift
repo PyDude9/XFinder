@@ -127,4 +127,54 @@ final class DiskManager {
         }
         return (totalR, totalW)
     }
+
+    // MARK: - SMART status (public, via diskutil)
+
+    /// SMART health for the disk backing a mount point.
+    ///
+    /// This page used to claim SMART was "không khả dụng trên phần cứng này",
+    /// which was **wrong** — `diskutil info <mount>` reports a real
+    /// `SMART Status:` line (Verified / Failing / Not Supported), including on
+    /// Apple Silicon internal storage. Verified on macOS 27: `diskutil info /`
+    /// → "Verified". What is genuinely unavailable is the *detailed attribute
+    /// table* (reallocated sectors, wear levelling, drive temperature) — that
+    /// needs `smartctl` or a private IOKit path, so it is not shown.
+    ///
+    /// Runs off-main: `diskutil` is a subprocess and takes tens of ms.
+    nonisolated static func smartStatus(forMount mount: String) async -> String? {
+        await Task.detached(priority: .utility) {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/usr/sbin/diskutil")
+            p.arguments = ["info", mount]
+            let pipe = Pipe()
+            p.standardOutput = pipe
+            p.standardError = FileHandle.nullDevice
+            guard (try? p.run()) != nil else { return nil }
+            // Read before waiting: a full pipe buffer would deadlock the child.
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            p.waitUntilExit()
+            guard let text = String(data: data, encoding: .utf8) else { return nil }
+
+            for line in text.components(separatedBy: "\n") {
+                guard line.contains("SMART Status") else { continue }
+                let value = line
+                    .components(separatedBy: ":")
+                    .dropFirst()
+                    .joined(separator: ":")
+                    .trimmingCharacters(in: .whitespaces)
+                return value.isEmpty ? nil : value
+            }
+            return nil
+        }.value
+    }
+
+    /// Vietnamese label + whether it is a healthy state.
+    static func smartLabel(_ raw: String) -> (text: String, healthy: Bool?) {
+        switch raw.lowercased() {
+        case "verified":      return ("Bình thường", true)
+        case "failing":       return ("Đang hỏng — sao lưu ngay", false)
+        case "not supported": return ("Ổ đĩa không hỗ trợ SMART", nil)
+        default:              return (raw, nil)
+        }
+    }
 }

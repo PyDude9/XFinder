@@ -20,7 +20,6 @@ struct SettingsDetailView: View {
                 Group {
                     switch destination {
                     case .settingsClipboard:  ClipboardSettingsBody()
-                    case .settingsMenubar:    MenubarSettingsBody()
                     default:                  EmptyView()
                     }
                 }
@@ -125,33 +124,11 @@ private struct ClipboardSettingsBody: View {
     }
 }
 
-// MARK: - Menubar
-
-private struct MenubarSettingsBody: View {
-    @AppStorage("menubar.showBattery") private var showBattery = true
-    @AppStorage("menubar.showNetwork") private var showNetwork = true
-    @AppStorage("menubar.updateInterval") private var updateInterval = 2
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            SettingsCard(title: "Thông tin trên flyout") {
-                VStack(spacing: 10) {
-                    ToggleRow(title: "Pin", isOn: $showBattery)
-                    ToggleRow(title: "Tốc độ mạng", isOn: $showNetwork)
-                }
-            }
-            SettingsCard(title: "Tần suất cập nhật", subtitle: "\(updateInterval) giây") {
-                Picker("Cập nhật", selection: $updateInterval) {
-                    Text("1 giây").tag(1)
-                    Text("2 giây").tag(2)
-                    Text("5 giây").tag(5)
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: updateInterval) { SystemMonitorManager.shared.applyUpdateInterval() }
-            }
-        }
-    }
-}
+// `MenubarSettingsBody` and the `settingsMenubar` destination ("Bảng menubar")
+// were removed: their three controls duplicated Điều khiển nhanh, and a second
+// page bound to the same keys is the duplicate-control trap. The menubar
+// flyout keys are still read at point of use by MenubarController /
+// SystemMonitorManager.
 
 // MARK: - AppKit side effects
 

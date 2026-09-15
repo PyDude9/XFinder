@@ -70,10 +70,22 @@ struct FinderUtilsDetailView: View {
             }
             .padding(.horizontal, 20)
 
-            Text("Menu chuột phải và Tác vụ nhanh của Finder cần một Finder Extension riêng. XFinder chưa kèm phần mở rộng đó, nên mục này báo đúng trạng thái thay vì hiện một công tắc không có tác dụng.")
-                .font(.system(size: 11)).foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 20)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Menu chuột phải và Tác vụ nhanh của Finder cần một Finder Extension riêng. XFinder chưa kèm phần mở rộng đó, nên mục này báo đúng trạng thái thay vì hiện một công tắc không có tác dụng.")
+                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                // The user reported the button "does not go straight to the
+                // right-click menu settings like other apps". That is a real
+                // macOS limit, not a bug here: `x-apple.systempreferences:`
+                // can open a PANE but cannot select a row inside it. Say so,
+                // and give the exact path to click instead of implying the
+                // button lands on the switch.
+                Text("Lưu ý: macOS chỉ cho mở tới trang cài đặt, không cho nhảy thẳng tới từng mục. Sau khi bấm nút trên, vào **Cài đặt hệ thống → Chung → Login Items & Extensions**, kéo xuống mục **Tiện ích mở rộng**, bấm ⓘ ở dòng **Finder** rồi bật ứng dụng bạn muốn hiện trong menu chuột phải.")
+                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 20)
         }
     }
 
@@ -179,8 +191,6 @@ struct FinderUtilsDetailView: View {
     }
 
     private func openExtensionsPane() {
-        let url = URL(string: "x-apple.systempreferences:com.apple.ExtensionsPreferences")
-        if let url, NSWorkspace.shared.open(url) { return }
-        NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/System Settings.app"))
+        WindowManager.openFinderExtensionsPane()
     }
 }

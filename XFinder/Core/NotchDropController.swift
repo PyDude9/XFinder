@@ -321,17 +321,84 @@ final class NotchDropController {
 /// Drop handling lives on the *view*, not the window — `NSWindow` has no
 /// `performDragOperation`. This view hosts the SwiftUI content and accepts the
 /// file drag on its behalf.
-private final class DropAcceptingView: NSView {
-    /// `isMovableByWindowBackground` alone is not enough: the `NSHostingView`
-    /// on top consumes the mouse-down, so AppKit never sees a background drag.
-    /// Forwarding it here makes the whole tray a drag handle, which is what
-    /// lets the user carry the tray to wherever they want to drop the files.
-    override func mouseDown(with event: NSEvent) {
-        window?.performDrag(with: event)
+/// Drags every staged file at once.
+///
+/// SwiftUI `.onDrag` returns a single `NSItemProvider`, so the deck could only
+/// ever hand over one file — the rest were silently dropped. AppKit's
+/// `beginDraggingSession(with:)` takes an array of dragging items, which is
+/// what "drag the whole tray into a window" actually needs.
+private struct MultiFileDragSource: NSViewRepresentable {
+    let paths: [String]
+
+    func makeNSView(context: Context) -> DragSourceView {
+        let v = DragSourceView()
+        v.paths = paths
+        return v
     }
 
-    /// Without this the first click only focuses the panel and the tray does
-    /// not start moving until a second drag.
+    func updateNSView(_ nsView: DragSourceView, context: Context) {
+        nsView.paths = paths
+    }
+
+    final class DragSourceView: NSView {
+        var paths: [String] = []
+
+        override func mouseDown(with event: NSEvent) {
+            guard !paths.isEmpty else { return super.mouseDown(with: event) }
+
+            let items: [NSDraggingItem] = paths.compactMap { path in
+                let url = URL(fileURLWithPath: path) as NSURL
+                let item = NSDraggingItem(pasteboardWriter: url)
+                let icon = NSWorkspace.shared.icon(forFile: path)
+                // Every item needs a frame + image or the session shows nothing.
+                item.setDraggingFrame(NSRect(x: 0, y: 0, width: 48, height: 48),
+                                      contents: icon)
+                return item
+            }
+            guard !items.isEmpty else { return }
+            beginDraggingSession(with: items, event: event, source: self)
+        }
+
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    }
+}
+
+extension MultiFileDragSource.DragSourceView: NSDraggingSource {
+    func draggingSession(_ session: NSDraggingSession,
+                         sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
+        // `.copy` outside the app: the tray keeps its files, matching the
+        // "Kéo ra sẽ sao chép file và giữ các mục trong khay" contract.
+        [.copy]
+    }
+}
+
+private final class DropAcceptingView: NSView {
+    /// Height of the header strip that acts as the window's drag handle.
+    /// Matches the title row in `NotchDropView`.
+    static let dragHandleHeight: CGFloat = 34
+
+    /// Move the tray ONLY when the press starts on the header strip.
+    ///
+    /// The previous version forwarded *every* mouse-down to
+    /// `window.performDrag`, which swallowed the press before SwiftUI's
+    /// `.onDrag` could begin — so files could never be dragged OUT of the
+    /// tray, the exact bug reported. A window drag and a file drag both start
+    /// with a mouse-down, so they must be separated by where the press lands:
+    /// header ⇒ move the window, anywhere else ⇒ let the file tiles have it.
+    override func mouseDown(with event: NSEvent) {
+        let p = convert(event.locationInWindow, from: nil)
+        // `bounds` is bottom-left origin, so the header is the TOP strip.
+        let headerStrip = NSRect(x: 0, y: bounds.maxY - Self.dragHandleHeight,
+                                 width: bounds.width, height: Self.dragHandleHeight)
+        if headerStrip.contains(p) {
+            window?.performDrag(with: event)
+        } else {
+            super.mouseDown(with: event)
+        }
+    }
+
+    /// Let a click reach the tray without first activating the panel — the
+    /// tray is non-activating on purpose so the previous app keeps focus.
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation { .copy }
@@ -443,10 +510,11 @@ private struct NotchDropView: View {
                 }
             }
             .frame(width: 78, height: 62)
-            .onDrag {
-                let urls = store.items.map { URL(fileURLWithPath: $0.path) }
-                return NSItemProvider(object: urls.first as NSURL? ?? NSURL())
-            }
+            // SwiftUI's `.onDrag` can only vend ONE provider, and there is no
+            // multi-item variant on macOS 14 (`.itemProviders` does not exist
+            // here). For the whole stack, hand off through an AppKit drag
+            // session instead, which does support several items.
+            .overlay(MultiFileDragSource(paths: store.items.map(\.path)))
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(store.items.count) tệp đang giữ")

@@ -239,7 +239,6 @@ struct FinderActionsDetailView: View {
     }
 
     private func openExtensionsPane() {
-        let url = URL(string: "x-apple.systempreferences:com.apple.ExtensionsPreferences")!
-        NSWorkspace.shared.open(url)
+        WindowManager.openFinderExtensionsPane()
     }
 }

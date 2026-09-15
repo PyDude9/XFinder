@@ -40,7 +40,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     // icon, both of which already live on Tổng quan / Điều khiển nhanh. A
     // catch-all settings bucket duplicated pages that own their own settings.
     case settingsClipboard
-    case settingsMenubar
     // Footer
     case about
 
@@ -77,7 +76,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .remoteConnect: return "Kết nối từ xa"
         case .quickShare: return "Chia sẻ nhanh"
         case .settingsClipboard: return "Clipboard"   // settings-only page now
-        case .settingsMenubar: return "Bảng menubar"
         case .about: return "Giới thiệu"
         }
     }
@@ -115,7 +113,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .remoteConnect: return "display.2"
         case .quickShare: return "square.and.arrow.up"
         case .settingsClipboard: return "doc.on.clipboard.fill"
-        case .settingsMenubar: return "menubar.dock.rectangle"
         case .about: return "info.circle"
         }
     }
@@ -142,7 +139,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             // CÔNG CỤ keeps the content tools; TIỆN ÍCH keeps the Finder
             // integration surfaces.
             ("CHUNG", [.dashboard, .quickControls, .antiSleep, .system, .network, .storage, .pin]),
-            ("CỬA SỔ", [.windowPreview, .snapZones, .menuIcons, .settingsMenubar]),
+            ("CỬA SỔ", [.windowPreview, .snapZones, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .actionHistory]),
             ("CÔNG CỤ", [.settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),

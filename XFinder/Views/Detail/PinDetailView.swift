@@ -65,8 +65,13 @@ struct PinDetailView: View {
                                 Spacer()
                                 Text("Đang thu thập…").font(.system(size: 11, design: .monospaced)).foregroundColor(.secondary)
                             }
-                            Text("Cảm biến nhiệt độ pin yêu cầu SMC riêng — không có API công khai.")
+                            // Verified on macOS 27, not assumed: a full key dump
+                            // of AppleSmartBattery (and IOPMPowerSource) has no
+                            // temperature key at all. Reading it needs the SMC,
+                            // which is private. So this stays a placeholder.
+                            Text("Đã kiểm tra trên máy này: IOKit không cung cấp khóa nhiệt độ pin nào. Đọc được giá trị này cần SMC (API riêng tư), nên XFinder không hiển thị số.")
                                 .font(.system(size: 11)).foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     .padding(.horizontal, 20)

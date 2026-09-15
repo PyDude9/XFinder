@@ -3,6 +3,10 @@ import SwiftUI
 struct StorageDetailView: View {
     @State private var disk = DiskManager.shared
     @State private var selectedMount: String = "/"
+    /// Raw `diskutil` SMART string for the selected volume, e.g. "Verified".
+    @State private var smartRaw: String? = nil
+    /// Distinguishes "still querying" from "queried and got nothing".
+    @State private var smartChecked = false
 
     var body: some View {
         ScrollView {
@@ -88,11 +92,37 @@ struct StorageDetailView: View {
 
                 SettingsCard(title: "SMART / Tình trạng ổ đĩa") {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Không khả dụng trên phần cứng này")
-                            .font(.system(size: 12, weight: .medium)).foregroundColor(.secondary)
-                        Text("Thông tin SMART yêu cầu quyền truy cập I/O riêng và không có API công khai ổn định trên macOS.")
+                        HStack(spacing: 8) {
+                            if let raw = smartRaw {
+                                let label = DiskManager.smartLabel(raw)
+                                Image(systemName: label.healthy == true ? "checkmark.circle.fill"
+                                      : (label.healthy == false ? "exclamationmark.triangle.fill"
+                                         : "minus.circle"))
+                                    .foregroundColor(label.healthy == true ? .green
+                                        : (label.healthy == false ? .red : .secondary))
+                                Text(label.text)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(label.healthy == false ? .red : .primary)
+                            } else if smartChecked {
+                                Image(systemName: "minus.circle").foregroundColor(.secondary)
+                                Text("Không đọc được trạng thái SMART của ổ này")
+                                    .font(.system(size: 12)).foregroundColor(.secondary)
+                            } else {
+                                ProgressView().controlSize(.small)
+                                Text("Đang kiểm tra…")
+                                    .font(.system(size: 12)).foregroundColor(.secondary)
+                            }
+                            Spacer()
+                        }
+                        Text("Lấy từ `diskutil` (API công khai). macOS không cung cấp bảng thuộc tính SMART chi tiết (số sector hỏng, độ mòn, nhiệt độ ổ) nên XFinder chỉ hiển thị trạng thái tổng thể thay vì đoán thêm.")
                             .font(.system(size: 11)).foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
+                }
+                .task(id: selectedMount) {
+                    smartChecked = false
+                    smartRaw = await DiskManager.smartStatus(forMount: selectedMount)
+                    smartChecked = true
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)

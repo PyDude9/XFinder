@@ -136,6 +136,29 @@ enum WindowManager {
         return app.activate(options: [.activateAllWindows])
     }
 
+    /// Opens the System Settings pane that controls Finder extensions.
+    ///
+    /// macOS 26/27 folded this into **Login Items & Extensions**; the old
+    /// `com.apple.ExtensionsPreferences` identifier no longer lands on the
+    /// right place, which is why the button appeared to do nothing useful.
+    /// Tries the current identifier first, then the legacy one, then System
+    /// Settings itself so the button is never dead.
+    ///
+    /// Note: no URL can deep-link straight to the *Finder extension* row —
+    /// macOS only exposes the pane. The UI says which switch to flip.
+    @discardableResult
+    static func openFinderExtensionsPane() -> Bool {
+        let candidates = [
+            "x-apple.systempreferences:com.apple.LoginItems-Settings.extension",
+            "x-apple.systempreferences:com.apple.ExtensionsPreferences",
+        ]
+        for raw in candidates {
+            if let url = URL(string: raw), NSWorkspace.shared.open(url) { return true }
+        }
+        return NSWorkspace.shared.open(
+            URL(fileURLWithPath: "/System/Applications/System Settings.app"))
+    }
+
     /// Raise ONE window, not the whole app.
     ///
     /// `NSRunningApplication.activate` brings every window of the app forward,

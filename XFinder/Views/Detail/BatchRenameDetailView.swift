@@ -97,16 +97,22 @@ struct BatchRenameDetailView: View {
                                     // `minWidth: 0` lets long file names actually
                                     // compress; without it the row keeps a wide
                                     // ideal width and resizes the window.
+                                    // `minWidth: 0` alone is NOT enough — it
+                                    // permits shrinking but the row still
+                                    // reports a wide *ideal* width, which is
+                                    // what pushes the window. `maxWidth:
+                                    // .infinity` makes each name claim a share
+                                    // of the available width instead.
                                     Text(plan.source.lastPathComponent)
                                         .font(.system(size: 11)).lineLimit(1).truncationMode(.middle)
-                                        .frame(minWidth: 0, alignment: .leading)
+                                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                                     Text("→").font(.system(size: 11)).foregroundColor(.secondary)
+                                        .layoutPriority(1)
                                     Text(plan.proposed.lastPathComponent)
                                         .font(.system(size: 11, weight: .medium))
                                         .lineLimit(1).truncationMode(.middle)
-                                        .frame(minWidth: 0, alignment: .leading)
+                                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                                         .foregroundColor(plan.collides ? .red : .primary)
-                                    Spacer()
                                     if plan.collides {
                                         Image(systemName: "exclamationmark.triangle.fill")
                                             .foregroundColor(.red).font(.caption)
