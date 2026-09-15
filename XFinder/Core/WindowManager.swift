@@ -39,6 +39,18 @@ enum WindowManager {
                   let widNum = dict[kCGWindowNumber as String] as? NSNumber
             else { continue }
             if owner == "XFinder" { continue } // hide self
+
+            // Filter out non-window junk that was polluting the ⌘-Tab list and
+            // showing as blank thumbnails. Two signals, both public:
+            //  * `WindowManager` is macOS's own Stage Manager / gesture process
+            //    ("Gesture Blocking Overlay") — never a user window.
+            //  * `SharingState == .none` (0) means the window is NOT capturable,
+            //    so ScreenCaptureKit returns nothing and the slot stays empty.
+            //    Every real app window reports `.readOnly` (1).
+            if owner == "WindowManager" || owner == "Window Server" { continue }
+            let sharing = (dict[kCGWindowSharingState as String] as? NSNumber)?.intValue ?? 1
+            if sharing == 0 { continue }
+
             let bounds: CGRect
             if let bd = dict[kCGWindowBounds as String] as? NSDictionary,
                let r = CGRect(dictionaryRepresentation: bd) {
