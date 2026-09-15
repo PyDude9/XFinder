@@ -1,0 +1,88 @@
+import Foundation
+
+/// Pure rename-planning logic, shared by the Batch Rename page. Given files +
+/// options it returns (current, proposed) pairs; the view executes via
+/// FileManager and logs to ActionHistoryStore.
+enum BatchRenameEngine {
+
+    enum Mode: String, CaseIterable, Identifiable {
+        case prefix, suffix, replace, sequence, lowercase, uppercase
+        var id: String { rawValue }
+        var titleVI: String {
+            switch self {
+            case .prefix: return "Thêm tiền tố"
+            case .suffix: return "Thêm hậu tố"
+            case .replace: return "Thay thế chữ"
+            case .sequence: return "Đánh số thứ tự"
+            case .lowercase: return "Chữ thường"
+            case .uppercase: return "Chữ HOA"
+            }
+        }
+    }
+
+    struct Options {
+        var mode: Mode = .prefix
+        var affix: String = ""        // prefix / suffix text
+        var find: String = ""         // replace: tìm
+        var replaceWith: String = ""  // replace: thay bằng
+        var sequenceStart: Int = 1
+        var sequenceDigits: Int = 2   // zero-padding width
+        var sequenceSeparator: String = "_"
+        var keepExtension: Bool = true
+    }
+
+    struct Plan: Equatable, Identifiable {
+        var source: URL
+        var proposed: URL
+        var collides: Bool            // proposed already exists
+        var id: String { source.path }
+    }
+
+    static func plan(files: [URL], options: Options) -> [Plan] {
+        var seen = Set<String>()
+        var counter = options.sequenceStart
+        return files.map { url in
+            let ext = url.pathExtension
+            var stem = url.deletingPathExtension().lastPathComponent
+            switch options.mode {
+            case .prefix:
+                stem = options.affix + stem
+            case .suffix:
+                stem = stem + options.affix
+            case .replace:
+                if !options.find.isEmpty {
+                    stem = stem.replacingOccurrences(of: options.find, with: options.replaceWith)
+                }
+            case .sequence:
+                let num = String(format: "%0\(max(1, options.sequenceDigits))d", counter)
+                stem = stem + options.sequenceSeparator + num
+                counter += 1
+            case .lowercase:
+                stem = stem.lowercased()
+            case .uppercase:
+                stem = stem.uppercased()
+            }
+            let newName = (options.keepExtension && !ext.isEmpty) ? "\(stem).\(ext)" : stem
+            let proposed = url.deletingLastPathComponent().appendingPathComponent(newName)
+            // Collision = target exists on disk OR already claimed by an earlier row.
+            let key = proposed.path.lowercased()
+            let collides = FileManager.default.fileExists(atPath: proposed.path) || seen.contains(key)
+            seen.insert(key)
+            return Plan(source: url, proposed: proposed, collides: collides)
+        }
+    }
+
+    /// Executes a collision-free subset; returns (moved, failed) pairs for logging.
+    static func execute(_ plans: [Plan]) -> (moved: [(old: URL, new: URL)], failed: Int) {
+        var moved: [(old: URL, new: URL)] = []
+        var failed = 0
+        let fm = FileManager.default
+        for p in plans where !p.collides && p.source != p.proposed {
+            do {
+                try fm.moveItem(at: p.source, to: p.proposed)
+                moved.append((p.source, p.proposed))
+            } catch { failed += 1 }
+        }
+        return (moved, failed)
+    }
+}

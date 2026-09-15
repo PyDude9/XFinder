@@ -1,0 +1,22 @@
+build/
+build-release/
+DerivedData/
+# Built app bundles never belong in source control — they ship as Release assets
+*.app/
+*.dmg
+*.zip
+XFinder [0-9]*-[0-9]*/
+# Swift Package Manager build products for the Tests package
+.build/
+Tests/.build/
+.swiftpm/
+Package.resolved
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+.DS_Store
+
+# Project memory / internal engineering notes — local only
+CLAUDE.md
+Claude.md
+claude.md
