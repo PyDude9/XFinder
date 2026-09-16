@@ -36,9 +36,10 @@ final class MenuBarHiderController: NSResponder {
         UserDefaults.standard.object(forKey: "menubar.hiderEnabled") as? Bool ?? false
     }
 
-    /// Application-lifetime wiring: install/remove items when the toggle moves.
+    /// TẠM TẮT (chờ giải pháp ẩn RIÊNG icon app, không che cả thanh menu bên
+    /// phải). Luôn gỡ items; giữ lại code để bật lại khi có cách đúng.
     func applySettings() {
-        if enabled { install() } else { remove() }
+        remove()
     }
 
     // MARK: - Install / remove

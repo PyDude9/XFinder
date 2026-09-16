@@ -146,6 +146,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 return event
             }
         }
+
+        // ⌥⌘ ghi chú: mới / xem tất cả / ghim.
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard event.modifierFlags.intersection([.command, .option]) == [.command, .option],
+                  event.modifierFlags.intersection([.control, .shift]).isEmpty
+            else { return event }
+            switch event.charactersIgnoringModifiers?.lowercased() {
+            case "n":
+                Task { @MainActor in
+                    NoteStore.shared.pendingNewNote = true
+                    AppState.shared.navigate(to: .notes)
+                }
+                return nil
+            case "l":
+                Task { @MainActor in AppState.shared.navigate(to: .notes) }
+                return nil
+            case "p":
+                Task { @MainActor in NoteStore.shared.togglePinFirstActive() }
+                return nil
+            default:
+                return event
+            }
+        }
     }
 
     private func setupDatabase() {

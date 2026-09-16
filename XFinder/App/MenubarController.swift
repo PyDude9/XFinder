@@ -28,9 +28,13 @@ class MenubarController: NSObject {
     func applyIcon() {
         let raw = UserDefaults.standard.string(forKey: "menubar.icon") ?? "magnifier"
         let symbol = Self.iconChoices.first(where: { $0.id == raw })?.symbol ?? "magnifyingglass"
-        guard let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "XFinder") else { return }
-        image.isTemplate = true // monochrome trắng/đen theo menu bar, đúng chuẩn macOS
-        statusItem?.button?.image = image
+        guard let base = NSImage(systemSymbolName: symbol, accessibilityDescription: "XFinder") else { return }
+        // Màu (xanh accent) thay vì trắng đơn sắc — để thấy rõ "logo", không còn
+        // icon trắng trơn như trước.
+        let colored = base.withSymbolConfiguration(
+            NSImage.SymbolConfiguration(paletteColors: [.systemBlue])) ?? base
+        colored.isTemplate = false
+        statusItem?.button?.image = colored
     }
 
     private func setupPopover() {

@@ -42,6 +42,7 @@ struct NoteEditorSheet: View {
                     .fontWeight(.semibold)
 
                 TextEditor(text: $content)
+                    .font(NoteStore.noteFont(13))
                     .border(Color.gray.opacity(0.3))
                     .cornerRadius(6)
             }

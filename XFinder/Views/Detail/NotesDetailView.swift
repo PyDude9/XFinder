@@ -8,6 +8,7 @@ struct NotesDetailView: View {
     @State private var store = NoteStore.shared
     /// Master switch in the page header — same key the edge panel reads.
     @AppStorage("notes.edgeEnabled") private var edgeEnabled = false
+    @AppStorage("notes.font") private var noteFont = "system"
     @State private var searchText = ""
     @State private var showArchived = false
     @State private var selectedColorName: String? = nil
@@ -64,6 +65,9 @@ struct NotesDetailView: View {
             .padding(.vertical, 16)
         }
         .background(Color(.windowBackgroundColor))
+        .onChange(of: store.pendingNewNote) { _, newValue in
+            if newValue { store.pendingNewNote = false; showCreateSheet = true }
+        }
         .sheet(isPresented: $showCreateSheet) {
             NoteEditorSheet(isPresented: $showCreateSheet, note: nil)
         }
@@ -79,6 +83,10 @@ struct NotesDetailView: View {
                     .font(.system(size: 11)).foregroundColor(.secondary)
             }
             Spacer()
+            Picker("", selection: $noteFont) {
+                ForEach(NoteStore.NoteFont.allCases) { f in Text(f.titleVI).tag(f.rawValue) }
+            }
+            .pickerStyle(.menu).frame(width: 110)
             Button("Ghi chú mới") { showCreateSheet = true }
                 .buttonStyle(.bordered).controlSize(.small)
         }
@@ -224,16 +232,24 @@ private struct ImportExportCard: View {
     @State private var store = NoteStore.shared
 
     var body: some View {
-        SettingsCard(title: "Nhập / Xuất JSON") {
+        SettingsCard(title: "Nhập / Xuất ghi chú") {
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Button("Xuất…") { exportJSON() }
-                        .buttonStyle(.bordered).controlSize(.small)
-                    Button("Nhập…") { importJSON() }
-                        .buttonStyle(.bordered).controlSize(.small)
+                HStack(spacing: 8) {
+                    Menu("Nhập…") {
+                        Button("Markdown (.md)") { pickImport(["md", "markdown"]) { store.importMarkdown($0) } }
+                        Button("Văn bản (.txt)") { pickImport(["txt"]) { store.importText($0) } }
+                        Button("JSON") { importJSON() }
+                    }
+                    .fixedSize()
+                    Menu("Xuất…") {
+                        Button("Markdown (.md)") { saveText("xnotes.md", store.exportMarkdown()) }
+                        Button("Văn bản (.txt)") { saveText("xnotes.txt", store.exportText()) }
+                        Button("JSON") { exportJSON() }
+                    }
+                    .fixedSize()
                     Spacer()
                 }
-                Text("Xuất toàn bộ ghi chú ra file JSON; nhập sẽ thay thế danh sách hiện tại.")
+                Text("Markdown/JSON tương thích các app ghi chú nhanh (Antinote, Simplenote…). Nhập sẽ thay thế toàn bộ danh sách hiện tại.")
                     .font(.system(size: 11)).foregroundColor(.secondary)
                 if let err = importError {
                     Text(err).font(.system(size: 11)).foregroundColor(.red)
@@ -241,6 +257,27 @@ private struct ImportExportCard: View {
             }
         }
         .padding(.horizontal, 20)
+    }
+
+    private func pickImport(_ types: [String], _ apply: @escaping (String) -> Void) {
+        importError = nil
+        let panel = NSOpenPanel()
+        panel.allowedFileTypes = types
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        apply(readText(url))
+    }
+
+    private func readText(_ url: URL) -> String {
+        (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+    }
+
+    private func saveText(_ name: String, _ text: String) {
+        let panel = NSSavePanel()
+        panel.allowedFileTypes = [(name as NSString).pathExtension]
+        panel.nameFieldStringValue = name
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        try? text.write(to: url, atomically: true, encoding: .utf8)
     }
 
     private func exportJSON() {
