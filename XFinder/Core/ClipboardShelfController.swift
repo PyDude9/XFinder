@@ -237,9 +237,11 @@ final class ClipboardShelfController {
         }
     }
 
-    /// Slot 0 is the full history; 1…n map onto the user's pinboards.
+    /// Slot 0 is the full history; 1…n map onto the user's pinboards (the
+    /// built-in "Clipboard History" board is already slot 0's history, so it is
+    /// not repeated as a board).
     private func selectBoard(at index: Int) {
-        let boards = ClipboardManager.shared.pinboards
+        let boards = ClipboardManager.shared.pinboards.filter { !$0.isBuiltIn }
         if index == 0 {
             selectedBoardID = nil
         } else if boards.indices.contains(index - 1) {
@@ -332,7 +334,7 @@ private struct ClipboardShelfView: View {
                     controller.selectedIndex = 0
                 }
 
-                ForEach(Array(manager.pinboards.enumerated()), id: \.element.id) { index, board in
+                ForEach(Array(manager.pinboards.filter { !$0.isBuiltIn }.enumerated()), id: \.element.id) { index, board in
                     boardChip(title: board.name,
                               icon: board.icon,
                               dot: board.color.color,

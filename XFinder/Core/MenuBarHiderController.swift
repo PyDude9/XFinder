@@ -87,9 +87,9 @@ final class MenuBarHiderController: NSResponder {
     }
 
     /// Cover: trên macOS 27 separator không còn đẩy icon hàng xóm ra ngoài, nên
-    /// XFinder che VÙNG ẨN bằng một panel vibrancy `.menu` ngang thanh menu, từ
-    /// mép trái tới vị trí mũi tên (mũi tên vẫn lộ ra để bấm mở lại). Đây là
-    /// cách public còn lại duy nhất để "ẩn" icon về mặt thị giác.
+    /// XFinder che VÙNG ẨN bằng panel vibrancy `.menu` ngang thanh menu. Che
+    /// phần BÊN PHẢI mũi tên — nơi status icon nằm — để menu app + Apple menu
+    /// bên trái không bị che (chỉ ẩn icon, không ẩn thanh menu).
     private func showCovers() {
         hideCovers()
         guard let arrow,
@@ -99,10 +99,10 @@ final class MenuBarHiderController: NSResponder {
         else { return }
         let bar = screen.frame.maxY - screen.visibleFrame.maxY
         guard bar > 2 else { return }
-        let arrowX = arrowWin.frame.minX
-        let rect = NSRect(x: screen.frame.minX,
+        let arrowMaxX = arrowWin.frame.maxX
+        let rect = NSRect(x: arrowMaxX,
                           y: screen.frame.maxY - bar,
-                          width: max(0, arrowX - screen.frame.minX),
+                          width: max(0, screen.frame.maxX - arrowMaxX),
                           height: bar + 1)
 
         let w = NSWindow(contentRect: rect, styleMask: .borderless, backing: .buffered, defer: false)

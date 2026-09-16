@@ -16,6 +16,7 @@ struct DashboardDetailView: View {
     @AppStorage("notes.edgeEnabled") private var edgeNotesEnabled = false
     @AppStorage("windowPreview.hoverEnabled") private var hoverEnabled = true
     @State private var l10n = L10n.shared
+    @AppStorage("menubar.icon") private var menubarIcon = "magnifier"
 
     @State private var trusted = WindowManager.isTrusted
     @State private var canRecord = WindowManager.canRecordScreen
@@ -28,7 +29,7 @@ struct DashboardDetailView: View {
                            title: L10n.t("Tổng quan"),
                            subtitle: L10n.t("Xem những gì đã sẵn sàng và hoàn tất thiết lập."))
 
-                quickGrantBanner
+                quickGrantBannerIfNeeded
                 preferences
                 Divider().padding(.horizontal, 20)
                 checklist
@@ -45,6 +46,22 @@ struct DashboardDetailView: View {
     }
 
     // MARK: Preferences
+
+    /// Banner "Cấp quyền nhanh" — chỉ hiện khi còn thiếu quyền; tự ẩn khi
+    /// Trợ năng + Ghi màn hình đều đã đủ.
+    @ViewBuilder
+    private var quickGrantBannerIfNeeded: some View {
+        if !trusted || !canRecord {
+            quickGrantBanner
+        }
+    }
+
+    private func setMenubarIcon(_ id: String) {
+        menubarIcon = id
+        if let delegate = NSApplication.shared.delegate as? AppDelegate {
+            delegate.menubarController?.applyIcon()
+        }
+    }
 
     /// Nút một chạm — gọi đồng thời hộp thoại xin quyền Trợ năng + Ghi màn
     /// hình, rồi mở pane nếu vẫn thiếu. Tiện nhất cho build test.
@@ -88,6 +105,23 @@ struct DashboardDetailView: View {
                 .labelsHidden()
                 .pickerStyle(.menu)
                 .frame(width: 140)
+            }
+            .padding(.vertical, 8)
+
+            Divider()
+
+            HStack {
+                Image(systemName: "menubar.rectangle").foregroundColor(.secondary).frame(width: 20)
+                Text("Biểu tượng thanh menu").font(.system(size: 13))
+                Spacer()
+                Picker("", selection: Binding(get: { menubarIcon }, set: { setMenubarIcon($0) })) {
+                    ForEach(MenubarController.iconChoices, id: \.id) { c in
+                        Image(systemName: c.symbol).tag(c.id)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: 80)
             }
             .padding(.vertical, 8)
 
@@ -159,7 +193,7 @@ struct DashboardDetailView: View {
                 title: L10n.t("Tác vụ nhanh trong Finder"),
                 status: L10n.t("Chưa có"),
                 actionTitle: L10n.t("Mở…"),
-                action: { appState.navigate(to: .finderUtils) })
+                action: { _ = WindowManager.openFinderExtensionsPane() })
 
             StatusChecklistRow(
                 state: clipboardManager.history.isEmpty ? .neutral : .ok,

@@ -25,7 +25,7 @@ struct MenuIconsDetailView: View {
                                 MenuBarHiderController.shared.applySettings()
                             }
 
-                        Text("Bấm mũi tên → ẩn mọi icon nằm BÊN TRÁI mũi tên. Kéo MŨI TÊN (⌘) sát mép phải để ẩn hết; các icon bạn muốn HIỆN thì kéo qua BÊN PHẢI mũi tên. Có thể ⌘-kéo icon qua lại giữa hai phía bất kỳ lúc nào.")
+                        Text("Bấm mũi tên → ẩn icon nằm BÊN PHẢI mũi tên (menu app + Apple menu bên trái không bị đụng). Kéo MŨI TÊN (⌘) sát mép trái để ẩn hết icon; các icon bạn muốn HIỆN thì kéo qua bên TRÁI mũi tên. ⌘-kéo icon qua lại giữa hai phía bất kỳ lúc nào.")
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)

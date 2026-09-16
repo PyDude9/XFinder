@@ -11,12 +11,26 @@ class MenubarController: NSObject {
         statusItem = statusBar.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "rectangle.stack.fill", accessibilityDescription: "XFinder")
             button.action = #selector(togglePopover(_:))
             button.target = self
         }
-
+        applyIcon()
         setupPopover()
+    }
+
+    /// Các lựa chọn biểu tượng menubar (monochrome, SF Symbols kiểu macOS).
+    static let iconChoices: [(id: String, symbol: String, title: String)] = [
+        ("magnifier", "magnifyingglass", "Kính lúp"),
+        ("folder", "folder.fill", "Thư mục"),
+        ("stack", "rectangle.stack.fill", "Chồng lớp"),
+    ]
+
+    func applyIcon() {
+        let raw = UserDefaults.standard.string(forKey: "menubar.icon") ?? "magnifier"
+        let symbol = Self.iconChoices.first(where: { $0.id == raw })?.symbol ?? "magnifyingglass"
+        guard let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "XFinder") else { return }
+        image.isTemplate = true // monochrome trắng/đen theo menu bar, đúng chuẩn macOS
+        statusItem?.button?.image = image
     }
 
     private func setupPopover() {

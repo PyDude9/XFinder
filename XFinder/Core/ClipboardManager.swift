@@ -335,6 +335,15 @@ final class ClipboardManager {
         }
     }
 
+    /// Màu của bảng ghim (không kể bảng builtin) đầu tiên mà record này thuộc
+    /// về — để card phản ánh màu danh mục khi được kéo-gán vào.
+    func pinnedColor(for recordID: UUID) -> Color? {
+        for board in pinboards where !board.isBuiltIn && board.itemIDs.contains(recordID) {
+            return board.color.color
+        }
+        return nil
+    }
+
     /// Items on the current board. The built-in history board shows everything;
     /// other boards show only pinned items.
     func boardItems() -> [ClipboardRecord] {

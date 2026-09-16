@@ -15,6 +15,11 @@ struct ClipboardCardView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Thanh màu trên đỉnh khi item được ghim vào một bảng (vd "Error"
+            // màu đỏ → thanh đỏ) — phản ánh đúng danh mục người dùng kéo-vào.
+            if clipboardManager.pinnedColor(for: record.id) != nil {
+                Rectangle().fill(accent).frame(height: 3)
+            }
             // Header: app icon + name + time, accent-tinted
             HStack(spacing: 8) {
                 Group {
@@ -134,6 +139,7 @@ struct ClipboardCardView: View {
     }
 
     private var accent: Color {
+        if let boardColor = clipboardManager.pinnedColor(for: record.id) { return boardColor }
         if let hex = record.metadata["accent"], !hex.isEmpty {
             return Color(hex: hex) ?? .accentColor
         }
