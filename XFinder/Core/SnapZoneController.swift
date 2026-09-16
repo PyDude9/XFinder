@@ -145,6 +145,13 @@ final class SnapZoneController {
     /// to know what was clicked in another app.
     private func beganOnWindowTitleBar(at point: CGPoint) -> Bool {
         guard WindowManager.isTrusted else { return false }
+        // Nhấn trong dải menu bar (wifi / ngày giờ…) hay Dock KHÔNG phải kéo cửa
+        // sổ. Nút status-item nằm trong window nhỏ của menu bar nên walk-up dễ
+        // nhận nhầm thành title bar → chặn ngay vùng ngoài visibleFrame.
+        let screen = WindowManager.screenUnderPointer()
+        if point.y >= screen.visibleFrame.maxY - 1 || point.y <= screen.visibleFrame.minY + 1 {
+            return false
+        }
         // AXUIElementCopyElementAtPosition dùng gốc top-left của MÀN CHÍNH (y
         // tăng xuống), còn NSEvent.mouseLocation là bottom-left của màn chính.
         // Flip luôn phải dùng biên trên của màn CHÍNH — dùng screen-under-

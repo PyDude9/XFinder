@@ -113,38 +113,15 @@ final class NotchDropController {
         let point = NSEvent.mouseLocation
         let dragging = NSEvent.pressedMouseButtons & 1 == 1
 
-        // Hover-to-open only reveals files ALREADY held — it must never open an
-        // empty tray just because the pointer crossed the notch.
-        if hoverEnabled, !dragging, !DropTrayStore.shared.items.isEmpty,
-           isInNotchZone(point) {
-            openedFromNotch = true
-            show()
-            lastInsidePanel = Date()
-            return
-        }
-
         guard dragging else {
             if wasDragging {
                 wasDragging = false
                 samples.removeAll()
             }
-            // A click outside the tray dismisses it immediately — waiting for
-            // the auto-close timer feels unresponsive once the user has
-            // clearly moved on.
-            if isShowing, clickStartedOutsideTray {
-                clickStartedOutsideTray = false
-                hide()
-                return
-            }
-            clickStartedOutsideTray = false
-            autoCloseIfPointerLeft(point)
+            // Khay KHÔNG tự biến mất: chỉ đóng bằng nút Close (DropOver-style).
             return
         }
 
-        if !wasDragging, isShowing, let panel,
-           !panel.frame.insetBy(dx: -4, dy: -4).contains(point) {
-            clickStartedOutsideTray = true
-        }
         wasDragging = true
 
         samples.append((point, Date()))
@@ -153,18 +130,10 @@ final class NotchDropController {
         samples.removeAll { $0.time < cutoff }
 
         // Every open path below requires a real FILE drag. Without this an
-        // ordinary click-drag (selecting text, moving a window, dragging a
-        // scrollbar) could summon the tray — the reported bug.
+        // ordinary click-drag could summon the tray — the reported bug.
         guard dragCarriesFiles() else { return }
 
-        if notchDropEnabled, isInNotchZone(point) {
-            openedFromNotch = true
-            show()
-            return
-        }
-        // Shake is the deliberate summon gesture. Do NOT open merely because a
-        // file drag started: the user asked for the tray to appear only when
-        // they ask for it.
+        // Shake là thao tác chủ đích để gọi khay; summon ở Notch đã tạm bỏ.
         if shakeEnabled, detectShake() {
             openedFromNotch = false
             show()
@@ -291,7 +260,6 @@ final class NotchDropController {
         panel = p
         isShowing = true
         lastInsidePanel = Date()
-        armCloseTimer()
     }
 
     func hide() {
