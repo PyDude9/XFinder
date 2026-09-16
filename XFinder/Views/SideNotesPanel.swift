@@ -11,11 +11,12 @@ struct NoteEditorSheet: View {
     @State private var title = ""
     @State private var content = ""
     @State private var selectedColor: Color = .yellow
+    @FocusState private var contentFocused: Bool
 
     var body: some View {
         VStack(spacing: 16) {
             HStack {
-                Text(note == nil ? "New Note" : "Edit Note")
+                Text(note == nil ? "Ghi chú mới" : "Sửa ghi chú")
                     .font(.headline)
 
                 Spacer()
@@ -28,27 +29,28 @@ struct NoteEditorSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Title (Optional)")
+                Text("Tiêu đề (không bắt buộc)")
                     .font(.caption)
                     .fontWeight(.semibold)
 
-                TextField("Note title", text: $title)
+                TextField("Tiêu đề", text: $title)
                     .textFieldStyle(.roundedBorder)
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Content")
+                Text("Nội dung")
                     .font(.caption)
                     .fontWeight(.semibold)
 
                 TextEditor(text: $content)
                     .font(NoteStore.noteFont(13))
+                    .focused($contentFocused)
                     .border(Color.gray.opacity(0.3))
                     .cornerRadius(6)
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Color")
+                Text("Màu")
                     .font(.caption)
                     .fontWeight(.semibold)
 
@@ -72,11 +74,11 @@ struct NoteEditorSheet: View {
             HStack(spacing: 12) {
                 Spacer()
 
-                Button("Cancel") {
+                Button("Hủy") {
                     isPresented = false
                 }
 
-                Button("Save") {
+                Button("Lưu") {
                     if let existing = note {
                         NoteStore.shared.update(existing, title: title, content: content,
                                                 color: CodableColor(color: selectedColor))
@@ -99,6 +101,8 @@ struct NoteEditorSheet: View {
                 content = note.content
                 selectedColor = note.color.color
             }
+            // Mở thẳng vào ô nội dung để gõ ngay (kiểu quick-note).
+            contentFocused = true
         }
     }
 }
