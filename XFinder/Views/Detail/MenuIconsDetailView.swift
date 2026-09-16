@@ -58,7 +58,7 @@ struct MenuIconsDetailView: View {
                               subtitle: "Kết quả đo thật trên macOS 27, không phải phỏng đoán.")
 
                 VStack(alignment: .leading, spacing: 8) {
-                    bullet("Cách cũ (kiểu Bartender) dùng một vạch ngăn rất rộng để đẩy biểu tượng bên trái ra ngoài màn hình. Trên macOS 27 cách này **không còn tác dụng**: biểu tượng bên cạnh không bị đẩy đi mà chỉ dịch chỗ.")
+                    bullet("Cách của Bartender / Hidden Bar (dwarvesf/hidden) — dùng 2 biểu tượng: một nút bấm + một vạch ngăn phình từ 1pt lên ~4000pt để đẩy các biểu tượng bên trái ra ngoài, kèm `autosaveName` nhớ vị trí. Trên macOS 27 cách này **không còn tác dụng**: biểu tượng bên cạnh không bị đẩy đi mà chỉ dịch chỗ.")
                     bullet("macOS 27 có sẵn một framework riêng tư điều khiển thanh menu. XFinder mở được nó và thấy hàm “ẩn toàn bộ thanh menu”, nhưng **không có hàm đọc danh sách biểu tượng**.")
                     bullet("Nghĩa là chỉ có thể ẩn **tất cả**, chứ không chọn được từng biểu tượng như bạn muốn. Ứng dụng nào làm được việc chọn lọc đều phải tự viết thêm bộ đọc riêng.")
                     bullet("Đây là API riêng tư của Apple: không được tài liệu hóa, có thể hỏng ở bản macOS kế tiếp và không qua được App Store.")
