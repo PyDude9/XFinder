@@ -4,6 +4,7 @@ struct RootView: View {
     @State private var appState = AppState.shared
     @State private var clipboardManager = ClipboardManager.shared
     @State private var systemMonitorManager = SystemMonitorManager.shared
+    @State private var l10n = L10n.shared
 
     var body: some View {
         NavigationView {
@@ -27,6 +28,9 @@ struct RootView: View {
         .navigationViewStyle(.columns)
         .frame(minWidth: 900, minHeight: 600)
         .environment(appState)
+        // Đổi ngôn ngữ → đổi id → SwiftUI dựng lại toàn bộ cây (sidebar +
+        // detail) để mọi chuỗi `L10n.t(...)` được đánh giá lại.
+        .id(l10n.language.rawValue)
     }
 }
 

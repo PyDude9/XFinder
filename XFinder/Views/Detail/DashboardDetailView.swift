@@ -15,6 +15,7 @@ struct DashboardDetailView: View {
     @AppStorage("ShowDockIcon") private var showDockIcon = true
     @AppStorage("notes.edgeEnabled") private var edgeNotesEnabled = false
     @AppStorage("windowPreview.hoverEnabled") private var hoverEnabled = true
+    @State private var l10n = L10n.shared
 
     @State private var trusted = WindowManager.isTrusted
     @State private var canRecord = WindowManager.canRecordScreen
@@ -24,8 +25,8 @@ struct DashboardDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 PageHeader(icon: "square.grid.2x2",
-                           title: "Tổng quan",
-                           subtitle: "Xem những gì đã sẵn sàng và hoàn tất thiết lập.")
+                           title: L10n.t("Tổng quan"),
+                           subtitle: L10n.t("Xem những gì đã sẵn sàng và hoàn tất thiết lập."))
 
                 preferences
                 Divider().padding(.horizontal, 20)
@@ -48,24 +49,30 @@ struct DashboardDetailView: View {
         VStack(spacing: 0) {
             HStack {
                 Image(systemName: "globe").foregroundColor(.secondary).frame(width: 20)
-                Text("Ngôn ngữ ứng dụng").font(.system(size: 13))
+                Text(L10n.t("Ngôn ngữ ứng dụng")).font(.system(size: 13))
                 Spacer()
-                // The UI ships Vietnamese-only; offering a picker with one real
-                // option would be a dead control, so state it plainly instead.
-                Text("Tiếng Việt").font(.system(size: 12)).foregroundColor(.secondary)
+                Picker("", selection: Binding(get: { l10n.language },
+                                               set: { l10n.set($0) })) {
+                    ForEach(AppLanguage.allCases) { lang in
+                        Text(lang.displayName).tag(lang)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: 140)
             }
             .padding(.vertical, 8)
 
             Divider()
 
-            ToggleRow(title: "Khởi động XFinder khi đăng nhập", isOn: $launchAtLogin)
+            ToggleRow(title: L10n.t("Khởi động XFinder khi đăng nhập"), isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { LoginItemController.apply($0) }
                 .padding(.vertical, 4)
 
             Divider()
 
-            ToggleRow(title: "Hiện biểu tượng trong Dock",
-                      subtitle: "Tắt để dùng XFinder thuần menubar.",
+            ToggleRow(title: L10n.t("Hiện biểu tượng trong Dock"),
+                      subtitle: L10n.t("Tắt để dùng XFinder thuần menubar."),
                       isOn: $showDockIcon)
                 .onChange(of: showDockIcon) { DockController.apply($0) }
                 .padding(.vertical, 4)
@@ -79,73 +86,73 @@ struct DashboardDetailView: View {
         VStack(spacing: 0) {
             StatusChecklistRow(
                 state: trusted ? .ok : .warning,
-                title: "Trợ năng (cửa sổ, Dock, độ sáng)",
-                status: trusted ? "Đã cấp" : "Chưa cấp",
-                actionTitle: trusted ? nil : "Mở…",
+                title: L10n.t("Trợ năng (cửa sổ, Dock, độ sáng)"),
+                status: trusted ? L10n.t("Đã cấp") : L10n.t("Chưa cấp"),
+                actionTitle: trusted ? nil : L10n.t("Mở…"),
                 action: trusted ? nil : { WindowManager.openAccessibilityPane() })
 
             StatusChecklistRow(
                 state: canRecord ? .ok : .warning,
-                title: "Ghi màn hình (ảnh thu nhỏ cửa sổ)",
-                status: canRecord ? "Đã cấp" : "Chưa cấp",
-                actionTitle: canRecord ? nil : "Mở…",
+                title: L10n.t("Ghi màn hình (ảnh thu nhỏ cửa sổ)"),
+                status: canRecord ? L10n.t("Đã cấp") : L10n.t("Chưa cấp"),
+                actionTitle: canRecord ? nil : L10n.t("Mở…"),
                 action: canRecord ? nil : { WindowManager.openScreenRecordingPane() })
 
             StatusChecklistRow(
                 state: automationOK ? .ok : .warning,
-                title: "Tự động hóa (đổi giao diện Sáng/Tối)",
-                status: automationOK ? "Đã cấp" : "Chưa xác định",
-                actionTitle: automationOK ? nil : "Mở…",
+                title: L10n.t("Tự động hóa (đổi giao diện Sáng/Tối)"),
+                status: automationOK ? L10n.t("Đã cấp") : L10n.t("Chưa xác định"),
+                actionTitle: automationOK ? nil : L10n.t("Mở…"),
                 action: automationOK ? nil : { SystemControls.openAutomationPane() })
 
             // Hover preview needs BOTH the toggle and Screen Recording: the
-            // thumbnails come from ScreenCaptureKit. Reporting "Đã bật" while
+            // thumbnails come from ScreenCaptureKit. Reporting L10n.t("Đã bật") while
             // the permission is missing would be a lie — the panel would open
             // with blank boxes, which is exactly the bug the user reported.
             StatusChecklistRow(
                 state: hoverEnabled ? (canRecord ? .ok : .warning) : .neutral,
-                title: "Xem trước cửa sổ từ Dock",
-                status: !hoverEnabled ? "Đang tắt"
-                    : (canRecord ? "Đã bật" : "Thiếu quyền Ghi màn hình"),
-                actionTitle: "Mở…",
+                title: L10n.t("Xem trước cửa sổ từ Dock"),
+                status: !hoverEnabled ? L10n.t("Đang tắt")
+                    : (canRecord ? L10n.t("Đã bật") : L10n.t("Thiếu quyền Ghi màn hình")),
+                actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .windowPreview) })
 
             StatusChecklistRow(
                 state: .ok,
-                title: "Quick Look nâng cao",
-                status: "Đã sẵn sàng",
-                actionTitle: "Mở…",
+                title: L10n.t("Quick Look nâng cao"),
+                status: L10n.t("Đã sẵn sàng"),
+                actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .quickLookPage) })
 
             // Honest: Finder context-menu items and Quick Actions need a Finder
             // Sync/Action extension target this app does not ship.
             StatusChecklistRow(
                 state: .warning,
-                title: "Tác vụ nhanh trong Finder",
-                status: "Chưa có",
-                actionTitle: "Mở…",
+                title: L10n.t("Tác vụ nhanh trong Finder"),
+                status: L10n.t("Chưa có"),
+                actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .finderUtils) })
 
             StatusChecklistRow(
                 state: clipboardManager.history.isEmpty ? .neutral : .ok,
-                title: "Clipboard",
+                title: L10n.t("Clipboard"),
                 status: clipboardManager.history.isEmpty
-                    ? "Chưa có mục" : "\(clipboardManager.history.count) mục",
-                actionTitle: "Mở…",
+                    ? L10n.t("Chưa có mục") : "\(clipboardManager.history.count) mục",
+                actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .clipboard) })
 
             StatusChecklistRow(
                 state: edgeNotesEnabled ? .ok : .neutral,
-                title: "Ghi chú ở mép màn hình",
-                status: edgeNotesEnabled ? "Đã bật" : "Đang tắt",
-                actionTitle: "Mở…",
+                title: L10n.t("Ghi chú ở mép màn hình"),
+                status: edgeNotesEnabled ? L10n.t("Đã bật") : L10n.t("Đang tắt"),
+                actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .notes) })
 
             StatusChecklistRow(
                 state: CaffeineController.shared.isActive ? .ok : .neutral,
-                title: "Chống ngủ",
-                status: CaffeineController.shared.isActive ? "Đang bật" : "Đang tắt",
-                actionTitle: "Mở…",
+                title: L10n.t("Chống ngủ"),
+                status: CaffeineController.shared.isActive ? L10n.t("Đang bật") : L10n.t("Đang tắt"),
+                actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .antiSleep) })
         }
         .padding(.horizontal, 20)
@@ -155,17 +162,17 @@ struct DashboardDetailView: View {
 
     private var gettingStarted: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Bắt đầu").font(.system(size: 14, weight: .semibold))
-            shortcutLine("⌘⇧V", "Mở khay Clipboard nổi ở bất kỳ đâu")
-            shortcutLine("⌘⇧C", "Bắt đầu Paste Stack")
-            shortcutLine("⌃⌥ ←→↑↓", "Bắt dính cửa sổ đang focus")
-            shortcutLine("⌘⇥", "Chuyển cửa sổ kèm ảnh xem trước")
-            Text("Di chuột lên icon app trên Dock để xem trước cửa sổ; lắc chuột khi kéo file hoặc trỏ vào tai thỏ để mở Khay thả.")
+            Text(L10n.t("Bắt đầu")).font(.system(size: 14, weight: .semibold))
+            shortcutLine("⌘⇧V", L10n.t("Mở khay Clipboard nổi ở bất kỳ đâu"))
+            shortcutLine("⌘⇧C", L10n.t("Bắt đầu Paste Stack"))
+            shortcutLine("⌃⌥ ←→↑↓", L10n.t("Bắt dính cửa sổ đang focus"))
+            shortcutLine("⌘⇥", L10n.t("Chuyển cửa sổ kèm ảnh xem trước"))
+            Text(L10n.t("Di chuột lên icon app trên Dock để xem trước cửa sổ; lắc chuột khi kéo file hoặc trỏ vào tai thỏ để mở Khay thả."))
                 .font(.system(size: 12)).foregroundColor(.secondary)
             HStack(spacing: 8) {
-                Button("Điều khiển nhanh…") { appState.navigate(to: .quickControls) }
+                Button(L10n.t("Điều khiển nhanh…")) { appState.navigate(to: .quickControls) }
                     .buttonStyle(.bordered).controlSize(.small)
-                Button("Kiểm tra lại quyền") { refreshPermissions() }
+                Button(L10n.t("Kiểm tra lại quyền")) { refreshPermissions() }
                     .buttonStyle(.bordered).controlSize(.small)
             }
             .padding(.top, 4)

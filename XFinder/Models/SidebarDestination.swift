@@ -47,36 +47,36 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     var titleVI: String {
         switch self {
-        case .dashboard: return "Tổng quan"
-        case .quickControls: return "Điều khiển nhanh"
-        case .antiSleep: return "Chống ngủ"
-        case .system: return "Hệ thống"
-        case .network: return "Mạng"
-        case .storage: return "Ổ đĩa"
-        case .pin: return "Pin"
-        case .clipboard: return "Clipboard"
-        case .notes: return "Ghi chú"
-        case .windowPreview: return "Xem trước cửa sổ"
-        case .snapZones: return "Vùng bắt dính"
-        case .menuIcons: return "Biểu tượng thanh menu"
-        case .finderKeyboard: return "Bàn phím Finder"
-        case .finderActions: return "Thao tác Finder"
-        case .finderSearch: return "Tìm kiếm"
-        case .aiSearch: return "Tìm kiếm AI"
-        case .batchRename: return "Đổi tên hàng loạt"
-        case .actionHistory: return "Lịch sử thao tác"
-        case .dropTray: return "Khay thả"
-        case .compress: return "Nén & Giải nén"
-        case .pdfTools: return "Công cụ PDF"
-        case .folderLock: return "Khóa thư mục"
-        case .quickLookPage: return "Quick Look"
-        case .mediaCompat: return "Tương thích media"
-        case .finderUtils: return "Tiện ích Finder"
-        case .sync: return "Đồng bộ"
-        case .remoteConnect: return "Kết nối từ xa"
-        case .quickShare: return "Chia sẻ nhanh"
-        case .settingsClipboard: return "Cài đặt Clipboard"
-        case .about: return "Giới thiệu"
+        case .dashboard: return L10n.t("Tổng quan")
+        case .quickControls: return L10n.t("Điều khiển nhanh")
+        case .antiSleep: return L10n.t("Chống ngủ")
+        case .system: return L10n.t("Hệ thống")
+        case .network: return L10n.t("Mạng")
+        case .storage: return L10n.t("Ổ đĩa")
+        case .pin: return L10n.t("Pin")
+        case .clipboard: return L10n.t("Clipboard")
+        case .notes: return L10n.t("Ghi chú")
+        case .windowPreview: return L10n.t("Xem trước cửa sổ")
+        case .snapZones: return L10n.t("Vùng bắt dính")
+        case .menuIcons: return L10n.t("Biểu tượng thanh menu")
+        case .finderKeyboard: return L10n.t("Bàn phím Finder")
+        case .finderActions: return L10n.t("Thao tác Finder")
+        case .finderSearch: return L10n.t("Tìm kiếm")
+        case .aiSearch: return L10n.t("Tìm kiếm AI")
+        case .batchRename: return L10n.t("Đổi tên hàng loạt")
+        case .actionHistory: return L10n.t("Lịch sử thao tác")
+        case .dropTray: return L10n.t("Khay thả")
+        case .compress: return L10n.t("Nén & Giải nén")
+        case .pdfTools: return L10n.t("Công cụ PDF")
+        case .folderLock: return L10n.t("Khóa thư mục")
+        case .quickLookPage: return L10n.t("Quick Look")
+        case .mediaCompat: return L10n.t("Tương thích media")
+        case .finderUtils: return L10n.t("Tiện ích Finder")
+        case .sync: return L10n.t("Đồng bộ")
+        case .remoteConnect: return L10n.t("Kết nối từ xa")
+        case .quickShare: return L10n.t("Chia sẻ nhanh")
+        case .settingsClipboard: return L10n.t("Cài đặt Clipboard")
+        case .about: return L10n.t("Giới thiệu")
         }
     }
 
