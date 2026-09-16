@@ -35,6 +35,7 @@
 				7F1A0007 /* Models */,
 				7F1A0008 /* Views */,
 				7F1A0009 /* Info.plist */,
+				7F1A00DD /* XFinder/Resources/AppIcon.icns */,
 			);
 			sourceTree = SOURCE_ROOT;
 		};
@@ -96,6 +97,7 @@
 				E38D74CB /* QuickSearch/Quicklinks.swift */,
 				7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */,
 				7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */,
+				7F1A00DB /* L10n.swift */,
 			);
 			path = XFinder/Core;
 			sourceTree = SOURCE_ROOT;
@@ -167,6 +169,8 @@
 			path = XFinder/Info.plist;
 			sourceTree = SOURCE_ROOT;
 		};
+		7F1A00DB /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		7F1A00DD /* XFinder/Resources/AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = XFinder/Resources/AppIcon.icns; sourceTree = "<group>"; };
 		7F1A000A /* XFinder.app */ = {
 			isa = PBXFileReference;
 			explicitFileType = wrapper.application;
@@ -346,6 +350,14 @@
 		7F1A00BA /* Detail/FolderSyncDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FolderSyncDetailView.swift"; sourceTree = "<group>"; };
 		7F1A00B6 /* Detail/FolderLockDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FolderLockDetailView.swift"; sourceTree = "<group>"; };
 		7F1A00B0 /* Detail/FinderKeyboardDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FinderKeyboardDetailView.swift"; sourceTree = "<group>"; };
+		7F1A00DF /* PBXResourcesBuildPhase */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7F1A001D /* PBXSourcesBuildPhase */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -439,6 +451,7 @@
 				7F1A00D3,
 				7F1A00D5,
 				7F1A00D7,
+				7F1A00DC,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -529,11 +542,14 @@
 		7F1A00D3 /* QuickSearch/QuickSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D2; };
 		7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D4; };
 		7F1A00D7 /* QuickSearchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D6; };
+		7F1A00DC /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00DB; };
+		7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A00DD; };
 		7F1A0004 /* XFinder */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7F1A0030;
 			buildPhases = (
 				7F1A001D,
+				7F1A00DF,
 			);
 			buildRules = (
 			);
