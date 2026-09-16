@@ -24,6 +24,7 @@ final class NotchDropController {
     private(set) var isShowing = false
 
     private var panel: NSPanel?
+    private var detailPanel: NSPanel?
     private var monitors: [Any] = []
     /// Only armed while the tray is open — auto-close fires on the *absence*
     /// of pointer movement, which a mouse monitor alone cannot detect.
@@ -270,6 +271,31 @@ final class NotchDropController {
         samples.removeAll()
         closeTimer?.invalidate()
         closeTimer = nil
+        detailPanel?.orderOut(nil)
+    }
+
+    // MARK: - Cửa sổ chi tiết (DropOver-style)
+
+    func toggleDetail() {
+        if let d = detailPanel, d.isVisible {
+            d.orderOut(nil)
+        } else {
+            showDetailPanel()
+        }
+    }
+
+    private func showDetailPanel() {
+        if detailPanel == nil {
+            let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 720, height: 520),
+                            styleMask: [.titled, .closable, .resizable],
+                            backing: .buffered, defer: false)
+            p.title = "Khay thả"
+            p.contentView = NSHostingView(rootView: DropTrayDetailGrid())
+            p.isReleasedWhenClosed = false
+            detailPanel = p
+        }
+        detailPanel?.center()
+        detailPanel?.makeKeyAndOrderFront(nil)
     }
 
     /// 1 s tick, alive only while the tray is open.
@@ -459,7 +485,6 @@ enum FileThumbnailer {
 /// Contents of the floating tray: staged items, drag-out support, quick clear.
 private struct NotchDropView: View {
     @State private var store = DropTrayStore.shared
-    @State private var expandedStack = false
 
     /// Overlapping deck + a count badge; click to fan the files out. Dragging
     /// the deck hands over EVERY held file at once, which is the whole point
@@ -487,17 +512,20 @@ private struct NotchDropView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(store.items.count) tệp đang giữ")
                     .font(.system(size: 12, weight: .semibold))
-                Text("Bấm để xem tất cả · kéo ra để dùng")
+                Text("Kéo cả chồng ra để dùng một lần.")
                     .font(.system(size: 10)).foregroundColor(.secondary)
-                Button("Xóa hết") { store.removePaths(store.items.map(\.path)) }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 10))
-                    .foregroundColor(.secondary)
+                HStack(spacing: 8) {
+                    Button("Xem chi tiết") { NotchDropController.shared.toggleDetail() }
+                        .buttonStyle(.bordered).controlSize(.mini)
+                    Button("Xóa hết") { store.removePaths(store.items.map(\.path)) }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                }
             }
             Spacer()
         }
         .contentShape(Rectangle())
-        .onTapGesture { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { expandedStack = true } }
         .frame(maxHeight: .infinity)
     }
 
@@ -523,20 +551,10 @@ private struct NotchDropView: View {
                         .font(.system(size: 11)).foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if store.items.count > 3 && !expandedStack {
-                // Stacked look (Dropover-style): a deck of overlapping cards
-                // keeps the tray small no matter how many files are held.
-                stackedDeck
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(store.items) { item in
-                            let url = URL(fileURLWithPath: item.path)
-                            TrayFileTile(item: item, url: url) { store.remove(item) }
-                        }
-                    }
-                }
-                .frame(maxHeight: .infinity)
+                // DropOver-style: luôn stack gọn; chi tiết từng file mở ở cửa sổ
+                // riêng (nút "Xem chi tiết") nên hàng nghìn file vẫn mượt.
+                stackedDeck
             }
         }
         .padding(12)
@@ -545,5 +563,37 @@ private struct NotchDropView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous)
             .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1))
+    }
+}
+
+/// Cửa sổ chi tiết của Khay thả — lưới thẻ từng file (kéo riêng từng file ra).
+/// Cắt bớt khi quá nhiều để không vẽ hàng nghìn ô cùng lúc.
+private struct DropTrayDetailGrid: View {
+    @State private var store = DropTrayStore.shared
+    private let cap = 400
+
+    private let columns = [GridItem(.adaptive(minimum: 110, maximum: 160), spacing: 10)]
+
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(store.items.prefix(cap)) { item in
+                    TrayFileTile(item: item, url: URL(fileURLWithPath: item.path)) {
+                        store.remove(item)
+                    }
+                }
+            }
+            .padding(12)
+        }
+        .frame(minWidth: 480, minHeight: 360)
+        .overlay(alignment: .bottom) {
+            if store.items.count > cap {
+                Text("Hiện \(cap)/\(store.items.count) mục — kéo cả chồng ở khay để thao tác cả lô.")
+                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.controlBackgroundColor).opacity(0.9))
+            }
+        }
     }
 }

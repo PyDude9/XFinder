@@ -63,8 +63,15 @@ final class EdgeNotesController {
         UserDefaults.standard.object(forKey: "notes.hideOnLeave") as? Bool ?? true
     }
 
+    /// Ghi chú ghim LUÔN nằm trên cùng dải mép màn hình (dễ truy cập), rồi mới
+    /// tới các ghi chú khác theo thời gian sửa mới nhất.
     var visibleNotes: [QuickNote] {
-        NoteStore.shared.notes.filter { !$0.isArchived }
+        NoteStore.shared.notes
+            .filter { !$0.isArchived }
+            .sorted { a, b in
+                if a.isPinned != b.isPinned { return a.isPinned }
+                return a.updatedAt > b.updatedAt
+            }
     }
 
     func applySettings() {
