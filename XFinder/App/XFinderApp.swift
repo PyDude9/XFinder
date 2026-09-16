@@ -100,6 +100,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    /// Finder Sync extension gửi URL scheme `xfinder://<host>?path=…` tới đây.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls where url.scheme == "xfinder" {
+            handleFinderURL(url)
+        }
+    }
+
+    private func handleFinderURL(_ url: URL) {
+        guard let comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
+        let path = comps.queryItems?.first(where: { $0.name == "path" })?.value
+        switch comps.host {
+        case "droptray-add":
+            if let path {
+                Task { @MainActor in
+                    DropTrayStore.shared.add(urls: [URL(fileURLWithPath: path)])
+                    NotchDropController.shared.show()
+                }
+            }
+        default:
+            break
+        }
+    }
+
     private func setupMenubar() {
         menubarController = MenubarController()
         menubarController?.setup()
