@@ -25,6 +25,7 @@ final class MenuBarHiderController: NSResponder {
 
     private var separator: NSStatusItem?
     private var arrow: NSStatusItem?
+    private var covers: [NSWindow] = []
 
     private override init() { super.init() }
     required init?(coder: NSCoder) { fatalError("not used") }
@@ -62,6 +63,7 @@ final class MenuBarHiderController: NSResponder {
     }
 
     private func remove() {
+        hideCovers()
         if let separator { NSStatusBar.system.removeStatusItem(separator) }
         if let arrow { NSStatusBar.system.removeStatusItem(arrow) }
         separator = nil
@@ -79,8 +81,49 @@ final class MenuBarHiderController: NSResponder {
         guard let separator else { return }
         isHiding.toggle()
         separator.length = isHiding ? collapseLength() : 1
+        if isHiding { showCovers() } else { hideCovers() }
         arrow?.button?.image = NSImage(systemSymbolName: isHiding ? "chevron.right" : "chevron.left",
                                        accessibilityDescription: nil)
+    }
+
+    /// Cover: trên macOS 27 separator không còn đẩy icon hàng xóm ra ngoài, nên
+    /// XFinder che VÙNG ẨN bằng một panel vibrancy `.menu` ngang thanh menu, từ
+    /// mép trái tới vị trí mũi tên (mũi tên vẫn lộ ra để bấm mở lại). Đây là
+    /// cách public còn lại duy nhất để "ẩn" icon về mặt thị giác.
+    private func showCovers() {
+        hideCovers()
+        guard let arrow,
+              let arrowWin = arrow.button?.window,
+              let screen = NSScreen.screens.first(where: { $0.frame.contains(arrowWin.frame.origin) })
+              ?? NSScreen.main
+        else { return }
+        let bar = screen.frame.maxY - screen.visibleFrame.maxY
+        guard bar > 2 else { return }
+        let arrowX = arrowWin.frame.minX
+        let rect = NSRect(x: screen.frame.minX,
+                          y: screen.frame.maxY - bar,
+                          width: max(0, arrowX - screen.frame.minX),
+                          height: bar + 1)
+
+        let w = NSWindow(contentRect: rect, styleMask: .borderless, backing: .buffered, defer: false)
+        w.level = .statusBar
+        w.isOpaque = false
+        w.backgroundColor = .clear
+        w.ignoresMouseEvents = true
+        w.hasShadow = false
+        w.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
+        let eff = NSVisualEffectView()
+        eff.material = .menu
+        eff.blendingMode = .behindWindow
+        eff.state = .active
+        w.contentView = eff
+        w.orderFrontRegardless()
+        covers = [w]
+    }
+
+    private func hideCovers() {
+        covers.forEach { $0.orderOut(nil) }
+        covers.removeAll()
     }
 
     // MARK: - macOS native path

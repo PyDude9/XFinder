@@ -42,9 +42,7 @@ final class QuickSearchEngine {
             async let apps = Task.detached(priority: .userInitiated) {
                 AppLauncher.shared.search(query: q)
             }.value
-            async let files = Task.detached(priority: .userInitiated) {
-                FileSearch.shared.search(query: q)
-            }.value
+            async let files = FileSearch.shared.search(query: q)
 
             let (appResults, fileResults) = await (apps, files)
             guard !Task.isCancelled else { return }

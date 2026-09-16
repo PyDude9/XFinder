@@ -251,6 +251,11 @@ private struct CommandTabSwitcherView: View {
                     )
                 }
             }
+
+            if !WindowManager.canRecordScreen {
+                Text("Thiếu quyền Ghi màn hình — chưa có ảnh xem trước. Mở Tổng quan → “Cấp mọi quyền…”.")
+                    .font(.caption2).foregroundColor(.secondary)
+            }
         }
         .padding(14)
         .background(RoundedRectangle(cornerRadius: 14).fill(Color(.windowBackgroundColor).opacity(0.96)))

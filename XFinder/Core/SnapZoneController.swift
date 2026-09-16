@@ -145,11 +145,12 @@ final class SnapZoneController {
     /// to know what was clicked in another app.
     private func beganOnWindowTitleBar(at point: CGPoint) -> Bool {
         guard WindowManager.isTrusted else { return false }
-        // AXUIElementCopyElementAtPosition wants top-left origin coords; the
-        // flip must use the screen under the pointer, not always the primary
-        // (multi-display bug).
-        let screen = WindowManager.screenUnderPointer()
-        let cgPoint = CGPoint(x: point.x, y: screen.frame.maxY - point.y)
+        // AXUIElementCopyElementAtPosition dùng gốc top-left của MÀN CHÍNH (y
+        // tăng xuống), còn NSEvent.mouseLocation là bottom-left của màn chính.
+        // Flip luôn phải dùng biên trên của màn CHÍNH — dùng screen-under-
+        // pointer sẽ lệch với màn phụ (bug "chỉ chạy trên màn 2").
+        let top = NSScreen.screens.first?.frame.maxY ?? 0
+        let cgPoint = CGPoint(x: point.x, y: top - point.y)
 
         var element: AXUIElement?
         guard AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(),
