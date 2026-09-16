@@ -31,8 +31,13 @@ final class ScreenBrightness {
 
     private var timer: Timer?
     private var consumers = 0
+    /// Giá trị registry lần đọc gần nhất — để phân biệt "đổi thật" với "kẹt".
+    private var lastRegistry: Double?
 
-    private init() { level = Self.readLevel() }
+    private init() {
+        level = Self.readLevel()
+        lastRegistry = level
+    }
 
     /// Demand-driven like the other monitors: no page open ⇒ no timer ⇒ idle
     /// CPU stays at zero.
@@ -57,24 +62,36 @@ final class ScreenBrightness {
         timer = nil
     }
 
-    func refresh() { level = Self.readLevel() }
+    func refresh() {
+        guard let r = Self.readLevel() else { return }
+        // Trên Apple Silicon, IODisplayParameters có thể kẹt ở một giá trị cố
+        // định (vd rawBrightness luôn ~72%) dù phần cứng đã đổi. Chỉ nhận
+        // re-read khi nó THỰC SỰ đổi, để không kéo % ngược về số ảo, còn phím
+        // tăng/giảm do người dùng bấm thì vẫn được cập nhật khi registry phản
+        // ánh.
+        if let prev = lastRegistry, abs(r - prev) < 0.001 { return }
+        lastRegistry = r
+        level = r
+    }
 
     /// Moves brightness toward `target` (0…1) by sending system brightness
-    /// keys, then re-reads the real value.
-    ///
-    /// There are ~16 hardware notches, so one full sweep of a slider is 16
-    /// steps. This cannot set an exact value — no public API can — so the UI
-    /// must treat the slider as a request, not a setting.
+    /// keys, then keeps track of the requested level as the displayed value —
+    /// macOS cannot be read back to an exact %, and on Apple Silicon the
+    /// registry read is often *stuck*, so the slider position is the honest
+    /// source of truth (the NX keys really did move the hardware near it).
     func setLevel(_ target: Double) {
         guard let current = level else { return }
-        let delta = target - current
+        let clamped = min(max(target, 0), 1)
+        let delta = clamped - current
         let steps = Int((delta * 16).rounded())
         guard steps != 0 else { return }
         for _ in 0..<abs(steps) {
             SystemControls.adjustBrightness(up: steps > 0)
         }
-        // Let the keys land before reading back.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+        level = clamped
+        // Re-read chỉ để bắt phím phần cứng nếu registry có đổi; không ghi đè
+        // vị trí người dùng kéo khi registry kẹt.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
             Task { @MainActor in self?.refresh() }
         }
     }

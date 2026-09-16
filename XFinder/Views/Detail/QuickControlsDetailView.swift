@@ -137,7 +137,7 @@ struct QuickControlsDetailView: View {
                         .tint(.blue)
                         .disabled(brightDenied || brightness.level == nil)
 
-                    Text(brightness.level.map { "\(Int($0 * 100))%" } ?? "—")
+                    Text(brightness.level == nil ? "—" : "\(Int(brightnessSlider * 100))%")
                         .font(.system(size: 11, design: .monospaced))
                         .frame(width: 38, alignment: .trailing)
                 }
@@ -160,7 +160,7 @@ struct QuickControlsDetailView: View {
                         .font(.system(size: 11)).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    Text("Giá trị đọc trực tiếp từ IOKit nên thanh trượt cập nhật cả khi bạn bấm phím độ sáng. macOS không cho đặt chính xác một mức, nên XFinder gửi từng nấc như phím bấm.")
+                    Text("macOS không cho đọc lại % chính xác (trên Apple Silicon giá trị registry thường kẹt), nên % bám theo vị trí bạn kéo — con số thật cho thanh trượt. XFinder gửi từng nấc như phím bấm.")
                         .font(.system(size: 11)).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }

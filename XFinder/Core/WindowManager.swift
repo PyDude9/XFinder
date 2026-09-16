@@ -209,9 +209,12 @@ enum WindowManager {
         } ?? axWindows[0]
 
         AXUIElementPerformAction(target, kAXRaiseAction as CFString)
-        // Raising alone does not move keyboard focus to the app.
-        NSRunningApplication(processIdentifier: info.ownerPID)?
-            .activate(options: [])
+        // Raising one window brings it above siblings but does NOT move input
+        // focus or activate the app — set AX frontmost and activate so the
+        // chosen app actually comes forward (⌘-Tab switch bug).
+        AXUIElementSetAttributeValue(appEl, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
+        _ = NSRunningApplication(processIdentifier: info.ownerPID)?
+            .activate(options: [.activateAllWindows])
         return true
     }
 

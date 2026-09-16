@@ -145,9 +145,11 @@ final class SnapZoneController {
     /// to know what was clicked in another app.
     private func beganOnWindowTitleBar(at point: CGPoint) -> Bool {
         guard WindowManager.isTrusted else { return false }
-        // AXUIElementCopyElementAtPosition wants top-left origin coordinates.
-        guard let primary = NSScreen.screens.first else { return false }
-        let cgPoint = CGPoint(x: point.x, y: primary.frame.maxY - point.y)
+        // AXUIElementCopyElementAtPosition wants top-left origin coords; the
+        // flip must use the screen under the pointer, not always the primary
+        // (multi-display bug).
+        let screen = WindowManager.screenUnderPointer()
+        let cgPoint = CGPoint(x: point.x, y: screen.frame.maxY - point.y)
 
         var element: AXUIElement?
         guard AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(),
@@ -155,13 +157,27 @@ final class SnapZoneController {
                                                &element) == .success,
               let element else { return false }
 
-        var roleRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleRef) == .success,
-              let role = roleRef as? String else { return false }
+        // The hit element is often a sub-view (traffic-light button, toolbar
+        // child, text) — walk a short parent chain to find its ancestor
+        // window/toolbar, which proves the press began on a title bar.
+        var cur: AXUIElement = element
+        for _ in 0..<4 {
+            if isWindowOrToolbar(cur) { return true }
+            var parentRef: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(cur, kAXParentAttribute as CFString,
+                                                &parentRef) == .success,
+                  let parent = parentRef else { break }
+            cur = parent as! AXUIElement
+        }
+        return false
+    }
 
-        // The title bar reports these roles; content views (text, buttons,
-        // web areas, images…) report their own and are correctly rejected.
-        return role == kAXWindowRole as String || role == "AXToolbar"
+    private func isWindowOrToolbar(_ el: AXUIElement) -> Bool {
+        var roleRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(el, kAXRoleAttribute as CFString,
+                                            &roleRef) == .success,
+              let role = roleRef as? String else { return false }
+        return role == (kAXWindowRole as String) || role == "AXToolbar"
     }
 
     /// Screen-edge hit test in AppKit coordinates (origin bottom-left).
