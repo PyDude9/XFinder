@@ -37,6 +37,9 @@ struct CompressDetailView: View {
     @State private var outputFolder: URL? = nil
     @State private var format: ArchiveFormat = .zip
     @State private var archiveName: String = "Archive"
+    @State private var password = ""
+    @State private var level = 6
+    @State private var resultURL: URL?
     @State private var isRunning = false
     @State private var log: [String] = []
 
@@ -111,6 +114,24 @@ struct CompressDetailView: View {
                                     .font(.system(size: 12))
                                     .foregroundColor(.secondary)
                             }
+                            if format == .zip {
+                                HStack {
+                                    Text("Mật khẩu (tuỳ chọn):").font(.system(size: 12)).foregroundColor(.secondary)
+                                    SecureField("để trống nếu không khoá", text: $password)
+                                        .textFieldStyle(.roundedBorder)
+                                        .font(.system(size: 12))
+                                }
+                                HStack {
+                                    Text("Mức nén:").font(.system(size: 12)).foregroundColor(.secondary)
+                                    Picker("", selection: $level) {
+                                        Text("Nhanh").tag(1)
+                                        Text("Thường").tag(6)
+                                        Text("Tối đa").tag(9)
+                                    }
+                                    .pickerStyle(.segmented)
+                                    .frame(maxWidth: 240)
+                                }
+                            }
                         }
                     }
                     .padding(.horizontal, 20)
@@ -143,6 +164,38 @@ struct CompressDetailView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(sources.isEmpty || isRunning)
                 .padding(.horizontal, 20)
+
+                if let resultURL {
+                    SettingsCard(title: "Việc tiếp theo") {
+                        HStack {
+                            Menu {
+                                if mode == .compress {
+                                    Button("Mở thư mục chứa") { NSWorkspace.shared.open(resultURL.deletingLastPathComponent()) }
+                                    Button("Hiện trong Finder") { NSWorkspace.shared.activateFileViewerSelecting([resultURL]) }
+                                } else {
+                                    Button("Mở thư mục đã giải") { NSWorkspace.shared.open(resultURL) }
+                                    Button("Hiện trong Finder") { NSWorkspace.shared.activateFileViewerSelecting([resultURL]) }
+                                    Button("Xóa file nén gốc", role: .destructive) {
+                                        for s in sources {
+                                            try? FileManager.default.trashItem(at: s, resultingItemURL: nil)
+                                        }
+                                        sources = []
+                                        self.resultURL = nil
+                                    }
+                                }
+                                Button("Chép đường dẫn") {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(resultURL.path, forType: .string)
+                                }
+                            } label: {
+                                Label(mode == .compress ? "Đã nén xong — tuỳ chọn…" : "Đã giải xong — tuỳ chọn…",
+                                      systemImage: "ellipsis.circle")
+                            }
+                            .fixedSize()
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
 
                 if !log.isEmpty {
                     SettingsCard(title: "Kết quả") {
@@ -200,30 +253,39 @@ struct CompressDetailView: View {
 
     private func compress() async {
         let destDir = outputFolder ?? sources[0].deletingLastPathComponent()
-        let dest = destDir
-            .appendingPathComponent(sanitizedName)
-            .appendingPathExtension(format == .zip ? "zip" : "gz")
-        // tar.gz needs the full double extension; appendingPathExtension("gz")
-        // on "Archive.tar" — build it explicitly.
-        let finalDest: URL = format == .zip
-            ? dest
-            : destDir.appendingPathComponent("\(sanitizedName).tar.gz")
-        var args: [String]
-        var exe: String
+        let exe: String
+        let args: [String]
+        let cwd: URL?
+        let finalDest: URL
         switch format {
-        case .zip:
-            exe = "/usr/bin/ditto"
-            args = ["-c", "-k", "--sequesterRsrc", "--keepParent"]
-                + sources.map(\.path) + [finalDest.path]
         case .tarGz:
             exe = "/usr/bin/tar"
+            finalDest = destDir.appendingPathComponent("\(sanitizedName).tar.gz")
             let parent = sources[0].deletingLastPathComponent().path
-            args = ["-czf", finalDest.path, "-C", parent]
-                + sources.map(\.lastPathComponent)
+            args = ["-czf", finalDest.path, "-C", parent] + sources.map(\.lastPathComponent)
+            cwd = nil
+        case .zip:
+            finalDest = destDir.appendingPathComponent("\(sanitizedName).zip")
+            if password.isEmpty && level == 6 {
+                // ditto giữ resource fork / metadata macOS; không mã hoá.
+                exe = "/usr/bin/ditto"
+                args = ["-c", "-k", "--sequesterRsrc", "--keepParent"]
+                    + sources.map(\.path) + [finalDest.path]
+                cwd = nil
+            } else {
+                // zip khi cần mật khẩu / mức nén khác mặc định.
+                exe = "/usr/bin/zip"
+                var a = ["-r", "-\(level)", "-q"]
+                if !password.isEmpty { a += ["-P", password] }
+                a += [finalDest.path] + sources.map(\.lastPathComponent)
+                args = a
+                cwd = sources[0].deletingLastPathComponent()
+            }
         }
-        let ok = await runProcess(exe: exe, args: args)
+        let ok = await runProcess(exe: exe, args: args, cwd: cwd)
         appendLog(ok ? "Đã nén → \(finalDest.lastPathComponent)" : "Thất bại khi nén \(sources.count) mục")
         if ok {
+            resultURL = finalDest
             ActionHistoryStore.shared.record(
                 kind: "compress",
                 summary: "Nén \(sources.count) mục → \(finalDest.lastPathComponent)",
@@ -240,15 +302,20 @@ struct CompressDetailView: View {
             let name = src.deletingPathExtension().lastPathComponent
             let exe: String
             let args: [String]
+            let destURL: URL
             if ext == "zip" {
                 exe = "/usr/bin/ditto"
-                args = ["-x", "-k", src.path, destDir.appendingPathComponent(name).path]
+                destURL = destDir.appendingPathComponent(name)
+                args = ["-x", "-k", src.path, destURL.path]
             } else {
                 exe = "/usr/bin/tar"
+                destURL = destDir
                 args = ["-xzf", src.path, "-C", destDir.path]
             }
-            if await runProcess(exe: exe, args: args) { okCount += 1 }
-            else { appendLog("Lỗi: không giải được \(src.lastPathComponent)") }
+            if await runProcess(exe: exe, args: args) {
+                okCount += 1
+                resultURL = destURL
+            } else { appendLog("Lỗi: không giải được \(src.lastPathComponent)") }
         }
         appendLog("Đã giải \(okCount)/\(sources.count) tập tin")
         if okCount > 0 {
@@ -264,11 +331,12 @@ struct CompressDetailView: View {
         return t.isEmpty ? "Archive" : t
     }
 
-    private func runProcess(exe: String, args: [String]) async -> Bool {
+    private func runProcess(exe: String, args: [String], cwd: URL? = nil) async -> Bool {
         await Task.detached(priority: .userInitiated) {
             let p = Process()
             p.executableURL = URL(fileURLWithPath: exe)
             p.arguments = args
+            if let cwd { p.currentDirectoryURL = cwd }
             p.standardOutput = Pipe()
             p.standardError = Pipe()
             do {

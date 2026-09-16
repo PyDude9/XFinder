@@ -25,7 +25,7 @@ struct MenuIconsDetailView: View {
                                 MenuBarHiderController.shared.applySettings()
                             }
 
-                        Text("Sau khi bật: giữ ⌘ và kéo MŨI TÊN ra đầu thanh menu, rồi kéo các biểu tượng bạn muốn ẩn vào nằm giữa mũi tên và khoảng trống. Bấm mũi tên để ẩn/hiện.")
+                        Text("Bấm mũi tên → ẩn mọi icon nằm BÊN TRÁI mũi tên. Kéo MŨI TÊN (⌘) sát mép phải để ẩn hết; các icon bạn muốn HIỆN thì kéo qua BÊN PHẢI mũi tên. Có thể ⌘-kéo icon qua lại giữa hai phía bất kỳ lúc nào.")
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)

@@ -37,6 +37,28 @@ struct QuickLookDetailView: View {
                     .strokeBorder(Color.primary.opacity(0.07), lineWidth: 1))
                 .padding(.horizontal, 20)
 
+                SettingsCard(title: "Video — QuickLookVideo",
+                             subtitle: "Xem trước & thumbnail video (AV1, VP9, DivX, WMV…, macOS 26+)") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("QuickLookVideo v3 cài Media Extensions vào AVFoundation để Quick Look hiện thumbnail và phát được mọi định dạng video — chính là tính năng video còn thiếu của XFinder.")
+                            .font(.system(size: 12)).foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        HStack {
+                            Button("Tải QuickLookVideo (DMG)") {
+                                NSWorkspace.shared.open(URL(string: "https://github.com/Marginal/QuickLookVideo/releases/download/rel-311/QLVideo_311.dmg")!)
+                            }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            Button("Trang phát hành") {
+                                NSWorkspace.shared.open(URL(string: "https://github.com/Marginal/QuickLookVideo/releases/tag/rel-311")!)
+                            }
+                            .buttonStyle(.bordered).controlSize(.small)
+                        }
+                        Text("Tải xong mở DMG và làm theo hướng dẫn bên trong; mở lại Finder nếu thumbnail video chưa mới.")
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                    }
+                }
+                .padding(.horizontal, 20)
+
                 Divider().padding(.horizontal, 20)
 
                 VStack(alignment: .leading, spacing: 7) {
