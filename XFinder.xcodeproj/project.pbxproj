@@ -3,39 +3,257 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
-		7F1A0000 /* PBXProject */ = {
-			isa = PBXProject;
-			attributes = {
-				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1400;
-				LastUpgradeCheck = 1400;
-			};
-			buildConfigurationList = 7F1A0001 /* Build configuration list for PBXProject "XFinder" */;
-			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
-			hasScannedForEncodings = 0;
-			knownRegions = (
-				en,
-			);
-			mainGroup = 7F1A0002;
-			productRefGroup = 7F1A0003;
-			projectDirPath = "";
-			projectRoot = "";
-			targets = (
-				7F1A0004,
-			);
+
+/* Begin PBXBuildFile section */
+		205EC420305AD1CE0094A78B /* XFinderSync.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 205EC419305AD1CE0094A78B /* XFinderSync.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		2535B74A /* QuickSearch/Quicklinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = E38D74CB /* QuickSearch/Quicklinks.swift */; };
+		2BE39F5C /* QuickSearch/Calculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC78A7D /* QuickSearch/Calculator.swift */; };
+		7F1A001E /* XFinderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000B /* XFinderApp.swift */; };
+		7F1A001F /* MenubarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000C /* MenubarController.swift */; };
+		7F1A0020 /* ClipboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000D /* ClipboardManager.swift */; };
+		7F1A0022 /* SystemMonitorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000F /* SystemMonitorManager.swift */; };
+		7F1A0023 /* DatabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0010 /* DatabaseService.swift */; };
+		7F1A0024 /* ClipboardRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0011 /* ClipboardRecord.swift */; };
+		7F1A0025 /* Pinboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0012 /* Pinboard.swift */; };
+		7F1A0027 /* QuickNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0014 /* QuickNote.swift */; };
+		7F1A0028 /* SystemMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0015 /* SystemMetrics.swift */; };
+		7F1A002A /* ClipboardTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0017 /* ClipboardTabView.swift */; };
+		7F1A002E /* SideNotesPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A001B /* SideNotesPanel.swift */; };
+		7F1A002F /* SettingsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A001C /* SettingsWindow.swift */; };
+		7F1A003A /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0035 /* AppState.swift */; };
+		7F1A003B /* SidebarDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0036 /* SidebarDestination.swift */; };
+		7F1A003C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0037 /* RootView.swift */; };
+		7F1A003D /* Sidebar/SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0038 /* Sidebar/SidebarView.swift */; };
+		7F1A003E /* Detail/PlaceholderDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0039 /* Detail/PlaceholderDetailView.swift */; };
+		7F1A0049 /* SystemMonitor/CaffeineController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0040 /* SystemMonitor/CaffeineController.swift */; };
+		7F1A004A /* SystemMonitor/PowerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0041 /* SystemMonitor/PowerManager.swift */; };
+		7F1A004B /* SystemMonitor/DiskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0042 /* SystemMonitor/DiskManager.swift */; };
+		7F1A004C /* Services/SystemControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0043 /* Services/SystemControls.swift */; };
+		7F1A004D /* Components/SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0044 /* Components/SettingsCard.swift */; };
+		7F1A004E /* Components/MetricBigNumber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0045 /* Components/MetricBigNumber.swift */; };
+		7F1A004F /* Components/StatBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0046 /* Components/StatBarView.swift */; };
+		7F1A0050 /* Components/SparklineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0047 /* Components/SparklineView.swift */; };
+		7F1A0051 /* Components/ToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0048 /* Components/ToggleRow.swift */; };
+		7F1A0059 /* Detail/DashboardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0052 /* Detail/DashboardDetailView.swift */; };
+		7F1A005A /* Detail/SystemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0053 /* Detail/SystemDetailView.swift */; };
+		7F1A005B /* Detail/PinDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0054 /* Detail/PinDetailView.swift */; };
+		7F1A005C /* Detail/NetworkDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0055 /* Detail/NetworkDetailView.swift */; };
+		7F1A005D /* Detail/StorageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0056 /* Detail/StorageDetailView.swift */; };
+		7F1A005E /* Detail/QuickControlsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0057 /* Detail/QuickControlsDetailView.swift */; };
+		7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0058 /* Detail/AntiSleepDetailView.swift */; };
+		7F1A0061 /* Detail/SettingsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0060 /* Detail/SettingsDetailView.swift */; };
+		7F1A0064 /* Detail/CompressDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0062 /* Detail/CompressDetailView.swift */; };
+		7F1A0065 /* Detail/PdfToolsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0063 /* Detail/PdfToolsDetailView.swift */; };
+		7F1A0080 /* NoteStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0066 /* NoteStore.swift */; };
+		7F1A0081 /* ActionHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0067 /* ActionHistoryStore.swift */; };
+		7F1A0082 /* BatchRenameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0068 /* BatchRenameEngine.swift */; };
+		7F1A0083 /* FileSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0069 /* FileSearchEngine.swift */; };
+		7F1A0084 /* WindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006A /* WindowManager.swift */; };
+		7F1A0085 /* Detail/NotesDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006B /* Detail/NotesDetailView.swift */; };
+		7F1A0086 /* Detail/BatchRenameDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006C /* Detail/BatchRenameDetailView.swift */; };
+		7F1A0087 /* Detail/ActionHistoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006D /* Detail/ActionHistoryDetailView.swift */; };
+		7F1A0088 /* Detail/SearchDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006E /* Detail/SearchDetailViews.swift */; };
+		7F1A0089 /* Detail/DropTrayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006F /* Detail/DropTrayDetailView.swift */; };
+		7F1A008A /* Detail/WindowDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0070 /* Detail/WindowDetailViews.swift */; };
+		7F1A008B /* Detail/QuickLookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0071 /* Detail/QuickLookDetailView.swift */; };
+		7F1A008C /* Detail/FinderToolDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0072 /* Detail/FinderToolDetailViews.swift */; };
+		7F1A0091 /* DockPreviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0090 /* DockPreviewController.swift */; };
+		7F1A0093 /* NetworkTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0092 /* NetworkTools.swift */; };
+		7F1A0095 /* EdgeNotesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0094 /* EdgeNotesController.swift */; };
+		7F1A00A1 /* Components/PageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A0 /* Components/PageHeader.swift */; };
+		7F1A00A3 /* CommandTabController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A2 /* CommandTabController.swift */; };
+		7F1A00A5 /* SnapZoneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A4 /* SnapZoneController.swift */; };
+		7F1A00A7 /* Detail/MenuIconsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A6 /* Detail/MenuIconsDetailView.swift */; };
+		7F1A00A9 /* Detail/FinderActionsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A8 /* Detail/FinderActionsDetailView.swift */; };
+		7F1A00AB /* MenuBarHiderController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00AA /* MenuBarHiderController.swift */; };
+		7F1A00AD /* ClipboardShelfController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00AC /* ClipboardShelfController.swift */; };
+		7F1A00AF /* FinderKeyboardController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00AE /* FinderKeyboardController.swift */; };
+		7F1A00B1 /* Detail/FinderKeyboardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B0 /* Detail/FinderKeyboardDetailView.swift */; };
+		7F1A00B3 /* NotchDropController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B2 /* NotchDropController.swift */; };
+		7F1A00B5 /* FolderLockController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B4 /* FolderLockController.swift */; };
+		7F1A00B7 /* Detail/FolderLockDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B6 /* Detail/FolderLockDetailView.swift */; };
+		7F1A00B9 /* FolderSyncController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B8 /* FolderSyncController.swift */; };
+		7F1A00BB /* Detail/FolderSyncDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00BA /* Detail/FolderSyncDetailView.swift */; };
+		7F1A00BD /* RemoteConnectController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00BC /* RemoteConnectController.swift */; };
+		7F1A00BF /* QuickShareController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00BE /* QuickShareController.swift */; };
+		7F1A00C1 /* Detail/RemoteConnectDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00C0 /* Detail/RemoteConnectDetailView.swift */; };
+		7F1A00C3 /* Detail/QuickShareDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00C2 /* Detail/QuickShareDetailView.swift */; };
+		7F1A00C5 /* EdgeNotesViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00C4 /* EdgeNotesViews.swift */; };
+		7F1A00C7 /* CloudSyncController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00C6 /* CloudSyncController.swift */; };
+		7F1A00C9 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00C8 /* UpdateChecker.swift */; };
+		7F1A00CD /* Detail/FinderUtilsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00CC /* Detail/FinderUtilsDetailView.swift */; };
+		7F1A00CF /* Components/PageWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00CE /* Components/PageWidth.swift */; };
+		7F1A00D1 /* Services/ScreenBrightness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D0 /* Services/ScreenBrightness.swift */; };
+		7F1A00D3 /* QuickSearch/QuickSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */; };
+		7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */; };
+		7F1A00D7 /* QuickSearchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D6 /* QuickSearchPanel.swift */; };
+		7F1A00DC /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00DB /* L10n.swift */; };
+		7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A00DD /* XFinder/Resources/AppIcon.icns */; };
+		7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0073 /* ClipboardPasteEngine.swift */; };
+		7F1A7F1A008E /* ClipboardPayloadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0074 /* ClipboardPayloadStore.swift */; };
+		7F1A7F1A008F /* ClipboardCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0075 /* ClipboardCardView.swift */; };
+		96F26CAC /* QuickSearch/AppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95421592 /* QuickSearch/AppLauncher.swift */; };
+		D066FCC9 /* QuickSearch/QuickSearchResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88AD9932 /* QuickSearch/QuickSearchResult.swift */; };
+		FEDF1419 /* QuickSearch/FileSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2B7B75 /* QuickSearch/FileSearch.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		205EC41E305AD1CE0094A78B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7F1A0000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 205EC418305AD1CE0094A78B;
+			remoteInfo = XFinderSync;
 		};
-		7F1A0002 /* XFinder */ = {
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		205EC421305AD1CE0094A78B /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				205EC420305AD1CE0094A78B /* XFinderSync.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0F2B7B75 /* QuickSearch/FileSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/FileSearch.swift; sourceTree = "<group>"; };
+		1EC78A7D /* QuickSearch/Calculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/Calculator.swift; sourceTree = "<group>"; };
+		205EC419305AD1CE0094A78B /* XFinderSync.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = XFinderSync.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F1A0009 /* XFinder/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = XFinder/Info.plist; sourceTree = SOURCE_ROOT; };
+		7F1A000A /* XFinder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XFinder.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F1A000B /* XFinderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XFinderApp.swift; sourceTree = "<group>"; };
+		7F1A000C /* MenubarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenubarController.swift; sourceTree = "<group>"; };
+		7F1A000D /* ClipboardManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardManager.swift; sourceTree = "<group>"; };
+		7F1A000F /* SystemMonitorManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitorManager.swift; sourceTree = "<group>"; };
+		7F1A0010 /* DatabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseService.swift; sourceTree = "<group>"; };
+		7F1A0011 /* ClipboardRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardRecord.swift; sourceTree = "<group>"; };
+		7F1A0012 /* Pinboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pinboard.swift; sourceTree = "<group>"; };
+		7F1A0014 /* QuickNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickNote.swift; sourceTree = "<group>"; };
+		7F1A0015 /* SystemMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMetrics.swift; sourceTree = "<group>"; };
+		7F1A0017 /* ClipboardTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardTabView.swift; sourceTree = "<group>"; };
+		7F1A001B /* SideNotesPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideNotesPanel.swift; sourceTree = "<group>"; };
+		7F1A001C /* SettingsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindow.swift; sourceTree = "<group>"; };
+		7F1A0035 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		7F1A0036 /* SidebarDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarDestination.swift; sourceTree = "<group>"; };
+		7F1A0037 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		7F1A0038 /* Sidebar/SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebar/SidebarView.swift; sourceTree = "<group>"; };
+		7F1A0039 /* Detail/PlaceholderDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/PlaceholderDetailView.swift; sourceTree = "<group>"; };
+		7F1A0040 /* SystemMonitor/CaffeineController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor/CaffeineController.swift; sourceTree = "<group>"; };
+		7F1A0041 /* SystemMonitor/PowerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor/PowerManager.swift; sourceTree = "<group>"; };
+		7F1A0042 /* SystemMonitor/DiskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor/DiskManager.swift; sourceTree = "<group>"; };
+		7F1A0043 /* Services/SystemControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/SystemControls.swift; sourceTree = "<group>"; };
+		7F1A0044 /* Components/SettingsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/SettingsCard.swift; sourceTree = "<group>"; };
+		7F1A0045 /* Components/MetricBigNumber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/MetricBigNumber.swift; sourceTree = "<group>"; };
+		7F1A0046 /* Components/StatBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/StatBarView.swift; sourceTree = "<group>"; };
+		7F1A0047 /* Components/SparklineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/SparklineView.swift; sourceTree = "<group>"; };
+		7F1A0048 /* Components/ToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/ToggleRow.swift; sourceTree = "<group>"; };
+		7F1A0052 /* Detail/DashboardDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/DashboardDetailView.swift; sourceTree = "<group>"; };
+		7F1A0053 /* Detail/SystemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SystemDetailView.swift; sourceTree = "<group>"; };
+		7F1A0054 /* Detail/PinDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/PinDetailView.swift; sourceTree = "<group>"; };
+		7F1A0055 /* Detail/NetworkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/NetworkDetailView.swift; sourceTree = "<group>"; };
+		7F1A0056 /* Detail/StorageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/StorageDetailView.swift; sourceTree = "<group>"; };
+		7F1A0057 /* Detail/QuickControlsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/QuickControlsDetailView.swift; sourceTree = "<group>"; };
+		7F1A0058 /* Detail/AntiSleepDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/AntiSleepDetailView.swift; sourceTree = "<group>"; };
+		7F1A0060 /* Detail/SettingsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SettingsDetailView.swift; sourceTree = "<group>"; };
+		7F1A0062 /* Detail/CompressDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/CompressDetailView.swift; sourceTree = "<group>"; };
+		7F1A0063 /* Detail/PdfToolsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/PdfToolsDetailView.swift; sourceTree = "<group>"; };
+		7F1A0066 /* NoteStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStore.swift; sourceTree = "<group>"; };
+		7F1A0067 /* ActionHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionHistoryStore.swift; sourceTree = "<group>"; };
+		7F1A0068 /* BatchRenameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchRenameEngine.swift; sourceTree = "<group>"; };
+		7F1A0069 /* FileSearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchEngine.swift; sourceTree = "<group>"; };
+		7F1A006A /* WindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowManager.swift; sourceTree = "<group>"; };
+		7F1A006B /* Detail/NotesDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/NotesDetailView.swift; sourceTree = "<group>"; };
+		7F1A006C /* Detail/BatchRenameDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/BatchRenameDetailView.swift; sourceTree = "<group>"; };
+		7F1A006D /* Detail/ActionHistoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/ActionHistoryDetailView.swift; sourceTree = "<group>"; };
+		7F1A006E /* Detail/SearchDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SearchDetailViews.swift; sourceTree = "<group>"; };
+		7F1A006F /* Detail/DropTrayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/DropTrayDetailView.swift; sourceTree = "<group>"; };
+		7F1A0070 /* Detail/WindowDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/WindowDetailViews.swift; sourceTree = "<group>"; };
+		7F1A0071 /* Detail/QuickLookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/QuickLookDetailView.swift; sourceTree = "<group>"; };
+		7F1A0072 /* Detail/FinderToolDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FinderToolDetailViews.swift; sourceTree = "<group>"; };
+		7F1A0073 /* ClipboardPasteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardPasteEngine.swift; sourceTree = "<group>"; };
+		7F1A0074 /* ClipboardPayloadStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardPayloadStore.swift; sourceTree = "<group>"; };
+		7F1A0075 /* ClipboardCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardCardView.swift; sourceTree = "<group>"; };
+		7F1A0090 /* DockPreviewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewController.swift; sourceTree = "<group>"; };
+		7F1A0092 /* NetworkTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkTools.swift; sourceTree = "<group>"; };
+		7F1A0094 /* EdgeNotesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeNotesController.swift; sourceTree = "<group>"; };
+		7F1A00A0 /* Components/PageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/PageHeader.swift; sourceTree = "<group>"; };
+		7F1A00A2 /* CommandTabController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandTabController.swift; sourceTree = "<group>"; };
+		7F1A00A4 /* SnapZoneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapZoneController.swift; sourceTree = "<group>"; };
+		7F1A00A6 /* Detail/MenuIconsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/MenuIconsDetailView.swift; sourceTree = "<group>"; };
+		7F1A00A8 /* Detail/FinderActionsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FinderActionsDetailView.swift; sourceTree = "<group>"; };
+		7F1A00AA /* MenuBarHiderController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarHiderController.swift; sourceTree = "<group>"; };
+		7F1A00AC /* ClipboardShelfController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardShelfController.swift; sourceTree = "<group>"; };
+		7F1A00AE /* FinderKeyboardController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderKeyboardController.swift; sourceTree = "<group>"; };
+		7F1A00B0 /* Detail/FinderKeyboardDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FinderKeyboardDetailView.swift; sourceTree = "<group>"; };
+		7F1A00B2 /* NotchDropController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchDropController.swift; sourceTree = "<group>"; };
+		7F1A00B4 /* FolderLockController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderLockController.swift; sourceTree = "<group>"; };
+		7F1A00B6 /* Detail/FolderLockDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FolderLockDetailView.swift; sourceTree = "<group>"; };
+		7F1A00B8 /* FolderSyncController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderSyncController.swift; sourceTree = "<group>"; };
+		7F1A00BA /* Detail/FolderSyncDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FolderSyncDetailView.swift; sourceTree = "<group>"; };
+		7F1A00BC /* RemoteConnectController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConnectController.swift; sourceTree = "<group>"; };
+		7F1A00BE /* QuickShareController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickShareController.swift; sourceTree = "<group>"; };
+		7F1A00C0 /* Detail/RemoteConnectDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/RemoteConnectDetailView.swift; sourceTree = "<group>"; };
+		7F1A00C2 /* Detail/QuickShareDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/QuickShareDetailView.swift; sourceTree = "<group>"; };
+		7F1A00C4 /* EdgeNotesViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeNotesViews.swift; sourceTree = "<group>"; };
+		7F1A00C6 /* CloudSyncController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncController.swift; sourceTree = "<group>"; };
+		7F1A00C8 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
+		7F1A00CC /* Detail/FinderUtilsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FinderUtilsDetailView.swift; sourceTree = "<group>"; };
+		7F1A00CE /* Components/PageWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/PageWidth.swift; sourceTree = "<group>"; };
+		7F1A00D0 /* Services/ScreenBrightness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ScreenBrightness.swift; sourceTree = "<group>"; };
+		7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchEngine.swift; sourceTree = "<group>"; };
+		7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchPanelController.swift; sourceTree = "<group>"; };
+		7F1A00D6 /* QuickSearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearchPanel.swift; sourceTree = "<group>"; };
+		7F1A00DB /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		7F1A00DD /* XFinder/Resources/AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = XFinder/Resources/AppIcon.icns; sourceTree = "<group>"; };
+		88AD9932 /* QuickSearch/QuickSearchResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchResult.swift; sourceTree = "<group>"; };
+		95421592 /* QuickSearch/AppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/AppLauncher.swift; sourceTree = "<group>"; };
+		E38D74CB /* QuickSearch/Quicklinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/Quicklinks.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		205EC424305AD1CE0094A78B /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 205EC418305AD1CE0094A78B /* XFinderSync */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		205EC41A305AD1CE0094A78B /* XFinderSync */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (205EC424305AD1CE0094A78B /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = XFinderSync; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		205EC416305AD1CE0094A78B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		7F1A0002 = {
 			isa = PBXGroup;
 			children = (
-				7F1A0005 /* App */,
-				7F1A0006 /* Core */,
-				7F1A0007 /* Models */,
-				7F1A0008 /* Views */,
-				7F1A0009 /* Info.plist */,
+				7F1A0005 /* XFinder/App */,
+				7F1A0006 /* XFinder/Core */,
+				7F1A0007 /* XFinder/Models */,
+				7F1A0008 /* XFinder/Views */,
+				7F1A0009 /* XFinder/Info.plist */,
 				7F1A00DD /* XFinder/Resources/AppIcon.icns */,
+				205EC41A305AD1CE0094A78B /* XFinderSync */,
+				7F1A0003 /* Products */,
 			);
 			sourceTree = SOURCE_ROOT;
 		};
@@ -43,11 +261,12 @@
 			isa = PBXGroup;
 			children = (
 				7F1A000A /* XFinder.app */,
+				205EC419305AD1CE0094A78B /* XFinderSync.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		7F1A0005 /* App */ = {
+		7F1A0005 /* XFinder/App */ = {
 			isa = PBXGroup;
 			children = (
 				7F1A000B /* XFinderApp.swift */,
@@ -57,7 +276,7 @@
 			path = XFinder/App;
 			sourceTree = SOURCE_ROOT;
 		};
-		7F1A0006 /* Core */ = {
+		7F1A0006 /* XFinder/Core */ = {
 			isa = PBXGroup;
 			children = (
 				7F1A000D /* ClipboardManager.swift */,
@@ -102,7 +321,7 @@
 			path = XFinder/Core;
 			sourceTree = SOURCE_ROOT;
 		};
-		7F1A0007 /* Models */ = {
+		7F1A0007 /* XFinder/Models */ = {
 			isa = PBXGroup;
 			children = (
 				7F1A0011 /* ClipboardRecord.swift */,
@@ -114,7 +333,7 @@
 			path = XFinder/Models;
 			sourceTree = SOURCE_ROOT;
 		};
-		7F1A0008 /* Views */ = {
+		7F1A0008 /* XFinder/Views */ = {
 			isa = PBXGroup;
 			children = (
 				7F1A0017 /* ClipboardTabView.swift */,
@@ -148,8 +367,8 @@
 				7F1A006F /* Detail/DropTrayDetailView.swift */,
 				7F1A0070 /* Detail/WindowDetailViews.swift */,
 				7F1A0071 /* Detail/QuickLookDetailView.swift */,
-				7F1A0075 /* Views/ClipboardCardView.swift */,
-				7F1A00C4 /* Views/EdgeNotesViews.swift */,
+				7F1A0075 /* ClipboardCardView.swift */,
+				7F1A00C4 /* EdgeNotesViews.swift */,
 				7F1A0072 /* Detail/FinderToolDetailViews.swift */,
 				7F1A00CC /* Detail/FinderUtilsDetailView.swift */,
 				7F1A00A8 /* Detail/FinderActionsDetailView.swift */,
@@ -163,194 +382,91 @@
 			path = XFinder/Views;
 			sourceTree = SOURCE_ROOT;
 		};
-		7F1A0009 /* Info.plist */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = text.plist.xml;
-			path = XFinder/Info.plist;
-			sourceTree = SOURCE_ROOT;
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		205EC418305AD1CE0094A78B /* XFinderSync */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 205EC425305AD1CE0094A78B /* Build configuration list for PBXNativeTarget "XFinderSync" */;
+			buildPhases = (
+				205EC415305AD1CE0094A78B /* Sources */,
+				205EC416305AD1CE0094A78B /* Frameworks */,
+				205EC417305AD1CE0094A78B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				205EC41A305AD1CE0094A78B /* XFinderSync */,
+			);
+			name = XFinderSync;
+			packageProductDependencies = (
+			);
+			productName = XFinderSync;
+			productReference = 205EC419305AD1CE0094A78B /* XFinderSync.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
-		7F1A00DB /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
-		7F1A00DD /* XFinder/Resources/AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = XFinder/Resources/AppIcon.icns; sourceTree = "<group>"; };
-		7F1A000A /* XFinder.app */ = {
-			isa = PBXFileReference;
-			explicitFileType = wrapper.application;
-			includeInIndex = 0;
-			path = XFinder.app;
-			sourceTree = BUILT_PRODUCTS_DIR;
+		7F1A0004 /* XFinder */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7F1A0030 /* Build configuration list for PBXNativeTarget "XFinder" */;
+			buildPhases = (
+				7F1A001D /* Sources */,
+				7F1A00DF /* Resources */,
+				205EC421305AD1CE0094A78B /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				205EC41F305AD1CE0094A78B /* PBXTargetDependency */,
+			);
+			name = XFinder;
+			productName = XFinder;
+			productReference = 7F1A000A /* XFinder.app */;
+			productType = "com.apple.product-type.application";
 		};
-		7F1A000B /* XFinderApp.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = XFinderApp.swift;
-			sourceTree = "<group>";
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7F1A0000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 1400;
+				TargetAttributes = {
+					205EC418305AD1CE0094A78B = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = 7F1A0001 /* Build configuration list for PBXProject "XFinder" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 7F1A0002;
+			productRefGroup = 7F1A0003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				7F1A0004 /* XFinder */,
+				205EC418305AD1CE0094A78B /* XFinderSync */,
+			);
 		};
-		7F1A000C /* MenubarController.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = MenubarController.swift;
-			sourceTree = "<group>";
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		205EC417305AD1CE0094A78B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
-		7F1A000D /* ClipboardManager.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = ClipboardManager.swift;
-			sourceTree = "<group>";
-		};
-		7F1A000F /* SystemMonitorManager.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = SystemMonitorManager.swift;
-			sourceTree = "<group>";
-		};
-		7F1A0010 /* DatabaseService.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = DatabaseService.swift;
-			sourceTree = "<group>";
-		};
-		7F1A0011 /* ClipboardRecord.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = ClipboardRecord.swift;
-			sourceTree = "<group>";
-		};
-		7F1A0012 /* Pinboard.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = Pinboard.swift;
-			sourceTree = "<group>";
-		};
-		7F1A0014 /* QuickNote.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = QuickNote.swift;
-			sourceTree = "<group>";
-		};
-		7F1A0015 /* SystemMetrics.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = SystemMetrics.swift;
-			sourceTree = "<group>";
-		};
-		7F1A0017 /* ClipboardTabView.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = ClipboardTabView.swift;
-			sourceTree = "<group>";
-		};
-		7F1A001B /* SideNotesPanel.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = SideNotesPanel.swift;
-			sourceTree = "<group>";
-		};
-		7F1A001C /* SettingsWindow.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = SettingsWindow.swift;
-			sourceTree = "<group>";
-		};
-		7F1A0035 /* AppState.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = AppState.swift;
-			sourceTree = "<group>";
-		};
-		7F1A0036 /* SidebarDestination.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = SidebarDestination.swift;
-			sourceTree = "<group>";
-		};
-		7F1A0037 /* RootView.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = RootView.swift;
-			sourceTree = "<group>";
-		};
-		7F1A0038 /* Sidebar/SidebarView.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Sidebar/SidebarView.swift";
-			sourceTree = "<group>";
-		};
-		7F1A0039 /* Detail/PlaceholderDetailView.swift */ = {
-			isa = PBXFileReference;
-			lastKnownFileType = sourcecode.swift;
-			path = "Detail/PlaceholderDetailView.swift";
-			sourceTree = "<group>";
-		};
-		7F1A0040 /* SystemMonitor/CaffeineController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SystemMonitor/CaffeineController.swift"; sourceTree = "<group>"; };
-		7F1A0041 /* SystemMonitor/PowerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SystemMonitor/PowerManager.swift"; sourceTree = "<group>"; };
-		7F1A0042 /* SystemMonitor/DiskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SystemMonitor/DiskManager.swift"; sourceTree = "<group>"; };
-		7F1A0043 /* Services/SystemControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/SystemControls.swift"; sourceTree = "<group>"; };
-		7F1A00D0 /* Services/ScreenBrightness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Services/ScreenBrightness.swift"; sourceTree = "<group>"; };
-		7F1A0044 /* Components/SettingsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/SettingsCard.swift"; sourceTree = "<group>"; };
-		7F1A00A0 /* Components/PageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/PageHeader.swift"; sourceTree = "<group>"; };
-		7F1A00CE /* Components/PageWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/PageWidth.swift"; sourceTree = "<group>"; };
-		7F1A0045 /* Components/MetricBigNumber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/MetricBigNumber.swift"; sourceTree = "<group>"; };
-		7F1A0046 /* Components/StatBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/StatBarView.swift"; sourceTree = "<group>"; };
-		7F1A0047 /* Components/SparklineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/SparklineView.swift"; sourceTree = "<group>"; };
-		7F1A0048 /* Components/ToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Components/ToggleRow.swift"; sourceTree = "<group>"; };
-		7F1A0052 /* Detail/DashboardDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/DashboardDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0053 /* Detail/SystemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/SystemDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0054 /* Detail/PinDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/PinDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0055 /* Detail/NetworkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/NetworkDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0056 /* Detail/StorageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/StorageDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0057 /* Detail/QuickControlsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/QuickControlsDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0058 /* Detail/AntiSleepDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/AntiSleepDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0060 /* Detail/SettingsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/SettingsDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0062 /* Detail/CompressDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/CompressDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0063 /* Detail/PdfToolsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/PdfToolsDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0066 /* NoteStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStore.swift; sourceTree = "<group>"; };
-		7F1A0067 /* ActionHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionHistoryStore.swift; sourceTree = "<group>"; };
-		7F1A0068 /* BatchRenameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchRenameEngine.swift; sourceTree = "<group>"; };
-		7F1A0069 /* FileSearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchEngine.swift; sourceTree = "<group>"; };
-		7F1A006A /* WindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowManager.swift; sourceTree = "<group>"; };
-		7F1A00C8 /* UpdateChecker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateChecker.swift; sourceTree = "<group>"; };
-		7F1A0090 /* DockPreviewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewController.swift; sourceTree = "<group>"; };
-		7F1A00A2 /* CommandTabController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandTabController.swift; sourceTree = "<group>"; };
-		7F1A00A4 /* SnapZoneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapZoneController.swift; sourceTree = "<group>"; };
-		7F1A00AA /* MenuBarHiderController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarHiderController.swift; sourceTree = "<group>"; };
-		7F1A00C6 /* CloudSyncController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSyncController.swift; sourceTree = "<group>"; };
-		7F1A00BE /* QuickShareController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickShareController.swift; sourceTree = "<group>"; };
-		7F1A00BC /* RemoteConnectController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConnectController.swift; sourceTree = "<group>"; };
-		7F1A00B8 /* FolderSyncController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderSyncController.swift; sourceTree = "<group>"; };
-		7F1A00B4 /* FolderLockController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderLockController.swift; sourceTree = "<group>"; };
-		7F1A00B2 /* NotchDropController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchDropController.swift; sourceTree = "<group>"; };
-		7F1A00AE /* FinderKeyboardController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderKeyboardController.swift; sourceTree = "<group>"; };
-		7F1A00AC /* ClipboardShelfController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardShelfController.swift; sourceTree = "<group>"; };
-		7F1A0092 /* NetworkTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkTools.swift; sourceTree = "<group>"; };
-		7F1A0094 /* EdgeNotesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeNotesController.swift; sourceTree = "<group>"; };
-		88AD9932 /* QuickSearch/QuickSearchResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchResult.swift; sourceTree = "<group>"; };
-		95421592 /* QuickSearch/AppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/AppLauncher.swift; sourceTree = "<group>"; };
-		0F2B7B75 /* QuickSearch/FileSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/FileSearch.swift; sourceTree = "<group>"; };
-		1EC78A7D /* QuickSearch/Calculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/Calculator.swift; sourceTree = "<group>"; };
-		E38D74CB /* QuickSearch/Quicklinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/Quicklinks.swift; sourceTree = "<group>"; };
-		7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchEngine.swift; sourceTree = "<group>"; };
-		7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchPanelController.swift; sourceTree = "<group>"; };
-		7F1A00D6 /* QuickSearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearchPanel.swift; sourceTree = "<group>"; };
-		7F1A006B /* Detail/NotesDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/NotesDetailView.swift"; sourceTree = "<group>"; };
-		7F1A006C /* Detail/BatchRenameDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/BatchRenameDetailView.swift"; sourceTree = "<group>"; };
-		7F1A006D /* Detail/ActionHistoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/ActionHistoryDetailView.swift"; sourceTree = "<group>"; };
-		7F1A006E /* Detail/SearchDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/SearchDetailViews.swift"; sourceTree = "<group>"; };
-		7F1A006F /* Detail/DropTrayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/DropTrayDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0070 /* Detail/WindowDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/WindowDetailViews.swift"; sourceTree = "<group>"; };
-		7F1A0071 /* Detail/QuickLookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/QuickLookDetailView.swift"; sourceTree = "<group>"; };
-		7F1A0073 /* ClipboardPasteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ClipboardPasteEngine.swift"; sourceTree = "<group>"; };
-		7F1A0074 /* ClipboardPayloadStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ClipboardPayloadStore.swift"; sourceTree = "<group>"; };
-		7F1A0075 /* Views/ClipboardCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ClipboardCardView.swift"; sourceTree = "<group>"; };
-		7F1A00C4 /* Views/EdgeNotesViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EdgeNotesViews.swift"; sourceTree = "<group>"; };
-		7F1A0072 /* Detail/FinderToolDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FinderToolDetailViews.swift"; sourceTree = "<group>"; };
-		7F1A00CC /* Detail/FinderUtilsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FinderUtilsDetailView.swift"; sourceTree = "<group>"; };
-		7F1A00A8 /* Detail/FinderActionsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FinderActionsDetailView.swift"; sourceTree = "<group>"; };
-		7F1A00A6 /* Detail/MenuIconsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/MenuIconsDetailView.swift"; sourceTree = "<group>"; };
-		7F1A00C2 /* Detail/QuickShareDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/QuickShareDetailView.swift"; sourceTree = "<group>"; };
-		7F1A00C0 /* Detail/RemoteConnectDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/RemoteConnectDetailView.swift"; sourceTree = "<group>"; };
-		7F1A00BA /* Detail/FolderSyncDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FolderSyncDetailView.swift"; sourceTree = "<group>"; };
-		7F1A00B6 /* Detail/FolderLockDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FolderLockDetailView.swift"; sourceTree = "<group>"; };
-		7F1A00B0 /* Detail/FinderKeyboardDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Detail/FinderKeyboardDetailView.swift"; sourceTree = "<group>"; };
-		7F1A00DF /* PBXResourcesBuildPhase */ = {
+		7F1A00DF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -358,230 +474,266 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		7F1A001D /* PBXSourcesBuildPhase */ = {
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		205EC415305AD1CE0094A78B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7F1A001E,
-				7F1A001F,
-				7F1A0020,
-				7F1A0022,
-				7F1A0023,
-				7F1A0024,
-				7F1A0025,
-				7F1A0027,
-				7F1A0028,
-				7F1A002A,
-				7F1A002E,
-				7F1A002F,
-				7F1A003A,
-				7F1A003B,
-				7F1A003C,
-				7F1A003D,
-				7F1A003E,
-				7F1A0049,
-				7F1A004A,
-				7F1A004B,
-				7F1A004C,
-				7F1A00D1,
-				7F1A004D,
-				7F1A00A1,
-				7F1A00CF,
-				7F1A004E,
-				7F1A004F,
-				7F1A0050,
-				7F1A0051,
-				7F1A0059,
-				7F1A005A,
-				7F1A005B,
-				7F1A005C,
-				7F1A005D,
-				7F1A005E,
-				7F1A005F,
-				7F1A0061,
-				7F1A0064,
-				7F1A0065,
-				7F1A0080,
-				7F1A0081,
-				7F1A0082,
-				7F1A0083,
-				7F1A0084,
-				7F1A00C9,
-				7F1A0085,
-				7F1A0086,
-				7F1A0087,
-				7F1A0088,
-				7F1A0089,
-				7F1A008A,
-				7F1A008B,
-				7F1A7F1A008D,
-				7F1A7F1A008E,
-				7F1A7F1A008F,
-				7F1A008C,
-				7F1A00CD,
-				7F1A0091,
-				7F1A00A3,
-				7F1A00A5,
-				7F1A00AB,
-				7F1A00C7,
-				7F1A00BF,
-				7F1A00BD,
-				7F1A00B9,
-				7F1A00B5,
-				7F1A00B3,
-				7F1A00AF,
-				7F1A00AD,
-				7F1A00A9,
-				7F1A00A7,
-				7F1A00C5,
-				7F1A00C3,
-				7F1A00C1,
-				7F1A00BB,
-				7F1A00B7,
-				7F1A00B1,
-				7F1A0093,
-				7F1A0095,
-				47391D8F,
-				8F7A94C3,
-				D066FCC9,
-				96F26CAC,
-				FEDF1419,
-				2BE39F5C,
-				2535B74A,
-				7F1A00D3,
-				7F1A00D5,
-				7F1A00D7,
-				7F1A00DC,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		7F1A001E /* XFinderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000B; };
-		7F1A001F /* MenubarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000C; };
-		7F1A0020 /* ClipboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000D; };
-		7F1A0022 /* SystemMonitorManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000F; };
-		7F1A0023 /* DatabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0010; };
-		7F1A0024 /* ClipboardRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0011; };
-		7F1A0025 /* Pinboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0012; };
-		7F1A0027 /* QuickNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0014; };
-		7F1A0028 /* SystemMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0015; };
-		7F1A002A /* ClipboardTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0017; };
-		7F1A002E /* SideNotesPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A001B; };
-		7F1A002F /* SettingsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A001C; };
-		7F1A003A /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0035; };
-		7F1A003B /* SidebarDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0036; };
-		7F1A003C /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0037; };
-		7F1A003D /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0038; };
-		7F1A003E /* PlaceholderDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0039; };
-		7F1A0049 /* CaffeineController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0040; };
-		7F1A004A /* PowerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0041; };
-		7F1A004B /* DiskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0042; };
-		7F1A004C /* SystemControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0043; };
-		7F1A00D1 /* ScreenBrightness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D0; };
-		7F1A004D /* SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0044; };
-		7F1A00A1 /* PageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A0; };
-		7F1A00CF /* PageWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00CE; };
-		7F1A004E /* MetricBigNumber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0045; };
-		7F1A004F /* StatBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0046; };
-		7F1A0050 /* SparklineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0047; };
-		7F1A0051 /* ToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0048; };
-		7F1A0059 /* 7F1A0052 in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0052; };
-		7F1A005A /* 7F1A0053 in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0053; };
-		7F1A005B /* 7F1A0054 in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0054; };
-		7F1A005C /* 7F1A0055 in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0055; };
-		7F1A005D /* 7F1A0056 in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0056; };
-		7F1A005E /* 7F1A0057 in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0057; };
-		7F1A005F /* 7F1A0058 in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0058; };
-		7F1A0061 /* 7F1A0060 in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0060; };
-		7F1A0064 /* CompressDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0062; };
-		7F1A0065 /* PdfToolsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0063; };
-		7F1A0080 /* NoteStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0066; };
-		7F1A0081 /* ActionHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0067; };
-		7F1A0082 /* BatchRenameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0068; };
-		7F1A0083 /* FileSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0069; };
-		7F1A0084 /* WindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006A; };
-		7F1A00C9 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00C8; };
-		7F1A0085 /* NotesDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006B; };
-		7F1A0086 /* BatchRenameDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006C; };
-		7F1A0087 /* ActionHistoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006D; };
-		7F1A0088 /* SearchDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006E; };
-		7F1A0089 /* DropTrayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006F; };
-		7F1A008A /* WindowDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0070; };
-		7F1A008B /* QuickLookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0071; };
-		7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0073 /* ClipboardPasteEngine.swift */; };
-		7F1A7F1A008E /* ClipboardPayloadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0074 /* ClipboardPayloadStore.swift */; };
-		7F1A7F1A008F /* Views/ClipboardCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0075 /* Views/ClipboardCardView.swift */; };
-		7F1A008C /* FinderToolDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0072; };
-		7F1A00CD /* FinderUtilsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00CC; };
-		7F1A0091 /* DockPreviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0090; };
-		7F1A00A3 /* CommandTabController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A2; };
-		7F1A00A5 /* SnapZoneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A4; };
-		7F1A00AB /* MenuBarHiderController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00AA; };
-		7F1A00C7 /* CloudSyncController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00C6; };
-		7F1A00BF /* QuickShareController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00BE; };
-		7F1A00BD /* RemoteConnectController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00BC; };
-		7F1A00B9 /* FolderSyncController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B8; };
-		7F1A00B5 /* FolderLockController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B4; };
-		7F1A00B3 /* NotchDropController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B2; };
-		7F1A00AF /* FinderKeyboardController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00AE; };
-		7F1A00AD /* ClipboardShelfController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00AC; };
-		7F1A00A9 /* Detail/FinderActionsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A8; };
-		7F1A00A7 /* Detail/MenuIconsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A6; };
-		7F1A00C5 /* Views/EdgeNotesViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00C4; };
-		7F1A00C3 /* Detail/QuickShareDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00C2; };
-		7F1A00C1 /* Detail/RemoteConnectDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00C0; };
-		7F1A00BB /* Detail/FolderSyncDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00BA; };
-		7F1A00B7 /* Detail/FolderLockDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B6; };
-		7F1A00B1 /* Detail/FinderKeyboardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B0; };
-		7F1A0093 /* NetworkTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0092; };
-		7F1A0095 /* EdgeNotesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0094; };
-		D066FCC9 /* QuickSearch/QuickSearchResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88AD9932; };
-		96F26CAC /* QuickSearch/AppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95421592; };
-		FEDF1419 /* QuickSearch/FileSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2B7B75; };
-		2BE39F5C /* QuickSearch/Calculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC78A7D; };
-		2535B74A /* QuickSearch/Quicklinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = E38D74CB; };
-		7F1A00D3 /* QuickSearch/QuickSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D2; };
-		7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D4; };
-		7F1A00D7 /* QuickSearchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D6; };
-		7F1A00DC /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00DB; };
-		7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A00DD; };
-		7F1A0004 /* XFinder */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 7F1A0030;
-			buildPhases = (
-				7F1A001D,
-				7F1A00DF,
+		7F1A001D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7F1A001E /* XFinderApp.swift in Sources */,
+				7F1A001F /* MenubarController.swift in Sources */,
+				7F1A0020 /* ClipboardManager.swift in Sources */,
+				7F1A0022 /* SystemMonitorManager.swift in Sources */,
+				7F1A0023 /* DatabaseService.swift in Sources */,
+				7F1A0024 /* ClipboardRecord.swift in Sources */,
+				7F1A0025 /* Pinboard.swift in Sources */,
+				7F1A0027 /* QuickNote.swift in Sources */,
+				7F1A0028 /* SystemMetrics.swift in Sources */,
+				7F1A002A /* ClipboardTabView.swift in Sources */,
+				7F1A002E /* SideNotesPanel.swift in Sources */,
+				7F1A002F /* SettingsWindow.swift in Sources */,
+				7F1A003A /* AppState.swift in Sources */,
+				7F1A003B /* SidebarDestination.swift in Sources */,
+				7F1A003C /* RootView.swift in Sources */,
+				7F1A003D /* Sidebar/SidebarView.swift in Sources */,
+				7F1A003E /* Detail/PlaceholderDetailView.swift in Sources */,
+				7F1A0049 /* SystemMonitor/CaffeineController.swift in Sources */,
+				7F1A004A /* SystemMonitor/PowerManager.swift in Sources */,
+				7F1A004B /* SystemMonitor/DiskManager.swift in Sources */,
+				7F1A004C /* Services/SystemControls.swift in Sources */,
+				7F1A00D1 /* Services/ScreenBrightness.swift in Sources */,
+				7F1A004D /* Components/SettingsCard.swift in Sources */,
+				7F1A00A1 /* Components/PageHeader.swift in Sources */,
+				7F1A00CF /* Components/PageWidth.swift in Sources */,
+				7F1A004E /* Components/MetricBigNumber.swift in Sources */,
+				7F1A004F /* Components/StatBarView.swift in Sources */,
+				7F1A0050 /* Components/SparklineView.swift in Sources */,
+				7F1A0051 /* Components/ToggleRow.swift in Sources */,
+				7F1A0059 /* Detail/DashboardDetailView.swift in Sources */,
+				7F1A005A /* Detail/SystemDetailView.swift in Sources */,
+				7F1A005B /* Detail/PinDetailView.swift in Sources */,
+				7F1A005C /* Detail/NetworkDetailView.swift in Sources */,
+				7F1A005D /* Detail/StorageDetailView.swift in Sources */,
+				7F1A005E /* Detail/QuickControlsDetailView.swift in Sources */,
+				7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */,
+				7F1A0061 /* Detail/SettingsDetailView.swift in Sources */,
+				7F1A0064 /* Detail/CompressDetailView.swift in Sources */,
+				7F1A0065 /* Detail/PdfToolsDetailView.swift in Sources */,
+				7F1A0080 /* NoteStore.swift in Sources */,
+				7F1A0081 /* ActionHistoryStore.swift in Sources */,
+				7F1A0082 /* BatchRenameEngine.swift in Sources */,
+				7F1A0083 /* FileSearchEngine.swift in Sources */,
+				7F1A0084 /* WindowManager.swift in Sources */,
+				7F1A00C9 /* UpdateChecker.swift in Sources */,
+				7F1A0085 /* Detail/NotesDetailView.swift in Sources */,
+				7F1A0086 /* Detail/BatchRenameDetailView.swift in Sources */,
+				7F1A0087 /* Detail/ActionHistoryDetailView.swift in Sources */,
+				7F1A0088 /* Detail/SearchDetailViews.swift in Sources */,
+				7F1A0089 /* Detail/DropTrayDetailView.swift in Sources */,
+				7F1A008A /* Detail/WindowDetailViews.swift in Sources */,
+				7F1A008B /* Detail/QuickLookDetailView.swift in Sources */,
+				7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */,
+				7F1A7F1A008E /* ClipboardPayloadStore.swift in Sources */,
+				7F1A7F1A008F /* ClipboardCardView.swift in Sources */,
+				7F1A008C /* Detail/FinderToolDetailViews.swift in Sources */,
+				7F1A00CD /* Detail/FinderUtilsDetailView.swift in Sources */,
+				7F1A0091 /* DockPreviewController.swift in Sources */,
+				7F1A00A3 /* CommandTabController.swift in Sources */,
+				7F1A00A5 /* SnapZoneController.swift in Sources */,
+				7F1A00AB /* MenuBarHiderController.swift in Sources */,
+				7F1A00C7 /* CloudSyncController.swift in Sources */,
+				7F1A00BF /* QuickShareController.swift in Sources */,
+				7F1A00BD /* RemoteConnectController.swift in Sources */,
+				7F1A00B9 /* FolderSyncController.swift in Sources */,
+				7F1A00B5 /* FolderLockController.swift in Sources */,
+				7F1A00B3 /* NotchDropController.swift in Sources */,
+				7F1A00AF /* FinderKeyboardController.swift in Sources */,
+				7F1A00AD /* ClipboardShelfController.swift in Sources */,
+				7F1A00A9 /* Detail/FinderActionsDetailView.swift in Sources */,
+				7F1A00A7 /* Detail/MenuIconsDetailView.swift in Sources */,
+				7F1A00C5 /* EdgeNotesViews.swift in Sources */,
+				7F1A00C3 /* Detail/QuickShareDetailView.swift in Sources */,
+				7F1A00C1 /* Detail/RemoteConnectDetailView.swift in Sources */,
+				7F1A00BB /* Detail/FolderSyncDetailView.swift in Sources */,
+				7F1A00B7 /* Detail/FolderLockDetailView.swift in Sources */,
+				7F1A00B1 /* Detail/FinderKeyboardDetailView.swift in Sources */,
+				7F1A0093 /* NetworkTools.swift in Sources */,
+				7F1A0095 /* EdgeNotesController.swift in Sources */,
+				D066FCC9 /* QuickSearch/QuickSearchResult.swift in Sources */,
+				96F26CAC /* QuickSearch/AppLauncher.swift in Sources */,
+				FEDF1419 /* QuickSearch/FileSearch.swift in Sources */,
+				2BE39F5C /* QuickSearch/Calculator.swift in Sources */,
+				2535B74A /* QuickSearch/Quicklinks.swift in Sources */,
+				7F1A00D3 /* QuickSearch/QuickSearchEngine.swift in Sources */,
+				7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */,
+				7F1A00D7 /* QuickSearchPanel.swift in Sources */,
+				7F1A00DC /* L10n.swift in Sources */,
 			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = XFinder;
-			productName = XFinder;
-			productReference = 7F1A000A;
-			productType = "com.apple.product-type.application";
+			runOnlyForDeploymentPostprocessing = 0;
 		};
-		7F1A0001 /* Build configuration list for PBXProject "XFinder" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				7F1A0031,
-				7F1A0032,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		205EC41F305AD1CE0094A78B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 205EC418305AD1CE0094A78B /* XFinderSync */;
+			targetProxy = 205EC41E305AD1CE0094A78B /* PBXContainerItemProxy */;
 		};
-		7F1A0030 /* Build configuration list for PBXNativeTarget "XFinder" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				7F1A0033,
-				7F1A0034,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		205EC422305AD1CE0094A78B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 723H5P27SV;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = XFinderSync/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = XFinderSync;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xfinder.app.XFinderSync;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		205EC423305AD1CE0094A78B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 723H5P27SV;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = XFinderSync/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = XFinderSync;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xfinder.app.XFinderSync;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
 		};
 		7F1A0031 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_DIALECT = "c++17";
@@ -598,7 +750,6 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				ARCHS = arm64;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				SDKROOT = macosx;
@@ -613,6 +764,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_DIALECT = "c++17";
@@ -625,7 +777,6 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ARCHS = arm64;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
@@ -639,12 +790,13 @@
 		7F1A0033 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = build;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 723H5P27SV;
 				ENABLE_HARDENED_RUNTIME = YES;
 				EXECUTABLE_NAME = XFinder;
 				INFOPLIST_FILE = XFinder/Info.plist;
@@ -652,7 +804,6 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				ARCHS = arm64;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xfinder.app;
 				PRODUCT_NAME = XFinder;
@@ -664,12 +815,13 @@
 		7F1A0034 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CONFIGURATION_BUILD_DIR = build;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 723H5P27SV;
 				ENABLE_HARDENED_RUNTIME = YES;
 				EXECUTABLE_NAME = XFinder;
 				INFOPLIST_FILE = XFinder/Info.plist;
@@ -677,7 +829,6 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				ARCHS = arm64;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xfinder.app;
 				PRODUCT_NAME = XFinder;
@@ -686,6 +837,37 @@
 			};
 			name = Release;
 		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		205EC425305AD1CE0094A78B /* Build configuration list for PBXNativeTarget "XFinderSync" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				205EC422305AD1CE0094A78B /* Debug */,
+				205EC423305AD1CE0094A78B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7F1A0001 /* Build configuration list for PBXProject "XFinder" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7F1A0031 /* Debug */,
+				7F1A0032 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7F1A0030 /* Build configuration list for PBXNativeTarget "XFinder" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7F1A0033 /* Debug */,
+				7F1A0034 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
 	};
-	rootObject = 7F1A0000;
+	rootObject = 7F1A0000 /* Project object */;
 }

@@ -30,12 +30,12 @@ class FinderSync: FIFinderSync {
 
     // MARK: - Menu
 
-    override func menu(for menuKind: FIMenuKind) -> NSMenu? {
+    override func menu(for menuKind: FIMenuKind) -> NSMenu {
         switch menuKind {
         case .contextualMenuForItems, .contextualMenuForContainer, .toolbarItemMenu:
             return buildMenu()
         default:
-            return nil
+            return NSMenu(title: "")
         }
     }
 
