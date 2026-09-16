@@ -261,6 +261,17 @@ enum WindowManager {
         NSWorkspace.shared.open(url)
     }
 
+    /// Một chạm xin cả hai quyền chạm màn chính (Trợ năng + Ghi màn hình):
+    /// gọi hộp thoại hệ thống, rồi mở pane nếu vẫn chưa được cấp.
+    static func requestAllPermissions() {
+        _ = requestAccessibilityTrust()
+        if #available(macOS 10.15, *) { CGRequestScreenCaptureAccess() }
+        if !AXIsProcessTrusted() { openAccessibilityPane() }
+        if #available(macOS 10.15, *), !CGPreflightScreenCaptureAccess() {
+            openScreenRecordingPane()
+        }
+    }
+
     /// Moves + resizes the frontmost window of `pid` to `rect` (screen coords).
     /// Returns false when untrusted or the app exposes no AX windows.
     @discardableResult

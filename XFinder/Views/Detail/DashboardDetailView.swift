@@ -28,6 +28,7 @@ struct DashboardDetailView: View {
                            title: L10n.t("Tổng quan"),
                            subtitle: L10n.t("Xem những gì đã sẵn sàng và hoàn tất thiết lập."))
 
+                quickGrantBanner
                 preferences
                 Divider().padding(.horizontal, 20)
                 checklist
@@ -44,6 +45,33 @@ struct DashboardDetailView: View {
     }
 
     // MARK: Preferences
+
+    /// Nút một chạm — gọi đồng thời hộp thoại xin quyền Trợ năng + Ghi màn
+    /// hình, rồi mở pane nếu vẫn thiếu. Tiện nhất cho build test.
+    private var quickGrantBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "hand.raised.fill").foregroundColor(.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L10n.t("Cấp quyền nhanh")).font(.system(size: 13, weight: .semibold))
+                Text(L10n.t("Nhắc Trợ năng + Ghi màn hình cùng lúc; mở Cài đặt nếu vẫn thiếu."))
+                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            Button {
+                WindowManager.requestAllPermissions()
+                refreshPermissions()
+            } label: {
+                Text(L10n.t("Cấp mọi quyền…"))
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        }
+        .padding(12)
+        .background(Color.orange.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, 20)
+    }
 
     private var preferences: some View {
         VStack(spacing: 0) {

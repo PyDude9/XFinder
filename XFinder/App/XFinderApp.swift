@@ -63,6 +63,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         FinderKeyboardController.shared.applySettings()
         NotchDropController.shared.applySettings()
         QuickSearchPanelController.shared.applySettings()
+
+        // `--grant-permissions` (từ scripts/dev-setup.sh): tự nhắc cả quyền
+        // Trợ năng + Ghi màn hình ngay khi mở, để build-test khỏi mò mẫm.
+        if ProcessInfo.processInfo.arguments.contains("--grant-permissions") {
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
+                WindowManager.requestAllPermissions()
+            }
+        }
     }
 
     /// Theme + Dock visibility persist in UserDefaults; apply at launch so

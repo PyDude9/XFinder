@@ -79,6 +79,10 @@ final class L10n {
         // Tổng quan
         "Xem những gì đã sẵn sàng và hoàn tất thiết lập.": "See what's ready and finish setup.",
         "Ngôn ngữ ứng dụng": "App language",
+        "Cấp quyền nhanh": "Quick permissions",
+        "Nhắc Trợ năng + Ghi màn hình cùng lúc; mở Cài đặt nếu vẫn thiếu.":
+            "Prompt Accessibility + Screen Recording at once; open Settings if still missing.",
+        "Cấp mọi quyền…": "Grant all…",
         "Khởi động XFinder khi đăng nhập": "Launch XFinder at login",
         "Hiện biểu tượng trong Dock": "Show icon in Dock",
         "Tắt để dùng XFinder thuần menubar.": "Turn off to run XFinder menu-bar only.",
