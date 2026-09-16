@@ -144,7 +144,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             ("CỬA SỔ", [.windowPreview, .snapZones, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .actionHistory]),
-            ("CÔNG CỤ", [.clipboard, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
+            ("CÔNG CỤ", [.settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare]),
             ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat]),
         ]

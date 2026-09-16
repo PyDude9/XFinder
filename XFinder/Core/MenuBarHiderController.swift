@@ -1,46 +1,30 @@
 import AppKit
-import Combine
+import Observation
 
-/// Biểu tượng thanh menu.
+/// Biểu tượng thanh menu — nút mũi tên ẩn biểu tượng, theo đúng cơ chế public
+/// API của dwarvesf/hidden (Hidden Bar):
 ///
-/// **macOS 26/27 broke the mechanism this used to rely on — measured, not
-/// assumed.** The old approach was the Bartender/Hidden-Bar trick: own an
-/// expandable "separator" status item, let the user ⌘-drag icons to its left,
-/// then set `separator.length = 10_000` so everything left of it is pushed off
-/// the visible bar.
+/// XFinder tạo 2 `NSStatusItem` của chính mình:
+///   * **nút mũi tên** (chevron) — bấm để ẩn/hiện.
+///   * **vạch ngăn** (separator) — `length = 1` khi hiện, phình lên
+///     `max(500, min(screenWidth + 200, 4000))` khi thu gọn để đẩy các icon
+///     nằm bên TRÁI ra ngoài. `NSStatusItem.autosaveName` để macOS nhớ vị trí
+///     người dùng ⌘-kéo nó tới.
 ///
-/// Probes run on macOS 27.0 (26A428), 1728 pt screen:
-///
-/// 1. `length = 10_000` is **clamped by the OS to ~5016 pt** — still far wider
-///    than the screen, so width alone was not the problem.
-/// 2. With the separator expanded, a neighbouring status item did **not** leave
-///    the bar. It moved *right*, from x=952 to x=988, and stayed `ONSCREEN`
-///    through a 7-second settle. macOS 27 lays the bar out ignoring the
-///    oversized item instead of letting it displace its neighbours.
-/// 3. `CGWindowListCopyWindowInfo` reports **0** windows at the status-item
-///    layer, so an app cannot even observe other apps' items to work around it.
-///
-/// What still works is `NSStatusItem.isVisible`, and that only ever applied to
-/// **an app's own items**. So the honest scope of this controller is now:
-/// XFinder can hide *its own* status items, and nothing more. Hiding other
-/// apps' icons is a macOS 26+ System Settings feature (Control Centre →
-/// Menu Bar), which is where the UI now sends the user.
-///
-/// Per the Honesty Rule, the separator item is **not installed any more**: it
-/// would put a widget in the user's menu bar that no longer does what its own
-/// help text promises.
+/// ⚠️ macOS 26/27 — đã đo (xem CLAUDE.md "macOS 27 — Biểu tượng thanh menu"):
+///     `length` bị clamp ~5016pt và layout KHÔNG còn đẩy item hàng xóm đi,
+///     nên trick này có thể không ẩn được icon của app khác trên macOS mới.
+///     Giữ lại như cách làm tham chiếu (đúng public API, không private XPC);
+///     UI ghi rõ giới hạn này thay vì giấu.
 @MainActor
 @Observable
 final class MenuBarHiderController: NSResponder {
     static let shared = MenuBarHiderController()
 
-    /// True while XFinder's own optional status items are hidden.
     private(set) var isHiding = false
 
-    /// Whether the OS-level mechanism this feature needs still exists.
-    /// Kept as a stored fact so the UI can explain itself rather than
-    /// silently doing nothing.
-    let separatorTrickAvailable = false
+    private var separator: NSStatusItem?
+    private var arrow: NSStatusItem?
 
     private override init() { super.init() }
     required init?(coder: NSCoder) { fatalError("not used") }
@@ -51,17 +35,59 @@ final class MenuBarHiderController: NSResponder {
         UserDefaults.standard.object(forKey: "menubar.hiderEnabled") as? Bool ?? false
     }
 
-    /// Applies the saved settings. Deliberately installs nothing: there is no
-    /// supported way left to hide another app's status item, so installing a
-    /// separator would be a dead control sitting in the user's menu bar.
+    /// Application-lifetime wiring: install/remove items when the toggle moves.
     func applySettings() {
-        // Intentionally empty. Left as the single call site referenced from
-        // `applicationDidFinishLaunching` so the wiring stays visible.
+        if enabled { install() } else { remove() }
     }
 
-    /// Opens the macOS pane that genuinely controls menu-bar icons (macOS 26+
-    /// moved this into Control Centre settings). Falls back to the Control
-    /// Centre pane, then to System Settings itself, so the button is never dead.
+    // MARK: - Install / remove
+
+    private func install() {
+        guard separator == nil else { return }
+        let bar = NSStatusBar.system
+
+        let arrow = bar.statusItem(withLength: NSStatusItem.squareLength)
+        if let b = arrow.button {
+            b.image = NSImage(systemSymbolName: isHiding ? "chevron.right" : "chevron.left",
+                              accessibilityDescription: "Ẩn/hiện biểu tượng thanh menu")
+            b.target = self
+            b.action = #selector(toggle)
+        }
+        arrow.autosaveName = "xfinder.menubar.arrow"
+        self.arrow = arrow
+
+        let sep = bar.statusItem(withLength: isHiding ? collapseLength() : 1)
+        sep.autosaveName = "xfinder.menubar.separator"
+        separator = sep
+    }
+
+    private func remove() {
+        if let separator { NSStatusBar.system.removeStatusItem(separator) }
+        if let arrow { NSStatusBar.system.removeStatusItem(arrow) }
+        separator = nil
+        arrow = nil
+        isHiding = false
+    }
+
+    /// Hidden Bar giới hạn độ dài phình trong khoảng 500…4000pt (sàn + màn + 200).
+    private func collapseLength() -> CGFloat {
+        let width = NSScreen.main?.frame.width ?? 1440
+        return min(max(500, width + 200), 4000)
+    }
+
+    @objc func toggle() {
+        guard let separator else { return }
+        isHiding.toggle()
+        separator.length = isHiding ? collapseLength() : 1
+        arrow?.button?.image = NSImage(systemSymbolName: isHiding ? "chevron.right" : "chevron.left",
+                                       accessibilityDescription: nil)
+    }
+
+    // MARK: - macOS native path
+
+    /// Opens System Settings → Control Centre → Menu Bar, where macOS 26/27
+    /// governs *system* menu-bar icons. Falls back to the Dock pane, then to
+    /// System Settings itself, so the button is never dead.
     func openSystemMenuBarSettings() {
         let candidates = [
             "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension",

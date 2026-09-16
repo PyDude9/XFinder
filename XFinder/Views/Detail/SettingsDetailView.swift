@@ -64,6 +64,17 @@ private struct ClipboardSettingsBody: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // Nội dung clipboard hiển thị ở khay ⌘⇧V / trang riêng; đây là tuỳ
+            // chỉnh. Một nút nhảy sang trang nội dung để không mất lối tới.
+            HStack(spacing: 10) {
+                Image(systemName: "square.on.square").foregroundColor(.accentColor)
+                Text("Lịch sử copy hiển thị ở khay ⌘⇧V và trang nội dung.")
+                    .font(.system(size: 11)).foregroundColor(.secondary)
+                Spacer()
+                Button("Mở lịch sử…") { AppState.shared.navigate(to: .clipboard) }
+                    .buttonStyle(.bordered).controlSize(.small)
+            }
+
             SettingsCard(title: "Phím tắt & quyền",
                          subtitle: "⌘⇧V mở khay clipboard nổi trên mọi ứng dụng") {
                 VStack(alignment: .leading, spacing: 8) {
