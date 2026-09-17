@@ -13,6 +13,21 @@ import AppKit
 /// context menu from a plain app — that requires a Finder Sync Extension
 /// target. The page links to the Extensions pane instead of faking it.
 struct FinderActionsDetailView: View {
+    @AppStorage("finderActions.menuLayout") private var menuLayout = "full"
+    @AppStorage("finderActions.defaultTerminal") private var defaultTerminal = "Terminal"
+    // 13 nhóm — MFinder screenshot; mỗi toggle là một @AppStorage bool, default true.
+    @AppStorage("finderActions.show.openIn") private var showOpenIn = true
+    @AppStorage("finderActions.show.createFile") private var showCreateFile = true
+    @AppStorage("finderActions.show.copy") private var showCopy = true
+    @AppStorage("finderActions.show.showInFinder") private var showShowInFinder = true
+    @AppStorage("finderActions.show.cleanup") private var showCleanup = true
+    @AppStorage("finderActions.show.imageTools") private var showImageTools = true
+    @AppStorage("finderActions.show.compress") private var showCompress = true
+    @AppStorage("finderActions.show.ocr") private var showOCR = true
+    @AppStorage("finderActions.show.pdfTools") private var showPDFTools = true
+    @AppStorage("finderActions.show.writeProtect") private var showWriteProtect = true
+    @AppStorage("finderActions.show.folderLock") private var showFolderLock = true
+
     @State private var selection: [URL] = []
     @State private var status: String?
     @State private var busy = false
@@ -22,7 +37,11 @@ struct FinderActionsDetailView: View {
             VStack(alignment: .leading, spacing: 14) {
                 PageHeader(icon: "contextualmenu.and.cursorarrow",
                            title: "Thao tác Finder",
-                           subtitle: "Chạy thao tác của XFinder trên các tệp đang chọn trong Finder.")
+                           subtitle: "Chọn các mục xuất hiện trong menu ngữ cảnh MFinder.")
+
+                menuConfigSection
+
+                Divider().padding(.horizontal, 20)
 
                 SectionHeader(icon: "cursorarrow.click.2",
                               title: "Tệp đang chọn trong Finder",
@@ -64,13 +83,17 @@ struct FinderActionsDetailView: View {
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 165), spacing: 8)], spacing: 8) {
                     actionButton("Sao chép đường dẫn", "doc.on.doc") { copyPaths() }
+                        .opacity(showCopy ? 1 : 0.4)
                     actionButton("Nén thành ZIP", "archivebox") { compress() }
+                        .opacity(showCompress ? 1 : 0.4)
                     actionButton("Đổi tên hàng loạt…", "textformat.abc") {
                         AppState.shared.navigate(to: .batchRename)
                     }
                     actionButton("Thêm vào Khay thả", "tray.and.arrow.down") { addToTray() }
                     actionButton("Chuyển vào Thùng rác", "trash", destructive: true) { trash() }
+                        .opacity(showCleanup ? 1 : 0.4)
                     actionButton("Hiện trong Finder", "folder") { reveal() }
+                        .opacity(showShowInFinder ? 1 : 0.4)
                 }
                 .padding(.horizontal, 20)
 
@@ -88,7 +111,7 @@ struct FinderActionsDetailView: View {
                               subtitle: "Thêm mục vào menu ngữ cảnh của Finder.")
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("macOS không có API công khai cho phép một ứng dụng thường thêm mục vào menu chuột phải của Finder. Cách được Apple hỗ trợ là Quick Action (Shortcuts/Automator) hoặc một Finder Sync Extension riêng.")
+                    Text("macOS không có API công khai cho phép một ứng dụng thường thêm mục vào menu chuột phải của Finder. Cách được Apple hỗ trợ là Quick Action (Shortcuts/Automator) hoặc một Finder Sync Extension riêng. Các toggle ở trên lọc những thao tác hiển thị khi bạn dùng XFinder qua các Thao tác nhanh trong Finder.")
                         .font(.system(size: 12)).foregroundColor(.secondary)
                     HStack(spacing: 8) {
                         Button("Mở Tiện ích mở rộng…") { openExtensionsPane() }
@@ -104,6 +127,59 @@ struct FinderActionsDetailView: View {
             .padding(.bottom, 20)
         }
         .background(Color(.windowBackgroundColor))
+    }
+
+    // MARK: - Menu config
+
+    private var menuConfigSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SectionHeader(icon: "slider.horizontal.3",
+                          title: "Cấu hình menu",
+                          subtitle: "Thay đổi sẽ xuất hiện khi menu ngữ cảnh Finder được mở lần tiếp theo.")
+
+            HStack {
+                Text("Bố cục menu").font(.system(size: 13))
+                Spacer()
+                Picker("", selection: $menuLayout) {
+                    Text("Gọn").tag("compact")
+                    Text("Đầy đủ").tag("full")
+                }
+                .pickerStyle(.segmented).frame(width: 160)
+            }
+            Text(menuLayout == "full" ? "Full: Open In và Copy mở thành menu con, liệt kê mọi terminal đã cài và đủ kiểu copy. Các nhóm khác không đổi."
+                                      : "Gọn: menu một cấp, chỉ nhóm chính.")
+                .font(.system(size: 11)).foregroundColor(.secondary)
+
+            HStack {
+                Text("Terminal mặc định").font(.system(size: 13))
+                Spacer()
+                Picker("", selection: $defaultTerminal) {
+                    Text("Terminal").tag("Terminal")
+                    Text("iTerm2").tag("iTerm2")
+                    Text("kitty").tag("kitty")
+                    Text("Alacritty").tag("Alacritty")
+                }
+                .pickerStyle(.menu).frame(width: 140)
+            }
+
+            Text("Các nhóm hiển thị").font(.system(size: 13, weight: .medium)).padding(.top, 4)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                ToggleRow(title: "Mở trong", isOn: $showOpenIn)
+                ToggleRow(title: "Tạo file mới", isOn: $showCreateFile)
+                ToggleRow(title: "Sao chép", isOn: $showCopy)
+                ToggleRow(title: "Hiển thị Finder", isOn: $showShowInFinder)
+                ToggleRow(title: "Dọn file rác", isOn: $showCleanup)
+                ToggleRow(title: "Công cụ ảnh", isOn: $showImageTools)
+                ToggleRow(title: "Nén & Giải nén", isOn: $showCompress)
+                ToggleRow(title: "Sắp xếp", isOn: $showCopy)
+                ToggleRow(title: "OCR", isOn: $showOCR)
+                ToggleRow(title: "Công cụ PDF", isOn: $showPDFTools)
+                ToggleRow(title: "Chống ghi", isOn: $showWriteProtect)
+                ToggleRow(title: "Khóa thư mục", isOn: $showFolderLock)
+            }
+        }
+        .padding(.horizontal, 20)
     }
 
     private func actionButton(_ title: String, _ icon: String,

@@ -44,7 +44,7 @@ struct NotesDetailView: View {
                 PageHeader(
                     icon: "note.text",
                     title: "Ghi chú",
-                    subtitle: "Ghi chú hiện ở mép màn hình — di chuột tới mép để xem và sửa.",
+                    subtitle: "Lưu ghi chú, danh sách công việc và ý tưởng ngay mép màn hình.",
                     trailing: AnyView(
                         HStack(spacing: 6) {
                             Text(edgeEnabled ? "Bật" : "Tắt")
@@ -58,8 +58,12 @@ struct NotesDetailView: View {
                     ))
 
                 summaryRow
+                filterRow
+                notesGrid
                 Divider().padding(.horizontal, 20)
                 EdgeNotesSettingsCard()
+                AppearanceCard()
+                ShortcutsCard()
                 ImportExportCard(importError: $importError)
             }
             .padding(.vertical, 16)
@@ -70,6 +74,11 @@ struct NotesDetailView: View {
         }
         .sheet(isPresented: $showCreateSheet) {
             NoteEditorSheet(isPresented: $showCreateSheet, note: nil)
+        }
+        .sheet(isPresented: $showCreateSheetForEdit) {
+            if let n = editingNote {
+                NoteEditorSheet(isPresented: $showCreateSheetForEdit, note: n)
+            }
         }
     }
 
@@ -224,6 +233,68 @@ private struct EdgeNotesSettingsCard: View {
             }
         }
         .padding(.horizontal, 20)
+    }
+}
+
+private struct AppearanceCard: View {
+    @AppStorage("notes.font") private var noteFont = "system"
+    @State private var store = NoteStore.shared
+
+    var body: some View {
+        SettingsCard(title: "Giao diện ghi chú",
+                     subtitle: "Markdown và danh sách công việc vẫn chỉnh sửa được dưới dạng văn bản thuần.") {
+            VStack(spacing: 10) {
+                HStack {
+                    Text("Phông chữ").font(.system(size: 13))
+                    Spacer()
+                    Picker("", selection: $noteFont) {
+                        ForEach(NoteStore.NoteFont.allCases) { f in Text(f.titleVI).tag(f.rawValue) }
+                    }
+                    .pickerStyle(.menu).frame(width: 120)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Cỡ chữ \(String(format: "%.1f", store.fontSize)) pt")
+                        .font(.system(size: 13))
+                    Slider(value: Binding(
+                        get: { store.fontSize },
+                        set: { store.setFontSize($0) }
+                    ), in: 11...20, step: 0.5)
+                }
+                ToggleRow(title: "Định dạng Markdown khi nhập", isOn: Binding(
+                    get: { store.markdownEnabled },
+                    set: { store.markdownEnabled = $0 }
+                ))
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+}
+
+private struct ShortcutsCard: View {
+    var body: some View {
+        SettingsCard(title: "Phím tắt",
+                     subtitle: "Mở ghi chú từ bất kỳ ứng dụng nào.") {
+            VStack(spacing: 8) {
+                shortcutRow("Ghi chú mới", keys: "⌥⌘N")
+                shortcutRow("Tất cả ghi chú", keys: "⌥⌘A")
+                shortcutRow("Ghi chú đã lưu trữ", keys: "⌥⌘L")
+                Text("Trong ghi chú: ⌘T ô đánh dấu · ⌘F tìm · ⌘P ghim · Esc đóng")
+                    .font(.system(size: 11)).foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private func shortcutRow(_ label: String, keys: String) -> some View {
+        HStack {
+            Text(label).font(.system(size: 12))
+            Spacer()
+            Text(keys)
+                .font(.system(size: 11, design: .monospaced))
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(Color.primary.opacity(0.07))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
     }
 }
 

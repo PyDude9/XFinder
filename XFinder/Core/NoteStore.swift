@@ -138,6 +138,21 @@ final class NoteStore {
         return (NoteFont(rawValue: raw) ?? .system).font(size)
     }
 
+    var fontSize: Double {
+        get { UserDefaults.standard.object(forKey: "notes.fontSize") as? Double ?? 13.5 }
+        set { UserDefaults.standard.set(newValue, forKey: "notes.fontSize") }
+    }
+
+    func setFontSize(_ v: Double) {
+        UserDefaults.standard.set(v, forKey: "notes.fontSize")
+        onChange?()
+    }
+
+    var markdownEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "notes.markdownEnabled") as? Bool ?? true }
+        set { UserDefaults.standard.set(newValue, forKey: "notes.markdownEnabled") }
+    }
+
     /// ⌥⌘N đặt cờ này; trang Ghi chú quan sát để mở sheet tạo mới.
     var pendingNewNote = false
 

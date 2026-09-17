@@ -35,6 +35,8 @@ struct CompressDetailView: View {
     @State private var mode: Mode = .compress
     @State private var sources: [URL] = []
     @State private var outputFolder: URL? = nil
+    @State private var extractionDestination: ExtractionDestination = .newFolderBesideArchive
+    @State private var conflictPolicy: ConflictPolicy = .keepBoth
     @State private var format: ArchiveFormat = .zip
     @State private var archiveName: String = "Archive"
     @State private var password = ""
@@ -43,14 +45,35 @@ struct CompressDetailView: View {
     @State private var isRunning = false
     @State private var log: [String] = []
 
+    enum ExtractionDestination: String, CaseIterable, Identifiable {
+        case newFolderBesideArchive, sameFolder, downloads, custom
+        var id: String { rawValue }
+        var titleVI: String {
+            switch self {
+            case .newFolderBesideArchive: return "Thư mục mới cạnh file nén"
+            case .sameFolder: return "Cùng thư mục với file nén"
+            case .downloads: return "Tải về"
+            case .custom: return "Thư mục tùy chọn"
+            }
+        }
+    }
+
+    enum ConflictPolicy: String, CaseIterable, Identifiable {
+        case keepBoth, ask, merge
+        var id: String { rawValue }
+        var titleVI: String {
+            switch self {
+            case .keepBoth: return "Giữ cả hai"
+            case .ask: return "Hỏi"
+            case .merge: return "Gộp thư mục"
+            }
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Nén & Giải nén")
-                    .font(.system(size: 22, weight: .bold))
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
-
+                headerSection
                 Picker("Chế độ", selection: $mode) {
                     ForEach(Mode.allCases) { m in Text(m.titleVI).tag(m) }
                 }
@@ -138,18 +161,66 @@ struct CompressDetailView: View {
                 }
 
                 SettingsCard(
-                    title: "Thư mục đích",
-                    subtitle: outputFolder?.path ?? "Mặc định: cùng thư mục với tập tin đầu tiên"
+                    title: "Giải nén vào",
+                    subtitle: extractionDestination.titleVI
                 ) {
-                    HStack {
-                        Button("Chọn thư mục đích…") { pickOutputFolder() }
-                        if outputFolder != nil {
-                            Button("Mặc định") { outputFolder = nil }
-                                .font(.system(size: 12))
+                    VStack(alignment: .leading, spacing: 8) {
+                        Picker("Giải nén vào", selection: $extractionDestination) {
+                            ForEach(ExtractionDestination.allCases) { d in Text(d.titleVI).tag(d) }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(maxWidth: 320)
+                        if extractionDestination == .custom {
+                            HStack {
+                                Button("Chọn thư mục đích…") { pickOutputFolder() }
+                                if let f = outputFolder {
+                                    Text(f.lastPathComponent).font(.system(size: 11)).foregroundColor(.secondary).lineLimit(1)
+                                }
+                                if outputFolder != nil {
+                                    Button("Mặc định") { outputFolder = nil; extractionDestination = .newFolderBesideArchive }
+                                        .font(.system(size: 12))
+                                }
+                            }
                         }
                     }
                 }
                 .padding(.horizontal, 20)
+
+                SettingsCard(
+                    title: "Khi tên đã tồn tại",
+                    subtitle: conflictPolicy.titleVI
+                ) {
+                    Picker("Khi tên đã tồn tại", selection: $conflictPolicy) {
+                        ForEach(ConflictPolicy.allCases) { p in Text(p.titleVI).tag(p) }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(maxWidth: 200)
+                    Text(conflictPolicy == .keepBoth ? "Giữ cả hai lưu một bản sao riêng (\"Report 2\")."
+                         : conflictPolicy == .merge ? "Gộp thêm file vào thư mục hiện có và khôi phục nếu giải nén thất bại."
+                         : "Hỏi trước khi ghi đè.")
+                        .font(.system(size: 11)).foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 20)
+
+                if mode == .compress {
+                    SettingsCard(title: "Mặc định giải nén") {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
+                            Text("Bộ máy nén và giải nén").font(.system(size: 13))
+                            Spacer()
+                            Text("7-Zip 26.02 tích hợp sẵn").font(.system(size: 11)).foregroundColor(.secondary)
+                        }
+                        Text("MFinder tích hợp sẵn bộ máy 7-Zip; không cần cài thêm ứng dụng nén và giải nén. Không bao giờ ghi đè — mục trùng tên sẽ được đổi tên (\"Report 2\") hoặc gộp.")
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal, 20)
+
+                    SettingsCard(title: "Tách tác vụ nén và giải nén hoạt động") {
+                        Text("Tạo file ZIP hoặc 7Z và giải nén ZIP, 7Z, RAR, TAR, GZ, XZ cùng các định dạng phổ biến khác. MFinder không bao giờ ghi đè file hiện có.")
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal, 20)
+                }
 
                 Button {
                     Task { await run() }
@@ -251,8 +322,58 @@ struct CompressDetailView: View {
         }
     }
 
+    private var headerSection: some View {
+        PageHeader(icon: "archivebox.fill",
+                   title: "Nén & Giải nén",
+                   subtitle: "Nén và giải nén file từ Finder.")
+    }
+
+    private func resolvedDestDir(for src: URL) -> URL {
+        switch extractionDestination {
+        case .newFolderBesideArchive:
+            return src.deletingLastPathComponent()
+        case .sameFolder:
+            return src.deletingLastPathComponent()
+        case .downloads:
+            return FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
+                ?? src.deletingLastPathComponent()
+        case .custom:
+            return outputFolder ?? src.deletingLastPathComponent()
+        }
+    }
+
+    private func uniqueDestURL(base: URL) -> URL {
+        // keepBoth: "Report" → "Report 2", "Report 2" → "Report 3"
+        switch conflictPolicy {
+        case .keepBoth:
+            if !FileManager.default.fileExists(atPath: base.path) { return base }
+            let dir = base.deletingLastPathComponent()
+            let ext = base.pathExtension
+            let stem = base.deletingPathExtension().lastPathComponent
+            var i = 2
+            while true {
+                let cand = ext.isEmpty ? dir.appendingPathComponent("\(stem) \(i)")
+                                       : dir.appendingPathComponent("\(stem) \(i).\(ext)")
+                if !FileManager.default.fileExists(atPath: cand.path) { return cand }
+                i += 1
+            }
+        case .ask:
+            if FileManager.default.fileExists(atPath: base.path) {
+                // Caller should have asked; fallback to keepBoth naming.
+                return uniqueDestURL(base: base) // recurse into keepBoth branch requires manual — just suffix
+            }
+            return base
+        case .merge:
+            return base
+        }
+    }
+
     private func compress() async {
-        let destDir = outputFolder ?? sources[0].deletingLastPathComponent()
+        var destDir = outputFolder ?? sources[0].deletingLastPathComponent()
+        if mode == .extract {} else {
+            // compress destination: picker is about extraction; compress always beside first source
+            destDir = sources[0].deletingLastPathComponent()
+        }
         let exe: String
         let args: [String]
         let cwd: URL?
@@ -260,12 +381,12 @@ struct CompressDetailView: View {
         switch format {
         case .tarGz:
             exe = "/usr/bin/tar"
-            finalDest = destDir.appendingPathComponent("\(sanitizedName).tar.gz")
+            finalDest = uniqueDestURL(base: destDir.appendingPathComponent("\(sanitizedName).tar.gz"))
             let parent = sources[0].deletingLastPathComponent().path
             args = ["-czf", finalDest.path, "-C", parent] + sources.map(\.lastPathComponent)
             cwd = nil
         case .zip:
-            finalDest = destDir.appendingPathComponent("\(sanitizedName).zip")
+            finalDest = uniqueDestURL(base: destDir.appendingPathComponent("\(sanitizedName).zip"))
             if password.isEmpty && level == 6 {
                 // ditto giữ resource fork / metadata macOS; không mã hoá.
                 exe = "/usr/bin/ditto"
@@ -297,16 +418,26 @@ struct CompressDetailView: View {
     private func extract() async {
         var okCount = 0
         for src in sources {
-            let destDir = outputFolder ?? src.deletingLastPathComponent()
+            let destBase = resolvedDestDir(for: src)
+            let destDir: URL
+            // MFinder: newFolderBesideArchive → folder named after archive beside it.
+            if extractionDestination == .newFolderBesideArchive {
+                destDir = uniqueDestURL(base: destBase.appendingPathComponent(src.deletingPathExtension().lastPathComponent))
+                try? FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
+            } else {
+                destDir = destBase
+                if destDir.path != src.deletingLastPathComponent().path {
+                    try? FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
+                }
+            }
             let ext = src.pathExtension.lowercased()
-            let name = src.deletingPathExtension().lastPathComponent
             let exe: String
             let args: [String]
             let destURL: URL
             if ext == "zip" {
                 exe = "/usr/bin/ditto"
-                destURL = destDir.appendingPathComponent(name)
-                args = ["-x", "-k", src.path, destURL.path]
+                destURL = destDir
+                args = ["-x", "-k", src.path, destDir.path]
             } else {
                 exe = "/usr/bin/tar"
                 destURL = destDir

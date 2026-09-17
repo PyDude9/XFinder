@@ -117,6 +117,9 @@ struct PermissionRow: View {
 /// grant flow when it is missing rather than showing controls that do nothing.
 struct SnapZonesDetailView: View {
     @AppStorage("snapzones.enabled") private var snapEnabled = true
+    @AppStorage("snapzones.restoreOnUnsnap") private var restoreOnUnsnap = true
+    @AppStorage("snapzones.showPreview") private var showPreview = true
+    @AppStorage("snapzones.haptic") private var hapticEnabled = false
     @AppStorage("snapzones.dragEnabled") private var dragEnabled = true
     @AppStorage("snapzones.hotkeysEnabled") private var hotkeysEnabled = true
     @AppStorage("snapzones.edgeMargin") private var edgeMargin = 20.0
@@ -131,14 +134,11 @@ struct SnapZonesDetailView: View {
                 PageHeader(
                     icon: "rectangle.split.2x2",
                     title: "Vùng bắt dính",
-                    subtitle: "Kéo cửa sổ tới mép màn hình hoặc dùng phím tắt để bắt dính.",
+                    subtitle: "Bắt dính cửa sổ bằng cách kéo chúng đến cạnh và góc màn hình.",
                     trailing: AnyView(
                         HStack(spacing: 6) {
                             Text(snapEnabled ? "Bật" : "Tắt")
                                 .font(.system(size: 12)).foregroundColor(.secondary)
-                            // Gate only — the sub-toggles keep their own values
-                            // so switching the feature off and on again restores
-                            // exactly what the user had configured.
                             Toggle("", isOn: $snapEnabled)
                                 .labelsHidden()
                                 .onChange(of: snapEnabled) { controller.applySettings() }
@@ -149,6 +149,16 @@ struct SnapZonesDetailView: View {
                     permissionBanner
                     Divider().padding(.horizontal, 20)
                 }
+
+                // Ba toggle đầu trang — khớp screenshot MFinder.
+                VStack(spacing: 10) {
+                    ToggleRow(title: "Khôi phục kích thước cửa sổ khi gỡ bắt dính", isOn: $restoreOnUnsnap)
+                    ToggleRow(title: "Tạo hiệu ứng cho vùng xem trước", isOn: $showPreview)
+                    ToggleRow(title: "Phản hồi rung", isOn: $hapticEnabled)
+                }
+                .padding(.horizontal, 20)
+
+                Divider().padding(.horizontal, 20)
 
                 SectionHeader(icon: "hand.draw",
                               title: "Kéo tới mép màn hình",
@@ -179,11 +189,6 @@ struct SnapZonesDetailView: View {
                             if reserveStage {
                                 Text("Bề rộng chừa: \(Int(stageInset)) pt")
                                     .font(.system(size: 13))
-                                // Floor of 48pt: measured as the narrowest strip
-                                // that still shows a recognisable app icon.
-                                // Below that the clearance is useless, so the
-                                // honest control is the on/off toggle above,
-                                // not a slider that trails off to nothing.
                                 Slider(value: $stageInset, in: 48...140, step: 2)
                                     .disabled(!snapEnabled)
                                 Text("macOS không tự thu nhỏ vùng làm việc cho Stage Manager, nên XFinder chừa mép trái để bạn vẫn thấy icon app đang xếp ở đó. Kéo nhỏ lại nếu bạn chỉ cần thấy icon.")
@@ -220,6 +225,55 @@ struct SnapZonesDetailView: View {
 
                 Divider().padding(.horizontal, 20)
 
+                // Hướng dẫn chia cửa sổ — khớp MFinder: Ngang/Dọc + 8 checkbox quanh 2×2 grid.
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Hướng dẫn chia cửa sổ").font(.system(size: 14, weight: .semibold))
+                            Text("Kéo đến cạnh hoặc góc màn hình, rồi thả.")
+                                .font(.system(size: 11)).foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Picker("", selection: Binding(
+                            get: { UserDefaults.standard.string(forKey: "snapzones.orientation") ?? "horizontal" },
+                            set: { UserDefaults.standard.set($0, forKey: "snapzones.orientation") }
+                        )) {
+                            Text("Ngang").tag("horizontal")
+                            Text("Dọc").tag("vertical")
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 140)
+                    }
+
+                    snapGuideGrid
+
+                    HStack {
+                        Text("Các lựa chọn được áp dụng cho mọi màn hình có cùng hướng này.")
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                        Spacer()
+                        Button("Khôi phục mặc định") { resetSnapDefaults() }
+                            .buttonStyle(.bordered).controlSize(.small)
+                    }
+
+                    DisclosureGroup("Chia cửa sổ của macOS") {
+                        Text("macOS Sequoia có tính năng chia cửa sổ riêng (Window Tiling). Mở Cài đặt hệ thống → Màn hình & Dock → Chia cửa sổ để cấu hình.")
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                        Button("Mở Cài đặt Màn hình & Dock") {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.Desktop-Settings.extension") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }
+                        .buttonStyle(.link).font(.system(size: 11))
+                    }
+                    .font(.system(size: 12))
+                }
+                .padding(14)
+                .background(Color(.controlBackgroundColor).opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .padding(.horizontal, 20)
+
+                Divider().padding(.horizontal, 20)
+
                 SectionHeader(icon: "square.grid.3x3",
                               title: "Bắt dính ngay",
                               subtitle: "Bấm một vùng để áp dụng cho cửa sổ vừa dùng.")
@@ -227,6 +281,9 @@ struct SnapZonesDetailView: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 8)], spacing: 8) {
                     ForEach(WindowManager.SnapTarget.allCases) { zone in
                         Button {
+                            if hapticEnabled {
+                                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+                            }
                             let ok = WindowManager.snapFrontmost(to: zone)
                             controller.lastOutcome = ok
                                 ? "Đã đưa cửa sổ vào “\(zone.titleVI)”."
@@ -257,6 +314,92 @@ struct SnapZonesDetailView: View {
             trusted = WindowManager.isTrusted
             controller.applySettings()
         }
+    }
+
+    // 2×2 grid với 8 checkbox xung quanh — wording MFinder.
+    private var snapGuideGrid: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                guideCheck(title: "Trên bên trái", subtitle: "Một phần tư trên bên trái")
+                Spacer()
+                VStack(spacing: 2) {
+                    Image(systemName: "checkmark.square.fill").foregroundColor(.accentColor)
+                    Text("Trên").font(.system(size: 11, weight: .medium))
+                    Text("Phóng to").font(.system(size: 10)).foregroundColor(.secondary)
+                }
+                Spacer()
+                guideCheck(title: "Trên bên phải", subtitle: "Một phần tư trên bên phải", trailing: true)
+            }
+            HStack(spacing: 8) {
+                guideCheck(title: "Trái", subtitle: "Cạnh trái, nửa trên/dưới khi gần góc")
+                Spacer()
+                snapCenterGrid
+                Spacer()
+                guideCheck(title: "Phải", subtitle: "Cạnh phải, nửa trên/dưới khi gần góc", trailing: true)
+            }
+            HStack(spacing: 12) {
+                guideCheck(title: "Dưới bên trái", subtitle: "Một phần tư dưới bên trái")
+                Spacer()
+                VStack(spacing: 2) {
+                    Image(systemName: "checkmark.square.fill").foregroundColor(.accentColor)
+                    Text("Dưới").font(.system(size: 11, weight: .medium))
+                    Text("Một phần ba. Rê về giữa để lấy hai phần ba.").font(.system(size: 9)).foregroundColor(.secondary).multilineTextAlignment(.center)
+                }
+                Spacer()
+                guideCheck(title: "Dưới bên phải", subtitle: "Một phần tư dưới bên phải", trailing: true)
+            }
+        }
+    }
+
+    private var snapCenterGrid: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 4) {
+                snapArrow("arrow.up.left")
+                snapArrow("arrow.up.right")
+            }
+            HStack(spacing: 4) {
+                snapArrow("arrow.down.left")
+                snapArrow("arrow.down.right")
+            }
+        }
+        .padding(8)
+        .background(Color.accentColor.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.accentColor.opacity(0.3), lineWidth: 1))
+    }
+
+    private func snapArrow(_ name: String) -> some View {
+        Image(systemName: name).font(.system(size: 14, weight: .medium)).foregroundColor(.accentColor)
+            .frame(width: 36, height: 28)
+            .background(Color.accentColor.opacity(0.15))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+
+    private func guideCheck(title: String, subtitle: String, trailing: Bool = false) -> some View {
+        HStack(spacing: 4) {
+            if !trailing {
+                Image(systemName: "checkmark.square.fill").foregroundColor(.accentColor).font(.system(size: 12))
+            }
+            VStack(alignment: trailing ? .trailing : .leading, spacing: 1) {
+                Text(title).font(.system(size: 11, weight: .medium))
+                Text(subtitle).font(.system(size: 9)).foregroundColor(.secondary)
+            }
+            if trailing {
+                Image(systemName: "checkmark.square.fill").foregroundColor(.accentColor).font(.system(size: 12))
+            }
+        }
+    }
+
+    private func resetSnapDefaults() {
+        edgeMargin = 20
+        stageInset = 68
+        reserveStage = true
+        restoreOnUnsnap = true
+        showPreview = true
+        hapticEnabled = false
+        dragEnabled = true
+        hotkeysEnabled = true
+        SnapZoneController.shared.applySettings()
     }
 
     private var permissionBanner: some View {
