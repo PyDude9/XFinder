@@ -72,6 +72,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 WindowManager.requestAllPermissions()
             }
         }
+
+        // Re-arm AX-gated controllers khi quay lại XFinder (user vừa cấp Trợ
+        // năng trong System Settings). Trước đây phải bật/tắt toggle thủ công
+        // mới kích hoạt — đây là bug "phải khởi động lại app".
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil, queue: .main
+        ) { _ in
+            Task { @MainActor in
+                DockPreviewController.shared.applySettings()
+                CommandTabController.shared.applySettings()
+                SnapZoneController.shared.applySettings()
+                FinderKeyboardController.shared.applySettings()
+                ClipboardShelfController.shared.applySettings()
+                QuickSearchPanelController.shared.applySettings()
+            }
+        }
     }
 
     /// Theme + Dock visibility persist in UserDefaults; apply at launch so

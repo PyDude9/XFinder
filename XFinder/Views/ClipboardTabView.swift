@@ -242,7 +242,9 @@ private struct ClipboardPinboardBar: View {
                             HStack(spacing: 6) {
                                 Circle().fill(board.color.color).frame(width: 8, height: 8)
                                 Image(systemName: board.icon).font(.caption)
-                                Text(board.name).font(.system(size: 12, weight: active ? .semibold : .regular))
+                                Text(board.name)
+                                    .font(.system(size: 12, weight: active ? .semibold : .regular))
+                                    .foregroundColor(active ? .white : board.color.color)
                                 Text("\(count(for: board))")
                                     .font(.caption2).foregroundColor(.secondary)
                                 if idx < 9 {

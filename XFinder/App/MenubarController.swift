@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-class MenubarController: NSObject {
+class MenubarController: NSObject, NSPopoverDelegate {
     var statusItem: NSStatusItem?
     var popover: NSPopover?
     var monitor: Any?
@@ -42,23 +42,38 @@ class MenubarController: NSObject {
         popover?.contentSize = NSSize(width: 340, height: 500)
         popover?.behavior = .transient
         popover?.animates = true
+        popover?.delegate = self
 
         let menubarView = MenubarFlyoutView()
         let hostingController = NSHostingController(rootView: menubarView)
         popover?.contentViewController = hostingController
     }
 
+    // NSPopoverDelegate — clean up the global click monitor when transient
+    // dismiss fires (click outside). Without this the monitor leaked.
+    func popoverDidClose(_ notification: Notification) {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
+    }
+
     @objc func togglePopover(_ sender: AnyObject?) {
         guard let popover = popover else { return }
 
         if popover.isShown {
-            // `nil`, not `sender`: `sender` is a non-Sendable `AnyObject?` and
-            // passing it on is a data race Swift 6 rejects. `performClose`
-            // only uses the sender for the responder chain, which this popover
-            // does not rely on, so dropping it changes no behaviour.
             popover.performClose(nil)
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
         } else if let button = statusItem?.button {
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            // Fallback for cases where .transient doesn't fire (e.g. click on
+            // a non-key window behind the popover) — mirror ClipboardShelf's
+            // global+local monitor pattern.
+            monitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+                guard let self, self.popover?.isShown == true else { return }
+                self.popover?.performClose(nil)
+                if let m = self.monitor { NSEvent.removeMonitor(m) }
+                self.monitor = nil
+            }
         }
     }
 }
