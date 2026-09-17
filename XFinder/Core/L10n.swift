@@ -88,6 +88,9 @@ final class L10n {
         "Chưa cài — tải trong trang Quick Look": "Not installed — get it on the Quick Look page",
         "Apple Intelligence": "Apple Intelligence",
         "Chưa sẵn sàng": "Not ready",
+        "Ẩn biểu tượng trên Desktop": "Hide desktop icons",
+        "Icon màn hình nền biến mất cho tới khi bật lại (Finder tự khởi động lại).":
+            "Desktop icons disappear until turned back on (Finder relaunches).",
         "Khởi động XFinder khi đăng nhập": "Launch XFinder at login",
         "Hiện biểu tượng trong Dock": "Show icon in Dock",
         "Tắt để dùng XFinder thuần menubar.": "Turn off to run XFinder menu-bar only.",

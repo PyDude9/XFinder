@@ -35,6 +35,7 @@ struct QuickControlsDetailView: View {
     /// Dock auto-hide is a real, readable/writable public preference, so it is
     /// a genuine two-way toggle rather than a fire-and-forget button.
     @State private var dockAutohide = DockPrefs.autohide()
+    @State private var desktopIconsHidden = false
 
     var body: some View {
         ScrollView {
@@ -56,6 +57,7 @@ struct QuickControlsDetailView: View {
         .onAppear {
             appearance = SystemControls.currentAppearance()
             dockAutohide = DockPrefs.autohide()
+            desktopIconsHidden = !DesktopIconsPrefs.showIcons()
             brightDenied = !WindowManager.isTrusted
             brightnessSlider = brightness.level ?? 0.5
             volumeObserver.retain()
@@ -208,6 +210,13 @@ struct QuickControlsDetailView: View {
 
                 ToggleRow(title: "Tự động ẩn Dock", isOn: $dockAutohide)
                     .onChange(of: dockAutohide) { _, on in DockPrefs.setAutohide(on) }
+
+                ToggleRow(title: "Ẩn biểu tượng trên Desktop",
+                          subtitle: "Icon màn hình nền biến mất cho tới khi bật lại (Finder tự khởi động lại).",
+                          isOn: $desktopIconsHidden)
+                    .onChange(of: desktopIconsHidden) { _, hide in
+                        DesktopIconsPrefs.setShowIcons(!hide)
+                    }
             }
             .padding(.horizontal, 20)
         }
@@ -291,6 +300,26 @@ enum DockPrefs {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
         p.arguments = ["Dock"]
+        p.standardError = FileHandle.nullDevice
+        try? p.run()
+    }
+}
+
+/// Ẩn icon màn hình nền — preference thật của Finder (`CreateDesktop`).
+/// Key chưa tồn tại = đang HIỆN icon (mặc định của macOS).
+enum DesktopIconsPrefs {
+    static func showIcons() -> Bool {
+        UserDefaults(suiteName: "com.apple.finder")?
+            .object(forKey: "CreateDesktop") as? Bool ?? true
+    }
+
+    static func setShowIcons(_ on: Bool) {
+        let d = UserDefaults(suiteName: "com.apple.finder")
+        d?.set(on, forKey: "CreateDesktop")
+        d?.synchronize()
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
+        p.arguments = ["Finder"]
         p.standardError = FileHandle.nullDevice
         try? p.run()
     }
