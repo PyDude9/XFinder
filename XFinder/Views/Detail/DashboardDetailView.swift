@@ -21,6 +21,10 @@ struct DashboardDetailView: View {
     @State private var trusted = WindowManager.isTrusted
     @State private var canRecord = WindowManager.canRecordScreen
     @State private var automationOK = false
+    @State private var mediaPreviewInstalled = false
+    @State private var appleIntelligence = false
+    @State private var finderSyncOn = false
+    @State private var activationObserver: NSObjectProtocol?
 
     var body: some View {
         ScrollView {
@@ -42,7 +46,23 @@ struct DashboardDetailView: View {
         // Only sample metrics while a page that shows them is on screen.
         .onAppear { SystemMonitorManager.shared.retain() }
         .onDisappear { SystemMonitorManager.shared.release() }
-        .onAppear { refreshPermissions() }
+        .onAppear {
+            refreshPermissions()
+            // Người dùng bật quyền trong System Settings rồi quay lại app →
+            // checklist tự cập nhật, không cần bấm "Kiểm tra lại quyền".
+            activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+                forName: NSWorkspace.didActivateApplicationNotification,
+                object: nil, queue: .main
+            ) { _ in
+                Task { @MainActor in refreshPermissions() }
+            }
+        }
+        .onDisappear {
+            if let activationObserver {
+                NSWorkspace.shared.notificationCenter.removeObserver(activationObserver)
+            }
+            activationObserver = nil
+        }
     }
 
     // MARK: Preferences
@@ -186,12 +206,26 @@ struct DashboardDetailView: View {
                 actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .quickLookPage) })
 
-            // Honest: Finder context-menu items and Quick Actions need a Finder
-            // Sync/Action extension target this app does not ship.
             StatusChecklistRow(
-                state: .warning,
+                state: mediaPreviewInstalled ? .ok : .warning,
+                title: L10n.t("Xem trước media"),
+                status: mediaPreviewInstalled ? L10n.t("Đã cài")
+                    : L10n.t("Chưa cài — tải trong trang Quick Look"),
+                actionTitle: L10n.t("Mở…"),
+                action: { appState.navigate(to: .quickLookPage) })
+
+            StatusChecklistRow(
+                state: appleIntelligence ? .ok : .neutral,
+                title: L10n.t("Apple Intelligence"),
+                status: appleIntelligence ? L10n.t("Sẵn sàng") : L10n.t("Chưa sẵn sàng"),
+                actionTitle: nil,
+                action: nil)
+
+            // Đã đóng gói XFinderSync.appex — trạng thái thật lấy từ pluginkit.
+            StatusChecklistRow(
+                state: finderSyncOn ? .ok : .warning,
                 title: L10n.t("Tác vụ nhanh trong Finder"),
-                status: L10n.t("Chưa có"),
+                status: finderSyncOn ? L10n.t("Đã bật") : L10n.t("Đang tắt"),
                 actionTitle: L10n.t("Mở…"),
                 action: { _ = WindowManager.openFinderExtensionsPane() })
 
@@ -199,7 +233,7 @@ struct DashboardDetailView: View {
                 state: clipboardManager.history.isEmpty ? .neutral : .ok,
                 title: L10n.t("Clipboard"),
                 status: clipboardManager.history.isEmpty
-                    ? L10n.t("Chưa có mục") : "\(clipboardManager.history.count) mục",
+                    ? L10n.t("Chưa có mục") : "\(clipboardManager.history.count) " + L10n.t("mục"),
                 actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .clipboard) })
 
@@ -261,6 +295,41 @@ struct DashboardDetailView: View {
         trusted = WindowManager.isTrusted
         canRecord = WindowManager.canRecordScreen
         automationOK = UserDefaults.standard.bool(forKey: "general.automationVerified")
+        mediaPreviewInstalled = Self.pluginkitLists(bundleFragment: "QuickLookVideo")
+        appleIntelligence = Self.appleIntelligenceDownloaded()
+        finderSyncOn = Self.pluginkitLists(bundleFragment: Bundle.main.bundleIdentifier ?? "com.xfinder.app",
+                                           pluginType: "com.apple.FinderSync")
+    }
+
+    /// Trạng thái thật từ `pluginkit -m` (không có "✓" cứng).
+    private static func pluginkitLists(bundleFragment: String, pluginType: String? = nil) -> Bool {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/pluginkit")
+        p.arguments = ["-m"] + (pluginType.map { ["-p", $0] } ?? [])
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        p.standardError = Pipe()
+        do { try p.run() } catch { return false }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        let out = String(data: data, encoding: .utf8) ?? ""
+        return out.contains(bundleFragment)
+    }
+
+    /// Apple Intelligence không có API kiểm tra công khai — heuristic trung
+    /// thực: model on-device phát hành qua MobileAsset; thư mục asset trống
+    /// nghĩa là chưa tải/chưa bật.
+    private static func appleIntelligenceDownloaded() -> Bool {
+        let paths = [
+            NSHomeDirectory() + "/Library/AssetsV2/com_apple_MobileAsset_UAF_FM_GenerativeExperiences",
+            "/System/Library/AssetsV2/com_apple_MobileAsset_UAF_FM_GenerativeExperiences",
+        ]
+        for path in paths {
+            if let sub = try? FileManager.default.subpaths(atPath: path), !sub.isEmpty {
+                return true
+            }
+        }
+        return false
     }
 }
 

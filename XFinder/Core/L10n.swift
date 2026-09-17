@@ -83,6 +83,11 @@ final class L10n {
         "Nhắc Trợ năng + Ghi màn hình cùng lúc; mở Cài đặt nếu vẫn thiếu.":
             "Prompt Accessibility + Screen Recording at once; open Settings if still missing.",
         "Cấp mọi quyền…": "Grant all…",
+        "Xem trước media": "Media preview",
+        "Đã cài": "Installed",
+        "Chưa cài — tải trong trang Quick Look": "Not installed — get it on the Quick Look page",
+        "Apple Intelligence": "Apple Intelligence",
+        "Chưa sẵn sàng": "Not ready",
         "Khởi động XFinder khi đăng nhập": "Launch XFinder at login",
         "Hiện biểu tượng trong Dock": "Show icon in Dock",
         "Tắt để dùng XFinder thuần menubar.": "Turn off to run XFinder menu-bar only.",
