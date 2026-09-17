@@ -41,8 +41,8 @@ struct QuickControlsDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 PageHeader(icon: "slider.horizontal.3",
-                           title: "Điều khiển nhanh",
-                           subtitle: "Điều khiển nhanh máy Mac và các cửa sổ.")
+                           title: L10n.t("Điều khiển nhanh"),
+                           subtitle: L10n.t("Điều khiển nhanh máy Mac và các cửa sổ."))
 
                 systemSection
 
@@ -77,14 +77,14 @@ struct QuickControlsDetailView: View {
     private var systemSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(icon: "desktopcomputer",
-                          title: "Hệ thống",
-                          subtitle: "Áp dụng cho toàn máy, không chỉ XFinder.")
+                          title: L10n.t("Hệ thống"),
+                          subtitle: L10n.t("Áp dụng cho toàn máy, không chỉ XFinder."))
 
             VStack(spacing: 10) {
                 // Volume — real, and live via the CoreAudio listener.
                 HStack(spacing: 12) {
                     Label {
-                        Text("Âm lượng").font(.system(size: 13))
+                        Text(L10n.t("Âm lượng")).font(.system(size: 13))
                     } icon: {
                         Image(systemName: volumeObserver.isMuted || volumeObserver.volume == 0
                               ? "speaker.slash.fill"
@@ -103,7 +103,7 @@ struct QuickControlsDetailView: View {
                         .frame(width: 38, alignment: .trailing)
                 }
 
-                ToggleRow(title: "Tắt tiếng",
+                ToggleRow(title: L10n.t("Tắt tiếng"),
                           isOn: Binding(get: { volumeObserver.isMuted },
                                         set: { _ in volumeObserver.toggleMute() }))
 
@@ -124,7 +124,7 @@ struct QuickControlsDetailView: View {
                 // control never moved and felt decorative.
                 HStack(spacing: 12) {
                     Label {
-                        Text("Độ sáng màn hình").font(.system(size: 13))
+                        Text(L10n.t("Độ sáng màn hình")).font(.system(size: 13))
                     } icon: {
                         Image(systemName: "sun.max.fill").foregroundColor(.secondary)
                     }
@@ -172,7 +172,7 @@ struct QuickControlsDetailView: View {
                 // System-wide appearance.
                 HStack(spacing: 12) {
                     Label {
-                        Text("Chế độ giao diện").font(.system(size: 13))
+                        Text(L10n.t("Chế độ giao diện")).font(.system(size: 13))
                     } icon: {
                         Image(systemName: "circle.lefthalf.filled").foregroundColor(.secondary)
                     }
@@ -200,7 +200,7 @@ struct QuickControlsDetailView: View {
 
                 Divider()
 
-                ToggleRow(title: "Chống ngủ",
+                ToggleRow(title: L10n.t("Chống ngủ"),
                           subtitle: caffeine.isActive ? "Đang bật" : "Đang tắt",
                           isOn: Binding(get: { caffeine.isActive },
                                         set: { on in
@@ -208,10 +208,10 @@ struct QuickControlsDetailView: View {
                                             else { caffeine.deactivate() }
                                         }))
 
-                ToggleRow(title: "Tự động ẩn Dock", isOn: $dockAutohide)
+                ToggleRow(title: L10n.t("Tự động ẩn Dock"), isOn: $dockAutohide)
                     .onChange(of: dockAutohide) { _, on in DockPrefs.setAutohide(on) }
 
-                ToggleRow(title: "Ẩn biểu tượng trên Desktop",
+                ToggleRow(title: L10n.t("Ẩn biểu tượng trên Desktop"),
                           subtitle: "Icon màn hình nền biến mất cho tới khi bật lại (Finder tự khởi động lại).",
                           isOn: $desktopIconsHidden)
                     .onChange(of: desktopIconsHidden) { _, hide in
@@ -227,16 +227,16 @@ struct QuickControlsDetailView: View {
     private var windowSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(icon: "macwindow",
-                          title: "Cửa sổ",
-                          subtitle: "Các tính năng cửa sổ của XFinder.")
+                          title: L10n.t("Cửa sổ"),
+                          subtitle: L10n.t("Các tính năng cửa sổ của XFinder."))
 
             VStack(spacing: 10) {
-                ToggleRow(title: "Xem trước Dock",
+                ToggleRow(title: L10n.t("Xem trước Dock"),
                           subtitle: "Rê chuột lên icon trên Dock để xem các cửa sổ.",
                           isOn: $hoverEnabled)
                     .onChange(of: hoverEnabled) { DockPreviewController.shared.applySettings() }
 
-                ToggleRow(title: "Chuyển đổi ứng dụng (⌘-Tab)",
+                ToggleRow(title: L10n.t("Chuyển đổi ứng dụng (⌘-Tab)"),
                           subtitle: "Thay trình chuyển ứng dụng của macOS bằng bản có ảnh thu nhỏ.",
                           isOn: $commandTabEnabled)
                     .onChange(of: commandTabEnabled) { CommandTabController.shared.applySettings() }

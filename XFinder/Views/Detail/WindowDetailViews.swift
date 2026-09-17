@@ -17,15 +17,15 @@ struct WindowPreviewDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 PageHeader(icon: "macwindow.on.rectangle",
-                           title: "Xem trước cửa sổ",
-                           subtitle: "Xem trước và chuyển cửa sổ ứng dụng ngay từ Dock.")
+                           title: L10n.t("Xem trước cửa sổ"),
+                           subtitle: L10n.t("Xem trước và chuyển cửa sổ ứng dụng ngay từ Dock."))
 
                 SectionHeader(icon: "square.on.square",
-                              title: "Cách hoạt động",
-                              subtitle: "Di chuột qua ứng dụng trên Dock để xem trước các cửa sổ.")
+                              title: L10n.t("Cách hoạt động"),
+                              subtitle: L10n.t("Di chuột qua ứng dụng trên Dock để xem trước các cửa sổ."))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    ToggleRow(title: "Hiện bản xem trước cửa sổ khi di chuột qua ứng dụng trên Dock",
+                    ToggleRow(title: L10n.t("Hiện bản xem trước cửa sổ khi di chuột qua ứng dụng trên Dock"),
                               isOn: $hoverEnabled)
                         .onChange(of: hoverEnabled) { controller.applySettings() }
                     Text("XFinder chỉ chụp ảnh thu nhỏ khi bảng xem trước đang hiển thị.")
@@ -40,17 +40,17 @@ struct WindowPreviewDetailView: View {
                 Divider().padding(.horizontal, 20)
 
                 SectionHeader(icon: "command",
-                              title: "Xem trước cửa sổ bằng Command-Tab",
-                              subtitle: "Chuyển trực tiếp giữa các cửa sổ bằng hình xem trước trực tiếp.")
+                              title: L10n.t("Xem trước cửa sổ bằng Command-Tab"),
+                              subtitle: L10n.t("Chuyển trực tiếp giữa các cửa sổ bằng hình xem trước trực tiếp."))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    ToggleRow(title: "Hiện bản xem trước cửa sổ bằng Command-Tab",
+                    ToggleRow(title: L10n.t("Hiện bản xem trước cửa sổ bằng Command-Tab"),
                               isOn: $commandTabEnabled)
                         .onChange(of: commandTabEnabled) { CommandTabController.shared.applySettings() }
                     Text("Khi bật, XFinder xử lý Command-Tab thay cho bộ chuyển ứng dụng của macOS. Giữ Command và nhấn Tab hoặc Shift-Tab để chọn cửa sổ; thả Command để mở hoặc nhấn Escape để hủy.")
                         .font(.system(size: 11)).foregroundColor(.secondary)
 
-                    ToggleRow(title: "Hiện cả cửa sổ ẩn trong App Switcher",
+                    ToggleRow(title: L10n.t("Hiện cả cửa sổ ẩn trong App Switcher"),
                               isOn: $showHiddenWindows)
                         .padding(.top, 8)
                     Text("Một số ứng dụng chỉ ẩn cửa sổ khi bạn đóng thay vì thoát — Spotify, Slack, Synology Chat. Liệt kê những cửa sổ đó cho phép Command-Tab gọi lại chúng, nhưng ứng dụng phải mở lại cửa sổ trước, nên sẽ hiện chậm hơn một chút.")
@@ -61,16 +61,16 @@ struct WindowPreviewDetailView: View {
                 Divider().padding(.horizontal, 20)
 
                 SectionHeader(icon: "lock.shield",
-                              title: "Quyền cần thiết",
-                              subtitle: "Trợ năng nhận diện ứng dụng trên Dock; Ghi màn hình hiển thị ảnh thu nhỏ trực tiếp.")
+                              title: L10n.t("Quyền cần thiết"),
+                              subtitle: L10n.t("Trợ năng nhận diện ứng dụng trên Dock; Ghi màn hình hiển thị ảnh thu nhỏ trực tiếp."))
 
                 VStack(spacing: 10) {
-                    PermissionRow(title: "Trợ năng",
+                    PermissionRow(title: L10n.t("Trợ năng"),
                                   granted: trusted,
                                   grantedText: "Đã cấp") {
                         WindowManager.openAccessibilityPane()
                     }
-                    PermissionRow(title: "Ghi màn hình",
+                    PermissionRow(title: L10n.t("Ghi màn hình"),
                                   granted: canRecord,
                                   grantedText: "Đã cấp") {
                         WindowManager.openScreenRecordingPane()
@@ -133,8 +133,8 @@ struct SnapZonesDetailView: View {
             VStack(alignment: .leading, spacing: 14) {
                 PageHeader(
                     icon: "rectangle.split.2x2",
-                    title: "Vùng bắt dính",
-                    subtitle: "Bắt dính cửa sổ bằng cách kéo chúng đến cạnh và góc màn hình.",
+                    title: L10n.t("Vùng bắt dính"),
+                    subtitle: L10n.t("Bắt dính cửa sổ bằng cách kéo chúng đến cạnh và góc màn hình."),
                     trailing: AnyView(
                         HStack(spacing: 6) {
                             Text(snapEnabled ? "Bật" : "Tắt")
@@ -152,20 +152,20 @@ struct SnapZonesDetailView: View {
 
                 // Ba toggle đầu trang — khớp screenshot MFinder.
                 VStack(spacing: 10) {
-                    ToggleRow(title: "Khôi phục kích thước cửa sổ khi gỡ bắt dính", isOn: $restoreOnUnsnap)
-                    ToggleRow(title: "Tạo hiệu ứng cho vùng xem trước", isOn: $showPreview)
-                    ToggleRow(title: "Phản hồi rung", isOn: $hapticEnabled)
+                    ToggleRow(title: L10n.t("Khôi phục kích thước cửa sổ khi gỡ bắt dính"), isOn: $restoreOnUnsnap)
+                    ToggleRow(title: L10n.t("Tạo hiệu ứng cho vùng xem trước"), isOn: $showPreview)
+                    ToggleRow(title: L10n.t("Phản hồi rung"), isOn: $hapticEnabled)
                 }
                 .padding(.horizontal, 20)
 
                 Divider().padding(.horizontal, 20)
 
                 SectionHeader(icon: "hand.draw",
-                              title: "Kéo tới mép màn hình",
-                              subtitle: "Kéo cửa sổ tới mép; vùng đích sẽ sáng lên, thả chuột để bắt dính.")
+                              title: L10n.t("Kéo tới mép màn hình"),
+                              subtitle: L10n.t("Kéo cửa sổ tới mép; vùng đích sẽ sáng lên, thả chuột để bắt dính."))
 
                 VStack(alignment: .leading, spacing: 8) {
-                    ToggleRow(title: "Bật bắt dính khi kéo tới mép", isOn: $dragEnabled)
+                    ToggleRow(title: L10n.t("Bật bắt dính khi kéo tới mép"), isOn: $dragEnabled)
                         .onChange(of: dragEnabled) { controller.applySettings() }
                         .disabled(!trusted)
 
@@ -182,7 +182,7 @@ struct SnapZonesDetailView: View {
 
                     if WindowManager.isStageManagerEnabled {
                         VStack(alignment: .leading, spacing: 6) {
-                            ToggleRow(title: "Chừa mép trái cho Stage Manager",
+                            ToggleRow(title: L10n.t("Chừa mép trái cho Stage Manager"),
                                       isOn: $reserveStage)
                                 .disabled(!snapEnabled)
 
@@ -205,11 +205,11 @@ struct SnapZonesDetailView: View {
                 Divider().padding(.horizontal, 20)
 
                 SectionHeader(icon: "keyboard",
-                              title: "Phím tắt toàn hệ thống",
-                              subtitle: "Áp dụng cho cửa sổ đang được focus.")
+                              title: L10n.t("Phím tắt toàn hệ thống"),
+                              subtitle: L10n.t("Áp dụng cho cửa sổ đang được focus."))
 
                 VStack(alignment: .leading, spacing: 8) {
-                    ToggleRow(title: "Bật phím tắt bắt dính", isOn: $hotkeysEnabled)
+                    ToggleRow(title: L10n.t("Bật phím tắt bắt dính"), isOn: $hotkeysEnabled)
                         .onChange(of: hotkeysEnabled) { controller.applySettings() }
                         .disabled(!trusted)
 
@@ -275,8 +275,8 @@ struct SnapZonesDetailView: View {
                 Divider().padding(.horizontal, 20)
 
                 SectionHeader(icon: "square.grid.3x3",
-                              title: "Bắt dính ngay",
-                              subtitle: "Bấm một vùng để áp dụng cho cửa sổ vừa dùng.")
+                              title: L10n.t("Bắt dính ngay"),
+                              subtitle: L10n.t("Bấm một vùng để áp dụng cho cửa sổ vừa dùng."))
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 8)], spacing: 8) {
                     ForEach(WindowManager.SnapTarget.allCases) { zone in

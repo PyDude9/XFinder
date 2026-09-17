@@ -36,15 +36,15 @@ struct FinderActionsDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 PageHeader(icon: "contextualmenu.and.cursorarrow",
-                           title: "Thao tác Finder",
-                           subtitle: "Chọn các mục xuất hiện trong menu ngữ cảnh MFinder.")
+                           title: L10n.t("Thao tác Finder"),
+                           subtitle: L10n.t("Chọn các mục xuất hiện trong menu ngữ cảnh MFinder."))
 
                 menuConfigSection
 
                 Divider().padding(.horizontal, 20)
 
                 SectionHeader(icon: "cursorarrow.click.2",
-                              title: "Tệp đang chọn trong Finder",
+                              title: L10n.t("Tệp đang chọn trong Finder"),
                               subtitle: selection.isEmpty
                                   ? "Chọn vài tệp trong Finder rồi bấm Đọc lựa chọn."
                                   : "\(selection.count) mục")
@@ -78,8 +78,8 @@ struct FinderActionsDetailView: View {
                 Divider().padding(.horizontal, 20)
 
                 SectionHeader(icon: "bolt",
-                              title: "Thao tác nhanh",
-                              subtitle: "Áp dụng cho các mục vừa đọc ở trên.")
+                              title: L10n.t("Thao tác nhanh"),
+                              subtitle: L10n.t("Áp dụng cho các mục vừa đọc ở trên."))
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 165), spacing: 8)], spacing: 8) {
                     actionButton("Sao chép đường dẫn", "doc.on.doc") { copyPaths() }
@@ -107,8 +107,8 @@ struct FinderActionsDetailView: View {
                 Divider().padding(.horizontal, 20)
 
                 SectionHeader(icon: "puzzlepiece.extension",
-                              title: "Menu chuột phải trong Finder",
-                              subtitle: "Thêm mục vào menu ngữ cảnh của Finder.")
+                              title: L10n.t("Menu chuột phải trong Finder"),
+                              subtitle: L10n.t("Thêm mục vào menu ngữ cảnh của Finder."))
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("macOS không có API công khai cho phép một ứng dụng thường thêm mục vào menu chuột phải của Finder. Cách được Apple hỗ trợ là Quick Action (Shortcuts/Automator) hoặc một Finder Sync Extension riêng. Các toggle ở trên lọc những thao tác hiển thị khi bạn dùng XFinder qua các Thao tác nhanh trong Finder.")
@@ -134,15 +134,15 @@ struct FinderActionsDetailView: View {
     private var menuConfigSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(icon: "slider.horizontal.3",
-                          title: "Cấu hình menu",
-                          subtitle: "Thay đổi sẽ xuất hiện khi menu ngữ cảnh Finder được mở lần tiếp theo.")
+                          title: L10n.t("Cấu hình menu"),
+                          subtitle: L10n.t("Thay đổi sẽ xuất hiện khi menu ngữ cảnh Finder được mở lần tiếp theo."))
 
             HStack {
-                Text("Bố cục menu").font(.system(size: 13))
+                Text(L10n.t("Bố cục menu")).font(.system(size: 13))
                 Spacer()
                 Picker("", selection: $menuLayout) {
-                    Text("Gọn").tag("compact")
-                    Text("Đầy đủ").tag("full")
+                    Text(L10n.t("Gọn")).tag("compact")
+                    Text(L10n.t("Đầy đủ")).tag("full")
                 }
                 .pickerStyle(.segmented).frame(width: 160)
             }
@@ -151,7 +151,7 @@ struct FinderActionsDetailView: View {
                 .font(.system(size: 11)).foregroundColor(.secondary)
 
             HStack {
-                Text("Terminal mặc định").font(.system(size: 13))
+                Text(L10n.t("Terminal mặc định")).font(.system(size: 13))
                 Spacer()
                 Picker("", selection: $defaultTerminal) {
                     Text("Terminal").tag("Terminal")
@@ -162,21 +162,21 @@ struct FinderActionsDetailView: View {
                 .pickerStyle(.menu).frame(width: 140)
             }
 
-            Text("Các nhóm hiển thị").font(.system(size: 13, weight: .medium)).padding(.top, 4)
+            Text(L10n.t("Các nhóm hiển thị")).font(.system(size: 13, weight: .medium)).padding(.top, 4)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                ToggleRow(title: "Mở trong", isOn: $showOpenIn)
-                ToggleRow(title: "Tạo file mới", isOn: $showCreateFile)
-                ToggleRow(title: "Sao chép", isOn: $showCopy)
-                ToggleRow(title: "Hiển thị Finder", isOn: $showShowInFinder)
-                ToggleRow(title: "Dọn file rác", isOn: $showCleanup)
-                ToggleRow(title: "Công cụ ảnh", isOn: $showImageTools)
-                ToggleRow(title: "Nén & Giải nén", isOn: $showCompress)
-                ToggleRow(title: "Sắp xếp", isOn: $showCopy)
-                ToggleRow(title: "OCR", isOn: $showOCR)
-                ToggleRow(title: "Công cụ PDF", isOn: $showPDFTools)
-                ToggleRow(title: "Chống ghi", isOn: $showWriteProtect)
-                ToggleRow(title: "Khóa thư mục", isOn: $showFolderLock)
+                ToggleRow(title: L10n.t("Mở trong"), isOn: $showOpenIn)
+                ToggleRow(title: L10n.t("Tạo file mới"), isOn: $showCreateFile)
+                ToggleRow(title: L10n.t("Sao chép"), isOn: $showCopy)
+                ToggleRow(title: L10n.t("Hiển thị Finder"), isOn: $showShowInFinder)
+                ToggleRow(title: L10n.t("Dọn file rác"), isOn: $showCleanup)
+                ToggleRow(title: L10n.t("Công cụ ảnh"), isOn: $showImageTools)
+                ToggleRow(title: L10n.t("Nén & Giải nén"), isOn: $showCompress)
+                ToggleRow(title: L10n.t("Sắp xếp"), isOn: $showCopy)
+                ToggleRow(title: L10n.t("OCR"), isOn: $showOCR)
+                ToggleRow(title: L10n.t("Công cụ PDF"), isOn: $showPDFTools)
+                ToggleRow(title: L10n.t("Chống ghi"), isOn: $showWriteProtect)
+                ToggleRow(title: L10n.t("Khóa thư mục"), isOn: $showFolderLock)
             }
         }
         .padding(.horizontal, 20)

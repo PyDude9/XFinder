@@ -43,8 +43,8 @@ struct NotesDetailView: View {
             VStack(alignment: .leading, spacing: 14) {
                 PageHeader(
                     icon: "note.text",
-                    title: "Ghi chú",
-                    subtitle: "Lưu ghi chú, danh sách công việc và ý tưởng ngay mép màn hình.",
+                    title: L10n.t("Ghi chú"),
+                    subtitle: L10n.t("Lưu ghi chú, danh sách công việc và ý tưởng ngay mép màn hình."),
                     trailing: AnyView(
                         HStack(spacing: 6) {
                             Text(edgeEnabled ? "Bật" : "Tắt")
@@ -201,12 +201,12 @@ private struct EdgeNotesSettingsCard: View {
     @State private var store = NoteStore.shared
 
     var body: some View {
-        SettingsCard(title: "Ghi chú ở mép màn hình",
+        SettingsCard(title: L10n.t("Ghi chú ở mép màn hình"),
                      subtitle: store.notes.isEmpty
-                         ? "Dải mép chỉ hiện khi có ít nhất một ghi chú."
+                         ? L10n.t("Dải mép chỉ hiện khi có ít nhất một ghi chú.")
                          : "Di chuột tới mép màn hình để mở ghi chú.") {
             VStack(spacing: 10) {
-                ToggleRow(title: "Hiện ghi chú ở mép màn hình", isOn: $edgeEnabled)
+                ToggleRow(title: L10n.t("Hiện ghi chú ở mép màn hình"), isOn: $edgeEnabled)
                     .onChange(of: edgeEnabled) { EdgeNotesController.shared.applySettings() }
                 Picker("Cạnh màn hình", selection: $edgeSide) {
                     Text("Trái").tag("Left")
@@ -220,11 +220,11 @@ private struct EdgeNotesSettingsCard: View {
                     Slider(value: $edgeHotspot, in: 4...40, step: 1)
                         .onChange(of: edgeHotspot) { EdgeNotesController.shared.applySettings() }
                 }
-                ToggleRow(title: "Hiện trên ứng dụng toàn màn hình",
+                ToggleRow(title: L10n.t("Hiện trên ứng dụng toàn màn hình"),
                           subtitle: "Best-effort qua .stationary",
                           isOn: $showFullscreen)
                     .onChange(of: showFullscreen) { EdgeNotesController.shared.applySettings() }
-                ToggleRow(title: "Ẩn khi con trỏ rời khỏi", isOn: $hideOnLeave)
+                ToggleRow(title: L10n.t("Ẩn khi con trỏ rời khỏi"), isOn: $hideOnLeave)
                     .onChange(of: hideOnLeave) { EdgeNotesController.shared.applySettings() }
                 if store.notes.isEmpty {
                     Text("Chưa có ghi chú — dải mép đang ẩn. Tạo ghi chú đầu tiên để dùng.")
@@ -241,8 +241,8 @@ private struct AppearanceCard: View {
     @State private var store = NoteStore.shared
 
     var body: some View {
-        SettingsCard(title: "Giao diện ghi chú",
-                     subtitle: "Markdown và danh sách công việc vẫn chỉnh sửa được dưới dạng văn bản thuần.") {
+        SettingsCard(title: L10n.t("Giao diện ghi chú"),
+                     subtitle: L10n.t("Markdown và danh sách công việc vẫn chỉnh sửa được dưới dạng văn bản thuần.")) {
             VStack(spacing: 10) {
                 HStack {
                     Text("Phông chữ").font(.system(size: 13))
@@ -260,7 +260,7 @@ private struct AppearanceCard: View {
                         set: { store.setFontSize($0) }
                     ), in: 11...20, step: 0.5)
                 }
-                ToggleRow(title: "Định dạng Markdown khi nhập", isOn: Binding(
+                ToggleRow(title: L10n.t("Định dạng Markdown khi nhập"), isOn: Binding(
                     get: { store.markdownEnabled },
                     set: { store.markdownEnabled = $0 }
                 ))
@@ -272,8 +272,8 @@ private struct AppearanceCard: View {
 
 private struct ShortcutsCard: View {
     var body: some View {
-        SettingsCard(title: "Phím tắt",
-                     subtitle: "Mở ghi chú từ bất kỳ ứng dụng nào.") {
+        SettingsCard(title: L10n.t("Phím tắt"),
+                     subtitle: L10n.t("Mở ghi chú từ bất kỳ ứng dụng nào.")) {
             VStack(spacing: 8) {
                 shortcutRow("Ghi chú mới", keys: "⌥⌘N")
                 shortcutRow("Tất cả ghi chú", keys: "⌥⌘A")
@@ -303,7 +303,7 @@ private struct ImportExportCard: View {
     @State private var store = NoteStore.shared
 
     var body: some View {
-        SettingsCard(title: "Nhập / Xuất ghi chú") {
+        SettingsCard(title: L10n.t("Nhập / Xuất ghi chú")) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     Menu("Nhập…") {

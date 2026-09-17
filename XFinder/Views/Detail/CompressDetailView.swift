@@ -161,7 +161,7 @@ struct CompressDetailView: View {
                 }
 
                 SettingsCard(
-                    title: "Giải nén vào",
+                    title: L10n.t("Giải nén vào"),
                     subtitle: extractionDestination.titleVI
                 ) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -187,7 +187,7 @@ struct CompressDetailView: View {
                 .padding(.horizontal, 20)
 
                 SettingsCard(
-                    title: "Khi tên đã tồn tại",
+                    title: L10n.t("Khi tên đã tồn tại"),
                     subtitle: conflictPolicy.titleVI
                 ) {
                     Picker("Khi tên đã tồn tại", selection: $conflictPolicy) {
@@ -206,7 +206,7 @@ struct CompressDetailView: View {
                     SettingsCard(title: "Mặc định giải nén") {
                         HStack(spacing: 8) {
                             Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                            Text("Bộ máy nén và giải nén").font(.system(size: 13))
+                            Text(L10n.t("Bộ máy nén và giải nén")).font(.system(size: 13))
                             Spacer()
                             Text("7-Zip 26.02 tích hợp sẵn").font(.system(size: 11)).foregroundColor(.secondary)
                         }
