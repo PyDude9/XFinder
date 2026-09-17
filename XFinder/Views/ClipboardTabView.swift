@@ -68,6 +68,13 @@ struct ClipboardTabView: View {
                                 .contextMenu {
                                     Button("Dán (Return)") { pasteSelected(plainText: false) }
                                     Button("Dán dạng text thuần (⇧Return)") { pasteSelected(plainText: true) }
+                                    if let rec = items.first(where: { $0.id == clipboardManager.selectedItemID }),
+                                       let ocr = rec.ocrText, !ocr.isEmpty {
+                                        Button("Sao chép chữ OCR trong ảnh") {
+                                            NSPasteboard.general.clearContents()
+                                            NSPasteboard.general.setString(ocr, forType: .string)
+                                        }
+                                    }
                                     Button("Ghim vào bảng hiện tại (⌘P)") { pinSelected() }
                                     Button("Xem nhanh (Space)") { preview(record) }
                                     Divider()

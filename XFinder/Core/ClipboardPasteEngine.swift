@@ -46,6 +46,9 @@ enum ClipboardPasteEngine {
                   FileManager.default.fileExists(atPath: path) else { return false }
             return pb.writeObjects([URL(fileURLWithPath: path) as NSURL])
         case .image:
+            if plainText, let ocr = record.ocrText, !ocr.isEmpty {
+                return pb.setString(ocr, forType: .string)
+            }
             if let path = record.payloadPath ?? record.thumbnailPath,
                let img = NSImage(contentsOfFile: path) {
                 pb.writeObjects([img])

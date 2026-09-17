@@ -81,6 +81,26 @@ struct ClipboardCardView: View {
                                 .font(.caption2).foregroundColor(.accentColor)
                         }
                     }
+                    if let ocr = record.ocrText, !ocr.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Divider()
+                            HStack(spacing: 6) {
+                                Image(systemName: "text.viewfinder").font(.caption2).foregroundColor(.accentColor)
+                                Text("Chữ trong ảnh").font(.caption2).fontWeight(.semibold).foregroundColor(.secondary)
+                                Spacer()
+                                Button {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(ocr, forType: .string)
+                                } label: {
+                                    Label("Sao chép", systemImage: "doc.on.doc").font(.caption2)
+                                }
+                                .buttonStyle(.bordered).controlSize(.mini)
+                            }
+                            Text(ocr)
+                                .font(.system(size: 11)).italic().foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
                 case .link:
                     Label(record.metadata["url"]?.isEmpty == false ? record.metadata["url"]! : record.displayPreview,
                           systemImage: "link")
