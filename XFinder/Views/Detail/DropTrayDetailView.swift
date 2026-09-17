@@ -10,7 +10,10 @@ struct DropTrayDetailView: View {
     @State private var history = ActionHistoryStore.shared
     @State private var isTargeted = false
     @State private var outcome: String? = nil
+    @State private var showDetailGrid = true
 
+    // Tai thỏ / notch — tạm ẩn theo yêu cầu (giữ key để bật lại sau).
+    // Các @AppStorage này vẫn persist nhưng không render trong UI.
     @AppStorage("dropTray.notchEnabled") private var notchEnabled = true
     @AppStorage("dropTray.shakeEnabled") private var shakeEnabled = true
     @AppStorage("dropTray.shakeSensitivity") private var shakeSensitivity = "medium"
@@ -24,7 +27,7 @@ struct DropTrayDetailView: View {
                 PageHeader(
                     icon: "tray.and.arrow.down",
                     title: "Khay thả",
-                    subtitle: "Lắc khi đang kéo file, hoặc kéo file vào tai thỏ.",
+                    subtitle: "Giữ file tạm để xử lý hàng loạt.",
                     trailing: AnyView(
                         HStack(spacing: 6) {
                             Text(notchEnabled ? "Bật" : "Tắt")
@@ -35,7 +38,7 @@ struct DropTrayDetailView: View {
                         }
                     ))
 
-                notchSettings
+                // notchSettings — tạm ẩn (giữ engine, ẩn UI)
 
                 // Drop zone
                 VStack(spacing: 8) {
@@ -66,27 +69,63 @@ struct DropTrayDetailView: View {
 
                 if !tray.items.isEmpty {
                     SettingsCard(title: "Trong khay (\(tray.items.count))") {
-                        VStack(spacing: 6) {
-                            ForEach(tray.items.prefix(15)) { item in
-                                HStack {
-                                    Image(systemName: item.isDir ? "folder.fill" : "doc.fill")
-                                        .foregroundColor(.secondary).font(.caption)
-                                    Text(item.name).font(.system(size: 12)).lineLimit(1)
-                                        .truncationMode(.middle)
-                                    if item.isMissing {
-                                        Text("(không còn tồn tại)")
-                                            .font(.caption2).foregroundColor(.red)
-                                    }
-                                    Spacer()
-                                    Button { tray.remove(item) } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.secondary)
-                                    }.buttonStyle(.plain)
-                                }
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("\(tray.items.count) mục").font(.system(size: 11)).foregroundColor(.secondary)
+                                Spacer()
+                                Button(showDetailGrid ? "Thu gọn" : "Xem chi tiết") { showDetailGrid.toggle() }
+                                    .buttonStyle(.bordered).controlSize(.small)
                             }
-                            if tray.items.count > 15 {
-                                Text("…và \(tray.items.count - 15) mục nữa")
-                                    .font(.caption).foregroundColor(.secondary)
+                            // Inline grid ngay dưới header — không mở window lung tung.
+                            if showDetailGrid {
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 8) {
+                                    ForEach(tray.items) { item in
+                                        VStack(spacing: 6) {
+                                            Image(systemName: item.isDir ? "folder.fill" : "doc.fill")
+                                                .font(.system(size: 22)).foregroundColor(.secondary)
+                                            Text(item.name).font(.system(size: 11)).lineLimit(2).multilineTextAlignment(.center)
+                                            if item.isMissing {
+                                                Text("(không còn tồn tại)").font(.caption2).foregroundColor(.red)
+                                            }
+                                        }
+                                        .frame(maxWidth: .infinity).padding(8)
+                                        .background(Color(.controlBackgroundColor).opacity(0.6))
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        .overlay(
+                                            HStack {
+                                                Spacer()
+                                                Button { tray.remove(item) } label: {
+                                                    Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+                                                }.buttonStyle(.plain).padding(4)
+                                            }.frame(maxHeight: .infinity, alignment: .top)
+                                        )
+                                    }
+                                }
+                            } else {
+                                // Compact list fallback khi thu gọn.
+                                VStack(spacing: 6) {
+                                    ForEach(tray.items.prefix(15)) { item in
+                                        HStack {
+                                            Image(systemName: item.isDir ? "folder.fill" : "doc.fill")
+                                                .foregroundColor(.secondary).font(.caption)
+                                            Text(item.name).font(.system(size: 12)).lineLimit(1)
+                                                .truncationMode(.middle)
+                                            if item.isMissing {
+                                                Text("(không còn tồn tại)")
+                                                    .font(.caption2).foregroundColor(.red)
+                                            }
+                                            Spacer()
+                                            Button { tray.remove(item) } label: {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .foregroundColor(.secondary)
+                                            }.buttonStyle(.plain)
+                                        }
+                                    }
+                                    if tray.items.count > 15 {
+                                        Text("…và \(tray.items.count - 15) mục nữa")
+                                            .font(.caption).foregroundColor(.secondary)
+                                    }
+                                }
                             }
                         }
                     }
