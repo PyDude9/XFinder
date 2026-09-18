@@ -38,10 +38,27 @@ final class L10n {
     /// Nonisolated — đọc thẳng UserDefaults nên gọi được từ enum `titleVI`
     /// (không ở MainActor). Re-render toàn cửa sổ do `.id(language)` của
     /// RootView đảm nhiệm khi đổi ngôn ngữ.
+    ///
+    /// Stable-key shim: nếu `vi` là key trong `L10nDB.viToKey`, dịch qua table
+    /// thay vì `enDict`. Nhờ đó code cũ `L10n.t("chuỗi Việt")` vẫn chạy trong khi
+    /// code mới dùng `L10n.t(key: "domain.key")` — không cần flag day.
     nonisolated static func t(_ vi: String) -> String {
-        if UserDefaults.standard.string(forKey: "AppLanguage") == AppLanguage.english.rawValue,
-           let en = enDict[vi] { return en }
+        if let stableKey = L10nDB.viToKey[vi],
+           let pair = L10nDB.table[stableKey],
+           LanguageIsEnglish,
+           let en = pair[.english] { return en }
+        if LanguageIsEnglish, let en = enDict[vi] { return en }
         return vi
+    }
+
+    nonisolated static func t(key: String) -> String {
+        guard let pair = L10nDB.table[key] else { return key }
+        if LanguageIsEnglish, let en = pair[.english] { return en }
+        return pair[.vietnamese] ?? key
+    }
+
+    nonisolated private static var LanguageIsEnglish: Bool {
+        UserDefaults.standard.string(forKey: "AppLanguage") == AppLanguage.english.rawValue
     }
 
     nonisolated private static let enDict: [String: String] = [

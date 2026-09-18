@@ -11,7 +11,7 @@ struct SidebarView: View {
     var body: some View {
         List(selection: selectionBinding) {
             ForEach(SidebarDestination.groups, id: \.header) { group in
-                Section(header: Text(group.header).font(.caption2).foregroundColor(.secondary)) {
+                Section(header: Text(L10n.t(group.header)).font(.caption2).foregroundColor(.secondary)) {
                     ForEach(group.items, id: \.self) { dest in
                         Label(dest.titleVI, systemImage: dest.icon)
                             // Without these, a long row ("Đổi tên hàng loạt")
