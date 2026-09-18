@@ -27,7 +27,7 @@ struct ClipboardTabView: View {
                 Image(systemName: "magnifyingglass").foregroundColor(.secondary)
                 // `@Bindable` is how Observation hands out a Binding for an
                 // `@Observable` object — `@Environment` alone has no `$`.
-                TextField("Tìm kiếm (⌘F) — gồm chữ trong ảnh OCR…",
+                TextField(L10n.t("Tìm kiếm (⌘F) — gồm chữ trong ảnh OCR…"),
                           text: Bindable(clipboardManager).searchText)
                     .textFieldStyle(.plain)
                     .focused($searchFocused)
@@ -66,19 +66,19 @@ struct ClipboardTabView: View {
                                 }
                                 .onDrag { NSItemProvider(object: record.id.uuidString as NSString) }
                                 .contextMenu {
-                                    Button("Dán (Return)") { pasteSelected(plainText: false) }
-                                    Button("Dán dạng text thuần (⇧Return)") { pasteSelected(plainText: true) }
+                                    Button(L10n.t("Dán (Return)")) { pasteSelected(plainText: false) }
+                                    Button(L10n.t("Dán dạng text thuần (⇧Return)")) { pasteSelected(plainText: true) }
                                     if let rec = items.first(where: { $0.id == clipboardManager.selectedItemID }),
                                        let ocr = rec.ocrText, !ocr.isEmpty {
-                                        Button("Sao chép chữ OCR trong ảnh") {
+                                        Button(L10n.t("Sao chép chữ OCR trong ảnh")) {
                                             NSPasteboard.general.clearContents()
                                             NSPasteboard.general.setString(ocr, forType: .string)
                                         }
                                     }
-                                    Button("Ghim vào bảng hiện tại (⌘P)") { pinSelected() }
+                                    Button(L10n.t("Ghim vào bảng hiện tại (⌘P)")) { pinSelected() }
                                     Button("Xem nhanh (Space)") { preview(record) }
                                     Divider()
-                                    Button("Xóa (⌘⌫)", role: .destructive) { deleteSelected() }
+                                    Button(L10n.t("Xóa (⌘⌫)"), role: .destructive) { deleteSelected() }
                                 }
                             }
                         }
@@ -94,11 +94,11 @@ struct ClipboardTabView: View {
 
             // Bottom hint bar (keyboard map)
             HStack(spacing: 12) {
-                Text("←/→ chọn · Return dán · ⇧Return dán thuần · Space xem · ⌘P ghim · ⌘1-9 bảng · Esc")
+                Text(L10n.t("←/→ chọn · Return dán · ⇧Return dán thuần · Space xem · ⌘P ghim · ⌘1-9 bảng · Esc"))
                     .font(.caption2).foregroundColor(.secondary)
                 Spacer()
                 if !WindowManager.isTrusted {
-                    Button("Bật Dán phím (cần Trợ năng)…") { showAccessAlert = true }
+                    Button(L10n.t("Bật Dán phím (cần Trợ năng)…")) { showAccessAlert = true }
                         .font(.caption2)
                 }
             }
@@ -113,11 +113,11 @@ struct ClipboardTabView: View {
             }
         }
         .onDisappear { removeKeyMonitor() }
-        .alert("Cần quyền Trợ năng để dán phím", isPresented: $showAccessAlert) {
-            Button("Mở Cài đặt Trợ năng") { WindowManager.openAccessibilityPane() }
-            Button("Để sau", role: .cancel) {}
+        .alert(L10n.t("Cần quyền Trợ năng để dán phím"), isPresented: $showAccessAlert) {
+            Button(L10n.t("Mở Cài đặt Trợ năng")) { WindowManager.openAccessibilityPane() }
+            Button(L10n.t("Để sau"), role: .cancel) {}
         } message: {
-            Text("XFinder sẽ ghi nội dung vào clipboard, chuyển tới ứng dụng trước đó và mô phỏng ⌘V. Sao chép vào clipboard vẫn dùng được (bấm \"Sao chép\" trong menu chuột phải).")
+            Text(L10n.t("XFinder sẽ ghi nội dung vào clipboard, chuyển tới ứng dụng trước đó và mô phỏng ⌘V. Sao chép vào clipboard vẫn dùng được (bấm \"Sao chép\" trong menu chuột phải)."))
         }
     }
 
@@ -279,7 +279,7 @@ private struct ClipboardPinboardBar: View {
                 Image(systemName: "plus.circle").imageScale(.large).foregroundColor(.secondary)
             }
             .buttonStyle(.plain).padding(.horizontal, 12)
-            .help("Tạo bảng ghim mới")
+            .help(L10n.t("Tạo bảng ghim mới"))
             Spacer()
         }
         .frame(height: 44)
@@ -302,13 +302,13 @@ private struct CreatePinboardSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Tạo bảng ghim").font(.title2).fontWeight(.semibold)
+            Text(L10n.t("Tạo bảng ghim")).font(.title2).fontWeight(.semibold)
             VStack(alignment: .leading, spacing: 8) {
-                Label("Tên", systemImage: "textformat")
-                TextField("Tên bảng", text: $name).textFieldStyle(.roundedBorder)
+                Label(L10n.t("Tên"), systemImage: "textformat")
+                TextField(L10n.t("Tên bảng"), text: $name).textFieldStyle(.roundedBorder)
             }
             VStack(alignment: .leading, spacing: 8) {
-                Label("Màu", systemImage: "paintbrush")
+                Label(L10n.t("Màu"), systemImage: "paintbrush")
                 HStack {
                     ForEach([Color.blue, Color.green, Color.purple, Color.orange, Color.red, Color.pink], id: \.self) { c in
                         Circle().fill(c).frame(width: 30, height: 30)
@@ -320,9 +320,9 @@ private struct CreatePinboardSheet: View {
             }
             HStack(spacing: 12) {
                 Spacer()
-                Button("Hủy", role: .cancel) { dismiss() }
-                Button("Tạo") {
-                    clipboardManager.createPinboard(name: name.isEmpty ? "Bảng mới" : name, color: selectedColor)
+                Button(L10n.t("Hủy"), role: .cancel) { dismiss() }
+                Button(L10n.t("Tạo")) {
+                    clipboardManager.createPinboard(name: name.isEmpty ? L10n.t("Bảng mới") : name, color: selectedColor)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
@@ -342,12 +342,12 @@ private struct PasteStackHUD: View {
             Image(systemName: "square.stack.3d.up.fill").font(.caption).foregroundColor(.accentColor)
             Text("Stack: \(clipboardManager.pasteStack.remaining)")
                 .font(.caption).fontWeight(.medium)
-            Button("Hủy") { clipboardManager.stopPasteStack() }
+            Button(L10n.t("Hủy")) { clipboardManager.stopPasteStack() }
                 .font(.caption2).buttonStyle(.plain).foregroundColor(.secondary)
         }
         .padding(.horizontal, 10).padding(.vertical, 4)
         .background(Color.accentColor.opacity(0.12)).cornerRadius(8)
-        .help("Paste Stack đang hoạt động — mỗi lần Dán lấy mục tiếp theo. Bấm Hủy để dừng.")
+        .help(L10n.t("Paste Stack đang hoạt động — mỗi lần Dán lấy mục tiếp theo. Bấm Hủy để dừng."))
     }
 }
 
@@ -356,8 +356,8 @@ private struct ClipboardEmptyView: View {
         VStack {
             Image(systemName: "clipboard").font(.system(size: 48))
                 .foregroundColor(.secondary).padding(.bottom, 16)
-            Text("Chưa có mục nào").font(.headline).foregroundColor(.secondary)
-            Text("Nội dung bạn sao chép sẽ hiện ở đây (ứng dụng mật khẩu và nội dung nhạy cảm được bỏ qua)")
+            Text(L10n.t("Chưa có mục nào")).font(.headline).foregroundColor(.secondary)
+            Text(L10n.t("Nội dung bạn sao chép sẽ hiện ở đây (ứng dụng mật khẩu và nội dung nhạy cảm được bỏ qua)"))
                 .font(.caption).foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

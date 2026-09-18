@@ -47,7 +47,7 @@ struct NotesDetailView: View {
                     subtitle: L10n.t("Lưu ghi chú, danh sách công việc và ý tưởng ngay mép màn hình."),
                     trailing: AnyView(
                         HStack(spacing: 6) {
-                            Text(edgeEnabled ? "Bật" : "Tắt")
+                            Text(edgeEnabled ? L10n.t("Bật") : L10n.t("Tắt"))
                                 .font(.system(size: 12)).foregroundColor(.secondary)
                             Toggle("", isOn: $edgeEnabled)
                                 .labelsHidden()
@@ -86,9 +86,9 @@ struct NotesDetailView: View {
         HStack(spacing: 10) {
             Image(systemName: "note.text").foregroundColor(.accentColor).frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(store.notes.filter { !$0.isArchived }.count) ghi chú đang dùng")
+                Text("\(store.notes.filter { !$0.isArchived }.count)\(L10n.t(" ghi chú đang dùng"))")
                     .font(.system(size: 13))
-                Text("\(store.notes.filter(\.isArchived).count) đã lưu trữ")
+                Text("\(store.notes.filter(\.isArchived).count)\(L10n.t(" đã lưu trữ"))")
                     .font(.system(size: 11)).foregroundColor(.secondary)
             }
             Spacer()
@@ -96,7 +96,7 @@ struct NotesDetailView: View {
                 ForEach(NoteStore.NoteFont.allCases) { f in Text(f.titleVI).tag(f.rawValue) }
             }
             .pickerStyle(.menu).frame(width: 110)
-            Button("Ghi chú mới") { showCreateSheet = true }
+            Button(L10n.t("Ghi chú mới")) { showCreateSheet = true }
                 .buttonStyle(.bordered).controlSize(.small)
         }
         .padding(.horizontal, 20)
@@ -104,7 +104,7 @@ struct NotesDetailView: View {
 
     private var header: some View {
         HStack {
-            Text("Ghi chú")
+            Text(L10n.t("Ghi chú"))
                 .font(.system(size: 22, weight: .bold))
             Text("\(store.notes.filter { !$0.isArchived }.count)")
                 .font(.system(size: 12))
@@ -113,7 +113,7 @@ struct NotesDetailView: View {
                 .background(Color(.controlBackgroundColor))
                 .cornerRadius(8)
             Spacer()
-            Button("Ghi chú mới") { showCreateSheet = true }
+            Button(L10n.t("Ghi chú mới")) { showCreateSheet = true }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
         }
@@ -147,7 +147,7 @@ struct NotesDetailView: View {
         HStack(spacing: 10) {
             HStack {
                 Image(systemName: "magnifyingglass").foregroundColor(.secondary).font(.caption)
-                TextField("Tìm ghi chú…", text: $searchText)
+                TextField(L10n.t("Tìm ghi chú…"), text: $searchText)
                     .textFieldStyle(.plain).font(.system(size: 12))
                 if !searchText.isEmpty {
                     Button { searchText = "" } label: {
@@ -160,8 +160,8 @@ struct NotesDetailView: View {
             .cornerRadius(6)
             .frame(maxWidth: 260)
 
-            Picker("Màu", selection: $selectedColorName) {
-                Text("Mọi màu").tag(nil as String?)
+            Picker(L10n.t("Màu"), selection: $selectedColorName) {
+                Text(L10n.t("Mọi màu")).tag(nil as String?)
                 ForEach(CodableColor.presetNames, id: \.self) { name in
                     Text(name).tag(name as String?)
                 }
@@ -170,8 +170,8 @@ struct NotesDetailView: View {
             .frame(width: 130)
 
             Picker("", selection: $showArchived) {
-                Text("Đang dùng").tag(false)
-                Text("Lưu trữ").tag(true)
+                Text(L10n.t("Đang dùng")).tag(false)
+                Text(L10n.t("Lưu trữ")).tag(true)
             }
             .pickerStyle(.segmented)
             .frame(width: 200)
@@ -183,9 +183,9 @@ struct NotesDetailView: View {
     private var emptyState: some View {
         VStack(spacing: 10) {
             Image(systemName: "note.text").font(.system(size: 36)).foregroundColor(.secondary)
-            Text(showArchived ? "Không có ghi chú lưu trữ" : "Chưa có ghi chú")
+            Text(showArchived ? L10n.t("Không có ghi chú lưu trữ") : L10n.t("Chưa có ghi chú"))
                 .font(.headline)
-            Text("Bấm “Ghi chú mới” để tạo ghi chú đầu tiên.")
+            Text(L10n.t("Bấm “Ghi chú mới” để tạo ghi chú đầu tiên."))
                 .font(.caption).foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -204,18 +204,18 @@ private struct EdgeNotesSettingsCard: View {
         SettingsCard(title: L10n.t("Ghi chú ở mép màn hình"),
                      subtitle: store.notes.isEmpty
                          ? L10n.t("Dải mép chỉ hiện khi có ít nhất một ghi chú.")
-                         : "Di chuột tới mép màn hình để mở ghi chú.") {
+                         : L10n.t("Di chuột tới mép màn hình để mở ghi chú.")) {
             VStack(spacing: 10) {
                 ToggleRow(title: L10n.t("Hiện ghi chú ở mép màn hình"), isOn: $edgeEnabled)
                     .onChange(of: edgeEnabled) { EdgeNotesController.shared.applySettings() }
-                Picker("Cạnh màn hình", selection: $edgeSide) {
-                    Text("Trái").tag("Left")
-                    Text("Phải").tag("Right")
+                Picker(L10n.t("Cạnh màn hình"), selection: $edgeSide) {
+                    Text(L10n.t("Trái")).tag("Left")
+                    Text(L10n.t("Phải")).tag("Right")
                 }
                 .pickerStyle(.segmented)
                 .onChange(of: edgeSide) { EdgeNotesController.shared.applySettings() }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Độ nhạy vùng chạm \(Int(edgeHotspot)) pt")
+                    Text("\(L10n.t("Độ nhạy vùng chạm "))\(Int(edgeHotspot)) pt")
                         .font(.system(size: 13, weight: .medium))
                     Slider(value: $edgeHotspot, in: 4...40, step: 1)
                         .onChange(of: edgeHotspot) { EdgeNotesController.shared.applySettings() }
@@ -227,7 +227,7 @@ private struct EdgeNotesSettingsCard: View {
                 ToggleRow(title: L10n.t("Ẩn khi con trỏ rời khỏi"), isOn: $hideOnLeave)
                     .onChange(of: hideOnLeave) { EdgeNotesController.shared.applySettings() }
                 if store.notes.isEmpty {
-                    Text("Chưa có ghi chú — dải mép đang ẩn. Tạo ghi chú đầu tiên để dùng.")
+                    Text(L10n.t("Chưa có ghi chú — dải mép đang ẩn. Tạo ghi chú đầu tiên để dùng."))
                         .font(.system(size: 11)).foregroundColor(.secondary)
                 }
             }
@@ -245,7 +245,7 @@ private struct AppearanceCard: View {
                      subtitle: L10n.t("Markdown và danh sách công việc vẫn chỉnh sửa được dưới dạng văn bản thuần.")) {
             VStack(spacing: 10) {
                 HStack {
-                    Text("Phông chữ").font(.system(size: 13))
+                    Text(L10n.t("Phông chữ")).font(.system(size: 13))
                     Spacer()
                     Picker("", selection: $noteFont) {
                         ForEach(NoteStore.NoteFont.allCases) { f in Text(f.titleVI).tag(f.rawValue) }
@@ -253,7 +253,7 @@ private struct AppearanceCard: View {
                     .pickerStyle(.menu).frame(width: 120)
                 }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Cỡ chữ \(String(format: "%.1f", store.fontSize)) pt")
+                    Text("\(L10n.t("Cỡ chữ")) \(String(format: "%.1f", store.fontSize)) pt")
                         .font(.system(size: 13))
                     Slider(value: Binding(
                         get: { store.fontSize },
@@ -275,10 +275,10 @@ private struct ShortcutsCard: View {
         SettingsCard(title: L10n.t("Phím tắt"),
                      subtitle: L10n.t("Mở ghi chú từ bất kỳ ứng dụng nào.")) {
             VStack(spacing: 8) {
-                shortcutRow("Ghi chú mới", keys: "⌥⌘N")
-                shortcutRow("Tất cả ghi chú", keys: "⌥⌘A")
-                shortcutRow("Ghi chú đã lưu trữ", keys: "⌥⌘L")
-                Text("Trong ghi chú: ⌘T ô đánh dấu · ⌘F tìm · ⌘P ghim · Esc đóng")
+                shortcutRow(L10n.t("Ghi chú mới"), keys: "⌥⌘N")
+                shortcutRow(L10n.t("Tất cả ghi chú"), keys: "⌥⌘A")
+                shortcutRow(L10n.t("Ghi chú đã lưu trữ"), keys: "⌥⌘L")
+                Text(L10n.t("Trong ghi chú: ⌘T ô đánh dấu · ⌘F tìm · ⌘P ghim · Esc đóng"))
                     .font(.system(size: 11)).foregroundColor(.secondary)
             }
         }
@@ -306,21 +306,21 @@ private struct ImportExportCard: View {
         SettingsCard(title: L10n.t("Nhập / Xuất ghi chú")) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
-                    Menu("Nhập…") {
+                    Menu(L10n.t("Nhập…")) {
                         Button("Markdown (.md)") { pickImport(["md", "markdown"]) { store.importMarkdown($0) } }
-                        Button("Văn bản (.txt)") { pickImport(["txt"]) { store.importText($0) } }
+                        Button(L10n.t("Văn bản (.txt)")) { pickImport(["txt"]) { store.importText($0) } }
                         Button("JSON") { importJSON() }
                     }
                     .fixedSize()
-                    Menu("Xuất…") {
+                    Menu(L10n.t("Xuất…")) {
                         Button("Markdown (.md)") { saveText("xnotes.md", store.exportMarkdown()) }
-                        Button("Văn bản (.txt)") { saveText("xnotes.txt", store.exportText()) }
+                        Button(L10n.t("Văn bản (.txt)")) { saveText("xnotes.txt", store.exportText()) }
                         Button("JSON") { exportJSON() }
                     }
                     .fixedSize()
                     Spacer()
                 }
-                Text("Markdown/JSON tương thích các app ghi chú nhanh (Antinote, Simplenote…). Nhập sẽ thay thế toàn bộ danh sách hiện tại.")
+                Text(L10n.t("Markdown/JSON tương thích các app ghi chú nhanh (Antinote, Simplenote…). Nhập sẽ thay thế toàn bộ danh sách hiện tại."))
                     .font(.system(size: 11)).foregroundColor(.secondary)
                 if let err = importError {
                     Text(err).font(.system(size: 11)).foregroundColor(.red)
@@ -370,7 +370,7 @@ private struct ImportExportCard: View {
         guard panel.runModal() == .OK, let url = panel.url,
               let data = try? Data(contentsOf: url) else { return }
         guard let decoded = try? JSONDecoder().decode([QuickNote].self, from: data) else {
-            importError = "File không đúng định dạng ghi chú XFinder."
+            importError = L10n.t("File không đúng định dạng ghi chú XFinder.")
             return
         }
         store.replaceAll(with: decoded)
@@ -405,11 +405,11 @@ private struct BrowserNoteCard: View {
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(note.color.color.opacity(0.3), lineWidth: 1))
         .onTapGesture(perform: onEdit)
         .contextMenu {
-            Button { onEdit() } label: { Label("Sửa", systemImage: "pencil") }
-            Button { onPin() } label: { Label(note.isPinned ? "Bỏ ghim" : "Ghim", systemImage: "pin") }
-            Button { onArchive() } label: { Label(note.isArchived ? "Khôi phục" : "Lưu trữ", systemImage: "archivebox") }
+            Button { onEdit() } label: { Label(L10n.t("Sửa"), systemImage: "pencil") }
+            Button { onPin() } label: { Label(note.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim"), systemImage: "pin") }
+            Button { onArchive() } label: { Label(note.isArchived ? L10n.t("Khôi phục") : L10n.t("Lưu trữ"), systemImage: "archivebox") }
             Divider()
-            Button(role: .destructive) { onDelete() } label: { Label("Xóa", systemImage: "trash") }
+            Button(role: .destructive) { onDelete() } label: { Label(L10n.t("Xóa"), systemImage: "trash") }
         }
     }
 }

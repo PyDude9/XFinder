@@ -10,8 +10,8 @@ struct PdfToolsDetailView: View {
         var id: String { rawValue }
         var titleVI: String {
             switch self {
-            case .merge: return "Gộp PDF"
-            case .extract: return "Tách trang"
+            case .merge: return L10n.t("Gộp PDF")
+            case .extract: return L10n.t("Tách trang")
             case .rotate: return "Xoay trang"
             }
         }
@@ -36,23 +36,23 @@ struct PdfToolsDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Công cụ PDF")
+                Text(L10n.t("Công cụ PDF"))
                     .font(.system(size: 22, weight: .bold))
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
 
-                Picker("Công cụ", selection: $tool) {
+                Picker(L10n.t("Công cụ"), selection: $tool) {
                     ForEach(Tool.allCases) { t in Text(t.titleVI).tag(t) }
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 20)
 
                 SettingsCard(
-                    title: tool == .merge ? "Các tập tin PDF cần gộp (theo thứ tự)" : "Tập tin PDF nguồn",
-                    subtitle: sources.isEmpty ? "Chưa chọn gì" : "\(sources.count) tập tin"
+                    title: tool == .merge ? L10n.t("Các tập tin PDF cần gộp (theo thứ tự)") : L10n.t("Tập tin PDF nguồn"),
+                    subtitle: sources.isEmpty ? L10n.t("Chưa chọn gì") : "\(sources.count)\(L10n.t(" tập tin"))"
                 ) {
                     VStack(alignment: .leading, spacing: 10) {
-                        Button("Chọn PDF…") { pickSources() }
+                        Button(L10n.t("Chọn PDF…")) { pickSources() }
                         ForEach(sources, id: \.self) { url in
                             HStack {
                                 Image(systemName: "doc.richtext.fill").foregroundColor(.red.opacity(0.8))
@@ -82,7 +82,7 @@ struct PdfToolsDetailView: View {
                             }
                         }
                         if !sources.isEmpty, tool != .merge, inspectedPageCount > 0 {
-                            Text("Tài liệu có \(inspectedPageCount) trang")
+                            Text("\(L10n.t("Tài liệu có "))\(inspectedPageCount) trang")
                                 .font(.system(size: 11))
                                 .foregroundColor(.secondary)
                         }
@@ -91,7 +91,7 @@ struct PdfToolsDetailView: View {
                 .padding(.horizontal, 20)
 
                 if tool == .extract {
-                    SettingsCard(title: "Trang cần tách", subtitle: "Ví dụ: 1-3 hoặc 2,5,7") {
+                    SettingsCard(title: L10n.t("Trang cần tách"), subtitle: L10n.t("Ví dụ: 1-3 hoặc 2,5,7")) {
                         TextField("1-3", text: $pageRangeText)
                             .textFieldStyle(.roundedBorder)
                             .font(.system(size: 12, design: .monospaced))
@@ -100,15 +100,15 @@ struct PdfToolsDetailView: View {
                 }
 
                 if tool == .rotate {
-                    SettingsCard(title: "Góc xoay & trang") {
+                    SettingsCard(title: L10n.t("Góc xoay & trang")) {
                         VStack(alignment: .leading, spacing: 10) {
-                            Picker("Góc", selection: $angle) {
+                            Picker(L10n.t("Góc"), selection: $angle) {
                                 Text("90°").tag(90)
                                 Text("180°").tag(180)
                                 Text("270°").tag(270)
                             }
                             .pickerStyle(.segmented)
-                            TextField("Trang (1-3 hoặc 2,5,7 — để trống = tất cả)", text: $pageRangeText)
+                            TextField(L10n.t("Trang (1-3 hoặc 2,5,7 — để trống = tất cả)"), text: $pageRangeText)
                                 .textFieldStyle(.roundedBorder)
                                 .font(.system(size: 12, design: .monospaced))
                         }
@@ -117,11 +117,11 @@ struct PdfToolsDetailView: View {
                 }
 
                 SettingsCard(
-                    title: "Thư mục đích",
-                    subtitle: outputFolder?.path ?? "Mặc định: cùng thư mục với tập tin đầu tiên"
+                    title: L10n.t("Thư mục đích"),
+                    subtitle: outputFolder?.path ?? L10n.t("Mặc định: cùng thư mục với tập tin đầu tiên")
                 ) {
                     HStack {
-                        Button("Chọn thư mục đích…") {
+                        Button(L10n.t("Chọn thư mục đích…")) {
                             let panel = NSOpenPanel()
                             panel.canChooseFiles = false
                             panel.canChooseDirectories = true
@@ -129,7 +129,7 @@ struct PdfToolsDetailView: View {
                             if panel.runModal() == .OK { outputFolder = panel.url }
                         }
                         if outputFolder != nil {
-                            Button("Mặc định") { outputFolder = nil }.font(.system(size: 12))
+                            Button(L10n.t("Mặc định")) { outputFolder = nil }.font(.system(size: 12))
                         }
                     }
                 }
@@ -142,7 +142,7 @@ struct PdfToolsDetailView: View {
                 } label: {
                     HStack {
                         if isRunning { ProgressView().scaleEffect(0.7) }
-                        Text(isRunning ? "Đang xử lý…" : "Thực hiện")
+                        Text(isRunning ? L10n.t("Đang xử lý…") : L10n.t("Thực hiện"))
                             .fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)
@@ -152,7 +152,7 @@ struct PdfToolsDetailView: View {
                 .padding(.horizontal, 20)
 
                 if let msg = resultMessage {
-                    SettingsCard(title: isError ? "Lỗi" : "Kết quả") {
+                    SettingsCard(title: isError ? L10n.t("Lỗi") : L10n.t("Kết quả")) {
                         Text(msg)
                             .font(.system(size: 12))
                             .foregroundColor(isError ? .red : .primary)
@@ -236,7 +236,7 @@ struct PdfToolsDetailView: View {
         var docs: [PDFDocument] = []
         for url in sources {
             guard let d = PDFDocument(url: url) else {
-                return finish(error: "Không đọc được \(url.lastPathComponent)")
+                return finish(error: "\(L10n.t("Không đọc được "))\(url.lastPathComponent)")
             }
             docs.append(d)
         }
@@ -253,18 +253,18 @@ struct PdfToolsDetailView: View {
             .appendingPathComponent("Merged-\(Int(Date().timeIntervalSince1970))")
             .appendingPathExtension("pdf")
         if out.write(to: dest) {
-            finish(error: nil, message: "Đã gộp \(sources.count) tập tin (\(idx) trang) → \(dest.lastPathComponent)")
+            finish(error: nil, message: "\(L10n.t("Đã gộp "))\(sources.count)\(L10n.t(" tập tin ("))\(idx) trang) → \(dest.lastPathComponent)")
         } else {
-            finish(error: "Không ghi được tập tin đích")
+            finish(error: L10n.t("Không ghi được tập tin đích"))
         }
     }
 
     private func doExtract() async {
         guard let src = sources.first, let doc = PDFDocument(url: src) else {
-            return finish(error: "Không đọc được tập tin PDF")
+            return finish(error: L10n.t("Không đọc được tập tin PDF"))
         }
         guard let pages = parsePages(total: doc.pageCount, allowEmptyAll: false) else {
-            return finish(error: "Khoảng trang không hợp lệ (tài liệu có \(doc.pageCount) trang)")
+            return finish(error: "\(L10n.t("Khoảng trang không hợp lệ (tài liệu có "))\(doc.pageCount) trang)")
         }
         let out = PDFDocument()
         for (i, p) in pages.enumerated() {
@@ -275,18 +275,18 @@ struct PdfToolsDetailView: View {
             .appendingPathComponent("\(src.deletingPathExtension().lastPathComponent)-pages")
             .appendingPathExtension("pdf")
         if out.write(to: dest) {
-            finish(error: nil, message: "Đã tách \(pages.count) trang → \(dest.lastPathComponent)")
+            finish(error: nil, message: "\(L10n.t("Đã tách "))\(pages.count) trang → \(dest.lastPathComponent)")
         } else {
-            finish(error: "Không ghi được tập tin đích")
+            finish(error: L10n.t("Không ghi được tập tin đích"))
         }
     }
 
     private func doRotate() async {
         guard let src = sources.first, let doc = PDFDocument(url: src) else {
-            return finish(error: "Không đọc được tập tin PDF")
+            return finish(error: L10n.t("Không đọc được tập tin PDF"))
         }
         guard let pages = parsePages(total: doc.pageCount, allowEmptyAll: true) else {
-            return finish(error: "Khoảng trang không hợp lệ (tài liệu có \(doc.pageCount) trang)")
+            return finish(error: "\(L10n.t("Khoảng trang không hợp lệ (tài liệu có "))\(doc.pageCount) trang)")
         }
         for p in pages {
             if let page = doc.page(at: p) {
@@ -297,9 +297,9 @@ struct PdfToolsDetailView: View {
             .appendingPathComponent("\(src.deletingPathExtension().lastPathComponent)-rotated")
             .appendingPathExtension("pdf")
         if doc.write(to: dest) {
-            finish(error: nil, message: "Đã xoay \(pages.count) trang \(angle)° → \(dest.lastPathComponent)")
+            finish(error: nil, message: "\(L10n.t("Đã xoay "))\(pages.count) trang \(angle)° → \(dest.lastPathComponent)")
         } else {
-            finish(error: "Không ghi được tập tin đích")
+            finish(error: L10n.t("Không ghi được tập tin đích"))
         }
     }
 

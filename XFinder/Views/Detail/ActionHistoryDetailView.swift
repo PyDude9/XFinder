@@ -17,7 +17,7 @@ struct ActionHistoryDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Lịch sử thao tác")
+                Text(L10n.t("Lịch sử thao tác"))
                     .font(.system(size: 22, weight: .bold))
                 Text("\(store.entries.count)")
                     .font(.system(size: 12)).foregroundColor(.secondary)
@@ -25,7 +25,7 @@ struct ActionHistoryDetailView: View {
                     .background(Color(.controlBackgroundColor)).cornerRadius(8)
                 Spacer()
                 if !store.entries.isEmpty {
-                    Button("Xóa lịch sử") { store.clear() }
+                    Button(L10n.t("Xóa lịch sử")) { store.clear() }
                         .font(.system(size: 12)).foregroundColor(.red)
                 }
             }
@@ -44,8 +44,8 @@ struct ActionHistoryDetailView: View {
                 VStack(spacing: 10) {
                     Image(systemName: "clock.arrow.circlepath")
                         .font(.system(size: 36)).foregroundColor(.secondary)
-                    Text("Chưa có thao tác nào").font(.headline)
-                    Text("Đổi tên, nén/giải nén, xử lý PDF… sẽ được ghi lại ở đây.")
+                    Text(L10n.t("Chưa có thao tác nào")).font(.headline)
+                    Text(L10n.t("Đổi tên, nén/giải nén, xử lý PDF… sẽ được ghi lại ở đây."))
                         .font(.caption).foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -69,13 +69,13 @@ struct ActionHistoryDetailView: View {
                                 }
                                 Spacer()
                                 if entry.reversible {
-                                    Button("Hoàn tác") {
+                                    Button(L10n.t("Hoàn tác")) {
                                         undoMessage = store.undo(entry)
                                     }
                                     .buttonStyle(.bordered)
                                     .controlSize(.small)
                                 } else {
-                                    Text("Không thể hoàn tác")
+                                    Text(L10n.t("Không thể hoàn tác"))
                                         .font(.caption2).foregroundColor(.secondary)
                                 }
                             }

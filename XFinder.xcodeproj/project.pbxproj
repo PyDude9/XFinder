@@ -91,6 +91,7 @@
 		7F1A00D7 /* QuickSearchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D6 /* QuickSearchPanel.swift */; };
 		7F1A00DC /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00DB /* L10n.swift */; };
 		7F1A00E1 /* L10nDB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E0 /* L10nDB.swift */; };
+		7F1A00E3 /* L10nStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E2 /* L10nStrings.swift */; };
 		7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A00DD /* XFinder/Resources/AppIcon.icns */; };
 		7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0073 /* ClipboardPasteEngine.swift */; };
 		7F1A7F1A008E /* ClipboardPayloadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0074 /* ClipboardPayloadStore.swift */; };
@@ -214,6 +215,7 @@
 		7F1A00D6 /* QuickSearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearchPanel.swift; sourceTree = "<group>"; };
 		7F1A00DB /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		7F1A00E0 /* L10nDB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nDB.swift; sourceTree = "<group>"; };
+		7F1A00E2 /* L10nStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nStrings.swift; sourceTree = "<group>"; };
 		7F1A00DD /* XFinder/Resources/AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = XFinder/Resources/AppIcon.icns; sourceTree = "<group>"; };
 		88AD9932 /* QuickSearch/QuickSearchResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchResult.swift; sourceTree = "<group>"; };
 		95421592 /* QuickSearch/AppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/AppLauncher.swift; sourceTree = "<group>"; };
@@ -320,6 +322,7 @@
 				7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */,
 				7F1A00DB /* L10n.swift */,
 				7F1A00E0 /* L10nDB.swift */,
+				7F1A00E2 /* L10nStrings.swift */,
 			);
 			path = XFinder/Core;
 			sourceTree = SOURCE_ROOT;
@@ -580,6 +583,7 @@
 				7F1A00D7 /* QuickSearchPanel.swift in Sources */,
 				7F1A00DC /* L10n.swift in Sources */,
 				7F1A00E1 /* L10nDB.swift in Sources */,
+				7F1A00E3 /* L10nStrings.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

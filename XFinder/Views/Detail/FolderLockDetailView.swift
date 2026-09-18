@@ -12,18 +12,18 @@ struct FolderLockDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 PageHeader(icon: "lock.shield",
-                           title: "Khóa thư mục",
-                           subtitle: "Mã hóa thư mục bằng mật khẩu — AES-256, hoàn toàn trên máy.")
+                           title: L10n.t("Khóa thư mục"),
+                           subtitle: L10n.t("Mã hóa thư mục bằng mật khẩu — AES-256, hoàn toàn trên máy."))
 
                 SectionHeader(icon: "plus.rectangle.on.folder",
-                              title: "Tạo vault mới",
-                              subtitle: "Chọn một thư mục để mã hóa thành vault có mật khẩu.")
+                              title: L10n.t("Tạo vault mới"),
+                              subtitle: L10n.t("Chọn một thư mục để mã hóa thành vault có mật khẩu."))
 
                 VStack(alignment: .leading, spacing: 8) {
                     Button {
                         showCreate = true
                     } label: {
-                        Label("Chọn thư mục để khóa…", systemImage: "folder.badge.plus")
+                        Label(L10n.t("Chọn thư mục để khóa…"), systemImage: "folder.badge.plus")
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
@@ -32,7 +32,7 @@ struct FolderLockDetailView: View {
                     if controller.busy {
                         HStack(spacing: 8) {
                             ProgressView().scaleEffect(0.6)
-                            Text("Đang xử lý… (mã hóa thư mục lớn có thể mất vài phút)")
+                            Text(L10n.t("Đang xử lý… (mã hóa thư mục lớn có thể mất vài phút)"))
                                 .font(.system(size: 11)).foregroundColor(.secondary)
                         }
                     }
@@ -45,9 +45,9 @@ struct FolderLockDetailView: View {
                 Divider().padding(.horizontal, 20)
 
                 SectionHeader(icon: "lock.doc",
-                              title: "Vault của bạn",
+                              title: L10n.t("Vault của bạn"),
                               subtitle: controller.vaults.isEmpty
-                                  ? "Chưa có vault nào."
+                                  ? L10n.t("Chưa có vault nào.")
                                   : "\(controller.vaults.count) vault")
 
                 VStack(spacing: 8) {
@@ -60,19 +60,19 @@ struct FolderLockDetailView: View {
                 Divider().padding(.horizontal, 20)
 
                 VStack(alignment: .leading, spacing: 7) {
-                    Text("Cách hoạt động").font(.system(size: 15, weight: .semibold))
-                    line("Vault là một disk image mã hóa AES-256 (.sparsebundle) — cùng cơ chế Apple dùng cho ảnh đĩa mã hóa.")
-                    line("Mở khóa: nhập mật khẩu → vault gắn vào máy như một ổ đĩa và mở trong Finder.")
-                    line("Khóa lại: ngắt ổ đĩa; nội dung trên đĩa trở lại dạng mã hóa, không đọc được.")
-                    line("Sparsebundle chỉ chiếm dung lượng thực tế đang dùng, và sao lưu Time Machine hiệu quả hơn ảnh đĩa thường.")
-                    line("XFinder KHÔNG lưu mật khẩu. Mất mật khẩu là mất dữ liệu — hãy lưu vào Keychain hoặc trình quản lý mật khẩu.")
-                    line("Thư mục gốc chỉ được chuyển vào Thùng rác sau khi đã kiểm tra bản mã hóa thành công.")
+                    Text(L10n.t("Cách hoạt động")).font(.system(size: 15, weight: .semibold))
+                    line(L10n.t("Vault là một disk image mã hóa AES-256 (.sparsebundle) — cùng cơ chế Apple dùng cho ảnh đĩa mã hóa."))
+                    line(L10n.t("Mở khóa: nhập mật khẩu → vault gắn vào máy như một ổ đĩa và mở trong Finder."))
+                    line(L10n.t("Khóa lại: ngắt ổ đĩa; nội dung trên đĩa trở lại dạng mã hóa, không đọc được."))
+                    line(L10n.t("Sparsebundle chỉ chiếm dung lượng thực tế đang dùng, và sao lưu Time Machine hiệu quả hơn ảnh đĩa thường."))
+                    line(L10n.t("XFinder KHÔNG lưu mật khẩu. Mất mật khẩu là mất dữ liệu — hãy lưu vào Keychain hoặc trình quản lý mật khẩu."))
+                    line(L10n.t("Thư mục gốc chỉ được chuyển vào Thùng rác sau khi đã kiểm tra bản mã hóa thành công."))
                 }
                 .padding(.horizontal, 20)
 
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
-                    Text("Không dùng cách “ẩn thư mục” (chflags hidden) vì ai cũng có thể hiện lại trong vài giây — đó không phải bảo mật thật.")
+                    Text(L10n.t("Không dùng cách “ẩn thư mục” (chflags hidden) vì ai cũng có thể hiện lại trong vài giây — đó không phải bảo mật thật."))
                         .font(.system(size: 12))
                 }
                 .padding(12)
@@ -101,24 +101,24 @@ struct FolderLockDetailView: View {
                 .frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
                 Text(vault.name).font(.system(size: 13, weight: .medium))
-                Text(vault.isMounted ? "Đang mở khóa" : "Đã khóa")
+                Text(vault.isMounted ? L10n.t("Đang mở khóa") : L10n.t("Đã khóa"))
                     .font(.system(size: 11)).foregroundColor(.secondary)
             }
             Spacer()
             if vault.isMounted {
-                Button("Khóa lại") {
+                Button(L10n.t("Khóa lại")) {
                     Task { await controller.lock(vault) }
                 }
                 .buttonStyle(.bordered).controlSize(.small)
             } else {
-                Button("Mở khóa…") { unlockTarget = vault }
+                Button(L10n.t("Mở khóa…")) { unlockTarget = vault }
                     .buttonStyle(.bordered).controlSize(.small)
             }
             Menu {
-                Button("Hiện trong Finder") {
+                Button(L10n.t("Hiện trong Finder")) {
                     NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: vault.imagePath)])
                 }
-                Button("Bỏ khỏi danh sách") { controller.forget(vault) }
+                Button(L10n.t("Bỏ khỏi danh sách")) { controller.forget(vault) }
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
@@ -144,34 +144,34 @@ private struct CreateVaultSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Tạo vault mã hóa").font(.system(size: 15, weight: .semibold))
+            Text(L10n.t("Tạo vault mã hóa")).font(.system(size: 15, weight: .semibold))
 
             HStack {
-                Button("Chọn thư mục…") { pick() }
+                Button(L10n.t("Chọn thư mục…")) { pick() }
                     .buttonStyle(.bordered).controlSize(.small)
-                Text(folder?.lastPathComponent ?? "Chưa chọn")
+                Text(folder?.lastPathComponent ?? L10n.t("Chưa chọn"))
                     .font(.system(size: 12)).foregroundColor(.secondary)
             }
 
-            SecureField("Mật khẩu (ít nhất 6 ký tự)", text: $password)
-            SecureField("Nhập lại mật khẩu", text: $confirm)
+            SecureField(L10n.t("Mật khẩu (ít nhất 6 ký tự)"), text: $password)
+            SecureField(L10n.t("Nhập lại mật khẩu"), text: $confirm)
 
             if !password.isEmpty, password != confirm {
-                Text("Mật khẩu nhập lại không khớp.")
+                Text(L10n.t("Mật khẩu nhập lại không khớp."))
                     .font(.system(size: 11)).foregroundColor(.red)
             }
 
-            Toggle("Chuyển thư mục gốc vào Thùng rác sau khi mã hóa", isOn: $deleteOriginal)
+            Toggle(L10n.t("Chuyển thư mục gốc vào Thùng rác sau khi mã hóa"), isOn: $deleteOriginal)
                 .font(.system(size: 12))
 
-            Text("XFinder không lưu mật khẩu này ở bất cứ đâu. Nếu quên, dữ liệu không thể khôi phục.")
+            Text(L10n.t("XFinder không lưu mật khẩu này ở bất cứ đâu. Nếu quên, dữ liệu không thể khôi phục."))
                 .font(.system(size: 11)).foregroundColor(.secondary)
 
             HStack {
                 Spacer()
-                Button("Hủy") { isPresented = false }
+                Button(L10n.t("Hủy")) { isPresented = false }
                     .buttonStyle(.bordered)
-                Button("Mã hóa") {
+                Button(L10n.t("Mã hóa")) {
                     guard let folder else { return }
                     let pw = password
                     let del = deleteOriginal
@@ -203,16 +203,16 @@ private struct UnlockSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Mở khóa “\(vault.name)”").font(.system(size: 15, weight: .semibold))
-            SecureField("Mật khẩu", text: $password)
+            Text("\(L10n.t("Mở khóa “"))\(vault.name)”").font(.system(size: 15, weight: .semibold))
+            SecureField(L10n.t("Mật khẩu"), text: $password)
             if let err = controller.lastError {
                 Text(err).font(.system(size: 11)).foregroundColor(.red)
             }
             HStack {
                 Spacer()
-                Button("Hủy") { unlockTarget = nil }
+                Button(L10n.t("Hủy")) { unlockTarget = nil }
                     .buttonStyle(.bordered)
-                Button("Mở khóa") {
+                Button(L10n.t("Mở khóa")) {
                     let pw = password
                     let v = vault
                     unlockTarget = nil

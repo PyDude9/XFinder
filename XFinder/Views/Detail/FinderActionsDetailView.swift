@@ -46,16 +46,16 @@ struct FinderActionsDetailView: View {
                 SectionHeader(icon: "cursorarrow.click.2",
                               title: L10n.t("Tệp đang chọn trong Finder"),
                               subtitle: selection.isEmpty
-                                  ? "Chọn vài tệp trong Finder rồi bấm Đọc lựa chọn."
-                                  : "\(selection.count) mục")
+                                  ? L10n.t("Chọn vài tệp trong Finder rồi bấm Đọc lựa chọn.")
+                                  : "\(selection.count)\(L10n.t(" mục"))")
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
-                        Button("Đọc lựa chọn") { readSelection() }
+                        Button(L10n.t("Đọc lựa chọn")) { readSelection() }
                             .buttonStyle(.borderedProminent).controlSize(.small)
                             .disabled(busy)
                         if !selection.isEmpty {
-                            Button("Bỏ chọn") { selection = []; status = nil }
+                            Button(L10n.t("Bỏ chọn")) { selection = []; status = nil }
                                 .buttonStyle(.bordered).controlSize(.small)
                         }
                     }
@@ -67,7 +67,7 @@ struct FinderActionsDetailView: View {
                                     .font(.system(size: 12)).lineLimit(1)
                             }
                             if selection.count > 8 {
-                                Text("… và \(selection.count - 8) mục nữa")
+                                Text("\(L10n.t("… và "))\(selection.count - 8)\(L10n.t(" mục nữa"))")
                                     .font(.system(size: 11)).foregroundColor(.secondary)
                             }
                         }
@@ -82,17 +82,17 @@ struct FinderActionsDetailView: View {
                               subtitle: L10n.t("Áp dụng cho các mục vừa đọc ở trên."))
 
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 165), spacing: 8)], spacing: 8) {
-                    actionButton("Sao chép đường dẫn", "doc.on.doc") { copyPaths() }
+                    actionButton(L10n.t("Sao chép đường dẫn"), "doc.on.doc") { copyPaths() }
                         .opacity(showCopy ? 1 : 0.4)
-                    actionButton("Nén thành ZIP", "archivebox") { compress() }
+                    actionButton(L10n.t("Nén thành ZIP"), "archivebox") { compress() }
                         .opacity(showCompress ? 1 : 0.4)
-                    actionButton("Đổi tên hàng loạt…", "textformat.abc") {
+                    actionButton(L10n.t("Đổi tên hàng loạt…"), "textformat.abc") {
                         AppState.shared.navigate(to: .batchRename)
                     }
-                    actionButton("Thêm vào Khay thả", "tray.and.arrow.down") { addToTray() }
-                    actionButton("Chuyển vào Thùng rác", "trash", destructive: true) { trash() }
+                    actionButton(L10n.t("Thêm vào Khay thả"), "tray.and.arrow.down") { addToTray() }
+                    actionButton(L10n.t("Chuyển vào Thùng rác"), "trash", destructive: true) { trash() }
                         .opacity(showCleanup ? 1 : 0.4)
-                    actionButton("Hiện trong Finder", "folder") { reveal() }
+                    actionButton(L10n.t("Hiện trong Finder"), "folder") { reveal() }
                         .opacity(showShowInFinder ? 1 : 0.4)
                 }
                 .padding(.horizontal, 20)
@@ -111,12 +111,12 @@ struct FinderActionsDetailView: View {
                               subtitle: L10n.t("Thêm mục vào menu ngữ cảnh của Finder."))
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("macOS không có API công khai cho phép một ứng dụng thường thêm mục vào menu chuột phải của Finder. Cách được Apple hỗ trợ là Quick Action (Shortcuts/Automator) hoặc một Finder Sync Extension riêng. Các toggle ở trên lọc những thao tác hiển thị khi bạn dùng XFinder qua các Thao tác nhanh trong Finder.")
+                    Text(L10n.t("macOS không có API công khai cho phép một ứng dụng thường thêm mục vào menu chuột phải của Finder. Cách được Apple hỗ trợ là Quick Action (Shortcuts/Automator) hoặc một Finder Sync Extension riêng. Các toggle ở trên lọc những thao tác hiển thị khi bạn dùng XFinder qua các Thao tác nhanh trong Finder."))
                         .font(.system(size: 12)).foregroundColor(.secondary)
                     HStack(spacing: 8) {
-                        Button("Mở Tiện ích mở rộng…") { openExtensionsPane() }
+                        Button(L10n.t("Mở Tiện ích mở rộng…")) { openExtensionsPane() }
                             .buttonStyle(.bordered).controlSize(.small)
-                        Button("Mở Automator") {
+                        Button(L10n.t("Mở Automator")) {
                             NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Automator.app"))
                         }
                         .buttonStyle(.bordered).controlSize(.small)
@@ -146,8 +146,8 @@ struct FinderActionsDetailView: View {
                 }
                 .pickerStyle(.segmented).frame(width: 160)
             }
-            Text(menuLayout == "full" ? "Full: Open In và Copy mở thành menu con, liệt kê mọi terminal đã cài và đủ kiểu copy. Các nhóm khác không đổi."
-                                      : "Gọn: menu một cấp, chỉ nhóm chính.")
+            Text(menuLayout == "full" ? L10n.t("Full: Open In và Copy mở thành menu con, liệt kê mọi terminal đã cài và đủ kiểu copy. Các nhóm khác không đổi.")
+                                      : L10n.t("Gọn: menu một cấp, chỉ nhóm chính."))
                 .font(.system(size: 11)).foregroundColor(.secondary)
 
             HStack {
@@ -207,7 +207,7 @@ struct FinderActionsDetailView: View {
             switch result {
             case .success(let urls):
                 selection = urls
-                status = urls.isEmpty ? "Finder không có mục nào đang chọn." : nil
+                status = urls.isEmpty ? L10n.t("Finder không có mục nào đang chọn.") : nil
             case .failure(let message):
                 status = message
             }
@@ -232,16 +232,17 @@ struct FinderActionsDetailView: View {
             end tell
             """
             guard let apple = NSAppleScript(source: script) else {
-                return .failure("Không tạo được AppleScript.")
+                return .failure(L10n.t("Không tạo được AppleScript."))
             }
             var err: NSDictionary?
             let output = apple.executeAndReturnError(&err)
             if let err {
                 let code = (err[NSAppleScript.errorNumber] as? Int) ?? 0
                 if code == -1743 {
-                    return .failure("Cần quyền Tự động hóa cho Finder — Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Tự động hóa → XFinder → bật Finder.")
+                    return .failure(L10n.t("Cần quyền Tự động hóa cho Finder — Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Tự động hóa → XFinder → bật Finder."))
                 }
-                return .failure("Không đọc được lựa chọn: \((err[NSAppleScript.errorMessage] as? String) ?? "lỗi \(code)")")
+                let msg = (err[NSAppleScript.errorMessage] as? String) ?? "\(L10n.t("Lỗi")) \(code)"
+                return .failure("\(L10n.t("Không đọc được lựa chọn")): \(msg)")
             }
             let paths = (output.stringValue ?? "")
                 .components(separatedBy: .newlines)
@@ -257,7 +258,7 @@ struct FinderActionsDetailView: View {
         let text = selection.map(\.path).joined(separator: "\n")
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
-        status = "Đã sao chép \(selection.count) đường dẫn."
+        status = "\(L10n.t("Đã sao chép "))\(selection.count)\(L10n.t(" đường dẫn."))"
     }
 
     private func reveal() {
@@ -271,12 +272,12 @@ struct FinderActionsDetailView: View {
                 try FileManager.default.trashItem(at: url, resultingItemURL: nil)
                 moved += 1
             } catch {
-                status = "Không xóa được \(url.lastPathComponent): \(error.localizedDescription)"
+                status = "\(L10n.t("Không xóa được "))\(url.lastPathComponent): \(error.localizedDescription)"
             }
         }
         if moved > 0 {
             ActionHistoryStore.shared.recordTrash(urls: selection)
-            status = "Đã chuyển \(moved) mục vào Thùng rác."
+            status = "\(L10n.t("Đã chuyển "))\(moved)\(L10n.t(" mục vào Thùng rác."))"
             selection = []
         }
     }
@@ -298,12 +299,12 @@ struct FinderActionsDetailView: View {
             let ok = p.terminationStatus == 0
             await MainActor.run {
                 busy = false
-                status = ok ? "Đã nén thành \(output.lastPathComponent)."
-                            : "Nén thất bại."
+                status = ok ? "\(L10n.t("Đã nén thành "))\(output.lastPathComponent)."
+                            : L10n.t("Nén thất bại.")
                 if ok {
                     ActionHistoryStore.shared.record(
                         kind: "compress",
-                        summary: "Nén \(items.count) mục → \(output.lastPathComponent)")
+                        summary: "\(L10n.t("Nén "))\(items.count)\(L10n.t(" mục → "))\(output.lastPathComponent)")
                 }
             }
         }
@@ -311,7 +312,7 @@ struct FinderActionsDetailView: View {
 
     private func addToTray() {
         DropTrayStore.shared.add(urls: selection)
-        status = "Đã thêm \(selection.count) mục vào Khay thả."
+        status = "\(L10n.t("Đã thêm "))\(selection.count)\(L10n.t(" mục vào Khay thả."))"
     }
 
     private func openExtensionsPane() {

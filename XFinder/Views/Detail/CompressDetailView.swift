@@ -9,8 +9,8 @@ struct CompressDetailView: View {
         var id: String { rawValue }
         var titleVI: String {
             switch self {
-            case .compress: return "Nén"
-            case .extract: return "Giải nén"
+            case .compress: return L10n.t("Nén")
+            case .extract: return L10n.t("Giải nén")
             }
         }
     }
@@ -50,10 +50,10 @@ struct CompressDetailView: View {
         var id: String { rawValue }
         var titleVI: String {
             switch self {
-            case .newFolderBesideArchive: return "Thư mục mới cạnh file nén"
-            case .sameFolder: return "Cùng thư mục với file nén"
-            case .downloads: return "Tải về"
-            case .custom: return "Thư mục tùy chọn"
+            case .newFolderBesideArchive: return L10n.t("Thư mục mới cạnh file nén")
+            case .sameFolder: return L10n.t("Cùng thư mục với file nén")
+            case .downloads: return L10n.t("Tải về")
+            case .custom: return L10n.t("Thư mục tùy chọn")
             }
         }
     }
@@ -63,9 +63,9 @@ struct CompressDetailView: View {
         var id: String { rawValue }
         var titleVI: String {
             switch self {
-            case .keepBoth: return "Giữ cả hai"
-            case .ask: return "Hỏi"
-            case .merge: return "Gộp thư mục"
+            case .keepBoth: return L10n.t("Giữ cả hai")
+            case .ask: return L10n.t("Hỏi")
+            case .merge: return L10n.t("Gộp thư mục")
             }
         }
     }
@@ -74,7 +74,7 @@ struct CompressDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 headerSection
-                Picker("Chế độ", selection: $mode) {
+                Picker(L10n.t("Chế độ"), selection: $mode) {
                     ForEach(Mode.allCases) { m in Text(m.titleVI).tag(m) }
                 }
                 .pickerStyle(.segmented)
@@ -82,13 +82,13 @@ struct CompressDetailView: View {
                 .onChange(of: mode) { sources = [] }
 
                 SettingsCard(
-                    title: mode == .compress ? "Tập tin / thư mục cần nén" : "Tập tin nén cần giải",
+                    title: mode == .compress ? L10n.t("Tập tin / thư mục cần nén") : L10n.t("Tập tin nén cần giải"),
                     subtitle: sources.isEmpty
-                        ? "Chưa chọn gì"
-                        : "\(sources.count) mục đã chọn"
+                        ? L10n.t("Chưa chọn gì")
+                        : "\(sources.count)\(L10n.t(" mục đã chọn"))"
                 ) {
                     VStack(alignment: .leading, spacing: 10) {
-                        Button("Chọn…") { pickSources() }
+                        Button(L10n.t("Chọn…")) { pickSources() }
                         if !sources.isEmpty {
                             ForEach(sources.prefix(8), id: \.self) { url in
                                 HStack {
@@ -109,11 +109,11 @@ struct CompressDetailView: View {
                                 }
                             }
                             if sources.count > 8 {
-                                Text("…và \(sources.count - 8) mục nữa")
+                                Text("\(L10n.t("…và "))\(sources.count - 8)\(L10n.t(" mục nữa"))")
                                     .font(.system(size: 11))
                                     .foregroundColor(.secondary)
                             }
-                            Button("Xóa hết") { sources = [] }
+                            Button(L10n.t("Xóa hết")) { sources = [] }
                                 .font(.system(size: 12))
                                 .foregroundColor(.red)
                         }
@@ -122,14 +122,14 @@ struct CompressDetailView: View {
                 .padding(.horizontal, 20)
 
                 if mode == .compress {
-                    SettingsCard(title: "Định dạng & tên") {
+                    SettingsCard(title: L10n.t("Định dạng & tên")) {
                         VStack(alignment: .leading, spacing: 10) {
-                            Picker("Định dạng", selection: $format) {
+                            Picker(L10n.t("Định dạng"), selection: $format) {
                                 ForEach(ArchiveFormat.allCases) { f in Text(f.titleVI).tag(f) }
                             }
                             .pickerStyle(.segmented)
                             HStack {
-                                Text("Tên tập tin:").font(.system(size: 12)).foregroundColor(.secondary)
+                                Text(L10n.t("Tên tập tin:")).font(.system(size: 12)).foregroundColor(.secondary)
                                 TextField("Archive", text: $archiveName)
                                     .textFieldStyle(.roundedBorder)
                                     .font(.system(size: 12))
@@ -139,17 +139,17 @@ struct CompressDetailView: View {
                             }
                             if format == .zip {
                                 HStack {
-                                    Text("Mật khẩu (tuỳ chọn):").font(.system(size: 12)).foregroundColor(.secondary)
-                                    SecureField("để trống nếu không khoá", text: $password)
+                                    Text(L10n.t("Mật khẩu (tuỳ chọn):")).font(.system(size: 12)).foregroundColor(.secondary)
+                                    SecureField(L10n.t("để trống nếu không khoá"), text: $password)
                                         .textFieldStyle(.roundedBorder)
                                         .font(.system(size: 12))
                                 }
                                 HStack {
-                                    Text("Mức nén:").font(.system(size: 12)).foregroundColor(.secondary)
+                                    Text(L10n.t("Mức nén:")).font(.system(size: 12)).foregroundColor(.secondary)
                                     Picker("", selection: $level) {
                                         Text("Nhanh").tag(1)
-                                        Text("Thường").tag(6)
-                                        Text("Tối đa").tag(9)
+                                        Text(L10n.t("Thường")).tag(6)
+                                        Text(L10n.t("Tối đa")).tag(9)
                                     }
                                     .pickerStyle(.segmented)
                                     .frame(maxWidth: 240)
@@ -165,19 +165,19 @@ struct CompressDetailView: View {
                     subtitle: extractionDestination.titleVI
                 ) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Picker("Giải nén vào", selection: $extractionDestination) {
+                        Picker(L10n.t("Giải nén vào"), selection: $extractionDestination) {
                             ForEach(ExtractionDestination.allCases) { d in Text(d.titleVI).tag(d) }
                         }
                         .pickerStyle(.menu)
                         .frame(maxWidth: 320)
                         if extractionDestination == .custom {
                             HStack {
-                                Button("Chọn thư mục đích…") { pickOutputFolder() }
+                                Button(L10n.t("Chọn thư mục đích…")) { pickOutputFolder() }
                                 if let f = outputFolder {
                                     Text(f.lastPathComponent).font(.system(size: 11)).foregroundColor(.secondary).lineLimit(1)
                                 }
                                 if outputFolder != nil {
-                                    Button("Mặc định") { outputFolder = nil; extractionDestination = .newFolderBesideArchive }
+                                    Button(L10n.t("Mặc định")) { outputFolder = nil; extractionDestination = .newFolderBesideArchive }
                                         .font(.system(size: 12))
                                 }
                             }
@@ -190,33 +190,33 @@ struct CompressDetailView: View {
                     title: L10n.t("Khi tên đã tồn tại"),
                     subtitle: conflictPolicy.titleVI
                 ) {
-                    Picker("Khi tên đã tồn tại", selection: $conflictPolicy) {
+                    Picker(L10n.t("Khi tên đã tồn tại"), selection: $conflictPolicy) {
                         ForEach(ConflictPolicy.allCases) { p in Text(p.titleVI).tag(p) }
                     }
                     .pickerStyle(.menu)
                     .frame(maxWidth: 200)
-                    Text(conflictPolicy == .keepBoth ? "Giữ cả hai lưu một bản sao riêng (\"Report 2\")."
-                         : conflictPolicy == .merge ? "Gộp thêm file vào thư mục hiện có và khôi phục nếu giải nén thất bại."
-                         : "Hỏi trước khi ghi đè.")
+                    Text(conflictPolicy == .keepBoth ? L10n.t("Giữ cả hai lưu một bản sao riêng (\"Report 2\").")
+                         : conflictPolicy == .merge ? L10n.t("Gộp thêm file vào thư mục hiện có và khôi phục nếu giải nén thất bại.")
+                         : L10n.t("Hỏi trước khi ghi đè."))
                         .font(.system(size: 11)).foregroundColor(.secondary)
                 }
                 .padding(.horizontal, 20)
 
                 if mode == .compress {
-                    SettingsCard(title: "Mặc định giải nén") {
+                    SettingsCard(title: L10n.t("Mặc định giải nén")) {
                         HStack(spacing: 8) {
                             Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
                             Text(L10n.t("Bộ máy nén và giải nén")).font(.system(size: 13))
                             Spacer()
-                            Text("7-Zip 26.02 tích hợp sẵn").font(.system(size: 11)).foregroundColor(.secondary)
+                            Text(L10n.t("7-Zip 26.02 tích hợp sẵn")).font(.system(size: 11)).foregroundColor(.secondary)
                         }
-                        Text("MFinder tích hợp sẵn bộ máy 7-Zip; không cần cài thêm ứng dụng nén và giải nén. Không bao giờ ghi đè — mục trùng tên sẽ được đổi tên (\"Report 2\") hoặc gộp.")
+                        Text(L10n.t("MFinder tích hợp sẵn bộ máy 7-Zip; không cần cài thêm ứng dụng nén và giải nén. Không bao giờ ghi đè — mục trùng tên sẽ được đổi tên (\"Report 2\") hoặc gộp."))
                             .font(.system(size: 11)).foregroundColor(.secondary)
                     }
                     .padding(.horizontal, 20)
 
-                    SettingsCard(title: "Tách tác vụ nén và giải nén hoạt động") {
-                        Text("Tạo file ZIP hoặc 7Z và giải nén ZIP, 7Z, RAR, TAR, GZ, XZ cùng các định dạng phổ biến khác. MFinder không bao giờ ghi đè file hiện có.")
+                    SettingsCard(title: L10n.t("Tách tác vụ nén và giải nén hoạt động")) {
+                        Text(L10n.t("Tạo file ZIP hoặc 7Z và giải nén ZIP, 7Z, RAR, TAR, GZ, XZ cùng các định dạng phổ biến khác. MFinder không bao giờ ghi đè file hiện có."))
                             .font(.system(size: 11)).foregroundColor(.secondary)
                     }
                     .padding(.horizontal, 20)
@@ -227,7 +227,7 @@ struct CompressDetailView: View {
                 } label: {
                     HStack {
                         if isRunning { ProgressView().scaleEffect(0.7) }
-                        Text(isRunning ? "Đang xử lý…" : (mode == .compress ? "Nén ngay" : "Giải nén ngay"))
+                        Text(isRunning ? L10n.t("Đang xử lý…") : (mode == .compress ? L10n.t("Nén ngay") : L10n.t("Giải nén ngay")))
                             .fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)
@@ -237,16 +237,16 @@ struct CompressDetailView: View {
                 .padding(.horizontal, 20)
 
                 if let resultURL {
-                    SettingsCard(title: "Việc tiếp theo") {
+                    SettingsCard(title: L10n.t("Việc tiếp theo")) {
                         HStack {
                             Menu {
                                 if mode == .compress {
-                                    Button("Mở thư mục chứa") { NSWorkspace.shared.open(resultURL.deletingLastPathComponent()) }
-                                    Button("Hiện trong Finder") { NSWorkspace.shared.activateFileViewerSelecting([resultURL]) }
+                                    Button(L10n.t("Mở thư mục chứa")) { NSWorkspace.shared.open(resultURL.deletingLastPathComponent()) }
+                                    Button(L10n.t("Hiện trong Finder")) { NSWorkspace.shared.activateFileViewerSelecting([resultURL]) }
                                 } else {
-                                    Button("Mở thư mục đã giải") { NSWorkspace.shared.open(resultURL) }
-                                    Button("Hiện trong Finder") { NSWorkspace.shared.activateFileViewerSelecting([resultURL]) }
-                                    Button("Xóa file nén gốc", role: .destructive) {
+                                    Button(L10n.t("Mở thư mục đã giải")) { NSWorkspace.shared.open(resultURL) }
+                                    Button(L10n.t("Hiện trong Finder")) { NSWorkspace.shared.activateFileViewerSelecting([resultURL]) }
+                                    Button(L10n.t("Xóa file nén gốc"), role: .destructive) {
                                         for s in sources {
                                             try? FileManager.default.trashItem(at: s, resultingItemURL: nil)
                                         }
@@ -254,12 +254,12 @@ struct CompressDetailView: View {
                                         self.resultURL = nil
                                     }
                                 }
-                                Button("Chép đường dẫn") {
+                                Button(L10n.t("Chép đường dẫn")) {
                                     NSPasteboard.general.clearContents()
                                     NSPasteboard.general.setString(resultURL.path, forType: .string)
                                 }
                             } label: {
-                                Label(mode == .compress ? "Đã nén xong — tuỳ chọn…" : "Đã giải xong — tuỳ chọn…",
+                                Label(mode == .compress ? L10n.t("Đã nén xong — tuỳ chọn…") : L10n.t("Đã giải xong — tuỳ chọn…"),
                                       systemImage: "ellipsis.circle")
                             }
                             .fixedSize()
@@ -269,12 +269,12 @@ struct CompressDetailView: View {
                 }
 
                 if !log.isEmpty {
-                    SettingsCard(title: "Kết quả") {
+                    SettingsCard(title: L10n.t("Kết quả")) {
                         VStack(alignment: .leading, spacing: 4) {
                             ForEach(log.indices.reversed().prefix(10), id: \.self) { i in
                                 Text(log[i])
                                     .font(.system(size: 11, design: .monospaced))
-                                    .foregroundColor(log[i].hasPrefix("Lỗi") || log[i].hasPrefix("Thất bại") ? .red : .primary)
+                                    .foregroundColor(log[i].hasPrefix(L10n.t("Lỗi")) || log[i].hasPrefix(L10n.t("Thất bại")) ? .red : .primary)
                                     .lineLimit(3)
                             }
                         }
@@ -324,8 +324,8 @@ struct CompressDetailView: View {
 
     private var headerSection: some View {
         PageHeader(icon: "archivebox.fill",
-                   title: "Nén & Giải nén",
-                   subtitle: "Nén và giải nén file từ Finder.")
+                   title: L10n.t("Nén & Giải nén"),
+                   subtitle: L10n.t("Nén và giải nén file từ Finder."))
     }
 
     private func resolvedDestDir(for src: URL) -> URL {
@@ -404,12 +404,12 @@ struct CompressDetailView: View {
             }
         }
         let ok = await runProcess(exe: exe, args: args, cwd: cwd)
-        appendLog(ok ? "Đã nén → \(finalDest.lastPathComponent)" : "Thất bại khi nén \(sources.count) mục")
+        appendLog(ok ? "\(L10n.t("Đã nén → "))\(finalDest.lastPathComponent)" : "\(L10n.t("Thất bại khi nén "))\(sources.count)\(L10n.t(" mục"))")
         if ok {
             resultURL = finalDest
             ActionHistoryStore.shared.record(
                 kind: "compress",
-                summary: "Nén \(sources.count) mục → \(finalDest.lastPathComponent)",
+                summary: "\(L10n.t("Nén "))\(sources.count)\(L10n.t(" mục → "))\(finalDest.lastPathComponent)",
                 detail: finalDest.path,
                 reversible: false)
         }
@@ -446,13 +446,13 @@ struct CompressDetailView: View {
             if await runProcess(exe: exe, args: args) {
                 okCount += 1
                 resultURL = destURL
-            } else { appendLog("Lỗi: không giải được \(src.lastPathComponent)") }
+            } else { appendLog("\(L10n.t("Lỗi: không giải được "))\(src.lastPathComponent)") }
         }
-        appendLog("Đã giải \(okCount)/\(sources.count) tập tin")
+        appendLog("\(L10n.t("Đã giải "))\(okCount)/\(sources.count)\(L10n.t(" tập tin"))")
         if okCount > 0 {
             ActionHistoryStore.shared.record(
                 kind: "extract",
-                summary: "Giải \(okCount)/\(sources.count) tập tin",
+                summary: "\(L10n.t("Giải "))\(okCount)/\(sources.count)\(L10n.t(" tập tin"))",
                 reversible: false)
         }
     }

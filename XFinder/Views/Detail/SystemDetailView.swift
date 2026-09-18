@@ -13,8 +13,8 @@ struct SystemDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 PageHeader(icon: "cpu",
-                           title: "Hệ thống",
-                           subtitle: "Xem nhanh CPU, đồ họa, bộ nhớ và nhiệt độ.")
+                           title: L10n.t("Hệ thống"),
+                           subtitle: L10n.t("Xem nhanh CPU, đồ họa, bộ nhớ và nhiệt độ."))
 
                 temperatureRow
                 Divider().padding(.horizontal, 20)
@@ -33,15 +33,15 @@ struct SystemDetailView: View {
 
                 Divider().padding(.horizontal, 20)
 
-                LabeledLine(label: "Bộ nhớ",
+                LabeledLine(label: L10n.t("Bộ nhớ"),
                             value: "\(monitor.currentMetrics.memoryUsedString) / \(monitor.currentMetrics.memoryTotalString)")
-                LabeledLine(label: "Áp lực bộ nhớ",
+                LabeledLine(label: L10n.t("Áp lực bộ nhớ"),
                             value: monitor.currentMetrics.thermalState.label)
-                LabeledLine(label: "Đã nén",
+                LabeledLine(label: L10n.t("Đã nén"),
                             value: fmt(monitor.currentMetrics.memoryCompressed))
-                LabeledLine(label: "Tệp trong bộ nhớ đệm",
+                LabeledLine(label: L10n.t("Tệp trong bộ nhớ đệm"),
                             value: fmt(monitor.currentMetrics.memoryCached))
-                LabeledLine(label: "Swap đã dùng",
+                LabeledLine(label: L10n.t("Swap đã dùng"),
                             value: fmt(monitor.currentMetrics.swapUsed))
 
                 if !monitor.metricsHistory.isEmpty {
@@ -52,7 +52,7 @@ struct SystemDetailView: View {
 
                 Divider().padding(.horizontal, 20)
 
-                LabeledLine(label: "Thời gian hoạt động",
+                LabeledLine(label: L10n.t("Thời gian hoạt động"),
                             value: monitor.currentMetrics.uptimeString)
             }
             .padding(.bottom, 20)
@@ -83,7 +83,7 @@ struct SystemDetailView: View {
             Text(title)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.secondary)
-            Text("Đang thu thập…")
+            Text(L10n.t("Đang thu thập…"))
                 .font(.system(size: 15, weight: .medium))
                 .foregroundColor(.secondary)
         }
@@ -110,7 +110,7 @@ struct MeterRow: View {
             HStack {
                 Text(label).font(.system(size: 13))
                 Spacer()
-                Text(percent.map { String(format: "%.0f%%", $0) } ?? "Không khả dụng")
+                Text(percent.map { String(format: "%.0f%%", $0) } ?? L10n.t("Không khả dụng"))
                     .font(.system(size: 13, weight: percent == nil ? .regular : .semibold))
                     .foregroundColor(percent == nil ? .secondary : .primary)
             }

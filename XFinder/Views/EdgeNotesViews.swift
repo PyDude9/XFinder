@@ -119,7 +119,7 @@ private struct NotePreviewCard: View {
                 .foregroundColor(.black.opacity(0.85))
                 .lineLimit(1)
             Divider().opacity(0.35)
-            Text(note.content.isEmpty ? "Ghi chú trống" : note.content)
+            Text(note.content.isEmpty ? L10n.t("Ghi chú trống") : note.content)
                 .font(.system(size: 10))
                 .foregroundColor(.black.opacity(0.75))
                 .lineLimit(6)
@@ -186,35 +186,35 @@ private struct NoteEditorCard: View {
 
     private var header: some View {
         HStack(spacing: 10) {
-            TextField("Tiêu đề", text: $title)
+            TextField(L10n.t("Tiêu đề"), text: $title)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.black.opacity(0.85))
 
-            Text(savedAt == nil ? "" : "Đã lưu")
+            Text(savedAt == nil ? "" : L10n.t("Đã lưu"))
                 .font(.system(size: 11))
                 .foregroundColor(.black.opacity(0.45))
 
             Button { fontScale = max(0.85, fontScale - 0.1) } label: {
                 Text("A").font(.system(size: 11, weight: .medium))
             }
-            .buttonStyle(.plain).help("Chữ nhỏ hơn")
+            .buttonStyle(.plain).help(L10n.t("Chữ nhỏ hơn"))
 
             Button { fontScale = min(1.5, fontScale + 0.1) } label: {
                 Text("A").font(.system(size: 15, weight: .medium))
             }
-            .buttonStyle(.plain).help("Chữ lớn hơn")
+            .buttonStyle(.plain).help(L10n.t("Chữ lớn hơn"))
 
             Button { store.togglePin(note) } label: {
                 Image(systemName: note.isPinned ? "pin.fill" : "pin")
                     .font(.system(size: 12))
             }
-            .buttonStyle(.plain).help(note.isPinned ? "Bỏ ghim" : "Ghim")
+            .buttonStyle(.plain).help(note.isPinned ? L10n.t("Bỏ ghim") : "Ghim")
 
             Button { insertChecklistItem() } label: {
                 Image(systemName: "checklist").font(.system(size: 12))
             }
-            .buttonStyle(.plain).help("Thêm ô đánh dấu (⌘T)")
+            .buttonStyle(.plain).help(L10n.t("Thêm ô đánh dấu (⌘T)"))
         }
         .foregroundColor(.black.opacity(0.7))
         .padding(.horizontal, 16).padding(.vertical, 12)
@@ -252,7 +252,7 @@ private struct NoteEditorCard: View {
 
             Spacer()
 
-            Button("Lưu trữ") {
+            Button(L10n.t("Lưu trữ")) {
                 store.toggleArchive(note)
                 controller.closeEditor()
             }
@@ -266,9 +266,9 @@ private struct NoteEditorCard: View {
                 Image(systemName: "trash").font(.system(size: 12))
             }
             .buttonStyle(.plain)
-            .help("Xóa ghi chú")
+            .help(L10n.t("Xóa ghi chú"))
 
-            Button("Đóng") { controller.closeEditor() }
+            Button(L10n.t("Đóng")) { controller.closeEditor() }
                 .buttonStyle(.plain)
                 .font(.system(size: 12, weight: .medium))
         }

@@ -132,7 +132,7 @@ struct DashboardDetailView: View {
 
             HStack {
                 Image(systemName: "menubar.rectangle").foregroundColor(.secondary).frame(width: 20)
-                Text("Biểu tượng thanh menu").font(.system(size: 13))
+                Text(L10n.t("Biểu tượng thanh menu")).font(.system(size: 13))
                 Spacer()
                 Picker("", selection: Binding(get: { menubarIcon }, set: { setMenubarIcon($0) })) {
                     ForEach(MenubarController.iconChoices, id: \.id) { c in

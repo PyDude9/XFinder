@@ -22,16 +22,16 @@ struct MediaCompatDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Tương thích media")
+                Text(L10n.t("Tương thích media"))
                     .font(.system(size: 22, weight: .bold))
                     .padding(.horizontal, 20).padding(.top, 16)
 
-                SettingsCard(title: "Tập tin cần kiểm tra",
-                             subtitle: files.isEmpty ? "Chưa chọn" : "\(files.count) tập tin") {
+                SettingsCard(title: L10n.t("Tập tin cần kiểm tra"),
+                             subtitle: files.isEmpty ? L10n.t("Chưa chọn") : "\(files.count)\(L10n.t(" tập tin"))") {
                     HStack {
-                        Button("Chọn tập tin…") { pick() }
+                        Button(L10n.t("Chọn tập tin…")) { pick() }
                         if !files.isEmpty {
-                            Button("Xóa") { files = []; rows = [] }.font(.system(size: 12))
+                            Button(L10n.t("Xóa")) { files = []; rows = [] }.font(.system(size: 12))
                         }
                     }
                 }
@@ -42,7 +42,7 @@ struct MediaCompatDetailView: View {
                 } label: {
                     HStack {
                         if checking { ProgressView().scaleEffect(0.7) }
-                        Text("Kiểm tra phát").fontWeight(.semibold)
+                        Text(L10n.t("Kiểm tra phát")).fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -50,10 +50,10 @@ struct MediaCompatDetailView: View {
                 .disabled(files.isEmpty || checking)
                 .padding(.horizontal, 20)
 
-                SettingsCard(title: "Kết quả",
-                             subtitle: "Nguồn: AVFoundation — thiết bị này có/mở được không") {
+                SettingsCard(title: L10n.t("Kết quả"),
+                             subtitle: L10n.t("Nguồn: AVFoundation — thiết bị này có/mở được không")) {
                     if rows.isEmpty {
-                        Text("Chọn tập tin và bấm Kiểm tra phát.")
+                        Text(L10n.t("Chọn tập tin và bấm Kiểm tra phát."))
                             .font(.caption).foregroundColor(.secondary)
                     } else {
                         VStack(spacing: 6) {
@@ -68,7 +68,7 @@ struct MediaCompatDetailView: View {
                                             .foregroundColor(.secondary).lineLimit(1)
                                     }
                                     Spacer()
-                                    Text(r.playable ? "Phát được" : "Không")
+                                    Text(r.playable ? L10n.t("Phát được") : L10n.t("Không"))
                                         .font(.system(size: 11, weight: .medium))
                                         .foregroundColor(r.playable ? .green : .red)
                                 }

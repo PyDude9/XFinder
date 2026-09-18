@@ -21,13 +21,13 @@ struct QuickLookDetailView: View {
             VStack(alignment: .leading, spacing: 14) {
                 PageHeader(icon: "eye",
                            title: "Quick Look",
-                           subtitle: "Xem trước Markdown và file nén mà không cần mở.")
+                           subtitle: L10n.t("Xem trước Markdown và file nén mà không cần mở."))
 
                 VStack(spacing: 0) {
-                    extensionRow(title: "Xem trước chính — Markdown & file nén",
+                    extensionRow(title: L10n.t("Xem trước chính — Markdown & file nén"),
                                  registered: mainRegistered)
                     Divider().padding(.leading, 34)
-                    extensionRow(title: "Xem trước cho lập trình viên — dữ liệu, mã nguồn & font",
+                    extensionRow(title: L10n.t("Xem trước cho lập trình viên — dữ liệu, mã nguồn & font"),
                                  registered: devRegistered)
                 }
                 .padding(14)
@@ -38,22 +38,22 @@ struct QuickLookDetailView: View {
                 .padding(.horizontal, 20)
 
                 SettingsCard(title: "Video — QuickLookVideo",
-                             subtitle: "Xem trước & thumbnail video (AV1, VP9, DivX, WMV…, macOS 26+)") {
+                             subtitle: L10n.t("Xem trước & thumbnail video (AV1, VP9, DivX, WMV…, macOS 26+)")) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("QuickLookVideo v3 cài Media Extensions vào AVFoundation để Quick Look hiện thumbnail và phát được mọi định dạng video — chính là tính năng video còn thiếu của XFinder.")
+                        Text(L10n.t("QuickLookVideo v3 cài Media Extensions vào AVFoundation để Quick Look hiện thumbnail và phát được mọi định dạng video — chính là tính năng video còn thiếu của XFinder."))
                             .font(.system(size: 12)).foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                         HStack {
-                            Button("Tải QuickLookVideo (DMG)") {
+                            Button(L10n.t("Tải QuickLookVideo (DMG)")) {
                                 NSWorkspace.shared.open(URL(string: "https://github.com/Marginal/QuickLookVideo/releases/download/rel-311/QLVideo_311.dmg")!)
                             }
                             .buttonStyle(.bordered).controlSize(.small)
-                            Button("Trang phát hành") {
+                            Button(L10n.t("Trang phát hành")) {
                                 NSWorkspace.shared.open(URL(string: "https://github.com/Marginal/QuickLookVideo/releases/tag/rel-311")!)
                             }
                             .buttonStyle(.bordered).controlSize(.small)
                         }
-                        Text("Tải xong mở DMG và làm theo hướng dẫn bên trong; mở lại Finder nếu thumbnail video chưa mới.")
+                        Text(L10n.t("Tải xong mở DMG và làm theo hướng dẫn bên trong; mở lại Finder nếu thumbnail video chưa mới."))
                             .font(.system(size: 11)).foregroundColor(.secondary)
                     }
                 }
@@ -62,20 +62,20 @@ struct QuickLookDetailView: View {
                 Divider().padding(.horizontal, 20)
 
                 VStack(alignment: .leading, spacing: 7) {
-                    Text("Định dạng xem trước").font(.system(size: 15, weight: .semibold))
-                    line("Nhấn Space trên file .md, .mdx, .qmd hoặc .rmd trong Finder.")
-                    line("Nhấn Space trên file ZIP, 7Z, RAR, GZ hoặc TAR.GZ để xem nội dung mà không cần giải nén.")
-                    line("Render tiêu đề, bảng, danh sách công việc, khối mã, front matter và ảnh local.")
-                    line("Mã MDX, Quarto và R được hiển thị nhưng không bao giờ được thực thi.")
-                    line("Bản xem trước file nén chỉ đọc header và không bao giờ tạo file đã giải nén.")
-                    line("Xem trước JSON, YAML, TOML, XML, CSV/TSV, log, mã nguồn, font và cơ sở dữ liệu SQLite chỉ đọc.")
-                    line("HTML thô, JavaScript và tài nguyên mạng bị chặn để bảo đảm an toàn.")
+                    Text(L10n.t("Định dạng xem trước")).font(.system(size: 15, weight: .semibold))
+                    line(L10n.t("Nhấn Space trên file .md, .mdx, .qmd hoặc .rmd trong Finder."))
+                    line(L10n.t("Nhấn Space trên file ZIP, 7Z, RAR, GZ hoặc TAR.GZ để xem nội dung mà không cần giải nén."))
+                    line(L10n.t("Render tiêu đề, bảng, danh sách công việc, khối mã, front matter và ảnh local."))
+                    line(L10n.t("Mã MDX, Quarto và R được hiển thị nhưng không bao giờ được thực thi."))
+                    line(L10n.t("Bản xem trước file nén chỉ đọc header và không bao giờ tạo file đã giải nén."))
+                    line(L10n.t("Xem trước JSON, YAML, TOML, XML, CSV/TSV, log, mã nguồn, font và cơ sở dữ liệu SQLite chỉ đọc."))
+                    line(L10n.t("HTML thô, JavaScript và tài nguyên mạng bị chặn để bảo đảm an toàn."))
                 }
                 .padding(.horizontal, 20)
 
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: "info.circle").foregroundColor(.blue)
-                    Text("Nếu ứng dụng Quick Look khác cũng xử lý cùng định dạng, macOS sẽ chọn một trình cung cấp. Hãy tắt tiện ích xung đột trong Login Items & Extensions.")
+                    Text(L10n.t("Nếu ứng dụng Quick Look khác cũng xử lý cùng định dạng, macOS sẽ chọn một trình cung cấp. Hãy tắt tiện ích xung đột trong Login Items & Extensions."))
                         .font(.system(size: 12))
                 }
                 .padding(12)
@@ -85,11 +85,11 @@ struct QuickLookDetailView: View {
                 Divider().padding(.horizontal, 20)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Xem trước ngay trong XFinder")
+                    Text(L10n.t("Xem trước ngay trong XFinder"))
                         .font(.system(size: 13, weight: .medium))
-                    Text("Không cần cài tiện ích: mở trình xem trước tích hợp để đọc Markdown và liệt kê file nén.")
+                    Text(L10n.t("Không cần cài tiện ích: mở trình xem trước tích hợp để đọc Markdown và liệt kê file nén."))
                         .font(.system(size: 12)).foregroundColor(.secondary)
-                    Button("Mở trình xem trước…") { showPreviewer = true }
+                    Button(L10n.t("Mở trình xem trước…")) { showPreviewer = true }
                         .buttonStyle(.bordered).controlSize(.small)
                 }
                 .padding(.horizontal, 20)
@@ -114,9 +114,9 @@ struct QuickLookDetailView: View {
                 .frame(width: 20)
             Text(title).font(.system(size: 13))
             Spacer(minLength: 10)
-            Text(registered ? "Đã đăng ký" : "Chưa cài đặt")
+            Text(registered ? L10n.t("Đã đăng ký") : L10n.t("Chưa cài đặt"))
                 .font(.system(size: 12)).foregroundColor(.secondary)
-            Button("Tiện ích…") { openExtensionsPane() }
+            Button(L10n.t("Tiện ích…")) { openExtensionsPane() }
                 .buttonStyle(.bordered).controlSize(.small)
         }
         .padding(.vertical, 6)
@@ -166,9 +166,9 @@ struct QuickLookPreviewerSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Trình xem trước").font(.system(size: 15, weight: .semibold))
+                Text(L10n.t("Trình xem trước")).font(.system(size: 15, weight: .semibold))
                 Spacer()
-                Button("Chọn tập tin…") { pickFiles() }
+                Button(L10n.t("Chọn tập tin…")) { pickFiles() }
                     .buttonStyle(.bordered).controlSize(.small)
                 Button("Xong") { isPresented = false }
                     .buttonStyle(.borderedProminent).controlSize(.small)
@@ -179,7 +179,7 @@ struct QuickLookPreviewerSheet: View {
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 6) {
                     if files.isEmpty {
-                        Text("Chưa chọn tập tin nào")
+                        Text(L10n.t("Chưa chọn tập tin nào"))
                             .font(.caption).foregroundColor(.secondary)
                             .padding(12)
                     } else {
@@ -208,7 +208,7 @@ struct QuickLookPreviewerSheet: View {
                         VStack(spacing: 10) {
                             Image(systemName: "eye").font(.system(size: 34)).foregroundColor(.secondary)
                             Text(url.lastPathComponent).font(.system(size: 13, weight: .medium))
-                            Button("Mở Quick Look hệ thống") { presentSystemQuickLook(url) }
+                            Button(L10n.t("Mở Quick Look hệ thống")) { presentSystemQuickLook(url) }
                                 .buttonStyle(.bordered).controlSize(.small)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -216,7 +216,7 @@ struct QuickLookPreviewerSheet: View {
                         VStack(spacing: 8) {
                             Image(systemName: "doc.text.magnifyingglass")
                                 .font(.system(size: 34)).foregroundColor(.secondary)
-                            Text("Chọn một tập tin để xem trước")
+                            Text(L10n.t("Chọn một tập tin để xem trước"))
                                 .font(.caption).foregroundColor(.secondary)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -374,7 +374,7 @@ struct ArchiveListView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(entries.count) mục").font(.caption).foregroundColor(.secondary)
+                Text("\(entries.count)\(L10n.t(" mục"))").font(.caption).foregroundColor(.secondary)
                     .padding([.top, .leading], 12)
                 ForEach(entries, id: \.self) { e in
                     HStack {

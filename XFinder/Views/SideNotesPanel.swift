@@ -16,7 +16,7 @@ struct NoteEditorSheet: View {
     var body: some View {
         VStack(spacing: 16) {
             HStack {
-                Text(note == nil ? "Ghi chú mới" : "Sửa ghi chú")
+                Text(note == nil ? L10n.t("Ghi chú mới") : L10n.t("Sửa ghi chú"))
                     .font(.headline)
 
                 Spacer()
@@ -29,16 +29,16 @@ struct NoteEditorSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Tiêu đề (không bắt buộc)")
+                Text(L10n.t("Tiêu đề (không bắt buộc)"))
                     .font(.caption)
                     .fontWeight(.semibold)
 
-                TextField("Tiêu đề", text: $title)
+                TextField(L10n.t("Tiêu đề"), text: $title)
                     .textFieldStyle(.roundedBorder)
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Nội dung")
+                Text(L10n.t("Nội dung"))
                     .font(.caption)
                     .fontWeight(.semibold)
 
@@ -50,7 +50,7 @@ struct NoteEditorSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Màu")
+                Text(L10n.t("Màu"))
                     .font(.caption)
                     .fontWeight(.semibold)
 
@@ -74,11 +74,11 @@ struct NoteEditorSheet: View {
             HStack(spacing: 12) {
                 Spacer()
 
-                Button("Hủy") {
+                Button(L10n.t("Hủy")) {
                     isPresented = false
                 }
 
-                Button("Lưu") {
+                Button(L10n.t("Lưu")) {
                     if let existing = note {
                         NoteStore.shared.update(existing, title: title, content: content,
                                                 color: CodableColor(color: selectedColor))

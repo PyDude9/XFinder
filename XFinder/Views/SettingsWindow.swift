@@ -26,16 +26,16 @@ struct AboutView: View {
                     .font(.title2)
                     .fontWeight(.bold)
 
-                Text("Phiên bản \(version) (build \(build))")
+                Text("\(L10n.t("Phiên bản "))\(version) (build \(build))")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
 
-            Text("Quản lý clipboard & giám sát hệ thống")
+            Text(L10n.t("Quản lý clipboard & giám sát hệ thống"))
                 .font(.caption)
                 .foregroundColor(.secondary)
 
-            Text("XFinder kết hợp quản lý clipboard và giám sát hệ thống theo thời gian thực trong một ứng dụng macOS gọn nhẹ. 100% cục bộ, không thu thập dữ liệu.")
+            Text(L10n.t("XFinder kết hợp quản lý clipboard và giám sát hệ thống theo thời gian thực trong một ứng dụng macOS gọn nhẹ. 100% cục bộ, không thu thập dữ liệu."))
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -46,9 +46,9 @@ struct AboutView: View {
             Spacer(minLength: 0)
 
             VStack(spacing: 6) {
-                Link("Mã nguồn trên GitHub",
+                Link(L10n.t("Mã nguồn trên GitHub"),
                      destination: URL(string: "https://github.com/PyDude9/XFinder")!)
-                Link("Báo lỗi / góp ý",
+                Link(L10n.t("Báo lỗi / góp ý"),
                      destination: URL(string: "https://github.com/PyDude9/XFinder/issues")!)
                 Text("thang0todev@gmail.com")
                     .foregroundColor(.secondary)
@@ -56,7 +56,7 @@ struct AboutView: View {
             }
             .font(.caption)
 
-            Text("© 2026 XFinder · Giấy phép MIT")
+            Text(L10n.t("© 2026 XFinder · Giấy phép MIT"))
                 .font(.caption2)
                 .foregroundColor(.secondary)
         }
@@ -73,27 +73,27 @@ struct AboutView: View {
             case .checking:
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text("Đang kiểm tra…").font(.caption).foregroundColor(.secondary)
+                    Text(L10n.t("Đang kiểm tra…")).font(.caption).foregroundColor(.secondary)
                 }
 
             case .upToDate(let current):
-                Label("Bạn đang dùng bản mới nhất (\(current))", systemImage: "checkmark.circle.fill")
+                Label("\(L10n.t("Bạn đang dùng bản mới nhất ("))\(current))", systemImage: "checkmark.circle.fill")
                     .font(.caption)
                     .foregroundColor(.green)
 
             case .updateAvailable(let latest, let current, let url):
                 VStack(spacing: 6) {
-                    Label("Có bản mới: \(latest) (bạn đang dùng \(current))",
+                    Label("\(L10n.t("Có bản mới: "))\(latest)\(L10n.t(" (bạn đang dùng "))\(current))",
                           systemImage: "arrow.down.circle.fill")
                         .font(.caption)
                         .foregroundColor(.accentColor)
-                    Button("Xem bản phát hành") { updater.openReleasesPage(url) }
+                    Button(L10n.t("Xem bản phát hành")) { updater.openReleasesPage(url) }
                         .controlSize(.small)
                 }
 
             case .failed(let message):
                 VStack(spacing: 4) {
-                    Label("Không kiểm tra được", systemImage: "exclamationmark.triangle.fill")
+                    Label(L10n.t("Không kiểm tra được"), systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundColor(.orange)
                     Text(message)
@@ -107,7 +107,7 @@ struct AboutView: View {
                 EmptyView()
             }
 
-            Button("Kiểm tra cập nhật") { updater.check() }
+            Button(L10n.t("Kiểm tra cập nhật")) { updater.check() }
                 .controlSize(.small)
                 .disabled(updater.state == .checking)
         }

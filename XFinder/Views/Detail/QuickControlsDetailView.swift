@@ -150,19 +150,19 @@ struct QuickControlsDetailView: View {
 
                 if brightDenied {
                     permissionNote(
-                        "Chưa có quyền Trợ năng — kéo thanh trượt sẽ không đổi được độ sáng.",
-                        button: "Cấp quyền Trợ năng…",
+                        L10n.t("Chưa có quyền Trợ năng — kéo thanh trượt sẽ không đổi được độ sáng."),
+                        button: L10n.t("Cấp quyền Trợ năng…"),
                         action: {
                             if !WindowManager.requestAccessibilityTrust() {
                                 WindowManager.openAccessibilityPane()
                             }
                         })
                 } else if brightness.level == nil {
-                    Text("Không đọc được độ sáng — máy này có thể chỉ dùng màn hình ngoài.")
+                    Text(L10n.t("Không đọc được độ sáng — máy này có thể chỉ dùng màn hình ngoài."))
                         .font(.system(size: 11)).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
-                    Text("macOS không cho đọc lại % chính xác (trên Apple Silicon giá trị registry thường kẹt), nên % bám theo vị trí bạn kéo — con số thật cho thanh trượt. XFinder gửi từng nấc như phím bấm.")
+                    Text(L10n.t("macOS không cho đọc lại % chính xác (trên Apple Silicon giá trị registry thường kẹt), nên % bám theo vị trí bạn kéo — con số thật cho thanh trượt. XFinder gửi từng nấc như phím bấm."))
                         .font(.system(size: 11)).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -194,14 +194,14 @@ struct QuickControlsDetailView: View {
 
                 if let err = appearanceError {
                     permissionNote(err,
-                                   button: "Mở Cài đặt Tự động hóa",
+                                   button: L10n.t("Mở Cài đặt Tự động hóa"),
                                    action: { SystemControls.openAutomationPane() })
                 }
 
                 Divider()
 
                 ToggleRow(title: L10n.t("Chống ngủ"),
-                          subtitle: caffeine.isActive ? "Đang bật" : "Đang tắt",
+                          subtitle: caffeine.isActive ? L10n.t("Đang bật") : L10n.t("Đang tắt"),
                           isOn: Binding(get: { caffeine.isActive },
                                         set: { on in
                                             if on { caffeine.activate(duration: .indefinite) }
@@ -212,7 +212,7 @@ struct QuickControlsDetailView: View {
                     .onChange(of: dockAutohide) { _, on in DockPrefs.setAutohide(on) }
 
                 ToggleRow(title: L10n.t("Ẩn biểu tượng trên Desktop"),
-                          subtitle: "Icon màn hình nền biến mất cho tới khi bật lại (Finder tự khởi động lại).",
+                          subtitle: L10n.t("Icon màn hình nền biến mất cho tới khi bật lại (Finder tự khởi động lại)."),
                           isOn: $desktopIconsHidden)
                     .onChange(of: desktopIconsHidden) { _, hide in
                         DesktopIconsPrefs.setShowIcons(!hide)
@@ -232,12 +232,12 @@ struct QuickControlsDetailView: View {
 
             VStack(spacing: 10) {
                 ToggleRow(title: L10n.t("Xem trước Dock"),
-                          subtitle: "Rê chuột lên icon trên Dock để xem các cửa sổ.",
+                          subtitle: L10n.t("Rê chuột lên icon trên Dock để xem các cửa sổ."),
                           isOn: $hoverEnabled)
                     .onChange(of: hoverEnabled) { DockPreviewController.shared.applySettings() }
 
                 ToggleRow(title: L10n.t("Chuyển đổi ứng dụng (⌘-Tab)"),
-                          subtitle: "Thay trình chuyển ứng dụng của macOS bằng bản có ảnh thu nhỏ.",
+                          subtitle: L10n.t("Thay trình chuyển ứng dụng của macOS bằng bản có ảnh thu nhỏ."),
                           isOn: $commandTabEnabled)
                     .onChange(of: commandTabEnabled) { CommandTabController.shared.applySettings() }
             }
@@ -272,10 +272,10 @@ struct QuickControlsDetailView: View {
                 appearance = SystemControls.currentAppearance()
             case .notPermitted:
                 appearance = SystemControls.currentAppearance()
-                appearanceError = "Chưa được cấp quyền Tự động hóa cho System Events. Mở Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Tự động hóa → XFinder → bật System Events."
+                appearanceError = L10n.t("Chưa được cấp quyền Tự động hóa cho System Events. Mở Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Tự động hóa → XFinder → bật System Events.")
             case .failed(let msg):
                 appearance = SystemControls.currentAppearance()
-                appearanceError = "Không đổi được giao diện: \(msg)"
+                appearanceError = "\(L10n.t("Không đổi được giao diện: "))\(msg)"
             }
         }
     }

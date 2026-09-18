@@ -23,8 +23,8 @@ struct FinderUtilsDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 PageHeader(icon: "puzzlepiece.extension",
-                           title: "Tiện ích Finder",
-                           subtitle: "Kết nối các lệnh XFinder với Finder.")
+                           title: L10n.t("Tiện ích Finder"),
+                           subtitle: L10n.t("Kết nối các lệnh XFinder với Finder."))
 
                 integrationStatus
 
@@ -47,15 +47,15 @@ struct FinderUtilsDetailView: View {
     private var integrationStatus: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(icon: "checkmark.seal",
-                          title: "Trạng thái tích hợp",
-                          subtitle: "Những gì macOS cho phép XFinder gắn vào Finder.")
+                          title: L10n.t("Trạng thái tích hợp"),
+                          subtitle: L10n.t("Những gì macOS cho phép XFinder gắn vào Finder."))
 
             VStack(spacing: 0) {
                 StatusChecklistRow(
                     state: .ok,
-                    title: "Thao tác trên mục đang chọn",
-                    status: "Đã bật",
-                    actionTitle: "Mở trang",
+                    title: L10n.t("Thao tác trên mục đang chọn"),
+                    status: L10n.t("Đã bật"),
+                    actionTitle: L10n.t("Mở trang"),
                     action: { AppState.shared.navigate(to: .finderActions) })
 
                 Divider()
@@ -63,15 +63,15 @@ struct FinderUtilsDetailView: View {
                 // Honest: this needs an extension target the app does not have.
                 StatusChecklistRow(
                     state: .warning,
-                    title: "Tác vụ nhanh trong menu chuột phải",
-                    status: "Chưa có",
-                    actionTitle: "Mở cài đặt",
+                    title: L10n.t("Tác vụ nhanh trong menu chuột phải"),
+                    status: L10n.t("Chưa có"),
+                    actionTitle: L10n.t("Mở cài đặt"),
                     action: { openExtensionsPane() })
             }
             .padding(.horizontal, 20)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Menu chuột phải và Tác vụ nhanh của Finder cần một Finder Extension riêng. XFinder chưa kèm phần mở rộng đó, nên mục này báo đúng trạng thái thay vì hiện một công tắc không có tác dụng.")
+                Text(L10n.t("Menu chuột phải và Tác vụ nhanh của Finder cần một Finder Extension riêng. XFinder chưa kèm phần mở rộng đó, nên mục này báo đúng trạng thái thay vì hiện một công tắc không có tác dụng."))
                     .font(.system(size: 11)).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -81,7 +81,7 @@ struct FinderUtilsDetailView: View {
                 // can open a PANE but cannot select a row inside it. Say so,
                 // and give the exact path to click instead of implying the
                 // button lands on the switch.
-                Text("Lưu ý: macOS chỉ cho mở tới trang cài đặt, không cho nhảy thẳng tới từng mục. Sau khi bấm nút trên, vào **Cài đặt hệ thống → Chung → Login Items & Extensions**, kéo xuống mục **Tiện ích mở rộng**, bấm ⓘ ở dòng **Finder** rồi bật ứng dụng bạn muốn hiện trong menu chuột phải.")
+                Text(L10n.md("Lưu ý: macOS chỉ cho mở tới trang cài đặt, không cho nhảy thẳng tới từng mục. Sau khi bấm nút trên, vào **Cài đặt hệ thống → Chung → Login Items & Extensions**, kéo xuống mục **Tiện ích mở rộng**, bấm ⓘ ở dòng **Finder** rồi bật ứng dụng bạn muốn hiện trong menu chuột phải."))
                     .font(.system(size: 11)).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -94,16 +94,16 @@ struct FinderUtilsDetailView: View {
     private var finderPrefs: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(icon: "folder",
-                          title: "Tùy chọn Finder",
-                          subtitle: "Các khóa cấu hình Finder mà Apple hỗ trợ công khai.")
+                          title: L10n.t("Tùy chọn Finder"),
+                          subtitle: L10n.t("Các khóa cấu hình Finder mà Apple hỗ trợ công khai."))
 
             VStack(spacing: 10) {
-                ToggleRow(title: "Hiện phần mở rộng tập tin", isOn: $showExtensions)
-                ToggleRow(title: "Hiện tập tin ẩn", isOn: $showHidden)
-                ToggleRow(title: "Hiện đường dẫn đầy đủ ở tiêu đề", isOn: $showFullPath)
+                ToggleRow(title: L10n.t("Hiện phần mở rộng tập tin"), isOn: $showExtensions)
+                ToggleRow(title: L10n.t("Hiện tập tin ẩn"), isOn: $showHidden)
+                ToggleRow(title: L10n.t("Hiện đường dẫn đầy đủ ở tiêu đề"), isOn: $showFullPath)
 
                 HStack(spacing: 8) {
-                    Button(isApplying ? "Đang áp dụng…" : "Áp dụng & khởi động lại Finder") {
+                    Button(isApplying ? L10n.t("Đang áp dụng…") : L10n.t("Áp dụng & khởi động lại Finder")) {
                         applyAll()
                     }
                     .buttonStyle(.borderedProminent)
@@ -116,7 +116,7 @@ struct FinderUtilsDetailView: View {
                     Spacer()
                 }
 
-                Text("Finder chỉ đọc các khóa này khi khởi động lại, nên XFinder sẽ khởi động lại Finder sau khi áp dụng. Cửa sổ Finder đang mở sẽ đóng lại.")
+                Text(L10n.t("Finder chỉ đọc các khóa này khi khởi động lại, nên XFinder sẽ khởi động lại Finder sau khi áp dụng. Cửa sổ Finder đang mở sẽ đóng lại."))
                     .font(.system(size: 11)).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -129,13 +129,13 @@ struct FinderUtilsDetailView: View {
     private var explainer: some View {
         VStack(alignment: .leading, spacing: 8) {
             SectionHeader(icon: "info.circle",
-                          title: "XFinder thêm gì vào Finder",
+                          title: L10n.t("XFinder thêm gì vào Finder"),
                           subtitle: nil)
 
             VStack(alignment: .leading, spacing: 6) {
-                bullet("Thao tác Finder: chạy lệnh của XFinder trên đúng các mục bạn đang chọn trong Finder.")
-                bullet("Bàn phím Finder: viết lại phím tắt Cắt/Dán/Xóa/Mở trước khi Finder nhận được.")
-                bullet("Đổi tên hàng loạt và Lịch sử thao tác: nhận trực tiếp mục đang chọn, và hoàn tác được.")
+                bullet(L10n.t("Thao tác Finder: chạy lệnh của XFinder trên đúng các mục bạn đang chọn trong Finder."))
+                bullet(L10n.t("Bàn phím Finder: viết lại phím tắt Cắt/Dán/Xóa/Mở trước khi Finder nhận được."))
+                bullet(L10n.t("Đổi tên hàng loạt và Lịch sử thao tác: nhận trực tiếp mục đang chọn, và hoàn tác được."))
             }
             .padding(.horizontal, 20)
         }
@@ -174,7 +174,7 @@ struct FinderUtilsDetailView: View {
             await run(["/usr/bin/killall", "-KILL", "cfprefsd"])
             await run(["/usr/bin/killall", "Finder"])
             isApplying = false
-            status = "Đã áp dụng."
+            status = L10n.t("Đã áp dụng.")
         }
     }
 

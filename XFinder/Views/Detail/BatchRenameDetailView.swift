@@ -23,29 +23,29 @@ struct BatchRenameDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Đổi tên hàng loạt")
+                Text(L10n.t("Đổi tên hàng loạt"))
                     .font(.system(size: 22, weight: .bold))
                     .padding(.horizontal, 20).padding(.top, 16)
 
-                SettingsCard(title: "Tập tin cần đổi tên",
-                             subtitle: files.isEmpty ? "Chưa chọn gì" : "\(files.count) mục") {
+                SettingsCard(title: L10n.t("Tập tin cần đổi tên"),
+                             subtitle: files.isEmpty ? L10n.t("Chưa chọn gì") : "\(files.count)\(L10n.t(" mục"))") {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Button("Chọn tập tin…") { pickFiles() }
+                            Button(L10n.t("Chọn tập tin…")) { pickFiles() }
                             if !files.isEmpty {
-                                Button("Xóa hết") { files = [] }
+                                Button(L10n.t("Xóa hết")) { files = [] }
                                     .font(.system(size: 12)).foregroundColor(.red)
                             }
                         }
                         if blocked > 0 {
-                            Text("\(blocked) mục bị chặn (trùng tên hoặc trùng đích).")
+                            Text("\(blocked)\(L10n.t(" mục bị chặn (trùng tên hoặc trùng đích)."))")
                                 .font(.caption).foregroundColor(.orange)
                         }
                     }
                 }
                 .padding(.horizontal, 20)
 
-                SettingsCard(title: "Kiểu đổi tên") {
+                SettingsCard(title: L10n.t("Kiểu đổi tên")) {
                     VStack(alignment: .leading, spacing: 10) {
                         // THE recurring window-resize culprit on this page.
                         //
@@ -60,7 +60,7 @@ struct BatchRenameDetailView: View {
                         //
                         // A menu picker has a small fixed ideal width, so the
                         // page can finally shrink to the window.
-                        Picker("Kiểu", selection: $options.mode) {
+                        Picker(L10n.t("Kiểu"), selection: $options.mode) {
                             ForEach(BatchRenameEngine.Mode.allCases) { m in
                                 Text(m.titleVI).tag(m)
                             }
@@ -71,41 +71,41 @@ struct BatchRenameDetailView: View {
 
                         switch options.mode {
                         case .prefix, .suffix:
-                            TextField(options.mode == .prefix ? "Tiền tố" : "Hậu tố",
+                            TextField(options.mode == .prefix ? L10n.t("Tiền tố") : L10n.t("Hậu tố"),
                                       text: $options.affix)
                                 .textFieldStyle(.roundedBorder).font(.system(size: 12))
                         case .replace:
                             HStack {
-                                TextField("Tìm", text: $options.find)
+                                TextField(L10n.t("Tìm"), text: $options.find)
                                     .textFieldStyle(.roundedBorder).font(.system(size: 12))
                                 Text("→").foregroundColor(.secondary)
-                                TextField("Thay bằng", text: $options.replaceWith)
+                                TextField(L10n.t("Thay bằng"), text: $options.replaceWith)
                                     .textFieldStyle(.roundedBorder).font(.system(size: 12))
                             }
                         case .sequence:
                             HStack {
-                                Stepper("Bắt đầu từ \(options.sequenceStart)",
+                                Stepper("\(L10n.t("Bắt đầu từ "))\(options.sequenceStart)",
                                         value: $options.sequenceStart, in: 0...9999)
                                     .font(.system(size: 12)).frame(maxWidth: 220)
-                                Stepper("Số chữ số \(options.sequenceDigits)",
+                                Stepper("\(L10n.t("Số chữ số "))\(options.sequenceDigits)",
                                         value: $options.sequenceDigits, in: 1...5)
                                     .font(.system(size: 12))
                             }
-                            TextField("Ký tự ngăn cách", text: $options.sequenceSeparator)
+                            TextField(L10n.t("Ký tự ngăn cách"), text: $options.sequenceSeparator)
                                 .textFieldStyle(.roundedBorder).font(.system(size: 12))
                                 .frame(maxWidth: 140)
                         case .lowercase, .uppercase:
                             EmptyView()
                         }
 
-                        ToggleRow(title: "Giữ phần mở rộng (.pdf, .jpg…)",
+                        ToggleRow(title: L10n.t("Giữ phần mở rộng (.pdf, .jpg…)"),
                                   isOn: $options.keepExtension)
                     }
                 }
                 .padding(.horizontal, 20)
 
                 if !files.isEmpty {
-                    SettingsCard(title: "Xem trước (\(runnable.count) sẽ đổi)") {
+                    SettingsCard(title: "\(L10n.t("Xem trước ("))\(runnable.count)\(L10n.t(" sẽ đổi)"))") {
                         VStack(alignment: .leading, spacing: 4) {
                             ForEach(plans.prefix(12)) { plan in
                                 HStack {
@@ -135,7 +135,7 @@ struct BatchRenameDetailView: View {
                                 }
                             }
                             if plans.count > 12 {
-                                Text("…và \(plans.count - 12) mục nữa")
+                                Text("\(L10n.t("…và "))\(plans.count - 12)\(L10n.t(" mục nữa"))")
                                     .font(.caption).foregroundColor(.secondary)
                             }
                         }
@@ -146,7 +146,7 @@ struct BatchRenameDetailView: View {
                 Button {
                     apply()
                 } label: {
-                    Text(runnable.isEmpty ? "Chưa có gì để đổi" : "Đổi \(runnable.count) mục")
+                    Text(runnable.isEmpty ? L10n.t("Chưa có gì để đổi") : "\(L10n.t("Đổi "))\(runnable.count)\(L10n.t(" mục"))")
                         .fontWeight(.semibold).frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -154,7 +154,7 @@ struct BatchRenameDetailView: View {
                 .padding(.horizontal, 20)
 
                 if let msg = outcome {
-                    SettingsCard(title: isError ? "Lỗi" : "Kết quả") {
+                    SettingsCard(title: isError ? L10n.t("Lỗi") : L10n.t("Kết quả")) {
                         Text(msg).font(.system(size: 12))
                             .foregroundColor(isError ? .red : .primary)
                     }
@@ -184,12 +184,12 @@ struct BatchRenameDetailView: View {
         if !moved.isEmpty { history.recordRenames(pairs: moved) }
         if moved.isEmpty, failed > 0 {
             isError = true
-            outcome = "Không đổi được mục nào (\(failed) thất bại)."
+            outcome = "\(L10n.t("Không đổi được mục nào ("))\(failed)\(L10n.t(" thất bại)."))"
         } else {
             isError = false
             outcome = failed == 0
-                ? "Đã đổi tên \(moved.count) mục. Xem Lịch sử thao tác để hoàn tác."
-                : "Đã đổi \(moved.count) mục, \(failed) mục thất bại."
+                ? "\(L10n.t("Đã đổi tên "))\(moved.count)\(L10n.t(" mục. Xem Lịch sử thao tác để hoàn tác."))"
+                : "\(L10n.t("Đã đổi "))\(moved.count)\(L10n.t(" mục, "))\(failed)\(L10n.t(" mục thất bại."))"
             files = files.filter { url in !moved.contains { $0.old == url } }
                 .map { url in moved.first { $0.old == url }?.new ?? url }
         }

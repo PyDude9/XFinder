@@ -16,7 +16,7 @@ struct QuickSearchPanelView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary).font(.system(size: 16))
 
-                TextField("Tìm ứng dụng, tập tin, quicklink, hoặc tính toán…",
+                TextField(L10n.t("Tìm ứng dụng, tập tin, quicklink, hoặc tính toán…"),
                           text: Bindable(controller).query)
                     .textFieldStyle(.plain)
                     .font(.system(size: 15))
@@ -91,9 +91,9 @@ struct QuickSearchPanelView: View {
         VStack(spacing: 10) {
             Image(systemName: "command.circle")
                 .font(.system(size: 34)).foregroundColor(.secondary)
-            Text("Gõ để tìm — ứng dụng, tập tin, quicklink, phép tính")
+            Text(L10n.t("Gõ để tìm — ứng dụng, tập tin, quicklink, phép tính"))
                 .font(.system(size: 13)).foregroundColor(.secondary)
-            Text("↵ thực thi dòng đầu · ↑/↓ di chuyển · Esc đóng")
+            Text(L10n.t("↵ thực thi dòng đầu · ↑/↓ di chuyển · Esc đóng"))
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .foregroundColor(.secondary.opacity(0.8))
         }

@@ -41,7 +41,7 @@ struct ClipboardCardView: View {
                     Image(systemName: "doc.on.doc").font(.caption).foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Sao chép lại vào clipboard")
+                .help(L10n.t("Sao chép lại vào clipboard"))
             }
             .padding(12)
             .background(accent.opacity(0.14))
@@ -86,13 +86,13 @@ struct ClipboardCardView: View {
                             Divider()
                             HStack(spacing: 6) {
                                 Image(systemName: "text.viewfinder").font(.caption2).foregroundColor(.accentColor)
-                                Text("Chữ trong ảnh").font(.caption2).fontWeight(.semibold).foregroundColor(.secondary)
+                                Text(L10n.t("Chữ trong ảnh")).font(.caption2).fontWeight(.semibold).foregroundColor(.secondary)
                                 Spacer()
                                 Button {
                                     NSPasteboard.general.clearContents()
                                     NSPasteboard.general.setString(ocr, forType: .string)
                                 } label: {
-                                    Label("Sao chép", systemImage: "doc.on.doc").font(.caption2)
+                                    Label(L10n.t("Sao chép"), systemImage: "doc.on.doc").font(.caption2)
                                 }
                                 .buttonStyle(.bordered).controlSize(.mini)
                             }
@@ -135,7 +135,7 @@ struct ClipboardCardView: View {
                     .font(.caption2).fontWeight(.semibold).foregroundColor(.secondary)
                 Spacer()
                 if let len = record.metadata["length"] {
-                    Text("\(len) ký tự").font(.caption2).foregroundColor(.secondary)
+                    Text("\(len)\(L10n.t(" ký tự"))").font(.caption2).foregroundColor(.secondary)
                 }
             }
             .padding(12)

@@ -48,6 +48,8 @@ final class L10n {
            LanguageIsEnglish,
            let en = pair[.english] { return en }
         if LanguageIsEnglish, let en = enDict[vi] { return en }
+        if LanguageIsEnglish, let en = moreDict[vi] { return en }
+        if LanguageIsEnglish, let en = fragDict[vi] { return en }
         return vi
     }
 

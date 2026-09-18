@@ -11,13 +11,13 @@ struct StorageDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Ổ đĩa")
+                Text(L10n.t("Ổ đĩa"))
                     .font(.system(size: 22, weight: .bold))
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
 
                 if !disk.volumes.isEmpty {
-                    Picker("Ổ đĩa", selection: $selectedMount) {
+                    Picker(L10n.t("Ổ đĩa"), selection: $selectedMount) {
                         ForEach(disk.volumes) { v in Text("\(v.volumeName) (\(v.mount))").tag(v.mount) }
                     }
                     .pickerStyle(.segmented)
@@ -30,7 +30,7 @@ struct StorageDetailView: View {
                             HStack {
                                 Text(vol.volumeName).font(.system(size: 13, weight: .semibold))
                                 Spacer()
-                                Text(String(format: "%.0f%% đã dùng", vol.percentUsed))
+                                Text(String(format: L10n.t("%.0f%% đã dùng"), vol.percentUsed))
                                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                                     .foregroundColor(vol.percentUsed > 90 ? .red : .primary)
                             }
@@ -43,18 +43,18 @@ struct StorageDetailView: View {
                             }
                             .frame(height: 8)
                             HStack {
-                                Text(fmt(vol.used) + " đã dùng").font(.system(size: 11)).foregroundColor(.secondary)
+                                Text(fmt(vol.used) + L10n.t(" đã dùng")).font(.system(size: 11)).foregroundColor(.secondary)
                                 Spacer()
-                                Text(fmt(vol.total) + " tổng").font(.system(size: 11)).foregroundColor(.secondary)
+                                Text(fmt(vol.total) + L10n.t(" tổng")).font(.system(size: 11)).foregroundColor(.secondary)
                             }
-                            Text("Còn trống \(fmt(vol.free))").font(.system(size: 11)).foregroundColor(.secondary)
+                            Text("\(L10n.t("Còn trống "))\(fmt(vol.free))").font(.system(size: 11)).foregroundColor(.secondary)
                         }
                     }
                     .padding(.horizontal, 20)
                 }
 
                 if disk.volumes.count > 1 {
-                    SettingsCard(title: "Tất cả phân vùng") {
+                    SettingsCard(title: L10n.t("Tất cả phân vùng")) {
                         VStack(spacing: 8) {
                             ForEach(disk.volumes) { v in
                                 HStack {
@@ -70,15 +70,15 @@ struct StorageDetailView: View {
                     .padding(.horizontal, 20)
                 }
 
-                SettingsCard(title: "Tốc độ I/O (KB/s)") {
+                SettingsCard(title: L10n.t("Tốc độ I/O (KB/s)")) {
                     VStack(spacing: 10) {
                         HStack(spacing: 12) {
-                            MetricBigNumber(value: String(format: "%.1f", disk.readKBs), unit: "KB/s", label: "Đọc", tint: .blue)
+                            MetricBigNumber(value: String(format: "%.1f", disk.readKBs), unit: "KB/s", label: L10n.t("Đọc"), tint: .blue)
                             MetricBigNumber(value: String(format: "%.1f", disk.writeKBs), unit: "KB/s", label: "Ghi", tint: .orange)
                         }
                         HStack(spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Đọc").font(.system(size: 11)).foregroundColor(.secondary)
+                                Text(L10n.t("Đọc")).font(.system(size: 11)).foregroundColor(.secondary)
                                 SparklineView(values: disk.historyRead, tint: .blue, height: 28)
                             }
                             VStack(alignment: .leading, spacing: 4) {
@@ -90,7 +90,7 @@ struct StorageDetailView: View {
                 }
                 .padding(.horizontal, 20)
 
-                SettingsCard(title: "SMART / Tình trạng ổ đĩa") {
+                SettingsCard(title: L10n.t("SMART / Tình trạng ổ đĩa")) {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 8) {
                             if let raw = smartRaw {
@@ -105,16 +105,16 @@ struct StorageDetailView: View {
                                     .foregroundColor(label.healthy == false ? .red : .primary)
                             } else if smartChecked {
                                 Image(systemName: "minus.circle").foregroundColor(.secondary)
-                                Text("Không đọc được trạng thái SMART của ổ này")
+                                Text(L10n.t("Không đọc được trạng thái SMART của ổ này"))
                                     .font(.system(size: 12)).foregroundColor(.secondary)
                             } else {
                                 ProgressView().controlSize(.small)
-                                Text("Đang kiểm tra…")
+                                Text(L10n.t("Đang kiểm tra…"))
                                     .font(.system(size: 12)).foregroundColor(.secondary)
                             }
                             Spacer()
                         }
-                        Text("Lấy từ `diskutil` (API công khai). macOS không cung cấp bảng thuộc tính SMART chi tiết (số sector hỏng, độ mòn, nhiệt độ ổ) nên XFinder chỉ hiển thị trạng thái tổng thể thay vì đoán thêm.")
+                        Text(L10n.t("Lấy từ `diskutil` (API công khai). macOS không cung cấp bảng thuộc tính SMART chi tiết (số sector hỏng, độ mòn, nhiệt độ ổ) nên XFinder chỉ hiển thị trạng thái tổng thể thay vì đoán thêm."))
                             .font(.system(size: 11)).foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }

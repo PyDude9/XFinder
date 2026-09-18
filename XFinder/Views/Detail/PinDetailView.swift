@@ -18,8 +18,8 @@ struct PinDetailView: View {
                     SettingsCard {
                         VStack(spacing: 8) {
                             Image(systemName: "battery.0").font(.system(size: 28)).foregroundColor(.secondary)
-                            Text("Không có pin").font(.system(size: 14, weight: .semibold))
-                            Text("Thiết bị này không có pin tích hợp.").font(.system(size: 12)).foregroundColor(.secondary)
+                            Text(L10n.t("Không có pin")).font(.system(size: 14, weight: .semibold))
+                            Text(L10n.t("Thiết bị này không có pin tích hợp.")).font(.system(size: 12)).foregroundColor(.secondary)
                         }
                         .frame(maxWidth: .infinity).padding(.vertical, 12)
                     }
@@ -29,7 +29,7 @@ struct PinDetailView: View {
                     SettingsCard {
                         VStack(spacing: 12) {
                             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                MetricBigNumber(value: String(format: "%.0f", m.batteryLevel), unit: "%", label: m.isCharging ? "Đang sạc" : "Đang xả", tint: m.batteryLevel < 20 ? .red : .green)
+                                MetricBigNumber(value: String(format: "%.0f", m.batteryLevel), unit: "%", label: m.isCharging ? L10n.t("Đang sạc") : L10n.t("Đang xả"), tint: m.batteryLevel < 20 ? .red : .green)
                                 Spacer()
                                 Text(m.batteryTimeString).font(.system(size: 13, weight: .medium, design: .rounded)).foregroundColor(.secondary)
                             }
@@ -42,7 +42,7 @@ struct PinDetailView: View {
                             }
                             .frame(height: 10)
                             HStack {
-                                Label(m.isCharging ? "Đang sạc" : "Đang xả", systemImage: m.isCharging ? "bolt.fill" : "bolt.slash")
+                                Label(m.isCharging ? L10n.t("Đang sạc") : L10n.t("Đang xả"), systemImage: m.isCharging ? "bolt.fill" : "bolt.slash")
                                 Spacer()
                                 Text(m.batteryTimeString).foregroundColor(.secondary)
                             }
@@ -51,33 +51,33 @@ struct PinDetailView: View {
                     }
                     .padding(.horizontal, 20)
 
-                    SettingsCard(title: "Sức khỏe pin") {
+                    SettingsCard(title: L10n.t("Sức khỏe pin")) {
                         VStack(spacing: 10) {
                             // Health = NominalChargeCapacity / DesignCapacity.
                             // It used to divide MaxCapacity (a 0-100 PERCENT on
                             // Apple Silicon) by mAh, which is what rendered 1%.
-                            row(label: "Sức khỏe",
+                            row(label: L10n.t("Sức khỏe"),
                                 value: info.healthPercent.map { String(format: "%.0f%%", $0) } ?? "—")
 
                             if let c = info.cycleCount {
-                                row(label: "Số chu kỳ",
+                                row(label: L10n.t("Số chu kỳ"),
                                     value: info.designCycleCount.map { "\(c) / \($0)" } ?? "\(c)")
                             } else {
-                                row(label: "Số chu kỳ", value: "—")
+                                row(label: L10n.t("Số chu kỳ"), value: "—")
                             }
 
                             if let n = info.nominalCapacity, let d = info.designCapacity {
-                                row(label: "Dung lượng", value: "\(n) / \(d) mAh")
+                                row(label: L10n.t("Dung lượng"), value: "\(n) / \(d) mAh")
                             }
 
-                            row(label: "Công suất",
+                            row(label: L10n.t("Công suất"),
                                 value: info.watts.map { String(format: "%.1f W", $0) } ?? "—")
 
                             if let v = info.voltage {
-                                row(label: "Điện áp", value: String(format: "%.2f V", v))
+                                row(label: L10n.t("Điện áp"), value: String(format: "%.2f V", v))
                             }
                             if let a = info.amperage {
-                                row(label: "Dòng điện", value: "\(a) mA")
+                                row(label: L10n.t("Dòng điện"), value: "\(a) mA")
                             }
 
                             Divider().opacity(0.5)
@@ -88,17 +88,17 @@ struct PinDetailView: View {
                             // (3469 -> 34.7 °C). Twice reported here as "no
                             // public API" because only the latter was checked.
                             if let t = info.temperatureC {
-                                row(label: "Nhiệt độ pin", value: String(format: "%.1f °C", t))
+                                row(label: L10n.t("Nhiệt độ pin"), value: String(format: "%.1f °C", t))
                                 if let mx = info.lifetimeMaxTempC, let mn = info.lifetimeMinTempC {
-                                    row(label: "Nhiệt độ đã ghi nhận",
+                                    row(label: L10n.t("Nhiệt độ đã ghi nhận"),
                                         value: String(format: "%.0f – %.0f °C", mn, mx))
                                 }
                             } else {
-                                row(label: "Nhiệt độ pin", value: "—")
+                                row(label: L10n.t("Nhiệt độ pin"), value: "—")
                             }
 
                             if let s = info.serial {
-                                row(label: "Số sê-ri", value: s)
+                                row(label: L10n.t("Số sê-ri"), value: s)
                             }
                         }
                     }

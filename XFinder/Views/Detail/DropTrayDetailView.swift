@@ -26,11 +26,11 @@ struct DropTrayDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 PageHeader(
                     icon: "tray.and.arrow.down",
-                    title: "Khay thả",
-                    subtitle: "Giữ file tạm để xử lý hàng loạt.",
+                    title: L10n.t("Khay thả"),
+                    subtitle: L10n.t("Giữ file tạm để xử lý hàng loạt."),
                     trailing: AnyView(
                         HStack(spacing: 6) {
-                            Text(notchEnabled ? "Bật" : "Tắt")
+                            Text(notchEnabled ? L10n.t("Bật") : L10n.t("Tắt"))
                                 .font(.system(size: 12)).foregroundColor(.secondary)
                             Toggle("", isOn: $notchEnabled)
                                 .labelsHidden()
@@ -46,12 +46,12 @@ struct DropTrayDetailView: View {
                         .font(.system(size: 34))
                         .foregroundColor(isTargeted ? .accentColor : .secondary)
                     Text(tray.items.isEmpty
-                         ? "Kéo tập tin vào đây"
-                         : "\(tray.items.count) mục trong khay")
+                         ? L10n.t("Kéo tập tin vào đây")
+                         : "\(tray.items.count)\(L10n.t(" mục trong khay"))")
                         .font(.headline)
-                    Text("hoặc")
+                    Text(L10n.t("hoặc"))
                         .font(.caption).foregroundColor(.secondary)
-                    Button("Thêm tập tin…") { pickFiles() }
+                    Button(L10n.t("Thêm tập tin…")) { pickFiles() }
                         .buttonStyle(.bordered).controlSize(.small)
                 }
                 .frame(maxWidth: .infinity).padding(.vertical, 24)
@@ -71,9 +71,9 @@ struct DropTrayDetailView: View {
                     SettingsCard(title: "Trong khay (\(tray.items.count))") {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
-                                Text("\(tray.items.count) mục").font(.system(size: 11)).foregroundColor(.secondary)
+                                Text("\(tray.items.count)\(L10n.t(" mục"))").font(.system(size: 11)).foregroundColor(.secondary)
                                 Spacer()
-                                Button(showDetailGrid ? "Thu gọn" : "Xem chi tiết") { showDetailGrid.toggle() }
+                                Button(showDetailGrid ? L10n.t("Thu gọn") : L10n.t("Xem chi tiết")) { showDetailGrid.toggle() }
                                     .buttonStyle(.bordered).controlSize(.small)
                             }
                             // Inline grid ngay dưới header — không mở window lung tung.
@@ -85,7 +85,7 @@ struct DropTrayDetailView: View {
                                                 .font(.system(size: 22)).foregroundColor(.secondary)
                                             Text(item.name).font(.system(size: 11)).lineLimit(2).multilineTextAlignment(.center)
                                             if item.isMissing {
-                                                Text("(không còn tồn tại)").font(.caption2).foregroundColor(.red)
+                                                Text(L10n.t("(không còn tồn tại)")).font(.caption2).foregroundColor(.red)
                                             }
                                         }
                                         .frame(maxWidth: .infinity).padding(8)
@@ -111,7 +111,7 @@ struct DropTrayDetailView: View {
                                             Text(item.name).font(.system(size: 12)).lineLimit(1)
                                                 .truncationMode(.middle)
                                             if item.isMissing {
-                                                Text("(không còn tồn tại)")
+                                                Text(L10n.t("(không còn tồn tại)"))
                                                     .font(.caption2).foregroundColor(.red)
                                             }
                                             Spacer()
@@ -122,7 +122,7 @@ struct DropTrayDetailView: View {
                                         }
                                     }
                                     if tray.items.count > 15 {
-                                        Text("…và \(tray.items.count - 15) mục nữa")
+                                        Text("\(L10n.t("…và "))\(tray.items.count - 15)\(L10n.t(" mục nữa"))")
                                             .font(.caption).foregroundColor(.secondary)
                                     }
                                 }
@@ -131,21 +131,21 @@ struct DropTrayDetailView: View {
                     }
                     .padding(.horizontal, 20)
 
-                    SettingsCard(title: "Thao tác cho cả khay") {
+                    SettingsCard(title: L10n.t("Thao tác cho cả khay")) {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 8) {
-                            trayButton("Di chuyển…", icon: "folder.fill") { moveOrCopy(move: true) }
-                            trayButton("Sao chép…", icon: "doc.on.doc.fill") { moveOrCopy(move: false) }
-                            trayButton("Nén ZIP", icon: "archivebox.fill") { zipTray() }
-                            trayButton("Mở tất cả", icon: "arrow.up.forward.app.fill") { openAll() }
-                            trayButton("Bỏ vào Rác", icon: "trash.fill", destructive: true) { trashAll() }
-                            trayButton("Dọn khay", icon: "xmark.circle", destructive: true) { tray.clear() }
+                            trayButton(L10n.t("Di chuyển…"), icon: "folder.fill") { moveOrCopy(move: true) }
+                            trayButton(L10n.t("Sao chép…"), icon: "doc.on.doc.fill") { moveOrCopy(move: false) }
+                            trayButton(L10n.t("Nén ZIP"), icon: "archivebox.fill") { zipTray() }
+                            trayButton(L10n.t("Mở tất cả"), icon: "arrow.up.forward.app.fill") { openAll() }
+                            trayButton(L10n.t("Bỏ vào Rác"), icon: "trash.fill", destructive: true) { trashAll() }
+                            trayButton(L10n.t("Dọn khay"), icon: "xmark.circle", destructive: true) { tray.clear() }
                         }
                     }
                     .padding(.horizontal, 20)
                 }
 
                 if let msg = outcome {
-                    SettingsCard(title: "Kết quả") {
+                    SettingsCard(title: L10n.t("Kết quả")) {
                         Text(msg).font(.system(size: 12))
                     }
                     .padding(.horizontal, 20).padding(.bottom, 20)
@@ -173,19 +173,19 @@ struct DropTrayDetailView: View {
     private var notchSettings: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(icon: "cursorarrow.motionlines",
-                          title: "Cách mở khay")
+                          title: L10n.t("Cách mở khay"))
 
             VStack(alignment: .leading, spacing: 10) {
-                ToggleRow(title: "Lắc để mở khay khi kéo file", isOn: $shakeEnabled)
+                ToggleRow(title: L10n.t("Lắc để mở khay khi kéo file"), isOn: $shakeEnabled)
                     .onChange(of: shakeEnabled) { NotchDropController.shared.applySettings() }
                     .disabled(!notchEnabled)
 
                 HStack {
-                    Text("Độ nhạy khi lắc").font(.system(size: 13))
+                    Text(L10n.t("Độ nhạy khi lắc")).font(.system(size: 13))
                     Spacer()
                     Picker("", selection: $shakeSensitivity) {
-                        Text("Thấp").tag("low")
-                        Text("Vừa").tag("medium")
+                        Text(L10n.t("Thấp")).tag("low")
+                        Text(L10n.t("Vừa")).tag("medium")
                         Text("Cao").tag("high")
                     }
                     .pickerStyle(.segmented)
@@ -194,39 +194,39 @@ struct DropTrayDetailView: View {
                     .disabled(!notchEnabled || !shakeEnabled)
                 }
 
-                ToggleRow(title: "Thả vào tai thỏ",
-                          subtitle: "Kéo file vào vùng tai thỏ của màn hình để mở khay.",
+                ToggleRow(title: L10n.t("Thả vào tai thỏ"),
+                          subtitle: L10n.t("Kéo file vào vùng tai thỏ của màn hình để mở khay."),
                           isOn: $notchDropEnabled)
                     .onChange(of: notchDropEnabled) { NotchDropController.shared.applySettings() }
                     .disabled(!notchEnabled)
 
-                ToggleRow(title: "Di chuột vào tai thỏ để mở khay",
-                          subtitle: "Mở khay cả khi không kéo file — tiện để lấy lại file đã giữ.",
+                ToggleRow(title: L10n.t("Di chuột vào tai thỏ để mở khay"),
+                          subtitle: L10n.t("Mở khay cả khi không kéo file — tiện để lấy lại file đã giữ."),
                           isOn: $hoverEnabled)
                     .onChange(of: hoverEnabled) { NotchDropController.shared.applySettings() }
                     .disabled(!notchEnabled)
             }
             .padding(.horizontal, 20)
 
-            SectionHeader(icon: "square.on.square", title: "Giao diện")
+            SectionHeader(icon: "square.on.square", title: L10n.t("Giao diện"))
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("Vị trí khay").font(.system(size: 13))
+                    Text(L10n.t("Vị trí khay")).font(.system(size: 13))
                     Spacer()
-                    Text("Luôn ở tai thỏ").font(.system(size: 12)).foregroundColor(.secondary)
+                    Text(L10n.t("Luôn ở tai thỏ")).font(.system(size: 12)).foregroundColor(.secondary)
                 }
-                Text("Khay luôn mở ngay dưới tai thỏ — một vị trí cố định để bạn nhớ thao tác, thay vì bám theo con trỏ.")
+                Text(L10n.t("Khay luôn mở ngay dưới tai thỏ — một vị trí cố định để bạn nhớ thao tác, thay vì bám theo con trỏ."))
                     .font(.system(size: 11)).foregroundColor(.secondary)
 
                 HStack {
-                    Text("Tự đóng sau khi rời chuột").font(.system(size: 13))
+                    Text(L10n.t("Tự đóng sau khi rời chuột")).font(.system(size: 13))
                     Spacer()
                     Picker("", selection: $autoCloseDelay) {
-                        Text("2 giây").tag(2.0)
-                        Text("3 giây").tag(3.0)
-                        Text("5 giây").tag(5.0)
-                        Text("10 giây").tag(10.0)
+                        Text(L10n.t("2 giây")).tag(2.0)
+                        Text(L10n.t("3 giây")).tag(3.0)
+                        Text(L10n.t("5 giây")).tag(5.0)
+                        Text(L10n.t("10 giây")).tag(10.0)
                     }
                     .labelsHidden()
                     .frame(width: 110)
@@ -275,10 +275,12 @@ struct DropTrayDetailView: View {
             } catch { failed += 1 }
         }
         history.record(kind: "other",
-                       summary: "\(move ? "Di chuyển" : "Sao chép") \(done) mục từ khay → “\(dest.lastPathComponent)”",
+                       summary: "\(move ? L10n.t("Di chuyển") : L10n.t("Sao chép")) \(done) \(L10n.t("mục từ khay")) → “\(dest.lastPathComponent)”",
                        reversible: false)
         if move { tray.removePaths(items.map(\.path)) }
-        outcome = "Đã \(move ? "di chuyển" : "sao chép") \(done) mục" + (failed > 0 ? ", \(failed) thất bại (trùng tên/lỗi)." : ".")
+        let verb = move ? L10n.t("đã di chuyển") : L10n.t("đã sao chép")
+        outcome = "\(verb) \(done)\(L10n.t(" mục"))"
+            + (failed > 0 ? ", \(failed)\(L10n.t(" thất bại (trùng tên/lỗi)."))" : ".")
     }
 
     private func zipTray() {
@@ -288,15 +290,15 @@ struct DropTrayDetailView: View {
         let archive = dest.appendingPathComponent("Khay-\(Int(Date().timeIntervalSince1970)).zip")
         let ok = DropTrayStore.runZip(sources: items, dest: archive)
         history.record(kind: "compress",
-                       summary: ok ? "Nén \(items.count) mục từ khay → \(archive.lastPathComponent)" : "Nén khay thất bại",
+                       summary: ok ? "\(L10n.t("Nén "))\(items.count)\(L10n.t(" mục từ khay → "))\(archive.lastPathComponent)" : L10n.t("Nén khay thất bại"),
                        reversible: false)
-        outcome = ok ? "Đã nén \(items.count) mục → \(archive.lastPathComponent)." : "Nén thất bại."
+        outcome = ok ? "\(L10n.t("Đã nén "))\(items.count)\(L10n.t(" mục → "))\(archive.lastPathComponent)." : L10n.t("Nén thất bại.")
     }
 
     private func openAll() {
         let items = liveItems().prefix(10)
         for url in items { NSWorkspace.shared.open(url) }
-        outcome = "Đã mở \(items.count) mục."
+        outcome = "\(L10n.t("Đã mở "))\(items.count)\(L10n.t(" mục."))"
     }
 
     private func trashAll() {
@@ -310,7 +312,7 @@ struct DropTrayDetailView: View {
         }
         history.recordTrash(urls: items)
         tray.removePaths(items.map(\.path))
-        outcome = "Đã chuyển \(done)/\(items.count) mục vào Thùng rác."
+        outcome = "\(L10n.t("Đã chuyển "))\(done)/\(items.count)\(L10n.t(" mục vào Thùng rác."))"
     }
 }
 
