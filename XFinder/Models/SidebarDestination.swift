@@ -15,6 +15,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     // CỬA SỔ — real except menuIcons (private API)
     case windowPreview
     case snapZones
+    case mouseGestures
     case menuIcons
     // FINDER & TÌM KIẾM
     case finderKeyboard
@@ -57,6 +58,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .clipboard: return L10n.t("Clipboard")
         case .notes: return L10n.t("Ghi chú")
         case .windowPreview: return L10n.t("Xem trước cửa sổ")
+        case .mouseGestures: return L10n.t("Chuột & cử chỉ")
         case .snapZones: return L10n.t("Vùng bắt dính")
         case .menuIcons: return L10n.t("Biểu tượng thanh menu")
         case .finderKeyboard: return L10n.t("Bàn phím Finder")
@@ -92,6 +94,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .clipboard: return "doc.on.clipboard.fill"
         case .notes: return "note.text"
         case .windowPreview: return "macwindow.badge.plus"
+        case .mouseGestures: return "computermouse"
         case .snapZones: return "rectangle.split.3x1"
         case .menuIcons: return "menubar.rectangle"
         case .finderKeyboard: return "keyboard.fill"
@@ -144,7 +147,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             ("CỬA SỔ", [.windowPreview, .snapZones, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .actionHistory]),
-            ("CÔNG CỤ", [.settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
+            ("CÔNG CỤ", [.settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock, .mouseGestures]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare]),
             ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat]),
         ]
