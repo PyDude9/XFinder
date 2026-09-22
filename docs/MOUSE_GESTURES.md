@@ -156,16 +156,56 @@ security add-trusted-cert -d -r trustRoot -p codeSign -k ~/Library/Keychains/log
 security find-identity -v -p codesigning     # phải thấy: 1 valid identities found
 ```
 
-Sau đó ký theo thứ tự **appex trước, app sau** (ký app trước sẽ làm hỏng chữ ký con):
+Sau đó ký theo thứ tự **appex trước, app sau** (ký app trước sẽ làm hỏng chữ ký con).
+
+**Đừng ký appex bằng `codesign --force` trần, và đừng ký app ngoài bằng `--deep`** —
+cả hai đều là bẫy đã gặp thật, và hậu quả không nhìn thấy được:
 
 ```sh
+# ĐÚNG: appex ký kèm entitlements của chính nó
+cat > /tmp/appex.entitlements <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>com.apple.security.app-sandbox</key><true/>
+  <key>com.apple.security.files.user-selected.read-only</key><true/>
+  <key>com.apple.security.get-task-allow</key><true/>
+</dict></plist>
+PLIST
 codesign --force --sign "XFinder Dev" --identifier com.xfinder.app.XFinderSync \
+  --entitlements /tmp/appex.entitlements \
   XFinder.app/Contents/PlugIns/XFinderSync.appex
-codesign --force --deep --sign "XFinder Dev" --identifier com.xfinder.app XFinder.app
+
+# ĐÚNG: app ngoài KHÔNG dùng --deep
+codesign --force --sign "XFinder Dev" --identifier com.xfinder.app XFinder.app
 ```
+
+| Bẫy | Hậu quả | Phát hiện bằng |
+|---|---|---|
+| `codesign --force` trên appex **không kèm entitlements** | Xoá luôn `com.apple.security.app-sandbox` mà target build ra. `pkd` **từ chối** plug-in ⇒ `pluginkit` không liệt kê, Finder không có menu. Không có thông báo lỗi nào | `pluginkit -m -p com.apple.FinderSync -v` không thấy dòng XFinder, trong khi app khác vẫn có |
+| `codesign --deep` trên app **ngoài** | Ký lại appex con bằng **identifier của app ngoài** ⇒ `com.xfinder.app.XFinderSync` bị gộp thành `com.xfinder.app`. Hai bundle trùng identifier ⇒ LaunchServices/pluginkit không phân giải được | `codesign -dv --verbose=2 <appex>/Contents/MacOS/XFinderSync` in ra `Identifier=com.xfinder.app` |
+| `codesign --verify --deep --strict` khi kiểm tra | Chỉ kiểm bundle ngoài, **che** đúng cái lỗi trên | Phải verify từng appex theo tên (`codesign --verify --strict <appex>`) |
+
+Ngoài ra, extension target phải khai `MACOSX_DEPLOYMENT_TARGET` **bằng** app chính
+(14.0). Để 27.0 thì `GENERATE_INFOPLIST_FILE` ghi `LSMinimumSystemVersion = 27.0`
+vào Info.plist của appex, và macOS **từ chối đăng ký** extension có minimum OS cao
+hơn container của nó. `ENABLE_DEBUG_DYLIB = NO` cũng bắt buộc: mặc định Debug của
+Xcode 16+ sinh stub + `.debug.dylib` + `__preview.dylib` thay vì một binary
+extension thật.
 
 **Cài vào `/Applications` để đường dẫn không đổi** — cùng danh tính *và* cùng path thì
 mục trong System Settings không bị nhân đôi.
+
+Một nguồn nhiễu riêng: **mọi thư mục build trung gian đều tự đăng ký cùng một
+plugin identifier** (thư mục staging, `/tmp`, DerivedData, bản copy trên Desktop).
+Đã đo được **16 đường dẫn chết** cùng khai `com.xfinder.app.XFinderSync`; khi đó
+`pluginkit` không phân giải được gì cả. `scripts/install-mouse-rebuild.sh` gỡ đăng
+ký các bản build/staging rồi `pluginkit -a` đúng bundle trong `/Applications`.
+
+Sau khi cài, **người dùng vẫn phải tự bật extension** trong System Settings ▸
+Login Items & Extensions ▸ Finder — không app nào làm hộ được. Script in ra trạng
+thái đo được (`!` = đã đăng ký nhưng chưa bật, `+` = đang bật) thay vì ngụ ý là
+đã chạy.
 
 Hai cái bẫy khi ký lại mà build đang nằm trên Desktop (đã gặp thật):
 

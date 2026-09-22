@@ -91,6 +91,7 @@
 		7F1A00D7 /* QuickSearchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D6 /* QuickSearchPanel.swift */; };
 		7F1A00DC /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00DB /* L10n.swift */; };
 		4C1A2B01 /* L10nStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1A2B00 /* L10nStore.swift */; };
+		4C1A2B07 /* FinderExtensionStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1A2B06 /* FinderExtensionStatus.swift */; };
 		4C1A2B03 /* XFinder/Resources/L10n.strings.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C1A2B02 /* XFinder/Resources/L10n.strings.json */; };
 		4C1A2B05 /* XFinder/Resources/L10n.allowlist.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */; };
 		7F1A00E5 /* MouseGestures/GestureModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E4 /* MouseGestures/GestureModel.swift */; };
@@ -223,6 +224,7 @@
 		7F1A00D6 /* QuickSearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearchPanel.swift; sourceTree = "<group>"; };
 		7F1A00DB /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		4C1A2B00 /* L10nStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nStore.swift; sourceTree = "<group>"; };
+		4C1A2B06 /* FinderExtensionStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderExtensionStatus.swift; sourceTree = "<group>"; };
 		4C1A2B02 /* XFinder/Resources/L10n.strings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = XFinder/Resources/L10n.strings.json; sourceTree = SOURCE_ROOT; };
 		4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = XFinder/Resources/L10n.allowlist.json; sourceTree = SOURCE_ROOT; };
 		7F1A00E4 /* MouseGestures/GestureModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureModel.swift; sourceTree = "<group>"; };
@@ -338,6 +340,7 @@
 				7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */,
 				7F1A00DB /* L10n.swift */,
 				4C1A2B00 /* L10nStore.swift */,
+				4C1A2B06 /* FinderExtensionStatus.swift */,
 				4C1A2B02 /* XFinder/Resources/L10n.strings.json */,
 				4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */,
 				7F1A00E4 /* MouseGestures/GestureModel.swift */,
@@ -609,6 +612,7 @@
 				7F1A00D7 /* QuickSearchPanel.swift in Sources */,
 				7F1A00DC /* L10n.swift in Sources */,
 				4C1A2B01 /* L10nStore.swift in Sources */,
+				4C1A2B07 /* FinderExtensionStatus.swift in Sources */,
 				7F1A00E5 /* MouseGestures/GestureModel.swift in Sources */,
 				7F1A00E7 /* MouseGestures/GestureEngine.swift in Sources */,
 				7F1A00E9 /* MouseGestures/GestureController.swift in Sources */,

@@ -5,10 +5,10 @@ import AppKit
 /// screenshot: a status block for the Finder integration surfaces, then a
 /// plain-language list of what XFinder adds to Finder.
 ///
-/// Honesty Rule: Finder context-menu items and Quick Actions require a
-/// **Finder Sync / Action extension target**, which this app does not ship.
-/// So those rows report their real state and link to the Extensions pane
-/// instead of pretending to toggle something.
+/// Honesty Rule: the right-click row reads the extension's real plug-in state
+/// from `FinderExtensionStatus.probe()` instead of asserting a value. XFinder
+/// DOES ship `XFinderSync.appex`; whether Finder uses it is the user's switch in
+/// System Settings, which no app can flip for them.
 struct FinderUtilsDetailView: View {
     @AppStorage("finder.showExtensions") private var showExtensions = false
     @AppStorage("finder.showHidden") private var showHidden = false
@@ -16,6 +16,7 @@ struct FinderUtilsDetailView: View {
 
     @State private var status: String? = nil
     @State private var isApplying = false
+    @State private var extensionStatus: FinderExtensionStatus = .unknown
 
     private let domain = "com.apple.finder"
 
@@ -39,10 +40,30 @@ struct FinderUtilsDetailView: View {
             .padding(.bottom, 20)
         }
         .background(Color(.windowBackgroundColor))
-        .onAppear(perform: readBack)
+        .onAppear {
+            readBack()
+            Task { extensionStatus = await FinderExtensionStatus.probe() }
+        }
     }
 
     // MARK: - Trạng thái tích hợp
+
+    /// Row copy derived from the MEASURED plug-in state. Every branch names what
+    /// the user has to do next, and the last one refuses to claim success.
+    private var extensionRowState: (state: StatusChecklistRow.State, status: String) {
+        switch extensionStatus {
+        case .enabled:
+            return (.ok, L10n.t("Đã bật"))
+        case .disabled:
+            return (.warning, L10n.t("Bạn đã tắt"))
+        case .registeredNotEnabled:
+            return (.warning, L10n.t("Chưa bật"))
+        case .notRegistered:
+            return (.warning, L10n.t("Chưa có"))
+        case .unknown:
+            return (.warning, L10n.t("Không xác định"))
+        }
+    }
 
     private var integrationStatus: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -60,18 +81,19 @@ struct FinderUtilsDetailView: View {
 
                 Divider()
 
-                // Honest: this needs an extension target the app does not have.
+                // Measured, not asserted: this row used to hard-code "Chưa có",
+                // which was true only while the appex failed to register.
                 StatusChecklistRow(
-                    state: .warning,
+                    state: extensionRowState.state,
                     title: L10n.t("Tác vụ nhanh trong menu chuột phải"),
-                    status: L10n.t("Chưa có"),
+                    status: extensionRowState.status,
                     actionTitle: L10n.t("Mở cài đặt"),
                     action: { openExtensionsPane() })
             }
             .padding(.horizontal, 20)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(L10n.t("Menu chuột phải và Tác vụ nhanh của Finder cần một Finder Extension riêng. XFinder chưa kèm phần mở rộng đó, nên mục này báo đúng trạng thái thay vì hiện một công tắc không có tác dụng."))
+                Text(extensionExplanation)
                     .font(.system(size: 11)).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -86,6 +108,22 @@ struct FinderUtilsDetailView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 20)
+        }
+    }
+
+    /// One sentence per measured state, each saying what happens next.
+    private var extensionExplanation: String {
+        switch extensionStatus {
+        case .enabled:
+            return L10n.t("XFinder đã kèm phần mở rộng Finder và macOS đang bật nó: bấm chuột phải vào tập tin trong Finder sẽ thấy mục “Thêm vào Khay thả XFinder” và nút trên thanh công cụ.")
+        case .disabled:
+            return L10n.t("Phần mở rộng đã cài nhưng đang bị tắt trong Cài đặt hệ thống, nên Finder không hiện mục của XFinder. Bật lại theo hướng dẫn bên dưới.")
+        case .registeredNotEnabled:
+            return L10n.t("Phần mở rộng đã cài và macOS đã biết nó, nhưng chưa bật — mặc định của mọi tiện ích mới. Bật theo hướng dẫn bên dưới để Finder hiện mục của XFinder.")
+        case .notRegistered:
+            return L10n.t("macOS chưa thấy phần mở rộng Finder của XFinder. Hãy cài bản dựng mới nhất, rồi bật theo hướng dẫn bên dưới.")
+        case .unknown:
+            return L10n.t("Chưa đọc được trạng thái phần mở rộng từ macOS. Bấm “Kiểm tra lại” sau khi mở trang cài đặt bên dưới.")
         }
     }
 

@@ -55,6 +55,33 @@ DIRECTION_HEADINGS = [
 ]
 SIDEBAR = ["Chuột & cử chỉ", "Tổng quan", "Hệ thống", "Mạng"]
 
+# The Finder-utilities page's extension row. Each of these is a full sentence the
+# page prints for one measured plug-in state, so a missing translation is a
+# Vietnamese paragraph on an English page.
+FINDER_EXTENSION_STRINGS = [
+    "Chưa bật",
+    "Bạn đã tắt",
+    "Không xác định",
+    "XFinder đã kèm phần mở rộng Finder và macOS đang bật nó: bấm chuột phải vào tập tin "
+    "trong Finder sẽ thấy mục “Thêm vào Khay thả XFinder” và nút trên thanh công cụ.",
+    "Phần mở rộng đã cài nhưng đang bị tắt trong Cài đặt hệ thống, nên Finder không hiện "
+    "mục của XFinder. Bật lại theo hướng dẫn bên dưới.",
+    "Phần mở rộng đã cài và macOS đã biết nó, nhưng chưa bật — mặc định của mọi tiện ích "
+    "mới. Bật theo hướng dẫn bên dưới để Finder hiện mục của XFinder.",
+    "macOS chưa thấy phần mở rộng Finder của XFinder. Hãy cài bản dựng mới nhất, rồi bật "
+    "theo hướng dẫn bên dưới.",
+    "Chưa đọc được trạng thái phần mở rộng từ macOS. Bấm “Kiểm tra lại” sau khi mở trang "
+    "cài đặt bên dưới.",
+]
+
+# Superseded copy: the page used to claim XFinder ships no extension. Keeping it
+# translated would let the false statement come back with a clean English label.
+RETIRED_FINDER_STRINGS = [
+    "Menu chuột phải và Tác vụ nhanh của Finder cần một Finder Extension riêng. "
+    "XFinder chưa kèm phần mở rộng đó, nên mục này báo đúng trạng thái thay vì hiện "
+    "một công tắc không có tác dụng.",
+]
+
 
 def main() -> int:
     failures: list[str] = []
@@ -160,6 +187,23 @@ def main() -> int:
         print(f"  {'OK  ' if ok else 'LEAK'} {vi!r} -> {en!r}")
         if not ok:
             failures.append(vi)
+
+    print()
+    print("=== Finder-extension status strings (every measured state) ===")
+    for vi in FINDER_EXTENSION_STRINGS:
+        en = t(vi)
+        ok = en != vi and not VIETNAMESE.search(en)
+        print(f"  {'OK  ' if ok else 'LEAK'} {vi[:52]!r} -> {en[:52]!r}")
+        if not ok:
+            failures.append(vi)
+
+    print()
+    print("=== the retired 'no extension' claim is gone (not translated) ===")
+    for vi in RETIRED_FINDER_STRINGS:
+        present = vi in sentences or vi in fragments
+        print(f"  {'LEAK' if present else 'GONE'} {vi[:52]!r}")
+        if present:
+            failures.append(f"stale Finder string still in the store: {vi[:40]}")
 
     print()
     print("=== is the app running, and did it log a store failure? ===")

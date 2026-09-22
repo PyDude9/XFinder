@@ -265,6 +265,10 @@
       "en": "You're on the latest version (",
       "scope": "fragment"
     },
+    "Bạn đã tắt": {
+      "en": "You turned it off",
+      "scope": "sentence"
+    },
     "Bạn đã tự đặt phím cho hướng này. Bấm “Về mặc định” để quay lại bảng có sẵn.": {
       "en": "You set a custom key for this direction. Click “Back to default” to return to the built-in table.",
       "scope": "sentence"
@@ -469,6 +473,10 @@
       "en": "Copy path",
       "scope": "sentence"
     },
+    "Chưa bật": {
+      "en": "Not enabled yet",
+      "scope": "sentence"
+    },
     "Chưa chia sẻ file nào": {
       "en": "No files shared yet",
       "scope": "sentence"
@@ -583,6 +591,10 @@
     },
     "Chưa được cấp quyền Tự động hóa cho System Events. Mở Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Tự động hóa → XFinder → bật System Events.": {
       "en": "Automation permission for System Events is not granted yet. Open System Settings → Privacy & Security → Automation → XFinder → turn on System Events.",
+      "scope": "sentence"
+    },
+    "Chưa đọc được trạng thái phần mở rộng từ macOS. Bấm “Kiểm tra lại” sau khi mở trang cài đặt bên dưới.": {
+      "en": "Could not read the extension's state from macOS. Open the settings page below, then press “Check again”.",
       "scope": "sentence"
     },
     "Chạy thao tác của XFinder trên các tệp đang chọn trong Finder.": {
@@ -1417,6 +1429,10 @@
       "en": "Couldn't create the AppleScript.",
       "scope": "sentence"
     },
+    "Không xác định": {
+      "en": "Unknown",
+      "scope": "sentence"
+    },
     "Không xóa được ": {
       "en": "Couldn't delete ",
       "scope": "fragment"
@@ -1635,10 +1651,6 @@
     },
     "Menu chuột phải trong Finder": {
       "en": "Finder context menu",
-      "scope": "sentence"
-    },
-    "Menu chuột phải và Tác vụ nhanh của Finder cần một Finder Extension riêng. XFinder chưa kèm phần mở rộng đó, nên mục này báo đúng trạng thái thay vì hiện một công tắc không có tác dụng.": {
-      "en": "Finder's right-click menu and Quick Actions need a separate Finder Extension. XFinder does not ship that extension yet, so this row reports the real status instead of showing a switch that does nothing.",
       "scope": "sentence"
     },
     "Màu": {
@@ -2151,6 +2163,14 @@
     },
     "Phản hồi rung": {
       "en": "Haptic feedback",
+      "scope": "sentence"
+    },
+    "Phần mở rộng đã cài nhưng đang bị tắt trong Cài đặt hệ thống, nên Finder không hiện mục của XFinder. Bật lại theo hướng dẫn bên dưới.": {
+      "en": "The extension is installed but switched off in System Settings, so Finder does not show XFinder's menu item. Turn it back on using the steps below.",
+      "scope": "sentence"
+    },
+    "Phần mở rộng đã cài và macOS đã biết nó, nhưng chưa bật — mặc định của mọi tiện ích mới. Bật theo hướng dẫn bên dưới để Finder hiện mục của XFinder.": {
+      "en": "The extension is installed and macOS knows about it, but it is not enabled yet — the default for any new extension. Enable it with the steps below so Finder shows XFinder's menu item.",
       "scope": "sentence"
     },
     "Pin": {
@@ -2941,6 +2961,10 @@
       "en": "What XFinder adds to Finder",
       "scope": "sentence"
     },
+    "XFinder đã kèm phần mở rộng Finder và macOS đang bật nó: bấm chuột phải vào tập tin trong Finder sẽ thấy mục “Thêm vào Khay thả XFinder” và nút trên thanh công cụ.": {
+      "en": "XFinder ships a Finder extension and macOS has it enabled: right-click a file in Finder to see “Add to XFinder Drop Tray”, plus a toolbar button.",
+      "scope": "sentence"
+    },
     "Xem": {
       "en": "View",
       "scope": "sentence"
@@ -3119,6 +3143,10 @@
     },
     "macOS Sequoia có tính năng chia cửa sổ riêng (Window Tiling). Mở Cài đặt hệ thống → Màn hình & Dock → Chia cửa sổ để cấu hình.": {
       "en": "macOS Sequoia has its own window tiling feature (Window Tiling). Open System Settings → Displays & Dock → Window Tiling to configure it.",
+      "scope": "sentence"
+    },
+    "macOS chưa thấy phần mở rộng Finder của XFinder. Hãy cài bản dựng mới nhất, rồi bật theo hướng dẫn bên dưới.": {
+      "en": "macOS cannot see XFinder's Finder extension. Install the latest build, then enable it with the steps below.",
       "scope": "sentence"
     },
     "macOS chỉ cho phép di chuyển cửa sổ của ứng dụng khác khi bạn cấp quyền Trợ năng cho XFinder.": {
