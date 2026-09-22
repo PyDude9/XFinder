@@ -4,6 +4,13 @@
 <dict>
 	<key>LSUIElement</key>
 	<true/>
+	<!-- Declared explicitly: with GENERATE_INFOPLIST_FILE = YES the build otherwise
+	     injects the SDK's own LSMinimumSystemVersion (27.0), which contradicts the
+	     host app's 14.0. macOS refuses to register an extension whose minimum OS
+	     exceeds its container's, so pluginkit listed nothing and Finder never showed
+	     the XFinder menu. Keep in step with MACOSX_DEPLOYMENT_TARGET. -->
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>
