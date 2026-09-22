@@ -255,7 +255,7 @@ struct MenubarFlyoutView: View {
                 set: { _ in volumeObserver.toggleMute() }))
 
             Divider()
-            Text("Cửa sổ").font(.system(size: 12, weight: .semibold)).foregroundColor(.secondary)
+            Text(L10n.t("Cửa sổ")).font(.system(size: 12, weight: .semibold)).foregroundColor(.secondary)
 
             flyoutToggle("Xem trước Dock", "macwindow.on.rectangle", isOn: Binding(
                 get: { UserDefaults.standard.object(forKey: "windowPreview.hoverEnabled") as? Bool ?? true },
@@ -313,7 +313,7 @@ struct MenubarFlyoutView: View {
             }
             infoRow("Phiên này",
                     "↓\(fmtBytes(systemMonitor.sessionBytesRX))  ↑\(fmtBytes(systemMonitor.sessionBytesTX))")
-            Button("Đo tốc độ") { navigate(.network) }
+            Button(L10n.t("Đo tốc độ")) { navigate(.network) }
                 .buttonStyle(.bordered).controlSize(.small)
         }
     }
@@ -335,7 +335,7 @@ struct MenubarFlyoutView: View {
                 meter("Pin", m.batteryLevel, m.batteryLevel < 20 ? .red : .green)
                 infoRow("Trạng thái", m.isCharging ? "Đang sạc" : m.batteryTimeString)
             } else {
-                Text("Không có pin").font(.system(size: 12)).foregroundColor(.secondary)
+                Text(L10n.t("Không có pin")).font(.system(size: 12)).foregroundColor(.secondary)
             }
             // Battery temperature needs SMC access — no public API.
             infoRow("Nhiệt độ pin", "Đang thu thập…")
@@ -354,10 +354,10 @@ struct MenubarFlyoutView: View {
                 closePopover()
                 EdgeNotesController.shared.revealAll()
             }
-            Text("\(noteStore.notes.filter { !$0.isArchived }.count) ghi chú đang dùng")
+            Text(L10n.t("\(noteStore.notes.filter { !$0.isArchived }.count) ghi chú đang dùng"))
                 .font(.system(size: 11)).foregroundColor(.secondary)
             if !edgeNotesEnabled {
-                Text("Bật “Ghi chú ở mép màn hình” trong Cài đặt để dùng.")
+                Text(L10n.t("Bật “Ghi chú ở mép màn hình” trong Cài đặt để dùng."))
                     .font(.system(size: 11)).foregroundColor(.orange)
             }
         }
@@ -372,7 +372,7 @@ struct MenubarFlyoutView: View {
             actionRow("Đồng bộ thư mục", "arrow.triangle.2.circlepath") { navigate(.sync) }
             HStack {
                 Image(systemName: "magnifyingglass").frame(width: 18).foregroundColor(.secondary)
-                Text("Tìm file…").font(.system(size: 12))
+                Text(L10n.t("Tìm file…")).font(.system(size: 12))
                 Spacer()
                 Text("⌘⇧V").font(.system(size: 11)).foregroundColor(.secondary)
             }
@@ -462,7 +462,7 @@ struct MenubarFlyoutView: View {
     private func tempCell(_ title: String) -> some View {
         VStack(spacing: 2) {
             Text(title).font(.system(size: 10)).foregroundColor(.secondary)
-            Text("Đang thu thập…").font(.system(size: 12)).foregroundColor(.secondary)
+            Text(L10n.t("Đang thu thập…")).font(.system(size: 12)).foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
     }

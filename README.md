@@ -14,7 +14,9 @@ Tiện ích hệ thống + quản lý clipboard cho macOS. Gọn nhẹ, chạy n
 
 **Clipboard** — lịch sử dạng thẻ, pinboard, tìm kiếm (kèm OCR ảnh qua Vision), Quick Look, Paste Stack. Bộ lọc riêng tư tự động bỏ qua nội dung từ trình quản lý mật khẩu.
 
-**Cửa sổ** — xem trước khi rê chuột lên icon trên Dock, vùng bắt dính (snap) 10 vị trí.
+**Cửa sổ** — xem trước khi rê chuột lên icon trên Dock, vùng bắt dính (snap) 10 vị trí, **cử chỉ chuột theo ứng dụng**.
+
+**Cử chỉ chuột** — giữ một nút (mặc định nút giữa), kéo theo hướng, thả để gửi phím tắt của app đang dùng. Ưu tiên preset: **Edge/Safari/Chrome, VS Code/Cursor/Zed/Antigravity/Claude, Photoshop/CapCut, Discord/Zalo/AyuGram, Obsidian/Notion** đều có mapping dùng được ngay sau khi bật — không phải cấu hình gì thêm. Hành động mơ hồ (thao tác không có phím tắt chung đáng tin) để trống có chủ ý thay vì đoán bừa. Chi tiết: [docs/MOUSE_GESTURES.md](docs/MOUSE_GESTURES.md).
 
 **Ghi chú** — ghi chú dán mép màn hình, hiện ra khi rê chuột.
 
@@ -42,8 +44,38 @@ Trong app, mở **Giới thiệu → Kiểm tra cập nhật** để so sánh ph
 
 XFinder hỏi quyền đúng lúc cần và nói rõ thiếu quyền nào:
 
-- **Trợ năng (Accessibility)** — bắt dính cửa sổ, xem trước cửa sổ, phím tắt toàn hệ thống, nút độ sáng.
+- **Trợ năng (Accessibility)** — bắt dính cửa sổ, xem trước cửa sổ, phím tắt toàn hệ thống, nút độ sáng, **cử chỉ chuột**.
 - **Tự động hoá (Automation)** — chuyển giao diện Sáng/Tối toàn hệ thống.
+
+### Cử chỉ chuột — bắt đầu nhanh
+
+1. **Cửa sổ → Chuột & cử chỉ** → cấp **Trợ năng**.
+2. Bật **Bật cử chỉ chuột**.
+3. Giữ **nút giữa**, kéo lên/xuống/trái/phải rồi thả.
+
+Xong — các app được hỗ trợ đã có phím tắt dựng sẵn. Ghi nút, nhập bundle ID
+hay ghi phím đều là tuỳ chỉnh **không bắt buộc**. Cấp quyền xong không cần khởi
+động lại XFinder: quay về app là Event Tap được mở ngay, và công tắc đã bật thì
+tap được arm ngay từ lúc mở app (không cần mở lại trang này).
+
+Preset dựng sẵn — đây **chính xác** là phím XFinder gửi:
+
+| Nhóm app | ↑ | ↓ | ← | → |
+|---|---|---|---|---|
+| Edge · Safari · Chrome | ⌘T | ⌘W | ⌃⇧Tab | ⌃Tab |
+| VS Code · Cursor · Zed · Antigravity · Claude | — | — | ⌃- | ⌃⇧- |
+| Photoshop · CapCut | ⌘0 | ⌘Z | `[` | `]` |
+| Discord · Zalo · AyuGram | — | — | ⌥↑ | ⌥↓ |
+| Obsidian · Notion | ⌘P | — | ⌘⌥← | ⌘⌥→ |
+| Excel · Word | — | — | — | — |
+| App không có trong danh sách | ⌃↑ | ⌃↓ | ⌃← | ⌃→ |
+
+"—" là **cố ý để trống**, không phải thiếu preset: những thao tác đó không có
+phím tắt chung đáng tin giữa các app trong nhóm (Word không có worksheet; "mở
+chat" khác nhau ở từng IDE). Dấu "—" trong một app **đã có preset sẽ không rơi
+về bảng toàn cục** — nó không gửi gì cả. Muốn khác thì **Ghi phím** riêng cho
+hướng đó. Tên hành động là ý định; app hoặc bản macOS của bạn có thể gán khác, nên
+đối chiếu với phím tắt thật của app.
 
 ---
 
@@ -55,7 +87,7 @@ Yêu cầu Xcode 15 trở lên và macOS 14+.
 xcodebuild -project XFinder.xcodeproj -scheme XFinder -configuration Release build
 ```
 
-Chạy test (logic thuần — hình học toạ độ, phân loại clipboard, kế hoạch đổi tên, so sánh phiên bản):
+Chạy test (logic thuần — hình học toạ độ, phân loại clipboard, kế hoạch đổi tên, so sánh phiên bản, phân giải preset cử chỉ chuột):
 
 ```bash
 swift test --package-path Tests

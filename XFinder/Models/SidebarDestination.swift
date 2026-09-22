@@ -144,10 +144,10 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             // CÔNG CỤ keeps the content tools; TIỆN ÍCH keeps the Finder
             // integration surfaces.
             ("CHUNG", [.dashboard, .quickControls, .antiSleep, .system, .network, .storage, .pin]),
-            ("CỬA SỔ", [.windowPreview, .snapZones, .menuIcons]),
+            ("CỬA SỔ", [.windowPreview, .snapZones, .mouseGestures, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .actionHistory]),
-            ("CÔNG CỤ", [.settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock, .mouseGestures]),
+            ("CÔNG CỤ", [.settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare]),
             ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat]),
         ]

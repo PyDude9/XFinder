@@ -7,8 +7,23 @@ enum TriggerSource: Codable, Equatable, Sendable {
 
     var label: String {
         switch self {
-        case .mouseButton(let n): return "Button \(n)"
+        case .mouseButton(let n): return TriggerSource.buttonName(n)
         case .modifierKey(let flags): return GestureShortcut(key: 0, flags: flags).modifierLabel
+        }
+    }
+
+    /// CoreGraphics numbers mouse buttons 0 = left, 1 = right, 2 = middle/wheel.
+    /// "Button 2" alone is meaningless to a user, and some vendors print a
+    /// *different* number on the mouse, so name the physical button and keep the
+    /// raw code in parentheses for the rare case where they disagree.
+    static func buttonName(_ n: Int) -> String {
+        switch n {
+        case 0:  return "Nút trái (Button 0)"
+        case 1:  return "Nút phải (Button 1)"
+        case 2:  return "Nút giữa / bấm con lăn (Button 2)"
+        case 3:  return "Nút hông sau — nút 4 (Button 3)"
+        case 4:  return "Nút hông trước — nút 5 (Button 4)"
+        default: return "Nút chuột số \(n + 1) (Button \(n))"
         }
     }
 
@@ -31,6 +46,20 @@ enum GestureDirection: String, Codable, CaseIterable, Sendable {
         case .right: return "→"
         case .tiltLeft: return "Tilt ←"
         case .tiltRight: return "Tilt →"
+        }
+    }
+
+    /// How the user physically performs this direction. The bare arrow is useless
+    /// on its own: the user cannot tell whether the button is held, whether the
+    /// motion is a drag or a scroll, or what "Tilt" even means on a normal mouse.
+    var instruction: String {
+        switch self {
+        case .up: return "Giữ nút rồi kéo LÊN"
+        case .down: return "Giữ nút rồi kéo XUỐNG"
+        case .left: return "Giữ nút rồi kéo SANG TRÁI"
+        case .right: return "Giữ nút rồi kéo SANG PHẢI"
+        case .tiltLeft: return "Nghiêng con lăn sang TRÁI (không giữ nút)"
+        case .tiltRight: return "Nghiêng con lăn sang PHẢI (không giữ nút)"
         }
     }
 }
@@ -150,7 +179,6 @@ struct GestureConfiguration: Codable, Sendable {
         if overrides[bundle]?[direction] != nil { return .userOverride }
         let isKnown = GestureProfiles.all.contains { $0.id == bundle }
         if isKnown {
-            if overrides[bundle]?[direction] != nil { return .userOverride }
             let profile = GestureProfiles.all.first { $0.id == bundle }!
             if profile.defaults[direction] != nil { return .preset }
             return .unassigned

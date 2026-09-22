@@ -7,6 +7,15 @@ final class GestureController {
     static let shared = GestureController()
     private(set) var configuration = GestureConfiguration()
     private(set) var status = "Đã tắt"
+    /// Whether the event tap is actually armed. The UI must not infer readiness
+    /// from `status` text — a tap can fail to open while the switch is on.
+    private(set) var tapActive = false
+    /// Why the last tap attempt failed ("" when it did not). Lets the page name the
+    /// real cause instead of a generic "it did not work".
+    private(set) var tapFailure = ""
+    /// Whether this process currently holds Accessibility trust, sampled at the
+    /// moment the tap was attempted. Not a live poll — see `refreshTrust()`.
+    private(set) var trusted = false
     private(set) var recording = false
     private(set) var activeBundle = ""
     private(set) var lastExternalBundle = ""
@@ -20,18 +29,58 @@ final class GestureController {
     }
 
     private init() {
-        if let data = UserDefaults.standard.data(forKey: storageKey),
-           let saved = try? JSONDecoder().decode(GestureConfiguration.self, from: data) {
-            configuration = saved
+        // A decode failure must NOT silently erase the user's overrides. `try?`
+        // used to make any missing/renamed key (e.g. a field added in a later
+        // build) drop the entire configuration, including every custom mapping —
+        // measured: a payload with one known key removed decodes to nil and the
+        // overrides are gone. So: try the real model, then a lenient pass that
+        // recovers whatever fields are present, and only warn when even that
+        // fails. The old data is left on disk either way, so nothing is destroyed.
+        if let data = UserDefaults.standard.data(forKey: storageKey) {
+            if let saved = try? JSONDecoder().decode(GestureConfiguration.self, from: data) {
+                configuration = saved
+            } else if let recovered = Self.recover(from: data) {
+                NSLog("[XFinder] mouse-gestures config decoded with missing fields; recovered what was readable")
+                configuration = recovered
+            } else {
+                NSLog("[XFinder] mouse-gestures config could not be read; keeping defaults, original data left intact")
+            }
         }
         configuration.validate()
         migrateIfNeeded()
     }
 
+    /// Best-effort read of a configuration envelope whose shape drifted.
+    /// Field-by-field so one unknown/missing key cannot discard the rest.
+    private static func recover(from data: Data) -> GestureConfiguration? {
+        struct Envelope: Decodable {
+            var enabled: Bool?
+            var deadzone: Double?
+            var tiltEnabled: Bool?
+            var debug: Bool?
+            var trigger: TriggerSource?
+            var overrides: [String: [GestureDirection: GestureAction]]?
+        }
+        guard let env = try? JSONDecoder().decode(Envelope.self, from: data) else { return nil }
+        guard env.enabled != nil || env.overrides != nil || env.trigger != nil else { return nil }
+        var out = GestureConfiguration()
+        if let v = env.enabled { out.enabled = v }
+        if let v = env.deadzone { out.deadzone = v }
+        if let v = env.tiltEnabled { out.tiltEnabled = v }
+        if let v = env.debug { out.debug = v }
+        if let v = env.trigger { out.trigger = v }
+        if let v = env.overrides { out.overrides = v }
+        return out
+    }
+
     /// If an older build pre-filled `overrides` with every factory default (one
     /// entry per built-in bundle), prune entries that merely echo the default.
     /// Keeps genuine user overrides and explicit `.unassigned` choices.
-    private func migrateIfNeeded() {
+    ///
+    /// Called from `init` **and** from `start()`. The flag alone is not enough:
+    /// the controller is a lazily created singleton, so `init` may run long after
+    /// the user's preferences were written by another build.
+    func migrateIfNeeded() {
         guard !configuration.overrides.isEmpty else { return }
         // Only run once per install.
         if UserDefaults.standard.bool(forKey: migrationFlagKey) { return }
@@ -59,6 +108,16 @@ final class GestureController {
 
     func start() {
         guard observers.isEmpty else { return }
+        // `init` ran the migration, but `GestureController.shared` is only
+        // instantiated when the page actually appears, and a legacy profile
+        // restored *after* first launch (a preferences sync, a copied plist, or a
+        // previous build that wrote the full dictionary) would otherwise keep a
+        // frozen copy of the presets forever. Re-running is idempotent and cheap:
+        // it is a no-op once the flag is set, and a no-op when there is nothing
+        // to migrate. Measured: without this, a seeded legacy payload survived a
+        // full launch untouched.
+        migrateIfNeeded()
+        refreshTrust()
         updateFrontmost(NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "")
         let center = NSWorkspace.shared.notificationCenter
         observers.append(center.addObserver(forName: NSWorkspace.didActivateApplicationNotification,
@@ -82,12 +141,29 @@ final class GestureController {
                                              object:nil, queue:.main) { [weak self] _ in
             Task { @MainActor [weak self] in self?.resume() }
         })
+        // Granting Accessibility happens in System Settings, i.e. while XFinder is
+        // not frontmost. Re-check on every activation so the tap arms immediately
+        // instead of needing a relaunch or a manual toggle.
+        observers.append(NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.engineStarted else { return }
+                self.refreshTrust(); self.apply()
+            }
+        })
         apply()
     }
     private func resume() {
         if engineStarted { engine.send(.resume) }
+        refreshTrust()
         updateFrontmost(NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "")
         apply()
+    }
+    /// Re-read Accessibility trust and re-arm the tap. Called on app activation so
+    /// granting the permission in System Settings takes effect without a relaunch.
+    func refreshTrust() {
+        trusted = WindowManager.isTrusted
+        if engineStarted { engine.send(.configure(configuration)) }
     }
     private func updateFrontmost(_ id: String) {
         activeBundle = id
@@ -98,8 +174,14 @@ final class GestureController {
         if engineStarted { engine.send(.suspend) }
     }
     func apply() {
-        // No worker/tap at all until the user enables gestures or starts recording.
-        guard configuration.enabled || recording || engineStarted else { status = "Đã tắt"; return }
+        // Nothing to arm when gestures are off and no recording is in flight — but
+        // `tapActive` must still be reported false so the page never shows a stale
+        // "ready" badge from a previous session.
+        guard configuration.enabled || recording || engineStarted else {
+            status = "Đã tắt"
+            tapActive = false
+            return
+        }
         engineStarted = true
         engine.send(.frontmost(activeBundle))
         engine.send(.configure(configuration))
@@ -125,10 +207,43 @@ final class GestureController {
     func setAction(_ action: GestureAction, bundle: String, direction: GestureDirection) {
         update { $0.overrides[bundle, default: [:]][direction] = action }
     }
+
+    /// Drop one direction's override so it falls back to the built-in preset.
+    ///
+    /// The detail panel's "Về mặc định" sits under a single direction heading, so
+    /// calling `resetProfile` there reset the *whole app* while the label promised
+    /// only that row — the user's other custom directions vanished with no undo.
+    /// A per-row control must change only that row.
+    func resetDirection(bundle: String, direction: GestureDirection) {
+        update {
+            guard var directions = $0.overrides[bundle] else { return }
+            directions.removeValue(forKey: direction)
+            // An emptied dictionary is the same as no override at all; leaving it
+            // behind would mark every other direction of this app as customised
+            // and keep the app in the "you set some directions" copy.
+            if directions.isEmpty {
+                $0.overrides.removeValue(forKey: bundle)
+            } else {
+                $0.overrides[bundle] = directions
+            }
+        }
+    }
+
     func resetProfile(_ bundle: String) { update { $0.overrides.removeValue(forKey: bundle) } }
     private func receive(_ result: GestureResult) {
         switch result {
         case .status(let value): status = value
+        case .tap(let active):
+            tapActive = active
+            // Mirror to UserDefaults so an outside probe can read the *measured*
+            // tap state. AppleScript cannot inspect this app (no AX grant for the
+            // shell), so this is the only trustworthy external signal.
+            UserDefaults.standard.set(["active": active, "failure": tapFailure, "trusted": trusted],
+                                      forKey: "mouseGestures.lastTapState")
+        case .tapFailure(let reason):
+            tapFailure = reason
+            UserDefaults.standard.set(["active": tapActive, "failure": reason, "trusted": trusted],
+                                      forKey: "mouseGestures.lastTapState")
         case .recordingEnded: recording = false
         case .trigger(let source):
             configuration.trigger = source; persist()

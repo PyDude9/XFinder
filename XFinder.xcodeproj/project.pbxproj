@@ -90,8 +90,15 @@
 		7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */; };
 		7F1A00D7 /* QuickSearchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D6 /* QuickSearchPanel.swift */; };
 		7F1A00DC /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00DB /* L10n.swift */; };
-		7F1A00E1 /* L10nDB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E0 /* L10nDB.swift */; };
-		7F1A00E3 /* L10nStrings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E2 /* L10nStrings.swift */; };
+		4C1A2B01 /* L10nStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1A2B00 /* L10nStore.swift */; };
+		4C1A2B03 /* XFinder/Resources/L10n.strings.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C1A2B02 /* XFinder/Resources/L10n.strings.json */; };
+		7F1A00E5 /* MouseGestures/GestureModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E4 /* MouseGestures/GestureModel.swift */; };
+		7F1A00E7 /* MouseGestures/GestureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E6 /* MouseGestures/GestureEngine.swift */; };
+		7F1A00E9 /* MouseGestures/GestureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E8 /* MouseGestures/GestureController.swift */; };
+		7F1A00EB /* Detail/MouseGesturesDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00EA /* Detail/MouseGesturesDetailView.swift */; };
+		7F1A00ED /* Components/MouseDiagramView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00EC /* Components/MouseDiagramView.swift */; };
+		7F1A00EF /* Components/GestureDetailPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00EE /* Components/GestureDetailPanel.swift */; };
+		7F1A00F1 /* MouseGestures/GestureUIDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00F0 /* MouseGestures/GestureUIDisplay.swift */; };
 		7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A00DD /* XFinder/Resources/AppIcon.icns */; };
 		7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0073 /* ClipboardPasteEngine.swift */; };
 		7F1A7F1A008E /* ClipboardPayloadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0074 /* ClipboardPayloadStore.swift */; };
@@ -214,8 +221,15 @@
 		7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchPanelController.swift; sourceTree = "<group>"; };
 		7F1A00D6 /* QuickSearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearchPanel.swift; sourceTree = "<group>"; };
 		7F1A00DB /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
-		7F1A00E0 /* L10nDB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nDB.swift; sourceTree = "<group>"; };
-		7F1A00E2 /* L10nStrings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nStrings.swift; sourceTree = "<group>"; };
+		4C1A2B00 /* L10nStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nStore.swift; sourceTree = "<group>"; };
+		4C1A2B02 /* XFinder/Resources/L10n.strings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = XFinder/Resources/L10n.strings.json; sourceTree = SOURCE_ROOT; };
+		7F1A00E4 /* MouseGestures/GestureModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureModel.swift; sourceTree = "<group>"; };
+		7F1A00E6 /* MouseGestures/GestureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureEngine.swift; sourceTree = "<group>"; };
+		7F1A00E8 /* MouseGestures/GestureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureController.swift; sourceTree = "<group>"; };
+		7F1A00EA /* Detail/MouseGesturesDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/MouseGesturesDetailView.swift; sourceTree = "<group>"; };
+		7F1A00EC /* Components/MouseDiagramView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/MouseDiagramView.swift; sourceTree = "<group>"; };
+		7F1A00EE /* Components/GestureDetailPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/GestureDetailPanel.swift; sourceTree = "<group>"; };
+		7F1A00F0 /* MouseGestures/GestureUIDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureUIDisplay.swift; sourceTree = "<group>"; };
 		7F1A00DD /* XFinder/Resources/AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = XFinder/Resources/AppIcon.icns; sourceTree = "<group>"; };
 		88AD9932 /* QuickSearch/QuickSearchResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchResult.swift; sourceTree = "<group>"; };
 		95421592 /* QuickSearch/AppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/AppLauncher.swift; sourceTree = "<group>"; };
@@ -321,8 +335,12 @@
 				7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */,
 				7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */,
 				7F1A00DB /* L10n.swift */,
-				7F1A00E0 /* L10nDB.swift */,
-				7F1A00E2 /* L10nStrings.swift */,
+				4C1A2B00 /* L10nStore.swift */,
+				4C1A2B02 /* XFinder/Resources/L10n.strings.json */,
+				7F1A00E4 /* MouseGestures/GestureModel.swift */,
+				7F1A00E6 /* MouseGestures/GestureEngine.swift */,
+				7F1A00E8 /* MouseGestures/GestureController.swift */,
+				7F1A00F0 /* MouseGestures/GestureUIDisplay.swift */,
 			);
 			path = XFinder/Core;
 			sourceTree = SOURCE_ROOT;
@@ -356,6 +374,8 @@
 				7F1A0046 /* Components/StatBarView.swift */,
 				7F1A0047 /* Components/SparklineView.swift */,
 				7F1A0048 /* Components/ToggleRow.swift */,
+				7F1A00EC /* Components/MouseDiagramView.swift */,
+				7F1A00EE /* Components/GestureDetailPanel.swift */,
 				7F1A0052 /* Detail/DashboardDetailView.swift */,
 				7F1A0053 /* Detail/SystemDetailView.swift */,
 				7F1A0054 /* Detail/PinDetailView.swift */,
@@ -384,6 +404,7 @@
 				7F1A00BA /* Detail/FolderSyncDetailView.swift */,
 				7F1A00B6 /* Detail/FolderLockDetailView.swift */,
 				7F1A00B0 /* Detail/FinderKeyboardDetailView.swift */,
+				7F1A00EA /* Detail/MouseGesturesDetailView.swift */,
 			);
 			path = XFinder/Views;
 			sourceTree = SOURCE_ROOT;
@@ -477,6 +498,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */,
+				4C1A2B03 /* XFinder/Resources/L10n.strings.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -582,8 +604,14 @@
 				7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */,
 				7F1A00D7 /* QuickSearchPanel.swift in Sources */,
 				7F1A00DC /* L10n.swift in Sources */,
-				7F1A00E1 /* L10nDB.swift in Sources */,
-				7F1A00E3 /* L10nStrings.swift in Sources */,
+				4C1A2B01 /* L10nStore.swift in Sources */,
+				7F1A00E5 /* MouseGestures/GestureModel.swift in Sources */,
+				7F1A00E7 /* MouseGestures/GestureEngine.swift in Sources */,
+				7F1A00E9 /* MouseGestures/GestureController.swift in Sources */,
+				7F1A00EB /* Detail/MouseGesturesDetailView.swift in Sources */,
+				7F1A00ED /* Components/MouseDiagramView.swift in Sources */,
+				7F1A00EF /* Components/GestureDetailPanel.swift in Sources */,
+				7F1A00F1 /* MouseGestures/GestureUIDisplay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

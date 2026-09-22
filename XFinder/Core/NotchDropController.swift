@@ -451,10 +451,10 @@ private struct TrayFileTile: View {
         .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.06)))
         .onDrag { NSItemProvider(contentsOf: url) ?? NSItemProvider() }
         .contextMenu {
-            Button("Hiện trong Finder") {
+            Button(L10n.t("Hiện trong Finder")) {
                 NSWorkspace.shared.activateFileViewerSelecting([url])
             }
-            Button("Mở") { NSWorkspace.shared.open(url) }
+            Button(L10n.t("Mở")) { NSWorkspace.shared.open(url) }
             Divider()
             Button("Bỏ khỏi khay", action: onRemove)
         }
@@ -510,14 +510,14 @@ private struct NotchDropView: View {
             .overlay(MultiFileDragSource(paths: store.items.map(\.path)))
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("\(store.items.count) tệp đang giữ")
+                Text(L10n.t("\(store.items.count) tệp đang giữ"))
                     .font(.system(size: 12, weight: .semibold))
-                Text("Kéo cả chồng ra để dùng một lần.")
+                Text(L10n.t("Kéo cả chồng ra để dùng một lần."))
                     .font(.system(size: 10)).foregroundColor(.secondary)
                 HStack(spacing: 8) {
-                    Button("Xem chi tiết") { NotchDropController.shared.toggleDetail() }
+                    Button(L10n.t("Xem chi tiết")) { NotchDropController.shared.toggleDetail() }
                         .buttonStyle(.bordered).controlSize(.mini)
-                    Button("Xóa hết") { store.removePaths(store.items.map(\.path)) }
+                    Button(L10n.t("Xóa hết")) { store.removePaths(store.items.map(\.path)) }
                         .buttonStyle(.plain)
                         .font(.system(size: 10))
                         .foregroundColor(.secondary)
@@ -533,7 +533,7 @@ private struct NotchDropView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "tray.and.arrow.down.fill").foregroundColor(.accentColor)
-                Text("Khay thả").font(.system(size: 13, weight: .semibold))
+                Text(L10n.t("Khay thả")).font(.system(size: 13, weight: .semibold))
                 Text("\(store.items.count)").font(.system(size: 11)).foregroundColor(.secondary)
                 Spacer()
                 Button {
@@ -547,7 +547,7 @@ private struct NotchDropView: View {
             if store.items.isEmpty {
                 VStack(spacing: 4) {
                     Image(systemName: "arrow.down.doc").font(.system(size: 22)).foregroundColor(.secondary)
-                    Text("Thả file vào đây để giữ tạm")
+                    Text(L10n.t("Thả file vào đây để giữ tạm"))
                         .font(.system(size: 11)).foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -588,7 +588,7 @@ private struct DropTrayDetailGrid: View {
         .frame(minWidth: 480, minHeight: 360)
         .overlay(alignment: .bottom) {
             if store.items.count > cap {
-                Text("Hiện \(cap)/\(store.items.count) mục — kéo cả chồng ở khay để thao tác cả lô.")
+                Text(L10n.t("Hiện \(cap)/\(store.items.count) mục — kéo cả chồng ở khay để thao tác cả lô."))
                     .font(.system(size: 11)).foregroundColor(.secondary)
                     .padding(.vertical, 6)
                     .frame(maxWidth: .infinity)
