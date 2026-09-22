@@ -48,10 +48,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // and ⌘⇧V opened an empty shelf.
         _ = ClipboardManager.shared
 
+        // Same pattern for gestures: `GestureController.shared` runs the legacy
+        // profile migration in `init`, and its `init` only happens when something
+        // references it. Relying on the view to do that meant a preferences file
+        // written by an older build kept a frozen copy of every preset until the
+        // user happened to open the page. Touching it here makes the migration
+        // run on every launch, idempotently.
+        _ = GestureController.shared
+
         applySavedAppearance()
         setupMenubar()
         setupGlobalHotkeys()
         setupDatabase()
+        // Arms the event tap when gestures are enabled, so a user who switched it
+        // on does not have to reopen the page after every launch.
+        GestureController.shared.start()
         EdgeNotesController.shared.applySettings()
         // App-lifetime: hovering a Dock icon must work whatever page is open,
         // not only while the Xem trước cửa sổ page happens to be on screen.

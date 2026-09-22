@@ -1,229 +1,426 @@
 import SwiftUI
 import AppKit
 
-// No .monospaced() on a Font, no Gauge/Grid/scrollContentBackground/symbolEffect/NavigationSplitView.
+/// Chuột & cử chỉ — the user opens this page asking **"what will each swipe send,
+/// right now?"**. Preset-first: every supported app already has working mappings,
+/// so the table is the page and recording is a secondary action.
+///
+/// Flat System-Settings layout (PageHeader → SectionHeader → Divider), matching
+/// Hệ thống / Mạng / Vùng bắt dính. No card-per-group: a card per table would
+/// break the mapping table into six boxes the eye cannot compare.
+///
+/// Banned on macOS 14 here: `.monospaced()`, `Gauge`, `Grid{`, `scrollContentBackground`,
+/// `symbolEffect`, `NavigationSplitView`. `.pickerStyle(.segmented)` is avoided —
+/// long labels give a segmented Picker an unbounded ideal width and the split view jumps.
 struct MouseGesturesDetailView: View {
     @State private var controller = GestureController.shared
     @State private var profile = GestureProfiles.fallback
     @State private var customBundle = ""
     @State private var recordingDirection: GestureDirection?
+    /// Which arm of the diagram is highlighted. `nil` = nothing picked yet, which
+    /// shows the interaction hint instead of an alarming blank panel.
+    @State private var pickedDirection: GestureDirection?
+    @State private var trusted = WindowManager.isTrusted
+
+    private var config: GestureConfiguration { controller.configuration }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                PageHeader(icon: "computermouse", title: L10n.t("Chuột & cử chỉ"),
-                           subtitle: L10n.t("Giữ nút, kéo một hướng, thả để gửi phím tắt theo ứng dụng."))
-                heroCard
-                triggerCard
-                sensitivityCard
-                optInCard
+            VStack(alignment: .leading, spacing: 14) {
+                PageHeader(
+                    icon: "computermouse",
+                    title: L10n.t("Chuột & cử chỉ"),
+                    subtitle: L10n.t("Giữ nút, kéo một hướng rồi thả — XFinder gửi phím tắt theo ứng dụng đang mở."),
+                    trailing: AnyView(
+                        HStack(spacing: 6) {
+                            Text(config.enabled ? L10n.t("Bật") : L10n.t("Tắt"))
+                                .font(.system(size: 12)).foregroundColor(.secondary)
+                            Toggle("", isOn: Binding(
+                                get: { config.enabled },
+                                set: { v in controller.update { $0.enabled = v } }))
+                                .labelsHidden()
+                        }
+                    ))
+
+                if !trusted { permissionBanner }
+
+                readinessRow
+
+                Divider().padding(.horizontal, 20)
+
                 mappingSection
-                Text(L10n.t("Nếu không hoạt động: kiểm tra Trợ năng, bundle ID, phím tắt của app và tắt mapping trùng trong phần mềm chuột khác. Tắt công tắc để ngừng xử lý cử chỉ."))
-                    .font(.system(size: 11)).foregroundColor(.secondary).padding(.horizontal, 20)
-            }.padding(.vertical, 20)
+
+                Text(L10n.t("Nếu không hoạt động: kiểm tra Trợ năng, bundle ID, phím tắt riêng của app và tắt mapping trùng trong phần mềm chuột khác. Tắt công tắc ở trên để ngừng xử lý cử chỉ."))
+                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 20)
+            }
+            .padding(.vertical, 20)
         }
-        .onAppear { controller.start() }
+        .background(Color(.windowBackgroundColor))
+        .onAppear {
+            trusted = WindowManager.isTrusted
+            controller.start()
+        }
         .onDisappear { controller.cancelRecording() }
-        .onChange(of: profile) { _, _ in recordingDirection = nil }
+        .onChange(of: profile) { _, _ in
+            recordingDirection = nil
+            pickedDirection = MouseDiagramSelection.afterProfileChange()
+        }
     }
 
-    // MARK: Hero — tiny decoration, never hit-tested. Highlights the direction
-    // currently being recorded so the picker → card connection is legible.
-    private var heroCard: some View {
-        let active: GestureDirection? = controller.recording ? recordingDirection : nil
-        return ZStack {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(.controlBackgroundColor))
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
-            HStack(spacing: 0) {
-                Canvas { ctx, size in
-                    let r = min(size.width, size.height) * 0.52
-                    let c = CGPoint(x: size.width/2, y: size.height/2)
-                    var p = Path()
-                    p.addEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: r*2, height: r*2))
-                    ctx.stroke(p, with: .color(Color.secondary.opacity(0.18)), lineWidth: 1)
-                }.frame(width: 96, height: 96).opacity(0.9)
-                ZStack {
-                    Image(systemName: "computermouse.fill")
-                        .font(.system(size: 30)).foregroundColor(.primary.opacity(0.9))
-                    Circle().fill(Color.primary.opacity(0.12)).frame(width: 18, height: 18)
-                        .offset(y: 8)
-                }.frame(width: 96, height: 96)
-                Canvas { ctx, size in
-                    let r = min(size.width, size.height) * 0.52
-                    let c = CGPoint(x: size.width/2, y: size.height/2)
-                    var p = Path()
-                    p.addEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: r*2, height: r*2))
-                    ctx.stroke(p, with: .color(Color.secondary.opacity(0.18)), lineWidth: 1)
-                }.frame(width: 96, height: 96).opacity(0.9)
-            }
-            .overlay(alignment: .top) { arrow(L10n.t("↑"), active == .up).offset(y: 8) }
-            .overlay(alignment: .bottom) { arrow(L10n.t("↓"), active == .down).offset(y: -8) }
-            .overlay(alignment: .leading) { arrow(L10n.t("←"), active == .left).offset(x: 18) }
-            .overlay(alignment: .trailing) { arrow(L10n.t("→"), active == .right).offset(x: -18) }
-            .allowsHitTesting(false)
+    // MARK: - Readiness (measured, never inferred from status text)
+
+    /// Preset-first statement: the mappings already exist. This row reports the
+    /// **measured** tap state (`tapActive`), because a switch that is on while the
+    /// event tap failed to open must not look like "Ready".
+    private var readinessRow: some View {
+        let on = config.enabled
+        let healthy = controller.tapActive
+        let tint: Color = !on ? .secondary : (healthy ? .green : .orange)
+        let icon = !on ? "pause.circle" : (healthy ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+        let text: String = {
+            if !on { return L10n.t("Cử chỉ đang tắt. Bật công tắc ở góc trên để dùng; bảng bên dưới đã có sẵn phím tắt.") }
+            if healthy { return L10n.t("Sẵn sàng — các ứng dụng bên dưới đã có phím tắt sẵn, không cần cấu hình thêm.") }
+            if !controller.tapFailure.isEmpty { return L10n.t("Chưa mở được Event Tap: ") + L10n.t(controller.tapFailure) }
+            return L10n.t("Chưa mở được Event Tap — cần quyền Trợ năng. Nhấn “Mở Cài đặt Trợ năng” ở trên.")
+        }()
+        return HStack(alignment: .top, spacing: 8) {
+            Image(systemName: icon).foregroundColor(tint).font(.system(size: 13))
+            Text(text).font(.system(size: 12)).foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
         }
-        .frame(height: 126)
         .padding(.horizontal, 20)
     }
-    private func arrow(_ s: String, _ on: Bool) -> some View {
-        Text(s).font(.system(size: 13, weight: .semibold, design: .rounded))
-            .foregroundColor(on ? .accentColor : .secondary)
-            .padding(.horizontal, 8).padding(.vertical, 4)
-            .background(Capsule().fill((on ? Color.accentColor : Color.secondary).opacity(0.12)))
-    }
 
-    private var triggerCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SettingsCard(title: L10n.t("Kích hoạt"), subtitle: L10n.t("Chọn nút hoặc modifier giữ để bắt cử chỉ")) {
-                Toggle(L10n.t("Bật cử chỉ chuột"), isOn: Binding(
-                    get: { controller.configuration.enabled },
-                    set: { v in controller.update { $0.enabled = v } }))
-                Text(L10n.t(controller.status)).font(.system(size: 11)).foregroundColor(.secondary)
-                Divider()
-                HStack {
-                    Text(L10n.t("Nút kích hoạt") + ": " + controller.configuration.trigger.label).font(.system(size: 12))
-                    Spacer()
-                    Button(L10n.t("Ghi nút / modifier")) { controller.recordTrigger() }.disabled(controller.recording)
-                    Button(L10n.t("Cấp quyền Trợ năng")) { WindowManager.requestAccessibilityTrust() }
-                }
-                Text(L10n.t("Mặc định: nút giữa (Button 2). Không dùng nút trái. Khi đổi chuột, ghi lại nút nếu mã nút khác. Modifier vẫn giữ chức năng bàn phím thông thường."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
-                if controller.recording {
-                    Text(L10n.t("Đang ghi — Esc để hủy, tự dừng sau 10 giây")).font(.system(size: 11)).foregroundColor(.orange)
-                    Button(L10n.t("Hủy ghi")) { controller.cancelRecording() }
-                }
+    /// A numbered step. Kept as its own helper so the numbering, spacing and
+    /// muted second line stay identical across the steps.
+    private func howToStep(_ number: Int, _ title: String, _ detail: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("\(number)")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+                .frame(width: 18, height: 18)
+                .background(Circle().fill(Color.accentColor))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.system(size: 12, weight: .medium))
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(detail).font(.system(size: 11)).foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-        }.padding(.horizontal, 20)
-    }
-
-    private var sensitivityCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SettingsCard(title: L10n.t("Độ nhạy"), subtitle: L10n.t("Ngưỡng chuyển động và giữ")) {
-                HStack {
-                    Text(L10n.t("Ngưỡng chuyển động (delta)")).font(.system(size: 12))
-                    Slider(value: Binding(get: { controller.configuration.deadzone },
-                        set: { v in controller.update { $0.deadzone = v } }), in: 4...200, step: 1)
-                    Text(String(format: "%.0f", controller.configuration.deadzone))
-                        .font(.system(size: 12, design: .monospaced)).frame(width: 28, alignment: .trailing)
-                }
-                Text(L10n.t("Đơn vị delta, không phải điểm màn hình. Kéo dưới ngưỡng sẽ phát lại click; kéo rồi quay về không tạo click. Nút giữ tối đa 15 giây."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
-            }
-        }.padding(.horizontal, 20)
-    }
-
-    private var optInCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SettingsCard(title: L10n.t("Tuỳ chọn"), subtitle: L10n.t("Bật khi cần")) {
-                Toggle(L10n.t("Ánh xạ tilt ngang rời rạc (không cần giữ nút)"), isOn: Binding(
-                    get: { controller.configuration.tiltEnabled },
-                    set: { v in controller.update { $0.tiltEnabled = v } }))
-                Text(L10n.t("Không bắt cuộn liên tục của Magic Mouse/trackpad. Tilt dùng phím tắt có giới hạn 350 ms; cuộn ngang nguyên bản không làm mượt thêm."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
-                Toggle(L10n.t("Log chẩn đoán (tối đa 4 lần/giây)"), isOn: Binding(
-                    get: { controller.configuration.debug },
-                    set: { v in controller.update { $0.debug = v } }))
-            }
-        }.padding(.horizontal, 20)
-    }
-
-    private var mappingSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(icon: "keyboard", title: L10n.t("Phím gửi theo ứng dụng"),
-                          subtitle: L10n.t("Đây là phím được gửi, không đảm bảo mọi app gán cùng chức năng. Mục chưa rõ để Chưa gán; ghi phím riêng để thay đổi."))
-            HStack(spacing: 8) {
-                Picker(L10n.t("Ứng dụng"), selection: $profile) {
-                    ForEach(GestureProfiles.all) { item in
-                        Text(item.id == "*" ? L10n.t("Mặc định toàn cục") : item.name).tag(item.id)
-                    }
-                    ForEach(customProfiles, id: \.self) { id in Text(id).tag(id) }
-                }.pickerStyle(.menu).frame(maxWidth: 260)
-                Spacer()
-            }.padding(.horizontal, 20)
-            HStack(spacing: 8) {
-                TextField(L10n.t("Bundle ID ứng dụng khác"), text: $customBundle).textFieldStyle(.roundedBorder)
-                Button(L10n.t("Chọn")) {
-                    let id = customBundle.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !id.isEmpty { profile = id }
-                }
-            }.padding(.horizontal, 20)
-            if !controller.lastExternalBundle.isEmpty {
-                Button(L10n.t("Dùng ứng dụng vừa hoạt động") + ": " + controller.lastExternalBundle) {
-                    profile = controller.lastExternalBundle
-                }.lineLimit(1).padding(.horizontal, 20)
-            }
-            Text(profile).font(.system(size: 11)).foregroundColor(.secondary).textSelection(.enabled).padding(.horizontal, 20)
-            ForEach(GestureDirection.allCases, id: \.self) { direction in
-                actionRow(direction).padding(.horizontal, 20)
-            }
-            Button(L10n.t("Khôi phục mapping mặc định của ứng dụng")) { controller.resetProfile(profile) }
-                .padding(.horizontal, 20)
+            Spacer(minLength: 0)
         }
+    }
+
+    private var permissionBanner: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(L10n.t("Cần quyền Trợ năng"), systemImage: "exclamationmark.triangle.fill")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.orange)
+            Text(L10n.t("XFinder chỉ nhận được nút chuột trước các ứng dụng khác khi bạn cấp quyền Trợ năng. Bật công tắc vẫn cần quyền này — thiếu quyền thì Event Tap không mở được và cử chỉ không chạy."))
+                .font(.system(size: 12)).foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                Button(L10n.t("Mở Cài đặt Trợ năng")) { WindowManager.openAccessibilityPane() }
+                    .buttonStyle(.borderedProminent).controlSize(.small)
+                Button(L10n.t("Kiểm tra lại")) {
+                    WindowManager.requestAccessibilityTrust()
+                    trusted = WindowManager.isTrusted
+                    controller.refreshTrust()
+                    controller.apply()
+                }
+                .buttonStyle(.bordered).controlSize(.small)
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Mapping section
+
+    /// The page's centrepiece: a drawing of the mouse whose arrows ARE the
+    /// selector, beside a panel explaining the highlighted arrow.
+    ///
+    /// This replaces a six-row text table. That table was the "looks empty" bug:
+    /// each row put the action, the motion sentence, a text badge and two buttons
+    /// on one line, then truncated everything — Global's `⌃↑` (three characters)
+    /// sat next to a full Vietnamese sentence in a ~240 pt pane and neither
+    /// survived. The data was never empty; the layout was.
+    private var mappingSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionHeader(icon: "computermouse",
+                          title: L10n.t("Sơ đồ cử chỉ"),
+                          subtitle: L10n.t("Chọn một mũi tên để xem nó gửi gì. Màu xanh là phím có sẵn, màu xanh dương là bạn tự đặt, viền đứt là chưa gán."))
+
+            appPickerRow
+            frontmostHint
+
+            HStack(alignment: .top, spacing: 18) {
+                VStack(spacing: 10) {
+                    MouseDiagramView(
+                        selection: $pickedDirection,
+                        action: { config.action(bundle: profile, direction: $0) },
+                        tint: { sourceTint(config.source(bundle: profile, direction: $0)) },
+                        showsTilt: config.tiltAvailable,
+                        trigger: config.trigger)
+                    triggerHint
+                }
+                .frame(maxWidth: .infinity)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    if let direction = pickedDirection {
+                        GestureDetailPanel(
+                            direction: direction,
+                            action: config.action(bundle: profile, direction: direction),
+                            source: config.source(bundle: profile, direction: direction),
+                            trigger: config.trigger,
+                            isRecording: controller.recording && recordingDirection == direction,
+                            onRecord: {
+                                recordingDirection = direction
+                                controller.recordShortcut(bundle: profile, direction: direction)
+                            },
+                            onSetUnassigned: {
+                                controller.setAction(.unassigned, bundle: profile, direction: direction)
+                            },
+                            onSetHorizontalScroll: supportsHorizontalScroll(direction)
+                                ? { controller.setAction(.horizontalScroll, bundle: profile, direction: direction) }
+                                : nil,
+                            onResetApp: { controller.resetDirection(bundle: profile, direction: direction) },
+                            appName: profileDisplayName,
+                            hasAppPreset: GestureProfiles.hasPreset(bundle: profile))
+                    } else {
+                        emptySelectionHint
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            .padding(.horizontal, 20)
+
+            legend
+            customBundleRow
+            tiltRow
+
+            HStack {
+                Button(L10n.t("Khôi phục toàn bộ ứng dụng này về mặc định")) { controller.resetProfile(profile) }
+                    .buttonStyle(.bordered).controlSize(.small)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+
+    /// Shown before the user has clicked an arrow. It teaches the interaction
+    /// instead of leaving an alarming blank half-page.
+    private var emptySelectionHint: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: "hand.tap")
+                .font(.system(size: 22)).foregroundColor(.secondary.opacity(0.6))
+            Text(L10n.t("Bấm vào một mũi tên để xem chi tiết"))
+                .font(.system(size: 13, weight: .medium))
+            Text(L10n.t("Mỗi mũi tên là một động tác: giữ nút ghi trên mũi tên rồi kéo theo hướng đó. Bấm vào để xem nó gửi phím gì, và đổi nếu bạn muốn."))
+                .font(.system(size: 11)).foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.secondary.opacity(0.05))
+        )
+    }
+
+    /// Reminder of what the highlighted arm means physically, set beside the
+    /// diagram where the eye already is.
+    private var triggerHint: some View {
+        VStack(spacing: 2) {
+            Text(config.trigger.label)
+                .font(.system(size: 11, weight: .medium))
+            Text(L10n.t("là nút bạn giữ để bắt đầu mọi cử chỉ — số trên mỗi mũi tên là nút đó"))
+                .font(.system(size: 10)).foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.center)
+            Button(L10n.t("Đổi nút")) { controller.recordTrigger() }
+                .buttonStyle(.link).font(.system(size: 10))
+                .disabled(controller.recording)
+        }
+        .frame(maxWidth: 200)
+    }
+
+    private func sourceTint(_ source: GestureRowSource) -> Color {
+        switch source {
+        case .preset, .presetGlobal: return .green
+        case .userOverride: return .accentColor
+        case .unassigned: return .gray
+        }
+    }
+
+    /// Only the tilt directions can be "leave the native horizontal scroll";
+    /// offering it on a vertical arm would be meaningless.
+    private func supportsHorizontalScroll(_ direction: GestureDirection) -> Bool {
+        GestureDirectionDisplay.supportsHorizontalScroll(direction)
+    }
+
+    /// Tilt exists only on mice whose wheel tilts *and* whose driver reports it as
+    /// a discrete horizontal wheel. This was hard-coded `true`, so the two tilt
+    /// arms were drawn on hardware where they can never fire — the Razer Basilisk
+    /// 25K/35K and the Magic Mouse both report every wheel event as
+    /// `scrollWheelEventIsContinuous == 1` with axis2 == 0 (measured, see
+    /// docs/GESTURE_VERIFICATION.md), which `GestureEngine` deliberately rejects so
+    /// it never steals trackpad scrolling. The switch below is now the only thing
+    /// that reveals the arms, and it says what it cannot know.
+    private var tiltRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle(isOn: Binding(
+                get: { config.tiltAvailable },
+                set: { v in controller.update { $0.tiltAvailable = v } }))
+            {
+                Text(L10n.t("Hiện hai hướng nghiêng con lăn")).font(.system(size: 12))
+            }
+            .toggleStyle(.switch).controlSize(.small)
+            Text(L10n.t("Chỉ dùng cho chuột có con lăn nghiêng được và có driver gửi cuộn ngang rời rạc — ví dụ Logitech MX Master với Logi Options. Đo trên máy này: Razer Basilisk và Magic Mouse đều báo cuộn liên tục, nên hai hướng đó sẽ không bao giờ chạy; tắt để sơ đồ khỏi vẽ thừa. XFinder không thể tự dò ra phần cứng của bạn."))
+                .font(.system(size: 11)).foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var profileDisplayName: String {
+        if profile == GestureProfiles.fallback { return L10n.t("Mặc định toàn cục") }
+        if !GestureProfiles.hasPreset(bundle: profile) {
+            // Not a built-in family: show the app's real name when macOS knows it,
+            // so the picker does not read out a raw bundle ID.
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: profile) {
+                return FileManager.default.displayName(atPath: url.path)
+            }
+            return profile
+        }
+        return GestureProfiles.all.first { $0.id == profile }?.name ?? profile
+    }
+
+    /// The app in front, when macOS reports one that is not XFinder itself.
+    private var frontmostBundle: String {
+        let id = controller.lastExternalBundle
+        return id.isEmpty ? GestureProfiles.fallback : id
+    }
+
+    /// App selection, with the real icon so the picker reads like a list of apps
+    /// rather than a list of bundle IDs.
+    private var appPickerRow: some View {
+        HStack(spacing: 10) {
+            if let img = appIcon {
+                Image(nsImage: img).resizable().frame(width: 20, height: 20).cornerRadius(4)
+            } else {
+                Image(systemName: "globe").font(.system(size: 16)).foregroundColor(.secondary)
+                    .frame(width: 20)
+            }
+            Text(profileDisplayName)
+                .font(.system(size: 13, weight: .medium))
+            Picker("", selection: $profile) {
+                ForEach(GestureProfiles.all) { item in
+                    Text(item.id == GestureProfiles.fallback ? L10n.t("Mặc định toàn cục") : item.name)
+                        .tag(item.id)
+                }
+                if !GestureProfiles.hasPreset(bundle: frontmostBundle) {
+                    Text(L10n.t("Ứng dụng đang dùng") + " — " + frontmostBundle).tag(frontmostBundle)
+                }
+                ForEach(customProfiles, id: \.self) { id in Text(id).tag(id) }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .frame(maxWidth: 220)
+            Spacer(minLength: 0)
+            if controller.recording {
+                HStack(spacing: 4) {
+                    Circle().fill(Color.orange).frame(width: 6, height: 6)
+                    Text(L10n.t("Đang ghi — Esc để hủy"))
+                        .font(.system(size: 11)).foregroundColor(.orange)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+
+    /// Which preset is in force for the app in front, and the honest distinction
+    /// between "this bundle has its own preset" and "unknown app → Global".
+    private var frontmostHint: some View {
+        let front = controller.lastExternalBundle
+        let hasBuiltIn = GestureProfiles.hasPreset(bundle: front)
+        let hasOverride = config.overrides[front]?.isEmpty == false
+        return VStack(alignment: .leading, spacing: 4) {
+            if front.isEmpty {
+                Text(L10n.t("Chưa xác định được ứng dụng đang mở phía trước."))
+                    .font(.system(size: 11)).foregroundColor(.secondary)
+            } else {
+                HStack(spacing: 6) {
+                    Text(L10n.t("Ứng dụng đang dùng") + ": " + front)
+                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .lineLimit(1).truncationMode(.middle)
+                    Button(L10n.t("Xem")) { profile = front }.controlSize(.small)
+                }
+                // The three sentences are chosen with an explicit `if`, not a
+                // ternary inside one `L10n.t(...)`: the lint only sees a literal
+                // that is the *direct* argument, and a ternary would hide three
+                // strings from it (and any future sweep).
+                if hasBuiltIn {
+                    if hasOverride {
+                        Text(L10n.t("Ứng dụng này có preset riêng, và bạn đã tự đặt một số hướng."))
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        Text(L10n.t("Ứng dụng này đang dùng preset có sẵn."))
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                } else {
+                    Text(L10n.t("Ứng dụng này không có preset riêng — đang dùng bảng “Mặc định toàn cục”."))
+                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private var appIcon: NSImage? {
+        guard profile != GestureProfiles.fallback else { return nil }
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: profile) else { return nil }
+        return NSWorkspace.shared.icon(forFile: url.path)
+    }
+
+    private var legend: some View {
+        Text(L10n.t("Mặc định = preset dựng sẵn · Tự đặt = bạn đã đổi hướng đó · Chưa gán = cố ý không gửi phím. Chưa gán trên ứng dụng đã có preset sẽ không rơi về bảng toàn cục. Biểu tượng ⇄ nhỏ trên mũi tên nghiêng nghĩa là hướng đó chuyển tiếp cuộn ngang nguyên bản của chuột."))
+            .font(.system(size: 11)).foregroundColor(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 20)
+    }
+
+    /// A custom bundle ID is an advanced escape hatch, not the primary workflow.
+    private var customBundleRow: some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    TextField(L10n.t("Bundle ID ứng dụng khác"), text: $customBundle)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: 320)
+                    Button(L10n.t("Chọn")) {
+                        let id = customBundle.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !id.isEmpty { profile = id }
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
+                    Spacer(minLength: 0)
+                }
+                Text(L10n.t("Ứng dụng không có trong danh sách sẽ dùng bảng “Mặc định toàn cục”. Đặt Chưa gán cho một hướng nếu bạn không muốn nó gửi phím nào."))
+                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 4)
+        } label: {
+            Text(L10n.t("Nâng cao — ứng dụng khác")).font(.system(size: 12))
+        }
+        .padding(.horizontal, 20)
     }
 
     private var customProfiles: [String] {
         let known = Set(GestureProfiles.all.map(\.id))
-        return Set(Array(controller.configuration.overrides.keys) + [profile]).subtracting(known).sorted()
-    }
-
-    private func actionRow(_ direction: GestureDirection) -> some View {
-        let action = controller.configuration.action(bundle: profile, direction: direction)
-        let isUnassigned: Bool = {
-            if case .unassigned = action { return true }
-            return false
-        }()
-        let appIcon: NSImage? = {
-            guard profile != GestureProfiles.fallback else { return nil }
-            if let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: profile) {
-                return NSWorkspace.shared.icon(forFile: app.path)
-            }
-            return nil
-        }()
-        return HStack(spacing: 10) {
-            if let img = appIcon {
-                Image(nsImage: img).resizable().frame(width: 16, height: 16).cornerRadius(3)
-            } else {
-                Image(systemName: "app.fill").foregroundColor(.secondary).frame(width: 16)
-            }
-            Text(direction.symbol).font(.system(size: 13, weight: .semibold, design: .rounded))
-                .frame(width: 42, alignment: .leading)
-            Text(actionLabel(action))
-                .font(.system(size: 12, weight: isUnassigned ? .regular : .medium, design: .rounded))
-                .foregroundColor(isUnassigned ? .secondary : .primary)
-                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading).lineLimit(1)
-            Group {
-                if isUnassigned {
-                    Button(L10n.t("Ghi phím")) {
-                        recordingDirection = direction
-                        controller.recordShortcut(bundle: profile, direction: direction)
-                    }.buttonStyle(.borderedProminent).controlSize(.small)
-                } else {
-                    Button(L10n.t("Ghi phím")) {
-                        recordingDirection = direction
-                        controller.recordShortcut(bundle: profile, direction: direction)
-                    }.buttonStyle(.bordered).controlSize(.small)
-                }
-            }.disabled(controller.recording)
-            Menu(L10n.t("Đổi")) {
-                Button(L10n.t("Chưa gán")) { controller.setAction(.unassigned, bundle: profile, direction: direction) }
-                if direction == .tiltLeft || direction == .tiltRight {
-                    Button(L10n.t("Cuộn ngang nguyên bản")) {
-                        controller.setAction(.horizontalScroll, bundle: profile, direction: direction)
-                    }
-                }
-            }.fixedSize()
-        }
-        .padding(.vertical, 6).padding(.horizontal, 10)
-        .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color(.controlBackgroundColor)))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).strokeBorder(Color.primary.opacity(0.06), lineWidth: 1))
-    }
-    private func actionLabel(_ action: GestureAction) -> String {
-        switch action {
-        case .unassigned: return L10n.t("Chưa gán")
-        case .shortcut(let s): return s.label
-        case .horizontalScroll: return L10n.t("Cuộn ngang nguyên bản")
-        }
+        return Set(Array(config.overrides.keys) + [profile]).subtracting(known).sorted()
     }
 }

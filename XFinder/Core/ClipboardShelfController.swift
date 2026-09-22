@@ -400,7 +400,7 @@ private struct ClipboardShelfView: View {
     }
 
     private var hintBar: some View {
-        Text("←/→ chọn · Return dán · ⇧Return dán thuần · Space xem · ⌘P ghim · ⌘1-9 bảng · Esc")
+        Text(L10n.t("←/→ chọn · Return dán · ⇧Return dán thuần · Space xem · ⌘P ghim · ⌘1-9 bảng · Esc"))
             .font(.system(size: 10))
             .foregroundColor(.secondary)
             .padding(.horizontal, 14).padding(.vertical, 7)
@@ -413,9 +413,9 @@ private struct ClipboardShelfView: View {
             VStack(spacing: 6) {
                 Image(systemName: "doc.on.clipboard")
                     .font(.system(size: 26)).foregroundColor(.secondary)
-                Text("Chưa có mục nào trong clipboard")
+                Text(L10n.t("Chưa có mục nào trong clipboard"))
                     .font(.system(size: 12)).foregroundColor(.secondary)
-                Text("Sao chép gì đó (⌘C) rồi mở lại bằng ⌘⇧V.")
+                Text(L10n.t("Sao chép gì đó (⌘C) rồi mở lại bằng ⌘⇧V."))
                     .font(.system(size: 11)).foregroundColor(.secondary)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -507,7 +507,7 @@ private struct ShelfCard: View {
                     .foregroundColor(.secondary)
                 Spacer()
                 if let s = record.textSnippet {
-                    Text("\(s.count) ký tự")
+                    Text(L10n.t("\(s.count) ký tự"))
                         .font(.system(size: 9)).foregroundColor(.secondary)
                 }
             }

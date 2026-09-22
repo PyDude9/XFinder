@@ -51,6 +51,8 @@ struct DetailHostView: View {
                 WindowPreviewDetailView()
             case .snapZones:
                 SnapZonesDetailView()
+            case .mouseGestures:
+                MouseGesturesDetailView()
             case .menuIcons:
                 MenuIconsDetailView()
             case .finderActions:

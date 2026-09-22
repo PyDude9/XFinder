@@ -253,7 +253,7 @@ private struct CommandTabSwitcherView: View {
             }
 
             if !WindowManager.canRecordScreen {
-                Text("Thiếu quyền Ghi màn hình — chưa có ảnh xem trước. Mở Tổng quan → “Cấp mọi quyền…”.")
+                Text(L10n.t("Thiếu quyền Ghi màn hình — chưa có ảnh xem trước. Mở Tổng quan → “Cấp mọi quyền…”."))
                     .font(.caption2).foregroundColor(.secondary)
             }
         }
