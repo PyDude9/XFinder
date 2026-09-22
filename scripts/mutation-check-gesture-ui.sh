@@ -9,6 +9,8 @@ cd "$(dirname "$0")/.."
 SRC=XFinder/Core/MouseGestures/GestureUIDisplay.swift
 BAK=/tmp/GestureUIDisplay.swift.bak
 cp "$SRC" "$BAK"
+restore_src() { cp "$BAK" "$SRC"; }
+trap restore_src EXIT
 
 total() {
   swift test --package-path Tests 2>&1 | grep -oE 'Executed [0-9]+ tests' | tail -1 | grep -oE '[0-9]+'
@@ -43,12 +45,38 @@ check "BUG 3: horizontal-scroll option removed from tilt arms"
 sed -i '' 's|^        isTilt(direction)$|        !isTilt(direction)|' "$SRC"
 check "BUG 4: horizontal-scroll offered on the drag arms instead"
 
-# Bug 5: a direction loses its heading (empty title above the keys).
-sed -i '' 's|case .down: return "Kéo XUỐNG"|case .down: return ""|' "$SRC"
-check "BUG 5: a direction renders an empty heading"
+# Bug 5: a drag arm loses the mouse-button it names, so the heading degrades to
+# the bare motion word ("kéo xuống") — the exact wording the user rejected.
+MODEL=XFinder/Core/MouseGestures/GestureModel.swift
+# Backup OUTSIDE the repo: a `.bak` sitting next to Swift sources can be picked
+# up by a stray build/glob and an interrupted run must not be able to strand it.
+MODEL_BAK=/tmp/GestureModel.swift.bak
+cp "$MODEL" "$MODEL_BAK"
+
+# Restore on ANY exit, including `set -e` aborting mid-mutation.
+restore_model() { cp "$MODEL_BAK" "$MODEL"; }
+trap restore_model EXIT
+
+python3 - "$MODEL" <<'PYEOF'
+import sys
+p = sys.argv[1]
+s = open(p, encoding='utf-8').read()
+old = r'return "\(trigger.numberedName): \(hint)"'
+assert old in s, "mutation target not found — fix the script, not the assertion"
+open(p, 'w', encoding='utf-8').write(s.replace(old, 'return hint'))
+PYEOF
+printf '%s\n' "BUG 5: a direction heading drops the held mouse button"
+out="$(swift test --package-path Tests 2>&1 | grep -cE 'error: -\[XFinderLogicTests' || true)"
+if [ "$out" -gt 0 ]; then
+  echo "  RED as expected ($out assertion(s) failed)"
+else
+  echo "  !! STILL GREEN — this test cannot fail, it proves nothing"
+fi
+restore_model
 
 echo "--- restoring ---"
 cp "$BAK" "$SRC"
 diff -q "$BAK" "$SRC" && echo "restored byte-identical"
+diff -q "$MODEL_BAK" "$MODEL" && echo "model restored byte-identical"
 echo "--- final ---"
 echo "Executed $(total) tests"
