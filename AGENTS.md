@@ -795,3 +795,32 @@ the harness with exit 133 (items not installed), proving detection of the origin
 - Important permission distinction: the terminal-hosted live probe can open a tap,
   while the new ad-hoc XFinder app can still fail. Never claim app-level gestures
   are verified from the probe's grant or a successful build alone.
+
+### The mutation scripts CAN leave the working tree mutated (2026-09-22) — checked first
+
+Found at the start of this pass: `GestureModel.swift` was sitting on disk with **mutation M1
+already applied** (`default: return "Nút hông sau — nút \(n + 1) (Button \(n))"`), uncommitted.
+A previous mutation run had been killed between `mutate` and `restore`, so the *shipped build
+contained the bug the mutation was meant to simulate*. Two tests caught it
+(`testTriggerLabelsNameButtonsByNumber`, `testGesturePageStringsAreAllTranslatable`) — but
+only when the suite was run directly. `verify-l10n.sh` printed a green `97 tests, 0 failures`
+from a **different, earlier** build directory, so the suite looked clean.
+
+**This is the same failure shape as the truncated `GestureModel.swift`** recorded earlier: a
+mutated tree that is committed or left behind is worse than no mutation script at all,
+because it silently ships the bug.
+
+Rules now:
+1. **Before trusting any "all green" result, run `git --no-optional-locks status --short`.**
+   An unexpected modified gesture/L10n source is a leftover mutation until proven otherwise.
+2. **The three mutation scripts must be run last, never first**, and never with the terminal
+   about to be interrupted. If one is interrupted, `git checkout --` the file it names and
+   re-run `cd Tests && swift test` before anything else.
+3. **"Baseline is not green" is a real finding, not harness noise.** It is exactly how the
+   leftover mutation was found — `fails()` returned 2 on the baseline step while a direct
+   `swift test` returned 0, because the two runs used different build state. Do not "retry
+   until green"; find which source file differs from `HEAD`.
+4. **Never read a green test count from a script that builds elsewhere** as proof about the
+   tree in front of you. `sh scripts/verify-l10n.sh` builds to `/tmp/xfinder-l10n-build`;
+   `cd Tests && swift test` compiles the symlinked sources in place. When they disagree,
+   the in-place run is the one that describes the working tree.
