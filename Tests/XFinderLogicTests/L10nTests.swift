@@ -101,14 +101,52 @@ final class L10nTests: XCTestCase {
                       "marked as standalone sentences but padded like fragments: \(bad)")
     }
 
+    /// Nothing may be **declared language-neutral** if it is actually a Vietnamese
+    /// sentence.
+    ///
+    /// This is the exact mechanism behind the repeated "Vietnamese leaks into the
+    /// English UI" reports, and it is why wrapping call sites never fixed it.
+    /// `L10n.LanguageNeutralKeys` is a declaration that a key must be returned
+    /// *verbatim*, so a Vietnamese sentence listed there is not a missing
+    /// translation — it is a line of code asserting that the string can never be
+    /// translated. Three button labels sat in that list (`"Nút 3 (bấm con lăn
+    /// xuống)"` and friends) and rendered as Vietnamese in English, no matter how many
+    /// call sites were wrapped.
+    ///
+    /// The allowed values are therefore only glyphs: a string with a Vietnamese
+    /// letter in it cannot be language-neutral.
+    /// The list lives in `Core/L10n.swift`, which imports SwiftUI and so cannot be
+    /// compiled by this package. It is therefore **read from the source** — a
+    /// fixture would let the declaration and the assertion drift, and the whole
+    /// point of this gate is to catch the declaration itself being wrong.
+    func testLanguageNeutralKeysContainNoSentences() throws {
+        let keys = try L10nFixture.declaredLanguageNeutralKeys()
+        XCTAssertFalse(keys.isEmpty, "the gate is reading nothing — check the pattern")
+        let vietnamese = Set("ăâđêôơưĂÂĐÊÔƠƯáàảãạắằẳẵặấầẩẫậéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ")
+        for key in keys {
+            let leaked = key.unicodeScalars.contains { scalar in
+                CharacterSet(charactersIn: String(vietnamese)).contains(scalar)
+            }
+            XCTAssertFalse(leaked,
+                           "`\(key)` is declared language-neutral but contains Vietnamese "
+                           + "letters — it will render verbatim in an English UI. "
+                           + "Only glyphs (⌘ ⌥ ⌃ ⇧) may be language-neutral.")
+            XCTAssertFalse(key.contains(" ") && key.count > 4,
+                           "`\(key)` is declared language-neutral but looks like a sentence")
+        }
+    }
+
     /// The gesture page's leak shape, pinned by name.
     ///
-    /// `TriggerSource.buttonName`, `TriggerSource.numberedName` and
-    /// `GestureDirection.title` all return Vietnamese from a pure-Foundation file
-    /// that must stay translation-free (the test package symlinks them). The fix is
-    /// to wrap at the call site, so the strings have to be *in the store* for the
-    /// call-site wrap to do anything — this asserts exactly that, for every value
-    /// those functions can return, in both the whole and the interpolated shape.
+    /// The model exposes **semantic keys**, never display text: `TriggerSource.key`
+    /// (a `ButtonKey`), `GestureDirection.titleKey`, `.motionKey` and
+    /// `.motionHintKey`. Those are Vietnamese literals, which is what the store is
+    /// keyed by — so every one of them has to be *in the store* with an English
+    /// value, or the English page silently renders Vietnamese.
+    ///
+    /// This test is the model-layer enforcement C4 asks for: it walks the model's
+    /// own key vocabulary rather than a hand-written list, so adding a direction or
+    /// a button shape cannot skip it.
     func testGesturePageStringsAreAllTranslatable() throws {
         let store = try L10nFixture.load()
         var needed = Set<L10nFixture.Probe>()
@@ -117,8 +155,7 @@ final class L10nTests: XCTestCase {
         // factual note; everything from 3 up is the interpolated "Nút \(n + 1)".
         let buttonNumbers = [0, 1, 2, 3, 4, 7, 31]
         for code in buttonNumbers {
-            needed.insert(.init(TriggerSource.buttonName(code)))
-            needed.insert(.init(TriggerSource.mouseButton(code).numberedName))
+            needed.insert(.init(L10nFixtures.buttonName(code)))
         }
         // The interpolated case is probed as its pieces, because that is how the
         // call site must assemble it: a whole-string wrap can never match a key
@@ -127,33 +164,32 @@ final class L10nTests: XCTestCase {
         XCTAssertFalse(interpolated.isEmpty, "precondition: an interpolated case exists")
         needed.insert(.init(fragment: "Nút ", suffix: "Button "))
 
-        // Headings are built from the trigger's number plus a per-direction hint,
-        // so BOTH halves must be translatable. Checking only the assembled
-        // "Nút 3: kéo lên" sentence is not enough and was a real hole: the hint
-        // half is assembled at runtime, so a missing hint fragment left the whole
-        // suite green while the English page rendered "Button 3: kéo lên".
-        // The direction list comes from the model, so a new direction cannot be
-        // added without an entry here.
+        // Headings are built from semantic keys, so every one of them must resolve.
         for direction in GestureDirection.allCases {
-            let title = GestureDirectionDisplay.title(direction, trigger: .mouseButton(2))
-            needed.insert(.init(title))
-            // A tilt heading is a whole sentence ("Nghiêng con lăn TRÁI") because no
-            // button is held, so it has no hint half — the whole-string probe above
-            // covers it. A hold direction *must* name the button and therefore must
-            // have a hint whose fragment is translated.
-            if GestureDirectionDisplay.isTilt(direction) { continue }
-            guard let hint = L10nFixture.directionHint(direction) else {
-                XCTFail("\(direction.rawValue): cannot extract the heading hint, so "
-                        + "nothing guarantees it is translatable")
-                continue
-            }
-            needed.insert(.init(fragment: hint, suffix: L10nFixture.directionHintEnglish[hint] ?? ""))
+            // The heading on its own — no button in it. This is the key the detail
+            // panel shows, and the one that must NOT name a number.
+            needed.insert(.init(direction.titleKey))
+            needed.insert(.init(direction.motionKey))
+            needed.insert(.init(direction.motionHintKey))
+        }
+        // Every action name the picker and the detail panel print. These reach the screen
+        // through `L10n.t(kind.labelKey)` — a **variable** — so neither the `L10n.t("...")`
+        // sweep in `verify-gesture-ui.sh` nor the literal audit (which skips
+        // `GestureModel.swift`/`GestureMap.swift`) can see them.
+        for kind in GestureActionKind.allCases {
+            needed.insert(.init(kind.labelKey))
+        }
+        // The system-action captions and the "no shortcut set in macOS" wording. Four of
+        // these were **missing before this pass** and therefore rendered Vietnamese in an
+        // English UI (`App Exposé`, `Hiện màn hình nền`, `Space trước`, `Space kế tiếp`) —
+        // exactly the variable-keyed leak shape this gate exists for, found by asking the
+        // store directly rather than by reading a screenshot.
+        for action in GestureSystemAction.allCases {
+            needed.insert(.init(action.captionKey))
+            needed.insert(.init(action.unboundCaptionKey))
         }
 
         // A `whole` probe is a string the call site passes to `L10n.t` verbatim.
-        // An interpolated value's assembled result is NOT one of those — it can
-        // only ever be built from its pieces — so those drop out of this check and
-        // are covered by the fragment probe above instead.
         let missing = needed.filter { probe in
             switch probe.kind {
             case .whole(let key):
@@ -170,6 +206,49 @@ final class L10nTests: XCTestCase {
         XCTAssertTrue(missing.isEmpty,
                       "the Mouse & Gestures page can still render Vietnamese in an "
                       + "English UI for: \(missing.map(\.label).sorted())")
+    }
+
+    /// A side button's positional hint must be in the store too. It is a full
+    /// sentence that reaches the screen through `L10n.t(_ key: ButtonKey)`, so a
+    /// missing entry would render the Vietnamese hint in an English UI — the same
+    /// leak shape, one level down.
+    func testSideButtonHintsAreTranslatable() throws {
+        let store = try L10nFixture.load()
+        var missing: [String] = []
+        for code in [3, 4] {
+            guard let hint = L10nFixtures.buttonHint(code) else { continue }
+            guard let entry = store.entries[hint] else {
+                missing.append("\(code): \(hint) missing"); continue
+            }
+            if entry.en.isEmpty { missing.append("\(code): \(hint) has no English") }
+        }
+        XCTAssertTrue(missing.isEmpty,
+                      "button hints can render Vietnamese in an English UI: \(missing)")
+    }
+
+    /// The model must not carry display strings, and that is now checkable by name.
+    ///
+    /// `titleKey`/`motionKey`/`motionHintKey`/`GestureDirection.glyph` and
+    /// `ButtonKey` are the whole vocabulary; if someone re-adds a `var label:
+    /// String` that builds a sentence, the screen can show it un-translated again.
+    /// This pins the shape: every direction key must be a **store key**, which is
+    /// exactly the property a rendered sentence does not have.
+    func testDirectionKeysAreStoreKeysNotRenderedSentences() throws {
+        let store = try L10nFixture.load()
+        for direction in GestureDirection.allCases {
+            for (name, key) in [("titleKey", direction.titleKey),
+                                ("motionKey", direction.motionKey),
+                                ("motionHintKey", direction.motionHintKey)] {
+                XCTAssertNotNil(store.entries[key],
+                                "\(direction.rawValue).\(name) = \(key) is not a store key, "
+                                + "so L10n cannot translate it")
+                // A key that interpolates a runtime value can never match a store
+                // entry — that is bug shape #2 and it must not come back.
+                XCTAssertFalse(L10nFixtures.interpolates(key),
+                               "\(direction.rawValue).\(name) interpolates a value, so it "
+                               + "can never be a lookup key: \(key)")
+            }
+        }
     }
 
     // MARK: - Cross-language drift
@@ -264,17 +343,59 @@ enum L10nFixture {
         return Set(list)
     }
 
-    /// Extracts the hint half of a direction heading, i.e. the `"kéo lên"` in
-    /// `"Nút 3: kéo lên"`, by diffing the heading against the button name the
-    /// heading was built from. Derived from the real functions rather than a
-    /// hand-written table, so it cannot drift out of sync with the model.
+    /// The strings `L10n.LanguageNeutralKeys` declares, read from the declaration.
+    ///
+    /// `Core/L10n.swift` imports SwiftUI, so this package cannot compile it and the
+    /// gate cannot ask the type directly. Reading the source is deliberate: this is
+    /// the one assertion that must catch the *declaration* being wrong (a Vietnamese
+    /// sentence listed as "language-neutral" is exactly how the leak survived every
+    /// call-site fix), so a hand-kept fixture would defeat it.
+    ///
+    /// The parse is narrow on purpose — it takes quoted strings between the
+    /// `static let all` marker and the closing bracket, and fails loudly if it finds
+    /// none.
+    static func declaredLanguageNeutralKeys() throws -> [String] {
+        let url = repoRoot().appendingPathComponent("XFinder/Core/L10n.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let marker = "static let all"
+        guard let start = source.range(of: marker) else {
+            throw FixtureError.declarationNotFound("`\(marker)` not found in Core/L10n.swift")
+        }
+        guard let end = source.range(of: "]", range: start.upperBound..<source.endIndex) else {
+            throw FixtureError.declarationNotFound("the list after `\(marker)` is unclosed")
+        }
+        let body = source[start.upperBound..<end.lowerBound]
+        let pattern = #""((?:[^"\\]|\\.)*)""#
+        let regex = try NSRegularExpression(pattern: pattern)
+        let ns = String(body) as NSString
+        return regex.matches(in: String(body), range: NSRange(location: 0, length: ns.length))
+            .compactMap { match in
+                guard match.numberOfRanges == 2 else { return nil }
+                return ns.substring(with: match.range(at: 1))
+            }
+    }
+
+    enum FixtureError: Error, CustomStringConvertible {
+        case declarationNotFound(String)
+
+        var description: String {
+            switch self {
+            case .declarationNotFound(let detail): return detail
+            }
+        }
+    }
+
+    /// Extracts the hint half of a direction heading. Derived from the model's own
+    /// keys rather than a hand-written table, so it cannot drift out of sync.
+    ///
+    /// The heading is assembled by `L10n.t(direction, trigger:)` as
+    /// `<titleKey> — <button>: <motionHintKey>`. That sentence cannot be built in
+    /// this package (no `L10n` here), so the hint is read from the model directly —
+    /// which is stronger, because it is the *source* of the sentence rather than a
+    /// parse of its output.
     static func directionHint(_ direction: GestureDirection) -> String? {
-        let trigger = TriggerSource.mouseButton(2)
-        let title = direction.title(trigger: trigger)
-        // A leading "Nút <n>: " built from the trigger's own numbered name.
-        let prefix = trigger.numberedName + ": "
-        guard title.hasPrefix(prefix) else { return nil }
-        let hint = String(title.dropFirst(prefix.count))
+        guard !GestureTriggerKind.isTilt(direction) else { return nil }
+        let hint = direction.motionHintKey
         return hint.isEmpty ? nil : hint
     }
 

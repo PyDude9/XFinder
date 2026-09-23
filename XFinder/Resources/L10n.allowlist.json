@@ -1,8 +1,10 @@
 {
   "_comment": "Vietnamese strings whose English spelling is genuinely identical. Kept as a file so that every exception is reviewable, and so the checker can fail on a stale entry. Add nothing here that merely lacks a translation — that is the bug this list must never hide.",
   "sameByDesign": [
+    "App Exposé",
     "Apple Intelligence",
     "Clipboard",
+    "Mission Control",
     "OCR",
     "Quick Look"
   ]

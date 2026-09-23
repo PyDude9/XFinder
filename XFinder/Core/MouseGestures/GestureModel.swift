@@ -1,41 +1,35 @@
 import Foundation
 
 // No AppKit dependencies: the test package compiles this exact file, not a copy.
+/// A **semantic** reference to a mouse control. It is deliberately NOT a display
+/// string: the model layer must never render, because that is how Vietnamese
+/// leaked into the English UI. `L10n` resolves these (see `L10n.t(_:)` overloads)
+/// and the tests assert every case resolves to a non-empty English value.
+enum ButtonKey: Equatable, Hashable, Sendable {
+    case index(Int)
+    /// Modifier used as the hold trigger — the label is language-neutral symbols.
+    case modifier(UInt64)
+}
+
 enum TriggerSource: Codable, Equatable, Sendable {
     case mouseButton(Int)
     case modifierKey(UInt64)
 
-    var label: String {
+    /// Replaces the old `label`/`numberedName` String properties. Nothing outside
+    /// this file may turn a trigger into display text without going through L10n.
+    var key: ButtonKey {
         switch self {
-        case .mouseButton(let n): return TriggerSource.buttonName(n)
-        case .modifierKey(let flags): return GestureShortcut(key: 0, flags: flags).modifierLabel
+        case .mouseButton(let n): return .index(n)
+        case .modifierKey(let flags): return .modifier(flags)
         }
     }
 
-    /// The button number alone — "Nút 3". Used where a note would wrap the line.
-    var numberedName: String {
-        switch self {
-        case .mouseButton(let n): return "Nút \(n + 1)"
-        case .modifierKey(let flags): return GestureShortcut(key: 0, flags: flags).modifierLabel
-        }
-    }
-
-    /// Buttons are named by the number macOS reports, because that is the only
-    /// identifier that is true for **every** mouse. Physical names are not:
-    /// Mac Mouse Fix, MOS and Razer all label the same hardware differently, and
-    /// a Razer Basilisk's "Button 4" is a different control from a Magic Mouse's.
-    /// Inventing "nút bắn tỉa" / "nút DPI" / "nút hông sau" was worse than the
-    /// bare number — it asserted a layout nothing had measured.
-    ///
-    /// The three numbers every mouse shares get a short factual note in
-    /// parentheses; the rest are the plain number.
-    static func buttonName(_ n: Int) -> String {
-        switch n {
-        case 0:  return "Nút 1 (chuột trái)"
-        case 1:  return "Nút 2 (chuột phải)"
-        case 2:  return "Nút 3 (bấm con lăn xuống)"
-        default: return "Nút \(n + 1)"
-        }
+    /// `true` when the trigger is a mouse button, i.e. when a number can be shown.
+    /// A modifier trigger has no number, and printing "Button 0" for it would be
+    /// a fabrication.
+    var isMouseButton: Bool {
+        if case .mouseButton = self { return true }
+        return false
     }
 
     var isValid: Bool {
@@ -44,6 +38,20 @@ enum TriggerSource: Codable, Equatable, Sendable {
         case .mouseButton(let n): return (1...31).contains(n)
         case .modifierKey(let f): return [1 << 17, 1 << 18, 1 << 19, 1 << 20].contains(f)
         }
+    }
+
+    /// The raw event button number this trigger consumes, or `nil` for a modifier.
+    /// Used by the collision checks that keep two features off one button.
+    var buttonNumber: Int? {
+        if case .mouseButton(let n) = self { return n }
+        return nil
+    }
+
+    /// How this trigger reads as a *modifier-style* description, for the diagnostic
+    /// ring's own log line. Semantic only — the words come from `L10n`.
+    var modifierFlags: UInt64? {
+        if case .modifierKey(let f) = self { return f }
+        return nil
     }
 }
 
@@ -54,41 +62,72 @@ enum GestureTriggerKind {
     static func isTilt(_ direction: GestureDirection) -> Bool {
         direction == .tiltLeft || direction == .tiltRight
     }
+
+    /// "Raw horizontal scroll" is only a meaningful choice for the tilt arms; the
+    /// four button-drag arms always send a keystroke or nothing, so offering
+    /// pass-through there would promise something the motion cannot do.
+    static func supportsHorizontalScroll(_ direction: GestureDirection) -> Bool {
+        isTilt(direction)
+    }
 }
 
 enum GestureDirection: String, Codable, CaseIterable, Sendable {
     case up, down, left, right, tiltLeft, tiltRight
 
-    /// What the user sees in a heading or a compact list: the direction word plus
-    /// the number of the mouse button they hold for it.
-    ///
-    /// It lives here rather than in the view because the page must never print a
-    /// bare arrow: the user asked, verbatim, *"tôi ko hiểu dùng nút nào của chuột
-    /// với mũi tên"* — an arrow does not say which button is held. One spelling
-    /// for the heading, the detail panel and the tooltip.
-    func title(trigger: TriggerSource) -> String {
-        let (motion, hint): (String, String)
+    /// Semantic key for the *motion*, resolved by L10n. The tilt cases are full
+    /// sentences; the four drag cases are the bare motion ("pull up") because the
+    /// heading composes them with the held button — see `motionKey`.
+    var motionKey: String {
         switch self {
-        case .up:        motion = "Kéo LÊN";        hint = "kéo lên"
-        case .down:      motion = "Kéo XUỐNG";      hint = "kéo xuống"
-        case .left:      motion = "Kéo SANG TRÁI";  hint = "kéo sang trái"
-        case .right:     motion = "Kéo SANG PHẢI";  hint = "kéo sang phải"
-        case .tiltLeft:  motion = "Nghiêng con lăn TRÁI";  hint = "nghiêng con lăn trái"
-        case .tiltRight: motion = "Nghiêng con lăn PHẢI";  hint = "nghiêng con lăn phải"
+        case .up:        return "Kéo LÊN"
+        case .down:      return "Kéo XUỐNG"
+        case .left:      return "Kéo SANG TRÁI"
+        case .right:     return "Kéo SANG PHẢI"
+        case .tiltLeft:  return "Nghiêng con lăn TRÁI"
+        case .tiltRight: return "Nghiêng con lăn PHẢI"
         }
-        guard !GestureTriggerKind.isTilt(self) else { return motion }
-        return "\(trigger.numberedName): \(hint)"
     }
 
-    /// "Nút 3" — the number alone, no note. Used where the full name would wrap.
-    var shortLabel: String {
+    /// The heading shown above the keys in the detail panel.
+    ///
+    /// This is a **key**, not a sentence: it names the direction on its own, with
+    /// no reference to the held button. The button belongs in `motionHintKey`,
+    /// which composes it with the trigger, because the trigger changes at runtime
+    /// and a key cannot interpolate. The user read the same number on all four
+    /// arms and concluded every arm was "Button 3"; splitting the two here is what
+    /// lets the diagram state the held button exactly once.
+    var titleKey: String {
+        switch self {
+        case .up:        return "Kéo lên"
+        case .down:      return "Kéo xuống"
+        case .left:      return "Kéo sang trái"
+        case .right:     return "Kéo sang phải"
+        case .tiltLeft:  return "Nghiêng con lăn TRÁI"
+        case .tiltRight: return "Nghiêng con lăn PHẢI"
+        }
+    }
+
+    /// The bare motion, used as the second half of "Button 3: pull up".
+    var motionHintKey: String {
+        switch self {
+        case .up:        return "kéo lên"
+        case .down:      return "kéo xuống"
+        case .left:      return "kéo sang trái"
+        case .right:     return "kéo sang phải"
+        case .tiltLeft:  return "nghiêng con lăn trái"
+        case .tiltRight: return "nghiêng con lăn phải"
+        }
+    }
+
+    /// The direction arrow, language-neutral and printed on every arm.
+    var glyph: String {
         switch self {
         case .up: return "↑"
         case .down: return "↓"
         case .left: return "←"
         case .right: return "→"
-        case .tiltLeft: return "Tilt ←"
-        case .tiltRight: return "Tilt →"
+        case .tiltLeft: return "⇱"
+        case .tiltRight: return "⇲"
         }
     }
 }
@@ -118,12 +157,104 @@ enum GestureAction: Codable, Equatable, Sendable {
     case shortcut(GestureShortcut)
     // Explicit opt-in forwarding, not an assertion of app-specific timeline semantics.
     case horizontalScroll
+    /// A **macOS system action** (Mission Control, App Exposé, Show Desktop, the two
+    /// Space moves), dispatched by replaying the keystroke the user's own
+    /// `com.apple.symbolichotkeys` binds to it.
+    ///
+    /// ── Why the delivery is indirect (measured 2026-09-22, corrected the next day) ─────
+    /// This case used to post an `NSEvent.systemDefined` key of keytype 32, and asserted
+    /// in three comment blocks that Mission Control "is reachable because ids 32 and 34
+    /// carry `vk = 232`". Both claims were wrong, and the user reported the symptom twice
+    /// ("chỉ là xuất hiện và nhận dạng cho có, không làm việc" — recognised, does nothing):
+    ///
+    ///   * **`NX_KEYTYPE_MISSION_CONTROL` does not exist.** `<IOKit/hidsystem/ev_keymap.h>`
+    ///     defines constants only up to `NX_KEYTYPE_MENU = 25`. The invented 32 posted an
+    ///     undefined keytype, which a screen-diff probe measured as changing nothing.
+    ///   * Mission Control / Exposé / Spaces are **software symbolic hotkeys**. They are
+    ///     not hardware keys, so no keytype can carry them; the only honest mechanism is
+    ///     the binding macOS itself uses.
+    ///
+    /// So the case now stores an *intent*, and `SpaceBinding` resolves it to the exact
+    /// keystroke in force on this machine — read at both display and dispatch time, so the
+    /// keys on screen and the keys posted cannot diverge. An action this machine does not
+    /// bind posts nothing and says so; it never falls back to a shipped guess.
+    case systemAction(GestureSystemAction)
+}
+
+/// The macOS system actions a gesture can perform by **replaying the user's own
+/// symbolic hotkey**.
+///
+/// ── Measured 2026-09-22, and this enum was WRONG until the next day ────────────────────
+/// The first version claimed these were reachable through `NSEvent.systemDefined` from a
+/// `SystemKeySender` keytype (32), and that Spaces had "no event-level API". Both halves
+/// were false, and the user reported the consequence twice:
+///
+///   * `NX_KEYTYPE_MISSION_CONTROL` **does not exist**. `ev_keymap.h` defines constants
+///     only up to `NX_KEYTYPE_MENU = 25`; the invented `32` posted an undefined keytype,
+///     which a screen-diff probe measured as doing *nothing*.
+///   * Mission Control, App Exposé, Show Desktop and the two Space moves are **software
+///     symbolic hotkeys**, not hardware special keys — so the right mechanism is not a
+///     keytype at all. It is to read the binding the user has in
+///     `com.apple.symbolichotkeys` (`SpaceBinding`) and post **that** keystroke.
+///
+/// So every case here resolves to a real keystroke at dispatch and display time. A case
+/// the machine does not bind posts nothing and is reported as such (`unboundCaptionKey`) —
+/// never a fabricated key, which is the exact failure this replaced.
+enum GestureSystemAction: String, Codable, CaseIterable, Equatable, Sendable {
+    case missionControl
+    case appExpose
+    case showDesktop
+    case previousSpace
+    case nextSpace
+
+    /// The intent this action implements. Lives here so `choice(for:)` can rebuild a
+    /// row's kind without a lookup table that could drift from the vocabulary.
+    var defaultKind: GestureActionKind {
+        switch self {
+        case .missionControl: return .missionControl
+        case .appExpose: return .appExposé
+        case .showDesktop: return .showDesktop
+        case .previousSpace: return .previousSpace
+        case .nextSpace: return .nextSpace
+        }
+    }
+
+    /// What the row shows in place of a keystroke **when the machine has no binding for
+    /// it**. A **store key**, resolved by `L10n`, never a rendered sentence.
+    ///
+    /// It has to exist because a row whose key is unbound still sends nothing: leaving it
+    /// to fall through the `shortcut?.label` path rendered it as an empty caption, which
+    /// reads as "unassigned" — the confusion this pass removes. Kept separate from
+    /// `captionKey`'s action *name* so the row can say both "Mission Control" and "no key
+    /// on this Mac" without inventing one of the two.
+    var captionKey: String {
+        switch self {
+        case .missionControl: return "Mission Control"
+        case .appExpose: return "App Exposé"
+        case .showDesktop: return "Hiện màn hình nền"
+        case .previousSpace: return "Space trước"
+        case .nextSpace: return "Space kế tiếp"
+        }
+    }
+
+    /// The label for an action this machine does not bind. Stated in the UI so a gesture
+    /// that sends nothing explains itself instead of looking broken.
+    var unboundCaptionKey: String { "Chưa gán trong macOS" }
 }
 
 struct GestureProfile: Identifiable, Sendable {
     var id: String
     var name: String
     var defaults: [GestureDirection: GestureAction]
+
+    /// The same bindings, with the **intent** and the declaring source attached.
+    ///
+    /// `defaults` is what the resolver stores and the engine dispatches; this is what
+    /// the page reads to print "⌘T — New tab (Safari's own shortcut)" instead of
+    /// guessing an action name from a key code. Both are built from one table in
+    /// `GestureProfiles.map(for:then:fallback:and:)`, so a displayed key cannot drift
+    /// from the dispatched one.
+    var gestureMap: [GestureDirection: GestureMapEntry] = [:]
 }
 
 // Built-in presets are the immutable factory layer. The resolver is the single
@@ -133,64 +264,297 @@ struct GestureProfile: Identifiable, Sendable {
 //      (legacy alias — preserved for upgrades, not used for new saves)
 //   3. built-in preset for that exact bundleId, or Global for an unknown app
 //   4. `.unassigned` — and an explicit `.unassigned` override NEVER falls through.
+//
+// `GestureDirection` and `GestureActionKind` are declared elsewhere; these
+// extensions are here so the shorthands the table below reads as (`d.up`, `k(17).c`)
+// live beside the table rather than in the call sites.
+extension GestureDirection {
+    /// The four directions that exist on every mouse. The two tilt arms are
+    /// deliberately absent: they are a separate motion, revealed only when the user
+    /// says their wheel tilts (see the `tiltAvailable` note in `Claude.md`).
+    static let holdDrag: [GestureDirection] = [.up, .down, .left, .right]
+
+    /// The same four, in the order the diagram draws them clockwise from the top.
+    static let clockwise: [GestureDirection] = [.up, .right, .down, .left]
+}
+
+/// A shortcut under construction, so the table below can be written as
+/// `key(17).cmd` instead of nesting two enum cases and a bitmask on every line.
+/// The modifiers compose, so `key(48).ctrl.shift` is `⌃⇧Tab`.
+struct GestureKeyBuilder {
+    let key: UInt16
+    private var flags: UInt64 = 0
+    var cmd: GestureKeyBuilder { adding(GestureShortcut.command) }
+    var shift: GestureKeyBuilder { adding(GestureShortcut.shift) }
+    var ctrl: GestureKeyBuilder { adding(GestureShortcut.control) }
+    var opt: GestureKeyBuilder { adding(GestureShortcut.option) }
+    /// The finished shortcut, to be wrapped in `.init(kind:shortcut:source:)`.
+    var shortcut: GestureShortcut { GestureShortcut(key: key, flags: flags) }
+    private var wide: GestureKeyBuilder { self }
+    private func adding(_ flag: UInt64) -> GestureKeyBuilder {
+        var copy = self
+        copy.flags |= flag
+        return copy
+    }
+}
+
 enum GestureProfiles {
     static let fallback = "*"
+
     static func key(_ code: UInt16, _ flags: UInt64) -> GestureAction {
         .shortcut(GestureShortcut(key: code, flags: flags))
     }
+
+    /// Start describing a binding: `map(17).cmd.convention(.nextTab)`.
+    static func map(_ code: UInt16) -> GestureKeyBuilder { GestureKeyBuilder(key: code) }
+}
+
+/// The row builders. Kept as `GestureMapEntry` factories so every entry in the table
+/// below states **three** things at once — the keys, the intent, and whether the keys
+/// are a platform convention or one app's own shortcut. A row that states only keys
+/// is what produced the "why does this say New tab?" problem.
+extension GestureMapEntry {
+    /// A binding that is a macOS/Windows-wide convention.
+    static func convention(_ kind: GestureActionKind, _ shortcut: GestureShortcut) -> GestureMapEntry {
+        GestureMapEntry(kind: kind, shortcut: shortcut, source: .platformConvention)
+    }
+
+    /// A convention delivered by a **system event** rather than a keystroke — Mission
+    /// Control, App Exposé, Show Desktop. Overloads `convention` so a preset row reads
+    /// the same way whichever mechanism actually sends it.
+    static func convention(_ kind: GestureActionKind, _ system: GestureSystemAction) -> GestureMapEntry {
+        GestureMapEntry(kind: kind, shortcut: nil, source: .platformConvention, systemAction: system)
+    }
+
+    /// A binding that is a specific app's documented shortcut.
+    static func appShortcut(_ kind: GestureActionKind, _ shortcut: GestureShortcut) -> GestureMapEntry {
+        GestureMapEntry(kind: kind, shortcut: shortcut, source: .appShortcut)
+    }
+
+    /// Deliberately unassigned. Never a placeholder for "we did not bother".
+    static func unassigned(_ kind: GestureActionKind) -> GestureMapEntry {
+        GestureMapEntry(kind: kind, shortcut: nil, source: .platformConvention)
+    }
+
+    /// Forward the mouse's own horizontal scroll instead of sending a key.
+    static var nativeHorizontalScroll: GestureMapEntry {
+        GestureMapEntry(kind: .horizontalScroll, shortcut: nil, source: .platformConvention)
+    }
+}
+
+/// A profile plus the map it was built from.
+extension GestureProfiles {
+    /// Builds a profile from a map, deriving `defaults` from it so the two cannot
+    /// disagree. `tilt` covers the two tilt arms, which are only revealed on hardware
+    /// that declares a horizontal wheel axis and are therefore not part of the four
+    /// direction table.
+    static func profile(_ id: String, _ name: String,
+                        up: GestureMapEntry, down: GestureMapEntry,
+                        left: GestureMapEntry, right: GestureMapEntry,
+                        tilt: GestureMapEntry? = nil) -> GestureProfile {
+        var table: [GestureDirection: GestureMapEntry] = [
+            .up: up, .down: down, .left: left, .right: right,
+        ]
+        if let tilt {
+            table[.tiltLeft] = tilt
+            table[.tiltRight] = tilt
+        }
+        return GestureProfile(id: id, name: name,
+                              defaults: actions(in: table), gestureMap: table)
+    }
+
+    /// The storable actions for a map.
+    ///
+    /// Two entries are not shortcuts and are handled differently on purpose:
+    ///   * a **system action** (`Mission Control`, `App Exposé`, `Show Desktop`) IS
+    ///     stored — it is a real, dispatchable value, and omitting it would make the
+    ///     preset fall back to `.unassigned` and silently delete the binding;
+    ///   * an `.unassigned` entry is **omitted**, because the absence of a key is what
+    ///     `GestureConfiguration.source()` reads as "the preset leaves this arm
+    ///     empty" rather than "the user set it to nothing";
+    ///   * an entry that says *forward the wheel's own sideways motion*
+    ///     (`.horizontalScroll`) is omitted for the same reason. The engine's tilt
+    ///     branch passes the event through for `.unassigned` **and**
+    ///     `.horizontalScroll`, so the two behave identically — but only the omitted
+    ///     form keeps the badge honest, and a stored `.horizontalScroll` would make the
+    ///     row claim "raw scroll" on mice that have no tilt axis at all.
+    static func actions(in table: [GestureDirection: GestureMapEntry]) -> [GestureDirection: GestureAction] {
+        var out: [GestureDirection: GestureAction] = [:]
+        for (direction, entry) in table {
+            if let shortcut = entry.shortcut { out[direction] = .shortcut(shortcut) }
+            else if let system = entry.systemAction { out[direction] = .systemAction(system) }
+        }
+        return out
+    }
+}
+
+extension GestureProfiles {
+    /// The built-in table. Colour is load-bearing: a `✏︎` row is one app's own
+    /// shortcut (verifiable in that app), an unmarked row is a platform convention.
+    ///
+    /// Nothing here is inferred from a single app and shipped as a shared truth. Where
+    /// two apps in one profile disagree, the row is Unassigned and the page says which
+    /// app to record for.
     static let all: [GestureProfile] = {
-        let c = GestureShortcut.command, ctrl = GestureShortcut.control
-        let s = GestureShortcut.shift, o = GestureShortcut.option
-        // Platform-standard text-editing keys, shared by every macOS app that has a
-        // text surface: Kitty, Terminal and iTerm all set `macos_option_as_alt`
-        // OFF by default precisely so ⌥←/⌥→ arrive as Option-Left/Option-Right, and
-        // AppKit's own `moveWordBackward:` / `moveWordForward:` are documented in
-        // the standard key bindings. So this is a real convention, not a guess.
-        let wordLeft = GestureProfiles.key(123, o)
-        let wordRight = GestureProfiles.key(124, o)
-        let global: [GestureDirection: GestureAction] = [
-            .up: key(33, c | s), .down: key(30, c | s), .left: key(33, c), .right: key(30, c),
-            .tiltLeft: key(24, c), .tiltRight: key(27, c)]
-        let browsers: [GestureDirection: GestureAction] = [
-            .up: key(17,c), .down: key(13,c), .left:key(48,ctrl|s), .right:key(48,ctrl),
-            .tiltLeft:key(17,c|s), .tiltRight:key(17,c|s)]
-        // Ambiguous actions stay unassigned. A matching profile never silently falls
-        // through to a destructive global action for one of its unassigned directions.
-        let dev: [GestureDirection: GestureAction] = [.left:key(27,ctrl), .right:key(27,ctrl|s)]
-        let design: [GestureDirection: GestureAction] = [.up:key(29,c), .down:key(6,c),
-            .left:key(33,0), .right:key(30,0)]
-        let chat: [GestureDirection: GestureAction] = [.left:key(126,o), .right:key(125,o)]
-        let notes: [GestureDirection: GestureAction] = [.up:key(35,c), .left:key(123,c|o), .right:key(124,c|o)]
-        // Terminals: Kitty (`net.kovidgoyal.kitty`), Terminal.app and iTerm2. Only
-        // the two word-jump directions are shipped — they are the one pair that is
-        // an OS convention rather than an app guess. Scrolling, splits and new
-        // tabs were deliberately left Unassigned: ⌘T is a new *window* in Terminal,
-        // ⌘W can kill a running command, and there is no shared "next pane" key.
-        // A wrong keystroke in a terminal can destroy work, so here Unassigned is
-        // the honest answer and "Đổi phím tắt" is one click away.
-        let terminal: [GestureDirection: GestureAction] = [.left: wordLeft, .right: wordRight]
-        var result = [GestureProfile(id:fallback,name:"Global",defaults:global)]
-        for (id,name) in [("com.microsoft.edgemac","Microsoft Edge"),("com.apple.Safari","Safari"),("com.google.Chrome","Chrome")] {
-            result.append(.init(id:id,name:name,defaults:browsers))
+        // -- shortcuts used more than once, named so a typo cannot hide --
+        let back = GestureShortcut(key: GestureKeyCode.leftBracket, flags: GestureShortcut.command)
+        let forward = GestureShortcut(key: GestureKeyCode.rightBracket, flags: GestureShortcut.command)
+        let zoomIn = GestureShortcut(key: GestureKeyCode.equals, flags: GestureShortcut.command)
+        let zoomOut = GestureShortcut(key: GestureKeyCode.minus, flags: GestureShortcut.command)
+        let wordLeft = GestureShortcut(key: GestureKeyCode.leftArrow, flags: GestureShortcut.option)
+        let wordRight = GestureShortcut(key: GestureKeyCode.rightArrow, flags: GestureShortcut.option)
+        let nextSpace = GestureShortcut(key: GestureKeyCode.rightArrow, flags: GestureShortcut.control)
+        let previousSpace = GestureShortcut(key: GestureKeyCode.leftArrow, flags: GestureShortcut.control)
+
+        var result: [GestureProfile] = []
+
+        // ── Global — the table for every app with no preset of its own.
+        //
+        // ── Past tense, measured 2026-09-22, corrected 2026-09-23 ────────────────────
+        // An earlier version sent `⌃↑`/`⌃↓`/`⌃←`/`⌃→` here on the belief that those are
+        // "the macOS Space and Mission Control keys". Probing this host disproved it twice
+        // over: on the first read nothing in `com.apple.symbolichotkeys` bound `⌃←`/`⌃→`
+        // (ids 79–82 were `enabled` with no `value`), and Mission Control sat on the
+        // system-defined keytype 232 — which is not a `CGKeyCode` and, as it turned out,
+        // not a real NX keytype either. So all four arms dispatched perfectly-formed
+        // keystrokes that no part of the system listened for. The user's report was exact:
+        // "chỉ là xuất hiện và nhận dạng cho có, không làm việc".
+        //
+        // The second attempt replaced up/down with an event-level path (`SystemKeySender`,
+        // keytype 32) and left left/right as the constant `⌘[`/`⌘]`. That was also wrong:
+        // keytype 32 does not exist, so Mission Control still did nothing, and the user
+        // reset their own shortcut to `⌃↑` while the preset kept posting something else.
+        //
+        // What each arm sends now: an **intent**, never a key. `SpaceBinding` resolves it
+        // from the user's own symbolic hotkeys, so the gesture posts the exact chord their
+        // Mac listens for — `⌃↑` for Mission Control *on a machine that binds it*, and
+        // nothing at all (with the page saying so) on one that does not. This is what makes
+        // "the shortcut shown equals the shortcut sent" true by construction rather than by
+        // a comment: there is only one resolver, and it reads the OS.
+        //
+        // Up → Mission Control, Down → App Exposé, Left/Right → previous/next Space. These
+        // are exactly the four actions the user asked for and the four their machine binds.
+        result.append(profile(fallback, "Global",
+                              up: .convention(.missionControl, GestureSystemAction.missionControl),
+                              down: .convention(.appExposé, GestureSystemAction.appExpose),
+                              left: .convention(.previousSpace, GestureSystemAction.previousSpace),
+                              right: .convention(.nextSpace, GestureSystemAction.nextSpace),
+                              tilt: .nativeHorizontalScroll))
+
+        // ── Browsers
+        let nextTab = GestureShortcut(key: GestureKeyCode.tab, flags: GestureShortcut.control)
+        let previousTab = GestureShortcut(key: GestureKeyCode.tab,
+                                          flags: GestureShortcut.control | GestureShortcut.shift)
+        for (id, name) in [("com.microsoft.edgemac", "Microsoft Edge"),
+                           ("com.apple.Safari", "Safari"),
+                           ("com.google.Chrome", "Chrome")] {
+            result.append(profile(id, name,
+                                  up: .convention(.nextTab, GestureShortcut(key: GestureKeyCode.t, flags: GestureShortcut.command)),
+                                  down: .convention(.previousTab, GestureShortcut(key: GestureKeyCode.w, flags: GestureShortcut.command)),
+                                  left: .convention(.previousPage, back),
+                                  right: .convention(.nextPage, forward),
+                                  tilt: .convention(.nextTab, nextTab)))
         }
-        for (id,name) in [("com.visualstudio.code","VS Code"),("com.cursor.ide","Cursor"),("dev.zed.Zed","Zed"),("com.antigravity.ide","Antigravity"),("com.anthropic.claude","Claude")] {
-            result.append(.init(id:id,name:name,defaults:dev))
+
+        // ── Dev & AI
+        //
+        // Up/Down are Unassigned on purpose and this is the row the honest rule is
+        // for: "toggle terminal" is ``⌃` `` in VS Code, `⌃`` in Cursor, and something
+        // else again in Zed; "AI refactor" is `⌘I` in Cursor and `⌘K` in Claude.
+        // Shipping either as a shared default would be a guess that looks verified.
+        // Left/Right send **editor navigation** — the platform's own history
+        // convention — rather than one app's pane-splitting keys, because which
+        // direction means "split" vs "focus left group" differs per app.
+        for (id, name) in [("com.visualstudio.code", "VS Code"), ("com.cursor.ide", "Cursor"),
+                           ("dev.zed.Zed", "Zed"), ("com.antigravity.ide", "Antigravity"),
+                           ("com.anthropic.claude", "Claude")] {
+            result.append(profile(id, name,
+                                  up: .unassigned(.horizontalScroll),
+                                  down: .unassigned(.horizontalScroll),
+                                  left: .convention(.previousPage, back),
+                                  right: .convention(.nextPage, forward)))
         }
-        for (id,name) in [("com.adobe.Photoshop","Photoshop"),("com.lemon.CapCutMac","CapCut")] {
-            result.append(.init(id:id,name:name,defaults:design))
+
+        // ── Terminals
+        //
+        // Two rows only, and the restraint is the point. `⌥←`/`⌥→` is a real
+        // convention: Kitty, Terminal and iTerm2 all ship `macos_option_as_alt`
+        // **off** precisely so those arrive as Option-Left/Right, and AppKit's own
+        // `moveWordBackward:`/`moveWordForward:` are standard bindings. Everything
+        // else stays Unassigned because `⌘T` is a new *window* here, `⌘W` can **kill
+        // a running command**, and there is no shared "next pane" key. A wrong
+        // keystroke in a terminal destroys work, so Unassigned is the honest cell.
+        let terminalMap = profile("net.kovidgoyal.kitty", "Kitty",
+                                  up: .unassigned(.zoomIn), down: .unassigned(.zoomOut),
+                                  left: .convention(.previousItem, wordLeft),
+                                  right: .convention(.nextItem, wordRight))
+        for (id, name) in [("com.apple.Terminal", "Terminal"), ("com.googlecode.iterm2", "iTerm2")] {
+            result.append(GestureProfile(id: id, name: name,
+                                         defaults: terminalMap.defaults,
+                                         gestureMap: terminalMap.gestureMap))
         }
-        for (id,name) in [("com.hnc.Discord","Discord"),("com.vng.zalo","Zalo"),("org.telegram.ayugram","AyuGram")] {
-            result.append(.init(id:id,name:name,defaults:chat))
+        result.append(terminalMap)
+
+        // ── Design & video
+        //
+        // Photoshop and CapCut are two different applications that happen to share
+        // two shortcuts, and the profile says so by marking them `appShortcut`:
+        // `⌘0` is "Fit on Screen" in Photoshop and "Fit to timeline" in CapCut, `⌘Z`
+        // is Undo in both. Left/Right send the bracket pair, which is a brush/tool
+        // size convention in Photoshop — **not** a claim about timeline scrubbing,
+        // which is why nothing in this profile is labelled with a media verb.
+        for (id, name) in [("com.adobe.Photoshop", "Photoshop"), ("com.lemon.CapCutMac", "CapCut")] {
+            result.append(profile(id, name,
+                                  up: .appShortcut(.zoomToFit, GestureShortcut(key: GestureKeyCode.zero, flags: GestureShortcut.command)),
+                                  down: .appShortcut(.undo, GestureShortcut(key: GestureKeyCode.z, flags: GestureShortcut.command)),
+                                  left: .appShortcut(.zoomOut, GestureShortcut(key: GestureKeyCode.leftBracket, flags: 0)),
+                                  right: .appShortcut(.zoomIn, GestureShortcut(key: GestureKeyCode.rightBracket, flags: 0))))
         }
-        for (id,name) in [("com.microsoft.Excel","Excel"),("com.microsoft.Word","Word")] {
-            result.append(.init(id:id,name:name,defaults:[:]))
+
+        // ── Office
+        //
+        // Two apps, **two tables**, because they are not the same application. The
+        // brief is explicit that Word has no worksheets, so nothing here maps
+        // sheet navigation; and Excel's `⌘Z` undoes the last cell edit while Word's
+        // undoes text — same keys, same intent, so those two rows are shared and
+        // marked as each app's shortcut. `⌃⇧Tab` is documented in **both** as "move
+        // to previous sheet/field", so it is a convention row in each table
+        // separately (not a fabricated shared one).
+        result.append(profile("com.microsoft.Excel", "Excel",
+                              up: .appShortcut(.zoomIn, zoomIn),
+                              down: .appShortcut(.zoomOut, zoomOut),
+                              left: .convention(.previousTab, previousTab),
+                              right: .convention(.nextTab, nextTab)))
+        result.append(profile("com.microsoft.Word", "Word",
+                              up: .appShortcut(.zoomIn, zoomIn),
+                              down: .appShortcut(.zoomOut, zoomOut),
+                              left: .unassigned(.previousTab),
+                              right: .unassigned(.nextTab)))
+
+        // ── Messaging
+        for (id, name) in [("com.hnc.Discord", "Discord"), ("com.vng.zalo", "Zalo"),
+                           ("org.telegram.ayugram", "AyuGram")] {
+            result.append(profile(id, name,
+                                  up: .unassigned(.previousItem),
+                                  down: .unassigned(.nextItem),
+                                  left: .convention(.previousItem, GestureShortcut(key: GestureKeyCode.upArrow, flags: GestureShortcut.option)),
+                                  right: .convention(.nextItem, GestureShortcut(key: GestureKeyCode.downArrow, flags: GestureShortcut.option))))
         }
-        for (id,name) in [("net.kovidgoyal.kitty","Kitty"),("com.apple.Terminal","Terminal"),("com.googlecode.iterm2","iTerm2")] {
-            result.append(.init(id:id,name:name,defaults:terminal))
+
+        // ── Notes
+        //
+        // Down stays Unassigned: "add a block" (Notion `/`) and "new note"
+        // (`⌘N` in Obsidian, `⌘N` in Notion but for a *page*) are different actions
+        // with different consequences, so one shared cell would be wrong in one app.
+        for (id, name) in [("co.elastic.obsidian", "Obsidian"), ("com.notion.Notion-App", "Notion")] {
+            result.append(profile(id, name,
+                                  up: .appShortcut(.nextItem, GestureShortcut(key: GestureKeyCode.p, flags: GestureShortcut.command)),
+                                  down: .unassigned(.previousItem),
+                                  left: .convention(.previousPage, GestureShortcut(key: GestureKeyCode.leftArrow, flags: GestureShortcut.command | GestureShortcut.option)),
+                                  right: .convention(.nextPage, GestureShortcut(key: GestureKeyCode.rightArrow, flags: GestureShortcut.command | GestureShortcut.option))))
         }
-        for (id,name) in [("co.elastic.obsidian","Obsidian"),("com.notion.Notion-App","Notion")] {
-            result.append(.init(id:id,name:name,defaults:notes))
-        }
+
+        _ = (back, forward, nextSpace, previousSpace, zoomIn, zoomOut, wordLeft, wordRight)
         return result
     }()
 
@@ -217,12 +581,64 @@ enum GestureProfiles {
 }
 
 struct GestureConfiguration: Codable, Sendable {
+    /// The hold trigger used when nothing else is configured, and the value an invalid
+    /// trigger is repaired to. Exposed so `validate()` and the stored property cannot
+    /// disagree about what "the default" is.
+    static let defaultTrigger: TriggerSource = .mouseButton(3)
     var enabled = false
-    var trigger: TriggerSource = .mouseButton(2)
+    // Hold trigger. WAS `.mouseButton(2)` (Middle Click), which is the single worst
+    // choice available: a middle click is a *frequent* action (open link in new tab,
+    // autoscroll) and holding it while dragging is not a motion a hand performs. The
+    // user's own configuration on disk had exactly this value, and it is why the
+    // feature read as "nothing happens" — measured: `trigger: {mouseButton: 2}` with
+    // `overrides: {}`.
+    //
+    // The default is now the **upper side button** (3). That number is a *starting
+    // point*, not a claim about the hardware: button indices come from the HID
+    // descriptor's declaration order, and nothing in CGEvent can tell us which
+    // physical button 3 is. `DeviceCapabilityProbe` reads the descriptor, but even a
+    // verified descriptor proves only that a button exists, not where it sits. The
+    // page therefore shows a Record button and says which number is in force, so the
+    // user confirms their own Sniper button instead of trusting an index.
+    var trigger: TriggerSource = GestureConfiguration.defaultTrigger
     // Raw event delta units, NOT calibrated screen points or physical millimetres.
     var deadzone = 12.0
     var tiltEnabled = false
     var debug = false
+    /// **Engine C — hold a side button and move to scroll.**
+    ///
+    /// Off by default, and the default is not timidity: on a mouse whose driver
+    /// already maps a side button to something, intercepting it fights the driver,
+    /// and the button is also a common "back" binding. It is opt-in per user, and the
+    /// page explains what it takes over before switching it on.
+    ///
+    /// It is deliberately a *different* mechanism from the four-way gesture trigger:
+    /// the trigger button is consumed for gestures, whereas this button stays a
+    /// normal click and only becomes a scroll modifier while it is held and the
+    /// pointer moves. That distinction is why it needs its own button rather than
+    /// reusing `trigger`.
+    ///
+    /// ── EVERY FIELD ADDED TO THIS TYPE NEEDS A DEFAULT HERE AND A LINE IN
+    ///    `Envelope` ─────────────────────────────────────────────────────────────
+    /// A stored configuration written by an *older* build has no key for a field added
+    /// later, and a non-optional `Codable` property makes the whole object fail to
+    /// decode with `keyNotFound`. That failure is not cosmetic: on this exact shape,
+    /// `try?` used to make the app silently discard every one of the user's overrides.
+    /// Verified on this payload — adding `scrollButtonEnabled` without the `Envelope`
+    /// line made the 2026-09-22 stored config fail to decode. So: new field ⇒ a
+    /// default in the declaration **and** an optional in `GestureController.Envelope`,
+    /// or an upgrade path erases the user's customisations.
+    var scrollButtonEnabled = false
+    /// Which button acts as the scroll modifier. Defaults to the button *below* the
+    /// gesture trigger, i.e. the one the user's thumb reaches without moving, and is
+    /// stored as a raw event button number for the same reason the trigger is: no API
+    /// can tell us which physical control a number maps to. The page has a Record
+    /// button so the user confirms it on their own mouse instead of trusting an index.
+    var scrollButton = GestureConfiguration.defaultScrollButton
+
+    /// The declared default for the scroll modifier. Named so `validate()` and the
+    /// stored property cannot drift, exactly like `defaultTrigger`.
+    static let defaultScrollButton: Int = 4
     // Default OFF on purpose, and the switch says so on the page: a Razer mouse
     // chosen by name in the product brief reports every wheel event as
     // `scrollWheelEventIsContinuous == 1` with axis2 == 0, measured on this
@@ -249,12 +665,42 @@ struct GestureConfiguration: Codable, Sendable {
     }
 
     mutating func validate() {
-        if !trigger.isValid { trigger = .mouseButton(2) }
+        // Repair an invalid trigger to the *same* default the type declares. A literal
+        // `2` used to sit here, so an out-of-range trigger (say `mouseButton(0)`, or a
+        // value written by an older build) was silently repaired INTO the middle click
+        // — the one button this feature must never hijack. The repair now reads the
+        // declared default, so the two can never drift apart again.
+        if !trigger.isValid { trigger = Self.defaultTrigger }
+        // The scroll modifier may never be the left button (it must stay usable for
+        // selecting and dragging), may never collide with the gesture trigger — one
+        // button cannot mean both "start a gesture" and "scroll" — and must be a real
+        // button number.
+        if !(1...31).contains(scrollButton) || scrollButton == trigger.buttonNumber {
+            scrollButton = ScrollButtonRepair.defaultFor(trigger: trigger)
+        }
         deadzone = deadzone.isFinite ? min(200, max(4, deadzone)) : 12
     }
 }
 
 enum GestureRowSource: Sendable { case preset, presetGlobal, userOverride, unassigned }
+
+/// Keeps the scroll modifier from colliding with the gesture trigger.
+///
+/// A separate type because the rule is not "pick a number" — it is "pick a number
+/// that is legal *and* is not the trigger", and the second half depends on a value
+/// that lives elsewhere in the configuration. Having it in one place is what lets a
+/// test pin that changing the trigger never leaves the two equal.
+enum ScrollButtonRepair {
+    /// The declared default for a given trigger: the next button up, wrapping inside
+    /// the usable range. Never returns the trigger itself, and never returns 0.
+    static func defaultFor(trigger: TriggerSource) -> Int {
+        // A modifier trigger consumes no button, so the declared default is always
+        // free and is returned as-is.
+        guard let taken = trigger.buttonNumber else { return GestureConfiguration.defaultScrollButton }
+        if taken != GestureConfiguration.defaultScrollButton { return GestureConfiguration.defaultScrollButton }
+        return taken == 31 ? 1 : taken + 1
+    }
+}
 
 struct GestureStroke: Sendable {
     private(set) var x = 0.0

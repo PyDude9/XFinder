@@ -171,6 +171,27 @@ enum WindowManager {
             URL(fileURLWithPath: "/System/Applications/System Settings.app"))
     }
 
+    /// Opens System Settings ▸ Keyboard ▸ Keyboard Shortcuts.
+    ///
+    /// A gesture that dispatches a system action posts the chord the user's own
+    /// `com.apple.symbolichotkeys` binds to it (`SpaceBinding`). When that action is
+    /// **unbound**, there is nothing to post and the page must offer the fix instead of a
+    /// dead gesture — this is that fix. Same shape as `openFinderExtensionsPane`: try the
+    /// current pane identifier, then the legacy one, then System Settings itself, so the
+    /// button is never dead.
+    @discardableResult
+    static func openKeyboardShortcutsPane() -> Bool {
+        let candidates = [
+            "x-apple.systempreferences:com.apple.Keyboard-Settings.extension",
+            "x-apple.systempreferences:com.apple.preference.keyboard",
+        ]
+        for raw in candidates {
+            if let url = URL(string: raw), NSWorkspace.shared.open(url) { return true }
+        }
+        return NSWorkspace.shared.open(
+            URL(fileURLWithPath: "/System/Applications/System Settings.app"))
+    }
+
     /// Raise ONE window, not the whole app.
     ///
     /// `NSRunningApplication.activate` brings every window of the app forward,

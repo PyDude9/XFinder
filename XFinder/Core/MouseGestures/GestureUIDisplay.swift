@@ -8,7 +8,26 @@ import Foundation
 // version of this page had *no* selection state at all — which is why every
 // direction resolved correctly while the page still looked empty. Putting the
 // state transition in a named pure function makes the interaction itself
-// assertable. The tests compile this exact file (see Tests/XFinderLogicTests).
+// assertable.
+//
+// What is deliberately NOT here any more
+// --------------------------------------
+// This file used to be symlinked into the test package and to expose
+// `title(_:trigger:)`, which rendered a heading. That was the language leak: a
+// heading is a *sentence*, and this file cannot see `L10n` (it is symlinked into a
+// plain-Foundation test bundle). The heading therefore came out in Vietnamese and
+// the call site's `L10n.t(...)` wrapped an already-rendered string, which can
+// never match a key — so the English page showed Vietnamese and every check
+// stayed green.
+//
+// The single spelling now lives on the model as semantic keys
+// (`GestureDirection.titleKey` / `.motionKey` / `.motionHintKey`), and the app
+// resolves them through `L10n.t`. The pure classification that *is* testable —
+// "is this a tilt direction" — moved onto `GestureTriggerKind` in the model, so
+// the model file now holds both spellings and this one holds none.
+//
+// The only thing left is the arrow-click state machine, which is UI logic with no
+// text in it at all.
 
 /// The arrow-click state machine driving `MouseDiagramView.selection`.
 enum MouseDiagramSelection {
@@ -27,32 +46,4 @@ enum MouseDiagramSelection {
     /// direction as it was mapped for the *previous* app — the panel would show
     /// the right keys for the wrong application, which is worse than showing none.
     static func afterProfileChange() -> GestureDirection? { nil }
-}
-
-/// Headings shown in `GestureDetailPanel`. The heading itself lives in
-/// `GestureDirection.title(trigger:)` on the model, because it must name the
-/// mouse button the user holds — the user reported, verbatim, *"tôi ko hiểu dùng
-/// nút nào của chuột với mũi tên"*, so a bare `↑` is not an acceptable heading.
-///
-/// What is left here is the pure classification logic: which directions are
-/// performed by tilting the wheel, and which can therefore accept "leave the
-/// native horizontal scroll". Both delegate to the model so there is exactly one
-/// spelling of "this is a tilt direction".
-enum GestureDirectionDisplay {
-    static func title(_ direction: GestureDirection, trigger: TriggerSource) -> String {
-        direction.title(trigger: trigger)
-    }
-
-    /// Whether this direction is performed by tilting the wheel rather than
-    /// holding the trigger button. Used to hide the tilt arms when the feature is
-    /// off, instead of drawing a control that does nothing.
-    static func isTilt(_ direction: GestureDirection) -> Bool {
-        GestureTriggerKind.isTilt(direction)
-    }
-
-    /// "Raw horizontal scroll" is only a meaningful choice for the tilt arms; the
-    /// four button-drag arms always send a keystroke or nothing.
-    static func supportsHorizontalScroll(_ direction: GestureDirection) -> Bool {
-        isTilt(direction)
-    }
 }

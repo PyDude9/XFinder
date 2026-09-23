@@ -38,14 +38,26 @@ RETIRED_PHYSICAL_NAMES = [
     "Nút phải (Button 1)",
     "Nút hông sau — nút 4 (Button 3)",
     "Nút hông trước — nút 5 (Button 4)",
-    "Giữ nút rồi kéo LÊN",
-    "Giữ nút rồi kéo SANG PHẢI",
-]
-# Buttons are numbered now; these are what the page actually renders.
-BUTTON_LABELS = [
     "Nút 1 (chuột trái)",
     "Nút 2 (chuột phải)",
     "Nút 3 (bấm con lăn xuống)",
+    "Giữ nút rồi kéo LÊN",
+    "Giữ nút rồi kéo SANG PHẢI",
+]
+# Buttons are numbered now; these are the labels the page actually renders.
+# RE-ANCHORED 2026-09-22: the three sentences below used to be "Nút N (mô tả)" and were
+# declared language-neutral, which is why they rendered verbatim in an English UI. They
+# are now three ordinary translatable labels plus one fragment, and the *retired* forms
+# moved to `RETIRED_PHYSICAL_NAMES`-style exclusion below. Leaving the old strings here
+# made this verifier report a LEAK for a string the app no longer renders — a false
+# alarm, which is its own kind of broken gate.
+BUTTON_LABELS = [
+    "Nút trái",
+    "Nút phải",
+    "Bấm con lăn xuống",
+    "Nút ",
+    "thường là nút hông trên (gần con lăn)",
+    "thường là nút hông dưới (ngón cái)",
 ]
 # The numbered headings, including the interpolated ones the page assembles from
 # `TriggerSource.numberedName` and the direction hint.
@@ -54,6 +66,13 @@ DIRECTION_HEADINGS = [
     "Nghiêng con lăn TRÁI", "Nghiêng con lăn PHẢI",
 ]
 SIDEBAR = ["Chuột & cử chỉ", "Tổng quan", "Hệ thống", "Mạng"]
+
+# The sidebar GROUP HEADINGS. These are rendered through `L10n.t(group.header)` — a
+# **variable** — so the literal sweep in `verify-gesture-ui.sh` §3 cannot see them, and all
+# six were missing from the store until a rendered-page read found them showing Vietnamese
+# on an English page. `check-sidebar-groups-l10n.py` is the static gate; this is the runtime
+# half, resolved against the store **inside the installed bundle**.
+SIDEBAR_GROUPS = ["CHUNG", "CỬA SỔ", "FINDER & TÌM KIẾM", "CÔNG CỤ", "KẾT NỐI", "TIỆN ÍCH"]
 
 # The Finder-utilities page's extension row. Each of these is a full sentence the
 # page prints for one measured plug-in state, so a missing translation is a
@@ -184,6 +203,15 @@ def main() -> int:
     for vi in SIDEBAR:
         en = t(vi)
         ok = not VIETNAMESE.search(en)
+        print(f"  {'OK  ' if ok else 'LEAK'} {vi!r} -> {en!r}")
+        if not ok:
+            failures.append(vi)
+
+    print()
+    print("=== sidebar groups ===")
+    for vi in SIDEBAR_GROUPS:
+        en = t(vi)
+        ok = en != vi and not VIETNAMESE.search(en)
         print(f"  {'OK  ' if ok else 'LEAK'} {vi!r} -> {en!r}")
         if not ok:
             failures.append(vi)

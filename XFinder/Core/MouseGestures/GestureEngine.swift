@@ -5,6 +5,10 @@ import os
 // All commands/results are value types. AppKit never enters the event callback.
 enum GestureCommand: Sendable {
     case configure(GestureConfiguration)
+    /// The machine's own hotkeys for the system actions a gesture can dispatch. Sent
+    /// alongside `.configure` because the two are read from different places (our store vs
+    /// `com.apple.symbolichotkeys`) and either can change independently.
+    case systemBindings(GestureSystemBindings)
     case frontmost(String)
     case recordTrigger
     case recordShortcut(String, GestureDirection)
@@ -20,6 +24,79 @@ enum GestureResult: Sendable {
     case trigger(TriggerSource)
     case shortcut(String, GestureDirection, GestureShortcut)
     case recordingEnded
+    /// The engine's own recent activity, so the page can show **measured** events
+    /// rather than an instruction the user has to trust.
+    case diagnostics([GestureDiagnostic])
+    /// A raw mouse press the tap saw, whatever it turned out to be. Published so the
+    /// page can answer "which number is my side button?" with a measurement.
+    case observedPress(Int)
+
+    /// Whether this result carries a freshly **measured** fact. The page resets its
+    /// activity list on a tap-state change and on a configuration change, because
+    /// those are the moments when old lines become misleading.
+    var isMeasuredFact: Bool {
+        switch self {
+        case .tap, .tapFailure, .diagnostics: return true
+        default: return false
+        }
+    }
+}
+
+/// What the engine did, in values rather than words — the page turns these into
+/// sentences through `L10n`, which is the only place a language can be chosen.
+struct GestureDiagnostic: Equatable, Sendable {
+    var event: GestureDiagnosticEvent
+    var bundle: String
+    var button: Int?
+    var direction: GestureDirection?
+    var kind: GestureActionKind?
+}
+
+enum GestureDiagnosticEvent: String, Equatable, Sendable {
+    /// The trigger button went down and a gesture may now start.
+    case triggerHeld
+    /// The stroke passed the deadzone and locked onto a direction.
+    case directionLocked
+    /// A direction's action was posted.
+    case actionSent
+    /// The button was released without passing the deadzone, so the normal click was
+    /// replayed — the case that proves gestures never eat ordinary clicks.
+    case clickPreserved
+    /// The pointer came back inside the deadzone before release, so nothing fired.
+    case gestureCancelled
+    /// A discrete horizontal wheel event was read as a tilt.
+    case tiltDiscrete
+    /// Engine C consumed a drag as scrolling.
+    case scrollDrag
+    /// A press landed on a button the engine watches but did not act on.
+    case buttonObserved
+    /// The gesture resolved to a system action (Mission Control / a Space move) that
+    /// **this machine has no shortcut for**, so nothing could be posted. Recorded because
+    /// it is the one failure that looks identical to "the feature is off" from outside:
+    /// the gesture is recognised, the direction locks, and no key leaves the process.
+    case systemActionUnbound
+    /// The gesture completed but the row is **deliberately unassigned**, so no key was
+    /// posted. Separate from `.actionSent` because that event's wording is "Shortcut sent"
+    /// — printing it for a row that sends nothing is the exact mislabelling the Honesty
+    /// Rule forbids, and this log is what the user reads to decide whether the feature
+    /// works (measured: Zed's up/down logged "Shortcut sent — Raw horizontal scroll").
+    case actionUnassigned
+
+    /// Store keys, resolved by `L10n`. Semantic only, as everywhere else in the model.
+    var labelKey: String {
+        switch self {
+        case .triggerHeld: return "Nút giữ đã được nhấn"
+        case .directionLocked: return "Đã khoá hướng"
+        case .actionSent: return "Đã gửi phím tắt"
+        case .clickPreserved: return "Không vượt ngưỡng — đã phát lại click bình thường"
+        case .gestureCancelled: return "Quay về vùng chết trước khi thả — đã huỷ"
+        case .tiltDiscrete: return "Đọc được nghiêng con lăn rời rạc"
+        case .scrollDrag: return "Giữ nút cuộn và kéo → cuộn"
+        case .buttonObserved: return "Nút được theo dõi nhưng không phải nút giữ"
+        case .systemActionUnbound: return "Hành động hệ thống này chưa được gán phím trong macOS"
+        case .actionUnassigned: return "Hướng này chưa gán nên không gửi gì"
+        }
+    }
 }
 
 /// A single high-priority serial queue owns one CFRunLoop. A dispatch queue alone
@@ -89,6 +166,11 @@ final class GestureWorker {
     static let syntheticTag: Int64 = 0x584647455354
     let engine: GestureEngine
     var configuration = GestureConfiguration()
+    /// The machine's own hotkeys for the system actions, threaded in from the controller
+    /// (which is the only place allowed to read `UserDefaults`). Empty by default, which is
+    /// the honest "we have not read them yet" state — a system action then posts nothing
+    /// rather than a guessed key.
+    var systemBindings = GestureSystemBindings.empty
     var suspended = false
     var bundle = ""
     var tap: CFMachPort?
@@ -105,6 +187,22 @@ final class GestureWorker {
     var holdTimer: CFRunLoopTimer?
     var lastTilt: CFTimeInterval = 0
     var lastDebug: CFTimeInterval = 0
+    // ── Engine C — hold a side button and move to scroll ──────────────────────────
+    //
+    // `scrollButton` is the physical button whose *drag* is converted into scroll
+    // wheel events. It is separate from the gesture trigger on purpose: the trigger is
+    // consumed for gestures, whereas this button stays a normal click and only becomes
+    // a scroll modifier while it is held **and** the pointer has moved past the
+    // deadzone. Under the deadzone nothing is swallowed, so the button's normal action
+    // survives — the same rule the gesture engine already follows for a plain click.
+    var scrollButtonHeld = false
+    var scrollButtonDragged = false
+    var lastScrollEmit: CFTimeInterval = 0
+    /// Diagnostic ring: the last few things the engine actually did, so the Settings
+    /// page can show measured facts instead of instructions. Off unless the user turns
+    /// debug logging on — nothing here runs on the hot path when it is empty.
+    var diagnostics: [GestureDiagnostic] = []
+    static let diagnosticsLimit = 20
     let logQueue = DispatchQueue(label: "com.xfinder.gesture.debug", qos: .utility)
     let logPending = OSAllocatedUnfairLock(initialState: false)
     enum Record { case trigger; case shortcut(String, GestureDirection) }
@@ -119,6 +217,8 @@ final class GestureWorker {
             case .configure(let config):
                 cancelStroke(); configuration = config
                 if !config.enabled { endRecording() }
+            case .systemBindings(let bindings):
+                systemBindings = bindings
             case .frontmost(let id):
                 if bundle != id { cancelStroke(); endRecording(); bundle = id }
             case .recordTrigger: cancelStroke(); beginRecording(.trigger)
@@ -233,19 +333,78 @@ final class GestureWorker {
             up.flags = down.flags
             up.setIntegerValueField(.mouseEventClickState, value: down.getIntegerValueField(.mouseEventClickState))
             post(down); post(up)
+            note(.clickPreserved, button: swallowedButton)
         } else if let direction = stroke.direction(deadzone: configuration.deadzone) {
-            perform(configuration.action(bundle: strokeBundle, direction: direction))
+            let action = configuration.action(bundle: strokeBundle, direction: direction)
+            if action == .unassigned {
+                // The row deliberately sends nothing. Recording it as `.actionSent`
+                // (whose wording is "Shortcut sent") would tell the user a key was posted
+                // when the engine returned without posting — measured here on Zed's
+                // up/down arms, which the dev preset leaves unassigned.
+                note(.actionUnassigned, direction: direction,
+                     kind: kindOf(action, direction: direction))
+            } else {
+                perform(action)
+                note(.actionSent, direction: direction, kind: kindOf(action, direction: direction))
+            }
+        } else {
+            // Over the deadzone at some point but back inside it at release: the user
+            // changed their mind. Nothing is posted and no click is replayed, because
+            // the pointer moved — a click at that location would land somewhere the
+            // user did not choose.
+            note(.gestureCancelled, direction: stroke.direction(deadzone: configuration.deadzone))
         }
         debug(stroke)
+    }
+
+    /// The intent behind an action, for the diagnostic line. Read from the same map
+    /// the page reads, so a logged action and a displayed action cannot disagree.
+    private func kindOf(_ action: GestureAction, direction: GestureDirection) -> GestureActionKind? {
+        GestureMap.row(overrides: configuration.overrides, bundle: strokeBundle,
+                       direction: direction).entry.kind
     }
     func post(_ event: CGEvent) {
         event.setIntegerValueField(.eventSourceUserData, value: Self.syntheticTag)
         eventSink(event)
     }
     func perform(_ action: GestureAction) {
-        guard case .shortcut(let shortcut) = action,
-              let down = CGEvent(keyboardEventSource: nil, virtualKey: shortcut.key, keyDown: true),
+        switch action {
+        case .shortcut(let shortcut):
+            postShortcut(shortcut)
+        case .systemAction(let system):
+            // Mission Control / App Exposé / Show Desktop / a Space move. These are software
+            // symbolic hotkeys, not hardware keys, so the only mechanism that works is to
+            // replay **the binding this machine has** — read from
+            // `com.apple.symbolichotkeys` by the controller and threaded in above. The old
+            // `SystemKeySender` posted an invented `NSEvent.systemDefined` keytype 32, which
+            // is not a real NX constant (`ev_keymap.h` stops at 25) and did nothing — the
+            // user's "nhận dạng cho có, không làm việc" report.
+            guard let shortcut = systemBindings.shortcut(for: system) else {
+                // Nothing to post, and no invented fallback. Recorded so the page can say
+                // "your Mac has no shortcut for this" instead of the gesture looking broken.
+                note(.systemActionUnbound, kind: system.defaultKind)
+                return
+            }
+            postShortcut(shortcut)
+        case .unassigned, .horizontalScroll:
+            // Neither case reaches here: the callers that can produce a tilt arm both
+            // pass the event through instead. Kept explicit so adding a case to the
+            // enum is a compile error rather than a silent no-op.
+            return
+        }
+    }
+
+    /// Post a key chord as a down/up pair.
+    ///
+    /// One implementation for both `.shortcut` and a resolved `.systemAction`, because the
+    /// two are the same operation once the system action has been resolved — and two copies
+    /// of it is how "the keys on screen" and "the keys posted" drift apart.
+    func postShortcut(_ shortcut: GestureShortcut) {
+        guard let down = CGEvent(keyboardEventSource: nil, virtualKey: shortcut.key, keyDown: true),
               let up = CGEvent(keyboardEventSource: nil, virtualKey: shortcut.key, keyDown: false) else { return }
+        // The stored modifier mask is passed **verbatim**, including the secondary-fn bit:
+        // Apple encodes the Mission Control / Space arrows as `control | maskSecondaryFn`,
+        // so masking it away would post a chord the system does not recognise.
         down.flags = CGEventFlags(rawValue: shortcut.flags)
         up.flags = down.flags
         post(down); post(up)
@@ -266,6 +425,27 @@ final class GestureWorker {
             print("[MouseGestures] app=\(id) profile=\(profile) delta=(\(x),\(y)) path=\(distance)")
             pending.withLock { $0 = false }
         }
+    }
+
+    /// Records an event for the Settings page.
+    ///
+    /// Kept deliberately cheap on the hot path: the configuration is read first, so
+    /// when logging is off this is one boolean load and nothing else — no array
+    /// mutation, no allocation, no lock. `debug` already defaults to off and the page
+    /// shows the measured tap state whether or not this ring has anything in it, so an
+    /// empty ring is never presented as "nothing works".
+    ///
+    /// Only the bundle ID, a button number and an action are recorded — never which
+    /// keys the user pressed and never any typed content, so enabling this cannot leak
+    /// what the user types into a report.
+    func note(_ event: GestureDiagnosticEvent, button: Int? = nil, direction: GestureDirection? = nil,
+              kind: GestureActionKind? = nil) {
+        guard configuration.debug else { return }
+        let entry = GestureDiagnostic(event: event, bundle: bundle,
+                                     button: button, direction: direction, kind: kind)
+        diagnostics.append(entry)
+        if diagnostics.count > Self.diagnosticsLimit { diagnostics.removeFirst() }
+        engine.report(.diagnostics(diagnostics))
     }
     var suppressedKey: Int64?
     func handle(_ type: CGEventType, _ event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -336,9 +516,17 @@ final class GestureWorker {
             return pass
         }
         guard configuration.enabled && !suspended else { return pass }
+        // Report the press before deciding what to do with it. A press the engine does
+        // not act on is still the press the user wants a number for, so this cannot sit
+        // behind any of the branches below.
+        if isDown { engine.report(.observedPress(button)) }
         switch configuration.trigger {
         case .mouseButton(let n):
-            if isDown, button == n { startStroke(event, button: button); return nil }
+            if isDown, button == n {
+                startStroke(event, button: button)
+                note(.triggerHeld, button: n)
+                return nil
+            }
         case .modifierKey(let flag):
             if type == .flagsChanged {
                 if event.flags.rawValue & flag == flag {
@@ -347,6 +535,7 @@ final class GestureWorker {
                         // Do not steal an in-progress native selection/window drag.
                         if !CGEventSource.buttonState(.combinedSessionState, button: .left) {
                             startStroke(event, button: nil)
+                            note(.triggerHeld)
                         }
                     }
                 } else {
@@ -357,6 +546,41 @@ final class GestureWorker {
                 return pass // Preserve normal keyboard shortcuts; modifier clicks are not fabricated.
             }
         }
+
+        // ── Engine C — hold a side button and move to scroll ───────────────────
+        //
+        // Ordered **before** the cancel-on-other-press rules below, because those
+        // rules exist to abort a gesture and this is not a gesture. Ordered after the
+        // trigger check so a configuration where the two share a button can never
+        // reach here — `validate()` forbids that collision, and the guard repeats it
+        // so a hand-edited preferences file cannot slip through.
+        if configuration.scrollButtonEnabled,
+           configuration.scrollButton != configuration.trigger.buttonNumber {
+            let isScrollButton = button == configuration.scrollButton
+            if isDown, isScrollButton {
+                scrollButtonHeld = true; scrollButtonDragged = false
+                note(.buttonObserved, button: button)
+            }
+            if type == .otherMouseDragged || type == .rightMouseDragged {
+                if isScrollButton {
+                    scrollButtonDragged = true
+                    emitScroll(dx: event.getIntegerValueField(.mouseEventDeltaX),
+                               dy: event.getIntegerValueField(.mouseEventDeltaY))
+                    note(.scrollDrag, button: button)
+                    return nil
+                }
+            }
+            if isUp, isScrollButton {
+                let consumed = scrollButtonDragged
+                scrollButtonHeld = false; scrollButtonDragged = false
+                if consumed {
+                    // The drag was replaced by scrolling, so the matching up must not
+                    // also reach the app as a click at a new location.
+                    return nil
+                }
+            }
+        }
+
         if type == .leftMouseDown || type == .keyDown || (isDown && swallowedButton != button) {
             cancelStroke()
         }
@@ -367,9 +591,17 @@ final class GestureWorker {
         default: isMovement = false
         }
         if stroke != nil && isMovement {
+            let before = stroke?.direction(deadzone: configuration.deadzone)
             stroke?.move(dx:Double(event.getIntegerValueField(.mouseEventDeltaX)),
                          dy:Double(event.getIntegerValueField(.mouseEventDeltaY)))
             if let stroke { debug(stroke) }
+            // Record the moment the direction locked, because that is the fact the user
+            // asked about ("did my hold even register as a gesture?") and it is not
+            // visible from the outcome alone: a cancel and a never-started stroke look
+            // identical if only the final result is logged.
+            if before == nil, let direction = stroke?.direction(deadzone: configuration.deadzone) {
+                note(.directionLocked, direction: direction)
+            }
             return nil // Do not leak a native drag without a native down.
         }
         if type == .scrollWheel, configuration.tiltEnabled {
@@ -379,12 +611,42 @@ final class GestureWorker {
                   event.getIntegerValueField(.scrollWheelEventDeltaAxis1) == 0 else { return pass }
             let delta = event.getIntegerValueField(.scrollWheelEventDeltaAxis2)
             guard delta != 0 else { return pass }
-            let action = configuration.action(bundle:bundle,direction:delta > 0 ? .tiltLeft : .tiltRight)
+            let direction: GestureDirection = delta > 0 ? .tiltLeft : .tiltRight
+            let action = configuration.action(bundle:bundle,direction:direction)
             if action == .unassigned || action == .horizontalScroll { return pass }
             let now = CFAbsoluteTimeGetCurrent()
-            if now-lastTilt >= 0.35 { lastTilt = now; perform(action) }
+            if now-lastTilt >= 0.35 {
+                lastTilt = now
+                perform(action)
+                note(.tiltDiscrete, direction: direction, kind: kindOf(action, direction: direction))
+            }
             return nil
         }
         return pass
+    }
+
+    /// Emits one throttled scroll wheel event from a pointer delta.
+    ///
+    /// Why throttled rather than one event per drag sample: a high-rate mouse
+    /// (the Basilisk reports 8 kHz) would otherwise post thousands of wheel events a
+    /// second, which reads as a violent jump rather than as scrolling. The interval is
+    /// the same order as the gesture engine's own debug throttle, so the two cannot
+    /// fight over the main thread's time.
+    ///
+    /// The sign is inverted on purpose: dragging **down** should scroll the content
+    /// the way a wheel rolled down does, which is a positive `wheel1` on macOS. This is
+    /// the one place in the module where a direction is deliberately flipped, so it is
+    /// stated here rather than buried in an expression.
+    func emitScroll(dx: Int64, dy: Int64) {
+        guard dx != 0 || dy != 0 else { return }
+        let now = CFAbsoluteTimeGetCurrent()
+        guard now - lastScrollEmit >= 0.016 else { return }  // ~60 Hz ceiling
+        lastScrollEmit = now
+        guard let wheel = CGEvent(scrollWheelEvent2Source: nil, units: .pixel,
+                                  wheelCount: 2, wheel1: Int32(clamping: dy),
+                                  wheel2: Int32(clamping: dx), wheel3: 0) else { return }
+        // Tagged like every other synthetic event, so the engine does not re-enter its
+        // own output and turn one drag into an endless scroll.
+        post(wheel)
     }
 }

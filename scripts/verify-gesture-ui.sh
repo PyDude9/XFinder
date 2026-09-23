@@ -8,6 +8,13 @@ echo "=== 1. L10n store coverage (duplicate keys crash at launch if nonzero) ===
 python3 scripts/check-l10n-coverage.py
 
 echo
+echo "=== 1b. Sidebar group headers are translated (the variable-passed-key leak) ==="
+# These six headings reach the screen through `L10n.t(group.header)` — a *variable* — so the
+# literal sweep in §3 cannot see them, and they rendered Vietnamese on an English page until
+# a rendered-page read found them. The gate fails loudly if its own parse goes stale.
+python3 scripts/check-sidebar-groups-l10n.py
+
+echo
 echo "=== 2. L10n: VI literals not wrapped in t() in Views/ ==="
 python3 - <<'PYEOF'
 import re, glob
@@ -32,8 +39,28 @@ import re, json
 files = ["XFinder/Views/Detail/MouseGesturesDetailView.swift",
          "XFinder/Views/Components/MouseDiagramView.swift",
          "XFinder/Views/Components/GestureDetailPanel.swift",
+         # The Mac-Mouse-Fix-style UI split into three components: the arm (a real
+         # button), the action picker (generated from the intent vocabulary) and the
+         # measured-activity panel. Each renders sentences, so each must be swept.
+         "XFinder/Views/Components/GestureArmView.swift",
+         "XFinder/Views/Components/GestureActionPicker.swift",
+         "XFinder/Views/Components/GestureActivityPanel.swift",
          "XFinder/Core/MouseGestures/GestureModel.swift",
-         "XFinder/Core/MouseGestures/GestureUIDisplay.swift",
+         # The intent vocabulary and the built-in map. Every `labelKey`/`groupKey` here
+         # is a Vietnamese literal that only `L10n.t` turns into words, so it has to be
+         # in this sweep or the English page silently renders Vietnamese action names.
+         "XFinder/Core/MouseGestures/GestureMap.swift",
+         # The engine's diagnostic labels, which the activity panel renders.
+         "XFinder/Core/MouseGestures/GestureEngine.swift",
+         # The label-and-heading vocabulary. `GestureUIDisplay.swift` used to be
+         # listed here, but it no longer renders anything: the heading structure
+         # moved to `GestureLabelStructure.swift` and the words to `L10n.t`.
+         "XFinder/Core/MouseGestures/GestureLabelStructure.swift",
+         "XFinder/Core/MouseGestures/DeviceCapabilityModel.swift",
+         # The system-action path: how Mission Control / App Exposé / Show Desktop / the two
+         # Space moves are resolved, and the read of the machine's own symbolic hotkeys.
+         # Both render captions or feed the warning text, so both belong in the sweep.
+         "XFinder/Core/MouseGestures/SpaceBinding.swift",
          "XFinder/Models/SidebarDestination.swift"]
 src = "".join(open(f, encoding='utf-8').read() for f in files)
 keys = set(re.findall(r'L10n\.t\("((?:[^"\\]|\\.)*)"\)', src))
@@ -55,11 +82,13 @@ PYEOF
 
 echo
 echo "=== 4. Tests ==="
-swift test --package-path Tests 2>&1 | grep -E "Executed [0-9]+ tests, with" | tail -1
+# From Tests/: from the repo root `swift test` reports 0 tests, which would make
+# everything below look green while proving nothing.
+(cd Tests && swift test 2>&1 | grep -E "Executed [0-9]+ tests, with" | tail -1)
 
 echo
 echo "=== 5. New sources present in the compile log by name ==="
-grep -E "MouseDiagramView|GestureDetailPanel|GestureUIDisplay|MouseGesturesDetailView" \
+grep -E "MouseDiagramView|GestureDetailPanel|GestureArmView|GestureActionPicker|GestureActivityPanel|GestureMap|GestureUIDisplay|MouseGesturesDetailView|DeviceCapability|GestureLabelStructure|SpaceBinding" \
   /tmp/xfinder-clean-build/dd/Build/Intermediates.noindex/XFinder.build/Debug/XFinder.build/Objects-normal/arm64/XFinder.SwiftFileList
 
 echo

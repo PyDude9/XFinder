@@ -12,9 +12,35 @@ mapping dùng được ngay**. Ghi nút / nhập bundle ID / ghi phím đều l�
 1. Mở XFinder → sidebar **CỬA SỔ → Chuột & cử chỉ**.
 2. Cấp **Trợ năng / Accessibility** cho đúng bản XFinder đang chạy.
 3. Bật **Bật cử chỉ chuột**. Mặc định tính năng **tắt**, tilt **tắt**, debug **tắt**.
-4. Giữ nút mặc định (**Nút 3** trên UI — bấm con lăn xuống, mã CoreGraphics `Button 2`),
-   kéo lên/xuống/trái/phải, rồi thả: gửi đúng một hành động theo app đang ở trước.
-5. Xong. Bảng bên dưới đã đúng — không cần cấu hình gì thêm.
+4. **Đọc mục "Kiểm tra nhanh" ở đầu trang.** Đây là bước trả lời hai câu hỏi duy nhất
+   khiến cử chỉ không chạy — xem hai mục ngay bên dưới.
+5. Giữ nút giữ của bạn, kéo lên/xuống/trái/phải, rồi thả: gửi đúng một hành động theo
+   app đang ở trước.
+6. Xong. Bảng bên dưới đã đúng — không cần cấu hình gì thêm.
+
+### "Tôi làm đúng mà không có gì xảy ra" — đúng hai nguyên nhân
+Cả hai đều **vô hình** trong bảng mapping, nên trang in chúng ra bằng số đo thật.
+
+**1. Nút giữ sai — và mặc định cũ là nút không giữ được.**
+
+Build cũ lấy `mouseButton(2)` (bấm con lăn) làm nút giữ mặc định. Giữ con lăn rồi kéo là
+thao tác tay **không làm được**, nên tính năng đọc như đã chết. Config đã lưu của bạn có
+thể vẫn mang giá trị đó, và **không có migration nào tự sửa**: `2` là giá trị *hợp lệ*, nên
+sửa ngầm sẽ ghi đè lựa chọn có chủ ý của người thật sự muốn nó.
+
+Trang giờ in **cảnh báo cam** đúng cho giá trị đó, kèm nút **Ghi lại nút giữ**. Bấm nút đó,
+rồi **bấm nút hông bạn muốn giữ** — số hiện ra ngay khi bạn bấm.
+
+**2. XFinder đang là ứng dụng phía trước.**
+
+Engine tra bảng theo **bundle ID của app đang frontmost**. Khi bạn *đang thử* từ chính trang
+này, XFinder frontmost — nên nhật ký hiện `com.xfinder.app` một cách **hợp lệ**, và cử chỉ
+trông như hỏng trong khi nó chạy đúng cấu hình. Hãy chuyển sang Zed / Chrome / Excel… rồi
+thử lại. Trang in rõ app sẽ nhận cử chỉ ở dòng **"Cử chỉ sẽ gửi tới"**.
+
+Nếu vừa bấm một nút khác nút giữ hiện tại, trang hiện luôn gợi ý **"Đặt nút này làm nút
+giữ?"** — một lần bấm để nhận. Gợi ý này **chỉ** hiện sau một lần bấm thật, không hiện trên
+bản cài mới.
 
 ### Nút nào, động tác nào (phần người dùng hay hỏi nhất)
 
@@ -26,7 +52,7 @@ Mã CoreGraphics đếm `0 = trái, 1 = phải, 2 = giữa`, còn số **in trê
 |---|---|---|
 | `Button 0` | **Nút 1** (chuột trái) | Bị chặn — chiếm thao tác kéo/chọn |
 | `Button 1` | **Nút 2** (chuột phải) | Dùng được nếu bạn muốn |
-| `Button 2` | **Nút 3** (bấm con lăn xuống) | **Mặc định** |
+| `Button 2` | **Nút 3** (bấm con lăn xuống) | **Không dùng làm nút giữ** — xem mục "Kiểm tra nhanh" |
 | `Button 3` | **Nút 4** | |
 | `Button 4` | **Nút 5** | |
 | từ `Button 5` | **Nút *n+1*** | Chuột nhiều nút |
@@ -247,48 +273,116 @@ có thể chọn modifier + di chuyển chuột. Không nhận diện riêng t�
 
 ## Mapping mặc định — đây chính xác là phím XFinder gửi
 
-Các tên tác vụ là **ý định sử dụng**, không phải đảm bảo mọi phiên bản ứng dụng
-đều có cùng shortcut. Tùy chỉnh bàn phím macOS/app có thể đổi kết quả. Ưu tiên
-phím hiển thị trong XFinder và shortcut thật của ứng dụng bạn dùng.
+**Bảng này là toàn bộ preset dựng sẵn.** Mỗi dòng ghi **ý định** ("Lùi", "Tab kế
+ tiếp") và **phím chính xác** sẽ được gửi. Hai thứ đó tách rời vì cùng một ý định là
+phím khác nhau ở mỗi app — và vì một phím tắt trần (`⌘⇧]`) không cho người dùng biết
+nó làm gì.
 
-| Profile | Giữ + ↑ | Giữ + ↓ | Giữ + ← | Giữ + → | Tilt ← / → (opt-in) |
+Ký hiệu: **⬤** = quy ước chung của macOS (mọi app có khái niệm đó đều hiểu);
+**▪** = phím tắt riêng của app đó, kiểm chứng được trong chính app;
+**—** = cố ý để trống. **⌨︎** = hành động **hệ thống**: XFinder đọc phím tắt **bạn đã gán**
+trong Hệ thống → Bàn phím → Phím tắt và gửi **đúng phím đó**; máy chưa gán thì **không gửi gì**
+(trang nói rõ). Đây **không** phải `NSEvent.systemDefined` — cơ chế đó đã bị gỡ (Round 8).
+
+| Profile | Giữ + ↑ | Giữ + ↓ | Giữ + ← | Giữ + → | Nghiêng ← / → (opt-in) |
 |---|---|---|---|---|---|
-| Global, app không khớp profile | `⌘⇧]` — mục kế tiếp | `⌘⇧[` — mục trước | `⌘[` — lùi | `⌘]` — tiến | `⌘=` / `⌘-` — zoom |
-| Edge, Safari, Chrome | ⌘T — tab mới | ⌘W — đóng tab | ⌃⇧Tab — tab trước | ⌃Tab — tab sau | Cả hai gửi ⌘⇧T — mở lại tab vừa đóng |
-| VS Code, Cursor, Zed, Antigravity, Claude | **Chưa gán** | **Chưa gán** | ⌃- | ⌃⇧- | Chưa gán |
-| Photoshop, CapCut | ⌘0 | ⌘Z | [ | ] | **Chưa gán** |
-| Discord, Zalo, AyuGram | **Chưa gán** | **Chưa gán** | ⌥↑ | ⌥↓ | Chưa gán |
-| Excel, Word | **Chưa gán** | **Chưa gán** | **Chưa gán** | **Chưa gán** | Chưa gán |
-| Kitty, Terminal, iTerm2 | **Chưa gán** | **Chưa gán** | ⌥← — lùi một từ | ⌥→ — tới một từ | Chưa gán |
-| Obsidian, Notion | ⌘P | **Chưa gán** | ⌘⌥← | ⌘⌥→ | Chưa gán |
+| Global (app không khớp profile nào) | ⌨︎ Mission Control | ⌨︎ App Exposé | ⌨︎ Space trước | ⌨︎ Space kế tiếp | — không gửi phím (chuyển tiếp cuộn ngang) |
+| Edge, Safari, Chrome | ⬤ `⌘T` — Tab mới | ⬤ `⌘W` — Đóng tab | ⬤ `⌘[` — Lùi | ⬤ `⌘]` — Tiến | ⬤ `⌃⇥` — Tab kế tiếp |
+| VS Code, Cursor, Zed, Antigravity, Claude | — | — | ⬤ `⌘[` — Lùi | ⬤ `⌘]` — Tiến | — |
+| Kitty, Terminal, iTerm2 | — | — | ⬤ `⌥←` — Lùi một từ | ⬤ `⌥→` — Tới một từ | — |
+| Photoshop, CapCut | ▪ `⌘0` — Vừa khung | ▪ `⌘Z` — Hoàn tác | ▪ `[` — Thu nhỏ cọ | ▪ `]` — Phóng to cọ | — |
+| **Excel** | ▪ `⌘+` — Phóng to | ▪ `⌘-` — Thu nhỏ | ⬤ `⌃⇧⇥` — Trang tính trước | ⬤ `⌃⇥` — Trang tính kế tiếp | — |
+| **Word** | ▪ `⌘+` — Phóng to | ▪ `⌘-` — Thu nhỏ | — | — | — |
+| Discord, Zalo, AyuGram | — | — | ⬤ `⌥↑` — Mục trước | ⬤ `⌥↓` — Mục kế tiếp | — |
+| Obsidian, Notion | ▪ `⌘P` — Mục kế tiếp | — | ⬤ `⌘⌥←` — Lùi | ⬤ `⌘⌥→` — Tiến | — |
 
-> **Global đã đổi (2026-09-22).** Bảng Global cũ gửi `⌃↑ ⌃↓ ⌃← ⌃→` cho Mission
-> Control / Spaces, và người dùng gọi nó là *“hơi vô dụng”* — đúng, vì chuột MX
-> Master 3 đã tự gán Mission Control vào nút ngón cái trong Logi Options, nên cử
-> chỉ chỉ **lặp lại một binding đã có**. Bảng mới gửi **điều hướng trang/mục**, thứ
-> mà cử chỉ thực sự cần: `⌘[` / `⌘]` là lùi/tiến theo lịch sử,
-> `⌘⇧[` / `⌘⇧]` là chuyển mục, và tilt là zoom. Global cũ **không còn tồn tại**
-> ở bất kỳ hướng nào.
+> **Word và Excel là HAI bảng riêng, không phải một bảng dùng chung.** Bản trước gộp
+> cả hai vào một profile rỗng. Word **không có worksheet**, nên `⌃⇧⇥` không có nghĩa
+> gì trong Word; Excel thì có tài liệu riêng cho cặp đó. Test
+> `testWordAndExcelDoNotShareOneTable` giữ hai dictionary tách rời.
+>
+> **Global đã đổi lần thứ TƯ (2026-09-23), và lần này là để sửa một cơ chế không tồn tại.**
+>
+> * Bảng 3 (2026-09-22) gửi `⌃↑`/`⌃↓` cho Mission Control, `⌃←`/`⌃→` cho Spaces — người dùng
+>   báo gesture **được nhận nhưng không làm gì**. Đo ra là **đúng**: máy này
+>   `com.apple.symbolichotkeys` ids 79–82 bật mà **không gán phím nào**, và plist factory
+>   của macOS 27 **không có** binding mũi tên nào cho chúng.
+> * Bảng 3b thay up/down bằng **keytype hệ thống số 32** (`NSEvent.systemDefined`, tiền thân
+>   của ký hiệu `⚙︎`). Cũng sai: **`NX_KEYTYPE_MISSION_CONTROL` không tồn tại** —
+>   `ev_keymap.h` chỉ định nghĩa tới `NX_KEYTYPE_MENU = 25`. Post một sự kiện không định nghĩa
+>   ⇒ không ai nghe.
+> * Bảng 4 (hiện tại) không ship **phím** nào cho bốn hành động này, mà ship **ý định**.
+>   `SpaceBinding` đọc `com.apple.symbolichotkeys` **của chính máy bạn** (ids 32/33/79–82,
+>   kèm fallback 80/82) và post **đúng chord máy đó khai** — đo trên máy này:
+>   `⌃↑`, `⌃↓`, `⌃←`, `⌃→`, mask `0x840000` = `control | maskSecondaryFn`.
+>
+> **Bit `fn` là bắt buộc.** Apple mã hoá các arrow này kèm `maskSecondaryFn`; mask bỏ bit đó
+> là post một chord hệ thống không khớp. `GestureShortcut.label` **bỏ** bit fn khi *hiển thị*
+> (nên hàng đọc `⌃↑`, giống System Settings) nhưng **post nguyên mask** — hiển thị và dispatch
+> là hai việc, và chỉ phần dispatch mới cần đúng bit.
+>
+> **Một resolver, hai người dùng.** `GestureMap.row(...)` trả `systemShortcut` +
+> `isUnboundSystemAction`; UI hiển thị đúng giá trị đó và engine post đúng giá trị đó. Máy
+> **chưa gán** phím cho hành động nào thì hàng ghi **“chưa gán trong macOS”** và cử chỉ
+> **không gửi gì** — không có nhánh nào bịa ra một phím dự phòng.
+>
+> **Chưa kiểm chứng được:** macOS có **thực sự** mở Mission Control / đổi Space khi post chord
+> đó hay không. Bằng chứng hiện có: engine post đúng chord máy khai, tap đang mở, AX tree
+> hiển thị đúng phím. Việc cuối cần mắt người — xem `docs/GESTURE_VERIFICATION.md`, Round 8.
+>
+> Test `testShownEqualsSentForEveryBundleAndDirection` giữ UI và engine dùng **cùng** resolver;
+> `testNoPresetShipsASpaceConstant` chặn hằng số `⌃←`/`⌃→` quay lại preset.
 
-\* Global gửi **phím tắt**, không dùng private API. `⌘[` / `⌘]` là quy ước lịch sử
-của macOS và được hầu hết app tôn trọng; app nào không có lịch sử thì phím đó vô hại.
-Nếu bạn đã đổi shortcut của app, XFinder vẫn gửi đúng phím — chỉ là app không làm gì.
+\* Global gửi **hành động hệ thống** cho cả bốn hướng, nhưng bằng **phím tắt do máy bạn khai**
+(§ `⌨︎`), không bằng sự kiện `NSEvent.systemDefined`. `⌘[` / `⌘]` là quy ước lịch sử của macOS
+và được hầu hết app tôn trọng; app nào không có lịch sử thì phím đó vô hại.
+
+**Hai nhánh nghiêng của Global:** preset để **trống**, và điều đó là chủ ý — engine
+nhánh tilt coi `.unassigned` là "để sự kiện cuộn ngang đi thẳng", nên thao tác nghiêng
+vẫn là cuộn ngang bình thường. Không có phím nào được gửi và không có gì bị giả vờ.
 
 ### Những mục chủ động KHÔNG gán tự động
 
-- Dev/AI ↑: `⌃\`` có thể là terminal nhưng không phải “chat UI” chung cho mọi app.
-- Dev/AI ↓: AI refactor và format code là hai hành động khác nhau.
-- Chat ↑/↓: unread, đầu trang và cuối trang không phải một hành động chung.
-- Office ←/→: Word không có worksheet; không gán shortcut Excel cho Word.
-- Terminal ↑/↓: không có phím chung cho “cuộn một dòng” trên cả Kitty, Terminal và
+Đây là danh sách **đầy đủ** các ô cố ý để trống, kèm lý do. Không ô nào bị bỏ trống vì
+"chưa làm" — mỗi ô là một hành động **không có phím chung đáng tin** giữa các app trong
+nhóm đó.
+
+- **Dev/AI ↑/↓**: "toggle terminal" là ``⌃` `` trong VS Code, `⌃\`` trong Cursor, và
+  khác nữa trong Zed; "AI refactor" là `⌘I` trong Cursor và `⌘K` trong Claude. Gửi một
+  trong hai như preset chung là **đoán** mà trông như đã kiểm chứng. Ghi phím riêng cho
+  từng app nếu bạn muốn.
+- **Chat ↑/↓**: "unread", "đầu trang" và "cuối trang" là ba hành động khác nhau, không
+  app nào dùng chung một phím.
+- **Word ←/→**: Word **không có worksheet**. Không mượn phím Excel cho Word.
+- **Notes ↓**: "thêm block" (Notion `/`) và "thêm trang" (`⌘N`) là hai hành động khác
+  nhau, hậu quả khác nhau.
+- **Terminal ↑/↓**: không có phím chung cho "cuộn một dòng" trên cả Kitty, Terminal và
   iTerm2 — và `⌘W` trong Terminal có thể **giết tiến trình đang chạy**. Sai một phím
   trong terminal là mất việc, nên ở đây Chưa gán mới là câu trả lời trung thực.
-- Notes ↓: tạo block/page khác nhau giữa Notion và Obsidian.
-- Design tilt: không gọi cuộn ngang thông thường là “smooth timeline scrubbing”.
-  Có thể chọn **Cuộn ngang nguyên bản** để chuyển tiếp sự kiện, không thêm smoothing.
+- **Design tilt**: không gọi cuộn ngang thông thường là "smooth timeline scrubbing".
 
 Những ô này có **Ghi phím** riêng theo app. “Chưa gán” trên profile đã khớp **không
-rơi về Global**; nó không gửi phím. Không cần tạo thêm tính năng AI hay quản lý tab.
+rơi về Global**; nó không gửi phím.
+
+### Năm hành động hệ thống
+
+`Mission Control`, `App Exposé`, `Hiện màn hình nền`, `Space trước` và `Space kế tiếp` đều nằm
+trong **danh sách chọn hành động**. **Bốn hành động đầu-cuối được Global dùng làm preset** —
+chúng chính là lý do bảng Global tồn tại. Chúng hoạt động bằng cách đọc binding **của chính
+bạn**, nên không có chuyện “gửi một phím bạn chưa gán”:
+
+- Máy bạn **đã** đặt phím tắt cho Mission Control (mặc định: `⌃↑`) → XFinder gửi đúng phím đó.
+- Máy bạn **chưa** đặt → hàng trên trang ghi **“chưa gán trong macOS”**, tô cam, và cử chỉ
+  **không gửi gì** — kèm nút mở thẳng Hệ thống → Bàn phím → Phím tắt để bạn gán.
+
+Không nằm trong preset nào:
+
+- **`Hiện màn hình nền`**: là `F11` trên bàn phím Apple đầy đủ — máy không có F11 thì phím đó
+  vô nghĩa, nên XFinder không áp nó lên mọi máy.
+- **`Chụp màn hình`**: `⌘⇧3` đã là phím hệ thống, và gán nó vào một cử chỉ đặt **ảnh chụp** khắp
+  nơi chỉ vì một cái vuốt tay là hậu quả không ai xin.
+
+Chọn chúng trong menu là hành động **chủ ý** của bạn, không phải preset áp lên.
 
 ### Nguồn của từng dòng
 
@@ -336,15 +430,43 @@ những hướng chưa override; đặt **Chưa gán** để vô hiệu hóa ri�
 Nút **Khôi phục toàn bộ ứng dụng này về mặc định** xóa override của profile đang chọn,
 không reset trigger, deadzone hay app khác.
 
-### Đổi chuột sang nút khác
+### Đổi nút giữ (nút nào của chuột?)
 
-1. Ở cột phải sơ đồ, bấm **Đổi nút** (nằm ngay dưới hình chuột).
-2. Bấm nút bạn muốn giữ. Modifier (⌃ ⌥ ⇧ ⌘) cũng nhận được, miễn là **giữ đúng một cái**.
-3. XFinder ghi ngay; nhấn **Esc** để huỷ, hoặc chờ 10 giây tự dừng.
+Đây là câu hỏi đầu tiên của mọi người dùng, và XFinder trả lời bằng **số đo trên máy
+bạn**, không bằng lời khuyên:
 
-**Nút 1** (`Button 0`) **bị từ chối** — nó chiếm thao tác kéo/chọn thông thường.
+1. Mở trang → mục **XFinder đã nhận gì**. Bấm **Bật ghi nhật ký**.
+2. Bấm thử nút bạn định dùng. Trang hiện **“Nút bạn vừa bấm: 4”** — đó là con số
+   XFinder nhận được từ chuột bạn, không phải suy đoán.
+3. Bấm **Ghi nút** trong mục **Nút giữ và cuộn**, rồi bấm đúng nút đó. Hoặc bấm vào
+   **bảng số trên thân chuột** trong sơ đồ (nút đó cũng ghi lại).
+4. Nhấn **Esc** để huỷ, hoặc chờ 10 giây tự dừng.
+
+**Nút 1** (`Button 0`, chuột trái) **bị từ chối** — nó chiếm thao tác kéo/chọn thông
+thường. Modifier (⌃ ⌥ ⇧ ⌘) cũng nhận được, miễn là **giữ đúng một cái**.
+
+> **Vì sao không nói thẳng “nút hông trên”?** Vì không API nào trả lời được câu đó.
+> `CGEventField` chỉ có năm trường chuột và trường cao nhất là `3`
+> (`mouseEventButtonNumber`) — **không có trường vendor/product/device nào**, nên không
+> code path nào biết con số nào ứng với nút vật lý nào. Số thì luôn đúng. Trang có
+> **Ghi nút** để bạn tự xác nhận, và mục *XFinder đã nhận gì* để bạn **đọc được số của
+> chính mình** thay vì phải tin.
+
 Trigger dùng chung cho mọi thiết bị theo **mã nút của event**, không theo HID identity
 của từng con chuột; đổi sang con khác có số nút khác thì ghi lại.
+
+### Giữ nút cuộn rồi kéo để cuộn (tuỳ chọn, mặc định tắt)
+
+Mục **Nút giữ và cuộn** có thêm một công tắc riêng: giữ **nút cuộn** rồi kéo là cuộn,
+không cần nhấc tay khỏi chuột. Dành cho app phải cuộn nhiều như Photoshop hay CapCut.
+
+- Nút đó **vẫn bấm bình thường** khi bạn không kéo. Chỉ khi kéo quá ngưỡng thì `↕`/`↔`
+  được chuyển thành sự kiện wheel có tiết chế (~60 Hz) — chuột 8 kHz không bắn hàng nghìn
+  sự kiện/giây.
+- **Mặc định tắt**, và đây không phải sự nhút nhát: nút hông thường đã được driver gán
+  sẵn (back/forward), nên chiếm nó là đánh nhau với driver. Đó là lựa chọn của bạn.
+- Nút cuộn **không bao giờ trùng nút giữ**: `validate()` tự sửa nếu bạn ghi trùng, vì
+  một nút không thể vừa "bắt đầu cử chỉ" vừa "cuộn".
 
 ### Tuỳ chỉnh một hướng, rồi trả về mặc định
 
@@ -370,22 +492,23 @@ dùng **Chưa gán** — nó lưu một override thật và không bị nhầm v
    thật sự có tác dụng, và dòng *Ứng dụng đang dùng:* trên trang nói rõ điều đó thay vì
    giả vờ app có preset riêng.
 3. **App có preset nhưng hướng đó Chưa gán** → **không** rơi về Global. Đây là chủ ý:
-   Dev/AI ↑↓ không được phép biến thành điều hướng mục chỉ vì bảng Global có `⌘⇧]`.
+   Dev/AI ↑↓ không được phép biến thành điều hướng mục chỉ vì bảng Global có giá trị.
 
 Bảng Global mặc định (áp cho app không có profile riêng):
 
 | Hướng | Gửi |
 |---|---|
-| Giữ + ↑ | `⌘⇧]` — mục kế tiếp |
-| Giữ + ↓ | `⌘⇧[` — mục trước |
-| Giữ + ← | `⌘[` — lùi |
-| Giữ + → | `⌘]` — tiến |
-| Tilt ← / → | `⌘=` / `⌘-` — zoom |
+| Giữ + ↑ | ⌨︎ **Mission Control** — đúng phím bạn đã gán |
+| Giữ + ↓ | ⌨︎ **App Exposé** |
+| Giữ + ← | ⌨︎ **Space trước** |
+| Giữ + → | ⌨︎ **Space kế tiếp** |
+| Tilt ← / → | để trống — chuyển tiếp cuộn ngang nguyên bản |
 
-\* Global gửi **phím tắt**, không gọi API riêng. `⌘[` / `⌘]` là quy ước lịch sử của
-macOS (Safari, Chrome, Edge, Preview, Xcode, Notes đều theo), `⌘⇧[` / `⌘⇧]` là
-quy ước chuyển mục của trình duyệt. App nào không có lịch sử thì phím đó vô hại, và
-mỗi hướng đều đổi được bằng **Đổi phím tắt**.
+\* Bốn hàng đầu là **ý định**, không phải hằng số: `SpaceBinding` giải chúng từ
+`com.apple.symbolichotkeys` của chính máy bạn (đo trên máy này: `⌃↑`, `⌃↓`, `⌃←`, `⌃→`) và
+**không gửi gì** nếu máy đó chưa gán. Mỗi hướng vẫn đổi được bằng **Đổi phím tắt**, hoặc
+**Chưa gán** để tắt hẳn. (Bảng Global cũ quảng cáo `⌘[`/`⌘]` cho Lùi/Tiến — đã bỏ: bốn hành
+động hệ thống mới là thứ người dùng thực sự cần ở bảng dự phòng.)
 
 ## Tilt, driver và tránh xung đột
 
@@ -456,12 +579,19 @@ Chạy kiểm tra:
 swift test --package-path Tests
 swiftc -swift-version 6 \
   XFinder/Core/MouseGestures/GestureModel.swift \
+  XFinder/Core/MouseGestures/GestureMap.swift \
+  XFinder/Core/MouseGestures/SpaceBinding.swift \
   XFinder/Core/MouseGestures/GestureEngine.swift \
   Tests/Runtime/MouseGesturesProbe.swift -o /tmp/xfinder-gesture-probe
 /tmp/xfinder-gesture-probe
 # Riêng lần này sẽ thử mở event tap thật trong 2 giây, trigger là Button 31:
 /tmp/xfinder-gesture-probe --live-tap
 ```
+
+`GestureMap.swift` và `SpaceBinding.swift` phải có trong danh sách biên dịch: engine
+đọc `GestureMap.row(...)` để lấy *ý định* của hàng, và `SpaceBinding` để giải phóng
+phím cho hành động hệ thống. Harness cũng khẳng định hành động hệ thống gửi **đúng
+chord của máy** (kèm bit fn) và khi máy không gán phím thì **không gửi gì cả**.
 
 Harness mặc định dùng callback production nhưng thu event đầu ra trong bộ nhớ,
 **không gửi click/phím vào ứng dụng khác**. Test package dùng symlink tới model

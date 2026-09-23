@@ -6,6 +6,10 @@ import Observation
 final class GestureController {
     static let shared = GestureController()
     private(set) var configuration = GestureConfiguration()
+    /// Status strings are **L10n keys**, not sentences. This type lives in `Core/`
+    /// and is created on the gesture queue; it has no business deciding what
+    /// language the user reads. Holding the Vietnamese literal here is exactly how
+    /// it used to reach an English UI un-translated. The view resolves it.
     private(set) var status = "Đã tắt"
     /// Whether the event tap is actually armed. The UI must not infer readiness
     /// from `status` text — a tap can fail to open while the switch is on.
@@ -19,9 +23,16 @@ final class GestureController {
     private(set) var recording = false
     private(set) var activeBundle = ""
     private(set) var lastExternalBundle = ""
+    /// The machine's own hotkeys for the system actions a gesture can dispatch (Mission
+    /// Control, App Exposé, Show Desktop, the two Space moves), read from
+    /// `com.apple.symbolichotkeys`. Published here so the page resolves exactly the keys the
+    /// engine will post — one read, one resolver, and no second copy that can disagree.
+    private(set) var systemBindings = GestureSystemBindings.empty
     private let storageKey = "mouseGestures.configuration.v1"
     // Legacy key that may hold a full copy of every preset. Migrated on first launch.
     private let migrationFlagKey = "mouseGestures.migrated.v1"
+    /// One-shot flag for the middle-click → side-button trigger migration.
+    private let triggerMigrationKey = "mouseGestures.triggerMigrated.v2"
     private var observers: [NSObjectProtocol] = []
     private var engineStarted = false
     @ObservationIgnored private lazy var engine = GestureEngine { [weak self] result in
@@ -48,17 +59,26 @@ final class GestureController {
         }
         configuration.validate()
         migrateIfNeeded()
+        migrateMiddleClickTriggerIfNeeded()
     }
 
     /// Best-effort read of a configuration envelope whose shape drifted.
-    /// Field-by-field so one unknown/missing key cannot discard the rest.
+    ///
+    /// Field-by-field so one unknown/missing key cannot discard the rest. **Every new
+    /// field must be added here**, or a configuration saved by an older build stops
+    /// decoding entirely and the user's overrides vanish — see the note on
+    /// `GestureConfiguration.scrollButtonEnabled`, where that was caught on a real
+    /// payload rather than reasoned about.
     private static func recover(from data: Data) -> GestureConfiguration? {
         struct Envelope: Decodable {
             var enabled: Bool?
             var deadzone: Double?
             var tiltEnabled: Bool?
+            var tiltAvailable: Bool?
             var debug: Bool?
             var trigger: TriggerSource?
+            var scrollButtonEnabled: Bool?
+            var scrollButton: Int?
             var overrides: [String: [GestureDirection: GestureAction]]?
         }
         guard let env = try? JSONDecoder().decode(Envelope.self, from: data) else { return nil }
@@ -67,8 +87,11 @@ final class GestureController {
         if let v = env.enabled { out.enabled = v }
         if let v = env.deadzone { out.deadzone = v }
         if let v = env.tiltEnabled { out.tiltEnabled = v }
+        if let v = env.tiltAvailable { out.tiltAvailable = v }
         if let v = env.debug { out.debug = v }
         if let v = env.trigger { out.trigger = v }
+        if let v = env.scrollButtonEnabled { out.scrollButtonEnabled = v }
+        if let v = env.scrollButton { out.scrollButton = v }
         if let v = env.overrides { out.overrides = v }
         return out
     }
@@ -106,6 +129,40 @@ final class GestureController {
         UserDefaults.standard.set(true, forKey: migrationFlagKey)
     }
 
+    /// Repair the one shipped default that made the feature unusable, without touching a
+    /// deliberate choice.
+    ///
+    /// Measured on this machine: the stored trigger was `mouseButton(2)` — the wheel click —
+    /// with `overrides` empty. Holding the wheel while dragging is not a motion a hand
+    /// performs, and the user reported it twice ("không hiển thị gì cả"). `validate()` could
+    /// not fix it, because B2 is a *valid* trigger; it was simply the wrong default left by
+    /// an older build.
+    ///
+    /// Guarded on `overrides.isEmpty` on purpose: a user who deliberately set the wheel as
+    /// their hold button keeps it. Only an untouched default is migrated. One-shot, so a
+    /// user who moves *back* to the wheel is not moved again on the next launch.
+    func migrateMiddleClickTriggerIfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: triggerMigrationKey) else { return }
+        UserDefaults.standard.set(true, forKey: triggerMigrationKey)
+        guard configuration.overrides.isEmpty,
+              configuration.trigger == .mouseButton(2) else { return }
+        configuration.trigger = GestureConfiguration.defaultTrigger
+        configuration.validate()
+        persist()
+    }
+
+    /// Re-read the machine's own symbolic hotkeys and publish them to the engine.
+    ///
+    /// Called at launch, on every app activation, and when the page appears — because the
+    /// user changes symbolic hotkeys in System Settings, i.e. while XFinder is *not*
+    /// frontmost, and the old binding would otherwise stay in force until a relaunch.
+    /// A `UserDefaults` read plus a command send, so calling it eagerly is cheap.
+    func refreshSystemBindings() {
+        systemBindings = SpaceBinding.currentBindings()
+        guard engineStarted else { return }
+        engine.send(.systemBindings(systemBindings))
+    }
+
     func start() {
         guard observers.isEmpty else { return }
         // `init` ran the migration, but `GestureController.shared` is only
@@ -117,7 +174,9 @@ final class GestureController {
         // to migrate. Measured: without this, a seeded legacy payload survived a
         // full launch untouched.
         migrateIfNeeded()
+        migrateMiddleClickTriggerIfNeeded()
         refreshTrust()
+        refreshSystemBindings()
         updateFrontmost(NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "")
         let center = NSWorkspace.shared.notificationCenter
         observers.append(center.addObserver(forName: NSWorkspace.didActivateApplicationNotification,
@@ -148,7 +207,7 @@ final class GestureController {
             forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor [weak self] in
                 guard let self, self.engineStarted else { return }
-                self.refreshTrust(); self.apply()
+                self.refreshTrust(); self.refreshSystemBindings(); self.apply()
             }
         })
         apply()
@@ -156,6 +215,7 @@ final class GestureController {
     private func resume() {
         if engineStarted { engine.send(.resume) }
         refreshTrust()
+        refreshSystemBindings()
         updateFrontmost(NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "")
         apply()
     }
@@ -184,6 +244,7 @@ final class GestureController {
         }
         engineStarted = true
         engine.send(.frontmost(activeBundle))
+        engine.send(.systemBindings(systemBindings))
         engine.send(.configure(configuration))
     }
     func update(_ change: (inout GestureConfiguration) -> Void) {
@@ -230,11 +291,25 @@ final class GestureController {
     }
 
     func resetProfile(_ bundle: String) { update { $0.overrides.removeValue(forKey: bundle) } }
+    /// The engine's recent activity, as plain values. The page renders it; the
+    /// controller only carries it, because a `Core/` type has no business deciding
+    /// which language the user reads.
+    private(set) var diagnostics: [GestureDiagnostic] = []
+    /// The button number of the most recent mouse press the engine's tap saw, whatever
+    /// that press turned out to be. Published because it answers the one question no API
+    /// can: "which number is my side button?" `CGEventField` carries no vendor/product
+    /// field, so the only honest way to learn it is to observe a real press.
+    private(set) var observedPress: Int?
+
     private func receive(_ result: GestureResult) {
         switch result {
         case .status(let value): status = value
         case .tap(let active):
             tapActive = active
+            // A tap change invalidates the previous activity list: those lines
+            // describe a session that has ended, and leaving them on screen would
+            // make a stale success look current.
+            diagnostics.removeAll()
             // Mirror to UserDefaults so an outside probe can read the *measured*
             // tap state. AppleScript cannot inspect this app (no AX grant for the
             // shell), so this is the only trustworthy external signal.
@@ -242,15 +317,25 @@ final class GestureController {
                                       forKey: "mouseGestures.lastTapState")
         case .tapFailure(let reason):
             tapFailure = reason
+            diagnostics.removeAll()
             UserDefaults.standard.set(["active": tapActive, "failure": reason, "trusted": trusted],
                                       forKey: "mouseGestures.lastTapState")
         case .recordingEnded: recording = false
         case .trigger(let source):
-            configuration.trigger = source; persist()
+            configuration.trigger = source
+            // Persist, and repair the scroll button if the new trigger now collides
+            // with it. Without this the two features would fight over one button and
+            // the only symptom would be "sometimes it scrolls instead of gestures".
+            configuration.validate()
+            persist(); apply()
         case .shortcut(let bundle, let direction, let shortcut):
             configuration.overrides[bundle, default: [:]][direction] = .shortcut(shortcut)
             persist()
             engine.send(.configure(configuration))
+        case .diagnostics(let entries):
+            diagnostics = entries
+        case .observedPress(let button):
+            observedPress = button
         }
     }
 }

@@ -1,9 +1,227 @@
 # Mouse Gestures — verification record
 
-Measured **2026-09-21**, macOS **27.0 (26A428)**. This is a development verification
-record, not a claim that a release or every mouse/app combination was tested.
+Measured **2026-09-21**, **2026-09-22** and **2026-09-23**, macOS **27.0 (26A428)**. This is a
+development verification record, not a claim that a release or every mouse/app combination was
+tested.
 
-## Blank settings page — root cause and fix
+---
+
+## Round 8 (2026-09-23) — "Global recognises the gesture but does nothing"
+
+### The report
+
+> "App nhận chuột tốt, nhưng các thao tác tôi gán như Hold Scroll Button và kéo lên là
+> Mission Control hoặc Hold Scroll Button + kéo sang phải là next space screen... Đều ko
+> hoạt động, chỉ là xuất hiện và nhận dạng cho có chứ không làm việc ở Profile Global Default."
+
+### Root cause — two wrong mechanisms in sequence, not one
+
+Round 7 proved the Global preset's `⌃↑`/`⌃↓` were bound to nothing. Its *replacement* was also
+wrong, and this round retired it:
+
+1. **`NX_KEYTYPE_MISSION_CONTROL` does not exist.** `SystemKeySender` posted `NSEvent`
+   `.systemDefined` keytype **32**. `ev_keymap.h` defines keytypes only up to
+   `NX_KEYTYPE_MENU = 25`; 32 is invented, so the event was undefined and no part of the system
+   listened. The code comment "id 32 → NX_KEYTYPE_MISSION_CONTROL" was folklore.
+2. **Mission Control / App Exposé / Space are software *symbolic hotkeys*.** The correct
+   mechanism is not a keytype at all: read the chord the user assigned in
+   `com.apple.symbolichotkeys` and post that exact chord.
+
+Measured live on this Mac:
+
+| id | action | vk | mods |
+|--:|:--|--:|--:|
+| 32 | Mission Control | 126 ↑ | 8650752 (`0x840000` = control \| fn) |
+| 33 | App Exposé | 125 ↓ | 8650752 |
+| 34 | Show Desktop | 126 ↑ | 8781824 (shift \| control \| fn) |
+| 79/80 | prev Space / alt | 123 ← | 8650752 / 8781824 |
+| 81/82 | next Space / alt | 124 → | 8650752 / 8781824 |
+
+3. **The `fn` bit is load-bearing.** `0x840000` is `control | maskSecondaryFn`; masking it off
+   posts a chord the system does not match. `GestureShortcut.label` drops the bit for *display*
+   (so rows read `⌃↑`, as System Settings shows) but posts the full mask.
+
+### The fix
+
+1. **`SystemKeySender` retired** — file, test symlink, its test file and all four pbxproj entries.
+2. **`SpaceBinding`** gained `appExpose = 33`, the `79→80` / `81→82` alternates, and a new pure
+   **`GestureSystemBindings`** (`[GestureSystemAction: GestureShortcut]`, plus `.empty`) passed
+   explicitly into *both* the resolver and the engine — so a test can hand it `.empty` and see the
+   honest "no key on this Mac" row instead of an invented key.
+3. **`GestureSystemAction`** gained `.previousSpace` / `.nextSpace` + `unboundCaptionKey`.
+   The Global preset is now up/down/left/right → four `.systemAction` cases, no constants.
+4. **One resolver**: `GestureMap.row(..., systemBindings:)` returns `systemShortcut` +
+   `isUnboundSystemAction`; the engine posts exactly that. Unresolvable ⇒ posts **nothing** and
+   logs `.systemActionUnbound`.
+5. **`systemAction(of:)`** — an override that picked a system action used to render as
+   "unassigned" because the resolver built the entry with both `shortcut` and `systemAction` nil.
+6. **Trigger migration 2 → 3**, once, only when `overrides.isEmpty`.
+7. **Page**: a "system shortcuts on this Mac" row that reads the live bindings and links to
+   Keyboard → Shortcuts; an unbound arm renders orange with a tooltip and a fix button; the
+   "shortcut sent" row no longer appears for an `.unassigned` row (measured on Zed up/down, the
+   log used to say "Shortcut sent — Raw horizontal scroll" for a row that sends nothing).
+
+### Verified, and not — stated separately
+
+| Claim | Status |
+|:--|:--|
+| Debug build, `lipo -archs` = arm64, files named in the compile log | ✅ incl. `SpaceBinding.swift` |
+| `cd Tests && swift test` | ✅ **162 tests, 0 failures** |
+| `scripts/verify-gesture-ui.sh` §1–§7 | ✅ 0 / 0 / 0 / 162 / names / arm64 / `active=1 trusted=1` |
+| `verify-l10n-runtime.py` against the **installed** bundle store | ✅ TOTAL 0 leaks |
+| Runtime harness, the new system-action path | ✅ *the machine's own chord posted, fn+control mask intact, unbound posts nothing* |
+| Event tap opened on the installed app | ✅ `lastTapState {active: 1, trusted: 1}` |
+| Rendered page: four arms read `⌃↑ ⌃↓ ⌃← ⌃→`; system row matches the plist | ✅ read via AX tree (`probe-ax-dump.swift`) |
+| Engine log: a real gesture → `Next Space`, recorded as **sent** | ✅ user-performed |
+| **Mission Control opens / the Space actually changes** | ❌ **no human has watched the screen** |
+
+The last line must not be reported as working. The evidence is that the engine posted the chord
+*this machine itself declares*, the tap is live, and the AX tree shows that key on the UI. The
+final step — does macOS actually switch — needs eyes. `probe-screen-diff.swift` can measure it
+but **changes Spaces for real**, so it only runs with the user's consent.
+
+### A language leak found by reading the rendered page, not by grepping
+
+`probe-ax-dump.swift` found:
+
+* **Six sidebar headings** `CHUNG · CỬA SỔ · FINDER & TÌM KIẾM · CÔNG CỤ · KẾT NỐI · TIỆN ÍCH`
+  rendering Vietnamese on the English UI. The call site was correct (`L10n.t(group.header)`) but
+  the key was **absent from the store**, so `t()` fell back to the Vietnamese literal.
+* **Five model strings passed through a variable**: `App Exposé`, `Hiện màn hình nền`,
+  `Space trước`, `Space kế tiếp`, `Chụp màn hình`.
+
+Three pre-existing gates were blind to all of these, because all three only look at
+`L10n.t("…")` literals. Closed by: registering the six headings +
+`scripts/check-sidebar-groups-l10n.py` (which parses the `groups` declaration and **fails if it
+finds fewer than 4 headers** — proven by deleting `CỬA SỔ` → exit 1), and walking
+`GestureActionKind.allCases` + `GestureSystemAction.allCases` inside `L10nTests` (which caught
+`Chụp màn hình` on its first run).
+
+**New rule: a string that reaches the screen through `L10n.t(variable)` is protected by no
+pre-existing gate.** To be sure, either enumerate the model's vocabulary in a test or parse the
+declaration itself.
+
+### New traps
+
+* **The runtime harness read production defaults.** `MouseGesturesProbe.swift` did not set
+  `trigger`, so when the production default moved 2 → 3 it failed at its first precondition in a
+  way that looked like an engine bug. It now pins the trigger explicitly.
+* **The harness had rotted against the preset.** It asserted the browser tilt was keycode 17
+  while the preset table had become `⌃⇥` (48). Changed to a **resolver-equivalence** assertion
+  (`posts(resolved(...))`) so it cannot rot again.
+* **`plistlib` and `defaults` differ on flush timing.** Reading the `.plist` with `plistlib`
+  immediately after the app writes returns the **stale** value (cfprefsd has not flushed) — which
+  nearly produced a false "the migration did not run" conclusion. `defaults export
+  com.xfinder.app -` reads through cfprefsd and sees the current value. Cross-check the two
+  before concluding.
+* **The mutation script hung instead of failing, and left the mutated source on disk.**
+  `mutation-check-gesture-labels.sh` was killed by the tool's timeout in the middle of mutation
+  M3, so `up: .convention(.missionControl, GestureShortcut(key: GestureKeyCode.upArrow, …))` —
+  *exactly the bug the mutation injects* — stayed in `GestureModel.swift` and went into the
+  build. **Root cause of the hang:** `MouseGestureTests.swift:1161` used
+  `liveBindings.shortcut(for: row.entry.systemAction!)`. M3 is *designed* to make the Global arm
+  stop being a system action, so `systemAction` becomes nil → the test **traps** instead of
+  failing → xctest never returns (crash reporting spins, `MallocStackLoggingDT` is loaded).
+  Diagnosed with `ps -eo pid,stat,command` (xctest in state **`R`** — spinning, not deadlocked)
+  and `sample <pid> 3`, which named the exact test and line. Fixed to
+  `guard let system = … else { XCTFail(…); continue }`. **Rule: in a test a mutation is
+  *designed* to redden, never force-unwrap the very value the mutation removes.** Note the
+  second symptom: `mutation-check-gesture-ui.sh` counts `error: -[XFinderLogicTests` lines, and
+  a trap emits none — so a trap also reads as **green** there.
+* **Do not let the tool's timeout kill a mutation script.** Run
+  `nohup sh scripts/mutation-check-*.sh > /tmp/log 2>&1 &` and poll the log. Killing one
+  mid-run strands both the mutation *and* orphaned `xctest` processes
+  (`pkill -9 -f XFinderLogicTests.xctest`). A silently killed gate reads exactly like a green one.
+  After the fix, run in the background: labels **5/5 RED**, ui **7/7 RED**, l10n **6/6 RED**,
+  every file restored byte-identical, post-restore suite **162 tests, 0 failures**.
+
+---
+
+## Round 7 (2026-09-22) — "gestures are recognised but do nothing"
+
+### The report
+
+> "App nhận chuột tốt, nhưng các thao tác tôi gán như Hold Scroll Button và kéo lên là
+> Mission Control hoặc Hold Scroll Button + kéo sang phải là next space screen... Đều ko
+> hoạt động, chỉ là xuất hiện và nhận dạng cho có chứ không làm việc ở Profile Global
+> Default."
+
+### Root cause — measured, and it was the **preset**, not the engine
+
+The Global profile sent `⌃↑` / `⌃↓` for Mission Control / App Exposé and `⌃←` / `⌃→` for
+previous/next Space. **Those keys are bound to nothing on this machine.** Four probes:
+
+| Probe | Result |
+|:--|:--|
+| `defaults export com.apple.symbolichotkeys -` | ids 79–82 ("Move left/right a space") are present with `enabled = 1` and **no `value` block** — the switch is on with no key assigned |
+| same, id 32 (Mission Control) | `vk = 232`, `mods = 0` — keycode 232 is an NX **system-defined** key; there is no `CGKeyCode` 232, so no `CGEvent(keyboardEventSource:)` can express it |
+| `/System/Library/User Template/English.lproj/…/com.apple.symbolichotkeys.plist` (factory) | contains **no** ids 32/34/79–82 at all — macOS 27 ships no arrow-key default for any of them |
+| `docs/probes/probe-post-shortcut.swift` + `probe-observe-shortcut.swift` | the engine's own synthetic `⌃→` was observed arriving intact: `vk=124`, `flags=537133056`, `mods=[⌃]`, down **and** up, 4 events from 2 posts — well formed, and with no listener |
+
+So the dispatch path was never broken. `GestureMap.systemKeystroke` named four actions it
+could not deliver — the failure the Honesty Rule exists to prevent.
+
+### The fix
+
+1. **`GestureAction.systemAction`** (new case) + `SystemKeySender`, posting Mission
+   Control / App Exposé / Show Desktop through `NSEvent.otherEvent(with: .systemDefined …)`
+   — the same mechanism `SystemControls.adjustBrightness` already ships. `SystemKeySender`
+   is split with `#if canImport(AppKit)` so the `data1` arithmetic is unit-testable in the
+   Foundation-only test package.
+2. **`systemKeystroke` returns `nil`** for those three intents rather than a fake key, and
+   `GestureMapEntry.systemAction` is mutually exclusive with `shortcut` by construction.
+3. **Global re-derived**: up → Mission Control, down → App Exposé (both system events),
+   left/right → `⌘[` / `⌘]` (history — a real convention with **no system prerequisite**).
+   Spaces is deliberately **absent** from the default: it has no event-level API, so
+   shipping it would repeat the bug. It stays in the picker.
+4. **`SpaceBinding`** reads the user's own symbolic hotkeys so the page can say whether
+   `⌃←`/`⌃→` are bound instead of assuming. It parses `enabled` from an **integer** — the
+   OS writes `1`/`0`, which does **not** bridge to `Bool`, so `as? Bool` reported every
+   switched-off shortcut as enabled.
+5. **UI captions**: `ResolvedGestureRow.caption` names the mechanism for system actions.
+   Before, `shortcut?.label ?? ""` rendered them as an **empty** caption, which reads as
+   "unassigned".
+
+### What is verified, and what is not — stated separately
+
+| Claim | Status |
+|:--|:--|
+| Build succeeds, arm64, new files in the compile log **by name** | ✅ `SystemKeySender.swift`, `SpaceBinding.swift` |
+| 164 unit tests pass (was 143) | ✅ |
+| `⌘[` / `⌘]` dispatch reaches the app and **changes the page** | ✅ measured in Safari: window title went `Binance Spot` → `Crypto Exchange` → `Trade ETHFI/USDT` |
+| The engine's synthetic shortcut is well-formed and reaches HID | ✅ observed via a second `.listenOnly` tap |
+| `⌃←`/`⌃→` do nothing here | ✅ and the reason is in the table above |
+| Two new tests can fail (mutation-proven) | ✅ `data1` shift layout (3 failures); Global→Space keys (8 failures) |
+| **Mission Control opens when the system key is posted** | ❌ **NOT VERIFIED** — see below |
+
+### Why Mission Control is unverified, and why that is recorded as a failure
+
+`docs/probes/probe-mission-control-detect.swift` tried to detect it from the window list.
+That detector was **wrong**, and getting it wrong twice is the instructive part:
+
+1. First it compared a `kCGWindowBounds` width (**points**, 1728) against
+   `CGDisplayPixelsWide` (**pixels**, 3456), so it reported "not open" for a Mission
+   Control that was visible. A broken probe reading as a negative result.
+2. After correcting that, it matched *any* full-width Dock window at a layer above 10 —
+   and **macOS 27 keeps exactly one such window permanently** (measured: `owner=Dock
+   layer=20 1728x1117 alpha=1`, its id survives `killall -9 Dock`). So every "MC OPEN"
+   reading in this round, including one that briefly looked like a success, was measuring
+   the Dock's normal surface.
+
+Final state: no posting variant (`.cgSessionEventTap`, `.cghidEventTap`,
+`.cgAnnotatedSessionEventTap`) and no sampling rate (down to 25 ms) changed the Dock's
+window set. Relevant context: `com.apple.dock` has `showMissionControlGestureEnabled = 0`,
+`showAppExposeGestureEnabled = 0` and `expose-animation-duration = 0` — the gesture
+triggers are off and the animation is instant, so a surface may never be observable from
+the window list at all.
+
+**Honest conclusion: `⌃↑`/`⌃↓` are provably unbound, which is why the preset changed. The
+system-event replacement is NOT proven to open Mission Control on this host.** It needs a
+human watching the screen. Do not report it as working until someone does.
+
+---
+
+## Round 1–6 — blank settings page, root cause and fix
 
 Two independent faults were needed for a blank page. The first was fixed in the
 previous pass; the second was found and fixed in this one, and it is the one that
@@ -412,4 +630,186 @@ mutations then went red.
 3. **How the page looks.** `screencapture` still fails on this host, so the diagram's numbered
    arms, the tilt row and the picker were verified structurally and by resolution, not visually.
 
+---
+
+## Round 5 — one map for the whole module, and a measured activity panel (2026-09-22)
+
+Triggered by the same report returning a third time: *"UI/UX ok rồi. Còn lại chức năng của
+gestures không phù hợp"*. The UI had been rebuilt twice; the **mappings** were the part that
+never matched the user's habits. Two structural causes, both fixed:
+
+* **A preset could not say what an action *was*.** A mapping was a bare `GestureShortcut`,
+  and the page guessed a name from the key code —
+  `case 17: return L10n.t("Tab mới")` — in a SwiftUI file no test could reach. Keying on the
+  intent instead is what lets `⌘0` read "Fit to window" in Photoshop *and* CapCut while the
+  same key in a browser means something else, and it is why an unrecognised recorded key now
+  shows **no name** rather than a borrowed one.
+* **The screen could show fewer options than the engine could perform**, which is the same
+  shape as the earlier "page looks empty" reports. `GestureActionCatalog.choices()` is
+  generated from `GestureActionKind.allCases`, so the picker cannot be shorter than the
+  vocabulary — asserted by `testActionCatalogCoversEveryIntentAndEveryChoiceIsSendable`,
+  which is what caught `.horizontalScroll` being present in the vocabulary and missing from
+  the list.
+
+### What changed in behaviour
+
+| Area | Before | After |
+|---|---|---|
+| Global | `⌘⇧]` / `⌘⇧[` (browser "next item") + `⌘[` / `⌘]` | history on the horizontal arms, `⌃←` / `⌃→` on the vertical — the two conventions with the widest reach |
+| Browsers | left/right = `⌃⇧⇥` / `⌃⇥` | history on left/right, next-tab moved to the tilt arms |
+| Dev & AI | `⌃-` / `⌃⇧-` (one editor's pane keys) | `⌘[` / `⌘]`, which every editor honours |
+| Excel / Word | **one empty table shared by both** | two tables: Excel has the documented sheet pair, Word has none because Word has no worksheets |
+| Terminals | unchanged, deliberately minimal | unchanged |
+| Tilt (presets) | `⌘=` / `⌘-` | unassigned — the tilt branch already passes the wheel's own scroll through, so a preset keystroke here was a key that could never do anything useful |
+| Scroll | — | **Engine C**: hold a side button and drag to scroll, off by default, repaired so it can never share a button with the trigger |
+| Action picker | intent guessed from key code | 20 intents × their keystrokes, grouped by what the user is doing |
+| Page feedback | instructions only | **measured activity**: the engine reports button-press, direction-lock, sent action, preserved click and cancellation |
+
+### Measured this round
+
+| Check | Result |
+|---|---|
+| Debug build | `BUILD SUCCEEDED`, 0 `error:` lines |
+| New sources in `XFinder.SwiftFileList` by name | `GestureMap.swift`, `GestureArmView.swift`, `GestureActionPicker.swift`, `GestureActivityPanel.swift` — all present |
+| `lipo -archs` | **arm64** |
+| Logic tests | **137 tests, 0 failures** (was 97 at Round 4) |
+| L10n coverage gate | `TOTAL 0 problems across 1018 entries` |
+| L10n duplicates gate | `TOTAL 0 duplicates across 1018 unique keys` |
+| VI-literal lint over `Views/` | `TOTAL 0` |
+| `LanguageNeutralKeys` contains no sentence | the gate now **reads `Core/L10n.swift` from source**, because that file imports SwiftUI and the test package cannot compile it — and because the thing it must catch is the *declaration* being wrong |
+| Event Tap activation | ✅ `{active: True, trusted: True, failure: ""}` |
+| Physical mouse behaviour | ❌ **still not verified** — see below |
+
+**Two injected bugs, each watched going red, source restored and re-run green:**
+
+1. `GestureMap.row` ignoring `overrides` → **4 failures** (the row/runtime agreement test for
+every bundle and direction, plus the override assertions).
+2. `displayName` returning the intent name for any shortcut → **1 failure**
+(`testRecordedShortcutIsNotGivenAnInventedActionName`).
+
+### Still not verified after this round
+
+1. **Physical mouse behaviour.** Four results stay separate: build ✅ / tests ✅ / event tap ✅ /
+   **hardware ❌**. Hold a side button, drag each direction, release — that is the only thing
+   that proves the mapping table, and it needs the user's hand.
+2. **Which physical button is which number on the Basilisk V3 35K.** The HID descriptor declares
+   `buttons = [1,2,3,4,5]`, and declaration order does **not** prove physical position. The page
+   now reports the number of any press it observes, so the user can read it off rather than
+   trust an index — but that reading has not been taken.
+3. **Engine C's feel.** The throttle is ~60 Hz thought through, not measured against a hand.
+4. **How the page looks.** `screencapture` still fails on this host.
+
 See [MOUSE_GESTURES.md](MOUSE_GESTURES.md) for exact mappings, configuration and commands.
+
+---
+
+## Round 6 — the acceptance section, and a probe that falsified its own brief (2026-09-22)
+
+### The brief's premise was wrong, and the probe is the reason to say so
+
+PATCH v7 R1 asserted that the HID probe **undercounts** the Basilisk: it should report “≥7
+buttons, not 5”, because the filter misses Razer's Vendor Defined Page (`0xFF00+`), and
+there are two profile buttons on top of the wheel to exclude.
+
+The brief also required the probe be run before any code changed. It was
+(`scripts/probe-hid-raw.swift`, dumping `UsagePage`/`Usage`/`type` for **every** element before
+any filtering). The measurement contradicts the brief on both counts:
+
+```
+=== Razer Basilisk V3 Pro 35K ===
+  transport: USB   vendorID: 0x1532   productID: 0x00D6
+  TOTAL elements: 105
+  tally by (page, type):
+    page=0x0009 type=0x02  ×5        ← the five buttons
+    page=0xFF00 type=0x101 ×92       ← vendor page: FEATURE elements only
+    page=0x0000 type=0x05  ×2
+    page=0x0001 type=0x01  ×3
+    page=0x0001 type=0x201 ×2
+    page=0x000C type=0x01  ×1
+  CURRENT filter (type 0x02 && page 0x09) buttons: [1, 2, 3, 4, 5]
+  v7 PROPOSED filter (page 0x09 only)     buttons: [1, 2, 3, 4, 5]   count=5
+  ALL button-typed elements (any page): [1,2,3,4,5 on 0x09] — nothing else
+```
+
+Three facts this settles:
+
+1. **5 is correct.** The count is not an undercount. The shipped filter and v7's proposed
+   filter return the **same** five usages, so `0xFF00` is not hiding buttons on this device.
+   Adding the proposed branch would have changed nothing on the Basilisk while admitting
+   garbage everywhere else — which is exactly what it does on **the Apple trackpad**, where the
+   same tree declares `page=0xFF00 type=0x02` with `usage=0xFFFFFFFF` on **1753 elements**. A
+   filter that scanned `0xFF00` for buttons would report **1756 buttons** on the trackpad, and
+   a `usage` of `-1` cannot be rendered as a number at all.
+2. **The profile-button exclusion is unnecessary.** No element on any page reports a sixth or
+   seventh button, so there is nothing to exclude. (The two buttons above the wheel are handled
+   by Razer's own firmware/driver and never reach the HID button page.)
+3. **The declared identity differs from the value recorded in `Claude.md`.** Measured now:
+   `USB`, `vendorID 0x1532` (Razer), `productID 0x00D6`. The stored note says
+   `Bluetooth Low Energy`, `0x068E / 0x00D8` (the BSKV3P 35K). Both are real; they are the
+   **same mouse over two transports**, and the mouse is currently on USB. So the note is not
+   wrong, it is incomplete — a device that changes transport changes its identity tuple, which
+   `deduplicated(_:)` keys on.
+
+**What was done instead:** no probe change. R1 reduced to the profile-button exclusion, which
+needed nothing. `DeviceCapabilityTypes.swift` and `DeviceCapability.swift` are untouched, and
+the `0xFF00` branch the brief asked for was **not** added — it would have re-introduced the
+class of bug (`[1,2,3,4,5,9]` from an over-broad filter) that a fixture test already pins.
+
+### Implemented this round
+
+1. **An acceptance section at the head of the page.** When a gesture does not fire there are
+   exactly two causes, and both were invisible in the mapping table: the hold button is the
+   wrong one, or XFinder is the app in front. Both are now stated as measurements — *this*
+   button number, *this* bundle ID — not as advice.
+2. **The wheel-hold warning.** The user's stored configuration carries
+   `trigger = mouseButton(2)`, the wheel click, and `validate()` will never repair it because 2
+   is a *valid* trigger. The page now singles that value out with an orange warning and a
+   re-record button. This is the concrete cause of “cử chỉ không chạy”.
+3. **An inline "set this as the hold button" offer**, gated on `observedPress` being a button
+   **different from** the current trigger. The rejected alternative (v6 R1) was gated on
+   `trigger == 2 && overrides == {}`, which matched **every fresh install**; gating on an
+   observed press is what makes the offer honest.
+4. **The frontmost-target row.** Explains a log full of `com.xfinder.app`: the resolver keys on
+   the frontmost bundle, and while the user tests from this page XFinder is frontmost. Stating
+   it is the honest fix — silently substituting the Global table would make the page disagree
+   with the engine, which is the one thing `testMapRowAgreesWithRuntimeActionForEveryBundleAndDirection`
+   exists to prevent.
+5. **`DEBUG_SHOW_ENGINE_LOG` (v7 R5).** A compile-time gate, not a runtime `if`: the strings,
+   the row view and the diagnostic plumbing leave the binary entirely. Verified both ways — the
+   build succeeds with it `false`, and the source was restored byte-identical afterwards.
+
+### Measured this round
+
+| Check | Result |
+|---|---|
+| HID raw probe | run and reported above — **the brief's premise is falsified** |
+| Debug build | `BUILD SUCCEEDED`, 0 `error:` lines |
+| Gesture sources in `XFinder.SwiftFileList` by name | all 17 present, incl. `MouseGesturesDetailView.swift` |
+| Bundled resources | `L10n.strings.json` (138 835 B), `L10n.allowlist.json` |
+| `lipo -archs` | **arm64** |
+| Logic tests | **143 tests, 0 failures** (was 139) |
+| L10n coverage / duplicates | `TOTAL 0` across **1031** entries |
+| VI-literal lint over `Views/` | `TOTAL 0` |
+| Runtime L10n against the **installed** app | `TOTAL 0 leaks in the resolved English UI` |
+| Event Tap activation | ✅ `{active: True, trusted: True, failure: ""}` |
+| Installed signature | `identifier "com.xfinder.app" and certificate leaf = H"989e240c…"` — stable across rebuilds |
+| Finder Sync appex | `+ com.xfinder.app.XFinderSync(1.0) … /Applications/XFinder.app/Contents/PlugIns/XFinderSync.appex` |
+| Physical mouse behaviour | ❌ **still not verified** |
+
+**Two injected bugs, each watched going red, source restored byte-identical and re-run green:**
+
+1. The wheel-hold predicate degenerated to a generic `isMouseButton` → **4 failures**
+   (`testWheelHoldIsSingledOutAsUnusable`). This is the mutation that matters: it restores
+   exactly the blindness that hid the user's reported bug.
+2. The "set as hold" offer made to fire on **any** press (including the current trigger) →
+   **1 failure** (`testSetAsHoldOfferRequiresADifferentObservedButton`).
+
+The `DEBUG_SHOW_ENGINE_LOG` gate was also exercised both ways: compiled with `false`
+(`BUILD SUCCEEDED`, section removed from the source unit) and restored byte-identical.
+
+### What the user must still do — one action
+
+The configuration on disk still holds `trigger = mouseButton(2)`. **Nothing in the code changes
+it**, by design: it is a valid value, so a silent migration would overwrite a deliberate choice
+for anyone who genuinely likes it. Open **Chuột & cử chỉ**, read the orange row, click
+**Ghi lại nút giữ**, and press the side button you want to hold. The row updates on the press.

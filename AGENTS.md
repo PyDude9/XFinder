@@ -824,3 +824,300 @@ Rules now:
    tree in front of you. `sh scripts/verify-l10n.sh` builds to `/tmp/xfinder-l10n-build`;
    `cd Tests && swift test` compiles the symlinked sources in place. When they disagree,
    the in-place run is the one that describes the working tree.
+
+## Mouse gestures — PATCH v3 (L1–L4) landed 2026-09-22
+
+The four reported defects are fixed, and the two claims in the old notes that were
+wrong are corrected here so they are not re-derived.
+
+### File layout, and *why* it is split this way
+
+The split is by **testability**, not taste. `Tests/` is a plain-Foundation package
+that symlinks individual files, so anything importing SwiftUI or IOKit cannot be
+covered by it — and a test that opened IOHID and asserted on whatever mouse is
+plugged in would pass on one desk and fail everywhere else.
+
+| File | Imports | In test package | Holds |
+|:--|:--|:--|:--|
+| `Core/MouseGestures/DeviceCapabilityTypes.swift` | Foundation | **yes** (symlink) | capability types + the pure button/axis/feature derivation |
+| `Core/MouseGestures/DeviceCapabilityModel.swift` | Foundation | **yes** (symlink) | `ArmSupport`, provenance, preset lookup, single-mouse selection |
+| `Core/MouseGestures/GestureLabelStructure.swift` | Foundation | **yes** (symlink) | button numbering + heading assembly **structure** |
+| `Core/MouseGestures/DeviceCapability.swift` | **IOKit.hid** | no | the live probe only |
+| `Core/MouseGestures/GestureUIDisplay.swift` | Foundation | **removed** | arrow-click state machine only |
+| `Core/L10n.swift` | SwiftUI | no | the *words* |
+
+### The "873 input-button elements" bug — the correct filter
+
+```swift
+// WRONG — this is what shipped and produced "873 elements" on a 5-button mouse
+el.usagePage == 0x01 && el.usage == 0x09
+```
+
+`0x01/0x09` is Generic Desktop / Button **collection**. It matches the collection
+node, not the buttons, and matches hundreds of nodes in a real descriptor.
+
+```swift
+// CORRECT — both guards are load-bearing
+IOHIDElementGetType(el).rawValue == 0x02      // kIOHIDElementTypeInput_Button
+    && Int(IOHIDElementGetUsagePage(el)) == 0x09
+```
+
+Guard 2 is not decoration: with the type check alone, a Generic-Desktop `0x01/0x09`
+element carrying the button element type is still admitted, and that fixture
+produced `[1,2,3,4,5,9]` — an invented sixth button. `DeviceCapabilityTests`
+pins both halves.
+
+### Measured by running the real probe (`/tmp/probe-capability.swift`), macOS 27.0
+
+```
+IOHIDManagerOpen kIOReturn: 0   (kIOReturnSuccess)
+raw device count BEFORE dedupe: 4
+  Apple Internal Keyboard / Trackpad  FIFO  vid=nil pid=nil   buttons=[1,2,3] axes=[x,y]  → inferred
+  BSKV3P 35K   Bluetooth Low Energy  vid=0x068E pid=0x00D8    buttons=[1,2,3,4,5] axes=[x,y,wheel] → verified
+```
+
+Three facts this settles:
+
+1. **C2 was right.** `0x068E/0x00D8` is the real Basilisk identity, confirmed from
+   IOHID properties on this machine — not inferred from a BLE namespace.
+2. **`IOHIDManagerCopyDevices` returns duplicates** — 4 raw entries for 2 physical
+   devices. `deduplicated(_:)` is required, and that is what it does.
+3. **The Basilisk declares NO tilt axis**, so `supportsTiltArms == false` for the
+   very mouse this feature was built for. That is why the tilt arms stay off by
+   default and why the note below is a measurement rather than a guess.
+
+### Two claims in the earlier notes that were wrong
+
+* **"Detection impossible."** It is not. `IOHIDManager` with
+  `kIOHIDVendorIDKey`/`ProductIDKey`/`ProductKey`/`TransportKey` identifies the
+  device fully. What *is* true is that a CGEvent tap carries no device identity
+  (C1) — so identification comes from IOHID and event handling from the tap.
+* **"Global is removable."** It is not, by decision (R6). Global stays, relabelled
+  "Default — applies to apps without their own preset", because it is the documented
+  fallback for every app without a built-in profile and deleting it would leave
+  those apps with nothing.
+
+### The gate hole this pass found — read this before trusting a green harness
+
+Three mutations in `mutation-check-gesture-labels.sh` had been reporting
+**"STAYED GREEN — the test does not catch this"**, and 2 more in
+`mutation-check-gesture-ui.sh` too. Two causes:
+
+1. **Anchors rotted.** The `sed`/python targets pointed at sentences the model no
+   longer produces. `mutation-check-gesture-ui.sh` even aborted with
+   `mutation target not found` *after* printing two green results.
+2. **The behaviour had moved into a file the tests cannot compile.**
+   `L10n.swift` imports SwiftUI, so the numbering (`n + 1`) and the heading join
+   lived where no test could reach them. Re-anchoring alone would NOT have fixed
+   this — the fix was moving the *structure* into
+   `GestureLabelStructure.swift` and leaving only the words in `L10n.swift`.
+
+**Standing rule, now enforced in both scripts:** every `mutate` takes an explicit
+target path and **aborts the whole run** when its anchor is missing, instead of
+printing "inconclusive" and carrying on. A mutation that cannot be applied is a
+broken gate, and a broken gate reads as a passing one.
+
+### L1, precisely
+
+`MouseDiagramView` printed `config.trigger.numberedName` on **each of the four
+arms**. The button is identical for every direction — it is what you hold to start
+*any* gesture — so four copies of "Nút 3" read as "all four buttons are Button 3".
+The number now appears **once**, as a badge on the mouse body. Each arm carries its
+direction glyph and a short caption of what it sends. `motionKey` is provably free
+of any button reference (`testArmCaptionsCarryNoButtonNumber`).
+
+### R2 enforcement for the language leak (model must not emit display strings)
+
+Three layers, all in place:
+
+1. **Static** — `GestureModel.swift` has no display `String` members that build a
+   sentence. `TriggerSource.label`/`numberedName` are gone; what remains is
+   `ButtonKey`, `.motionKey`, `.titleKey`, `.motionHintKey`, `.glyph`.
+2. **Unit** — `testDirectionKeysAreStoreKeysNotRenderedSentences` and
+   `testGesturePageStringsAreAllTranslatable` walk the model's own vocabulary and
+   assert every key resolves to non-empty English in the shipped store.
+3. **Integration** — `testArmCaptionsCarryNoButtonNumber`, plus
+   `verify-gesture-ui.sh` §3 (every `L10n.t("…")` key the gesture UI uses exists)
+   and §2 (zero unwrapped Vietnamese literals in `Views/`).
+
+### Deferred, with the reason
+
+* **A real device picker.** D4 locks single-mouse, and `DeviceSelection` picks one
+  automatically with a manual override honoured. There is no multi-device UI.
+* **Per-device profiles.** The config stores per *bundle ID*, so bindings follow the
+  app, not the mouse. Making them follow the mouse needs a device-keyed store and a
+  migration; not built.
+* **Learning / suggestions.** The brief's §3 behaviour system is not implemented.
+  Nothing in the UI claims it is.
+
+## Mouse gestures — Round 7: "nhận dạng nhưng không làm gì" (2026-09-22)
+
+Người dùng: gesture **được nhận** nhưng **không có tác dụng** ở profile **Global** —
+Hold + kéo LÊN = Mission Control, kéo PHẢI = next Space.
+
+### Nguyên nhân gốc: **preset sai**, KHÔNG phải engine
+
+Global gửi `⌃↑`/`⌃↓`/`⌃←`/`⌃→`. **Bốn phép đo chứng minh các phím đó không được gán gì:**
+
+| Probe | Kết quả |
+|:--|:--|
+| `defaults export com.apple.symbolichotkeys -` | id 79–82 **có, `enabled=1`, KHÔNG có `value`** → bật mà không gán phím |
+| id 32 (Mission Control) | `vk=232 mods=0` — keycode 232 là **NX system-defined**, không có `CGKeyCode` 232 |
+| User Template plist (factory) | **không có** id 32/34/79–82 → macOS 27 không ship binding mũi tên |
+| `docs/probes/probe-post-shortcut.swift` + `probe-observe-shortcut.swift` | `⌃→` của engine **tới nơi nguyên vẹn** (`vk=124 flags=537133056 mods=[⌃]`, down+up) — event đúng, **không ai nghe** |
+
+⇒ Dispatch chưa bao giờ hỏng; `systemKeystroke` **đặt tên hành động nó không gửi được**.
+
+### Đã sửa
+
+1. **`GestureAction.systemAction`** + `SystemKeySender` — Mission Control / App Exposé /
+   Show Desktop gửi bằng `NSEvent.otherEvent(with: .systemDefined …)`, **cùng cơ chế
+   `SystemControls.adjustBrightness`**. Tách `#if canImport(AppKit)` để test được `data1`.
+2. `systemKeystroke` trả `nil` cho ba intent đó; `entry.systemAction` **loại trừ với
+   `shortcut`** theo cấu trúc.
+3. **Global**: up → Mission Control, down → App Exposé (system event); left/right → `⌘[`/`⌘]`.
+   **Space cố ý vắng** khỏi default (không có API event-level → ship = lặp bug). Còn trong picker.
+4. **`SpaceBinding`** đọc symbolic hotkey của người dùng. Parse `enabled` từ **integer**
+   (`1`/`0` **không** bridge sang `Bool`; `as? Bool` báo shortcut đã tắt là bật).
+5. `ResolvedGestureRow.caption` gọi tên cơ chế cho system action (trước đó `shortcut?.label ?? ""`
+   render **caption rỗng** → đọc như "chưa gán").
+
+### Kiểm chứng — tách rời; mục cuối **THẤT BẠI**
+
+Build ✅ arm64 + tên file trong compile log (`SystemKeySender`, `SpaceBinding`) ·
+**164 test** ✅ · Event Tap ✅ `{active:True,trusted:True}` ·
+`⌘[`/`⌘]` **đến app và ĐỔI TRANG** ✅ (Safari title `Binance Spot`→`Crypto Exchange`→`Trade ETHFI/USDT`) ·
+`⌃←`/`⌃→` vô tác dụng ✅ · 2 test mới inject được ✅ ·
+**Mission Control MỞ ❌ CHƯA KIỂM CHỨNG ĐƯỢC**.
+
+**Vì sao:** `probe-mission-control-detect.swift` sai **hai lần** —
+(1) so `kCGWindowBounds` (**point** 1728) với `CGDisplayPixelsWide` (**pixel** 3456) → báo
+"not open" cho MC đang hiện (**probe hỏng đọc ra âm tính**);
+(2) sau khi sửa, khớp **mọi** cửa sổ Dock full-width — và **macOS 27 giữ đúng một cửa sổ như
+vậy thường trực** (`owner=Dock layer=20 1728x1117`, id sống sót `killall -9 Dock`), nên **mọi**
+kết quả "MC OPEN" đều đang đo bề mặt Dock. Không variant post nào
+(`cgSession`/`cghid`/`cgAnnotated`) hay tốc độ lấy mẫu nào (xuống 25 ms) làm đổi tập cửa sổ.
+Bối cảnh: `showMissionControlGestureEnabled=0`, `showAppExposeGestureEnabled=0`,
+`expose-animation-duration=0`.
+
+**`⌃↑`/`⌃↓` chứng minh được là không gán → preset đổi vì thế. Cơ chế system-event CHƯA chứng
+minh được là mở Mission Control. Cần người nhìn màn hình xác nhận. ĐỪNG báo nó chạy.**
+
+### Bẫy script mới
+
+* **`mutation-check-l10n.sh` hardcode restore allowlist** → **xoá mọi entry thêm sau**
+  (`"Mission Control"`). Run báo **xanh**, để lại allowlist **cũ**, lỗi nổi lên **sau** dưới
+  dạng test đỏ không liên quan. Sửa: **chỉ thêm lại đúng tên đã xoá**. **Một restore hardcode
+  là một mutation thứ hai không ai yêu cầu.**
+* **Anchor M3 mục lần thứ ba**; script báo `HARNESS ERROR` chứ không xanh giả — đúng rule
+  rotting-anchor. Đã re-anchor vào system-action declaration.
+
+## Mouse gestures — Round 8: Global thật sự gửi phím (2026-09-23)
+
+Người dùng: *"Hold Scroll Button + kéo lên là Mission Control hoặc kéo sang phải là next
+space… đều không hoạt động, chỉ là xuất hiện và nhận dạng cho có, không làm việc ở Profile
+Global Default."* Round 7 đo ra `⌃↑`/`⌃↓` không được gán — nhưng **cách sửa của round 7 cũng
+sai**, nên round này thay cả cơ chế.
+
+### Nguyên nhân gốc — hai lần sai, không phải một
+
+1. **`NX_KEYTYPE_MISSION_CONTROL` KHÔNG tồn tại.** `SystemKeySender` post keytype **32**
+   qua `NSEvent.systemDefined`. `ev_keymap.h` chỉ định nghĩa tới `NX_KEYTYPE_MENU = 25`;
+   32 là số bịa ⇒ post một sự kiện không định nghĩa ⇒ **không làm gì**.
+2. **Mission Control / Exposé / Space là symbolic hotkey phần mềm** — cơ chế *đúng* là
+   **đọc binding người dùng đã đặt** rồi post **đúng chord đó**, không phải keytype nào cả.
+3. **Bit `fn` là bắt buộc.** `0x840000` = `control | maskSecondaryFn`; Apple mã hoá arrow bằng
+   bit này, mask nó đi là post chord hệ thống không khớp. `GestureShortcut.label` **bỏ** bit fn
+   khi *hiển thị* (nên hàng đọc `⌃↑`) nhưng **post nguyên mask**.
+
+### Đã sửa
+
+1. **`SystemKeySender` bị xoá**: file, symlink test, `SystemKeySenderTests.swift`, **4 entry
+   pbxproj**, và tên nó trong 2 script.
+2. **`SpaceBinding`** thêm `appExpose = 33`, fallback `79→80` / `81→82`, và
+   **`GestureSystemBindings`** — value bất biến (`[GestureSystemAction: GestureShortcut]`)
+   truyền tường minh vào **cả** resolver và engine.
+3. **`GestureSystemAction` thêm `.previousSpace` / `.nextSpace`** + `unboundCaptionKey`.
+   Global preset: up/down/left/right = **bốn system action**, không hằng số nào.
+4. **Một resolver cho UI và engine**: `GestureMap.row(..., systemBindings:)` trả
+   `systemShortcut` + `isUnboundSystemAction`; engine post đúng `systemShortcut` đó;
+   **không giải được ⇒ post không gì** và ghi `.systemActionUnbound`.
+5. **`systemAction(of:)`** — override chọn system action trước đây render thành "chưa gán".
+6. **Migration trigger 2 → 3**, một lần, **chỉ khi `overrides` rỗng**.
+7. **Trang**: hàng "Phím hệ thống trên máy này" đọc thẳng binding của máy + nút mở
+   Bàn phím → Phím tắt; arm không giải được tô **cam** + tooltip; hàng "Đã gửi phím tắt"
+   **không còn hiện cho hàng `.unassigned`**.
+
+### Kiểm chứng — tách rời
+
+| Phát biểu | Kết quả |
+|:--|:--|
+| Build Debug, `lipo -archs` = arm64, tên file trong compile log | ✅ gồm `SpaceBinding.swift` |
+| `cd Tests && swift test` | ✅ **162 test, 0 fail** |
+| `scripts/verify-gesture-ui.sh` §1–§7 | ✅ 0 / 0 / 0 / 162 / đủ tên / arm64 / `active=1 trusted=1` |
+| `verify-l10n-runtime.py` (store **trong bundle đã cài**) | ✅ TOTAL 0 leaks |
+| Harness runtime, phần **system action** mới | ✅ *chord của máy được post, mask fn+control nguyên vẹn, không gán ⇒ post không gì* |
+| Event Tap mở thật trên app đã cài | ✅ `lastTapState {active: 1, trusted: 1}` |
+| Trang render: 4 arm đọc `⌃↑ ⌃↓ ⌃← ⌃→`; hàng phím hệ thống khớp plist | ✅ đo bằng AX tree |
+| Log engine: gesture → `Next Space`, ghi là **đã gửi** | ✅ người dùng tự thao tác |
+| **Mission Control MỞ / Space ĐỔI thật** | ❌ **chưa có ai nhìn màn hình xác nhận** |
+
+Điểm cuối **không** được báo là chạy. Bằng chứng hiện có: engine post đúng chord mà **chính
+máy này** khai, tap đang mở, AX tree cho thấy đúng phím đó trên UI. Việc cuối — macOS có thực
+sự đổi Space — cần mắt người. `probe-screen-diff.swift` đo được nhưng **đổi Space thật**, nên
+chỉ chạy khi người dùng đồng ý.
+
+### Lỗi ngôn ngữ còn sót — tìm bằng cách **đọc trang đã render**
+
+Tìm ra bằng `probe-ax-dump.swift` (đọc text node thật), **không** bằng grep:
+
+* **Sáu heading sidebar** `CHUNG · CỬA SỔ · FINDER & TÌM KIẾM · CÔNG CỤ · KẾT NỐI · TIỆN ÍCH`
+  hiện **tiếng Việt trên UI English**. Call site đúng (`L10n.t(group.header)`), nhưng **khoá
+  không có trong store** ⇒ `t()` rơi về tiếng Việt.
+* **Năm chuỗi model truyền qua biến** thiếu khoá: `App Exposé`, `Hiện màn hình nền`,
+  `Space trước`, `Space kế tiếp`, `Chụp màn hình`.
+
+Đã sửa + **thêm gate có thể fail**:
+
+1. `scripts/add-sidebar-l10n-entries.py` (đăng ký 6 heading) +
+   `scripts/check-sidebar-groups-l10n.py` — gate mới, đọc chính `groups` trong
+   `SidebarDestination.swift`, **fail nếu parse ra < 4 heading**. Cắm vào
+   `verify-gesture-ui.sh` §1b. Đã **chứng minh fail**: xoá `CỬA SỔ` → exit 1.
+2. `L10nTests.testGesturePageStringsAreAllTranslatable` giờ đi qua
+   **`GestureActionKind.allCases` + `GestureSystemAction.allCases`** — chính gate này **bắt
+   được `Chụp màn hình`** ngay lần chạy đầu.
+3. `verify-l10n-runtime.py` thêm mục **sidebar groups**, giải với store **trong bundle đã cài**.
+
+**Rule bổ sung:** một chuỗi đi qua `L10n.t(variable)` **không** được gate nào cũ bảo vệ. Muốn
+chắc phải liệt kê vocabulary của model trong test (như 2) hoặc parse chính declaration (như 1).
+
+### Bẫy mới
+
+* **Harness runtime đọc default của production.** `MouseGesturesProbe.swift` không set
+  `trigger`, nên khi default đổi 2 → 3 nó **fail ngay precondition đầu** với lý do trông như lỗi
+  engine. Đã pin trigger tường minh trong harness.
+* **Harness đã mục so với preset**: nó khẳng định tilt browser = keycode **17** trong khi bảng
+  preset đã là `⌃⇥` (48). Đổi sang **so với resolver** (`posts(resolved(...))`) — không thể mục
+  lần nữa. Ghi vào `docs/MOUSE_GESTURES.md` kèm lệnh biên dịch đã cập nhật (`GestureMap.swift`
+  và `SpaceBinding.swift` phải có trong danh sách).
+* **`plistlib` vs `defaults` khác nhau về thời điểm flush.** Đọc `.plist` bằng `plistlib` ngay
+  sau khi app ghi cho ra **giá trị cũ** (cfprefsd chưa flush) — suýt kết luận sai "migration
+  không chạy". `defaults export com.xfinder.app -` đọc qua cfprefsd nên thấy giá trị hiện tại.
+* **Mutation script TREO, không fail — và để lại nguồn đã bị mutate trên đĩa.**
+  `mutation-check-gesture-labels.sh` bị kill bởi timeout của công cụ ở giữa `mutate` M3, nên
+  `up: .convention(.missionControl, GestureShortcut(key: GestureKeyCode.upArrow, …))` — tức
+  **đúng con bug mà mutation muốn mô phỏng** — nằm lại trong `GestureModel.swift` và **đã đi
+  vào bản build**. Đây là dạng đã ghi trong rule “mutation để lại cây bẩn”.
+  **Nguyên nhân gốc của việc treo:** `MouseGestureTests.swift:1161`
+  `XCTAssertEqual(row.systemShortcut, liveBindings.shortcut(for: row.entry.systemAction!))`
+  **force-unwrap `systemAction!`**. Mutation M3 đúng là làm arm Global thôi là system action
+  ⇒ `systemAction == nil` ⇒ **trap** chứ không phải assertion failure ⇒ xctest **không bao giờ
+  trả về** (crash reporting quay vô tận vì `MallocStackLoggingDT` được nạp). `sample` cho thấy
+  stack đứng ở `_assertionFailure` → `closure #1 in closure #1`, và `ps` cho thấy xctest ở
+  trạng thái **`R` (running)** — chạy vòng lặp, **không** phải deadlock. Đã sửa thành
+  `guard let system = … else { XCTFail(…); continue }`. **Rule: trong một test mà mutation
+  *được thiết kế* để làm đỏ, tuyệt đối không force-unwrap đúng giá trị mà mutation gỡ bỏ.**
+* **Đừng để timeout của công cụ kill mutation script.** Chạy
+  `nohup sh scripts/mutation-check-*.sh > /tmp/log 2>&1 &` rồi poll file log; kill giữa chừng
+  vừa để lại mutation, vừa để lại **xctest mồ côi** (`pkill -9 -f XFinderLogicTests.xctest`).
+  Một gate bị kill im lặng đọc y hệt một gate xanh.

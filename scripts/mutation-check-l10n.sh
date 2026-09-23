@@ -33,12 +33,16 @@ run_case() {
 
 # 1. The exact bug the user reported: a gesture string with no translation, so
 #    L10n.t falls back to the Vietnamese literal in an English UI. The key is now
-#    a numbered button label, but the failure shape is identical.
+#    the middle-click button label — re-anchored 2026-09-22 when the three button
+#    labels stopped being "language-neutral" keys. Leaving the old anchor in place
+#    made this script crash with a KeyError instead of testing anything, which is the
+#    rotting-anchor failure AGENTS.md warns about: a gate that cannot run is not a
+#    gate that passed.
 python3 - <<'EOF'
 import json
 p = "XFinder/Resources/L10n.strings.json"
 d = json.load(open(p, encoding="utf-8"))
-del d["entries"]["Nút 3 (bấm con lăn xuống)"]
+del d["entries"]["Bấm con lăn xuống"]
 json.dump(d, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 EOF
 run_case "1. delete a numbered button label (the reported leak)"
@@ -110,8 +114,18 @@ python3 - <<'EOF'
 import json
 p = "XFinder/Resources/L10n.allowlist.json"
 d = json.load(open(p, encoding="utf-8"))
-d["sameByDesign"] = ["Apple Intelligence", "Clipboard", "OCR", "Quick Look"]
+# Restore **only** OCR, not the whole list.
+#
+# This used to assign the four original names literally, which silently deleted any
+# entry added since (`Mission Control`, added 2026-09-22 with the system-action work).
+# The script then reported a green mutation run while leaving the tree with a *stale*
+# allowlist — and the failure surfaced later as an unrelated red test. Re-adding the
+# single name it removed is the only restore that cannot eat someone else's edit.
+if "OCR" not in d["sameByDesign"]:
+    d["sameByDesign"].append("OCR")
+d["sameByDesign"] = sorted(set(d["sameByDesign"]))
 json.dump(d, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+open(p, "a", encoding="utf-8").write("\n")
 EOF
 
 restore

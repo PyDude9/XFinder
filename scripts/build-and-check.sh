@@ -26,9 +26,18 @@ if [ -z "$LIST" ]; then
   LIST=$(find "$OUT/dd" -name "XFinder.SwiftFileList" -print -quit)
 fi
 echo "list: $LIST"
-for f in GestureModel.swift GestureEngine.swift GestureController.swift GestureUIDisplay.swift \
-         MouseGesturesDetailView.swift MouseDiagramView.swift GestureDetailPanel.swift \
-         L10n.swift L10nStore.swift; do
+# Files added in the "one map" pass: `GestureMap.swift` is the resolver the page AND
+# the engine read, and the three view files are the Mac-Mouse-Fix-style UI. Every one
+# needs four pbxproj entries, and a missing `PBXFileReference` excludes a file from the
+# compilation *silently* — which is why this checks by name instead of trusting the
+# build's exit code.
+GESTURE_FILES="GestureModel.swift GestureEngine.swift GestureController.swift GestureUIDisplay.swift
+MouseGesturesDetailView.swift MouseDiagramView.swift GestureDetailPanel.swift
+L10n.swift L10nStore.swift DeviceCapability.swift DeviceCapabilityTypes.swift
+DeviceCapabilityModel.swift GestureLabelStructure.swift GestureMap.swift
+GestureArmView.swift GestureActionPicker.swift GestureActivityPanel.swift
+SpaceBinding.swift"
+for f in $GESTURE_FILES; do
   if grep -q "$f" "$LIST"; then echo "  OK   $f"; else echo "  MISS $f"; fi
 done
 

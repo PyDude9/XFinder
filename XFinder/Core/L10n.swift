@@ -73,3 +73,83 @@ final class L10n {
         UserDefaults.standard.string(forKey: "AppLanguage") == AppLanguage.english.rawValue
     }
 }
+
+// MARK: - Mouse-gesture semantic keys
+//
+// The gesture *model* never returns display text (that is how Vietnamese leaked
+// into an English UI: three call sites wrapped `L10n.t` around a value the model
+// had already rendered, and two did not). Instead the model exposes semantic
+// cases — `ButtonKey`, `GestureDirection.motionKey` — and these overloads are the
+// **only** place they become words. `LanguageNeutralKeys` lists what is a symbol
+// rather than a sentence, so a test can assert every *word* key is translated
+// while the symbols legitimately pass through.
+extension L10n {
+    enum LanguageNeutralKeys {
+        /// Keys that are symbols, not words, so they are identical in every language.
+        /// Kept explicit so "this resolves to itself" is a declared fact rather than
+        /// an untranslated string hiding among the rest.
+        ///
+        /// Only symbols belong here. This list previously held three **Vietnamese
+        /// sentences** — `"Nút 3 (bấm con lăn xuống)"` and friends — declared as
+        /// "language-neutral" and therefore returned verbatim by `t(_:)`. That is the
+        /// exact mechanism behind the user's report of Vietnamese leaking into the
+        /// English page: not a missing translation, but a line of code asserting the
+        /// string must never be translated.
+        ///
+        /// It was also factually wrong. macOS numbers mouse buttons from **0**: 0 =
+        /// left, 1 = right, 2 = middle (the wheel), 3 = first side button. The old
+        /// label called the wheel "Nút 3", so it misnamed the very button this feature
+        /// now defaults to as its hold trigger.
+        ///
+        /// Button labels are now ordinary translatable sentences; what stays neutral
+        /// is the bare modifier symbols, which are language-independent glyphs.
+        static let all: Set<String> = [
+            "⌘", "⌥", "⌃", "⇧",
+        ]
+    }
+
+    /// Resolve a semantic button reference to its label.
+    ///
+    /// `Nút N` is numbered the way the user counts (macOS numbers from 0), and the
+    /// three numbers every mouse shares carry a short factual note. A modifier
+    /// trigger prints its own symbols, which are language-neutral.
+    ///
+    /// The **structure** — which key to use, and the `+ 1` offset — comes from
+    /// `ButtonLabelStructure`, which imports nothing but Foundation and is symlinked
+    /// into the test package. Putting it there is what let the mutation harness
+    /// catch a broken numbering again; living in this SwiftUI-importing file it was
+    /// unreachable and three mutations stayed green.
+    nonisolated static func t(_ key: ButtonKey) -> String {
+        switch key {
+        case .index(let n):
+            if let named = ButtonLabelStructure.namedKey(forButtonNumber: n) { return t(named) }
+            let number = t(ButtonLabelStructure.numberedPrefixKey)
+                + "\(ButtonLabelStructure.displayNumber(forButtonNumber: n))"
+            // A side button carries a positional hint, because "Button 4" alone does
+            // not tell the user where to put their thumb. The hint is a separate
+            // translatable sentence, so it says "usually" in both languages rather
+            // than inventing a position no API can confirm.
+            guard let hint = ButtonLabelStructure.hintKey(forButtonNumber: n) else { return number }
+            return number + " — " + t(hint)
+        case .modifier(let flags):
+            return GestureShortcut(key: 0, flags: flags).modifierLabel
+        }
+    }
+
+    /// The heading for one direction, naming the held button. Composed here (not in
+    /// the model) so both halves are translated and the joined sentence reads
+    /// correctly in each language.
+    ///
+    /// The *shape* of the join lives in `ButtonLabelStructure.HeadingStructure`, so
+    /// the "does the heading name the held button?" property is testable. This
+    /// function only supplies the words.
+    nonisolated static func t(_ direction: GestureDirection, trigger: TriggerSource) -> String {
+        let parts = ButtonLabelStructure.HeadingStructure.parts(for: direction, trigger: trigger)
+        guard let buttonKey = parts.buttonKey else { return t(parts.motionKey) }
+        // The interpolated case joins a *fragment* to a runtime value: the key keeps
+        // its trailing space and the number is appended, because a key containing a
+        // runtime value can never be looked up.
+        let button = parts.appendNumber.map { t(buttonKey) + "\($0)" } ?? t(buttonKey)
+        return button + ButtonLabelStructure.HeadingStructure.separator + t(parts.motionKey)
+    }
+}

@@ -1,61 +1,62 @@
 import SwiftUI
 
-/// A clickable mouse diagram: the whole point of the page, drawn instead of
-/// tabulated. The user opens "Chuột & cử chỉ" asking *"what happens if I do
-/// this?"* — a diagram answers that in one look, where six text rows of
+/// A clickable mouse diagram: the whole point of the page, drawn instead of tabulated.
+/// The user opens this page asking *"what happens if I do this?"* — a drawing answers
+/// that in one look, where six text rows of
 /// `⌃↑ / Giữ nút rồi kéo LÊN / Mặc định / Ghi phím / Đổi` do not.
 ///
-/// Modelled on Mac Mouse Fix and MOS: the device is the navigation, and the
-/// arrow you press is the gesture you perform. Each arm is a real `Button`, so
-/// the diagram is also the selector — there is no separate list to correlate.
+/// Modelled on Mac Mouse Fix and MOS: the device is the navigation, and the arrow you
+/// press is the gesture you perform.
 ///
-/// Each arrow carries its **button number** ("3 ↑"), because the arrow alone does
-/// not say which control is held — the user reported exactly that confusion. The
-/// number is macOS's own numbering, which is the one identifier every mouse
-/// shares; see `TriggerSource.buttonName(_:)`.
+/// The held button is printed **once**, as a badge on the mouse body. Printing it per
+/// arm is the L1 bug: the number is identical for every direction (it is what you hold
+/// to start *any* gesture), so four copies read as "all four buttons are Button 3".
 ///
-/// Geometry is hand-placed rather than `GeometryReader`-derived so the layout
-/// stays byte-identical at any pane width; only the canvas size is flexible.
+/// Geometry is hand-placed rather than `GeometryReader`-derived so the layout stays
+/// byte-identical at any pane width; only the canvas size is flexible.
 struct MouseDiagramView: View {
-    /// The direction currently selected by the user, or nil when none is picked.
+    /// The direction currently selected, or nil when none is picked.
     @Binding var selection: GestureDirection?
-    /// Resolved action per direction — the caller owns resolution so the diagram
-    /// can never disagree with the runtime engine.
-    let action: (GestureDirection) -> GestureAction
+    /// The resolved row per direction. One value carries the shortcut, the intent and
+    /// the provenance, so the caption and the dispatched action cannot disagree.
+    let row: (GestureDirection) -> ResolvedGestureRow
+    /// What to call the action in the app on screen, or nil when the shortcut is not
+    /// that app's own binding for the intent.
+    let actionName: (GestureDirection) -> String?
     /// Badge colour per direction: preset / user override / unassigned.
     let tint: (GestureDirection) -> Color
     /// Directions that can be shown at all. Tilt arms are hidden when the user's
     /// hardware has no tilt, rather than drawn as a control that does nothing.
     let showsTilt: Bool
-    /// The configured trigger. Its number is printed on every arm, so the picture
-    /// answers "which button do I hold?" without the user reading the hint below.
+    /// The configured trigger. Its number is printed once on the mouse body.
     let trigger: TriggerSource
+    /// Arms the current device cannot perform, disabled with a tooltip saying so.
+    var unsupported: (GestureDirection) -> ArmSupport = { _ in .supported }
+    /// Which arm is waiting for the user to press a key, so the diagram can show it.
+    var recordingDirection: GestureDirection?
+    /// Clicking the badge re-records the hold button — Mac Mouse Fix's core gesture of
+    /// "click the thing you want to change".
+    var onRecordTrigger: (() -> Void)?
+    /// Whether the page is currently recording the *trigger*.
+    var isRecordingTrigger: Bool = false
 
     private let bodyWidth: CGFloat = 84
     private let bodyHeight: CGFloat = 132
     private let armLength: CGFloat = 46
 
-    /// The shortest name that still says which button: "Nút 3". A modifier trigger
-    /// (⌃ alone) has no number, so fall back to its symbol — printing "Nút 0" for
-    /// a modifier would be a fabrication.
-    private var triggerNumber: String {
-        if case .mouseButton = trigger { return trigger.numberedName }
-        return trigger.label
-    }
-
     var body: some View {
         ZStack {
             mouseBody
-            arrow(.up,    x: 0,                  y: -(bodyHeight / 2 + armLength * 0.62), angle: 0)
-            arrow(.down,  x: 0,                  y:  (bodyHeight / 2 + armLength * 0.62), angle: 180)
-            arrow(.left,  x: -(bodyWidth / 2 + armLength * 0.72), y: -6, angle: -90)
-            arrow(.right, x:  (bodyWidth / 2 + armLength * 0.72), y: -6, angle: 90)
+            arm(.up,    x: 0,                                    y: -(bodyHeight / 2 + armLength * 0.62))
+            arm(.down,  x: 0,                                    y:  (bodyHeight / 2 + armLength * 0.62))
+            arm(.left,  x: -(bodyWidth / 2 + armLength * 0.72),   y: -6)
+            arm(.right, x:  (bodyWidth / 2 + armLength * 0.72),   y: -6)
             if showsTilt {
-                tiltHint(.tiltLeft,  x: -30)
-                tiltHint(.tiltRight, x:  30)
+                tiltArm(.tiltLeft,  x: -34)
+                tiltArm(.tiltRight, x:  34)
             }
         }
-        .frame(width: bodyWidth + armLength * 3.4, height: bodyHeight + armLength * 2.6)
+        .frame(width: bodyWidth + armLength * 3.6, height: bodyHeight + armLength * 2.6)
         .animation(.spring(response: 0.28, dampingFraction: 0.82), value: selection)
     }
 
@@ -74,118 +75,118 @@ struct MouseDiagramView: View {
                 .frame(width: bodyWidth, height: bodyHeight)
                 .shadow(color: .black.opacity(0.10), radius: 5, y: 1.5)
 
-            // The scroll wheel, drawn as the highlighted trigger when the user's
-            // active trigger actually is the middle button — so the picture always
-            // matches the configured trigger instead of asserting a fixed one.
+            // The scroll wheel, drawn where it actually is: it is also where the middle
+            // button lives, which is why the label for button 2 says so.
             Capsule()
                 .fill(Color.secondary.opacity(0.22))
                 .frame(width: 9, height: 22)
                 .offset(y: -bodyHeight / 2 + 22)
+
+            holdBadge
         }
     }
 
-    // MARK: - Arms
-
-    private func arrow(_ direction: GestureDirection, x: CGFloat, y: CGFloat, angle: Double) -> some View {
-        let isSelected = selection == direction
-        let assigned = isAssigned(direction)
-        return Button {
-            // Toggle semantics live in `MouseDiagramSelection` so the interaction
-            // itself is assertable — see GestureUIDisplay.swift.
-            selection = MouseDiagramSelection.afterClick(current: selection, clicked: direction)
+    /// The held button, stated **once** on the device. Clicking it records a new one —
+    /// the interaction Mac Mouse Fix trains users on, and the shortest path from
+    /// "which button am I supposed to hold?" to having picked their own.
+    private var holdBadge: some View {
+        Button {
+            onRecordTrigger?()
         } label: {
             VStack(spacing: 1) {
-                Text(triggerNumber)
-                    .font(.system(size: 9, weight: .medium, design: .rounded))
-                    .foregroundColor(assigned ? tint(direction) : Color.secondary.opacity(0.6))
-                    .lineLimit(1)
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? tint(direction).opacity(0.20) : Color.clear)
-                        .frame(width: 28, height: 28)
-                    Image(systemName: "arrowtriangle.up.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(assigned ? tint(direction) : Color.secondary.opacity(0.45))
-                        .rotationEffect(.degrees(angle))
-                    // Dashed ring = "this arm sends nothing". Absence is honest and
-                    // reads as Unassigned without needing the word.
-                    if !assigned {
-                        Circle()
-                            .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [2, 2]))
-                            .foregroundColor(.secondary.opacity(0.5))
-                            .frame(width: 28, height: 28)
-                    }
-                    // A filled square badge marks "this arm passes the mouse's own
-                    // horizontal scroll through". Without it the arm would still
-                    // look like an arrow sending nothing, which is a different
-                    // state and must not be confused with it.
-                    if case .horizontalScroll = action(direction) {
-                        Image(systemName: "arrow.left.and.right")
-                            .font(.system(size: 7, weight: .bold))
-                            .foregroundColor(tint(direction))
-                            .offset(x: 9, y: -9)
-                    }
+                Text(L10n.t("Giữ"))
+                    .font(.system(size: 8, weight: .semibold, design: .rounded))
+                    .foregroundColor(.secondary)
+                Text(L10n.t(trigger.key))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundColor(.accentColor)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.65)
+                    .fixedSize(horizontal: false, vertical: true)
+                if onRecordTrigger != nil {
+                    Text(isRecordingTrigger ? L10n.t("đang ghi…") : L10n.t("bấm để đổi"))
+                        .font(.system(size: 7))
+                        .foregroundColor(.secondary)
                 }
             }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .offset(x: x, y: y)
-        .help(helpText(direction))
-        .accessibilityLabel(helpText(direction))
-    }
-
-    /// Tilt is shown as a small rotation hint on the wheel, not as a fifth arm:
-    /// it is a different physical motion and drawing it as another arrow would
-    /// teach the wrong gesture.
-    private func tiltHint(_ direction: GestureDirection, x: CGFloat) -> some View {
-        let isSelected = selection == direction
-        let assigned = isAssigned(direction)
-        let usable = showsTilt
-        return Button {
-            selection = MouseDiagramSelection.afterClick(current: selection, clicked: direction)
-        } label: {
-            HStack(spacing: 2) {
-                Image(systemName: direction == .tiltLeft ? "arrow.uturn.left" : "arrow.uturn.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(usable && assigned ? tint(direction) : Color.secondary.opacity(0.4))
-                Text(direction == .tiltLeft ? "Tilt ←" : "Tilt →")
-                    .font(.system(size: 8, weight: .medium, design: .rounded))
-                    .foregroundColor(Color.secondary.opacity(usable ? 0.7 : 0.35))
-            }
-            .padding(.horizontal, 5).padding(.vertical, 3)
+            .frame(width: bodyWidth - 16)
+            .padding(.vertical, 4)
             .background(
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(isSelected ? tint(direction).opacity(0.20) : Color.clear)
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(isRecordingTrigger ? Color.orange.opacity(0.18) : Color.clear)
             )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .offset(x: x, y: bodyHeight / 2 - 16)
-        .help(helpText(direction))
-        .accessibilityLabel(helpText(direction))
+        .disabled(onRecordTrigger == nil)
+        .offset(y: 26)
+        .help(L10n.t("Nút bạn giữ để bắt đầu mọi cử chỉ. Bấm để ghi nút khác."))
     }
 
-    // MARK: - Helpers
+    // MARK: - Arms
 
-    private func isAssigned(_ direction: GestureDirection) -> Bool {
-        if case .unassigned = action(direction) { return false }
-        return true
+    private func arm(_ direction: GestureDirection, x: CGFloat, y: CGFloat) -> some View {
+        GestureArmView(direction: direction,
+                       row: row(direction),
+                       actionName: actionName(direction),
+                       isSelected: selection == direction,
+                       support: unsupported(direction),
+                       tint: tint(direction),
+                       isRecording: recordingDirection == direction,
+                       onTap: {
+                           selection = MouseDiagramSelection.afterClick(current: selection,
+                                                                        clicked: direction)
+                       })
+        .offset(x: x, y: y)
     }
 
-    /// The tooltip is the sentence the diagram cannot draw: the motion *and* what
-    /// it sends. Both are needed — an arrow alone says neither.
-    private func helpText(_ direction: GestureDirection) -> String {
-        let motion = L10n.t(direction.title(trigger: trigger))
-        let sent: String
-        switch action(direction) {
-        case .unassigned:
-            sent = L10n.t("chưa gán phím nào")
-        case .horizontalScroll:
-            sent = L10n.t("cuộn ngang nguyên bản")
-        case .shortcut(let s):
-            sent = L10n.t("gửi ") + s.label
+    /// Tilt is shown as a small rotation hint beside the wheel, not as a fifth arm: it
+    /// is a different physical motion, and drawing it as another arrow would teach the
+    /// wrong gesture.
+    private func tiltArm(_ direction: GestureDirection, x: CGFloat) -> some View {
+        let support = unsupported(direction)
+        return Button {
+            selection = MouseDiagramSelection.afterClick(current: selection, clicked: direction)
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: direction == .tiltLeft ? "arrow.uturn.left" : "arrow.uturn.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(armColor(direction, support: support))
+                Text(row(direction).caption.map { L10n.t($0) } ?? L10n.t("Chưa gán"))
+                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 5).padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(selection == direction ? tint(direction).opacity(0.18) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .strokeBorder(recordingDirection == direction ? Color.orange
+                                                                  : Color.secondary.opacity(0.25),
+                                  lineWidth: 1)
+            )
+            .contentShape(Rectangle())
         }
-        return motion + " — " + sent
+        .buttonStyle(.plain)
+        .disabled(!support.isSupported)
+        .opacity(support.isSupported ? 1 : 0.45)
+        .offset(x: x, y: bodyHeight / 2 - 14)
+        .help(L10n.t(direction.motionKey))
+        .accessibilityLabel(L10n.t(direction.motionKey))
+    }
+
+    private func armColor(_ direction: GestureDirection, support: ArmSupport) -> Color {
+        guard support.isSupported else { return Color.secondary.opacity(0.5) }
+        return row(direction).entry.isUnassigned ? Color.secondary.opacity(0.45) : tint(direction)
     }
 }
+
+/// `ArmSupport` is declared in `DeviceCapabilityModel.swift`, not here.
+///
+/// It reads like view code but it is domain logic — "can this mouse perform this
+/// direction?" — and keeping it in a SwiftUI file would put it out of reach of the
+/// test package, which is where the D2/D3 contract is pinned.

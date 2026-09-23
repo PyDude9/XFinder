@@ -6,7 +6,13 @@ final class MouseGestureTests: XCTestCase {
         XCTAssertFalse(config.enabled)
         XCTAssertFalse(config.tiltEnabled)
         XCTAssertFalse(config.debug)
-        XCTAssertEqual(config.trigger, .mouseButton(2))
+        // The hold trigger must NOT be a middle click. Measured on the user's machine:
+        // the shipped default was `.mouseButton(2)` and their stored config carried it,
+        // which is the documented cause of the "nothing happens" report — holding the
+        // wheel while dragging is not a motion a hand makes, and a middle click is a
+        // frequent deliberate action that must stay available.
+        XCTAssertEqual(config.trigger, .mouseButton(3))
+        XCTAssertNotEqual(config.trigger, .mouseButton(2), "middle click must never be the default hold trigger")
     }
     func testStrictDeadzoneAndFourDirections() {
         var stroke = GestureStroke()
@@ -40,22 +46,44 @@ final class MouseGestureTests: XCTestCase {
         for id in ["com.visualstudio.code","com.cursor.ide","dev.zed.Zed","com.antigravity.ide","com.anthropic.claude"] {
             XCTAssertEqual(config.action(bundle:id,direction:.up),.unassigned)
             XCTAssertEqual(config.action(bundle:id,direction:.down),.unassigned)
+            // Left/right are the platform *history* convention, which every editor
+            // honours, rather than one app's pane-splitting keys.
+            XCTAssertEqual(config.action(bundle:id,direction:.left),GestureProfiles.key(33,GestureShortcut.command))
+            XCTAssertEqual(config.action(bundle:id,direction:.right),GestureProfiles.key(30,GestureShortcut.command))
         }
-        for id in ["com.microsoft.Word","com.microsoft.Excel"] {
-            for d in GestureDirection.allCases { XCTAssertEqual(config.action(bundle:id,direction:d),.unassigned) }
+        // Word has no worksheet navigation, so its tab rows stay empty. Excel does
+        // have a documented pair, so it answers for itself — the two tables are
+        // separate on purpose, which `testWordAndExcelDoNotShareOneTable` pins.
+        for d in [GestureDirection.left, .right] {
+            XCTAssertEqual(config.action(bundle:"com.microsoft.Word",direction:d),.unassigned)
         }
+        XCTAssertNotEqual(config.action(bundle:"com.microsoft.Excel",direction:.left),.unassigned)
         XCTAssertEqual(config.action(bundle:"co.elastic.obsidian",direction:.down),.unassigned)
     }
     func testFallbackAndExplicitDisable() {
         var config = GestureConfiguration()
-        XCTAssertEqual(config.action(bundle:"unknown.app",direction:.up),GestureProfiles.key(33,GestureShortcut.command | GestureShortcut.shift))
+        // Global's four arms, after the 2026-09-23 correction. Every one of them is a
+        // **system action**: the engine resolves it from the user's own
+        // `com.apple.symbolichotkeys` (`SpaceBinding`) and posts the chord their Mac binds.
+        // The preset ships no key at all, because the two states that genuinely occur —
+        // bound and unbound — are both real, and a shipped constant is wrong in one of them
+        // (measured twice; see the note in `GestureModel.swift`).
+        XCTAssertEqual(config.action(bundle:"unknown.app",direction:.up),
+                       .systemAction(.missionControl))
+        XCTAssertEqual(config.action(bundle:"unknown.app",direction:.down),
+                       .systemAction(.appExpose))
+        XCTAssertEqual(config.action(bundle:"unknown.app",direction:.left),
+                       .systemAction(.previousSpace))
+        XCTAssertEqual(config.action(bundle:"unknown.app",direction:.right),
+                       .systemAction(.nextSpace))
         // An explicit per-bundle unassigned on a known app sticks.
         XCTAssertNotEqual(config.action(bundle:"com.apple.Safari",direction:.up),.unassigned)
         config.overrides["com.apple.Safari",default:[:]][.up] = .unassigned
         XCTAssertEqual(config.action(bundle:"com.apple.Safari",direction:.up),.unassigned)
         // Unknown app's Global fallback uses the Global profile itself; overriding
         // a single known app does not affect the unknown app's Global fallback.
-        XCTAssertEqual(config.action(bundle:"unknown.app",direction:.up),GestureProfiles.key(33,GestureShortcut.command | GestureShortcut.shift))
+        XCTAssertEqual(config.action(bundle:"unknown.app",direction:.up),
+                       .systemAction(.missionControl))
     }
     func testAppOverrideAndRoundTrip() throws {
         var config = GestureConfiguration()
@@ -68,7 +96,7 @@ final class MouseGestureTests: XCTestCase {
     func testValidateUnsafeSettings() {
         var config = GestureConfiguration()
         config.trigger = .mouseButton(0); config.deadzone = .nan; config.validate()
-        XCTAssertEqual(config.trigger,.mouseButton(2)); XCTAssertEqual(config.deadzone,12)
+        XCTAssertEqual(config.trigger,.mouseButton(3)); XCTAssertEqual(config.deadzone,12)
         config.deadzone = 1e9; config.validate(); XCTAssertEqual(config.deadzone,200)
         XCTAssertFalse(TriggerSource.modifierKey(0).isValid)
         XCTAssertFalse(TriggerSource.modifierKey(GestureShortcut.command | GestureShortcut.shift).isValid)
@@ -78,8 +106,9 @@ final class MouseGestureTests: XCTestCase {
         XCTAssertEqual(Set(GestureProfiles.all.map(\.id)).count,GestureProfiles.all.count)
         let config = GestureConfiguration()
         for id in ["com.apple.Safari","com.google.Chrome","com.microsoft.edgemac"] {
+            XCTAssertEqual(config.action(bundle:id,direction:.up),GestureProfiles.key(17,GestureShortcut.command))
             XCTAssertEqual(config.action(bundle:id,direction:.down),GestureProfiles.key(13,GestureShortcut.command))
-            XCTAssertEqual(config.action(bundle:id,direction:.left),GestureProfiles.key(48,GestureShortcut.control | GestureShortcut.shift))
+            XCTAssertEqual(config.action(bundle:id,direction:.left),GestureProfiles.key(33,GestureShortcut.command))
             XCTAssertEqual(config.action(bundle:id,direction:.tiltLeft),config.action(bundle:id,direction:.tiltRight))
         }
     }
@@ -93,6 +122,200 @@ final class MouseGestureTests: XCTestCase {
     }
 
     // MARK: Preset-first: every built-in bundle resolves immediately
+
+    /// The page's row resolver and the runtime's action are **the same value**.
+    ///
+    /// This is the brief's "use one resolver for UI and runtime, not two copies of
+    /// mapping logic", asserted rather than intended. `GestureMap.row` is what the
+    /// diagram, the detail panel and the picker read; `GestureConfiguration.action` is
+    /// what the engine posts. If a refactor ever gives one of them its own lookup, this
+    /// fails for every bundle and direction at once.
+    func testMapRowAgreesWithRuntimeActionForEveryBundleAndDirection() {
+        var config = GestureConfiguration()
+        // Include a user override, so the agreement is checked on the override path too
+        // and not only on the preset path.
+        config.overrides["com.apple.Safari", default: [:]][.left] = GestureProfiles.key(0, GestureShortcut.control)
+        for profile in GestureProfiles.all {
+            for direction in GestureDirection.allCases {
+                let row = GestureMap.row(overrides: config.overrides,
+                                         bundle: profile.id, direction: direction)
+                XCTAssertEqual(row.action, config.action(bundle: profile.id, direction: direction),
+                               "\(profile.id) \(direction.rawValue): the row says one thing and the "
+                               + "engine sends another")
+            }
+        }
+        // An override that exists only in the map's inputs must still reach the outcome:
+        // if `row` ignored `overrides` this would silently report the preset value.
+        let overridden = GestureMap.row(overrides: config.overrides,
+                                        bundle: "com.apple.Safari", direction: .left)
+        XCTAssertTrue(overridden.isUserOverride)
+        XCTAssertEqual(overridden.action, GestureProfiles.key(0, GestureShortcut.control))
+    }
+
+    /// An app with no preset of its own inherits Global, and the row says so — while an
+    /// app that *has* one but leaves a direction empty must not be reported as Global.
+    ///
+    /// Both halves are the same question from opposite sides, and the earlier version of
+    /// this page conflated them: `⌘⇧]` from Global appeared under Explorer's unassigned
+    /// Up row, which reads as "Explorer supports this and sends ⌘⇧]".
+    func testEffectiveBundleDistinguishesInheritanceFromAnEmptyPreset() {
+        let inherited = GestureMap.row(overrides: [:], bundle: "com.example.unknown", direction: .up)
+        XCTAssertEqual(inherited.effectiveBundle, GestureProfiles.fallback)
+        XCTAssertFalse(inherited.entry.isUnassigned)
+
+        let emptyInOwnPreset = GestureMap.row(overrides: [:], bundle: "com.microsoft.Word", direction: .left)
+        XCTAssertEqual(emptyInOwnPreset.effectiveBundle, "com.microsoft.Word")
+        XCTAssertTrue(emptyInOwnPreset.entry.isUnassigned)
+        // Explicitly *not* the Global ⌃←, which is what a fall-through would have sent.
+        XCTAssertNotEqual(emptyInOwnPreset.action, GestureProfiles.key(123, GestureShortcut.control))
+    }
+
+    /// A recorded shortcut must never be described by an intent name it does not perform.
+    ///
+    /// The old page named an action from the key code (`case 29: return "Vừa khung"`), so
+    /// a user who recorded `⌘↩` for an arm would still see "Fit to window" under it. The
+    /// rule now is: the name is shown only when the shortcut is the one the built-in
+    /// table declares for that intent.
+    func testRecordedShortcutIsNotGivenAnInventedActionName() {
+        var config = GestureConfiguration()
+        config.overrides["com.apple.Safari", default: [:]][.up] = .shortcut(GestureShortcut(key: 36, flags: GestureShortcut.command))
+        let row = GestureMap.row(overrides: config.overrides, bundle: "com.apple.Safari", direction: .up)
+        XCTAssertNil(GestureMap.displayName(for: row),
+                     "a recorded key was given the preset's action name")
+        // The preset value keeps its name, so this is not "names never appear".
+        let presetRow = GestureMap.row(overrides: [:], bundle: "com.apple.Safari", direction: .up)
+        XCTAssertEqual(GestureMap.displayName(for: presetRow), GestureActionKind.nextTab.labelKey)
+    }
+
+    /// Every intent in the vocabulary must be reachable in the picker, and every choice
+    /// the picker offers must be dispatchable. This is the "the screen was empty" bug
+    /// stated as a property instead of as a screenshot.
+    func testActionCatalogCoversEveryIntentAndEveryChoiceIsSendable() {
+        let groups = GestureActionCatalog.choices()
+        let offered = Set(groups.flatMap(\.items).map(\.kind))
+        for kind in GestureActionKind.allCases {
+            XCTAssertTrue(offered.contains(kind),
+                          "\(kind.rawValue) is in the vocabulary but the picker never offers it — "
+                          + "this is how a page ends up looking empty")
+        }
+        XCTAssertFalse(groups.isEmpty)
+        for item in groups.flatMap(\.items) {
+            // A choice must map to exactly one of the four sent forms, and one that
+            // claims a shortcut must actually carry one. A system action must carry no
+            // shortcut — a row that sends `NSEvent.systemDefined` and also claims keys
+            // is precisely the mislabelling this pass removed.
+            switch item.action {
+            case .shortcut(let s):
+                XCTAssertEqual(item.shortcut, s)
+                XCTAssertNil(item.systemAction, "\(item.id) carries both a shortcut and a system action")
+            case .systemAction(let system):
+                XCTAssertNil(item.shortcut, "\(item.id) sends a system event but claims keys")
+                XCTAssertEqual(item.systemAction, system)
+            case .unassigned, .horizontalScroll:
+                XCTAssertNil(item.shortcut, "\(item.id) claims to send nothing but carries keys")
+                XCTAssertNil(item.systemAction, "\(item.id) claims to send nothing but carries a system action")
+            }
+        }
+        XCTAssertFalse(GestureActionCatalog.choices().first(where: { $0.group == "Điều hướng" })?.items.isEmpty ?? true)
+    }
+
+    /// No two choices in the picker may be identical, or picking one would be a coin
+    /// flip between two rows that look the same.
+    func testActionCatalogHasNoDuplicateChoices() {
+        let ids = GestureActionCatalog.choices().flatMap(\.items).map(\.id)
+        XCTAssertEqual(Set(ids).count, ids.count, "the picker offers duplicate rows: \(ids.count) vs \(Set(ids).count)")
+    }
+
+    /// The scroll modifier may never collide with the gesture trigger, and `validate()`
+    /// is the only thing enforcing it. If it did collide, one button would mean both
+    /// "start a gesture" and "scroll" and the user would see intermittent behaviour
+    /// with no error anywhere.
+    /// A configuration written by an **older build** must still decode, or the user's
+    /// overrides are silently discarded on upgrade.
+    ///
+    /// This is not hypothetical and it is not "defensive": adding two fields to
+    /// `GestureConfiguration` on 2026-09-22 made the stored payload fail
+    /// `keyNotFound` — measured on the installed app's own preferences. `init` survives
+    /// that via `recover(from:)`, so what actually has to hold is that **the envelope
+    /// carries every field**, not just the ones the current build happens to need.
+    ///
+    /// The fixture is generated by encoding the real model and then **removing** the new
+    /// keys, because that is exactly what an older build's JSON looks like. A
+    /// hand-written dictionary would not decode at all — `overrides` encodes as an
+    /// interleaved array (`["up", {"shortcut": …}]`), which is the trap the docs record.
+    func testLegacyConfigurationWithoutNewFieldsStillDecodes() throws {
+        var modern = GestureConfiguration()
+        modern.enabled = true
+        modern.trigger = .mouseButton(2)
+        modern.overrides["com.apple.Safari"] = [
+            .up: .shortcut(GestureShortcut(key: 36, flags: GestureShortcut.command)),
+        ]
+        let encoded = try JSONEncoder().encode(modern)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        // The keys an earlier build did not write.
+        object.removeValue(forKey: "scrollButtonEnabled")
+        object.removeValue(forKey: "scrollButton")
+        let legacy = try JSONSerialization.data(withJSONObject: object)
+
+        // The precondition that makes `recover(from:)` load-bearing rather than optional: a
+        // payload missing a non-optional key does NOT decode strictly.
+        XCTAssertNil(try? JSONDecoder().decode(GestureConfiguration.self, from: legacy),
+                     "if this ever decodes strictly the recovery path is no longer needed — "
+                     + "and, more importantly, the new fields were not really added")
+
+        // Decoding the *current* model from the current model's own encoding must work,
+        // which is what proves the keys were removed rather than never present.
+        XCTAssertNotNil(try? JSONDecoder().decode(GestureConfiguration.self, from: encoded))
+        XCTAssertTrue(String(data: encoded, encoding: .utf8)?.contains("scrollButtonEnabled") ?? false)
+    }
+
+    /// The `Envelope` in `GestureController.recover(from:)` must list **every** field.
+    ///
+    /// Read from the source, because `GestureController` imports AppKit and the test
+    /// package cannot compile it. A missing line there is invisible at runtime until a
+    /// user upgrades with customisations set — which is when it matters most.
+    func testRecoveryEnvelopeCoversEveryStoredField() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("XFinder/Core/MouseGestures/GestureController.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        guard let start = source.range(of: "struct Envelope: Decodable {"),
+              let end = source.range(of: "}", range: start.upperBound..<source.endIndex) else {
+            return XCTFail("could not read the recovery envelope out of GestureController.swift")
+        }
+        let body = source[start.upperBound..<end.lowerBound]
+        // Every key the current model encodes. Kept as an explicit list so adding a
+        // stored field forces a deliberate decision about the upgrade path.
+        for field in ["enabled", "deadzone", "tiltEnabled", "tiltAvailable",
+                      "debug", "trigger", "scrollButtonEnabled", "scrollButton", "overrides"] {
+            XCTAssertTrue(body.contains("var \(field):"),
+                          "\(field) is stored but missing from the recovery envelope — an "
+                          + "older payload will decode to nil and the user's overrides are lost")
+        }
+    }
+
+    func testScrollButtonNeverCollidesWithTheTrigger() {
+        var config = GestureConfiguration()
+        config.trigger = .mouseButton(GestureConfiguration.defaultScrollButton)
+        config.scrollButton = GestureConfiguration.defaultScrollButton
+        config.validate()
+        XCTAssertNotEqual(config.scrollButton, config.trigger.buttonNumber)
+        // Left click is never a legal scroll modifier: it must stay available for
+        // selecting and dragging.
+        config.scrollButton = 0
+        config.validate()
+        XCTAssertNotEqual(config.scrollButton, 0)
+        XCTAssertTrue((1...31).contains(config.scrollButton))
+        // A modifier trigger consumes no button, so the declared default is legal.
+        config.trigger = .modifierKey(GestureShortcut.option)
+        config.scrollButton = GestureConfiguration.defaultScrollButton
+        config.validate()
+        XCTAssertEqual(config.scrollButton, GestureConfiguration.defaultScrollButton)
+        // Out-of-range values are repaired rather than stored.
+        config.scrollButton = 99
+        config.validate()
+        XCTAssertTrue((1...31).contains(config.scrollButton))
+    }
 
     func testEveryBuiltInBundleResolvesPresetOrUnassignedPerDirection() {
         let config = GestureConfiguration()
@@ -173,6 +396,12 @@ final class MouseGestureTests: XCTestCase {
         XCTAssertEqual(config.source(bundle: "com.apple.Safari", direction: .tiltLeft), .preset)
         // Dev up is intentionally unassigned — not a missing preset.
         XCTAssertEqual(config.source(bundle: "com.visualstudio.code", direction: .up), .unassigned)
+        // Global's tilt arms are *unassigned* in the stored profile on purpose: the
+        // engine's tilt branch passes the event through for `.unassigned`, which is
+        // exactly "let the wheel's sideways motion be a sideways scroll". Storing
+        // `.horizontalScroll` here would be a stored key with no behaviour attached
+        // and would badge the row as a preset that "sends" something.
+        XCTAssertEqual(config.source(bundle: "com.apple.Safari", direction: .tiltRight), .preset)
         config.overrides["com.apple.Safari", default: [:]][.up] = .unassigned
         XCTAssertEqual(config.source(bundle: "com.apple.Safari", direction: .up), .userOverride)
         XCTAssertEqual(config.source(bundle: "unknown.app", direction: .up), .presetGlobal)
@@ -236,39 +465,100 @@ final class MouseGestureTests: XCTestCase {
         let shift = GestureShortcut.shift, opt = GestureShortcut.option
         let cfg = GestureConfiguration()
 
-        // Global fallback: page/workspace navigation, not Mission Control.
-        // Reason, measured not assumed: the MX Master 3 (cited in the brief as a
-        // daily mouse) already binds Mission Control to its thumb button in Logi
-        // Options, so a ⌃↑ Global duplicated a binding the user already had and the
-        // page read as useless. Page navigation is what a gesture is actually
-        // wanted for, and it is a real convention: ⌘⇧[ / ⌘⇧] step between tabs in
-        // most macOS apps while ⌘[ / ⌘] step back and forward in history.
-        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .up), GestureProfiles.key(33, c | shift))
-        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .down), GestureProfiles.key(30, c | shift))
-        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .left), GestureProfiles.key(33, c))
-        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .right), GestureProfiles.key(30, c))
-        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .tiltLeft), GestureProfiles.key(24, c))
-        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .tiltRight), GestureProfiles.key(27, c))
-        // The old Mission Control mapping must be gone, not merely shadowed.
-        for (dir, key) in [(GestureDirection.up, 126), (.down, 125), (.left, 123), (.right, 124)] {
+        // Global fallback: **an intent, never a key**.
+        //
+        // This row has reversed four times and every reversal was a measurement, not taste:
+        //   1. `⌃↑ ⌃↓` for Mission Control — *"hơi vô dụng"*; their MX Master 3 already
+        //      bound Mission Control to its thumb button in Logi Options.
+        //   2. `⌘⇧]` / `⌘⇧[` for "next/previous item" — a real browser convention, but in a
+        //      text editor it is *nothing at all*.
+        //   3. `⌃←`/`⌃→` for Spaces as a constant — **probed and disproved**: on this host
+        //      ids 79–82 were `enabled` with no `value`, so nothing listened. The user's
+        //      report was exact: recognised, does nothing.
+        //   4. `NSEvent.systemDefined` keytype 32 — also wrong: no such NX constant exists
+        //      (`ev_keymap.h` stops at `NX_KEYTYPE_MENU = 25`), so Mission Control still did
+        //      nothing while the page showed a row that looked delivered.
+        //
+        // So the preset now names the **action** and the key comes from the user's own
+        // symbolic hotkeys at dispatch time. Asserting the exact key here would re-introduce
+        // the bug in the test: there is no one right key, and the honest assertion is that
+        // no arm carries a hardcoded chord (checked below) while all four carry an action.
+        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .up), .systemAction(.missionControl))
+        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .down), .systemAction(.appExpose))
+        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .left), .systemAction(.previousSpace))
+        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .right), .systemAction(.nextSpace))
+        // The tilt arms send nothing, which the engine's tilt branch reads as "pass
+        // the wheel's own sideways motion through". Unassigned is the honest stored
+        // value for that: the row promises no keystroke and none is posted.
+        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .tiltLeft), .unassigned)
+        XCTAssertEqual(cfg.action(bundle: "whatever.unknown", direction: .tiltRight), .unassigned)
+        // The two superseded *keystroke* mappings may not come back anywhere in Global.
+        // `⌃↑`/`⌃↓` must not: they are unbound, so they would silently do nothing again.
+        for (dir, key) in [(GestureDirection.up, 126), (.down, 125)] {
             XCTAssertNotEqual(cfg.action(bundle: "whatever.unknown", direction: dir),
                               GestureProfiles.key(UInt16(key), ctrl), "global \(dir.rawValue) still sends ⌃arrow")
+        }
+        // And the Space keys must not return either — that is version 3, the one this
+        // test was written to prevent from being re-introduced a fourth time.
+        for (dir, key) in [(GestureDirection.left, 123), (.right, 124)] {
+            XCTAssertNotEqual(cfg.action(bundle: "whatever.unknown", direction: dir),
+                              GestureProfiles.key(UInt16(key), ctrl),
+                              "global \(dir.rawValue) still sends a ⌃arrow Space key, which is unbound here")
+        }
+        // A system action must never *also* claim a shortcut — a row that posts keys while
+        // being described as "whatever your Mac binds" is the mislabelling being removed.
+        // All four Global arms are checked, not just the vertical pair: left/right became
+        // system actions in the 2026-09-23 correction, so leaving them out here would let the
+        // exact bug that was just fixed return unnoticed.
+        for dir in [GestureDirection.up, .down, .left, .right] {
+            XCTAssertNil(GestureMap.shortcut(of: cfg.action(bundle: "whatever.unknown", direction: dir)),
+                         "global \(dir.rawValue) is a system action but reports a keystroke")
+        }
+        // And each of the four is the *system action for that direction* — a copy-paste that
+        // wired two arms to one action would leave a direction silently dead.
+        XCTAssertEqual(GestureMap.systemAction(of: cfg.action(bundle: "whatever.unknown", direction: .up)),
+                       .missionControl)
+        XCTAssertEqual(GestureMap.systemAction(of: cfg.action(bundle: "whatever.unknown", direction: .down)),
+                       .appExpose)
+        XCTAssertEqual(GestureMap.systemAction(of: cfg.action(bundle: "whatever.unknown", direction: .left)),
+                       .previousSpace)
+        XCTAssertEqual(GestureMap.systemAction(of: cfg.action(bundle: "whatever.unknown", direction: .right)),
+                       .nextSpace)
+        // The `⌘⇧]`/`⌘⇧[` "next/previous item" pair is gone too. It is a browser
+        // convention and means *nothing at all* in a text editor, which is most of
+        // this user's day — so Global no longer ships it on either axis.
+        for dir in [GestureDirection.up, .down] {
+            for key: UInt16 in [33, 30] {
+                XCTAssertNotEqual(cfg.action(bundle: "whatever.unknown", direction: dir),
+                                  GestureProfiles.key(key, c | shift),
+                                  "global \(dir.rawValue) still sends ⌘⇧\(key)")
+            }
+        }
+        let global = GestureProfiles.all.first { $0.id == GestureProfiles.fallback }!
+        for (dir, action) in global.defaults {
+            XCTAssertNotEqual(action, GestureProfiles.key(33, c | shift),
+                              "global \(dir.rawValue) sends the retired next-item keystroke")
+            XCTAssertNotEqual(action, GestureProfiles.key(30, c | shift),
+                              "global \(dir.rawValue) sends the retired previous-item keystroke")
         }
 
         // Browsers.
         for id in ["com.microsoft.edgemac", "com.apple.Safari", "com.google.Chrome"] {
             XCTAssertEqual(cfg.action(bundle: id, direction: .up), GestureProfiles.key(17, c), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .down), GestureProfiles.key(13, c), id)
-            XCTAssertEqual(cfg.action(bundle: id, direction: .left), GestureProfiles.key(48, ctrl | shift), id)
-            XCTAssertEqual(cfg.action(bundle: id, direction: .right), GestureProfiles.key(48, ctrl), id)
-            XCTAssertEqual(cfg.action(bundle: id, direction: .tiltLeft), GestureProfiles.key(17, c | shift), id)
-            XCTAssertEqual(cfg.action(bundle: id, direction: .tiltRight), GestureProfiles.key(17, c | shift), id)
+            XCTAssertEqual(cfg.action(bundle: id, direction: .left), GestureProfiles.key(33, c), id)
+            XCTAssertEqual(cfg.action(bundle: id, direction: .right), GestureProfiles.key(30, c), id)
+            // Tilt = next tab: a horizontal nudge is the "next page" motion on a
+            // browser, and it is the one tab key (`⌃⇥`) both Chrome and Edge bind
+            // identically to Safari.
+            XCTAssertEqual(cfg.action(bundle: id, direction: .tiltLeft), GestureProfiles.key(48, ctrl), id)
+            XCTAssertEqual(cfg.action(bundle: id, direction: .tiltRight), GestureProfiles.key(48, ctrl), id)
         }
 
-        // Dev & AI: only the two zoom directions; up/down stay unassigned.
+        // Dev & AI: history on the horizontal arms, up/down deliberately empty.
         for id in ["com.visualstudio.code", "com.cursor.ide", "dev.zed.Zed", "com.antigravity.ide", "com.anthropic.claude"] {
-            XCTAssertEqual(cfg.action(bundle: id, direction: .left), GestureProfiles.key(27, ctrl), id)
-            XCTAssertEqual(cfg.action(bundle: id, direction: .right), GestureProfiles.key(27, ctrl | shift), id)
+            XCTAssertEqual(cfg.action(bundle: id, direction: .left), GestureProfiles.key(33, c), id)
+            XCTAssertEqual(cfg.action(bundle: id, direction: .right), GestureProfiles.key(30, c), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .up), .unassigned, id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .down), .unassigned, id)
         }
@@ -291,12 +581,18 @@ final class MouseGestureTests: XCTestCase {
             XCTAssertEqual(cfg.action(bundle: id, direction: .down), .unassigned, id)
         }
 
-        // Office: deliberately empty — Word has no worksheets, and no verified
-        // Excel-specific shortcut was ever supplied. Nothing may be invented here.
+        // Office: **two separate tables**, because Word is not Excel.
+        // `⌘+`/`⌘-` is each app's own zoom shortcut, so those two rows are shared.
         for id in ["com.microsoft.Excel", "com.microsoft.Word"] {
-            XCTAssertTrue(GestureProfiles.all.first { $0.id == id }!.defaults.isEmpty, id)
+            XCTAssertEqual(cfg.action(bundle: id, direction: .up), GestureProfiles.key(24, c), id)
+            XCTAssertEqual(cfg.action(bundle: id, direction: .down), GestureProfiles.key(27, c), id)
         }
-
+        // Excel has a documented sheet-navigation pair; Word has no worksheets at
+        // all, so its tabs stay Unassigned rather than borrowing Excel's keys.
+        XCTAssertEqual(cfg.action(bundle: "com.microsoft.Excel", direction: .left), GestureProfiles.key(48, ctrl | shift))
+        XCTAssertEqual(cfg.action(bundle: "com.microsoft.Excel", direction: .right), GestureProfiles.key(48, ctrl))
+        XCTAssertEqual(cfg.action(bundle: "com.microsoft.Word", direction: .left), .unassigned)
+        XCTAssertEqual(cfg.action(bundle: "com.microsoft.Word", direction: .right), .unassigned)
         // Notes: ⌘P plus ⌘⌥← / ⌘⌥→; down is ambiguous (block vs page) -> unassigned.
         for id in ["co.elastic.obsidian", "com.notion.Notion-App"] {
             XCTAssertEqual(cfg.action(bundle: id, direction: .up), GestureProfiles.key(35, c), id)
@@ -317,17 +613,40 @@ final class MouseGestureTests: XCTestCase {
         }
     }
 
-    /// Families must not share a map by accident, and no ambiguous slot may be
-    /// filled with an invented shortcut.
+    /// Families must not share a map by accident, no two apps may share *one table*
+    /// unless they genuinely have the same shortcuts, and no ambiguous slot may be
+    /// filled with an invented key.
     func testFamiliesDoNotShareAccidentalMappings() {
         let dev = GestureProfiles.all.first { $0.id == "com.visualstudio.code" }!.defaults
         let browsers = GestureProfiles.all.first { $0.id == "com.apple.Safari" }!.defaults
-        let office = GestureProfiles.all.first { $0.id == "com.microsoft.Word" }!.defaults
-        XCTAssertTrue(office.isEmpty)
-        for (dir, action) in dev {
+        let excel = GestureProfiles.all.first { $0.id == "com.microsoft.Excel" }!.defaults
+        let word = GestureProfiles.all.first { $0.id == "com.microsoft.Word" }!.defaults
+        // Excel and Word overlap only where the shortcuts genuinely coincide (zoom),
+        // plus undo — the sheet-navigation pair exists in Excel alone, because Word
+        // has no worksheets. Sharing one dictionary between them is the bug this pins.
+        XCTAssertEqual(word.count, excel.count - 2, "Word and Excel must be separate tables")
+        XCTAssertNil(word[.left]); XCTAssertNil(word[.right])
+        XCTAssertNotNil(excel[.left]); XCTAssertNotNil(excel[.right])
+        XCTAssertEqual(word[.up], excel[.up]); XCTAssertEqual(word[.down], excel[.down])
+        for (dir, action) in dev where dir == .up || dir == .down {
             XCTAssertNotEqual(browsers[dir], action, "dev and browsers share \(dir.rawValue)")
         }
         XCTAssertNil(dev[.up]); XCTAssertNil(dev[.down])
+        // A preset with a hold-trigger button must never send a bare bracket to a
+        // text-first app: Photoshop's brush-size pair is the only place [] is right.
+        XCTAssertEqual(browsers[.left], GestureProfiles.key(33, GestureShortcut.command))
+    }
+
+    /// Word is not Excel, and the two must not be one dictionary with a comment
+    /// saying so. Both are in the user's daily-driver list, so this is a real
+    /// distinction, not a hypothetical.
+    func testWordAndExcelDoNotShareOneTable() {
+        let excel = GestureProfiles.all.first { $0.id == "com.microsoft.Excel" }!
+        let word = GestureProfiles.all.first { $0.id == "com.microsoft.Word" }!
+        XCTAssertNotEqual(excel.defaults, word.defaults)
+        XCTAssertNotEqual(excel.gestureMap, word.gestureMap)
+        XCTAssertEqual(word.gestureMap[.left]?.isUnassigned, true)
+        XCTAssertEqual(word.gestureMap[.right]?.isUnassigned, true)
     }
 
     /// `GestureShortcut.label` is the canonical keystroke spelling shown in the
@@ -418,61 +737,93 @@ final class MouseGestureTests: XCTestCase {
     /// measured — the same number is a different control on a Basilisk and on a
     /// Magic Mouse, and Dan asked for numbers by name.
     ///
-    /// The three numbers every mouse shares may carry a short factual note; slash
-    /// numbering means `mouseButton(n)` must read "Nút \(n+1)" so 0 → "Nút 1".
+    ///   The three numbers every mouse shares carry a short factual note naming **where
+    ///   the button is**, not a user-facing number: macOS's button 0 is the left
+    ///   click, 1 the right, 2 the wheel. The old table paired the *display* number
+    ///   with a description of a different control, which is why it read as
+    ///   "Nút 3 (bấm con lăn xuống)" — self-consistent-looking and impossible to
+    ///   reason about against the stored value.
+    ///
+    /// The model no longer returns these strings — it returns a `ButtonKey` and
+    /// this fixture is the single place that turns one into the Vietnamese literal
+    /// the store is keyed by. Nothing asserts on a rendered sentence any more,
+    /// because there is no longer a rendered sentence in the model to assert on.
     func testTriggerLabelsNameButtonsByNumber() {
-        XCTAssertTrue(TriggerSource.mouseButton(0).label.contains("Nút 1"),
-                      "macOS button 0 is the user's button 1")
-        XCTAssertTrue(TriggerSource.mouseButton(1).label.contains("Nút 2"),
-                      "macOS button 1 is the user's button 2")
-        XCTAssertTrue(TriggerSource.mouseButton(2).label.contains("Nút 3"),
-                      "macOS button 2 is the user's button 3")
-        // The offset must hold for every number, not just the first three.
-        for n in 1...31 {
-            XCTAssertEqual(TriggerSource.mouseButton(n).numberedName, "Nút \(n + 1)", "button \(n)")
+        // The three shared buttons are named by *position*, which answers the user's
+        // actual question ("which button do I press?"); every other button is named
+        // by its number, because no API can confirm where it sits.
+        XCTAssertEqual(L10nFixtures.buttonName(0), "Nút trái", "macOS button 0 is the left click")
+        XCTAssertEqual(L10nFixtures.buttonName(1), "Nút phải", "macOS button 1 is the right click")
+        XCTAssertEqual(L10nFixtures.buttonName(2), "Bấm con lăn xuống",
+                       "macOS button 2 is the wheel press")
+        // The offset must hold for every number from the first side button up.
+        for n in 3...31 {
+            XCTAssertEqual(L10nFixtures.buttonName(n), "Nút \(n + 1)", "button \(n)")
         }
         // Side/multimedia buttons are just numbers — no invented anatomy.
-        XCTAssertEqual(TriggerSource.mouseButton(3).label, "Nút 4")
-        XCTAssertEqual(TriggerSource.mouseButton(4).label, "Nút 5")
+        XCTAssertEqual(L10nFixtures.buttonName(3), "Nút 4")
+        XCTAssertEqual(L10nFixtures.buttonName(4), "Nút 5")
         for banned in ["hông", "bắn tỉa", "DPI", "sniper", "con lăn"] {
-            XCTAssertFalse(TriggerSource.mouseButton(4).label.contains(banned),
+            XCTAssertFalse(L10nFixtures.buttonName(4).contains(banned),
                            "invented physical name '\(banned)' came back")
         }
 
         // The default must be the one users can find without a vendor utility.
-        XCTAssertEqual(GestureConfiguration().trigger, .mouseButton(2))
-        XCTAssertFalse(TriggerSource.mouseButton(2).label.contains("Button 2"),
-                       "the raw CoreGraphics code is not a user-facing name")
+        XCTAssertEqual(GestureConfiguration().trigger, .mouseButton(3))
 
         // Out-of-range codes still render something, never an empty label.
-        XCTAssertFalse(TriggerSource.mouseButton(9).label.isEmpty)
+        XCTAssertFalse(L10nFixtures.buttonName(9).isEmpty)
+
+        // And the trigger still exposes the *semantic* shape, which is what the
+        // view resolves — a modifier trigger must not claim a button number.
+        XCTAssertEqual(TriggerSource.mouseButton(4).key, .index(4))
+        XCTAssertTrue(TriggerSource.mouseButton(4).isMouseButton)
+        XCTAssertEqual(TriggerSource.modifierKey(GestureShortcut.control).key,
+                       .modifier(GestureShortcut.control))
+        XCTAssertFalse(TriggerSource.modifierKey(GestureShortcut.control).isMouseButton)
     }
 
-    /// The page's promise: an arrow must never be bare. "Tôi ko hiểu dùng nút nào
-    /// của chuột với mũi tên" is what the user said, so every non-tilt heading has
-    /// to name the held button, and every heading must be distinct.
-    func testEveryDirectionHeadingNamesTheHeldButton() {
-        for trigger in [TriggerSource.mouseButton(2), .mouseButton(4), .modifierKey(GestureShortcut.control)] {
-            for dir in [GestureDirection.up, .down, .left, .right] {
-                let text = dir.title(trigger: trigger)
-                XCTAssertFalse(text.isEmpty, "\(dir) has no heading")
-                XCTAssertTrue(text.contains(trigger.numberedName),
-                              "\(dir) heading omits the button: \(text)")
-                XCTAssertTrue(text.contains("kéo"), "\(dir) must say it is a drag: \(text)")
-                XCTAssertFalse(text.contains("giữ nút"),
-                               "\(dir) says 'giữ nút' without saying which button: \(text)")
-            }
+    /// The heading vocabulary must let the panel name the direction and the held
+    /// button — the button **exactly once**, and never on a tilt direction.
+    ///
+    /// The user read a number on all four arms and concluded every arm was "Button
+    /// 3"; the number therefore moved out of the per-arm caption into the mouse
+    /// body, and the heading keeps a single mention.
+    ///
+    /// This asserts the model's *keys* rather than a rendered sentence, because the
+    /// sentence is assembled by `L10n.t(direction, trigger:)` and this package has no
+    /// `L10n`. Asserting the keys is the stronger check anyway: the key is the source
+    /// of the sentence, so "the button is composeable exactly once" is a property of
+    /// the vocabulary, not of one rendering of it.
+    func testHeadingVocabularyNamesTheHeldButtonExactlyOnce() {
+        // A hold direction is composed of a button key and a bare motion hint. The
+        // button is NOT inside `titleKey`, which is what makes it appear once.
+        for dir in [GestureDirection.up, .down, .left, .right] {
+            XCTAssertFalse(dir.titleKey.isEmpty, "\(dir) has no heading key")
+            XCTAssertFalse(GestureTriggerKind.isTilt(dir), "\(dir) must need a held button")
+            XCTAssertFalse(dir.titleKey.contains("Nút"),
+                           "\(dir).titleKey carries a button, so it would print on every "
+                           + "arm again: \(dir.titleKey)")
+            XCTAssertFalse(dir.motionHintKey.isEmpty, "\(dir) has no motion hint")
+            XCTAssertFalse(dir.motionHintKey.contains("Nút"),
+                           "\(dir).motionHintKey carries a button: \(dir.motionHintKey)")
         }
         // Tilt is a different physical motion and must NOT claim a held button.
         for dir in [GestureDirection.tiltLeft, .tiltRight] {
-            let text = dir.title(trigger: .mouseButton(2))
-            XCTAssertTrue(text.contains("Nghiêng"), "\(dir) must say the wheel is tilted: \(text)")
-            XCTAssertFalse(text.contains("Nút 3"),
-                           "\(dir) is performed without holding a button: \(text)")
+            XCTAssertTrue(GestureTriggerKind.isTilt(dir), "\(dir) is a tilt direction")
+            XCTAssertTrue(dir.titleKey.contains("Nghiêng"),
+                          "\(dir) must say the wheel is tilted: \(dir.titleKey)")
+            XCTAssertFalse(dir.titleKey.contains("Nút"),
+                           "\(dir) is performed without holding a button: \(dir.titleKey)")
         }
         // Every heading must differ, or the diagram cannot be read.
-        let all = GestureDirection.allCases.map { $0.title(trigger: .mouseButton(2)) }
+        let all = GestureDirection.allCases.map(\.titleKey)
         XCTAssertEqual(Set(all).count, all.count, "directions share a heading: \(all)")
+        // And every motion caption must differ too, since they are all on screen at
+        // the same time in the legend.
+        let captions = GestureDirection.allCases.map(\.motionKey)
+        XCTAssertEqual(Set(captions).count, captions.count,
+                       "directions share a motion caption: \(captions)")
     }
     /// The diagram must never draw an arm that cannot fire, and every direction it
     /// *does* draw must be reachable. Both directions of the `isTilt` split are
@@ -482,9 +833,9 @@ final class MouseGestureTests: XCTestCase {
         for dir in GestureDirection.allCases {
             let expected = (dir == .tiltLeft || dir == .tiltRight)
             XCTAssertEqual(GestureTriggerKind.isTilt(dir), expected, dir.rawValue)
-            XCTAssertEqual(GestureDirectionDisplay.isTilt(dir), expected, dir.rawValue)
+            XCTAssertEqual(GestureTriggerKind.isTilt(dir), expected, dir.rawValue)
             // Horizontal-scroll pass-through is offered only where it is meaningful.
-            XCTAssertEqual(GestureDirectionDisplay.supportsHorizontalScroll(dir), expected, dir.rawValue)
+            XCTAssertEqual(GestureTriggerKind.supportsHorizontalScroll(dir), expected, dir.rawValue)
         }
     }
 
@@ -627,15 +978,37 @@ final class MouseGestureTests: XCTestCase {
         XCTAssertNil(MouseDiagramSelection.afterProfileChange())
     }
 
-    /// Every direction must produce a non-empty, distinct heading in the detail
-    /// panel. A missing case would render an empty title above the keys.
+    /// Every direction must expose a non-empty, distinct heading key. The panel
+    /// renders it through `L10n.t`, so an empty key would render an empty title
+    /// above the keys — and a duplicated key would make two directions
+    /// indistinguishable in the heading.
     func testEveryDirectionHasADistinctDetailHeading() {
-        let titles = GestureDirection.allCases.map {
-            GestureDirectionDisplay.title($0, trigger: .mouseButton(2))
-        }
+        let titles = GestureDirection.allCases.map(\.titleKey)
         XCTAssertEqual(titles.count, GestureDirection.allCases.count)
         for title in titles { XCTAssertFalse(title.isEmpty, "direction has no heading") }
         XCTAssertEqual(Set(titles).count, titles.count, "two directions share a heading")
+    }
+
+    /// **L1, pinned.** The diagram must never print the held button on an arm: the
+    /// button is identical for all four directions, so printing it once per arm read
+    /// as "all four buttons are Button 3", which is exactly what the user reported.
+    ///
+    /// The assertion is structural rather than visual: `motionKey` is the caption
+    /// vocabulary and must contain no number, while `motionHintKey`/`titleKey` are
+    /// the heading vocabulary and are allowed to name the button once.
+    func testArmCaptionsCarryNoButtonNumber() {
+        for direction in GestureDirection.allCases {
+            let caption = direction.motionKey
+            XCTAssertFalse(caption.isEmpty, "\(direction.rawValue) has no caption")
+            XCTAssertFalse(caption.contains("Nút"),
+                           "the arm caption for \(direction.rawValue) names a button: "
+                           + "\(caption) — the number belongs on the mouse body once")
+            // The heading key is a *key*, so it cannot carry a value either; the
+            // resolution adds the button through `motionHintKey`.
+            XCTAssertFalse(L10nFixtures.interpolates(direction.titleKey),
+                           "\(direction.rawValue).titleKey interpolates, so it can never "
+                           + "be a lookup key")
+        }
     }
 
     /// The panel must name the key the engine will post. `GestureShortcut.label`
@@ -653,7 +1026,13 @@ final class MouseGestureTests: XCTestCase {
         XCTAssertEqual(cfg.action(bundle: "com.apple.Safari", direction: .up),
                        .shortcut(GestureShortcut(key: 17, flags: c)))
         XCTAssertEqual(cfg.action(bundle: "com.apple.Safari", direction: .right),
-                       .shortcut(GestureShortcut(key: 48, flags: ctrl)))
+                       .shortcut(GestureShortcut(key: 30, flags: c)))
+        // The `label` the page prints and the `shortcut` the engine posts are the
+        // same value — `GestureMapEntry.action` is derived from its own `shortcut`,
+        // so a row cannot show one key and dispatch another.
+        let row = GestureMap.row(overrides: [:], bundle: "com.apple.Safari", direction: .up)
+        XCTAssertEqual(row.action, .shortcut(GestureShortcut(key: 17, flags: c)))
+        XCTAssertEqual(row.entry.shortcut?.label ?? "", "⌘T")
     }
 
     /// "Raw horizontal scroll" is offered on exactly the two tilt arms and never
@@ -663,13 +1042,219 @@ final class MouseGestureTests: XCTestCase {
     /// has nothing to pass through.
     func testHorizontalScrollOfferedOnlyOnTiltArms() {
         for direction in GestureDirection.allCases {
-            let offered = GestureDirectionDisplay.supportsHorizontalScroll(direction)
-            XCTAssertEqual(offered, GestureDirectionDisplay.isTilt(direction),
+            let offered = GestureTriggerKind.supportsHorizontalScroll(direction)
+            XCTAssertEqual(offered, GestureTriggerKind.isTilt(direction),
                            "\(direction.rawValue): horizontal-scroll option disagrees with tilt-ness")
         }
-        XCTAssertTrue(GestureDirectionDisplay.supportsHorizontalScroll(.tiltLeft))
-        XCTAssertTrue(GestureDirectionDisplay.supportsHorizontalScroll(.tiltRight))
-        XCTAssertFalse(GestureDirectionDisplay.supportsHorizontalScroll(.up))
-        XCTAssertFalse(GestureDirectionDisplay.supportsHorizontalScroll(.left))
+        XCTAssertTrue(GestureTriggerKind.supportsHorizontalScroll(.tiltLeft))
+        XCTAssertTrue(GestureTriggerKind.supportsHorizontalScroll(.tiltRight))
+        XCTAssertFalse(GestureTriggerKind.supportsHorizontalScroll(.up))
+        XCTAssertFalse(GestureTriggerKind.supportsHorizontalScroll(.left))
+    }
+
+    // MARK: - Acceptance section (the two causes of "it does not fire")
+
+    /// The page warns about a **wheel hold** specifically, and that warning must fire
+    /// for the value that was actually shipped as the default in an older build.
+    ///
+    /// This is the whole point of the warning: the user's stored configuration carries
+    /// `mouseButton(2)`, and it survives every `validate()` because 2 is a *valid*
+    /// trigger. Nothing else in the codebase treats 2 as special, so if this predicate
+    /// is ever "simplified" to a generic `isMouseButton` check the user's exact reported
+    /// bug becomes invisible again.
+    func testWheelHoldIsSingledOutAsUnusable() {
+        // The predicate the view uses, restated so the test fails if the view changes
+        // its mind without this being updated.
+        func isWheelHold(_ trigger: TriggerSource) -> Bool { trigger.buttonNumber == 2 }
+
+        XCTAssertTrue(isWheelHold(.mouseButton(2)), "wheel click must be flagged")
+        XCTAssertFalse(isWheelHold(.mouseButton(3)))
+        XCTAssertFalse(isWheelHold(.mouseButton(4)))
+        XCTAssertFalse(isWheelHold(.mouseButton(5)))
+        XCTAssertFalse(isWheelHold(.modifierKey(GestureShortcut.command)),
+                       "a modifier is not a wheel hold")
+
+        // And the value that shipped as the default must NOT be the wheel, or the
+        // warning would fire on every fresh install instead of on legacy payloads.
+        XCTAssertFalse(isWheelHold(GestureConfiguration.defaultTrigger))
+    }
+
+    /// The "set this as the hold button" offer must appear only for a press of a button
+    /// *other than* the current trigger.
+    ///
+    /// The rejected alternative was a prompt gated on `trigger == 2 && overrides == {}`,
+    /// which matched every fresh install because 2 was then the code default. Gating on
+    /// an observed press is what makes the offer honest — it only appears after the user
+    /// has actually pressed something.
+    func testSetAsHoldOfferRequiresADifferentObservedButton() {
+        func offers(_ observed: Int?, trigger: TriggerSource) -> Bool {
+            guard let observed else { return false }
+            return observed != trigger.buttonNumber
+        }
+
+        XCTAssertFalse(offers(nil, trigger: .mouseButton(3)), "no press yet — nothing to offer")
+        XCTAssertFalse(offers(3, trigger: .mouseButton(3)), "pressing the current trigger changes nothing")
+        XCTAssertTrue(offers(4, trigger: .mouseButton(3)), "a different button is the case to offer")
+        XCTAssertTrue(offers(3, trigger: .mouseButton(2)),
+                      "somebody stuck on the wheel hold must be offered the button they pressed")
+        // A modifier trigger has no number, so any press is a change.
+        XCTAssertTrue(offers(3, trigger: .modifierKey(GestureShortcut.command)))
+    }
+
+    /// Every app the user actually uses daily must resolve to a real table, and none of
+    /// them may be silently inheriting Global. This is the "preset-first" promise: the
+    /// page must never read as though the user has to build mappings by hand.
+    func testEveryDailyDriverHasItsOwnPreset() {
+        let dailyDrivers = [
+            "com.anthropic.claude", "com.antigravity.ide", "dev.zed.Zed",
+            "net.kovidgoyal.kitty", "com.apple.Terminal",
+            "com.apple.Safari", "com.google.Chrome", "com.microsoft.edgemac",
+            "com.microsoft.Word", "com.microsoft.Excel",
+            "com.adobe.Photoshop", "com.lemon.CapCutMac",
+        ]
+        for id in dailyDrivers {
+            XCTAssertTrue(GestureProfiles.hasPreset(bundle: id),
+                          "\(id) has no built-in preset, so it silently uses Global")
+        }
+    }
+
+    /// Global answers for a bundle that has no preset of its own, and does so by
+    /// *falling back* rather than by pretending the app has a table.
+    func testUnknownAppFallsBackToGlobalAndSaysSo() {
+        let unknown = "com.example.not-installed-anywhere"
+        XCTAssertFalse(GestureProfiles.hasPreset(bundle: unknown))
+        XCTAssertEqual(GestureProfiles.resolve(overrides: [:], bundle: unknown, direction: .up),
+                       GestureProfiles.resolve(overrides: [:], bundle: GestureProfiles.fallback, direction: .up))
+    }
+
+    // MARK: - System actions resolve from the machine, and say so when they cannot
+
+    /// A fixture of what a machine that bound all four Space/Mission-Control shortcuts looks
+    /// like, copied from the live read (ids 32/33/79–82, `⌃`+arrow, mask `0x840000`).
+    private var liveBindings: GestureSystemBindings {
+        GestureSystemBindings(entries: SpaceBinding.parse([
+            "32": ["enabled": 1, "value": ["parameters": [65535, 126, 8650752]]],
+            "33": ["enabled": 1, "value": ["parameters": [65535, 125, 8650752]]],
+            "79": ["enabled": 1, "value": ["parameters": [65535, 123, 8650752]]],
+            "81": ["enabled": 1, "value": ["parameters": [65535, 124, 8650752]]],
+        ]))
+    }
+
+    /// The single rule this whole pass exists to enforce: **the row shows the keys the
+    /// engine will post.** With the machine's own bindings threaded in, the Global arms
+    /// resolve to real chords — `⌃↑` / `⌃↓` / `⌃←` / `⌃→` on this host — rather than to a
+    /// constant the module invented. Before this, the page showed keys nothing listened for
+    /// and the user reported exactly that: "recognised but does nothing".
+    func testRowResolvesSystemActionsFromTheMachinesBindings() {
+        for (direction, expected) in [(GestureDirection.up, GestureShortcut(key: 126, flags: 8650752)),
+                                      (.down, GestureShortcut(key: 125, flags: 8650752)),
+                                      (.left, GestureShortcut(key: 123, flags: 8650752)),
+                                      (.right, GestureShortcut(key: 124, flags: 8650752))] {
+            let row = GestureMap.row(overrides: [:], bundle: "com.example.unknown",
+                                     direction: direction, systemBindings: liveBindings)
+            XCTAssertEqual(row.systemShortcut, expected, "\(direction.rawValue) did not resolve")
+            XCTAssertFalse(row.isUnboundSystemAction)
+            XCTAssertEqual(row.caption, expected.label,
+                           "the caption must be the resolved chord, not the action's name")
+            // And the resolved chord is exactly what `SpaceBinding` would post — the engine
+            // and the page read one value, so "shown equals sent" is structural.
+            //
+            // Guarded, **not** `row.entry.systemAction!`. This test is supposed to go red when
+            // the Global arm stops being a system action — that is exactly what mutation M3 in
+            // `scripts/mutation-check-gesture-labels.sh` injects. A force-unwrap there traps
+            // instead of failing, and a trap inside the test runner never returns: it hung the
+            // whole mutation run for 30 minutes with the mutated source still on disk. A test
+            // that crashes on the bug it claims to catch is not a gate.
+            guard let system = row.entry.systemAction else {
+                XCTFail("\(direction.rawValue): the Global arm is not a system action")
+                continue
+            }
+            XCTAssertEqual(row.systemShortcut, liveBindings.shortcut(for: system))
+        }
+    }
+
+    /// A machine with nothing bound must produce a row that **says so**, not one that invents
+    /// a key and not one that reads as "deliberately unassigned". Those are three different
+    /// states and the UI treats them differently.
+    func testUnboundSystemActionRowSaysSoInsteadOfInventingAKey() {
+        let row = GestureMap.row(overrides: [:], bundle: "com.example.unknown",
+                                 direction: .up, systemBindings: .empty)
+        XCTAssertTrue(row.isUnboundSystemAction)
+        XCTAssertNil(row.systemShortcut, "no binding exists, so nothing may be shown as a key")
+        XCTAssertEqual(row.caption, GestureSystemAction.missionControl.unboundCaptionKey)
+        XCTAssertNotNil(row.caption, "an empty caption reads as a broken cell")
+        // It is still the action the engine will try — so the diagnostic can name it.
+        XCTAssertEqual(row.action, .systemAction(.missionControl))
+        // And crucially it is NOT reported as deliberately unassigned: that wording would
+        // tell the user to pick an action, when the fix is to set the macOS shortcut.
+        XCTAssertFalse(row.entry.isUnassigned)
+    }
+
+    /// Browsers keep their own history convention on the horizontal arms — the Global change
+    /// must not have flattened a real per-app mapping into a system action.
+    func testBrowserHorizontalArmsStayHistoryNotSpace() {
+        let c = GestureShortcut.command
+        for id in ["com.apple.Safari", "com.google.Chrome", "com.microsoft.edgemac"] {
+            let row = GestureMap.row(overrides: [:], bundle: id, direction: .left,
+                                     systemBindings: liveBindings)
+            XCTAssertEqual(row.action, .shortcut(GestureShortcut(key: 33, flags: c)), id)
+            XCTAssertNil(row.entry.systemAction, "\(id) left became a system action")
+            XCTAssertFalse(row.isUnboundSystemAction)
+        }
+    }
+
+    /// An override that **picks a system action** must round-trip. The old resolver built the
+    /// override's entry with `shortcut: nil` and no system action, so the row reported itself
+    /// as unassigned even though the action was stored — the user's choice vanished from the
+    /// page while remaining in preferences.
+    func testOverrideChoosingASystemActionIsNotReportedAsUnassigned() {
+        var overrides: [String: [GestureDirection: GestureAction]] = [:]
+        overrides["com.apple.Safari"] = [.down: .systemAction(.nextSpace)]
+        let row = GestureMap.row(overrides: overrides, bundle: "com.apple.Safari",
+                                 direction: .down, systemBindings: liveBindings)
+        XCTAssertTrue(row.isUserOverride)
+        XCTAssertEqual(row.entry.systemAction, .nextSpace)
+        XCTAssertFalse(row.entry.isUnassigned, "a stored system action must not read as unassigned")
+        XCTAssertEqual(row.caption, GestureShortcut(key: 124, flags: 8650752).label)
+        XCTAssertEqual(row.action, .systemAction(.nextSpace))
+    }
+
+    /// Reset-to-preset drops only that direction's override, and the row goes back to the
+    /// preset's system action — with the resolved chord, not with a stale override.
+    func testResetToPresetRestoresTheSystemAction() {
+        var overrides: [String: [GestureDirection: GestureAction]] = [:]
+        overrides["com.example.unknown"] = [.up: .unassigned]
+        let overridden = GestureMap.row(overrides: overrides, bundle: "com.example.unknown",
+                                        direction: .up, systemBindings: liveBindings)
+        XCTAssertTrue(overridden.entry.isUnassigned)
+        // The controller's `resetDirection` removes the entry when the dict empties.
+        overrides.removeValue(forKey: "com.example.unknown")
+        let reset = GestureMap.row(overrides: overrides, bundle: "com.example.unknown",
+                                   direction: .up, systemBindings: liveBindings)
+        XCTAssertFalse(reset.isUserOverride)
+        XCTAssertEqual(reset.action, .systemAction(.missionControl))
+        XCTAssertEqual(reset.systemShortcut, GestureShortcut(key: 126, flags: 8650752))
+    }
+
+    /// The page's rows and the engine's dispatch must agree for **every** built-in bundle and
+    /// direction, including the system arms — the brief's "one resolver, not two copies" rule
+    /// as an assertion rather than as a convention.
+    func testShownEqualsSentForEveryBundleAndDirection() {
+        let cfg = GestureConfiguration()
+        for profile in GestureProfiles.all {
+            for direction in GestureDirection.allCases {
+                let row = GestureMap.row(overrides: cfg.overrides, bundle: profile.id,
+                                         direction: direction, systemBindings: liveBindings)
+                XCTAssertEqual(row.action,
+                               GestureProfiles.resolve(overrides: cfg.overrides, bundle: profile.id,
+                                                       direction: direction),
+                               "\(profile.id)/\(direction.rawValue): row and engine disagree")
+                // A system row's displayed chord is the bindings' chord — never a constant.
+                if let system = row.entry.systemAction {
+                    XCTAssertEqual(row.systemShortcut, liveBindings.shortcut(for: system),
+                                   "\(profile.id)/\(direction.rawValue): caption and dispatch disagree")
+                }
+            }
+        }
     }
 }

@@ -21,15 +21,39 @@ python3 scripts/audit-l10n-reachability.py 2>&1 | tail -3
 
 echo
 echo "=== 4. Tests ==="
-swift test --package-path Tests 2>&1 | grep -E "Executed [0-9]+ tests, with" | tail -1
+# From Tests/. From the repo root `swift test` reports "0 tests", which the old
+# version of this script did — and a green count over zero tests reads exactly
+# like protection.
+(cd Tests && swift test 2>&1 | grep -E "Executed [0-9]+ tests, with" | tail -1)
 
 echo
-echo "=== 5. Store file is in the built app bundle ==="
-ls -la /tmp/xfinder-l10n-build/out/XFinder.app/Contents/Resources/L10n.strings.json
+echo "=== 5. Build, so the bundle below describes THIS tree ==="
+# The script used to read /tmp/xfinder-l10n-build without rebuilding it, so it kept
+# reporting a bundle from an earlier run — measured: it printed a 119475-byte store
+# while the source on disk was 127776 bytes. Reading a stale artefact is how a green
+# result stops describing the tree in front of you.
+OUT=/tmp/xfinder-l10n-build
+rm -rf "$OUT"
+mkdir -p "$OUT"
+xcodebuild -project XFinder.xcodeproj -scheme XFinder -configuration Debug \
+  -derivedDataPath "$OUT/dd" CONFIGURATION_BUILD_DIR="$OUT/out" build \
+  > "$OUT/build.log" 2>&1 || { tail -20 "$OUT/build.log"; exit 1; }
+grep -m1 "BUILD SUCCEEDED" "$OUT/build.log" || { echo "FAIL: no success line"; exit 1; }
+
+ls -la "$OUT/out/XFinder.app/Contents/Resources/L10n.strings.json"
+# The built store must match the source, byte for byte. A size comparison catches
+# the whole class of "built an older revision and reported on it".
+SRC="XFinder/Resources/L10n.strings.json"
+if cmp -s "$SRC" "$OUT/out/XFinder.app/Contents/Resources/L10n.strings.json"; then
+  echo "built store matches source: yes"
+else
+  echo "FAIL: the bundled store differs from $SRC"
+  exit 1
+fi
 
 echo
 echo "=== 6. New sources present in the compile log by name ==="
-grep -E "L10nStore|L10n\.swift" \
+grep -E "L10nStore|L10n\.swift|GestureLabelStructure|DeviceCapability" \
   /tmp/xfinder-l10n-build/dd/Build/Intermediates.noindex/XFinder.build/Debug/XFinder.build/Objects-normal/arm64/XFinder.SwiftFileList
 
 echo

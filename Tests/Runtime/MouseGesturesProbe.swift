@@ -48,7 +48,42 @@ import os
             var output: [CGEvent] = []
             let worker = GestureWorker(engine: engine, eventSink: { output.append($0.copy()!) })
             worker.configuration.enabled = true
+            // The harness pins its **own** trigger rather than relying on the production
+            // default. That default moved from the wheel click (2) to the upper side button
+            // (3) when the wheel-hold was found to be ergonomically impossible, and this
+            // file silently started failing its first assertion as a result — a reminder
+            // that a harness reading a default is testing two things at once.
+            worker.configuration.trigger = .mouseButton(2)
             worker.bundle = "com.apple.Safari"
+            // The machine's own symbolic hotkeys, as measured on this host: Mission Control
+            // ⌃↑, App Exposé ⌃↓, previous/next Space ⌃←/⌃→, each with `0x840000` =
+            // control | maskSecondaryFn. The Global preset resolves its four arms from
+            // these, so a harness with no bindings models a Mac with nothing bound — a real
+            // state, but not one that produces a keypress.
+            let machineBindings = GestureSystemBindings(entries: SpaceBinding.parse([
+                "32": ["enabled": 1, "value": ["parameters": [65535, 126, 8650752]]],
+                "33": ["enabled": 1, "value": ["parameters": [65535, 125, 8650752]]],
+                "79": ["enabled": 1, "value": ["parameters": [65535, 123, 8650752]]],
+                "81": ["enabled": 1, "value": ["parameters": [65535, 124, 8650752]]],
+            ]))
+            worker.systemBindings = machineBindings
+
+            /// What the engine actually posted must equal what the **resolver** says the row
+            /// sends. Written as an equivalence rather than a magic keycode because the raw
+            /// numbers here had already drifted from the presets (this file expected `⌘T`
+            /// for the browser tilt row, which had become `⌃Tab`) — and a harness asserting a
+            /// stale literal fails for the wrong reason. The unit tests pin the table; this
+            /// pins that the engine dispatches what the table says.
+            func posts(_ action: GestureAction) -> Bool {
+                guard let expected = GestureMap.shortcut(of: action) else { return false }
+                return output.count == 2
+                    && output[0].getIntegerValueField(.keyboardEventKeycode) == Int64(expected.key)
+                    && output[1].getIntegerValueField(.keyboardEventKeycode) == Int64(expected.key)
+                    && (output[0].flags.rawValue & expected.flags) == expected.flags
+            }
+            func resolved(_ bundle: String, _ direction: GestureDirection) -> GestureAction {
+                GestureProfiles.resolve(overrides: [:], bundle: bundle, direction: direction)
+            }
             func event(_ type: CGEventType, button: Int64 = 2, dx: Int64 = 0, dy: Int64 = 0) -> CGEvent {
                 let value = CGEvent(source:nil)!
                 value.type = type
@@ -69,7 +104,7 @@ import os
             output.removeAll()
             precondition(send(.otherMouseDown)); precondition(send(.otherMouseDragged,dy:-20)); precondition(send(.otherMouseUp))
             precondition(output.map(\.type) == [.keyDown,.keyUp])
-            precondition(output[0].getIntegerValueField(.keyboardEventKeycode) == 17)
+            precondition(posts(resolved("com.apple.Safari", .up)), "engine did not post the row's own key")
             precondition(output[0].flags.contains(.maskCommand))
             output.removeAll()
             precondition(send(.otherMouseDown)); precondition(send(.otherMouseDragged,dx:20))
@@ -136,7 +171,8 @@ import os
             precondition(worker.handle(.scrollWheel,wheel) == nil)
             precondition(output.count == 2)
             precondition(worker.handle(.scrollWheel,wheel) == nil && output.count == 2)
-            precondition(output[0].getIntegerValueField(.keyboardEventKeycode) == 17)
+            precondition(posts(resolved("com.apple.Safari", .tiltLeft)),
+                         "the tilt row's dispatched key differs from what the resolver reports")
             output.removeAll()
             worker.configuration.trigger = .mouseButton(2)
             // Directly measure the actual callback (no posting), not a model copy.
@@ -147,7 +183,68 @@ import os
             let elapsed = CFAbsoluteTimeGetCurrent()-start
             worker.cancelStroke(); precondition(send(.otherMouseUp))
             precondition(output.isEmpty)
+
+            // ── System actions post *this machine's* chord, or nothing at all ───────────
+            //
+            // The bug asserted against: the Global preset named Mission Control and posted
+            // an invented `NSEvent.systemDefined` keytype 32. That keytype does not exist
+            // (`ev_keymap.h` stops at `NX_KEYTYPE_MENU = 25`), so the gesture was recognised
+            // and did nothing — the user's "nhận dạng cho có, không làm việc". The fix
+            // resolves the chord from the user's own symbolic hotkeys; this measures that
+            // the engine posts **that** chord, with its mask intact, and that an action the
+            // machine does not bind posts nothing at all.
+            var systemConfig = GestureConfiguration()
+            systemConfig.enabled = true
+            systemConfig.trigger = .mouseButton(2)
+            worker.configuration = systemConfig
+            worker.bundle = "com.example.unknown"   // no preset of its own → the Global table
+            // The live shape read from this machine on 2026-09-23: 32 = ⌃↑ Mission Control,
+            // 81 = ⌃→ next Space, both with `0x840000` = control | maskSecondaryFn.
+            worker.systemBindings = machineBindings
+            guard let expectedMissionControl = machineBindings.shortcut(for: .missionControl),
+                  let expectedNextSpace = machineBindings.shortcut(for: .nextSpace) else {
+                preconditionFailure("the fixture must carry these two bindings")
+            }
+            output.removeAll()
+            precondition(send(.otherMouseDown))
+            precondition(send(.otherMouseDragged,dy:-20))   // pull UP → Mission Control
+            precondition(send(.otherMouseUp))
+            precondition(output.map(\.type) == [.keyDown,.keyUp],
+                         "a system action must post a real key pair, not a systemDefined event")
+            precondition(output[0].getIntegerValueField(.keyboardEventKeycode)
+                         == Int64(expectedMissionControl.key),
+                         "Mission Control must post the key this machine binds, not an invented one")
+            precondition(output[0].flags.contains(.maskControl), "control must survive")
+            precondition(output[0].flags.contains(.maskSecondaryFn),
+                         "the secondary-fn bit is part of Apple's encoding and must survive")
+            output.removeAll()
+            precondition(send(.otherMouseDown))
+            precondition(send(.otherMouseDragged,dx:20))    // pull RIGHT → next Space
+            precondition(send(.otherMouseUp))
+            precondition(output.map(\.type) == [.keyDown,.keyUp])
+            precondition(output[0].getIntegerValueField(.keyboardEventKeycode)
+                         == Int64(expectedNextSpace.key),
+                         "next Space must post the key this machine binds")
+            // Unbound: the same gesture must post **nothing**. A fabricated fallback here is
+            // exactly the shipped bug, so this is the assertion that keeps it out.
+            worker.systemBindings = .empty
+            output.removeAll()
+            precondition(send(.otherMouseDown))
+            precondition(send(.otherMouseDragged,dy:-20))
+            precondition(send(.otherMouseUp))
+            precondition(output.isEmpty,
+                         "an unbound system action must post nothing, not a guessed key")
+            // A deliberately unassigned row (the dev preset leaves up/down empty) likewise
+            // posts nothing, and must not be reported as a sent shortcut.
+            worker.bundle = "dev.zed.Zed"
+            output.removeAll()
+            precondition(send(.otherMouseDown))
+            precondition(send(.otherMouseDragged,dy:-20))
+            precondition(send(.otherMouseUp))
+            precondition(output.isEmpty, "an unassigned direction must not post a key")
+
             print("PASS production callback: click replay, recursion, browser shortcut, deadzone, cancellation, modifier, passthrough")
+            print("PASS system actions: machine's own chord posted, fn+control mask intact, unbound posts nothing")
             print("80,000 callback invocations: \(elapsed) s; NOT a physical 8 kHz mouse measurement")
             done.signal()
         }

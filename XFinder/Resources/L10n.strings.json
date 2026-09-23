@@ -153,6 +153,10 @@
       "en": " paths.",
       "scope": "fragment"
     },
+    " — ": {
+      "en": " — ",
+      "scope": "fragment"
+    },
     "%.0f%% đã dùng": {
       "en": "%.0f%% used",
       "scope": "sentence"
@@ -229,12 +233,20 @@
       "en": "AI understood",
       "scope": "sentence"
     },
+    "App Exposé": {
+      "en": "App Exposé",
+      "scope": "sentence"
+    },
     "Apple Intelligence": {
       "en": "Apple Intelligence",
       "scope": "sentence"
     },
     "Ba bước, không cần cấu hình gì thêm.": {
       "en": "Three steps, nothing else to configure.",
+      "scope": "sentence"
+    },
+    "Ba bước: giữ nút → kéo quá ngưỡng → thả. Kéo chưa đủ xa thì XFinder phát lại click bình thường, nên không mất thao tác nào.": {
+      "en": "Three steps: hold the button → pull past the threshold → release. A pull that is too short replays the normal click, so no action is ever lost.",
       "scope": "sentence"
     },
     "Biểu tượng thanh menu": {
@@ -261,12 +273,20 @@
       "en": "You set this",
       "scope": "sentence"
     },
+    "Bạn vừa bấm": {
+      "en": "You just pressed",
+      "scope": "fragment"
+    },
     "Bạn đang dùng bản mới nhất (": {
       "en": "You're on the latest version (",
       "scope": "fragment"
     },
     "Bạn đã tắt": {
       "en": "You turned it off",
+      "scope": "sentence"
+    },
+    "Bạn đã tự đặt phím cho hướng này. Bấm mũi tên quay lại để trả về preset.": {
+      "en": "You set the shortcut for this direction. Click the back arrow to return it to the preset.",
       "scope": "sentence"
     },
     "Bạn đã tự đặt phím cho hướng này. Bấm “Về mặc định” để quay lại bảng có sẵn.": {
@@ -301,6 +321,10 @@
       "en": "New board",
       "scope": "sentence"
     },
+    "Bấm con lăn xuống": {
+      "en": "Middle click",
+      "scope": "sentence"
+    },
     "Bấm mũi tên → ẩn icon nằm BÊN PHẢI mũi tên (menu app + Apple menu bên trái không bị đụng). Kéo MŨI TÊN (⌘) sát mép trái để ẩn hết icon; các icon bạn muốn HIỆN thì kéo qua bên TRÁI mũi tên. ⌘-kéo icon qua lại giữa hai phía bất kỳ lúc nào.": {
       "en": "Click the arrow → hides the icons to the RIGHT of the arrow (the app menu and Apple menu on the left are untouched). Drag the ARROW (⌘) to the far left edge to hide every icon; any icon you want SHOWN, drag it to the LEFT of the arrow. ⌘-drag icons back and forth between the two sides at any time.",
       "scope": "sentence"
@@ -315,6 +339,10 @@
     },
     "Bấm “Ghi chú mới” để tạo ghi chú đầu tiên.": {
       "en": "Click “New note” to create your first note.",
+      "scope": "sentence"
+    },
+    "Bấm “Xem” ở mục dưới để mở đúng bảng của ứng dụng này.": {
+      "en": "Click “View” below to open this app's own table.",
       "scope": "sentence"
     },
     "Bật": {
@@ -335,6 +363,14 @@
     },
     "Bật bắt dính khi kéo tới mép": {
       "en": "Snap when dragging to an edge",
+      "scope": "sentence"
+    },
+    "Bật ghi nhật ký": {
+      "en": "Turn on logging",
+      "scope": "sentence"
+    },
+    "Bật ghi nhật ký để xem XFinder nhận được nút nào và gửi phím gì. Mặc định tắt để không tốn CPU khi rảnh.": {
+      "en": "Turn on logging to see which button XFinder received and which keys it sent. Off by default so an idle app costs no CPU.",
       "scope": "sentence"
     },
     "Bật nghiêng con lăn (Tilt) — không cần giữ nút": {
@@ -413,6 +449,10 @@
       "en": "Memory",
       "scope": "sentence"
     },
+    "CHUNG": {
+      "en": "GENERAL",
+      "scope": "sentence"
+    },
     "Chia cửa sổ của macOS": {
       "en": "macOS window tiling",
       "scope": "sentence"
@@ -465,6 +505,14 @@
       "en": "Mouse & Gestures",
       "scope": "sentence"
     },
+    "Chuột này không có phần cứng cho hướng đó": {
+      "en": "This mouse has no hardware for that direction",
+      "scope": "sentence"
+    },
+    "Chuột đang kết nối": {
+      "en": "Connected mouse",
+      "scope": "sentence"
+    },
     "Chép link": {
       "en": "Copy link",
       "scope": "sentence"
@@ -507,6 +555,10 @@
     },
     "Chưa có cặp đồng bộ nào": {
       "en": "No sync pairs yet",
+      "scope": "sentence"
+    },
+    "Chưa có cử chỉ nào. Giữ nút trên sơ đồ rồi kéo một hướng — dòng đo sẽ hiện ở đây.": {
+      "en": "No gestures yet. Hold the button on the diagram and pull in one direction — the measurement will appear here.",
       "scope": "sentence"
     },
     "Chưa có dữ liệu.": {
@@ -569,6 +621,10 @@
       "en": "Unassigned",
       "scope": "sentence"
     },
+    "Chưa gán trong macOS": {
+      "en": "No shortcut set in macOS",
+      "scope": "sentence"
+    },
     "Chưa mở được Event Tap — cần quyền Trợ năng. Nhấn “Mở Cài đặt Trợ năng” ở trên.": {
       "en": "The Event Tap could not be opened — Accessibility is required. Click “Open Accessibility Settings” above.",
       "scope": "sentence"
@@ -576,6 +632,18 @@
     "Chưa mở được Event Tap: ": {
       "en": "Could not open the Event Tap: ",
       "scope": "fragment"
+    },
+    "Chưa nhận diện được chuột": {
+      "en": "No mouse detected",
+      "scope": "sentence"
+    },
+    "Chưa nhận diện được chuột — đang dùng bảng nút chung.": {
+      "en": "No mouse detected — falling back to the generic button table.",
+      "scope": "sentence"
+    },
+    "Chưa rõ": {
+      "en": "Unknown",
+      "scope": "sentence"
     },
     "Chưa sẵn sàng": {
       "en": "Not ready",
@@ -591,6 +659,10 @@
     },
     "Chưa được cấp quyền Tự động hóa cho System Events. Mở Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Tự động hóa → XFinder → bật System Events.": {
       "en": "Automation permission for System Events is not granted yet. Open System Settings → Privacy & Security → Automation → XFinder → turn on System Events.",
+      "scope": "sentence"
+    },
+    "Chưa đọc được mô tả chuột, nên chưa rõ hướng này có chạy được không": {
+      "en": "The mouse's descriptor could not be read, so it is not yet known whether this direction can run",
       "scope": "sentence"
     },
     "Chưa đọc được trạng thái phần mở rộng từ macOS. Bấm “Kiểm tra lại” sau khi mở trang cài đặt bên dưới.": {
@@ -647,6 +719,10 @@
     },
     "Chọn một mũi tên để xem nó gửi gì. Màu xanh là phím có sẵn, màu xanh dương là bạn tự đặt, viền đứt là chưa gán.": {
       "en": "Select an arrow to see what it sends. Green is a built-in key, blue is one you set yourself, a dashed outline is unassigned.",
+      "scope": "sentence"
+    },
+    "Chọn một mũi tên để xem nó gửi gì. Số trên thân chuột là nút bạn giữ — bấm vào đó để đổi.": {
+      "en": "Pick an arrow to see what it sends. The number on the mouse body is the button you hold — click it to change.",
       "scope": "sentence"
     },
     "Chọn một thư mục để mã hóa thành vault có mật khẩu.": {
@@ -713,6 +789,10 @@
       "en": "Anti-sleep",
       "scope": "sentence"
     },
+    "Chụp màn hình": {
+      "en": "Screenshot",
+      "scope": "sentence"
+    },
     "Chừa mép trái cho Stage Manager": {
       "en": "Leave a left edge for Stage Manager",
       "scope": "sentence"
@@ -743,6 +823,10 @@
     },
     "Cuộn ngang nguyên bản của chuột": {
       "en": "The mouse's own horizontal scroll",
+      "scope": "sentence"
+    },
+    "CÔNG CỤ": {
+      "en": "TOOLS",
       "scope": "sentence"
     },
     "Cài đặt Clipboard": {
@@ -905,8 +989,20 @@
       "en": "Smaller brush",
       "scope": "sentence"
     },
+    "CỬA SỔ": {
+      "en": "WINDOWS",
+      "scope": "sentence"
+    },
+    "Cử chỉ sẽ gửi tới": {
+      "en": "Gestures will be sent to",
+      "scope": "fragment"
+    },
     "Cử chỉ đang tắt. Bật công tắc ở góc trên để dùng; bảng bên dưới đã có sẵn phím tắt.": {
       "en": "Gestures are off. Turn on the switch in the top corner to use them; the table below already has shortcuts ready.",
+      "scope": "sentence"
+    },
+    "Cử chỉ đang tắt. Bật công tắc ở góc trên để dùng; sơ đồ bên dưới đã có sẵn phím tắt.": {
+      "en": "Gestures are off. Turn on the switch at the top to use them; the diagram below already has shortcuts.",
       "scope": "sentence"
     },
     "Cửa sổ": {
@@ -945,6 +1041,10 @@
       "en": "Capacity",
       "scope": "sentence"
     },
+    "Dành cho ứng dụng cần cuộn nhiều như Photoshop hay CapCut: giữ một nút hông rồi kéo là cuộn, không cần nhấc tay khỏi chuột. Nút đó vẫn bấm bình thường khi bạn không kéo. Mặc định tắt vì nó chiếm một nút bạn có thể đang dùng cho việc khác.": {
+      "en": "For applications you scroll a lot in, such as Photoshop or CapCut: hold a side button and drag to scroll without lifting your hand off the mouse. That button still clicks normally when you do not drag. Off by default because it takes over a button you may be using for something else.",
+      "scope": "sentence"
+    },
     "Dán (Return)": {
       "en": "Paste (Return)",
       "scope": "sentence"
@@ -955,6 +1055,10 @@
     },
     "Dòng điện": {
       "en": "Current",
+      "scope": "sentence"
+    },
+    "Dòng đo thật từ engine — không phải hướng dẫn. Giữ nút rồi kéo để thấy nó ghi lại.": {
+      "en": "Real measurements from the engine, not instructions. Hold the button and drag to see it record them.",
       "scope": "sentence"
     },
     "Dùng `scp` qua SSH — cùng cơ chế Terminal, không có dịch vụ trung gian.": {
@@ -1005,6 +1109,18 @@
       "en": "Clear tray",
       "scope": "sentence"
     },
+    "Event Tap chưa mở nên chưa có gì để hiện. Kiểm tra quyền Trợ năng ở trên.": {
+      "en": "The event tap is not open, so there is nothing to show yet. Check the Accessibility permission above.",
+      "scope": "sentence"
+    },
+    "Event Tap đã khôi phục; cử chỉ cũ đã hủy": {
+      "en": "The Event Tap recovered; the gesture in progress was cancelled",
+      "scope": "sentence"
+    },
+    "FINDER & TÌM KIẾM": {
+      "en": "FINDER & SEARCH",
+      "scope": "sentence"
+    },
     "File **ở nguyên trên máy Mac này**. XFinder mở một máy chủ HTTP nhỏ trong mạng nội bộ và trả về liên kết.": {
       "en": "The file **stays right on this Mac**. XFinder starts a small HTTP server on the local network and returns the link.",
       "scope": "sentence"
@@ -1053,6 +1169,10 @@
       "en": "Edge notes — move the pointer to the edge to view and edit.",
       "scope": "sentence"
     },
+    "Ghi lại nút giữ": {
+      "en": "Re-record hold button",
+      "scope": "sentence"
+    },
     "Ghi màn hình": {
       "en": "Screen Recording",
       "scope": "sentence"
@@ -1061,12 +1181,20 @@
       "en": "Screen Recording (window thumbnails)",
       "scope": "sentence"
     },
+    "Ghi nút": {
+      "en": "Record button",
+      "scope": "sentence"
+    },
     "Ghi nút / modifier": {
       "en": "Record button / modifier",
       "scope": "sentence"
     },
     "Ghi phím": {
       "en": "Record key",
+      "scope": "sentence"
+    },
+    "Ghi phím tắt…": {
+      "en": "Record a shortcut…",
       "scope": "sentence"
     },
     "Ghim vào bảng hiện tại (⌘P)": {
@@ -1109,6 +1237,10 @@
       "en": "About",
       "scope": "sentence"
     },
+    "Giữ": {
+      "en": "Hold",
+      "scope": "fragment"
+    },
     "Giữ ": {
       "en": "Keep ",
       "scope": "fragment"
@@ -1127,6 +1259,22 @@
     },
     "Giữ nút chuột đã chọn bên dưới.": {
       "en": "Hold the mouse button you picked below.",
+      "scope": "sentence"
+    },
+    "Giữ nút cuộn rồi kéo để cuộn": {
+      "en": "Hold the scroll button and drag to scroll",
+      "scope": "sentence"
+    },
+    "Giữ nút cuộn và kéo → cuộn": {
+      "en": "Held the scroll button and dragged → scrolled",
+      "scope": "sentence"
+    },
+    "Giữ nút này rồi kéo bốn hướng. Mặc định là nút hông — con số tuỳ chuột, nên hãy ghi lại nếu bạn muốn nút khác.": {
+      "en": "Hold this button and pull in one of four directions. The default is a side button — the number depends on your mouse, so record it if you want another one.",
+      "scope": "sentence"
+    },
+    "Giữ nút này rồi kéo một trong bốn hướng. Con số là con số XFinder nhận được từ chuột, không phải tên cố định — mỗi chuột một khác.": {
+      "en": "Hold this button and pull in one of four directions. The number is the number XFinder receives from the mouse, not a fixed name — it differs per mouse.",
       "scope": "sentence"
     },
     "Giữ nút, kéo một hướng rồi thả — XFinder gửi phím tắt theo ứng dụng đang mở.": {
@@ -1181,6 +1329,10 @@
       "en": "Raw HTML, JavaScript and network resources are blocked for safety.",
       "scope": "sentence"
     },
+    "Hai nguyên nhân duy nhất khiến cử chỉ không chạy: nút giữ chưa đúng, hoặc XFinder đang là ứng dụng phía trước.": {
+      "en": "The only two reasons a gesture does not fire: the hold button is not the one you think, or XFinder is the app in front.",
+      "scope": "sentence"
+    },
     "Hiển thị Finder": {
       "en": "Show in Finder",
       "scope": "sentence"
@@ -1211,6 +1363,10 @@
     },
     "Hiện hai hướng nghiêng con lăn": {
       "en": "Show the two wheel-tilt directions",
+      "scope": "sentence"
+    },
+    "Hiện màn hình nền": {
+      "en": "Show Desktop",
       "scope": "sentence"
     },
     "Hiện mũi tên trên thanh menu": {
@@ -1253,12 +1409,24 @@
       "en": "Finder keyboard behavior",
       "scope": "sentence"
     },
+    "Hành động": {
+      "en": "Action",
+      "scope": "sentence"
+    },
+    "Hành động hệ thống này chưa được gán phím trong macOS": {
+      "en": "This system action has no shortcut set in macOS",
+      "scope": "sentence"
+    },
     "Hôm nay": {
       "en": "Today",
       "scope": "sentence"
     },
     "Hướng dẫn chia cửa sổ": {
       "en": "Window-split guide",
+      "scope": "sentence"
+    },
+    "Hướng này chưa gán nên không gửi gì": {
+      "en": "This direction is unassigned, so nothing was sent",
       "scope": "sentence"
     },
     "Hậu tố": {
@@ -1409,12 +1577,28 @@
       "en": "Sends no keys",
       "scope": "sentence"
     },
+    "Không hỗ trợ": {
+      "en": "Not supported",
+      "scope": "sentence"
+    },
+    "Không hỗ trợ bởi chuột này": {
+      "en": "not supported by this mouse",
+      "scope": "sentence"
+    },
+    "Không hỗ trợ bởi chuột này — ": {
+      "en": "Not supported by this mouse — ",
+      "scope": "fragment"
+    },
     "Không khả dụng": {
       "en": "Not available",
       "scope": "sentence"
     },
     "Không kiểm tra được": {
       "en": "Couldn't check",
+      "scope": "sentence"
+    },
+    "Không mở được Event Tap — kiểm tra quyền Trợ năng": {
+      "en": "Could not open the Event Tap — check Accessibility permission",
       "scope": "sentence"
     },
     "Không thể hoàn tác": {
@@ -1429,6 +1613,14 @@
       "en": "Couldn't create the AppleScript.",
       "scope": "sentence"
     },
+    "Không tạo được vòng lặp cử chỉ": {
+      "en": "Could not create the gesture run loop",
+      "scope": "sentence"
+    },
+    "Không vượt ngưỡng — đã phát lại click bình thường": {
+      "en": "Under the threshold — the normal click was replayed",
+      "scope": "sentence"
+    },
     "Không xác định": {
       "en": "Unknown",
       "scope": "sentence"
@@ -1440,6 +1632,14 @@
     "Không đọc được ": {
       "en": "Couldn't read ",
       "scope": "fragment"
+    },
+    "Không đọc được mô tả chuột nào. Sơ đồ vẫn dùng được với các nút cơ bản.": {
+      "en": "No mouse descriptor could be read. The diagram still works with the basic buttons.",
+      "scope": "sentence"
+    },
+    "Không đọc được mô tả chuột vì thiếu quyền. Sơ đồ vẫn dùng được — chỉ là XFinder chưa biết chuột bạn có nút nào.": {
+      "en": "The mouse descriptor could not be read because a permission is missing. The diagram still works — XFinder just does not know which buttons your mouse has.",
+      "scope": "sentence"
     },
     "Không đọc được trạng thái SMART của ổ này": {
       "en": "Couldn't read this drive's SMART status",
@@ -1489,6 +1689,10 @@
       "en": "Re-check permissions",
       "scope": "sentence"
     },
+    "Kiểm tra nhanh": {
+      "en": "Quick check",
+      "scope": "sentence"
+    },
     "Kiểm tra phát": {
       "en": "Test playback",
       "scope": "sentence"
@@ -1529,6 +1733,18 @@
       "en": "Drag a file to the screen notch area to open the tray.",
       "scope": "sentence"
     },
+    "Kéo lên": {
+      "en": "Pull up",
+      "scope": "sentence"
+    },
+    "Kéo sang phải": {
+      "en": "Pull right",
+      "scope": "sentence"
+    },
+    "Kéo sang trái": {
+      "en": "Pull left",
+      "scope": "sentence"
+    },
     "Kéo tập tin vào đây": {
       "en": "Drag files here",
       "scope": "sentence"
@@ -1537,12 +1753,20 @@
       "en": "Drag to screen edge",
       "scope": "sentence"
     },
+    "Kéo xuống": {
+      "en": "Pull down",
+      "scope": "sentence"
+    },
     "Kéo đến cạnh hoặc góc màn hình, rồi thả.": {
       "en": "Drag to an edge or corner, then drop.",
       "scope": "sentence"
     },
     "Ký tự ngăn cách": {
       "en": "Separator character",
+      "scope": "sentence"
+    },
+    "KẾT NỐI": {
+      "en": "CONNECT",
       "scope": "sentence"
     },
     "Kết nối các lệnh XFinder với Finder.": {
@@ -1583,6 +1807,10 @@
     },
     "Làm lại": {
       "en": "Redo",
+      "scope": "sentence"
+    },
+    "Lùi": {
+      "en": "Back",
       "scope": "sentence"
     },
     "Lưu": {
@@ -1653,6 +1881,10 @@
       "en": "Finder context menu",
       "scope": "sentence"
     },
+    "Mission Control": {
+      "en": "Mission Control",
+      "scope": "sentence"
+    },
     "Màu": {
       "en": "Color",
       "scope": "sentence"
@@ -1709,6 +1941,10 @@
       "en": "Default = built-in preset · Custom = you changed that direction · Unassigned = deliberately sends no shortcut. Unassigned on an app that has a preset does not fall back to the global table.",
       "scope": "sentence"
     },
+    "Mặc định = preset dựng sẵn · Tự đặt = bạn đã đổi hướng đó · Chưa gán = cố ý không gửi phím. Chưa gán trên ứng dụng đã có preset sẽ không rơi về bảng toàn cục. Biểu tượng ⇄ nhỏ nghĩa là hướng đó chuyển tiếp cuộn ngang nguyên bản của chuột.": {
+      "en": "Preset = shipped default · Yours = you changed that direction · Unassigned = deliberately sends nothing. Unassigned on an app that has a preset never falls back to the Global table. The small ⇄ badge means that direction passes the mouse's own horizontal scroll straight through.",
+      "scope": "sentence"
+    },
     "Mặc định = preset dựng sẵn · Tự đặt = bạn đã đổi hướng đó · Chưa gán = cố ý không gửi phím. Chưa gán trên ứng dụng đã có preset sẽ không rơi về bảng toàn cục. Biểu tượng ⇄ nhỏ trên mũi tên nghiêng nghĩa là hướng đó chuyển tiếp cuộn ngang nguyên bản của chuột.": {
       "en": "Preset = shipped default · Yours = you changed that direction · Unassigned = deliberately sends nothing. Unassigned on an app that has a preset never falls back to the Global table. The small ⇄ badge on a tilt arrow means that direction passes the mouse's own horizontal scroll straight through.",
       "scope": "sentence"
@@ -1742,11 +1978,15 @@
       "scope": "sentence"
     },
     "Mỗi mũi tên là một động tác: giữ nút ghi trên mũi tên rồi kéo theo hướng đó. Bấm vào để xem nó gửi phím gì, và đổi nếu bạn muốn.": {
-      "en": "Each arrow is one move: hold the button printed on the arrow and pull in that direction. Click it to see the keys it sends, and change them if you want.",
+      "en": "Each arrow is one move: hold the button shown on the mouse and pull in that direction. Click it to see the keys it sends, and change them if you want.",
       "scope": "sentence"
     },
     "Mỗi mũi tên là một động tác: giữ nút giữa rồi kéo theo hướng đó. Bấm vào để xem nó gửi phím gì, và đổi nếu bạn muốn.": {
       "en": "Each arrow is one gesture: hold the middle button and drag in that direction. Click one to see which shortcut it sends, and change it if you like.",
+      "scope": "sentence"
+    },
+    "Mỗi mũi tên là một động tác: giữ nút trên thân chuột rồi kéo theo hướng đó. Bấm vào mũi tên để xem và đổi phím nó gửi.": {
+      "en": "Each arrow is one motion: hold the button on the mouse body and pull in that direction. Click an arrow to see and change the keys it sends.",
       "scope": "sentence"
     },
     "Một phần ba. Rê về giữa để lấy hai phần ba.": {
@@ -1801,6 +2041,14 @@
       "en": "Open macOS Menu Bar Settings",
       "scope": "sentence"
     },
+    "Mở Phím tắt": {
+      "en": "Open Keyboard settings",
+      "scope": "sentence"
+    },
+    "Mở Phím tắt trong Cài đặt": {
+      "en": "Open Keyboard Shortcuts settings",
+      "scope": "sentence"
+    },
     "Mở Quick Look hệ thống": {
       "en": "Open system Quick Look",
       "scope": "sentence"
@@ -1841,6 +2089,10 @@
       "en": "Unlock…",
       "scope": "sentence"
     },
+    "Mở lại tab vừa đóng": {
+      "en": "Reopen last closed tab",
+      "scope": "sentence"
+    },
     "Mở lịch sử…": {
       "en": "Open history…",
       "scope": "sentence"
@@ -1871,6 +2123,14 @@
     },
     "Mở…": {
       "en": "Open…",
+      "scope": "sentence"
+    },
+    "Mục kế tiếp": {
+      "en": "Next item",
+      "scope": "sentence"
+    },
+    "Mục trước": {
+      "en": "Previous item",
       "scope": "sentence"
     },
     "Mức nén:": {
@@ -2001,18 +2261,6 @@
       "en": "Button ",
       "scope": "fragment"
     },
-    "Nút 1 (chuột trái)": {
-      "en": "Button 1 (left click)",
-      "scope": "sentence"
-    },
-    "Nút 2 (chuột phải)": {
-      "en": "Button 2 (right click)",
-      "scope": "sentence"
-    },
-    "Nút 3 (bấm con lăn xuống)": {
-      "en": "Button 3 (press the wheel down)",
-      "scope": "sentence"
-    },
     "Nút 3: kéo lên": {
       "en": "Button 3: pull up",
       "scope": "sentence"
@@ -2033,6 +2281,34 @@
       "en": "Button :number",
       "scope": "sentence"
     },
+    "Nút bạn giữ để bắt đầu mọi cử chỉ. Bấm để ghi nút khác.": {
+      "en": "The button you hold to start any gesture. Click to record a different one.",
+      "scope": "sentence"
+    },
+    "Nút bạn vừa bấm: ": {
+      "en": "The button you just pressed: ",
+      "scope": "fragment"
+    },
+    "Nút cuộn": {
+      "en": "Scroll button",
+      "scope": "sentence"
+    },
+    "Nút giữ": {
+      "en": "Hold button",
+      "scope": "sentence"
+    },
+    "Nút giữ bắt đầu mọi cử chỉ. Nút cuộn là tuỳ chọn riêng, mặc định tắt.": {
+      "en": "The hold button starts every gesture. The scroll button is a separate option, off by default.",
+      "scope": "sentence"
+    },
+    "Nút giữ và cuộn": {
+      "en": "Hold button and scrolling",
+      "scope": "sentence"
+    },
+    "Nút giữ đã được nhấn": {
+      "en": "Hold button pressed",
+      "scope": "sentence"
+    },
     "Nút hoặc modifier bạn giữ để bắt đầu một cử chỉ.": {
       "en": "The button or modifier you hold to start a gesture.",
       "scope": "sentence"
@@ -2043,6 +2319,18 @@
     },
     "Nút mũi tên ẩn biểu tượng": {
       "en": "Arrow button hides icons",
+      "scope": "sentence"
+    },
+    "Nút phải": {
+      "en": "Right click",
+      "scope": "sentence"
+    },
+    "Nút trái": {
+      "en": "Left click",
+      "scope": "sentence"
+    },
+    "Nút được theo dõi nhưng không phải nút giữ": {
+      "en": "Button observed, but it is not the hold button",
       "scope": "sentence"
     },
     "Nếu không hoạt động: kiểm tra Trợ năng, bundle ID, phím tắt riêng của app và tắt mapping trùng trong phần mềm chuột khác. Tắt công tắc ở trên để ngừng xử lý cử chỉ.": {
@@ -2109,12 +2397,20 @@
       "en": "Return key opens the selection",
       "scope": "sentence"
     },
+    "Phím bạn tự ghi": {
+      "en": "a shortcut you recorded",
+      "scope": "sentence"
+    },
     "Phím gửi theo ứng dụng": {
       "en": "Shortcuts sent, by app",
       "scope": "sentence"
     },
     "Phím hệ thống macOS": {
       "en": "macOS system key",
+      "scope": "sentence"
+    },
+    "Phím hệ thống trên máy này": {
+      "en": "System shortcuts on this Mac",
       "scope": "sentence"
     },
     "Phím tắt": {
@@ -2127,6 +2423,14 @@
     },
     "Phím tắt có sẵn của ứng dụng này. Bạn không cần cấu hình gì.": {
       "en": "This app's built-in shortcuts. You do not need to configure anything.",
+      "scope": "sentence"
+    },
+    "Phím tắt riêng của ứng dụng": {
+      "en": "This app's own shortcut",
+      "scope": "sentence"
+    },
+    "Phím tắt riêng của ứng dụng này — có sẵn, không cần cấu hình gì.": {
+      "en": "This application's own shortcut — already set up, nothing to configure.",
       "scope": "sentence"
     },
     "Phím tắt toàn cục": {
@@ -2142,7 +2446,7 @@
       "scope": "sentence"
     },
     "Phóng to": {
-      "en": "Maximize",
+      "en": "Zoom in",
       "scope": "sentence"
     },
     "Phóng to cọ": {
@@ -2181,6 +2485,10 @@
       "en": "This app's preset deliberately leaves this direction empty, so it does not fall back to the Global table.",
       "scope": "sentence"
     },
+    "Quay về vùng chết trước khi thả — đã huỷ": {
+      "en": "Came back inside the deadzone before release — cancelled",
+      "scope": "sentence"
+    },
     "Quick Look": {
       "en": "Quick Look",
       "scope": "sentence"
@@ -2191,6 +2499,14 @@
     },
     "QuickLookVideo v3 cài Media Extensions vào AVFoundation để Quick Look hiện thumbnail và phát được mọi định dạng video — chính là tính năng video còn thiếu của XFinder.": {
       "en": "QuickLookVideo v3 installs Media Extensions into AVFoundation so Quick Look can show thumbnails and play any video format — exactly the video feature XFinder was missing.",
+      "scope": "sentence"
+    },
+    "Quy ước chung của macOS": {
+      "en": "Standard macOS convention",
+      "scope": "sentence"
+    },
+    "Quy ước chung của macOS, hầu hết ứng dụng đều hiểu.": {
+      "en": "A standard macOS convention — most applications understand it.",
       "scope": "sentence"
     },
     "Quyền cần thiết": {
@@ -2245,6 +2561,18 @@
       "en": "One-way folder backup.",
       "scope": "sentence"
     },
+    "Soạn thảo": {
+      "en": "Editing",
+      "scope": "sentence"
+    },
+    "Space kế tiếp": {
+      "en": "Next Space",
+      "scope": "sentence"
+    },
+    "Space trước": {
+      "en": "Previous Space",
+      "scope": "sentence"
+    },
     "Sparsebundle chỉ chiếm dung lượng thực tế đang dùng, và sao lưu Time Machine hiệu quả hơn ảnh đĩa thường.": {
       "en": "A sparsebundle only takes up the space actually in use, and backs up more efficiently with Time Machine than a regular disk image.",
       "scope": "sentence"
@@ -2274,7 +2602,7 @@
       "scope": "fragment"
     },
     "Sẵn sàng — các ứng dụng bên dưới đã có phím tắt sẵn, không cần cấu hình thêm.": {
-      "en": "Ready — the apps below already have built-in shortcuts, no extra configuration needed.",
+      "en": "Ready — the applications below already have shortcuts, with nothing further to configure.",
       "scope": "sentence"
     },
     "Số chu kỳ": {
@@ -2325,8 +2653,20 @@
       "en": "Edit…",
       "scope": "sentence"
     },
+    "TIỆN ÍCH": {
+      "en": "UTILITIES",
+      "scope": "sentence"
+    },
+    "Tab kế tiếp": {
+      "en": "Next tab",
+      "scope": "sentence"
+    },
     "Tab mới": {
       "en": "New tab",
+      "scope": "sentence"
+    },
+    "Tab trước": {
+      "en": "Previous tab",
       "scope": "sentence"
     },
     "Terminal mặc định": {
@@ -2365,8 +2705,16 @@
       "en": "The changes appear the next time the Finder context menu is opened.",
       "scope": "sentence"
     },
+    "Thiết bị do bạn chọn": {
+      "en": "Device you picked",
+      "scope": "sentence"
+    },
     "Thiết bị này không có pin tích hợp.": {
       "en": "This device has no built-in battery.",
+      "scope": "sentence"
+    },
+    "Thiết bị này không khai đủ mã định danh, nên XFinder chỉ biết chắc những nút nó khai. Hướng nào chưa chắc thì để trống chứ không báo là không hỗ trợ.": {
+      "en": "This device does not declare complete identifiers, so XFinder only knows the buttons it does declare. A direction it cannot confirm is left plain rather than reported as unsupported.",
       "scope": "sentence"
     },
     "Thiếu quyền Ghi màn hình": {
@@ -2383,6 +2731,10 @@
     },
     "Thu hồi tất cả": {
       "en": "Revoke all",
+      "scope": "sentence"
+    },
+    "Thu nhỏ": {
+      "en": "Zoom out",
       "scope": "sentence"
     },
     "Thu nhỏ cọ": {
@@ -2521,6 +2873,10 @@
       "en": "Title (optional)",
       "scope": "sentence"
     },
+    "Tiến": {
+      "en": "Forward",
+      "scope": "sentence"
+    },
     "Tiền tố": {
       "en": "Prefix",
       "scope": "sentence"
@@ -2557,8 +2913,16 @@
       "en": "Pages to split",
       "scope": "sentence"
     },
+    "Trang kế tiếp": {
+      "en": "Next page",
+      "scope": "sentence"
+    },
     "Trang phát hành": {
       "en": "Release page",
+      "scope": "sentence"
+    },
+    "Trang trước": {
+      "en": "Previous page",
       "scope": "sentence"
     },
     "Trong ghi chú: ⌘T ô đánh dấu · ⌘F tìm · ⌘P ghim · Esc đóng": {
@@ -2918,7 +3282,7 @@
       "scope": "sentence"
     },
     "Vừa khung": {
-      "en": "Fit to frame",
+      "en": "Fit to window",
       "scope": "sentence"
     },
     "XFinder KHÔNG lưu mật khẩu. Mất mật khẩu là mất dữ liệu — hãy lưu vào Keychain hoặc trình quản lý mật khẩu.": {
@@ -2945,6 +3309,14 @@
       "en": "XFinder sends",
       "scope": "sentence"
     },
+    "XFinder gửi đúng phím bạn gán trong Bàn phím → Phím tắt, nên bốn hướng của bảng Toàn cục chạy đúng như bàn phím của bạn.": {
+      "en": "XFinder sends exactly the keys you set in Keyboard → Keyboard Shortcuts, so the Global table's four directions act like your own keyboard.",
+      "scope": "sentence"
+    },
+    "XFinder gửi đúng phím này. Việc phím đó có làm đúng hành động hay không còn tuỳ phím tắt riêng của ứng dụng — macOS cho phép đổi gần như mọi phím tắt.": {
+      "en": "XFinder sends exactly these keys. Whether they still perform the name shown depends on the application's own shortcut settings — macOS lets almost any shortcut be rebound.",
+      "scope": "sentence"
+    },
     "XFinder không lưu mật khẩu này ở bất cứ đâu. Nếu quên, dữ liệu không thể khôi phục.": {
       "en": "XFinder does not store this password anywhere. If you forget it, the data cannot be recovered.",
       "scope": "sentence"
@@ -2961,9 +3333,25 @@
       "en": "What XFinder adds to Finder",
       "scope": "sentence"
     },
+    "XFinder đang là ứng dụng phía trước, nên cử chỉ được tra theo chính XFinder. Hãy chuyển sang ứng dụng bạn muốn dùng (Zed, Chrome, Excel…) rồi thử lại — đây là lý do nhật ký bên dưới chỉ hiện com.xfinder.app.": {
+      "en": "XFinder is the app in front, so the gesture is resolved for XFinder itself. Switch to the app you mean to use (Zed, Chrome, Excel…) and try again — this is why the log below shows only com.xfinder.app.",
+      "scope": "sentence"
+    },
+    "XFinder đang đọc mô tả HID của chuột bạn.": {
+      "en": "XFinder is reading your mouse's HID descriptor.",
+      "scope": "sentence"
+    },
     "XFinder đã kèm phần mở rộng Finder và macOS đang bật nó: bấm chuột phải vào tập tin trong Finder sẽ thấy mục “Thêm vào Khay thả XFinder” và nút trên thanh công cụ.": {
       "en": "XFinder ships a Finder extension and macOS has it enabled: right-click a file in Finder to see “Add to XFinder Drop Tray”, plus a toolbar button.",
       "scope": "sentence"
+    },
+    "XFinder đã nhận gì": {
+      "en": "What XFinder received",
+      "scope": "sentence"
+    },
+    "XFinder đọc trực tiếp mô tả HID của chuột: ": {
+      "en": "XFinder reads your mouse's HID descriptor directly: ",
+      "scope": "fragment"
     },
     "Xem": {
       "en": "View",
@@ -3093,13 +3481,37 @@
       "en": "\\(store.items.count) files held",
       "scope": "fragment"
     },
+    "bấm để đổi": {
+      "en": "click to change",
+      "scope": "fragment"
+    },
+    "chuyển tiếp cuộn ngang của chuột": {
+      "en": "passes the mouse's horizontal scroll through",
+      "scope": "sentence"
+    },
+    "chưa có phím tắt trong macOS": {
+      "en": "no shortcut set in macOS",
+      "scope": "sentence"
+    },
     "chưa có quyền Trợ năng": {
       "en": "Accessibility permission is not granted",
+      "scope": "sentence"
+    },
+    "chưa dò được chuột nào": {
+      "en": "no mouse detected yet",
       "scope": "sentence"
     },
     "chưa gán phím nào": {
       "en": "sends nothing yet",
       "scope": "fragment"
+    },
+    "chưa gán trong macOS": {
+      "en": "not set in macOS",
+      "scope": "sentence"
+    },
+    "chưa xác định": {
+      "en": "not determined",
+      "scope": "sentence"
     },
     "cuộn ngang nguyên bản": {
       "en": "the mouse's own horizontal scroll",
@@ -3133,6 +3545,10 @@
       "en": "is the button you hold to start every gesture",
       "scope": "sentence"
     },
+    "là nút bạn giữ để bắt đầu mọi cử chỉ — cùng một nút cho cả bốn hướng": {
+      "en": "is the button you hold to start any gesture — the same button for all four directions",
+      "scope": "sentence"
+    },
     "là nút bạn giữ để bắt đầu mọi cử chỉ — số trên mỗi mũi tên là nút đó": {
       "en": "is the button you hold to start any gesture — the number on every arrow is that button",
       "scope": "sentence"
@@ -3143,6 +3559,10 @@
     },
     "macOS Sequoia có tính năng chia cửa sổ riêng (Window Tiling). Mở Cài đặt hệ thống → Màn hình & Dock → Chia cửa sổ để cấu hình.": {
       "en": "macOS Sequoia has its own window tiling feature (Window Tiling). Open System Settings → Displays & Dock → Window Tiling to configure it.",
+      "scope": "sentence"
+    },
+    "macOS chưa gán phím tắt cho hành động này, nên hướng này chưa gửi được gì": {
+      "en": "macOS has no shortcut set for this action, so this direction sends nothing",
       "scope": "sentence"
     },
     "macOS chưa thấy phần mở rộng Finder của XFinder. Hãy cài bản dựng mới nhất, rồi bật theo hướng dẫn bên dưới.": {
@@ -3165,6 +3585,10 @@
       "en": "macOS does not shrink the working area for Stage Manager by itself, so XFinder leaves a gap at the left edge so you can still see the app icons stacked there. Drag it smaller if you only need to see the icons.",
       "scope": "sentence"
     },
+    "macOS trên máy này chưa gán phím tắt cho hành động này, nên cử chỉ sẽ không gửi gì. Mở Bàn phím → Phím tắt để gán, hoặc chọn một hành động khác.": {
+      "en": "This Mac has no shortcut set for this action, so the gesture sends nothing. Open Keyboard → Keyboard Shortcuts to set one, or pick a different action.",
+      "scope": "sentence"
+    },
     "mặc định": {
       "en": "default",
       "scope": "sentence"
@@ -3177,8 +3601,28 @@
       "en": "items from the tray",
       "scope": "fragment"
     },
+    "nghiêng con lăn phải": {
+      "en": "tilt the wheel right",
+      "scope": "fragment"
+    },
+    "nghiêng con lăn trái": {
+      "en": "tilt the wheel left",
+      "scope": "fragment"
+    },
+    "nút.": {
+      "en": "buttons.",
+      "scope": "fragment"
+    },
     "tapCreate trả nil dù đã có quyền Trợ năng": {
       "en": "tapCreate returned nil even though Accessibility is already granted",
+      "scope": "sentence"
+    },
+    "thường là nút hông dưới (ngón cái)": {
+      "en": "usually the lower side button (under your thumb)",
+      "scope": "sentence"
+    },
+    "thường là nút hông trên (gần con lăn)": {
+      "en": "usually the upper side button (near the wheel)",
       "scope": "sentence"
     },
     "© 2026 XFinder · Giấy phép MIT": {
@@ -3229,8 +3673,16 @@
       "en": "Waiting for a network address…",
       "scope": "sentence"
     },
+    "Đang dò thiết bị…": {
+      "en": "Detecting device…",
+      "scope": "sentence"
+    },
     "Đang dùng": {
       "en": "In use",
+      "scope": "sentence"
+    },
+    "Đang dùng phím bổ trợ làm nút giữ. Giữ phím đó rồi kéo chuột để bắt đầu cử chỉ.": {
+      "en": "A modifier key is the hold trigger. Hold that key and move the mouse to start a gesture.",
       "scope": "sentence"
     },
     "Đang ghi — Esc để hủy": {
@@ -3247,6 +3699,10 @@
     },
     "Đang ghi…": {
       "en": "Recording…",
+      "scope": "sentence"
+    },
+    "Đang hoạt động": {
+      "en": "Running",
       "scope": "sentence"
     },
     "Đang kiểm tra…": {
@@ -3309,6 +3765,10 @@
       "en": "Measuring…",
       "scope": "sentence"
     },
+    "Điều hướng": {
+      "en": "Navigation",
+      "scope": "sentence"
+    },
     "Điều khiển các lượt Khi thay đổi và Hằng ngày. Đồng bộ ngay thủ công vẫn khả dụng.": {
       "en": "Controls the On Change and Daily runs. A manual Sync Now is still available.",
       "scope": "sentence"
@@ -3335,6 +3795,18 @@
     },
     "Đo tốc độ": {
       "en": "Speed test",
+      "scope": "sentence"
+    },
+    "Đây là con số XFinder nhận được từ chuột. Bấm “Ghi nút” rồi bấm đúng nút đó để đặt nó làm nút giữ.": {
+      "en": "This is the number XFinder received from your mouse. Click “Record button” and press that same button to make it the hold button.",
+      "scope": "sentence"
+    },
+    "Đây là hành động hệ thống của macOS, nhưng máy này chưa gán phím tắt cho nó. XFinder gửi đúng phím bạn gán trong Bàn phím → Phím tắt, nên hãy gán ở đó hoặc chọn hành động khác.": {
+      "en": "This is a macOS system action, but this Mac has no shortcut set for it. XFinder sends exactly the keys you set in Keyboard → Keyboard Shortcuts, so set one there or pick a different action.",
+      "scope": "sentence"
+    },
+    "Đây là nút bấm con lăn. Giữ con lăn rồi kéo là thao tác tay không làm được — cử chỉ sẽ như không chạy. Bấm “Ghi lại nút giữ” rồi bấm một nút hông.": {
+      "en": "This is the wheel click. Holding the wheel while pulling cannot be done with a hand, so the gesture reads as dead. Click “Re-record hold button” and press a side button.",
       "scope": "sentence"
     },
     "Đã ": {
@@ -3378,6 +3850,14 @@
       "en": "Merged ",
       "scope": "fragment"
     },
+    "Đã gửi phím tắt": {
+      "en": "Shortcut sent",
+      "scope": "sentence"
+    },
+    "Đã khoá hướng": {
+      "en": "Direction locked",
+      "scope": "sentence"
+    },
     "Đã khóa": {
       "en": "Locked",
       "scope": "sentence"
@@ -3389,6 +3869,10 @@
     "Đã mở ": {
       "en": "Opened ",
       "scope": "fragment"
+    },
+    "Đã nhận diện": {
+      "en": "Detected",
+      "scope": "sentence"
     },
     "Đã nén": {
       "en": "Compressed",
@@ -3426,6 +3910,10 @@
       "en": "Split ",
       "scope": "fragment"
     },
+    "Đã tắt": {
+      "en": "Off",
+      "scope": "sentence"
+    },
     "Đã xoay ": {
       "en": "Rotated ",
       "scope": "fragment"
@@ -3454,12 +3942,24 @@
       "en": "Close tab",
       "scope": "sentence"
     },
+    "Đưa hướng này về preset — không đụng các hướng khác": {
+      "en": "Return this direction to its preset — leaves the others alone",
+      "scope": "sentence"
+    },
     "Đường link": {
       "en": "Link",
       "scope": "sentence"
     },
     "Đầy đủ": {
       "en": "Full",
+      "scope": "sentence"
+    },
+    "Đặt làm nút giữ": {
+      "en": "Use as hold button",
+      "scope": "sentence"
+    },
+    "Đặt nút này làm nút giữ?": {
+      "en": "Set it as the hold button?",
       "scope": "sentence"
     },
     "Để sau": {
@@ -3488,6 +3988,10 @@
     },
     "Đọc lựa chọn": {
       "en": "Read selection",
+      "scope": "sentence"
+    },
+    "Đọc được nghiêng con lăn rời rạc": {
+      "en": "Read a discrete wheel tilt",
       "scope": "sentence"
     },
     "Đồng bộ": {
@@ -3533,6 +4037,10 @@
     "Đổi ": {
       "en": "Rename ",
       "scope": "fragment"
+    },
+    "Đổi hành động cho hướng này": {
+      "en": "Change what this direction does",
+      "scope": "sentence"
     },
     "Đổi nút": {
       "en": "Change button",
@@ -3585,6 +4093,10 @@
     "Động tác": {
       "en": "Motion",
       "scope": "sentence"
+    },
+    "đang ghi…": {
+      "en": "recording…",
+      "scope": "fragment"
     },
     "đã di chuyển": {
       "en": "moved",
@@ -3648,6 +4160,10 @@
     },
     "Ứng dụng này không có preset riêng — đang dùng bảng “Mặc định toàn cục”.": {
       "en": "This app has no preset of its own — it is using the “Global Defaults” table.",
+      "scope": "sentence"
+    },
+    "Ứng dụng này không có preset riêng, và bảng Toàn cục cũng chưa gán hướng này.": {
+      "en": "This app has no preset of its own, and the Global table has nothing for this direction either.",
       "scope": "sentence"
     },
     "Ứng dụng này không có preset riêng, và bảng Toàn cục cũng chưa gán hướng này. Bấm “Đổi phím tắt” để tự đặt.": {
