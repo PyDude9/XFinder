@@ -779,4 +779,9 @@ final class WindowPreviewStoreTests: XCTestCase {
         XCTAssertEqual(WindowPreviewStore.maxVisibleCards(screenWidth: 2560), 7) // clamped max 7
         XCTAssertEqual(WindowPreviewStore.maxVisibleCards(screenWidth: 800), 5)  // clamped min 5
     }
+
+    func testAppIconProminenceTokens() {
+        XCTAssertEqual(LiquidGlassTokens.Card.appIconSize, 22)
+        XCTAssertEqual(LiquidGlassTokens.Card.badgeIconSize, 28)
+    }
 }

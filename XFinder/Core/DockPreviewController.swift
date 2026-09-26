@@ -212,11 +212,52 @@ final class DockPreviewController {
 
     // MARK: - Panel
 
+    struct PanelDimensions {
+        let panelWidth: CGFloat
+        let panelHeight: CGFloat
+        let cardWidth: CGFloat
+        let cardHeight: CGFloat
+        let thumbWidth: CGFloat
+        let thumbHeight: CGFloat
+    }
+
+    static func browserPanelDimensions(tabCount: Int) -> PanelDimensions {
+        let count = max(1, min(5, tabCount))
+        switch count {
+        case 1:
+            return PanelDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
+        case 2:
+            let cW: CGFloat = 240, cH: CGFloat = 165
+            let pW: CGFloat = cW * 2 + 12 + 24 // 516
+            let pH: CGFloat = cH + 24 // 189
+            return PanelDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
+        case 3:
+            let cW: CGFloat = 220, cH: CGFloat = 165
+            let pW: CGFloat = cW * 3 + 12 * 2 + 24 // 708
+            let pH: CGFloat = cH + 24 // 189
+            return PanelDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
+        case 4:
+            let cW: CGFloat = 210, cH: CGFloat = 160
+            let pW: CGFloat = cW * 4 + 10 * 3 + 24 // 894
+            let pH: CGFloat = cH + 24 // 184
+            return PanelDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
+        case 5:
+            let cW: CGFloat = 200, cH: CGFloat = 155
+            let pW: CGFloat = cW * 5 + 10 * 4 + 24 // 1064
+            let pH: CGFloat = cH + 24 // 179
+            return PanelDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
+        default:
+            return PanelDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
+        }
+    }
+
     private func showPanel(for icon: IconRect) {
         let bundleID = NSRunningApplication(processIdentifier: icon.pid)?.bundleIdentifier ?? ""
         let isBrowser = BrowserTabProvider.isSupportedBrowser(bundleID: bundleID)
-        let panelWidth: CGFloat = isBrowser ? 560 : 320
-        let panelHeight: CGFloat = isBrowser ? 190 : 220
+        let tabCount = isBrowser ? (WindowPreviewStore.shared.activeBrowserTabs.isEmpty ? 2 : WindowPreviewStore.shared.activeBrowserTabs.count) : 1
+        let dims = isBrowser ? Self.browserPanelDimensions(tabCount: tabCount) : PanelDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
+        let panelWidth = dims.panelWidth
+        let panelHeight = dims.panelHeight
 
         if panelPID == icon.pid, panel != nil { return }
 
@@ -340,44 +381,43 @@ struct DockPreviewView: View {
         BrowserTabProvider.isSupportedBrowser(bundleID: bundleID)
     }
 
-    private var hasTwoOrMoreTabs: Bool {
-        isBrowser && store.activeBrowserTabs.count >= 2
-    }
-
     var body: some View {
         let dockItems = store.previewItems.filter { !$0.isOnOtherSpace }
+        let visibleTabs = Array(store.activeBrowserTabs.prefix(5))
+        let tabCount = visibleTabs.count
+        let dims = DockPreviewController.browserPanelDimensions(tabCount: tabCount)
 
         Group {
-            if hasTwoOrMoreTabs {
-                // Windows Taskbar style: 2 preview cards side by side
-                HStack(spacing: 12) {
-                    DockBrowserTabCard(
-                        tab: store.activeBrowserTabs[0],
-                        appIcon: iconForPID(pid),
-                        bundleID: bundleID,
-                        pid: pid,
-                        primaryThumb: dockItems.first?.thumbnail,
-                        onPick: onPick
-                    )
-                    DockBrowserTabCard(
-                        tab: store.activeBrowserTabs[1],
-                        appIcon: iconForPID(pid),
-                        bundleID: bundleID,
-                        pid: pid,
-                        primaryThumb: store.activeBrowserTabs[1].isActive ? dockItems.first?.thumbnail : nil,
-                        onPick: onPick
-                    )
+            if isBrowser && tabCount >= 2 {
+                // Windows Taskbar style: up to 5 preview cards side by side
+                HStack(spacing: tabCount >= 4 ? 10 : 12) {
+                    ForEach(visibleTabs) { tab in
+                        DockBrowserTabCard(
+                            tab: tab,
+                            appIcon: iconForPID(pid),
+                            bundleID: bundleID,
+                            pid: pid,
+                            primaryThumb: tab.isActive ? dockItems.first?.thumbnail : nil,
+                            cardWidth: dims.cardWidth,
+                            cardHeight: dims.cardHeight,
+                            thumbWidth: dims.thumbWidth,
+                            thumbHeight: dims.thumbHeight,
+                            onPick: onPick
+                        )
+                    }
                 }
-                .padding(14)
-                .frame(width: 560, height: 190)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
+                .frame(width: dims.panelWidth, height: dims.panelHeight)
             } else if isBrowser && store.activeBrowserTabs.isEmpty && !store.needsAutomationPermission {
-                // Loading state for browser (stable 560x190 container)
+                // Loading state for browser (stable initial container)
                 HStack(spacing: 12) {
-                    DockTabPlaceholderCard(title: title, appIcon: iconForPID(pid))
-                    DockTabPlaceholderCard(title: L10n.t("Đang chờ dữ liệu…"), appIcon: iconForPID(pid))
+                    DockTabPlaceholderCard(title: title, appIcon: iconForPID(pid), width: 240, height: 165)
+                    DockTabPlaceholderCard(title: L10n.t("Đang chờ dữ liệu…"), appIcon: iconForPID(pid), width: 240, height: 165)
                 }
-                .padding(14)
-                .frame(width: 560, height: 190)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
+                .frame(width: 516, height: 189)
             } else {
                 // Single card mode: for 1-tab browser or standard apps (320x220)
                 let targetHeight: CGFloat = (bundleID == "com.apple.iCal" && !store.calendarEvents.isEmpty) || (bundleID == "com.apple.weather" && store.weatherInfo != nil) ? 280 : 220
@@ -493,10 +533,8 @@ struct DockPreviewView: View {
         }
         .onChange(of: store.activeBrowserTabs) { tabs in
             if isBrowser {
-                let hasMultiple = tabs.count >= 2
-                let targetWidth: CGFloat = hasMultiple ? 560 : 320
-                let targetHeight: CGFloat = hasMultiple ? 190 : 220
-                DockPreviewController.shared.updatePanelSize(width: targetWidth, height: targetHeight, animated: true)
+                let dims = DockPreviewController.browserPanelDimensions(tabCount: tabs.count)
+                DockPreviewController.shared.updatePanelSize(width: dims.panelWidth, height: dims.panelHeight, animated: true)
             }
         }
     }
@@ -508,13 +546,17 @@ struct DockPreviewView: View {
     }
 }
 
-/// A crisp 260x170 card representing an active browser tab for Dock hover.
+/// A crisp card representing an active browser tab for Dock hover (supports 1..5 tabs).
 struct DockBrowserTabCard: View {
     let tab: BrowserTabItem
     let appIcon: NSImage?
     let bundleID: String
     let pid: pid_t
     let primaryThumb: NSImage?
+    var cardWidth: CGFloat = 240
+    var cardHeight: CGFloat = 165
+    var thumbWidth: CGFloat = 224
+    var thumbHeight: CGFloat = 119
     let onPick: () -> Void
 
     @State private var isHovered: Bool = false
@@ -525,7 +567,7 @@ struct DockBrowserTabCard: View {
             WindowManager.activate(pid: pid)
             onPick()
         }) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 5) {
                 // Header: favicon/app icon + title + domain
                 HStack(spacing: 6) {
                     if let appIcon = appIcon {
@@ -558,31 +600,31 @@ struct DockBrowserTabCard: View {
                             .frame(width: 5, height: 5)
                     }
                 }
-                .frame(height: 28)
+                .frame(height: 26)
                 .padding(.horizontal, 6)
                 .padding(.top, 4)
 
-                // Thumbnail: 244 x 100
+                // Thumbnail: Retina crisp
                 Group {
                     if let tabThumb = TabPreviewCache.shared.getPreview(tabId: tab.id) {
-                        WindowThumbnailView(image: tabThumb, width: 244, height: 100)
+                        WindowThumbnailView(image: tabThumb, width: thumbWidth, height: thumbHeight)
                     } else if tab.isActive, let primaryThumb = primaryThumb {
-                        WindowThumbnailView(image: primaryThumb, width: 244, height: 100)
+                        WindowThumbnailView(image: primaryThumb, width: thumbWidth, height: thumbHeight)
                     } else {
                         WebSnapshotCardView(
                             tab: tab,
-                            width: 244,
-                            height: 100,
+                            width: thumbWidth,
+                            height: thumbHeight,
                             showFullDetails: false
                         )
                     }
                 }
-                .frame(width: 244, height: 100)
+                .frame(width: thumbWidth, height: thumbHeight)
                 .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 6)
                 .padding(.bottom, 6)
             }
-            .frame(width: 260, height: 170)
+            .frame(width: cardWidth, height: cardHeight)
             .background {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(isHovered ? Color.white.opacity(0.12) : Color.white.opacity(0.05))
@@ -607,9 +649,11 @@ struct DockBrowserTabCard: View {
 struct DockTabPlaceholderCard: View {
     let title: String
     let appIcon: NSImage?
+    var width: CGFloat = 240
+    var height: CGFloat = 165
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 6) {
                 if let appIcon = appIcon {
                     Image(nsImage: appIcon)
@@ -623,7 +667,7 @@ struct DockTabPlaceholderCard: View {
                     .lineLimit(1)
                 Spacer()
             }
-            .frame(height: 28)
+            .frame(height: 26)
             .padding(.horizontal, 6)
             .padding(.top, 4)
 
@@ -631,12 +675,12 @@ struct DockTabPlaceholderCard: View {
                 Color.white.opacity(0.06)
                 ProgressView().scaleEffect(0.6)
             }
-            .frame(width: 244, height: 100)
+            .frame(width: width - 16, height: height - 46)
             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 6)
             .padding(.bottom, 6)
         }
-        .frame(width: 260, height: 170)
+        .frame(width: width, height: height)
         .background {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color.white.opacity(0.05))

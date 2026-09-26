@@ -713,21 +713,21 @@ public struct WindowPreviewCard: View {
         Button(action: onSelect) {
             LiquidGlassCard(isSelected: isSelected, cornerRadius: LiquidGlassTokens.Card.cornerRadius) {
                 VStack(alignment: .leading, spacing: 8) {
-                    // Card Header: App Icon 16x16 + 12pt medium name + secondary text
+                    // Card Header: App Icon 22x22 + 12.5pt semibold name + secondary text
                     HStack(spacing: 7) {
                         if let icon = iconForBundle(item.bundleID) {
                             Image(nsImage: icon)
                                 .resizable()
                                 .frame(width: LiquidGlassTokens.Card.appIconSize, height: LiquidGlassTokens.Card.appIconSize)
-                                .cornerRadius(3)
-                                .opacity(0.80)
+                                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                                .shadow(color: Color.black.opacity(0.25), radius: 2, y: 1)
                         }
 
                         VStack(alignment: .leading, spacing: 1) {
                             let appName = appNameForBundle(item.bundleID)
                             Text(appName)
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.white.opacity(0.90))
+                                .font(.system(size: 12.5, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.95))
                                 .lineLimit(1)
                                 .truncationMode(.tail)
 
@@ -744,8 +744,8 @@ public struct WindowPreviewCard: View {
 
                             if !subTitle.isEmpty {
                                 Text(subTitle)
-                                    .font(.system(size: 11, weight: .regular))
-                                    .foregroundColor(.white.opacity(0.45))
+                                    .font(.system(size: 10.5, weight: .regular))
+                                    .foregroundColor(.white.opacity(0.50))
                                     .lineLimit(1)
                                     .truncationMode(.tail)
                             }
@@ -755,34 +755,52 @@ public struct WindowPreviewCard: View {
                     .padding(.horizontal, 4)
                     .padding(.top, 2)
 
-                    // Thumbnail: 184x86, radius 10, no inner stroke, no heavy badge
+                    // Thumbnail with prominent App Icon Badge
                     let calculatedThumbWidth = thumbWidth ?? (size.width - LiquidGlassTokens.Card.padding * 2)
                     let calculatedThumbHeight = thumbHeight ?? LiquidGlassTokens.Card.switcherThumbSize.height
 
-                    if let thumb = item.thumbnail {
-                        WindowThumbnailView(image: thumb, width: calculatedThumbWidth, height: calculatedThumbHeight)
-                    } else if BrowserTabProvider.isSupportedBrowser(bundleID: item.bundleID) {
-                        let repTab = item.tabs.first ?? BrowserTabItem(title: item.title, url: item.appName)
-                        WebSnapshotCardView(
-                            tab: repTab,
-                            width: calculatedThumbWidth,
-                            height: calculatedThumbHeight,
-                            showFullDetails: false
-                        )
-                    } else {
-                        // Fallback / other space: subtle glass fill + 40px icon opacity 0.12 in center
-                        ZStack {
-                            RoundedRectangle(cornerRadius: LiquidGlassTokens.thumbRadius, style: .continuous)
-                                .fill(Color.white.opacity(0.04))
+                    ZStack(alignment: .bottomTrailing) {
+                        Group {
+                            if let thumb = item.thumbnail {
+                                WindowThumbnailView(image: thumb, width: calculatedThumbWidth, height: calculatedThumbHeight)
+                            } else if BrowserTabProvider.isSupportedBrowser(bundleID: item.bundleID) {
+                                let repTab = item.tabs.first ?? BrowserTabItem(title: item.title, url: item.appName)
+                                WebSnapshotCardView(
+                                    tab: repTab,
+                                    width: calculatedThumbWidth,
+                                    height: calculatedThumbHeight,
+                                    showFullDetails: false
+                                )
+                            } else {
+                                // Fallback / other space: subtle glass fill + 48px icon opacity 0.20 in center
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: LiquidGlassTokens.thumbRadius, style: .continuous)
+                                        .fill(Color.white.opacity(0.04))
 
-                            if let icon = iconForBundle(item.bundleID) {
-                                Image(nsImage: icon)
-                                    .resizable()
-                                    .frame(width: 40, height: 40)
-                                    .opacity(0.12)
+                                    if let icon = iconForBundle(item.bundleID) {
+                                        Image(nsImage: icon)
+                                            .resizable()
+                                            .frame(width: 48, height: 48)
+                                            .opacity(0.20)
+                                    }
+                                }
+                                .frame(width: calculatedThumbWidth, height: calculatedThumbHeight)
                             }
                         }
-                        .frame(width: calculatedThumbWidth, height: calculatedThumbHeight)
+
+                        // Prominent App Icon Badge at bottom-right corner of thumbnail (28x28 with shadow & squircle)
+                        if let icon = iconForBundle(item.bundleID) {
+                            Image(nsImage: icon)
+                                .resizable()
+                                .frame(width: LiquidGlassTokens.Card.badgeIconSize, height: LiquidGlassTokens.Card.badgeIconSize)
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                        .stroke(Color.white.opacity(0.25), lineWidth: 0.8)
+                                )
+                                .shadow(color: Color.black.opacity(0.45), radius: 4, x: 0, y: 2)
+                                .padding(5)
+                        }
                     }
                 }
                 .padding(LiquidGlassTokens.Card.padding)

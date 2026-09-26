@@ -174,6 +174,15 @@ final class CommandTabController {
             WindowPreviewStore.shared.selectedIndex = selection
             isActive = true
             isActiveSnapshot = true
+
+            // Check if modifier was already released during a quick tap
+            let isOptionHotkey = hotkeyPreference == "optionTab"
+            let modifierKey: NSEvent.ModifierFlags = isOptionHotkey ? .option : .command
+            if !NSEvent.modifierFlags.contains(modifierKey) {
+                dismiss(activate: true)
+                return
+            }
+
             PreviewOverlayWindow.shared.present(
                 selection: selection,
                 onCommit: { [weak self] idx in
@@ -194,14 +203,19 @@ final class CommandTabController {
 
     private func dismiss(activate: Bool) {
         if activate, let item = WindowPreviewStore.shared.commitSelection() {
-            if item.isGroup {
-                if let app = NSRunningApplication.runningApplications(withBundleIdentifier: item.bundleID).first {
-                    app.activate(options: [.activateIgnoringOtherApps])
-                }
-            } else if let win = WindowManager.listWindows().first(where: { $0.id == item.windowID }) {
+            let runningApp = NSRunningApplication.runningApplications(withBundleIdentifier: item.bundleID).first
+                ?? NSWorkspace.shared.runningApplications.first(where: {
+                    $0.localizedName == item.appName || $0.bundleIdentifier == item.bundleID
+                })
+
+            if let app = runningApp {
+                if app.isHidden { app.unhide() }
+                _ = app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+                _ = WindowManager.activate(pid: app.processIdentifier)
+            }
+
+            if !item.isGroup, let win = WindowManager.listWindows().first(where: { $0.id == item.windowID }) {
                 WindowManager.raiseWindow(win)
-            } else if let app = NSRunningApplication.runningApplications(withBundleIdentifier: item.bundleID).first {
-                app.activate(options: [.activateIgnoringOtherApps])
             }
         }
         isActive = false

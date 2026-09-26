@@ -63,7 +63,8 @@ public struct LiquidGlassTokens {
         public static var dockThumbSize: CGSize { LiquidGlassTokens.dockThumbSize }
         public static var switcherThumbSize: CGSize { LiquidGlassTokens.switcherThumbSize }
         public static let trafficDotSize: CGFloat = 10
-        public static let appIconSize: CGFloat = 16
+        public static let appIconSize: CGFloat = 22
+        public static let badgeIconSize: CGFloat = 28
         public static let padding: CGFloat = 8
     }
 

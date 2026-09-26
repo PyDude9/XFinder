@@ -174,7 +174,8 @@ enum WindowManager {
     @discardableResult
     static func activate(pid: pid_t) -> Bool {
         guard let app = NSRunningApplication(processIdentifier: pid) else { return false }
-        return app.activate(options: [.activateAllWindows])
+        if app.isHidden { app.unhide() }
+        return app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
     }
 
     /// Opens the System Settings pane that controls Finder extensions.
@@ -231,41 +232,43 @@ enum WindowManager {
     /// so the switcher still works without the permission — just less precisely.
     @discardableResult
     static func raiseWindow(_ info: WindowInfo) -> Bool {
-        guard isTrusted else { return activate(pid: info.ownerPID) }
+        guard let app = NSRunningApplication(processIdentifier: info.ownerPID) else { return false }
+        if app.isHidden { app.unhide() }
+
+        guard isTrusted else {
+            return app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+        }
+
         let appEl = AXUIElementCreateApplication(info.ownerPID)
         var windowsRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(appEl, kAXWindowsAttribute as CFString,
-                                            &windowsRef) == .success,
-              let axWindows = windowsRef as? [AXUIElement], !axWindows.isEmpty
-        else { return activate(pid: info.ownerPID) }
+        if AXUIElementCopyAttributeValue(appEl, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+           let axWindows = windowsRef as? [AXUIElement], !axWindows.isEmpty {
+            let target = axWindows.first { el in
+                var titleRef: CFTypeRef?
+                let title = AXUIElementCopyAttributeValue(el, kAXTitleAttribute as CFString, &titleRef) == .success
+                    ? (titleRef as? String ?? "") : ""
+                if !info.title.isEmpty, title == info.title { return true }
 
-        // CoreGraphics bounds are top-left origin, and so is AXPosition, so the
-        // two can be compared directly here without a flip.
-        let target = axWindows.first { el in
-            var titleRef: CFTypeRef?
-            let title = AXUIElementCopyAttributeValue(el, kAXTitleAttribute as CFString,
-                                                      &titleRef) == .success
-                ? (titleRef as? String ?? "") : ""
-            if !info.title.isEmpty, title == info.title { return true }
+                var posRef: CFTypeRef?
+                guard AXUIElementCopyAttributeValue(el, kAXPositionAttribute as CFString, &posRef) == .success,
+                      let posVal = posRef else { return false }
+                var point = CGPoint.zero
+                guard AXValueGetValue(posVal as! AXValue, .cgPoint, &point) else { return false }
+                return abs(point.x - info.bounds.origin.x) < 4 && abs(point.y - info.bounds.origin.y) < 4
+            } ?? axWindows[0]
 
-            var posRef: CFTypeRef?
-            guard AXUIElementCopyAttributeValue(el, kAXPositionAttribute as CFString,
-                                                &posRef) == .success, let posVal = posRef
-            else { return false }
-            var point = CGPoint.zero
-            guard AXValueGetValue(posVal as! AXValue, .cgPoint, &point) else { return false }
-            return abs(point.x - info.bounds.origin.x) < 4
-                && abs(point.y - info.bounds.origin.y) < 4
-        } ?? axWindows[0]
+            // If minimized, unminimize it
+            var isMinRef: CFTypeRef?
+            if AXUIElementCopyAttributeValue(target, kAXMinimizedAttribute as CFString, &isMinRef) == .success,
+               (isMinRef as? Bool) == true {
+                AXUIElementSetAttributeValue(target, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
+            }
 
-        AXUIElementPerformAction(target, kAXRaiseAction as CFString)
-        // Raising one window brings it above siblings but does NOT move input
-        // focus or activate the app — set AX frontmost and activate so the
-        // chosen app actually comes forward (⌘-Tab switch bug).
-        AXUIElementSetAttributeValue(appEl, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
-        _ = NSRunningApplication(processIdentifier: info.ownerPID)?
-            .activate(options: [.activateAllWindows])
-        return true
+            AXUIElementPerformAction(target, kAXRaiseAction as CFString)
+            AXUIElementSetAttributeValue(appEl, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
+        }
+
+        return app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
     }
 
     // MARK: - Accessibility-gated move/resize
