@@ -26,6 +26,10 @@ public final class XFinderBrowserHelper: @unchecked Sendable {
            let base64String = dataUrl.components(separatedBy: ",").last,
            let imageData = Data(base64Encoded: base64String),
            let img = NSImage(data: imageData) {
+            let scale = NSScreen.main?.backingScaleFactor ?? 2.0
+            if let rep = img.representations.first, rep.pixelsWide > 0, rep.pixelsHigh > 0 {
+                img.size = NSSize(width: CGFloat(rep.pixelsWide) / scale, height: CGFloat(rep.pixelsHigh) / scale)
+            }
             TabPreviewCache.shared.setPreview(tabId: message.tabId, image: img)
             return true
         }

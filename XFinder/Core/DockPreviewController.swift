@@ -27,6 +27,7 @@ final class DockPreviewController {
     private var hoverSince = Date.distantPast
     private var panel: NSWindow?
     private var panelPID: pid_t?
+    private var hideWorkItem: DispatchWorkItem?
     /// Short enough to feel instant; long enough that merely sweeping the
     /// pointer across the Dock does not fire a panel for every icon.
     private let dwell: TimeInterval = 0.08
@@ -71,6 +72,8 @@ final class DockPreviewController {
     }
 
     func stop() {
+        hideWorkItem?.cancel()
+        hideWorkItem = nil
         if let monitor { NSEvent.removeMonitor(monitor) }
         if let localMonitor { NSEvent.removeMonitor(localMonitor) }
         monitor = nil
@@ -87,6 +90,8 @@ final class DockPreviewController {
         if Date().timeIntervalSince(lastIconLoad) > 10 { reloadIcons() }
 
         if let icon = icons.first(where: { $0.rect.contains(mouse) }) {
+            hideWorkItem?.cancel()
+            hideWorkItem = nil
             if panelPID == icon.pid { return } // pointer went into the panel zone
             if hoveredPID != icon.pid {
                 hoveredPID = icon.pid
@@ -101,9 +106,27 @@ final class DockPreviewController {
             return
         }
         // Outside icons: keep the panel while the pointer is inside it.
-        if let panel, panel.frame.insetBy(dx: -8, dy: -8).contains(mouse) { return }
+        if let panel, panel.frame.insetBy(dx: -8, dy: -8).contains(mouse) {
+            hideWorkItem?.cancel()
+            hideWorkItem = nil
+            return
+        }
         hoveredPID = nil
-        hidePanel()
+        scheduleHidePanel(delay: 0.3)
+    }
+
+    private func scheduleHidePanel(delay: TimeInterval) {
+        guard hideWorkItem == nil, panel != nil else { return }
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.hideWorkItem = nil
+            let mouse = NSEvent.mouseLocation
+            if let p = self.panel, p.frame.insetBy(dx: -8, dy: -8).contains(mouse) { return }
+            if self.icons.contains(where: { $0.rect.contains(mouse) }) { return }
+            self.hidePanel()
+        }
+        hideWorkItem = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
     /// One-shot, fires once the dwell has elapsed; re-checks that the pointer
@@ -192,8 +215,8 @@ final class DockPreviewController {
     private func showPanel(for icon: IconRect) {
         let bundleID = NSRunningApplication(processIdentifier: icon.pid)?.bundleIdentifier ?? ""
         let isBrowser = BrowserTabProvider.isSupportedBrowser(bundleID: bundleID)
-        let panelHeight: CGFloat = isBrowser ? 280 : 220
-        let panelWidth: CGFloat = 320
+        let panelWidth: CGFloat = isBrowser ? 560 : 320
+        let panelHeight: CGFloat = isBrowser ? 190 : 220
 
         if panelPID == icon.pid, panel != nil { return }
 
@@ -205,7 +228,7 @@ final class DockPreviewController {
                     self?.hidePanel()
                 }
             }
-            anchorAbove(icon: icon, isBrowser: isBrowser, animated: true)
+            anchorAbove(icon: icon, windowWidth: panelWidth, windowHeight: panelHeight, animated: true)
             return
         }
 
@@ -232,7 +255,7 @@ final class DockPreviewController {
         panel.orderFrontRegardless()
         self.panel = panel
         self.panelPID = icon.pid
-        anchorAbove(icon: icon, isBrowser: isBrowser, animated: false)
+        anchorAbove(icon: icon, windowWidth: panelWidth, windowHeight: panelHeight, animated: false)
 
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.20
@@ -241,18 +264,23 @@ final class DockPreviewController {
         }
     }
 
-    /// Places the panel fully ABOVE the hovered Dock icon with a fixed width 320 and height 280 (browser) or 220 (normal).
-    private func anchorAbove(icon: IconRect, isBrowser: Bool, animated: Bool = true) {
+    /// Dynamically update panel size when browser tabs load or change.
+    func updatePanelSize(width: CGFloat, height: CGFloat, animated: Bool = true) {
+        guard let panel, let icon = icons.first(where: { $0.pid == panelPID }) else { return }
+        if panel.frame.width == width && panel.frame.height == height { return }
+        anchorAbove(icon: icon, windowWidth: width, windowHeight: height, animated: animated)
+    }
+
+    /// Places the panel fully ABOVE the hovered Dock icon centered on the icon.
+    private func anchorAbove(icon: IconRect, windowWidth: CGFloat, windowHeight: CGFloat, animated: Bool = true) {
         guard let panel else { return }
-        let windowWidth: CGFloat = 320
-        let windowHeight: CGFloat = isBrowser ? 280 : 220
         let gap: CGFloat = 12
 
         let screen = NSScreen.screens.first(where: { $0.frame.contains(CGPoint(x: icon.rect.midX, y: icon.rect.midY)) })?.visibleFrame
             ?? NSScreen.main?.visibleFrame
             ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
 
-        var originX = icon.rect.midX - 160
+        var originX = icon.rect.midX - (windowWidth / 2)
         var originY = icon.rect.maxY + gap
 
         // Clamp horizontally so it stays within visible screen bounds
@@ -279,6 +307,8 @@ final class DockPreviewController {
     }
 
     private func hidePanel() {
+        hideWorkItem?.cancel()
+        hideWorkItem = nil
         guard let currentPanel = panel else { return }
         self.panel = nil
         self.panelPID = nil
@@ -299,8 +329,7 @@ struct DockPreviewView: View {
     let title: String
     let onPick: () -> Void
     @State private var store = WindowPreviewStore.shared
-    @State private var hoveredTabID: String?
-    @State private var scale: CGFloat = 0.95
+    @State private var offset: CGFloat = 8
     @State private var opacity: Double = 0.0
 
     private var bundleID: String {
@@ -311,142 +340,148 @@ struct DockPreviewView: View {
         BrowserTabProvider.isSupportedBrowser(bundleID: bundleID)
     }
 
-    private var activeTab: BrowserTabItem? {
-        store.activeBrowserTabs.first(where: { $0.isActive }) ?? store.activeBrowserTabs.first
-    }
-
-    private var currentTab: BrowserTabItem? {
-        if let hID = hoveredTabID, let match = store.activeBrowserTabs.first(where: { $0.id == hID }) {
-            return match
-        }
-        return activeTab
+    private var hasTwoOrMoreTabs: Bool {
+        isBrowser && store.activeBrowserTabs.count >= 2
     }
 
     var body: some View {
         let dockItems = store.previewItems.filter { !$0.isOnOtherSpace }
-        let targetHeight: CGFloat = isBrowser ? 280 : 220
 
-        VStack(alignment: .leading, spacing: 6) {
-            // Header: fixed 36px
-            HStack(spacing: 7) {
-                if let icon = iconForPID(pid) {
-                    Image(nsImage: icon)
-                        .resizable()
-                        .frame(width: 16, height: 16)
-                        .clipShape(RoundedRectangle(cornerRadius: 3))
+        Group {
+            if hasTwoOrMoreTabs {
+                // Windows Taskbar style: 2 preview cards side by side
+                HStack(spacing: 12) {
+                    DockBrowserTabCard(
+                        tab: store.activeBrowserTabs[0],
+                        appIcon: iconForPID(pid),
+                        bundleID: bundleID,
+                        pid: pid,
+                        primaryThumb: dockItems.first?.thumbnail,
+                        onPick: onPick
+                    )
+                    DockBrowserTabCard(
+                        tab: store.activeBrowserTabs[1],
+                        appIcon: iconForPID(pid),
+                        bundleID: bundleID,
+                        pid: pid,
+                        primaryThumb: store.activeBrowserTabs[1].isActive ? dockItems.first?.thumbnail : nil,
+                        onPick: onPick
+                    )
                 }
-                VStack(alignment: .leading, spacing: 1) {
-                    let displayTitle = isBrowser && currentTab != nil ? currentTab!.title : (dockItems.first?.title.isEmpty == false ? dockItems.first!.title : title)
-                    let displaySubtitle = isBrowser && currentTab != nil ? currentTab!.domain : (dockItems.first?.appName.isEmpty == false ? dockItems.first!.appName : title)
-                    Text(displayTitle)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                    Text(displaySubtitle)
-                        .font(.system(size: 11))
-                        .foregroundColor(.primary.opacity(0.55))
-                        .lineLimit(1)
+                .padding(14)
+                .frame(width: 560, height: 190)
+            } else if isBrowser && store.activeBrowserTabs.isEmpty && !store.needsAutomationPermission {
+                // Loading state for browser (stable 560x190 container)
+                HStack(spacing: 12) {
+                    DockTabPlaceholderCard(title: title, appIcon: iconForPID(pid))
+                    DockTabPlaceholderCard(title: L10n.t("Đang chờ dữ liệu…"), appIcon: iconForPID(pid))
                 }
-                Spacer()
-            }
-            .frame(height: 36)
-            .padding(.horizontal, 8)
-
-            // Thumbnail / WebSnapshotCardView / AppHeroCardView: fixed 304x160
-            if isBrowser, let cur = currentTab {
-                Button(action: {
-                    BrowserTabProvider.shared.selectTab(tab: cur, in: bundleID)
-                    WindowManager.activate(pid: pid)
-                    onPick()
-                }) {
-                    if let tabThumb = TabPreviewCache.shared.getPreview(tabId: cur.id) {
-                        WindowThumbnailView(image: tabThumb, width: 304, height: 160)
-                    } else if cur.isActive, let firstThumb = dockItems.first?.thumbnail {
-                        WindowThumbnailView(image: firstThumb, width: 304, height: 160)
-                    } else {
-                        let curIndex = store.activeBrowserTabs.firstIndex(where: { $0.id == cur.id })
-                        WebSnapshotCardView(
-                            tab: cur,
-                            tabIndex: curIndex != nil ? curIndex! + 1 : nil,
-                            totalTabs: store.activeBrowserTabs.count > 0 ? store.activeBrowserTabs.count : nil,
-                            width: 304,
-                            height: 160,
-                            showFullDetails: true
-                        )
-                    }
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 8)
-            } else if let first = dockItems.first {
-                Button(action: {
-                    WindowManager.activate(pid: pid)
-                    onPick()
-                }) {
-                    if let thumb = first.thumbnail {
-                        WindowThumbnailView(image: thumb, width: 304, height: 160)
-                    } else {
-                        AppHeroCardView(
-                            appName: first.appName.isEmpty ? title : first.appName,
-                            title: first.title.isEmpty ? (first.appName.isEmpty ? title : first.appName) : first.title,
-                            bundleID: bundleID,
-                            isStageMiniature: first.isStageMiniature,
-                            isOnOtherSpace: first.isOnOtherSpace,
-                            width: 304,
-                            height: 160
-                        )
-                    }
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 8)
+                .padding(14)
+                .frame(width: 560, height: 190)
             } else {
-                ZStack {
-                    Color.white.opacity(0.06)
-                    ProgressView().scaleEffect(0.6)
-                }
-                .frame(width: 304, height: 160)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .padding(.horizontal, 8)
-            }
+                // Single card mode: for 1-tab browser or standard apps (320x220)
+                let targetHeight: CGFloat = (bundleID == "com.apple.iCal" && !store.calendarEvents.isEmpty) || (bundleID == "com.apple.weather" && store.weatherInfo != nil) ? 280 : 220
 
-            // Tabs / Special: fixed 68px for browser
-            if isBrowser {
-                if !store.activeBrowserTabs.isEmpty || store.needsAutomationPermission {
-                    BrowserTabCarouselView(
-                        tabs: store.activeBrowserTabs,
-                        needsPermission: store.needsAutomationPermission,
-                        selectedTabID: currentTab?.id,
-                        onHoverTab: { tab in
-                            hoveredTabID = tab.id
-                        },
-                        onSelectTab: { tab in
-                            BrowserTabProvider.shared.selectTab(tab: tab, in: bundleID)
+                VStack(alignment: .leading, spacing: 6) {
+                    // Header: fixed 36px
+                    HStack(spacing: 7) {
+                        if let icon = iconForPID(pid) {
+                            Image(nsImage: icon)
+                                .resizable()
+                                .frame(width: 16, height: 16)
+                                .clipShape(RoundedRectangle(cornerRadius: 3))
+                        }
+                        VStack(alignment: .leading, spacing: 1) {
+                            let displayTitle = isBrowser && store.activeBrowserTabs.first != nil ? store.activeBrowserTabs.first!.title : (dockItems.first?.title.isEmpty == false ? dockItems.first!.title : title)
+                            let displaySubtitle = isBrowser && store.activeBrowserTabs.first != nil ? store.activeBrowserTabs.first!.domain : (dockItems.first?.appName.isEmpty == false ? dockItems.first!.appName : title)
+                            Text(displayTitle)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+                            Text(displaySubtitle)
+                                .font(.system(size: 11))
+                                .foregroundColor(.primary.opacity(0.55))
+                                .lineLimit(1)
+                        }
+                        Spacer()
+                    }
+                    .frame(height: 36)
+                    .padding(.horizontal, 8)
+
+                    // Thumbnail / WebSnapshotCardView / AppHeroCardView: fixed 304x160
+                    if isBrowser, let cur = store.activeBrowserTabs.first {
+                        Button(action: {
+                            BrowserTabProvider.shared.selectTab(tab: cur, in: bundleID)
                             WindowManager.activate(pid: pid)
                             onPick()
+                        }) {
+                            if let tabThumb = TabPreviewCache.shared.getPreview(tabId: cur.id) {
+                                WindowThumbnailView(image: tabThumb, width: 304, height: 160)
+                            } else if let firstThumb = dockItems.first?.thumbnail {
+                                WindowThumbnailView(image: firstThumb, width: 304, height: 160)
+                            } else {
+                                WebSnapshotCardView(
+                                    tab: cur,
+                                    width: 304,
+                                    height: 160,
+                                    showFullDetails: true
+                                )
+                            }
                         }
-                    )
-                    .frame(height: 68)
-                } else {
-                    Color.clear
-                        .frame(height: 68)
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 8)
+                    } else if let first = dockItems.first {
+                        Button(action: {
+                            WindowManager.activate(pid: pid)
+                            onPick()
+                        }) {
+                            if let thumb = first.thumbnail {
+                                WindowThumbnailView(image: thumb, width: 304, height: 160)
+                            } else {
+                                AppHeroCardView(
+                                    appName: first.appName.isEmpty ? title : first.appName,
+                                    title: first.title.isEmpty ? (first.appName.isEmpty ? title : first.appName) : first.title,
+                                    bundleID: bundleID,
+                                    isStageMiniature: first.isStageMiniature,
+                                    isOnOtherSpace: first.isOnOtherSpace,
+                                    width: 304,
+                                    height: 160
+                                )
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 8)
+                    } else {
+                        ZStack {
+                            Color.white.opacity(0.06)
+                            ProgressView().scaleEffect(0.6)
+                        }
+                        .frame(width: 304, height: 160)
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .padding(.horizontal, 8)
+                    }
+
+                    // Special widgets
+                    if bundleID == "com.apple.iCal" && !store.calendarEvents.isEmpty {
+                        CalendarPreviewView(events: store.calendarEvents)
+                            .frame(height: 54)
+                            .padding(.horizontal, 8)
+                    } else if bundleID == "com.apple.weather", let weather = store.weatherInfo {
+                        WeatherPreviewView(weather: weather)
+                            .frame(height: 54)
+                            .padding(.horizontal, 8)
+                    }
                 }
-            } else if bundleID == "com.apple.iCal" && !store.calendarEvents.isEmpty {
-                CalendarPreviewView(events: store.calendarEvents)
-                    .frame(height: 54)
-                    .padding(.horizontal, 8)
-            } else if bundleID == "com.apple.weather", let weather = store.weatherInfo {
-                WeatherPreviewView(weather: weather)
-                    .frame(height: 54)
-                    .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .frame(width: 320, height: targetHeight)
             }
         }
-        .padding(.vertical, 4)
-        .frame(width: 320, height: targetHeight)
         .liquidGlassContainer(cornerRadius: LiquidGlassTokens.Container.cornerRadius)
-        .scaleEffect(scale)
+        .offset(y: offset)
         .opacity(opacity)
         .onAppear {
-            withAnimation(LiquidGlassTokens.spring) {
-                scale = 1.0
+            withAnimation(.spring(response: 0.18, dampingFraction: 0.8)) {
+                offset = 0
                 opacity = 1.0
             }
             store.loadDockPreviews(for: pid)
@@ -456,11 +491,159 @@ struct DockPreviewView: View {
                 store.loadDockPreviews(for: newPID)
             }
         }
+        .onChange(of: store.activeBrowserTabs) { tabs in
+            if isBrowser {
+                let hasMultiple = tabs.count >= 2
+                let targetWidth: CGFloat = hasMultiple ? 560 : 320
+                let targetHeight: CGFloat = hasMultiple ? 190 : 220
+                DockPreviewController.shared.updatePanelSize(width: targetWidth, height: targetHeight, animated: true)
+            }
+        }
     }
 
     private func iconForPID(_ p: pid_t) -> NSImage? {
         guard let app = NSRunningApplication(processIdentifier: p),
               let url = app.bundleURL else { return nil }
         return NSWorkspace.shared.icon(forFile: url.path)
+    }
+}
+
+/// A crisp 260x170 card representing an active browser tab for Dock hover.
+struct DockBrowserTabCard: View {
+    let tab: BrowserTabItem
+    let appIcon: NSImage?
+    let bundleID: String
+    let pid: pid_t
+    let primaryThumb: NSImage?
+    let onPick: () -> Void
+
+    @State private var isHovered: Bool = false
+
+    var body: some View {
+        Button(action: {
+            BrowserTabProvider.shared.selectTab(tab: tab, in: bundleID)
+            WindowManager.activate(pid: pid)
+            onPick()
+        }) {
+            VStack(alignment: .leading, spacing: 6) {
+                // Header: favicon/app icon + title + domain
+                HStack(spacing: 6) {
+                    if let appIcon = appIcon {
+                        Image(nsImage: appIcon)
+                            .resizable()
+                            .frame(width: 14, height: 14)
+                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                    } else {
+                        Image(systemName: tab.isSecure ? "lock.fill" : "globe")
+                            .font(.system(size: 10))
+                            .foregroundColor(.blue)
+                    }
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(tab.title.isEmpty ? tab.domain : tab.title)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                        Text(tab.domain)
+                            .font(.system(size: 9.5))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    if tab.isActive {
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 5, height: 5)
+                    }
+                }
+                .frame(height: 28)
+                .padding(.horizontal, 6)
+                .padding(.top, 4)
+
+                // Thumbnail: 244 x 100
+                Group {
+                    if let tabThumb = TabPreviewCache.shared.getPreview(tabId: tab.id) {
+                        WindowThumbnailView(image: tabThumb, width: 244, height: 100)
+                    } else if tab.isActive, let primaryThumb = primaryThumb {
+                        WindowThumbnailView(image: primaryThumb, width: 244, height: 100)
+                    } else {
+                        WebSnapshotCardView(
+                            tab: tab,
+                            width: 244,
+                            height: 100,
+                            showFullDetails: false
+                        )
+                    }
+                }
+                .frame(width: 244, height: 100)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .padding(.horizontal, 8)
+                .padding(.bottom, 6)
+            }
+            .frame(width: 260, height: 170)
+            .background {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isHovered ? Color.white.opacity(0.12) : Color.white.opacity(0.05))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(isHovered ? Color.blue.opacity(0.55) : Color.white.opacity(0.12), lineWidth: 1)
+            }
+            .shadow(color: isHovered ? Color.blue.opacity(0.18) : Color.black.opacity(0.08), radius: isHovered ? 8 : 4, y: 2)
+            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .onHover { h in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovered = h
+            }
+        }
+    }
+}
+
+/// Placeholder card during initial async tab discovery.
+struct DockTabPlaceholderCard: View {
+    let title: String
+    let appIcon: NSImage?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                if let appIcon = appIcon {
+                    Image(nsImage: appIcon)
+                        .resizable()
+                        .frame(width: 14, height: 14)
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
+                Text(title)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                Spacer()
+            }
+            .frame(height: 28)
+            .padding(.horizontal, 6)
+            .padding(.top, 4)
+
+            ZStack {
+                Color.white.opacity(0.06)
+                ProgressView().scaleEffect(0.6)
+            }
+            .frame(width: 244, height: 100)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .padding(.horizontal, 8)
+            .padding(.bottom, 6)
+        }
+        .frame(width: 260, height: 170)
+        .background {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        }
     }
 }

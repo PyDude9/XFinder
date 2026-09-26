@@ -29,7 +29,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 function captureTab(tabId, windowId) {
-  chrome.tabs.captureVisibleTab(windowId, { format: "jpeg", quality: 90 }, (dataUrl) => {
+  chrome.tabs.captureVisibleTab(windowId, { format: "png" }, (dataUrl) => {
     if (chrome.runtime.lastError || !dataUrl) {
       return;
     }
@@ -38,7 +38,8 @@ function captureTab(tabId, windowId) {
         tabId: String(tabId),
         dataUrl: dataUrl,
         title: tab ? tab.title : "",
-        url: tab ? tab.url : ""
+        url: tab ? tab.url : "",
+        dpr: (typeof window !== "undefined" && window.devicePixelRatio) ? window.devicePixelRatio : 2
       };
       sendNative(payload);
     });

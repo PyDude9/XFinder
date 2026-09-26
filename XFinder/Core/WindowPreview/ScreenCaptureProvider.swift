@@ -167,17 +167,22 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
             if let win = content.windows.first(where: { $0.windowID == windowID }),
                win.frame.width > 1, win.frame.height > 1 {
                 let filter = SCContentFilter(desktopIndependentWindow: win)
+                let scale = NSScreen.main?.backingScaleFactor ?? 2.0
                 let config = SCStreamConfiguration()
-                config.width = min(max(100, Int(win.frame.width * 2)), 1600)
-                config.height = min(max(100, Int(win.frame.height * 2)), 1200)
+                config.width = max(200, Int(win.frame.width * scale))
+                config.height = max(200, Int(win.frame.height * scale))
                 config.scalesToFit = false
                 config.showsCursor = false
                 config.capturesAudio = false
                 config.captureResolution = .best
 
                 let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
-                let straightened = Self.straightenImageIfNeeded(cgImage)
-                let img = NSImage(cgImage: straightened, size: NSSize(width: straightened.width, height: straightened.height))
+                let finalCG: CGImage = (win.frame.width <= 260 && win.frame.height <= 260)
+                    ? Self.straightenImageIfNeeded(cgImage)
+                    : cgImage
+                let ptW = CGFloat(finalCG.width) / scale
+                let ptH = CGFloat(finalCG.height) / scale
+                let img = NSImage(cgImage: finalCG, size: NSSize(width: ptW, height: ptH))
                 cache.set(windowID, image: img)
                 return img
             }
@@ -187,7 +192,10 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
 
         // Fallback for On another Space, Stage Manager or SCK miss:
         if let fallbackCG = legacyWindowCapture(windowID: windowID) {
-            let img = NSImage(cgImage: fallbackCG, size: NSSize(width: fallbackCG.width, height: fallbackCG.height))
+            let scale = NSScreen.main?.backingScaleFactor ?? 2.0
+            let ptW = CGFloat(fallbackCG.width) / scale
+            let ptH = CGFloat(fallbackCG.height) / scale
+            let img = NSImage(cgImage: fallbackCG, size: NSSize(width: ptW, height: ptH))
             cache.set(windowID, image: img)
             return img
         }
@@ -213,12 +221,13 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
             let wanted = Set(neededIDs)
+            let scale = NSScreen.main?.backingScaleFactor ?? 2.0
             for win in content.windows where wanted.contains(win.windowID) {
                 guard win.frame.width > 1, win.frame.height > 1 else { continue }
                 let filter = SCContentFilter(desktopIndependentWindow: win)
                 let config = SCStreamConfiguration()
-                config.width = min(max(100, Int(win.frame.width * 2)), 1600)
-                config.height = min(max(100, Int(win.frame.height * 2)), 1200)
+                config.width = max(200, Int(win.frame.width * scale))
+                config.height = max(200, Int(win.frame.height * scale))
                 config.scalesToFit = false
                 config.showsCursor = false
                 config.capturesAudio = false
@@ -227,8 +236,12 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
                 guard let cgImage = try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config) else {
                     continue
                 }
-                let straightened = Self.straightenImageIfNeeded(cgImage)
-                let img = NSImage(cgImage: straightened, size: NSSize(width: straightened.width, height: straightened.height))
+                let finalCG: CGImage = (win.frame.width <= 260 && win.frame.height <= 260)
+                    ? Self.straightenImageIfNeeded(cgImage)
+                    : cgImage
+                let ptW = CGFloat(finalCG.width) / scale
+                let ptH = CGFloat(finalCG.height) / scale
+                let img = NSImage(cgImage: finalCG, size: NSSize(width: ptW, height: ptH))
                 cache.set(win.windowID, image: img)
                 result[win.windowID] = img
             }
@@ -239,7 +252,10 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
         // Fallback for any needed windows not captured by SCK:
         for wid in neededIDs where result[wid] == nil {
             if let fallbackCG = legacyWindowCapture(windowID: wid) {
-                let img = NSImage(cgImage: fallbackCG, size: NSSize(width: fallbackCG.width, height: fallbackCG.height))
+                let scale = NSScreen.main?.backingScaleFactor ?? 2.0
+                let ptW = CGFloat(fallbackCG.width) / scale
+                let ptH = CGFloat(fallbackCG.height) / scale
+                let img = NSImage(cgImage: fallbackCG, size: NSSize(width: ptW, height: ptH))
                 cache.set(wid, image: img)
                 result[wid] = img
             }

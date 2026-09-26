@@ -147,12 +147,14 @@ public final class WindowPreviewStore {
         let isBrowser = BrowserTabProvider.isSupportedBrowser(bundleID: bundleID)
 
         // Dock hover: strictly 1 primary window preview.
-        // Prioritize windows with non-empty titles (real user-facing document/web pages rather than helper/omnibox popups).
-        let titledWins = allWins.filter { !$0.title.isEmpty }
+        // Filter out Stage Manager miniature tiles and tiny utility windows:
+        let validWins = allWins.filter { !$0.isStageMiniature && $0.bounds.width >= 260 && $0.bounds.height >= 180 }
+        let candidates = !validWins.isEmpty ? validWins : allWins
+        let titledWins = candidates.filter { !$0.title.isEmpty }
         guard let win = titledWins.first(where: { $0.isOnCurrentSpace })
             ?? titledWins.first
-            ?? allWins.first(where: { $0.isOnCurrentSpace })
-            ?? allWins.first else {
+            ?? candidates.first(where: { $0.isOnCurrentSpace })
+            ?? candidates.first else {
             self.previewItems = []
             self.activeBrowserTabs = []
             return
