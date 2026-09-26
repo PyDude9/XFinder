@@ -5,6 +5,7 @@ struct RootView: View {
     @State private var clipboardManager = ClipboardManager.shared
     @State private var systemMonitorManager = SystemMonitorManager.shared
     @State private var l10n = L10n.shared
+    @ObservedObject private var permissionManager = PermissionManager.shared
 
     var body: some View {
         NavigationView {
@@ -17,13 +18,35 @@ struct RootView: View {
 
             // No notes column here: notes live in the screen-edge panel, and a
             // permanent sidebar repeated it on every settings page.
-            DetailHostView(selection: appState.selection)
-                .environment(clipboardManager)
-                .environment(systemMonitorManager)
-                // `minWidth: 0` is the load-bearing part: without it a page
-                // whose content has a large ideal width (the batch-rename
-                // preview rows) pushes the whole window wider when selected.
-                .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+            VStack(spacing: 0) {
+                if !permissionManager.isAccessibilityGranted {
+                    HStack(spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                            .font(.system(size: 13))
+                        Text(L10n.t("XFinder cần quyền Trợ năng để nhận cử chỉ"))
+                            .font(.system(size: 12))
+                        Spacer()
+                        Button(L10n.t("Mở Cài đặt")) {
+                            PermissionManager.shared.openAccessibilitySettings()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.orange.opacity(0.12))
+                    Divider()
+                }
+
+                DetailHostView(selection: appState.selection)
+                    .environment(clipboardManager)
+                    .environment(systemMonitorManager)
+                    // `minWidth: 0` is the load-bearing part: without it a page
+                    // whose content has a large ideal width (the batch-rename
+                    // preview rows) pushes the whole window wider when selected.
+                    .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .navigationViewStyle(.columns)
         .frame(minWidth: 900, minHeight: 600)
@@ -102,6 +125,8 @@ struct DetailHostView: View {
             case .pin:
                 PinDetailView()
                     .environment(systemMonitorManager)
+            case .voiceTyping:
+                VoiceDetailView()
             case .settingsClipboard:
                 SettingsDetailView(destination: selection)
             case .compress:

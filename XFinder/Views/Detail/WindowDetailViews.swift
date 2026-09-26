@@ -9,6 +9,12 @@ struct WindowPreviewDetailView: View {
     @AppStorage("windowPreview.hoverEnabled") private var hoverEnabled = true
     @AppStorage("windowPreview.commandTabEnabled") private var commandTabEnabled = false
     @AppStorage("windowPreview.showHiddenWindows") private var showHiddenWindows = false
+    @AppStorage("windowPreview.switcherHotkey") private var switcherHotkey = "commandTab"
+    @AppStorage("windowPreview.animationEnabled") private var animationEnabled = true
+    @AppStorage("windowPreview.customDockEnabled") private var customDockEnabled = false
+    @State private var dockAutohide = DockPrefs.autohide()
+    @State private var excludedApps: [String] = UserDefaults.standard.stringArray(forKey: "windowPreview.excludedApps") ?? []
+    @State private var newExcludedApp: String = ""
     @State private var controller = DockPreviewController.shared
     @State private var trusted = WindowManager.isTrusted
     @State private var canRecord = WindowManager.canRecordScreen
@@ -20,39 +26,40 @@ struct WindowPreviewDetailView: View {
                            title: L10n.t("Xem trước cửa sổ"),
                            subtitle: L10n.t("Xem trước và chuyển cửa sổ ứng dụng ngay từ Dock."))
 
-                SectionHeader(icon: "square.on.square",
-                              title: L10n.t("Cách hoạt động"),
-                              subtitle: L10n.t("Di chuột qua ứng dụng trên Dock để xem trước các cửa sổ."))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    ToggleRow(title: L10n.t("Hiện bản xem trước cửa sổ khi di chuột qua ứng dụng trên Dock"),
-                              isOn: $hoverEnabled)
-                        .onChange(of: hoverEnabled) { controller.applySettings() }
-                    Text(L10n.t("XFinder chỉ chụp ảnh thu nhỏ khi bảng xem trước đang hiển thị."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
-                    if hoverEnabled {
-                        Text(controller.statusHint)
-                            .font(.system(size: 11)).foregroundColor(.secondary)
-                    }
-                }
-                .padding(.horizontal, 20)
-
-                Divider().padding(.horizontal, 20)
-
+                // Section 1: Switcher
                 SectionHeader(icon: "command",
-                              title: L10n.t("Xem trước cửa sổ bằng Command-Tab"),
+                              title: L10n.t("Chuyển cửa sổ bằng phím tắt"),
                               subtitle: L10n.t("Chuyển trực tiếp giữa các cửa sổ bằng hình xem trước trực tiếp."))
 
-                VStack(alignment: .leading, spacing: 4) {
-                    ToggleRow(title: L10n.t("Hiện bản xem trước cửa sổ bằng Command-Tab"),
+                VStack(alignment: .leading, spacing: 10) {
+                    ToggleRow(title: L10n.t("Bật bộ chuyển cửa sổ Liquid Glass"),
                               isOn: $commandTabEnabled)
                         .onChange(of: commandTabEnabled) { CommandTabController.shared.applySettings() }
-                    Text(L10n.t("Khi bật, XFinder xử lý Command-Tab thay cho bộ chuyển ứng dụng của macOS. Giữ Command và nhấn Tab hoặc Shift-Tab để chọn cửa sổ; thả Command để mở hoặc nhấn Escape để hủy."))
+                    Text(L10n.t("Khi bật, XFinder xử lý chuyển cửa sổ thay cho bộ chuyển ứng dụng của macOS. Giữ phím tắt để duyệt danh sách, nhấn dấu phẩy (,) để tìm kiếm, thả phím để mở hoặc nhấn Escape để hủy."))
+                        .font(.system(size: 11)).foregroundColor(.secondary)
+
+                    HStack {
+                        Text(L10n.t("Phím tắt chuyển cửa sổ"))
+                            .font(.system(size: 13))
+                        Spacer()
+                        Picker("", selection: $switcherHotkey) {
+                            Text("⌘ Tab").tag("commandTab")
+                            Text("⌥ Tab").tag("optionTab")
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 160)
+                        .onChange(of: switcherHotkey) {
+                            CommandTabController.shared.applySettings()
+                        }
+                    }
+
+                    ToggleRow(title: L10n.t("Hiệu ứng chuyển động"),
+                              isOn: $animationEnabled)
+                    Text(L10n.t("Mượt mà với hoạt cảnh co giãn và bóng mờ Liquid Glass."))
                         .font(.system(size: 11)).foregroundColor(.secondary)
 
                     ToggleRow(title: L10n.t("Hiện cả cửa sổ ẩn trong App Switcher"),
                               isOn: $showHiddenWindows)
-                        .padding(.top, 8)
                     Text(L10n.t("Một số ứng dụng chỉ ẩn cửa sổ khi bạn đóng thay vì thoát — Spotify, Slack, Synology Chat. Liệt kê những cửa sổ đó cho phép Command-Tab gọi lại chúng, nhưng ứng dụng phải mở lại cửa sổ trước, nên sẽ hiện chậm hơn một chút."))
                         .font(.system(size: 11)).foregroundColor(.secondary)
                 }
@@ -60,6 +67,89 @@ struct WindowPreviewDetailView: View {
 
                 Divider().padding(.horizontal, 20)
 
+                // Section 2: Dock
+                SectionHeader(icon: "square.on.square",
+                              title: L10n.t("Dải Dock Liquid Glass"),
+                              subtitle: L10n.t("Di chuột qua ứng dụng trên Dock để xem trước các cửa sổ."))
+
+                VStack(alignment: .leading, spacing: 10) {
+                    ToggleRow(title: L10n.t("Hiện bản xem trước cửa sổ khi di chuột qua ứng dụng trên Dock"),
+                              isOn: $hoverEnabled)
+                        .onChange(of: hoverEnabled) { controller.applySettings() }
+                    Text(L10n.t("XFinder chỉ chụp ảnh thu nhỏ khi bảng xem trước đang hiển thị."))
+                        .font(.system(size: 11)).foregroundColor(.secondary)
+
+                    ToggleRow(title: L10n.t("Hiện dải ứng dụng Dock thay thế ở cạnh dưới màn hình"),
+                              isOn: $customDockEnabled)
+                        .onChange(of: customDockEnabled) {
+                            DockLayerController.shared.applySettings()
+                        }
+
+                    ToggleRow(title: L10n.t("Tự động ẩn Dock của macOS"),
+                              isOn: $dockAutohide)
+                        .onChange(of: dockAutohide) {
+                            DockPrefs.setAutohide(dockAutohide)
+                        }
+                }
+                .padding(.horizontal, 20)
+
+                Divider().padding(.horizontal, 20)
+
+                // Section 3: Excluded Apps
+                SectionHeader(icon: "nosign",
+                              title: L10n.t("Ứng dụng loại trừ"),
+                              subtitle: L10n.t("Các ứng dụng này sẽ không xuất hiện trong bộ chuyển cửa sổ."))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    if excludedApps.isEmpty {
+                        Text(L10n.t("Chưa có ứng dụng nào bị loại trừ."))
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    } else {
+                        VStack(spacing: 4) {
+                            ForEach(excludedApps, id: \.self) { app in
+                                HStack {
+                                    Text(app)
+                                        .font(.system(size: 12, design: .monospaced))
+                                    Spacer()
+                                    Button(action: {
+                                        excludedApps.removeAll { $0 == app }
+                                        UserDefaults.standard.set(excludedApps, forKey: "windowPreview.excludedApps")
+                                    }) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Color(.controlBackgroundColor).opacity(0.4))
+                                .cornerRadius(6)
+                            }
+                        }
+                    }
+
+                    HStack {
+                        TextField(L10n.t("Thêm ứng dụng..."), text: $newExcludedApp)
+                            .textFieldStyle(.roundedBorder)
+                        Button(L10n.t("Thêm")) {
+                            let trimmed = newExcludedApp.trimmingCharacters(in: .whitespaces)
+                            if !trimmed.isEmpty && !excludedApps.contains(trimmed) {
+                                excludedApps.append(trimmed)
+                                UserDefaults.standard.set(excludedApps, forKey: "windowPreview.excludedApps")
+                                newExcludedApp = ""
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        .disabled(newExcludedApp.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                Divider().padding(.horizontal, 20)
+
+                // Section 4: Permissions
                 SectionHeader(icon: "lock.shield",
                               title: L10n.t("Quyền cần thiết"),
                               subtitle: L10n.t("Trợ năng nhận diện ứng dụng trên Dock; Ghi màn hình hiển thị ảnh thu nhỏ trực tiếp."))
@@ -84,6 +174,8 @@ struct WindowPreviewDetailView: View {
         .onAppear {
             trusted = WindowManager.isTrusted
             canRecord = WindowManager.canRecordScreen
+            dockAutohide = DockPrefs.autohide()
+            excludedApps = UserDefaults.standard.stringArray(forKey: "windowPreview.excludedApps") ?? []
             controller.applySettings()
         }
     }

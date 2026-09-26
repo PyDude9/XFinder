@@ -3,6 +3,8 @@ import Combine
 
 struct PinDetailView: View {
     @Environment(SystemMonitorManager.self) var monitor
+    @ObservedObject private var batteryStore = BatteryStore.shared
+    @AppStorage("battery.showDisconnected") private var showDisconnected = false
     @State private var info: BatteryInfo = PowerManager.read()
     @State private var hasBattery: Bool = PowerManager.hasBattery()
 
@@ -104,13 +106,48 @@ struct PinDetailView: View {
                     }
                     .padding(.horizontal, 20)
                 }
+
+                let externalDevices = batteryStore.allDevices.filter { $0.kind != .mac }
+                if !externalDevices.isEmpty {
+                    SettingsCard(title: L10n.t("Thiết bị đã kết nối")) {
+                        VStack(spacing: 12) {
+                            HStack {
+                                Toggle(L10n.t("Hiện thiết bị đã ngắt kết nối"), isOn: $showDisconnected)
+                                    .font(.system(size: 12))
+                                Spacer()
+                            }
+
+                            let displayDevices = externalDevices.filter { showDisconnected || $0.isConnected }
+                            if displayDevices.isEmpty {
+                                Text(L10n.t("Không có thiết bị kết nối"))
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .padding(.vertical, 8)
+                            } else {
+                                VStack(spacing: 8) {
+                                    ForEach(displayDevices) { dev in
+                                        LargeBatteryCardView(device: dev)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                }
             }
             .padding(.bottom, 20)
         }
         .background(Color(.windowBackgroundColor))
         // Only sample metrics while a page that shows them is on screen.
-        .onAppear { SystemMonitorManager.shared.retain() }
-        .onDisappear { SystemMonitorManager.shared.release() }
+        .onAppear {
+            SystemMonitorManager.shared.retain()
+            batteryStore.retain()
+        }
+        .onDisappear {
+            SystemMonitorManager.shared.release()
+            batteryStore.release()
+        }
         .onAppear {
             info = PowerManager.read()
             hasBattery = PowerManager.hasBattery()

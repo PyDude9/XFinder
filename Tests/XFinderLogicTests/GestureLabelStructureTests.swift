@@ -180,4 +180,62 @@ final class GestureLabelStructureTests: XCTestCase {
                            "\(direction.rawValue) motion half names a button: \(motion)")
         }
     }
+
+    // MARK: - The compact form drawn on the diagram (PATCH v9.1 R2)
+
+    /// The chip form is the bare user-facing number, and it goes through
+    /// `displayNumber(forButtonNumber:)` rather than doing its own `+ 1`.
+    ///
+    /// A second copy of the offset is the hazard: `displayNumber(forButtonNumber:)`
+    /// already exists and was wrong once, so the chip path must use it. The named form is
+    /// deliberately **not** used here — `Bấm con lăn xuống` is 17 characters and cannot fit
+    /// a 46 pt chip, which is a measured width limit, not a preference.
+    func testChipLabelIsTheBareNumberAndSharesTheOneOffset() {
+        for code in 0...31 {
+            XCTAssertEqual(ButtonLabelStructure.compactLabel(forButtonNumber: code),
+                           ButtonLabel(key: ButtonLabelStructure.numberedPrefixKey,
+                                       appendNumber: ButtonLabelStructure.displayNumber(forButtonNumber: code)),
+                           "chip label for button \(code)")
+        }
+        // Named forms still exist for the list, the tooltips and the detail heading.
+        XCTAssertEqual(ButtonLabelStructure.compactLabel(forButtonNumber: 0).appendNumber, 1)
+        XCTAssertEqual(ButtonLabelStructure.compactLabel(forButtonNumber: 2).appendNumber, 3)
+        XCTAssertEqual(ButtonLabelStructure.compactLabel(forButtonNumber: 5).appendNumber, 6)
+        XCTAssertNotNil(ButtonLabelStructure.namedKey(forButtonNumber: 2),
+                        "the descriptive name is still the one the list prints")
+    }
+
+    /// The chip form drops the positional hint and the descriptive name, and that is the
+    /// whole reason it is a separate function: the hint is a sentence and the Vietnamese
+    /// wheel name is 17 characters, neither of which fits a 46 pt chip. Nothing is lost,
+    /// because the full form is still what the Assigned-buttons list and the tooltips print.
+    func testChipLabelDropsTheHintTheFullLabelKeeps() {
+        for code in [3, 4] {
+            let hint = ButtonLabelStructure.hintKey(forButtonNumber: code)
+            XCTAssertNotNil(hint, "precondition: \(code) has a hint to drop")
+            let chip = ButtonLabelStructure.compactLabel(forButtonNumber: code)
+            XCTAssertEqual(chip.key, ButtonLabelStructure.numberedPrefixKey)
+            XCTAssertNotEqual(chip.key, hint,
+                              "the chip form must use the fragment, never the hint")
+        }
+        for code in [0, 1, 2] {
+            let named = ButtonLabelStructure.namedKey(forButtonNumber: code)
+            XCTAssertNotNil(named, "precondition: \(code) has a descriptive name")
+            XCTAssertNotEqual(ButtonLabelStructure.compactLabel(forButtonNumber: code).key,
+                              named,
+                              "the chip is a number; the name belongs to the full-width rows")
+        }
+    }
+
+    /// A key that renders a number must never be the prefix used for the interpolated
+    /// case — if it were, the chip would print “Nút 4” and then append another 4.
+    func testChipNumberedFormUsesTheFragmentSoTheNumberIsAppendedOnce() {
+        let chip = ButtonLabelStructure.compactLabel(forButtonNumber: 3)
+        XCTAssertEqual(chip.key, ButtonLabelStructure.numberedPrefixKey)
+        // The fragment carries its trailing space on purpose: without it the join would
+        // read "Nút4".
+        XCTAssertTrue(chip.key.hasSuffix(" "), "the fragment must keep its trailing space")
+        XCTAssertFalse(chip.key.contains("4"),
+                       "a key containing a runtime value can never be looked up")
+    }
 }

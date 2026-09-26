@@ -136,6 +136,26 @@ extension L10n {
         }
     }
 
+    /// The label for a control drawn as a chip on the mouse diagram: the bare user-facing
+    /// **number**, never the descriptive name.
+    ///
+    /// Two measured reasons, not a style choice: a chip is 46 pt wide and the Vietnamese
+    /// name for the wheel (`Bấm con lăn xuống`, 17 characters) does not fit at any legible
+    /// size, and the user asked for buttons to be named by number. The descriptive name is
+    /// not lost — the chip's tooltip and the Assigned-buttons list both print it, and both
+    /// read it from the same table.
+    nonisolated static func t(compactButton key: ButtonKey) -> String {
+        switch key {
+        case .index(let n):
+            let parts = ButtonLabelStructure.compactLabel(forButtonNumber: n)
+            // A fragment cannot be a dictionary key once a runtime value is in it, so the
+            // number is appended outside the lookup — the same join `t(_ key:)` performs.
+            return parts.appendNumber.map { t(parts.key) + "\($0)" } ?? t(parts.key)
+        case .modifier(let flags):
+            return GestureShortcut(key: 0, flags: flags).modifierLabel
+        }
+    }
+
     /// The heading for one direction, naming the held button. Composed here (not in
     /// the model) so both halves are translated and the joined sentence reads
     /// correctly in each language.

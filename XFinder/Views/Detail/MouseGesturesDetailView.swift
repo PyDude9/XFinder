@@ -3,16 +3,23 @@ import AppKit
 
 /// Compile-time lever for the measured-activity block at the bottom of the page.
 ///
-/// **`false` is the shipped value.** The block is a development instrument — the only place
-/// the engine's own view of a press (button number, locked direction, the app it resolved
-/// for) is visible — so it is not part of the page a normal user reads.
+/// **`false` is the shipped value, and it is now authoritative.** The block is a development
+/// instrument — the only place the engine's own view of a press (button number, locked
+/// direction, the app it resolved for) is visible — so it is not part of the page a normal
+/// user reads, and the user asked for it to be gone from the shipped build.
 ///
-/// It is deliberately **not** wrapped in `#if`: the page's own switch says *"Bật ghi nhật ký
-/// để xem XFinder nhận được gì"*, so a compile-time-only removal would leave a control that
-/// promises something it cannot do — the exact thing Part 0 §6 of `AGENTS.md` forbids. The
-/// section therefore renders when `DEBUG_SHOW_ENGINE_LOG || config.debug`: hidden for a
-/// fresh user (debug defaults off), shown the moment they flip that switch, and forced on
-/// for a diagnostic build by setting this to `true`.
+/// ── What changed, and the mistake it corrects (PATCH v10.1) ───────────────────────────
+/// The section used to render on `DEBUG_SHOW_ENGINE_LOG || config.debug`. The reasoning was
+/// that the page's own switch says *"Bật ghi nhật ký để xem XFinder nhận được gì"*, so
+/// removing the block at compile time would leave a control promising something it cannot do.
+/// The reasoning was wrong on its own facts: **that switch lives inside this section**, so
+/// gating the section removes the switch with it and nothing is left promising anything.
+/// What the `||` actually did was let a stored `debug = true` keep a developer block on the
+/// user's page — which is what the user reported.
+///
+/// So the flag alone decides. `GestureConfiguration.debug` is untouched and still gates the
+/// engine's own diagnostic ring, and the switch that writes it is offered exactly when the
+/// block it controls is visible. A diagnostic build sets this to `true` and gets both back.
 private let DEBUG_SHOW_ENGINE_LOG = false
 
 /// Chuột & cử chỉ — the user opens this page asking **"what will each swipe send,
@@ -33,9 +40,18 @@ struct MouseGesturesDetailView: View {
     @State private var customBundle = ""
     @State private var recordingDirection: GestureDirection?
     @State private var recordingTrigger = false
+    /// The row whose per-row **Ghi** button armed the recording, or `nil` when the
+    /// recording was started from a header button (PATCH v10 R3). Purely a highlight: the
+    /// engine can only listen for "the next press", so the row exists to make the *intent*
+    /// explicit — press this control — and to show that XFinder is listening.
+    @State private var recordingButton: Int?
     /// Which arm of the diagram is highlighted. `nil` = nothing picked yet, which shows
     /// the interaction hint instead of an alarming blank panel.
     @State private var pickedDirection: GestureDirection?
+    /// Which *control* of the mouse is highlighted, tracked separately from the direction
+    /// because they are different questions and can be open at once: "what does this arrow
+    /// send" and "what is this button doing".
+    @State private var pickedButton: Int?
     @State private var trusted = WindowManager.isTrusted
     /// The pointing devices IOHID could actually read. Empty means "the probe found
     /// nothing", which is NOT the same as "the mouse has no buttons" — the diagram says
@@ -45,6 +61,13 @@ struct MouseGesturesDetailView: View {
     /// A device the user pinned manually. Honoured as-is and never replaced by a
     /// detection result — see `DeviceSelection.active`.
     @State private var pinnedDevice: CapabilityDescriptor?
+    /// The raw HID element facts, read **only** when the user opens the disclosure
+    /// (PATCH v10 R1). Reading it costs another `IOHIDManagerOpen` plus an element copy
+    /// per device, so it must never be on the page-load path — the summary above is
+    /// enough to use the page, and this exists so the summary can be checked.
+    @State private var hidDump: [String] = []
+    @State private var hidDumpExpanded = false
+    @State private var hidDumpLoading = false
     /// Set when the user pressed a button on the mouse while the page was open, so the
     /// page can report the number the engine actually saw. This is the measured answer
     /// to "which button should I hold?", and it costs nothing to collect: the event tap
@@ -56,6 +79,54 @@ struct MouseGesturesDetailView: View {
     /// The single device in force for this session (D4: one mouse at a time).
     private var activeDevice: CapabilityDescriptor? {
         DeviceSelection.active(from: devices, override: pinnedDevice)
+    }
+
+    /// Everything the role function needs, built once per render from the device in force.
+    private var roleContext: MouseRoleContext {
+        DeviceCapabilityModel.roleContext(for: activeDevice, configuration: config)
+    }
+
+    /// The single role function the drawing and the list both read.
+    private func buttonRole(_ button: Int) -> MouseButtonRole {
+        DeviceCapabilityModel.role(forEventButton: button, context: roleContext)
+    }
+
+    /// The controls to draw and list: the archetype slots, plus anything beyond them the
+    /// mouse declares.
+    private var drawnButtons: [Int] {
+        DeviceCapabilityModel.drawnButtons(declaredEventButtons: roleContext.declaredEventButtons)
+    }
+
+    /// A press the engine saw that the descriptor never declared — measured evidence that
+    /// the probe under-reports this mouse, which is the only thing that should raise the
+    /// "missing button" prompt.
+    private var undeclaredPress: Int? {
+        DeviceCapabilityModel.undeclaredPress(observed: observedButton, context: roleContext)
+    }
+
+    /// Which figure to draw (PATCH v10 R2). Derived from the descriptor, so a device that is
+    /// not a multi-button mouse gets the generic figure instead of six chips it does not
+    /// have — and a device nothing could be read from still gets the archetype, greyed and
+    /// labelled "not read yet", because a blank figure would read as "no buttons".
+    private var diagramStyle: MouseDiagramStyle {
+        DeviceCapabilityModel.diagramStyle(for: activeDevice)
+    }
+
+    /// Button-typed elements the descriptor declares on a vendor-defined page. Evidence
+    /// only — never added to the declared button count.
+    private var vendorControlCount: Int {
+        DeviceCapabilityModel.vendorControlCount(for: activeDevice)
+    }
+
+    /// Whether the descriptor under-reports this mouse, on evidence. See
+    /// `DeviceCapabilityModel.underReportedControls` for why this cannot fire on a mouse
+    /// that simply has fewer buttons.
+    private var underReported: Bool {
+        DeviceCapabilityModel.underReportedControls(
+            declaredEventButtons: roleContext.declaredEventButtons,
+            vendorControlCount: vendorControlCount,
+            observed: observedButton,
+            context: roleContext)
     }
 
     private var provenance: CapabilityProvenance { DeviceSelection.provenance(for: activeDevice) }
@@ -101,7 +172,7 @@ struct MouseGesturesDetailView: View {
 
                 mappingSection
 
-                if DEBUG_SHOW_ENGINE_LOG || config.debug {
+                if DEBUG_SHOW_ENGINE_LOG {
                     Divider().padding(.horizontal, 20)
 
                     activitySection
@@ -126,9 +197,17 @@ struct MouseGesturesDetailView: View {
             controller.refreshSystemBindings()
             probeDevices()
         }
-        .onDisappear { controller.cancelRecording(); recordingTrigger = false }
+        .onDisappear {
+            controller.cancelRecording()
+            recordingTrigger = false
+            recordingButton = nil
+        }
         .onChange(of: controller.recording) { _, recording in
-            if !recording { recordingDirection = nil; recordingTrigger = false }
+            if !recording {
+                recordingDirection = nil
+                recordingTrigger = false
+                recordingButton = nil
+            }
         }
         .onChange(of: controller.observedPress) { _, press in
             guard let press else { return }
@@ -137,6 +216,7 @@ struct MouseGesturesDetailView: View {
         .onChange(of: profile) { _, _ in
             recordingDirection = nil
             pickedDirection = MouseDiagramSelection.afterProfileChange()
+            pickedButton = nil
         }
     }
 
@@ -215,26 +295,46 @@ struct MouseGesturesDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionHeader(icon: "computermouse",
                           title: L10n.t("Sơ đồ cử chỉ"),
-                          subtitle: L10n.t("Chọn một mũi tên để xem nó gửi gì. Số trên thân chuột là nút bạn giữ — bấm vào đó để đổi."))
+                          subtitle: L10n.t("Số trên thân chuột là nút bạn giữ — bấm vào đó để đổi. Các nút của chuột hiện ngay trên hình: nút nào mờ là nút máy chưa đọc được."))
 
             appPickerRow
             frontmostHint
             deviceRow
+            hidDumpRow
             observedButtonRow
 
             HStack(alignment: .top, spacing: 18) {
-                MouseDiagramView(
-                    selection: $pickedDirection,
-                    row: { resolved($0) },
-                    actionName: { resolvedName($0) },
-                    tint: { sourceTint(profile, $0) },
-                    showsTilt: config.tiltAvailable,
-                    trigger: config.trigger,
-                    unsupported: { DeviceCapabilityModel.armSupport(for: $0, device: activeDevice) },
-                    recordingDirection: recordingDirection,
-                    onRecordTrigger: { triggerRecording() },
-                    isRecordingTrigger: recordingTrigger)
-                    .frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 10) {
+                    MouseDiagramView(
+                        selection: $pickedDirection,
+                        selectedButton: $pickedButton,
+                        row: { resolved($0) },
+                        actionName: { resolvedName($0) },
+                        tint: { sourceTint(profile, $0) },
+                        buttonRole: { buttonRole($0) },
+                        buttons: drawnButtons,
+                        style: diagramStyle,
+                        declaredEventButtons: roleContext.declaredEventButtons,
+                        trigger: config.trigger,
+                        unsupported: { DeviceCapabilityModel.armSupport(for: $0, device: activeDevice) },
+                        recordingDirection: recordingDirection,
+                        onRecordTrigger: { triggerRecording() },
+                        isRecordingTrigger: recordingTrigger)
+                        .frame(maxWidth: .infinity)
+                    // Tilt gets its own row under the drawing: it is a different physical
+                    // motion on a different axis, needs no held button, and only exists on
+                    // hardware whose wheel declares a discrete horizontal axis.
+                    if tiltArmsLive {
+                        TiltArmsRow(
+                            selection: $pickedDirection,
+                            row: { resolved($0) },
+                            actionName: { resolvedName($0) },
+                            tint: { sourceTint(profile, $0) },
+                            unsupported: { DeviceCapabilityModel.armSupport(for: $0, device: activeDevice) },
+                            recordingDirection: recordingDirection)
+                    }
+                }
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
 
                 VStack(alignment: .leading, spacing: 10) {
                     if let direction = pickedDirection {
@@ -263,6 +363,8 @@ struct MouseGesturesDetailView: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
             }
             .padding(.horizontal, 20)
+
+            buttonListSection
 
             legend
             tiltRow
@@ -437,6 +539,57 @@ struct MouseGesturesDetailView: View {
             .fixedSize()
     }
 
+    /// The raw element facts, one disclosure below the summary (PATCH v10 R1).
+    ///
+    /// Everything the page says about the mouse is derived from these lines, so showing
+    /// them is what makes the rest checkable: "the descriptor declares five buttons" and
+    /// "there are N vendor-page button elements" are claims, and a claim whose evidence can
+    /// be read is worth more than one that cannot. Read on demand — see `hidDump`'s note on
+    /// why this is not on the page-load path.
+    private var hidDumpRow: some View {
+        DisclosureGroup(isExpanded: $hidDumpExpanded) {
+            VStack(alignment: .leading, spacing: 2) {
+                if hidDumpLoading {
+                    Text(L10n.t("Đang đọc mô tả HID…"))
+                        .font(.system(size: 11)).foregroundColor(.secondary)
+                } else {
+                    ForEach(Array(hidDump.enumerated()), id: \.offset) { _, line in
+                        Text(line)
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 4)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "list.bullet.rectangle")
+                    .font(.system(size: 12)).foregroundColor(.secondary).frame(width: 16)
+                Text(L10n.t("Mô tả HID thô"))
+                    .font(.system(size: 11, weight: .medium)).foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal, 20)
+        .onChange(of: hidDumpExpanded) { _, expanded in
+            if expanded, hidDump.isEmpty { loadHIDDump() }
+        }
+    }
+
+    /// Reads the raw element facts off the main thread, exactly like the summary probe.
+    private func loadHIDDump() {
+        hidDumpLoading = true
+        Task {
+            let lines = await Task.detached(priority: .userInitiated) {
+                DeviceCapabilityProbe.connectedElementDump()
+            }.value
+            hidDump = lines
+            hidDumpLoading = false
+        }
+    }
+
     /// The measured answer to "which button is my mouse's side button?".
     ///
     /// The engine's event tap already receives every mouse press, so the page can report
@@ -494,11 +647,58 @@ struct MouseGesturesDetailView: View {
         return NSWorkspace.shared.icon(forFile: url.path)
     }
 
+    /// The list of the mouse's controls and what each one is doing (PATCH v9.1 R3).
+    ///
+    /// Sits directly under the drawing rather than in a tab of its own: a chip and its row
+    /// are two views of one fact, and putting a click target in one place and its options in
+    /// another (with a scroll between them) is how "click the thing you want to change"
+    /// becomes "click, then hunt for what changed".
+    private var buttonListSection: some View {
+        GestureButtonList(
+            buttons: drawnButtons,
+            role: { buttonRole($0) },
+            selected: $pickedButton,
+            declaredEventButtons: roleContext.declaredEventButtons,
+            vendorControlCount: vendorControlCount,
+            undeclaredPress: undeclaredPress,
+            underReported: underReported,
+            onSetTrigger: { button in
+                // The one write this section performs, and it goes through the same
+                // `update` path as every other control so `validate()` runs and the
+                // scroll modifier can be repaired if it collided with the new trigger.
+                controller.update { $0.trigger = .mouseButton(button) }
+            },
+            onRecordTrigger: { triggerRecording() },
+            recordingButton: recordingButton,
+            holdButtonSingleClickEnabled: Binding(
+                get: { config.holdButtonSingleClickEnabled },
+                set: { v in controller.update { $0.holdButtonSingleClickEnabled = v } }
+            ),
+            onSetAction: { button, action in
+                controller.update { config in
+                    config.buttonActions[button + 1] = action
+                }
+            })
+        .padding(.horizontal, 20)
+    }
+
     private var legend: some View {
         Text(L10n.t("Mặc định = preset dựng sẵn · Tự đặt = bạn đã đổi hướng đó · Chưa gán = cố ý không gửi phím. Chưa gán trên ứng dụng đã có preset sẽ không rơi về bảng toàn cục. Biểu tượng ⇄ nhỏ nghĩa là hướng đó chuyển tiếp cuộn ngang nguyên bản của chuột."))
             .font(.system(size: 11)).foregroundColor(.secondary)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 20)
+    }
+
+    /// Whether the two tilt arms are **live** — both stored fields, not just the one the
+    /// switch used to write.
+    ///
+    /// Measured on this machine's own store: `tiltAvailable = true, tiltEnabled = false`, a
+    /// state the current UI cannot produce but an older build left behind. Reading
+    /// `tiltAvailable` alone drew two arms that could never fire *and* showed the switch as
+    /// on. `TiltArmsVisibility.isLive` is the tested contract for the read; the switch below
+    /// writes both fields through `TiltArmsVisibility.fields(forReveal:)`.
+    private var tiltArmsLive: Bool {
+        TiltArmsVisibility.isLive(available: config.tiltAvailable, enabled: config.tiltEnabled)
     }
 
     /// Tilt exists only on mice whose wheel tilts *and* whose driver reports it as a
@@ -507,18 +707,37 @@ struct MouseGesturesDetailView: View {
     /// Magic Mouse both report every wheel event as `IsContinuous == 1` with axis2 == 0
     /// (measured, see docs/GESTURE_VERIFICATION.md), which `GestureEngine` deliberately
     /// rejects so it never steals trackpad scrolling.
+    ///
+    /// ── One switch, and it must write both fields (PATCH v10) ──────────────────────────
+    /// It used to write only `tiltAvailable` — the field that decides whether the arms are
+    /// **drawn**. The engine reads `tiltEnabled`, which nothing set, so an action assigned
+    /// to `tiltLeft` could never fire: the switch revealed two arms that were dead on
+    /// arrival. `TiltArmsVisibility.fields(forReveal:)` is the tested contract for what this
+    /// one switch writes, and the copy below says "turn on" rather than "show" because that
+    /// is now what it does.
     private var tiltRow: some View {
         VStack(alignment: .leading, spacing: 4) {
             Toggle(isOn: Binding(
-                get: { config.tiltAvailable },
-                set: { v in controller.update { $0.tiltAvailable = v } }))
+                get: { tiltArmsLive },
+                set: { v in
+                    let write = TiltArmsVisibility.fields(forReveal: v)
+                    controller.update {
+                        $0.tiltAvailable = write.available
+                        $0.tiltEnabled = write.enabled
+                    }
+                }))
             {
-                Text(L10n.t("Hiện hai hướng nghiêng con lăn")).font(.system(size: 12))
+                Text(L10n.t("Bật hai hướng nghiêng con lăn")).font(.system(size: 12))
             }
             .toggleStyle(.switch).controlSize(.small)
             Text(L10n.t("Chỉ dùng cho chuột có con lăn nghiêng được và có driver gửi cuộn ngang rời rạc — ví dụ Logitech MX Master với Logi Options. Đo trên máy này: Razer Basilisk và Magic Mouse đều báo cuộn liên tục, nên hai hướng đó sẽ không bao giờ chạy; tắt để sơ đồ khỏi vẽ thừa. XFinder không thể tự dò ra phần cứng của bạn."))
                 .font(.system(size: 11)).foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            if tiltArmsLive {
+                Text(L10n.t("Công tắc này vừa hiện hai mũi tên vừa cho engine xử lý nghiêng con lăn — trước đây nó chỉ hiện mũi tên, nên gán phím cho nghiêng xong vẫn không có gì chạy. Nghiêng chỉ chạy khi công tắc chính ở trên cũng đang bật."))
+                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(.horizontal, 20)
     }
@@ -616,7 +835,7 @@ struct MouseGesturesDetailView: View {
                     .font(.system(size: 12))
                     .foregroundColor(wheelHold ? .orange : .green)
                     .frame(width: 16)
-                Text(L10n.t("Nút giữ") + ": " + L10n.t(held.key))
+                Text(L10n.t("Nút giữ") + ": " + L10n.t(compactButton: held.key))
                     .font(.system(size: 12, weight: .medium))
                 Spacer(minLength: 0)
                 Button(recordingTrigger ? L10n.t("Đang ghi…") : L10n.t("Ghi lại nút giữ")) { triggerRecording() }
@@ -679,7 +898,7 @@ struct MouseGesturesDetailView: View {
                 Spacer(minLength: 0)
             }
             if isSelf {
-                Text(L10n.t("XFinder đang là ứng dụng phía trước, nên cử chỉ được tra theo chính XFinder. Hãy chuyển sang ứng dụng bạn muốn dùng (Zed, Chrome, Excel…) rồi thử lại — đây là lý do nhật ký bên dưới chỉ hiện com.xfinder.app."))
+                Text(L10n.t("XFinder đang là ứng dụng phía trước, nên cử chỉ được tra theo chính XFinder. Hãy chuyển sang ứng dụng bạn muốn dùng (Zed, Chrome, Excel…) rồi thử lại."))
                     .font(.system(size: 11)).foregroundColor(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             } else if !front.isEmpty {
@@ -692,8 +911,8 @@ struct MouseGesturesDetailView: View {
 
     // MARK: - Activity (measured, from the engine's own callback)
     //
-    // Rendered when `DEBUG_SHOW_ENGINE_LOG || config.debug` — see the constant at the top of
-    // the file for why this is a runtime condition rather than a `#if`.
+    // Rendered when `DEBUG_SHOW_ENGINE_LOG` is set — see the constant at the top of the file
+    // for why this is a compile-time gate rather than `config.debug`.
     private var activitySection: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(icon: "waveform.path.ecg",
@@ -724,7 +943,7 @@ struct MouseGesturesDetailView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
-                Text(L10n.t(config.trigger.key))
+                Text(L10n.t(compactButton: config.trigger.key))
                     .font(.system(size: 12, weight: .semibold))
                 Button(recordingTrigger ? L10n.t("Đang ghi…") : L10n.t("Ghi nút")) { triggerRecording() }
                     .buttonStyle(.bordered).controlSize(.small)
@@ -797,8 +1016,14 @@ struct MouseGesturesDetailView: View {
     /// because they are the same interaction — press a button on the mouse — and the
     /// engine's recording mode already accepts either. The page distinguishes them only
     /// in what it *says*.
-    private func triggerRecording() {
+    ///
+    /// `button` is the row the user clicked **Ghi** on, when they did (PATCH v10 R3). It
+    /// changes nothing about what is stored — the number that arrives is always the
+    /// measured one, and it is persisted the moment the engine reports it — it only marks
+    /// the row so the user can see which control XFinder is waiting for.
+    private func triggerRecording(button: Int? = nil) {
         recordingTrigger = true
+        recordingButton = button
         recordingDirection = nil
         controller.recordTrigger()
     }

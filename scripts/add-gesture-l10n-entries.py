@@ -10,6 +10,7 @@ call site, and the script is idempotent: running it twice changes nothing.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -17,6 +18,36 @@ STORE = ROOT / "XFinder/Resources/L10n.strings.json"
 
 # Vietnamese key -> (English, scope)
 ENTRIES: dict[str, tuple[str, str]] = {
+    # --- PATCH v10.2: Side Buttons Instant Action + Sniper Truth ---------------
+    "Đã gán: Lùi": ("Assigned: Back", "sentence"),
+    "Đã gán: Tiến": ("Assigned: Forward", "sentence"),
+    "Nút giữ • Tiến": ("Hold • Forward", "sentence"),
+    "Nút giữ • Lùi": ("Hold • Back", "sentence"),
+    "Đã gán: Phím tắt": ("Assigned: Shortcut", "sentence"),
+    "Nút này do firmware chuột tự xử lý qua Bluetooth. Kết nối qua USB hoặc gán phím tắt trong Razer Synapse để dùng.":
+        ("This button is handled by mouse firmware over Bluetooth. Connect via USB or assign via Razer Synapse to a keyboard shortcut to use it.", "sentence"),
+    "Bấm đơn gửi phím tắt Lùi (Cmd+[). Giữ nút này có thể dùng làm nút giữ cử chỉ nếu được chọn.":
+        ("Single click sends Back shortcut (Cmd+[). Holding this button can be used as gesture trigger if selected.", "sentence"),
+    "Bấm đơn gửi phím tắt Tiến (Cmd+]). Giữ nút này có thể dùng làm nút giữ cử chỉ nếu được chọn.":
+        ("Single click sends Forward shortcut (Cmd+]). Holding this button can be used as gesture trigger if selected.", "sentence"),
+    "Bấm nhanh nút này để gửi phím tắt tiến. Giữ nút này rồi kéo một trong bốn hướng để chạy cử chỉ.":
+        ("Quick click this button to send Forward shortcut. Hold and drag in four directions to perform gestures.", "sentence"),
+    "Bấm đơn gửi phím tắt đã gán.": ("Single click sends assigned shortcut.", "sentence"),
+    "Bấm đơn gửi phím tắt đã gán. Giữ nút này rồi kéo một trong bốn hướng để chạy cử chỉ.":
+        ("Single click sends assigned shortcut. Hold and drag in four directions to perform gestures.", "sentence"),
+    "Bấm con lăn vẫn do ứng dụng xử lý (mở tab mới, cuộn tự động). XFinder không chiếm nút này.":
+        ("Wheel click is handled by applications (open new tab, autoscroll). XFinder does not take this button.", "sentence"),
+    "Mặc định: Lùi (Cmd+[ trong Safari/Chrome). Có thể đổi sang làm nút giữ cử chỉ.":
+        ("Default: Back (Cmd+[ in Safari/Chrome). Can be changed to gesture hold trigger.", "sentence"),
+    "Mặc định: Bấm nhanh = Tiến (Cmd+]), giữ + kéo = cử chỉ.":
+        ("Default: Quick click = Forward (Cmd+]), hold + drag = gesture.", "sentence"),
+    "Bấm nhanh = Tiến": ("Quick click = Forward", "sentence"),
+    "Bấm nhanh dưới 200ms là Tiến, giữ và kéo là cử chỉ":
+        ("Quick click under 200ms is Forward, hold and drag is gesture", "sentence"),
+    "Gán hành động": ("Assign action", "sentence"),
+    "Lùi (Cmd+[)": ("Back (Cmd+[)", "sentence"),
+    "Tiến (Cmd+])": ("Forward (Cmd+])", "sentence"),
+
     # --- System actions --------------------------------------------------------
     # Added 2026-09-22 with `GestureAction.systemAction`, extended 2026-09-23 when the
     # dispatch mechanism changed. The Global preset used to send `⌃↑`/`⌃↓`/`⌃←`/`⌃→` from a
@@ -153,7 +184,12 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Không tạo được vòng lặp cử chỉ": ("Could not create the gesture run loop", "sentence"),
 
     # --- Changed copy ---------------------------------------------------------
-    "Hiện hai hướng nghiêng con lăn": ("Show the two wheel-tilt directions", "sentence"),
+    # `Hiện hai hướng nghiêng con lăn` used to live here; it is retired in `REMOVED` below
+    # (PATCH v10: the switch says "turn on" because it now enables the arms as well as
+    # revealing them). Keeping a retired key in `ENTRIES` as well made this script's counters
+    # meaningless — it reported "added 5, removed 5" on every run, because five keys were
+    # added and then deleted in the same pass. The store was never wrong, but a report that
+    # never settles is a report nobody can act on.
     "Chỉ dùng cho chuột có con lăn nghiêng được và có driver gửi cuộn ngang rời rạc — ví dụ Logitech MX Master với Logi Options. Đo trên máy này: Razer Basilisk và Magic Mouse đều báo cuộn liên tục, nên hai hướng đó sẽ không bao giờ chạy; tắt để sơ đồ khỏi vẽ thừa. XFinder không thể tự dò ra phần cứng của bạn.":
         ("Only for a mouse whose wheel tilts left/right and whose driver sends discrete "
          "horizontal scroll — a Logitech MX Master on Logi Options, for example. Measured "
@@ -296,9 +332,9 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Cử chỉ đang tắt. Bật công tắc ở góc trên để dùng; sơ đồ bên dưới đã có sẵn phím tắt.":
         ("Gestures are off. Turn on the switch at the top to use them; the diagram below "
          "already has shortcuts.", "sentence"),
-    "Chọn một mũi tên để xem nó gửi gì. Số trên thân chuột là nút bạn giữ — bấm vào đó để đổi.":
-        ("Pick an arrow to see what it sends. The number on the mouse body is the button "
-         "you hold — click it to change.", "sentence"),
+    # `Chọn một mũi tên để xem nó gửi gì. Số trên thân chuột là nút bạn giữ — bấm vào đó để đổi.`
+    # is retired in `REMOVED`: the diagram now draws the mouse's own controls too, so the
+    # subtitle names both interactions.
     "Mỗi mũi tên là một động tác: giữ nút trên thân chuột rồi kéo theo hướng đó. Bấm vào mũi tên để xem và đổi phím nó gửi.":
         ("Each arrow is one motion: hold the button on the mouse body and pull in that "
          "direction. Click an arrow to see and change the keys it sends.", "sentence"),
@@ -335,12 +371,140 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Đặt làm nút giữ": ("Use as hold button", "sentence"),
     "Cử chỉ sẽ gửi tới": ("Gestures will be sent to", "fragment"),
     "chưa xác định": ("not determined", "sentence"),
-    "XFinder đang là ứng dụng phía trước, nên cử chỉ được tra theo chính XFinder. Hãy chuyển sang ứng dụng bạn muốn dùng (Zed, Chrome, Excel…) rồi thử lại — đây là lý do nhật ký bên dưới chỉ hiện com.xfinder.app.":
-        ("XFinder is the app in front, so the gesture is resolved for XFinder itself. "
-         "Switch to the app you mean to use (Zed, Chrome, Excel…) and try again — this is "
-         "why the log below shows only com.xfinder.app.", "sentence"),
     "Bấm “Xem” ở mục dưới để mở đúng bảng của ứng dụng này.":
         ("Click “View” below to open this app's own table.", "sentence"),
+
+    # --- PATCH v9.1: the capability-driven diagram and the buttons list --------------
+    # Added 2026-09-23. The page stopped drawing a fixed Magic-Mouse figure and started
+    # drawing the controls the probe actually found, which needs names for states the page
+    # had no words for: a control the descriptor never declared, one that has not been read
+    # at all, and the honest explanation for each. `MouseButtonRole.labelKey` /
+    # `.explanationKey` live in `DeviceCapabilityModel.swift` and reach the screen through
+    # `L10n.t(variable)`, so the literal lint cannot see them — the dedicated
+    # `scripts/audit-gesture-vocabulary-l10n.py` gate exists for exactly this class.
+    "Chỉ bấm": ("Click only", "sentence"),
+    "Chuột không khai báo": ("Not declared", "sentence"),
+    "Chưa đọc được": ("Not read yet", "sentence"),
+    "Giữ nút này rồi kéo một trong bốn hướng để chạy cử chỉ.":
+        ("Hold this button and pull in one of four directions to run a gesture.", "sentence"),
+    "Giữ nút này rồi kéo là cuộn, không cần nhấc tay khỏi chuột.":
+        ("Hold this button and drag to scroll, without lifting your hand off the mouse.",
+         "sentence"),
+    "Nút bấm trái và phải luôn được giữ nguyên — XFinder không bao giờ chiếm hai nút này.":
+        ("Left and right click are always left alone — XFinder never takes over those two "
+         "buttons.", "sentence"),
+    "Chuột có nút này nhưng hiện chưa gán gì cho nó.":
+        ("Your mouse has this button, but nothing is assigned to it yet.", "sentence"),
+    "Mô tả HID của chuột không khai báo nút này. Nếu chuột bạn thật sự có nó, hãy bấm nút đó rồi dùng “Ghi nút thật” — số XFinder nhận được là sự thật đo được, còn mô tả chỉ là khai báo.":
+        ("The mouse's HID descriptor does not declare this button. If your mouse really has "
+         "it, press that button and use “Record a real button” — the number XFinder "
+         "receives is measured truth, while the descriptor is only a declaration.", "sentence"),
+    "Chưa đọc được mô tả chuột, nên chưa biết chuột có nút này hay không.":
+        ("The mouse descriptor has not been read, so whether this button exists is not "
+         "known.", "sentence"),
+    "Nút chuột XFinder thấy": ("Buttons XFinder can see", "sentence"),
+    "Ghi nút thật": ("Record a real button", "sentence"),
+    "Đang là nút giữ": ("Currently the hold button", "sentence"),
+    "Không đổi được": ("Cannot be changed", "sentence"),
+    "Mô tả HID của chuột khai báo: ": ("The mouse's HID descriptor declares: ", "fragment"),
+    "Mô tả HID của chuột không khai báo nút nào.":
+        ("The mouse's HID descriptor declares no buttons.", "sentence"),
+    "Chưa đọc được mô tả HID của chuột, nên danh sách dưới chỉ là các nút thường gặp. “Ghi nút thật” luôn dùng được.":
+        ("The mouse's HID descriptor has not been read, so the list below is only the usual "
+         "buttons. “Record a real button” always works.", "sentence"),
+    "XFinder nhận được ": ("XFinder received ", "fragment"),
+    " khi bạn bấm, nhưng mô tả HID của chuột không khai báo nút đó.":
+        (" when you pressed it, but the mouse's HID descriptor does not declare that "
+         "button.", "fragment"),
+    "Đây là số đo thật từ chuột bạn, không phải phỏng đoán. Bấm “Đặt làm nút giữ” ở dòng tương ứng bên dưới để dùng nó.":
+        ("This is a real measurement from your mouse, not a guess. Click “Use as hold "
+         "button” on the matching row below to use it.", "sentence"),
+    "Số trên thân chuột là nút bạn giữ — bấm vào đó để đổi. Các nút của chuột hiện ngay trên hình: nút nào mờ là nút máy chưa đọc được.":
+        ("The label on the mouse body is the button you hold — click it to change. The "
+         "mouse's buttons are drawn on the figure: a dimmed one is one the machine has not "
+         "read.", "sentence"),
+
+    # --- PATCH v10: probe evidence, diagram positions, per-row record --------------
+    # The reference mouse's own diagram named six controls; the HID descriptor declares
+    # five. Every string below exists to explain that difference **from evidence** rather
+    # than by widening the filter until a sixth number appears — and three of them reach
+    # the screen through `L10n.t(variable)` (`MouseControlSlot.positionKey`,
+    # `MouseHardwareExclusion.titleKey`, `DeviceCapabilityModel.passthroughNoteKey`), which
+    # is the leak shape no literal sweep can see. `L10nTests` enumerates them for that
+    # reason.
+    "Con lăn": ("Wheel", "sentence"),
+    "Hông trên": ("Upper side", "sentence"),
+    "Hông dưới": ("Lower side", "sentence"),
+    "Hông cuối": ("Bottom side", "sentence"),
+    "Ghi": ("Record", "sentence"),
+    "Bấm “Ghi” rồi bấm nút này trên chuột — số XFinder nhận được sẽ được lưu ngay.":
+        ("Click “Record”, then press this button on the mouse — the number XFinder sees is "
+         + "saved immediately.", "sentence"),
+    "Mô tả HID thô": ("Raw HID descriptor", "sentence"),
+    "Đang đọc mô tả HID…": ("Reading the HID descriptor…", "sentence"),
+    # The two vendor-count fragments that used to live here are retired in `REMOVED` (PATCH
+    # v10.1): they spliced the count into the middle of the sentence, which English rendered as
+    # "1 button elements". The count now ends the clause — see the `fragment` pair further down.
+    "Mô tả HID khai báo ít nút hơn số vị trí trên hình, nhưng lại có thêm nút trên trang riêng của hãng — nghĩa là mô tả này chưa kể hết chuột của bạn.":
+        ("The HID descriptor declares fewer buttons than the figure has positions, yet also "
+         + "declares extra buttons on the vendor's own page — so this descriptor does not "
+         + "describe your whole mouse.", "sentence"),
+    "XFinder không tự đoán số cho những nút đó. Bấm “Ghi” ở dòng bạn muốn rồi bấm nút thật trên chuột — số nhận được là số đo thật, và nó được lưu ngay.":
+        ("XFinder will not guess a number for those buttons. Click “Record” on the row you "
+         + "want and press the real button — the number that arrives is a real measurement, "
+         + "and it is stored immediately.", "sentence"),
+    "Nút do chuột tự xử lý": ("Buttons the mouse handles itself", "sentence"),
+    "Đổi chế độ con lăn": ("Scroll-mode toggle", "sentence"),
+    "Trên chuột có nút riêng cho việc này thì nó do firmware của chuột xử lý — mô tả HID không khai báo nó, nên XFinder không thấy và không gán được.":
+        ("A mouse with its own button for this handles it in firmware — the HID descriptor "
+         + "does not declare it, so XFinder cannot see it or assign it.", "sentence"),
+    "Đổi DPI": ("DPI switch", "sentence"),
+    "Nút đổi độ nhạy thường được firmware xử lý ngay trong chuột. XFinder chỉ biết tới những nút mà mô tả HID khai báo.":
+        ("A sensitivity switch is usually handled by the mouse's own firmware. XFinder only "
+         + "knows the buttons the HID descriptor declares.", "sentence"),
+    "Đổi hồ sơ": ("Profile switch", "sentence"),
+    "Nút chuyển hồ sơ lưu trong bộ nhớ chuột, không gửi sự kiện nào ra macOS — không API nào đọc được nó.":
+        ("A profile switch lives in the mouse's own memory and sends no event to macOS — no "
+         + "API can read it.", "sentence"),
+    "Bấm đơn vẫn do ứng dụng xử lý — hầu hết app hiểu nút này là “lùi”. XFinder chỉ chiếm nút này khi bạn đặt nó làm nút giữ hoặc nút cuộn.":
+        ("A single click still goes to the application — most apps read this button as "
+         + "“back”. XFinder only takes it over when you make it the hold button or the "
+         + "scroll button.", "sentence"),
+    "Bấm đơn vẫn do ứng dụng xử lý — hầu hết app hiểu nút này là “tiến”. XFinder chỉ chiếm nút này khi bạn đặt nó làm nút giữ hoặc nút cuộn.":
+        ("A single click still goes to the application — most apps read this button as "
+         + "“forward”. XFinder only takes it over when you make it the hold button or the "
+         + "scroll button.", "sentence"),
+    "Nút này không có phím tắt mặc định nào trong macOS. Bấm “Ghi” rồi bấm đúng nút đó để XFinder đọc số và đặt nó làm nút giữ.":
+        ("This button has no default shortcut in macOS. Click “Record” and press that button "
+         + "so XFinder can read its number and use it as the hold button.", "sentence"),
+    # The tilt switch used to say "show", and it only *showed*: it wrote `tiltAvailable` while
+    # the engine reads `tiltEnabled`, so the two revealed arms could never fire. The label now
+    # says "turn on" because that is what the switch does (`TiltArmsVisibility`).
+    "Bật hai hướng nghiêng con lăn": ("Turn on the two wheel-tilt directions", "sentence"),
+    "Công tắc này vừa hiện hai mũi tên vừa cho engine xử lý nghiêng con lăn — trước đây nó chỉ hiện mũi tên, nên gán phím cho nghiêng xong vẫn không có gì chạy. Nghiêng chỉ chạy khi công tắc chính ở trên cũng đang bật.":
+        ("This switch both reveals the two arrows and lets the engine handle wheel tilt — it "
+         + "used to only reveal them, so assigning a key to a tilt direction still did "
+         + "nothing. Tilt only fires while the main switch above is on too.", "sentence"),
+
+    # --- PATCH v10.1 -----------------------------------------------------------
+    # The activity block is now gated on `DEBUG_SHOW_ENGINE_LOG` alone (the user asked for it
+    # gone from the shipped build), so this sentence must stop pointing at "the log below" —
+    # in a shipped build there is no such block. Copy that names a control which is not on the
+    # page is the same class of problem as a control whose label lies, so the clause is gone
+    # rather than merely stale.
+    "XFinder đang là ứng dụng phía trước, nên cử chỉ được tra theo chính XFinder. Hãy chuyển sang ứng dụng bạn muốn dùng (Zed, Chrome, Excel…) rồi thử lại.":
+        ("XFinder is the app in front, so the gesture is resolved for XFinder itself. Switch "
+         + "to the app you mean to use (Zed, Chrome, Excel…) and try again.", "sentence"),
+    # The vendor-page count used to be spliced into the middle of a sentence ("also declares
+    # N button elements on…"), which renders as "1 button elements" in English. The count now
+    # ends the clause, so one string is correct for every value in both languages. Both halves
+    # are `fragment` because both are concatenated with a runtime number.
+    "Ngoài ra mô tả HID còn khai báo các phần tử nút trên trang riêng của hãng: ":
+        ("The HID descriptor also declares button-typed elements on the vendor's own page: ",
+         "fragment"),
+    " Số đó không phải số nút và XFinder không đánh số được chúng — chỉ bấm nút thật mới biết số.":
+        (" That is not a button count and XFinder cannot number them — only pressing the real "
+         + "button reveals its number.", "fragment"),
 
     # --- Strings that are gone from the source ---------------------------------
     # Removed so a future sweep cannot silently re-introduce them, and so the
@@ -367,14 +531,43 @@ REMOVED = [
     "Nút 1 (chuột trái)",
     "Nút 2 (chuột phải)",
     "Nút 3 (bấm con lăn xuống)",
+    # Superseded 2026-09-23: the diagram's subtitle described clicking an arrow only. The
+    # page now also draws the mouse's own controls, so the sentence names both interactions.
+    "Chọn một mũi tên để xem nó gửi gì. Số trên thân chuột là nút bạn giữ — bấm vào đó để đổi.",
     # Superseded 2026-09-23: the system actions no longer post an `NSEvent.systemDefined`
     # event (that keytype did not exist), so this row's copy is gone with the mechanism.
     # Removed rather than merely unused, so a future sweep cannot quietly re-introduce it.
     "gửi sự kiện hệ thống",
+    # Superseded 2026-09-23 (PATCH v10): the tilt switch said "show", and showing was all it
+    # did — the engine reads `tiltEnabled`, which nothing set, so the two revealed arms were
+    # dead. The switch now writes both fields and says "turn on".
+    "Hiện hai hướng nghiêng con lăn",
+    # Superseded 2026-09-24 (PATCH v10.1): this sentence ended "…and try again — this is why
+    # the log below shows only com.xfinder.app", but the log block is now gated on
+    # `DEBUG_SHOW_ENGINE_LOG` and is not rendered in a shipped build, so the clause pointed at
+    # something the reader cannot see.
+    "XFinder đang là ứng dụng phía trước, nên cử chỉ được tra theo chính XFinder. Hãy chuyển sang ứng dụng bạn muốn dùng (Zed, Chrome, Excel…) rồi thử lại — đây là lý do nhật ký bên dưới chỉ hiện com.xfinder.app.",
+    # Superseded 2026-09-24 (PATCH v10.1): the vendor-page count sat in the middle of the
+    # sentence, so English read "1 button elements". Split so the number ends the clause.
+    "Ngoài ra mô tả HID còn khai báo ",
+    "phần tử nút trên trang riêng của hãng. Số đó không phải số nút và XFinder không đánh số được chúng — chỉ bấm nút thật mới biết số.",
 ]
 
 
 def main() -> int:
+    # ── Self-check: no key may appear in both lists ─────────────────────────────
+    # A key in `ENTRIES` **and** `REMOVED` is added and then deleted in the same pass, so it
+    # never reaches the store and the counters below never settle — this script reported
+    # "added 5, removed 5" on every run because five retired strings had been left in
+    # `ENTRIES`. The store was correct (the delete wins), which is exactly why it went
+    # unnoticed: a report that never reaches zero is a report nobody reads.
+    conflicts = sorted(k for k in REMOVED if k in ENTRIES)
+    if conflicts:
+        print(f"CONFLICT: {len(conflicts)} key(s) are in BOTH ENTRIES and REMOVED — "
+              f"delete them from ENTRIES:", file=sys.stderr)
+        for key in conflicts:
+            print(f"  {key!r}", file=sys.stderr)
+
     doc = json.loads(STORE.read_text(encoding="utf-8"))
     entries = doc["entries"]
     before = len(entries)
@@ -397,7 +590,7 @@ def main() -> int:
     doc["entries"] = dict(sorted(entries.items()))
     STORE.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"entries {before} -> {len(doc['entries'])}  (added {added}, replaced {replaced}, removed {removed})")
-    return 0
+    return 1 if conflicts else 0
 
 
 if __name__ == "__main__":

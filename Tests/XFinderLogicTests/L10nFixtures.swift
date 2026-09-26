@@ -69,3 +69,7 @@ enum L10nFixtures {
         }
     }
 }
+
+public enum L10n {
+    public static func t(_ vi: String) -> String { vi }
+}

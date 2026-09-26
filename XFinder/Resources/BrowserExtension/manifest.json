@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "XFinder Tab Preview Helper",
+  "version": "1.0.0",
+  "description": "Captures tab previews for XFinder Dock and Switcher without browser chrome UI",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "nativeMessaging"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

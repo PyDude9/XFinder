@@ -41,6 +41,41 @@ extension DeviceCapabilityProbe {
     /// "not detected yet" — never a fabricated capability set. `DeviceCapabilityModel`
     /// turns `[]` into `.unknownUntilDetected`, not into `.unsupportedByMouse`.
     static func connectedPointingDevices() -> [CapabilityDescriptor] {
+        // IOHIDManagerCopyDevices duplicates a single physical device — the probe
+        // in this repo saw 2 identical Basilisk entries and 2 identical trackpad
+        // entries. Dedupe last, on the full identity tuple, keeping first sight.
+        deduplicated(readDevices().map(\.descriptor))
+    }
+
+    /// The raw `(usagePage, usage, type)` facts of every connected pointing device, as
+    /// printable lines — the **"log the raw facts before any filter runs"** step (R1).
+    ///
+    /// It exists to keep the page falsifiable. Claims like "the descriptor declares five
+    /// buttons" or "there is a vendor page with N button elements" are worth nothing
+    /// unless the underlying elements can be read, so this returns exactly what
+    /// `IOHIDDeviceCopyMatchingElements` reported, untransformed, for a human to check.
+    /// The page shows it behind a disclosure, on demand — never on the idle path.
+    static func connectedElementDump() -> [String] {
+        var lines: [String] = []
+        for read in readDevices() {
+            let name = read.descriptor.productName.isEmpty ? "(no product name)" : read.descriptor.productName
+            let transport = read.descriptor.transport.isEmpty ? "(no transport)" : read.descriptor.transport
+            lines.append("— \(name) · \(transport)")
+            lines.append(contentsOf: DeviceCapabilityProbe.elementDump(from: read.elements))
+        }
+        return lines.isEmpty ? ["(no pointing device could be read)"] : lines
+    }
+
+    /// One device's descriptor **and** the element facts it was derived from. Kept
+    /// together so the raw dump shows the *input* to the derivation rather than a second
+    /// read of the hardware that might disagree with it.
+    private struct DeviceRead {
+        var descriptor: CapabilityDescriptor
+        var elements: [HIDElementFact]
+    }
+
+    /// Opens a manager, enumerates the matching devices and reads each one.
+    private static func readDevices() -> [DeviceRead] {
         let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
 
         // Pointer matching: Generic Desktop / Mouse (0x01, 0x02) and Generic
@@ -61,20 +96,12 @@ extension DeviceCapabilityProbe {
         }
         defer { IOHIDManagerClose(manager, IOOptionBits(kIOHIDOptionsTypeNone)) }
 
-        var read: [CapabilityDescriptor] = []
-        for device in deviceSet {
-            read.append(descriptor(for: device))
-        }
-
-        // IOHIDManagerCopyDevices duplicates a single physical device — the probe
-        // in this repo saw 2 identical Basilisk entries and 2 identical trackpad
-        // entries. Dedupe last, on the full identity tuple, keeping first sight.
-        return deduplicated(read)
+        return deviceSet.map { read($0) }
     }
 
-    /// Reads one device's identity and elements. Kept separate from the manager
-    /// plumbing so the per-device work is readable on its own.
-    private static func descriptor(for device: IOHIDDevice) -> CapabilityDescriptor {
+    /// Reads one device's identity and elements, returning both. Kept separate from the
+    /// manager plumbing so the per-device work is readable on its own.
+    private static func read(_ device: IOHIDDevice) -> DeviceRead {
         func intProperty(_ key: CFString) -> Int? {
             // A missing key stays nil. Never `?? -1`, never `?? 0` — the Apple
             // Internal Trackpad genuinely has neither vendor nor product key, and a
@@ -109,6 +136,6 @@ extension DeviceCapabilityProbe {
             elements: elements,
             source: .detected
         )
-        return descriptor(from: properties)
+        return DeviceRead(descriptor: descriptor(from: properties), elements: elements)
     }
 }

@@ -16,6 +16,10 @@ xcuserdata/
 *.xcscmblueprint
 .DS_Store
 
+# Python bytecode — the audit/lint scripts are imported directly by the gate harnesses
+__pycache__/
+*.pyc
+
 # Project memory / internal engineering notes — local only
 CLAUDE.md
 Claude.md

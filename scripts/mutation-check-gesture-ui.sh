@@ -138,6 +138,14 @@ mutate "$CAP" \
   '            if false { return .unknownUntilDetected }'
 check "BUG 7: a missing capability on an unattributable device is called unsupported"
 
+# ── Bug 8 (PATCH v10.1): the tilt arms are read from `tiltAvailable` alone, so a payload
+# where the two fields disagree (`true`/`false` — measured on this machine) draws two arms
+# that can never fire and shows the switch as on. The conjunction is the honest read. ───
+mutate "$SRC" \
+  '        available && enabled' \
+  '        available'
+check "BUG 8: tilt arms read from one field, so drawn-but-dead arms look live"
+
 echo "--- restoring ---"
 restore_all
 diff -q "$SRC_BAK" "$SRC" && echo "restored byte-identical: GestureUIDisplay.swift"
@@ -145,4 +153,14 @@ diff -q "$MODEL_BAK" "$MODEL" && echo "restored byte-identical: GestureModel.swi
 diff -q "$CAP_BAK" "$CAP" && echo "restored byte-identical: DeviceCapabilityModel.swift"
 
 echo "--- final ---"
-echo "Executed $(total) tests"
+# Assert the tree is green, don't just report a count. The three sibling harnesses
+# print the failure count here; this one used to print only `Executed N tests`, so a
+# mutation stranded by an interrupted run would end the script looking green — the
+# "gate that reads as passing" failure recorded in AGENTS.md.
+FINAL_TOTAL="$(total)"
+FINAL_FAILS="$(failures)"
+echo "post-restore suite: Executed $FINAL_TOTAL tests, $FINAL_FAILS failure(s)"
+if [ "$FINAL_FAILS" -ne 0 ]; then
+  echo "FAIL: the tree is not green after restore — a mutation was left behind"
+  exit 1
+fi

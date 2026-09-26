@@ -813,3 +813,495 @@ The configuration on disk still holds `trigger = mouseButton(2)`. **Nothing in t
 it**, by design: it is a valid value, so a silent migration would overwrite a deliberate choice
 for anyone who genuinely likes it. Open **Chuột & cử chỉ**, read the orange row, click
 **Ghi lại nút giữ**, and press the side button you want to hold. The row updates on the press.
+
+---
+
+## Round 7 — PATCH v9.1: the diagram draws the device, and the buttons get names (2026-09-23)
+
+Scope was **UI only** by instruction (`Gestures logic FREEZE. Chỉ sửa UI`). No gesture semantics,
+no trigger default and no engine path changed in this round.
+
+### The requirement that could not be met as written, and the measurement that says so
+
+R1 asked for the HID probe to be widened so a Basilisk V3 Pro 35K "over USB must return 6
+buttons", and said that if it still reports 5 the UI must show a *Missing buttons* warning rather
+than draw it wrong.
+
+**The mouse is currently not connected on this machine, so the 6-button claim could not be
+re-measured, and it was not asserted either way.** What the probe *did* measure, live:
+
+```
+IOHIDManagerOpen kIOReturn: 0
+raw device count BEFORE dedupe: 2
+  Apple Internal Keyboard / Trackpad   FIFO   vendorID: nil   productID: nil
+    TOTAL elements: 1771
+    page=0x0009 type=0x02  ×3        ← the declared buttons: usages [1,2,3]
+    page=0xFF00 type=0x02  ×1753     ← usage 0xFFFFFFFF, element type Input_Button
+```
+
+`system_profiler SPBluetoothDataType` lists `BSKV3P 35K` (`0x068E/0x00D8`) under **Not Connected**.
+
+**The `0xFF00` row is the reason R1's widening is not just unhelpful but actively harmful.** On
+this very machine the Apple trackpad declares **1753** vendor-page elements of element type
+`Input_Button`, every one with usage `0xFFFFFFFF` (= `-1`). A filter that scanned `0xFF00` for
+buttons would report **1756 buttons**, one of them numbered `-1`. That is the same failure as the
+original "873 input-button elements": a filter widened until it produced a number, then the number
+believed. No widening was made; the button filter is unchanged and still pinned by
+`testButtonFilterRequiresTheButtonPageNotJustTheElementType`.
+
+### What was implemented instead — the honest form of R1's own fallback
+
+R1's escape hatch was "if the probe still says 5, show a *Missing buttons* warning instead of
+drawing it wrong". That is what shipped, in a form driven by **evidence rather than a guess**:
+
+* the drawing renders every archetype position, but a control the descriptor does not declare is
+drawn **dashed and dim**, and a control on a descriptor that could not be read says *"not read
+yet"*. The two are different states and are never collapsed;
+* pressing a button the descriptor never declared raises the warning **with the measured number
+  in it** and a one-click *Đặt làm nút giữ* on that row. It cannot fire on a mouse that merely has
+  fewer buttons, because it requires a real press to contradict the real declaration.
+
+### Implemented
+
+| Area | Change |
+|---|---|
+| Diagram | `MouseDiagramView` rewritten to draw the mouse's actual controls at archetype positions (left/right/middle on top, side buttons on the left edge, Sniper at the thumb rest), each labelled with the **compact** button name |
+| Buttons list | new `GestureButtonList` — every control with its live role (`Nút giữ` / `Nút cuộn` / `Chỉ bấm` / `Chưa gán` / `Chuột không khai báo` / `Chưa đọc được`) and a one-click *Đặt làm nút giữ* |
+| Role model | `MouseControlSlot`, `MouseButtonRole`, `MouseRoleContext`, `DeviceCapabilityModel.role(forEventButton:context:)`, `.undeclaredPress(observed:context:)`, `.eventButtons(from:)`, `.drawnButtons(...)` — all in the **Foundation-only** half, so all testable |
+| Tilt | the two tilt arms moved to their own row under the drawing; inside the figure they collided with the newly-drawn control chips |
+| Compact label | `ButtonLabelStructure.compactLabel(forButtonNumber:)` + `L10n.t(compactButton:)` so a 46 pt chip drops the positional hint without dropping the numbering |
+| Language gate | new `scripts/audit-gesture-vocabulary-l10n.py` — enumerates the module's vocabulary from its declarations and resolves every key against the shipped store |
+
+### Measured this round
+
+| Check | Result |
+|---|---|
+| Debug build | `BUILD SUCCEEDED`, 0 `error:` lines |
+| Sources in `XFinder.SwiftFileList` by name | 19/19 OK, incl. the new `GestureButtonList.swift` (proving the four hand-written pbxproj entries are right) |
+| Bundled store | `L10n.strings.json` 148 817 B, **1 074** entries (was 1 055) |
+| `lipo -archs` | **arm64** |
+| Logic tests | **176 tests, 0 failures** (was 162) |
+| New vocabulary gate | 63 keys + 20 profile names, `TOTAL 0 unresolved` |
+| L10n coverage / duplicates | `TOTAL 0` across 1 074 entries |
+| Runtime L10n against the **installed** app | `TOTAL 0 leaks in the resolved English UI` |
+| **Rendered page, English** (`probe-ax-dump.swift`) | **116 text nodes, 89 static-text, 38 buttons — the page is not blank**; **0 Vietnamese lines** (the single regex hit was `App Exposé`, an allowlisted brand name) |
+| **Rendered page, Vietnamese** | same 116 nodes; the only strings identical to English were `Quick Look`, `Mission Control`, `App Exposé` (all allowlisted), the four key glyphs `⌃↑ ⌃↓ ⌃← ⌃→`, and the IOHID product name `Apple Internal Keyboard / Trackpad` |
+| Mutation harness (`mutation-check-gesture-buttons.sh`) | **5/5 RED**, source restored byte-identical, post-restore suite **176/0** |
+| Physical mouse behaviour | ❌ **still not verified — and this round the mouse was not even connected** |
+
+### The five injected bugs
+
+| | Bug injected | Tests that caught it |
+|---|---|---|
+| M1 | usage→event conversion lost its `- 1` | 3 (`testEventButtonsConvertUsagesToZeroBasedNumbers` and neighbours) |
+| M2 | `reserved` checked before the stored assignment | 1 (`testAssignmentOutranksReservedAndEverythingElse`) |
+| M3 | the missing-button prompt fired on every press | 1 (`testUndeclaredPressFiresOnlyOnAMeasuredMismatch`) |
+| M4 | the compact label re-derived the number itself | 1 (`testCompactLabelKeepsTheNumberingAndTheSharedNames`) |
+| M5 | `MouseButtonRole.labelKey` returned a rendered sentence instead of a store key | 1 (`testGesturePageStringsAreAllTranslatable`) |
+
+### Two false premises this round corrected
+
+1. **"The feature page shows nothing."** Measured against the installed build: the page renders
+   116 text nodes and 38 buttons, in both languages. The premise is false for this build; the
+   cause of what the user saw was not reproducible here. What *was* reproducible is what they said
+   next — the figure showed one control and no way to tell which physical button pairs with which
+   arrow — and that is what this round fixed.
+2. **"`Button 3` everywhere."** As of the L1 fix the held number is printed **once**, on the mouse
+   body, and no arm prints a number. The *button table* is still numbered from 1 (`mouseButton(2)`
+   is `Middle click`, i.e. the third control), which is macOS's 0-based numbering plus one, and
+   that is intentional and documented. Every control now carries its own label, so four identical
+   numbers are no longer possible.
+
+### Still needs a human
+
+* **Connect the mouse and read the buttons list.** Whether the Basilisk declares five controls or
+  six is measurable in one second once it is paired: open the page, and the line reads
+  *"The mouse's HID descriptor declares: …"*. If the Sniper is missing from that list, press it —
+  the warning and the measured number appear, and *Đặt làm nút giữ* on that row settles it.
+* **Whether a gesture actually fires** in a real app, and whether Mission Control opens. No probe
+  in this repo has ever confirmed the last one; it needs eyes on the screen.
+* The hold trigger on this machine is still `mouseButton(2)` (the wheel click), which the page
+  warns about in orange. Changing it is one click in the new buttons list.
+## Round 8 — PATCH v10: the vendor page is read as evidence, the figure follows the device (2026-09-23)
+
+Scope by instruction: **`Gestures logic FREEZE — chỉ sửa Probe + UI`.** Verified rather than
+asserted: `git status` for this round lists `DeviceCapability.swift`, `DeviceCapabilityTypes.swift`,
+`DeviceCapabilityModel.swift`, `MouseDiagramView.swift`, `GestureButtonList.swift`,
+`MouseGesturesDetailView.swift`, the L10n store and the docs. **`GestureEngine.swift`,
+`GestureController.swift`, `GestureModel.swift`, `GestureMap.swift` and `SpaceBinding.swift` are
+not in that list** — the engine, the trigger default, the deadzone and the release-to-fire rule
+were not touched.
+
+### The acceptance that could not be measured today, and the two measurements that say why
+
+R1 asks for the probe to scan both the Button page (`0x09`) and the vendor page (`0xFF00`) and to
+return **exactly six** buttons for a Basilisk V3 35K over USB and BLE. Both halves of the
+acceptance were attempted; both are blocked by facts on this machine, and neither is claimed.
+
+**1. The mouse is not connected.**
+
+```
+$ system_profiler SPBluetoothDataType | sed -n '/Not Connected/,$p'
+      Not Connected:
+          BSKV3P 35K:
+              Address: CA:20:84:51:19:5B
+              Vendor ID: 0x068E
+              Product ID: 0x00D8
+              Minor Type: Mouse
+```
+
+**2. The shell cannot read HID elements at all, so even the trackpad cannot be measured today.**
+
+```
+$ swiftc -O docs/probes/probe-hid-raw.swift -o /tmp/probe-hid-raw && /tmp/probe-hid-raw
+IOHIDManagerOpen kIOReturn: -536870174          ← 0xE00002E2 = kIOReturnNotPrivileged
+raw device count BEFORE dedupe: 2
+  Apple Internal Keyboard / Trackpad   FIFO   vendorID: nil   productID: nil
+  (no elements)                                  ← the manager never opened
+```
+
+`-536870174` is `kIOReturnNotPrivileged`: the terminal hosting the probe has no **Input
+Monitoring** grant, and without an open manager `IOHIDDeviceCopyMatchingElements` returns nothing.
+The same shell also fails the other read path — `AXIsProcessTrusted (this process): false`, so
+`probe-ax-dump.swift` reports `NO WINDOWS attribute` and the rendered page cannot be read either.
+**Both verification instruments available to this session are unprivileged today.** That is
+
+### What was implemented, and the measurement each piece rests on
+
+| Area | Change | The fact it rests on |
+|---|---|---|
+| Probe — vendor page | `DeviceCapabilityProbe.vendorButtonUsages(from:)`: element type `Input_Button`, `usagePage >= 0xFF00`, **usage in `1...0x3F`**, deduped | the 1753-element `0xFFFFFFFF` trackpad measurement (Round 7). Without the range guard the count becomes 1753 and one entry is numbered `-1` |
+| Probe — raw facts | `elementDump(from:)` (pure) + `connectedElementDump()` (live) + a `DisclosureGroup` on the page | R1's own "log raw UsagePage/Usage before filtering" step, made checkable in the UI instead of in a log nobody reads |
+| Descriptor | `PhysicalCapabilities.vendorButtonUsages: [Int]` — **deliberately not folded into `buttons`** | a vendor usage has no defined relationship to a `CGEvent` button number, so `usage - 1` is meaningless there; `buttons` is what every number on the page derives from |
+| Figure | `MouseDiagramStyle` (`.archetype` / `.generic` / `.unknown`) + `diagramStyle(for:)`; `.generic` draws **only** the declared controls | the acceptance case "switch to a Magic Mouse → generic figure". `.unknown` still draws the archetype, dashed, because a failed read is not a measured absence |
+| Figure | Basilisk positions: top row left — wheel — right; left flank upper / lower / **Sniper lowest**; a **position caption** under each chip | the reference diagram's own layout. Captions are ≤ 14 characters because the chip is 46 pt at 7 pt type — a measured content constraint, pinned by a test |
+| List | per-row **Ghi** button (`recordingButton`), position name, and a statement of what a **single click** does for buttons 3/4/5 | `DeviceCapabilityModel.passthroughNoteKey` — the engine takes only the hold trigger and the optional scroll button, so a plain click on 3/4 still reaches the app |
+| List | **firmware-handled controls** (scroll-mode / DPI / profile) listed with the measured half separated from the inferred half | the descriptor declares five usages; those three controls are not among them (observation), and firmware handling is the usual explanation (inference, worded as such) |
+| Prompt | `underReportedControls(...)` — fires on **either** a press the descriptor never declared **or** fewer declared controls than positions *while* a vendor page declares extras | keeps the v9.1 rule that the prompt is never noise on a mouse that simply has fewer buttons |
+
+### A third bug found while wiring R2: the tilt switch revealed arms it never enabled
+
+R2 requires tilt to "render separately, not count into the button list". While wiring that, a grep
+for the two tilt fields turned up this:
+
+```
+GestureEngine.swift:607        if type == .scrollWheel, configuration.tiltEnabled {   ← the engine
+GestureController.swift:89     if let v = env.tiltEnabled { out.tiltEnabled = v }    ← decode only
+MouseGesturesDetailView.swift  set: { v in controller.update { $0.tiltAvailable = v } }  ← the switch
+```
+
+**Nothing ever wrote `tiltEnabled`.** The page's single switch wrote `tiltAvailable`, which only
+decides whether the two arms are *drawn*, while the engine gates on `tiltEnabled`. So the user
+could turn the switch on, assign an action to *nghiêng trái*, and the action could never fire —
+and turning the switch off left the engine's state untouched. This is exactly the class AGENTS.md
+Part 3b keeps a register for (a stored key with no writer) and Part 0 §6 forbids (a control that
+cannot do what its label says).
+
+Fixed in the UI layer, with the engine untouched: `TiltArmsVisibility.fields(forReveal:)` is the
+**pure, tested** contract for what the one switch writes, and it writes both fields. The label
+changed from *"Hiện hai hướng nghiêng con lăn"* (show) to *"Bật hai hướng nghiêng con lăn"*
+(turn on), because showing was all it used to do. The two fields stay **separate in the model** —
+`MouseGestureTests.testTiltArmsAreHiddenByDefault` still pins that — so an older payload with only
+`tiltAvailable` still decodes and still means "off".
+
+
+### Measured this round
+
+| Check | Result |
+|---|---|
+| Debug build | `BUILD SUCCEEDED`, **0** `error:` lines, `lipo -archs` = **arm64** |
+| Changed sources present in the compile log **by name** | `MouseGesturesDetailView`, `MouseDiagramView`, `GestureButtonList`, `DeviceCapability`, `DeviceCapabilityTypes`, `DeviceCapabilityModel`, `GestureLabelStructure` — all 7 found |
+| New warnings in the changed files | **none** |
+| Logic tests | **183 tests, 0 failures** (was 176; +7 new) |
+| L10n coverage / duplicates | `TOTAL 0` across **1 097** entries (was 1 074; +23 new, 1 re-scoped to `fragment`, 2 removed) |
+| §2 sweep — unwrapped Vietnamese literals in `Views/` | `TOTAL 0` |
+| §3 sweep — every `L10n.t("…")` key the gesture UI uses exists | `keys used: 169 | missing: 0` |
+| Mutation harness (`mutation-check-gesture-buttons.sh`) | **11/11 RED** (M1–M5 from v9.1, M6–M11 new), source restored **byte-identical**, post-restore suite **183/0** |
+| Probe script compiles and runs | yes — reaches the device list; returns `(no elements)` because of the permission state above |
+| `git status` for leftover mutations | clean (the harness's post-run hash check confirms byte-identical restore) |
+| **Probe returns 6 buttons over USB and BLE** | ❌ **not measured — mouse not connected, and the shell has no Input Monitoring grant** |
+| **Sniper logs Button 5 / Record stores it** | ❌ **not measured — needs the mouse** |
+| **Button 3/4 single click fires back/forward** | ⚠️ **code-read only.** The engine's `otherMouseDown` path returns `pass` for any button that is neither the trigger nor the enabled scroll button, so a click on 3/4 is forwarded. Not re-measured on hardware this round |
+| **Rendered page in either language** | ❌ **not measured — `AXIsProcessTrusted` is false for this shell** |
+
+recorded as a limitation of the round, not as a result.
+
+
+
+### The five new injected bugs (M6–M10)
+
+| | Bug injected | What caught it |
+|---|---|---|
+| M6 | vendor scan loses its usage-range guard, admitting the 1753 `0xFFFFFFFF` sentinels | `testVendorPageButtonElementsAreEvidenceAndTheSentinelUsageIsExcluded` |
+| M7 | `diagramStyle` always returns `.archetype` | `testDiagramStyleFallsBackToGenericForADeviceWithFewButtons` |
+| M8 | `MouseControlSlot.positionKey` returns a sentence instead of a store key | `testEveryArchetypePositionHasACaptionKeyThatFitsItsChip` **and** `L10nTests.testGesturePageStringsAreAllTranslatable` |
+| M9 | the raw dump stops listing the vendor page | `testElementDumpReportsTheRawFactsBeforeAnyFilter` |
+| M10 | the under-report prompt fires without evidence | `testUnderReportedPromptNeedsEvidence` |
+
+M8 catching in **two** places is the useful part: the caption is rendered as
+`L10n.t(slot.positionKey)`, so a rendered sentence would show in the English UI and no literal
+sweep could see it. The vocabulary enumeration in `L10nTests` is what closes that hole, and M8 is
+the proof that the closure works.
+
+### Still needs a human, with the exact steps
+
+1. **Connect the Basilisk** (USB or Bluetooth) and open *Chuột & cử chỉ*. The line under
+   *Chuột đang kết nối* reads `XFinder đọc trực tiếp mô tả HID của chuột: N nút.` — that `N` is
+   the measurement R1 asks about. Open **Mô tả HID thô** below it to see the raw pages.
+2. **Press the Sniper button.** If the page shows *"Nút bạn vừa bấm: N"*, that is the number, and
+   the warning offers *Đặt làm nút giữ*. If **nothing** appears, the button is firmware-only and
+   no API will ever see it — the page already lists that case under *Nút do chuột tự xử lý*.
+3. **Confirm the diagram** shows the controls at the reference positions with their captions, and
+   that a one-button device falls back to the generic figure.
+4. To re-run the raw probe from a terminal, grant that terminal **Input Monitoring** first;
+   without it the probe exits at `kIOReturnNotPrivileged` exactly as recorded above.
+
+---
+
+## Round 9 — the v10 build re-verified, and the BLE question answered (2026-09-23)
+
+Trigger: *"the feature page shows nothing, build the app again and test the feature"*. No product
+source changed in this round; it is a verification pass plus one gate hardening. **Every ❌ row in
+the Round 8 table above is superseded here.**
+
+### Why the page looked empty: the installed build was old
+
+`/Applications/XFinder.app/Contents/MacOS/` was stamped **12:54**; the v10 sources are
+**14:23–14:41**. The user was reading the *previous* build. After
+`sh scripts/install-mouse-rebuild.sh`, `probe-ax-dump.swift` reads the page in full:
+
+| | English | Tiếng Việt |
+|:--|--:|--:|
+| text nodes / buttons | 128 / 40 | 128 / 40 |
+| lines containing Vietnamese diacritics | **1** — `App Exposé` (allowlisted) | 120 |
+
+Every v10 element is present: the `Ready — the applications below already have shortcuts` block,
+`Connected mouse · Detected · BSKV3P 35K · 5 buttons`, the **Raw HID descriptor** disclosure, the
+per-row **Record** button, the position captions, and the *Buttons the mouse handles itself* rows.
+The eight strings identical in both languages are all legitimate: `App Exposé`, `Mission Control`,
+`Quick Look`, `BSKV3P 35K`, and the four chord glyphs `⌃↑ ⌃↓ ⌃← ⌃→`.
+
+**So "the page shows nothing" and "the English UI leaks Vietnamese" both fail to reproduce on the
+v10 build.** The first had a mundane cause, and the fix is procedural: install before believing a
+UI report.
+
+### The probe, finally measured — over BLE the answer is 5, with no vendor page
+
+The mouse is connected, over **Bluetooth Low Energy**. `docs/probes/probe-hid-raw.swift` opens
+(`IOHIDManagerOpen kIOReturn: 0`) and dumps elements:
+
+```
+raw device count BEFORE dedupe: 4        (2 physical devices, listed twice — dedupe required)
+BSKV3P 35K   transport: Bluetooth Low Energy   vendorID 0x68E   productID 0xD8   898 elements
+  page=0x0009 type=0x02 ×5    usages [1,2,3,4,5]  → event buttons [0,1,2,3,4]
+  vendor scan (page >= 0xFF00, type 0x02, usage 1...0x3F): []   ← empty
+  no 0xFF00 element of any kind → nothing to widen the filter to
+```
+
+So **the Sniper button emits no HID button element over Bluetooth.** It is firmware-only on this
+transport, and no filter change can reveal it — widening the scan would only re-admit the
+`0xFFFFFFFF` sentinels that `DeviceCapabilityTests` exists to reject. `probe-hid-raw` prints the
+honest summary itself: *"the figure has 6 positions and this descriptor declares 5. XFinder reports
+that as a fact and offers Record; it does NOT invent a number."* The page renders exactly that:
+`Detected · BSKV3P 35K · 5 buttons`, and `Button 6 — Not declared` with a **Record** button.
+
+**"Probe returns 6 buttons over USB and BLE" is false for BLE.** USB remains untested (no cable).
+If it is ever measured and differs, that is a *second* row, not a correction of this one.
+
+### Measured this round
+
+| Check | Result |
+|---|---|
+| Debug build | `BUILD SUCCEEDED`, **0** `error:`, `lipo -archs` = **arm64** |
+| Gesture sources present in the compile log by name | **19/19** |
+| Logic tests | **183 tests, 0 failures** |
+| L10n coverage / duplicates | `TOTAL 0` across **1 097** entries |
+| §2 sweep (unwrapped VI literals) / §3 sweep (gesture UI keys) | `TOTAL 0` / `170 keys, 0 missing` |
+| `check-sidebar-groups-l10n.py` / `audit-gesture-vocabulary-l10n.py` | 0 problems / 63 keys + 20 names, 0 unresolved |
+| Runtime harness | **PASS** — production callback (click replay, recursion, browser shortcut, deadzone, cancellation, modifier, passthrough) + system actions post the machine's own chord with the fn mask intact |
+| Runtime harness `--live-tap` | **PASS** — real tap install/remove and simulated-timeout recovery |
+| Mutation harnesses, **run sequentially** | buttons **11/11 RED** · labels **5/5 RED** · ui **7/7 RED** · l10n **6/6 RED**; all sources restored byte-identical; post-restore suite **183/0** |
+| Install | signed with the stable `XFinder Dev` identity; `XFinderSync.appex` registered **and enabled** (`pluginkit` prints `+`) |
+| Rendered page, both languages | **measured** — table above |
+| **Physical gesture dispatch** | ❌ **not verified** — needs a human eye on Mission Control / Space change |
+
+### New trap: the mutation harnesses must not run in parallel
+
+They mutate the **real** tree. Four `nohup … &` in one shell produced false reds that look exactly
+like real findings: `mutation-check-gesture-labels.sh` reported `FAIL: baseline is not green —
+failing test cases: 6` (alone: baseline 0, 5/5 RED) and `mutation-check-l10n.sh` reported
+`suite green again after restore: 2 failures` (alone: 183/0). The tree was never left dirty — each
+script traps `EXIT` and restores from `/tmp` backups — but **a parallel run manufactures false
+reds**, and "baseline is not green" is also the signature of a genuine stranded mutation. Run them
+**one at a time**, detached, polling the log.
+
+### Gate hardened
+
+`mutation-check-gesture-ui.sh` ended with `echo "Executed $(total) tests"` — a count with no failure
+figure, so a stranded mutation would end the script looking green. It now computes the failure count
+and **exits 1** when nonzero, matching its two siblings. Proven both ways with a scratch test file
+(one `XCTFail`): `184 tests, 1 failure(s)` → exit **1**; after deleting it, `183 tests, 0
+failure(s)` → exit **0**. The scratch file was removed immediately.
+
+### Housekeeping
+
+Four LaunchServices registrations still named non-installed `/tmp` build directories
+(`xf-out`, `xfinder-l10n-build`, `xfinder-v10-build`, `xf-gate-out`), all claiming the same plug-in
+identifier as the installed appex. Deregistered with `lsregister -u`; the install script's own check
+now reports clean. The script only deregisters its own `$SRC`/`$STAGE`, so this recurs with each new
+build directory.
+
+---
+
+## PATCH v10.1 — Razer figure parity, chip numbers, and the debug gate (2026-09-24)
+
+Scope, as the brief set it: **probe + UI only. Gestures logic frozen.** That freeze is verified, not
+asserted — `git diff --name-only` shows `GestureEngine.swift`, `GestureController.swift`,
+`GestureModel.swift`, `GestureMap.swift` and `SpaceBinding.swift` are **not** modified. Trigger,
+deadzone, fire-on-release, and the preset tables are untouched.
+
+### What the brief asked for, and which parts were already done
+
+The brief's R1 (probe scans Button page `0x09` **and** Vendor page `0xFF00`, logs raw
+UsagePage/Usage, emits `CapabilityDescriptor { buttons[], tiltSupported, source }`) and R3 (the
+"Buttons XFinder can see" list with 1/2 locked to click-only, 3 marked as the hold button, 4/5/6
+offering Record and Use-as-hold, plus the E/F/M "handles itself" rows) were **already satisfied by
+v10** — verified by reading the source and by the rendered page, not assumed. The genuine deltas
+were four:
+
+1. the mouse body was a **pill** (`RoundedRectangle`, corner radius ≈ half its width) — the Magic
+   Mouse silhouette the user reported;
+2. the hold badge printed the **descriptive name** (`Middle click`) while the chips beside it
+   printed numbers, so one screen used two vocabularies for the same control;
+3. a chip the descriptor did not declare was drawn as a **live** control;
+4. the "What XFinder received" block still rendered, because it was gated on
+   `DEBUG_SHOW_ENGINE_LOG || config.debug` and the live config had `debug = true`.
+
+### The four changes
+
+| # | Change | Where |
+|:--|:--|:--|
+| 1 | `MouseSilhouette` — the outline in `MouseFigureOutline.points`, drawn as a closed Catmull-Rom curve; a **button seam**, a **wheel in that seam**, and a **thumb rest** in the lower-left carrying the three side controls | `GestureUIDisplay.swift` (pure data), `MouseDiagramView.swift` (the shape) |
+| 2 | The badge, the Quick-check row and the Switches row print the **user-facing number** (`Button 3`) — the same vocabulary as the chips. The descriptive name stays in the tooltips, the list rows and the explanation sentences | `MouseDiagramView.swift`, `MouseGesturesDetailView.swift`, `GestureDetailPanel.swift` |
+| 3 | `MouseButtonRole.isDeclared` — the **drawing's** question, deliberately not the same as `isAssignable`. `.notDeclared` and `.unknown` chips are disabled with a tooltip; the row below keeps its Record button | `DeviceCapabilityModel.swift`, `MouseDiagramView.swift` |
+| 4 | The activity section renders on `DEBUG_SHOW_ENGINE_LOG` **alone**. The switch that enables the engine's diagnostic ring lives *inside* that section, so gating the section removes the switch with it — nothing is left promising anything | `MouseGesturesDetailView.swift` |
+
+Change 4 corrects a reasoning error in the earlier design, and the correction is worth recording:
+the old comment justified `|| config.debug` by saying a compile-time gate "would leave a control
+that promises something it cannot do". The control in question is **inside the gated section**, so
+that concern never applied — and what the `||` actually did was let a stored `debug = true` keep a
+developer block on a user's page.
+
+Change 1's two load-bearing properties are **numbers**, so they are testable: the widest point on
+the **left** sits lower than the widest point on the **right** (that offset *is* the thumb rest),
+and the thumb rest is in the lower-left. `MouseFigureTests` pins both, plus the blunt front (the two
+main-button chips are 46 pt wide on a 116 pt body, so a narrow "nose" would leave them floating).
+
+### Measured on the real hardware this round
+
+The Basilisk reconnected over **Bluetooth Low Energy** during this pass, so the v10 figure was
+re-read on live hardware:
+
+```
+BSKV3P 35K   transport: Bluetooth Low Energy   vendorID 0x68e   productID 0xd8
+  page=0x0009 type=0x02 ×5    usages [1,2,3,4,5]  → event buttons [0,1,2,3,4]
+  v10 vendor scan (type 0x02 && page >= 0xFF00 && usage 1...0x3F): []      ← empty
+  v10 figure: archetype (6 positions) — "declares 5"
+```
+
+**Five buttons over BLE, no vendor-page button element.** The Sniper is firmware-only on this
+transport, which is what the page already says under *Buttons the mouse handles itself*. **"The
+probe must return 6 buttons" is false for BLE** — this is the third independent reading of the same
+number, so do not re-open it. USB remains unmeasured (no cable).
+
+The Apple Internal Keyboard / Trackpad, read in the same run, declares buttons `[1,2,3]` **and one
+vendor-page button element (usage 12)** — the 1753 `0xFFFFFFFF` sentinel elements are still
+correctly excluded by the range guard. That is the "1 vendor element" the page can print, and it is
+real: with 3 declared controls and a vendor page, `underReportedControls` fires on evidence.
+
+### Four results, kept separate
+
+| Statement | Result |
+|:--|:--|
+| Build | `BUILD SUCCEEDED`, **0** `error:`, all gesture sources present in the compile log **by name**, `lipo -archs` = **arm64** |
+| Tests | **193 tests, 0 failures** (+10: 8 `MouseFigureTests`, 1 `isDeclared`, 1 `isLive`) |
+| L10n gates | coverage `TOTAL 0` / **1097** · duplicates 0 · literal sweep 0 · sidebar groups 0 · vocabulary 63 keys + 20 names, 0 unresolved · `verify-gesture-ui.sh` §1–§7 green · runtime-in-installed-bundle **TOTAL 0 leaks** |
+| Mutation harnesses, sequentially | buttons **13/13 RED** (M12/M13 new) · labels **5/5 RED** · ui **8/8 RED** (BUG 8 new) · l10n **6/6 RED**; every source restored byte-identical; post-restore **193/0** |
+| Rendered page, English | 122 text nodes; **1** diacritic line (`App Exposé`, allowlisted); `Button 1…Button 6` chips; `Hold, Button 3, click to change`; `Hold button: Button 3`; `Button 6 — Not declared…`; **0** tilt arms; **no** "What XFinder received" block |
+| Rendered page, Tiếng Việt | 122 diacritic lines; same structure; no debug block |
+| Install | signed with the stable `XFinder Dev` identity; `XFinderSync.appex` registered **and enabled** (`pluginkit` prints `+`) |
+| **Physical gesture dispatch** | ❌ **not verified** — still needs a human eye on Mission Control / a Space change |
+
+Both languages were measured with `defaults write com.xfinder.app AppLanguage …` and
+`docs/probes/probe-ax-dump.swift <pid>`, then the setting was restored to `english`. The dump needs
+the window **frontmost** — a background launch reports `windows: 0`, which is a measurement
+artifact, not an empty page.
+
+### New gate: the L10n entry script refuses to lie about its own counts
+
+`add-gesture-l10n-entries.py` reported `added 5, replaced 0, removed 5` on **every** run, including
+a second run on an unchanged store — so its "idempotent" claim was untestable. Cause: **five keys
+were listed in both `ENTRIES` and `REMOVED`**, so they were added and then deleted in the same pass.
+The store was never wrong (`REMOVED` wins), which is exactly why it went unnoticed — a report that
+never reaches zero is a report nobody reads.
+
+Fixed by deleting the five retired keys from `ENTRIES`, and by adding a **self-check** that prints
+`CONFLICT: N key(s) are in BOTH ENTRIES and REMOVED` and **exits 1**. Proven in both directions:
+with a deliberate conflict → `exit 1`; clean → `exit 0` and `added 0, replaced 0, removed 0`.
+
+### Two more copy defects found by reading the rendered page
+
+* **A sentence pointed at a block that is no longer rendered.** The frontmost row ended
+  "…and try again — this is why the log below shows only com.xfinder.app", and the log block is now
+  gated off. Reworded rather than left dangling: copy that names a control which is not on the page
+  is the same class of problem as a control whose label lies.
+* **"1 button elements".** The vendor-page count was spliced into the *middle* of the sentence, so
+  English read `also declares 1 button elements on…`. The count now ends the clause
+  (`also declares button-typed elements on the vendor's own page: 1.`), which is correct for every
+  value in both languages. Both halves are `fragment` scope because both are concatenated with a
+  runtime number — `check-l10n-coverage.py` rejects edge padding on a `sentence`.
+
+### A third defect, found by reading the **persisted config** rather than the code
+
+`defaults export com.xfinder.app -` then `plistlib` showed the store still holding:
+
+```
+tiltAvailable = true, tiltEnabled = false
+```
+
+That is a state the current UI cannot produce — PATCH v10 made the one tilt switch write **both**
+fields (`TiltArmsVisibility.fields(forReveal:)`) — but the build before it wrote only
+`tiltAvailable`, and the payload survived. Reading `tiltAvailable` alone then drew **two arms that
+could never fire** *and* showed the switch as **on**: the same "control that cannot do what its
+label says" the write-side contract exists to prevent, one layer down. On the rendered page that
+was two live-looking controls with no possible effect.
+
+Fixed with the **read**-side contract, in the same pure file and with no engine change:
+`TiltArmsVisibility.isLive(available:enabled:)` is the conjunction, and the page reads it for the
+arms, the switch and the explanation. **No migration is needed** — a payload that disagrees with
+itself simply reads as off until the user turns the switch on again. `BUG 8` in
+`mutation-check-gesture-ui.sh` injects the single-field read and goes red.
+
+After the fix, the rendered page on this machine draws **0** tilt arms (measured: `Tilt the wheel`
+appears 0 times) while the switch is still offered, which is the truthful state — the arms can never
+fire on this hardware anyway, and the page's own copy says so.
+
+### Docs corrected, because a stale doc teaches the next round the old bug
+
+`docs/MOUSE_GESTURES.md` still described the **removed** L1 behaviour — "the button number is
+printed on each arrow of the diagram" — which is the exact bug this feature was fixed for. Also
+corrected: the old table that showed the UI as `Nút 1 (chuột trái)` (that parenthetical form is
+gone), the two instructions that told the reader to enable the now-hidden log to read a button
+number (they now point at the **"Nút bạn vừa bấm"** row, which is not gated), and `README.md`'s
+"the page also has a *What XFinder received* section" plus its stale `162 test` figure.
+
+### Still open
+
+* **Instant Action for buttons 3/4/5** is still **not** shipped, and the reason is unchanged: the
+  engine takes only the hold trigger and the optional scroll button, so a single click on 3/4 is
+  forwarded to the application. A row offering to rebind it would be a control that cannot do what
+  its label says. The row *states* what the click does instead. v10.1's acceptance list does not ask
+  for it.
+* **Physical dispatch** — the engine posts the machine's own chord and the tap is armed, but whether
+  macOS actually opens Mission Control / changes Space needs an eye on the screen.
+  `probe-screen-diff.swift` **changes Spaces for real**, so it runs only with the user's consent.

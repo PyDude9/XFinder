@@ -1,46 +1,139 @@
 import SwiftUI
 
-/// Biểu tượng thanh menu — nút MŨI TÊN ẩn/hiện biểu tượng, theo cơ chế public
-/// API của Hidden Bar/Bartender (`NSStatusItem` separator + arrow). Ghi rõ giới
-/// hạn macOS 27 thay vì giấu.
+/// Biểu tượng thanh menu — nút MŨI TÊN ẩn/hiện biểu tượng qua Native Visibility Engine (macOS 27+)
+/// và Legacy Length Engine (macOS <= 26).
 struct MenuIconsDetailView: View {
     @State private var hider = MenuBarHiderController.shared
-    @AppStorage("menubar.hiderEnabled") private var enabled = false
+    @AppStorage("menubar.hiderEnabled") private var enabled = true
+    @AppStorage("menubar.defaultCollapsed") private var defaultCollapsed = true
+    @AppStorage("menubar.autoHideEnabled") private var autoHideEnabled = false
+    @AppStorage("menubar.autoHideSeconds") private var autoHideSeconds = 5.0
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                PageHeader(icon: "menubar.rectangle",
-                           title: L10n.t("Biểu tượng thanh menu"),
-                           subtitle: L10n.t("Ẩn bớt biểu tượng trên thanh menu để gọn hơn."))
+                PageHeader(
+                    icon: "menubar.rectangle",
+                    title: L10n.t("Biểu tượng thanh menu"),
+                    subtitle: L10n.t("Ẩn bớt biểu tượng trên thanh menu để gọn gàng hơn.")
+                )
 
-                SectionHeader(icon: "chevron.left.chevron.right",
-                              title: L10n.t("Nút mũi tên ẩn biểu tượng"),
-                              subtitle: L10n.t("Hoạt động như Hidden Bar — ẩn icon nằm bên trái mũi tên."))
+                Divider()
 
-                SettingsCard(title: L10n.t("Bật nút mũi tên")) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ToggleRow(title: L10n.t("Hiện mũi tên trên thanh menu"), isOn: $enabled)
-                            .onChange(of: enabled) {
-                                MenuBarHiderController.shared.applySettings()
+                SectionHeader(
+                    icon: "chevron.left.chevron.right",
+                    title: L10n.t("Nút mũi tên ẩn biểu tượng"),
+                    subtitle: L10n.t("Ẩn các biểu tượng ứng dụng nằm bên trái mũi tên.")
+                )
+
+                VStack(spacing: 0) {
+                    ToggleRow(
+                        title: L10n.t("Bật ẩn biểu tượng thanh menu"),
+                        subtitle: L10n.t("Hiện nút mũi tên trên thanh menu để thu gọn hoặc mở rộng."),
+                        isOn: Binding(
+                            get: { enabled },
+                            set: {
+                                enabled = $0
+                                hider.isEnabled = $0
                             }
+                        )
+                    )
 
-                        Text(L10n.t("Bấm mũi tên → ẩn icon nằm BÊN PHẢI mũi tên (menu app + Apple menu bên trái không bị đụng). Kéo MŨI TÊN (⌘) sát mép trái để ẩn hết icon; các icon bạn muốn HIỆN thì kéo qua bên TRÁI mũi tên. ⌘-kéo icon qua lại giữa hai phía bất kỳ lúc nào."))
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                    if enabled {
+                        Divider().padding(.vertical, 8)
+
+                        ToggleRow(
+                            title: L10n.t("Mặc định thu gọn khi mở app"),
+                            subtitle: L10n.t("Tự động ẩn các biểu tượng ngay khi XFinder khởi động."),
+                            isOn: Binding(
+                                get: { defaultCollapsed },
+                                set: {
+                                    defaultCollapsed = $0
+                                    hider.defaultCollapsed = $0
+                                }
+                            )
+                        )
+
+                        Divider().padding(.vertical, 8)
+
+                        ToggleRow(
+                            title: L10n.t("Tự động ẩn sau thời gian chờ"),
+                            subtitle: L10n.t("Tự động thu gọn các biểu tượng sau khi mở rộng."),
+                            isOn: Binding(
+                                get: { autoHideEnabled },
+                                set: {
+                                    autoHideEnabled = $0
+                                    hider.isAutoHideEnabled = $0
+                                }
+                            )
+                        )
+
+                        if autoHideEnabled {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(L10n.t("Thời gian tự động ẩn"))
+                                        .font(.system(size: 13, weight: .medium))
+                                    Text("\(L10n.t("Thu gọn sau "))\(Int(autoHideSeconds))\(L10n.t(" giây không thao tác"))")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                Slider(
+                                    value: Binding(
+                                        get: { autoHideSeconds },
+                                        set: {
+                                            autoHideSeconds = $0
+                                            hider.autoHideSeconds = $0
+                                        }
+                                    ),
+                                    in: 1...30,
+                                    step: 1
+                                )
+                                .frame(width: 140)
+                                Text("\(Int(autoHideSeconds))s")
+                                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                    .frame(width: 32, alignment: .trailing)
+                            }
+                            .padding(.top, 6)
+                        }
+                    }
+
+                    Divider().padding(.vertical, 8)
+
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.t("Động cơ ẩn biểu tượng"))
+                                .font(.system(size: 13, weight: .medium))
+                            Text(ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27
+                                 ? L10n.t("Native Visibility Engine (Assessment Mode)")
+                                 : L10n.t("Legacy Length Engine"))
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Text(ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27 ? "macOS 27+ Native" : "Legacy")
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color.white.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                 }
                 .padding(.horizontal, 20)
 
-                SectionHeader(icon: "exclamationmark.triangle",
-                              title: L10n.t("Giới hạn trên macOS 27"),
-                              subtitle: L10n.t("Kết quả đo thật, không phỏng đoán."))
+                Divider()
+
+                SectionHeader(
+                    icon: "questionmark.circle",
+                    title: L10n.t("Cách sử dụng"),
+                    subtitle: L10n.t("Sắp xếp biểu tượng linh hoạt bằng phím ⌘.")
+                )
 
                 VStack(alignment: .leading, spacing: 8) {
-                    bullet(L10n.t("macOS 26/27 không còn đẩy icon hàng xóm khi vạch ngăn phình rộng (length bị clamp ~5016pt; icon bên cạnh chỉ dịch chỗ chứ không ra khỏi bar) — nên trên macOS mới, mũi tên có thể KHÔNG ẩn được icon của app khác như macOS cũ."))
-                    bullet(L10n.t("Không có API công khai nào ẩn icon của app thứ ba; đây là cách public API duy nhất (giống hệt Hidden Bar). Icon HỆ THỐNG do macOS 26+ quản tại Control Centre → Menu Bar."))
-                    bullet(L10n.t("Nếu trên máy bạn mũi tên không ẩn được icon thứ ba, tính năng vẫn vô hại — XFinder nói rõ giới hạn thay vì hứa ẩn mà không làm."))
+                    bullet(L10n.t("Nhấp vào nút mũi tên trên thanh menu để thu gọn hoặc mở rộng các biểu tượng."))
+                    bullet(L10n.t("Giữ phím Command (⌘) và kéo thả bất kỳ biểu tượng nào sang bên phải mũi tên để luôn hiển thị."))
+                    bullet(L10n.t("Các biểu tượng nằm bên trái mũi tên sẽ tự động được ẩn khi thu gọn."))
+                    bullet(L10n.t("Các biểu tượng hệ thống (Đồng hồ, Wi-Fi, Pin, Trung tâm điều khiển) luôn luôn được giữ lại."))
                 }
                 .padding(.horizontal, 20)
 
@@ -53,15 +146,14 @@ struct MenuIconsDetailView: View {
                 .controlSize(.small)
                 .padding(.horizontal, 20)
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, 24)
         }
-        .background(Color(.windowBackgroundColor))
     }
 
     private func bullet(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text("•").font(.system(size: 12)).foregroundColor(.secondary)
-            Text(.init(text))
+            Text(text)
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

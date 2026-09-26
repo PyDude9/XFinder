@@ -82,6 +82,19 @@ struct PhysicalCapabilities: Codable, Equatable, Sendable {
     /// Whether any button-page element was seen at all. This distinguishes "a
     /// device with no buttons" from "a descriptor that could not be read".
     var hasButtonPage: Bool
+    /// Button-typed elements on a vendor-defined page, as raw usages (PATCH v10 R1).
+    ///
+    /// **Deliberately NOT folded into `buttons`.** A vendor usage cannot be converted
+    /// to a `CGEvent` button number, and `buttons` is what every number on the page is
+    /// derived from — see `DeviceCapabilityProbe.vendorButtonUsages(from:)`. This array
+    /// answers a different question: *"does the descriptor declare controls beyond the
+    /// standard button page?"*, which is evidence, and evidence is what the page shows.
+    ///
+    /// Defaulted so every existing fixture and call site that builds this type by
+    /// memberwise init keeps compiling unchanged. Nothing in the app encodes or decodes
+    /// a `CapabilityDescriptor` (the probe is live, never persisted), so the synthesized
+    /// `Codable` conformance has no stored payload to stay compatible with.
+    var vendorButtonUsages: [Int] = []
 }
 
 /// What the mouse module may attempt with this hardware. Derived purely from
@@ -151,6 +164,17 @@ enum DeviceCapabilityProbe {
     /// Button usage page. Buttons are identified by element *type*, not by a
     /// usage pair — see the filter-bug note in the file header.
     static let usagePageButton = 0x09
+    /// Vendor-defined usage page. A mouse that puts a control beyond the standard
+    /// Button page declares it here. See `vendorButtonUsages(from:)` for why those
+    /// usages are reported as **evidence** and never merged into `buttons`.
+    static let usagePageVendorDefined = 0xFF00
+    /// The largest vendor usage admitted as a plausible button index. Load-bearing —
+    /// see `vendorButtonUsages(from:)`.
+    static let vendorUsageMax = 0x3F
+    /// `0xFFFFFFFF` is the "no usage" sentinel this repo measured on the Apple
+    /// Internal Trackpad: 1753 vendor-page elements all carrying it. Named so the
+    /// exclusion reads as a fact about real hardware rather than as a magic number.
+    static let usageSentinelNone = 0xFFFF_FFFF
 
     static let axisUsageX = 0x30
     static let axisUsageY = 0x31
@@ -182,6 +206,71 @@ enum DeviceCapabilityProbe {
     /// Tuple convenience for a fixture that does not want to name the type.
     static func buttonUsages(fromTriples triples: [(usagePage: Int, usage: Int, type: UInt32)]) -> [Int] {
         buttonUsages(from: triples.map { HIDElementFact(usagePage: $0.usagePage, usage: $0.usage, type: $0.type) })
+    }
+
+    /// Button-typed elements on a **vendor-defined** page, as raw usages.
+    ///
+    /// ── Why these are evidence, not buttons ─────────────────────────────────────
+    /// A vendor usage is a private number. There is **no defined relationship**
+    /// between it and a `CGEvent` button number, so `usage - 1` — the conversion that
+    /// is correct on the Button page — is meaningless here. Merging these into
+    /// `buttons` would therefore either invent numbers or duplicate real ones, and
+    /// every chip on the page is numbered from that array.
+    ///
+    /// So the probe reports them separately: *"your mouse also declares N vendor-page
+    /// controls"*, and the only honest way to learn what number one of them sends is
+    /// to **press it** and read the number off the event tap. That is what
+    /// `DeviceCapabilityModel.undeclaredPress` and the page's Record button are for.
+    ///
+    /// ── Both guards are load-bearing ────────────────────────────────────────────
+    /// * `type == Input_Button` — the same guard as the Button page, and for the same
+    ///   reason (a vendor page carries hundreds of non-button nodes).
+    /// * `usage in 1...0x3F` — this is the guard that stops the count racing away.
+    ///   Measured on this machine: the Apple Internal Trackpad declares **1753**
+    ///   vendor-page elements with `type == Input_Button` and usage
+    ///   `0xFFFFFFFF` (`usageSentinelNone`). Dropping the range guard reports 1753
+    ///   "buttons" and numbers one of them `-1` — the identical failure shape as the
+    ///   original "873 input-button elements" bug, which is why a fixture pins it.
+    static func vendorButtonUsages(from elements: [HIDElementFact]) -> [Int] {
+        var seen = Set<Int>()
+        for el in elements
+        where el.type == elementTypeInputButton
+            && el.usagePage >= usagePageVendorDefined
+            && (1...vendorUsageMax).contains(el.usage) {
+            seen.insert(el.usage)
+        }
+        return seen.sorted()
+    }
+
+    /// Every element's `(usagePage, usage, type)`, formatted for a human — the
+    /// "log the raw facts before any filter runs" step.
+    ///
+    /// The point is falsifiability: the page can print this, so a claim like "the
+    /// Sniper button is on a vendor page" is checkable against the descriptor instead
+    /// of being taken on trust. The tally comes first because on a real mouse most
+    /// elements are axes and feature nodes; listing only the button and vendor pages
+    /// afterwards keeps a 900-element descriptor readable.
+    static func elementDump(from elements: [HIDElementFact], limit: Int = 400) -> [String] {
+        var lines: [String] = []
+        var tally: [String: Int] = [:]
+        for el in elements {
+            let key = String(format: "page=0x%04X type=0x%02X", el.usagePage, el.type)
+            tally[key, default: 0] += 1
+        }
+        lines.append("elements: \(elements.count)")
+        for (key, count) in tally.sorted(by: { $0.key < $1.key }) {
+            lines.append("  \(key) ×\(count)")
+        }
+        let interesting = elements.filter {
+            $0.usagePage == usagePageButton || $0.usagePage >= usagePageVendorDefined
+        }
+        lines.append("button page 0x09 + vendor page >= 0xFF00: \(interesting.count)")
+        for el in interesting.prefix(limit) {
+            lines.append(String(format: "  page=0x%04X usage=0x%04X (%d) type=0x%02X",
+                                el.usagePage, el.usage, el.usage, el.type))
+        }
+        if interesting.count > limit { lines.append("  … \(interesting.count - limit) more") }
+        return lines
     }
 
     // MARK: Pure: elements → axes
@@ -222,7 +311,8 @@ enum DeviceCapabilityProbe {
         PhysicalCapabilities(
             buttons: buttonUsages(from: elements),
             axes: axisTokens(from: elements),
-            hasButtonPage: elements.contains { $0.usagePage == usagePageButton }
+            hasButtonPage: elements.contains { $0.usagePage == usagePageButton },
+            vendorButtonUsages: vendorButtonUsages(from: elements)
         )
     }
 

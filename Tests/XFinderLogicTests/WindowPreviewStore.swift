@@ -1,0 +1,1 @@
+../../XFinder/Core/WindowPreview/WindowPreviewStore.swift

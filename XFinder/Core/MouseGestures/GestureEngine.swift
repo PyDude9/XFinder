@@ -178,6 +178,8 @@ final class GestureWorker {
     var stroke: GestureStroke?
     var originalDown: CGEvent?
     var swallowedButton: Int?
+    var swallowedInstantButton: Int?
+    var strokeStartTime: CFTimeInterval = 0
     var strokeBundle = ""
     var cancelled = false
     var modifierHeld = false
@@ -238,7 +240,7 @@ final class GestureWorker {
     nonisolated(unsafe) static var lastTapFailure = ""
 
     func reconcileTap() {
-        let needed = (!suspended && (configuration.enabled || record != nil)) || swallowedButton != nil || suppressedKey != nil
+        let needed = (!suspended && (configuration.enabled || record != nil)) || swallowedButton != nil || suppressedKey != nil || swallowedInstantButton != nil
         if !needed {
             if let tap { CGEvent.tapEnable(tap: tap, enable: false); CFMachPortInvalidate(tap) }
             if let tapSource { CFRunLoopRemoveSource(CFRunLoopGetCurrent(), tapSource, .commonModes) }
@@ -296,12 +298,14 @@ final class GestureWorker {
         if reconcile { scheduleReconcile() }
     }
     func cancelStroke() {
-        stroke = nil; originalDown = nil; cancelled = true
+        stroke = nil; originalDown = nil; cancelled = true; strokeStartTime = 0
+        swallowedInstantButton = nil
         // Keep swallowing the matching up even after settings change: the native
         // target never saw the down. Do not replay a click into a newly focused app.
     }
     func startStroke(_ event: CGEvent, button: Int?) {
         stroke = GestureStroke(); strokeBundle = bundle; cancelled = false
+        strokeStartTime = CFAbsoluteTimeGetCurrent()
         originalDown = button == nil ? nil : event.copy()
         swallowedButton = button
         if let holdTimer { CFRunLoopTimerInvalidate(holdTimer) }
@@ -314,26 +318,35 @@ final class GestureWorker {
             // bounded interval so disabling never leaves a permanent event tap.
             self?.cancelStroke()
             self?.swallowedButton = nil
+            self?.swallowedInstantButton = nil
             self?.suppressedKey = nil
             self?.reconcileTap()
         }
         if let holdTimer { CFRunLoopAddTimer(CFRunLoopGetCurrent(), holdTimer, .commonModes) }
     }
     func finishStroke(_ event: CGEvent) {
+        let duration = CFAbsoluteTimeGetCurrent() - strokeStartTime
         defer {
-            stroke = nil; originalDown = nil; swallowedButton = nil
+            stroke = nil; originalDown = nil; swallowedButton = nil; strokeStartTime = 0
             if let holdTimer { CFRunLoopTimerInvalidate(holdTimer) }; holdTimer = nil
         }
         guard !cancelled, strokeBundle == bundle, let stroke else { return }
-        if stroke.isClick(deadzone: configuration.deadzone), let down = originalDown,
-           let up = event.copy() {
-            // Use the original click location, flags, button and click count.
-            // Preallocate BOTH events before posting either half of the pair.
-            up.location = down.location
-            up.flags = down.flags
-            up.setIntegerValueField(.mouseEventClickState, value: down.getIntegerValueField(.mouseEventClickState))
-            post(down); post(up)
-            note(.clickPreserved, button: swallowedButton)
+        if stroke.isClick(deadzone: configuration.deadzone) {
+            if duration < 0.200, configuration.holdButtonSingleClickEnabled,
+               let button = swallowedButton,
+               let action = GestureConfigStore.action(in: configuration.buttonActions, forEventButton: button),
+               action.isAssigned {
+                performButtonAction(action)
+                note(.actionSent, button: button)
+            } else if let down = originalDown, let up = event.copy() {
+                // Use the original click location, flags, button and click count.
+                // Preallocate BOTH events before posting either half of the pair.
+                up.location = down.location
+                up.flags = down.flags
+                up.setIntegerValueField(.mouseEventClickState, value: down.getIntegerValueField(.mouseEventClickState))
+                post(down); post(up)
+                note(.clickPreserved, button: swallowedButton)
+            }
         } else if let direction = stroke.direction(deadzone: configuration.deadzone) {
             let action = configuration.action(bundle: strokeBundle, direction: direction)
             if action == .unassigned {
@@ -355,6 +368,17 @@ final class GestureWorker {
             note(.gestureCancelled, direction: stroke.direction(deadzone: configuration.deadzone))
         }
         debug(stroke)
+    }
+
+    func performButtonAction(_ action: ButtonAction) {
+        switch action {
+        case .instant(let instant):
+            postShortcut(instant.shortcut)
+        case .shortcut(let shortcut):
+            postShortcut(shortcut)
+        case .unassigned:
+            break
+        }
     }
 
     /// The intent behind an action, for the diagnostic line. Read from the same map
@@ -486,6 +510,11 @@ final class GestureWorker {
             if !configuration.enabled && record == nil { scheduleReconcile() }
             return nil
         }
+        if isUp, swallowedInstantButton == button {
+            swallowedInstantButton = nil
+            if !configuration.enabled && record == nil { scheduleReconcile() }
+            return nil
+        }
         if let record {
             if type == .keyDown, key == 53 {
                 suppressedKey = key; armDrainTimer(); endRecording(); return nil
@@ -581,10 +610,27 @@ final class GestureWorker {
             }
         }
 
+        // ── Instant actions for assigned non-trigger buttons (PATCH v10.2 R1) ─
+        if button >= 2,
+           button != configuration.trigger.buttonNumber,
+           (!configuration.scrollButtonEnabled || button != configuration.scrollButton),
+           let action = GestureConfigStore.action(in: configuration.buttonActions, forEventButton: button),
+           action.isAssigned {
+            if isDown {
+                swallowedInstantButton = button
+                performButtonAction(action)
+                note(.actionSent, button: button)
+                return nil
+            }
+        }
+
         if type == .leftMouseDown || type == .keyDown || (isDown && swallowedButton != button) {
             cancelStroke()
         }
-        if stroke == nil, swallowedButton != nil, type == .rightMouseDragged || type == .otherMouseDragged { return nil }
+        if isDown, swallowedInstantButton != nil, swallowedInstantButton != button {
+            swallowedInstantButton = nil
+        }
+        if stroke == nil, (swallowedButton != nil || swallowedInstantButton != nil), type == .rightMouseDragged || type == .otherMouseDragged { return nil }
         let isMovement: Bool
         switch type {
         case .mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged: isMovement = true

@@ -103,3 +103,9 @@ echo "--- designated requirement ---"
 codesign -d -r- /Applications/XFinder.app 2>&1 | tail -3
 echo "--- archs ---"
 lipo -archs /Applications/XFinder.app/Contents/MacOS/XFinder.debug.dylib
+
+echo "--- launch app ---"
+pkill -9 XFinder 2>/dev/null || true
+sleep 1
+open /Applications/XFinder.app
+echo "app launched from /Applications/XFinder.app"

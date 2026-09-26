@@ -81,6 +81,35 @@ for device in deviceSet {
     }
     print("  CURRENT filter (type 0x02 && page 0x09) buttons: \(shipped.sorted())")
 
+    // ── PATCH v10 R1 ───────────────────────────────────────────────────────────────
+    // The vendor-page scan, exactly as `DeviceCapabilityProbe.vendorButtonUsages` performs
+    // it: element type Input_Button, page >= 0xFF00, and usage inside 1...0x3F. The range
+    // guard is what excludes the 0xFFFFFFFF "no usage" sentinel — measured on the Apple
+    // Internal Trackpad, which declares 1753 such elements. Without it this line reports
+    // 1753 "buttons" and numbers one of them -1.
+    var vendorUsages = Set<Int>()
+    var sentinelCount = 0
+    var vendorNonButtonCount = 0
+    for el in raw where Int(IOHIDElementGetUsagePage(el)) >= 0xFF00 {
+        let type = IOHIDElementGetType(el).rawValue
+        let usage = Int(IOHIDElementGetUsage(el))
+        if usage == 0xFFFF_FFFF { sentinelCount += 1; continue }
+        guard type == 0x02 else { vendorNonButtonCount += 1; continue }
+        if (1...0x3F).contains(usage) { vendorUsages.insert(usage) }
+    }
+    print("  v10 vendor scan (type 0x02 && page >= 0xFF00 && usage 1...0x3F): \(vendorUsages.sorted())")
+    print("    excluded: \(sentinelCount) elements with usage 0xFFFFFFFF, \(vendorNonButtonCount) non-button elements")
+
+    // The event-button numbers the UI will print, and the figure it will draw.
+    let eventButtons = shipped.sorted().map { $0 - 1 }.filter { $0 >= 0 }
+    let style = shipped.count >= 3 ? "archetype (6 positions)" : "generic (declared only)"
+    print("  v10 event buttons shown in the UI: \(eventButtons)")
+    print("  v10 figure: \(style)")
+    if shipped.count < 6 {
+        print("    note: the figure has 6 positions and this descriptor declares \(shipped.count).")
+        print("    XFinder reports that as a fact and offers Record; it does NOT invent a number.")
+    }
+
     // What v7's proposal ("all page 0x09 regardless of collection") would yield.
     var v7 = Set<Int>()
     for el in raw where Int(IOHIDElementGetUsagePage(el)) == 0x09 {

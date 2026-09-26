@@ -1,0 +1,1 @@
+../../XFinder/Core/Battery/MagicBatteryReader.swift

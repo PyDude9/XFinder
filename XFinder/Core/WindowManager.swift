@@ -26,11 +26,32 @@ enum WindowManager {
         var isOnScreen: Bool
     }
 
+    @_silgen_name("_AXUIElementGetWindow")
+    private static func _AXUIElementGetWindow(_ element: AXUIElement, _ identifier: UnsafeMutablePointer<CGWindowID>) -> AXError
+
+    public static func isWindowMinimized(windowID: CGWindowID, pid: pid_t) -> Bool {
+        let appElement = AXUIElementCreateApplication(pid)
+        var windowsRef: CFTypeRef?
+        if AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+           let windows = windowsRef as? [AXUIElement] {
+            for win in windows {
+                var wid: CGWindowID = 0
+                if _AXUIElementGetWindow(win, &wid) == .success, wid == windowID {
+                    var minRef: CFTypeRef?
+                    if AXUIElementCopyAttributeValue(win, kAXMinimizedAttribute as CFString, &minRef) == .success,
+                       let isMini = minRef as? Bool {
+                        return isMini
+                    }
+                }
+            }
+        }
+        return false
+    }
+
     // MARK: - List (public, always works)
 
     static func listWindows() -> [WindowInfo] {
-        guard let raw = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
-                                                   kCGNullWindowID) as? [[String: Any]]
+        guard let raw = CGWindowListCopyWindowInfo(.optionAll, kCGNullWindowID) as? [[String: Any]]
         else { return [] }
         var out: [WindowInfo] = []
         for dict in raw {
@@ -38,32 +59,40 @@ enum WindowManager {
                   let pid = dict[kCGWindowOwnerPID as String] as? pid_t,
                   let widNum = dict[kCGWindowNumber as String] as? NSNumber
             else { continue }
-            if owner == "XFinder" { continue } // hide self
-
-            // Filter out non-window junk that was polluting the ⌘-Tab list and
-            // showing as blank thumbnails. Two signals, both public:
-            //  * `WindowManager` is macOS's own Stage Manager / gesture process
-            //    ("Gesture Blocking Overlay") — never a user window.
-            //  * `SharingState == .none` (0) means the window is NOT capturable,
-            //    so ScreenCaptureKit returns nothing and the slot stays empty.
-            //    Every real app window reports `.readOnly` (1).
-            if owner == "WindowManager" || owner == "Window Server" { continue }
+            let wid = CGWindowID(widNum.uint32Value)
+            let layer = (dict[kCGWindowLayer as String] as? NSNumber)?.intValue ?? (dict[kCGWindowLayer as String] as? Int ?? -1)
+            let alpha = (dict[kCGWindowAlpha as String] as? NSNumber)?.doubleValue ?? (dict[kCGWindowAlpha as String] as? Double ?? 1.0)
             let sharing = (dict[kCGWindowSharingState as String] as? NSNumber)?.intValue ?? 1
-            if sharing == 0 { continue }
 
             let bounds: CGRect
             if let bd = dict[kCGWindowBounds as String] as? NSDictionary,
                let r = CGRect(dictionaryRepresentation: bd) {
                 bounds = r
             } else { bounds = .zero }
+
+            let runningApp = NSRunningApplication(processIdentifier: pid)
+            let bundleID = runningApp?.bundleIdentifier ?? owner
+            let isHidden = runningApp?.isHidden == true
+            let isOnScreen = (dict[kCGWindowIsOnscreen as String] as? Bool == true) || ((dict[kCGWindowIsOnscreen as String] as? NSNumber)?.boolValue == true)
+
+            // LOẠI HOÀN TOÀN:
+            if layer != 0 { continue }
+            if alpha == 0 { continue }
+            if sharing == 0 { continue }
+            if bounds.width < 50 || bounds.height < 50 { continue }
+            if bundleID == "com.apple.dock" || bundleID == "com.apple.WindowManager" || owner == "XFinder" || owner == "WindowManager" || owner == "Window Server" || owner == "Dock" { continue }
+            if isHidden { continue }
+            if let app = runningApp, app.activationPolicy != .regular { continue }
+
+            let isMinimized = isWindowMinimized(windowID: wid, pid: pid)
+            if isMinimized && !isOnScreen { continue }
+
+            let isOnOtherSpace = !isOnScreen && layer == 0 && !isHidden && !isMinimized
+            print("[Space] \(bundleID) onScreen=\(isOnScreen) hidden=\(isHidden) -> otherSpace=\(isOnOtherSpace)")
+
             let title = (dict[kCGWindowName as String] as? String) ?? ""
-            let layer = (dict[kCGWindowLayer as String] as? NSNumber)?.intValue ?? 0
-            guard layer == 0 else { continue }
-            out.append(WindowInfo(id: CGWindowID(widNum.uint32Value), ownerPID: pid,
-                                  ownerName: owner, title: title, bounds: bounds,
-                                  isOnScreen: true))
+            out.append(WindowInfo(id: wid, ownerPID: pid, ownerName: owner, title: title, bounds: bounds, isOnScreen: isOnScreen))
         }
-        // Most-recently-used first is not exposed; keep layer order, cap for perf.
         return Array(out.prefix(40))
     }
 
@@ -79,27 +108,27 @@ enum WindowManager {
     ///
     /// Verified with a probe on macOS 27.0 (26A428): SCK captured 3/3 windows.
     /// Needs Screen Recording permission, same as before.
-    static func thumbnail(windowID: CGWindowID, maxSize: CGFloat = 320) async -> NSImage? {
+    static func thumbnail(windowID: CGWindowID, maxSize: CGFloat = 800) async -> NSImage? {
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(
-                true, onScreenWindowsOnly: true)
+                false, onScreenWindowsOnly: false)
             guard let win = content.windows.first(where: { $0.windowID == windowID }),
                   win.frame.width > 1, win.frame.height > 1 else { return nil }
 
             let cfg = SCStreamConfiguration()
-            cfg.width = Int(win.frame.width)
-            cfg.height = Int(win.frame.height)
+            cfg.width = max(100, Int(win.frame.width * 2))
+            cfg.height = max(100, Int(win.frame.height * 2))
+            cfg.scalesToFit = false
             cfg.showsCursor = false
+            cfg.capturesAudio = false
+            cfg.captureResolution = .best
             let filter = SCContentFilter(desktopIndependentWindow: win)
 
             let cg = try await SCScreenshotManager.captureImage(contentFilter: filter,
                                                                configuration: cfg)
             let w = CGFloat(cg.width), h = CGFloat(cg.height)
             guard w > 0, h > 0 else { return nil }
-            let img = NSImage(cgImage: cg, size: .zero)
-            let scale = min(1, maxSize / max(w, h))
-            img.size = NSSize(width: w * scale, height: h * scale)
-            return img
+            return NSImage(cgImage: cg, size: NSSize(width: w, height: h))
         } catch {
             return nil
         }
@@ -111,28 +140,28 @@ enum WindowManager {
     /// content for every window, which is the slow part — one query plus N
     /// captures is markedly faster for a Dock preview holding several windows.
     static func thumbnails(windowIDs: [CGWindowID],
-                           maxSize: CGFloat = 320) async -> [(CGWindowID, NSImage)] {
+                           maxSize: CGFloat = 800) async -> [(CGWindowID, NSImage)] {
         guard !windowIDs.isEmpty else { return [] }
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(
-                true, onScreenWindowsOnly: true)
+                false, onScreenWindowsOnly: false)
             let wanted = Set(windowIDs)
             var out: [(CGWindowID, NSImage)] = []
             for win in content.windows where wanted.contains(win.windowID) {
                 guard win.frame.width > 1, win.frame.height > 1 else { continue }
                 let cfg = SCStreamConfiguration()
-                cfg.width = Int(win.frame.width)
-                cfg.height = Int(win.frame.height)
+                cfg.width = max(100, Int(win.frame.width * 2))
+                cfg.height = max(100, Int(win.frame.height * 2))
+                cfg.scalesToFit = false
                 cfg.showsCursor = false
+                cfg.capturesAudio = false
+                cfg.captureResolution = .best
                 let filter = SCContentFilter(desktopIndependentWindow: win)
                 guard let cg = try? await SCScreenshotManager.captureImage(
                     contentFilter: filter, configuration: cfg) else { continue }
                 let w = CGFloat(cg.width), h = CGFloat(cg.height)
                 guard w > 0, h > 0 else { continue }
-                let img = NSImage(cgImage: cg, size: .zero)
-                let scale = min(1, maxSize / max(w, h))
-                img.size = NSSize(width: w * scale, height: h * scale)
-                out.append((win.windowID, img))
+                out.append((win.windowID, NSImage(cgImage: cg, size: NSSize(width: w, height: h))))
             }
             return out
         } catch {

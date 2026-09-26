@@ -33,6 +33,7 @@ final class GestureController {
     private let migrationFlagKey = "mouseGestures.migrated.v1"
     /// One-shot flag for the middle-click → side-button trigger migration.
     private let triggerMigrationKey = "mouseGestures.triggerMigrated.v2"
+    private let triggerMigrationV10_2Key = "mouseGestures.triggerMigrated.v10_2"
     private var observers: [NSObjectProtocol] = []
     private var engineStarted = false
     @ObservationIgnored private lazy var engine = GestureEngine { [weak self] result in
@@ -60,6 +61,7 @@ final class GestureController {
         configuration.validate()
         migrateIfNeeded()
         migrateMiddleClickTriggerIfNeeded()
+        migrateToV10_2IfNeeded()
     }
 
     /// Best-effort read of a configuration envelope whose shape drifted.
@@ -80,6 +82,8 @@ final class GestureController {
             var scrollButtonEnabled: Bool?
             var scrollButton: Int?
             var overrides: [String: [GestureDirection: GestureAction]]?
+            var buttonActions: [Int: ButtonAction]?
+            var holdButtonSingleClickEnabled: Bool?
         }
         guard let env = try? JSONDecoder().decode(Envelope.self, from: data) else { return nil }
         guard env.enabled != nil || env.overrides != nil || env.trigger != nil else { return nil }
@@ -93,6 +97,8 @@ final class GestureController {
         if let v = env.scrollButtonEnabled { out.scrollButtonEnabled = v }
         if let v = env.scrollButton { out.scrollButton = v }
         if let v = env.overrides { out.overrides = v }
+        if let v = env.buttonActions { out.buttonActions = v }
+        if let v = env.holdButtonSingleClickEnabled { out.holdButtonSingleClickEnabled = v }
         return out
     }
 
@@ -131,22 +137,28 @@ final class GestureController {
 
     /// Repair the one shipped default that made the feature unusable, without touching a
     /// deliberate choice.
-    ///
-    /// Measured on this machine: the stored trigger was `mouseButton(2)` — the wheel click —
-    /// with `overrides` empty. Holding the wheel while dragging is not a motion a hand
-    /// performs, and the user reported it twice ("không hiển thị gì cả"). `validate()` could
-    /// not fix it, because B2 is a *valid* trigger; it was simply the wrong default left by
-    /// an older build.
-    ///
-    /// Guarded on `overrides.isEmpty` on purpose: a user who deliberately set the wheel as
-    /// their hold button keeps it. Only an untouched default is migrated. One-shot, so a
-    /// user who moves *back* to the wheel is not moved again on the next launch.
     func migrateMiddleClickTriggerIfNeeded() {
         guard !UserDefaults.standard.bool(forKey: triggerMigrationKey) else { return }
         UserDefaults.standard.set(true, forKey: triggerMigrationKey)
         guard configuration.overrides.isEmpty,
               configuration.trigger == .mouseButton(2) else { return }
         configuration.trigger = GestureConfiguration.defaultTrigger
+        configuration.validate()
+        persist()
+    }
+
+    /// PATCH v10.2: Migrate trigger from Wheel (2) or Upper side (3) to Lower side Button 5 (4),
+    /// and initialize default button actions (Button 4 -> Back, Button 5 -> Forward).
+    func migrateToV10_2IfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: triggerMigrationV10_2Key) else { return }
+        UserDefaults.standard.set(true, forKey: triggerMigrationV10_2Key)
+        if configuration.trigger == .mouseButton(2) || configuration.trigger == .mouseButton(3) {
+            configuration.trigger = .mouseButton(4)
+        }
+        if configuration.buttonActions.isEmpty {
+            configuration.buttonActions = GestureConfigStore.defaultButtonActions
+        }
+        configuration.holdButtonSingleClickEnabled = true
         configuration.validate()
         persist()
     }

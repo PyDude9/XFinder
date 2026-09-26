@@ -580,73 +580,84 @@ extension GestureProfiles {
     }
 }
 
+enum InstantAction: String, Codable, CaseIterable, Equatable, Sendable {
+    case back
+    case forward
+
+    var labelKey: String {
+        switch self {
+        case .back: return "Lùi"
+        case .forward: return "Tiến"
+        }
+    }
+
+    var shortcut: GestureShortcut {
+        switch self {
+        case .back:
+            return GestureShortcut(key: 33, flags: GestureShortcut.command) // [ (leftBracket)
+        case .forward:
+            return GestureShortcut(key: 30, flags: GestureShortcut.command) // ] (rightBracket)
+        }
+    }
+}
+
+enum ButtonAction: Codable, Equatable, Sendable {
+    case unassigned
+    case instant(InstantAction)
+    case shortcut(GestureShortcut)
+
+    var isAssigned: Bool {
+        switch self {
+        case .unassigned: return false
+        case .instant, .shortcut: return true
+        }
+    }
+
+    var labelKey: String {
+        switch self {
+        case .unassigned: return "Chưa gán"
+        case .instant(let action): return action.labelKey
+        case .shortcut: return "Phím tắt"
+        }
+    }
+}
+
+struct GestureConfigStore: Sendable {
+    /// Default mapping (PATCH v10.2 R1):
+    /// Button 4 (Upper side) -> .instant(.back)
+    /// Button 5 (Lower side) -> .instant(.forward)
+    static let defaultButtonActions: [Int: ButtonAction] = [
+        4: .instant(.back),
+        5: .instant(.forward)
+    ]
+
+    /// Resolves button action for a given event button number (0-based).
+    /// Keys in `buttonActions` are user-facing button numbers (1-based: Button 4 = Upper side, Button 5 = Lower side).
+    static func action(in actions: [Int: ButtonAction], forEventButton eventButton: Int) -> ButtonAction? {
+        let displayButton = eventButton + 1
+        if let byDisplay = actions[displayButton], byDisplay.isAssigned { return byDisplay }
+        return nil
+    }
+}
+
 struct GestureConfiguration: Codable, Sendable {
     /// The hold trigger used when nothing else is configured, and the value an invalid
     /// trigger is repaired to. Exposed so `validate()` and the stored property cannot
-    /// disagree about what "the default" is.
-    static let defaultTrigger: TriggerSource = .mouseButton(3)
+    /// disagree about what "the default" is. Default is Button 5 (Lower side button, eventButton 4).
+    static let defaultTrigger: TriggerSource = .mouseButton(4)
     var enabled = false
-    // Hold trigger. WAS `.mouseButton(2)` (Middle Click), which is the single worst
-    // choice available: a middle click is a *frequent* action (open link in new tab,
-    // autoscroll) and holding it while dragging is not a motion a hand performs. The
-    // user's own configuration on disk had exactly this value, and it is why the
-    // feature read as "nothing happens" — measured: `trigger: {mouseButton: 2}` with
-    // `overrides: {}`.
-    //
-    // The default is now the **upper side button** (3). That number is a *starting
-    // point*, not a claim about the hardware: button indices come from the HID
-    // descriptor's declaration order, and nothing in CGEvent can tell us which
-    // physical button 3 is. `DeviceCapabilityProbe` reads the descriptor, but even a
-    // verified descriptor proves only that a button exists, not where it sits. The
-    // page therefore shows a Record button and says which number is in force, so the
-    // user confirms their own Sniper button instead of trusting an index.
     var trigger: TriggerSource = GestureConfiguration.defaultTrigger
-    // Raw event delta units, NOT calibrated screen points or physical millimetres.
     var deadzone = 12.0
     var tiltEnabled = false
     var debug = false
-    /// **Engine C — hold a side button and move to scroll.**
-    ///
-    /// Off by default, and the default is not timidity: on a mouse whose driver
-    /// already maps a side button to something, intercepting it fights the driver,
-    /// and the button is also a common "back" binding. It is opt-in per user, and the
-    /// page explains what it takes over before switching it on.
-    ///
-    /// It is deliberately a *different* mechanism from the four-way gesture trigger:
-    /// the trigger button is consumed for gestures, whereas this button stays a
-    /// normal click and only becomes a scroll modifier while it is held and the
-    /// pointer moves. That distinction is why it needs its own button rather than
-    /// reusing `trigger`.
-    ///
-    /// ── EVERY FIELD ADDED TO THIS TYPE NEEDS A DEFAULT HERE AND A LINE IN
-    ///    `Envelope` ─────────────────────────────────────────────────────────────
-    /// A stored configuration written by an *older* build has no key for a field added
-    /// later, and a non-optional `Codable` property makes the whole object fail to
-    /// decode with `keyNotFound`. That failure is not cosmetic: on this exact shape,
-    /// `try?` used to make the app silently discard every one of the user's overrides.
-    /// Verified on this payload — adding `scrollButtonEnabled` without the `Envelope`
-    /// line made the 2026-09-22 stored config fail to decode. So: new field ⇒ a
-    /// default in the declaration **and** an optional in `GestureController.Envelope`,
-    /// or an upgrade path erases the user's customisations.
     var scrollButtonEnabled = false
-    /// Which button acts as the scroll modifier. Defaults to the button *below* the
-    /// gesture trigger, i.e. the one the user's thumb reaches without moving, and is
-    /// stored as a raw event button number for the same reason the trigger is: no API
-    /// can tell us which physical control a number maps to. The page has a Record
-    /// button so the user confirms it on their own mouse instead of trusting an index.
     var scrollButton = GestureConfiguration.defaultScrollButton
-
-    /// The declared default for the scroll modifier. Named so `validate()` and the
-    /// stored property cannot drift, exactly like `defaultTrigger`.
-    static let defaultScrollButton: Int = 4
-    // Default OFF on purpose, and the switch says so on the page: a Razer mouse
-    // chosen by name in the product brief reports every wheel event as
-    // `scrollWheelEventIsContinuous == 1` with axis2 == 0, measured on this
-    // machine — so shipping this default on would draw two arms that can never
-    // fire on the very hardware the feature was built for.
+    static let defaultScrollButton: Int = 3
     var tiltAvailable = false
-    // Persist ONLY genuine user overrides. Do not pre-fill with factory defaults.
     var overrides: [String: [GestureDirection: GestureAction]] = [:]
+    var buttonActions: [Int: ButtonAction] = GestureConfigStore.defaultButtonActions
+    var holdButtonSingleClickEnabled: Bool = true
+
 
     func action(bundle: String, direction: GestureDirection) -> GestureAction {
         GestureProfiles.resolve(overrides: overrides, bundle: bundle, direction: direction)
@@ -665,20 +676,14 @@ struct GestureConfiguration: Codable, Sendable {
     }
 
     mutating func validate() {
-        // Repair an invalid trigger to the *same* default the type declares. A literal
-        // `2` used to sit here, so an out-of-range trigger (say `mouseButton(0)`, or a
-        // value written by an older build) was silently repaired INTO the middle click
-        // — the one button this feature must never hijack. The repair now reads the
-        // declared default, so the two can never drift apart again.
         if !trigger.isValid { trigger = Self.defaultTrigger }
-        // The scroll modifier may never be the left button (it must stay usable for
-        // selecting and dragging), may never collide with the gesture trigger — one
-        // button cannot mean both "start a gesture" and "scroll" — and must be a real
-        // button number.
         if !(1...31).contains(scrollButton) || scrollButton == trigger.buttonNumber {
             scrollButton = ScrollButtonRepair.defaultFor(trigger: trigger)
         }
         deadzone = deadzone.isFinite ? min(200, max(4, deadzone)) : 12
+        if buttonActions.isEmpty {
+            buttonActions = GestureConfigStore.defaultButtonActions
+        }
     }
 }
 

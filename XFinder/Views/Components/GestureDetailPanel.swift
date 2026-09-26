@@ -111,7 +111,7 @@ struct GestureDetailPanel: View {
                 Text(L10n.t(direction.motionKey))
                     .font(.system(size: 12, weight: .medium))
                     .fixedSize(horizontal: false, vertical: true)
-                Text(L10n.t("Giữ") + " " + L10n.t(trigger.key))
+                Text(L10n.t("Giữ") + " " + L10n.t(compactButton: trigger.key))
                     .font(.system(size: 11)).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

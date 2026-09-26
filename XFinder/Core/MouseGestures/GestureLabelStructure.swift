@@ -87,6 +87,26 @@ enum ButtonLabelStructure {
     /// the offset directly rather than inferring it from a rendered string.
     static func displayNumber(forButtonNumber n: Int) -> Int { n + 1 }
 
+    /// The label for a control drawn on the mouse diagram: **the bare number**, always.
+    ///
+    /// ── Why a number and not “Left click” (measured) ────────────────────────────────
+    /// One chip is 46 pt wide. The named form fits for the three shared controls
+    /// (`Middle click`) but the Vietnamese name for the wheel — `Bấm con lăn xuống`, 17
+    /// characters — does not fit at any size that is still legible, and a chip that
+    /// silently truncates its own label is worse than a number that always fits. The
+    /// brief asked for a bare number here for the same reason, and the user asked for
+    /// buttons to be named by number.
+    ///
+    /// Nothing is lost: the chip sits **at the position of that control on the mouse**, its
+    /// tooltip prints the full name, and the Assigned-buttons list directly below prints it
+    /// in a full-width row. The number is the user-facing one (`n + 1`), produced by
+    /// `displayNumber(forButtonNumber:)` — the single place that offset is defined, and the
+    /// offset that was already wrong once.
+    static func compactLabel(forButtonNumber n: Int) -> ButtonLabel {
+        return ButtonLabel(key: numberedPrefixKey,
+                           appendNumber: displayNumber(forButtonNumber: n))
+    }
+
     /// The two halves of a hold-direction heading, as keys.
     ///
     /// A separate type because the heading is the one string where the *join*
@@ -124,6 +144,20 @@ enum ButtonLabelStructure {
             }
         }
     }
+}
+
+/// The two pieces of a button label, with no words in them: a store key, and the number
+/// to append when that key is the interpolated prefix fragment.
+///
+/// The same shape as `ButtonParts`, but without the motion half — a chip names a control,
+/// not a gesture, and reusing `ButtonParts` would force every chip to pretend to have a
+/// direction.
+struct ButtonLabel: Equatable, Sendable {
+    /// The store key: the prefix fragment (`"Nút "`) for the chip form, or a named label
+    /// (`"Nút trái"`) when a caller wants the descriptive form.
+    var key: String
+    /// Set only when `key` is the fragment, because a fragment cannot interpolate.
+    var appendNumber: Int?
 }
 
 /// The resolved pieces of a heading, with no words in them.

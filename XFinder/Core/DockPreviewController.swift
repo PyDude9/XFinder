@@ -29,7 +29,7 @@ final class DockPreviewController {
     private var panelPID: pid_t?
     /// Short enough to feel instant; long enough that merely sweeping the
     /// pointer across the Dock does not fire a panel for every icon.
-    private let dwell: TimeInterval = 0.12
+    private let dwell: TimeInterval = 0.08
     private var lastIconLoad = Date.distantPast
 
     private init() {}
@@ -44,15 +44,15 @@ final class DockPreviewController {
         let enabled = UserDefaults.standard.object(forKey: "windowPreview.hoverEnabled") as? Bool ?? true
         guard enabled else {
             stop()
-            statusHint = "Đang tắt — bật “Hiện bản xem trước khi di chuột qua ứng dụng trên Dock”."
+            statusHint = L10n.t("Đang tắt — bật “Hiện bản xem trước khi di chuột qua ứng dụng trên Dock”.")
             return
         }
         guard WindowManager.isTrusted else {
             stop()
-            statusHint = "Chưa có quyền Trợ năng — không đọc được vị trí icon Dock."
+            statusHint = L10n.t("Chưa có quyền Trợ năng — không đọc được vị trí icon Dock.")
             return
         }
-        statusHint = "Đang chờ: di chuột vào icon app trên Dock."
+        statusHint = L10n.t("Đang chờ: di chuột vào icon app trên Dock.")
         guard monitor == nil else { return }
         reloadIcons()
         // Event-driven: `mouseMoved` fires only on actual movement, so hovering
@@ -190,13 +190,35 @@ final class DockPreviewController {
     // MARK: - Panel
 
     private func showPanel(for icon: IconRect) {
+        let bundleID = NSRunningApplication(processIdentifier: icon.pid)?.bundleIdentifier ?? ""
+        let isBrowser = BrowserTabProvider.isSupportedBrowser(bundleID: bundleID)
+        let panelHeight: CGFloat = isBrowser ? 280 : 220
+        let panelWidth: CGFloat = 320
+
         if panelPID == icon.pid, panel != nil { return }
+
+        // If panel already exists, smoothly morph to new icon without tearing down the window
+        if let panel = self.panel, let host = panel.contentView as? NSHostingView<DockPreviewView> {
+            self.panelPID = icon.pid
+            withTransaction(Transaction(animation: nil)) {
+                host.rootView = DockPreviewView(pid: icon.pid, title: icon.title) { [weak self] in
+                    self?.hidePanel()
+                }
+            }
+            anchorAbove(icon: icon, isBrowser: isBrowser, animated: true)
+            return
+        }
+
         hidePanel()
         let content = DockPreviewView(pid: icon.pid, title: icon.title) { [weak self] in
             self?.hidePanel()
         }
         let host = NSHostingView(rootView: content)
-        let panel = NSPanel(contentRect: NSRect(origin: .zero, size: NSSize(width: 320, height: 160)),
+        host.wantsLayer = true
+        host.layer?.cornerRadius = LiquidGlassTokens.containerRadius
+        host.layer?.masksToBounds = true
+        host.layer?.backgroundColor = NSColor.clear.cgColor
+        let panel = NSPanel(contentRect: NSRect(origin: .zero, size: NSSize(width: panelWidth, height: panelHeight)),
                             styleMask: [.borderless, .nonactivatingPanel],
                             backing: .buffered, defer: false)
         panel.level = .popUpMenu
@@ -204,108 +226,241 @@ final class DockPreviewController {
         panel.backgroundColor = .clear
         panel.hasShadow = true
         panel.ignoresMouseEvents = false
+        panel.isMovable = false
         panel.contentView = host
+        panel.alphaValue = 0.0
         panel.orderFrontRegardless()
         self.panel = panel
         self.panelPID = icon.pid
-        anchorAbove(icon: icon)
+        anchorAbove(icon: icon, isBrowser: isBrowser, animated: false)
 
-        // Thumbnails arrive asynchronously and change the fitting size, so
-        // re-anchor once the real size is known. Without this the panel is
-        // positioned from a pre-layout size and lands ON TOP of the Dock icon.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
-            guard let self, self.panelPID == icon.pid else { return }
-            self.anchorAbove(icon: icon)
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-            guard let self, self.panelPID == icon.pid else { return }
-            self.anchorAbove(icon: icon)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.20
+            context.timingFunction = CAMediaTimingFunction(controlPoints: 0.32, 0.72, 0, 1)
+            panel.animator().alphaValue = 1.0
         }
     }
 
-    /// Places the panel fully ABOVE the hovered Dock icon, never overlapping it.
-    private func anchorAbove(icon: IconRect) {
-        guard let panel, let host = panel.contentView else { return }
-        var size = host.fittingSize
-        if size.width < 60 || size.height < 40 { size = NSSize(width: 320, height: 160) }
+    /// Places the panel fully ABOVE the hovered Dock icon with a fixed width 320 and height 280 (browser) or 220 (normal).
+    private func anchorAbove(icon: IconRect, isBrowser: Bool, animated: Bool = true) {
+        guard let panel else { return }
+        let windowWidth: CGFloat = 320
+        let windowHeight: CGFloat = isBrowser ? 280 : 220
+        let gap: CGFloat = 12
 
-        let screen = NSScreen.screens.first(where: { $0.frame.contains(CGPoint(x: icon.rect.midX, y: icon.rect.midY)) })
-            ?? NSScreen.main
-        var x = icon.rect.midX - size.width / 2
-        // icon.rect is already AppKit space (bottom-left), so the icon's TOP
-        // edge is maxY — sit the panel's bottom just above it.
-        var y = icon.rect.maxY + 8
-        if let screen {
-            x = min(max(x, screen.frame.minX + 8), screen.frame.maxX - size.width - 8)
-            // Clamp only so the panel stays on screen; keep it above the icon.
-            let highest = screen.frame.maxY - size.height - 8
-            if y > highest { y = highest }
+        let screen = NSScreen.screens.first(where: { $0.frame.contains(CGPoint(x: icon.rect.midX, y: icon.rect.midY)) })?.visibleFrame
+            ?? NSScreen.main?.visibleFrame
+            ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+
+        var originX = icon.rect.midX - 160
+        var originY = icon.rect.maxY + gap
+
+        // Clamp horizontally so it stays within visible screen bounds
+        originX = max(screen.minX + 8, min(originX, screen.maxX - windowWidth - 8))
+
+        // If top edge would exceed screen, place below icon if possible or clamp
+        if originY + windowHeight > screen.maxY {
+            originY = icon.rect.minY - windowHeight - gap
         }
-        panel.setFrame(NSRect(x: x, y: y, width: size.width, height: size.height), display: true)
+        if originY < screen.minY + 8 {
+            originY = screen.minY + 8
+        }
+
+        let targetFrame = NSRect(x: originX, y: originY, width: windowWidth, height: windowHeight)
+        if animated {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.20
+                context.timingFunction = CAMediaTimingFunction(controlPoints: 0.32, 0.72, 0, 1)
+                panel.animator().setFrame(targetFrame, display: true)
+            }
+        } else {
+            panel.setFrame(targetFrame, display: true)
+        }
     }
 
     private func hidePanel() {
-        panel?.orderOut(nil)
-        panel = nil
-        panelPID = nil
+        guard let currentPanel = panel else { return }
+        self.panel = nil
+        self.panelPID = nil
+
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.2
+            context.timingFunction = CAMediaTimingFunction(controlPoints: 0.32, 0.72, 0, 1)
+            currentPanel.animator().alphaValue = 0.0
+        }, completionHandler: {
+            currentPanel.orderOut(nil)
+        })
     }
 }
 
-/// Thumbnail grid shown above a hovered Dock icon.
+/// Thumbnail grid shown above a hovered Dock icon with Liquid Glass styling.
 struct DockPreviewView: View {
     let pid: pid_t
     let title: String
     let onPick: () -> Void
-    @State private var windows: [WindowManager.WindowInfo] = []
-    @State private var thumbs: [CGWindowID: NSImage] = [:]
+    @State private var store = WindowPreviewStore.shared
+    @State private var hoveredTabID: String?
+    @State private var scale: CGFloat = 0.95
+    @State private var opacity: Double = 0.0
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .padding(.horizontal, 10).padding(.top, 10)
-            HStack(spacing: 8) {
-                ForEach(windows.prefix(8)) { win in
-                    Button(action: {
-                        WindowManager.activate(pid: win.ownerPID)
-                        onPick()
-                    }) {
-                        VStack(spacing: 4) {
-                            Group {
-                                if let img = thumbs[win.id] {
-                                    Image(nsImage: img).resizable().aspectRatio(contentMode: .fit)
-                                } else {
-                                    Rectangle().fill(Color(.controlBackgroundColor))
-                                        .overlay(Image(systemName: "macwindow").foregroundColor(.secondary))
-                                }
-                            }
-                            .frame(width: 150, height: 94)
-                            .clipShape(RoundedRectangle(cornerRadius: 5))
-                            Text(win.title.isEmpty ? title : win.title)
-                                .font(.system(size: 10)).lineLimit(1).frame(width: 150)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 10).padding(.bottom, 10)
-        }
-        .frame(maxWidth: 720)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color(.windowBackgroundColor)))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.separatorColor), lineWidth: 1))
-        .onAppear { load() }
+    private var bundleID: String {
+        NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
     }
 
-    private func load() {
-        windows = WindowManager.listWindows().filter { $0.ownerPID == pid }
-        let ids = windows.map(\.id)
-        Task {
-            // One batched ScreenCaptureKit round trip for the whole panel.
-            // `thumbnails(windowIDs:)` queries shareable content once and then
-            // captures each window, instead of re-querying per window.
-            let made = await WindowManager.thumbnails(windowIDs: ids, maxSize: 220)
-            for (id, img) in made { thumbs[id] = img }
+    private var isBrowser: Bool {
+        BrowserTabProvider.isSupportedBrowser(bundleID: bundleID)
+    }
+
+    private var activeTab: BrowserTabItem? {
+        store.activeBrowserTabs.first(where: { $0.isActive }) ?? store.activeBrowserTabs.first
+    }
+
+    private var currentTab: BrowserTabItem? {
+        if let hID = hoveredTabID, let match = store.activeBrowserTabs.first(where: { $0.id == hID }) {
+            return match
         }
+        return activeTab
+    }
+
+    var body: some View {
+        let dockItems = store.previewItems.filter { !$0.isOnOtherSpace }
+        let targetHeight: CGFloat = isBrowser ? 280 : 220
+
+        VStack(alignment: .leading, spacing: 6) {
+            // Header: fixed 36px
+            HStack(spacing: 7) {
+                if let icon = iconForPID(pid) {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
+                VStack(alignment: .leading, spacing: 1) {
+                    let displayTitle = isBrowser && currentTab != nil ? currentTab!.title : (dockItems.first?.title.isEmpty == false ? dockItems.first!.title : title)
+                    let displaySubtitle = isBrowser && currentTab != nil ? currentTab!.domain : (dockItems.first?.appName.isEmpty == false ? dockItems.first!.appName : title)
+                    Text(displayTitle)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Text(displaySubtitle)
+                        .font(.system(size: 11))
+                        .foregroundColor(.primary.opacity(0.55))
+                        .lineLimit(1)
+                }
+                Spacer()
+            }
+            .frame(height: 36)
+            .padding(.horizontal, 8)
+
+            // Thumbnail / WebSnapshotCardView / AppHeroCardView: fixed 304x160
+            if isBrowser, let cur = currentTab {
+                Button(action: {
+                    BrowserTabProvider.shared.selectTab(tab: cur, in: bundleID)
+                    WindowManager.activate(pid: pid)
+                    onPick()
+                }) {
+                    if let tabThumb = TabPreviewCache.shared.getPreview(tabId: cur.id) {
+                        WindowThumbnailView(image: tabThumb, width: 304, height: 160)
+                    } else if cur.isActive, let firstThumb = dockItems.first?.thumbnail {
+                        WindowThumbnailView(image: firstThumb, width: 304, height: 160)
+                    } else {
+                        let curIndex = store.activeBrowserTabs.firstIndex(where: { $0.id == cur.id })
+                        WebSnapshotCardView(
+                            tab: cur,
+                            tabIndex: curIndex != nil ? curIndex! + 1 : nil,
+                            totalTabs: store.activeBrowserTabs.count > 0 ? store.activeBrowserTabs.count : nil,
+                            width: 304,
+                            height: 160,
+                            showFullDetails: true
+                        )
+                    }
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 8)
+            } else if let first = dockItems.first {
+                Button(action: {
+                    WindowManager.activate(pid: pid)
+                    onPick()
+                }) {
+                    if let thumb = first.thumbnail {
+                        WindowThumbnailView(image: thumb, width: 304, height: 160)
+                    } else {
+                        AppHeroCardView(
+                            appName: first.appName.isEmpty ? title : first.appName,
+                            title: first.title.isEmpty ? (first.appName.isEmpty ? title : first.appName) : first.title,
+                            bundleID: bundleID,
+                            isStageMiniature: first.isStageMiniature,
+                            isOnOtherSpace: first.isOnOtherSpace,
+                            width: 304,
+                            height: 160
+                        )
+                    }
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 8)
+            } else {
+                ZStack {
+                    Color.white.opacity(0.06)
+                    ProgressView().scaleEffect(0.6)
+                }
+                .frame(width: 304, height: 160)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .padding(.horizontal, 8)
+            }
+
+            // Tabs / Special: fixed 68px for browser
+            if isBrowser {
+                if !store.activeBrowserTabs.isEmpty || store.needsAutomationPermission {
+                    BrowserTabCarouselView(
+                        tabs: store.activeBrowserTabs,
+                        needsPermission: store.needsAutomationPermission,
+                        selectedTabID: currentTab?.id,
+                        onHoverTab: { tab in
+                            hoveredTabID = tab.id
+                        },
+                        onSelectTab: { tab in
+                            BrowserTabProvider.shared.selectTab(tab: tab, in: bundleID)
+                            WindowManager.activate(pid: pid)
+                            onPick()
+                        }
+                    )
+                    .frame(height: 68)
+                } else {
+                    Color.clear
+                        .frame(height: 68)
+                }
+            } else if bundleID == "com.apple.iCal" && !store.calendarEvents.isEmpty {
+                CalendarPreviewView(events: store.calendarEvents)
+                    .frame(height: 54)
+                    .padding(.horizontal, 8)
+            } else if bundleID == "com.apple.weather", let weather = store.weatherInfo {
+                WeatherPreviewView(weather: weather)
+                    .frame(height: 54)
+                    .padding(.horizontal, 8)
+            }
+        }
+        .padding(.vertical, 4)
+        .frame(width: 320, height: targetHeight)
+        .liquidGlassContainer(cornerRadius: LiquidGlassTokens.Container.cornerRadius)
+        .scaleEffect(scale)
+        .opacity(opacity)
+        .onAppear {
+            withAnimation(LiquidGlassTokens.spring) {
+                scale = 1.0
+                opacity = 1.0
+            }
+            store.loadDockPreviews(for: pid)
+        }
+        .onChange(of: pid) { newPID in
+            withTransaction(Transaction(animation: nil)) {
+                store.loadDockPreviews(for: newPID)
+            }
+        }
+    }
+
+    private func iconForPID(_ p: pid_t) -> NSImage? {
+        guard let app = NSRunningApplication(processIdentifier: p),
+              let url = app.bundleURL else { return nil }
+        return NSWorkspace.shared.icon(forFile: url.path)
     }
 }

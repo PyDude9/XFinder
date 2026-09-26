@@ -86,6 +86,7 @@
 		7F1A00CD /* Detail/FinderUtilsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00CC /* Detail/FinderUtilsDetailView.swift */; };
 		7F1A00CF /* Components/PageWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00CE /* Components/PageWidth.swift */; };
 		7F1A00D1 /* Services/ScreenBrightness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D0 /* Services/ScreenBrightness.swift */; };
+		7F1A0131 /* Services/PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0130 /* Services/PermissionManager.swift */; };
 		7F1A00D3 /* QuickSearch/QuickSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */; };
 		7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */; };
 		7F1A00D7 /* QuickSearchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D6 /* QuickSearchPanel.swift */; };
@@ -104,12 +105,50 @@
 		7F1A0105 /* Components/GestureActionPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0104 /* Components/GestureActionPicker.swift */; };
 		7F1A010B /* MouseGestures/SpaceBinding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A010A /* MouseGestures/SpaceBinding.swift */; };
 		7F1A0107 /* Components/GestureActivityPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0106 /* Components/GestureActivityPanel.swift */; };
+		7F1A0111 /* Components/GestureButtonList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0110 /* Components/GestureButtonList.swift */; };
 		7F1A00F1 /* MouseGestures/GestureUIDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00F0 /* MouseGestures/GestureUIDisplay.swift */; };
 		7F1A00F3 /* MouseGestures/DeviceCapability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00F2 /* MouseGestures/DeviceCapability.swift */; };
 		7F1A00F7 /* MouseGestures/DeviceCapabilityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00F6 /* MouseGestures/DeviceCapabilityTypes.swift */; };
 		7F1A00F9 /* MouseGestures/GestureLabelStructure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00F8 /* MouseGestures/GestureLabelStructure.swift */; };
 		7F1A00F5 /* MouseGestures/DeviceCapabilityModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00F4 /* MouseGestures/DeviceCapabilityModel.swift */; };
 		7F1A0101 /* MouseGestures/GestureMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0100 /* MouseGestures/GestureMap.swift */; };
+		7F1A0121 /* Battery/ConnectedDeviceBattery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0120 /* Battery/ConnectedDeviceBattery.swift */; };
+		7F1A0123 /* Battery/BatteryProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0122 /* Battery/BatteryProvider.swift */; };
+		7F1A0125 /* Battery/MacPowerSourceProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0124 /* Battery/MacPowerSourceProvider.swift */; };
+		7F1A0127 /* Battery/HIDBatteryProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0126 /* Battery/HIDBatteryProvider.swift */; };
+		7F1A0129 /* Battery/BluetoothBatteryProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0128 /* Battery/BluetoothBatteryProvider.swift */; };
+		7F1A012B /* Battery/BatteryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A012A /* Battery/BatteryStore.swift */; };
+		7F1A0192 /* Battery/MagicBatteryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0191 /* Battery/MagicBatteryReader.swift */; };
+		7F1A0194 /* Battery/BluetoothBatteryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0193 /* Battery/BluetoothBatteryReader.swift */; };
+		7F1A012D /* Components/BatteryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A012C /* Components/BatteryViews.swift */; };
+		7F1A0141 /* WindowPreview/PreviewItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0140 /* WindowPreview/PreviewItem.swift */; };
+		7F1A0143 /* WindowPreview/ScreenCaptureProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0142 /* WindowPreview/ScreenCaptureProvider.swift */; };
+		7F1A0145 /* WindowPreview/SpecialProviders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0144 /* WindowPreview/SpecialProviders.swift */; };
+		7F1A0147 /* WindowPreview/WindowPreviewStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0146 /* WindowPreview/WindowPreviewStore.swift */; };
+		7F1A0149 /* WindowPreview/PreviewOverlayWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0148 /* WindowPreview/PreviewOverlayWindow.swift */; };
+		7F1A014B /* Components/LiquidGlassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A014A /* Components/LiquidGlassView.swift */; };
+		7F1A014D /* Components/WindowPreviewComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A014C /* Components/WindowPreviewComponents.swift */; };
+		7F1A014F /* Components/LiquidGlassTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A014E /* Components/LiquidGlassTokens.swift */; };
+		7F1A0151 /* WindowPreview/DockLayerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0150 /* WindowPreview/DockLayerController.swift */; };
+		7F1A0153 /* WindowPreview/TabPreviewCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0152 /* WindowPreview/TabPreviewCache.swift */; };
+		7F1A0155 /* WindowPreview/XFinderBrowserHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0154 /* WindowPreview/XFinderBrowserHelper.swift */; };
+		7F1A0161 /* Voice/VoiceProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0160 /* Voice/VoiceProtocols.swift */; };
+		7F1A0163 /* Voice/AudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0162 /* Voice/AudioCapture.swift */; };
+		7F1A0165 /* Voice/VoiceHotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0164 /* Voice/VoiceHotkeyManager.swift */; };
+		7F1A0167 /* Voice/Providers/AppleSpeechProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0166 /* Voice/Providers/AppleSpeechProvider.swift */; };
+		7F1A0169 /* Voice/Providers/WhisperKitProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0168 /* Voice/Providers/WhisperKitProvider.swift */; };
+		7F1A016B /* Voice/Providers/OllamaCorrectionProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016A /* Voice/Providers/OllamaCorrectionProvider.swift */; };
+		7F1A016D /* Voice/TypingSink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016C /* Voice/TypingSink.swift */; };
+		7F1A016F /* Voice/VoiceGhostOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016E /* Voice/VoiceGhostOverlay.swift */; };
+		7F1A0171 /* Voice/VoiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0170 /* Voice/VoiceManager.swift */; };
+		7F1A0173 /* Detail/VoiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0172 /* Detail/VoiceDetailView.swift */; };
+		7F1A0181 /* MenuBar/MenuBarEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0180 /* MenuBar/MenuBarEngine.swift */; };
+		7F1A0183 /* MenuBar/MenuBarEngineFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0182 /* MenuBar/MenuBarEngineFactory.swift */; };
+		7F1A0185 /* MenuBar/LegacyLengthEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0184 /* MenuBar/LegacyLengthEngine.swift */; };
+		7F1A0187 /* MenuBar/NativeVisibilityEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0186 /* MenuBar/NativeVisibilityEngine.swift */; };
+		7F1A018B /* MenuBar/Native/HBNativeVisibilityShim.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A018A /* MenuBar/Native/HBNativeVisibilityShim.m */; };
+		7F1A018D /* MenuBar/Native/NativeVisibilityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A018C /* MenuBar/Native/NativeVisibilityBridge.swift */; };
+		7F1A018F /* MenuBar/Layout/AccessibilityMenuBarInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A018E /* MenuBar/Layout/AccessibilityMenuBarInventory.swift */; };
 		7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A00DD /* XFinder/Resources/AppIcon.icns */; };
 		7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0073 /* ClipboardPasteEngine.swift */; };
 		7F1A7F1A008E /* ClipboardPayloadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0074 /* ClipboardPayloadStore.swift */; };
@@ -228,6 +267,7 @@
 		7F1A00CC /* Detail/FinderUtilsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FinderUtilsDetailView.swift; sourceTree = "<group>"; };
 		7F1A00CE /* Components/PageWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/PageWidth.swift; sourceTree = "<group>"; };
 		7F1A00D0 /* Services/ScreenBrightness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/ScreenBrightness.swift; sourceTree = "<group>"; };
+		7F1A0130 /* Services/PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/PermissionManager.swift; sourceTree = "<group>"; };
 		7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchEngine.swift; sourceTree = "<group>"; };
 		7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchPanelController.swift; sourceTree = "<group>"; };
 		7F1A00D6 /* QuickSearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearchPanel.swift; sourceTree = "<group>"; };
@@ -246,16 +286,56 @@
 		7F1A0104 /* Components/GestureActionPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/GestureActionPicker.swift; sourceTree = "<group>"; };
 		7F1A010A /* MouseGestures/SpaceBinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/SpaceBinding.swift; sourceTree = "<group>"; };
 		7F1A0106 /* Components/GestureActivityPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/GestureActivityPanel.swift; sourceTree = "<group>"; };
+		7F1A0110 /* Components/GestureButtonList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/GestureButtonList.swift; sourceTree = "<group>"; };
 		7F1A00F0 /* MouseGestures/GestureUIDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureUIDisplay.swift; sourceTree = "<group>"; };
 		7F1A00F2 /* MouseGestures/DeviceCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/DeviceCapability.swift; sourceTree = "<group>"; };
 		7F1A00F6 /* MouseGestures/DeviceCapabilityTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/DeviceCapabilityTypes.swift; sourceTree = "<group>"; };
 		7F1A0100 /* MouseGestures/GestureMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureMap.swift; sourceTree = "<group>"; };
+		7F1A0120 /* Battery/ConnectedDeviceBattery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Battery/ConnectedDeviceBattery.swift; sourceTree = "<group>"; };
+		7F1A0122 /* Battery/BatteryProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Battery/BatteryProvider.swift; sourceTree = "<group>"; };
+		7F1A0124 /* Battery/MacPowerSourceProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Battery/MacPowerSourceProvider.swift; sourceTree = "<group>"; };
+		7F1A0126 /* Battery/HIDBatteryProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Battery/HIDBatteryProvider.swift; sourceTree = "<group>"; };
+		7F1A0128 /* Battery/BluetoothBatteryProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Battery/BluetoothBatteryProvider.swift; sourceTree = "<group>"; };
+		7F1A012A /* Battery/BatteryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Battery/BatteryStore.swift; sourceTree = "<group>"; };
+		7F1A0191 /* Battery/MagicBatteryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Battery/MagicBatteryReader.swift; sourceTree = "<group>"; };
+		7F1A0193 /* Battery/BluetoothBatteryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Battery/BluetoothBatteryReader.swift; sourceTree = "<group>"; };
+		7F1A012C /* Components/BatteryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/BatteryViews.swift; sourceTree = "<group>"; };
+		7F1A0140 /* WindowPreview/PreviewItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPreview/PreviewItem.swift; sourceTree = "<group>"; };
+		7F1A0142 /* WindowPreview/ScreenCaptureProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPreview/ScreenCaptureProvider.swift; sourceTree = "<group>"; };
+		7F1A0144 /* WindowPreview/SpecialProviders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPreview/SpecialProviders.swift; sourceTree = "<group>"; };
+		7F1A0146 /* WindowPreview/WindowPreviewStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPreview/WindowPreviewStore.swift; sourceTree = "<group>"; };
+		7F1A0148 /* WindowPreview/PreviewOverlayWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPreview/PreviewOverlayWindow.swift; sourceTree = "<group>"; };
+		7F1A014A /* Components/LiquidGlassView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/LiquidGlassView.swift; sourceTree = "<group>"; };
+		7F1A014C /* Components/WindowPreviewComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/WindowPreviewComponents.swift; sourceTree = "<group>"; };
+		7F1A014E /* Components/LiquidGlassTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/LiquidGlassTokens.swift; sourceTree = "<group>"; };
+		7F1A0150 /* WindowPreview/DockLayerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPreview/DockLayerController.swift; sourceTree = "<group>"; };
+		7F1A0152 /* WindowPreview/TabPreviewCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPreview/TabPreviewCache.swift; sourceTree = "<group>"; };
+		7F1A0154 /* WindowPreview/XFinderBrowserHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPreview/XFinderBrowserHelper.swift; sourceTree = "<group>"; };
+		7F1A0160 /* Voice/VoiceProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceProtocols.swift; sourceTree = "<group>"; };
+		7F1A0162 /* Voice/AudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/AudioCapture.swift; sourceTree = "<group>"; };
+		7F1A0164 /* Voice/VoiceHotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceHotkeyManager.swift; sourceTree = "<group>"; };
+		7F1A0166 /* Voice/Providers/AppleSpeechProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/Providers/AppleSpeechProvider.swift; sourceTree = "<group>"; };
+		7F1A0168 /* Voice/Providers/WhisperKitProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/Providers/WhisperKitProvider.swift; sourceTree = "<group>"; };
+		7F1A016A /* Voice/Providers/OllamaCorrectionProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/Providers/OllamaCorrectionProvider.swift; sourceTree = "<group>"; };
+		7F1A016C /* Voice/TypingSink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/TypingSink.swift; sourceTree = "<group>"; };
+		7F1A016E /* Voice/VoiceGhostOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceGhostOverlay.swift; sourceTree = "<group>"; };
+		7F1A0170 /* Voice/VoiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceManager.swift; sourceTree = "<group>"; };
+		7F1A0172 /* Detail/VoiceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/VoiceDetailView.swift; sourceTree = "<group>"; };
 		7F1A00F8 /* MouseGestures/GestureLabelStructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureLabelStructure.swift; sourceTree = "<group>"; };
 		7F1A00F4 /* MouseGestures/DeviceCapabilityModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/DeviceCapabilityModel.swift; sourceTree = "<group>"; };
 		7F1A00DD /* XFinder/Resources/AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = XFinder/Resources/AppIcon.icns; sourceTree = "<group>"; };
 		88AD9932 /* QuickSearch/QuickSearchResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchResult.swift; sourceTree = "<group>"; };
 		95421592 /* QuickSearch/AppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/AppLauncher.swift; sourceTree = "<group>"; };
 		E38D74CB /* QuickSearch/Quicklinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/Quicklinks.swift; sourceTree = "<group>"; };
+		7F1A0180 /* MenuBar/MenuBarEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/MenuBarEngine.swift; sourceTree = "<group>"; };
+		7F1A0182 /* MenuBar/MenuBarEngineFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/MenuBarEngineFactory.swift; sourceTree = "<group>"; };
+		7F1A0184 /* MenuBar/LegacyLengthEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/LegacyLengthEngine.swift; sourceTree = "<group>"; };
+		7F1A0186 /* MenuBar/NativeVisibilityEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/NativeVisibilityEngine.swift; sourceTree = "<group>"; };
+		7F1A0188 /* MenuBar/Native/HBNativeVisibilityShim.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MenuBar/Native/HBNativeVisibilityShim.h; sourceTree = "<group>"; };
+		7F1A018A /* MenuBar/Native/HBNativeVisibilityShim.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MenuBar/Native/HBNativeVisibilityShim.m; sourceTree = "<group>"; };
+		7F1A018C /* MenuBar/Native/NativeVisibilityBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/Native/NativeVisibilityBridge.swift; sourceTree = "<group>"; };
+		7F1A018E /* MenuBar/Layout/AccessibilityMenuBarInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/Layout/AccessibilityMenuBarInventory.swift; sourceTree = "<group>"; };
+		7F1A0190 /* XFinder/XFinder-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XFinder/XFinder-Bridging-Header.h"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -291,6 +371,7 @@
 				7F1A0007 /* XFinder/Models */,
 				7F1A0008 /* XFinder/Views */,
 				7F1A0009 /* XFinder/Info.plist */,
+				7F1A0190 /* XFinder/XFinder-Bridging-Header.h */,
 				7F1A00DD /* XFinder/Resources/AppIcon.icns */,
 				205EC41A305AD1CE0094A78B /* XFinderSync */,
 				7F1A0003 /* Products */,
@@ -327,6 +408,7 @@
 				7F1A0042 /* SystemMonitor/DiskManager.swift */,
 				7F1A0043 /* Services/SystemControls.swift */,
 				7F1A00D0 /* Services/ScreenBrightness.swift */,
+				7F1A0130 /* Services/PermissionManager.swift */,
 				7F1A0066 /* NoteStore.swift */,
 				7F1A0067 /* ActionHistoryStore.swift */,
 				7F1A0068 /* BatchRenameEngine.swift */,
@@ -371,6 +453,39 @@
 				7F1A0100 /* MouseGestures/GestureMap.swift */,
 				7F1A00F8 /* MouseGestures/GestureLabelStructure.swift */,
 				7F1A00F4 /* MouseGestures/DeviceCapabilityModel.swift */,
+				7F1A0120 /* Battery/ConnectedDeviceBattery.swift */,
+				7F1A0122 /* Battery/BatteryProvider.swift */,
+				7F1A0124 /* Battery/MacPowerSourceProvider.swift */,
+				7F1A0126 /* Battery/HIDBatteryProvider.swift */,
+				7F1A0128 /* Battery/BluetoothBatteryProvider.swift */,
+				7F1A012A /* Battery/BatteryStore.swift */,
+				7F1A0191 /* Battery/MagicBatteryReader.swift */,
+				7F1A0193 /* Battery/BluetoothBatteryReader.swift */,
+				7F1A0140 /* WindowPreview/PreviewItem.swift */,
+				7F1A0142 /* WindowPreview/ScreenCaptureProvider.swift */,
+				7F1A0144 /* WindowPreview/SpecialProviders.swift */,
+				7F1A0146 /* WindowPreview/WindowPreviewStore.swift */,
+				7F1A0148 /* WindowPreview/PreviewOverlayWindow.swift */,
+				7F1A0150 /* WindowPreview/DockLayerController.swift */,
+				7F1A0152 /* WindowPreview/TabPreviewCache.swift */,
+				7F1A0154 /* WindowPreview/XFinderBrowserHelper.swift */,
+				7F1A0160 /* Voice/VoiceProtocols.swift */,
+				7F1A0162 /* Voice/AudioCapture.swift */,
+				7F1A0164 /* Voice/VoiceHotkeyManager.swift */,
+				7F1A0166 /* Voice/Providers/AppleSpeechProvider.swift */,
+				7F1A0168 /* Voice/Providers/WhisperKitProvider.swift */,
+				7F1A016A /* Voice/Providers/OllamaCorrectionProvider.swift */,
+				7F1A016C /* Voice/TypingSink.swift */,
+				7F1A016E /* Voice/VoiceGhostOverlay.swift */,
+				7F1A0170 /* Voice/VoiceManager.swift */,
+				7F1A0180 /* MenuBar/MenuBarEngine.swift */,
+				7F1A0182 /* MenuBar/MenuBarEngineFactory.swift */,
+				7F1A0184 /* MenuBar/LegacyLengthEngine.swift */,
+				7F1A0186 /* MenuBar/NativeVisibilityEngine.swift */,
+				7F1A0188 /* MenuBar/Native/HBNativeVisibilityShim.h */,
+				7F1A018A /* MenuBar/Native/HBNativeVisibilityShim.m */,
+				7F1A018C /* MenuBar/Native/NativeVisibilityBridge.swift */,
+				7F1A018E /* MenuBar/Layout/AccessibilityMenuBarInventory.swift */,
 			);
 			path = XFinder/Core;
 			sourceTree = SOURCE_ROOT;
@@ -409,6 +524,11 @@
 				7F1A0102 /* Components/GestureArmView.swift */,
 				7F1A0104 /* Components/GestureActionPicker.swift */,
 				7F1A0106 /* Components/GestureActivityPanel.swift */,
+				7F1A0110 /* Components/GestureButtonList.swift */,
+				7F1A012C /* Components/BatteryViews.swift */,
+				7F1A014A /* Components/LiquidGlassView.swift */,
+				7F1A014C /* Components/WindowPreviewComponents.swift */,
+				7F1A014E /* Components/LiquidGlassTokens.swift */,
 				7F1A0052 /* Detail/DashboardDetailView.swift */,
 				7F1A0053 /* Detail/SystemDetailView.swift */,
 				7F1A0054 /* Detail/PinDetailView.swift */,
@@ -418,6 +538,7 @@
 				7F1A0058 /* Detail/AntiSleepDetailView.swift */,
 				7F1A0060 /* Detail/SettingsDetailView.swift */,
 				7F1A0062 /* Detail/CompressDetailView.swift */,
+				7F1A0172 /* Detail/VoiceDetailView.swift */,
 				7F1A0063 /* Detail/PdfToolsDetailView.swift */,
 				7F1A006B /* Detail/NotesDetailView.swift */,
 				7F1A006C /* Detail/BatchRenameDetailView.swift */,
@@ -572,6 +693,7 @@
 				7F1A004B /* SystemMonitor/DiskManager.swift in Sources */,
 				7F1A004C /* Services/SystemControls.swift in Sources */,
 				7F1A00D1 /* Services/ScreenBrightness.swift in Sources */,
+				7F1A0131 /* Services/PermissionManager.swift in Sources */,
 				7F1A004D /* Components/SettingsCard.swift in Sources */,
 				7F1A00A1 /* Components/PageHeader.swift in Sources */,
 				7F1A00CF /* Components/PageWidth.swift in Sources */,
@@ -650,12 +772,50 @@
 				7F1A0105 /* Components/GestureActionPicker.swift in Sources */,
 				7F1A010B /* MouseGestures/SpaceBinding.swift in Sources */,
 				7F1A0107 /* Components/GestureActivityPanel.swift in Sources */,
+				7F1A0111 /* Components/GestureButtonList.swift in Sources */,
 				7F1A00F1 /* MouseGestures/GestureUIDisplay.swift in Sources */,
 				7F1A00F3 /* MouseGestures/DeviceCapability.swift in Sources */,
 				7F1A00F7 /* MouseGestures/DeviceCapabilityTypes.swift in Sources */,
 				7F1A0101 /* MouseGestures/GestureMap.swift in Sources */,
 				7F1A00F9 /* MouseGestures/GestureLabelStructure.swift in Sources */,
 				7F1A00F5 /* MouseGestures/DeviceCapabilityModel.swift in Sources */,
+				7F1A0121 /* Battery/ConnectedDeviceBattery.swift in Sources */,
+				7F1A0123 /* Battery/BatteryProvider.swift in Sources */,
+				7F1A0125 /* Battery/MacPowerSourceProvider.swift in Sources */,
+				7F1A0127 /* Battery/HIDBatteryProvider.swift in Sources */,
+				7F1A0129 /* Battery/BluetoothBatteryProvider.swift in Sources */,
+				7F1A012B /* Battery/BatteryStore.swift in Sources */,
+				7F1A0192 /* Battery/MagicBatteryReader.swift in Sources */,
+				7F1A0194 /* Battery/BluetoothBatteryReader.swift in Sources */,
+				7F1A012D /* Components/BatteryViews.swift in Sources */,
+				7F1A0141 /* WindowPreview/PreviewItem.swift in Sources */,
+				7F1A0143 /* WindowPreview/ScreenCaptureProvider.swift in Sources */,
+				7F1A0145 /* WindowPreview/SpecialProviders.swift in Sources */,
+				7F1A0147 /* WindowPreview/WindowPreviewStore.swift in Sources */,
+				7F1A0149 /* WindowPreview/PreviewOverlayWindow.swift in Sources */,
+				7F1A014B /* Components/LiquidGlassView.swift in Sources */,
+				7F1A014D /* Components/WindowPreviewComponents.swift in Sources */,
+				7F1A014F /* Components/LiquidGlassTokens.swift in Sources */,
+				7F1A0151 /* WindowPreview/DockLayerController.swift in Sources */,
+				7F1A0153 /* WindowPreview/TabPreviewCache.swift in Sources */,
+				7F1A0155 /* WindowPreview/XFinderBrowserHelper.swift in Sources */,
+				7F1A0161 /* Voice/VoiceProtocols.swift in Sources */,
+				7F1A0163 /* Voice/AudioCapture.swift in Sources */,
+				7F1A0165 /* Voice/VoiceHotkeyManager.swift in Sources */,
+				7F1A0167 /* Voice/Providers/AppleSpeechProvider.swift in Sources */,
+				7F1A0169 /* Voice/Providers/WhisperKitProvider.swift in Sources */,
+				7F1A016B /* Voice/Providers/OllamaCorrectionProvider.swift in Sources */,
+				7F1A016D /* Voice/TypingSink.swift in Sources */,
+				7F1A016F /* Voice/VoiceGhostOverlay.swift in Sources */,
+				7F1A0171 /* Voice/VoiceManager.swift in Sources */,
+				7F1A0173 /* Detail/VoiceDetailView.swift in Sources */,
+				7F1A0181 /* MenuBar/MenuBarEngine.swift in Sources */,
+				7F1A0183 /* MenuBar/MenuBarEngineFactory.swift in Sources */,
+				7F1A0185 /* MenuBar/LegacyLengthEngine.swift in Sources */,
+				7F1A0187 /* MenuBar/NativeVisibilityEngine.swift in Sources */,
+				7F1A018B /* MenuBar/Native/HBNativeVisibilityShim.m in Sources */,
+				7F1A018D /* MenuBar/Native/NativeVisibilityBridge.swift in Sources */,
+				7F1A018F /* MenuBar/Layout/AccessibilityMenuBarInventory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -887,6 +1047,13 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xfinder.app;
 				PRODUCT_NAME = XFinder;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"XFinder_NATIVE_VISIBILITY=1",
+					"$(inherited)",
+				);
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG XFinder_NATIVE_VISIBILITY $(inherited)";
+				SWIFT_OBJC_BRIDGING_HEADER = "XFinder/XFinder-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
 			};
@@ -910,6 +1077,12 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.xfinder.app;
 				PRODUCT_NAME = XFinder;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"XFinder_NATIVE_VISIBILITY=1",
+					"$(inherited)",
+				);
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "XFinder_NATIVE_VISIBILITY $(inherited)";
+				SWIFT_OBJC_BRIDGING_HEADER = "XFinder/XFinder-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
 			};

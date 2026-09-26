@@ -11,7 +11,7 @@ final class MouseGestureTests: XCTestCase {
         // which is the documented cause of the "nothing happens" report — holding the
         // wheel while dragging is not a motion a hand makes, and a middle click is a
         // frequent deliberate action that must stay available.
-        XCTAssertEqual(config.trigger, .mouseButton(3))
+        XCTAssertEqual(config.trigger, .mouseButton(4))
         XCTAssertNotEqual(config.trigger, .mouseButton(2), "middle click must never be the default hold trigger")
     }
     func testStrictDeadzoneAndFourDirections() {
@@ -96,7 +96,7 @@ final class MouseGestureTests: XCTestCase {
     func testValidateUnsafeSettings() {
         var config = GestureConfiguration()
         config.trigger = .mouseButton(0); config.deadzone = .nan; config.validate()
-        XCTAssertEqual(config.trigger,.mouseButton(3)); XCTAssertEqual(config.deadzone,12)
+        XCTAssertEqual(config.trigger,.mouseButton(4)); XCTAssertEqual(config.deadzone,12)
         config.deadzone = 1e9; config.validate(); XCTAssertEqual(config.deadzone,200)
         XCTAssertFalse(TriggerSource.modifierKey(0).isValid)
         XCTAssertFalse(TriggerSource.modifierKey(GestureShortcut.command | GestureShortcut.shift).isValid)
@@ -769,7 +769,7 @@ final class MouseGestureTests: XCTestCase {
         }
 
         // The default must be the one users can find without a vendor utility.
-        XCTAssertEqual(GestureConfiguration().trigger, .mouseButton(3))
+        XCTAssertEqual(GestureConfiguration().trigger, .mouseButton(4))
 
         // Out-of-range codes still render something, never an empty label.
         XCTAssertFalse(L10nFixtures.buttonName(9).isEmpty)
@@ -848,12 +848,70 @@ final class MouseGestureTests: XCTestCase {
     func testTiltArmsAreHiddenByDefault() {
         XCTAssertFalse(GestureConfiguration().tiltAvailable,
                        "tilt must default off: no mouse measured here can fire it")
-        // Both switches are independent; neither may imply the other.
+        // Both switches are independent **in the model**; neither may imply the other.
+        // The *view* writes both from its one switch — see `testTiltRevealSwitchAlsoEnablesTheArms`
+        // — because an arm that is drawn but disabled is a control that cannot do what its
+        // label says. Keeping the fields separate here is what lets a payload written by an
+        // older build (which had only `tiltAvailable`) still decode and still mean "off".
         XCTAssertFalse(GestureConfiguration().tiltEnabled)
         var config = GestureConfiguration()
         config.tiltAvailable = true
         XCTAssertTrue(config.tiltAvailable)
-        XCTAssertFalse(config.tiltEnabled, "revealing the arms must not switch them on")
+        XCTAssertFalse(config.tiltEnabled, "the model field must not imply the other")
+    }
+
+    /// The page's single tilt switch must write **both** fields (PATCH v10).
+    ///
+    /// The shipped bug: the switch wrote only `tiltAvailable` (draw the arms) while the engine
+    /// reads `tiltEnabled` (handle the events). Nothing anywhere set `tiltEnabled`, so a user
+    /// could reveal the arms, assign an action to `tiltLeft`, and nothing would ever fire —
+    /// and the reverse, turning the switch off, left the engine intercepting discrete
+    /// horizontal wheel events for arms that were no longer on screen.
+    func testTiltRevealSwitchAlsoEnablesTheArms() {
+        let on = TiltArmsVisibility.fields(forReveal: true)
+        XCTAssertTrue(on.available, "the arms must be drawn")
+        XCTAssertTrue(on.enabled,
+                      "drawing the arms without enabling them is the bug this pass fixed")
+        let off = TiltArmsVisibility.fields(forReveal: false)
+        XCTAssertFalse(off.available)
+        XCTAssertFalse(off.enabled, "switching off must also stop the engine handling tilt")
+
+        // The contract, stated as the property that matters: the two fields always agree, so
+        // no combination can leave a visible-but-dead arm or a hidden-but-live one.
+        for reveal in [true, false] {
+            let fields = TiltArmsVisibility.fields(forReveal: reveal)
+            XCTAssertEqual(fields.available, fields.enabled)
+        }
+    }
+
+    /// The **read** side needs its own contract, and this is why (found 2026-09-24).
+    ///
+    /// `fields(forReveal:)` fixes what the switch writes, but it cannot fix what an older
+    /// payload already holds. Measured on this machine's own store:
+    ///
+    ///     tiltAvailable = true, tiltEnabled = false
+    ///
+    /// — a state the current UI cannot produce, left by the build where the switch wrote only
+    /// `tiltAvailable`. Reading `tiltAvailable` alone drew two arms that could never fire *and*
+    /// showed the switch as on: the same "control that cannot do what its label says" the
+    /// write-side contract exists to prevent, one layer down. The conjunction is the honest
+    /// read, and it needs no migration — a payload that disagrees with itself reads as off
+    /// until the user turns the switch on again.
+    func testTiltArmsAreLiveOnlyWhenBothFieldsAgree() {
+        XCTAssertTrue(TiltArmsVisibility.isLive(available: true, enabled: true))
+        XCTAssertFalse(TiltArmsVisibility.isLive(available: true, enabled: false),
+                       "drawn but not enabled is the shipped bug — it must read as off")
+        XCTAssertFalse(TiltArmsVisibility.isLive(available: false, enabled: true),
+                       "enabled but not drawn is the mirror case")
+        XCTAssertFalse(TiltArmsVisibility.isLive(available: false, enabled: false))
+
+        // The property the fix is for: whatever the switch writes, the read agrees with it,
+        // and every inconsistent payload reads as off rather than as a live arm.
+        for reveal in [true, false] {
+            let fields = TiltArmsVisibility.fields(forReveal: reveal)
+            XCTAssertEqual(TiltArmsVisibility.isLive(available: fields.available,
+                                                     enabled: fields.enabled), reveal)
+        }
     }
 
     // MARK: - Duplicate L10n keys
@@ -1256,5 +1314,51 @@ final class MouseGestureTests: XCTestCase {
                 }
             }
         }
+    }
+
+    // MARK: - PATCH v10.2: Side Buttons Instant Action + Safari Overrides
+
+    func testInstantActionsAndButtonActionModels() {
+        XCTAssertEqual(InstantAction.back.labelKey, "Lùi")
+        XCTAssertEqual(InstantAction.back.shortcut.key, 33)
+        XCTAssertEqual(InstantAction.back.shortcut.flags, GestureShortcut.command) // Command flag
+        XCTAssertEqual(InstantAction.back.shortcut.label, "⌘[")
+
+        XCTAssertEqual(InstantAction.forward.labelKey, "Tiến")
+        XCTAssertEqual(InstantAction.forward.shortcut.key, 30)
+        XCTAssertEqual(InstantAction.forward.shortcut.flags, GestureShortcut.command) // Command flag
+        XCTAssertEqual(InstantAction.forward.shortcut.label, "⌘]")
+
+        XCTAssertTrue(ButtonAction.instant(.back).isAssigned)
+        XCTAssertTrue(ButtonAction.instant(.forward).isAssigned)
+        XCTAssertFalse(ButtonAction.unassigned.isAssigned)
+
+        // Lookup helper handles 0-based and 1-based indices
+        let actions = GestureConfigStore.defaultButtonActions
+        XCTAssertEqual(GestureConfigStore.action(in: actions, forEventButton: 3), .instant(.back))
+        XCTAssertEqual(GestureConfigStore.action(in: actions, forEventButton: 4), .instant(.forward))
+        XCTAssertNil(GestureConfigStore.action(in: actions, forEventButton: 2))
+        XCTAssertNil(GestureConfigStore.action(in: actions, forEventButton: 5))
+    }
+
+    func testSafariProfileOverridesOnlyGesturesNotGlobalButtonActions() {
+        var config = GestureConfiguration()
+        XCTAssertEqual(config.buttonActions[4], .instant(.back))
+        XCTAssertEqual(config.buttonActions[5], .instant(.forward))
+
+        // Safari profile has built-in presets for gestures (left/right -> switch tab)
+        let safariPreset = GestureProfiles.all.first { $0.id == "com.apple.Safari" }
+        XCTAssertNotNil(safariPreset)
+        let resolvedLeft = GestureProfiles.resolve(overrides: config.overrides, bundle: "com.apple.Safari", direction: .left)
+        XCTAssertEqual(resolvedLeft, safariPreset?.defaults[.left])
+
+        // Add user override for Safari direction
+        config.overrides["com.apple.Safari"] = [.up: .shortcut(GestureShortcut(key: 17, flags: 1 << 20))]
+
+        // Global button actions remain untouched
+        XCTAssertEqual(config.buttonActions[4], .instant(.back))
+        XCTAssertEqual(config.buttonActions[5], .instant(.forward))
+        XCTAssertEqual(GestureConfigStore.action(in: config.buttonActions, forEventButton: 3), .instant(.back))
+        XCTAssertEqual(GestureConfigStore.action(in: config.buttonActions, forEventButton: 4), .instant(.forward))
     }
 }

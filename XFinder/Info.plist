@@ -51,6 +51,18 @@
     <key>NSAppleEventsUsageDescription</key>
     <string>XFinder cần quyền này để đổi giao diện Sáng/Tối của toàn hệ thống.</string>
 
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>XFinder cần Bluetooth để đọc pin AirPods/Watch</string>
+
+    <key>NSScreenCaptureDescription</key>
+    <string>XFinder cần quyền Ghi màn hình để xem trước cửa sổ trên Dock.</string>
+
+    <key>NSMicrophoneUsageDescription</key>
+    <string>XFinder cần micro để nhập văn bản bằng giọng nói (Voice to Typing).</string>
+
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>XFinder cần nhận dạng giọng nói để chuyển giọng nói thành văn bản.</string>
+
     <key>NSBonjourServiceTypes</key>
     <array>
         <string>_xfinder._tcp</string>

@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 
+@MainActor
 class MenubarController: NSObject, NSPopoverDelegate {
     var statusItem: NSStatusItem?
     var popover: NSPopover?
@@ -16,6 +17,39 @@ class MenubarController: NSObject, NSPopoverDelegate {
         }
         applyIcon()
         setupPopover()
+        VoiceManager.shared.onStateChange = { [weak self] state in
+            self?.updateVoiceState(state)
+        }
+    }
+
+    private func updateVoiceState(_ state: VoiceState) {
+        guard let button = statusItem?.button else { return }
+        switch state {
+        case .idle:
+            applyIcon()
+        case .listening(let rms):
+            let symbolName = rms > 0.5 ? "waveform.badge.mic" : "mic.fill"
+            let base = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Listening")
+            let colored = base?.withSymbolConfiguration(
+                NSImage.SymbolConfiguration(paletteColors: [.systemRed, .systemOrange])
+            ) ?? base
+            colored?.isTemplate = false
+            button.image = colored
+        case .processing:
+            let base = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: "Processing")
+            let colored = base?.withSymbolConfiguration(
+                NSImage.SymbolConfiguration(paletteColors: [.systemBlue])
+            ) ?? base
+            colored?.isTemplate = false
+            button.image = colored
+        case .error:
+            let base = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: "Error")
+            let colored = base?.withSymbolConfiguration(
+                NSImage.SymbolConfiguration(paletteColors: [.systemOrange])
+            ) ?? base
+            colored?.isTemplate = false
+            button.image = colored
+        }
     }
 
     /// Các lựa chọn biểu tượng menubar (monochrome, SF Symbols kiểu macOS).
@@ -86,6 +120,8 @@ struct MenubarFlyoutView: View {
     @State private var caffeine = CaffeineController.shared
     @State private var volumeObserver = VolumeObserver.shared
     @State private var noteStore = NoteStore.shared
+    @State private var batteryStore = BatteryStore.shared
+    @ObservedObject private var permissionManager = PermissionManager.shared
     @State private var tab: FlyoutTab = .controls
     @AppStorage("menubar.showBattery") private var showBattery = true
     @AppStorage("menubar.showNetwork") private var showNetwork = true
@@ -138,6 +174,9 @@ struct MenubarFlyoutView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
+            if !permissionManager.isAccessibilityGranted {
+                accessibilityBanner
+            }
             tabStrip
             Divider()
 
@@ -160,10 +199,12 @@ struct MenubarFlyoutView: View {
         .onAppear {
             volumeObserver.retain()
             systemMonitor.retain()
+            batteryStore.retain()
         }
         .onDisappear {
             volumeObserver.release()
             systemMonitor.release()
+            batteryStore.release()
         }
     }
 
@@ -177,6 +218,29 @@ struct MenubarFlyoutView: View {
             Spacer()
         }
         .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 8)
+    }
+
+    private var accessibilityBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(.orange)
+                .font(.system(size: 13))
+            Text(L10n.t("XFinder cần quyền Trợ năng để nhận cử chỉ"))
+                .font(.system(size: 11))
+                .foregroundColor(.primary)
+                .lineLimit(2)
+            Spacer()
+            Button(L10n.t("Mở Cài đặt")) {
+                PermissionManager.shared.openAccessibilitySettings()
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        }
+        .padding(8)
+        .background(Color.orange.opacity(0.12))
+        .cornerRadius(8)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 6)
     }
 
     private var tabStrip: some View {
@@ -331,14 +395,16 @@ struct MenubarFlyoutView: View {
     private var batterySection: some View {
         let m = systemMonitor.currentMetrics
         return VStack(alignment: .leading, spacing: 8) {
+            AirBatteryListView(showDisconnectedToggle: false)
+
             if m.batteryLevel > 0 {
-                meter("Pin", m.batteryLevel, m.batteryLevel < 20 ? .red : .green)
+                Divider().padding(.vertical, 2)
                 infoRow("Trạng thái", m.isCharging ? "Đang sạc" : m.batteryTimeString)
-            } else {
+                // Battery temperature needs SMC access — no public API.
+                infoRow("Nhiệt độ pin", "Đang thu thập…")
+            } else if batteryStore.allDevices.isEmpty {
                 Text(L10n.t("Không có pin")).font(.system(size: 12)).foregroundColor(.secondary)
             }
-            // Battery temperature needs SMC access — no public API.
-            infoRow("Nhiệt độ pin", "Đang thu thập…")
         }
     }
 

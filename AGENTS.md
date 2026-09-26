@@ -57,17 +57,22 @@ screenshot happened to show, then the next page the user opened was mixed again.
 "the ones you can see" is not a fix; the only fix is a sweep with a **measurement** and a
 **lint that fails**.
 
-*Architecture (three dicts, all keyed by the Vietnamese literal so call sites read naturally):*
+*Architecture — **one** store, keyed by the Vietnamese literal so call sites read naturally:*
 
-| Store | File | Holds |
+| Piece | File | Holds |
 |:--|:--|:--|
-| `L10nDB.table` | `Core/L10nDB.swift` | stable dotted keys (`sidebar.dashboard`) — sidebar + destinations |
-| `L10n.enDict` | `Core/L10n.swift` | the original ~158 sidebar/Overview/QuickControls strings |
-| `L10n.moreDict` | `Core/L10nStrings.swift` | every other full sentence (~550) |
-| `L10n.fragDict` | `Core/L10nStrings.swift` | *fragments* used inside interpolation (`" mục"`, `"Đã nén "`) |
+| `L10n.strings.json` | `XFinder/Resources/` | every entry: `{ "en": …, "scope": "sentence" \| "fragment" }`, optionally `"swap": true` |
+| `L10n.allowlist.json` | `XFinder/Resources/` | strings that are identical in both languages **on purpose** — proper nouns (`Mission Control`, `Quick Look`, `OCR`, `App Exposé`…) |
+| `L10nStore` | `Core/L10nStore.swift` | loads the JSON and splits it into `sentences` / `fragments` by `scope` |
+| `L10n.t(_:)` | `Core/L10n.swift` | looks in `fragments`, then `sentences`, then **falls back to the Vietnamese** |
 
-`L10n.t(_:)` tries them in that order and **falls back to the Vietnamese** on a miss — a
-missing translation degrades to VI, it never crashes or shows a raw key.
+The earlier **three-dictionary design (`L10nDB` / `enDict` / `moreDict` / `fragDict`) was removed**,
+and the reason is the leak itself: with three Swift dictionaries *nothing said where a new string
+belonged*, so a new string usually belonged to none of them — and because `t()` falls back to
+Vietnamese, the English UI silently showed Vietnamese while the build stayed green. `scope` makes
+that a property of the **data** instead of a property of the file the string happens to live in, and
+one store means one thing to lint. Do not re-introduce the extra dictionaries; if a string needs a
+new *kind*, add a `scope` value and a gate for it.
 
 *Interpolated strings need splitting, not wrapping.* `L10n.t("Đã nén \(n) mục")` can never
 match a dict key, because the key contains a runtime value. The correct shape puts each
@@ -81,15 +86,20 @@ Text("\(L10n.t("Đã nén "))\(items.count)\(L10n.t(" mục"))")
 ```
 
 Fragments keep their leading/trailing spaces on purpose — that is what makes the joined
-sentence read correctly in both languages. They live in `fragDict`, separate from
-`moreDict`, so a fragment can never shadow the full-sentence translation of the same words.
+sentence read correctly in both languages. `scope: "fragment"` is what keeps them apart from
+full sentences, so a fragment can never shadow the full-sentence translation of the same words.
+A string that is concatenated with a runtime value **must** be declared `fragment`:
+`check-l10n-coverage.py` rejects edge padding on a `sentence`, so decide the scope from the call
+site, not from how the string reads.
 
 *Markdown-bearing strings* (`**bold**`) must reach a `Text(.init(…))` / `LocalizedStringKey`,
 or the asterisks render literally. Use `L10n.md(_:)` for a bare `Text`; helpers that already
 do `Text(.init(t))` — e.g. the `note(_:)` in the Sync/Remote/Share pages — take plain
 `L10n.t()`.
 
-*The lint.* This must print `TOTAL 0` before any language work is called done:
+*The lint.* This must print `TOTAL 0` before any language work is called done. The repo ships
+the same sweep as `scripts/audit-l10n-literals.py` (run as §2 of `scripts/verify-gesture-ui.sh`);
+the inline version below is what to run when the script is not at hand:
 
 ```bash
 python3 - <<'EOF'
@@ -112,6 +122,36 @@ EOF
 A bare `grep 'Text("'` is **not** sufficient — it misses `Label(…)`, `Button(…)`,
 `Picker(…)`, `TextField(…)`, `DisclosureGroup(…)`, `SettingsCard(title:)`, ternaries, and
 every non-`Text` call site. The sweep found leaks in all of those.
+
+*A string that reaches the screen through `L10n.t(variable)` is protected by **no** literal sweep.*
+This is the leak that survived four fixes: the call site is correct, but the key lives in a
+*model* file, so `audit-l10n-literals.py` only sees it as an unwrapped literal elsewhere and
+`check-l10n-coverage.py` only compares the store with itself. Two gates close it, and both must
+run:
+
+* `scripts/check-sidebar-groups-l10n.py` — parses the `groups` declaration in
+  `SidebarDestination.swift` and fails if it resolves fewer than 4 headings (guards against a
+  rotted anchor). Six sidebar headings leaked this way.
+* `scripts/audit-gesture-vocabulary-l10n.py` — parses the gesture module's own declarations
+  (`labelKey`, `namedKey(…)`, `static let all`) and resolves every key against the shipped store.
+  Five model captions leaked this way.
+
+The full battery, all of which must be green before language work is called done:
+
+```sh
+python3 scripts/check-l10n-coverage.py            # store: no missing/identical en
+python3 scripts/check-l10n-duplicates.py          # no duplicate object keys in the JSON
+python3 scripts/audit-l10n-literals.py            # VI literals not wrapped in t()
+python3 scripts/check-sidebar-groups-l10n.py      # variable-passed sidebar keys
+python3 scripts/audit-gesture-vocabulary-l10n.py  # variable-passed model keys
+python3 scripts/verify-l10n-runtime.py            # resolves against the store in the INSTALLED bundle
+```
+
+`verify-l10n-runtime.py` is the one that measures the *shipped* app rather than the tree: it reads
+`/Applications/XFinder.app`, so it is the gate that would have caught a store that never made it
+into the bundle. Measure the rendered page too — `docs/probes/probe-ax-dump.swift <pid>` reads the
+real text nodes in both languages, which is how six sidebar headings were found after three literal
+sweeps had reported `TOTAL 0`.
 
 *Do not mass-wrap with a regex without checking the nested-quote cases.* A naive
 `"…"` matcher breaks on `"\(cond ? "a" : "b")"` and `"\(String(format: "%.1f", x))"` — it
@@ -748,32 +788,28 @@ Tóm tắt trạng thái THỰC của code lúc này (ghi đè mọi mô tả c�
   (nay ký kèm entitlements, app ngoài **không** dùng `--deep`).
   Người dùng vẫn phải tự bật trong System Settings ▸ Login Items & Extensions ▸ Finder.
 
-## Menu Bar Icons re-probe — 2026-09-18 (current implementation)
+## Menu Bar Icons: Native Visibility Engine (macOS 27+ Assessment Mode)
 
-Explicit user request supersedes the earlier “do not re-probe” decision above.
-`applySettings()` now honors `menubar.hiderEnabled` (default false); an opt-in,
-clearly labelled experimental arrow and separator replace the unconditional remove.
-The overlay-window workaround is removed: it covered the wrong side.
-`collapseRequested` describes a request, never verified visibility. Command-drag
-positions the arrow beside XFinder and hidden candidates left of the separator.
+**Architecture**:
+- Framework: Private `/System/Library/PrivateFrameworks/MenuBarClientCore.framework/MenuBarClientCore`.
+- Shim: `XFinder/Core/MenuBar/Native/HBNativeVisibilityShim.{h,m}` invoking `MBAssessmentModeConfiguration` and `MBAssessmentModeAssertion`.
+- Engine: `NativeVisibilityEngine.swift` (macOS 27+) and `LegacyLengthEngine.swift` (fallback).
+- Controller: `MenuBarHiderController.swift` with auto-hide timer and startup collapse.
 
-Fresh probe on macOS 27.0 (26A428): separator widths 1/1928/600/800/300/1 pt;
-test neighbour x = 1056/1056/1056/1056/1048/1039, width 48 pt. Repeating with
-four extra 480-pt separators also left the test frame in screen bounds. This is
-frame evidence only: screencapture failed (`could not create image from display`).
-Neither isVisible=true nor an on-screen local window frame proves rendered
-visibility on this OS. Other apps' actual hiding is NOT verified; do not infer
-that all other mechanisms are impossible from this separator probe.
+**Critical Rules & Lessons Learned (DO NOT REGRESS)**:
+1. **`allowedBundleIdentifiers` MUST contain ONLY visible bundles**:
+   `allowedBundleIdentifiers` is an allowlist for items that stay VISIBLE.
+   Passing `layout.bundles(in: [.visible, .hidden])` or `runningApplications` allows EVERY app to be displayed, causing macOS to hide 0 icons.
+   Always pass `layout.bundles(in: [.visible])` (plus own bundle).
+2. **`NSStatusItem.button?.window?.frame` returns (0,0) on macOS 14+ / 27**:
+   Because `NSStatusBarWindow` is remotely hosted by `MenuBarAgent`, local window frames have origin `(0, 0)`.
+   Using `button.window.frame.midX` yields ~14.0, which incorrectly places all menubar icons (x > 1000) into `.visible`.
+   The arrow's authoritative screen position MUST be resolved via Accessibility (`AccessibilityMenuBarInventory.ownStatusItemFrame(matching:)`).
+3. **Initial Collapse at Launch (`attemptInitialCollapse`)**:
+   At app launch, WindowServer status items register asynchronously. A single fixed delay can fail if AX has not yet populated the status item child. Use `attemptInitialCollapse(retriesLeft: 4)` which retries every 0.6s until the boundary resolves and collapse succeeds.
+4. **Auto-Hide Timer in `RunLoop.common`**:
+   Timers in `RunLoop.Mode.default` stall during event tracking or modal interactions. Always add the auto-hide timer to `RunLoop.main` in `.common` mode. Check `isMouseInMenuBar()` before collapsing and re-arm if the mouse is hovering.
 
-The actual controller was compiled into an isolated AppKit harness: install,
-idempotent apply, performClick collapse/expand and disable cleanup passed.
-Debug app build succeeded; compile log includes MenuBarHiderController.swift,
-MenuIconsDetailView.swift and L10nStrings.swift; lipo reports arm64. Views VI
-literal lint: TOTAL 0. This does NOT certify Bartender-like behaviour on macOS 27.
-Verification logs and build: /tmp/xfinder-menu-verification (temporary, not git).
-
-Mutation check: restoring unconditional `remove()` in a scratch controller failed
-the harness with exit 133 (items not installed), proving detection of the original bug.
 
 ## Mouse gestures module
 
@@ -1121,3 +1157,440 @@ chắc phải liệt kê vocabulary của model trong test (như 2) hoặc parse
   `nohup sh scripts/mutation-check-*.sh > /tmp/log 2>&1 &` rồi poll file log; kill giữa chừng
   vừa để lại mutation, vừa để lại **xctest mồ côi** (`pkill -9 -f XFinderLogicTests.xctest`).
   Một gate bị kill im lặng đọc y hệt một gate xanh.
+
+## Mouse gestures — PATCH v9.1: sơ đồ vẽ theo thiết bị (2026-09-23)
+
+Scope theo yêu cầu: **chỉ UI**. Không đỏi semantics cử chỉ, không đổi trigger mặc định, không
+đổi đường dispatch nào.
+
+### Tiền đề "probe phải trả 6 nút" — đo lại và **không** nới bộ lọc
+
+Người dùng yêu cầu nới probe để Basilisk "qua USB phải trả về 6 buttons", kèm phương án dự
+phòng: nếu vẫn 5 thì hiện cảnh báo *Missing buttons* thay vì vẽ sai.
+
+**Chuột hiện không kết nối** (`system_profiler SPBluetoothDataType` xếp `BSKV3P 35K`
+(`0x068E/0x00D8`) dưới **Not Connected**), nên tuyên bố 6 nút **không đo lại được** và cũng
+**không được khẳng định theo chiều nào**. Cái đo được, trên máy này:
+
+```
+  Apple Internal Keyboard / Trackpad   FIFO   vendorID: nil   productID: nil
+    page=0x0009 type=0x02  ×3        ← nút thai báo: usages [1,2,3]
+    page=0xFF00 type=0x02  ×1753     ← usage 0xFFFFFFFF, element type Input_Button
+```
+
+**Dòng `0xFF00` là lý do việc nới bộ lọc không chỉ vô ích mà còn có hại.** Trên chính máy này,
+trackpad Apple khai **1753** element trang vendor mang element type `Input_Button`, tất cả usage
+`0xFFFFFFFF` (= `-1`). Lọc theo `0xFF00` sẽ báo **1756 nút**, một trong số đó đánh số `-1` —
+cùng dạng thất bại với "873 input-button elements" ban đầu: **nới bộ lọc cho tới khi ra một con
+số, rồi tin con số đó.** Bộ lọc giữ nguyên, vẫn bị `DeviceCapabilityTests` khoá.
+
+### Bản trung thực của phương án dự phòng R1
+
+Cảnh báo *thiếu nút* **do bằng chứng kích hoạt**, không hiện cho mọi người: nếu engine **nhận
+được một lần bấm mà mô tả HID không khai báo** con số đó, dòng tương ứng hiện số đo + nút *Đặt
+làm nút giữ*. Không thể hiện trên một con chuột chỉ đơn giản là ít nút, vì nó đòi một lần bấm
+thật để mâu thuẫn với khai báo thật.
+
+### Ba thái tắc của một ô nút — không được gộp
+
+| Thái tắc | Nghĩa |
+|---|---|
+| có nhãn | mô tả HID **khai báo** nút này |
+| viền đứt, mờ | mô tả HID **đã đọc và không khai báo** — chuột thật sự không có |
+| viền đứt, mờ, tooltip "Chưa đọc được" | **chưa đọc được mô tả** — không biết |
+
+Dòng thứ ba không được gộp vào dòng thứ hai, đúng như `ArmSupport.unknownUntilDetected` không
+được gộp vào `.unsupportedByMouse`. Một lần đọc hỏng **không phải** absence đã đo.
+
+### Nút chưa khai báo **vẫn gán được**
+
+`MouseButtonRole.isAssignable` trả `true` cho cả `.notDeclared` và `.unknown`. Đây là quyết
+định, không phải sơ suất: HID trên phần cứng thật hay thiếu nút, và chặn người dùng gán một nút
+họ **bấm được** là biến hạn chế của phép dò thành vấn đề của người dùng. Chỉ `.reserved`
+(chuột trái/phải) là không gán được.
+
+### Thứ tự kiểm tra trong `role(forEventButton:context:)` là hợp đồng
+
+**Gán thắng tất cả.** Nếu cấu hình trỏ nút giữ vào chuột phải, dòng đó phải nói "Nút giữ" chứ
+không phải "Chỉ bấm" — trang báo **sự thật đang lưu**, không phải khuyến nghị. Một dòng hiện
+"Chỉ bấm" trong khi engine đang tiêu thụ nút đó là dạng sai tệ nhất. Mutation M2 đúng là đảo
+thứ tự này, và một test bắt được.
+
+### Ô trên sơ đồ là **số**, không phải tên mô tả — vì kích thước đo được
+
+Một ô chip rộng **46 pt**. Tên tiếng Việt của nút giữa (`Bấm con lăn xuống`) dài **17 ký tự** và
+không vừa ở cỡ chữ nào còn đọc được, kể cả sau `minimumScaleFactor`; một ô tự cắt cụt nhãn của
+chính nó tệ hơn một con số luôn vừa. Nên: ô chip = `Nút 4` (`compactLabel`), và **mọi chỗ nói
+"nút nào" bằng một giá trị duy nhất cũng in số** — badge trên thân chuột, dòng "Nút giữ:" ở mục
+Kiểm tra nhanh, dòng trong mục *Nút giữ và cuộn*. Tên đầy đủ + ghi chú vị trí nằm ở tooltip và ở
+dòng rộng trong danh sách.
+
+> **Sửa ở PATCH v10.1.** Bản trước cho badge in **tên đầy đủ** (`Middle click`) với lý do nó rộng
+> 94 pt. Lý do đó bỏ qua một điều: các ô chip ngay cạnh badge in **số**, nên một màn hình dùng
+> hai từ vựng cho cùng một nút và badge đọc như một control *khác*. Một từ vựng, ở mọi chỗ.
+
+Bài học chung của lượt này: **một ô nhãn hẹp là một ràng buộc nội dung, không phải một sở thích
+bố cục.** Đo bề rộng trước khi chọn chuỗi cho nó.
+
+### Gate mới: `scripts/audit-gesture-vocabulary-l10n.py`
+
+Sinh ra vì **cả lớp lỗi ngôn ngữ đã báo bốn lần** đều đi qua `L10n.t(biến)` — chuỗi không có
+mặt ở bất kỳ dòng `L10n.t("...")` nào nên không sweep nào thấy. Gate này **parse chính khai
+báo** của module (`var labelKey: String`, `func namedKey(...)`, `static let all: [GestureProfile]`)
+rồi giải từng khoá với store trong bundle đã cài.
+
+Ba lỗi của chính gate này, ghi lại vì cùng một dạng "gate xanh trên rỗng":
+
+1. `text.find("{", match.end())` **bỏ qua dấu `{` của chính khai báo** khi regex bao gồm nó
+   (`... = {`) → body lấy được là của khai báo **kế tiếp** → 0 tên profile, in ra `0 (Vietnamese: 0)`.
+   Kiểm tra tên profile **xanh trên 0 tên**. Sửa: tìm từ `match.start()`.
+2. Chỉ đọc `return "…"` nên **im lặng bỏ qua** khai báo một biểu thức (`{ "Chưa gán trong macOS" }`).
+   Sửa: lấy mọi literal trong body.
+3. Regex tên profile đòi chữ thường sau dấu chấm → `com.apple.Safari`, `dev.zed.Zed`,
+   `com.adobe.Photoshop` bị **âm thầm bỏ**, còn 10 thay vì 20. Sửa: cho phép chữ hoa.
+
+**Rule: một gate mới phải được chứng minh đỏ.** Cả ba lỗi trên đều là "xanh nhưng không kiểm
+gì" — đúng dạng đã ghi ở mục script-rot. Đã inject hai lần (xoá một khoá khỏi store → `MISSING`;
+đổi một tên profile thành tiếng Việt → `NAME-LEAK`) và cả hai đều **exit 1**.
+
+### "Trang rỗng" — đo bằng cây AX, không bằng mắt
+
+`screencapture` hỏng trên máy này, nên câu hỏi "trang có hiện gì không" chỉ trả lời được bằng
+`docs/probes/probe-ax-dump.swift <pid>`. Đo trên **bản đã cài**:
+
+| | English | Tiếng Việt |
+|---|---|---|
+| text nodes | 116 (89 static-text, 38 button) | 116 |
+| **trang có rỗng không** | **không** | không |
+| chuỗi tiếng Việt trên UI English | **0** (hit duy nhất là `App Exposé`, allowlist) | — |
+| chuỗi trùng EN/VI | — | 8: `Quick Look`, `Mission Control`, `App Exposé`, `⌃↑⌃↓⌃←⌃→`, và tên sản phẩm IOHID. Tất cả đều hợp lệ |
+
+**Rule: "trang không hiển thị gì cả" là một khẳng định phải đo, và nó có thể sai.** Ở đây nó sai
+với bản hiện tại — điều tái hiện được là khiếu nại *sau* đó (hình chỉ có một nút, không biết nút
+vật lý nào ứng với mũi tên nào), và đó mới là cái đã sửa.
+
+### Đọc tài liệu là một nguồn bug
+
+`docs/MOUSE_GESTURES.md` mô tả **hành vi sai đã bị gỡ**: "mỗi mũi tên trên sơ đồ in số nút ngay
+trên đầu mũi tên". Đó chính là lỗi L1 (bốn bản sao của một con số). Tài liệu đã sửa. **Sau khi
+đổi hành vi, grep tài liệu theo mô tả cũ** — tài liệu sai nguy hiểm ngang code sai vì nó dạy
+phiên sau lập lại lỗi cũ.
+
+### Phạm vi đã ghi nhận là CHƯA làm
+
+* **Instant Action cho nút 3/4/5** (R3/R4 nhắc tới) **vẫn chưa ship**, và lý do nằm ở Part 0 §6:
+  engine không có đường nào cho nó — một cú click đơn trên nút 3/4/5 được chuyển nguyên vẹn cho
+  app dưới dạng back/forward. Ship một dòng nhận đổi nó là ship một control không làm được điều
+  nhãn nó hứa. **PATCH v10 bổ sung phần trung thực của việc này**: mỗi dòng nút 3/4/5 nay *nói ra*
+  cú bấm đơn đang làm gì (`DeviceCapabilityModel.passthroughNoteKey`), thay vì để ô trống đọc như
+  "chưa làm gì". Việc gán hành động cho cú bấm đơn vẫn là việc của lượt sau, **kèm thay đổi
+  engine**.
+* **Mắt người trên Mission Control / đổi Space.** Chưa probe nào trong repo xác nhận được, và
+  `probe-screen-diff.swift` **đổi Space thật** nên chỉ chạy khi người dùng đồng ý.
+* Nút giữ trên máy này vẫn là `mouseButton(2)` (bấm con lăn) — trang cảnh báo màu cam, và danh
+  sách nút mới đổi được bằng một cú click.
+
+## Mouse gestures — PATCH v10: vendor page as evidence, figure follows the device (2026-09-23)
+
+Scope: **`Gestures logic FREEZE — chỉ sửa Probe + UI`**. Verified from `git status`: the engine,
+controller, model, map and space-binding files were **not touched** — trigger default, deadzone
+and fire-on-release are unchanged.
+
+### Superseded — the three blockers are gone, and the BLE answer is **5 buttons** (2026-09-23, same day, later)
+
+This section used to list three facts that made the probe half unmeasurable. **All three were
+re-measured and none of them still holds** — do not quote the old list:
+
+| Was | Now |
+|:--|:--|
+| `system_profiler` put `BSKV3P 35K` (0x068E/0x00D8) under **Not Connected** | connected over **Bluetooth Low Energy** |
+| `probe-hid-raw` → `kIOReturnNotPrivileged` (-536870174), every device "(no elements)" | `IOHIDManagerOpen kIOReturn: 0` — full element dump |
+| `probe-ax-dump.swift` → `AXIsProcessTrusted: false`, "NO WINDOWS attribute" | `true` — the rendered page reads fine |
+
+**The measurement this feature was waiting for.** Over BLE the Basilisk declares **five** buttons
+and **no vendor page at all**:
+
+```
+BSKV3P 35K   transport: Bluetooth Low Energy   vendorID 0x68E   productID 0xD8   898 elements
+  page=0x0009 type=0x02 ×5    usages [1,2,3,4,5]  → event buttons [0,1,2,3,4]
+  vendor scan (page >= 0xFF00, type 0x02, usage 1...0x3F): []   ← empty
+  no 0xFF00 element of any kind → there is nothing to widen the filter to
+```
+
+So the Sniper button is **firmware-only over Bluetooth**: it emits no HID button element, and no
+filter change can reveal it. `probe-hid-raw` states it itself — *"the figure has 6 positions and
+this descriptor declares 5. XFinder reports that as a fact and offers Record; it does NOT invent a
+number"*. The page renders exactly that: `Detected · BSKV3P 35K · 5 buttons`, plus
+`Button 6 — Not declared` with a **Record** button. **"Probe returns 6 buttons over USB/BLE" is
+false for BLE** — record 5 and stop re-opening it. USB is still untested (no cable); if it is ever
+measured and differs, that is a *second* row, not a correction of this one.
+
+Rendered page, both languages, `probe-ax-dump.swift` against the **installed** build:
+
+| | English | Tiếng Việt |
+|:--|--:|--:|
+| text nodes / buttons | 128 / 40 | 128 / 40 |
+| lines with Vietnamese diacritics | **1** — `App Exposé`, allowlisted | 120 |
+
+So "the page shows nothing" and "the English UI is mixed with Vietnamese" **do not reproduce** on
+the v10 build. The first had a mundane cause: the copy in `/Applications` was from **12:54** while
+the v10 sources are **14:23–14:41**, so the user was looking at the *previous* build. Install
+before believing a UI report.
+
+### The rule this pass is really about: two button sources, never added together
+
+The vendor page (`UsagePage >= 0xFF00`) **is** scanned now, but its usages go into
+`PhysicalCapabilities.vendorButtonUsages` — **not** into `buttons`. Reason, and it is not
+stylistic: `buttons` is a list of HID usages whose `usage - 1` is the `CGEvent` button number, and
+that arithmetic is defined *only* on the Button page. A vendor usage is a private number, so
+folding it in would either invent numbers or collide with real ones — and every number on the
+page derives from `buttons`.
+
+The vendor filter has **two** guards and both are load-bearing:
+
+```swift
+el.type == elementTypeInputButton                 // same guard as the Button page
+    && el.usagePage >= usagePageVendorDefined
+    && (1...vendorUsageMax).contains(el.usage)    // 1...0x3F — this one is the trap
+```
+
+The range guard exists because of a **measurement on this machine**: the Apple Internal Trackpad
+declares **1753** vendor-page elements with `type == Input_Button` and usage `0xFFFFFFFF`
+(`usageSentinelNone`). Drop the guard and the count becomes 1753 with one entry numbered `-1` —
+the same shape as the original "873 input-button elements" bug. `DeviceCapabilityTests` pins it
+with that exact fixture, and mutation **M6** proves the pin bites.
+
+### The figure follows the device now
+
+`MouseDiagramStyle` is `.archetype` (declared ≥ 3 buttons → the six reference positions),
+`.generic` (fewer → **only** the declared controls are drawn) or `.unknown` (nothing read → the
+archetype, dashed, saying "not read yet"). The last one is deliberate: a blank figure reads as
+"your mouse has no buttons", and a failed read is not a measured absence.
+
+Chip captions (`MouseControlSlot.positionKey`: `Trái` `Phải` `Con lăn` `Hông trên` `Hông dưới`
+`Hông cuối`) describe the **drawing's** positions, never the user's hardware — no API reports
+where a physical button sits. They are ≤ 14 characters because the chip is 46 pt at 7 pt type;
+that bound is a test (`testEveryArchetypePositionHasACaptionKeyThatFitsItsChip`), not a style
+preference.
+
+### "Instant Action" for buttons 3/4/5 is still NOT shipped, and the reason is unchanged
+
+A row does not offer to rebind a single click, because the engine has no path for one: it takes
+only the hold trigger and the optional scroll button, so a click on 3/4 is forwarded and most apps
+read it as back/forward. The row now **states that** (`passthroughNoteKey`) instead of leaving an
+empty cell. Shipping a control that claims to rebind it would violate Part 0 §6. This needs an
+engine change, so it is a later round — not this UI-only one.
+
+### Verification actually obtained
+
+| Check | Result |
+|---|---|
+| Build | `BUILD SUCCEEDED`, 0 `error:`, `lipo -archs` = arm64 |
+| 7 changed sources found in the compile log **by name** | yes |
+| `cd Tests && swift test` | **183 tests, 0 failures** |
+| `check-l10n-coverage.py` / `check-l10n-duplicates.py` | `TOTAL 0` over **1097** entries |
+| §2 sweep (unwrapped VI literals in `Views/`) | `TOTAL 0` |
+| §3 sweep (every `L10n.t("…")` key the gesture UI uses) | `169 keys, 0 missing` |
+| `mutation-check-gesture-buttons.sh` | **11/11 RED**, restore byte-identical, suite 183/0 |
+| Physical mouse / rendered page | rendered page **measured** in both languages (128 nodes, 1 allowlisted diacritic line); physical gesture dispatch still needs a human eye — see the superseded block above |
+
+### Bug found while wiring R2: the tilt switch revealed arms it never enabled
+
+`grep tiltEnabled` showed the engine gates on `configuration.tiltEnabled`, `Envelope` only
+*decodes* it, and the page's one switch wrote `tiltAvailable`. **Nothing ever wrote
+`tiltEnabled`** — so turning the switch on drew two arms whose assigned actions could never fire,
+and turning it off left the engine's state alone. Same class as Part 3b's stored-but-unread
+register, same violation as Part 0 §6.
+
+Fixed in the UI layer with the engine untouched: `TiltArmsVisibility.fields(forReveal:)`
+(`GestureUIDisplay.swift`, Foundation-only, testable) is the contract for what the one switch
+writes, and it writes **both** fields. The label moved from *"Hiện hai hướng nghiêng con lăn"*
+(show) to *"Bật hai hướng nghiêng con lăn"* (turn on), because showing was all it did. The two
+fields remain **separate in the model** — `testTiltArmsAreHiddenByDefault` still pins that — so an
+older payload carrying only `tiltAvailable` still decodes and still means "off". Mutation **M11**
+injects the old behaviour and goes red.
+
+### New trap recorded
+
+`check-l10n-coverage.py` **rejects edge padding on a `sentence`**. A string that is concatenated
+with a runtime value must be declared `fragment` in the store — `"Ngoài ra mô tả HID còn khai
+báo "` failed as a sentence and passed as a fragment, with no code change. When adding a string
+that ends in a space, decide the scope from the call site, not from how it reads.
+
+---
+
+## Mouse gestures — Round 9: the v10 build re-verified end to end (2026-09-23)
+
+The user's report was *"the feature page shows nothing, build the app again and test the
+feature"*. Nothing in the source changed in this pass — it is a **verification** pass, plus one
+gate hardening. What follows is what was measured, in the order it was measured.
+
+### "The page shows nothing" — cause found, and it was mundane
+
+`ls -la /Applications/XFinder.app/Contents/MacOS/` gave **12:54**; the v10 sources are
+**14:23–14:41**. The installed app was the *previous* build, so the user was reading a page that
+did not contain this round's work. After `scripts/install-mouse-rebuild.sh`, `probe-ax-dump.swift`
+reads **128 text nodes / 40 buttons** on that page in both languages, including every v10
+element: the `Ready — the applications below already have shortcuts` view, `Connected mouse ·
+Detected · BSKV3P 35K · 5 buttons`, the **Raw HID descriptor** disclosure, the per-row **Record**
+button, the position captions, and the *Buttons the mouse handles itself* rows.
+
+**Rule: install before believing a UI report.** `sh scripts/build-and-check.sh` builds to
+`/tmp/xfinder-clean-build` and touches nothing the user can see.
+
+### The BLE measurement (supersedes the v10 blocker block)
+
+Over Bluetooth Low Energy the Basilisk declares **5** buttons on the Button page and **no vendor
+page at all** — so the Sniper is firmware-only on this transport and no filter change can reveal
+it. Full numbers in the v10 section above. **Do not re-open "the probe must return 6".**
+
+### Verification obtained (four results, kept separate)
+
+| Statement | Result |
+|:--|:--|
+| Build | `BUILD SUCCEEDED`, **0** `error:`, **19/19** gesture sources in the compile log by name, `lipo -archs` = arm64 |
+| Tests | **183 tests, 0 failures** |
+| L10n gates | coverage `TOTAL 0` over **1097** entries · duplicates 0 · literal sweep 0 · sidebar groups 0 · gesture vocabulary 63 keys + 20 names, 0 unresolved |
+| Runtime harness (`Tests/Runtime/MouseGesturesProbe.swift`) | PASS — production callback (click replay, recursion, browser shortcut, deadzone, cancellation, modifier, passthrough) + system actions post the machine's own chord with the fn mask intact; `--live-tap` PASS (real tap install/remove + timeout recovery) |
+| Mutation harnesses, **sequentially** | buttons **11/11 RED** · labels **5/5 RED** · ui **7/7 RED** · l10n **6/6 RED**; every source restored byte-identical, post-restore suite 183/0 |
+| Install | signed with the stable `XFinder Dev` identity; `XFinderSync.appex` registered **and enabled** (`pluginkit` prints `+`) |
+| Rendered page | English: 128 nodes, **1** diacritic line (`App Exposé`, allowlisted). Vietnamese: 120 diacritic lines. No leak in either direction |
+| **Physical gesture dispatch** | ❌ **not verified** — needs a human eye on Mission Control / Space change. The hold trigger is still `mouseButton(2)` (the wheel click), which the page itself flags in orange |
+
+### New trap: the four mutation harnesses must run **sequentially**
+
+They mutate the **real** source tree (`GestureUIDisplay.swift`, `GestureModel.swift`,
+`DeviceCapabilityModel.swift`, the L10n store). Started in parallel — four `nohup … &` in one
+shell — they clobber each other and produce results that look like real findings:
+
+* `mutation-check-gesture-labels.sh` reported **`FAIL: baseline is not green — failing test
+  cases: 6`**; run alone, the baseline is **0** and all five mutations are RED.
+* `mutation-check-l10n.sh` reported **`suite green again after restore: 2 failures`**; run alone,
+  it is **183 tests, 0 failures**.
+
+The tree was never left dirty (`git status` matched before and after), because each script traps
+`EXIT` and restores from backups held in `/tmp`. But **a parallel run manufactures false reds**,
+and the "baseline is not green" line is exactly the shape of the real leftover-mutation bug — so
+the two are indistinguishable unless the runs are serialised. Run them **one at a time**, detached,
+polling the log.
+
+### Gate hardened: `mutation-check-gesture-ui.sh` now asserts green instead of printing a count
+
+Its last step was `echo "Executed $(total) tests"` — a count with no failure figure, so an
+interrupted run that stranded a mutation would end the script looking green. The two sibling
+harnesses print the failure count; this one now computes it and **exits 1** when it is nonzero.
+Proven in both directions without touching product code: a scratch test file
+(`Tests/XFinderLogicTests/ScratchDirtyTreeProbeTests.swift`) containing one `XCTFail` made the
+final step print `184 tests, 1 failure(s)` and exit **1**; deleting the scratch file made it print
+`183 tests, 0 failure(s)` and exit **0**. The scratch file was deleted immediately and is not in
+the tree.
+
+### Housekeeping found on the way
+
+`install-mouse-rebuild.sh`'s own last check prints LaunchServices registrations that still name a
+non-installed path, and four were live (`/private/tmp/xf-out`, `xfinder-l10n-build`,
+`xfinder-v10-build`, `xf-gate-out`). All four copies of `com.xfinder.app.XFinderSync` claim the
+same plug-in identifier, which is the condition the script exists to prevent. They were
+deregistered with `lsregister -u`; the check now reports clean. The script only deregisters its own
+`$SRC`/`$STAGE`, so this recurs on every new build directory — worth fixing in the script next time
+it is touched.
+
+
+---
+
+## Mouse gestures — PATCH v10.1: Razer figure parity + the debug gate (2026-09-24)
+
+Scope was **probe + UI only, gestures logic frozen**, and the freeze is verified rather than
+asserted: `git diff --name-only` shows `GestureEngine.swift`, `GestureController.swift`,
+`GestureModel.swift`, `GestureMap.swift` and `SpaceBinding.swift` are **not modified**. Trigger
+default, deadzone, fire-on-release and every preset table are untouched.
+
+**R1 and R3 of the brief were already satisfied by v10** — the probe already scans both pages and
+logs raw `(page, usage, type)`, and the "Buttons XFinder can see" list already had 1/2 locked,
+3 marked as the hold button, and 4/5/6 offering Record + Use-as-hold. Verified by reading, and said
+so rather than "fixing" them. The real deltas were four:
+
+1. **The body was a pill** (`RoundedRectangle`, corner radius ≈ half its width — the Magic Mouse
+   silhouette the user reported). Now `MouseSilhouette`, built from `MouseFigureOutline.points` in
+   the Foundation-only half, drawn as a closed Catmull-Rom curve, with a **button seam**, a **wheel
+   in that seam**, and a **thumb rest in the lower-left** carrying the three side controls.
+2. **One vocabulary for "which button"**: the badge, the Quick-check row and the Switches row now
+   print the **number** (`Button 3`), matching the chips. The name stays in tooltips, list rows and
+   the explanation sentences.
+3. **`MouseButtonRole.isDeclared`** — the *drawing's* question, deliberately **not** the same as
+   `isAssignable`. A chip the descriptor did not declare (`.notDeclared`, `.unknown`) is drawn
+   disabled with a tooltip; the row below keeps its Record button, because that is where the
+   measurement happens.
+4. **The activity block renders on `DEBUG_SHOW_ENGINE_LOG` alone.** It used to be
+   `DEBUG_SHOW_ENGINE_LOG || config.debug`, so a stored `debug = true` kept a developer block on a
+   user's page — the reported bug. The old comment justified the `||` by saying a compile-time gate
+   would leave a control promising something it cannot do; that control is **inside the gated
+   section**, so the concern never applied. Check the containment before reaching for an `||`.
+
+### Rules this round added, because each was a real defect
+
+* **A report that never reaches zero is a report nobody reads.** `add-gesture-l10n-entries.py`
+  printed `added 5, replaced 0, removed 5` on **every** run — including a re-run on an unchanged
+  store — so its idempotence was untestable. Five keys were in **both** `ENTRIES` and `REMOVED`, so
+  they were added and deleted in the same pass. The store was never wrong (`REMOVED` wins), which is
+  why it went unnoticed for a whole pass. Fixed by deleting them from `ENTRIES`, and by adding a
+  self-check that prints `CONFLICT: …` and **exits 1** — proven in both directions.
+* **Two sources of truth for one list will drift.** `ENTRIES` and `REMOVED` are one list of strings
+  with two opinions about it; nothing structural prevented a key from being in both. When two lists
+  must stay disjoint, assert it.
+* **Copy that names a control which is not on the page is the same failure as a label that lies.**
+  Hiding the activity block made the frontmost row's "…this is why the log below shows only
+  com.xfinder.app" point at nothing. Reworded.
+* **A count spliced into the middle of a sentence needs plural agreement.** `also declares 1 button
+  elements on…` is what that produces in English. Move the number to the **end** of the clause and
+  one string is correct for every value in both languages. Both halves must be `fragment` scope,
+  since both are concatenated with a runtime value.
+* **A stale doc teaches the next round the old bug.** `docs/MOUSE_GESTURES.md` still said "the
+  button number is printed on each arrow of the diagram" — the removed L1 behaviour. Also fixed
+  there: the old `Nút 1 (chuột trái)` display form, and two instructions that told the reader to
+  enable the now-hidden log to read a button number (they now point at the **"Nút bạn vừa bấm"**
+  row, which is **not** gated).
+* **A write-side contract is not a read-side contract.** PATCH v10 made the tilt switch write
+  **both** `tiltAvailable` and `tiltEnabled` (`TiltArmsVisibility.fields(forReveal:)`), which
+  fixes what the switch *writes* — but this machine's own store still held
+  `tiltAvailable = true, tiltEnabled = false`, left by the build where the switch wrote only the
+  first. Reading `tiltAvailable` alone then drew two arms that could never fire **and** showed the
+  switch as on: the same "control that cannot do what its label says" the write-side contract
+  exists to prevent, one layer down. `TiltArmsVisibility.isLive(available:enabled:)` is the tested
+  **read** contract (the conjunction), the page reads it for the arms, the switch and the
+  explanation, and **no migration is needed** — a payload that disagrees with itself simply reads
+  as off until the user turns the switch on again. **Found by reading the persisted config, not by
+  reading the code**: `defaults export com.xfinder.app -` then `plistlib`.
+
+### Measured this round (do not re-derive)
+
+```
+BSKV3P 35K   transport: Bluetooth Low Energy   vendorID 0x68e   productID 0xd8
+  page=0x0009 type=0x02 ×5   usages [1,2,3,4,5] → event buttons [0,1,2,3,4]
+  v10 vendor scan (type 0x02 && page >= 0xFF00 && usage 1...0x3F): []     ← empty
+```
+
+**Five buttons over BLE, no vendor-page button element** — the third independent reading of the same
+number, so "the probe must return 6" stays closed for BLE. USB remains unmeasured. The Apple
+Internal Keyboard / Trackpad, read in the same run, declares `[1,2,3]` **plus one** vendor-page
+button element (usage 12) — the 1753 `0xFFFFFFFF` sentinels are still excluded by the range guard,
+which is why that count is 1 and not 1756.
+
+### Verification (four results, kept separate)
+
+| Statement | Result |
+|:--|:--|
+| Build | `BUILD SUCCEEDED`, 0 `error:`, every gesture source in the compile log **by name**, `lipo -archs` = arm64 |
+| Tests | **193 tests, 0 failures** (+10) |
+| Gates | coverage `TOTAL 0`/1097 · duplicates 0 · literal sweep 0 · sidebar groups 0 · vocabulary 63+20, 0 unresolved · `verify-gesture-ui.sh` §1–§7 · runtime-in-installed-bundle **TOTAL 0 leaks** |
+| Mutations, sequentially | buttons **13/13 RED** (M12/M13 new) · labels **5/5 RED** · ui **8/8 RED** (BUG 8 new) · l10n **6/6 RED**; all restored byte-identical; post-restore 193/0 |
+| Rendered page | English 122 nodes / **1** diacritic line (`App Exposé`, allowlisted) · no debug block · tilt arms **not drawn** (the stored `true`/`false` now reads as off) |
+| **Physical dispatch** | ❌ **not verified** — needs an eye on Mission Control / a Space change |
+
+**The AX dump needs the window frontmost.** A background launch reports `windows: 0`, which is a
+measurement artifact — front the app (`open -a /Applications/XFinder.app`) before believing a dump,
+and restore `AppLanguage english` afterwards.
+
+**Still not shipped:** Instant Action for buttons 3/4/5, for the unchanged reason — the engine takes
+only the hold trigger and the optional scroll button, so a single click on 3/4 is forwarded to the
+application. The row *states* what the click does instead.

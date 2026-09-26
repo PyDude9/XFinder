@@ -82,6 +82,12 @@ final class CommandTabController {
         dismiss(activate: false)
     }
 
+    private nonisolated(unsafe) var isActiveSnapshot = false
+
+    nonisolated private var hotkeyPreference: String {
+        UserDefaults.standard.string(forKey: "windowPreview.switcherHotkey") ?? "commandTab"
+    }
+
     /// Runs on the tap's thread — hop to the main actor for any UI work.
     private nonisolated func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         // A tap disabled by timeout must be re-armed or ⌘-Tab breaks entirely.
@@ -94,25 +100,63 @@ final class CommandTabController {
 
         let flags = event.flags
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-        let commandDown = flags.contains(.maskCommand)
+        let isOptionHotkey = hotkeyPreference == "optionTab"
+        let modifierDown = isOptionHotkey ? flags.contains(.maskAlternate) : flags.contains(.maskCommand)
 
-        if type == .keyDown, commandDown, keyCode == 48 { // Tab
+        if type == .keyDown, modifierDown, keyCode == 48 { // Tab
             let backwards = flags.contains(.maskShift)
             Task { @MainActor in self.step(backwards: backwards) }
             return nil // consume
         }
 
-        if type == .keyDown, keyCode == 53 { // Escape
-            Task { @MainActor in
-                if self.isActive { self.dismiss(activate: false) }
+        // When switcher is active:
+        if isActiveSnapshot {
+            // Comma (,) focuses search field
+            if type == .keyDown, keyCode == 43 {
+                Task { @MainActor in
+                    PreviewOverlayWindow.shared.focusSearch()
+                }
+                return nil
             }
-            return Unmanaged.passUnretained(event)
+
+            // Left arrow
+            if type == .keyDown, keyCode == 123 {
+                Task { @MainActor in self.step(backwards: true) }
+                return nil
+            }
+
+            // Right arrow
+            if type == .keyDown, keyCode == 124 {
+                Task { @MainActor in self.step(backwards: false) }
+                return nil
+            }
+
+            // Return / Enter commits selection
+            if type == .keyDown, keyCode == 36 {
+                Task { @MainActor in self.dismiss(activate: true) }
+                return nil
+            }
+
+            // Escape
+            if type == .keyDown, keyCode == 53 {
+                Task { @MainActor in
+                    if WindowPreviewStore.shared.isSearchActive {
+                        WindowPreviewStore.shared.isSearchActive = false
+                        WindowPreviewStore.shared.searchQuery = ""
+                    } else {
+                        self.dismiss(activate: false)
+                    }
+                }
+                return nil
+            }
         }
 
-        // Command released → commit the selection.
-        if type == .flagsChanged, !commandDown {
+        // Modifier released → commit the selection (unless in active search typing mode)
+        if type == .flagsChanged, !modifierDown {
             Task { @MainActor in
-                if self.isActive { self.dismiss(activate: true) }
+                if self.isActive && !WindowPreviewStore.shared.isSearchActive {
+                    self.dismiss(activate: true)
+                }
             }
         }
 
@@ -123,72 +167,48 @@ final class CommandTabController {
 
     private func step(backwards: Bool) {
         if !isActive {
-            entries = switchableWindows()
-            guard !entries.isEmpty else { return }
-            selection = entries.count > 1 ? 1 : 0
+            WindowPreviewStore.shared.loadSwitchableWindows()
+            let items = WindowPreviewStore.shared.filteredPreviewItems
+            guard !items.isEmpty else { return }
+            selection = items.count > 1 ? 1 : 0
+            WindowPreviewStore.shared.selectedIndex = selection
             isActive = true
-            showPanel()
+            isActiveSnapshot = true
+            PreviewOverlayWindow.shared.present(
+                selection: selection,
+                onCommit: { [weak self] idx in
+                    self?.selection = idx
+                    WindowPreviewStore.shared.selectedIndex = idx
+                    self?.dismiss(activate: true)
+                },
+                onDismiss: { [weak self] in
+                    self?.dismiss(activate: false)
+                }
+            )
             return
         }
-        guard !entries.isEmpty else { return }
-        selection = (selection + (backwards ? -1 : 1) + entries.count) % entries.count
-        refreshPanel()
-    }
-
-    /// Every switchable **window**, not one row per app.
-    ///
-    /// This used to dedupe by pid, which made the switcher an app switcher —
-    /// and a preview list of one icon per app shows the user nothing they did
-    /// not already know. With per-window rows plus a live thumbnail, ⌘-Tab can
-    /// pick "the second Safari window" directly, which is the whole point.
-    /// Capped so a machine with dozens of windows still renders a sane panel.
-    private func switchableWindows() -> [WindowManager.WindowInfo] {
-        Array(WindowManager.listWindows()
-            .filter { $0.bounds.width > 80 && $0.bounds.height > 80 }
-            .prefix(12))
-    }
-
-    private func showPanel() {
-        dismissPanelOnly()
-        let host = NSHostingView(rootView: CommandTabSwitcherView(entries: entries, selection: selection))
-        let size = host.fittingSize
-        let p = NSPanel(contentRect: NSRect(origin: .zero, size: size),
-                        styleMask: [.borderless, .nonactivatingPanel],
-                        backing: .buffered, defer: false)
-        p.level = .popUpMenu
-        p.isOpaque = false
-        p.backgroundColor = .clear
-        p.hasShadow = true
-        p.ignoresMouseEvents = true
-        p.contentView = host
-        if let screen = NSScreen.main {
-            p.setFrameOrigin(NSPoint(x: screen.frame.midX - size.width / 2,
-                                     y: screen.frame.midY - size.height / 2))
-        }
-        p.orderFrontRegardless()
-        panel = p
-    }
-
-    private func refreshPanel() {
-        guard let panel, let host = panel.contentView as? NSHostingView<CommandTabSwitcherView> else { return }
-        host.rootView = CommandTabSwitcherView(entries: entries, selection: selection)
-    }
-
-    private func dismissPanelOnly() {
-        panel?.orderOut(nil)
-        panel = nil
+        WindowPreviewStore.shared.step(forward: !backwards)
+        selection = WindowPreviewStore.shared.selectedIndex
+        PreviewOverlayWindow.shared.updateSelection(selection)
     }
 
     private func dismiss(activate: Bool) {
-        if activate, entries.indices.contains(selection) {
-            // Raise the chosen WINDOW, not the whole app — otherwise picking
-            // one of several windows of the same app raises an arbitrary one.
-            WindowManager.raiseWindow(entries[selection])
+        if activate, let item = WindowPreviewStore.shared.commitSelection() {
+            if item.isGroup {
+                if let app = NSRunningApplication.runningApplications(withBundleIdentifier: item.bundleID).first {
+                    app.activate(options: [.activateIgnoringOtherApps])
+                }
+            } else if let win = WindowManager.listWindows().first(where: { $0.id == item.windowID }) {
+                WindowManager.raiseWindow(win)
+            } else if let app = NSRunningApplication.runningApplications(withBundleIdentifier: item.bundleID).first {
+                app.activate(options: [.activateIgnoringOtherApps])
+            }
         }
         isActive = false
-        entries = []
+        isActiveSnapshot = false
         selection = 0
-        dismissPanelOnly()
+        PreviewOverlayWindow.shared.dismiss()
+        WindowPreviewStore.shared.clear()
     }
 }
 

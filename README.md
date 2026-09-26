@@ -16,7 +16,7 @@ Tiện ích hệ thống + quản lý clipboard cho macOS. Gọn nhẹ, chạy n
 
 **Cửa sổ** — xem trước khi rê chuột lên icon trên Dock, vùng bắt dính (snap) 10 vị trí, **cử chỉ chuột theo ứng dụng**.
 
-**Cử chỉ chuột** — giữ một nút hông, kéo theo hướng, thả để gửi phím tắt của app đang dùng. Ưu tiên preset: **Edge/Safari/Chrome, VS Code/Cursor/Zed/Antigravity/Claude, Photoshop/CapCut, Excel/Word, Discord/Zalo/AyuGram, Kitty/Terminal/iTerm2, Obsidian/Notion** đều có mapping dùng được ngay sau khi bật — không phải cấu hình gì thêm. Hành động mơ hồ (không có phím tắt chung đáng tin) để trống **có chủ ý** thay vì đoán bừa, và mỗi dòng hiện **cả ý định lẫn phím chính xác** sẽ gửi. Trang còn có mục **XFinder đã nhận gì** — dòng đo thật từ engine (nút nào được nhấn, hướng nào bị khoá, phím nào đã gửi), để bạn biết cử chỉ có chạy hay không thay vì phải tin. Chi tiết: [docs/MOUSE_GESTURES.md](docs/MOUSE_GESTURES.md).
+**Cử chỉ chuột** — giữ một nút hông, kéo theo hướng, thả để gửi phím tắt của app đang dùng. Ưu tiên preset: **Edge/Safari/Chrome, VS Code/Cursor/Zed/Antigravity/Claude, Photoshop/CapCut, Excel/Word, Discord/Zalo/AyuGram, Kitty/Terminal/iTerm2, Obsidian/Notion** đều có mapping dùng được ngay sau khi bật — không phải cấu hình gì thêm. Hành động mơ hồ (không có phím tắt chung đáng tin) để trống **có chủ ý** thay vì đoán bừa, và mỗi dòng hiện **cả ý định lẫn phím chính xác** sẽ gửi. Sơ đồ vẽ **đúng các nút mô tả HID của chuột bạn khai báo** (nút nào không đọc được thì vẽ mờ, không bấm được), và trang **đo** con số nút khi bạn bấm thật, để bạn biết cử chỉ có chạy hay không thay vì phải tin. Chi tiết: [docs/MOUSE_GESTURES.md](docs/MOUSE_GESTURES.md).
 
 **Ghi chú** — ghi chú dán mép màn hình, hiện ra khi rê chuột.
 
@@ -70,16 +70,17 @@ API nào trả lời được câu đó: `CGEventField` chỉ có năm trường
 
 Thay vào đó, trang **đo**:
 
-1. Bật **XFinder đã nhận gì** → **Bật ghi nhật ký**.
-2. Bấm thử nút bạn định dùng → trang hiện **"Nút bạn vừa bấm: 4"**, tức con số XFinder
-   thật sự nhận được từ chuột bạn.
-3. **Ghi nút** rồi bấm đúng nút đó.
+1. Bấm thử nút bạn định dùng. Trang hiện **"Nút bạn vừa bấm: 4"** ngay dưới dòng thiết bị
+   — đó là con số XFinder thật sự nhận được từ chuột bạn (engine vốn đã nhận mọi lần bấm,
+   nên không cần bật gì thêm).
+2. **Ghi nút** rồi bấm đúng nút đó — hoặc bấm **Đặt làm nút giữ** ngay ở dòng tương ứng.
 
 Số trên UI là **cách bạn đếm** (macOS đếm từ 0, nên `mouseButton(2)` hiển thị
-**Nút 3**). Ba nút ai cũng có được gọi tên theo **vị trí** — **Nút trái**, **Nút phải**,
-**Bấm con lăn xuống** — vì đó là mô tả đúng cho mọi con chuột. Từ nút thứ tư trở đi
-chỉ là số, kèm một gợi ý có điều kiện ("thường là nút hông trên"), vì thứ tự khai báo
-trong HID descriptor chứng minh một nút **tồn tại** chứ không cho biết nó **ở đâu**.
+**Nút 3**). Ba nút ai cũng có còn có **tên mô tả** — **Nút trái**, **Nút phải**,
+**Bấm con lăn xuống** — nhưng tên đó chỉ nằm ở **tooltip** và ở **dòng rộng trong danh
+sách**, không ở sơ đồ (một ô sơ đồ rộng 46 pt). Từ nút thứ tư trở đi chỉ là số, kèm một
+gợi ý có điều kiện ("thường là nút hông trên"), vì thứ tự khai báo trong HID descriptor
+chứng minh một nút **tồn tại** chứ không cho biết nó **ở đâu**.
 
 **Nút cuộn (tuỳ chọn, mặc định tắt):** giữ một nút hông rồi kéo là cuộn — tiện cho
 Photoshop/CapCut. Nút đó vẫn bấm bình thường khi bạn không kéo, và XFinder tự sửa nếu
@@ -136,7 +137,7 @@ Bốn mức, tách rời — không gộp:
 | Mức | Trạng thái |
 |---|---|
 | Build (`arm64`, đủ file trong compile log) | ✅ |
-| Test logic (162 test) | ✅ |
+| Test logic (192 test) | ✅ |
 | Event Tap mở được trên app đã cài (`active=1 trusted=1`) | ✅ |
 | **Chuột thật: giữ nút hông + kéo có mở Mission Control / đổi Space** | ⏳ **cần mắt người xác nhận** |
 

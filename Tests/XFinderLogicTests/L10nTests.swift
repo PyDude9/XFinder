@@ -188,6 +188,36 @@ final class L10nTests: XCTestCase {
             needed.insert(.init(action.captionKey))
             needed.insert(.init(action.unboundCaptionKey))
         }
+        // The **role** vocabulary added with the capability-driven diagram (PATCH v9.1).
+        // `MouseButtonRole.labelKey` / `.explanationKey` are read through
+        // `L10n.t(variable)` in `GestureButtonList` and `MouseDiagramView`, so they are
+        // exactly the class of string no literal sweep can see. Enumerating
+        // `allCases` here means a role added later cannot ship untranslated.
+        for role in [MouseButtonRole.holdTrigger, .scrollButton, .reserved,
+                     .unassigned, .notDeclared, .unknown] {
+            needed.insert(.init(role.labelKey))
+            needed.insert(.init(role.explanationKey))
+        }
+        // The **position captions** on the archetype figure (PATCH v10 R2). Same leak
+        // shape again: `MouseDiagramView` renders them as `L10n.t(slot.positionKey)`, and
+        // the four added this pass (`Con lăn`, `Hông trên`, `Hông dưới`, `Hông cuối`) had
+        // no entry until they were enumerated here.
+        for slot in MouseControlSlot.allCases {
+            needed.insert(.init(slot.positionKey))
+        }
+        // The firmware-handled controls (PATCH v10 R2) and the per-row statement of what a
+        // single click does (R3). Both are arrays of **store keys** rendered through
+        // `L10n.t(variable)`, so a literal sweep sees nothing and only this enumeration
+        // can catch a missing translation.
+        for exclusion in MouseHardwareExclusion.all {
+            needed.insert(.init(exclusion.titleKey))
+            needed.insert(.init(exclusion.explanationKey))
+        }
+        for button in MouseControlSlot.allCases.map(\.eventButton) {
+            if let note = DeviceCapabilityModel.passthroughNoteKey(forEventButton: button) {
+                needed.insert(.init(note))
+            }
+        }
 
         // A `whole` probe is a string the call site passes to `L10n.t` verbatim.
         let missing = needed.filter { probe in

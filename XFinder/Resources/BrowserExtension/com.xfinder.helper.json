@@ -1,0 +1,9 @@
+{
+  "name": "com.xfinder.helper",
+  "description": "XFinder Native Messaging Host for browser tab previews",
+  "path": "/Applications/XFinder.app/Contents/MacOS/XFinder",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://*/"
+  ]
+}

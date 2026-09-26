@@ -12,6 +12,9 @@ struct XFinderApp: App {
             RootView()
                 .environment(clipboardManager)
                 .environment(systemMonitorManager)
+                .onAppear {
+                    PermissionManager.shared.requestAllIfNeeded()
+                }
         }
         .windowStyle(.hiddenTitleBar)
         .commands {
@@ -38,6 +41,7 @@ struct XFinderApp: App {
     }
 }
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     var menubarController: MenubarController?
     var aboutWindow: NSWindow?
@@ -69,19 +73,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         DockPreviewController.shared.applySettings()
         CommandTabController.shared.applySettings()
         SnapZoneController.shared.applySettings()
+        MenuBarHiderController.shared.autoHideTimer?.invalidate()
         MenuBarHiderController.shared.applySettings()
         ClipboardShelfController.shared.applySettings()
         FinderKeyboardController.shared.applySettings()
         NotchDropController.shared.applySettings()
         QuickSearchPanelController.shared.applySettings()
+        VoiceManager.shared.setup()
+        PermissionManager.shared.requestAllIfNeeded()
 
-        // `--grant-permissions` (từ scripts/dev-setup.sh): tự nhắc cả quyền
-        // Trợ năng + Ghi màn hình ngay khi mở, để build-test khỏi mò mẫm.
-        if ProcessInfo.processInfo.arguments.contains("--grant-permissions") {
-            Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 1_200_000_000)
-                WindowManager.requestAllPermissions()
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            BatteryStore.shared.start()
         }
 
         // Re-arm AX-gated controllers khi quay lại XFinder (user vừa cấp Trợ
@@ -92,12 +94,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil, queue: .main
         ) { _ in
             Task { @MainActor in
+                PermissionManager.shared.updateStatuses()
                 DockPreviewController.shared.applySettings()
                 CommandTabController.shared.applySettings()
                 SnapZoneController.shared.applySettings()
                 FinderKeyboardController.shared.applySettings()
                 ClipboardShelfController.shared.applySettings()
                 QuickSearchPanelController.shared.applySettings()
+                VoiceManager.shared.applySettings()
+                GestureController.shared.start()
             }
         }
     }

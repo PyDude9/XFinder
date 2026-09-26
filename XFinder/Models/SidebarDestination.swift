@@ -36,6 +36,8 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case sync
     case remoteConnect
     case quickShare
+    // CÔNG CỤ
+    case voiceTyping
     // CÀI ĐẶT
     // `settingsGeneral` was removed: "Cài đặt chung" only held theme + Dock
     // icon, both of which already live on Tổng quan / Điều khiển nhanh. A
@@ -77,6 +79,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .sync: return L10n.t("Đồng bộ")
         case .remoteConnect: return L10n.t("Kết nối từ xa")
         case .quickShare: return L10n.t("Chia sẻ nhanh")
+        case .voiceTyping: return L10n.t("Nhập bằng giọng nói")
         case .settingsClipboard: return L10n.t("Cài đặt Clipboard")
         case .about: return L10n.t("Giới thiệu")
         }
@@ -115,6 +118,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .sync: return "arrow.triangle.2.circlepath"
         case .remoteConnect: return "display.2"
         case .quickShare: return "square.and.arrow.up"
+        case .voiceTyping: return "mic.fill"
         case .settingsClipboard: return "gearshape"
         case .about: return "info.circle"
         }
@@ -130,24 +134,11 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     static var groups: [(header: String, items: [SidebarDestination])] {
         [
-            // Clipboard: hàng `clipboard` là trang nội dung (deck), hàng
-            // `settingsClipboard` ("Cài đặt Clipboard") là tuỳ chỉnh + quyền
-            // Trợ năng. Không còn kiểu "sidebar chỉ có settings" — khi chưa
-            // cấp AX, ⌘⇧V không mở được và cả tính năng đọc như đã chết.
-            // No CÀI ĐẶT group at all: every page owns its own settings, and a
-            // catch-all bucket only duplicated them.
-            //
-            // Grouping follows the reference screenshots. The two file-name
-            // tools (Đổi tên hàng loạt, Lịch sử thao tác) sit under
-            // FINDER & TÌM KIẾM, not CÔNG CỤ — they act on the Finder selection
-            // and belong beside the search rows the user reaches them from.
-            // CÔNG CỤ keeps the content tools; TIỆN ÍCH keeps the Finder
-            // integration surfaces.
             ("CHUNG", [.dashboard, .quickControls, .antiSleep, .system, .network, .storage, .pin]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .mouseGestures, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .actionHistory]),
-            ("CÔNG CỤ", [.settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
+            ("CÔNG CỤ", [.voiceTyping, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare]),
             ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat]),
         ]

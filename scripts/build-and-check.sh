@@ -36,7 +36,19 @@ MouseGesturesDetailView.swift MouseDiagramView.swift GestureDetailPanel.swift
 L10n.swift L10nStore.swift DeviceCapability.swift DeviceCapabilityTypes.swift
 DeviceCapabilityModel.swift GestureLabelStructure.swift GestureMap.swift
 GestureArmView.swift GestureActionPicker.swift GestureActivityPanel.swift
-SpaceBinding.swift"
+GestureButtonList.swift
+SpaceBinding.swift
+ConnectedDeviceBattery.swift BatteryProvider.swift MacPowerSourceProvider.swift
+MagicBatteryReader.swift BluetoothBatteryReader.swift BatteryStore.swift
+BatteryViews.swift PermissionManager.swift
+PreviewItem.swift ScreenCaptureProvider.swift SpecialProviders.swift
+WindowPreviewStore.swift PreviewOverlayWindow.swift LiquidGlassView.swift
+WindowPreviewComponents.swift LiquidGlassTokens.swift DockLayerController.swift
+VoiceProtocols.swift AudioCapture.swift VoiceHotkeyManager.swift
+AppleSpeechProvider.swift WhisperKitProvider.swift OllamaCorrectionProvider.swift
+TypingSink.swift VoiceGhostOverlay.swift VoiceManager.swift VoiceDetailView.swift
+MenuBarEngine.swift MenuBarEngineFactory.swift LegacyLengthEngine.swift
+NativeVisibilityEngine.swift NativeVisibilityBridge.swift AccessibilityMenuBarInventory.swift"
 for f in $GESTURE_FILES; do
   if grep -q "$f" "$LIST"; then echo "  OK   $f"; else echo "  MISS $f"; fi
 done
@@ -55,3 +67,24 @@ done
 
 echo "--- archs ---"
 lipo -archs "$OUT/out/XFinder.app/Contents/MacOS/XFinder"
+
+echo "--- code sign with XFinder Dev ---"
+if security find-identity -p codesigning -v | grep -q "XFinder Dev"; then
+  codesign --force --deep --sign "XFinder Dev" "$OUT/out/XFinder.app" 2>/dev/null || codesign --force --deep --sign - "$OUT/out/XFinder.app"
+  echo "signed with XFinder Dev or ad-hoc"
+else
+  codesign --force --deep --sign - "$OUT/out/XFinder.app"
+  echo "signed ad-hoc"
+fi
+
+echo "--- deploy to /Applications and launch ---"
+pkill -9 XFinder 2>/dev/null || true
+sleep 1
+rm -rf /Applications/XFinder.app
+ditto "$OUT/out/XFinder.app" /Applications/XFinder.app
+xattr -cr /Applications/XFinder.app
+if security find-identity -p codesigning -v | grep -q "XFinder Dev"; then
+  codesign --force --deep --sign "XFinder Dev" /Applications/XFinder.app 2>/dev/null || codesign --force --deep --sign - /Applications/XFinder.app
+fi
+open /Applications/XFinder.app
+echo "app launched from /Applications/XFinder.app"

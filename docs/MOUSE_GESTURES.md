@@ -34,7 +34,7 @@ rồi **bấm nút hông bạn muốn giữ** — số hiện ra ngay khi bạn 
 **2. XFinder đang là ứng dụng phía trước.**
 
 Engine tra bảng theo **bundle ID của app đang frontmost**. Khi bạn *đang thử* từ chính trang
-này, XFinder frontmost — nên nhật ký hiện `com.xfinder.app` một cách **hợp lệ**, và cử chỉ
+này, XFinder frontmost — nên cử chỉ được tra theo chính XFinder một cách **hợp lệ**, và nó
 trông như hỏng trong khi nó chạy đúng cấu hình. Hãy chuyển sang Zed / Chrome / Excel… rồi
 thử lại. Trang in rõ app sẽ nhận cử chỉ ở dòng **"Cử chỉ sẽ gửi tới"**.
 
@@ -46,16 +46,22 @@ bản cài mới.
 
 Mã CoreGraphics đếm `0 = trái, 1 = phải, 2 = giữa`, còn số **in trên vỏ chuột**
 đếm từ 1. UI hiển thị **theo số người dùng đếm** — tức `mouseButton(n)` hiển thị
-`Nút (n+1)` — và giữ mã thô trong ngoặc ở ba nút ai cũng có:
+`Nút (n+1)`:
 
 | Mã CoreGraphics | UI hiển thị | Ghi chú |
 |---|---|---|
-| `Button 0` | **Nút 1** (chuột trái) | Bị chặn — chiếm thao tác kéo/chọn |
-| `Button 1` | **Nút 2** (chuột phải) | Dùng được nếu bạn muốn |
-| `Button 2` | **Nút 3** (bấm con lăn xuống) | **Không dùng làm nút giữ** — xem mục "Kiểm tra nhanh" |
+| `Button 0` | **Nút 1** | Bị chặn — chiếm thao tác kéo/chọn |
+| `Button 1` | **Nút 2** | Dùng được nếu bạn muốn |
+| `Button 2` | **Nút 3** | **Không dùng làm nút giữ** — xem mục "Kiểm tra nhanh" |
 | `Button 3` | **Nút 4** | |
 | `Button 4` | **Nút 5** | |
 | từ `Button 5` | **Nút *n+1*** | Chuột nhiều nút |
+
+Ba nút ai cũng có còn có **tên mô tả** — **Nút trái**, **Nút phải**, **Bấm con lăn xuống** —
+nhưng tên đó chỉ xuất hiện ở **tooltip** và ở **dòng rộng trong danh sách**, không ở sơ đồ:
+một ô sơ đồ rộng 46 pt và tên tiếng Việt của nút giữa dài 17 ký tự. Chỗ nào nói "nút nào"
+bằng **một giá trị duy nhất** — bảng giữ trên thân chuột, dòng "Nút giữ:" ở mục Kiểm tra
+nhanh, dòng trong mục *Nút giữ và cuộn* — thì in **số**, cùng một từ vựng với các ô.
 
 > **Vì sao không đặt tên vật lý?** Bản trước gọi `Button 3` là “nút hông sau” và
 > `Button 4` là “nút hông trước”. Sai theo hai cách: cùng một số là **nút khác nhau**
@@ -64,10 +70,144 @@ Mã CoreGraphics đếm `0 = trái, 1 = phải, 2 = giữa`, còn số **in trê
 > vendor/product nào trong `CGEventField`. Đặt tên vật lý là **khẳng định một layout
 > chưa từng đo**. Số thì luôn đúng.
 
-**Mỗi mũi tên trên sơ đồ in số nút ngay trên đầu mũi tên** (`Nút 3 ↑`), và
-**tiêu đề trong bảng chi tiết cũng ghi số** (`Nút 3: kéo lên`). Đây là câu trả lời
-cho câu hỏi nguyên văn *“tôi ko hiểu dùng nút nào của chuột với mũi tên”* — một
-mũi tên trần không cho biết đang giữ nút nào.
+**Mỗi nút của chuột được vẽ trên sơ đồ** — mỗi ô là **số của nút đó** (`Nút 4`) — và mỗi nút có một
+dòng đầy đủ trong mục *Nút chuột XFinder thấy*, kèm tên mô tả, vai trò hiện tại và một nút
+**Đặt làm nút giữ**. Sơ đồ trả lời *“nút đó nằm ở đâu trên con chuột của tôi”*, danh sách trả lời
+*“nút nào, đang làm gì”*. Đây là câu trả lời cho câu hỏi nguyên văn *“tôi ko hiểu dùng nút nào
+của chuột với mũi tên”*.
+
+> **Vì sao ô trên sơ đồ là số mà không phải “Bấm con lăn xuống”?** Vì một ô rộng 46 pt và tên
+> tiếng Việt của nút giữa dài 17 ký tự — không vừa ở cỡ chữ nào còn đọc được, và một ô tự cắt
+> cụt nhãn của chính nó thì tệ hơn một con số luôn vừa. Tên đầy đủ nằm ở tooltip và ở dòng
+> rộng trong danh sách bên dưới.
+
+**Nút giữ được in đúng MỘT lần**, ở bảng trên thân chuột, và bảng đó in **số** (`Nút 3`) —
+cùng từ vựng với các ô của sơ đồ. Bản trước in số đó trên **cả bốn mũi tên**, và vì con số
+giống hệt nhau ở mọi hướng (nó là nút bạn giữ để bắt đầu *bất kỳ* động tác nào), bốn bản sao
+đọc thành "cả bốn nút đều là Nút 3". Bấm vào bảng đó để ghi lại nút khác. (Ghi chú này tồn
+tại vì tài liệu này từng mô tả đúng cái hành vi sai đó.)
+
+### Sơ đồ vẽ theo chuột bạn có (2026-09-23, cập nhật PATCH v10.1)
+
+Sơ đồ **không còn là một hình chuột cố định bốn mũi tên**. Nó vẽ theo mô tả HID của chuột
+bạn, ở vị trí mà nút đó nằm trên con chuột kiểu Razer Basilisk:
+
+- **hàng trên**: nút trái — bấm con lăn — nút phải, đúng thứ tự đó, hai nút bên hông con lăn;
+- **cạnh trái**, từ trên xuống: **nút hông trên**, **nút hông dưới**, rồi **nút hông cuối**
+  (Sniper) — vì Sniper nằm thấp nhất dưới ngón cái.
+
+Thân chuột cũng **không còn là một viên thuốc** (`RoundedRectangle` với bán kính gần nửa
+chiều rộng — hình Magic Mouse). PATCH v10.1 vẽ nó bằng `MouseSilhouette`, dựng từ
+`MouseFigureOutline.points`, và hình đó mang ba thứ mà viên thuốc không có: một **đường
+ngăn** giữa hai nút chính, **con lăn** nằm trong đường ngăn đó, và một **gờ ngón cái** ở
+dưới-bên trái với ba nút hông nằm trên. Hai tính chất làm nên khác biệt là **số**, không
+phải cảm tính — điểm rộng nhất bên trái nằm **thấp hơn** điểm rộng nhất bên phải (đó là gờ
+ngón cái), và gờ đó ở **nửa dưới, bên trái** — nên `MouseFigureTests` khoá được chúng.
+
+Mỗi ô in **số** (`Nút 4`) và bên dưới là **tên vị trí** trên hình (`Hông trên`). Hai thứ này
+trả lời hai câu khác nhau: con số là thứ bạn gán, tên vị trí là chỗ trên hình. Không API nào
+cho biết một nút vật lý nằm ở đâu, nên phần chữ dưới ô là mô tả **hình vẽ**, còn danh sách bên
+dưới mới là thứ **mô tả HID khai báo** — hai điều đó không được trộn.
+
+Ô của một nút mà phép đọc **không** đưa vào chuột (`.notDeclared` hoặc `.unknown`) được vẽ
+**mờ, viền đứt và không bấm được**, kèm tooltip nói rõ và chỉ sang nút **Ghi** ở dòng tương
+ứng. Lý do là honesty rule: một ô còn bấm được là một lời khẳng định rằng XFinder *thấy*
+nút đó, mà với một nút chưa khai báo thì đó đúng là điều mà đường "bấm để ghi" tồn tại để
+kiểm chứng. Nút **Ghi** vẫn nằm ở dòng bên dưới, nơi phép đo thật sự xảy ra — nên không có
+gì bị khoá khỏi người dùng.
+
+**Hình đổi theo thiết bị.** Chuột khai báo **≥ 3 nút** thì vẽ hình 6 vị trí ở trên. Thiết bị
+khai báo ít hơn (Magic Mouse một nút) thì vẽ **hình chung, chỉ những nút đo được** — không vẽ
+6 ô cho một con chuột một nút. Khi **chưa đọc được** mô tả thì vẫn vẽ hình 6 vị trí nhưng mờ
+và ghi “chưa đọc được”, vì một hình trống sẽ đọc thành “chuột bạn không có nút nào”.
+
+Ba thái tắc của một ô, và chúng **khác nhau có ý nghĩa**:
+
+| Thái tắc | Nghĩa |
+|---|---|
+| có nhãn, bình thường | mô tả HID khai báo nút này |
+| viền đứt, mờ | **mô tả HID đã đọc và không khai báo nút này** — chuột bạn thật sự không có |
+| viền đứt, mờ, tooltip “Chưa đọc được” | **chưa đọc được mô tả chuột** — không biết chuột có nút này hay không |
+
+Dòng thứ ba là điều kiện không thể gộp với dòng thứ hai, đúng như với các hướng cử chỉ: một
+lần đọc hỏng **không phải** là một absence đã đo.
+
+Mục **Nút chuột XFinder thấy** ngay dưới sơ đồ liệt kê từng nút kèm vị trí, vai trò thật, và
+**nút “Ghi” riêng cho từng dòng** — bấm nút vật lý, số nhận được lưu ngay, dòng đó sáng lên
+trong lúc chờ. Vai trò:
+
+| Vai trò | Nghĩa |
+|---|---|
+| **Nút giữ** | nút đang bắt đầu cử chỉ bốn hướng |
+| **Nút cuộn** | nút đang làm modifier cuộn (chỉ khi công tắc cuộn bật) |
+| **Chỉ bấm** | chuột trái / phải — engine không bao giờ chiếm hai nút này |
+| **Chưa gán** | chuột có nút này, hiện chưa gán gì |
+| **Chuột không khai báo** | mô tả HID đã đọc và không có nút này |
+| **Chưa đọc được** | chưa đọc được mô tả chuột |
+
+**Một nút chưa khai báo vẫn gán được.** Đây không phải sơ suất: mô tả HID trên phần cứng
+thật hay thiếu nút (xem mục dưới), và chặn người dùng gán một nút họ **bấm được** là biến
+hạn chế của phép dò thành vấn đề của người dùng.
+
+**Bấm đơn thì sao?** Dòng của nút 4 và nút 5 ghi thẳng điều đang xảy ra: **bấm đơn vẫn do ứng
+dụng xử lý** (hầu hết app hiểu là lùi / tiến), vì engine chỉ chiếm nút giữ và nút cuộn. Nút 6
+(Sniper) ghi rõ nó **không có phím tắt mặc định nào trong macOS** và chỉ “Ghi” mới cho ra số.
+Trang **không** mời bạn gán một hành động cho cú bấm đơn, vì engine chưa có đường nào cho việc
+đó — mời gán sẽ là một control không làm được điều nhãn nó hứa.
+
+### Nút do chuột tự xử lý (E / F / M)
+
+Chuột kiểu Basilisk có thêm nút **đổi chế độ con lăn**, **đổi DPI** và **đổi hồ sơ**. Ba nút
+này **không có trong mô tả HID**: mô tả của chuột trong repo này khai báo đúng 5 nút
+(`[1,2,3,4,5]` = trái, phải, con lăn, hai nút hông). Trang liệt kê chúng và nói rõ phần nào là
+**đo được** (không có trong khai báo) và phần nào là **suy luận** (thường do firmware chuột xử
+lý). Nút Sniper cũng vắng mặt trong khai báo đó — nên cách duy nhất để biết nó gửi số nào là
+**bấm nó** và đọc số XFinder nhận được.
+
+> **Đo lại 2026-09-23, chuột kết nối qua Bluetooth Low Energy:** khai báo đúng **5** nút
+> (`page=0x0009`, usages `[1,2,3,4,5]`, 898 phần tử) và **không có phần tử nào trên trang
+> vendor** — quét `page >= 0xFF00` với `usage 1...0x3F` trả về rỗng. Nên **trên BLE, Sniper là
+> firmware-only**: nó không gửi element nút nào, và không bộ lọc nào đào ra được. Trang render
+> đúng sự thật đó (`5 buttons` + `Button 6 — Not declared` kèm nút **Record**). USB **chưa đo**
+> (không có cáp); nếu sau này khác thì ghi thành dòng riêng, không sửa dòng này.
+
+### Khi phép dò thiếu nút — dấu hiệu đo được, không phải phỏng đoán
+
+Cảnh báo “thiếu nút” có **hai** nguồn bằng chứng, cả hai đều đo được:
+
+1. XFinder nhận được một lần bấm mà **mô tả HID không hề khai báo** con số đó — bạn bấm được
+   nút đó, nên nút đó có thật và khai báo còn thiếu.
+2. Mô tả khai báo **ít nút hơn số vị trí trên hình**, mà lại **có thêm phần tử nút trên trang
+   riêng của hãng** (UsagePage ≥ `0xFF00`) — nghĩa là trang Button chuẩn không kể hết chuột bạn.
+
+Khi cảnh báo hiện, trang đề nghị **Đặt làm nút giữ** ngay trên dòng tương ứng. Đó là cách trả
+lời trung thực cho “chuột tôi có nhiều nút hơn thế”: engine vốn đã nhận mọi lần bấm, nên con số
+đó là **đo được**.
+
+Cảnh báo này **chỉ hiện khi có bằng chứng**. Nó không hiện chỉ vì chuột bạn ít nút hơn một
+hình mẫu nào đó — nếu hiện như vậy thì mọi chuột hai nút đều bị cảnh báo vô cớ.
+
+**Trang Button chuẩn và trang vendor được đọc cả hai, nhưng không cộng vào nhau.** Phép dò
+quét `UsagePage 0x09` (nguồn duy nhất của **số** nút) **và** `UsagePage ≥ 0xFF00` (chỉ để báo
+*bằng chứng*). Lý do không cộng: một usage trên trang vendor là số riêng của hãng, **không có
+quan hệ nào** với số `CGEvent` — `usage - 1` đúng trên trang Button nhưng vô nghĩa ở đây. Cộng
+vào sẽ hoặc bịa số, hoặc trùng số với nút có thật.
+
+Bộ lọc vendor có **hai** chốt, cả hai đều có việc: `type == Input_Button` **và** `usage` trong
+`1...0x3F`. Chốt thứ hai tồn tại vì một phép đo trên chính máy này: trackpad Apple khai báo
+**1753** phần tử trang `0xFF00` mang `type == Input_Button` với usage `0xFFFFFFFF` (sentinel
+“không có usage”). Bỏ chốt khoảng sẽ báo **1753 nút** và đánh số một trong số đó là `-1` —
+đúng dạng thất bại của “873 input-button elements” năm trước.
+
+**Mô tả HID thô** nằm trong một mục gập ngay dưới dòng thiết bị: bấm mở thì XFinder đọc lại
+`IOHIDDeviceCopyMatchingElements` và in nguyên `(page, usage, type)` của từng phần tử. Đây là
+bước “ghi log trước khi lọc”, và nó tồn tại để **mọi câu trên trang này kiểm tra được** thay vì
+phải tin. Nó đọc theo yêu cầu — không nằm trên đường tải trang.
+
+> **Vì sao không nới bộ lọc cho tới khi ra 6 nút?** Vì bộ lọc đó đã từng bị nới và đã ship
+> một **nút thứ sáu không tồn tại**: một fixture lọc quá rộng cho ra `[1,2,3,4,5,9]`. Bộ lọc
+> này bị một test khoá lại. Nếu số nút bạn đo được khác với khai báo, cách đúng là **ghi lại
+> con số thật**, không phải sửa bộ lọc để nó nói ra con số mong muốn.
 
 ### Giao diện kiểu Mac Mouse Fix / MOS (2026-09-21)
 
@@ -105,7 +245,7 @@ chưa gán. Cùng màu đó dùng cho cả mũi tên, viền bảng và nhãn ng
 Ba bước trên trang:
 
 1. **Giữ** nút đã chọn (mặc định: **Nút 3**, bấm con lăn xuống — giữ nguyên, đừng nhả).
-   Số nút được in ngay trên mỗi mũi tên của sơ đồ.
+   Số của nút giữ in **một lần** trên thân chuột, không in trên từng mũi tên.
 2. Vẫn giữ, **kéo** theo một hướng. Phải vượt ngưỡng (~12 đơn vị delta) mới tính là cử chỉ;
    ngắn hơn thì XFinder phát lại click bình thường.
 3. **Thả** — XFinder gửi phím tắt của app đang ở trước.
@@ -433,14 +573,20 @@ không reset trigger, deadzone hay app khác.
 ### Đổi nút giữ (nút nào của chuột?)
 
 Đây là câu hỏi đầu tiên của mọi người dùng, và XFinder trả lời bằng **số đo trên máy
-bạn**, không bằng lời khuyên:
+bạn**, không bằng lời khuyên. Hai đường, cả hai đều một lần bấm:
 
-1. Mở trang → mục **XFinder đã nhận gì**. Bấm **Bật ghi nhật ký**.
-2. Bấm thử nút bạn định dùng. Trang hiện **“Nút bạn vừa bấm: 4”** — đó là con số
-   XFinder nhận được từ chuột bạn, không phải suy đoán.
-3. Bấm **Ghi nút** trong mục **Nút giữ và cuộn**, rồi bấm đúng nút đó. Hoặc bấm vào
-   **bảng số trên thân chuột** trong sơ đồ (nút đó cũng ghi lại).
-4. Nhấn **Esc** để huỷ, hoặc chờ 10 giây tự dừng.
+**Đường trực tiếp** — mục *Nút chuột XFinder thấy*, dòng của nút bạn muốn dùng, bấm
+**Đặt làm nút giữ**. Sơ đồ và bảng cập nhật ngay. Chuột trái/phải hiện **Không đổi được**.
+
+**Đường đo** — khi bạn không chắc con số nào ứng với nút vật lý nào:
+
+1. Bấm thử nút bạn định dùng. Trang hiện **“Nút bạn vừa bấm: 4”** ngay dưới dòng thiết bị
+   — đó là con số XFinder nhận được từ chuột bạn, không phải suy đoán, và nó hiện **không
+   cần bật gì thêm** (engine vốn đã nhận mọi lần bấm).
+2. Bấm **Ghi nút thật** (trong mục *Nút chuột XFinder thấy*) hoặc **Ghi nút** (trong mục
+   *Nút giữ và cuộn*), rồi bấm đúng nút đó. Bấm vào **bảng số trên thân chuột** trong sơ đồ
+   cũng ghi lại.
+3. Nhấn **Esc** để huỷ, hoặc chờ 10 giây tự dừng.
 
 **Nút 1** (`Button 0`, chuột trái) **bị từ chối** — nó chiếm thao tác kéo/chọn thông
 thường. Modifier (⌃ ⌥ ⇧ ⌘) cũng nhận được, miễn là **giữ đúng một cái**.
@@ -449,7 +595,7 @@ thường. Modifier (⌃ ⌥ ⇧ ⌘) cũng nhận được, miễn là **giữ 
 > `CGEventField` chỉ có năm trường chuột và trường cao nhất là `3`
 > (`mouseEventButtonNumber`) — **không có trường vendor/product/device nào**, nên không
 > code path nào biết con số nào ứng với nút vật lý nào. Số thì luôn đúng. Trang có
-> **Ghi nút** để bạn tự xác nhận, và mục *XFinder đã nhận gì* để bạn **đọc được số của
+> **Ghi nút** để bạn tự xác nhận, và dòng **“Nút bạn vừa bấm”** để bạn **đọc được số của
 > chính mình** thay vì phải tin.
 
 Trigger dùng chung cho mọi thiết bị theo **mã nút của event**, không theo HID identity
@@ -512,7 +658,18 @@ Bảng Global mặc định (áp cho app không có profile riêng):
 
 ## Tilt, driver và tránh xung đột
 
-- Tilt độc lập với trigger, chỉ bật khi công tắc chính và công tắc tilt đều bật.
+- Tilt độc lập với trigger. Công tắc **“Bật hai hướng nghiêng con lăn”** ghi **cả hai** trường:
+  `tiltAvailable` (vẽ hai mũi tên) và `tiltEnabled` (engine xử lý sự kiện). Trước PATCH v10 nó chỉ
+  ghi trường thứ nhất, còn engine đọc trường thứ hai — nên gán phím cho nghiêng xong vẫn **không
+  có gì chạy**: một control không làm được điều nhãn nó hứa. Hợp đồng đó nay nằm ở
+  `TiltArmsVisibility.fields(forReveal:)` và có test + mutation riêng.
+- **Phía đọc cũng có hợp đồng riêng** (PATCH v10.1). Sửa được cái công tắc *ghi* không sửa được
+  payload cũ đã lưu: đo trên chính máy này, store vẫn giữ `tiltAvailable = true` cùng
+  `tiltEnabled = false`, nên trang vẽ **hai mũi tên không bao giờ chạy được** và vẫn hiện công tắc
+  là **bật**. Trang nay đọc **phép giao** (`TiltArmsVisibility.isLive(available:enabled:)`) cho cả
+  mũi tên, công tắc lẫn câu giải thích, nên một payload tự mâu thuẫn đọc là **tắt**. **Không cần
+  migration**: bật lại công tắc là cả hai trường được ghi đúng.
+- Nghiêng chỉ chạy khi **công tắc chính** (bật cử chỉ) cũng đang bật.
 - Chỉ nhận scroll ngang **rời rạc**, axis dọc bằng 0. Cuộn liên tục/momentum của
   trackpad và Magic Mouse được giữ nguyên. Không thể coi mọi ngang scroll là
   thao tác nghiêng bánh xe thật: Event Tap không cung cấp nhận diện vật lý ở đây.

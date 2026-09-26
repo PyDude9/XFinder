@@ -1,70 +1,166 @@
 import AppKit
 import Observation
 
-/// Biểu tượng thanh menu — nút mũi tên ẩn biểu tượng, theo đúng cơ chế public
-/// API của dwarvesf/hidden (Hidden Bar):
-///
-/// XFinder tạo 2 `NSStatusItem` của chính mình:
-///   * **nút mũi tên** (chevron) — bấm để ẩn/hiện.
-///   * **vạch ngăn** (separator) — `length = 1` khi hiện, phình lên
-///     `max(500, min(screenWidth + 200, 4000))` khi thu gọn để đẩy các icon
-///     nằm bên TRÁI ra ngoài. `NSStatusItem.autosaveName` để macOS nhớ vị trí
-///     người dùng ⌘-kéo nó tới.
-///
-/// ⚠️ macOS 26/27 — đã đo (xem CLAUDE.md "macOS 27 — Biểu tượng thanh menu"):
-///     `length` bị clamp ~5016pt và layout KHÔNG còn đẩy item hàng xóm đi,
-///     nên trick này có thể không ẩn được icon của app khác trên macOS mới.
-///     Giữ lại như cách làm tham chiếu (đúng public API, không private XPC);
-///     UI ghi rõ giới hạn này thay vì giấu.
+/// MenuBarHiderController coordinates menu bar hiding for XFinder.
+/// Implements MenuBarItemProvider and delegates hiding mechanics to MenuBarEngine.
 @MainActor
 @Observable
-final class MenuBarHiderController: NSResponder {
-    static let shared = MenuBarHiderController()
+public final class MenuBarHiderController: NSResponder, MenuBarItemProvider {
+    public static let shared = MenuBarHiderController()
 
-    private(set) var isHiding = false
+    public private(set) var isHiding = false
 
     private var separator: NSStatusItem?
     private var arrow: NSStatusItem?
-    private var covers: [NSWindow] = []
+    public private(set) var currentEngine: MenuBarEngine?
 
-    private override init() { super.init() }
-    required init?(coder: NSCoder) { fatalError("not used") }
+    public var autoHideTimer: Timer?
 
-    // MARK: Settings (read at point of use)
-
-    private var enabled: Bool {
-        UserDefaults.standard.object(forKey: "menubar.hiderEnabled") as? Bool ?? false
+    public var toggleItem: NSStatusItem {
+        if let arrow = arrow { return arrow }
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        self.arrow = item
+        return item
     }
 
-    /// TẠM TẮT (chờ giải pháp ẩn RIÊNG icon app, không che cả thanh menu bên
-    /// phải). Luôn gỡ items; giữ lại code để bật lại khi có cách đúng.
-    func applySettings() {
-        remove()
+    public var separatorItem: NSStatusItem {
+        if let separator = separator { return separator }
+        let item = NSStatusBar.system.statusItem(withLength: 1)
+        self.separator = item
+        return item
     }
 
-    // MARK: - Install / remove
+    private override init() {
+        super.init()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleUserDefaultsChange),
+            name: UserDefaults.didChangeNotification,
+            object: nil
+        )
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("not used")
+    }
+
+    @objc private func handleUserDefaultsChange() {
+        if !autoHideEnabled {
+            autoHideTimer?.invalidate()
+            autoHideTimer = nil
+        }
+        if hiderEnabled != (arrow != nil) {
+            applySettings()
+        }
+    }
+
+    public var hiderEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "menubar.hiderEnabled") as? Bool ?? true }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "menubar.hiderEnabled")
+            applySettings()
+        }
+    }
+
+    public var isEnabled: Bool {
+        get { hiderEnabled }
+        set { hiderEnabled = newValue }
+    }
+
+    public var autoHideEnabled: Bool {
+        get { UserDefaults.standard.object(forKey: "menubar.autoHideEnabled") as? Bool ?? false }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "menubar.autoHideEnabled")
+            if newValue {
+                if !isHiding {
+                    scheduleAutoHide()
+                }
+            } else {
+                autoHideTimer?.invalidate()
+                autoHideTimer = nil
+            }
+        }
+    }
+
+    public var isAutoHideEnabled: Bool {
+        get { autoHideEnabled }
+        set { autoHideEnabled = newValue }
+    }
+
+    public var autoHideSeconds: Double {
+        get { UserDefaults.standard.object(forKey: "menubar.autoHideSeconds") as? Double ?? 5.0 }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "menubar.autoHideSeconds")
+            if autoHideEnabled && !isHiding {
+                scheduleAutoHide()
+            }
+        }
+    }
+
+    public var defaultCollapsed: Bool {
+        get { UserDefaults.standard.object(forKey: "menubar.defaultCollapsed") as? Bool ?? true }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "menubar.defaultCollapsed")
+        }
+    }
+
+    public func applySettings() {
+        if hiderEnabled {
+            install()
+        } else {
+            remove()
+        }
+    }
 
     private func install() {
-        guard separator == nil else { return }
+        guard arrow == nil else { return }
         let bar = NSStatusBar.system
 
-        let arrow = bar.statusItem(withLength: NSStatusItem.squareLength)
-        if let b = arrow.button {
+        let arrowItem = bar.statusItem(withLength: NSStatusItem.variableLength)
+        if let b = arrowItem.button {
             b.image = NSImage(systemSymbolName: isHiding ? "chevron.right" : "chevron.left",
                               accessibilityDescription: "Ẩn/hiện biểu tượng thanh menu")
             b.target = self
             b.action = #selector(toggle)
         }
-        arrow.autosaveName = "xfinder.menubar.arrow"
-        self.arrow = arrow
+        arrowItem.autosaveName = "xfinder.menubar.arrow"
+        self.arrow = arrowItem
 
-        let sep = bar.statusItem(withLength: isHiding ? collapseLength() : 1)
-        sep.autosaveName = "xfinder.menubar.separator"
-        separator = sep
+        let sepItem = bar.statusItem(withLength: 1)
+        sepItem.autosaveName = "xfinder.menubar.separator"
+        self.separator = sepItem
+
+        let engine = MenuBarEngineFactory.make(items: self)
+        self.currentEngine = engine
+        NSLog("MenuBarHiderController: initialized with engine %@", String(describing: type(of: engine)))
+
+        if defaultCollapsed && hiderEnabled {
+            attemptInitialCollapse(retriesLeft: 4)
+        } else if autoHideEnabled && hiderEnabled {
+            scheduleAutoHide()
+        }
+    }
+
+    private func attemptInitialCollapse(retriesLeft: Int) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            guard let self = self, self.defaultCollapsed, self.hiderEnabled else { return }
+            self.collapse { [weak self] result in
+                guard let self = self else { return }
+                if result != .collapsed && retriesLeft > 0 {
+                    self.attemptInitialCollapse(retriesLeft: retriesLeft - 1)
+                }
+            }
+        }
     }
 
     private func remove() {
-        hideCovers()
+        autoHideTimer?.invalidate()
+        autoHideTimer = nil
+        if let engine = currentEngine, engine.state == .collapsed {
+            engine.expand()
+        }
+        currentEngine = nil
+
         if let separator { NSStatusBar.system.removeStatusItem(separator) }
         if let arrow { NSStatusBar.system.removeStatusItem(arrow) }
         separator = nil
@@ -72,67 +168,71 @@ final class MenuBarHiderController: NSResponder {
         isHiding = false
     }
 
-    /// Hidden Bar giới hạn độ dài phình trong khoảng 500…4000pt (sàn + màn + 200).
-    private func collapseLength() -> CGFloat {
-        let width = NSScreen.main?.frame.width ?? 1440
-        return min(max(500, width + 200), 4000)
+    public func expand() {
+        guard let engine = currentEngine else { return }
+        engine.expand()
+        isHiding = false
+        updateArrowImage()
+        if autoHideEnabled {
+            scheduleAutoHide()
+        }
     }
 
-    @objc func toggle() {
-        guard let separator else { return }
-        isHiding.toggle()
-        separator.length = isHiding ? collapseLength() : 1
-        if isHiding { showCovers() } else { hideCovers() }
-        arrow?.button?.image = NSImage(systemSymbolName: isHiding ? "chevron.right" : "chevron.left",
-                                       accessibilityDescription: nil)
+    public func collapse(completion: ((CollapseResult) -> Void)? = nil) {
+        autoHideTimer?.invalidate()
+        autoHideTimer = nil
+        guard let engine = currentEngine else {
+            completion?(.unavailable)
+            return
+        }
+        engine.collapse { [weak self] result in
+            guard let self = self else { return }
+            self.isHiding = (result == .collapsed)
+            self.updateArrowImage()
+            completion?(result)
+        }
     }
 
-    /// Cover: trên macOS 27 separator không còn đẩy icon hàng xóm ra ngoài, nên
-    /// XFinder che VÙNG ẨN bằng panel vibrancy `.menu` ngang thanh menu. Che
-    /// phần BÊN PHẢI mũi tên — nơi status icon nằm — để menu app + Apple menu
-    /// bên trái không bị che (chỉ ẩn icon, không ẩn thanh menu).
-    private func showCovers() {
-        hideCovers()
-        guard let arrow,
-              let arrowWin = arrow.button?.window,
-              let screen = NSScreen.screens.first(where: { $0.frame.contains(arrowWin.frame.origin) })
-              ?? NSScreen.main
-        else { return }
-        let bar = screen.frame.maxY - screen.visibleFrame.maxY
-        guard bar > 2 else { return }
-        let arrowMaxX = arrowWin.frame.maxX
-        let rect = NSRect(x: arrowMaxX,
-                          y: screen.frame.maxY - bar,
-                          width: max(0, screen.frame.maxX - arrowMaxX),
-                          height: bar + 1)
-
-        let w = NSWindow(contentRect: rect, styleMask: .borderless, backing: .buffered, defer: false)
-        w.level = .statusBar
-        w.isOpaque = false
-        w.backgroundColor = .clear
-        w.ignoresMouseEvents = true
-        w.hasShadow = false
-        w.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
-        let eff = NSVisualEffectView()
-        eff.material = .menu
-        eff.blendingMode = .behindWindow
-        eff.state = .active
-        w.contentView = eff
-        w.orderFrontRegardless()
-        covers = [w]
+    @objc public func toggle() {
+        guard let engine = currentEngine else { return }
+        if engine.state == .collapsed || isHiding {
+            expand()
+        } else {
+            collapse()
+        }
     }
 
-    private func hideCovers() {
-        covers.forEach { $0.orderOut(nil) }
-        covers.removeAll()
+    public func scheduleAutoHide() {
+        autoHideTimer?.invalidate()
+        autoHideTimer = nil
+        guard autoHideEnabled && autoHideSeconds > 0 else { return }
+        let timer = Timer(timeInterval: autoHideSeconds, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self = self else { return }
+                if self.isMouseInMenuBar() {
+                    self.scheduleAutoHide()
+                } else {
+                    self.collapse()
+                }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        self.autoHideTimer = timer
     }
 
-    // MARK: - macOS native path
+    public func isMouseInMenuBar() -> Bool {
+        let p = NSEvent.mouseLocation
+        return NSScreen.screens.contains { p.y >= $0.visibleFrame.maxY && p.y <= $0.frame.maxY }
+    }
 
-    /// Opens System Settings → Control Centre → Menu Bar, where macOS 26/27
-    /// governs *system* menu-bar icons. Falls back to the Dock pane, then to
-    /// System Settings itself, so the button is never dead.
-    func openSystemMenuBarSettings() {
+    private func updateArrowImage() {
+        arrow?.button?.image = NSImage(
+            systemSymbolName: isHiding ? "chevron.right" : "chevron.left",
+            accessibilityDescription: "Ẩn/hiện biểu tượng thanh menu"
+        )
+    }
+
+    public func openSystemMenuBarSettings() {
         let candidates = [
             "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension",
             "x-apple.systempreferences:com.apple.preference.dock",
