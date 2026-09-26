@@ -56,27 +56,14 @@ public struct LiquidGlassView<Content: View>: View {
             }
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(LiquidGlassTokens.containerBorder, lineWidth: 1)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(
-                        LinearGradient(colors: [LiquidGlassTokens.containerHighlight, .clear], startPoint: .top, endPoint: .bottom),
-                        lineWidth: 1
-                    )
-                    .mask(
-                        RoundedRectangle(cornerRadius: cornerRadius)
-                            .fill(LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .center))
-                    )
+                    .stroke(LiquidGlassTokens.containerBorder, lineWidth: 0.5)
             }
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .shadow(color: LiquidGlassTokens.shadow, radius: LiquidGlassTokens.shadowRadius, x: 0, y: LiquidGlassTokens.shadowY)
-            .shadow(color: LiquidGlassTokens.shadowSecondary, radius: LiquidGlassTokens.shadowSecondaryRadius, x: 0, y: LiquidGlassTokens.shadowSecondaryY)
-            .shadow(color: isSelected ? LiquidGlassTokens.selectionGlow : .clear, radius: LiquidGlassTokens.selectionGlowRadius, x: 0, y: 0)
     }
 }
 
-/// Liquid Glass visual effect card for individual window previews (ZStack with .hudWindow + dark tint)
+/// Liquid Glass visual effect card for individual window previews (clean, unselected is 100% transparent)
 public struct LiquidGlassCard<Content: View>: View {
     public let content: Content
     public var isSelected: Bool
@@ -95,33 +82,21 @@ public struct LiquidGlassCard<Content: View>: View {
     public var body: some View {
         content
             .background {
-                ZStack {
-                    VisualEffectView(material: LiquidGlassTokens.material, blendingMode: .withinWindow)
-                    isSelected ? LiquidGlassTokens.cardSelectedBackground : LiquidGlassTokens.cardBackground
+                if isSelected {
+                    ZStack {
+                        VisualEffectView(material: LiquidGlassTokens.material, blendingMode: .withinWindow)
+                        LiquidGlassTokens.cardSelectedBackground
+                    }
+                } else {
+                    Color.clear
                 }
             }
-            .overlay {
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(isSelected ? LiquidGlassTokens.cardSelectedBorder : LiquidGlassTokens.glassBorder, lineWidth: isSelected ? 1.5 : 1.0)
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(
-                        LinearGradient(colors: [LiquidGlassTokens.glassHighlight, .clear], startPoint: .top, endPoint: .bottom),
-                        lineWidth: 1
-                    )
-                    .mask(
-                        RoundedRectangle(cornerRadius: cornerRadius)
-                            .fill(LinearGradient(colors: [.white, .clear], startPoint: .top, endPoint: .center))
-                    )
-            }
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-            .shadow(color: LiquidGlassTokens.shadow, radius: LiquidGlassTokens.shadowRadius, x: 0, y: LiquidGlassTokens.shadowY)
-            .shadow(color: isSelected ? LiquidGlassTokens.selectionGlow : .clear, radius: LiquidGlassTokens.selectionGlowRadius, x: 0, y: 0)
+            .shadow(color: isSelected ? Color.black.opacity(0.14) : Color.clear, radius: 20, x: 0, y: 8)
     }
 }
 
-/// 100% Flat, crisp window thumbnail view with zero 3D distortion or blur.
+/// 100% Flat, crisp window thumbnail view with zero 3D distortion or inner stroke.
 public struct WindowThumbnailView: View {
     public var image: NSImage?
     public var width: CGFloat?
@@ -152,12 +127,8 @@ public struct WindowThumbnailView: View {
                 }
             }
         }
-        .frame(width: width, height: height ?? 110)
+        .frame(width: width, height: height ?? LiquidGlassTokens.Card.switcherThumbSize.height)
         .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTokens.thumbRadius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: LiquidGlassTokens.thumbRadius, style: .continuous)
-                .stroke(Color.white.opacity(0.10), lineWidth: 1)
-        )
         .contentShape(RoundedRectangle(cornerRadius: LiquidGlassTokens.thumbRadius))
     }
 }

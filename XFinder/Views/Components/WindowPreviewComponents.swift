@@ -610,11 +610,18 @@ public struct WeatherPreviewView: View {
 public struct WindowSwitcherSearchPill: View {
     @Binding public var query: String
     @Binding public var isFocused: Bool
+    public var counterText: String?
     public var onClear: () -> Void
 
-    public init(query: Binding<String>, isFocused: Binding<Bool>, onClear: @escaping () -> Void = {}) {
+    public init(
+        query: Binding<String>,
+        isFocused: Binding<Bool>,
+        counterText: String? = nil,
+        onClear: @escaping () -> Void = {}
+    ) {
         self._query = query
         self._isFocused = isFocused
+        self.counterText = counterText
         self.onClear = onClear
     }
 
@@ -625,43 +632,49 @@ public struct WindowSwitcherSearchPill: View {
                 .foregroundColor(.white.opacity(0.50))
 
             if isFocused {
-                TextField(L10n.t("Nhấn , để tìm kiếm cửa sổ"), text: $query)
+                TextField(L10n.t("Nhấn , để tìm kiếm"), text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundColor(.white)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundColor(.white.opacity(0.90))
                 if !query.isEmpty {
                     Button(action: {
                         query = ""
                         onClear()
                     }) {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.white.opacity(0.6))
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.50))
                     }
                     .buttonStyle(.plain)
                 }
             } else {
-                Text(query.isEmpty ? L10n.t("Nhấn , để tìm kiếm cửa sổ") : query)
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundColor(query.isEmpty ? .white.opacity(0.50) : .white)
+                Text(query.isEmpty ? L10n.t("Nhấn , để tìm kiếm") : query)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundColor(query.isEmpty ? .white.opacity(0.50) : .white.opacity(0.90))
                     .lineLimit(1)
                 Spacer()
             }
+
+            if let counter = counterText, !counter.isEmpty {
+                Text(counter)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundColor(.white.opacity(0.50))
+            }
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 12)
         .frame(width: LiquidGlassTokens.SearchPill.width, height: LiquidGlassTokens.SearchPill.height)
         .background {
             ZStack {
-                VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
-                Color.white.opacity(0.18)
+                VisualEffectView(material: .popover, blendingMode: .withinWindow)
+                Color.white.opacity(0.10)
             }
         }
         .clipShape(Capsule())
         .overlay(
             Capsule()
-                .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                .stroke(Color.white.opacity(0.12), lineWidth: 0.5)
         )
-        .shadow(color: Color.black.opacity(0.12), radius: 16, x: 0, y: 4)
+        .shadow(color: Color.black.opacity(0.10), radius: 8, x: 0, y: 2)
         .onTapGesture {
             isFocused = true
         }
@@ -699,61 +712,55 @@ public struct WindowPreviewCard: View {
     public var body: some View {
         Button(action: onSelect) {
             LiquidGlassCard(isSelected: isSelected, cornerRadius: LiquidGlassTokens.Card.cornerRadius) {
-                VStack(alignment: .leading, spacing: 4) {
-                    // Card Header: Traffic lights + App Icon + 2-line title/subtitle
-                    HStack(spacing: 8) {
-                        // Traffic lights (3 dots, 10px each, spacing 4px)
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(Color(red: 1.0, green: 0.372, blue: 0.337)) // #FF5F56
-                                .frame(width: LiquidGlassTokens.Card.trafficDotSize, height: LiquidGlassTokens.Card.trafficDotSize)
-                            Circle()
-                                .fill(Color(red: 1.0, green: 0.741, blue: 0.180)) // #FFBD2E
-                                .frame(width: LiquidGlassTokens.Card.trafficDotSize, height: LiquidGlassTokens.Card.trafficDotSize)
-                            Circle()
-                                .fill(Color(red: 0.153, green: 0.788, blue: 0.247)) // #27C93F
-                                .frame(width: LiquidGlassTokens.Card.trafficDotSize, height: LiquidGlassTokens.Card.trafficDotSize)
-                        }
-
-                        // App Icon (18px, corner 4)
+                VStack(alignment: .leading, spacing: 8) {
+                    // Card Header: App Icon 16x16 + 12pt medium name + secondary text
+                    HStack(spacing: 7) {
                         if let icon = iconForBundle(item.bundleID) {
                             Image(nsImage: icon)
                                 .resizable()
                                 .frame(width: LiquidGlassTokens.Card.appIconSize, height: LiquidGlassTokens.Card.appIconSize)
-                                .cornerRadius(4)
+                                .cornerRadius(3)
+                                .opacity(0.80)
                         }
 
-                        // App name 13 semibold + Window title 11 regular opacity 0.55
                         VStack(alignment: .leading, spacing: 1) {
-                            let headerTitle = item.isGroup
-                                ? "\(appNameForBundle(item.bundleID)) • \(item.windowCount) \(L10n.t("cửa sổ"))"
-                                : appNameForBundle(item.bundleID)
-                            Text(headerTitle)
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.white)
+                            let appName = appNameForBundle(item.bundleID)
+                            Text(appName)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.white.opacity(0.90))
                                 .lineLimit(1)
                                 .truncationMode(.tail)
-                            let subTitle = item.isOnOtherSpace ? L10n.t("Ở Space khác") : (item.title.isEmpty ? appNameForBundle(item.bundleID) : item.title)
-                            Text(subTitle)
-                                .font(.system(size: 11, weight: .regular))
-                                .foregroundColor(.white.opacity(0.55))
-                                .lineLimit(1)
-                                .truncationMode(.tail)
+
+                            let subTitle: String = {
+                                if item.windowCount > 1 {
+                                    return "\(item.windowCount) \(L10n.t("cửa sổ")) •"
+                                }
+                                let winTitle = item.title
+                                if !winTitle.isEmpty && winTitle != appName {
+                                    return winTitle
+                                }
+                                return ""
+                            }()
+
+                            if !subTitle.isEmpty {
+                                Text(subTitle)
+                                    .font(.system(size: 11, weight: .regular))
+                                    .foregroundColor(.white.opacity(0.45))
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                            }
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.top, 4)
+                    .padding(.horizontal, 4)
+                    .padding(.top, 2)
 
-                    // Thumbnail: 220x110 fill, crisp border, mini badge
+                    // Thumbnail: 184x86, radius 10, no inner stroke, no heavy badge
                     let calculatedThumbWidth = thumbWidth ?? (size.width - LiquidGlassTokens.Card.padding * 2)
                     let calculatedThumbHeight = thumbHeight ?? LiquidGlassTokens.Card.switcherThumbSize.height
 
                     if let thumb = item.thumbnail {
                         WindowThumbnailView(image: thumb, width: calculatedThumbWidth, height: calculatedThumbHeight)
-                            .overlay(alignment: .topTrailing) {
-                                badgeView
-                            }
                     } else if BrowserTabProvider.isSupportedBrowser(bundleID: item.bundleID) {
                         let repTab = item.tabs.first ?? BrowserTabItem(title: item.title, url: item.appName)
                         WebSnapshotCardView(
@@ -762,57 +769,28 @@ public struct WindowPreviewCard: View {
                             height: calculatedThumbHeight,
                             showFullDetails: false
                         )
-                        .overlay(alignment: .topTrailing) {
-                            badgeView
-                        }
                     } else {
-                        // Other space / fallback: subtle glass gradient + 32px icon opacity 0.15 + label
+                        // Fallback / other space: subtle glass fill + 40px icon opacity 0.12 in center
                         ZStack {
                             RoundedRectangle(cornerRadius: LiquidGlassTokens.thumbRadius, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white.opacity(0.08),
-                                            Color.white.opacity(0.03)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: LiquidGlassTokens.thumbRadius, style: .continuous)
-                                        .stroke(Color.white.opacity(0.10), lineWidth: 1)
-                                )
+                                .fill(Color.white.opacity(0.04))
 
-                            VStack(spacing: 6) {
-                                if let icon = iconForBundle(item.bundleID) {
-                                    Image(nsImage: icon)
-                                        .resizable()
-                                        .frame(width: 32, height: 32)
-                                        .opacity(0.15)
-                                }
-                                Text(item.isOnOtherSpace ? L10n.t("Ở Space khác") : (item.title.isEmpty ? appNameForBundle(item.bundleID) : item.title))
-                                    .font(.system(size: 11, weight: .regular))
-                                    .foregroundColor(.white.opacity(0.60))
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-                                    .padding(.horizontal, 10)
+                            if let icon = iconForBundle(item.bundleID) {
+                                Image(nsImage: icon)
+                                    .resizable()
+                                    .frame(width: 40, height: 40)
+                                    .opacity(0.12)
                             }
                         }
                         .frame(width: calculatedThumbWidth, height: calculatedThumbHeight)
-                        .overlay(alignment: .topTrailing) {
-                            badgeView
-                        }
                     }
                 }
                 .padding(LiquidGlassTokens.Card.padding)
                 .frame(width: size.width, height: size.height)
             }
             .scaleEffect(isSelected ? LiquidGlassTokens.switcherSelectionScale : (isHovered ? 1.02 : 1.0))
-            .offset(y: isSelected ? LiquidGlassTokens.switcherSelectionYOffset : (isHovered ? -2 : 0))
-            .brightness(isSelected ? LiquidGlassTokens.switcherSelectionBrightness : 0)
-            .opacity(isSelected ? 1.0 : (isHovered ? 0.92 : LiquidGlassTokens.unselectedOpacity))
-            .saturation(isSelected ? 1.0 : (isHovered ? 1.0 : LiquidGlassTokens.unselectedSaturation))
+            .offset(y: isSelected ? LiquidGlassTokens.switcherSelectionYOffset : (isHovered ? -1 : 0))
+            .opacity(isSelected ? 1.0 : (isHovered ? 0.88 : LiquidGlassTokens.unselectedOpacity))
             .animation(LiquidGlassTokens.spring, value: isSelected)
             .animation(.easeOut(duration: 0.18), value: isHovered)
             .onHover { hovering in
@@ -820,29 +798,6 @@ public struct WindowPreviewCard: View {
             }
         }
         .buttonStyle(.plain)
-    }
-
-    @ViewBuilder
-    private var badgeView: some View {
-        if item.windowCount > 1 {
-            Text("\(item.windowCount)")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.white)
-                .padding(.vertical, 4)
-                .padding(.horizontal, 8)
-                .background(
-                    ZStack {
-                        VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
-                        Color.black.opacity(0.55)
-                    }
-                )
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
-                )
-                .padding(6)
-        }
     }
 
     private func iconForBundle(_ bundleID: String) -> NSImage? {

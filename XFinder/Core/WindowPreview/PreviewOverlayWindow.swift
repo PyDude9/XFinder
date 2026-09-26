@@ -67,19 +67,18 @@ public final class PreviewOverlayWindow: NSPanel {
 
     private func reposition(for host: NSView) {
         guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
-        let containerWidth = min(screen.frame.width - 32, 1400)
-        let containerHeight: CGFloat = 220
+        let count = max(1, WindowPreviewStore.shared.filteredPreviewItems.count)
+        let cardWidth: CGFloat = LiquidGlassTokens.Card.size.width
+        let cardGap: CGFloat = LiquidGlassTokens.Container.gap
+        let padding: CGFloat = LiquidGlassTokens.Container.padding
+        let contentWidth = padding * 2 + CGFloat(count) * cardWidth + CGFloat(max(0, count - 1)) * cardGap
+        let containerWidth = min(screen.frame.width - 32, max(300, contentWidth))
+        let containerHeight: CGFloat = LiquidGlassTokens.Card.size.height + 24
         let searchPillHeight: CGFloat = LiquidGlassTokens.SearchPill.height
-        let spacingAboveContainer: CGFloat = 16
+        let spacingAboveContainer: CGFloat = 10
 
-        // Search pill (36) + spacing (16) = 52px above container top
-        let topOffsetFromContainer = searchPillHeight + spacingAboveContainer
-        let containerTopY = screen.frame.maxY - 140
-        let windowTopY = containerTopY + topOffsetFromContainer
-
-        let fittingH = host.fittingSize.height
-        let totalH = max(fittingH, topOffsetFromContainer + containerHeight)
-        let windowY = windowTopY - totalH
+        let totalH = searchPillHeight + spacingAboveContainer + containerHeight
+        let windowY = screen.frame.midY - totalH / 2
         let windowX = screen.frame.midX - containerWidth / 2
 
         self.setFrame(NSRect(x: windowX, y: windowY, width: containerWidth, height: totalH), display: true)
@@ -106,56 +105,34 @@ struct PreviewOverlayContentView: View {
     @State private var store = WindowPreviewStore.shared
     @State private var scale: CGFloat = LiquidGlassTokens.Motion.scaleInitial
     @State private var opacity: Double = 0.0
-    @Namespace private var switcherNamespace
+    @State private var blur: CGFloat = 4.0
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Search pill + Position Counter pill (same liquid glass system, 16px above container)
-            HStack(spacing: 10) {
-                WindowSwitcherSearchPill(
-                    query: $store.searchQuery,
-                    isFocused: $store.isSearchActive,
-                    onClear: {
-                        store.searchQuery = ""
-                    }
-                )
-
-                let totalCount = store.filteredPreviewItems.count
-                if totalCount > 0 {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.70))
-                        Text("\(store.selectedIndex + 1) / \(totalCount)")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.90))
-                    }
-                    .padding(.horizontal, 14)
-                    .frame(height: LiquidGlassTokens.SearchPill.height)
-                    .background(
-                        ZStack {
-                            VisualEffectView(material: .hudWindow, blendingMode: .withinWindow)
-                            Color.white.opacity(0.14)
-                        }
-                    )
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1)
-                    )
+        VStack(spacing: 10) {
+            // Single merged Search + Position Counter pill (300x28, 10px above container)
+            let totalCount = store.filteredPreviewItems.count
+            let counterText = totalCount > 0 ? "\(store.selectedIndex + 1)/\(totalCount)" : nil
+            WindowSwitcherSearchPill(
+                query: $store.searchQuery,
+                isFocused: $store.isSearchActive,
+                counterText: counterText,
+                onClear: {
+                    store.searchQuery = ""
                 }
-            }
+            )
 
-            // Horizontal pill container for cards (height 220)
+            // Horizontal container for cards
             let items = store.filteredPreviewItems
+            let containerHeight: CGFloat = LiquidGlassTokens.Card.size.height + 24
             ZStack {
                 if items.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "macwindow.badge.magnifyingglass")
-                            .font(.system(size: 28))
-                            .foregroundColor(.white.opacity(0.60))
+                            .font(.system(size: 26))
+                            .foregroundColor(.white.opacity(0.50))
                         Text(L10n.t("Không có cửa sổ"))
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.white.opacity(0.60))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white.opacity(0.50))
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -164,42 +141,20 @@ struct PreviewOverlayContentView: View {
                             HStack(spacing: LiquidGlassTokens.Container.gap) {
                                 ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                                     let isSelected = (index == store.selectedIndex)
-                                    VStack(spacing: 6) {
-                                        ZStack {
-                                            if isSelected {
-                                                RoundedRectangle(cornerRadius: LiquidGlassTokens.Card.cornerRadius)
-                                                    .stroke(LiquidGlassTokens.cardSelectedBorder, lineWidth: 1.5)
-                                                    .shadow(color: LiquidGlassTokens.selectionGlow, radius: 20)
-                                                    .matchedGeometryEffect(id: "selectionGlow", in: switcherNamespace)
-                                            }
-                                            WindowPreviewCard(
-                                                item: item,
-                                                isSelected: isSelected,
-                                                size: LiquidGlassTokens.Card.size,
-                                                thumbWidth: LiquidGlassTokens.Card.switcherThumbSize.width,
-                                                thumbHeight: LiquidGlassTokens.Card.switcherThumbSize.height,
-                                                onSelect: { onSelect(index) }
-                                            )
-                                        }
-
-                                        if isSelected {
-                                            Circle()
-                                                .fill(Color.white)
-                                                .frame(width: 6, height: 6)
-                                                .shadow(color: Color.white.opacity(0.6), radius: 3)
-                                                .matchedGeometryEffect(id: "selectionDot", in: switcherNamespace)
-                                        } else {
-                                            Circle()
-                                                .fill(Color.clear)
-                                                .frame(width: 6, height: 6)
-                                        }
-                                    }
+                                    WindowPreviewCard(
+                                        item: item,
+                                        isSelected: isSelected,
+                                        size: LiquidGlassTokens.Card.size,
+                                        thumbWidth: LiquidGlassTokens.Card.switcherThumbSize.width,
+                                        thumbHeight: LiquidGlassTokens.Card.switcherThumbSize.height,
+                                        onSelect: { onSelect(index) }
+                                    )
                                     .id(index)
                                 }
                             }
                             .padding(.horizontal, LiquidGlassTokens.Container.padding)
                             .padding(.vertical, 12)
-                            .frame(minHeight: 220)
+                            .frame(minHeight: containerHeight)
                         }
                         .onChange(of: store.selectedIndex) { newIndex in
                             withAnimation(LiquidGlassTokens.spring) {
@@ -225,7 +180,7 @@ struct PreviewOverlayContentView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 220)
+            .frame(height: containerHeight)
             .liquidGlassContainer(cornerRadius: LiquidGlassTokens.Container.cornerRadius)
 
             // Special previews for active highlighted window (Calendar / Weather only)
@@ -251,16 +206,19 @@ struct PreviewOverlayContentView: View {
         }
         .scaleEffect(scale)
         .opacity(opacity)
+        .blur(radius: blur)
         .onAppear {
             let animEnabled = UserDefaults.standard.object(forKey: "windowPreview.animationEnabled") as? Bool ?? true
             if animEnabled {
-                withAnimation(LiquidGlassTokens.Motion.spring) {
+                withAnimation(.easeOut(duration: 0.18)) {
                     scale = LiquidGlassTokens.Motion.scaleFinal
                     opacity = 1.0
+                    blur = 0.0
                 }
             } else {
                 scale = LiquidGlassTokens.Motion.scaleFinal
                 opacity = 1.0
+                blur = 0.0
             }
             if store.filteredPreviewItems.indices.contains(store.selectedIndex) {
                 store.loadSpecialPreviews(for: store.filteredPreviewItems[store.selectedIndex])

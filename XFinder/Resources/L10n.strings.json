@@ -17,6 +17,10 @@
       "en": " active notes",
       "scope": "fragment"
     },
+    " giây không thao tác": {
+      "en": " seconds of inactivity",
+      "scope": "fragment"
+    },
     " giờ": {
       "en": " h left",
       "scope": "fragment"
@@ -789,16 +793,16 @@
       "en": "Mode",
       "scope": "sentence"
     },
+    "Chế độ danh sách": {
+      "en": "List mode",
+      "scope": "sentence"
+    },
     "Chế độ giao diện": {
       "en": "Appearance",
       "scope": "sentence"
     },
     "Chế độ lưới": {
       "en": "Grid mode",
-      "scope": "sentence"
-    },
-    "Chế độ danh sách": {
-      "en": "List mode",
       "scope": "sentence"
     },
     "Chế độ thẻ lớn": {
@@ -2281,6 +2285,10 @@
       "en": "Default extraction",
       "scope": "sentence"
     },
+    "Mặc định thu gọn khi mở app": {
+      "en": "Default collapsed on launch",
+      "scope": "sentence"
+    },
     "Mặc định toàn cục": {
       "en": "Global default",
       "scope": "sentence"
@@ -2523,6 +2531,10 @@
     },
     "Nhiệt độ đã ghi nhận": {
       "en": "Recorded temperature",
+      "scope": "sentence"
+    },
+    "Nhấn , để tìm kiếm": {
+      "en": "Press , to search",
       "scope": "sentence"
     },
     "Nhấn , để tìm kiếm cửa sổ": {
@@ -3193,6 +3205,10 @@
       "en": "Collapse",
       "scope": "sentence"
     },
+    "Thu gọn sau ": {
+      "en": "Collapse after ",
+      "scope": "fragment"
+    },
     "Thu hồi tất cả": {
       "en": "Revoke all",
       "scope": "sentence"
@@ -3315,6 +3331,10 @@
     },
     "Thời gian hoạt động": {
       "en": "Uptime",
+      "scope": "sentence"
+    },
+    "Thời gian tự động ẩn": {
+      "en": "Auto-hide delay",
       "scope": "sentence"
     },
     "Thời lượng": {
@@ -3713,12 +3733,24 @@
       "en": "Automation (light/dark appearance)",
       "scope": "sentence"
     },
+    "Tự động thu gọn các biểu tượng sau khi mở rộng.": {
+      "en": "Automatically collapse icons after expanding.",
+      "scope": "sentence"
+    },
     "Tự động ẩn Dock": {
       "en": "Auto-hide Dock",
       "scope": "sentence"
     },
     "Tự động ẩn Dock của macOS": {
       "en": "Auto-hide macOS Dock",
+      "scope": "sentence"
+    },
+    "Tự động ẩn các biểu tượng ngay khi XFinder khởi động.": {
+      "en": "Automatically hide icons when XFinder starts up.",
+      "scope": "sentence"
+    },
+    "Tự động ẩn sau thời gian chờ": {
+      "en": "Auto-hide after delay",
       "scope": "sentence"
     },
     "Vault của bạn": {
@@ -4829,34 +4861,6 @@
     "⌘⇧V mở khay clipboard nổi trên mọi ứng dụng": {
       "en": "⌘⇧V opens the floating clipboard shelf over any app",
       "scope": "sentence"
-    },
-    "Mặc định thu gọn khi mở app": {
-      "en": "Default collapsed on launch",
-      "scope": "sentence"
-    },
-    "Tự động ẩn các biểu tượng ngay khi XFinder khởi động.": {
-      "en": "Automatically hide icons when XFinder starts up.",
-      "scope": "sentence"
-    },
-    "Tự động ẩn sau thời gian chờ": {
-      "en": "Auto-hide after delay",
-      "scope": "sentence"
-    },
-    "Tự động thu gọn các biểu tượng sau khi mở rộng.": {
-      "en": "Automatically collapse icons after expanding.",
-      "scope": "sentence"
-    },
-    "Thời gian tự động ẩn": {
-      "en": "Auto-hide delay",
-      "scope": "sentence"
-    },
-    "Thu gọn sau ": {
-      "en": "Collapse after ",
-      "scope": "fragment"
-    },
-    " giây không thao tác": {
-      "en": " seconds of inactivity",
-      "scope": "fragment"
     }
   }
 }

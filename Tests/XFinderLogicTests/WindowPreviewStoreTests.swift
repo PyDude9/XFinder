@@ -375,12 +375,12 @@ final class WindowPreviewStoreTests: XCTestCase {
     }
 
     func testSquareBackgroundClipTokens() {
-        // Tokens per PATCH 3.0 specification: container 24, card 18, thumb 12, blur 40, saturation 1.6
+        // Tokens for lightweight macOS switcher styling: container 24, card 16, thumb 10, blur 32, saturation 1.4
         XCTAssertEqual(LiquidGlassTokens.containerRadius, 24)
-        XCTAssertEqual(LiquidGlassTokens.cardRadius, 18)
-        XCTAssertEqual(LiquidGlassTokens.thumbRadius, 12)
-        XCTAssertEqual(LiquidGlassTokens.blurRadius, 40)
-        XCTAssertEqual(LiquidGlassTokens.saturation, 1.6)
+        XCTAssertEqual(LiquidGlassTokens.cardRadius, 16)
+        XCTAssertEqual(LiquidGlassTokens.thumbRadius, 10)
+        XCTAssertEqual(LiquidGlassTokens.blurRadius, 32)
+        XCTAssertEqual(LiquidGlassTokens.saturation, 1.4)
     }
 
     func testTabAndWindowPreviewableConditions() {
@@ -456,11 +456,10 @@ final class WindowPreviewStoreTests: XCTestCase {
     }
 
     func testLiquidGlassTokensPatch26() {
-        XCTAssertEqual(LiquidGlassTokens.switcherSelectionScale, 1.06)
-        XCTAssertEqual(LiquidGlassTokens.unselectedOpacity, 0.65)
-        XCTAssertEqual(LiquidGlassTokens.unselectedSaturation, 0.85)
-        XCTAssertEqual(LiquidGlassTokens.cardSize.width, 220)
-        XCTAssertEqual(LiquidGlassTokens.cardSize.height, 172)
+        XCTAssertEqual(LiquidGlassTokens.switcherSelectionScale, 1.04)
+        XCTAssertEqual(LiquidGlassTokens.unselectedOpacity, 0.70)
+        XCTAssertEqual(LiquidGlassTokens.cardSize.width, 200)
+        XCTAssertEqual(LiquidGlassTokens.cardSize.height, 140)
         XCTAssertEqual(LiquidGlassTokens.dockCardSize.width, 320)
         XCTAssertEqual(LiquidGlassTokens.dockCardSize.height, 280)
     }
@@ -520,16 +519,16 @@ final class WindowPreviewStoreTests: XCTestCase {
         XCTAssertEqual(dockCard.height, 280)
 
         let switcherCard = LiquidGlassTokens.cardSize
-        XCTAssertEqual(switcherCard.width, 220)
-        XCTAssertEqual(switcherCard.height, 172)
+        XCTAssertEqual(switcherCard.width, 200)
+        XCTAssertEqual(switcherCard.height, 140)
 
         // Calculated inner thumbnail dimensions
         let dockThumb = LiquidGlassTokens.Card.dockThumbSize
         let switcherThumb = LiquidGlassTokens.Card.switcherThumbSize
         XCTAssertEqual(dockThumb.width, 304)
         XCTAssertEqual(dockThumb.height, 160)
-        XCTAssertEqual(switcherThumb.width, 204)
-        XCTAssertEqual(switcherThumb.height, 120)
+        XCTAssertEqual(switcherThumb.width, 184)
+        XCTAssertEqual(switcherThumb.height, 86)
 
         // Uncapturable / other Space window returns nil thumbnail for clean fallback
         let uncapturableItem = PreviewItem(
