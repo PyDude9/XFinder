@@ -66,6 +66,76 @@ public func isTabPreviewableForDock(_ t: BrowserTab) -> Bool {
     return !t.isHidden && !t.isFrozen && !t.isDiscarded && !t.url.isEmpty && t.hasContent
 }
 
+/// Filters browser tabs to show in Dock preview:
+/// Only tabs that are active / currently in use (up to a maximum of 5 tabs).
+/// If no tab is explicitly active (e.g. edge cases), falls back to the 1st previewable tab.
+public func activeTabsForDockPreview(_ tabs: [BrowserTabItem], maxCount: Int = 5) -> [BrowserTabItem] {
+    let eligible = tabs.filter(isTabPreviewableForDock)
+    let active = eligible.filter { $0.isActive }
+    if !active.isEmpty {
+        return Array(active.prefix(maxCount))
+    }
+    if let first = eligible.first {
+        return [first]
+    }
+    return []
+}
+
+public struct DockPreviewDimensions: Equatable {
+    public let panelWidth: CGFloat
+    public let panelHeight: CGFloat
+    public let cardWidth: CGFloat
+    public let cardHeight: CGFloat
+    public let thumbWidth: CGFloat
+    public let thumbHeight: CGFloat
+
+    public init(
+        panelWidth: CGFloat,
+        panelHeight: CGFloat,
+        cardWidth: CGFloat,
+        cardHeight: CGFloat,
+        thumbWidth: CGFloat,
+        thumbHeight: CGFloat
+    ) {
+        self.panelWidth = panelWidth
+        self.panelHeight = panelHeight
+        self.cardWidth = cardWidth
+        self.cardHeight = cardHeight
+        self.thumbWidth = thumbWidth
+        self.thumbHeight = thumbHeight
+    }
+}
+
+public func browserPanelDimensions(tabCount: Int) -> DockPreviewDimensions {
+    let count = max(1, min(5, tabCount))
+    switch count {
+    case 1:
+        return DockPreviewDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
+    case 2:
+        let cW: CGFloat = 240, cH: CGFloat = 165
+        let pW: CGFloat = cW * 2 + 12 + 24 // 516
+        let pH: CGFloat = cH + 24 // 189
+        return DockPreviewDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
+    case 3:
+        let cW: CGFloat = 220, cH: CGFloat = 165
+        let pW: CGFloat = cW * 3 + 12 * 2 + 24 // 708
+        let pH: CGFloat = cH + 24 // 189
+        return DockPreviewDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
+    case 4:
+        let cW: CGFloat = 210, cH: CGFloat = 160
+        let pW: CGFloat = cW * 4 + 10 * 3 + 24 // 894
+        let pH: CGFloat = cH + 24 // 184
+        return DockPreviewDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
+    case 5:
+        let cW: CGFloat = 200, cH: CGFloat = 155
+        let pW: CGFloat = cW * 5 + 10 * 4 + 24 // 1064
+        let pH: CGFloat = cH + 24 // 179
+        return DockPreviewDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
+    default:
+        return DockPreviewDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
+    }
+}
+
 // Cho Cmd+Tab switcher — hiện TẤT CẢ tabs của window đó nhưng vẫn có label
 public func isTabVisibleForSwitcher(_ t: BrowserTab) -> Bool {
     return !t.isDiscarded && !t.isHidden

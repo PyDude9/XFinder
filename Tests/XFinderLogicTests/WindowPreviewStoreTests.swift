@@ -784,4 +784,66 @@ final class WindowPreviewStoreTests: XCTestCase {
         XCTAssertEqual(LiquidGlassTokens.Card.appIconSize, 22)
         XCTAssertEqual(LiquidGlassTokens.Card.badgeIconSize, 28)
     }
+
+    func testActiveTabsForDockPreviewRules() {
+        // Scenario 1: 1 window with 1 active tab and 9 background inactive tabs
+        var tabs1: [BrowserTabItem] = [
+            BrowserTabItem(title: "Active Tab", url: "https://apple.com", isFrozen: false, isActive: true)
+        ]
+        for i in 1...9 {
+            tabs1.append(BrowserTabItem(title: "Background \(i)", url: "https://example.com/\(i)", isFrozen: false, isActive: false))
+        }
+        let result1 = activeTabsForDockPreview(tabs1)
+        XCTAssertEqual(result1.count, 1, "Only active tab must be returned, not background tabs")
+        XCTAssertEqual(result1.first?.title, "Active Tab")
+
+        // Scenario 2: 2 windows open with 2 active tabs and 5 background tabs
+        var tabs2: [BrowserTabItem] = [
+            BrowserTabItem(title: "Active Win 1", url: "https://apple.com/1", isFrozen: false, isActive: true),
+            BrowserTabItem(title: "Active Win 2", url: "https://apple.com/2", isFrozen: false, isActive: true)
+        ]
+        for i in 1...5 {
+            tabs2.append(BrowserTabItem(title: "Background \(i)", url: "https://example.com/\(i)", isFrozen: false, isActive: false))
+        }
+        let result2 = activeTabsForDockPreview(tabs2)
+        XCTAssertEqual(result2.count, 2, "Exactly 2 active tabs must be displayed")
+        XCTAssertEqual(result2.map(\.title), ["Active Win 1", "Active Win 2"])
+
+        // Scenario 3: 3 active tabs -> displays 3 tabs
+        var tabs3 = (1...3).map { BrowserTabItem(title: "Active \($0)", url: "https://site\($0).com", isFrozen: false, isActive: true) }
+        tabs3.append(BrowserTabItem(title: "Inactive", url: "https://inactive.com", isFrozen: false, isActive: false))
+        let result3 = activeTabsForDockPreview(tabs3)
+        XCTAssertEqual(result3.count, 3)
+
+        // Scenario 4: 7 active tabs -> clamped to maximum 5 tabs
+        let tabs7 = (1...7).map { BrowserTabItem(title: "Active \($0)", url: "https://site\($0).com", isFrozen: false, isActive: true) }
+        let result7 = activeTabsForDockPreview(tabs7)
+        XCTAssertEqual(result7.count, 5, "Clamped to max 5 tabs")
+
+        // Scenario 5: No tabs are active (fallback to 1 tab)
+        let tabsNoActive = (1...4).map { BrowserTabItem(title: "Tab \($0)", url: "https://site\($0).com", isFrozen: false, isActive: false) }
+        let resultNoActive = activeTabsForDockPreview(tabsNoActive)
+        XCTAssertEqual(resultNoActive.count, 1, "Fallback to 1 tab if none marked active")
+        XCTAssertEqual(resultNoActive.first?.title, "Tab 1")
+
+        // Scenario 6: Discarded/frozen tabs are filtered out
+        let tabsWithDiscarded = [
+            BrowserTabItem(title: "Active Discarded [Discarded]", url: "https://apple.com", isFrozen: false, isActive: true),
+            BrowserTabItem(title: "Active Real", url: "https://real.com", isFrozen: false, isActive: true)
+        ]
+        let resultDiscarded = activeTabsForDockPreview(tabsWithDiscarded)
+        XCTAssertEqual(resultDiscarded.count, 1)
+        XCTAssertEqual(resultDiscarded.first?.title, "Active Real")
+    }
+
+    func testBrowserPanelDimensions() {
+        XCTAssertEqual(browserPanelDimensions(tabCount: 1), DockPreviewDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160))
+        XCTAssertEqual(browserPanelDimensions(tabCount: 2), DockPreviewDimensions(panelWidth: 516, panelHeight: 189, cardWidth: 240, cardHeight: 165, thumbWidth: 224, thumbHeight: 119))
+        XCTAssertEqual(browserPanelDimensions(tabCount: 3), DockPreviewDimensions(panelWidth: 708, panelHeight: 189, cardWidth: 220, cardHeight: 165, thumbWidth: 204, thumbHeight: 119))
+        XCTAssertEqual(browserPanelDimensions(tabCount: 4), DockPreviewDimensions(panelWidth: 894, panelHeight: 184, cardWidth: 210, cardHeight: 160, thumbWidth: 194, thumbHeight: 114))
+        XCTAssertEqual(browserPanelDimensions(tabCount: 5), DockPreviewDimensions(panelWidth: 1064, panelHeight: 179, cardWidth: 200, cardHeight: 155, thumbWidth: 184, thumbHeight: 109))
+        // Clamping check
+        XCTAssertEqual(browserPanelDimensions(tabCount: 0), browserPanelDimensions(tabCount: 1))
+        XCTAssertEqual(browserPanelDimensions(tabCount: 10), browserPanelDimensions(tabCount: 5))
+    }
 }

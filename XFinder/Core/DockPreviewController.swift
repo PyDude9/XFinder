@@ -212,50 +212,14 @@ final class DockPreviewController {
 
     // MARK: - Panel
 
-    struct PanelDimensions {
-        let panelWidth: CGFloat
-        let panelHeight: CGFloat
-        let cardWidth: CGFloat
-        let cardHeight: CGFloat
-        let thumbWidth: CGFloat
-        let thumbHeight: CGFloat
-    }
-
-    static func browserPanelDimensions(tabCount: Int) -> PanelDimensions {
-        let count = max(1, min(5, tabCount))
-        switch count {
-        case 1:
-            return PanelDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
-        case 2:
-            let cW: CGFloat = 240, cH: CGFloat = 165
-            let pW: CGFloat = cW * 2 + 12 + 24 // 516
-            let pH: CGFloat = cH + 24 // 189
-            return PanelDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
-        case 3:
-            let cW: CGFloat = 220, cH: CGFloat = 165
-            let pW: CGFloat = cW * 3 + 12 * 2 + 24 // 708
-            let pH: CGFloat = cH + 24 // 189
-            return PanelDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
-        case 4:
-            let cW: CGFloat = 210, cH: CGFloat = 160
-            let pW: CGFloat = cW * 4 + 10 * 3 + 24 // 894
-            let pH: CGFloat = cH + 24 // 184
-            return PanelDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
-        case 5:
-            let cW: CGFloat = 200, cH: CGFloat = 155
-            let pW: CGFloat = cW * 5 + 10 * 4 + 24 // 1064
-            let pH: CGFloat = cH + 24 // 179
-            return PanelDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
-        default:
-            return PanelDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
-        }
-    }
+    typealias PanelDimensions = DockPreviewDimensions
 
     private func showPanel(for icon: IconRect) {
         let bundleID = NSRunningApplication(processIdentifier: icon.pid)?.bundleIdentifier ?? ""
         let isBrowser = BrowserTabProvider.isSupportedBrowser(bundleID: bundleID)
-        let tabCount = isBrowser ? (WindowPreviewStore.shared.activeBrowserTabs.isEmpty ? 2 : WindowPreviewStore.shared.activeBrowserTabs.count) : 1
-        let dims = isBrowser ? Self.browserPanelDimensions(tabCount: tabCount) : PanelDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
+        let activeTabs = isBrowser ? activeTabsForDockPreview(WindowPreviewStore.shared.activeBrowserTabs) : []
+        let tabCount = isBrowser ? (activeTabs.isEmpty ? 1 : activeTabs.count) : 1
+        let dims = isBrowser ? browserPanelDimensions(tabCount: tabCount) : PanelDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
         let panelWidth = dims.panelWidth
         let panelHeight = dims.panelHeight
 
@@ -383,13 +347,13 @@ struct DockPreviewView: View {
 
     var body: some View {
         let dockItems = store.previewItems.filter { !$0.isOnOtherSpace }
-        let visibleTabs = Array(store.activeBrowserTabs.prefix(5))
+        let visibleTabs = isBrowser ? activeTabsForDockPreview(store.activeBrowserTabs) : []
         let tabCount = visibleTabs.count
-        let dims = DockPreviewController.browserPanelDimensions(tabCount: tabCount)
+        let dims = browserPanelDimensions(tabCount: max(1, tabCount))
 
         Group {
             if isBrowser && tabCount >= 2 {
-                // Windows Taskbar style: up to 5 preview cards side by side
+                // Windows Taskbar style: up to 5 preview cards side by side (active tabs only)
                 HStack(spacing: tabCount >= 4 ? 10 : 12) {
                     ForEach(visibleTabs) { tab in
                         DockBrowserTabCard(
@@ -409,15 +373,6 @@ struct DockPreviewView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 12)
                 .frame(width: dims.panelWidth, height: dims.panelHeight)
-            } else if isBrowser && store.activeBrowserTabs.isEmpty && !store.needsAutomationPermission {
-                // Loading state for browser (stable initial container)
-                HStack(spacing: 12) {
-                    DockTabPlaceholderCard(title: title, appIcon: iconForPID(pid), width: 240, height: 165)
-                    DockTabPlaceholderCard(title: L10n.t("Đang chờ dữ liệu…"), appIcon: iconForPID(pid), width: 240, height: 165)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 12)
-                .frame(width: 516, height: 189)
             } else {
                 // Single card mode: for 1-tab browser or standard apps (320x220)
                 let targetHeight: CGFloat = (bundleID == "com.apple.iCal" && !store.calendarEvents.isEmpty) || (bundleID == "com.apple.weather" && store.weatherInfo != nil) ? 280 : 220
@@ -432,8 +387,9 @@ struct DockPreviewView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 3))
                         }
                         VStack(alignment: .leading, spacing: 1) {
-                            let displayTitle = isBrowser && store.activeBrowserTabs.first != nil ? store.activeBrowserTabs.first!.title : (dockItems.first?.title.isEmpty == false ? dockItems.first!.title : title)
-                            let displaySubtitle = isBrowser && store.activeBrowserTabs.first != nil ? store.activeBrowserTabs.first!.domain : (dockItems.first?.appName.isEmpty == false ? dockItems.first!.appName : title)
+                            let curTab = visibleTabs.first ?? store.activeBrowserTabs.first(where: { $0.isActive }) ?? store.activeBrowserTabs.first
+                            let displayTitle = isBrowser && curTab != nil ? curTab!.title : (dockItems.first?.title.isEmpty == false ? dockItems.first!.title : title)
+                            let displaySubtitle = isBrowser && curTab != nil ? curTab!.domain : (dockItems.first?.appName.isEmpty == false ? dockItems.first!.appName : title)
                             Text(displayTitle)
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.primary)
@@ -449,7 +405,7 @@ struct DockPreviewView: View {
                     .padding(.horizontal, 8)
 
                     // Thumbnail / WebSnapshotCardView / AppHeroCardView: fixed 304x160
-                    if isBrowser, let cur = store.activeBrowserTabs.first {
+                    if isBrowser, let cur = visibleTabs.first ?? store.activeBrowserTabs.first(where: { $0.isActive }) ?? store.activeBrowserTabs.first {
                         Button(action: {
                             BrowserTabProvider.shared.selectTab(tab: cur, in: bundleID)
                             WindowManager.activate(pid: pid)
@@ -531,9 +487,11 @@ struct DockPreviewView: View {
                 store.loadDockPreviews(for: newPID)
             }
         }
-        .onChange(of: store.activeBrowserTabs) { tabs in
+        .onChange(of: store.activeBrowserTabs) { _ in
             if isBrowser {
-                let dims = DockPreviewController.browserPanelDimensions(tabCount: tabs.count)
+                let visible = activeTabsForDockPreview(store.activeBrowserTabs)
+                let count = visible.isEmpty ? 1 : visible.count
+                let dims = browserPanelDimensions(tabCount: count)
                 DockPreviewController.shared.updatePanelSize(width: dims.panelWidth, height: dims.panelHeight, animated: true)
             }
         }
