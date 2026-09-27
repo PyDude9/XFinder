@@ -208,4 +208,25 @@ enum ClipboardClassifier {
         }
         return nil
     }
+
+    /// Detects credit card numbers (Luhn candidate, 13-19 digits) to prevent saving payment secrets.
+    static func looksLikeCreditCard(_ t: String) -> Bool {
+        let trimmed = t.trimmingCharacters(in: .whitespacesAndNewlines)
+        let digits = trimmed.filter { $0.isNumber }
+        guard (13...19).contains(digits.count),
+              digits.count == trimmed.filter({ !$0.isWhitespace && $0 != "-" }).count else {
+            return false
+        }
+        var sum = 0
+        let reversed = digits.reversed().map { Int(String($0)) ?? 0 }
+        for (idx, digit) in reversed.enumerated() {
+            if idx % 2 == 1 {
+                let doubled = digit * 2
+                sum += doubled > 9 ? doubled - 9 : doubled
+            } else {
+                sum += digit
+            }
+        }
+        return sum % 10 == 0
+    }
 }

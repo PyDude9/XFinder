@@ -1,6 +1,6 @@
 import Foundation
 
-enum ContentType: String, Codable, Sendable {
+enum ContentType: String, CaseIterable, Identifiable, Codable, Sendable {
     case text
     case code
     case markdown
@@ -8,6 +8,32 @@ enum ContentType: String, Codable, Sendable {
     case link
     case color
     case file
+
+    var id: String { rawValue }
+
+    var titleVI: String {
+        switch self {
+        case .text: return L10n.t("Văn bản")
+        case .code: return L10n.t("Mã nguồn")
+        case .markdown: return "Markdown"
+        case .image: return L10n.t("Hình ảnh")
+        case .link: return L10n.t("Liên kết")
+        case .color: return L10n.t("Màu sắc")
+        case .file: return L10n.t("Tập tin")
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .text: return "doc.text"
+        case .code: return "chevron.left.forwardslash.chevron.right"
+        case .markdown: return "text.badge.checkmark"
+        case .image: return "photo"
+        case .link: return "link"
+        case .color: return "paintpalette"
+        case .file: return "doc"
+        }
+    }
 }
 
 struct ClipboardRecord: Identifiable, Codable, Sendable {

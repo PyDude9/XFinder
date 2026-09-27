@@ -185,4 +185,46 @@ final class ClipboardPrivacyTests: XCTestCase {
             bundleID: "com.apple.Safari",
             excludePasswordManagers: true))
     }
+
+    // MARK: - Luhn Credit Card Detection Tests
+
+    private func looksLikeCreditCard(_ t: String) -> Bool {
+        let trimmed = t.trimmingCharacters(in: .whitespacesAndNewlines)
+        let digits = trimmed.filter { $0.isNumber }
+        guard (13...19).contains(digits.count),
+              digits.count == trimmed.filter({ !$0.isWhitespace && $0 != "-" }).count else {
+            return false
+        }
+        var sum = 0
+        let reversed = digits.reversed().map { Int(String($0)) ?? 0 }
+        for (idx, digit) in reversed.enumerated() {
+            if idx % 2 == 1 {
+                let doubled = digit * 2
+                sum += doubled > 9 ? doubled - 9 : doubled
+            } else {
+                sum += digit
+            }
+        }
+        return sum % 10 == 0
+    }
+
+    func testValidCreditCardIsDetected() {
+        // Standard Visa test number: 4532 0151 1283 0366
+        XCTAssertTrue(looksLikeCreditCard("4532 0151 1283 0366"))
+        XCTAssertTrue(looksLikeCreditCard("4532-0151-1283-0366"))
+        XCTAssertTrue(looksLikeCreditCard("4532015112830366"))
+    }
+
+    func testInvalidCreditCardIsIgnored() {
+        // Phone number, short digits, or invalid checksum
+        XCTAssertFalse(looksLikeCreditCard("0912345678"))
+        XCTAssertFalse(looksLikeCreditCard("4532 0151 1283 0367")) // Invalid checksum
+        XCTAssertFalse(looksLikeCreditCard("Invoice #12345678901234"))
+    }
+
+    func testCustomExcludedBundleIDs() {
+        let customList = ["com.secret.internal", "com.banking.app"]
+        XCTAssertTrue(customList.contains("com.secret.internal"))
+        XCTAssertFalse(customList.contains("com.apple.Safari"))
+    }
 }

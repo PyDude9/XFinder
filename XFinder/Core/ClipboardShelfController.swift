@@ -276,10 +276,16 @@ final class ClipboardShelfController {
         let record = list[index]
         let pid = targetPID
         close()
-        // Let the panel actually go away before the keystroke is delivered,
-        // otherwise the paste can land back in the shelf.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            ClipboardPasteEngine.paste(record: record, to: pid, plainText: plainText)
+        let autoPaste = UserDefaults.standard.object(forKey: "clipboard.autoPasteAfterSelection") as? Bool ?? true
+        if autoPaste {
+            // Let the panel actually go away before the keystroke is delivered,
+            // otherwise the paste can land back in the shelf.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                ClipboardPasteEngine.paste(record: record, to: pid, plainText: plainText)
+            }
+        } else {
+            ClipboardPasteEngine.writeToPasteboard(record: record, plainText: plainText)
+            ClipboardSounds.playCopy()
         }
     }
 

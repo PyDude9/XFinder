@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import CryptoKit
 import SwiftUI
 
 /// Clipboard ingest: event-driven pasteboard monitoring (zero polling),
@@ -13,8 +14,23 @@ final class ClipboardManager {
     var pinboards: [Pinboard] = Pinboard.defaultPinboards
     var currentPinboardID: UUID?
     var selectedItemID: UUID?
+    var selectedTypeFilter: ContentType? = nil
     var searchText: String = ""
     var pasteStack = PasteStack()
+
+    /// Sliding window (10s) deduplication cache.
+    private var recentHashes: [(hash: String, date: Date)] = []
+
+    private func isDuplicateContent(_ string: String) -> Bool {
+        let hash = SHA256.hash(data: Data(string.utf8)).map { String(format: "%02x", $0) }.joined()
+        let now = Date()
+        recentHashes.removeAll { now.timeIntervalSince($0.date) > 10 }
+        if recentHashes.contains(where: { $0.hash == hash }) {
+            return true
+        }
+        recentHashes.append((hash: hash, date: now))
+        return false
+    }
 
     /// Last non-XFinder frontmost app — the paste target for ⌘V synthesis.
     private(set) var lastExternalPID: pid_t?
@@ -150,16 +166,27 @@ final class ClipboardManager {
         if UserDefaults.standard.object(forKey: "privacy.excludePasswordManagers") as? Bool ?? true,
            let bid = front?.bundleIdentifier, Self.excludedBundleIDs.contains(bid) { return }
 
+        // User-defined excluded bundle IDs.
+        if let bid = front?.bundleIdentifier {
+            let customRaw = UserDefaults.standard.string(forKey: "clipboard.customExcludedApps") ?? ""
+            let customList = customRaw.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            if customList.contains(bid) { return }
+        }
+
         let defaults = UserDefaults.standard
         let captureImages = defaults.object(forKey: "clipboard.captureImages") as? Bool ?? true
         let captureLinks = defaults.object(forKey: "clipboard.captureLinks") as? Bool ?? true
         let enableOCR = defaults.object(forKey: "clipboard.enableOCR") as? Bool ?? true
+        let excludeCreditCards = defaults.object(forKey: "clipboard.excludeCreditCards") as? Bool ?? true
 
         let bundleID = front?.bundleIdentifier
         let appName = front?.localizedName
 
         if types.contains(NSPasteboard.PasteboardType.string.rawValue),
            let text = pb.string(forType: .string), !text.isEmpty {
+            if excludeCreditCards && ClipboardClassifier.looksLikeCreditCard(text) { return }
+            guard !isDuplicateContent(text) else { return }
+
             let kind = ClipboardClassifier.classify(text: text)
             if kind == .link, !captureLinks { return }
             var payloadPath: String?
@@ -212,6 +239,7 @@ final class ClipboardManager {
 
         if let urls = pb.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
            let first = urls.first {
+            guard !isDuplicateContent(first.path) else { return }
             let record = ClipboardRecord(
                 type: .file,
                 sourceBundleID: bundleID, sourceAppName: appName,
@@ -280,8 +308,12 @@ final class ClipboardManager {
     }
 
     func filteredHistory() -> [ClipboardRecord] {
-        guard !searchText.isEmpty else { return history }
-        return history.filter { r in
+        var list = history
+        if let filter = selectedTypeFilter {
+            list = list.filter { $0.type == filter }
+        }
+        guard !searchText.isEmpty else { return list }
+        return list.filter { r in
             (r.textSnippet?.localizedCaseInsensitiveContains(searchText) ?? false)
                 || (r.ocrText?.localizedCaseInsensitiveContains(searchText) ?? false)
                 || (r.sourceAppName?.localizedCaseInsensitiveContains(searchText) ?? false)

@@ -5145,6 +5145,62 @@
     "Hiểu: ": {
       "en": "Understood: ",
       "scope": "fragment"
+    },
+    "Văn bản": {
+      "en": "Text",
+      "scope": "sentence"
+    },
+    "Mã nguồn": {
+      "en": "Code",
+      "scope": "sentence"
+    },
+    "Liên kết": {
+      "en": "Link",
+      "scope": "sentence"
+    },
+    "Màu sắc": {
+      "en": "Color",
+      "scope": "sentence"
+    },
+    "Tất cả": {
+      "en": "All",
+      "scope": "sentence"
+    },
+    "Tự động dán sau khi chọn": {
+      "en": "Auto-paste after selection",
+      "scope": "sentence"
+    },
+    "Nhấn Return dán thẳng vào ứng dụng. Khi tắt: chỉ sao chép vào bộ nhớ tạm.": {
+      "en": "Pressing Return pastes directly into active app. When off: copies to clipboard only.",
+      "scope": "sentence"
+    },
+    "Dán & Thao tác": {
+      "en": "Paste & Actions",
+      "scope": "sentence"
+    },
+    "Bỏ qua ứng dụng tùy chỉnh": {
+      "en": "Custom excluded apps",
+      "scope": "sentence"
+    },
+    "Lọc loại": {
+      "en": "Filter type",
+      "scope": "sentence"
+    },
+    "Bỏ qua số thẻ thanh toán (Credit Card)": {
+      "en": "Exclude credit card numbers",
+      "scope": "sentence"
+    },
+    "Tự động lọc số thẻ 13-19 số thỏa thuật toán Luhn": {
+      "en": "Automatically ignore 13-19 digit card numbers matching Luhn algorithm",
+      "scope": "sentence"
+    },
+    "Xem nhanh (Space)": {
+      "en": "Quick Look (Space)",
+      "scope": "sentence"
+    },
+    "Danh sách Bundle ID ứng dụng bỏ qua (phân tách bởi dấu phẩy)": {
+      "en": "Excluded app bundle IDs (comma-separated)",
+      "scope": "sentence"
     }
   }
 }

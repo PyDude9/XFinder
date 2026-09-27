@@ -45,6 +45,22 @@ struct ClipboardTabView: View {
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
 
+            // Content Type Filter Pills
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    filterPill(title: L10n.t("Tất cả"), icon: "square.grid.2x2", isSelected: clipboardManager.selectedTypeFilter == nil) {
+                        clipboardManager.selectedTypeFilter = nil
+                    }
+                    ForEach(ContentType.allCases) { type in
+                        filterPill(title: type.titleVI, icon: type.icon, isSelected: clipboardManager.selectedTypeFilter == type) {
+                            clipboardManager.selectedTypeFilter = type
+                        }
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+            }
+
             Divider()
 
             if items.isEmpty {
@@ -64,7 +80,15 @@ struct ClipboardTabView: View {
                                 .onTapGesture {
                                     clipboardManager.selectedItemID = record.id
                                 }
-                                .onDrag { NSItemProvider(object: record.id.uuidString as NSString) }
+                                .onDrag {
+                                    if record.type == .file, let path = record.payloadPath ?? record.metadata["path"] {
+                                        return NSItemProvider(object: URL(fileURLWithPath: path) as NSURL)
+                                    }
+                                    if let text = record.textSnippet {
+                                        return NSItemProvider(object: text as NSString)
+                                    }
+                                    return NSItemProvider(object: record.id.uuidString as NSString)
+                                }
                                 .contextMenu {
                                     Button(L10n.t("Dán (Return)")) { pasteSelected(plainText: false) }
                                     Button(L10n.t("Dán dạng text thuần (⇧Return)")) { pasteSelected(plainText: true) }
@@ -76,7 +100,7 @@ struct ClipboardTabView: View {
                                         }
                                     }
                                     Button(L10n.t("Ghim vào bảng hiện tại (⌘P)")) { pinSelected() }
-                                    Button("Xem nhanh (Space)") { preview(record) }
+                                    Button(L10n.t("Xem nhanh (Space)")) { preview(record) }
                                     Divider()
                                     Button(L10n.t("Xóa (⌘⌫)"), role: .destructive) { deleteSelected() }
                                 }
@@ -194,15 +218,43 @@ struct ClipboardTabView: View {
     }
 
     private func pasteRecord(_ rec: ClipboardRecord, plainText: Bool) {
-        // Without trust: copy-back fallback (honest, no fake keystroke).
-        guard WindowManager.isTrusted else {
+        let autoPaste = UserDefaults.standard.object(forKey: "clipboard.autoPasteAfterSelection") as? Bool ?? true
+        // Without trust or when autoPaste is disabled: copy-back fallback (honest, no fake keystroke).
+        guard WindowManager.isTrusted && autoPaste else {
             ClipboardPasteEngine.writeToPasteboard(record: rec, plainText: plainText)
-            showAccessAlert = true
+            ClipboardSounds.playCopy()
+            if !WindowManager.isTrusted && autoPaste {
+                showAccessAlert = true
+            }
             return
         }
         ClipboardPasteEngine.paste(record: rec,
                                    to: clipboardManager.lastExternalPID,
                                    plainText: plainText)
+    }
+
+    @ViewBuilder
+    private func filterPill(title: String, icon: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                Text(title)
+                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(isSelected ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.06))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 1)
+            )
+            .foregroundColor(isSelected ? .accentColor : .primary)
+        }
+        .buttonStyle(.plain)
     }
 
     private func pinSelected() {
