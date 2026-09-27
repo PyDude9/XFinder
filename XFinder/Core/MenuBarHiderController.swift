@@ -119,7 +119,7 @@ public final class MenuBarHiderController: NSResponder, MenuBarItemProvider {
         let arrowItem = bar.statusItem(withLength: NSStatusItem.variableLength)
         if let b = arrowItem.button {
             b.image = NSImage(systemSymbolName: isHiding ? "chevron.right" : "chevron.left",
-                              accessibilityDescription: "Ẩn/hiện biểu tượng thanh menu")
+                              accessibilityDescription: L10n.t("Ẩn/hiện biểu tượng thanh menu"))
             b.target = self
             b.action = #selector(toggle)
         }
@@ -228,7 +228,7 @@ public final class MenuBarHiderController: NSResponder, MenuBarItemProvider {
     private func updateArrowImage() {
         arrow?.button?.image = NSImage(
             systemSymbolName: isHiding ? "chevron.right" : "chevron.left",
-            accessibilityDescription: "Ẩn/hiện biểu tượng thanh menu"
+            accessibilityDescription: L10n.t("Ẩn/hiện biểu tượng thanh menu")
         )
     }
 

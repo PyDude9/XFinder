@@ -366,16 +366,16 @@ enum WindowManager {
         var id: String { rawValue }
         var titleVI: String {
             switch self {
-            case .leftHalf: return "Trái nửa màn hình"
-            case .rightHalf: return "Phải nửa màn hình"
-            case .topHalf: return "Trên nửa màn hình"
-            case .bottomHalf: return "Dưới nửa màn hình"
-            case .topLeft: return "Góc trên-trái"
-            case .topRight: return "Góc trên-phải"
-            case .bottomLeft: return "Góc dưới-trái"
-            case .bottomRight: return "Góc dưới-phải"
-            case .maximize: return "Toàn màn hình"
-            case .center: return "Giữa màn hình"
+            case .leftHalf: return L10n.t("Trái nửa màn hình")
+            case .rightHalf: return L10n.t("Phải nửa màn hình")
+            case .topHalf: return L10n.t("Trên nửa màn hình")
+            case .bottomHalf: return L10n.t("Dưới nửa màn hình")
+            case .topLeft: return L10n.t("Góc trên-trái")
+            case .topRight: return L10n.t("Góc trên-phải")
+            case .bottomLeft: return L10n.t("Góc dưới-trái")
+            case .bottomRight: return L10n.t("Góc dưới-phải")
+            case .maximize: return L10n.t("Toàn màn hình")
+            case .center: return L10n.t("Giữa màn hình")
             }
         }
 

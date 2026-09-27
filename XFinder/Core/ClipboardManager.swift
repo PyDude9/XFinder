@@ -191,6 +191,7 @@ final class ClipboardManager {
                 thumbnailPath: stored?.thumb, payloadPath: stored?.payload,
                 metadata: ["width": "\(Int(image.size.width))",
                            "height": "\(Int(image.size.height))",
+                           // L10n:data-only — "×" is a raw data separator, not UI text
                            "dimensions": "\(Int(image.size.width))×\(Int(image.size.height))"]
             )
             addToHistory(record)

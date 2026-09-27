@@ -23,10 +23,10 @@ struct QuickSearchResult: Identifiable, @unchecked Sendable {
         /// Nhãn nhóm hiển thị trên trang Tìm kiếm.
         var titleVI: String {
             switch self {
-            case .quicklink: return "Liên kết nhanh"
-            case .app: return "Ứng dụng"
-            case .calculator: return "Tính toán"
-            case .file: return "Tập tin"
+            case .quicklink: return L10n.t("Liên kết nhanh")
+            case .app: return L10n.t("Ứng dụng")
+            case .calculator: return L10n.t("Tính toán")
+            case .file: return L10n.t("Tập tin")
             }
         }
 

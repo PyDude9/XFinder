@@ -118,7 +118,7 @@ final class NoteStore {
         var id: String { rawValue }
         var titleVI: String {
             switch self {
-            case .system: return "Hệ thống"
+            case .system: return L10n.t("Hệ thống")
             case .serif: return "Serif"
             case .mono: return "Mono"
             }

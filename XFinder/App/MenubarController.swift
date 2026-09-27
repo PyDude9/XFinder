@@ -54,9 +54,9 @@ class MenubarController: NSObject, NSPopoverDelegate {
 
     /// Các lựa chọn biểu tượng menubar (monochrome, SF Symbols kiểu macOS).
     static let iconChoices: [(id: String, symbol: String, title: String)] = [
-        ("magnifier", "magnifyingglass", "Kính lúp"),
-        ("folder", "folder.fill", "Thư mục"),
-        ("stack", "rectangle.stack.fill", "Chồng lớp"),
+        ("magnifier", "magnifyingglass", L10n.t("Kính lúp")),
+        ("folder", "folder.fill", L10n.t("Thư mục")),
+        ("stack", "rectangle.stack.fill", L10n.t("Chồng lớp")),
     ]
 
     func applyIcon() {
@@ -143,13 +143,13 @@ struct MenubarFlyoutView: View {
         }
         var titleVI: String {
             switch self {
-            case .controls:  return "Điều khiển"
-            case .antiSleep: return "Chống ngủ"
-            case .system:    return "Hệ thống"
-            case .network:   return "Mạng"
-            case .storage:   return "Ổ đĩa"
-            case .battery:   return "Pin"
-            case .notes:     return "Ghi chú"
+            case .controls:  return L10n.t("Điều khiển")
+            case .antiSleep: return L10n.t("Chống ngủ")
+            case .system:    return L10n.t("Hệ thống")
+            case .network:   return L10n.t("Mạng")
+            case .storage:   return L10n.t("Ổ đĩa")
+            case .battery:   return L10n.t("Pin")
+            case .notes:     return L10n.t("Ghi chú")
             }
         }
         var destination: SidebarDestination {
@@ -272,7 +272,7 @@ struct MenubarFlyoutView: View {
                     .font(.system(size: 11)).foregroundColor(.secondary)
             }
             .buttonStyle(.plain)
-            .help("Mở trang \(tab.titleVI)")
+            .help(L10n.t("Mở trang ") + tab.titleVI)
         }
     }
 
@@ -306,29 +306,29 @@ struct MenubarFlyoutView: View {
                     .font(.system(size: 11, design: .monospaced)).frame(width: 34)
             }
 
-            flyoutToggle("Chống ngủ", "moon.zzz", isOn: Binding(
+            flyoutToggle(L10n.t("Chống ngủ"), "moon.zzz", isOn: Binding(
                 get: { caffeine.isActive },
                 set: { $0 ? caffeine.activate(duration: .indefinite) : caffeine.deactivate() }))
 
-            flyoutToggle("Chế độ tối", "circle.lefthalf.filled", isOn: Binding(
+            flyoutToggle(L10n.t("Chế độ tối"), "circle.lefthalf.filled", isOn: Binding(
                 get: { SystemControls.isDarkMode() },
                 set: { on in Task { await SystemControls.setAppearance(on ? .dark : .light) } }))
 
-            flyoutToggle("Tắt tiếng", "speaker.slash", isOn: Binding(
+            flyoutToggle(L10n.t("Tắt tiếng"), "speaker.slash", isOn: Binding(
                 get: { volumeObserver.isMuted },
                 set: { _ in volumeObserver.toggleMute() }))
 
             Divider()
             Text(L10n.t("Cửa sổ")).font(.system(size: 12, weight: .semibold)).foregroundColor(.secondary)
 
-            flyoutToggle("Xem trước Dock", "macwindow.on.rectangle", isOn: Binding(
+            flyoutToggle(L10n.t("Xem trước Dock"), "macwindow.on.rectangle", isOn: Binding(
                 get: { UserDefaults.standard.object(forKey: "windowPreview.hoverEnabled") as? Bool ?? true },
                 set: { on in
                     UserDefaults.standard.set(on, forKey: "windowPreview.hoverEnabled")
                     DockPreviewController.shared.applySettings()
                 }))
 
-            flyoutToggle("Chuyển đổi ứng dụng", "square.on.square", isOn: Binding(
+            flyoutToggle(L10n.t("Chuyển đổi ứng dụng"), "square.on.square", isOn: Binding(
                 get: { UserDefaults.standard.object(forKey: "windowPreview.commandTabEnabled") as? Bool ?? false },
                 set: { on in
                     UserDefaults.standard.set(on, forKey: "windowPreview.commandTabEnabled")
@@ -339,15 +339,15 @@ struct MenubarFlyoutView: View {
 
     private var antiSleepSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            flyoutToggle("Chống ngủ", "moon.zzz", isOn: Binding(
+            flyoutToggle(L10n.t("Chống ngủ"), "moon.zzz", isOn: Binding(
                 get: { caffeine.isActive },
                 set: { $0 ? caffeine.activate(duration: .indefinite) : caffeine.deactivate() }))
             Text(caffeine.isActive
-                 ? "Máy Mac sẽ không tự ngủ."
-                 : "Máy Mac tuân theo cài đặt năng lượng thông thường.")
+                 ? L10n.t("Máy Mac sẽ không tự ngủ.")
+                 : L10n.t("Máy Mac tuân theo cài đặt năng lượng thông thường."))
                 .font(.system(size: 11)).foregroundColor(.secondary)
             if let remaining = caffeine.remainingSeconds {
-                infoRow("Còn lại", "\(remaining / 60) phút")
+                infoRow(L10n.t("Còn lại"), String(remaining / 60) + L10n.t(" phút"))
             }
         }
     }
@@ -362,20 +362,20 @@ struct MenubarFlyoutView: View {
             meter("CPU", systemMonitor.currentMetrics.cpuUsage, .blue)
             // GPU load has no public API — show the honest placeholder.
             meter("GPU", nil, .teal)
-            infoRow("Bộ nhớ", "\(systemMonitor.currentMetrics.memoryUsedString) / \(systemMonitor.currentMetrics.memoryTotalString)")
-            infoRow("Áp lực bộ nhớ", systemMonitor.currentMetrics.thermalState.label)
-            infoRow("Thời gian hoạt động", systemMonitor.currentMetrics.uptimeString)
+            infoRow(L10n.t("Bộ nhớ"), "\(systemMonitor.currentMetrics.memoryUsedString) / \(systemMonitor.currentMetrics.memoryTotalString)")
+            infoRow(L10n.t("Áp lực bộ nhớ"), systemMonitor.currentMetrics.thermalState.label)
+            infoRow(L10n.t("Thời gian hoạt động"), systemMonitor.currentMetrics.uptimeString)
         }
     }
 
     private var networkSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 0) {
-                rateCell("Tải xuống", systemMonitor.currentMetrics.networkDownload, .blue, "arrow.down")
+                rateCell(L10n.t("Tải xuống"), systemMonitor.currentMetrics.networkDownload, .blue, "arrow.down")
                 Divider().frame(height: 34)
-                rateCell("Tải lên", systemMonitor.currentMetrics.networkUpload, .green, "arrow.up")
+                rateCell(L10n.t("Tải lên"), systemMonitor.currentMetrics.networkUpload, .green, "arrow.up")
             }
-            infoRow("Phiên này",
+            infoRow(L10n.t("Phiên này"),
                     "↓\(fmtBytes(systemMonitor.sessionBytesRX))  ↑\(fmtBytes(systemMonitor.sessionBytesTX))")
             Button(L10n.t("Đo tốc độ")) { navigate(.network) }
                 .buttonStyle(.bordered).controlSize(.small)
@@ -384,11 +384,11 @@ struct MenubarFlyoutView: View {
 
     private var storageSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            infoRow("Dung lượng",
+            infoRow(L10n.t("Dung lượng"),
                     "\(systemMonitor.currentMetrics.diskUsedString) / \(systemMonitor.currentMetrics.diskTotalString)")
-            meter("Đã dùng", systemMonitor.currentMetrics.diskPercentage, .purple)
+            meter(L10n.t("Đã dùng"), systemMonitor.currentMetrics.diskPercentage, .purple)
             // SMART attributes are not exposed by any public API.
-            infoRow("SMART", "Không khả dụng")
+            infoRow("SMART", L10n.t("Không khả dụng"))
         }
     }
 
@@ -399,9 +399,9 @@ struct MenubarFlyoutView: View {
 
             if m.batteryLevel > 0 {
                 Divider().padding(.vertical, 2)
-                infoRow("Trạng thái", m.isCharging ? "Đang sạc" : m.batteryTimeString)
+                infoRow(L10n.t("Trạng thái"), m.isCharging ? L10n.t("Đang sạc") : m.batteryTimeString)
                 // Battery temperature needs SMC access — no public API.
-                infoRow("Nhiệt độ pin", "Đang thu thập…")
+                infoRow(L10n.t("Nhiệt độ pin"), L10n.t("Đang thu thập…"))
             } else if batteryStore.allDevices.isEmpty {
                 Text(L10n.t("Không có pin")).font(.system(size: 12)).foregroundColor(.secondary)
             }
@@ -412,11 +412,11 @@ struct MenubarFlyoutView: View {
         VStack(alignment: .leading, spacing: 8) {
             // These act on the screen-edge panel — that is where notes live.
             // Both used to just open the Settings page, which did nothing useful.
-            actionRow("Ghi chú mới", "square.and.pencil") {
+            actionRow(L10n.t("Ghi chú mới"), "square.and.pencil") {
                 closePopover()
                 EdgeNotesController.shared.createNote()
             }
-            actionRow("Tất cả ghi chú", "note.text") {
+            actionRow(L10n.t("Tất cả ghi chú"), "note.text") {
                 closePopover()
                 EdgeNotesController.shared.revealAll()
             }
@@ -433,9 +433,9 @@ struct MenubarFlyoutView: View {
 
     private var actionList: some View {
         VStack(spacing: 0) {
-            actionRow("Lịch sử thao tác", "clock.arrow.circlepath") { navigate(.actionHistory) }
-            actionRow("Khay thả…", "tray.and.arrow.down") { navigate(.dropTray) }
-            actionRow("Đồng bộ thư mục", "arrow.triangle.2.circlepath") { navigate(.sync) }
+            actionRow(L10n.t("Lịch sử thao tác"), "clock.arrow.circlepath") { navigate(.actionHistory) }
+            actionRow(L10n.t("Khay thả…"), "tray.and.arrow.down") { navigate(.dropTray) }
+            actionRow(L10n.t("Đồng bộ thư mục"), "arrow.triangle.2.circlepath") { navigate(.sync) }
             HStack {
                 Image(systemName: "magnifyingglass").frame(width: 18).foregroundColor(.secondary)
                 Text(L10n.t("Tìm file…")).font(.system(size: 12))
@@ -454,14 +454,14 @@ struct MenubarFlyoutView: View {
             // "Cài đặt chung" no longer exists; Điều khiển nhanh is the page
             // that actually holds the app-level switches.
             Button { navigate(.quickControls) } label: {
-                Label("Cài đặt XFinder", systemImage: "gearshape")
+                Label(L10n.t("Cài đặt XFinder"), systemImage: "gearshape")
                     .font(.system(size: 12))
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered).controlSize(.small)
 
             Button { quit() } label: {
-                Label("Thoát", systemImage: "power")
+                Label(L10n.t("Thoát"), systemImage: "power")
                     .font(.system(size: 12))
                     .frame(maxWidth: .infinity)
             }
@@ -507,7 +507,7 @@ struct MenubarFlyoutView: View {
             HStack {
                 Text(label).font(.system(size: 12))
                 Spacer()
-                Text(percent.map { String(format: "%.0f%%", $0) } ?? "Không khả dụng")
+                Text(percent.map { String(format: "%.0f%%", $0) } ?? L10n.t("Không khả dụng"))
                     .font(.system(size: 12, weight: percent == nil ? .regular : .semibold))
                     .foregroundColor(percent == nil ? .secondary : .primary)
             }

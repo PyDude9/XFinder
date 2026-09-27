@@ -101,7 +101,7 @@ public final class NativeVisibilityEngine: MenuBarEngine {
 
         var boundary = itemFrame(arrow)
         if boundary == nil || boundary?.origin.x == 0 {
-            boundary = AccessibilityMenuBarInventory.ownStatusItemFrame(matching: "Ẩn/hiện biểu tượng thanh menu")
+            boundary = AccessibilityMenuBarInventory.ownStatusItemFrame(matching: L10n.t("Ẩn/hiện biểu tượng thanh menu"))
         }
         guard let resolvedBoundary = boundary, resolvedBoundary.origin.x > 0 else {
             return body(nil)

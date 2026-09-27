@@ -87,9 +87,9 @@ enum SystemControls {
         var id: String { rawValue }
         var titleVI: String {
             switch self {
-            case .light: return "Sáng"
-            case .dark: return "Tối"
-            case .auto: return "Hệ thống"
+            case .light: return L10n.t("Sáng")
+            case .dark: return L10n.t("Tối")
+            case .auto: return L10n.t("Hệ thống")
             }
         }
         var icon: String {

@@ -131,8 +131,8 @@ final class SnapZoneController {
                 activeZone = nil
                 let ok = WindowManager.snapFrontmost(to: zone)
                 lastOutcome = ok
-                    ? "Đã đưa cửa sổ vào “\(zone.titleVI)”."
-                    : "Không di chuyển được — ứng dụng không cho phép hoặc thiếu quyền."
+                    ? "\(L10n.t("Đã đưa cửa sổ vào “"))\(zone.titleVI)”."
+                    : L10n.t("Không di chuyển được — ứng dụng không cho phép hoặc thiếu quyền.")
             } else {
                 hideOverlay()
             }
@@ -295,8 +295,8 @@ final class SnapZoneController {
         Task { @MainActor in
             let ok = WindowManager.snapFrontmost(to: target)
             self.lastOutcome = ok
-                ? "Đã đưa cửa sổ vào “\(target.titleVI)”."
-                : "Không di chuyển được — ứng dụng không cho phép."
+                ? "\(L10n.t("Đã đưa cửa sổ vào “"))\(target.titleVI)”."
+                : L10n.t("Không di chuyển được — ứng dụng không cho phép.")
         }
         return nil // consume
     }

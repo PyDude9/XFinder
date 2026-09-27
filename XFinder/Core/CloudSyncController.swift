@@ -57,7 +57,7 @@ final class CloudSyncController {
             return
         }
         guard isAvailable else {
-            status = .unavailable("Chưa đăng nhập iCloud, hoặc XFinder chưa có entitlement iCloud (cần tài khoản Apple Developer trả phí).")
+            status = .unavailable(L10n.t("Chưa đăng nhập iCloud, hoặc XFinder chưa có entitlement iCloud (cần tài khoản Apple Developer trả phí)."))
             return
         }
         NotificationCenter.default.addObserver(

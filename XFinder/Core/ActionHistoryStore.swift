@@ -48,7 +48,7 @@ final class ActionHistoryStore {
         guard !pairs.isEmpty else { return }
         let first = pairs[0].new.deletingLastPathComponent().lastPathComponent
         record(kind: "rename",
-               summary: "Đổi tên \(pairs.count) mục trong “\(first)”",
+               summary: "\(L10n.t("Đổi tên "))\(pairs.count)\(L10n.t(" mục trong "))“\(first)”",
                detail: pairs.prefix(5).map { "\($0.old.lastPathComponent) → \($0.new.lastPathComponent)" }.joined(separator: "\n"),
                reversible: true,
                undoPayload: UndoPayload(from: pairs.map(\.new.path), to: pairs.map(\.old.path)))
@@ -57,7 +57,7 @@ final class ActionHistoryStore {
     func recordTrash(urls: [URL]) {
         guard !urls.isEmpty else { return }
         record(kind: "trash",
-               summary: "Chuyển \(urls.count) mục vào Thùng rác",
+               summary: "\(L10n.t("Chuyển "))\(urls.count)\(L10n.t(" mục vào Thùng rác"))",
                detail: urls.prefix(5).map(\.lastPathComponent).joined(separator: ", "),
                reversible: false)
     }
@@ -73,7 +73,7 @@ final class ActionHistoryStore {
     func undo(_ entry: Entry) -> String {
         guard entry.reversible, let payload = entry.undoPayload,
               payload.from.count == payload.to.count else {
-            return "Không thể hoàn tác thao tác này."
+            return L10n.t("Không thể hoàn tác thao tác này.")
         }
         var restored = 0, failed = 0
         let fm = FileManager.default
@@ -92,11 +92,11 @@ final class ActionHistoryStore {
         }
         if restored > 0, let i = entries.firstIndex(where: { $0.id == entry.id }) {
             entries.remove(at: i)
-            record(kind: "other", summary: "Hoàn tác: khôi phục \(restored) mục", reversible: false)
+            record(kind: "other", summary: "\(L10n.t("Hoàn tác: khôi phục "))\(restored)\(L10n.t(" mục."))", reversible: false)
         }
         return failed == 0
-            ? "Đã hoàn tác \(restored) mục."
-            : "Khôi phục \(restored) mục, \(failed) mục thất bại."
+            ? "\(L10n.t("Đã hoàn tác "))\(restored)\(L10n.t(" mục."))"
+            : "\(L10n.t("Khôi phục "))\(restored)\(L10n.t(", "))\(failed)\(L10n.t(" mục thất bại."))"
     }
 
     // MARK: - Persistence

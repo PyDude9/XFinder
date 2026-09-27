@@ -33,12 +33,12 @@ final class CommandTabController {
     func applySettings() {
         guard enabled else {
             teardownTap()
-            statusHint = "Đang tắt."
+            statusHint = L10n.t("Đang tắt.")
             return
         }
         guard WindowManager.isTrusted else {
             teardownTap()
-            statusHint = "Chưa có quyền Trợ năng — không chặn được Command-Tab."
+            statusHint = L10n.t("Chưa có quyền Trợ năng — không chặn được Command-Tab.")
             return
         }
         setupTap()
@@ -61,7 +61,7 @@ final class CommandTabController {
                                           callback: callback,
                                           userInfo: Unmanaged.passUnretained(self).toOpaque())
         else {
-            statusHint = "Không tạo được event tap — kiểm tra quyền Trợ năng."
+            statusHint = L10n.t("Không tạo được event tap — kiểm tra quyền Trợ năng.")
             return
         }
         let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
@@ -69,7 +69,7 @@ final class CommandTabController {
         CGEvent.tapEnable(tap: tap, enable: true)
         eventTap = tap
         runLoopSource = source
-        statusHint = "Đang hoạt động — giữ ⌘ và nhấn Tab."
+        statusHint = L10n.t("Đang hoạt động — giữ ⌘ và nhấn Tab.")
     }
 
     private func teardownTap() {

@@ -140,13 +140,13 @@ struct SystemMetrics: Codable, Sendable {
     }
 
     var uptimeString: String {
-        guard uptime > 60 else { return "vừa khởi động" }
+        guard uptime > 60 else { return L10n.t("Vừa khởi động") }
         let s = Int(uptime)
         let days = s / 86400
         let hours = (s % 86400) / 3600
         let mins = (s % 3600) / 60
-        if days > 0 { return "\(days) ngày \(hours) giờ" }
-        if hours > 0 { return "\(hours) giờ \(mins) phút" }
-        return "\(mins) phút"
+        if days > 0 { return "\(days)\(L10n.t(" ngày "))\(hours)\(L10n.t(" giờ"))" }
+        if hours > 0 { return "\(hours)\(L10n.t(" giờ "))\(mins)\(L10n.t(" phút"))" }
+        return "\(mins)\(L10n.t(" phút"))"
     }
 }

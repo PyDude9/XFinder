@@ -13,7 +13,14 @@ enum ClipboardPasteEngine {
     static func paste(record: ClipboardRecord, to pid: pid_t?, plainText: Bool = false) -> Bool {
         guard WindowManager.isTrusted else { return false }
         guard writeToPasteboard(record: record, plainText: plainText) else { return false }
-        if let pid, let app = NSRunningApplication(processIdentifier: pid) {
+        let mine = ProcessInfo.processInfo.processIdentifier
+        guard let targetPID = pid, targetPID != mine else {
+            // No external target: content copied to clipboard; skip ⌘V synthesis
+            // to avoid pasting recursively into XFinder itself.
+            ClipboardSounds.playPaste()
+            return true
+        }
+        if let app = NSRunningApplication(processIdentifier: targetPID) {
             app.activate(options: [.activateAllWindows])
         }
         // Let the target app front before the keystroke lands.

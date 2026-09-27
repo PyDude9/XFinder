@@ -12,7 +12,7 @@ struct PdfToolsDetailView: View {
             switch self {
             case .merge: return L10n.t("Gộp PDF")
             case .extract: return L10n.t("Tách trang")
-            case .rotate: return "Xoay trang"
+            case .rotate: return L10n.t("Xoay trang")
             }
         }
     }

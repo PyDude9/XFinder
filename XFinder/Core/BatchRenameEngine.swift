@@ -10,12 +10,12 @@ enum BatchRenameEngine {
         var id: String { rawValue }
         var titleVI: String {
             switch self {
-            case .prefix: return "Thêm tiền tố"
-            case .suffix: return "Thêm hậu tố"
-            case .replace: return "Thay thế chữ"
-            case .sequence: return "Đánh số thứ tự"
-            case .lowercase: return "Chữ thường"
-            case .uppercase: return "Chữ HOA"
+            case .prefix: return L10n.t("Thêm tiền tố")
+            case .suffix: return L10n.t("Thêm hậu tố")
+            case .replace: return L10n.t("Thay thế chữ")
+            case .sequence: return L10n.t("Đánh số thứ tự")
+            case .lowercase: return L10n.t("Chữ thường")
+            case .uppercase: return L10n.t("Chữ HOA")
             }
         }
     }

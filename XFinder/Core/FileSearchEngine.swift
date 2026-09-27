@@ -52,13 +52,13 @@ enum FileSearchEngine {
             var id: String { rawValue }
             var titleVI: String {
                 switch self {
-                case .any: return "Mọi loại"
-                case .images: return "Hình ảnh"
-                case .documents: return "Tài liệu"
-                case .audio: return "Âm thanh"
+                case .any: return L10n.t("Mọi loại")
+                case .images: return L10n.t("Hình ảnh")
+                case .documents: return L10n.t("Tài liệu")
+                case .audio: return L10n.t("Âm thanh")
                 case .video: return "Video"
-                case .archives: return "File nén"
-                case .folders: return "Thư mục"
+                case .archives: return L10n.t("File nén")
+                case .folders: return L10n.t("Thư mục")
                 }
             }
             /// Spotlight kMDItemContentTypeTree fragment, nil = no constraint.
@@ -110,30 +110,30 @@ enum FileSearchEngine {
 
         // Kind
         if has("ảnh", "hình", "image", "photo", "picture", "png", "jpg") {
-            parts.append("kMDItemContentTypeTree == 'public.image'"); notes.append("loại: hình ảnh")
+            parts.append("kMDItemContentTypeTree == 'public.image'"); notes.append(L10n.t("loại: hình ảnh"))
         } else if has("video", "phim", "movie", "mp4") {
-            parts.append("kMDItemContentTypeTree == 'public.movie'"); notes.append("loại: video")
+            parts.append("kMDItemContentTypeTree == 'public.movie'"); notes.append(L10n.t("loại: video"))
         } else if has("nhạc", "âm thanh", "audio", "music", "mp3") {
-            parts.append("kMDItemContentTypeTree == 'public.audio'"); notes.append("loại: âm thanh")
+            parts.append("kMDItemContentTypeTree == 'public.audio'"); notes.append(L10n.t("loại: âm thanh"))
         } else if has("pdf") {
-            parts.append("kMDItemContentTypeTree == 'com.adobe.pdf'"); notes.append("loại: PDF")
+            parts.append("kMDItemContentTypeTree == 'com.adobe.pdf'"); notes.append(L10n.t("loại: PDF"))
         } else if has("nén", "zip", "archive") {
-            parts.append("kMDItemContentTypeTree == 'public.archive'"); notes.append("loại: file nén")
+            parts.append("kMDItemContentTypeTree == 'public.archive'"); notes.append(L10n.t("loại: file nén"))
         } else if has("thư mục", "folder", "directory") {
-            parts.append("kMDItemContentTypeTree == 'public.folder'"); notes.append("loại: thư mục")
+            parts.append("kMDItemContentTypeTree == 'public.folder'"); notes.append(L10n.t("loại: thư mục"))
         } else if has("tài liệu", "document", "doc", "word", "excel") {
-            parts.append("kMDItemContentTypeTree == 'public.content'"); notes.append("loại: tài liệu")
+            parts.append("kMDItemContentTypeTree == 'public.content'"); notes.append(L10n.t("loại: tài liệu"))
         }
 
         // Recency
         if has("hôm nay", "today") {
-            parts.append("kMDItemFSContentChangeDate >= $time.today(-1)"); notes.append("sửa: hôm nay")
+            parts.append("kMDItemFSContentChangeDate >= $time.today(-1)"); notes.append(L10n.t("sửa: hôm nay"))
         } else if has("hôm qua", "yesterday") {
-            parts.append("kMDItemFSContentChangeDate >= $time.today(-2)"); notes.append("sửa: 2 ngày qua")
+            parts.append("kMDItemFSContentChangeDate >= $time.today(-2)"); notes.append(L10n.t("sửa: 2 ngày qua"))
         } else if has("tuần này", "tuần qua", "this week", "last week") {
-            parts.append("kMDItemFSContentChangeDate >= $time.today(-7)"); notes.append("sửa: 7 ngày qua")
+            parts.append("kMDItemFSContentChangeDate >= $time.today(-7)"); notes.append(L10n.t("sửa: 7 ngày qua"))
         } else if has("tháng này", "tháng qua", "this month") {
-            parts.append("kMDItemFSContentChangeDate >= $time.today(-30)"); notes.append("sửa: 30 ngày qua")
+            parts.append("kMDItemFSContentChangeDate >= $time.today(-30)"); notes.append(L10n.t("sửa: 30 ngày qua"))
         }
 
         // Quoted "name" or remainder words as name filter.
@@ -155,15 +155,15 @@ enum FileSearchEngine {
         if !meaningful.isEmpty {
             let escaped = meaningful.joined(separator: " ").replacingOccurrences(of: "'", with: "\\'")
             parts.append("kMDItemDisplayName == '*\(escaped)*'wc")
-            notes.append("tên chứa: “\(meaningful.joined(separator: " "))”")
+            notes.append(L10n.t("tên chứa: ") + "\"\(meaningful.joined(separator: " "))\"")
         }
 
         if parts.isEmpty {
             let escaped = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 .replacingOccurrences(of: "'", with: "\\'")
             return ("kMDItemDisplayName == '*\(escaped)*'wc",
-                    "Không nhận ra cấu trúc — tìm tên chứa toàn bộ câu.")
+                    L10n.t("Không nhận ra cấu trúc — tìm tên chứa toàn bộ câu."))
         }
-        return (parts.joined(separator: " && "), "Hiểu: " + notes.joined(separator: " · "))
+        return (parts.joined(separator: " && "), L10n.t("Hiểu: ") + notes.joined(separator: " · "))
     }
 }

@@ -381,7 +381,7 @@ private struct ClipboardShelfView: View {
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").foregroundColor(.secondary)
-            TextField("Tìm kiếm (⌘F) — gồm chữ trong ảnh OCR…",
+            TextField(L10n.t("Tìm kiếm (⌘F) — gồm chữ trong ảnh OCR…"),
                       text: Binding(get: { controller.searchText },
                                     set: { controller.searchText = $0; controller.selectedIndex = 0 }))
                 .textFieldStyle(.plain)

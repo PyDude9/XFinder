@@ -4861,6 +4861,290 @@
     "⌘⇧V mở khay clipboard nổi trên mọi ứng dụng": {
       "en": "⌘⇧V opens the floating clipboard shelf over any app",
       "scope": "sentence"
+    },
+    "Thêm hậu tố": {
+      "en": "Add suffix",
+      "scope": "sentence"
+    },
+    "Thay thế chữ": {
+      "en": "Replace text",
+      "scope": "sentence"
+    },
+    "Đánh số thứ tự": {
+      "en": "Number sequence",
+      "scope": "sentence"
+    },
+    "Chữ thường": {
+      "en": "Lowercase",
+      "scope": "sentence"
+    },
+    "Chữ HOA": {
+      "en": "UPPERCASE",
+      "scope": "sentence"
+    },
+    "Mọi loại": {
+      "en": "Any kind",
+      "scope": "sentence"
+    },
+    "Hình ảnh": {
+      "en": "Images",
+      "scope": "sentence"
+    },
+    "Tài liệu": {
+      "en": "Documents",
+      "scope": "sentence"
+    },
+    "Âm thanh": {
+      "en": "Audio",
+      "scope": "sentence"
+    },
+    "File nén": {
+      "en": "Archives",
+      "scope": "sentence"
+    },
+    "Thư mục": {
+      "en": "Folders",
+      "scope": "sentence"
+    },
+    "Sáng": {
+      "en": "Light",
+      "scope": "sentence"
+    },
+    "Tối": {
+      "en": "Dark",
+      "scope": "sentence"
+    },
+    "Tính toán": {
+      "en": "Calculation",
+      "scope": "sentence"
+    },
+    "Tập tin": {
+      "en": "File",
+      "scope": "sentence"
+    },
+    "Trái nửa màn hình": {
+      "en": "Left half",
+      "scope": "sentence"
+    },
+    "Phải nửa màn hình": {
+      "en": "Right half",
+      "scope": "sentence"
+    },
+    "Trên nửa màn hình": {
+      "en": "Top half",
+      "scope": "sentence"
+    },
+    "Dưới nửa màn hình": {
+      "en": "Bottom half",
+      "scope": "sentence"
+    },
+    "Góc trên-trái": {
+      "en": "Top-left corner",
+      "scope": "sentence"
+    },
+    "Góc trên-phải": {
+      "en": "Top-right corner",
+      "scope": "sentence"
+    },
+    "Góc dưới-trái": {
+      "en": "Bottom-left corner",
+      "scope": "sentence"
+    },
+    "Góc dưới-phải": {
+      "en": "Bottom-right corner",
+      "scope": "sentence"
+    },
+    "Điều khiển": {
+      "en": "Controls",
+      "scope": "sentence"
+    },
+    "Xoay trang": {
+      "en": "Rotate pages",
+      "scope": "sentence"
+    },
+    "Vừa khởi động": {
+      "en": "Just started",
+      "scope": "sentence"
+    },
+    "Không thể hoàn tác thao tác này.": {
+      "en": "This action cannot be undone.",
+      "scope": "sentence"
+    },
+    "Đã đưa cửa sổ vào ": {
+      "en": "Moved window to ",
+      "scope": "fragment"
+    },
+    "Chưa có quyền Trợ năng — không chặn được Command-Tab.": {
+      "en": "Accessibility not granted — cannot intercept Command-Tab.",
+      "scope": "sentence"
+    },
+    "Không tạo được event tap — kiểm tra quyền Trợ năng.": {
+      "en": "Could not create event tap — check Accessibility permission.",
+      "scope": "sentence"
+    },
+    "Đang hoạt động — giữ ⌘ và nhấn Tab.": {
+      "en": "Active — hold ⌘ and press Tab.",
+      "scope": "sentence"
+    },
+    "Chưa đăng nhập iCloud, hoặc XFinder chưa có entitlement iCloud (cần tài khoản Apple Developer trả phí).": {
+      "en": "Not signed in to iCloud, or XFinder lacks the iCloud entitlement (requires a paid Apple Developer account).",
+      "scope": "sentence"
+    },
+    "Mở trang ": {
+      "en": "Open page ",
+      "scope": "fragment"
+    },
+    "Chế độ tối": {
+      "en": "Dark mode",
+      "scope": "sentence"
+    },
+    "Chuyển đổi ứng dụng": {
+      "en": "App Switcher",
+      "scope": "sentence"
+    },
+    "Máy Mac sẽ không tự ngủ.": {
+      "en": "Mac will not sleep automatically.",
+      "scope": "sentence"
+    },
+    "Máy Mac tuân theo cài đặt năng lượng thông thường.": {
+      "en": "Mac follows the normal energy settings.",
+      "scope": "sentence"
+    },
+    "Còn lại": {
+      "en": "Remaining",
+      "scope": "sentence"
+    },
+    "Đã dùng": {
+      "en": "Used",
+      "scope": "sentence"
+    },
+    "Trạng thái": {
+      "en": "Status",
+      "scope": "sentence"
+    },
+    "Khay thả…": {
+      "en": "Drop tray…",
+      "scope": "sentence"
+    },
+    "Cài đặt XFinder": {
+      "en": "XFinder Settings",
+      "scope": "sentence"
+    },
+    "Thoát": {
+      "en": "Quit",
+      "scope": "sentence"
+    },
+    " ngày ": {
+      "en": " d ",
+      "scope": "fragment"
+    },
+    " giờ ": {
+      "en": " h ",
+      "scope": "fragment"
+    },
+    "Kính lúp": {
+      "en": "Magnifier",
+      "scope": "sentence"
+    },
+    "Chồng lớp": {
+      "en": "Overlay",
+      "scope": "sentence"
+    },
+    "Hoàn tác: khôi phục ": {
+      "en": "Undo: restored ",
+      "scope": "fragment"
+    },
+    "Khôi phục ": {
+      "en": "Restored ",
+      "scope": "fragment"
+    },
+    "Đổi tên ": {
+      "en": "Rename ",
+      "scope": "fragment"
+    },
+    "Chuyển ": {
+      "en": "Move ",
+      "scope": "fragment"
+    },
+    " mục vào Thùng rác": {
+      "en": " items to Trash",
+      "scope": "fragment"
+    },
+    "Ẩn/hiện biểu tượng thanh menu": {
+      "en": "Show/hide menu bar icons",
+      "scope": "sentence"
+    },
+    "Đã hoàn tác ": {
+      "en": "Undone: ",
+      "scope": "fragment"
+    },
+    " mục trong ": {
+      "en": " items in ",
+      "scope": "fragment"
+    },
+    "Không di chuyển được — ứng dụng không cho phép.": {
+      "en": "Could not move — app denied the request.",
+      "scope": "sentence"
+    },
+    ", ": {
+      "en": ", ",
+      "scope": "fragment"
+    },
+    "loại: hình ảnh": {
+      "en": "kind: images",
+      "scope": "sentence"
+    },
+    "loại: video": {
+      "en": "kind: video",
+      "scope": "sentence"
+    },
+    "loại: âm thanh": {
+      "en": "kind: audio",
+      "scope": "sentence"
+    },
+    "loại: PDF": {
+      "en": "kind: PDF",
+      "scope": "sentence"
+    },
+    "loại: file nén": {
+      "en": "kind: archives",
+      "scope": "sentence"
+    },
+    "loại: thư mục": {
+      "en": "kind: folders",
+      "scope": "sentence"
+    },
+    "loại: tài liệu": {
+      "en": "kind: documents",
+      "scope": "sentence"
+    },
+    "sửa: hôm nay": {
+      "en": "modified: today",
+      "scope": "sentence"
+    },
+    "sửa: 2 ngày qua": {
+      "en": "modified: 2 days ago",
+      "scope": "sentence"
+    },
+    "sửa: 7 ngày qua": {
+      "en": "modified: 7 days ago",
+      "scope": "sentence"
+    },
+    "sửa: 30 ngày qua": {
+      "en": "modified: 30 days ago",
+      "scope": "sentence"
+    },
+    "tên chứa: ": {
+      "en": "name contains: ",
+      "scope": "fragment"
+    },
+    "Không nhận ra cấu trúc — tìm tên chứa toàn bộ câu.": {
+      "en": "Unrecognized structure — searching name for the full phrase.",
+      "scope": "sentence"
+    },
+    "Hiểu: ": {
+      "en": "Understood: ",
+      "scope": "fragment"
     }
   }
 }
