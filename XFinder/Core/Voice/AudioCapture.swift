@@ -8,7 +8,7 @@ public final class AudioCapture: @unchecked Sendable {
 
     private let engine = AVAudioEngine()
     private var converter: AVAudioConverter?
-    private let targetFormat: AVAudioFormat
+    private let targetFormat: AVAudioFormat?
 
     private let lock = NSLock()
     private var _isRunning = false
@@ -32,10 +32,12 @@ public final class AudioCapture: @unchecked Sendable {
     private var hasHeardSpeech = false
 
     public init() {
-        guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false) else {
-            fatalError("Could not create 16kHz Mono Float32 AVAudioFormat")
+        if let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false) {
+            self.targetFormat = format
+        } else {
+            assertionFailure("Could not create 16kHz Mono Float32 AVAudioFormat")
+            self.targetFormat = nil
         }
-        self.targetFormat = format
     }
 
     /// Starts audio capture from the default input device.
@@ -43,6 +45,9 @@ public final class AudioCapture: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         guard !_isRunning else { return }
+        guard let targetFormat = targetFormat else {
+            throw NSError(domain: "AudioCapture", code: -1, userInfo: [NSLocalizedDescriptionKey: "Target audio format unavailable"])
+        }
 
         let inputNode = engine.inputNode
         let hwFormat = inputNode.inputFormat(forBus: 0)
@@ -92,6 +97,7 @@ public final class AudioCapture: @unchecked Sendable {
     }
 
     private func processInputBuffer(_ buffer: AVAudioPCMBuffer) {
+        guard let targetFormat = self.targetFormat else { return }
         let convertedBuffer: AVAudioPCMBuffer
         if let converter = self.converter {
             let ratio = targetFormat.sampleRate / buffer.format.sampleRate
