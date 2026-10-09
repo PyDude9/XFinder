@@ -284,6 +284,16 @@ enum DeviceCapabilityProbe {
         return seen.sorted()
     }
 
+    /// Human name of a usage page. `elementDump` only lists the Button, Consumer and
+    /// Vendor pages, so "Other" is unreachable from it; it exists so the function is total.
+    static func usagePageName(_ page: Int) -> String {
+        switch page {
+        case usagePageButton: return "Button"
+        case usagePageConsumer: return "Consumer"
+        default: return page >= usagePageVendorDefined ? "Vendor" : "Other"
+        }
+    }
+
     /// Every element's `(usagePage, usage, type)`, formatted for a human — the
     /// "log the raw facts before any filter runs" step.
     ///
@@ -310,8 +320,10 @@ enum DeviceCapabilityProbe {
         }
         lines.append("button page 0x09 + consumer page 0x0C + vendor page >= 0xFF00: \(interesting.count)")
         for el in interesting.prefix(limit) {
-            lines.append(String(format: "  page=0x%04X usage=0x%04X (%d) type=0x%02X",
-                                el.usagePage, el.usage, el.usage, el.type))
+            let line = String(format: "  page=0x%04X usage=0x%04X (%d) type=0x%02X",
+                              el.usagePage, el.usage, el.usage, el.type)
+            // Name the page so the raw line is checkable without a HID usage table to hand.
+            lines.append(line + "  [\(usagePageName(el.usagePage))]")
         }
         if interesting.count > limit { lines.append("  … \(interesting.count - limit) more") }
         return lines
