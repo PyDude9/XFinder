@@ -204,7 +204,7 @@ struct FinderUtilsDetailView: View {
         d?.set(showExtensions, forKey: "AppleShowAllExtensions")
         d?.set(showHidden, forKey: "AppleShowAllFiles")
         d?.set(showFullPath, forKey: "_FXShowPosixPathInTitle")
-        d?.synchronize()
+        CFPreferencesSynchronize(domain as CFString, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
 
         Task {
             // cfprefsd caches the domain; flush it before restarting Finder or

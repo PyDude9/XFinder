@@ -79,11 +79,13 @@ final class FolderSyncController {
 
     private func scheduleDebounced(_ id: UUID) {
         debounce[id]?.cancel()
-        debounce[id] = Task { [weak self] in
+        debounce[id] = Task.detached { [weak self] in
             try? await Task.sleep(nanoseconds: 3_000_000_000)
             guard !Task.isCancelled, let self else { return }
-            if let pair = self.pairs.first(where: { $0.id == id }) {
-                await self.run(pair)
+            await MainActor.run {
+                if let pair = self.pairs.first(where: { $0.id == id }) {
+                    Task { await self.run(pair) }
+                }
             }
         }
     }
@@ -112,12 +114,12 @@ final class FolderSyncController {
 
     func add(source: URL, dest: URL) {
         guard source.path != dest.path else {
-            lastError = "Nguồn và đích không được trùng nhau."
+            lastError = L10n.t("Nguồn và đích không được trùng nhau.")
             return
         }
         // A destination inside the source would recurse forever.
         if dest.path.hasPrefix(source.path + "/") {
-            lastError = "Thư mục đích nằm trong thư mục nguồn — sẽ lặp vô hạn."
+            lastError = L10n.t("Thư mục đích nằm trong thư mục nguồn — sẽ lặp vô hạn.")
             return
         }
         lastError = nil
@@ -150,7 +152,7 @@ final class FolderSyncController {
 
         let fm = FileManager.default
         guard fm.fileExists(atPath: pair.sourcePath) else {
-            record(pair, "Nguồn không tồn tại.")
+            record(pair, L10n.t("Nguồn không tồn tại."))
             return false
         }
         if !fm.fileExists(atPath: pair.destPath) {
@@ -166,13 +168,13 @@ final class FolderSyncController {
 
         let result = await Self.runProcess(["/usr/bin/rsync"] + args)
         let summary = result.ok
-            ? "Đồng bộ xong lúc " + Self.timeString(Date())
-            : "Lỗi: " + result.output.split(separator: "\n").last.map(String.init).orEmpty
+            ? L10n.t("Đồng bộ xong lúc ") + Self.timeString(Date())
+            : L10n.t("Lỗi: ") + result.output.split(separator: "\n").last.map(String.init).orEmpty
         record(pair, summary)
         if result.ok {
             ActionHistoryStore.shared.record(
                 kind: "sync",
-                summary: "Đồng bộ \(pair.sourceName) → \(pair.destName)")
+                summary: "\(L10n.t("Đồng bộ "))\(pair.sourceName) → \(pair.destName)")
         }
         return result.ok
     }
@@ -192,7 +194,7 @@ final class FolderSyncController {
             let pipe = Pipe()
             p.standardOutput = pipe
             p.standardError = pipe
-            guard (try? p.run()) != nil else { return (false, "không chạy được rsync") }
+            guard (try? p.run()) != nil else { return (false, L10n.t("không chạy được rsync")) }
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             p.waitUntilExit()
             return (p.terminationStatus == 0, String(data: data, encoding: .utf8) ?? "")

@@ -288,11 +288,15 @@ struct DropTrayDetailView: View {
         let items = liveItems()
         guard !items.isEmpty else { return }
         let archive = dest.appendingPathComponent("Khay-\(Int(Date().timeIntervalSince1970)).zip")
-        let ok = DropTrayStore.runZip(sources: items, dest: archive)
-        history.record(kind: "compress",
-                       summary: ok ? "\(L10n.t("Nén "))\(items.count)\(L10n.t(" mục từ khay → "))\(archive.lastPathComponent)" : L10n.t("Nén khay thất bại"),
-                       reversible: false)
-        outcome = ok ? "\(L10n.t("Đã nén "))\(items.count)\(L10n.t(" mục → "))\(archive.lastPathComponent)." : L10n.t("Nén thất bại.")
+        Task {
+            let ok = await Task.detached {
+                DropTrayStore.runZip(sources: items, dest: archive)
+            }.value
+            self.history.record(kind: "compress",
+                           summary: ok ? "\(L10n.t("Nén "))\(items.count)\(L10n.t(" mục từ khay → "))\(archive.lastPathComponent)" : L10n.t("Nén khay thất bại"),
+                           reversible: false)
+            self.outcome = ok ? "\(L10n.t("Đã nén "))\(items.count)\(L10n.t(" mục → "))\(archive.lastPathComponent)." : L10n.t("Nén thất bại.")
+        }
     }
 
     private func openAll() {

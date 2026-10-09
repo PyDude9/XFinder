@@ -193,7 +193,6 @@ struct NotesDetailView: View {
 }
 
 private struct EdgeNotesSettingsCard: View {
-    @AppStorage("notes.edgeEnabled") private var edgeEnabled = false
     @AppStorage("notes.edgeSide") private var edgeSide = "Right"
     @AppStorage("notes.edgeHotspot") private var edgeHotspot = 12.0
     @AppStorage("notes.fullscreen") private var showFullscreen = false
@@ -206,8 +205,6 @@ private struct EdgeNotesSettingsCard: View {
                          ? L10n.t("Dải mép chỉ hiện khi có ít nhất một ghi chú.")
                          : L10n.t("Di chuột tới mép màn hình để mở ghi chú.")) {
             VStack(spacing: 10) {
-                ToggleRow(title: L10n.t("Hiện ghi chú ở mép màn hình"), isOn: $edgeEnabled)
-                    .onChange(of: edgeEnabled) { EdgeNotesController.shared.applySettings() }
                 Picker(L10n.t("Cạnh màn hình"), selection: $edgeSide) {
                     Text(L10n.t("Trái")).tag("Left")
                     Text(L10n.t("Phải")).tag("Right")

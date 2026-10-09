@@ -144,8 +144,9 @@ struct QuickLookDetailView: View {
         p.standardOutput = pipe
         p.standardError = FileHandle.nullDevice
         guard (try? p.run()) != nil else { return [] }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
         p.waitUntilExit()
-        let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let out = String(data: data, encoding: .utf8) ?? ""
         return out.components(separatedBy: .newlines)
     }
 
@@ -251,7 +252,14 @@ struct QuickLookPreviewerSheet: View {
             return
         }
         if url.isArchiveURL {
-            archiveListing = ArchiveReader.listEntries(url: url)
+            Task {
+                let entries = await Task.detached {
+                    ArchiveReader.listEntries(url: url)
+                }.value
+                if self.selected == url {
+                    self.archiveListing = entries
+                }
+            }
         }
     }
 

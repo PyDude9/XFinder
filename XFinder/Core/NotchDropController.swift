@@ -261,6 +261,7 @@ final class NotchDropController {
         panel = p
         isShowing = true
         lastInsidePanel = Date()
+        armCloseTimer()
     }
 
     func hide() {

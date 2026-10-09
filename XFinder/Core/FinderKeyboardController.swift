@@ -25,7 +25,7 @@ final class FinderKeyboardController {
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     /// Set by ⌘X, consumed by the next ⌘V.
-    private nonisolated(unsafe) var cutPending = false
+    private let cutPending = Locked<Bool>(false)
 
     private init() {}
 
@@ -79,7 +79,10 @@ final class FinderKeyboardController {
     }
 
     private func teardown() {
-        if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            CFMachPortInvalidate(tap)
+        }
         if let source = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
         }
@@ -90,7 +93,9 @@ final class FinderKeyboardController {
     private nonisolated func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             Task { @MainActor in
-                if let tap = self.eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+                if let tap = self.eventTap, CFMachPortIsValid(tap) {
+                    CGEvent.tapEnable(tap: tap, enable: true)
+                }
             }
             return Unmanaged.passUnretained(event)
         }
@@ -107,30 +112,30 @@ final class FinderKeyboardController {
         let cmd = flags.contains(.maskCommand)
 
         // ⌘X — mark a cut, then let Finder do a normal ⌘C.
-        if cmd, keyCode == 7, cutPasteSnapshot { // X
-            cutPending = true
+        if cmd, keyCode == 7, cutPasteSnapshot.value { // X
+            cutPending.value = true
             event.setIntegerValueField(.keyboardEventKeycode, value: 8) // → C
             return Unmanaged.passUnretained(event)
         }
 
         // ⌘V after a ⌘X — rewrite to Finder's own Move Item Here (⌘⌥V), so
         // the operation is Finder's and stays undoable with ⌘Z.
-        if cmd, keyCode == 9, cutPasteSnapshot { // V
-            if cutPending {
-                cutPending = false
+        if cmd, keyCode == 9, cutPasteSnapshot.value { // V
+            if cutPending.value {
+                cutPending.value = false
                 event.flags = flags.union(.maskAlternate)
             }
             return Unmanaged.passUnretained(event)
         }
 
         // Delete → ⌘⌫ (Finder's Move to Trash).
-        if keyCode == 51, !cmd, deleteSnapshot { // Delete
+        if keyCode == 51, !cmd, deleteSnapshot.value { // Delete
             event.flags = flags.union(.maskCommand)
             return Unmanaged.passUnretained(event)
         }
 
         // Return → ⌘O (Open) instead of rename.
-        if keyCode == 36, !cmd, returnSnapshot { // Return
+        if keyCode == 36, !cmd, returnSnapshot.value { // Return
             event.setIntegerValueField(.keyboardEventKeycode, value: 31) // O
             event.flags = flags.union(.maskCommand)
             return Unmanaged.passUnretained(event)
@@ -155,14 +160,14 @@ final class FinderKeyboardController {
     }
 
     // Settings mirrored for lock-free reads from the tap thread.
-    private nonisolated(unsafe) var cutPasteSnapshot = false
-    private nonisolated(unsafe) var deleteSnapshot = false
-    private nonisolated(unsafe) var returnSnapshot = false
+    private let cutPasteSnapshot = Locked<Bool>(false)
+    private let deleteSnapshot = Locked<Bool>(false)
+    private let returnSnapshot = Locked<Bool>(false)
 
     /// Called whenever a toggle changes so the tap thread sees fresh values.
     func refreshSnapshots() {
-        cutPasteSnapshot = cutPasteEnabled
-        deleteSnapshot = deleteToTrash
-        returnSnapshot = returnOpens
+        cutPasteSnapshot.value = cutPasteEnabled
+        deleteSnapshot.value = deleteToTrash
+        returnSnapshot.value = returnOpens
     }
 }

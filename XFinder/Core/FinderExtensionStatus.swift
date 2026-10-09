@@ -31,11 +31,9 @@ enum FinderExtensionStatus: Equatable {
     /// known and nothing when it is not. Off the main thread and with a timeout,
     /// because a page open must never stall on a subprocess.
     static func probe() async -> FinderExtensionStatus {
-        await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                continuation.resume(returning: probeSync())
-            }
-        }
+        await Task.detached(priority: .userInitiated) {
+            probeSync()
+        }.value
     }
 
     /// Synchronous variant, so a test or a harness can call it directly.

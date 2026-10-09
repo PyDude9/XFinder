@@ -57,7 +57,7 @@ final class FolderLockController {
             .appendingPathComponent("\(name).sparsebundle").path
 
         guard !FileManager.default.fileExists(atPath: imagePath) else {
-            lastError = "Đã tồn tại “\(name).sparsebundle” ở thư mục này."
+            lastError = "\(L10n.t("Đã tồn tại “"))\(name).sparsebundle\(L10n.t("” ở thư mục này."))"
             return false
         }
 
@@ -74,14 +74,14 @@ final class FolderLockController {
             stdin: password)
 
         guard created.ok else {
-            lastError = "Không tạo được vault: \(created.output)"
+            lastError = "\(L10n.t("Không tạo được vault: "))\(created.output)"
             return false
         }
 
         // Verify by attaching and comparing the top-level entry count before
         // anything is deleted.
         guard let mount = await attach(imagePath: imagePath, password: password) else {
-            lastError = "Tạo xong nhưng không mở được để kiểm tra — giữ nguyên thư mục gốc."
+            lastError = L10n.t("Tạo xong nhưng không mở được để kiểm tra — giữ nguyên thư mục gốc.")
             return false
         }
         let fm = FileManager.default
@@ -90,14 +90,14 @@ final class FolderLockController {
         _ = await Self.run(["/usr/bin/hdiutil", "detach", mount, "-quiet"])
 
         guard src >= 0, dst >= src else {
-            lastError = "Kiểm tra nội dung thất bại — giữ nguyên thư mục gốc để an toàn."
+            lastError = L10n.t("Kiểm tra nội dung thất bại — giữ nguyên thư mục gốc để an toàn.")
             return false
         }
 
         if deleteOriginal {
             // Trash, never rm: recoverable if the user changes their mind.
             do { try fm.trashItem(at: folder, resultingItemURL: nil) }
-            catch { lastError = "Đã mã hóa nhưng không xóa được thư mục gốc: \(error.localizedDescription)" }
+            catch { lastError = "\(L10n.t("Đã mã hóa nhưng không xóa được thư mục gốc: "))\(error.localizedDescription)" }
         }
 
         vaults.append(Vault(imagePath: imagePath, name: name))
@@ -112,7 +112,7 @@ final class FolderLockController {
         lastError = nil
         defer { busy = false }
         guard let mount = await attach(imagePath: vault.imagePath, password: password) else {
-            lastError = "Sai mật khẩu hoặc không mở được vault."
+            lastError = L10n.t("Sai mật khẩu hoặc không mở được vault.")
             return false
         }
         if let idx = vaults.firstIndex(where: { $0.id == vault.id }) {
@@ -130,7 +130,7 @@ final class FolderLockController {
         guard let mount = vault.mountPath else { return true }
         let result = await Self.run(["/usr/bin/hdiutil", "detach", mount, "-quiet"])
         guard result.ok else {
-            lastError = "Không khóa được — có thể còn file đang mở trong vault."
+            lastError = L10n.t("Không khóa được — có thể còn file đang mở trong vault.")
             return false
         }
         if let idx = vaults.firstIndex(where: { $0.id == vault.id }) {
@@ -173,7 +173,7 @@ final class FolderLockController {
             p.standardError = out
             let input = Pipe()
             if stdin != nil { p.standardInput = input }
-            guard (try? p.run()) != nil else { return (false, "không chạy được hdiutil") }
+            guard (try? p.run()) != nil else { return (false, L10n.t("không chạy được hdiutil")) }
             if let stdin {
                 input.fileHandleForWriting.write(Data(stdin.utf8))
                 try? input.fileHandleForWriting.close()
