@@ -33,6 +33,8 @@
 		7F1A01B4 /* SystemMonitor/GPUUtilization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01B3 /* SystemMonitor/GPUUtilization.swift */; };
 		7F1A004B /* SystemMonitor/DiskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0042 /* SystemMonitor/DiskManager.swift */; };
 		7F1A004C /* Services/SystemControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0043 /* Services/SystemControls.swift */; };
+		7F1A01C2 /* Services/AudioOutputDevices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01C1 /* Services/AudioOutputDevices.swift */; };
+		7F1A01C0 /* Services/AudioOutputList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01BF /* Services/AudioOutputList.swift */; };
 		7F1A004D /* Components/SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0044 /* Components/SettingsCard.swift */; };
 		7F1A004E /* Components/MetricBigNumber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0045 /* Components/MetricBigNumber.swift */; };
 		7F1A004F /* Components/StatBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0046 /* Components/StatBarView.swift */; };
@@ -229,6 +231,8 @@
 		7F1A01B3 /* SystemMonitor/GPUUtilization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor/GPUUtilization.swift; sourceTree = "<group>"; };
 		7F1A0042 /* SystemMonitor/DiskManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor/DiskManager.swift; sourceTree = "<group>"; };
 		7F1A0043 /* Services/SystemControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/SystemControls.swift; sourceTree = "<group>"; };
+		7F1A01C1 /* Services/AudioOutputDevices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/AudioOutputDevices.swift; sourceTree = "<group>"; };
+		7F1A01BF /* Services/AudioOutputList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/AudioOutputList.swift; sourceTree = "<group>"; };
 		7F1A0044 /* Components/SettingsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/SettingsCard.swift; sourceTree = "<group>"; };
 		7F1A0045 /* Components/MetricBigNumber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/MetricBigNumber.swift; sourceTree = "<group>"; };
 		7F1A0046 /* Components/StatBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/StatBarView.swift; sourceTree = "<group>"; };
@@ -445,6 +449,8 @@
 				7F1A01B3 /* SystemMonitor/GPUUtilization.swift */,
 				7F1A0042 /* SystemMonitor/DiskManager.swift */,
 				7F1A0043 /* Services/SystemControls.swift */,
+				7F1A01C1 /* Services/AudioOutputDevices.swift */,
+				7F1A01BF /* Services/AudioOutputList.swift */,
 				7F1A00D0 /* Services/ScreenBrightness.swift */,
 				7F1A0130 /* Services/PermissionManager.swift */,
 				7F1A0066 /* NoteStore.swift */,
@@ -748,6 +754,8 @@
 				7F1A01B4 /* SystemMonitor/GPUUtilization.swift in Sources */,
 				7F1A004B /* SystemMonitor/DiskManager.swift in Sources */,
 				7F1A004C /* Services/SystemControls.swift in Sources */,
+				7F1A01C2 /* Services/AudioOutputDevices.swift in Sources */,
+				7F1A01C0 /* Services/AudioOutputList.swift in Sources */,
 				7F1A00D1 /* Services/ScreenBrightness.swift in Sources */,
 				7F1A0131 /* Services/PermissionManager.swift in Sources */,
 				7F1A004D /* Components/SettingsCard.swift in Sources */,

@@ -126,6 +126,7 @@ struct MenubarFlyoutView: View {
     @State private var appState = AppState.shared
     @State private var caffeine = CaffeineController.shared
     @State private var volumeObserver = VolumeObserver.shared
+    @State private var audioOutputs = AudioOutputDevices.shared
     @State private var noteStore = NoteStore.shared
     @State private var batteryStore = BatteryStore.shared
     /// Raw `diskutil` SMART value for `/`, e.g. "Verified"; nil until checked or when unreadable.
@@ -220,11 +221,13 @@ struct MenubarFlyoutView: View {
         }
         .onAppear {
             volumeObserver.retain()
+            audioOutputs.retain()
             systemMonitor.retain()
             batteryStore.retain()
         }
         .onDisappear {
             volumeObserver.release()
+            audioOutputs.release()
             systemMonitor.release()
             batteryStore.release()
         }
@@ -326,6 +329,26 @@ struct MenubarFlyoutView: View {
                                       set: { volumeObserver.setVolume($0) }), in: 0...1)
                 Text("\(Int(volumeObserver.volume * 100))%")
                     .font(.system(size: 11, design: .monospaced)).frame(width: 34)
+            }
+
+            // Only when there is something to choose; the flyout's space is precious.
+            if audioOutputs.devices.count > 1 {
+                Menu {
+                    ForEach(audioOutputs.devices) { d in
+                        Button {
+                            audioOutputs.select(d)
+                        } label: {
+                            Label(d.name, systemImage: d.id == audioOutputs.currentID ? "checkmark" : d.symbol)
+                        }
+                    }
+                } label: {
+                    Label(audioOutputs.current?.name ?? L10n.t("Âm thanh ra"),
+                          systemImage: audioOutputs.current?.symbol ?? "speaker.wave.2")
+                        .font(.system(size: 12))
+                        .lineLimit(1).truncationMode(.middle)
+                }
+                .menuStyle(.borderlessButton)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             flyoutToggle(L10n.t("Chống ngủ"), "moon.zzz", isOn: Binding(

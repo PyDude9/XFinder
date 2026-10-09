@@ -11,6 +11,7 @@ import AppKit
 ///   and names the Automation permission when it is refused.
 struct QuickControlsDetailView: View {
     @State private var volumeObserver = VolumeObserver.shared
+    @State private var audioOutputs = AudioOutputDevices.shared
     @State private var appearance: SystemControls.AppearanceMode = SystemControls.currentAppearance()
     @State private var appearanceError: String? = nil
     @State private var appearanceBusy = false
@@ -65,6 +66,7 @@ struct QuickControlsDetailView: View {
             brightDenied = !WindowManager.isTrusted
             brightnessSlider = brightness.level ?? 0.5
             volumeObserver.retain()
+            audioOutputs.retain()
             // Polls IOKit while this page is visible so the slider follows the
             // keyboard brightness keys; released on disappear so idle CPU
             // stays at zero.
@@ -72,6 +74,7 @@ struct QuickControlsDetailView: View {
         }
         .onDisappear {
             volumeObserver.release()
+            audioOutputs.release()
             brightness.release()
         }
     }
@@ -105,6 +108,48 @@ struct QuickControlsDetailView: View {
                     Text("\(Int(volumeObserver.volume * 100))%")
                         .font(.system(size: 11, design: .monospaced))
                         .frame(width: 38, alignment: .trailing)
+                }
+
+                // Sound output — the list System Settings shows, live via CoreAudio listeners
+                // (no polling). With a single device there is nothing to choose, so it is shown
+                // as a plain readout and says why, instead of a one-item picker.
+                HStack(spacing: 12) {
+                    Label {
+                        Text(L10n.t("Âm thanh ra")).font(.system(size: 13))
+                    } icon: {
+                        Image(systemName: audioOutputs.current?.symbol ?? "speaker.wave.2")
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(width: 130, alignment: .leading)
+
+                    if audioOutputs.devices.count > 1 {
+                        Picker("", selection: Binding(
+                            get: { audioOutputs.currentID },
+                            set: { id in
+                                if let d = audioOutputs.devices.first(where: { $0.id == id }) { audioOutputs.select(d) }
+                            })) {
+                            ForEach(audioOutputs.devices) { d in
+                                Label(d.name, systemImage: d.symbol).tag(d.id)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        Text(audioOutputs.current?.name ?? "—")
+                            .font(.system(size: 12)).foregroundColor(.secondary)
+                            .lineLimit(1).truncationMode(.middle)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                if audioOutputs.devices.count <= 1 {
+                    Text(L10n.t("Chỉ có một thiết bị âm thanh ra — cắm tai nghe hoặc kết nối loa để chọn thiết bị khác."))
+                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let err = audioOutputs.lastError {
+                    Text("\(L10n.t("Không đổi được thiết bị âm thanh ra: "))\(err)")
+                        .font(.system(size: 11)).foregroundColor(.red)
                 }
 
                 ToggleRow(title: L10n.t("Tắt tiếng"),

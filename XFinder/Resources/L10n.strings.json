@@ -6306,6 +6306,18 @@
     "Cấp quyền Trợ năng — ⌘Q giữ để thoát cần quyền này.": {
       "en": "Grant Accessibility — hold-to-quit needs it.",
       "scope": "sentence"
+    },
+    "Âm thanh ra": {
+      "en": "Sound output",
+      "scope": "sentence"
+    },
+    "Chỉ có một thiết bị âm thanh ra — cắm tai nghe hoặc kết nối loa để chọn thiết bị khác.": {
+      "en": "Only one sound output is available — plug in headphones or connect a speaker to choose another.",
+      "scope": "sentence"
+    },
+    "Không đổi được thiết bị âm thanh ra: ": {
+      "en": "Could not change the sound output: ",
+      "scope": "fragment"
     }
   }
 }

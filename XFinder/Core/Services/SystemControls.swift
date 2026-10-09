@@ -271,10 +271,74 @@ final class VolumeObserver {
         isMuted = next
     }
 
+    // MARK: Listeners
+    //
+    // Two kinds, with different lifetimes — keeping them apart is what fixes two bugs:
+    //  * the SYSTEM-level "default output device changed" listener is registered ONCE when the
+    //    observer is first retained and removed when the last retain is released. It used to be
+    //    added inside `start()` and never removed, while every default change called
+    //    `stop(); start()` — so each device switch ADDED another copy, doubling the callbacks per
+    //    change. A switcher makes device changes routine, so that growth became reachable.
+    //  * the PER-DEVICE volume/mute listeners are re-bound on every default change (`rebind`).
+    //    Registering the system listener first also means an output returning after none existed
+    //    (`deviceID == 0`) is still noticed; it used to bail out before registering and go deaf.
+
+    private var defaultDeviceBlock: AudioObjectPropertyListenerBlock?
+
     private func start() {
+        addDefaultDeviceListener()
+        bindDevice()
+    }
+
+    private func stop() {
+        unbindDevice()
+        removeDefaultDeviceListener()
+    }
+
+    /// Diagnostic: how many times the default-device listener has re-bound. It must equal the
+    /// number of default-output changes. With the old leak (one more system listener per change)
+    /// it grew geometrically, which is how the harness proves the leak is gone.
+    private(set) var rebindCount = 0
+
+    /// The default output changed: move the per-device listeners to the new device.
+    private func rebind() {
+        rebindCount += 1
+        unbindDevice()
+        bindDevice()
+    }
+
+    private func addDefaultDeviceListener() {
+        guard defaultDeviceBlock == nil else { return }
+        let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+            Task { @MainActor in self?.rebind() }
+        }
+        defaultDeviceBlock = block
+        var devAddr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &devAddr, DispatchQueue.main, block)
+    }
+
+    private func removeDefaultDeviceListener() {
+        guard let block = defaultDeviceBlock else { return }
+        var devAddr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        AudioObjectRemovePropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &devAddr, DispatchQueue.main, block)
+        defaultDeviceBlock = nil
+    }
+
+    private func bindDevice() {
         guard !listening else { return }
         deviceID = SystemControls.defaultOutputDevice()
-        guard deviceID != 0 else { return }
+        // No output device right now: stay armed on the system listener and bind when one returns.
+        guard deviceID != 0 else {
+            volume = SystemControls.getVolume()
+            isMuted = SystemControls.isMuted()
+            return
+        }
 
         let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
             Task { @MainActor in
@@ -296,25 +360,12 @@ final class VolumeObserver {
             AudioObjectAddPropertyListenerBlock(deviceID, &addr, DispatchQueue.main, block)
         }
 
-        // Default-device changes (plugging in headphones) need re-binding.
-        var devAddr = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain)
-        AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &devAddr, DispatchQueue.main) { [weak self] _, _ in
-            Task { @MainActor in
-                guard let self else { return }
-                self.stop()
-                self.start()
-            }
-        }
-
         listening = true
         volume = SystemControls.getVolume()
         isMuted = SystemControls.isMuted()
     }
 
-    private func stop() {
+    private func unbindDevice() {
         guard listening, let block = listenerBlock, deviceID != 0 else { return }
         for selector in [kAudioDevicePropertyVolumeScalar, kAudioDevicePropertyMute] {
             var addr = AudioObjectPropertyAddress(
