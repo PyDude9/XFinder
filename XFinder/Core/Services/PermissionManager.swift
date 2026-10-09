@@ -103,14 +103,6 @@ public final class PermissionManager: NSObject, ObservableObject, CBCentralManag
         }
     }
 
-    /// Request all permissions on startup on the main thread like Zed.
-    public func requestAllIfNeeded() {
-        requestAccessibility()
-        requestScreenRecording()
-        requestBluetooth()
-        updateStatuses()
-    }
-
     // MARK: - CBCentralManagerDelegate
 
     nonisolated public func centralManagerDidUpdateState(_ central: CBCentralManager) {

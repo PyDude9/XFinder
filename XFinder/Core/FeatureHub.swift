@@ -108,6 +108,27 @@ final class FeatureHub {
         ]
     }
 
+    /// The action behind a "Grant…" button. macOS lists an app in a Privacy pane only AFTER the app
+    /// has asked, so opening the pane alone can leave XFinder missing from it: ask first, and fall
+    /// back to the pane when the system will not prompt again (already denied).
+    func request(_ p: AppPermission) {
+        switch p {
+        case .accessibility:
+            if !WindowManager.requestAccessibilityTrust() { openSettings(for: p) }
+        case .screenRecording:
+            if !CGPreflightScreenCaptureAccess() { _ = CGRequestScreenCaptureAccess() }
+            openSettings(for: p)
+        case .microphone:
+            if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+                AVCaptureDevice.requestAccess(for: .audio) { _ in Task { @MainActor in self.revision += 1 } }
+            } else { openSettings(for: p) }
+        case .speechRecognition:
+            if SFSpeechRecognizer.authorizationStatus() == .notDetermined {
+                SFSpeechRecognizer.requestAuthorization { _ in Task { @MainActor in self.revision += 1 } }
+            } else { openSettings(for: p) }
+        }
+    }
+
     func openSettings(for p: AppPermission) {
         if let url = URL(string: p.settingsURL) { NSWorkspace.shared.open(url) }
     }

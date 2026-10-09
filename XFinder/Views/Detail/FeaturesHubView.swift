@@ -64,6 +64,7 @@ struct FeaturesHubView: View {
                         .font(.system(size: 12)).foregroundColor(.secondary)
                         .monospacedDigit()
                     Spacer()
+                    Button(L10n.t("Chạy lại thiết lập")) { OnboardingWindow.shared.show() }
                     Button(L10n.t("Bật tất cả")) { hub.setAll(true) }
                         .disabled(hub.onCount == FeatureCatalog.all.count)
                     Button(L10n.t("Tắt tất cả")) { hub.setAll(false) }
@@ -222,9 +223,14 @@ struct FeaturesHubView: View {
                             .font(.system(size: 11)).foregroundColor(.orange)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    Button(L10n.t("Mở Cài đặt hệ thống")) { hub.openSettings(for: r.permission) }
-                        .controlSize(.small)
-                        .padding(.top, 2)
+                    HStack(spacing: 8) {
+                        if !r.granted {
+                            Button(L10n.t("Cấp quyền…")) { hub.request(r.permission) }.controlSize(.small)
+                        }
+                        Button(L10n.t("Mở Cài đặt hệ thống")) { hub.openSettings(for: r.permission) }
+                            .controlSize(.small)
+                    }
+                    .padding(.top, 2)
                 }
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             }

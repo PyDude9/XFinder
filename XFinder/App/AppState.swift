@@ -57,7 +57,7 @@ final class MainWindowController: NSObject, NSWindowDelegate {
             .environment(ClipboardManager.shared)
             .environment(SystemMonitorManager.shared)
             .onAppear {
-                PermissionManager.shared.requestAllIfNeeded()
+                PermissionManager.shared.updateStatuses()
             }
 
         let hosting = NSHostingController(rootView: rootView)

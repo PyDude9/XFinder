@@ -72,12 +72,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NotchDropController.shared.applySettings()
         QuickSearchPanelController.shared.applySettings()
         VoiceManager.shared.setup()
-        PermissionManager.shared.requestAllIfNeeded()
+        // No permission prompts at launch: first-run setup (`OnboardingView`) asks for exactly the
+        // permissions the chosen features need, and the Permissions tab asks on demand.
+        PermissionManager.shared.updateStatuses()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             BatteryStore.shared.start()
         }
 
+        if Onboarding.shouldShow(completedVersion: UserDefaults.standard.object(forKey: Onboarding.completedKey) as? Int) {
+            OnboardingWindow.shared.show()
+        }
         if UserDefaults.standard.string(forKey: "startPage") != nil {
             MainWindowController.shared.showWindow()
         }

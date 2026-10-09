@@ -6674,6 +6674,66 @@
     "Không có trang nào khớp.": {
       "en": "No page matches.",
       "scope": "sentence"
+    },
+    "Chào mừng đến XFinder": {
+      "en": "Welcome to XFinder",
+      "scope": "sentence"
+    },
+    "Chọn thứ bạn muốn dùng. Bạn đổi lại bất cứ lúc nào ở Tính năng & Quyền.": {
+      "en": "Choose what you want to use. You can change it any time in Features & Permissions.",
+      "scope": "sentence"
+    },
+    "Tối giản": {
+      "en": "Minimal",
+      "scope": "sentence"
+    },
+    "Chỉ những gì không chạy nền: gợi ý clipboard, làm sạch liên kết, bảng lệnh ⌘K.": {
+      "en": "Only what does not run in the background: clipboard suggestions, link cleaning, the ⌘K command bar.",
+      "scope": "sentence"
+    },
+    "Hằng ngày": {
+      "en": "Everyday",
+      "scope": "sentence"
+    },
+    "Thêm khay ⌘⇧V, xem trước Dock và vùng bắt dính.": {
+      "en": "Adds the ⌘⇧V shelf, Dock preview and snap zones.",
+      "scope": "sentence"
+    },
+    "Bật mọi tính năng, kể cả giọng nói và giữ ⌘Q.": {
+      "en": "Turns on every feature, including voice and hold ⌘Q.",
+      "scope": "sentence"
+    },
+    "Tiếp tục": {
+      "en": "Continue",
+      "scope": "sentence"
+    },
+    "Bỏ qua": {
+      "en": "Skip",
+      "scope": "sentence"
+    },
+    "Quay lại": {
+      "en": "Back",
+      "scope": "sentence"
+    },
+    "Quyền cần cho lựa chọn của bạn": {
+      "en": "Permissions your choice needs",
+      "scope": "sentence"
+    },
+    "Chỉ những quyền mà tính năng bạn bật thật sự dùng. Bỏ qua cũng được: tính năng cần quyền đó sẽ đứng yên, phần còn lại vẫn chạy.": {
+      "en": "Only the permissions the features you turned on actually use. You can skip: a feature that needs one simply stays idle and the rest keep working.",
+      "scope": "sentence"
+    },
+    "Lựa chọn của bạn không cần quyền nào.": {
+      "en": "Your choice needs no permission.",
+      "scope": "sentence"
+    },
+    "Cấp quyền…": {
+      "en": "Grant…",
+      "scope": "sentence"
+    },
+    "Chạy lại thiết lập": {
+      "en": "Run setup again",
+      "scope": "sentence"
     }
   }
 }
