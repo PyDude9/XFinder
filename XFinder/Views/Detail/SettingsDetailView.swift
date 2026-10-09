@@ -43,6 +43,7 @@ private struct ClipboardSettingsBody: View {
     @AppStorage("clipboard.captureImages") private var captureImages = true
     @AppStorage("clipboard.captureLinks") private var captureLinks = true
     @AppStorage("clipboard.cleanURLs") private var cleanURLs = false
+    @AppStorage("clipboard.autoClearSeconds") private var autoClearSeconds = 0
     @AppStorage("clipboard.enableOCR") private var enableOCR = true
     @AppStorage("clipboard.maxHistory") private var maxHistory = 1000
     @AppStorage("clipboard.autoDeleteDays") private var autoDeleteDays = 30
@@ -64,6 +65,20 @@ private struct ClipboardSettingsBody: View {
     @State private var clipboard = ClipboardManager.shared
     @State private var editingBoard: Pinboard? = nil
     @State private var showRenameBoard = false
+
+    /// Picker label for an auto-clear choice. Each literal is wrapped where it is written, so the
+    /// literal lint sees it; a value outside `ClipboardAutoClear.choices` (hand-edited
+    /// `defaults write`) falls back to a bare number of seconds rather than a blank row.
+    private func autoClearLabel(_ seconds: Int) -> String {
+        switch seconds {
+        case 0:   return L10n.t("Tắt")
+        case 30:  return L10n.t("30 giây")
+        case 60:  return L10n.t("1 phút")
+        case 300: return L10n.t("5 phút")
+        case 900: return L10n.t("15 phút")
+        default:  return "\(seconds)s"
+        }
+    }
 
     private static func time(_ d: Date) -> String {
         let f = DateFormatter(); f.dateStyle = .short; f.timeStyle = .short
@@ -193,6 +208,36 @@ private struct ClipboardSettingsBody: View {
                     ToggleRow(title: L10n.t("Khóa Touch ID"),
                               subtitle: L10n.t("Yêu cầu Touch ID hoặc mật khẩu máy khi mở lịch sử"),
                               isOn: $touchIDLock)
+                    // `.menu`, not `.segmented`: five options would sum into a window-resizing
+                    // ideal width (CLAUDE.md Part 3c). The copy states what this does NOT do —
+                    // it clears the macOS clipboard, not XFinder's own history.
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.t("Tự xóa clipboard"))
+                                .font(.system(size: 13, weight: .medium))
+                            Text(L10n.t("Xóa clipboard của macOS sau khoảng thời gian bạn chọn nếu không có gì được sao chép sau đó. Chỉ chạy khi XFinder đang mở. Lịch sử của XFinder không bị xóa."))
+                                .font(.system(size: 11)).foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 8)
+                        Picker("", selection: $autoClearSeconds) {
+                            ForEach(ClipboardAutoClear.choices, id: \.self) { s in
+                                Text(autoClearLabel(s)).tag(s)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .labelsHidden()
+                        .frame(width: 110)
+                    }
+                    if autoClearSeconds > 0 {
+                        if let last = clipboard.lastAutoClear {
+                            Text("\(L10n.t("Lần tự xóa gần nhất: "))\(last.formatted(date: .omitted, time: .standard))")
+                                .font(.system(size: 11)).foregroundColor(.secondary)
+                        } else {
+                            Text(L10n.t("Chưa tự xóa lần nào kể từ khi mở XFinder."))
+                                .font(.system(size: 11)).foregroundColor(.secondary)
+                        }
+                    }
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L10n.t("Bỏ qua ứng dụng tùy chỉnh"))
                             .font(.system(size: 13, weight: .medium))

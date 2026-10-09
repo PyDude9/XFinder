@@ -47,6 +47,9 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "clipboard.cleanURLs",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
                reader: "XFinder/Core/ClipboardManager.swift"),
+        Switch(key: "clipboard.autoClearSeconds",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
+               reader: "XFinder/Core/ClipboardManager.swift"),
     ]
 
     // MARK: - Source access
@@ -68,26 +71,27 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         return text
     }
 
-    /// All `@AppStorage("<key>") … = <true|false>` defaults declared in one view file.
-    static func viewDefaults(forKey key: String, in text: String) -> [Bool] {
+    /// All `@AppStorage("<key>") … = <literal>` defaults declared in one view file. The literal is
+    /// `true`/`false` or an integer, kept as text so Bool and Int keys share one gate.
+    static func viewDefaults(forKey key: String, in text: String) -> [String] {
         let pattern = #"@AppStorage\(\s*""# + NSRegularExpression.escapedPattern(for: key)
-            + #""\s*\)[^=\n]*=\s*(true|false)\b"#
+            + #""\s*\)[^=\n]*=\s*(true|false|-?\d+)\b"#
         return matches(pattern, in: text)
     }
 
-    /// All `object(forKey: "<key>") as? Bool ?? <true|false>` reads in one Core file.
-    static func readerDefaults(forKey key: String, in text: String) -> [Bool] {
+    /// All `object(forKey: "<key>") as? Bool|Int ?? <literal>` reads in one Core file.
+    static func readerDefaults(forKey key: String, in text: String) -> [String] {
         let pattern = #"object\(forKey:\s*""# + NSRegularExpression.escapedPattern(for: key)
-            + #""\s*\)\s*as\?\s*Bool\s*\?\?\s*(true|false)\b"#
+            + #""\s*\)\s*as\?\s*(?:Bool|Int)\s*\?\?\s*(true|false|-?\d+)\b"#
         return matches(pattern, in: text)
     }
 
-    private static func matches(_ pattern: String, in text: String) -> [Bool] {
+    private static func matches(_ pattern: String, in text: String) -> [String] {
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
         let range = NSRange(text.startIndex..., in: text)
         return regex.matches(in: text, range: range).compactMap { m in
             guard let r = Range(m.range(at: 1), in: text) else { return nil }
-            return text[r] == "true"
+            return String(text[r])
         }
     }
 
@@ -117,7 +121,7 @@ final class FeatureKeyDefaultsTests: XCTestCase {
 
     /// The gate itself must not pass on an empty table or a rotted anchor.
     func testGateParsesRealDeclarationsNotNothing() {
-        XCTAssertGreaterThanOrEqual(Self.switches.count, 7, "the switch table collapsed")
+        XCTAssertGreaterThanOrEqual(Self.switches.count, 8, "the switch table collapsed")
 
         let fixtureView = """
         struct V: View {
@@ -125,15 +129,22 @@ final class FeatureKeyDefaultsTests: XCTestCase {
             @AppStorage("a.b")  var again = false
         }
         """
-        XCTAssertEqual(Self.viewDefaults(forKey: "a.b", in: fixtureView), [true, false])
+        XCTAssertEqual(Self.viewDefaults(forKey: "a.b", in: fixtureView), ["true", "false"])
         XCTAssertEqual(Self.viewDefaults(forKey: "a.c", in: fixtureView), [])
 
         let fixtureReader = """
         var on: Bool { UserDefaults.standard.object(forKey: "a.b") as? Bool ?? false }
-        let other = UserDefaults.standard.object(forKey: "a.b") as? Int ?? 3
+        let other = UserDefaults.standard.object(forKey: "a.b") as? Double ?? 3
         """
-        XCTAssertEqual(Self.readerDefaults(forKey: "a.b", in: fixtureReader), [false],
-                       "a non-Bool read of the same key is not a switch reader")
+        XCTAssertEqual(Self.readerDefaults(forKey: "a.b", in: fixtureReader), ["false"],
+                       "a read of a different type (Double here) is not a switch reader")
+
+        // Integer-valued settings (seconds, counts) go through the same gate.
+        let intView = "@AppStorage(\"n.k\") private var k = 30\n@AppStorage(\"n.neg\") private var neg = -1"
+        XCTAssertEqual(Self.viewDefaults(forKey: "n.k", in: intView), ["30"])
+        XCTAssertEqual(Self.viewDefaults(forKey: "n.neg", in: intView), ["-1"])
+        let intReader = "let k = UserDefaults.standard.object(forKey: \"n.k\") as? Int ?? 30"
+        XCTAssertEqual(Self.readerDefaults(forKey: "n.k", in: intReader), ["30"])
     }
 
     // MARK: - Dead switches stay dead

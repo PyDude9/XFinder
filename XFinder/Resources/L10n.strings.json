@@ -6250,6 +6250,34 @@
     "Chưa làm sạch liên kết nào kể từ khi mở XFinder.": {
       "en": "No link cleaned since XFinder opened.",
       "scope": "sentence"
+    },
+    "Tự xóa clipboard": {
+      "en": "Auto-clear clipboard",
+      "scope": "sentence"
+    },
+    "Xóa clipboard của macOS sau khoảng thời gian bạn chọn nếu không có gì được sao chép sau đó. Chỉ chạy khi XFinder đang mở. Lịch sử của XFinder không bị xóa.": {
+      "en": "Clears the macOS clipboard after the delay you choose, if nothing was copied since. Only runs while XFinder is open. XFinder's own history is not cleared.",
+      "scope": "sentence"
+    },
+    "30 giây": {
+      "en": "30 sec",
+      "scope": "sentence"
+    },
+    "1 phút": {
+      "en": "1 min",
+      "scope": "sentence"
+    },
+    "5 phút": {
+      "en": "5 min",
+      "scope": "sentence"
+    },
+    "Lần tự xóa gần nhất: ": {
+      "en": "Last auto-clear: ",
+      "scope": "fragment"
+    },
+    "Chưa tự xóa lần nào kể từ khi mở XFinder.": {
+      "en": "Nothing auto-cleared since XFinder opened.",
+      "scope": "sentence"
     }
   }
 }

@@ -174,7 +174,53 @@ final class ClipboardManager {
         guard now != lastChangeCount else { return false }
         lastChangeCount = now
         captureClipboardContent()
+        // After capture, not before: cleaning may have rewritten the pasteboard (new count), and
+        // a copy that was NOT ingested (concealed / password-manager) still needs its timer —
+        // that is the copy auto-clear matters most for.
+        scheduleAutoClear()
         return true
+    }
+
+    // MARK: - Auto-clear (opt-in, one-shot)
+
+    /// When the macOS clipboard was last auto-cleared this session; nil until it happens, so the
+    /// settings page can show that the app wiped something rather than ask to be trusted.
+    private(set) var lastAutoClear: Date?
+    private var autoClearWork: DispatchWorkItem?
+
+    /// `clipboard.autoClearSeconds` (default **0** = off). Arms ONE timer for the pasteboard as
+    /// it is now; a newer copy cancels it and arms its own. The rules live in
+    /// `ClipboardAutoClear` (pure, tested): never clear a count that has moved, never arm for an
+    /// empty pasteboard (our own `clearContents()` is a change too). No polling.
+    ///
+    /// This clears the **system pasteboard only**. XFinder's own history keeps the record — the
+    /// setting's copy says so; claiming otherwise would be false.
+    private func scheduleAutoClear() {
+        autoClearWork?.cancel()
+        autoClearWork = nil
+        let seconds = UserDefaults.standard.object(forKey: "clipboard.autoClearSeconds") as? Int ?? 0
+        let pb = NSPasteboard.general
+        guard ClipboardAutoClear.shouldArm(setting: seconds, pasteboardIsEmpty: (pb.types ?? []).isEmpty),
+              let delay = ClipboardAutoClear.delay(forSetting: seconds) else { return }
+        let armed = pb.changeCount
+        let work = DispatchWorkItem { [weak self] in
+            // Main queue by construction; assumeIsolated keeps the @MainActor state honest.
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                let pb = NSPasteboard.general
+                guard ClipboardAutoClear.shouldClear(armedChangeCount: armed,
+                                                     currentChangeCount: pb.changeCount,
+                                                     pasteboardIsEmpty: (pb.types ?? []).isEmpty) else { return }
+                pb.clearContents()
+                // Our own clear is a change: consume it so the monitor neither ingests an empty
+                // pasteboard nor arms a timer for it.
+                self.lastChangeCount = pb.changeCount
+                self.lastAutoClear = Date()
+                self.autoClearWork = nil
+            }
+        }
+        autoClearWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
     // MARK: - Link cleaning (opt-in)
