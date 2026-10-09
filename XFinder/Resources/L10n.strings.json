@@ -6214,6 +6214,22 @@
     "Xếp hạng lịch sử theo ứng dụng sắp dán vào": {
       "en": "Ranks history by the app you are about to paste into",
       "scope": "sentence"
+    },
+    "Bình thường": {
+      "en": "Healthy",
+      "scope": "sentence"
+    },
+    "Đang hỏng — sao lưu ngay": {
+      "en": "Failing — back up now",
+      "scope": "sentence"
+    },
+    "Ổ đĩa không hỗ trợ SMART": {
+      "en": "This drive does not support SMART",
+      "scope": "sentence"
+    },
+    "SMART ổ khởi động": {
+      "en": "Boot drive SMART",
+      "scope": "sentence"
     }
   }
 }

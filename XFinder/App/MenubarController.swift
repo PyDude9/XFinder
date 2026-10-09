@@ -128,6 +128,9 @@ struct MenubarFlyoutView: View {
     @State private var volumeObserver = VolumeObserver.shared
     @State private var noteStore = NoteStore.shared
     @State private var batteryStore = BatteryStore.shared
+    /// Raw `diskutil` SMART value for `/`, e.g. "Verified"; nil until checked or when unreadable.
+    @State private var smartRaw: String? = nil
+    @State private var smartChecked = false
     @ObservedObject private var permissionManager = PermissionManager.shared
     @State private var tab: FlyoutTab = .controls
     @AppStorage("menubar.showBattery") private var showBattery = true
@@ -203,6 +206,18 @@ struct MenubarFlyoutView: View {
             footer
         }
         .frame(width: 340)
+        // One `diskutil info /` per flyout appearance — a subprocess, so never on the metrics
+        // tick. `.task` cancels when the popover closes; the result is not bound to a timer.
+        .task {
+            // The popover's hosting controller lives for the whole app, so @State survives
+            // close/reopen. Clear the old value FIRST or the row keeps showing the previous
+            // answer with full confidence while the new diskutil run is in flight — the
+            // "Đang kiểm tra…" branch was dead code from the second open onward.
+            smartRaw = nil
+            smartChecked = false
+            smartRaw = await DiskManager.smartStatus(forMount: "/")
+            smartChecked = true
+        }
         .onAppear {
             volumeObserver.retain()
             systemMonitor.retain()
@@ -395,8 +410,31 @@ struct MenubarFlyoutView: View {
             infoRow(L10n.t("Dung lượng"),
                     "\(systemMonitor.currentMetrics.diskUsedString) / \(systemMonitor.currentMetrics.diskTotalString)")
             meter(L10n.t("Đã dùng"), systemMonitor.currentMetrics.diskPercentage, .purple)
-            // SMART attributes are not exposed by any public API.
-            infoRow("SMART", L10n.t("Không khả dụng"))
+            // SMART *status* IS public (`diskutil info /`), and the Ổ đĩa page already shows
+            // it. This row said "Không khả dụng" until 2026-10-09 — two surfaces, two answers.
+            // Same reader, same key mapper (SMARTStatus), boot volume only (no picker here).
+            smartRow
+        }
+    }
+
+    /// SMART status of the boot volume, fetched once per flyout appearance (see `.task` on
+    /// the root). Only the attribute table is unavailable; that is not what this row claims.
+    private var smartRow: some View {
+        HStack {
+            Text(L10n.t("SMART ổ khởi động")).font(.system(size: 12)).foregroundColor(.secondary)
+            Spacer()
+            if let raw = smartRaw {
+                let label = SMARTStatus.label(forRaw: raw)
+                Text(L10n.t(label.key))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(label.healthy == false ? .red : .primary)
+            } else if smartChecked {
+                Text(L10n.t("Không đọc được trạng thái SMART của ổ này"))
+                    .font(.system(size: 12)).foregroundColor(.secondary)
+            } else {
+                Text(L10n.t("Đang kiểm tra…"))
+                    .font(.system(size: 12)).foregroundColor(.secondary)
+            }
         }
     }
 

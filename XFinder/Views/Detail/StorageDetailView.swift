@@ -94,13 +94,16 @@ struct StorageDetailView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 8) {
                             if let raw = smartRaw {
-                                let label = DiskManager.smartLabel(raw)
+                                // `label.key` is a store key (a model must not return display text);
+                                // an unknown raw value falls through L10n.t unchanged, which is the
+                                // OS's own wording — honest, not invented.
+                                let label = SMARTStatus.label(forRaw: raw)
                                 Image(systemName: label.healthy == true ? "checkmark.circle.fill"
                                       : (label.healthy == false ? "exclamationmark.triangle.fill"
                                          : "minus.circle"))
                                     .foregroundColor(label.healthy == true ? .green
                                         : (label.healthy == false ? .red : .secondary))
-                                Text(label.text)
+                                Text(L10n.t(label.key))
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(label.healthy == false ? .red : .primary)
                             } else if smartChecked {
@@ -120,6 +123,10 @@ struct StorageDetailView: View {
                     }
                 }
                 .task(id: selectedMount) {
+                    // Clear before refetching: switching volumes must show "Đang kiểm tra…",
+                    // not the previous volume's status while diskutil runs (same ordering bug
+                    // the flyout had — `if let raw` is checked before `smartChecked`).
+                    smartRaw = nil
                     smartChecked = false
                     smartRaw = await DiskManager.smartStatus(forMount: selectedMount)
                     smartChecked = true

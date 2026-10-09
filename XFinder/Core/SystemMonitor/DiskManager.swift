@@ -154,27 +154,12 @@ final class DiskManager {
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             p.waitUntilExit()
             guard let text = String(data: data, encoding: .utf8) else { return nil }
-
-            for line in text.components(separatedBy: "\n") {
-                guard line.contains("SMART Status") else { continue }
-                let value = line
-                    .components(separatedBy: ":")
-                    .dropFirst()
-                    .joined(separator: ":")
-                    .trimmingCharacters(in: .whitespaces)
-                return value.isEmpty ? nil : value
-            }
-            return nil
+            // Extraction lives in SMARTStatus so a test can pin it against real diskutil text.
+            return SMARTStatus.parse(diskutilOutput: text)
         }.value
     }
 
-    /// Vietnamese label + whether it is a healthy state.
-    static func smartLabel(_ raw: String) -> (text: String, healthy: Bool?) {
-        switch raw.lowercased() {
-        case "verified":      return ("Bình thường", true)
-        case "failing":       return ("Đang hỏng — sao lưu ngay", false)
-        case "not supported": return ("Ổ đĩa không hỗ trợ SMART", nil)
-        default:              return (raw, nil)
-        }
-    }
+    // `smartLabel(_:)` moved to `SMARTStatus.label(forRaw:)`, which returns a STORE KEY the
+    // view must wrap in `L10n.t`. The old version returned Vietnamese display strings from
+    // Core and the page rendered them bare — a language leak no literal sweep could see.
 }
