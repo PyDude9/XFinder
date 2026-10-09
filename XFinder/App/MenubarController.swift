@@ -137,12 +137,14 @@ struct MenubarFlyoutView: View {
     @State private var hub = FeatureHub.shared
     /// Groups the user collapsed in the Tính năng tab. Windows starts open, the rest closed.
     @State private var collapsedGroups: Set<FeatureGroup> = [.clipboard, .tools, .voice]
-    @AppStorage("menubar.showBattery") private var showBattery = true
-    @AppStorage("menubar.showNetwork") private var showNetwork = true
+    /// HIDDEN tab ids (see `FlyoutLayout`). Optional: nil = never customised, which is what lets the
+    /// two legacy keys (`menubar.showBattery/showNetwork`, no UI ever wrote them) still apply once.
+    @AppStorage(FlyoutLayout.key) private var hiddenRaw: String?
+    @State private var editingTabs = false
     @AppStorage("notes.edgeEnabled") private var edgeNotesEnabled = false
 
     enum FlyoutTab: String, CaseIterable, Identifiable {
-        case controls, antiSleep, system, network, storage, battery, notes, features
+        case controls, antiSleep, system, network, storage, battery, notes
         var id: String { rawValue }
         var icon: String {
             switch self {
@@ -153,7 +155,6 @@ struct MenubarFlyoutView: View {
             case .storage:   return "internaldrive"
             case .battery:   return "battery.100"
             case .notes:     return "note.text"
-            case .features:  return "switch.2"
             }
         }
         var titleVI: String {
@@ -165,7 +166,6 @@ struct MenubarFlyoutView: View {
             case .storage:   return L10n.t("Ổ đĩa")
             case .battery:   return L10n.t("Pin")
             case .notes:     return L10n.t("Ghi chú")
-            case .features:  return L10n.t("Tính năng")
             }
         }
         var destination: SidebarDestination {
@@ -177,15 +177,31 @@ struct MenubarFlyoutView: View {
             case .storage:   return .storage
             case .battery:   return .pin
             case .notes:     return .notes
-            case .features:  return .features
             }
         }
     }
 
+    private var hiddenTabs: Set<String> {
+        FlyoutLayout.hidden(
+            stored: hiddenRaw,
+            legacyShowBattery: UserDefaults.standard.object(forKey: "menubar.showBattery") as? Bool,
+            legacyShowNetwork: UserDefaults.standard.object(forKey: "menubar.showNetwork") as? Bool)
+    }
+
     private var visibleTabs: [FlyoutTab] {
-        FlyoutTab.allCases.filter {
-            ($0 != .battery || showBattery) && ($0 != .network || showNetwork)
-        }
+        let ids = Set(FlyoutLayout.visible(all: FlyoutTab.allCases.map(\.rawValue), hidden: hiddenTabs))
+        return FlyoutTab.allCases.filter { ids.contains($0.rawValue) }
+    }
+
+    /// The tab actually shown: the selected one, or the first visible if it was just hidden.
+    private var shownTab: FlyoutTab {
+        let sel = FlyoutLayout.selection(current: tab.rawValue, visible: visibleTabs.map(\.rawValue))
+        return FlyoutTab(rawValue: sel) ?? .controls
+    }
+
+    private func toggleTabVisibility(_ t: FlyoutTab) {
+        hiddenRaw = FlyoutLayout.encode(FlyoutLayout.toggled(
+            t.rawValue, all: FlyoutTab.allCases.map(\.rawValue), hidden: hiddenTabs))
     }
 
     var body: some View {
@@ -200,7 +216,7 @@ struct MenubarFlyoutView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     sectionHeader
-                    content
+                    if editingTabs { tabPicker } else { content }
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)
@@ -233,6 +249,7 @@ struct MenubarFlyoutView: View {
             batteryStore.retain()
         }
         .onDisappear {
+            editingTabs = false   // reopening shows content, not a half-finished editor
             volumeObserver.release()
             audioOutputs.release()
             hub.release()
@@ -294,14 +311,14 @@ struct MenubarFlyoutView: View {
     private var tabStrip: some View {
         HStack(spacing: 2) {
             ForEach(visibleTabs) { t in
-                Button { tab = t } label: {
+                Button { tab = t; editingTabs = false } label: {
                     Image(systemName: t.icon)
                         .font(.system(size: 14))
                         .frame(maxWidth: .infinity, minHeight: 30)
                         .background(
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(tab == t ? Color.accentColor.opacity(0.28) : Color.clear))
-                        .foregroundColor(tab == t ? .accentColor : .secondary)
+                                .fill(shownTab == t ? Color.accentColor.opacity(0.28) : Color.clear))
+                        .foregroundColor(shownTab == t ? .accentColor : .secondary)
                 }
                 .buttonStyle(.plain)
                 .help(t.titleVI)
@@ -313,15 +330,51 @@ struct MenubarFlyoutView: View {
     }
 
     private var sectionHeader: some View {
-        HStack {
-            Text(tab.titleVI).font(.system(size: 14, weight: .semibold))
+        HStack(spacing: 10) {
+            Text(editingTabs ? L10n.t("Chọn mục hiển thị") : shownTab.titleVI)
+                .font(.system(size: 14, weight: .semibold))
             Spacer()
-            Button { navigate(tab.destination) } label: {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+            if editingTabs {
+                Button(L10n.t("Xong")) { editingTabs = false }
+                    .buttonStyle(.bordered).controlSize(.small)
+            } else {
+                Button { editingTabs = true } label: {
+                    Image(systemName: "eye")
+                        .font(.system(size: 11)).foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(L10n.t("Chọn mục hiển thị"))
+                Button { navigate(shownTab.destination) } label: {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 11)).foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help(L10n.t("Mở trang ") + shownTab.titleVI)
             }
-            .buttonStyle(.plain)
-            .help(L10n.t("Mở trang ") + tab.titleVI)
+        }
+    }
+
+    /// One switch per tab. The last visible tab's switch is disabled (`FlyoutLayout.canHide`), so
+    /// the popover can never be emptied from here.
+    private var tabPicker: some View {
+        let all = FlyoutTab.allCases.map(\.rawValue)
+        let hidden = hiddenTabs
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(L10n.t("Tắt mục nào bạn không cần. Mục đã tắt không hiện trên thanh biểu tượng."))
+                .font(.system(size: 11)).foregroundColor(.secondary)
+            ForEach(FlyoutTab.allCases) { t in
+                let shown = !hidden.contains(t.rawValue)
+                HStack(spacing: 10) {
+                    Image(systemName: t.icon).frame(width: 20).foregroundColor(.accentColor)
+                    Text(t.titleVI).font(.system(size: 13))
+                    Spacer()
+                    Toggle("", isOn: Binding(get: { shown }, set: { _ in toggleTabVisibility(t) }))
+                        .toggleStyle(.switch).labelsHidden().controlSize(.small)
+                        .disabled(shown && !FlyoutLayout.canHide(t.rawValue, all: all, hidden: hidden))
+                }
+                .padding(.horizontal, 10).padding(.vertical, 7)
+                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(0.06)))
+            }
         }
     }
 
@@ -329,7 +382,7 @@ struct MenubarFlyoutView: View {
 
     @ViewBuilder
     private var content: some View {
-        switch tab {
+        switch shownTab {
         case .controls:  controlsSection
         case .antiSleep: antiSleepSection
         case .system:    systemSection
@@ -337,7 +390,6 @@ struct MenubarFlyoutView: View {
         case .storage:   storageSection
         case .battery:   batterySection
         case .notes:     notesSection
-        case .features:  featuresSection
         }
     }
 
@@ -389,21 +441,9 @@ struct MenubarFlyoutView: View {
                 set: { _ in volumeObserver.toggleMute() }))
 
             Divider()
-            Text(L10n.t("Cửa sổ")).font(.system(size: 12, weight: .semibold)).foregroundColor(.secondary)
-
-            flyoutToggle(L10n.t("Xem trước Dock"), "macwindow.on.rectangle", isOn: Binding(
-                get: { UserDefaults.standard.object(forKey: "windowPreview.hoverEnabled") as? Bool ?? true },
-                set: { on in
-                    UserDefaults.standard.set(on, forKey: "windowPreview.hoverEnabled")
-                    DockPreviewController.shared.applySettings()
-                }))
-
-            flyoutToggle(L10n.t("Chuyển đổi ứng dụng"), "square.on.square", isOn: Binding(
-                get: { UserDefaults.standard.object(forKey: "windowPreview.commandTabEnabled") as? Bool ?? false },
-                set: { on in
-                    UserDefaults.standard.set(on, forKey: "windowPreview.commandTabEnabled")
-                    CommandTabController.shared.applySettings()
-                }))
+            // The ONE place feature on/off lives in the popover (it was a second tab that repeated
+            // two hand-rolled switches). Same keys as the Features hub, via `FeatureHub`.
+            featuresSection
         }
     }
 

@@ -6530,6 +6530,14 @@
     "Mac đang được giữ thức": {
       "en": "Mac is being kept awake",
       "scope": "sentence"
+    },
+    "Chọn mục hiển thị": {
+      "en": "Choose what to show",
+      "scope": "sentence"
+    },
+    "Tắt mục nào bạn không cần. Mục đã tắt không hiện trên thanh biểu tượng.": {
+      "en": "Turn off what you do not need. Hidden sections disappear from the icon strip.",
+      "scope": "sentence"
     }
   }
 }

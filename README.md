@@ -2,13 +2,41 @@
 
 Tiện ích hệ thống + quản lý clipboard cho macOS. Gọn nhẹ, chạy native, **100% cục bộ — không thu thập dữ liệu, không gửi gì lên mạng**.
 
-**Nền tảng**: macOS 14.0+ · Apple Silicon (arm64) · Swift 5.8 · SwiftUI + AppKit
+**Nền tảng**: macOS 14.0+ · Apple Silicon (arm64) · Swift 6 · SwiftUI + AppKit
 **Tác giả**: thang0todev@gmail.com
 **Giấy phép**: [MIT](LICENSE)
 
 ---
 
 ## Tính năng
+
+### Chỉ bật thứ bạn dùng
+
+Trang **Tính năng & Quyền** (sidebar → CHUNG) gom mọi tính năng chạy nền vào một chỗ:
+
+- **Công tắc từng tính năng** — mỗi công tắc ghi đúng khoá mà chính tính năng đó đọc, nên trang riêng của tính năng và trang này không bao giờ lệch nhau. Tắt là **ngừng hẳn** bộ lắng nghe/hẹn giờ, không chỉ ẩn.
+- **Nhãn chi phí khi rảnh** — "Không chạy nền", "Lắng nghe bàn phím", "Lắng nghe chuột", "Có bộ hẹn giờ". Nhãn phải đúng: tính năng nào cài event tap hay timer thì không được tự nhận là "không chạy nền" (có test chặn).
+- **Ba gói bật nhanh** — *Cửa sổ*, *Clipboard và tìm kiếm*, *Yên tĩnh* (tắt mọi thứ lắng nghe hay chạy hẹn giờ; danh sách này **suy ra từ danh mục**, thêm tính năng mới thì tự được tính).
+- **Tab Quyền** — Trợ năng, Ghi màn hình, Micro, Nhận dạng giọng nói: đã cấp hay chưa, tính năng nào dùng, cảnh báo khi *có tính năng bật mà thiếu quyền* và khi *đã cấp mà không gì cần nữa*. Mọi quyền đều tùy chọn.
+
+Tính năng đã tắt **không** làm biến mất hàng trong sidebar — trang của nó vẫn mở được và nói rõ nó đang tắt.
+
+### Popover trên thanh menu
+
+Một biểu tượng, các mục tách thành tab: **Điều khiển · Chống ngủ · Hệ thống · Mạng · Ổ đĩa · Pin · Ghi chú**. Tab *Điều khiển* có âm lượng, chọn thiết bị âm thanh ra, chống ngủ, chế độ tối, tắt tiếng và **các công tắc tính năng nhóm theo Cửa sổ / Clipboard / Công cụ / Giọng nói** (cùng khoá với trang Tính năng & Quyền).
+
+**Chọn mục hiển thị**: bấm biểu tượng con mắt ở đầu mục để bật/tắt từng tab — không phải lúc nào cũng cần xem hết. Luôn còn ít nhất một tab (công tắc cuối bị khoá), tab đang xem bị ẩn thì chuyển sang tab đầu tiên còn hiện, và mục mới của bản sau tự hiện mặc định.
+
+### Danh mục tính năng
+
+| Nhóm | Tính năng | Ghi chú |
+|---|---|---|
+| Cửa sổ & Dock | Xem trước Dock · Chuyển ứng dụng ⌘-Tab · Vùng bắt dính · **Giữ ⌘Q để thoát** | cần Trợ năng; xem trước cần thêm Ghi màn hình |
+| Clipboard | Khay ⌘⇧V · **Làm sạch liên kết** (bỏ tham số theo dõi) · Tab Gợi ý · **Tự xoá clipboard** sau một khoảng thời gian | chỉ xoá clipboard hệ thống sau 30 giây – 15 phút kể từ lần chép, và không xoá thứ bạn chép sau đó; lịch sử của XFinder vẫn giữ bản ghi |
+| Công cụ | Bảng lệnh ⌘K · Ghi chú mép màn hình · Khay thả file · Đồng bộ thư mục · **Lấy màu từ màn hình** (chép dạng `#RRGGBB`) | |
+| Giọng nói | Nhập bằng giọng nói | cần Trợ năng + Micro + Nhận dạng giọng nói |
+| Âm thanh | **Chọn thiết bị âm thanh ra** ngay trong popover | chỉ hiện khi có từ 2 thiết bị trở lên |
+| Giám sát | CPU · **GPU %** (đọc từ IORegistry) · RAM · ổ đĩa kèm **trạng thái SMART** · pin · mạng | không có số nào bị bịa — xem mục *Giới hạn đã biết* |
 
 **Giám sát hệ thống** — CPU, RAM, ổ đĩa, pin (độ chai, số chu kỳ, công suất), mạng (↓/↑ theo thời gian thực, speedtest).
 
@@ -164,7 +192,7 @@ Bốn mức, tách rời — không gộp:
 | Mức | Trạng thái |
 |---|---|
 | Build (`arm64`, đủ file trong compile log) | ✅ |
-| Test logic (192 test) | ✅ |
+| Test logic (399 test) | ✅ |
 | Event Tap mở được trên app đã cài (`active=1 trusted=1`) | ✅ |
 | **Chuột thật: giữ nút hông + kéo có mở Mission Control / đổi Space** | ⏳ **cần mắt người xác nhận** |
 
