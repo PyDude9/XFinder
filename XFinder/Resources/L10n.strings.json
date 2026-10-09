@@ -6538,6 +6538,14 @@
     "Tắt mục nào bạn không cần. Mục đã tắt không hiện trên thanh biểu tượng.": {
       "en": "Turn off what you do not need. Hidden sections disappear from the icon strip.",
       "scope": "sentence"
+    },
+    "Tính năng & Quyền…": {
+      "en": "Features & Permissions…",
+      "scope": "sentence"
+    },
+    "Chọn XFinder chạy những gì, chỉnh máy Mac và xem nó được phép làm gì.": {
+      "en": "Choose what XFinder runs, adjust your Mac and see what it may do.",
+      "scope": "sentence"
     }
   }
 }

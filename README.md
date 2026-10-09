@@ -12,7 +12,7 @@ Tiện ích hệ thống + quản lý clipboard cho macOS. Gọn nhẹ, chạy n
 
 ### Chỉ bật thứ bạn dùng
 
-Trang **Tính năng & Quyền** (sidebar → CHUNG) gom mọi tính năng chạy nền vào một chỗ:
+Trang **Tính năng & Quyền** (sidebar → CHUNG) có ba tab — *Tính năng*, *Điều khiển* (âm lượng, thiết bị âm thanh ra, độ sáng, giao diện sáng/tối, chống ngủ, tự ẩn Dock, ẩn icon Desktop) và *Quyền* — và gom mọi tính năng chạy nền vào một chỗ:
 
 - **Công tắc từng tính năng** — mỗi công tắc ghi đúng khoá mà chính tính năng đó đọc, nên trang riêng của tính năng và trang này không bao giờ lệch nhau. Tắt là **ngừng hẳn** bộ lắng nghe/hẹn giờ, không chỉ ẩn.
 - **Nhãn chi phí khi rảnh** — "Không chạy nền", "Lắng nghe bàn phím", "Lắng nghe chuột", "Có bộ hẹn giờ". Nhãn phải đúng: tính năng nào cài event tap hay timer thì không được tự nhận là "không chạy nền" (có test chặn).

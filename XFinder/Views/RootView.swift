@@ -111,8 +111,6 @@ struct DetailHostView: View {
                 DashboardDetailView()
                     .environment(systemMonitorManager)
                     .environment(clipboardManager)
-            case .quickControls:
-                QuickControlsDetailView()
             case .antiSleep:
                 AntiSleepDetailView()
             case .system:

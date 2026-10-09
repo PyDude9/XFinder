@@ -31,12 +31,10 @@ final class FeatureKeyDefaultsTests: XCTestCase {
                reader: "XFinder/Core/ClipboardPasteEngine.swift"),
         Switch(key: "windowPreview.hoverEnabled",
                views: ["XFinder/Views/Detail/WindowDetailViews.swift",
-                       "XFinder/Views/Detail/QuickControlsDetailView.swift",
                        "XFinder/Views/Detail/DashboardDetailView.swift"],
                reader: "XFinder/Core/DockPreviewController.swift"),
         Switch(key: "windowPreview.commandTabEnabled",
-               views: ["XFinder/Views/Detail/WindowDetailViews.swift",
-                       "XFinder/Views/Detail/QuickControlsDetailView.swift"],
+               views: ["XFinder/Views/Detail/WindowDetailViews.swift"],
                reader: "XFinder/Core/CommandTabController.swift"),
         Switch(key: "clipboard.globalHotkey",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
@@ -51,7 +49,7 @@ final class FeatureKeyDefaultsTests: XCTestCase {
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
                reader: "XFinder/Core/ClipboardManager.swift"),
         Switch(key: "quitProtection.enabled",
-               views: ["XFinder/Views/Detail/QuickControlsDetailView.swift"],
+               views: [],   // bound only through FeatureHub now (the old page was merged away)
                reader: "XFinder/Core/QuitProtectionController.swift"),
     ]
 

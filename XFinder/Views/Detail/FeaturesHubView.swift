@@ -10,7 +10,7 @@ import SwiftUI
 /// `FeatureHub`), so there is no second source of truth to drift. The hub does not hide
 /// sidebar rows: a feature that is off still has its page, which says it is off.
 struct FeaturesHubView: View {
-    private enum Tab: Hashable { case features, permissions }
+    private enum Tab: Hashable { case features, controls, permissions }
 
     @State private var hub = FeatureHub.shared
     @State private var tab: Tab = .features
@@ -20,19 +20,21 @@ struct FeaturesHubView: View {
             VStack(alignment: .leading, spacing: 18) {
                 PageHeader(icon: "square.grid.2x2",
                            title: L10n.t("Tính năng & Quyền"),
-                           subtitle: L10n.t("Chọn XFinder chạy những gì và xem nó được phép làm gì."))
+                           subtitle: L10n.t("Chọn XFinder chạy những gì, chỉnh máy Mac và xem nó được phép làm gì."))
 
                 Picker("", selection: $tab) {
                     Text(L10n.t("Tính năng")).tag(Tab.features)
+                    Text(L10n.t("Điều khiển")).tag(Tab.controls)
                     Text(L10n.t("Quyền")).tag(Tab.permissions)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(width: 260)
+                .frame(width: 360)
                 .padding(.horizontal, 20)
 
                 switch tab {
                 case .features: featuresTab
+                case .controls: SystemControlsPanel()
                 case .permissions: permissionsTab
                 }
             }

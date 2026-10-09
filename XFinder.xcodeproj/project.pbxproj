@@ -45,7 +45,7 @@
 		7F1A005B /* Detail/PinDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0054 /* Detail/PinDetailView.swift */; };
 		7F1A005C /* Detail/NetworkDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0055 /* Detail/NetworkDetailView.swift */; };
 		7F1A005D /* Detail/StorageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0056 /* Detail/StorageDetailView.swift */; };
-		7F1A005E /* Detail/QuickControlsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0057 /* Detail/QuickControlsDetailView.swift */; };
+		7F1A005E /* Detail/SystemControlsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0057 /* Detail/SystemControlsPanel.swift */; };
 		7F1A01CE /* Detail/FeaturesHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01CD /* Detail/FeaturesHubView.swift */; };
 		7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0058 /* Detail/AntiSleepDetailView.swift */; };
 		7F1A0061 /* Detail/SettingsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0060 /* Detail/SettingsDetailView.swift */; };
@@ -250,7 +250,7 @@
 		7F1A0054 /* Detail/PinDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/PinDetailView.swift; sourceTree = "<group>"; };
 		7F1A0055 /* Detail/NetworkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/NetworkDetailView.swift; sourceTree = "<group>"; };
 		7F1A0056 /* Detail/StorageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/StorageDetailView.swift; sourceTree = "<group>"; };
-		7F1A0057 /* Detail/QuickControlsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/QuickControlsDetailView.swift; sourceTree = "<group>"; };
+		7F1A0057 /* Detail/SystemControlsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SystemControlsPanel.swift; sourceTree = "<group>"; };
 		7F1A01CD /* Detail/FeaturesHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FeaturesHubView.swift; sourceTree = "<group>"; };
 		7F1A0058 /* Detail/AntiSleepDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/AntiSleepDetailView.swift; sourceTree = "<group>"; };
 		7F1A0060 /* Detail/SettingsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SettingsDetailView.swift; sourceTree = "<group>"; };
@@ -614,7 +614,7 @@
 				7F1A0054 /* Detail/PinDetailView.swift */,
 				7F1A0055 /* Detail/NetworkDetailView.swift */,
 				7F1A0056 /* Detail/StorageDetailView.swift */,
-				7F1A0057 /* Detail/QuickControlsDetailView.swift */,
+				7F1A0057 /* Detail/SystemControlsPanel.swift */,
 				7F1A01CD /* Detail/FeaturesHubView.swift */,
 				7F1A0058 /* Detail/AntiSleepDetailView.swift */,
 				7F1A0060 /* Detail/SettingsDetailView.swift */,
@@ -791,7 +791,7 @@
 				7F1A005B /* Detail/PinDetailView.swift in Sources */,
 				7F1A005C /* Detail/NetworkDetailView.swift in Sources */,
 				7F1A005D /* Detail/StorageDetailView.swift in Sources */,
-				7F1A005E /* Detail/QuickControlsDetailView.swift in Sources */,
+				7F1A005E /* Detail/SystemControlsPanel.swift in Sources */,
 				7F1A01CE /* Detail/FeaturesHubView.swift in Sources */,
 				7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */,
 				7F1A0061 /* Detail/SettingsDetailView.swift in Sources */,

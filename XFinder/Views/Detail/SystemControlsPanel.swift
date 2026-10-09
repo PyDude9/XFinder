@@ -1,15 +1,18 @@
 import SwiftUI
 import AppKit
 
-/// Điều khiển nhanh — flat System-Settings layout matching the reference
-/// screenshot: a "Hệ thống" group of machine-wide switches, then a "Cửa sổ"
-/// group for XFinder's own window features.
+/// Điều khiển hệ thống — the "Điều khiển" tab of Tính năng & Quyền: machine-wide switches
+/// (volume, output device, brightness, appearance, keep-awake, Dock auto-hide, desktop icons).
 ///
-/// Honesty Rule notes kept from the previous version:
-/// * brightness has no public read API, so it is −/+ only and never shows a %.
-/// * the appearance switch drives the *system* appearance via System Events,
-///   and names the Automation permission when it is refused.
-struct QuickControlsDetailView: View {
+/// This used to be its own sidebar page ("Điều khiển nhanh") that ALSO carried a "Cửa sổ" group
+/// switching Dock preview / ⌘-Tab / hold-⌘Q — the same three keys the Features tab already owns.
+/// Those rows are gone from here: one key, one control (Part 0 §4).
+///
+/// Honesty Rule notes kept:
+/// * brightness has no public write API, so it goes through key events and the % follows the slider.
+/// * the appearance switch drives the *system* appearance via System Events, and names the
+///   Automation permission when it is refused.
+struct SystemControlsPanel: View {
     @State private var volumeObserver = VolumeObserver.shared
     @State private var audioOutputs = AudioOutputDevices.shared
     @State private var appearance: SystemControls.AppearanceMode = SystemControls.currentAppearance()
@@ -27,38 +30,13 @@ struct QuickControlsDetailView: View {
     @State private var brightnessDragging = false
     @State private var caffeine = CaffeineController.shared
 
-    @AppStorage("windowPreview.hoverEnabled") private var hoverEnabled = true
-    // MUST match `CommandTabController`'s own default (false). An @AppStorage
-    // default that disagrees with the reader silently turns the feature on for
-    // anyone who has never touched the switch.
-    @AppStorage("windowPreview.commandTabEnabled") private var commandTabEnabled = false
-    // MUST match `QuitProtectionController`'s own default (false): it changes what ⌘Q does in
-    // every app, so it is opt-in. Bound ONLY here — one key, one control.
-    @AppStorage("quitProtection.enabled") private var quitProtection = false
-    @State private var quitProtectionController = QuitProtectionController.shared
-
     /// Dock auto-hide is a real, readable/writable public preference, so it is
     /// a genuine two-way toggle rather than a fire-and-forget button.
     @State private var dockAutohide = DockPrefs.autohide()
     @State private var desktopIconsHidden = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                PageHeader(icon: "slider.horizontal.3",
-                           title: L10n.t("Điều khiển nhanh"),
-                           subtitle: L10n.t("Điều khiển nhanh máy Mac và các cửa sổ."))
-
-                systemSection
-
-                Divider().padding(.horizontal, 20)
-
-                windowSection
-
-            }
-            .padding(.bottom, 20)
-        }
-        .background(Color(.windowBackgroundColor))
+        systemSection
         .onAppear {
             appearance = SystemControls.currentAppearance()
             dockAutohide = DockPrefs.autohide()
@@ -266,50 +244,6 @@ struct QuickControlsDetailView: View {
                     .onChange(of: desktopIconsHidden) { _, hide in
                         DesktopIconsPrefs.setShowIcons(!hide)
                     }
-            }
-            .padding(.horizontal, 20)
-        }
-    }
-
-    // MARK: - Cửa sổ
-
-    private var windowSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(icon: "macwindow",
-                          title: L10n.t("Cửa sổ"),
-                          subtitle: L10n.t("Các tính năng cửa sổ của XFinder."))
-
-            VStack(spacing: 10) {
-                ToggleRow(title: L10n.t("Xem trước Dock"),
-                          subtitle: L10n.t("Rê chuột lên icon trên Dock để xem các cửa sổ."),
-                          isOn: $hoverEnabled)
-                    .onChange(of: hoverEnabled) { DockPreviewController.shared.applySettings() }
-
-                ToggleRow(title: L10n.t("Chuyển đổi ứng dụng (⌘-Tab)"),
-                          subtitle: L10n.t("Thay trình chuyển ứng dụng của macOS bằng bản có ảnh thu nhỏ."),
-                          isOn: $commandTabEnabled)
-                    .onChange(of: commandTabEnabled) { CommandTabController.shared.applySettings() }
-
-                ToggleRow(title: L10n.t("Giữ ⌘Q để thoát ứng dụng"),
-                          subtitle: L10n.t("Nhấn nhanh ⌘Q không còn thoát ứng dụng nữa: phải giữ khoảng 1 giây, có thanh tiến trình và Esc để hủy. Giúp tránh thoát nhầm. Không áp dụng cho Finder."),
-                          isOn: $quitProtection)
-                    .onChange(of: quitProtection) { quitProtectionController.applySettings() }
-                if quitProtection {
-                    if brightDenied {
-                        // `brightDenied` is simply "Accessibility is not granted" (set on appear).
-                        permissionNote(
-                            L10n.t("Cấp quyền Trợ năng — ⌘Q giữ để thoát cần quyền này."),
-                            button: L10n.t("Cấp quyền Trợ năng…"),
-                            action: {
-                                if !WindowManager.requestAccessibilityTrust() {
-                                    WindowManager.openAccessibilityPane()
-                                }
-                            })
-                    } else {
-                        Text(quitProtectionController.statusHint)
-                            .font(.system(size: 11)).foregroundColor(.secondary)
-                    }
-                }
             }
             .padding(.horizontal, 20)
         }

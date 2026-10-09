@@ -17,7 +17,7 @@ struct XFinderApp: App {
 
             CommandGroup(replacing: .appSettings) {
                 Button("Settings") {
-                    AppState.shared.navigate(to: .quickControls)
+                    AppState.shared.navigate(to: .features)
                 }
                 .keyboardShortcut(",", modifiers: .command)
             }
@@ -151,7 +151,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case "settings":
             Task { @MainActor in
                 let dest = comps.queryItems?.first(where: { $0.name == "page" })?.value
-                    .flatMap { SidebarDestination(rawValue: $0) } ?? .quickControls
+                    .flatMap { SidebarDestination(rawValue: $0) } ?? .features
                 AppState.shared.navigate(to: dest)
             }
         default:
@@ -218,7 +218,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func toggleToolsWindow() {
-        Task { @MainActor in AppState.shared.navigate(to: .quickControls) }
+        Task { @MainActor in AppState.shared.navigate(to: .features) }
     }
 
     @objc func activatePasteStack() {

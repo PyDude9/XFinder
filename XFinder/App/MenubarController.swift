@@ -170,7 +170,7 @@ struct MenubarFlyoutView: View {
         }
         var destination: SidebarDestination {
             switch self {
-            case .controls:  return .quickControls
+            case .controls:  return .features
             case .antiSleep: return .antiSleep
             case .system:    return .system
             case .network:   return .network
@@ -643,7 +643,7 @@ struct MenubarFlyoutView: View {
         HStack(spacing: 8) {
             // "Cài đặt chung" no longer exists; Điều khiển nhanh is the page
             // that actually holds the app-level switches.
-            Button { navigate(.quickControls) } label: {
+            Button { navigate(.features) } label: {
                 Label(L10n.t("Cài đặt XFinder"), systemImage: "gearshape")
                     .font(.system(size: 12))
                     .frame(maxWidth: .infinity)

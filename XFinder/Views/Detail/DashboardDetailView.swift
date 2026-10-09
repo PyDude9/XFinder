@@ -266,7 +266,7 @@ struct DashboardDetailView: View {
             Text(L10n.t("Di chuột lên icon app trên Dock để xem trước cửa sổ; lắc chuột khi kéo file hoặc trỏ vào tai thỏ để mở Khay thả."))
                 .font(.system(size: 12)).foregroundColor(.secondary)
             HStack(spacing: 8) {
-                Button(L10n.t("Điều khiển nhanh…")) { appState.navigate(to: .quickControls) }
+                Button(L10n.t("Tính năng & Quyền…")) { appState.navigate(to: .features) }
                     .buttonStyle(.bordered).controlSize(.small)
                 Button(L10n.t("Kiểm tra lại quyền")) { refreshPermissions() }
                     .buttonStyle(.bordered).controlSize(.small)
