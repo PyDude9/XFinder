@@ -6318,6 +6318,14 @@
     "Không đổi được thiết bị âm thanh ra: ": {
       "en": "Could not change the sound output: ",
       "scope": "fragment"
+    },
+    "Lấy màu từ màn hình": {
+      "en": "Pick color from screen",
+      "scope": "sentence"
+    },
+    "Đã sao chép": {
+      "en": "Copied",
+      "scope": "sentence"
     }
   }
 }

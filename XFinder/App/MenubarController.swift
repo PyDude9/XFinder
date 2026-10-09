@@ -504,6 +504,11 @@ struct MenubarFlyoutView: View {
         VStack(spacing: 0) {
             actionRow(L10n.t("Lịch sử thao tác"), "clock.arrow.circlepath") { navigate(.actionHistory) }
             actionRow(L10n.t("Khay thả…"), "tray.and.arrow.down") { navigate(.dropTray) }
+            actionRow(L10n.t("Lấy màu từ màn hình"), "eyedropper") {
+                // The popover would cover the pixels being picked; let it close first.
+                closePopover()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { ScreenColorPicker.shared.pick() }
+            }
             actionRow(L10n.t("Đồng bộ thư mục"), "arrow.triangle.2.circlepath") { navigate(.sync) }
             HStack {
                 Image(systemName: "magnifyingglass").frame(width: 18).foregroundColor(.secondary)
