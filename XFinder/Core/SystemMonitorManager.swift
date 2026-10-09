@@ -98,10 +98,15 @@ final class SystemMonitorManager {
         if metricsHistory.count > 60 { metricsHistory.removeFirst() }
     }
 
+    /// GPU `Device Utilization %` from the IORegistry (public; measured to follow real load —
+    /// see `GPUUtilization`). nil ⇒ the meter shows "Không khả dụng", never 0.
+    private let gpuReader = GPUUtilizationReader()
+
     private func collectMetrics() -> SystemMetrics {
         let now = Date()
 
         let cpuUsage = cpuUsagePercent(now: now)
+        let gpuUsage = gpuReader.read()
         let cpuPerCore = coreUsagePercents(now: now)
         let mem = Self.readMemoryBreakdown()
         let (diskUsed, diskTotal) = Self.readDisk()
@@ -112,6 +117,7 @@ final class SystemMonitorManager {
 
         return SystemMetrics(
             cpuUsage: cpuUsage,
+            gpuUsage: gpuUsage,
             memoryUsed: mem.used,
             memoryTotal: mem.total,
             diskUsed: diskUsed,

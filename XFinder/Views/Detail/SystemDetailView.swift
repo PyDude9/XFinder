@@ -3,9 +3,10 @@ import SwiftUI
 /// Hệ thống — layout mirrors the reference screenshot: two temperature
 /// readouts across the top, CPU and GPU meters, a flat memory table, uptime.
 ///
-/// Honesty Rule: CPU/GPU temperature and GPU load have no public macOS API
-/// (SMC and IOAccelerator are private and unreliable on Apple Silicon), so
-/// those slots render "Đang thu thập…" / "Không khả dụng" — never a number.
+/// Honesty Rule: CPU/GPU temperature has no public macOS API (SMC is private),
+/// so those slots render "Đang thu thập…" — never a number. GPU *load* IS
+/// public (`IOAccelerator/PerformanceStatistics`, see `GPUUtilization`) and is
+/// shown; it renders "Không khả dụng" only when the hardware publishes no value.
 struct SystemDetailView: View {
     @Environment(SystemMonitorManager.self) var monitor
     @AppStorage("menubar.updateInterval") private var updateInterval = 2
@@ -29,8 +30,17 @@ struct SystemDetailView: View {
                         .padding(.horizontal, 20)
                 }
 
-                // GPU load: IOAccelerator is not public → no meter, no number.
-                MeterRow(label: "GPU", percent: nil, tint: .teal)
+                // GPU load: `IOAccelerator/PerformanceStatistics/Device Utilization %`, a
+                // public IORegistry read that was measured to track real load (idle 0–22 %,
+                // Metal burn 99–100 %). nil only when the hardware does not publish it.
+                MeterRow(label: "GPU",
+                         percent: monitor.currentMetrics.gpuUsage,
+                         tint: .teal)
+                if monitor.metricsHistory.contains(where: { $0.gpuUsage != nil }) {
+                    SparklineView(values: monitor.metricsHistory.map { $0.gpuUsage ?? 0 },
+                                  yMax: 100, tint: .teal, height: 26)
+                        .padding(.horizontal, 20)
+                }
 
                 Divider().padding(.horizontal, 20)
 

@@ -14,6 +14,10 @@ enum SystemThermalState: String, Codable, Sendable {
 
 struct SystemMetrics: Codable, Sendable {
     let cpuUsage: Double
+    /// GPU `Device Utilization %` from `IOAccelerator/PerformanceStatistics`. Optional on
+    /// purpose: nil means the hardware publishes no such key, and the meter must say
+    /// "Không khả dụng" rather than draw a fabricated 0 % (Honesty Rule).
+    let gpuUsage: Double?
     let memoryUsed: Int64
     let memoryTotal: Int64
     let diskUsed: Int64
@@ -40,6 +44,7 @@ struct SystemMetrics: Codable, Sendable {
 
     init(
         cpuUsage: Double = 0,
+        gpuUsage: Double? = nil,
         memoryUsed: Int64 = 0,
         memoryTotal: Int64 = 0,
         diskUsed: Int64 = 0,
@@ -61,6 +66,7 @@ struct SystemMetrics: Codable, Sendable {
         swapUsed: Int64 = 0
     ) {
         self.cpuUsage = cpuUsage
+        self.gpuUsage = gpuUsage
         self.memoryUsed = memoryUsed
         self.memoryTotal = memoryTotal
         self.diskUsed = diskUsed

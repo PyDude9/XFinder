@@ -30,7 +30,9 @@ Tiện ích hệ thống + quản lý clipboard cho macOS. Gọn nhẹ, chạy n
 
 Một số chỉ số macOS không cung cấp API công khai, XFinder hiển thị trạng thái thật thay vì số liệu suy đoán:
 
-- Nhiệt độ CPU / GPU, % GPU, SMART ổ đĩa: **không khả dụng**
+- Nhiệt độ CPU / GPU: **không khả dụng** (SMC không có API công khai)
+- % GPU: **có** — đọc từ IORegistry (`IOAccelerator`), đã đo bám tải thật; chỉ hiện "Không khả dụng" khi phần cứng không công bố giá trị
+- SMART ổ đĩa: chỉ trạng thái Verified/Failing (qua `diskutil`), **không** có bảng thuộc tính
 - Độ sáng màn hình: chỉ tăng/giảm, không hiện %
 - Mạng theo từng app: số liệu lấy mẫu, ghi rõ "≈"
 

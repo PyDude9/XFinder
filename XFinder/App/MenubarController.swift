@@ -367,8 +367,9 @@ struct MenubarFlyoutView: View {
                 tempCell("GPU")
             }
             meter("CPU", systemMonitor.currentMetrics.cpuUsage, .blue)
-            // GPU load has no public API — show the honest placeholder.
-            meter("GPU", nil, .teal)
+            // GPU load from the IORegistry (public, load-tracking — see GPUUtilization);
+            // nil on hardware that does not publish it ⇒ the placeholder.
+            meter("GPU", systemMonitor.currentMetrics.gpuUsage, .teal)
             infoRow(L10n.t("Bộ nhớ"), "\(systemMonitor.currentMetrics.memoryUsedString) / \(systemMonitor.currentMetrics.memoryTotalString)")
             infoRow(L10n.t("Áp lực bộ nhớ"), systemMonitor.currentMetrics.thermalState.label)
             infoRow(L10n.t("Thời gian hoạt động"), systemMonitor.currentMetrics.uptimeString)
