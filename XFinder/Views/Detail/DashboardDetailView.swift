@@ -235,7 +235,7 @@ struct DashboardDetailView: View {
                 status: clipboardManager.history.isEmpty
                     ? L10n.t("Chưa có mục") : "\(clipboardManager.history.count) " + L10n.t("mục"),
                 actionTitle: L10n.t("Mở…"),
-                action: { appState.navigate(to: .clipboard) })
+                action: { ClipboardShelfController.shared.toggle() })
 
             StatusChecklistRow(
                 state: edgeNotesEnabled ? .ok : .neutral,
@@ -295,14 +295,21 @@ struct DashboardDetailView: View {
         trusted = WindowManager.isTrusted
         canRecord = WindowManager.canRecordScreen
         automationOK = UserDefaults.standard.bool(forKey: "general.automationVerified")
-        mediaPreviewInstalled = Self.pluginkitLists(bundleFragment: "QuickLookVideo")
-        appleIntelligence = Self.appleIntelligenceDownloaded()
-        finderSyncOn = Self.pluginkitLists(bundleFragment: Bundle.main.bundleIdentifier ?? "com.xfinder.app",
-                                           pluginType: "com.apple.FinderSync")
+        Task.detached {
+            let media = Self.pluginkitLists(bundleFragment: "QuickLookVideo")
+            let ai = Self.appleIntelligenceDownloaded()
+            let bundleID = Bundle.main.bundleIdentifier ?? "com.xfinder.app"
+            let finderSync = Self.pluginkitLists(bundleFragment: bundleID, pluginType: "com.apple.FinderSync")
+            await MainActor.run {
+                self.mediaPreviewInstalled = media
+                self.appleIntelligence = ai
+                self.finderSyncOn = finderSync
+            }
+        }
     }
 
     /// Trạng thái thật từ `pluginkit -m` (không có "✓" cứng).
-    private static func pluginkitLists(bundleFragment: String, pluginType: String? = nil) -> Bool {
+    nonisolated private static func pluginkitLists(bundleFragment: String, pluginType: String? = nil) -> Bool {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/pluginkit")
         p.arguments = ["-m"] + (pluginType.map { ["-p", $0] } ?? [])
@@ -319,7 +326,7 @@ struct DashboardDetailView: View {
     /// Apple Intelligence không có API kiểm tra công khai — heuristic trung
     /// thực: model on-device phát hành qua MobileAsset; thư mục asset trống
     /// nghĩa là chưa tải/chưa bật.
-    private static func appleIntelligenceDownloaded() -> Bool {
+    nonisolated private static func appleIntelligenceDownloaded() -> Bool {
         let paths = [
             NSHomeDirectory() + "/Library/AssetsV2/com_apple_MobileAsset_UAF_FM_GenerativeExperiences",
             "/System/Library/AssetsV2/com_apple_MobileAsset_UAF_FM_GenerativeExperiences",
@@ -345,7 +352,8 @@ enum LoginItemController {
                 NSLog("XFinder: login item change failed — \(error.localizedDescription)")
             }
         } else {
-            SMLoginItemSetEnabled(Bundle.main.bundleIdentifier! as CFString, enabled)
+            guard let bundleID = Bundle.main.bundleIdentifier else { return }
+            SMLoginItemSetEnabled(bundleID as CFString, enabled)
         }
     }
 }

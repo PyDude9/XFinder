@@ -42,6 +42,13 @@ class MenubarController: NSObject, NSPopoverDelegate {
             ) ?? base
             colored?.isTemplate = false
             button.image = colored
+        case .reviewing:
+            let base = NSImage(systemSymbolName: "text.badge.checkmark", accessibilityDescription: "Review")
+            let colored = base?.withSymbolConfiguration(
+                NSImage.SymbolConfiguration(paletteColors: [.systemGreen])
+            ) ?? base
+            colored?.isTemplate = false
+            button.image = colored
         case .error:
             let base = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: "Error")
             let colored = base?.withSymbolConfiguration(

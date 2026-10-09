@@ -269,8 +269,10 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
         typealias CGSFunc = @convention(c) (UInt32, UnsafeMutablePointer<CGWindowID>, UInt32, UInt32) -> Unmanaged<CFArray>?
         typealias MainCIDFunc = @convention(c) () -> UInt32
 
-        if let handle = dlopen(nil, RTLD_LAZY),
-           let symCID = dlsym(handle, "CGSMainConnectionID"),
+        guard let handle = dlopen(nil, RTLD_LAZY) else { return nil }
+        defer { dlclose(handle) }
+
+        if let symCID = dlsym(handle, "CGSMainConnectionID"),
            let symCap = dlsym(handle, "CGSHWCaptureWindowList") {
             let getCID = unsafeBitCast(symCID, to: MainCIDFunc.self)
             let capture = unsafeBitCast(symCap, to: CGSFunc.self)
@@ -286,12 +288,14 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
 
         // 2. Fall back to CGWindowListCreateImage
         typealias Func = @convention(c) (CGRect, CGWindowListOption, CGWindowID, CGWindowImageOption) -> Unmanaged<CGImage>?
-        guard let handle = dlopen(nil, RTLD_LAZY),
-              let sym = dlsym(handle, "CGWindowListCreateImage") else { return nil }
-        let fn = unsafeBitCast(sym, to: Func.self)
-        let options: CGWindowImageOption = [.boundsIgnoreFraming, .bestResolution]
-        guard let raw = fn(.null, .optionIncludingWindow, windowID, options)?.takeRetainedValue() else { return nil }
-        return Self.straightenImageIfNeeded(raw)
+        if let sym = dlsym(handle, "CGWindowListCreateImage") {
+            let fn = unsafeBitCast(sym, to: Func.self)
+            let options: CGWindowImageOption = [.boundsIgnoreFraming, .bestResolution]
+            if let raw = fn(.null, .optionIncludingWindow, windowID, options)?.takeRetainedValue() {
+                return Self.straightenImageIfNeeded(raw)
+            }
+        }
+        return nil
     }
 }
 

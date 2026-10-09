@@ -266,15 +266,17 @@ struct QuickControlsDetailView: View {
         appearanceBusy = true
         Task {
             let result = await SystemControls.setAppearance(mode)
+            let current = SystemControls.currentAppearance()
+            if appearance != current {
+                appearance = current
+            }
             appearanceBusy = false
             switch result {
             case .ok:
-                appearance = SystemControls.currentAppearance()
+                break
             case .notPermitted:
-                appearance = SystemControls.currentAppearance()
                 appearanceError = L10n.t("Chưa được cấp quyền Tự động hóa cho System Events. Mở Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Tự động hóa → XFinder → bật System Events.")
             case .failed(let msg):
-                appearance = SystemControls.currentAppearance()
                 appearanceError = "\(L10n.t("Không đổi được giao diện: "))\(msg)"
             }
         }
@@ -296,7 +298,7 @@ enum DockPrefs {
     static func setAutohide(_ on: Bool) {
         let d = UserDefaults(suiteName: "com.apple.dock")
         d?.set(on, forKey: "autohide")
-        d?.synchronize()
+        CFPreferencesSynchronize("com.apple.dock" as CFString, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
         p.arguments = ["Dock"]
@@ -316,7 +318,7 @@ enum DesktopIconsPrefs {
     static func setShowIcons(_ on: Bool) {
         let d = UserDefaults(suiteName: "com.apple.finder")
         d?.set(on, forKey: "CreateDesktop")
-        d?.synchronize()
+        CFPreferencesSynchronize("com.apple.finder" as CFString, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
         p.arguments = ["Finder"]

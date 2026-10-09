@@ -7,6 +7,7 @@ import Combine
 /// one implementation. Volume via public CoreAudio HAL scalar; brightness via
 /// synthesized system brightness keys (needs Accessibility trust); dark mode
 /// toggles the system appearance via System Events (needs Automation).
+@MainActor
 enum SystemControls {
 
     // MARK: Volume — public, real
@@ -164,7 +165,7 @@ enum SystemControls {
         // each read or this always reports the pre-change value.
         for _ in 0..<8 {
             try? await Task.sleep(nanoseconds: 150_000_000)
-            UserDefaults.standard.synchronize()
+            CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication)
             if currentAppearance() == mode {
                 // Automation has no preflight API; a successful change is the
                 // only evidence the grant exists. Tổng quan reads this flag.
@@ -185,7 +186,7 @@ enum SystemControls {
         p.standardError = Pipe()
         try? p.run()
         p.waitUntilExit()
-        UserDefaults.standard.synchronize()
+        CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication)
     }
 
     /// Opens the Automation pane so the user can tick System Events for XFinder.

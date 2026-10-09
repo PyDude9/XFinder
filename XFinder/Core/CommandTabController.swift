@@ -73,7 +73,10 @@ final class CommandTabController {
     }
 
     private func teardownTap() {
-        if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            CFMachPortInvalidate(tap)
+        }
         if let source = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
         }
@@ -82,7 +85,7 @@ final class CommandTabController {
         dismiss(activate: false)
     }
 
-    private nonisolated(unsafe) var isActiveSnapshot = false
+    private let isActiveSnapshot = Locked<Bool>(false)
 
     nonisolated private var hotkeyPreference: String {
         UserDefaults.standard.string(forKey: "windowPreview.switcherHotkey") ?? "commandTab"
@@ -93,7 +96,9 @@ final class CommandTabController {
         // A tap disabled by timeout must be re-armed or ⌘-Tab breaks entirely.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             Task { @MainActor in
-                if let tap = self.eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+                if let tap = self.eventTap, CFMachPortIsValid(tap) {
+                    CGEvent.tapEnable(tap: tap, enable: true)
+                }
             }
             return Unmanaged.passUnretained(event)
         }
@@ -110,7 +115,7 @@ final class CommandTabController {
         }
 
         // When switcher is active:
-        if isActiveSnapshot {
+        if isActiveSnapshot.value {
             // Comma (,) focuses search field
             if type == .keyDown, keyCode == 43 {
                 Task { @MainActor in
@@ -173,7 +178,7 @@ final class CommandTabController {
             selection = items.count > 1 ? 1 : 0
             WindowPreviewStore.shared.selectedIndex = selection
             isActive = true
-            isActiveSnapshot = true
+            isActiveSnapshot.value = true
 
             // Check if modifier was already released during a quick tap
             let isOptionHotkey = hotkeyPreference == "optionTab"
@@ -219,7 +224,7 @@ final class CommandTabController {
             }
         }
         isActive = false
-        isActiveSnapshot = false
+        isActiveSnapshot.value = false
         selection = 0
         PreviewOverlayWindow.shared.dismiss()
         WindowPreviewStore.shared.clear()

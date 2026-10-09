@@ -8,6 +8,7 @@ import SwiftUI
 /// those slots render "Đang thu thập…" / "Không khả dụng" — never a number.
 struct SystemDetailView: View {
     @Environment(SystemMonitorManager.self) var monitor
+    @AppStorage("menubar.updateInterval") private var updateInterval = 2
 
     var body: some View {
         ScrollView {
@@ -54,6 +55,26 @@ struct SystemDetailView: View {
 
                 LabeledLine(label: L10n.t("Thời gian hoạt động"),
                             value: monitor.currentMetrics.uptimeString)
+
+                Divider().padding(.horizontal, 20)
+
+                HStack {
+                    Text(L10n.t("Tần suất cập nhật"))
+                        .font(.system(size: 13))
+                    Spacer()
+                    Picker("", selection: $updateInterval) {
+                        Text("1s").tag(1)
+                        Text("2s").tag(2)
+                        Text("5s").tag(5)
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                    .frame(width: 140)
+                    .onChange(of: updateInterval) { _ in
+                        SystemMonitorManager.shared.applyUpdateInterval()
+                    }
+                }
+                .padding(.horizontal, 20)
             }
             .padding(.bottom, 20)
         }

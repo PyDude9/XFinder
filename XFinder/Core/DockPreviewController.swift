@@ -388,8 +388,17 @@ struct DockPreviewView: View {
                         }
                         VStack(alignment: .leading, spacing: 1) {
                             let curTab = visibleTabs.first ?? store.activeBrowserTabs.first(where: { $0.isActive }) ?? store.activeBrowserTabs.first
-                            let displayTitle = isBrowser && curTab != nil ? curTab!.title : (dockItems.first?.title.isEmpty == false ? dockItems.first!.title : title)
-                            let displaySubtitle = isBrowser && curTab != nil ? curTab!.domain : (dockItems.first?.appName.isEmpty == false ? dockItems.first!.appName : title)
+                            let firstItem = dockItems.first
+                            let displayTitle: String = {
+                                if isBrowser, let tab = curTab { return tab.title }
+                                if let item = firstItem, !item.title.isEmpty { return item.title }
+                                return title
+                            }()
+                            let displaySubtitle: String = {
+                                if isBrowser, let tab = curTab { return tab.domain }
+                                if let item = firstItem, !item.appName.isEmpty { return item.appName }
+                                return title
+                            }()
                             Text(displayTitle)
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(.primary)

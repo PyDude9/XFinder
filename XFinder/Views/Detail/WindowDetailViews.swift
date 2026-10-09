@@ -222,184 +222,19 @@ struct SnapZonesDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                PageHeader(
-                    icon: "rectangle.split.2x2",
-                    title: L10n.t("Vùng bắt dính"),
-                    subtitle: L10n.t("Bắt dính cửa sổ bằng cách kéo chúng đến cạnh và góc màn hình."),
-                    trailing: AnyView(
-                        HStack(spacing: 6) {
-                            Text(snapEnabled ? L10n.t("Bật") : L10n.t("Tắt"))
-                                .font(.system(size: 12)).foregroundColor(.secondary)
-                            Toggle("", isOn: $snapEnabled)
-                                .labelsHidden()
-                                .onChange(of: snapEnabled) { controller.applySettings() }
-                        }
-                    ))
-
+            VStack(spacing: 16) {
                 if !trusted {
                     permissionBanner
-                    Divider().padding(.horizontal, 20)
                 }
 
-                // Ba toggle đầu trang — khớp screenshot MFinder.
-                VStack(spacing: 10) {
-                    ToggleRow(title: L10n.t("Khôi phục kích thước cửa sổ khi gỡ bắt dính"), isOn: $restoreOnUnsnap)
-                    ToggleRow(title: L10n.t("Tạo hiệu ứng cho vùng xem trước"), isOn: $showPreview)
-                    ToggleRow(title: L10n.t("Phản hồi rung"), isOn: $hapticEnabled)
-                }
-                .padding(.horizontal, 20)
-
-                Divider().padding(.horizontal, 20)
-
-                SectionHeader(icon: "hand.draw",
-                              title: L10n.t("Kéo tới mép màn hình"),
-                              subtitle: L10n.t("Kéo cửa sổ tới mép; vùng đích sẽ sáng lên, thả chuột để bắt dính."))
-
-                VStack(alignment: .leading, spacing: 8) {
-                    ToggleRow(title: L10n.t("Bật bắt dính khi kéo tới mép"), isOn: $dragEnabled)
-                        .onChange(of: dragEnabled) { controller.applySettings() }
-                        .disabled(!trusted)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("\(L10n.t("Độ nhạy mép "))\(Int(edgeMargin)) pt")
-                            .font(.system(size: 13))
-                        Slider(value: $edgeMargin, in: 8...60, step: 1)
-                            .onChange(of: edgeMargin) { controller.applySettings() }
-                            .disabled(!trusted || !dragEnabled)
-                    }
-
-                    Text(L10n.t("Mép trái/phải → nửa màn hình · góc → một phần tư · mép trên → toàn màn hình · mép dưới → nửa dưới."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
-
-                    if WindowManager.isStageManagerEnabled {
-                        VStack(alignment: .leading, spacing: 6) {
-                            ToggleRow(title: L10n.t("Chừa mép trái cho Stage Manager"),
-                                      isOn: $reserveStage)
-                                .disabled(!snapEnabled)
-
-                            if reserveStage {
-                                Text("\(L10n.t("Bề rộng chừa: "))\(Int(stageInset)) pt")
-                                    .font(.system(size: 13))
-                                Slider(value: $stageInset, in: 48...140, step: 2)
-                                    .disabled(!snapEnabled)
-                                Text(L10n.t("macOS không tự thu nhỏ vùng làm việc cho Stage Manager, nên XFinder chừa mép trái để bạn vẫn thấy icon app đang xếp ở đó. Kéo nhỏ lại nếu bạn chỉ cần thấy icon."))
-                                    .font(.system(size: 11)).foregroundColor(.secondary)
-                            } else {
-                                Text(L10n.t("Cửa sổ sẽ bắt dính hết chiều ngang màn hình và có thể che dải Stage Manager."))
-                                    .font(.system(size: 11)).foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-
-                Divider().padding(.horizontal, 20)
-
-                SectionHeader(icon: "keyboard",
-                              title: L10n.t("Phím tắt toàn hệ thống"),
-                              subtitle: L10n.t("Áp dụng cho cửa sổ đang được focus."))
-
-                VStack(alignment: .leading, spacing: 8) {
-                    ToggleRow(title: L10n.t("Bật phím tắt bắt dính"), isOn: $hotkeysEnabled)
-                        .onChange(of: hotkeysEnabled) { controller.applySettings() }
-                        .disabled(!trusted)
-
-                    VStack(spacing: 4) {
-                        shortcutRow("⌃⌥ ←", L10n.t("Nửa trái"))
-                        shortcutRow("⌃⌥ →", L10n.t("Nửa phải"))
-                        shortcutRow("⌃⌥ ↑", L10n.t("Toàn màn hình"))
-                        shortcutRow("⌃⌥ ↓", L10n.t("Nửa dưới"))
-                        shortcutRow("⌃⌥ ↩", L10n.t("Giữa màn hình"))
-                    }
-                }
-                .padding(.horizontal, 20)
-
-                Divider().padding(.horizontal, 20)
-
-                // Hướng dẫn chia cửa sổ — khớp MFinder: Ngang/Dọc + 8 checkbox quanh 2×2 grid.
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(L10n.t("Hướng dẫn chia cửa sổ")).font(.system(size: 14, weight: .semibold))
-                            Text(L10n.t("Kéo đến cạnh hoặc góc màn hình, rồi thả."))
-                                .font(.system(size: 11)).foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        Picker("", selection: Binding(
-                            get: { UserDefaults.standard.string(forKey: "snapzones.orientation") ?? "horizontal" },
-                            set: { UserDefaults.standard.set($0, forKey: "snapzones.orientation") }
-                        )) {
-                            Text("Ngang").tag("horizontal")
-                            Text(L10n.t("Dọc")).tag("vertical")
-                        }
-                        .pickerStyle(.segmented)
-                        .frame(width: 140)
-                    }
-
-                    snapGuideGrid
-
-                    HStack {
-                        Text(L10n.t("Các lựa chọn được áp dụng cho mọi màn hình có cùng hướng này."))
-                            .font(.system(size: 11)).foregroundColor(.secondary)
-                        Spacer()
-                        Button(L10n.t("Khôi phục mặc định")) { resetSnapDefaults() }
-                            .buttonStyle(.bordered).controlSize(.small)
-                    }
-
-                    DisclosureGroup(L10n.t("Chia cửa sổ của macOS")) {
-                        Text(L10n.t("macOS Sequoia có tính năng chia cửa sổ riêng (Window Tiling). Mở Cài đặt hệ thống → Màn hình & Dock → Chia cửa sổ để cấu hình."))
-                            .font(.system(size: 11)).foregroundColor(.secondary)
-                        Button(L10n.t("Mở Cài đặt Màn hình & Dock")) {
-                            if let url = URL(string: "x-apple.systempreferences:com.apple.Desktop-Settings.extension") {
-                                NSWorkspace.shared.open(url)
-                            }
-                        }
-                        .buttonStyle(.link).font(.system(size: 11))
-                    }
-                    .font(.system(size: 12))
-                }
-                .padding(14)
-                .background(Color(.controlBackgroundColor).opacity(0.5))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .padding(.horizontal, 20)
-
-                Divider().padding(.horizontal, 20)
-
-                SectionHeader(icon: "square.grid.3x3",
-                              title: L10n.t("Bắt dính ngay"),
-                              subtitle: L10n.t("Bấm một vùng để áp dụng cho cửa sổ vừa dùng."))
-
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 8)], spacing: 8) {
-                    ForEach(WindowManager.SnapTarget.allCases) { zone in
-                        Button {
-                            if hapticEnabled {
-                                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
-                            }
-                            let ok = WindowManager.snapFrontmost(to: zone)
-                            controller.lastOutcome = ok
-                                ? "\(L10n.t("Đã đưa cửa sổ vào “"))\(zone.titleVI)”."
-                                : L10n.t("Không di chuyển được — ứng dụng không cho phép hoặc thiếu quyền.")
-                        } label: {
-                            Text(zone.titleVI)
-                                .font(.system(size: 12))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 4)
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(!trusted)
-                    }
-                }
-                .padding(.horizontal, 20)
-
-                if let msg = controller.lastOutcome {
-                    Text(msg)
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 20)
-                }
+                card1General
+                card2DragBehavior
+                card3Shortcuts
+                card4VisualGuideAndSnapNow
             }
-            .padding(.bottom, 20)
+            .frame(maxWidth: 760)
+            .padding(20)
+            .frame(maxWidth: .infinity)
         }
         .background(Color(.windowBackgroundColor))
         .onAppear {
@@ -408,76 +243,491 @@ struct SnapZonesDetailView: View {
         }
     }
 
-    // 2×2 grid với 8 checkbox xung quanh — wording MFinder.
-    private var snapGuideGrid: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                guideCheck(title: L10n.t("Trên bên trái"), subtitle: L10n.t("Một phần tư trên bên trái"))
-                Spacer()
-                VStack(spacing: 2) {
-                    Image(systemName: "checkmark.square.fill").foregroundColor(.accentColor)
-                    Text(L10n.t("Trên")).font(.system(size: 11, weight: .medium))
-                    Text(L10n.t("Phóng to")).font(.system(size: 10)).foregroundColor(.secondary)
+    // MARK: - Reusable Card Container
+    private func snapCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(.controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Card 1: General
+    private var card1General: some View {
+        snapCard {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: "rectangle.split.2x2")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.accentColor)
+                    .frame(width: 28, height: 28)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.t("Vùng bắt dính"))
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.primary)
+                    Text(L10n.t("Bắt dính cửa sổ bằng cách kéo chúng đến cạnh và góc màn hình."))
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
                 }
+
                 Spacer()
-                guideCheck(title: L10n.t("Trên bên phải"), subtitle: L10n.t("Một phần tư trên bên phải"), trailing: true)
+
+                HStack(spacing: 6) {
+                    Text(snapEnabled ? L10n.t("Bật") : L10n.t("Tắt"))
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                    Toggle("", isOn: $snapEnabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .onChange(of: snapEnabled) { controller.applySettings() }
+                }
             }
+
+            if snapEnabled {
+                Divider().opacity(0.15)
+
+                VStack(spacing: 10) {
+                    ToggleRow(title: L10n.t("Khôi phục kích thước cửa sổ khi gỡ bắt dính"), isOn: $restoreOnUnsnap)
+                    Divider().opacity(0.15)
+                    ToggleRow(title: L10n.t("Tạo hiệu ứng cho vùng xem trước"), isOn: $showPreview)
+                    Divider().opacity(0.15)
+                    ToggleRow(title: L10n.t("Phản hồi rung"), isOn: $hapticEnabled)
+                }
+            }
+        }
+        .animation(.default, value: snapEnabled)
+    }
+
+    // MARK: - Card 2: Drag Behavior
+    private var card2DragBehavior: some View {
+        snapCard {
             HStack(spacing: 8) {
-                guideCheck(title: L10n.t("Trái"), subtitle: L10n.t("Cạnh trái, nửa trên/dưới khi gần góc"))
-                Spacer()
-                snapCenterGrid
-                Spacer()
-                guideCheck(title: L10n.t("Phải"), subtitle: L10n.t("Cạnh phải, nửa trên/dưới khi gần góc"), trailing: true)
+                Image(systemName: "hand.draw")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.t("Kéo tới mép màn hình"))
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(L10n.t("Kéo cửa sổ tới mép; vùng đích sẽ sáng lên, thả chuột để bắt dính."))
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
             }
-            HStack(spacing: 12) {
-                guideCheck(title: L10n.t("Dưới bên trái"), subtitle: L10n.t("Một phần tư dưới bên trái"))
+
+            Divider().opacity(0.15)
+
+            HStack {
+                Text(L10n.t("Bật bắt dính khi kéo tới mép"))
+                    .font(.system(size: 13, weight: .medium))
                 Spacer()
-                VStack(spacing: 2) {
-                    Image(systemName: "checkmark.square.fill").foregroundColor(.accentColor)
-                    Text(L10n.t("Dưới")).font(.system(size: 11, weight: .medium))
-                    Text(L10n.t("Một phần ba. Rê về giữa để lấy hai phần ba.")).font(.system(size: 9)).foregroundColor(.secondary).multilineTextAlignment(.center)
+                Toggle("", isOn: $dragEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .onChange(of: dragEnabled) { controller.applySettings() }
+                    .disabled(!trusted || !snapEnabled)
+            }
+
+            if dragEnabled && snapEnabled {
+                Divider().opacity(0.15)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 12) {
+                        Text(L10n.t("Độ nhạy mép"))
+                            .font(.system(size: 13))
+                            .frame(width: 120, alignment: .leading)
+                        Slider(value: $edgeMargin, in: 8...60, step: 1)
+                            .onChange(of: edgeMargin) { controller.applySettings() }
+                            .disabled(!trusted)
+                        Text("\(Int(edgeMargin)) pt")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(.secondary)
+                            .frame(width: 45, alignment: .trailing)
+                    }
+                    Text(L10n.t("Mép trái/phải → nửa màn hình · góc → một phần tư · mép trên → toàn màn hình · mép dưới → nửa dưới."))
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary.opacity(0.8))
+                }
+
+                Divider().opacity(0.15)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(L10n.t("Chừa mép trái cho Stage Manager"))
+                            .font(.system(size: 13, weight: .medium))
+                        Spacer()
+                        Toggle("", isOn: $reserveStage)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
+
+                    if reserveStage {
+                        HStack(spacing: 12) {
+                            Text(L10n.t("Bề rộng chừa"))
+                                .font(.system(size: 13))
+                                .frame(width: 120, alignment: .leading)
+                            Slider(value: $stageInset, in: 48...140, step: 2)
+                            Text("\(Int(stageInset)) pt")
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .frame(width: 45, alignment: .trailing)
+                        }
+                        Text(L10n.t("macOS không tự thu nhỏ vùng làm việc cho Stage Manager, nên XFinder chừa mép trái để bạn vẫn thấy icon app đang xếp ở đó. Kéo nhỏ lại nếu bạn chỉ cần thấy icon."))
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary.opacity(0.8))
+                    }
+                }
+            }
+        }
+        .animation(.default, value: dragEnabled)
+        .animation(.default, value: reserveStage)
+    }
+
+    // MARK: - Card 3: Shortcuts
+    private var card3Shortcuts: some View {
+        snapCard {
+            HStack(spacing: 8) {
+                Image(systemName: "keyboard")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.accentColor)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.t("Phím tắt toàn hệ thống"))
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(L10n.t("Áp dụng cho cửa sổ đang được focus."))
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Divider().opacity(0.15)
+
+            HStack {
+                Text(L10n.t("Bật phím tắt bắt dính"))
+                    .font(.system(size: 13, weight: .medium))
+                Spacer()
+                Toggle("", isOn: $hotkeysEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .onChange(of: hotkeysEnabled) { controller.applySettings() }
+                    .disabled(!trusted || !snapEnabled)
+            }
+
+            if hotkeysEnabled && snapEnabled {
+                Divider().opacity(0.15)
+
+                HStack(alignment: .top, spacing: 24) {
+                    VStack(spacing: 8) {
+                        shortcutItem(label: L10n.t("Nửa trái"), keys: ["⌃", "⌥", "←"])
+                        shortcutItem(label: L10n.t("Toàn màn hình"), keys: ["⌃", "⌥", "↑"])
+                        shortcutItem(label: L10n.t("Giữa màn hình"), keys: ["⌃", "⌥", "↩"])
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    VStack(spacing: 8) {
+                        shortcutItem(label: L10n.t("Nửa phải"), keys: ["⌃", "⌥", "→"])
+                        shortcutItem(label: L10n.t("Nửa dưới"), keys: ["⌃", "⌥", "↓"])
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .animation(.default, value: hotkeysEnabled)
+    }
+
+    // MARK: - Card 4: Visual Guide & Snap Now
+    private var card4VisualGuideAndSnapNow: some View {
+        snapCard {
+            // Header with Segmented Control
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.t("Hướng dẫn chia cửa sổ"))
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(L10n.t("Kéo đến cạnh hoặc góc màn hình, rồi thả."))
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
                 }
                 Spacer()
-                guideCheck(title: L10n.t("Dưới bên phải"), subtitle: L10n.t("Một phần tư dưới bên phải"), trailing: true)
+                Picker("", selection: Binding(
+                    get: { UserDefaults.standard.string(forKey: "snapzones.orientation") ?? "horizontal" },
+                    set: { UserDefaults.standard.set($0, forKey: "snapzones.orientation") }
+                )) {
+                    Text(L10n.t("Ngang")).tag("horizontal")
+                    Text(L10n.t("Dọc")).tag("vertical")
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 140)
             }
+
+            Divider().opacity(0.15)
+
+            // 3-Column Visual Guide
+            HStack(alignment: .center, spacing: 14) {
+                // Cột trái
+                VStack(alignment: .leading, spacing: 14) {
+                    guideItem(title: L10n.t("Trên bên trái"), subtitle: L10n.t("Một phần tư trên bên trái"))
+                    guideItem(title: L10n.t("Trái"), subtitle: L10n.t("Cạnh trái, nửa trên/dưới khi gần góc"))
+                    guideItem(title: L10n.t("Dưới bên trái"), subtitle: L10n.t("Một phần tư dưới bên trái"))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Cột giữa (bản đồ 3x3 trực quan)
+                VStack(spacing: 6) {
+                    guideItemCenter(title: L10n.t("Trên"), subtitle: L10n.t("Phóng to"))
+
+                    snapMap3x3
+
+                    guideItemCenter(title: L10n.t("Dưới"), subtitle: L10n.t("Một phần ba. Rê về giữa để lấy hai phần ba."))
+                }
+                .frame(width: 150)
+
+                // Cột phải
+                VStack(alignment: .trailing, spacing: 14) {
+                    guideItem(title: L10n.t("Trên bên phải"), subtitle: L10n.t("Một phần tư trên bên phải"), trailing: true)
+                    guideItem(title: L10n.t("Phải"), subtitle: L10n.t("Cạnh phải, nửa trên/dưới khi gần góc"), trailing: true)
+                    guideItem(title: L10n.t("Dưới bên phải"), subtitle: L10n.t("Một phần tư dưới bên phải"), trailing: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .padding(.vertical, 4)
+
+            // Footer of visual guide
+            HStack {
+                Text(L10n.t("Các lựa chọn được áp dụng cho mọi màn hình có cùng hướng này."))
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                Spacer()
+                Button(L10n.t("Khôi phục mặc định")) { resetSnapDefaults() }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+            }
+
+            Divider().opacity(0.15)
+
+            // Snap Now section
+            VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.t("Bắt dính ngay"))
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(L10n.t("Bấm một vùng để áp dụng cho cửa sổ vừa dùng."))
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+
+                let cols = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
+                LazyVGrid(columns: cols, spacing: 8) {
+                    // Row 1
+                    snapNowButton(.leftHalf, title: L10n.t("Nửa trái"), icon: "rectangle.lefthalf.filled", isPrimary: true)
+                    snapNowButton(.rightHalf, title: L10n.t("Nửa phải"), icon: "rectangle.righthalf.filled", isPrimary: true)
+                    snapNowButton(.topHalf, title: L10n.t("Nửa trên"), icon: "rectangle.tophalf.filled")
+                    snapNowButton(.bottomHalf, title: L10n.t("Nửa dưới"), icon: "rectangle.bottomhalf.filled")
+
+                    // Row 2
+                    snapNowButton(.topLeft, title: L10n.t("Trên bên trái"), icon: "arrow.up.left")
+                    snapNowButton(.topRight, title: L10n.t("Trên bên phải"), icon: "arrow.up.right")
+                    snapNowButton(.bottomLeft, title: L10n.t("Dưới bên trái"), icon: "arrow.down.left")
+                    snapNowButton(.bottomRight, title: L10n.t("Dưới bên phải"), icon: "arrow.down.right")
+
+                    // Row 3
+                    snapNowButton(.maximize, title: L10n.t("Toàn màn hình"), icon: "rectangle.fill")
+                    snapNowButton(.center, title: L10n.t("Giữa màn hình"), icon: "rectangle.center.inset.filled")
+                    Color.clear.frame(height: 32)
+                    Color.clear.frame(height: 32)
+                }
+
+                if let msg = controller.lastOutcome {
+                    Text(msg)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .padding(.top, 2)
+                }
+            }
+
+            Divider().opacity(0.15)
+
+            // macOS Window Tiling disclosure
+            DisclosureGroup(L10n.t("Chia cửa sổ của macOS")) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L10n.t("macOS Sequoia có tính năng chia cửa sổ riêng (Window Tiling). Mở Cài đặt hệ thống → Màn hình & Dock → Chia cửa sổ để cấu hình."))
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                    Button(L10n.t("Mở Cài đặt Màn hình & Dock")) {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.Desktop-Settings.extension") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .buttonStyle(.link)
+                    .font(.system(size: 11))
+                }
+                .padding(.top, 4)
+            }
+            .font(.system(size: 12))
         }
     }
 
-    private var snapCenterGrid: some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 4) {
-                snapArrow("arrow.up.left")
-                snapArrow("arrow.up.right")
+    // MARK: - Helpers
+
+    private var snapMap3x3: some View {
+        VStack(spacing: 3) {
+            HStack(spacing: 3) {
+                snapMapBtn("arrow.up.left", target: .topLeft)
+                snapMapBtn("arrow.up", target: .topHalf)
+                snapMapBtn("arrow.up.right", target: .topRight)
             }
-            HStack(spacing: 4) {
-                snapArrow("arrow.down.left")
-                snapArrow("arrow.down.right")
+            HStack(spacing: 3) {
+                snapMapBtn("arrow.left", target: .leftHalf)
+                Button {
+                    snapAction(.maximize)
+                } label: {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.accentColor.opacity(0.85))
+                        Image(systemName: "macwindow")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(width: 34, height: 26)
+                }
+                .buttonStyle(.plain)
+                .help(L10n.t("Toàn màn hình"))
+
+                snapMapBtn("arrow.right", target: .rightHalf)
+            }
+            HStack(spacing: 3) {
+                snapMapBtn("arrow.down.left", target: .bottomLeft)
+                snapMapBtn("arrow.down", target: .bottomHalf)
+                snapMapBtn("arrow.down.right", target: .bottomRight)
             }
         }
-        .padding(8)
-        .background(Color.accentColor.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.accentColor.opacity(0.3), lineWidth: 1))
+        .padding(6)
+        .background(Color.accentColor.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color.accentColor.opacity(0.25), lineWidth: 1)
+        )
     }
 
-    private func snapArrow(_ name: String) -> some View {
-        Image(systemName: name).font(.system(size: 14, weight: .medium)).foregroundColor(.accentColor)
-            .frame(width: 36, height: 28)
-            .background(Color.accentColor.opacity(0.15))
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+    private func snapMapBtn(_ icon: String, target: WindowManager.SnapTarget) -> some View {
+        Button {
+            snapAction(target)
+        } label: {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.accentColor)
+                .frame(width: 34, height: 26)
+                .background(Color.accentColor.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .help(target.titleVI)
     }
 
-    private func guideCheck(title: String, subtitle: String, trailing: Bool = false) -> some View {
-        HStack(spacing: 4) {
+    private func snapNowButton(_ target: WindowManager.SnapTarget, title: String, icon: String, isPrimary: Bool = false) -> some View {
+        Button {
+            snapAction(target)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: isPrimary ? .semibold : .regular))
+                    .foregroundColor(isPrimary ? .accentColor : .primary.opacity(0.8))
+                Text(title)
+                    .font(.system(size: 11, weight: isPrimary ? .medium : .regular))
+                    .foregroundColor(isPrimary ? .accentColor : .primary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 32)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isPrimary ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.05))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(isPrimary ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(!trusted)
+    }
+
+    private func snapAction(_ zone: WindowManager.SnapTarget) {
+        if hapticEnabled {
+            NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+        }
+        let ok = WindowManager.snapFrontmost(to: zone)
+        controller.lastOutcome = ok
+            ? "\(L10n.t("Đã đưa cửa sổ vào “"))\(zone.titleVI)”."
+            : L10n.t("Không di chuyển được — ứng dụng không cho phép hoặc thiếu quyền.")
+    }
+
+    private func guideItem(title: String, subtitle: String, trailing: Bool = false) -> some View {
+        HStack(alignment: .top, spacing: 6) {
             if !trailing {
-                Image(systemName: "checkmark.square.fill").foregroundColor(.accentColor).font(.system(size: 12))
+                Image(systemName: "checkmark.square.fill")
+                    .foregroundColor(.accentColor)
+                    .font(.system(size: 13))
+                    .padding(.top, 1)
             }
-            VStack(alignment: trailing ? .trailing : .leading, spacing: 1) {
-                Text(title).font(.system(size: 11, weight: .medium))
-                Text(subtitle).font(.system(size: 9)).foregroundColor(.secondary)
+            VStack(alignment: trailing ? .trailing : .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 11, weight: .medium))
+                Text(subtitle)
+                    .font(.system(size: 9))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(trailing ? .trailing : .leading)
             }
             if trailing {
-                Image(systemName: "checkmark.square.fill").foregroundColor(.accentColor).font(.system(size: 12))
+                Image(systemName: "checkmark.square.fill")
+                    .foregroundColor(.accentColor)
+                    .font(.system(size: 13))
+                    .padding(.top, 1)
+            }
+        }
+    }
+
+    private func guideItemCenter(title: String, subtitle: String) -> some View {
+        VStack(spacing: 2) {
+            Image(systemName: "checkmark.square.fill")
+                .foregroundColor(.accentColor)
+                .font(.system(size: 13))
+            Text(title)
+                .font(.system(size: 11, weight: .medium))
+            Text(subtitle)
+                .font(.system(size: 9))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+    }
+
+    private func shortcutItem(label: String, keys: [String]) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundColor(.primary)
+            Spacer()
+            HStack(spacing: 3) {
+                ForEach(keys, id: \.self) { key in
+                    Text(key)
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundColor(.primary.opacity(0.85))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2.5)
+                        .background(Color.primary.opacity(0.06))
+                        .cornerRadius(4)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(Color.primary.opacity(0.12), lineWidth: 0.5)
+                        )
+                }
             }
         }
     }
@@ -495,34 +745,26 @@ struct SnapZonesDetailView: View {
     }
 
     private var permissionBanner: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(L10n.t("Cần quyền Trợ năng"), systemImage: "exclamationmark.triangle.fill")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.orange)
-            Text(L10n.t("macOS chỉ cho phép di chuyển cửa sổ của ứng dụng khác khi bạn cấp quyền Trợ năng cho XFinder."))
-                .font(.system(size: 12)).foregroundColor(.secondary)
-            HStack {
-                Button(L10n.t("Mở Cài đặt Trợ năng")) { WindowManager.openAccessibilityPane() }
-                    .buttonStyle(.borderedProminent).controlSize(.small)
-                Button(L10n.t("Kiểm tra lại")) {
-                    trusted = WindowManager.isTrusted
-                    controller.applySettings()
+        snapCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(L10n.t("Cần quyền Trợ năng"), systemImage: "exclamationmark.triangle.fill")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.orange)
+                Text(L10n.t("macOS chỉ cho phép di chuyển cửa sổ của ứng dụng khác khi bạn cấp quyền Trợ năng cho XFinder."))
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                HStack {
+                    Button(L10n.t("Mở Cài đặt Trợ năng")) { WindowManager.openAccessibilityPane() }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                    Button(L10n.t("Kiểm tra lại")) {
+                        trusted = WindowManager.isTrusted
+                        controller.applySettings()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
-                .buttonStyle(.bordered).controlSize(.small)
             }
-        }
-        .padding(.horizontal, 20)
-    }
-
-    private func shortcutRow(_ keys: String, _ label: String) -> some View {
-        HStack {
-            Text(keys)
-                .font(.system(size: 12, design: .monospaced))
-                .padding(.horizontal, 6).padding(.vertical, 2)
-                .background(Color.primary.opacity(0.07))
-                .cornerRadius(4)
-            Text(label).font(.system(size: 12)).foregroundColor(.secondary)
-            Spacer()
         }
     }
 }

@@ -10,7 +10,7 @@ public protocol MenuBarInventoryProviding: AnyObject {
 
 @MainActor
 public final class AccessibilityMenuBarInventory: MenuBarInventoryProviding {
-    private static let messagingTimeout: Float = 0.1
+    nonisolated private static let messagingTimeout: Float = 0.1
     private var hasRequestedAuthorization = false
 
     public init() {}
@@ -33,13 +33,13 @@ public final class AccessibilityMenuBarInventory: MenuBarInventoryProviding {
             .filter { $0.processIdentifier != ownPID && $0.bundleURL?.pathExtension == "app" }
             .map { (pid: $0.processIdentifier, bundleIdentifier: $0.bundleIdentifier) }
 
-        DispatchQueue.global(qos: .userInitiated).async {
+        Task.detached(priority: .userInitiated) {
             let items = Self.statusItems(of: apps)
-            DispatchQueue.main.async { completion(items) }
+            await MainActor.run { completion(items) }
         }
     }
 
-    private static func statusItems(of apps: [(pid: pid_t, bundleIdentifier: String?)]) -> [MenuBarInventoryItem] {
+    nonisolated private static func statusItems(of apps: [(pid: pid_t, bundleIdentifier: String?)]) -> [MenuBarInventoryItem] {
         var items: [MenuBarInventoryItem] = []
         for app in apps {
             let element = AXUIElementCreateApplication(app.pid)
@@ -82,7 +82,7 @@ public final class AccessibilityMenuBarInventory: MenuBarInventoryProviding {
         return frames.min(by: { $0.minX < $1.minX })
     }
 
-    private static func frame(of element: AXUIElement) -> CGRect? {
+    nonisolated private static func frame(of element: AXUIElement) -> CGRect? {
         var positionValue: CFTypeRef?
         var sizeValue: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionValue) == .success,

@@ -30,21 +30,33 @@ public final class MenuBarHiderController: NSResponder, MenuBarItemProvider {
         return item
     }
 
+    private nonisolated(unsafe) var defaultsObserver: (any NSObjectProtocol)?
+
     private override init() {
         super.init()
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleUserDefaultsChange),
-            name: UserDefaults.didChangeNotification,
-            object: nil
-        )
+        defaultsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.handleUserDefaultsChange()
+            }
+        }
+    }
+
+    deinit {
+        if let obs = defaultsObserver {
+            NotificationCenter.default.removeObserver(obs)
+        }
     }
 
     required init?(coder: NSCoder) {
-        fatalError("not used")
+        assertionFailure("init(coder:) is not supported")
+        return nil
     }
 
-    @objc private func handleUserDefaultsChange() {
+    private func handleUserDefaultsChange() {
         if !autoHideEnabled {
             autoHideTimer?.invalidate()
             autoHideTimer = nil

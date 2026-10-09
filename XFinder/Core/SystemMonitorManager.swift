@@ -62,7 +62,9 @@ final class SystemMonitorManager {
         monitorTimer = Timer.scheduledTimer(withTimeInterval: Self.updateInterval(), repeats: true) { [weak self] _ in
             Task { @MainActor in self?.updateMetrics() }
         }
-        RunLoop.main.add(monitorTimer!, forMode: .common)
+        if let timer = monitorTimer {
+            RunLoop.main.add(timer, forMode: .common)
+        }
         updateMetrics()
     }
 

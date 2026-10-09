@@ -39,6 +39,15 @@ final class SnapZoneController {
     private var hotkeysEnabled: Bool {
         UserDefaults.standard.object(forKey: "snapzones.hotkeysEnabled") as? Bool ?? true
     }
+    private var showPreview: Bool {
+        UserDefaults.standard.object(forKey: "snapzones.showPreview") as? Bool ?? true
+    }
+    private var hapticEnabled: Bool {
+        UserDefaults.standard.object(forKey: "snapzones.haptic") as? Bool ?? false
+    }
+    private var restoreOnUnsnap: Bool {
+        UserDefaults.standard.object(forKey: "snapzones.restoreOnUnsnap") as? Bool ?? true
+    }
     /// How close to the edge (points) counts as a snap gesture.
     private var edgeMargin: CGFloat {
         CGFloat(UserDefaults.standard.object(forKey: "snapzones.edgeMargin") as? Double ?? 20)
@@ -111,7 +120,12 @@ final class SnapZoneController {
             if let zone = zone(for: mouse, on: screen) {
                 if zone != activeZone {
                     activeZone = zone
-                    showOverlay(zone: zone, on: screen)
+                    if showPreview {
+                        showOverlay(zone: zone, on: screen)
+                    }
+                    if hapticEnabled {
+                        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+                    }
                 }
             } else {
                 activeZone = nil
@@ -130,6 +144,9 @@ final class SnapZoneController {
                 hideOverlay()
                 activeZone = nil
                 let ok = WindowManager.snapFrontmost(to: zone)
+                if ok && hapticEnabled {
+                    NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .default)
+                }
                 lastOutcome = ok
                     ? "\(L10n.t("Đã đưa cửa sổ vào “"))\(zone.titleVI)”."
                     : L10n.t("Không di chuyển được — ứng dụng không cho phép hoặc thiếu quyền.")
@@ -262,7 +279,10 @@ final class SnapZoneController {
     }
 
     private func stopHotkeys() {
-        if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: false) }
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            CFMachPortInvalidate(tap)
+        }
         if let source = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
         }
@@ -273,7 +293,9 @@ final class SnapZoneController {
     private nonisolated func handleKey(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             Task { @MainActor in
-                if let tap = self.eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+                if let tap = self.eventTap, CFMachPortIsValid(tap) {
+                    CGEvent.tapEnable(tap: tap, enable: true)
+                }
             }
             return Unmanaged.passUnretained(event)
         }
