@@ -6230,6 +6230,26 @@
     "SMART ổ khởi động": {
       "en": "Boot drive SMART",
       "scope": "sentence"
+    },
+    "Làm sạch liên kết khi sao chép": {
+      "en": "Clean links when copying",
+      "scope": "sentence"
+    },
+    "Xóa tham số theo dõi (utm_*, fbclid, gclid…) khỏi liên kết bạn vừa sao chép bằng cách ghi lại clipboard. Chỉ áp dụng khi toàn bộ nội dung sao chép là một liên kết duy nhất.": {
+      "en": "Removes tracking parameters (utm_*, fbclid, gclid…) from a link you copy by rewriting the clipboard. Only applies when everything you copied is a single link.",
+      "scope": "sentence"
+    },
+    "Lần gần nhất: đã bỏ ": {
+      "en": "Last cleaned: removed ",
+      "scope": "fragment"
+    },
+    " khỏi ": {
+      "en": " from ",
+      "scope": "fragment"
+    },
+    "Chưa làm sạch liên kết nào kể từ khi mở XFinder.": {
+      "en": "No link cleaned since XFinder opened.",
+      "scope": "sentence"
     }
   }
 }

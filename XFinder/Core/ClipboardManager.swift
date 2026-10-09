@@ -177,6 +177,34 @@ final class ClipboardManager {
         return true
     }
 
+    // MARK: - Link cleaning (opt-in)
+
+    /// What the last cleaning removed, for the Clipboard settings page. nil until a link was
+    /// cleaned this session — so the user can see the app changed their clipboard, not just
+    /// trust that it did something.
+    private(set) var lastCleanedLink: URLCleaner.Result?
+
+    /// `clipboard.cleanURLs` (default **false**: it rewrites what the user copied, so it must be
+    /// asked for). When the whole copy is one link carrying listed tracking parameters, the
+    /// pasteboard is rewritten with the cleaned link and that is what history records.
+    ///
+    /// Skipped when the change was XFinder's own write (`OwnWriteMark`): the paste engine writes
+    /// and sends ⌘V ~150 ms later, and rewriting the pasteboard under the target app's read
+    /// would paste an empty or half-written clipboard.
+    private func applyLinkCleaning(to text: String, pasteboard pb: NSPasteboard, defaults: UserDefaults) -> String {
+        guard defaults.object(forKey: "clipboard.cleanURLs") as? Bool ?? false,
+              !OwnWriteMark.shared.contains(pb.changeCount),
+              let result = URLCleaner.clean(text) else { return text }
+        pb.clearContents()
+        pb.setString(result.cleaned, forType: .string)
+        pb.setString(result.cleaned, forType: .URL)
+        // Our own rewrite bumped changeCount: consume it so the monitor does not ingest it as
+        // a second copy of the same link.
+        lastChangeCount = pb.changeCount
+        lastCleanedLink = result
+        return result.cleaned
+    }
+
     // MARK: - Capture
 
     private func captureClipboardContent() {
@@ -326,8 +354,11 @@ final class ClipboardManager {
 
         // 3. String content (text, code, links, or text file paths)
         if types.contains(.string),
-           let text = pb.string(forType: .string), !text.isEmpty {
-            if excludeCreditCards && ClipboardClassifier.looksLikeCreditCard(text) { return }
+           let original = pb.string(forType: .string), !original.isEmpty {
+            if excludeCreditCards && ClipboardClassifier.looksLikeCreditCard(original) { return }
+            // Opt-in link cleaning runs AFTER the privacy checks above (a secret never reaches
+            // it) and BEFORE the duplicate check, so history stores what was actually pasted.
+            let text = applyLinkCleaning(to: original, pasteboard: pb, defaults: defaults)
 
             // Check if string is a direct path to an image file or filename on Desktop
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)

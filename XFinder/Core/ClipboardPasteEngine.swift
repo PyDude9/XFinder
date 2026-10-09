@@ -36,6 +36,9 @@ enum ClipboardPasteEngine {
     @discardableResult
     static func writeToPasteboard(record: ClipboardRecord, plainText: Bool = false) -> Bool {
         let pb = NSPasteboard.general
+        // Tell the monitor this change is ours, after the writes below have bumped changeCount.
+        // Link cleaning must never rewrite the pasteboard during a paste (see OwnWriteMark).
+        defer { OwnWriteMark.shared.record(pb.changeCount) }
         pb.clearContents()
         switch record.type {
         case .text, .code, .markdown, .color, .merged:

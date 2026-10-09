@@ -44,6 +44,9 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "notes.edgeEnabled",
                views: ["XFinder/Views/Detail/NotesDetailView.swift"],
                reader: "XFinder/Core/EdgeNotesController.swift"),
+        Switch(key: "clipboard.cleanURLs",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
+               reader: "XFinder/Core/ClipboardManager.swift"),
     ]
 
     // MARK: - Source access
@@ -114,7 +117,7 @@ final class FeatureKeyDefaultsTests: XCTestCase {
 
     /// The gate itself must not pass on an empty table or a rotted anchor.
     func testGateParsesRealDeclarationsNotNothing() {
-        XCTAssertGreaterThanOrEqual(Self.switches.count, 6, "the switch table collapsed")
+        XCTAssertGreaterThanOrEqual(Self.switches.count, 7, "the switch table collapsed")
 
         let fixtureView = """
         struct V: View {

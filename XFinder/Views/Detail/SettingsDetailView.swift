@@ -42,6 +42,7 @@ struct SettingsDetailView: View {
 private struct ClipboardSettingsBody: View {
     @AppStorage("clipboard.captureImages") private var captureImages = true
     @AppStorage("clipboard.captureLinks") private var captureLinks = true
+    @AppStorage("clipboard.cleanURLs") private var cleanURLs = false
     @AppStorage("clipboard.enableOCR") private var enableOCR = true
     @AppStorage("clipboard.maxHistory") private var maxHistory = 1000
     @AppStorage("clipboard.autoDeleteDays") private var autoDeleteDays = 30
@@ -238,6 +239,20 @@ private struct ClipboardSettingsBody: View {
                 VStack(spacing: 10) {
                     ToggleRow(title: L10n.t("Ảnh chụp / hình ảnh"), isOn: $captureImages)
                     ToggleRow(title: L10n.t("Đường link"), isOn: $captureLinks)
+                    ToggleRow(title: L10n.t("Làm sạch liên kết khi sao chép"),
+                              subtitle: L10n.t("Xóa tham số theo dõi (utm_*, fbclid, gclid…) khỏi liên kết bạn vừa sao chép bằng cách ghi lại clipboard. Chỉ áp dụng khi toàn bộ nội dung sao chép là một liên kết duy nhất."),
+                              isOn: $cleanURLs)
+                    // The app rewrites what the user copied, so it shows what it did — the
+                    // last cleaning this session — rather than asking to be trusted.
+                    if cleanURLs {
+                        if let last = clipboard.lastCleanedLink {
+                            Text("\(L10n.t("Lần gần nhất: đã bỏ "))\(last.removed.joined(separator: ", "))\(L10n.t(" khỏi "))\(last.host)")
+                                .font(.system(size: 11)).foregroundColor(.secondary)
+                        } else {
+                            Text(L10n.t("Chưa làm sạch liên kết nào kể từ khi mở XFinder."))
+                                .font(.system(size: 11)).foregroundColor(.secondary)
+                        }
+                    }
                     ToggleRow(title: L10n.t("Nhận diện chữ (OCR)"), subtitle: "Vision Framework", isOn: $enableOCR)
                     // "Tải trước ảnh xem trước liên kết" was removed here: nothing ever read
                     // `clipboard.linkPreviews`, and fetching every copied URL would also break
