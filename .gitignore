@@ -24,3 +24,9 @@ __pycache__/
 CLAUDE.md
 Claude.md
 claude.md
+
+# Local assistant / IDE session state — absolute paths and session ids, never shared
+.claude/
+.v2c/
+.zcode/
+.zcodeignore
