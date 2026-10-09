@@ -232,8 +232,9 @@ extension SpaceBinding {
     /// it: the defaults cache can hold a stale copy right after the user edits a shortcut
     /// in System Settings, which is exactly the moment the user would open this page.
     static func read() -> [Entry] {
-        let defaults = UserDefaults(suiteName: "com.apple.symbolichotkeys")
-        defaults?.synchronize()
+        let suite = "com.apple.symbolichotkeys"
+        let defaults = UserDefaults(suiteName: suite)
+        CFPreferencesSynchronize(suite as CFString, kCFPreferencesCurrentUser, kCFPreferencesAnyHost)
         guard let raw = defaults?.dictionary(forKey: "AppleSymbolicHotKeys") else { return [] }
         return parse(raw)
     }

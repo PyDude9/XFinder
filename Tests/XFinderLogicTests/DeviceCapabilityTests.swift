@@ -623,6 +623,41 @@ final class DeviceCapabilityTests: XCTestCase {
 
     // MARK: - PATCH v10: vendor-page evidence, diagram style, position captions
 
+    /// Consumer-page controls are raw evidence only: they never become CoreGraphics buttons.
+    func testConsumerPageUsagesStaySeparateFromEventButtons() {
+        let elements: [HIDElementFact] = [
+            .init(usagePage: 0x09, usage: 1, type: DeviceCapabilityProbe.elementTypeInputButton),
+            .init(usagePage: 0x09, usage: 2, type: DeviceCapabilityProbe.elementTypeInputButton),
+            .init(usagePage: DeviceCapabilityProbe.usagePageConsumer, usage: 0xE9,
+                  type: DeviceCapabilityProbe.elementTypeInputButton),
+            .init(usagePage: DeviceCapabilityProbe.usagePageConsumer, usage: 0xEA,
+                  type: DeviceCapabilityProbe.elementTypeUnknown),
+            .init(usagePage: DeviceCapabilityProbe.usagePageConsumer, usage: 0xE9,
+                  type: DeviceCapabilityProbe.elementTypeInputButton)
+        ]
+
+        XCTAssertEqual(DeviceCapabilityProbe.consumerUsages(from: elements), [0xE9, 0xEA])
+        let physical = DeviceCapabilityProbe.physicalCapabilities(from: elements)
+        XCTAssertEqual(physical.buttons, [1, 2])
+        XCTAssertEqual(physical.consumerUsages, [0xE9, 0xEA])
+
+        let descriptor = DeviceCapabilityProbe.descriptor(from: .init(
+            transport: "USB", vendorID: 1, productID: 2, productName: "Consumer fixture",
+            elements: elements, source: .detected))
+        XCTAssertEqual(DeviceCapabilityModel.eventButtons(from: descriptor), [0, 1])
+        XCTAssertFalse((DeviceCapabilityModel.eventButtons(from: descriptor) ?? []).contains(0xE8),
+                       "Consumer usage must never be converted with usage - 1")
+    }
+
+    func testElementDumpIncludesConsumerPageAsRawEvidence() {
+        let dump = DeviceCapabilityProbe.elementDump(from: [
+            .init(usagePage: DeviceCapabilityProbe.usagePageConsumer, usage: 0xE9,
+                  type: DeviceCapabilityProbe.elementTypeInputButton)
+        ])
+        XCTAssertTrue(dump.contains { $0.contains("page=0x000C usage=0x00E9") })
+        XCTAssertTrue(dump.contains { $0.contains("Consumer") })
+    }
+
     /// The vendor-page scan must be **evidence**, not a button count (R1).
     ///
     /// The fixture reproduces the trap this machine measured: the Apple Internal Trackpad

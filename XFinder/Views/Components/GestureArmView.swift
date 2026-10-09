@@ -39,7 +39,10 @@ struct GestureArmView: View {
         }
         .buttonStyle(.plain)
         .disabled(!support.isSupported || isRecording)
-        .opacity(support.isSupported ? 1 : 0.45)
+        // An arm the mouse cannot perform — or one nothing was read for — is drawn at the
+        // same 30 % weight the missing/unknown control chips carry, so the whole placeholder
+        // vocabulary reads as one thing. A *supported* arm is untouched at full weight.
+        .opacity(support.isSupported ? 1 : 0.30)
         .help(helpText)
         .accessibilityLabel(helpText)
     }

@@ -35,6 +35,10 @@ struct GestureButtonList: View {
     /// Evidence that the standard button page is not the whole story — never added to the
     /// declared count, because a vendor usage has no `CGEvent` number.
     var vendorControlCount: Int = 0
+    /// How many usages the descriptor declares on the **Consumer** page (`0x0C`). Same
+    /// rule as `vendorControlCount`: evidence, never a button, never numbered. Its own
+    /// count so the two facts cannot be added together on screen either.
+    var consumerUsageCount: Int = 0
     /// A press the engine saw that the descriptor does not declare, or `nil`.
     let undeclaredPress: Int?
     /// Whether the descriptor under-reports this mouse, on evidence. Separate from
@@ -42,7 +46,14 @@ struct GestureButtonList: View {
     var underReported: Bool = false
     let onSetTrigger: (Int) -> Void
     /// Press-a-button recording, for a control the descriptor under-reports.
-    let onRecordTrigger: () -> Void
+    ///
+    /// The control the record was armed **for**, or `nil` when it was armed from the
+    /// header rather than a row (PATCH v11). The row passes its own button so the page can
+    /// mark *which* control XFinder is waiting for; the header passes `nil` because it
+    /// deliberately targets no single row. The number that is stored is still whatever the
+    /// engine measures — this only carries intent for the highlight, never a fabricated
+    /// button.
+    let onRecordTrigger: (Int?) -> Void
     /// The row whose Record button is armed, so the row itself shows it is listening.
     var recordingButton: Int?
     var holdButtonSingleClickEnabled: Binding<Bool>? = nil
@@ -74,8 +85,11 @@ struct GestureButtonList: View {
                 Text(L10n.t("Nút chuột XFinder thấy"))
                     .font(.system(size: 12, weight: .medium))
                 Spacer(minLength: 0)
+                // The header arms the same recording as every row, but targets no single
+                // row — it passes `nil`, so no row is marked and the next real press is
+                // measured. The row buttons below pass their own number instead.
                 Button(recordingButton != nil ? L10n.t("Đang ghi…") : L10n.t("Ghi nút thật"))
-                { onRecordTrigger() }
+                { onRecordTrigger(nil) }
                     .buttonStyle(.bordered).controlSize(.small)
                     .disabled(recordingButton != nil)
             }
@@ -87,6 +101,16 @@ struct GestureButtonList: View {
                      + "\(vendorControlCount)."
                      + L10n.t(" Số đó không phải số nút và XFinder không đánh số được chúng — chỉ bấm nút thật mới biết số."))
                     .font(.system(size: 11)).foregroundColor(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            // The Consumer page is a second kind of evidence, reported separately so a
+            // reader cannot add it to the vendor count. A Consumer usage has no `CGEvent`
+            // number, so it is stated as a fact and never numbered.
+            if consumerUsageCount > 0 {
+                Text(L10n.t("Ngoài ra mô tả HID còn khai báo các mã điều khiển trên trang Consumer: ")
+                     + "\(consumerUsageCount)."
+                     + L10n.t(" Số đó không phải số nút và XFinder không đánh số được chúng."))
+                    .font(.system(size: 11)).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -268,13 +292,18 @@ struct GestureButtonList: View {
                     // arrives is what gets stored. That is the only path that works for a
                     // control the descriptor never declared, and it costs the user one click
                     // on the row they are looking at instead of a trip to a header button.
-                    Button(isRecording ? L10n.t("Đang ghi…") : L10n.t("Ghi")) { onRecordTrigger() }
+                    // The row passes **its own** button (PATCH v11) so the page knows which
+                    // control is being recorded; the engine still stores whatever it measures.
+                    Button(isRecording ? L10n.t("Đang ghi…") : L10n.t("Ghi")) { onRecordTrigger(button) }
                         .buttonStyle(.bordered).controlSize(.small)
                         .disabled(recordingButton != nil)
                         .help(L10n.t("Bấm “Ghi” rồi bấm nút này trên chuột — số XFinder nhận được sẽ được lưu ngay."))
                     Button(L10n.t("Đặt làm nút giữ")) { onSetTrigger(button) }
                         .buttonStyle(.bordered).controlSize(.small)
-                        .disabled(recordingButton != nil)
+                        .disabled(recordingButton != nil || !role.isDeclared)
+                        .help(role.isDeclared
+                              ? L10n.t("Đặt nút này làm nút giữ")
+                              : L10n.t("Bấm “Ghi” rồi bấm nút thật trước khi đặt làm nút giữ."))
                     if let onSetAction = onSetAction {
                         Menu {
                             Button(L10n.t("Lùi (Cmd+[)")) { onSetAction(button, .instant(.back)) }

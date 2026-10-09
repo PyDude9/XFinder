@@ -237,7 +237,7 @@ final class GestureWorker {
     /// its own, so the only trustworthy signal is the process's AX trust state at
     /// the moment of the attempt. Recorded so the UI and a probe can tell
     /// "permission missing" apart from "tap exists but is not rendering".
-    nonisolated(unsafe) static var lastTapFailure = ""
+    static let lastTapFailure = Locked<String>("")
 
     func reconcileTap() {
         let needed = (!suspended && (configuration.enabled || record != nil)) || swallowedButton != nil || suppressedKey != nil || swallowedInstantButton != nil
@@ -253,7 +253,7 @@ final class GestureWorker {
             .otherMouseDown, .otherMouseUp, .mouseMoved, .leftMouseDragged,
             .rightMouseDragged, .otherMouseDragged, .flagsChanged, .keyDown, .keyUp, .scrollWheel]
         let mask = types.reduce(CGEventMask(0)) { $0 | (CGEventMask(1) << $1.rawValue) }
-        Self.lastTapFailure = AXIsProcessTrusted()
+        Self.lastTapFailure.value = AXIsProcessTrusted()
             ? "tapCreate trả nil dù đã có quyền Trợ năng"
             : "chưa có quyền Trợ năng"
         guard let port = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap,
@@ -264,7 +264,7 @@ final class GestureWorker {
               let source = CFMachPortCreateRunLoopSource(nil, port, 0) else {
             endRecording(reconcile: false)
             engine.report(.tap(active: false))
-            engine.report(.tapFailure(Self.lastTapFailure))
+            engine.report(.tapFailure(Self.lastTapFailure.value))
             engine.report(.status("Không mở được Event Tap — kiểm tra quyền Trợ năng")); return
         }
         tap = port; tapSource = source

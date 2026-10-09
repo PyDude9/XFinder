@@ -282,7 +282,7 @@ struct MouseDiagramView: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 5, style: .continuous)
                             .strokeBorder(chipStroke(role, isSelected: isSelected),
-                                          style: StrokeStyle(lineWidth: isSelected ? 1.5 : 1,
+                                          style: StrokeStyle(lineWidth: chipStrokeWidth(role, isSelected: isSelected),
                                                              dash: chipIsDashed(role) ? [2.5, 2.5] : []))
                     )
                 Text(L10n.t(slot.positionKey))
@@ -302,6 +302,11 @@ struct MouseDiagramView: View {
         // disprove. The row below keeps its Record button, so the control is still reachable
         // where the measurement happens.
         .disabled(!role.isDeclared)
+        // A missing/unknown control is drawn at 30 % — the same weight an unsupported arm
+        // carries — so the whole chip reads as "not a button XFinder can see". The dashed
+        // border, the tooltip and the accessibility label all stay, because a placeholder
+        // must still be *explainable*; only its visual weight is reduced.
+        .opacity(role.isDeclared ? 1 : 0.30)
         .help(chipTooltip(button, role: role))
         .accessibilityLabel(chipTooltip(button, role: role))
     }
@@ -310,8 +315,21 @@ struct MouseDiagramView: View {
         role == .notDeclared || role == .unknown
     }
 
+    /// The border is thicker only for a control the figure is actually **selecting**.
+    ///
+    /// A placeholder can become `selectedButton` (the list below still points at it while
+    /// the user records the real button), but a thicker accent border on a chip nobody can
+    /// click would read as "active". Gating the emphasis on `isDeclared` keeps a selected
+    /// placeholder looking like the placeholder it is.
+    private func chipStrokeWidth(_ role: MouseButtonRole, isSelected: Bool) -> CGFloat {
+        isSelected && role.isDeclared ? 1.5 : 1
+    }
+
     private func chipFill(_ role: MouseButtonRole, isSelected: Bool) -> Color {
-        if isSelected { return Color.accentColor.opacity(0.18) }
+        // Only a *declared* control can look selected. A placeholder that happens to be the
+        // selected row keeps its muted fill, because the accent fill is a claim that this is
+        // a control XFinder can see and change here.
+        if isSelected && role.isDeclared { return Color.accentColor.opacity(0.18) }
         switch role {
         case .holdTrigger, .holdTriggerWithAction:  return Color.accentColor.opacity(0.14)
         case .assigned:     return Color.accentColor.opacity(0.09)
@@ -321,7 +339,7 @@ struct MouseDiagramView: View {
     }
 
     private func chipStroke(_ role: MouseButtonRole, isSelected: Bool) -> Color {
-        if isSelected { return .accentColor }
+        if isSelected && role.isDeclared { return .accentColor }
         switch role {
         case .holdTrigger, .holdTriggerWithAction:  return .accentColor
         case .assigned:     return .accentColor.opacity(0.7)

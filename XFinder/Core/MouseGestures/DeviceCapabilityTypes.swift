@@ -95,6 +95,18 @@ struct PhysicalCapabilities: Codable, Equatable, Sendable {
     /// a `CapabilityDescriptor` (the probe is live, never persisted), so the synthesized
     /// `Codable` conformance has no stored payload to stay compatible with.
     var vendorButtonUsages: [Int] = []
+    /// Raw usages seen on the **Consumer** page (`0x0C`), e.g. volume, play/pause.
+    ///
+    /// Same rule as `vendorButtonUsages`: this is **evidence**, never a button. A
+    /// Consumer usage has no defined relationship to a `CGEvent` button number, so it
+    /// is collected, de-duplicated and sorted here and shown as its own fact — it is
+    /// never folded into `buttons`, never counted as an event button, and never drives
+    /// a chip. See `DeviceCapabilityProbe.consumerUsages(from:)`.
+    ///
+    /// Defaulted for the same reason as `vendorButtonUsages`: every existing fixture
+    /// and memberwise call site keeps compiling, and no stored payload exists to stay
+    /// compatible with.
+    var consumerUsages: [Int] = []
 }
 
 /// What the mouse module may attempt with this hardware. Derived purely from
@@ -164,6 +176,12 @@ enum DeviceCapabilityProbe {
     /// Button usage page. Buttons are identified by element *type*, not by a
     /// usage pair — see the filter-bug note in the file header.
     static let usagePageButton = 0x09
+    /// Consumer page: standard non-button controls (volume, play/pause, brightness).
+    ///
+    /// Collected as **evidence only** — see `consumerUsages(from:)`. A Consumer usage
+    /// cannot be converted to a `CGEvent` button number any more than a vendor usage
+    /// can, so it is reported as its own fact and never as a button.
+    static let usagePageConsumer = 0x0C
     /// Vendor-defined usage page. A mouse that puts a control beyond the standard
     /// Button page declares it here. See `vendorButtonUsages(from:)` for why those
     /// usages are reported as **evidence** and never merged into `buttons`.
@@ -208,6 +226,30 @@ enum DeviceCapabilityProbe {
         buttonUsages(from: triples.map { HIDElementFact(usagePage: $0.usagePage, usage: $0.usage, type: $0.type) })
     }
 
+    /// Raw **Consumer**-page usages, ascending and de-duplicated.
+    ///
+    /// ── Why these are evidence, not buttons ─────────────────────────────────────
+    /// A Consumer usage is a standardized control code (volume up/down, play/pause,
+    /// scan-next…) with **no defined relationship** to a `CGEvent` button number.
+    /// Folding them into `buttons` would shift every chip on the page, so the probe
+    /// reports them separately: *"your mouse also declares N consumer-page usages"*.
+    ///
+    /// Unlike `vendorButtonUsages(from:)` this deliberately does **not** require the
+    /// element type to be `Input_Button`: a Consumer control is routinely declared as
+    /// a collection or a feature element rather than a button, so collecting on the
+    /// page alone is the honest read of "does the descriptor declare Consumer controls
+    /// at all?". The page guard is what keeps every unrelated page out; the usage
+    /// sentinel is excluded because it is the same "no usage" marker the vendor scan
+    /// already treats as absent.
+    static func consumerUsages(from elements: [HIDElementFact]) -> [Int] {
+        var seen = Set<Int>()
+        for el in elements
+        where el.usagePage == usagePageConsumer && el.usage != usageSentinelNone {
+            seen.insert(el.usage)
+        }
+        return seen.sorted()
+    }
+
     /// Button-typed elements on a **vendor-defined** page, as raw usages.
     ///
     /// ── Why these are evidence, not buttons ─────────────────────────────────────
@@ -248,8 +290,8 @@ enum DeviceCapabilityProbe {
     /// The point is falsifiability: the page can print this, so a claim like "the
     /// Sniper button is on a vendor page" is checkable against the descriptor instead
     /// of being taken on trust. The tally comes first because on a real mouse most
-    /// elements are axes and feature nodes; listing only the button and vendor pages
-    /// afterwards keeps a 900-element descriptor readable.
+    /// elements are axes and feature nodes; listing only the button, consumer and
+    /// vendor pages afterwards keeps a 900-element descriptor readable.
     static func elementDump(from elements: [HIDElementFact], limit: Int = 400) -> [String] {
         var lines: [String] = []
         var tally: [String: Int] = [:]
@@ -262,9 +304,11 @@ enum DeviceCapabilityProbe {
             lines.append("  \(key) ×\(count)")
         }
         let interesting = elements.filter {
-            $0.usagePage == usagePageButton || $0.usagePage >= usagePageVendorDefined
+            $0.usagePage == usagePageButton
+                || $0.usagePage == usagePageConsumer
+                || $0.usagePage >= usagePageVendorDefined
         }
-        lines.append("button page 0x09 + vendor page >= 0xFF00: \(interesting.count)")
+        lines.append("button page 0x09 + consumer page 0x0C + vendor page >= 0xFF00: \(interesting.count)")
         for el in interesting.prefix(limit) {
             lines.append(String(format: "  page=0x%04X usage=0x%04X (%d) type=0x%02X",
                                 el.usagePage, el.usage, el.usage, el.type))
@@ -312,7 +356,8 @@ enum DeviceCapabilityProbe {
             buttons: buttonUsages(from: elements),
             axes: axisTokens(from: elements),
             hasButtonPage: elements.contains { $0.usagePage == usagePageButton },
-            vendorButtonUsages: vendorButtonUsages(from: elements)
+            vendorButtonUsages: vendorButtonUsages(from: elements),
+            consumerUsages: consumerUsages(from: elements)
         )
     }
 
