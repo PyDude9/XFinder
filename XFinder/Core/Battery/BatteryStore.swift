@@ -1,6 +1,17 @@
 import Foundation
 import Combine
 
+/// The BLE battery scanner as the store sees it.
+///
+/// Injected so a unit test never creates a real `CBCentralManager`: in a process with no
+/// Bluetooth usage description the OS aborts the process shortly after the manager is
+/// created, which showed up as `signal 6` in an unrelated test class run later.
+public protocol BatteryGATTScanning: Sendable {
+    func startScan()
+}
+
+extension BLEBatteryGATT: BatteryGATTScanning {}
+
 @MainActor
 @Observable
 public final class BatteryStore: ObservableObject {
@@ -25,23 +36,26 @@ public final class BatteryStore: ObservableObject {
     private let hidProvider: BatteryProvider
     private let bluetoothProvider: BatteryProvider
     private let magicReader: (@Sendable () -> [MagicBatteryItem])?
+    private let gattScanner: any BatteryGATTScanning
 
     public init(
         macProvider: BatteryProvider = MacPowerSourceProvider(),
         hidProvider: BatteryProvider = HIDBatteryProvider(),
         bluetoothProvider: BatteryProvider = BluetoothBatteryProvider(),
-        magicReader: (@Sendable () -> [MagicBatteryItem])? = nil
+        magicReader: (@Sendable () -> [MagicBatteryItem])? = nil,
+        gattScanner: any BatteryGATTScanning = BLEBatteryGATT.shared
     ) {
         self.macProvider = macProvider
         self.hidProvider = hidProvider
         self.bluetoothProvider = bluetoothProvider
         self.magicReader = magicReader
+        self.gattScanner = gattScanner
     }
 
     // MARK: - Lifecycle
 
     public func start() {
-        BLEBatteryGATT.shared.startScan()
+        gattScanner.startScan()
         Task {
             await refresh()
         }
@@ -146,7 +160,7 @@ public final class BatteryStore: ObservableObject {
         guard !isPolling else { return }
         isPolling = true
 
-        BLEBatteryGATT.shared.startScan()
+        gattScanner.startScan()
 
         // Initial fetch
         Task { [weak self] in

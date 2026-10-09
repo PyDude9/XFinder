@@ -1,6 +1,14 @@
 import XCTest
 @testable import XFinderLogicTests
 
+/// Counts scan requests instead of touching CoreBluetooth.
+final class SpyGATTScanner: BatteryGATTScanning, @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+    var startScanCount: Int { lock.withLock { count } }
+    func startScan() { lock.withLock { count += 1 } }
+}
+
 final class BatteryStoreTests: XCTestCase {
 
     // MARK: - Model & Clamping Tests
@@ -80,22 +88,30 @@ final class BatteryStoreTests: XCTestCase {
         let macMock = MockBatteryProvider(source: .mac)
         let hidMock = MockBatteryProvider(source: .hid)
         let btMock = MockBatteryProvider(source: .bluetooth)
+        // Never the real scanner: a real CBCentralManager in the test process makes the OS
+        // abort it (signal 6) a moment later, in whichever test class happens to be running.
+        let scanner = SpyGATTScanner()
 
-        let store = BatteryStore(macProvider: macMock, hidProvider: hidMock, bluetoothProvider: btMock)
+        let store = BatteryStore(macProvider: macMock, hidProvider: hidMock,
+                                 bluetoothProvider: btMock, gattScanner: scanner)
 
         XCTAssertFalse(store.isPolling)
+        XCTAssertEqual(scanner.startScanCount, 0, "creating a store must not start a BLE scan")
 
         store.retain()
         XCTAssertTrue(store.isPolling)
+        XCTAssertEqual(scanner.startScanCount, 1, "the first retain starts polling and one scan")
 
         store.retain()
         XCTAssertTrue(store.isPolling)
+        XCTAssertEqual(scanner.startScanCount, 1, "a second retain must not start another scan")
 
         store.release()
         XCTAssertTrue(store.isPolling, "Should remain polling when retain count > 0")
 
         store.release()
         XCTAssertFalse(store.isPolling, "Should stop polling when retain count reaches 0")
+        XCTAssertEqual(scanner.startScanCount, 1, "stopping must not scan")
     }
 
     @MainActor
