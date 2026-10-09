@@ -6278,6 +6278,34 @@
     "Chưa tự xóa lần nào kể từ khi mở XFinder.": {
       "en": "Nothing auto-cleared since XFinder opened.",
       "scope": "sentence"
+    },
+    "Chưa có quyền Trợ năng — không chặn được ⌘Q.": {
+      "en": "Accessibility is not granted — ⌘Q cannot be intercepted.",
+      "scope": "sentence"
+    },
+    "Đang hoạt động — giữ ⌘Q khoảng 1 giây để thoát.": {
+      "en": "Active — hold ⌘Q for about 1 second to quit.",
+      "scope": "sentence"
+    },
+    "Giữ ⌘Q để thoát ": {
+      "en": "Hold ⌘Q to quit ",
+      "scope": "fragment"
+    },
+    "Nhả phím hoặc nhấn Esc để hủy": {
+      "en": "Release the key or press Esc to cancel",
+      "scope": "sentence"
+    },
+    "Giữ ⌘Q để thoát ứng dụng": {
+      "en": "Hold ⌘Q to quit apps",
+      "scope": "sentence"
+    },
+    "Nhấn nhanh ⌘Q không còn thoát ứng dụng nữa: phải giữ khoảng 1 giây, có thanh tiến trình và Esc để hủy. Giúp tránh thoát nhầm. Không áp dụng cho Finder.": {
+      "en": "A quick ⌘Q no longer quits an app: you must hold it for about 1 second, with a progress bar and Esc to cancel. Prevents accidental quits. Not applied to Finder.",
+      "scope": "sentence"
+    },
+    "Cấp quyền Trợ năng — ⌘Q giữ để thoát cần quyền này.": {
+      "en": "Grant Accessibility — hold-to-quit needs it.",
+      "scope": "sentence"
     }
   }
 }

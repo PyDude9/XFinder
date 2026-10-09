@@ -50,6 +50,9 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "clipboard.autoClearSeconds",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
                reader: "XFinder/Core/ClipboardManager.swift"),
+        Switch(key: "quitProtection.enabled",
+               views: ["XFinder/Views/Detail/QuickControlsDetailView.swift"],
+               reader: "XFinder/Core/QuitProtectionController.swift"),
     ]
 
     // MARK: - Source access
@@ -121,7 +124,7 @@ final class FeatureKeyDefaultsTests: XCTestCase {
 
     /// The gate itself must not pass on an empty table or a rotted anchor.
     func testGateParsesRealDeclarationsNotNothing() {
-        XCTAssertGreaterThanOrEqual(Self.switches.count, 8, "the switch table collapsed")
+        XCTAssertGreaterThanOrEqual(Self.switches.count, 9, "the switch table collapsed")
 
         let fixtureView = """
         struct V: View {

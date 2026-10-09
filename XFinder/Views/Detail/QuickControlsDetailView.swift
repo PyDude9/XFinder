@@ -31,6 +31,10 @@ struct QuickControlsDetailView: View {
     // default that disagrees with the reader silently turns the feature on for
     // anyone who has never touched the switch.
     @AppStorage("windowPreview.commandTabEnabled") private var commandTabEnabled = false
+    // MUST match `QuitProtectionController`'s own default (false): it changes what ⌘Q does in
+    // every app, so it is opt-in. Bound ONLY here — one key, one control.
+    @AppStorage("quitProtection.enabled") private var quitProtection = false
+    @State private var quitProtectionController = QuitProtectionController.shared
 
     /// Dock auto-hide is a real, readable/writable public preference, so it is
     /// a genuine two-way toggle rather than a fire-and-forget button.
@@ -240,6 +244,27 @@ struct QuickControlsDetailView: View {
                           subtitle: L10n.t("Thay trình chuyển ứng dụng của macOS bằng bản có ảnh thu nhỏ."),
                           isOn: $commandTabEnabled)
                     .onChange(of: commandTabEnabled) { CommandTabController.shared.applySettings() }
+
+                ToggleRow(title: L10n.t("Giữ ⌘Q để thoát ứng dụng"),
+                          subtitle: L10n.t("Nhấn nhanh ⌘Q không còn thoát ứng dụng nữa: phải giữ khoảng 1 giây, có thanh tiến trình và Esc để hủy. Giúp tránh thoát nhầm. Không áp dụng cho Finder."),
+                          isOn: $quitProtection)
+                    .onChange(of: quitProtection) { quitProtectionController.applySettings() }
+                if quitProtection {
+                    if brightDenied {
+                        // `brightDenied` is simply "Accessibility is not granted" (set on appear).
+                        permissionNote(
+                            L10n.t("Cấp quyền Trợ năng — ⌘Q giữ để thoát cần quyền này."),
+                            button: L10n.t("Cấp quyền Trợ năng…"),
+                            action: {
+                                if !WindowManager.requestAccessibilityTrust() {
+                                    WindowManager.openAccessibilityPane()
+                                }
+                            })
+                    } else {
+                        Text(quitProtectionController.statusHint)
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                    }
+                }
             }
             .padding(.horizontal, 20)
         }

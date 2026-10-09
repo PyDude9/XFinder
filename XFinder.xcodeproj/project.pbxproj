@@ -165,6 +165,8 @@
 		7F1A018F /* MenuBar/Layout/AccessibilityMenuBarInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A018E /* MenuBar/Layout/AccessibilityMenuBarInventory.swift */; };
 		7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A00DD /* XFinder/Resources/AppIcon.icns */; };
 		7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0073 /* ClipboardPasteEngine.swift */; };
+		7F1A01BE /* QuitProtectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01BD /* QuitProtectionController.swift */; };
+		7F1A01BC /* QuitHold.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01BB /* QuitHold.swift */; };
 		7F1A01BA /* ClipboardAutoClear.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01B9 /* ClipboardAutoClear.swift */; };
 		7F1A01B8 /* URLCleaner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01B7 /* URLCleaner.swift */; };
 		7F1A7F1A008E /* ClipboardPayloadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0074 /* ClipboardPayloadStore.swift */; };
@@ -256,6 +258,8 @@
 		7F1A0071 /* Detail/QuickLookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/QuickLookDetailView.swift; sourceTree = "<group>"; };
 		7F1A0072 /* Detail/FinderToolDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FinderToolDetailViews.swift; sourceTree = "<group>"; };
 		7F1A0073 /* ClipboardPasteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardPasteEngine.swift; sourceTree = "<group>"; };
+		7F1A01BD /* QuitProtectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitProtectionController.swift; sourceTree = "<group>"; };
+		7F1A01BB /* QuitHold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitHold.swift; sourceTree = "<group>"; };
 		7F1A01B9 /* ClipboardAutoClear.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardAutoClear.swift; sourceTree = "<group>"; };
 		7F1A01B7 /* URLCleaner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLCleaner.swift; sourceTree = "<group>"; };
 		7F1A0074 /* ClipboardPayloadStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardPayloadStore.swift; sourceTree = "<group>"; };
@@ -448,6 +452,8 @@
 				7F1A0068 /* BatchRenameEngine.swift */,
 				7F1A0069 /* FileSearchEngine.swift */,
 				7F1A0073 /* ClipboardPasteEngine.swift */,
+				7F1A01BD /* QuitProtectionController.swift */,
+				7F1A01BB /* QuitHold.swift */,
 				7F1A01B9 /* ClipboardAutoClear.swift */,
 				7F1A01B7 /* URLCleaner.swift */,
 				7F1A0074 /* ClipboardPayloadStore.swift */,
@@ -775,6 +781,8 @@
 				7F1A008A /* Detail/WindowDetailViews.swift in Sources */,
 				7F1A008B /* Detail/QuickLookDetailView.swift in Sources */,
 				7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */,
+				7F1A01BE /* QuitProtectionController.swift in Sources */,
+				7F1A01BC /* QuitHold.swift in Sources */,
 				7F1A01BA /* ClipboardAutoClear.swift in Sources */,
 				7F1A01B8 /* URLCleaner.swift in Sources */,
 				7F1A7F1A008E /* ClipboardPayloadStore.swift in Sources */,
