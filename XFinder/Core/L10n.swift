@@ -64,6 +64,12 @@ final class L10n {
         return vi
     }
 
+    /// The English text for a store key regardless of the UI language (nil-free: falls back to the
+    /// key). Used by sidebar search so a page is findable by either of its names.
+    nonisolated static func english(_ vi: String) -> String {
+        L10nStore.fragments[vi] ?? L10nStore.sentences[vi] ?? vi
+    }
+
     /// Dạng `LocalizedStringKey` cho chuỗi có markdown (`**bold**`).
     nonisolated static func md(_ vi: String) -> LocalizedStringKey {
         LocalizedStringKey(t(vi))

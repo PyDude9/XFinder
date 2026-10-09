@@ -6666,6 +6666,14 @@
     " tiến trình khác (của hệ thống hoặc người dùng khác) macOS không cho XFinder xem, nên cổng do chúng giữ có thể không hiện ở đây.": {
       "en": " other processes (system or another user's) are off limits to XFinder, so ports they hold may not appear here.",
       "scope": "fragment"
+    },
+    "Tìm trang": {
+      "en": "Find a page",
+      "scope": "sentence"
+    },
+    "Không có trang nào khớp.": {
+      "en": "No page matches.",
+      "scope": "sentence"
     }
   }
 }

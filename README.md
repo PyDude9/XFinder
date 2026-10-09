@@ -27,6 +27,8 @@ Một biểu tượng, các mục tách thành tab: **Điều khiển · Chống
 
 **Chọn mục hiển thị**: bấm biểu tượng con mắt ở đầu mục để bật/tắt từng tab — không phải lúc nào cũng cần xem hết. Luôn còn ít nhất một tab (công tắc cuối bị khoá), tab đang xem bị ẩn thì chuyển sang tab đầu tiên còn hiện, và mục mới của bản sau tự hiện mặc định.
 
+**Ô tìm trang** ở đầu sidebar: gõ không dấu cũng được (`tong quan`, `doi ten`), khớp cả tên tiếng Việt lẫn tiếng Anh và tên nhóm, Enter mở kết quả đầu, Esc xoá.
+
 ### Danh mục tính năng
 
 | Nhóm | Tính năng | Ghi chú |

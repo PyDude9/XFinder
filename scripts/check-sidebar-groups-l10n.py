@@ -62,6 +62,18 @@ def group_headers() -> list[str]:
     return HEADER.findall(block.group(1))
 
 
+TITLE_BLOCK = re.compile(r"var\s+titleKey\b.*?\{(.*?)\n    \}", re.DOTALL)
+TITLE = re.compile(r'case\s+\.\w+:\s*return\s+"((?:[^"\\]|\\.)*)"')
+MIN_EXPECTED_TITLES = 20
+
+
+def page_titles() -> list[str]:
+    block = TITLE_BLOCK.search(MODEL.read_text(encoding="utf-8"))
+    if block is None:
+        raise SystemExit(f"HARNESS ERROR: could not locate `titleKey` in {REL_MODEL}.")
+    return TITLE.findall(block.group(1))
+
+
 def main() -> int:
     headers = group_headers()
     if len(headers) < MIN_EXPECTED_HEADERS:
@@ -88,9 +100,24 @@ def main() -> int:
         elif VIETNAMESE.search(en):
             problems.append(f"{header!r} -> {en!r} still carries Vietnamese characters")
 
+    # Page titles are the store keys too (`titleVI` = L10n.t(titleKey)) and sidebar search matches
+    # their English form, so a missing entry breaks the row label AND the search.
+    titles = page_titles()
+    if len(titles) < MIN_EXPECTED_TITLES:
+        print(f"HARNESS ERROR: found {len(titles)} page titles (expected at least {MIN_EXPECTED_TITLES}).")
+        return 1
+    allow = set(json.loads((ROOT / "XFinder/Resources/L10n.allowlist.json").read_text(encoding="utf-8")).get("sameByDesign", []))
+    for t in titles:
+        entry = entries.get(t)
+        if entry is None:
+            if t not in allow:
+                problems.append(f"page title {t!r} is not in the store or the allowlist")
+        elif not (entry.get("en") or ""):
+            problems.append(f"page title {t!r} has no English value")
+
     for line in problems:
         print("PROBLEM", line)
-    print(f"TOTAL {len(problems)} problems across {len(headers)} sidebar group headers")
+    print(f"TOTAL {len(problems)} problems across {len(headers)} sidebar group headers and {len(titles)} page titles")
     if problems:
         print(f"       fix: python3 scripts/add-sidebar-l10n-entries.py")
     return 1 if problems else 0
