@@ -65,9 +65,8 @@ struct DetailHostView: View {
     var body: some View {
         Group {
             switch selection {
-            case .clipboard:
-                ClipboardTabView()
-                    .environment(clipboardManager)
+            case .clipboard, .settingsClipboard:
+                SettingsDetailView(destination: .settingsClipboard)
             case .notes:
                 NotesDetailView()
             case .windowPreview:

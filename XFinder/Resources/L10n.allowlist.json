@@ -1,13 +1,19 @@
 {
   "_comment": "Vietnamese strings whose English spelling is genuinely identical. Kept as a file so that every exception is reviewable, and so the checker can fail on a stale entry. Add nothing here that merely lacks a translation — that is the bug this list must never hide.",
   "sameByDesign": [
+    "Anthropic (Claude)",
     "App Exposé",
     "Apple Intelligence",
     "Clipboard",
+    "DeepSeek",
+    "Google Gemini",
+    "Groq",
     "Legacy Length Engine",
     "Mission Control",
     "Native Visibility Engine (Assessment Mode)",
     "OCR",
+    "OpenAI",
+    "OpenRouter",
     "Quick Look"
   ]
 }

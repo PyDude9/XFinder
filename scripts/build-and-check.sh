@@ -45,8 +45,11 @@ PreviewItem.swift ScreenCaptureProvider.swift SpecialProviders.swift
 WindowPreviewStore.swift PreviewOverlayWindow.swift LiquidGlassView.swift
 WindowPreviewComponents.swift LiquidGlassTokens.swift DockLayerController.swift
 VoiceProtocols.swift AudioCapture.swift VoiceHotkeyManager.swift
-AppleSpeechProvider.swift WhisperKitProvider.swift OllamaCorrectionProvider.swift
-TypingSink.swift VoiceGhostOverlay.swift VoiceManager.swift VoiceDetailView.swift
+AppleSpeechProvider.swift TypingSink.swift VoiceManager.swift VoiceDetailView.swift
+DictationMode.swift VoiceTrigger.swift RefinePrompt.swift RefinerTypes.swift
+VoiceSettingsKeys.swift VoiceRefiner.swift VoiceTextDiff.swift VoiceKeychain.swift
+VoiceScreenContext.swift VoiceHUD.swift VoiceDiffPanel.swift VoiceAudioCue.swift
+AppleOnDeviceRefiner.swift HTTPRefiner.swift OllamaRefiner.swift
 MenuBarEngine.swift MenuBarEngineFactory.swift LegacyLengthEngine.swift
 NativeVisibilityEngine.swift NativeVisibilityBridge.swift AccessibilityMenuBarInventory.swift"
 for f in $GESTURE_FILES; do

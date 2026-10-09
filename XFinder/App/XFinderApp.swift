@@ -4,19 +4,10 @@ import AppKit
 @main
 struct XFinderApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @State private var clipboardManager = ClipboardManager.shared
-    @State private var systemMonitorManager = SystemMonitorManager.shared
-
     var body: some Scene {
-        WindowGroup {
-            RootView()
-                .environment(clipboardManager)
-                .environment(systemMonitorManager)
-                .onAppear {
-                    PermissionManager.shared.requestAllIfNeeded()
-                }
+        Settings {
+            EmptyView()
         }
-        .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About XFinder") {
@@ -86,6 +77,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             BatteryStore.shared.start()
         }
 
+        if UserDefaults.standard.string(forKey: "startPage") != nil {
+            MainWindowController.shared.showWindow()
+        }
+
         // Re-arm AX-gated controllers khi quay lại XFinder (user vừa cấp Trợ
         // năng trong System Settings). Trước đây phải bật/tắt toggle thủ công
         // mới kích hoạt — đây là bug "phải khởi động lại app".
@@ -151,6 +146,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     NotchDropController.shared.show()
                 }
             }
+        case "settings":
+            Task { @MainActor in
+                let dest = comps.queryItems?.first(where: { $0.name == "page" })?.value
+                    .flatMap { SidebarDestination(rawValue: $0) } ?? .quickControls
+                AppState.shared.navigate(to: dest)
+            }
         default:
             break
         }
@@ -172,7 +173,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 Task { @MainActor in
                     let items = Array(ClipboardManager.shared.history.prefix(10))
                     if !items.isEmpty { ClipboardManager.shared.startPasteStack(from: items) }
-                    AppState.shared.navigate(to: .clipboard)
+                    ClipboardShelfController.shared.toggle()
                 }
                 return nil
             default:
@@ -211,7 +212,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func toggleClipboardWindow() {
-        Task { @MainActor in AppState.shared.navigate(to: .clipboard) }
+        Task { @MainActor in ClipboardShelfController.shared.toggle() }
     }
 
     @objc func toggleToolsWindow() {

@@ -136,12 +136,24 @@
 		7F1A0163 /* Voice/AudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0162 /* Voice/AudioCapture.swift */; };
 		7F1A0165 /* Voice/VoiceHotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0164 /* Voice/VoiceHotkeyManager.swift */; };
 		7F1A0167 /* Voice/Providers/AppleSpeechProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0166 /* Voice/Providers/AppleSpeechProvider.swift */; };
-		7F1A0169 /* Voice/Providers/WhisperKitProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0168 /* Voice/Providers/WhisperKitProvider.swift */; };
-		7F1A016B /* Voice/Providers/OllamaCorrectionProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016A /* Voice/Providers/OllamaCorrectionProvider.swift */; };
 		7F1A016D /* Voice/TypingSink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016C /* Voice/TypingSink.swift */; };
-		7F1A016F /* Voice/VoiceGhostOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016E /* Voice/VoiceGhostOverlay.swift */; };
 		7F1A0171 /* Voice/VoiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0170 /* Voice/VoiceManager.swift */; };
 		7F1A0173 /* Detail/VoiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0172 /* Detail/VoiceDetailView.swift */; };
+		7F1A0195 /* Voice/DictationMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0196 /* Voice/DictationMode.swift */; };
+		7F1A0197 /* Voice/RefinePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0198 /* Voice/RefinePrompt.swift */; };
+		7F1A0199 /* Voice/RefinerTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A019A /* Voice/RefinerTypes.swift */; };
+		7F1A019B /* Voice/VoiceAudioCue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A019C /* Voice/VoiceAudioCue.swift */; };
+		7F1A019D /* Voice/VoiceDiffPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A019E /* Voice/VoiceDiffPanel.swift */; };
+		7F1A019F /* Voice/VoiceHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01A0 /* Voice/VoiceHUD.swift */; };
+		7F1A01A1 /* Voice/VoiceKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01A2 /* Voice/VoiceKeychain.swift */; };
+		7F1A01A3 /* Voice/VoiceRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01A4 /* Voice/VoiceRefiner.swift */; };
+		7F1A01A5 /* Voice/VoiceScreenContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01A6 /* Voice/VoiceScreenContext.swift */; };
+		7F1A01A7 /* Voice/VoiceSettingsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01A8 /* Voice/VoiceSettingsKeys.swift */; };
+		7F1A01A9 /* Voice/VoiceTextDiff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01AA /* Voice/VoiceTextDiff.swift */; };
+		7F1A01AB /* Voice/VoiceTrigger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01AC /* Voice/VoiceTrigger.swift */; };
+		7F1A01AD /* Voice/Providers/AppleOnDeviceRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01AE /* Voice/Providers/AppleOnDeviceRefiner.swift */; };
+		7F1A01AF /* Voice/Providers/HTTPRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01B0 /* Voice/Providers/HTTPRefiner.swift */; };
+		7F1A01B1 /* Voice/Providers/OllamaRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01B2 /* Voice/Providers/OllamaRefiner.swift */; };
 		7F1A0181 /* MenuBar/MenuBarEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0180 /* MenuBar/MenuBarEngine.swift */; };
 		7F1A0183 /* MenuBar/MenuBarEngineFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0182 /* MenuBar/MenuBarEngineFactory.swift */; };
 		7F1A0185 /* MenuBar/LegacyLengthEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0184 /* MenuBar/LegacyLengthEngine.swift */; };
@@ -315,12 +327,24 @@
 		7F1A0162 /* Voice/AudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/AudioCapture.swift; sourceTree = "<group>"; };
 		7F1A0164 /* Voice/VoiceHotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceHotkeyManager.swift; sourceTree = "<group>"; };
 		7F1A0166 /* Voice/Providers/AppleSpeechProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/Providers/AppleSpeechProvider.swift; sourceTree = "<group>"; };
-		7F1A0168 /* Voice/Providers/WhisperKitProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/Providers/WhisperKitProvider.swift; sourceTree = "<group>"; };
-		7F1A016A /* Voice/Providers/OllamaCorrectionProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/Providers/OllamaCorrectionProvider.swift; sourceTree = "<group>"; };
 		7F1A016C /* Voice/TypingSink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/TypingSink.swift; sourceTree = "<group>"; };
-		7F1A016E /* Voice/VoiceGhostOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceGhostOverlay.swift; sourceTree = "<group>"; };
 		7F1A0170 /* Voice/VoiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceManager.swift; sourceTree = "<group>"; };
 		7F1A0172 /* Detail/VoiceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/VoiceDetailView.swift; sourceTree = "<group>"; };
+		7F1A0196 /* Voice/DictationMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/DictationMode.swift; sourceTree = "<group>"; };
+		7F1A0198 /* Voice/RefinePrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/RefinePrompt.swift; sourceTree = "<group>"; };
+		7F1A019A /* Voice/RefinerTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/RefinerTypes.swift; sourceTree = "<group>"; };
+		7F1A019C /* Voice/VoiceAudioCue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceAudioCue.swift; sourceTree = "<group>"; };
+		7F1A019E /* Voice/VoiceDiffPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceDiffPanel.swift; sourceTree = "<group>"; };
+		7F1A01A0 /* Voice/VoiceHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceHUD.swift; sourceTree = "<group>"; };
+		7F1A01A2 /* Voice/VoiceKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceKeychain.swift; sourceTree = "<group>"; };
+		7F1A01A4 /* Voice/VoiceRefiner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceRefiner.swift; sourceTree = "<group>"; };
+		7F1A01A6 /* Voice/VoiceScreenContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceScreenContext.swift; sourceTree = "<group>"; };
+		7F1A01A8 /* Voice/VoiceSettingsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceSettingsKeys.swift; sourceTree = "<group>"; };
+		7F1A01AA /* Voice/VoiceTextDiff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceTextDiff.swift; sourceTree = "<group>"; };
+		7F1A01AC /* Voice/VoiceTrigger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceTrigger.swift; sourceTree = "<group>"; };
+		7F1A01AE /* Voice/Providers/AppleOnDeviceRefiner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/Providers/AppleOnDeviceRefiner.swift; sourceTree = "<group>"; };
+		7F1A01B0 /* Voice/Providers/HTTPRefiner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/Providers/HTTPRefiner.swift; sourceTree = "<group>"; };
+		7F1A01B2 /* Voice/Providers/OllamaRefiner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/Providers/OllamaRefiner.swift; sourceTree = "<group>"; };
 		7F1A00F8 /* MouseGestures/GestureLabelStructure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureLabelStructure.swift; sourceTree = "<group>"; };
 		7F1A00F4 /* MouseGestures/DeviceCapabilityModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/DeviceCapabilityModel.swift; sourceTree = "<group>"; };
 		7F1A00DD /* XFinder/Resources/AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = XFinder/Resources/AppIcon.icns; sourceTree = "<group>"; };
@@ -473,11 +497,23 @@
 				7F1A0162 /* Voice/AudioCapture.swift */,
 				7F1A0164 /* Voice/VoiceHotkeyManager.swift */,
 				7F1A0166 /* Voice/Providers/AppleSpeechProvider.swift */,
-				7F1A0168 /* Voice/Providers/WhisperKitProvider.swift */,
-				7F1A016A /* Voice/Providers/OllamaCorrectionProvider.swift */,
 				7F1A016C /* Voice/TypingSink.swift */,
-				7F1A016E /* Voice/VoiceGhostOverlay.swift */,
 				7F1A0170 /* Voice/VoiceManager.swift */,
+				7F1A0196 /* Voice/DictationMode.swift */,
+				7F1A0198 /* Voice/RefinePrompt.swift */,
+				7F1A019A /* Voice/RefinerTypes.swift */,
+				7F1A019C /* Voice/VoiceAudioCue.swift */,
+				7F1A019E /* Voice/VoiceDiffPanel.swift */,
+				7F1A01A0 /* Voice/VoiceHUD.swift */,
+				7F1A01A2 /* Voice/VoiceKeychain.swift */,
+				7F1A01A4 /* Voice/VoiceRefiner.swift */,
+				7F1A01A6 /* Voice/VoiceScreenContext.swift */,
+				7F1A01A8 /* Voice/VoiceSettingsKeys.swift */,
+				7F1A01AA /* Voice/VoiceTextDiff.swift */,
+				7F1A01AC /* Voice/VoiceTrigger.swift */,
+				7F1A01AE /* Voice/Providers/AppleOnDeviceRefiner.swift */,
+				7F1A01B0 /* Voice/Providers/HTTPRefiner.swift */,
+				7F1A01B2 /* Voice/Providers/OllamaRefiner.swift */,
 				7F1A0180 /* MenuBar/MenuBarEngine.swift */,
 				7F1A0182 /* MenuBar/MenuBarEngineFactory.swift */,
 				7F1A0184 /* MenuBar/LegacyLengthEngine.swift */,
@@ -803,12 +839,24 @@
 				7F1A0163 /* Voice/AudioCapture.swift in Sources */,
 				7F1A0165 /* Voice/VoiceHotkeyManager.swift in Sources */,
 				7F1A0167 /* Voice/Providers/AppleSpeechProvider.swift in Sources */,
-				7F1A0169 /* Voice/Providers/WhisperKitProvider.swift in Sources */,
-				7F1A016B /* Voice/Providers/OllamaCorrectionProvider.swift in Sources */,
 				7F1A016D /* Voice/TypingSink.swift in Sources */,
-				7F1A016F /* Voice/VoiceGhostOverlay.swift in Sources */,
 				7F1A0171 /* Voice/VoiceManager.swift in Sources */,
 				7F1A0173 /* Detail/VoiceDetailView.swift in Sources */,
+				7F1A0195 /* Voice/DictationMode.swift in Sources */,
+				7F1A0197 /* Voice/RefinePrompt.swift in Sources */,
+				7F1A0199 /* Voice/RefinerTypes.swift in Sources */,
+				7F1A019B /* Voice/VoiceAudioCue.swift in Sources */,
+				7F1A019D /* Voice/VoiceDiffPanel.swift in Sources */,
+				7F1A019F /* Voice/VoiceHUD.swift in Sources */,
+				7F1A01A1 /* Voice/VoiceKeychain.swift in Sources */,
+				7F1A01A3 /* Voice/VoiceRefiner.swift in Sources */,
+				7F1A01A5 /* Voice/VoiceScreenContext.swift in Sources */,
+				7F1A01A7 /* Voice/VoiceSettingsKeys.swift in Sources */,
+				7F1A01A9 /* Voice/VoiceTextDiff.swift in Sources */,
+				7F1A01AB /* Voice/VoiceTrigger.swift in Sources */,
+				7F1A01AD /* Voice/Providers/AppleOnDeviceRefiner.swift in Sources */,
+				7F1A01AF /* Voice/Providers/HTTPRefiner.swift in Sources */,
+				7F1A01B1 /* Voice/Providers/OllamaRefiner.swift in Sources */,
 				7F1A0181 /* MenuBar/MenuBarEngine.swift in Sources */,
 				7F1A0183 /* MenuBar/MenuBarEngineFactory.swift in Sources */,
 				7F1A0185 /* MenuBar/LegacyLengthEngine.swift in Sources */,

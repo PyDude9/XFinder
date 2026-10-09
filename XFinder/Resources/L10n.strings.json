@@ -25,6 +25,14 @@
       "en": " h left",
       "scope": "fragment"
     },
+    " giờ ": {
+      "en": " h ",
+      "scope": "fragment"
+    },
+    " giờ trước": {
+      "en": " h ago",
+      "scope": "fragment"
+    },
     " khi bạn bấm, nhưng mô tả HID của chuột không khai báo nút đó.": {
       "en": " when you pressed it, but the mouse's HID descriptor does not declare that button.",
       "scope": "fragment"
@@ -49,6 +57,10 @@
       "en": " more results.",
       "scope": "fragment"
     },
+    " mô hình đã tải": {
+      "en": " models loaded",
+      "scope": "fragment"
+    },
     " mở bảng lệnh nổi kiểu Spotlight / Raycast / TinyCast": {
       "en": " opens the floating palette, Spotlight / Raycast / TinyCast style",
       "scope": "fragment"
@@ -69,6 +81,10 @@
       "en": " items failed.",
       "scope": "fragment"
     },
+    " mục trong ": {
+      "en": " items in ",
+      "scope": "fragment"
+    },
     " mục trong khay": {
       "en": " items in the tray",
       "scope": "fragment"
@@ -77,8 +93,20 @@
       "en": " items on iCloud",
       "scope": "fragment"
     },
+    " mục tới ": {
+      "en": " items to ",
+      "scope": "fragment"
+    },
     " mục từ khay → ": {
       "en": " items from the tray → ",
+      "scope": "fragment"
+    },
+    " mục vào Khay thả.": {
+      "en": " items to the Drop Tray.",
+      "scope": "fragment"
+    },
+    " mục vào Thùng rác": {
+      "en": " items to Trash",
       "scope": "fragment"
     },
     " mục vào Thùng rác.": {
@@ -105,12 +133,28 @@
       "en": " items. See Action History to undo.",
       "scope": "fragment"
     },
+    " mục…": {
+      "en": " items…",
+      "scope": "fragment"
+    },
     " ngày": {
       "en": " days",
       "scope": "fragment"
     },
+    " ngày ": {
+      "en": " d ",
+      "scope": "fragment"
+    },
+    " ngày trước": {
+      "en": " d ago",
+      "scope": "fragment"
+    },
     " phút": {
       "en": " min left",
+      "scope": "fragment"
+    },
+    " phút trước": {
+      "en": " m ago",
       "scope": "fragment"
     },
     " sẽ đổi)": {
@@ -145,6 +189,10 @@
       "en": " total",
       "scope": "fragment"
     },
+    " từ": {
+      "en": " words",
+      "scope": "fragment"
+    },
     " từ khóa": {
       "en": " keywords",
       "scope": "fragment"
@@ -177,6 +225,10 @@
       "en": "(no longer exists)",
       "scope": "sentence"
     },
+    ", ": {
+      "en": ", ",
+      "scope": "fragment"
+    },
     "1 giờ": {
       "en": "1 hour",
       "scope": "sentence"
@@ -187,6 +239,10 @@
     },
     "100% trên máy — ví dụ: “ảnh sửa tuần này”": {
       "en": "100% on-device — e.g. “photos edited this week”",
+      "scope": "sentence"
+    },
+    "1000 mục": {
+      "en": "1000 items",
       "scope": "sentence"
     },
     "15 phút": {
@@ -205,6 +261,10 @@
       "en": "2 hours",
       "scope": "sentence"
     },
+    "200 mục": {
+      "en": "200 items",
+      "scope": "sentence"
+    },
     "24 giờ": {
       "en": "24 hours",
       "scope": "sentence"
@@ -217,12 +277,20 @@
       "en": "3 s",
       "scope": "sentence"
     },
+    "30 ngày": {
+      "en": "30 days",
+      "scope": "sentence"
+    },
     "30 ngày qua": {
       "en": "Last 30 days",
       "scope": "sentence"
     },
     "5 giây": {
       "en": "5 s",
+      "scope": "sentence"
+    },
+    "5000 mục": {
+      "en": "5000 items",
       "scope": "sentence"
     },
     "6 giờ": {
@@ -241,8 +309,20 @@
       "en": "7-Zip 26.02 built in",
       "scope": "sentence"
     },
+    "90 ngày": {
+      "en": "90 days",
+      "scope": "sentence"
+    },
     "AI hiểu": {
       "en": "AI understood",
+      "scope": "sentence"
+    },
+    "API riêng (dùng khoá của bạn)": {
+      "en": "Your own API (your key)",
+      "scope": "sentence"
+    },
+    "Anthropic (Claude)": {
+      "en": "Anthropic (Claude)",
       "scope": "sentence"
     },
     "App Exposé": {
@@ -253,12 +333,36 @@
       "en": "Apple Intelligence",
       "scope": "sentence"
     },
+    "Apple Intelligence & Gợi ý thông minh": {
+      "en": "Apple Intelligence & Smart Suggestions",
+      "scope": "sentence"
+    },
+    "Apple Intelligence (trên máy)": {
+      "en": "Apple Intelligence (on-device)",
+      "scope": "sentence"
+    },
+    "Apple Intelligence chưa được bật trong Cài đặt hệ thống.": {
+      "en": "Apple Intelligence has not been enabled in System Settings.",
+      "scope": "sentence"
+    },
+    "Apple Intelligence không khả dụng trên máy này.": {
+      "en": "Apple Intelligence is not available on this Mac.",
+      "scope": "sentence"
+    },
+    "Apple Intelligence trên máy": {
+      "en": "Apple Intelligence, on this Mac",
+      "scope": "sentence"
+    },
     "Ba bước, không cần cấu hình gì thêm.": {
       "en": "Three steps, nothing else to configure.",
       "scope": "sentence"
     },
     "Ba bước: giữ nút → kéo quá ngưỡng → thả. Kéo chưa đủ xa thì XFinder phát lại click bình thường, nên không mất thao tác nào.": {
       "en": "Three steps: hold the button → pull past the threshold → release. A pull that is too short replays the normal click, so no action is ever lost.",
+      "scope": "sentence"
+    },
+    "Biểu tượng": {
+      "en": "Icon",
       "scope": "sentence"
     },
     "Biểu tượng thanh menu": {
@@ -305,6 +409,10 @@
       "en": "You set a custom key for this direction. Click “Back to default” to return to the built-in table.",
       "scope": "sentence"
     },
+    "Bản SDK này không có FoundationModels.": {
+      "en": "This SDK does not include FoundationModels.",
+      "scope": "sentence"
+    },
     "Bản xem trước": {
       "en": "Preview",
       "scope": "sentence"
@@ -337,6 +445,10 @@
       "en": "Secure",
       "scope": "sentence"
     },
+    "Bấm bật / bấm tắt": {
+      "en": "Press to start / press to stop",
+      "scope": "sentence"
+    },
     "Bấm con lăn vẫn do ứng dụng xử lý (mở tab mới, cuộn tự động). XFinder không chiếm nút này.": {
       "en": "Wheel click is handled by applications (open new tab, autoscroll). XFinder does not take this button.",
       "scope": "sentence"
@@ -347,6 +459,10 @@
     },
     "Bấm mũi tên → ẩn icon nằm BÊN PHẢI mũi tên (menu app + Apple menu bên trái không bị đụng). Kéo MŨI TÊN (⌘) sát mép trái để ẩn hết icon; các icon bạn muốn HIỆN thì kéo qua bên TRÁI mũi tên. ⌘-kéo icon qua lại giữa hai phía bất kỳ lúc nào.": {
       "en": "Click the arrow → hides the icons to the RIGHT of the arrow (the app menu and Apple menu on the left are untouched). Drag the ARROW (⌘) to the far left edge to hide every icon; any icon you want SHOWN, drag it to the LEFT of the arrow. ⌘-drag icons back and forth between the two sides at any time.",
+      "scope": "sentence"
+    },
+    "Bấm một lần để bắt đầu, bấm lần nữa để kết thúc — tiện cho đoạn dài.": {
+      "en": "Press once to start, press again to finish — easier for long passages.",
       "scope": "sentence"
     },
     "Bấm một vùng để áp dụng cho cửa sổ vừa dùng.": {
@@ -489,12 +605,24 @@
       "en": "Start at ",
       "scope": "fragment"
     },
+    "Bề rộng chừa": {
+      "en": "Reserved width",
+      "scope": "sentence"
+    },
     "Bề rộng chừa: ": {
       "en": "Reserved width: ",
       "scope": "fragment"
     },
+    "Bị từ chối — khóa SSH chưa được chấp nhận trên máy chủ. Thêm khóa công khai vào ~/.ssh/authorized_keys ở máy đích.": {
+      "en": "Permission denied — SSH key not accepted by host. Add your public key to ~/.ssh/authorized_keys on the target machine.",
+      "scope": "sentence"
+    },
     "Bỏ chọn": {
       "en": "Deselect",
+      "scope": "sentence"
+    },
+    "Bỏ chọn tất cả": {
+      "en": "Deselect all",
       "scope": "sentence"
     },
     "Bỏ ghim": {
@@ -505,8 +633,32 @@
       "en": "Remove from list",
       "scope": "sentence"
     },
+    "Bỏ lưu Snippet": {
+      "en": "Remove from Snippets",
+      "scope": "sentence"
+    },
+    "Bỏ qua số thẻ thanh toán (Credit Card)": {
+      "en": "Exclude credit card numbers",
+      "scope": "sentence"
+    },
     "Bỏ qua trình quản lý mật khẩu": {
       "en": "Skip password managers",
+      "scope": "sentence"
+    },
+    "Bỏ qua ứng dụng này (không lưu vào Clipboard)": {
+      "en": "Ignore this app (do not save to Clipboard)",
+      "scope": "sentence"
+    },
+    "Bỏ qua ứng dụng tùy chỉnh": {
+      "en": "Custom excluded apps",
+      "scope": "sentence"
+    },
+    "Bỏ từ đệm": {
+      "en": "Remove filler words",
+      "scope": "sentence"
+    },
+    "Bỏ từ đệm, sửa nói lắp, thêm dấu câu và viết hoa.": {
+      "en": "Removes filler words, fixes stumbles, adds punctuation and capitals.",
       "scope": "sentence"
     },
     "Bỏ vào Rác": {
@@ -517,8 +669,16 @@
       "en": "Menu layout",
       "scope": "sentence"
     },
+    "Bộ lọc": {
+      "en": "Filter",
+      "scope": "sentence"
+    },
     "Bộ máy nén và giải nén": {
       "en": "Compression engine",
+      "scope": "sentence"
+    },
+    "Bộ nghe phím toàn hệ thống": {
+      "en": "System-wide key listener",
       "scope": "sentence"
     },
     "Bộ nhớ": {
@@ -527,6 +687,10 @@
     },
     "CHUNG": {
       "en": "GENERAL",
+      "scope": "sentence"
+    },
+    "ChatGPT Plus và Claude Pro không cấp quyền dùng API qua đăng nhập. Cách duy nhất để dùng chúng một cách chính thức là tạo khoá API ở trang quản trị của nhà cung cấp — XFinder không đăng nhập hộ và không dùng phiên trình duyệt của bạn.": {
+      "en": "ChatGPT Plus and Claude Pro do not grant API access through a sign-in. The only official way to use them is to create an API key in the provider's console — XFinder does not sign in for you and does not use your browser session.",
       "scope": "sentence"
     },
     "Chia cửa sổ của macOS": {
@@ -545,6 +709,10 @@
       "en": "Quick Share",
       "scope": "sentence"
     },
+    "Cho AI biết bạn đang viết trong ứng dụng nào, để câu chữ hợp ngữ cảnh hơn.": {
+      "en": "Tells the AI which app you are writing in, so the wording fits the context.",
+      "scope": "sentence"
+    },
     "Cho phép ngủ bình thường": {
       "en": "Allow normal sleep",
       "scope": "sentence"
@@ -552,6 +720,10 @@
     "Cho ứng dụng Clipboard trên iPhone sau này.": {
       "en": "For a future Clipboard app on iPhone.",
       "scope": "sentence"
+    },
+    "Chuyển ": {
+      "en": "Move ",
+      "scope": "fragment"
     },
     "Chuyển cửa sổ bằng phím tắt": {
       "en": "Window Switcher Shortcut",
@@ -577,8 +749,16 @@
       "en": "Move to Trash",
       "scope": "sentence"
     },
+    "Chuyển đổi ứng dụng": {
+      "en": "App Switcher",
+      "scope": "sentence"
+    },
     "Chuyển đổi ứng dụng (⌘-Tab)": {
       "en": "App switcher (⌘-Tab)",
+      "scope": "sentence"
+    },
+    "Chuỗi vừa dán không giống một khoá API.": {
+      "en": "That does not look like an API key.",
       "scope": "sentence"
     },
     "Chuột & cử chỉ": {
@@ -601,8 +781,20 @@
       "en": "Connected mouse",
       "scope": "sentence"
     },
+    "Chèn": {
+      "en": "Insert",
+      "scope": "sentence"
+    },
+    "Chèn đúng những gì bạn nói, không qua AI — nhanh nhất.": {
+      "en": "Inserts exactly what you said, with no AI pass — the fastest path.",
+      "scope": "sentence"
+    },
     "Chép link": {
       "en": "Copy link",
+      "scope": "sentence"
+    },
+    "Chép nguyên văn": {
+      "en": "As dictated",
       "scope": "sentence"
     },
     "Chép đường dẫn": {
@@ -617,12 +809,20 @@
       "en": "No files shared yet",
       "scope": "sentence"
     },
+    "Chưa chạy — cần quyền Trợ năng": {
+      "en": "Not running — Accessibility permission needed",
+      "scope": "sentence"
+    },
     "Chưa chọn": {
       "en": "Not selected",
       "scope": "sentence"
     },
     "Chưa chọn gì": {
       "en": "Nothing selected",
+      "scope": "sentence"
+    },
+    "Chưa chọn nhà cung cấp AI": {
+      "en": "No AI provider selected",
       "scope": "sentence"
     },
     "Chưa chọn tập tin nào": {
@@ -665,6 +865,10 @@
       "en": "Nothing to rename",
       "scope": "sentence"
     },
+    "Chưa có khoá API": {
+      "en": "No API key yet",
+      "scope": "sentence"
+    },
     "Chưa có khóa? Chạy `ssh-keygen -t ed25519` rồi `ssh-copy-id user@host` trong Terminal một lần.": {
       "en": "No key yet? Run `ssh-keygen -t ed25519` and then `ssh-copy-id user@host` in Terminal once.",
       "scope": "sentence"
@@ -687,6 +891,10 @@
     },
     "Chưa có mục nào trong clipboard": {
       "en": "Nothing in the clipboard yet",
+      "scope": "sentence"
+    },
+    "Chưa có quyền Trợ năng — không chặn được Command-Tab.": {
+      "en": "Accessibility not granted — cannot intercept Command-Tab.",
       "scope": "sentence"
     },
     "Chưa có quyền Trợ năng — không đọc được vị trí icon Dock.": {
@@ -721,12 +929,28 @@
       "en": "Microphone or Speech Recognition permission not granted",
       "scope": "sentence"
     },
+    "Chưa cấu hình nhà cung cấp AI, đã chèn bản gốc": {
+      "en": "No AI provider is configured, so the raw text was inserted",
+      "scope": "sentence"
+    },
+    "Chưa cấu hình đủ để kết nối. Hãy kiểm tra khoá API và tên mô hình.": {
+      "en": "Not configured enough to connect. Check the API key and the model name.",
+      "scope": "sentence"
+    },
     "Chưa gán": {
       "en": "Unassigned",
       "scope": "sentence"
     },
     "Chưa gán trong macOS": {
       "en": "No shortcut set in macOS",
+      "scope": "sentence"
+    },
+    "Chưa hỗ trợ đăng nhập trực tiếp — xem giải thích bên dưới.": {
+      "en": "Direct sign-in is not supported — see the explanation below.",
+      "scope": "sentence"
+    },
+    "Chưa hỗ trợ đăng nhập tài khoản": {
+      "en": "Account sign-in is not supported",
       "scope": "sentence"
     },
     "Chưa mở được Event Tap — cần quyền Trợ năng. Nhấn “Mở Cài đặt Trợ năng” ở trên.": {
@@ -761,12 +985,20 @@
       "en": "Could not determine the frontmost application yet.",
       "scope": "sentence"
     },
+    "Chưa đăng nhập iCloud, hoặc XFinder chưa có entitlement iCloud (cần tài khoản Apple Developer trả phí).": {
+      "en": "Not signed in to iCloud, or XFinder lacks the iCloud entitlement (requires a paid Apple Developer account).",
+      "scope": "sentence"
+    },
     "Chưa được cấp quyền Tự động hóa cho System Events. Mở Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Tự động hóa → XFinder → bật System Events.": {
       "en": "Automation permission for System Events is not granted yet. Open System Settings → Privacy & Security → Automation → XFinder → turn on System Events.",
       "scope": "sentence"
     },
     "Chưa đọc được": {
       "en": "Not read yet",
+      "scope": "sentence"
+    },
+    "Chưa đọc được danh sách mô hình. Hãy chắc rằng Ollama đang chạy.": {
+      "en": "Could not read the model list. Make sure Ollama is running.",
       "scope": "sentence"
     },
     "Chưa đọc được mô tả HID của chuột, nên danh sách dưới chỉ là các nút thường gặp. “Ghi nút thật” luôn dùng được.": {
@@ -785,6 +1017,10 @@
       "en": "Could not read the extension's state from macOS. Open the settings page below, then press “Check again”.",
       "scope": "sentence"
     },
+    "Chạy hoàn toàn trên máy, miễn phí, không cần mạng.": {
+      "en": "Runs entirely on this Mac — free, and no network needed.",
+      "scope": "sentence"
+    },
     "Chạy thao tác của XFinder trên các tệp đang chọn trong Finder.": {
       "en": "Run XFinder actions on the files selected in Finder.",
       "scope": "sentence"
@@ -801,12 +1037,24 @@
       "en": "Appearance",
       "scope": "sentence"
     },
+    "Chế độ gõ": {
+      "en": "Dictation mode",
+      "scope": "sentence"
+    },
     "Chế độ lưới": {
       "en": "Grid mode",
       "scope": "sentence"
     },
     "Chế độ thẻ lớn": {
       "en": "Large card mode",
+      "scope": "sentence"
+    },
+    "Chế độ tối": {
+      "en": "Dark mode",
+      "scope": "sentence"
+    },
+    "Chế độ “Chép nguyên văn” không dùng AI, không cần kiểm tra.": {
+      "en": "The “As dictated” mode does not use AI, so there is nothing to test.",
       "scope": "sentence"
     },
     "Chỉ bấm": {
@@ -823,6 +1071,10 @@
     },
     "Chỉ đặt lại hướng này về bảng có sẵn, không đụng các hướng khác.": {
       "en": "Reset only this direction to the built-in table; the others keep their settings.",
+      "scope": "sentence"
+    },
+    "Chỉ đọc khi bạn đã bôi đen. Nội dung này được gửi tới nhà cung cấp AI bạn chọn.": {
+      "en": "Read only while you have a selection. It is sent to the AI provider you chose.",
       "scope": "sentence"
     },
     "Chọn": {
@@ -845,6 +1097,10 @@
       "en": "Choose a file to create a link for devices on the same Wi-Fi network.",
       "scope": "sentence"
     },
+    "Chọn lời nói của bạn biến thành dạng văn bản nào.": {
+      "en": "Choose what your speech turns into.",
+      "scope": "sentence"
+    },
     "Chọn một file trong Finder rồi nhấn ⌘X để cắt.": {
       "en": "Select a file in Finder then press ⌘X to cut.",
       "scope": "sentence"
@@ -865,8 +1121,20 @@
       "en": "Choose source",
       "scope": "sentence"
     },
+    "Chọn nhiều": {
+      "en": "Select multiple",
+      "scope": "sentence"
+    },
+    "Chọn nơi xử lý văn bản. Chế độ “Chép nguyên văn” không cần mục này.": {
+      "en": "Choose where the text is processed. The “As dictated” mode does not need this.",
+      "scope": "sentence"
+    },
     "Chọn phím theo thói quen — ví dụ ⌘Space hoặc ⌥Space. Nếu chọn ⌘Space, hãy tắt ⌘Space của Spotlight trong Cài đặt → Bàn phím → Phím tắt để tránh mở cả hai cùng lúc.": {
       "en": "Pick a key that matches your habit — for example ⌘Space or ⌥Space. If you choose ⌘Space, turn off Spotlight's ⌘Space in Settings → Keyboard → Shortcuts so both do not open at once.",
+      "scope": "sentence"
+    },
+    "Chọn phím để bắt đầu nói và cách nó hoạt động.": {
+      "en": "Choose the key that starts dictation, and how it behaves.",
       "scope": "sentence"
     },
     "Chọn thư mục NGUỒN (sẽ được sao chép đi)": {
@@ -917,12 +1185,20 @@
       "en": "Anti-sleep",
       "scope": "sentence"
     },
+    "Chồng lớp": {
+      "en": "Overlay",
+      "scope": "sentence"
+    },
     "Chụp màn hình": {
       "en": "Screenshot",
       "scope": "sentence"
     },
     "Chừa mép trái cho Stage Manager": {
       "en": "Leave a left edge for Stage Manager",
+      "scope": "sentence"
+    },
+    "Chữ HOA": {
+      "en": "UPPERCASE",
       "scope": "sentence"
     },
     "Chữ lớn hơn": {
@@ -933,12 +1209,20 @@
       "en": "Smaller text",
       "scope": "sentence"
     },
+    "Chữ thường": {
+      "en": "Lowercase",
+      "scope": "sentence"
+    },
     "Chữ trong ảnh": {
       "en": "Text in image",
       "scope": "sentence"
     },
     "Clipboard": {
       "en": "Clipboard",
+      "scope": "sentence"
+    },
+    "Command Phải (⌘)": {
+      "en": "Right Command (⌘)",
       "scope": "sentence"
     },
     "Con lăn": {
@@ -963,6 +1247,10 @@
     },
     "Cài đặt Clipboard": {
       "en": "Clipboard Settings",
+      "scope": "sentence"
+    },
+    "Cài đặt XFinder": {
+      "en": "XFinder Settings",
       "scope": "sentence"
     },
     "Các biểu tượng hệ thống (Đồng hồ, Wi-Fi, Pin, Trung tâm điều khiển) luôn luôn được giữ lại.": {
@@ -1013,6 +1301,10 @@
       "en": "How it works",
       "scope": "sentence"
     },
+    "Cách kích hoạt": {
+      "en": "Activation",
+      "scope": "sentence"
+    },
     "Cách mở khay": {
       "en": "How the tray opens",
       "scope": "sentence"
@@ -1021,8 +1313,24 @@
       "en": "How to Use",
       "scope": "sentence"
     },
+    "Câu lệnh": {
+      "en": "Instruction",
+      "scope": "sentence"
+    },
+    "Câu lệnh cho AI": {
+      "en": "Instruction for the AI",
+      "scope": "sentence"
+    },
+    "Câu từ gãy gọn, lịch sự, dùng cho công việc.": {
+      "en": "Tight, polite wording for work.",
+      "scope": "sentence"
+    },
     "Còn %02d:%02d": {
       "en": "%02d:%02d left",
+      "scope": "sentence"
+    },
+    "Còn lại": {
+      "en": "Remaining",
       "scope": "sentence"
     },
     "Còn trống ": {
@@ -1063,6 +1371,14 @@
     },
     "Cùng thư mục với file nén": {
       "en": "Same folder as the archive",
+      "scope": "sentence"
+    },
+    "Cũ nhất": {
+      "en": "Oldest",
+      "scope": "sentence"
+    },
+    "Cạnh con trỏ": {
+      "en": "Beside the caret",
       "scope": "sentence"
     },
     "Cạnh màn hình": {
@@ -1129,6 +1445,10 @@
       "en": "Needs Accessibility to paste via keystroke",
       "scope": "sentence"
     },
+    "Cần quyền Trợ năng để nghe phím tắt toàn hệ thống.": {
+      "en": "Accessibility permission is needed to hear the shortcut system-wide.",
+      "scope": "sentence"
+    },
     "Cần quyền Trợ năng để nhận phím.": {
       "en": "Needs Accessibility to receive keys.",
       "scope": "sentence"
@@ -1151,6 +1471,14 @@
     },
     "Cổng": {
       "en": "Port",
+      "scope": "sentence"
+    },
+    "Cỡ chữ": {
+      "en": "Font size",
+      "scope": "sentence"
+    },
+    "Cỡ chữ thẻ": {
+      "en": "Card text size",
       "scope": "sentence"
     },
     "Cỡ cọ lớn hơn": {
@@ -1183,6 +1511,14 @@
     },
     "Cửa sổ sẽ bắt dính hết chiều ngang màn hình và có thể che dải Stage Manager.": {
       "en": "The window will snap to the full width of the screen and may cover the Stage Manager strip.",
+      "scope": "sentence"
+    },
+    "Danh sách Bundle ID ứng dụng bỏ qua (phân tách bởi dấu phẩy)": {
+      "en": "Excluded app bundle IDs (comma-separated)",
+      "scope": "sentence"
+    },
+    "DeepSeek": {
+      "en": "DeepSeek",
       "scope": "sentence"
     },
     "Demo tính năng mới": {
@@ -1221,12 +1557,20 @@
       "en": "For applications you scroll a lot in, such as Photoshop or CapCut: hold a side button and drag to scroll without lifting your hand off the mouse. That button still clicks normally when you do not drag. Off by default because it takes over a button you may be using for something else.",
       "scope": "sentence"
     },
+    "Dán & Thao tác": {
+      "en": "Paste & Actions",
+      "scope": "sentence"
+    },
     "Dán (Return)": {
       "en": "Paste (Return)",
       "scope": "sentence"
     },
     "Dán dạng text thuần (⇧Return)": {
       "en": "Paste as plain text (⇧Return)",
+      "scope": "sentence"
+    },
+    "Dán khoá API": {
+      "en": "Paste the API key",
       "scope": "sentence"
     },
     "Dòng điện": {
@@ -1237,8 +1581,16 @@
       "en": "Real measurements from the engine, not instructions. Hold the button and drag to see it record them.",
       "scope": "sentence"
     },
+    "Dùng": {
+      "en": "Use",
+      "scope": "sentence"
+    },
     "Dùng `scp` qua SSH — cùng cơ chế Terminal, không có dịch vụ trung gian.": {
       "en": "Uses `scp` over SSH — the same Terminal mechanism, with no intermediary service.",
+      "scope": "sentence"
+    },
+    "Dùng câu lệnh riêng bạn tự viết.": {
+      "en": "Uses an instruction you wrote yourself.",
       "scope": "sentence"
     },
     "Dùng cùng cách bấm phím như khi chỉnh sửa văn bản lúc Finder đang hoạt động.": {
@@ -1247,6 +1599,14 @@
     },
     "Dùng iCloud Key-Value Store: giới hạn 1 MB của Apple nên **chỉ đồng bộ văn bản** (tối đa 60 mục, mỗi mục 2000 ký tự). Ảnh và tệp luôn ở lại máy Mac.": {
       "en": "Uses iCloud Key-Value Store: Apple's 1 MB limit means **text only is synced** (at most 60 items, 2000 characters each). Images and files always stay on the Mac.",
+      "scope": "sentence"
+    },
+    "Dùng khoá API thay thế": {
+      "en": "Use an API key instead",
+      "scope": "sentence"
+    },
+    "Dùng nhiều nhất": {
+      "en": "Most used",
       "scope": "sentence"
     },
     "Dùng như thế nào": {
@@ -1269,12 +1629,20 @@
       "en": "Bottom left",
       "scope": "sentence"
     },
+    "Dưới nửa màn hình": {
+      "en": "Bottom half",
+      "scope": "sentence"
+    },
     "Dải Dock Liquid Glass": {
       "en": "Liquid Glass Dock",
       "scope": "sentence"
     },
     "Dải mép chỉ hiện khi có ít nhất một ghi chú.": {
       "en": "The edge strip appears only when there is at least one note.",
+      "scope": "sentence"
+    },
+    "Dải sóng nhấp nhô theo giọng nói thật.": {
+      "en": "The bars move with your real voice.",
       "scope": "sentence"
     },
     "Dọc": {
@@ -1291,6 +1659,10 @@
     },
     "Dừng thử nghiệm": {
       "en": "Stop test",
+      "scope": "sentence"
+    },
+    "Dựng lời nói thành email có chào hỏi, thân bài và kết.": {
+      "en": "Turns speech into an email with a greeting, body and sign-off.",
       "scope": "sentence"
     },
     "Event Tap chưa mở nên chưa có gì để hiện. Kiểm tra quyền Trợ năng ở trên.": {
@@ -1315,6 +1687,10 @@
     },
     "File không đúng định dạng ghi chú XFinder.": {
       "en": "File isn't a valid XFinder notes format.",
+      "scope": "sentence"
+    },
+    "File nén": {
+      "en": "Archives",
       "scope": "sentence"
     },
     "Finder chỉ đọc các khóa này khi khởi động lại, nên XFinder sẽ khởi động lại Finder sau khi áp dụng. Cửa sổ Finder đang mở sẽ đóng lại.": {
@@ -1389,6 +1765,10 @@
       "en": "Record a shortcut…",
       "scope": "sentence"
     },
+    "Ghim": {
+      "en": "Pin",
+      "scope": "sentence"
+    },
     "Ghim vào bảng hiện tại (⌘P)": {
       "en": "Pin to current board (⌘P)",
       "scope": "sentence"
@@ -1419,6 +1799,10 @@
     },
     "Giải nén vào": {
       "en": "Extract to",
+      "scope": "sentence"
+    },
+    "Giới hạn lịch sử": {
+      "en": "History limit",
       "scope": "sentence"
     },
     "Giới hạn trên macOS 27": {
@@ -1493,12 +1877,28 @@
       "en": "Hold hotkey to speak, release to insert text.",
       "scope": "sentence"
     },
+    "Giữ phím để nói, thả ra là chèn văn bản.": {
+      "en": "Hold the key to talk; releasing inserts the text.",
+      "scope": "sentence"
+    },
     "Giữ phần mở rộng (.pdf, .jpg…)": {
       "en": "Keep the extension (.pdf, .jpg…)",
       "scope": "sentence"
     },
+    "Giữ để nói": {
+      "en": "Hold to talk",
+      "scope": "sentence"
+    },
     "Giữa màn hình": {
       "en": "Center of screen",
+      "scope": "sentence"
+    },
+    "Google Gemini": {
+      "en": "Google Gemini",
+      "scope": "sentence"
+    },
+    "Groq": {
+      "en": "Groq",
       "scope": "sentence"
     },
     "Gán hành động": {
@@ -1509,12 +1909,32 @@
       "en": "Corner",
       "scope": "sentence"
     },
+    "Góc dưới-phải": {
+      "en": "Bottom-right corner",
+      "scope": "sentence"
+    },
+    "Góc dưới-trái": {
+      "en": "Bottom-left corner",
+      "scope": "sentence"
+    },
+    "Góc trên-phải": {
+      "en": "Top-right corner",
+      "scope": "sentence"
+    },
+    "Góc trên-trái": {
+      "en": "Top-left corner",
+      "scope": "sentence"
+    },
     "Góc xoay & trang": {
       "en": "Rotation & pages",
       "scope": "sentence"
     },
     "Gõ để tìm — ứng dụng, tập tin, quicklink, phép tính": {
       "en": "Type to search — apps, files, quicklinks, calculations",
+      "scope": "sentence"
+    },
+    "Gạch đầu dòng": {
+      "en": "Bullet points",
       "scope": "sentence"
     },
     "Gọn": {
@@ -1525,8 +1945,20 @@
       "en": "Compact: one-level menu, main groups only.",
       "scope": "sentence"
     },
+    "Gộp": {
+      "en": "Merge",
+      "scope": "sentence"
+    },
     "Gộp PDF": {
       "en": "Merge PDFs",
+      "scope": "sentence"
+    },
+    "Gộp các mục đã chọn": {
+      "en": "Merge selected clips",
+      "scope": "sentence"
+    },
+    "Gộp cần ít nhất 2 mục": {
+      "en": "Merge requires at least 2 clips",
       "scope": "sentence"
     },
     "Gộp thêm file vào thư mục hiện có và khôi phục nếu giải nén thất bại.": {
@@ -1537,8 +1969,32 @@
       "en": "Merge folders",
       "scope": "sentence"
     },
+    "Gợi ý": {
+      "en": "Suggestions",
+      "scope": "sentence"
+    },
+    "Gợi ý cho ": {
+      "en": "Suggested for ",
+      "scope": "fragment"
+    },
+    "Gợi ý hàng đầu": {
+      "en": "Top Suggestion",
+      "scope": "sentence"
+    },
+    "Gợi ý thông minh": {
+      "en": "Intelligent Suggestions",
+      "scope": "sentence"
+    },
     "Gợi ý: loại (ảnh, video, pdf, thư mục…) + thời gian (hôm nay, tuần này…) + tên trong “ngoặc kép”.": {
       "en": "Hint: kind (image, video, pdf, folder…) + time (today, this week…) + a name in “quotes”.",
+      "scope": "sentence"
+    },
+    "Gửi tên ứng dụng và tiêu đề cửa sổ": {
+      "en": "Send the app name and window title",
+      "scope": "sentence"
+    },
+    "Gửi đoạn văn bản đang bôi đen": {
+      "en": "Send the selected text",
       "scope": "sentence"
     },
     "HTML thô, JavaScript và tài nguyên mạng bị chặn để bảo đảm an toàn.": {
@@ -1552,6 +2008,10 @@
     "Hiển thị Finder": {
       "en": "Show in Finder",
       "scope": "sentence"
+    },
+    "Hiểu: ": {
+      "en": "Understood: ",
+      "scope": "fragment"
     },
     "Hiện \\(cap)/\\(store.items.count) mục — kéo cả chồng ở khay để thao tác cả lô.": {
       "en": "Showing \\(cap)/\\(store.items.count) items — drag the whole stack from the tray to act on them in a batch.",
@@ -1567,6 +2027,10 @@
     },
     "Hiện bản xem trước cửa sổ khi di chuột qua ứng dụng trên Dock": {
       "en": "Show window previews when hovering an app on the Dock",
+      "scope": "sentence"
+    },
+    "Hiện bảng so sánh chữ gốc và chữ đã tút. Return để chèn, Esc để hủy.": {
+      "en": "Shows the original and the rewritten text side by side. Return inserts, Esc discards.",
       "scope": "sentence"
     },
     "Hiện cả cửa sổ ẩn trong App Switcher": {
@@ -1601,6 +2065,10 @@
       "en": "Show file extensions",
       "scope": "sentence"
     },
+    "Hiện sóng âm": {
+      "en": "Show the waveform",
+      "scope": "sentence"
+    },
     "Hiện thiết bị đã ngắt kết nối": {
       "en": "Show disconnected devices",
       "scope": "sentence"
@@ -1629,6 +2097,14 @@
       "en": "Undo",
       "scope": "sentence"
     },
+    "Hoàn tác: khôi phục ": {
+      "en": "Undo: restored ",
+      "scope": "fragment"
+    },
+    "Hoàn tất": {
+      "en": "Done",
+      "scope": "sentence"
+    },
     "Hoạt động như Hidden Bar — ẩn icon nằm bên trái mũi tên.": {
       "en": "Works like Hidden Bar — hides icons left of the arrow.",
       "scope": "sentence"
@@ -1645,8 +2121,16 @@
       "en": "This system action has no shortcut set in macOS",
       "scope": "sentence"
     },
+    "Hình ảnh": {
+      "en": "Images",
+      "scope": "sentence"
+    },
     "Hôm nay": {
       "en": "Today",
+      "scope": "sentence"
+    },
+    "Hôm qua": {
+      "en": "Yesterday",
       "scope": "sentence"
     },
     "Hông cuối": {
@@ -1685,6 +2169,10 @@
       "en": "Expires after",
       "scope": "sentence"
     },
+    "Hết thời gian chờ — máy chủ không phản hồi.": {
+      "en": "Connection timed out — host did not respond.",
+      "scope": "sentence"
+    },
     "Hệ thống": {
       "en": "System",
       "scope": "sentence"
@@ -1713,6 +2201,10 @@
       "en": "Cancel",
       "scope": "sentence"
     },
+    "Hủy chọn": {
+      "en": "Deselect",
+      "scope": "sentence"
+    },
     "Hủy ghi": {
       "en": "Cancel recording",
       "scope": "sentence"
@@ -1727,6 +2219,10 @@
     },
     "Khay thả": {
       "en": "Drop Tray",
+      "scope": "sentence"
+    },
+    "Khay thả…": {
+      "en": "Drop tray…",
       "scope": "sentence"
     },
     "Khi bật, XFinder xử lý Command-Tab thay cho bộ chuyển ứng dụng của macOS. Giữ Command và nhấn Tab hoặc Shift-Tab để chọn cửa sổ; thả Command để mở hoặc nhấn Escape để hủy.": {
@@ -1749,12 +2245,28 @@
       "en": "If name already exists",
       "scope": "sentence"
     },
+    "Khoá API": {
+      "en": "API key",
+      "scope": "sentence"
+    },
+    "Khoá được lưu trong Keychain của macOS, không nằm trong tệp cấu hình.": {
+      "en": "The key is stored in the macOS Keychain, not in a config file.",
+      "scope": "sentence"
+    },
+    "Khoảng thời gian": {
+      "en": "Date range",
+      "scope": "sentence"
+    },
     "Khoảng trang không hợp lệ (tài liệu có ": {
       "en": "Invalid page range (document has ",
       "scope": "fragment"
     },
     "Khóa SSH (để trống = dùng khóa mặc định)": {
       "en": "SSH key (blank = use default key)",
+      "scope": "sentence"
+    },
+    "Khóa Touch ID": {
+      "en": "Touch ID Lock",
       "scope": "sentence"
     },
     "Khóa lại": {
@@ -1771,6 +2283,14 @@
     },
     "Khôi phục": {
       "en": "Restore",
+      "scope": "sentence"
+    },
+    "Khôi phục ": {
+      "en": "Restored ",
+      "scope": "fragment"
+    },
+    "Khôi phục clipboard": {
+      "en": "Restore the clipboard",
       "scope": "sentence"
     },
     "Khôi phục kích thước cửa sổ khi gỡ bắt dính": {
@@ -1793,6 +2313,10 @@
       "en": "No",
       "scope": "sentence"
     },
+    "Không bao giờ": {
+      "en": "Never",
+      "scope": "sentence"
+    },
     "Không có API công khai nào ẩn icon của app thứ ba; đây là cách public API duy nhất (giống hệt Hidden Bar). Icon HỆ THỐNG do macOS 26+ quản tại Control Centre → Menu Bar.": {
       "en": "No public API hides another app's icons; this is the only public API way (exactly like Hidden Bar). SYSTEM icons are managed by macOS 26+ in Control Centre → Menu Bar.",
       "scope": "sentence"
@@ -1809,12 +2333,20 @@
       "en": "Nothing matches “",
       "scope": "fragment"
     },
+    "Không có gợi ý nào cho ứng dụng này": {
+      "en": "No suggestions for this app yet",
+      "scope": "sentence"
+    },
     "Không có pin": {
       "en": "No battery",
       "scope": "sentence"
     },
     "Không có thiết bị kết nối": {
       "en": "No connected devices",
+      "scope": "sentence"
+    },
+    "Không có ảnh chụp màn hình nào được gửi. XFinder chỉ đọc tên ứng dụng, tiêu đề cửa sổ và đoạn bạn bôi đen, và chỉ khi bạn bật ở trên.": {
+      "en": "No screenshots are sent. XFinder reads only the app name, window title and your selection, and only when you enable it above.",
       "scope": "sentence"
     },
     "Không cần cài tiện ích: mở trình xem trước tích hợp để đọc Markdown và liệt kê file nén.": {
@@ -1825,12 +2357,24 @@
       "en": "Could not move — the app does not allow it or permission is missing.",
       "scope": "sentence"
     },
+    "Không di chuyển được — ứng dụng không cho phép.": {
+      "en": "Could not move — app denied the request.",
+      "scope": "sentence"
+    },
     "Không dùng cách “ẩn thư mục” (chflags hidden) vì ai cũng có thể hiện lại trong vài giây — đó không phải bảo mật thật.": {
       "en": "Does not use the “hide the folder” trick (chflags hidden), because anyone can reveal it again in seconds — that is not real security.",
       "scope": "sentence"
     },
     "Không ghi được tập tin đích": {
       "en": "Couldn't write the destination file",
+      "scope": "sentence"
+    },
+    "Không ghi được vào Keychain.": {
+      "en": "Could not write to the Keychain.",
+      "scope": "sentence"
+    },
+    "Không giới hạn": {
+      "en": "Unlimited",
       "scope": "sentence"
     },
     "Không gửi phím nào": {
@@ -1849,12 +2393,24 @@
       "en": "Not supported by this mouse — ",
       "scope": "fragment"
     },
+    "Không khóa được — có thể còn file đang mở trong vault.": {
+      "en": "Could not lock — files might still be open in the vault.",
+      "scope": "sentence"
+    },
     "Không khả dụng": {
       "en": "Not available",
       "scope": "sentence"
     },
     "Không kiểm tra được": {
       "en": "Couldn't check",
+      "scope": "sentence"
+    },
+    "Không kết nối được": {
+      "en": "Could not connect",
+      "scope": "sentence"
+    },
+    "Không kết nối được Ollama tại địa chỉ đã nhập.": {
+      "en": "Could not reach Ollama at that address.",
       "scope": "sentence"
     },
     "Không mở được Event Tap — kiểm tra quyền Trợ năng": {
@@ -1869,17 +2425,37 @@
       "en": "No speech detected",
       "scope": "sentence"
     },
+    "Không nhận ra cấu trúc — tìm tên chứa toàn bộ câu.": {
+      "en": "Unrecognized structure — searching name for the full phrase.",
+      "scope": "sentence"
+    },
     "Không thể hoàn tác": {
       "en": "Can't be undone",
+      "scope": "sentence"
+    },
+    "Không thể hoàn tác thao tác này.": {
+      "en": "This action cannot be undone.",
       "scope": "sentence"
     },
     "Không tìm thấy gì": {
       "en": "Nothing found",
       "scope": "sentence"
     },
+    "Không tìm thấy máy chủ — kiểm tra lại tên host.": {
+      "en": "Host not found — check the hostname.",
+      "scope": "sentence"
+    },
     "Không tạo được AppleScript.": {
       "en": "Couldn't create the AppleScript.",
       "scope": "sentence"
+    },
+    "Không tạo được event tap — kiểm tra quyền Trợ năng.": {
+      "en": "Could not create event tap — check Accessibility permission.",
+      "scope": "sentence"
+    },
+    "Không tạo được vault: ": {
+      "en": "Could not create vault: ",
+      "scope": "fragment"
     },
     "Không tạo được vòng lặp cử chỉ": {
       "en": "Could not create the gesture run loop",
@@ -1900,6 +2476,14 @@
     "Không đọc được ": {
       "en": "Couldn't read ",
       "scope": "fragment"
+    },
+    "Không đọc được câu trả lời": {
+      "en": "Could not read the response",
+      "scope": "sentence"
+    },
+    "Không đọc được lựa chọn": {
+      "en": "Could not read the selection",
+      "scope": "sentence"
     },
     "Không đọc được mô tả chuột nào. Sơ đồ vẫn dùng được với các nút cơ bản.": {
       "en": "No mouse descriptor could be read. The diagram still works with the basic buttons.",
@@ -1969,8 +2553,16 @@
       "en": "Quick check",
       "scope": "sentence"
     },
+    "Kiểm tra nội dung thất bại — giữ nguyên thư mục gốc để an toàn.": {
+      "en": "Content verification failed — original folder kept for safety.",
+      "scope": "sentence"
+    },
     "Kiểm tra phát": {
       "en": "Test playback",
+      "scope": "sentence"
+    },
+    "Kiểm tra quyền hệ thống và thử micro ngay tại đây.": {
+      "en": "Check system permissions, and test the microphone right here.",
       "scope": "sentence"
     },
     "Kiểu": {
@@ -2041,6 +2633,18 @@
       "en": "Activation & Shortcuts",
       "scope": "sentence"
     },
+    "Kích hoạt & phím tắt": {
+      "en": "Activation & shortcut",
+      "scope": "sentence"
+    },
+    "Kích thước chữ trong nội dung thẻ clipboard": {
+      "en": "Text font size inside clipboard card bodies",
+      "scope": "sentence"
+    },
+    "Kính lúp": {
+      "en": "Magnifier",
+      "scope": "sentence"
+    },
     "Ký tự ngăn cách": {
       "en": "Separator character",
       "scope": "sentence"
@@ -2051,6 +2655,22 @@
     },
     "Kết nối các lệnh XFinder với Finder.": {
       "en": "Connect XFinder's commands to Finder.",
+      "scope": "sentence"
+    },
+    "Kết nối thành công": {
+      "en": "Connection succeeded",
+      "scope": "sentence"
+    },
+    "Kết nối thành công tới ": {
+      "en": "Connected successfully to ",
+      "scope": "fragment"
+    },
+    "Kết nối thất bại": {
+      "en": "Connection failed",
+      "scope": "sentence"
+    },
+    "Kết nối tới Ollama tại localhost:11434.": {
+      "en": "Connects to Ollama at localhost:11434.",
       "scope": "sentence"
     },
     "Kết nối từ xa": {
@@ -2073,6 +2693,10 @@
       "en": "Legacy Length Engine",
       "scope": "sentence"
     },
+    "Liên kết": {
+      "en": "Link",
+      "scope": "sentence"
+    },
     "Liên kết nhanh": {
       "en": "Quicklinks",
       "scope": "sentence"
@@ -2091,6 +2715,14 @@
     },
     "Loại & thời gian": {
       "en": "Kind & time",
+      "scope": "sentence"
+    },
+    "Loại nội dung": {
+      "en": "Content Type",
+      "scope": "sentence"
+    },
+    "Loại “à”, “ừm”, “kiểu như”, “um”, “uh”…": {
+      "en": "Removes “um”, “uh”, “you know”, “I mean”…",
       "scope": "sentence"
     },
     "Luôn ở tai thỏ": {
@@ -2117,6 +2749,14 @@
       "en": "Save",
       "scope": "sentence"
     },
+    "Lưu Snippet": {
+      "en": "Save Snippet",
+      "scope": "sentence"
+    },
+    "Lưu dưới dạng Snippet…": {
+      "en": "Save as Snippet…",
+      "scope": "sentence"
+    },
     "Lưu ghi chú, danh sách công việc và ý tưởng ngay mép màn hình.": {
       "en": "Keep notes, to-dos and ideas at the screen edge.",
       "scope": "sentence"
@@ -2125,8 +2765,20 @@
       "en": "Throughput, apps using the network, and connection speed.",
       "scope": "sentence"
     },
+    "Lưu sẵn những câu lệnh bạn hay dùng để chọn nhanh.": {
+      "en": "Keep the instructions you reuse, so you can pick one in a click.",
+      "scope": "sentence"
+    },
+    "Lưu thành Snippet…": {
+      "en": "Save as Snippet…",
+      "scope": "sentence"
+    },
     "Lưu trữ": {
       "en": "Archive",
+      "scope": "sentence"
+    },
+    "Lưu trữ & Hiển thị": {
+      "en": "Storage & Display",
       "scope": "sentence"
     },
     "Lưu ý": {
@@ -2135,6 +2787,10 @@
     },
     "Lưu ý: macOS chỉ cho mở tới trang cài đặt, không cho nhảy thẳng tới từng mục. Sau khi bấm nút trên, vào **Cài đặt hệ thống → Chung → Login Items & Extensions**, kéo xuống mục **Tiện ích mở rộng**, bấm ⓘ ở dòng **Finder** rồi bật ứng dụng bạn muốn hiện trong menu chuột phải.": {
       "en": "Note: macOS only opens the settings pane, it cannot jump straight to an individual item. After clicking the button above, go to **System Settings → General → Login Items & Extensions**, scroll down to **Extensions**, click ⓘ on the **Finder** row and turn on the app you want to appear in the right-click menu.",
+      "scope": "sentence"
+    },
+    "Lấy khoá": {
+      "en": "Get a key",
       "scope": "sentence"
     },
     "Lấy từ `diskutil` (API công khai). macOS không cung cấp bảng thuộc tính SMART chi tiết (số sector hỏng, độ mòn, nhiệt độ ổ) nên XFinder chỉ hiển thị trạng thái tổng thể thay vì đoán thêm.": {
@@ -2149,25 +2805,49 @@
       "en": "History",
       "scope": "sentence"
     },
+    "Lịch sử Clipboard": {
+      "en": "Clipboard History",
+      "scope": "sentence"
+    },
     "Lịch sử copy hiển thị ở khay ⌘⇧V và trang nội dung.": {
       "en": "Copy history shows in the ⌘⇧V shelf and the content page.",
+      "scope": "sentence"
+    },
+    "Lịch sử copy hiển thị ở khay ⌘⇧V.": {
+      "en": "Copy history shows in the ⌘⇧V shelf.",
       "scope": "sentence"
     },
     "Lịch sử thao tác": {
       "en": "Action History",
       "scope": "sentence"
     },
+    "Lọc loại": {
+      "en": "Filter type",
+      "scope": "sentence"
+    },
     "Lỗi": {
       "en": "Error",
+      "scope": "sentence"
+    },
+    "Lỗi khi tút văn bản, đã chèn bản gốc": {
+      "en": "Rewriting failed, so the raw text was inserted",
       "scope": "sentence"
     },
     "Lỗi nhận dạng giọng nói": {
       "en": "Speech recognition error",
       "scope": "sentence"
     },
+    "Lỗi: ": {
+      "en": "Error: ",
+      "scope": "fragment"
+    },
     "Lỗi: không giải được ": {
       "en": "Error: couldn't extract ",
       "scope": "fragment"
+    },
+    "Lớn (15.5pt)": {
+      "en": "Large (15.5pt)",
+      "scope": "sentence"
     },
     "MFinder tích hợp sẵn bộ máy 7-Zip; không cần cài thêm ứng dụng nén và giải nén. Không bao giờ ghi đè — mục trùng tên sẽ được đổi tên (\\\"Report 2\\\") hoặc gộp.": {
       "en": "XFinder ships with the 7-Zip engine built in; you do not need to install another archiver. It never overwrites — items with the same name are renamed (\\\"Report 2\\\") or merged.",
@@ -2193,8 +2873,36 @@
       "en": "Color",
       "scope": "sentence"
     },
+    "Màu sắc": {
+      "en": "Color",
+      "scope": "sentence"
+    },
+    "Máy Mac sẽ không tự ngủ.": {
+      "en": "Mac will not sleep automatically.",
+      "scope": "sentence"
+    },
+    "Máy Mac tuân theo cài đặt năng lượng thông thường.": {
+      "en": "Mac follows the normal energy settings.",
+      "scope": "sentence"
+    },
     "Máy chủ": {
       "en": "Server",
+      "scope": "sentence"
+    },
+    "Máy chủ trả lỗi": {
+      "en": "The server returned an error",
+      "scope": "sentence"
+    },
+    "Máy chủ từ chối kết nối — kiểm tra cổng và dịch vụ SSH.": {
+      "en": "Connection refused by host — check the port and SSH service.",
+      "scope": "sentence"
+    },
+    "Máy này chạy macOS cũ hơn 26, chưa có Apple Intelligence.": {
+      "en": "This Mac runs a version older than macOS 26, so Apple Intelligence is not available.",
+      "scope": "sentence"
+    },
+    "Máy này không nằm trong danh sách hỗ trợ Apple Intelligence.": {
+      "en": "This Mac is not on the Apple Intelligence support list.",
       "scope": "sentence"
     },
     "Mã MDX, Quarto và R được hiển thị nhưng không bao giờ được thực thi.": {
@@ -2209,6 +2917,10 @@
       "en": "Encrypt a folder with a password — AES-256, entirely on-device.",
       "scope": "sentence"
     },
+    "Mã nguồn": {
+      "en": "Code",
+      "scope": "sentence"
+    },
     "Mã nguồn trên GitHub": {
       "en": "Source code on GitHub",
       "scope": "sentence"
@@ -2217,8 +2929,28 @@
       "en": "Left/right edge → half the screen · corner → a quarter · top edge → full screen · bottom edge → bottom half.",
       "scope": "sentence"
     },
+    "Mép trên màn hình": {
+      "en": "Top edge of the screen",
+      "scope": "sentence"
+    },
+    "Mô hình": {
+      "en": "Model",
+      "scope": "sentence"
+    },
+    "Mô hình AI tút văn bản": {
+      "en": "AI model that rewrites the text",
+      "scope": "sentence"
+    },
     "Mô hình Apple Speech Recognizer tích hợp": {
       "en": "Built-in Apple Speech Recognizer model",
+      "scope": "sentence"
+    },
+    "Mô hình Apple Speech Recognizer tích hợp.": {
+      "en": "The built-in Apple Speech recognizer.",
+      "scope": "sentence"
+    },
+    "Mô hình trên máy chưa tải xong. Thử lại sau ít phút.": {
+      "en": "The on-device model has not finished downloading. Try again in a few minutes.",
       "scope": "sentence"
     },
     "Mô tả HID của chuột khai báo: ": {
@@ -2309,12 +3041,20 @@
       "en": "Default: same folder as the first file",
       "scope": "sentence"
     },
+    "Mọi loại": {
+      "en": "Any kind",
+      "scope": "sentence"
+    },
     "Mọi lúc": {
       "en": "Any time",
       "scope": "sentence"
     },
     "Mọi màu": {
       "en": "Any color",
+      "scope": "sentence"
+    },
+    "Mọi ứng dụng": {
+      "en": "All apps",
       "scope": "sentence"
     },
     "Mỗi liên kết có mã ngẫu nhiên 160-bit và tự hết hạn; máy chủ tự tắt khi không còn liên kết nào.": {
@@ -2353,8 +3093,20 @@
       "en": "Top-left quarter",
       "scope": "sentence"
     },
+    "Một số bàn phím không gửi phím Fn dưới dạng mã phím thường — nếu giữ mà không thấy gì, hãy chọn Option Phải.": {
+      "en": "Some keyboards do not send Fn as a normal keycode — if holding it does nothing, choose Right Option.",
+      "scope": "sentence"
+    },
     "Một số ứng dụng chỉ ẩn cửa sổ khi bạn đóng thay vì thoát — Spotify, Slack, Synology Chat. Liệt kê những cửa sổ đó cho phép Command-Tab gọi lại chúng, nhưng ứng dụng phải mở lại cửa sổ trước, nên sẽ hiện chậm hơn một chút.": {
       "en": "Some apps only hide their window when you close it instead of quitting — Spotify, Slack, Synology Chat. Listing those windows lets Command-Tab bring them back, but the app has to reopen the window first, so they appear a little more slowly.",
+      "scope": "sentence"
+    },
+    "Một tiếng “tách” rất nhẹ để không phải nhìn màn hình.": {
+      "en": "A very quiet click, so you do not have to watch the screen.",
+      "scope": "sentence"
+    },
+    "Mới nhất": {
+      "en": "Newest",
       "scope": "sentence"
     },
     "Mở": {
@@ -2413,12 +3165,20 @@
       "en": "Open the floating Clipboard shelf anywhere",
       "scope": "sentence"
     },
+    "Mở khay clipboard (⌘⇧V)": {
+      "en": "Open clipboard shelf (⌘⇧V)",
+      "scope": "sentence"
+    },
     "Mở khay cả khi không kéo file — tiện để lấy lại file đã giữ.": {
       "en": "Open the tray even when you are not dragging a file — handy for getting back files it is holding.",
       "scope": "sentence"
     },
     "Mở khóa": {
       "en": "Unlock",
+      "scope": "sentence"
+    },
+    "Mở khóa Clipboard": {
+      "en": "Unlock Clipboard",
       "scope": "sentence"
     },
     "Mở khóa “": {
@@ -2452,6 +3212,10 @@
     "Mở trang": {
       "en": "Open page",
       "scope": "sentence"
+    },
+    "Mở trang ": {
+      "en": "Open page ",
+      "scope": "fragment"
     },
     "Mở trong": {
       "en": "Open in",
@@ -2489,6 +3253,14 @@
       "en": "Native Visibility Engine (Assessment Mode)",
       "scope": "sentence"
     },
+    "Neo ở mép trên, không che tài liệu.": {
+      "en": "Anchored at the top edge, never covering the document.",
+      "scope": "sentence"
+    },
+    "Ngang": {
+      "en": "Horizontal",
+      "scope": "sentence"
+    },
     "Nghiêng con lăn PHẢI": {
       "en": "Tilt the wheel RIGHT",
       "scope": "sentence"
@@ -2504,6 +3276,14 @@
     "Ngoài ra mô tả HID còn khai báo các phần tử nút trên trang riêng của hãng: ": {
       "en": "The HID descriptor also declares button-typed elements on the vendor's own page: ",
       "scope": "fragment"
+    },
+    "Nguồn không tồn tại.": {
+      "en": "Source folder does not exist.",
+      "scope": "sentence"
+    },
+    "Nguồn và đích không được trùng nhau.": {
+      "en": "Source and destination cannot be identical.",
+      "scope": "sentence"
     },
     "Nguồn: AVFoundation — thiết bị này có/mở được không": {
       "en": "Source: AVFoundation — whether this device can open it",
@@ -2525,6 +3305,10 @@
       "en": "Motion threshold (delta)",
       "scope": "sentence"
     },
+    "Ngữ cảnh màn hình": {
+      "en": "Screen context",
+      "scope": "sentence"
+    },
     "Nhiệt độ pin": {
       "en": "Battery temperature",
       "scope": "sentence"
@@ -2533,12 +3317,24 @@
       "en": "Recorded temperature",
       "scope": "sentence"
     },
+    "Nhà cung cấp": {
+      "en": "Provider",
+      "scope": "sentence"
+    },
+    "Nhà cung cấp không sẵn sàng": {
+      "en": "The provider is not available",
+      "scope": "sentence"
+    },
     "Nhấn , để tìm kiếm": {
       "en": "Press , to search",
       "scope": "sentence"
     },
     "Nhấn , để tìm kiếm cửa sổ": {
       "en": "Press , to search windows",
+      "scope": "sentence"
+    },
+    "Nhấn Return dán thẳng vào ứng dụng. Khi tắt: chỉ sao chép vào bộ nhớ tạm.": {
+      "en": "Pressing Return pastes directly into active app. When off: copies to clipboard only.",
       "scope": "sentence"
     },
     "Nhấn Space trên file .md, .mdx, .qmd hoặc .rmd trong Finder.": {
@@ -2583,6 +3379,10 @@
     },
     "Nhắc Trợ năng + Ghi màn hình cùng lúc; mở Cài đặt nếu vẫn thiếu.": {
       "en": "Prompts for Accessibility + Screen Recording at the same time; opens Settings if either is still missing.",
+      "scope": "sentence"
+    },
+    "Nhỏ (12pt)": {
+      "en": "Small (12pt)",
       "scope": "sentence"
     },
     "Những gì macOS cho phép XFinder gắn vào Finder.": {
@@ -2631,6 +3431,10 @@
     },
     "Nén và giải nén file từ Finder.": {
       "en": "Compress and extract files from Finder.",
+      "scope": "sentence"
+    },
+    "Nói và chữ tự vào đúng ô đang gõ — kèm tút lại văn bản bằng AI.": {
+      "en": "Speak, and the words land where you are typing — with an AI pass to tidy them up.",
       "scope": "sentence"
     },
     "Nút ": {
@@ -2757,6 +3561,10 @@
       "en": "If another Quick Look app also handles the same format, macOS picks one provider. Turn off the conflicting extension in Login Items & Extensions.",
       "scope": "sentence"
     },
+    "Nổi ngay cạnh vị trí bạn đang gõ.": {
+      "en": "Floats right next to where you are typing.",
+      "scope": "sentence"
+    },
     "Nội dung": {
       "en": "Content",
       "scope": "sentence"
@@ -2777,8 +3585,36 @@
       "en": "Left half",
       "scope": "sentence"
     },
+    "Nửa trên": {
+      "en": "Top half",
+      "scope": "sentence"
+    },
     "OCR": {
       "en": "OCR",
+      "scope": "sentence"
+    },
+    "Ollama (chạy trên máy)": {
+      "en": "Ollama (runs on this Mac)",
+      "scope": "sentence"
+    },
+    "OpenAI": {
+      "en": "OpenAI",
+      "scope": "sentence"
+    },
+    "OpenAI, Groq, Anthropic, Gemini, OpenRouter, DeepSeek hoặc một địa chỉ riêng.": {
+      "en": "OpenAI, Groq, Anthropic, Gemini, OpenRouter, DeepSeek, or your own endpoint.",
+      "scope": "sentence"
+    },
+    "OpenRouter": {
+      "en": "OpenRouter",
+      "scope": "sentence"
+    },
+    "Option Phải (⌥)": {
+      "en": "Right Option (⌥)",
+      "scope": "sentence"
+    },
+    "Option Trái (⌥)": {
+      "en": "Left Option (⌥)",
       "scope": "sentence"
     },
     "Paste Stack đang hoạt động — mỗi lần Dán lấy mục tiếp theo. Bấm Hủy để dừng.": {
@@ -2801,12 +3637,20 @@
       "en": "Distinguishes Right Option from Left Option",
       "scope": "sentence"
     },
+    "Phân biệt Option Phải và Option Trái.": {
+      "en": "Right Option and Left Option are distinct keys.",
+      "scope": "sentence"
+    },
     "Phép đo dùng dữ liệu Internet. Đóng tất cả màn hình theo dõi mạng để hủy.": {
       "en": "The test uses Internet data. Close every network monitoring screen to cancel it.",
       "scope": "sentence"
     },
     "Phím Delete chuyển mục đã chọn vào Thùng rác": {
       "en": "Delete key moves the selection to the Trash",
+      "scope": "sentence"
+    },
+    "Phím Fn / Globe": {
+      "en": "Fn / Globe key",
       "scope": "sentence"
     },
     "Phím Return mở mục đã chọn": {
@@ -2827,6 +3671,10 @@
     },
     "Phím hệ thống trên máy này": {
       "en": "System shortcuts on this Mac",
+      "scope": "sentence"
+    },
+    "Phím kích hoạt": {
+      "en": "Trigger key",
       "scope": "sentence"
     },
     "Phím tắt": {
@@ -2889,6 +3737,10 @@
       "en": "Right",
       "scope": "sentence"
     },
+    "Phải nửa màn hình": {
+      "en": "Right half",
+      "scope": "sentence"
+    },
     "Phản hồi rung": {
       "en": "Haptic feedback",
       "scope": "sentence"
@@ -2937,6 +3789,10 @@
       "en": "A standard macOS convention — most applications understand it.",
       "scope": "sentence"
     },
+    "Quyền & thử nghiệm": {
+      "en": "Permissions & test",
+      "scope": "sentence"
+    },
     "Quyền Micro (Microphone)": {
       "en": "Microphone permission",
       "scope": "sentence"
@@ -2977,6 +3833,10 @@
       "en": "SMART / Drive health",
       "scope": "sentence"
     },
+    "Sai mật khẩu hoặc không mở được vault.": {
+      "en": "Incorrect password or failed to unlock vault.",
+      "scope": "sentence"
+    },
     "Sao chép": {
       "en": "Copy",
       "scope": "sentence"
@@ -2993,6 +3853,10 @@
       "en": "Copy back to clipboard",
       "scope": "sentence"
     },
+    "Sao chép phần này": {
+      "en": "Copy this part",
+      "scope": "sentence"
+    },
     "Sao chép đường dẫn": {
       "en": "Copy path",
       "scope": "sentence"
@@ -3003,6 +3867,10 @@
     },
     "Sao lưu thư mục một chiều.": {
       "en": "One-way folder backup.",
+      "scope": "sentence"
+    },
+    "Soạn email": {
+      "en": "Write an email",
       "scope": "sentence"
     },
     "Soạn thảo": {
@@ -3017,12 +3885,20 @@
       "en": "Previous Space",
       "scope": "sentence"
     },
+    "Space để chèn ngay bản gốc · Esc để hủy": {
+      "en": "Space inserts the raw text now · Esc cancels",
+      "scope": "sentence"
+    },
     "Sparsebundle chỉ chiếm dung lượng thực tế đang dùng, và sao lưu Time Machine hiệu quả hơn ảnh đĩa thường.": {
       "en": "A sparsebundle only takes up the space actually in use, and backs up more efficiently with Time Machine than a regular disk image.",
       "scope": "sentence"
     },
     "Swap đã dùng": {
       "en": "Swap used",
+      "scope": "sentence"
+    },
+    "Sáng": {
+      "en": "Light",
       "scope": "sentence"
     },
     "Sơ đồ cử chỉ": {
@@ -3065,6 +3941,10 @@
       "en": "Approximate figures from nettop — there is no public API for per-process traffic.",
       "scope": "sentence"
     },
+    "Số lượng mục lưu tối đa trong lịch sử clipboard": {
+      "en": "Maximum number of items stored in clipboard history",
+      "scope": "sentence"
+    },
     "Số sê-ri": {
       "en": "Serial number",
       "scope": "sentence"
@@ -3095,6 +3975,10 @@
     },
     "Sửa liên kết nhanh": {
       "en": "Edit quicklink",
+      "scope": "sentence"
+    },
+    "Sửa nói lắp, viết hoa đầu câu và tên riêng.": {
+      "en": "Fixes stumbles, and capitalises sentence starts and proper nouns.",
       "scope": "sentence"
     },
     "Sửa đổi": {
@@ -3141,6 +4025,10 @@
       "en": "Default terminal",
       "scope": "sentence"
     },
+    "Thanh trạng thái nổi": {
+      "en": "Floating status bar",
+      "scope": "sentence"
+    },
     "Thao tác Finder": {
       "en": "Finder Actions",
       "scope": "sentence"
@@ -3163,6 +4051,10 @@
     },
     "Thay bằng": {
       "en": "Replace with",
+      "scope": "sentence"
+    },
+    "Thay thế chữ": {
+      "en": "Replace text",
       "scope": "sentence"
     },
     "Thay trình chuyển ứng dụng của macOS bằng bản có ảnh thu nhỏ.": {
@@ -3201,6 +4093,10 @@
       "en": "Screen Recording permission is missing — no preview images yet. Open Overview → “Grant all permissions…”.",
       "scope": "sentence"
     },
+    "Thoát": {
+      "en": "Quit",
+      "scope": "sentence"
+    },
     "Thu gọn": {
       "en": "Collapse",
       "scope": "sentence"
@@ -3227,6 +4123,10 @@
     },
     "Thêm": {
       "en": "Add",
+      "scope": "sentence"
+    },
+    "Thêm hậu tố": {
+      "en": "Add suffix",
       "scope": "sentence"
     },
     "Thêm kết nối từ xa": {
@@ -3285,6 +4185,10 @@
       "en": "Add app...",
       "scope": "sentence"
     },
+    "Thư mục": {
+      "en": "Folders",
+      "scope": "sentence"
+    },
     "Thư mục gốc chỉ được chuyển vào Thùng rác sau khi đã kiểm tra bản mã hóa thành công.": {
       "en": "The source folder is only moved to the Trash after the encrypted copy has been verified successfully.",
       "scope": "sentence"
@@ -3301,6 +4205,14 @@
       "en": "Destination folder",
       "scope": "sentence"
     },
+    "Thư mục đích nằm trong thư mục nguồn — sẽ lặp vô hạn.": {
+      "en": "Destination is inside source folder — would cause an infinite loop.",
+      "scope": "sentence"
+    },
+    "Thư viện câu lệnh": {
+      "en": "Instruction library",
+      "scope": "sentence"
+    },
     "Thường": {
       "en": "Regular",
       "scope": "sentence"
@@ -3311,6 +4223,10 @@
     },
     "Thả nút để XFinder gửi phím tắt.": {
       "en": "Release the button and XFinder sends the shortcut.",
+      "scope": "sentence"
+    },
+    "Thả phím để chèn · Esc để hủy": {
+      "en": "Release to insert · Esc cancels",
       "scope": "sentence"
     },
     "Thả vào tai thỏ": {
@@ -3329,8 +4245,16 @@
       "en": "Failed to compress ",
       "scope": "fragment"
     },
+    "Thời gian": {
+      "en": "Time",
+      "scope": "sentence"
+    },
     "Thời gian hoạt động": {
       "en": "Uptime",
+      "scope": "sentence"
+    },
+    "Thời gian tự động dọn dẹp các mục cũ trong lịch sử": {
+      "en": "Time interval to automatically clean up old items in history",
       "scope": "sentence"
     },
     "Thời gian tự động ẩn": {
@@ -3347,6 +4271,14 @@
     },
     "Thử lại": {
       "en": "Retry",
+      "scope": "sentence"
+    },
+    "Thử lại hoặc kiểm tra quyền trong trang Nhập bằng giọng nói.": {
+      "en": "Try again, or check permissions on the Voice to Typing page.",
+      "scope": "sentence"
+    },
+    "Thử micro": {
+      "en": "Test the microphone",
       "scope": "sentence"
     },
     "Thử micro & nhận dạng": {
@@ -3373,12 +4305,20 @@
       "en": "Title (optional)",
       "scope": "sentence"
     },
+    "Tiêu đề mẫu lưu": {
+      "en": "Snippet title",
+      "scope": "sentence"
+    },
     "Tiến": {
       "en": "Forward",
       "scope": "sentence"
     },
     "Tiến (Cmd+])": {
       "en": "Forward (Cmd+])",
+      "scope": "sentence"
+    },
+    "Tiếng Anh (en-US)": {
+      "en": "English (en-US)",
       "scope": "sentence"
     },
     "Tiếng Việt (vi-VN)": {
@@ -3449,6 +4389,10 @@
       "en": "Left",
       "scope": "sentence"
     },
+    "Trái nửa màn hình": {
+      "en": "Left half",
+      "scope": "sentence"
+    },
     "Trên": {
       "en": "Top",
       "scope": "sentence"
@@ -3465,12 +4409,24 @@
       "en": "A mouse with its own button for this handles it in firmware — the HID descriptor does not declare it, so XFinder cannot see it or assign it.",
       "scope": "sentence"
     },
+    "Trên nửa màn hình": {
+      "en": "Top half",
+      "scope": "sentence"
+    },
     "Trình xem trước": {
       "en": "Previewer",
       "scope": "sentence"
     },
+    "Trạng thái": {
+      "en": "Status",
+      "scope": "sentence"
+    },
     "Trạng thái tích hợp": {
       "en": "Integration status",
+      "scope": "sentence"
+    },
+    "Trả lại nội dung clipboard cũ sau khi dán. Tắt nếu bạn muốn giữ văn bản vừa nói.": {
+      "en": "Puts the previous clipboard back after pasting. Turn off to keep the dictated text.",
       "scope": "sentence"
     },
     "Trợ năng": {
@@ -3485,6 +4441,14 @@
       "en": "Accessibility identifies apps in the Dock; Screen Recording renders the thumbnails directly.",
       "scope": "sentence"
     },
+    "Tài khoản ChatGPT / Claude": {
+      "en": "ChatGPT / Claude account",
+      "scope": "sentence"
+    },
+    "Tài liệu": {
+      "en": "Documents",
+      "scope": "sentence"
+    },
     "Tài liệu có ": {
       "en": "Document has ",
       "scope": "fragment"
@@ -3495,6 +4459,14 @@
     },
     "Tác vụ nhanh trong menu chuột phải": {
       "en": "Quick Actions in the right-click menu",
+      "scope": "sentence"
+    },
+    "Tách các phần": {
+      "en": "Separate parts",
+      "scope": "sentence"
+    },
+    "Tách mục đã gộp": {
+      "en": "Unmerge clip",
       "scope": "sentence"
     },
     "Tách trang": {
@@ -3549,6 +4521,10 @@
       "en": "Search (⌘F) — including OCR text in images…",
       "scope": "sentence"
     },
+    "Tìm kiếm (⌘F)…": {
+      "en": "Search (⌘F)…",
+      "scope": "sentence"
+    },
     "Tìm kiếm AI": {
       "en": "AI Search",
       "scope": "sentence"
@@ -3565,6 +4541,18 @@
       "en": "Search apps, files, quicklinks, or calculate…",
       "scope": "sentence"
     },
+    "Tính toán": {
+      "en": "Calculation",
+      "scope": "sentence"
+    },
+    "Tóm ý thành danh sách gạch đầu dòng.": {
+      "en": "Turns the points into a bulleted list.",
+      "scope": "sentence"
+    },
+    "Tùy biến": {
+      "en": "Custom",
+      "scope": "sentence"
+    },
     "Tùy chỉnh phím tắt và cách hoạt động của bàn phím trong Finder.": {
       "en": "Customize Finder's keyboard shortcuts and behavior.",
       "scope": "sentence"
@@ -3579,6 +4567,10 @@
     },
     "Tùy chọn…": {
       "en": "Options…",
+      "scope": "sentence"
+    },
+    "Tút lại & xóa từ thừa": {
+      "en": "Clean up",
       "scope": "sentence"
     },
     "Tương thích media": {
@@ -3617,8 +4609,16 @@
       "en": "Create new vault",
       "scope": "sentence"
     },
+    "Tạo xong nhưng không mở được để kiểm tra — giữ nguyên thư mục gốc.": {
+      "en": "Created but failed to mount for verification — original folder kept.",
+      "scope": "sentence"
+    },
     "Tải QuickLookVideo (DMG)": {
       "en": "Download QuickLookVideo (DMG)",
+      "scope": "sentence"
+    },
+    "Tải danh sách": {
+      "en": "Load list",
       "scope": "sentence"
     },
     "Tải file và thư mục đã chọn lên đích từ xa.": {
@@ -3629,8 +4629,16 @@
       "en": "Upload",
       "scope": "sentence"
     },
+    "Tải lên ": {
+      "en": "Upload ",
+      "scope": "fragment"
+    },
     "Tải lên…": {
       "en": "Upload…",
+      "scope": "sentence"
+    },
+    "Tải trước ảnh xem trước liên kết": {
+      "en": "Load link preview images",
       "scope": "sentence"
     },
     "Tải về": {
@@ -3645,12 +4653,32 @@
       "en": "Download",
       "scope": "sentence"
     },
+    "Tất cả": {
+      "en": "All",
+      "scope": "sentence"
+    },
     "Tất cả ghi chú": {
       "en": "All notes",
       "scope": "sentence"
     },
+    "Tất cả loại": {
+      "en": "All Types",
+      "scope": "sentence"
+    },
     "Tất cả phân vùng": {
       "en": "All partitions",
+      "scope": "sentence"
+    },
+    "Tất cả thời gian": {
+      "en": "All time",
+      "scope": "sentence"
+    },
+    "Tần suất cập nhật": {
+      "en": "Update interval",
+      "scope": "sentence"
+    },
+    "Tập tin": {
+      "en": "File",
       "scope": "sentence"
     },
     "Tập tin / thư mục cần nén": {
@@ -3705,6 +4733,10 @@
       "en": "I/O speed (KB/s)",
       "scope": "sentence"
     },
+    "Tối": {
+      "en": "Dark",
+      "scope": "sentence"
+    },
     "Tối đa": {
       "en": "Maximum",
       "scope": "sentence"
@@ -3729,12 +4761,36 @@
       "en": "Custom",
       "scope": "sentence"
     },
+    "Tự động dán sau khi chọn": {
+      "en": "Auto-paste after selection",
+      "scope": "sentence"
+    },
+    "Tự động dự đoán và đưa clipboard phù hợp với ứng dụng đang dùng dựa trên ngữ cảnh và Apple Intelligence trên thiết bị.": {
+      "en": "Automatically predicts and suggests clipboard items matching your active app using on-device context and Apple Intelligence.",
+      "scope": "sentence"
+    },
     "Tự động hóa (đổi giao diện Sáng/Tối)": {
       "en": "Automation (light/dark appearance)",
       "scope": "sentence"
     },
+    "Tự động lọc số thẻ 13-19 số thỏa thuật toán Luhn": {
+      "en": "Automatically ignore 13-19 digit card numbers matching Luhn algorithm",
+      "scope": "sentence"
+    },
     "Tự động thu gọn các biểu tượng sau khi mở rộng.": {
       "en": "Automatically collapse icons after expanding.",
+      "scope": "sentence"
+    },
+    "Tự động thêm dấu câu": {
+      "en": "Add punctuation automatically",
+      "scope": "sentence"
+    },
+    "Tự động tải ảnh xem trước cho các liên kết web được sao chép": {
+      "en": "Automatically load preview images for copied web links",
+      "scope": "sentence"
+    },
+    "Tự động xóa sau": {
+      "en": "Auto-delete after",
       "scope": "sentence"
     },
     "Tự động ẩn Dock": {
@@ -3777,12 +4833,20 @@
       "en": "Example: report",
       "scope": "sentence"
     },
+    "Ví dụ: dịch sang tiếng Anh; viết chú thích cho mã nguồn; tóm tắt thành báo cáo cuối ngày.": {
+      "en": "For example: translate into English; write code comments; turn it into an end-of-day report.",
+      "scope": "sentence"
+    },
     "Ví dụ: saf, gh, 12*(3+4), báo cáo…": {
       "en": "Example: saf, gh, 12*(3+4), report…",
       "scope": "sentence"
     },
     "Ví dụ: video mới tháng này, pdf báo cáo…": {
       "en": "Example: new videos this month, report pdf…",
+      "scope": "sentence"
+    },
+    "Ví dụ: đang trả lời trong Mail thì AI biết đó là email.": {
+      "en": "For example: while replying in Mail, the AI knows it is an email.",
       "scope": "sentence"
     },
     "Vô hạn": {
@@ -3793,8 +4857,20 @@
       "en": "Snap Zones",
       "scope": "sentence"
     },
+    "Văn bản": {
+      "en": "Text",
+      "scope": "sentence"
+    },
     "Văn bản (.txt)": {
       "en": "Text (.txt)",
+      "scope": "sentence"
+    },
+    "Văn bản không rời khỏi máy này. Miễn phí và không cần mạng.": {
+      "en": "The text never leaves this Mac. Free, and no network needed.",
+      "scope": "sentence"
+    },
+    "Văn phong chuyên nghiệp": {
+      "en": "Professional tone",
       "scope": "sentence"
     },
     "Vẫn đang giữ nút, kéo chuột theo một hướng.": {
@@ -3805,16 +4881,32 @@
       "en": "Reset to preset",
       "scope": "sentence"
     },
+    "Vị trí hiển thị": {
+      "en": "Position",
+      "scope": "sentence"
+    },
     "Vị trí khay": {
       "en": "Tray position",
+      "scope": "sentence"
+    },
+    "Vị trí và phản hồi khi đang nói.": {
+      "en": "Where it appears, and the feedback while you speak.",
       "scope": "sentence"
     },
     "Vừa": {
       "en": "Medium",
       "scope": "sentence"
     },
+    "Vừa (13.5pt)": {
+      "en": "Medium (13.5pt)",
+      "scope": "sentence"
+    },
     "Vừa khung": {
       "en": "Fit to window",
+      "scope": "sentence"
+    },
+    "Vừa khởi động": {
+      "en": "Just started",
       "scope": "sentence"
     },
     "XFinder KHÔNG lưu mật khẩu. Mất mật khẩu là mất dữ liệu — hãy lưu vào Keychain hoặc trình quản lý mật khẩu.": {
@@ -3856,6 +4948,10 @@
     "XFinder không lưu mật khẩu này ở bất cứ đâu. Nếu quên, dữ liệu không thể khôi phục.": {
       "en": "XFinder does not store this password anywhere. If you forget it, the data cannot be recovered.",
       "scope": "sentence"
+    },
+    "XFinder không lưu mật khẩu. Nếu chưa có khóa, chạy": {
+      "en": "XFinder does not store passwords. If you do not have a key yet, run",
+      "scope": "fragment"
     },
     "XFinder không tự đoán số cho những nút đó. Bấm “Ghi” ở dòng bạn muốn rồi bấm nút thật trên chuột — số nhận được là số đo thật, và nó được lưu ngay.": {
       "en": "XFinder will not guess a number for those buttons. Click “Record” on the row you want and press the real button — the number that arrives is a real measurement, and it is stored immediately.",
@@ -3907,6 +5003,14 @@
     },
     "Xem chi tiết": {
       "en": "View details",
+      "scope": "sentence"
+    },
+    "Xem lại trước khi chèn": {
+      "en": "Review before inserting",
+      "scope": "sentence"
+    },
+    "Xem nhanh (Space)": {
+      "en": "Quick Look (Space)",
       "scope": "sentence"
     },
     "Xem nhanh CPU, đồ họa, bộ nhớ và nhiệt độ.": {
@@ -3969,12 +5073,28 @@
       "en": "Preview and switch app windows right from the Dock.",
       "scope": "sentence"
     },
+    "Xoay trang": {
+      "en": "Rotate pages",
+      "scope": "sentence"
+    },
+    "Xong": {
+      "en": "Done",
+      "scope": "sentence"
+    },
     "Xuất…": {
       "en": "Export…",
       "scope": "sentence"
     },
+    "Xác minh host key thất bại. Chạy `ssh <user>@<host>` trong Terminal một lần để tin tưởng máy chủ.": {
+      "en": "Host key verification failed. Run `ssh <user>@<host>` in Terminal once to trust the host.",
+      "scope": "sentence"
+    },
     "Xác thực bằng **khóa SSH**, không lưu mật khẩu. XFinder chỉ ghi nhớ host/user/đường dẫn và *vị trí* file khóa.": {
       "en": "Authenticates with an **SSH key**, no password is stored. XFinder only remembers the host/user/path and the *location* of the key file.",
+      "scope": "sentence"
+    },
+    "Xác thực bằng Touch ID hoặc mật khẩu để xem lịch sử clipboard": {
+      "en": "Authenticate with Touch ID or password to view clipboard history",
       "scope": "sentence"
     },
     "Xóa": {
@@ -4005,6 +5125,10 @@
       "en": "Clear history",
       "scope": "sentence"
     },
+    "Xóa mục đã chọn": {
+      "en": "Delete selected clips",
+      "scope": "sentence"
+    },
     "Xóa tệp thừa": {
       "en": "Delete extra files",
       "scope": "sentence"
@@ -4015,6 +5139,10 @@
     },
     "Yêu cầu": {
       "en": "Request",
+      "scope": "sentence"
+    },
+    "Yêu cầu Touch ID hoặc mật khẩu máy khi mở lịch sử": {
+      "en": "Require Touch ID or password to open clipboard history",
       "scope": "sentence"
     },
     "Yêu cầu Trợ năng, Micro và Nhận dạng giọng nói.": {
@@ -4069,6 +5197,11 @@
       "en": "the mouse's own horizontal scroll",
       "scope": "fragment"
     },
+    "còn ": {
+      "en": "",
+      "scope": "fragment",
+      "swap": true
+    },
     "cửa sổ": {
       "en": "windows",
       "scope": "sentence"
@@ -4083,6 +5216,22 @@
     },
     "hoặc": {
       "en": "or",
+      "scope": "sentence"
+    },
+    "không chạy được ": {
+      "en": "failed to run ",
+      "scope": "fragment"
+    },
+    "không chạy được hdiutil": {
+      "en": "failed to run hdiutil",
+      "scope": "sentence"
+    },
+    "không chạy được rsync": {
+      "en": "failed to run rsync",
+      "scope": "sentence"
+    },
+    "không rõ": {
+      "en": "unknown",
       "scope": "sentence"
     },
     "kéo lên": {
@@ -4101,6 +5250,34 @@
       "en": "pull down",
       "scope": "fragment"
     },
+    "loại: PDF": {
+      "en": "kind: PDF",
+      "scope": "sentence"
+    },
+    "loại: file nén": {
+      "en": "kind: archives",
+      "scope": "sentence"
+    },
+    "loại: hình ảnh": {
+      "en": "kind: images",
+      "scope": "sentence"
+    },
+    "loại: thư mục": {
+      "en": "kind: folders",
+      "scope": "sentence"
+    },
+    "loại: tài liệu": {
+      "en": "kind: documents",
+      "scope": "sentence"
+    },
+    "loại: video": {
+      "en": "kind: video",
+      "scope": "sentence"
+    },
+    "loại: âm thanh": {
+      "en": "kind: audio",
+      "scope": "sentence"
+    },
     "là nút bạn giữ để bắt đầu mọi cử chỉ": {
       "en": "is the button you hold to start every gesture",
       "scope": "sentence"
@@ -4111,6 +5288,10 @@
     },
     "là nút bạn giữ để bắt đầu mọi cử chỉ — số trên mỗi mũi tên là nút đó": {
       "en": "is the button you hold to start any gesture — the number on every arrow is that button",
+      "scope": "sentence"
+    },
+    "macOS 26 trở lên mới có Apple Intelligence.": {
+      "en": "Apple Intelligence requires macOS 26 or later.",
       "scope": "sentence"
     },
     "macOS 26/27 không còn đẩy icon hàng xóm khi vạch ngăn phình rộng (length bị clamp ~5016pt; icon bên cạnh chỉ dịch chỗ chứ không ra khỏi bar) — nên trên macOS mới, mũi tên có thể KHÔNG ẩn được icon của app khác như macOS cũ.": {
@@ -4173,6 +5354,26 @@
       "en": "buttons.",
       "scope": "fragment"
     },
+    "rồi": {
+      "en": "then",
+      "scope": "fragment"
+    },
+    "sửa: 2 ngày qua": {
+      "en": "modified: 2 days ago",
+      "scope": "sentence"
+    },
+    "sửa: 30 ngày qua": {
+      "en": "modified: 30 days ago",
+      "scope": "sentence"
+    },
+    "sửa: 7 ngày qua": {
+      "en": "modified: 7 days ago",
+      "scope": "sentence"
+    },
+    "sửa: hôm nay": {
+      "en": "modified: today",
+      "scope": "sentence"
+    },
     "tapCreate trả nil dù đã có quyền Trợ năng": {
       "en": "tapCreate returned nil even though Accessibility is already granted",
       "scope": "sentence"
@@ -4183,6 +5384,18 @@
     },
     "thường là nút hông trên (gần con lăn)": {
       "en": "usually the upper side button (near the wheel)",
+      "scope": "sentence"
+    },
+    "tên chứa: ": {
+      "en": "name contains: ",
+      "scope": "fragment"
+    },
+    "ví dụ: qwen2.5:7b": {
+      "en": "for example: qwen2.5:7b",
+      "scope": "sentence"
+    },
+    "vừa xong": {
+      "en": "just now",
       "scope": "sentence"
     },
     "© 2026 XFinder · Giấy phép MIT": {
@@ -4209,8 +5422,16 @@
       "en": "Memory pressure",
       "scope": "sentence"
     },
+    "Âm báo bắt đầu / kết thúc": {
+      "en": "Start / stop sound",
+      "scope": "sentence"
+    },
     "Âm lượng": {
       "en": "Volume",
+      "scope": "sentence"
+    },
+    "Âm thanh": {
+      "en": "Audio",
       "scope": "sentence"
     },
     "Âm thanh khi sao chép/dán": {
@@ -4273,6 +5494,14 @@
       "en": "Running",
       "scope": "sentence"
     },
+    "Đang hoạt động — giữ ⌘ và nhấn Tab.": {
+      "en": "Active — hold ⌘ and press Tab.",
+      "scope": "sentence"
+    },
+    "Đang kiểm tra kết nối…": {
+      "en": "Checking connection…",
+      "scope": "sentence"
+    },
     "Đang kiểm tra…": {
       "en": "Checking…",
       "scope": "sentence"
@@ -4308,6 +5537,14 @@
     "Đang tìm…": {
       "en": "Searching…",
       "scope": "sentence"
+    },
+    "Đang tút lại văn bản…": {
+      "en": "Rewriting the text…",
+      "scope": "sentence"
+    },
+    "Đang tải lên ": {
+      "en": "Uploading ",
+      "scope": "fragment"
     },
     "Đang tắt": {
       "en": "Off",
@@ -4353,6 +5590,10 @@
       "en": "Navigation",
       "scope": "sentence"
     },
+    "Điều khiển": {
+      "en": "Controls",
+      "scope": "sentence"
+    },
     "Điều khiển các lượt Khi thay đổi và Hằng ngày. Đồng bộ ngay thủ công vẫn khả dụng.": {
       "en": "Controls the On Change and Daily runs. A manual Sync Now is still available.",
       "scope": "sentence"
@@ -4379,6 +5620,10 @@
     },
     "Đo tốc độ": {
       "en": "Speed test",
+      "scope": "sentence"
+    },
+    "Đánh số thứ tự": {
+      "en": "Number sequence",
       "scope": "sentence"
     },
     "Đây là con số XFinder nhận được từ chuột. Bấm “Ghi nút” rồi bấm đúng nút đó để đặt nó làm nút giữ.": {
@@ -4414,6 +5659,14 @@
       "en": "Copied",
       "scope": "sentence"
     },
+    "Đã chọn": {
+      "en": "Selected",
+      "scope": "sentence"
+    },
+    "Đã chọn ": {
+      "en": "Selected ",
+      "scope": "fragment"
+    },
     "Đã cài": {
       "en": "Installed",
       "scope": "sentence"
@@ -4424,6 +5677,14 @@
     },
     "Đã cấp": {
       "en": "Granted",
+      "scope": "sentence"
+    },
+    "Đã dùng": {
+      "en": "Used",
+      "scope": "sentence"
+    },
+    "Đã ghim": {
+      "en": "Pinned",
       "scope": "sentence"
     },
     "Đã giải ": {
@@ -4446,12 +5707,28 @@
       "en": "Assigned: Forward",
       "scope": "sentence"
     },
+    "Đã gộp": {
+      "en": "Merged",
+      "scope": "sentence"
+    },
     "Đã gộp ": {
       "en": "Merged ",
       "scope": "fragment"
     },
+    "Đã gộp thành công": {
+      "en": "Merged successfully",
+      "scope": "sentence"
+    },
     "Đã gửi phím tắt": {
       "en": "Shortcut sent",
+      "scope": "sentence"
+    },
+    "Đã hoàn tác ": {
+      "en": "Undone: ",
+      "scope": "fragment"
+    },
+    "Đã hủy": {
+      "en": "Cancelled",
       "scope": "sentence"
     },
     "Đã khoá hướng": {
@@ -4469,6 +5746,14 @@
     "Đã lưu": {
       "en": "Saved",
       "scope": "sentence"
+    },
+    "Đã lưu Snippet": {
+      "en": "Snippet saved",
+      "scope": "sentence"
+    },
+    "Đã mã hóa nhưng không xóa được thư mục gốc: ": {
+      "en": "Encrypted but failed to delete original folder: ",
+      "scope": "fragment"
     },
     "Đã mở ": {
       "en": "Opened ",
@@ -4510,17 +5795,33 @@
       "en": "Ready",
       "scope": "sentence"
     },
+    "Đã sửa ": {
+      "en": "Changed ",
+      "scope": "fragment"
+    },
     "Đã thêm ": {
       "en": "Added ",
       "scope": "fragment"
+    },
+    "Đã thêm vào danh sách bỏ qua": {
+      "en": "Added to ignored apps list",
+      "scope": "sentence"
     },
     "Đã tách ": {
       "en": "Split ",
       "scope": "fragment"
     },
+    "Đã tải lên ": {
+      "en": "Uploaded ",
+      "scope": "fragment"
+    },
     "Đã tắt": {
       "en": "Off",
       "scope": "sentence"
+    },
+    "Đã tồn tại “": {
+      "en": "Already exists “",
+      "scope": "fragment"
     },
     "Đã xoay ": {
       "en": "Rotated ",
@@ -4534,8 +5835,16 @@
       "en": "Registered",
       "scope": "sentence"
     },
+    "Đã đưa cửa sổ vào ": {
+      "en": "Moved window to ",
+      "scope": "fragment"
+    },
     "Đã đưa cửa sổ vào “": {
       "en": "Snapped the window into “",
+      "scope": "fragment"
+    },
+    "Đã đổi ": {
+      "en": "Renamed ",
       "scope": "fragment"
     },
     "Đã đổi tên ": {
@@ -4566,12 +5875,28 @@
       "en": "Use as hold button",
       "scope": "sentence"
     },
+    "Đặt lại bộ lọc": {
+      "en": "Reset Filters",
+      "scope": "sentence"
+    },
     "Đặt nút này làm nút giữ?": {
       "en": "Set it as the hold button?",
       "scope": "sentence"
     },
     "Để sau": {
       "en": "Later",
+      "scope": "sentence"
+    },
+    "Địa chỉ API": {
+      "en": "API address",
+      "scope": "sentence"
+    },
+    "Địa chỉ Ollama": {
+      "en": "Ollama address",
+      "scope": "sentence"
+    },
+    "Địa chỉ riêng (OpenAI format)": {
+      "en": "Your own endpoint (OpenAI format)",
       "scope": "sentence"
     },
     "Định dạng": {
@@ -4606,6 +5931,10 @@
       "en": "Sync",
       "scope": "sentence"
     },
+    "Đồng bộ ": {
+      "en": "Sync ",
+      "scope": "fragment"
+    },
     "Đồng bộ **một chiều**: nguồn → đích. Thay đổi ở đích không quay về nguồn.": {
       "en": "**One-way** sync: source → destination. Changes at the destination do not flow back to the source.",
       "scope": "sentence"
@@ -4637,6 +5966,10 @@
     "Đồng bộ tự động": {
       "en": "Automatic sync",
       "scope": "sentence"
+    },
+    "Đồng bộ xong lúc ": {
+      "en": "Sync finished at ",
+      "scope": "fragment"
     },
     "Đổi": {
       "en": "Change",
@@ -4674,6 +6007,10 @@
       "en": "Change shortcut…",
       "scope": "sentence"
     },
+    "Đổi tên ": {
+      "en": "Rename ",
+      "scope": "fragment"
+    },
     "Đổi tên bảng ghim": {
       "en": "Rename board",
       "scope": "sentence"
@@ -4696,6 +6033,10 @@
     },
     "Độ nhạy khi lắc": {
       "en": "Shake sensitivity",
+      "scope": "sentence"
+    },
+    "Độ nhạy mép": {
+      "en": "Edge sensitivity",
       "scope": "sentence"
     },
     "Độ nhạy mép ": {
@@ -4758,6 +6099,10 @@
       "en": "Hide when pointer leaves",
       "scope": "sentence"
     },
+    "Ẩn/hiện biểu tượng thanh menu": {
+      "en": "Show/hide menu bar icons",
+      "scope": "sentence"
+    },
     "Ẩn/hiện khung": {
       "en": "Toggle the panel",
       "scope": "sentence"
@@ -4788,6 +6133,10 @@
     },
     "Ứng dụng loại trừ": {
       "en": "Excluded apps",
+      "scope": "sentence"
+    },
+    "Ứng dụng nguồn": {
+      "en": "Source app",
       "scope": "sentence"
     },
     "Ứng dụng này chưa có bảng riêng, nên đang dùng bảng Toàn cục. Bạn có thể tự đặt riêng cho nó.": {
@@ -4834,6 +6183,10 @@
       "en": "“Delete extra files at the destination” is OFF by default. Turning it on makes the destination identical to the source, deletions included.",
       "scope": "sentence"
     },
+    "” ở thư mục này.": {
+      "en": "” in this folder.",
+      "scope": "fragment"
+    },
     "… và ": {
       "en": "… and ",
       "scope": "fragment"
@@ -4860,346 +6213,6 @@
     },
     "⌘⇧V mở khay clipboard nổi trên mọi ứng dụng": {
       "en": "⌘⇧V opens the floating clipboard shelf over any app",
-      "scope": "sentence"
-    },
-    "Thêm hậu tố": {
-      "en": "Add suffix",
-      "scope": "sentence"
-    },
-    "Thay thế chữ": {
-      "en": "Replace text",
-      "scope": "sentence"
-    },
-    "Đánh số thứ tự": {
-      "en": "Number sequence",
-      "scope": "sentence"
-    },
-    "Chữ thường": {
-      "en": "Lowercase",
-      "scope": "sentence"
-    },
-    "Chữ HOA": {
-      "en": "UPPERCASE",
-      "scope": "sentence"
-    },
-    "Mọi loại": {
-      "en": "Any kind",
-      "scope": "sentence"
-    },
-    "Hình ảnh": {
-      "en": "Images",
-      "scope": "sentence"
-    },
-    "Tài liệu": {
-      "en": "Documents",
-      "scope": "sentence"
-    },
-    "Âm thanh": {
-      "en": "Audio",
-      "scope": "sentence"
-    },
-    "File nén": {
-      "en": "Archives",
-      "scope": "sentence"
-    },
-    "Thư mục": {
-      "en": "Folders",
-      "scope": "sentence"
-    },
-    "Sáng": {
-      "en": "Light",
-      "scope": "sentence"
-    },
-    "Tối": {
-      "en": "Dark",
-      "scope": "sentence"
-    },
-    "Tính toán": {
-      "en": "Calculation",
-      "scope": "sentence"
-    },
-    "Tập tin": {
-      "en": "File",
-      "scope": "sentence"
-    },
-    "Trái nửa màn hình": {
-      "en": "Left half",
-      "scope": "sentence"
-    },
-    "Phải nửa màn hình": {
-      "en": "Right half",
-      "scope": "sentence"
-    },
-    "Trên nửa màn hình": {
-      "en": "Top half",
-      "scope": "sentence"
-    },
-    "Dưới nửa màn hình": {
-      "en": "Bottom half",
-      "scope": "sentence"
-    },
-    "Góc trên-trái": {
-      "en": "Top-left corner",
-      "scope": "sentence"
-    },
-    "Góc trên-phải": {
-      "en": "Top-right corner",
-      "scope": "sentence"
-    },
-    "Góc dưới-trái": {
-      "en": "Bottom-left corner",
-      "scope": "sentence"
-    },
-    "Góc dưới-phải": {
-      "en": "Bottom-right corner",
-      "scope": "sentence"
-    },
-    "Điều khiển": {
-      "en": "Controls",
-      "scope": "sentence"
-    },
-    "Xoay trang": {
-      "en": "Rotate pages",
-      "scope": "sentence"
-    },
-    "Vừa khởi động": {
-      "en": "Just started",
-      "scope": "sentence"
-    },
-    "Không thể hoàn tác thao tác này.": {
-      "en": "This action cannot be undone.",
-      "scope": "sentence"
-    },
-    "Đã đưa cửa sổ vào ": {
-      "en": "Moved window to ",
-      "scope": "fragment"
-    },
-    "Chưa có quyền Trợ năng — không chặn được Command-Tab.": {
-      "en": "Accessibility not granted — cannot intercept Command-Tab.",
-      "scope": "sentence"
-    },
-    "Không tạo được event tap — kiểm tra quyền Trợ năng.": {
-      "en": "Could not create event tap — check Accessibility permission.",
-      "scope": "sentence"
-    },
-    "Đang hoạt động — giữ ⌘ và nhấn Tab.": {
-      "en": "Active — hold ⌘ and press Tab.",
-      "scope": "sentence"
-    },
-    "Chưa đăng nhập iCloud, hoặc XFinder chưa có entitlement iCloud (cần tài khoản Apple Developer trả phí).": {
-      "en": "Not signed in to iCloud, or XFinder lacks the iCloud entitlement (requires a paid Apple Developer account).",
-      "scope": "sentence"
-    },
-    "Mở trang ": {
-      "en": "Open page ",
-      "scope": "fragment"
-    },
-    "Chế độ tối": {
-      "en": "Dark mode",
-      "scope": "sentence"
-    },
-    "Chuyển đổi ứng dụng": {
-      "en": "App Switcher",
-      "scope": "sentence"
-    },
-    "Máy Mac sẽ không tự ngủ.": {
-      "en": "Mac will not sleep automatically.",
-      "scope": "sentence"
-    },
-    "Máy Mac tuân theo cài đặt năng lượng thông thường.": {
-      "en": "Mac follows the normal energy settings.",
-      "scope": "sentence"
-    },
-    "Còn lại": {
-      "en": "Remaining",
-      "scope": "sentence"
-    },
-    "Đã dùng": {
-      "en": "Used",
-      "scope": "sentence"
-    },
-    "Trạng thái": {
-      "en": "Status",
-      "scope": "sentence"
-    },
-    "Khay thả…": {
-      "en": "Drop tray…",
-      "scope": "sentence"
-    },
-    "Cài đặt XFinder": {
-      "en": "XFinder Settings",
-      "scope": "sentence"
-    },
-    "Thoát": {
-      "en": "Quit",
-      "scope": "sentence"
-    },
-    " ngày ": {
-      "en": " d ",
-      "scope": "fragment"
-    },
-    " giờ ": {
-      "en": " h ",
-      "scope": "fragment"
-    },
-    "Kính lúp": {
-      "en": "Magnifier",
-      "scope": "sentence"
-    },
-    "Chồng lớp": {
-      "en": "Overlay",
-      "scope": "sentence"
-    },
-    "Hoàn tác: khôi phục ": {
-      "en": "Undo: restored ",
-      "scope": "fragment"
-    },
-    "Khôi phục ": {
-      "en": "Restored ",
-      "scope": "fragment"
-    },
-    "Đổi tên ": {
-      "en": "Rename ",
-      "scope": "fragment"
-    },
-    "Chuyển ": {
-      "en": "Move ",
-      "scope": "fragment"
-    },
-    " mục vào Thùng rác": {
-      "en": " items to Trash",
-      "scope": "fragment"
-    },
-    "Ẩn/hiện biểu tượng thanh menu": {
-      "en": "Show/hide menu bar icons",
-      "scope": "sentence"
-    },
-    "Đã hoàn tác ": {
-      "en": "Undone: ",
-      "scope": "fragment"
-    },
-    " mục trong ": {
-      "en": " items in ",
-      "scope": "fragment"
-    },
-    "Không di chuyển được — ứng dụng không cho phép.": {
-      "en": "Could not move — app denied the request.",
-      "scope": "sentence"
-    },
-    ", ": {
-      "en": ", ",
-      "scope": "fragment"
-    },
-    "loại: hình ảnh": {
-      "en": "kind: images",
-      "scope": "sentence"
-    },
-    "loại: video": {
-      "en": "kind: video",
-      "scope": "sentence"
-    },
-    "loại: âm thanh": {
-      "en": "kind: audio",
-      "scope": "sentence"
-    },
-    "loại: PDF": {
-      "en": "kind: PDF",
-      "scope": "sentence"
-    },
-    "loại: file nén": {
-      "en": "kind: archives",
-      "scope": "sentence"
-    },
-    "loại: thư mục": {
-      "en": "kind: folders",
-      "scope": "sentence"
-    },
-    "loại: tài liệu": {
-      "en": "kind: documents",
-      "scope": "sentence"
-    },
-    "sửa: hôm nay": {
-      "en": "modified: today",
-      "scope": "sentence"
-    },
-    "sửa: 2 ngày qua": {
-      "en": "modified: 2 days ago",
-      "scope": "sentence"
-    },
-    "sửa: 7 ngày qua": {
-      "en": "modified: 7 days ago",
-      "scope": "sentence"
-    },
-    "sửa: 30 ngày qua": {
-      "en": "modified: 30 days ago",
-      "scope": "sentence"
-    },
-    "tên chứa: ": {
-      "en": "name contains: ",
-      "scope": "fragment"
-    },
-    "Không nhận ra cấu trúc — tìm tên chứa toàn bộ câu.": {
-      "en": "Unrecognized structure — searching name for the full phrase.",
-      "scope": "sentence"
-    },
-    "Hiểu: ": {
-      "en": "Understood: ",
-      "scope": "fragment"
-    },
-    "Văn bản": {
-      "en": "Text",
-      "scope": "sentence"
-    },
-    "Mã nguồn": {
-      "en": "Code",
-      "scope": "sentence"
-    },
-    "Liên kết": {
-      "en": "Link",
-      "scope": "sentence"
-    },
-    "Màu sắc": {
-      "en": "Color",
-      "scope": "sentence"
-    },
-    "Tất cả": {
-      "en": "All",
-      "scope": "sentence"
-    },
-    "Tự động dán sau khi chọn": {
-      "en": "Auto-paste after selection",
-      "scope": "sentence"
-    },
-    "Nhấn Return dán thẳng vào ứng dụng. Khi tắt: chỉ sao chép vào bộ nhớ tạm.": {
-      "en": "Pressing Return pastes directly into active app. When off: copies to clipboard only.",
-      "scope": "sentence"
-    },
-    "Dán & Thao tác": {
-      "en": "Paste & Actions",
-      "scope": "sentence"
-    },
-    "Bỏ qua ứng dụng tùy chỉnh": {
-      "en": "Custom excluded apps",
-      "scope": "sentence"
-    },
-    "Lọc loại": {
-      "en": "Filter type",
-      "scope": "sentence"
-    },
-    "Bỏ qua số thẻ thanh toán (Credit Card)": {
-      "en": "Exclude credit card numbers",
-      "scope": "sentence"
-    },
-    "Tự động lọc số thẻ 13-19 số thỏa thuật toán Luhn": {
-      "en": "Automatically ignore 13-19 digit card numbers matching Luhn algorithm",
-      "scope": "sentence"
-    },
-    "Xem nhanh (Space)": {
-      "en": "Quick Look (Space)",
-      "scope": "sentence"
-    },
-    "Danh sách Bundle ID ứng dụng bỏ qua (phân tách bởi dấu phẩy)": {
-      "en": "Excluded app bundle IDs (comma-separated)",
       "scope": "sentence"
     }
   }
