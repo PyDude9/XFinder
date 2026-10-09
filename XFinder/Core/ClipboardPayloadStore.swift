@@ -11,8 +11,8 @@ enum ClipboardPayloadStore {
 
     static func baseDir() -> URL {
         let fm = FileManager.default
-        let dir = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("XFinder/Clipboard", isDirectory: true)
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? fm.temporaryDirectory
+        let dir = appSupport.appendingPathComponent("XFinder/Clipboard", isDirectory: true)
         try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }

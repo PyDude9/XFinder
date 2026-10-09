@@ -55,6 +55,11 @@ private struct ClipboardSettingsBody: View {
     @AppStorage("clipboard.autoPasteAfterSelection") private var autoPaste = true
     @AppStorage("clipboard.excludeCreditCards") private var excludeCreditCards = true
     @AppStorage("clipboard.customExcludedApps") private var customExcludedApps = ""
+    @AppStorage("clipboard.textSize") private var textSize: Double = 13.5
+    @AppStorage("clipboard.touchIDLock") private var touchIDLock = false
+    @AppStorage("clipboard.linkPreviews") private var linkPreviews = true
+    @AppStorage("clipboard.intelligentSuggestions") private var intelligentSuggestions = true
+
     @State private var cloud = CloudSyncController.shared
     @State private var clipboard = ClipboardManager.shared
     @State private var editingBoard: Pinboard? = nil
@@ -71,11 +76,13 @@ private struct ClipboardSettingsBody: View {
             // chỉnh. Một nút nhảy sang trang nội dung để không mất lối tới.
             HStack(spacing: 10) {
                 Image(systemName: "square.on.square").foregroundColor(.accentColor)
-                Text(L10n.t("Lịch sử copy hiển thị ở khay ⌘⇧V và trang nội dung."))
+                Text(L10n.t("Lịch sử copy hiển thị ở khay ⌘⇧V."))
                     .font(.system(size: 11)).foregroundColor(.secondary)
                 Spacer()
-                Button(L10n.t("Mở lịch sử…")) { AppState.shared.navigate(to: .clipboard) }
-                    .buttonStyle(.bordered).controlSize(.small)
+                Button(L10n.t("Mở khay clipboard (⌘⇧V)")) {
+                    ClipboardShelfController.shared.toggle()
+                }
+                .buttonStyle(.bordered).controlSize(.small)
             }
 
             SettingsCard(title: L10n.t("Phím tắt & quyền"),
@@ -104,11 +111,70 @@ private struct ClipboardSettingsBody: View {
                 }
             }
 
+            SettingsCard(title: L10n.t("Apple Intelligence & Gợi ý thông minh")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    ToggleRow(title: L10n.t("Gợi ý thông minh"),
+                              subtitle: L10n.t("Tự động dự đoán và đưa clipboard phù hợp với ứng dụng đang dùng dựa trên ngữ cảnh và Apple Intelligence trên thiết bị."),
+                              isOn: $intelligentSuggestions)
+                }
+            }
+
             SettingsCard(title: L10n.t("Dán & Thao tác")) {
                 VStack(spacing: 10) {
                     ToggleRow(title: L10n.t("Tự động dán sau khi chọn"),
                               subtitle: L10n.t("Nhấn Return dán thẳng vào ứng dụng. Khi tắt: chỉ sao chép vào bộ nhớ tạm."),
                               isOn: $autoPaste)
+                }
+            }
+
+
+            SettingsCard(title: L10n.t("Lưu trữ & Hiển thị")) {
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.t("Giới hạn lịch sử"))
+                            .font(.system(size: 13, weight: .medium))
+                        Text(L10n.t("Số lượng mục lưu tối đa trong lịch sử clipboard"))
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                        Picker("", selection: $maxHistory) {
+                            Text(L10n.t("200 mục")).tag(200)
+                            Text(L10n.t("1000 mục")).tag(1000)
+                            Text(L10n.t("5000 mục")).tag(5000)
+                            Text(L10n.t("Không giới hạn")).tag(0)
+                        }
+                        .pickerStyle(.segmented)
+                        .onChange(of: maxHistory) { clipboard.trimToCap() }
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.t("Tự động xóa sau"))
+                            .font(.system(size: 13, weight: .medium))
+                        Text(L10n.t("Thời gian tự động dọn dẹp các mục cũ trong lịch sử"))
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                        Picker("", selection: $autoDeleteDays) {
+                            Text(L10n.t("7 ngày")).tag(7)
+                            Text(L10n.t("30 ngày")).tag(30)
+                            Text(L10n.t("90 ngày")).tag(90)
+                            Text(L10n.t("Không bao giờ")).tag(0)
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.t("Cỡ chữ thẻ"))
+                            .font(.system(size: 13, weight: .medium))
+                        Text(L10n.t("Kích thước chữ trong nội dung thẻ clipboard"))
+                            .font(.system(size: 11)).foregroundColor(.secondary)
+                        Picker("", selection: $textSize) {
+                            Text(L10n.t("Nhỏ (12pt)")).tag(12.0)
+                            Text(L10n.t("Vừa (13.5pt)")).tag(13.5)
+                            Text(L10n.t("Lớn (15.5pt)")).tag(15.5)
+                        }
+                        .pickerStyle(.segmented)
+                    }
                 }
             }
 
@@ -121,6 +187,9 @@ private struct ClipboardSettingsBody: View {
                     ToggleRow(title: L10n.t("Bỏ qua số thẻ thanh toán (Credit Card)"),
                               subtitle: L10n.t("Tự động lọc số thẻ 13-19 số thỏa thuật toán Luhn"),
                               isOn: $excludeCreditCards)
+                    ToggleRow(title: L10n.t("Khóa Touch ID"),
+                              subtitle: L10n.t("Yêu cầu Touch ID hoặc mật khẩu máy khi mở lịch sử"),
+                              isOn: $touchIDLock)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L10n.t("Bỏ qua ứng dụng tùy chỉnh"))
                             .font(.system(size: 13, weight: .medium))
@@ -168,6 +237,9 @@ private struct ClipboardSettingsBody: View {
                     ToggleRow(title: L10n.t("Ảnh chụp / hình ảnh"), isOn: $captureImages)
                     ToggleRow(title: L10n.t("Đường link"), isOn: $captureLinks)
                     ToggleRow(title: L10n.t("Nhận diện chữ (OCR)"), subtitle: "Vision Framework", isOn: $enableOCR)
+                    ToggleRow(title: L10n.t("Tải trước ảnh xem trước liên kết"),
+                              subtitle: L10n.t("Tự động tải ảnh xem trước cho các liên kết web được sao chép"),
+                              isOn: $linkPreviews)
                     ToggleRow(title: L10n.t("Âm thanh khi sao chép/dán"), subtitle: L10n.t("Tink/Pop hệ thống"), isOn: $sounds)
                 }
             }

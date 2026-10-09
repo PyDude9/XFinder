@@ -50,9 +50,14 @@ final class CloudSyncController {
         FileManager.default.ubiquityIdentityToken != nil
     }
 
+    private var syncObserver: (any NSObjectProtocol)?
+
     func applySettings() {
+        if let obs = syncObserver {
+            NotificationCenter.default.removeObserver(obs)
+            syncObserver = nil
+        }
         guard isEnabled else {
-            NotificationCenter.default.removeObserver(self)
             status = .disabled
             return
         }
@@ -60,11 +65,15 @@ final class CloudSyncController {
             status = .unavailable(L10n.t("Chưa đăng nhập iCloud, hoặc XFinder chưa có entitlement iCloud (cần tài khoản Apple Developer trả phí)."))
             return
         }
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(remoteChanged),
-            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-            object: store)
+        syncObserver = NotificationCenter.default.addObserver(
+            forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+            object: store,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.refreshStatus()
+            }
+        }
         store.synchronize()
         refreshStatus()
     }
@@ -104,10 +113,6 @@ final class CloudSyncController {
             let at = Double(dict["at"] ?? "") ?? 0
             return (id, text, dict["app"] ?? "", Date(timeIntervalSince1970: at))
         }
-    }
-
-    @objc private func remoteChanged(_ note: Notification) {
-        Task { @MainActor in refreshStatus() }
     }
 
     private func refreshStatus() {

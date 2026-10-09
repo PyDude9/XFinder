@@ -1,32 +1,92 @@
 import AppKit
+import LocalAuthentication
 import QuickLookUI
 import SwiftUI
 
 /// Clipboard page — PasteApp-style card deck with:
-/// - app-icon accent headers + per-type card bodies (text/code/image/link/color/file)
+/// - app-icon accent headers + per-type card bodies (text/code/image/link/color/file/merged)
+/// - Klippy-inspired slices (All · Pinned · Saved · Merged), multi-tier filters (Date · App · Sort)
+/// - Multi-select & batch operations (Merge clips, Delete, Deselect)
+/// - Snippet naming & saving, Touch ID authentication gate
 /// - keyboard nav (←/→, Return paste, ⇧Return plain, ⌘1-9 boards, ⌘P pin, ⌘F search, ⌘⌫ delete, Esc)
 /// - Space Quick Look (QLPreviewPanel), drag-to-tab pinning, Paste Stack HUD
 struct ClipboardTabView: View {
     @Environment(ClipboardManager.self) var clipboardManager
+    @AppStorage("clipboard.touchIDLock") private var touchIDLock = false
     @FocusState private var searchFocused: Bool
     @State private var keyMonitor: Any?
     @State private var qlController: ClipboardQLController?
     @State private var showAccessAlert = false
+    @State private var isUnlocked = false
+    @State private var showSaveSnippetSheet = false
+    @State private var snippetToSave: ClipboardRecord? = nil
+    @State private var snippetTitleInput = ""
 
     private var items: [ClipboardRecord] { clipboardManager.boardItems() }
 
     var body: some View {
+        Group {
+            if touchIDLock && !isUnlocked {
+                touchIDLockView
+            } else {
+                mainClipboardContent
+            }
+        }
+        .background(Color(.windowBackgroundColor))
+        .onAppear {
+            installKeyMonitor()
+            if touchIDLock && !isUnlocked {
+                authenticateWithBiometrics()
+            } else if !touchIDLock {
+                isUnlocked = true
+            }
+            if clipboardManager.selectedItemID == nil {
+                clipboardManager.selectedItemID = items.first?.id
+            }
+        }
+        .onDisappear { removeKeyMonitor() }
+        .alert(L10n.t("Cần quyền Trợ năng để dán phím"), isPresented: $showAccessAlert) {
+            Button(L10n.t("Mở Cài đặt Trợ năng")) { WindowManager.openAccessibilityPane() }
+            Button(L10n.t("Để sau"), role: .cancel) {}
+        } message: {
+            Text(L10n.t("XFinder sẽ ghi nội dung vào clipboard, chuyển tới ứng dụng trước đó và mô phỏng ⌘V. Sao chép vào clipboard vẫn dùng được (bấm \"Sao chép\" trong menu chuột phải)."))
+        }
+        .sheet(isPresented: $showSaveSnippetSheet) {
+            saveSnippetSheetView
+        }
+    }
+
+    private var touchIDLockView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "lock.shield.fill")
+                .font(.system(size: 48))
+                .foregroundColor(.accentColor)
+            Text(L10n.t("Mở khóa Clipboard"))
+                .font(.title2).fontWeight(.semibold)
+            Text(L10n.t("Xác thực bằng Touch ID hoặc mật khẩu để xem lịch sử clipboard"))
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+            Button(L10n.t("Mở khóa Clipboard")) {
+                authenticateWithBiometrics()
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var mainClipboardContent: some View {
         VStack(spacing: 0) {
             ClipboardPinboardBar(showAccessAlert: $showAccessAlert)
                 .environment(clipboardManager)
 
             Divider()
 
-            // Search bar
+            // Row 1: Search bar
             HStack {
                 Image(systemName: "magnifyingglass").foregroundColor(.secondary)
-                // `@Bindable` is how Observation hands out a Binding for an
-                // `@Observable` object — `@Environment` alone has no `$`.
                 TextField(L10n.t("Tìm kiếm (⌘F) — gồm chữ trong ảnh OCR…"),
                           text: Bindable(clipboardManager).searchText)
                     .textFieldStyle(.plain)
@@ -45,20 +105,140 @@ struct ClipboardTabView: View {
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
 
-            // Content Type Filter Pills
+            // Row 2: Slice tabs + Filters dropdowns + Multi-select button
+            HStack(spacing: 8) {
+                // Slices (All & Pinned, removed Saved & Merged)
+                HStack(spacing: 4) {
+                    sliceButton(.all)
+                    sliceButton(.pinned)
+                }
+
+                Spacer()
+
+                // Date filter menu
+                Menu {
+                    ForEach(ClipboardDateFilter.allCases) { df in
+                        Button {
+                            clipboardManager.dateFilter = df
+                        } label: {
+                            HStack {
+                                Text(df.titleVI)
+                                if clipboardManager.dateFilter == df {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                        Text(clipboardManager.dateFilter.titleVI)
+                    }
+                    .font(.system(size: 11))
+                    .foregroundColor(clipboardManager.dateFilter != .allTime ? .accentColor : .secondary)
+                }
+                .menuStyle(.borderlessButton)
+
+                // Source app filter menu
+                if !clipboardManager.allSourceApps.isEmpty {
+                    Menu {
+                        Button {
+                            clipboardManager.sourceAppFilter = nil
+                        } label: {
+                            HStack {
+                                Text(L10n.t("Mọi ứng dụng"))
+                                if clipboardManager.sourceAppFilter == nil {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                        Divider()
+                        ForEach(clipboardManager.allSourceApps, id: \.self) { app in
+                            Button {
+                                clipboardManager.sourceAppFilter = app
+                            } label: {
+                                HStack {
+                                    Text(app)
+                                    if clipboardManager.sourceAppFilter == app {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "app.dashed")
+                            Text(clipboardManager.sourceAppFilter ?? L10n.t("Mọi ứng dụng"))
+                        }
+                        .font(.system(size: 11))
+                        .foregroundColor(clipboardManager.sourceAppFilter != nil ? .accentColor : .secondary)
+                    }
+                    .menuStyle(.borderlessButton)
+                }
+
+                // Sort order menu
+                Menu {
+                    ForEach(ClipboardSortOrder.allCases) { so in
+                        Button {
+                            clipboardManager.sortOrder = so
+                        } label: {
+                            HStack {
+                                Text(so.titleVI)
+                                if clipboardManager.sortOrder == so {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.up.arrow.down")
+                        Text(clipboardManager.sortOrder.titleVI)
+                    }
+                    .font(.system(size: 11))
+                    .foregroundColor(clipboardManager.sortOrder != .newest ? .accentColor : .secondary)
+                }
+                .menuStyle(.borderlessButton)
+
+                // Multi-select toggle
+                Button {
+                    clipboardManager.isMultiSelectActive.toggle()
+                    if !clipboardManager.isMultiSelectActive {
+                        clipboardManager.multiSelectedIDs.removeAll()
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: clipboardManager.isMultiSelectActive ? "checkmark.circle.fill" : "checkmark.circle")
+                        Text(clipboardManager.isMultiSelectActive ? L10n.t("Hoàn tất") : L10n.t("Chọn nhiều"))
+                    }
+                    .font(.system(size: 11, weight: clipboardManager.isMultiSelectActive ? .semibold : .regular))
+                    .foregroundColor(clipboardManager.isMultiSelectActive ? .white : .primary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(clipboardManager.isMultiSelectActive ? Color.accentColor : Color.primary.opacity(0.06))
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+
+            // Row 3: Content Type Filter Pills
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     filterPill(title: L10n.t("Tất cả"), icon: "square.grid.2x2", isSelected: clipboardManager.selectedTypeFilter == nil) {
                         clipboardManager.selectedTypeFilter = nil
                     }
-                    ForEach(ContentType.allCases) { type in
+                    ForEach(ContentType.allCases.filter { $0 != .merged }) { type in
                         filterPill(title: type.titleVI, icon: type.icon, isSelected: clipboardManager.selectedTypeFilter == type) {
                             clipboardManager.selectedTypeFilter = type
                         }
                     }
                 }
                 .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.vertical, 4)
             }
 
             Divider()
@@ -70,40 +250,7 @@ struct ClipboardTabView: View {
                     ScrollView(.horizontal, showsIndicators: true) {
                         HStack(spacing: 12) {
                             ForEach(items) { record in
-                                ClipboardCardView(
-                                    record: record,
-                                    selected: clipboardManager.selectedItemID == record.id,
-                                    onPreview: { preview(record) }
-                                )
-                                .frame(width: 250, height: 320)
-                                .id(record.id)
-                                .onTapGesture {
-                                    clipboardManager.selectedItemID = record.id
-                                }
-                                .onDrag {
-                                    if record.type == .file, let path = record.payloadPath ?? record.metadata["path"] {
-                                        return NSItemProvider(object: URL(fileURLWithPath: path) as NSURL)
-                                    }
-                                    if let text = record.textSnippet {
-                                        return NSItemProvider(object: text as NSString)
-                                    }
-                                    return NSItemProvider(object: record.id.uuidString as NSString)
-                                }
-                                .contextMenu {
-                                    Button(L10n.t("Dán (Return)")) { pasteSelected(plainText: false) }
-                                    Button(L10n.t("Dán dạng text thuần (⇧Return)")) { pasteSelected(plainText: true) }
-                                    if let rec = items.first(where: { $0.id == clipboardManager.selectedItemID }),
-                                       let ocr = rec.ocrText, !ocr.isEmpty {
-                                        Button(L10n.t("Sao chép chữ OCR trong ảnh")) {
-                                            NSPasteboard.general.clearContents()
-                                            NSPasteboard.general.setString(ocr, forType: .string)
-                                        }
-                                    }
-                                    Button(L10n.t("Ghim vào bảng hiện tại (⌘P)")) { pinSelected() }
-                                    Button(L10n.t("Xem nhanh (Space)")) { preview(record) }
-                                    Divider()
-                                    Button(L10n.t("Xóa (⌘⌫)"), role: .destructive) { deleteSelected() }
-                                }
+                                cardView(for: record)
                             }
                         }
                         .padding(.horizontal, 12).padding(.vertical, 16)
@@ -114,6 +261,49 @@ struct ClipboardTabView: View {
                         }
                     }
                 }
+            }
+
+            // Multi-select action bar
+            if clipboardManager.isMultiSelectActive {
+                HStack(spacing: 12) {
+                    Text("\(L10n.t("Đã chọn "))\(clipboardManager.multiSelectedIDs.count)\(L10n.t(" mục"))")
+                        .font(.system(size: 12, weight: .medium))
+                    Spacer()
+                    Button {
+                        clipboardManager.mergeRecords(Array(clipboardManager.multiSelectedIDs))
+                    } label: {
+                        Label(L10n.t("Gộp các mục đã chọn"), systemImage: "arrow.triangle.merge")
+                            .font(.system(size: 11))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(clipboardManager.multiSelectedIDs.count < 2)
+
+                    Button(role: .destructive) {
+                        for id in clipboardManager.multiSelectedIDs {
+                            clipboardManager.deleteRecord(id)
+                        }
+                        clipboardManager.multiSelectedIDs.removeAll()
+                        clipboardManager.isMultiSelectActive = false
+                    } label: {
+                        Label(L10n.t("Xóa mục đã chọn"), systemImage: "trash")
+                            .font(.system(size: 11))
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(clipboardManager.multiSelectedIDs.isEmpty)
+
+                    Button(L10n.t("Bỏ chọn tất cả")) {
+                        clipboardManager.multiSelectedIDs.removeAll()
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(Color(.windowBackgroundColor))
+                .overlay(Divider(), alignment: .top)
             }
 
             // Bottom hint bar (keyboard map)
@@ -129,19 +319,50 @@ struct ClipboardTabView: View {
             .padding(.horizontal, 12).padding(.vertical, 6)
             .background(Color(.controlBackgroundColor).opacity(0.5))
         }
-        .background(Color(.windowBackgroundColor))
-        .onAppear {
-            installKeyMonitor()
-            if clipboardManager.selectedItemID == nil {
-                clipboardManager.selectedItemID = items.first?.id
+    }
+
+    private var saveSnippetSheetView: some View {
+        VStack(spacing: 16) {
+            Text(L10n.t("Lưu Snippet"))
+                .font(.headline)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.t("Tiêu đề mẫu lưu"))
+                    .font(.caption).foregroundColor(.secondary)
+                TextField(L10n.t("Tiêu đề mẫu lưu"), text: $snippetTitleInput)
+                    .textFieldStyle(.roundedBorder)
+            }
+            HStack {
+                Button(L10n.t("Hủy"), role: .cancel) {
+                    showSaveSnippetSheet = false
+                    snippetToSave = nil
+                }
+                Spacer()
+                Button(L10n.t("Lưu Snippet")) {
+                    if let rec = snippetToSave {
+                        clipboardManager.saveSnippet(rec.id, title: snippetTitleInput.isEmpty ? nil : snippetTitleInput)
+                    }
+                    showSaveSnippetSheet = false
+                    snippetToSave = nil
+                }
+                .keyboardShortcut(.defaultAction)
             }
         }
-        .onDisappear { removeKeyMonitor() }
-        .alert(L10n.t("Cần quyền Trợ năng để dán phím"), isPresented: $showAccessAlert) {
-            Button(L10n.t("Mở Cài đặt Trợ năng")) { WindowManager.openAccessibilityPane() }
-            Button(L10n.t("Để sau"), role: .cancel) {}
-        } message: {
-            Text(L10n.t("XFinder sẽ ghi nội dung vào clipboard, chuyển tới ứng dụng trước đó và mô phỏng ⌘V. Sao chép vào clipboard vẫn dùng được (bấm \"Sao chép\" trong menu chuột phải)."))
+        .padding(20)
+        .frame(width: 320)
+    }
+
+    private func authenticateWithBiometrics() {
+        let context = LAContext()
+        var error: NSError?
+        let reason = L10n.t("Xác thực bằng Touch ID hoặc mật khẩu để xem lịch sử clipboard")
+        if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
+            context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, _ in
+                Task { @MainActor in
+                    if success { isUnlocked = true }
+                }
+            }
+        } else {
+            isUnlocked = true
         }
     }
 
@@ -256,6 +477,103 @@ struct ClipboardTabView: View {
         }
         .buttonStyle(.plain)
     }
+
+    @ViewBuilder
+    private func sliceButton(_ slice: ClipboardSlice) -> some View {
+        let isSelected = clipboardManager.selectedSlice == slice
+        Button {
+            clipboardManager.selectedSlice = slice
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: slice.icon)
+                    .font(.system(size: 10))
+                Text(slice.titleVI)
+                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(isSelected ? Color.accentColor : Color.primary.opacity(0.06))
+            )
+            .foregroundColor(isSelected ? .white : .primary)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func cardView(for record: ClipboardRecord) -> some View {
+        ClipboardCardView(
+            record: record,
+            selected: clipboardManager.selectedItemID == record.id,
+            onPreview: { preview(record) }
+        )
+        .frame(width: 230, height: 260)
+        .id(record.id)
+        .onTapGesture { handleCardTap(record) }
+        .onDrag { itemDragProvider(for: record) }
+        .contextMenu { cardContextMenu(for: record) }
+    }
+
+
+    private func handleCardTap(_ record: ClipboardRecord) {
+        if clipboardManager.isMultiSelectActive {
+            clipboardManager.toggleMultiSelect(record.id)
+        } else {
+            clipboardManager.selectedItemID = record.id
+        }
+    }
+
+    private func itemDragProvider(for record: ClipboardRecord) -> NSItemProvider {
+        if record.type == .file, let path = record.payloadPath ?? record.metadata["path"] {
+            return NSItemProvider(object: URL(fileURLWithPath: path) as NSURL)
+        }
+        if let text = record.textSnippet {
+            return NSItemProvider(object: text as NSString)
+        }
+        return NSItemProvider(object: record.id.uuidString as NSString)
+    }
+
+    @ViewBuilder
+    private func cardContextMenu(for record: ClipboardRecord) -> some View {
+        Button(L10n.t("Dán (Return)")) { pasteSelected(plainText: false) }
+        Button(L10n.t("Dán dạng text thuần (⇧Return)")) { pasteSelected(plainText: true) }
+        if let rec = items.first(where: { $0.id == clipboardManager.selectedItemID }),
+           let ocr = rec.ocrText, !ocr.isEmpty {
+            Button(L10n.t("Sao chép chữ OCR trong ảnh")) {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(ocr, forType: .string)
+            }
+        }
+        Divider()
+        Button(record.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim")) {
+            clipboardManager.togglePin(record.id)
+        }
+        if record.isSavedSnippet {
+            Button(L10n.t("Bỏ lưu Snippet")) {
+                clipboardManager.removeSnippet(record.id)
+            }
+        } else {
+            Button(L10n.t("Lưu dưới dạng Snippet…")) {
+                snippetToSave = record
+                snippetTitleInput = record.displayTitle
+                showSaveSnippetSheet = true
+            }
+        }
+        if record.type == .merged {
+            Button(L10n.t("Tách mục đã gộp")) {
+                clipboardManager.unmergeRecord(record.id)
+            }
+        }
+        Button(L10n.t("Ghim vào bảng hiện tại (⌘P)")) { pinSelected() }
+        Button(L10n.t("Xem nhanh (Space)")) { preview(record) }
+        Divider()
+        Button(L10n.t("Bỏ qua ứng dụng này (không lưu vào Clipboard)")) {
+            clipboardManager.excludeApp(bundleID: record.sourceBundleID, appName: record.sourceAppName)
+        }
+        Button(L10n.t("Xóa (⌘⌫)"), role: .destructive) { deleteSelected() }
+    }
+
 
     private func pinSelected() {
         guard let rec = selected(), let board = clipboardManager.currentPinboardID else { return }

@@ -14,10 +14,11 @@ actor DatabaseService {
     /// would open its own sqlite handle that nothing ever closes (see the note
     /// where `deinit` used to be).
     private init() {
-        let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let fm = fileManager
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ?? fm.temporaryDirectory
         let appDir = appSupport.appendingPathComponent("XFinder", isDirectory: true)
 
-        try? fileManager.createDirectory(at: appDir, withIntermediateDirectories: true)
+        try? fm.createDirectory(at: appDir, withIntermediateDirectories: true)
         self.dbPath = appDir.appendingPathComponent("xfinder.db").path
     }
 

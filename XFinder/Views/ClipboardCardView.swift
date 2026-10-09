@@ -1,172 +1,479 @@
 import AppKit
 import SwiftUI
 
-/// PasteApp-style clipboard card (guide §2): dynamic accent header from the
-/// source app's icon tint, rich per-type body, metadata footer. macOS 12-safe
-/// (no Grid/symbolEffect/scrollContentBackground).
+/// Paste 7-style clipboard card: dynamic vibrant accent header matching the source app's
+/// brand icon color, rich per-type body, metadata footer, elevated selection.
 struct ClipboardCardView: View {
     let record: ClipboardRecord
     let selected: Bool
-    let onPreview: () -> Void
+    var onSelect: (() -> Void)? = nil
+    var onPreview: (() -> Void)? = nil
 
     @Environment(ClipboardManager.self) private var clipboardManager
+    @AppStorage("clipboard.textSize") private var textSize: Double = 13.5
     @State private var hovering = false
     @State private var appIcon: NSImage?
 
     var body: some View {
         VStack(spacing: 0) {
-            // Thanh màu trên đỉnh khi item được ghim vào một bảng (vd "Error"
-            // màu đỏ → thanh đỏ) — phản ánh đúng danh mục người dùng kéo-vào.
-            if clipboardManager.pinnedColor(for: record.id) != nil {
-                Rectangle().fill(accent).frame(height: 3)
+            // Thanh màu trên đỉnh khi item được ghim vào một bảng tùy chỉnh
+            if let boardColor = clipboardManager.pinnedColor(for: record.id) {
+                Rectangle().fill(boardColor).frame(height: 3)
             }
-            // Header: app icon + name + time, accent-tinted
-            HStack(spacing: 8) {
-                Group {
-                    if let icon = appIcon {
-                        Image(nsImage: icon).resizable()
-                    } else {
-                        Image(systemName: iconFor(record.type)).foregroundColor(.secondary)
-                    }
-                }
-                .frame(width: 22, height: 22).cornerRadius(5)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(record.displayTitle).font(.caption).fontWeight(.semibold).lineLimit(1)
-                    Text(record.timeString).font(.caption2).foregroundColor(.secondary)
-                }
-                Spacer()
-                Button {
-                    ClipboardPasteEngine.writeToPasteboard(record: record)
-                } label: {
-                    Image(systemName: "doc.on.doc").font(.caption).foregroundColor(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help(L10n.t("Sao chép lại vào clipboard"))
-            }
-            .padding(12)
-            .background(accent.opacity(0.14))
-            Divider()
 
-            // Body per content type
-            VStack(alignment: .leading, spacing: 8) {
-                switch record.type {
-                case .text:
-                    Text(fullText ?? record.displayPreview)
-                        .font(.system(size: 13))
-                        .lineLimit(6)
-                case .markdown:
-                    Text(fullText ?? record.displayPreview)
-                        .font(.system(size: 12))
-                        .lineLimit(7)
-                case .code:
-                    Text(fullText ?? record.displayPreview)
-                        .font(.system(size: 11, design: .monospaced))
-                        .foregroundColor(.green)
-                        .lineLimit(8)
-                case .image:
-                    if let path = record.thumbnailPath ?? record.payloadPath,
-                       let img = NSImage(contentsOfFile: path) {
-                        Image(nsImage: img)
-                            .resizable().aspectRatio(contentMode: .fit)
-                            .frame(maxHeight: 130).cornerRadius(4)
-                    } else {
-                        Image(systemName: "photo").font(.system(size: 40)).foregroundColor(.secondary)
-                    }
-                    HStack {
-                        if let dims = record.metadata["dimensions"] {
-                            Text(dims).font(.caption).foregroundColor(.secondary)
-                        }
-                        if record.ocrText != nil {
-                            Label("OCR", systemImage: "text.viewfinder")
-                                .font(.caption2).foregroundColor(.accentColor)
-                        }
-                    }
-                    if let ocr = record.ocrText, !ocr.isEmpty {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Divider()
-                            HStack(spacing: 6) {
-                                Image(systemName: "text.viewfinder").font(.caption2).foregroundColor(.accentColor)
-                                Text(L10n.t("Chữ trong ảnh")).font(.caption2).fontWeight(.semibold).foregroundColor(.secondary)
-                                Spacer()
-                                Button {
-                                    NSPasteboard.general.clearContents()
-                                    NSPasteboard.general.setString(ocr, forType: .string)
-                                } label: {
-                                    Label(L10n.t("Sao chép"), systemImage: "doc.on.doc").font(.caption2)
-                                }
-                                .buttonStyle(.bordered).controlSize(.mini)
-                            }
-                            Text(ocr)
-                                .font(.system(size: 11)).italic().foregroundColor(.secondary)
-                                .lineLimit(2)
-                        }
-                    }
-                case .link:
-                    Label(record.metadata["url"]?.isEmpty == false ? record.metadata["url"]! : record.displayPreview,
-                          systemImage: "link")
-                        .font(.system(size: 12))
-                        .lineLimit(4)
-                        .foregroundColor(.accentColor)
-                case .color:
-                    HStack(spacing: 10) {
-                        if let ns = ClipboardClassifier.color(from: record.displayPreview) {
-                            Circle().fill(Color(ns)).frame(width: 44, height: 44)
-                        } else {
-                            Circle().fill(Color.blue).frame(width: 44, height: 44)
-                        }
-                        Text(record.displayPreview)
-                            .font(.system(size: 12, design: .monospaced))
-                    }
-                case .file:
-                    Label(record.displayPreview, systemImage: "doc.fill")
-                        .font(.system(size: 12)).lineLimit(2)
-                    if let p = record.metadata["path"] {
-                        Text(p).font(.caption2).foregroundColor(.secondary).lineLimit(2)
-                    }
-                }
-                Spacer()
-            }
-            .padding(12)
-            Divider()
+            // Header: Vibrant app brand color background (Paste 7 style)
+            headerView
 
-            // Footer: type + length / OCR-hit hint
-            HStack(spacing: 8) {
-                Text(record.type.rawValue.uppercased())
-                    .font(.caption2).fontWeight(.semibold).foregroundColor(.secondary)
-                Spacer()
-                if let len = record.metadata["length"] {
-                    Text("\(len)\(L10n.t(" ký tự"))").font(.caption2).foregroundColor(.secondary)
-                }
-            }
-            .padding(12)
-            .background(Color(.controlBackgroundColor).opacity(0.5))
+            // Body: per content type
+            bodyView
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(Color(.windowBackgroundColor))
+
+            // Footer metadata
+            footerView
         }
-        .background(Color(.controlBackgroundColor))
-        .cornerRadius(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.windowBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(selected ? Color.accentColor : Color.secondary.opacity(0.25),
-                        lineWidth: selected ? 2 : 1)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(selected ? Color.accentColor : Color.primary.opacity(0.08),
+                        lineWidth: selected ? 2.5 : 1)
         )
-        .shadow(radius: hovering ? 6 : 2)
-        .scaleEffect(hovering ? 1.03 : 1.0)
-        .animation(.spring(response: 0.28, dampingFraction: 0.82), value: hovering)
+        .shadow(color: Color.black.opacity(selected ? 0.22 : (hovering ? 0.14 : 0.07)),
+                radius: selected ? 10 : (hovering ? 6 : 3),
+                y: selected ? 4 : (hovering ? 3 : 1))
+        .offset(y: selected ? -4 : (hovering ? -2 : 0))
+        .scaleEffect(selected ? 1.02 : 1.0)
+        .animation(.spring(response: 0.26, dampingFraction: 0.8), value: hovering)
+        .animation(.spring(response: 0.26, dampingFraction: 0.8), value: selected)
         .onHover { hovering = $0 }
-        .onTapGesture(count: 2) { onPreview() }
+        .onTapGesture {
+            if clipboardManager.isMultiSelectActive {
+                clipboardManager.toggleMultiSelect(record.id)
+            } else if let onSelect {
+                onSelect()
+            }
+        }
         .onAppear {
             appIcon = ClipboardAppIcon.icon(forBundleID: record.sourceBundleID)
         }
     }
 
-    private var accent: Color {
-        if let boardColor = clipboardManager.pinnedColor(for: record.id) { return boardColor }
-        if let hex = record.metadata["accent"], !hex.isEmpty {
-            return Color(hex: hex) ?? .accentColor
+    // MARK: - Header (Paste 7 Vibrant Header)
+
+    private var headerView: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(record.type.titleVI)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                Text(record.timeString)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.white.opacity(0.85))
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            if record.isPinned {
+                Image(systemName: "pin.fill")
+                    .font(.caption2)
+                    .foregroundColor(.white)
+                    .padding(4)
+                    .background(Circle().fill(Color.orange))
+                    .help(L10n.t("Đã ghim"))
+            }
+
+            if record.isSavedSnippet {
+                Image(systemName: "bookmark.fill")
+                    .font(.caption2)
+                    .foregroundColor(.white)
+                    .padding(4)
+                    .background(Circle().fill(Color.accentColor))
+                    .help(L10n.t("Đã lưu"))
+            }
+
+            // Quick actions on hover
+            if hovering && !clipboardManager.isMultiSelectActive {
+                Button {
+                    clipboardManager.togglePin(record.id)
+                } label: {
+                    Image(systemName: record.isPinned ? "pin.fill" : "pin")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(5)
+                        .background(Circle().fill(Color.black.opacity(0.25)))
+                }
+                .buttonStyle(.plain)
+                .help(record.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim"))
+
+                Button {
+                    ClipboardPasteEngine.writeToPasteboard(record: record)
+                    ClipboardSounds.playCopy()
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(5)
+                        .background(Circle().fill(Color.black.opacity(0.25)))
+                }
+                .buttonStyle(.plain)
+                .help(L10n.t("Sao chép lại vào clipboard"))
+            }
+
+            // Source App Icon badge
+            Group {
+                if let icon = appIcon {
+                    Image(nsImage: icon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                } else {
+                    Image(systemName: iconFor(record.type))
+                        .font(.system(size: 14))
+                        .foregroundColor(.white)
+                }
+            }
+            .frame(width: 26, height: 26)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.18), radius: 2, y: 1)
+            .help(record.displayTitle)
         }
-        return .accentColor
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(height: 48)
+        .background(accent)
     }
 
-    /// Short payloads inline; long ones load from disk on appear.
+    // MARK: - Body View
+
+    @ViewBuilder
+    private var bodyView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            switch record.type {
+            case .text, .markdown:
+                formattedTextBody
+            case .code:
+                codeBody
+            case .image:
+                imageBody
+            case .link:
+                linkBody
+            case .color:
+                colorBody
+            case .file:
+                fileBody
+            case .merged:
+                mergedBody
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+    }
+
+    private var formattedTextBody: some View {
+        let text = fullText ?? record.displayPreview
+
+        if let img = ClipboardClassifier.resolveCandidateImage(for: record) {
+            return AnyView(
+                VStack(alignment: .center, spacing: 6) {
+                    Image(nsImage: img)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: 110)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    Text(text)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            )
+        }
+
+        let lines = text.split(separator: "\n", maxSplits: 2, omittingEmptySubsequences: true)
+        let firstLine = lines.first.map(String.init) ?? ""
+
+        return AnyView(
+            VStack(alignment: .leading, spacing: 4) {
+                if lines.count > 1 && firstLine.count < 50 {
+                    Text(firstLine)
+                        .font(.system(size: CGFloat(textSize), weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                    let remaining = text.dropFirst(firstLine.count).trimmingCharacters(in: .whitespacesAndNewlines)
+                    Text(remaining)
+                        .font(.system(size: CGFloat(textSize - 1)))
+                        .foregroundColor(.secondary)
+                        .lineLimit(5)
+                } else {
+                    Text(text)
+                        .font(.system(size: CGFloat(textSize)))
+                        .foregroundColor(.primary)
+                        .lineLimit(7)
+                }
+            }
+        )
+    }
+
+    private var codeBody: some View {
+        let text = fullText ?? record.displayPreview
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(text)
+                .font(.system(size: CGFloat(textSize - 2), design: .monospaced))
+                .foregroundColor(.primary)
+                .lineLimit(7)
+                .padding(6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(Color.primary.opacity(0.04))
+                )
+        }
+    }
+
+    private var imageBody: some View {
+        VStack(alignment: .center, spacing: 6) {
+            ZStack(alignment: .bottomTrailing) {
+                if let path = record.thumbnailPath ?? record.payloadPath ?? record.metadata["path"],
+                   let img = NSImage(contentsOfFile: path) {
+                    Image(nsImage: img)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: 110)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                } else if let img = ClipboardClassifier.resolveCandidateImage(for: record) {
+                    Image(nsImage: img)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: 110)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                } else {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(Color.primary.opacity(0.05))
+                        .frame(maxWidth: .infinity, minHeight: 90, maxHeight: 110)
+                        .overlay(
+                            Image(systemName: "photo")
+                                .font(.system(size: 32))
+                                .foregroundColor(.secondary)
+                        )
+                }
+
+                if let dims = record.metadata["dimensions"] {
+                    Text(dims)
+                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(Color.black.opacity(0.65)))
+                        .padding(4)
+                }
+            }
+
+            if let snippet = record.textSnippet, snippet != "Image" && !snippet.isEmpty {
+                Text(L10n.t(snippet))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+
+            if let ocr = record.ocrText, !ocr.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "text.viewfinder")
+                        .font(.system(size: 10))
+                        .foregroundColor(.accentColor)
+                    Text(ocr)
+                        .font(.system(size: 10))
+                        .italic()
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                    Spacer()
+                }
+            }
+        }
+    }
+
+    private var linkBody: some View {
+        let urlStr = record.metadata["url"]?.isEmpty == false ? record.metadata["url"]! : record.displayPreview
+        let host = URL(string: urlStr)?.host ?? ""
+
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "link")
+                    .font(.system(size: 12))
+                    .foregroundColor(accent)
+                Text(host.isEmpty ? urlStr : host)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(accent)
+                    .lineLimit(1)
+            }
+            Text(urlStr)
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+                .lineLimit(4)
+        }
+    }
+
+    private var colorBody: some View {
+        HStack(spacing: 12) {
+            if let ns = ClipboardClassifier.color(from: record.displayPreview) {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(ns))
+                    .frame(width: 52, height: 52)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                    )
+                    .shadow(color: Color.black.opacity(0.1), radius: 3, y: 1)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(record.displayPreview.uppercased())
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                Text(L10n.t("Màu sắc"))
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 8)
+    }
+
+    private var fileBody: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            let path = record.metadata["path"] ?? record.payloadPath
+            if let path, let img = NSImage(contentsOfFile: path) {
+                ZStack(alignment: .bottomTrailing) {
+                    Image(nsImage: img)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: 110)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                    if let dims = record.metadata["dimensions"] {
+                        Text(dims)
+                            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(Color.black.opacity(0.65)))
+                            .padding(4)
+                    }
+                }
+                Text(record.displayPreview)
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            } else if let img = ClipboardClassifier.resolveCandidateImage(for: record) {
+                ZStack(alignment: .bottomTrailing) {
+                    Image(nsImage: img)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: 110)
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                    if let dims = record.metadata["dimensions"] {
+                        Text(dims)
+                            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(Color.black.opacity(0.65)))
+                            .padding(4)
+                    }
+                }
+                Text(record.displayPreview)
+                    .font(.system(size: 11, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: "doc.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(record.displayPreview)
+                            .font(.system(size: 12, weight: .semibold))
+                            .lineLimit(2)
+                        if let path {
+                            Text(path)
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var mergedBody: some View {
+        let parts = record.mergedComponents
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Label("\(parts.count) \(L10n.t("mục"))", systemImage: "arrow.triangle.merge")
+                    .font(.caption2).fontWeight(.semibold)
+                    .foregroundColor(.accentColor)
+                Spacer()
+            }
+            ForEach(Array(parts.prefix(2).enumerated()), id: \.offset) { idx, part in
+                HStack(alignment: .top, spacing: 4) {
+                    Text("\(idx + 1).")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(.secondary)
+                    Text(part)
+                        .font(.system(size: CGFloat(textSize - 2)))
+                        .lineLimit(2)
+                }
+            }
+            if parts.count > 2 {
+                Text("\(L10n.t("…và "))\(parts.count - 2)\(L10n.t(" mục nữa"))")
+                    .font(.caption2).foregroundColor(.secondary)
+            }
+        }
+    }
+
+    // MARK: - Footer
+
+    private var footerView: some View {
+        HStack(spacing: 6) {
+            if let len = record.metadata["length"] {
+                Text("\(len)\(L10n.t(" ký tự"))")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary)
+            } else if record.type == .image, let dims = record.metadata["dimensions"] {
+                Text(dims)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundColor(.secondary)
+            } else if record.type == .link, let host = URL(string: record.metadata["url"] ?? "")?.host {
+                Text(host)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            if clipboardManager.isMultiSelectActive {
+                let isChecked = clipboardManager.multiSelectedIDs.contains(record.id)
+                Image(systemName: isChecked ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 13))
+                    .foregroundColor(isChecked ? .accentColor : .secondary)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.primary.opacity(0.02))
+        .overlay(Divider().opacity(0.3), alignment: .top)
+    }
+
+    // MARK: - Helpers
+
+    private var accent: Color {
+        if let boardColor = clipboardManager.pinnedColor(for: record.id) { return boardColor }
+        return ClipboardAppColor.color(forBundleID: record.sourceBundleID, contentType: record.type)
+    }
+
     private var fullText: String? {
         if let p = record.payloadPath, record.type == .text,
            let s = try? String(contentsOfFile: p, encoding: .utf8) {
@@ -184,13 +491,7 @@ struct ClipboardCardView: View {
         case .link: return "link"
         case .color: return "paintpalette"
         case .file: return "doc"
+        case .merged: return "arrow.triangle.merge"
         }
-    }
-}
-
-private extension Color {
-    init?(hex: String) {
-        guard let ns = ClipboardClassifier.color(from: hex) else { return nil }
-        self.init(ns)
     }
 }
