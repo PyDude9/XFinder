@@ -6326,6 +6326,206 @@
     "Đã sao chép": {
       "en": "Copied",
       "scope": "sentence"
+    },
+    "Tính năng & Quyền": {
+      "en": "Features & Permissions",
+      "scope": "sentence"
+    },
+    "Chọn XFinder chạy những gì và xem nó được phép làm gì.": {
+      "en": "Choose what XFinder runs and see what it is allowed to do.",
+      "scope": "sentence"
+    },
+    "Tính năng": {
+      "en": "Features",
+      "scope": "sentence"
+    },
+    "Quyền": {
+      "en": "Permissions",
+      "scope": "sentence"
+    },
+    "Chỉ bật thứ bạn dùng. Tính năng đã tắt sẽ ngừng chạy nền.": {
+      "en": "Turn on only what you use. A feature you turn off stops running in the background.",
+      "scope": "sentence"
+    },
+    "Bật tất cả": {
+      "en": "Turn all on",
+      "scope": "sentence"
+    },
+    "Tắt tất cả": {
+      "en": "Turn all off",
+      "scope": "sentence"
+    },
+    "Bắt đầu bằng một gói": {
+      "en": "Start with a bundle",
+      "scope": "sentence"
+    },
+    "Một cú bấm đặt sẵn theo cách bạn dùng máy. Mọi thứ còn lại vẫn cách một cú bấm.": {
+      "en": "One click sets things up for how you use your Mac. Everything else stays one click away.",
+      "scope": "sentence"
+    },
+    "Áp dụng": {
+      "en": "Apply",
+      "scope": "sentence"
+    },
+    "Mỗi quyền làm gì và tính năng nào dùng nó.": {
+      "en": "What each permission does and which features use it.",
+      "scope": "sentence"
+    },
+    "Hiện không tính năng nào đang bật cần quyền này.": {
+      "en": "No feature that is on needs this permission right now.",
+      "scope": "sentence"
+    },
+    "Bạn đã cấp quyền này nhưng không gì đang bật cần nó. Nếu muốn, hãy thu hồi trong Cài đặt hệ thống.": {
+      "en": "You granted this permission, but nothing that is on needs it. If you like, revoke it in System Settings.",
+      "scope": "sentence"
+    },
+    "Có tính năng đang bật nhưng chưa có quyền này nên nó chưa hoạt động.": {
+      "en": "A feature is on but lacks this permission, so it is not working yet.",
+      "scope": "sentence"
+    },
+    "Mở Cài đặt hệ thống": {
+      "en": "Open System Settings",
+      "scope": "sentence"
+    },
+    "Mọi quyền đều tùy chọn: bỏ qua một quyền thì tính năng cần nó đứng yên, phần còn lại vẫn chạy.": {
+      "en": "Every permission is optional: skip one and the feature that needs it stays off while the rest keeps working.",
+      "scope": "sentence"
+    },
+    "Micro": {
+      "en": "Microphone",
+      "scope": "sentence"
+    },
+    "Nhận dạng giọng nói": {
+      "en": "Speech Recognition",
+      "scope": "sentence"
+    },
+    "Cho phép tính năng phản ứng với phím, chuột và di chuyển cửa sổ.": {
+      "en": "Lets features react to keys and clicks, and move windows.",
+      "scope": "sentence"
+    },
+    "Cho phép hiện ảnh thu nhỏ cửa sổ.": {
+      "en": "Lets features show window thumbnails.",
+      "scope": "sentence"
+    },
+    "Cho phép nghe giọng bạn khi nhập bằng giọng nói.": {
+      "en": "Lets voice typing hear you.",
+      "scope": "sentence"
+    },
+    "Cho phép chuyển giọng nói thành chữ.": {
+      "en": "Lets voice typing turn speech into text.",
+      "scope": "sentence"
+    },
+    "Không chạy nền": {
+      "en": "Nothing at rest",
+      "scope": "sentence"
+    },
+    "Lắng nghe bàn phím": {
+      "en": "Listens to the keyboard",
+      "scope": "sentence"
+    },
+    "Lắng nghe chuột": {
+      "en": "Listens to the mouse",
+      "scope": "sentence"
+    },
+    "Có bộ hẹn giờ": {
+      "en": "Runs a timer",
+      "scope": "sentence"
+    },
+    "Cửa sổ và Dock": {
+      "en": "Windows and Dock",
+      "scope": "sentence"
+    },
+    "Giọng nói": {
+      "en": "Voice",
+      "scope": "sentence"
+    },
+    "Kéo cửa sổ tới mép màn hình để chia khung.": {
+      "en": "Drag a window to a screen edge to tile it.",
+      "scope": "sentence"
+    },
+    "Nhấn nhanh ⌘Q không thoát nhầm; phải giữ khoảng 1 giây.": {
+      "en": "A quick ⌘Q no longer quits by accident; hold it for about a second.",
+      "scope": "sentence"
+    },
+    "Khay Clipboard ⌘⇧V": {
+      "en": "Clipboard shelf ⌘⇧V",
+      "scope": "sentence"
+    },
+    "Mở lịch sử clipboard ở mọi ứng dụng bằng phím tắt.": {
+      "en": "Open clipboard history in any app with a shortcut.",
+      "scope": "sentence"
+    },
+    "Xóa tham số theo dõi khỏi liên kết bạn sao chép.": {
+      "en": "Removes tracking parameters from links you copy.",
+      "scope": "sentence"
+    },
+    "Xếp hạng lịch sử theo ứng dụng sắp dán vào.": {
+      "en": "Ranks history by the app you are about to paste into.",
+      "scope": "sentence"
+    },
+    "Bảng lệnh ⌘K": {
+      "en": "Command bar ⌘K",
+      "scope": "sentence"
+    },
+    "Tìm ứng dụng, tệp và tính toán từ một ô nhập.": {
+      "en": "Search apps, files and calculate from one field.",
+      "scope": "sentence"
+    },
+    "Dải ghi chú ẩn ở mép màn hình, rê chuột để mở.": {
+      "en": "A note strip hidden at the screen edge; point at it to open.",
+      "scope": "sentence"
+    },
+    "Khay thả file": {
+      "en": "File drop tray",
+      "scope": "sentence"
+    },
+    "Giữ tệp tạm trên khay, kéo thả đi nơi khác.": {
+      "en": "Hold files on a tray and drag them elsewhere.",
+      "scope": "sentence"
+    },
+    "Đồng bộ thư mục tự động": {
+      "en": "Automatic folder sync",
+      "scope": "sentence"
+    },
+    "Sao chép một chiều theo lịch hoặc khi có thay đổi.": {
+      "en": "One-way copy on a schedule or when something changes.",
+      "scope": "sentence"
+    },
+    "Giữ phím, nói, thả ra là chữ vào ô đang gõ.": {
+      "en": "Hold a key, speak, release, and the text lands where you are typing.",
+      "scope": "sentence"
+    },
+    "Xem trước Dock, ⌘-Tab, vùng bắt dính và giữ ⌘Q để thoát.": {
+      "en": "Dock preview, ⌘-Tab, snap zones and hold ⌘Q to quit.",
+      "scope": "sentence"
+    },
+    "Clipboard và tìm kiếm": {
+      "en": "Clipboard and search",
+      "scope": "sentence"
+    },
+    "Khay ⌘⇧V, làm sạch liên kết, gợi ý và bảng lệnh ⌘K.": {
+      "en": "The ⌘⇧V shelf, link cleaning, suggestions and the ⌘K command bar.",
+      "scope": "sentence"
+    },
+    "Yên tĩnh": {
+      "en": "Quiet",
+      "scope": "sentence"
+    },
+    "Tắt mọi thứ lắng nghe bàn phím, chuột hay chạy hẹn giờ. Chỉ giữ những gì không chạy nền.": {
+      "en": "Turns off everything that listens to input or runs a timer. Keeps only what does nothing at rest.",
+      "scope": "sentence"
+    },
+    " tính năng đang bật": {
+      "en": " features on",
+      "scope": "fragment"
+    },
+    "Thiếu quyền: ": {
+      "en": "Missing permission: ",
+      "scope": "fragment"
+    },
+    "Dùng bởi: ": {
+      "en": "Used by: ",
+      "scope": "fragment"
     }
   }
 }

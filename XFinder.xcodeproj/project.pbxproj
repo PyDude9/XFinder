@@ -46,6 +46,7 @@
 		7F1A005C /* Detail/NetworkDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0055 /* Detail/NetworkDetailView.swift */; };
 		7F1A005D /* Detail/StorageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0056 /* Detail/StorageDetailView.swift */; };
 		7F1A005E /* Detail/QuickControlsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0057 /* Detail/QuickControlsDetailView.swift */; };
+		7F1A01CE /* Detail/FeaturesHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01CD /* Detail/FeaturesHubView.swift */; };
 		7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0058 /* Detail/AntiSleepDetailView.swift */; };
 		7F1A0061 /* Detail/SettingsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0060 /* Detail/SettingsDetailView.swift */; };
 		7F1A0064 /* Detail/CompressDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0062 /* Detail/CompressDetailView.swift */; };
@@ -167,6 +168,9 @@
 		7F1A018F /* MenuBar/Layout/AccessibilityMenuBarInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A018E /* MenuBar/Layout/AccessibilityMenuBarInventory.swift */; };
 		7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A00DD /* XFinder/Resources/AppIcon.icns */; };
 		7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0073 /* ClipboardPasteEngine.swift */; };
+		7F1A01CC /* FeatureHub.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01CB /* FeatureHub.swift */; };
+		7F1A01CA /* FeatureCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01C9 /* FeatureCatalog.swift */; };
+		7F1A01C8 /* PortList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01C7 /* PortList.swift */; };
 		7F1A01C6 /* ScreenColorPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01C5 /* ScreenColorPicker.swift */; };
 		7F1A01C4 /* ColorFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01C3 /* ColorFormat.swift */; };
 		7F1A01BE /* QuitProtectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01BD /* QuitProtectionController.swift */; };
@@ -246,6 +250,7 @@
 		7F1A0055 /* Detail/NetworkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/NetworkDetailView.swift; sourceTree = "<group>"; };
 		7F1A0056 /* Detail/StorageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/StorageDetailView.swift; sourceTree = "<group>"; };
 		7F1A0057 /* Detail/QuickControlsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/QuickControlsDetailView.swift; sourceTree = "<group>"; };
+		7F1A01CD /* Detail/FeaturesHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FeaturesHubView.swift; sourceTree = "<group>"; };
 		7F1A0058 /* Detail/AntiSleepDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/AntiSleepDetailView.swift; sourceTree = "<group>"; };
 		7F1A0060 /* Detail/SettingsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SettingsDetailView.swift; sourceTree = "<group>"; };
 		7F1A0062 /* Detail/CompressDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/CompressDetailView.swift; sourceTree = "<group>"; };
@@ -264,6 +269,9 @@
 		7F1A0071 /* Detail/QuickLookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/QuickLookDetailView.swift; sourceTree = "<group>"; };
 		7F1A0072 /* Detail/FinderToolDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FinderToolDetailViews.swift; sourceTree = "<group>"; };
 		7F1A0073 /* ClipboardPasteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardPasteEngine.swift; sourceTree = "<group>"; };
+		7F1A01CB /* FeatureHub.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureHub.swift; sourceTree = "<group>"; };
+		7F1A01C9 /* FeatureCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureCatalog.swift; sourceTree = "<group>"; };
+		7F1A01C7 /* PortList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortList.swift; sourceTree = "<group>"; };
 		7F1A01C5 /* ScreenColorPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenColorPicker.swift; sourceTree = "<group>"; };
 		7F1A01C3 /* ColorFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorFormat.swift; sourceTree = "<group>"; };
 		7F1A01BD /* QuitProtectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitProtectionController.swift; sourceTree = "<group>"; };
@@ -462,6 +470,9 @@
 				7F1A0068 /* BatchRenameEngine.swift */,
 				7F1A0069 /* FileSearchEngine.swift */,
 				7F1A0073 /* ClipboardPasteEngine.swift */,
+				7F1A01CB /* FeatureHub.swift */,
+				7F1A01C9 /* FeatureCatalog.swift */,
+				7F1A01C7 /* PortList.swift */,
 				7F1A01C5 /* ScreenColorPicker.swift */,
 				7F1A01C3 /* ColorFormat.swift */,
 				7F1A01BD /* QuitProtectionController.swift */,
@@ -601,6 +612,7 @@
 				7F1A0055 /* Detail/NetworkDetailView.swift */,
 				7F1A0056 /* Detail/StorageDetailView.swift */,
 				7F1A0057 /* Detail/QuickControlsDetailView.swift */,
+				7F1A01CD /* Detail/FeaturesHubView.swift */,
 				7F1A0058 /* Detail/AntiSleepDetailView.swift */,
 				7F1A0060 /* Detail/SettingsDetailView.swift */,
 				7F1A0062 /* Detail/CompressDetailView.swift */,
@@ -777,6 +789,7 @@
 				7F1A005C /* Detail/NetworkDetailView.swift in Sources */,
 				7F1A005D /* Detail/StorageDetailView.swift in Sources */,
 				7F1A005E /* Detail/QuickControlsDetailView.swift in Sources */,
+				7F1A01CE /* Detail/FeaturesHubView.swift in Sources */,
 				7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */,
 				7F1A0061 /* Detail/SettingsDetailView.swift in Sources */,
 				7F1A0064 /* Detail/CompressDetailView.swift in Sources */,
@@ -795,6 +808,9 @@
 				7F1A008A /* Detail/WindowDetailViews.swift in Sources */,
 				7F1A008B /* Detail/QuickLookDetailView.swift in Sources */,
 				7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */,
+				7F1A01CC /* FeatureHub.swift in Sources */,
+				7F1A01CA /* FeatureCatalog.swift in Sources */,
+				7F1A01C8 /* PortList.swift in Sources */,
 				7F1A01C6 /* ScreenColorPicker.swift in Sources */,
 				7F1A01C4 /* ColorFormat.swift in Sources */,
 				7F1A01BE /* QuitProtectionController.swift in Sources */,

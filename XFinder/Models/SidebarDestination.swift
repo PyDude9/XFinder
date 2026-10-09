@@ -3,6 +3,7 @@ import SwiftUI
 enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     // CHUNG — built now, real data
     case dashboard
+    case features
     case quickControls
     case antiSleep
     case system
@@ -51,6 +52,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     var titleVI: String {
         switch self {
         case .dashboard: return L10n.t("Tổng quan")
+        case .features: return L10n.t("Tính năng & Quyền")
         case .quickControls: return L10n.t("Điều khiển nhanh")
         case .antiSleep: return L10n.t("Chống ngủ")
         case .system: return L10n.t("Hệ thống")
@@ -88,6 +90,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     var icon: String {
         switch self {
         case .dashboard: return "chart.bar.fill"
+        case .features: return "square.grid.2x2"
         case .quickControls: return "slider.horizontal.3"
         case .antiSleep: return "moon.zzz.fill"
         case .system: return "cpu"
@@ -134,7 +137,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     static var groups: [(header: String, items: [SidebarDestination])] {
         [
-            ("CHUNG", [.dashboard, .quickControls, .antiSleep, .system, .network, .storage, .pin]),
+            ("CHUNG", [.dashboard, .features, .quickControls, .antiSleep, .system, .network, .storage, .pin]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .mouseGestures, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .actionHistory]),

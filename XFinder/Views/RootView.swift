@@ -67,6 +67,8 @@ struct DetailHostView: View {
             switch selection {
             case .clipboard, .settingsClipboard:
                 SettingsDetailView(destination: .settingsClipboard)
+            case .features:
+                FeaturesHubView()
             case .notes:
                 NotesDetailView()
             case .windowPreview:
