@@ -134,12 +134,15 @@ struct MenubarFlyoutView: View {
     @State private var smartChecked = false
     @ObservedObject private var permissionManager = PermissionManager.shared
     @State private var tab: FlyoutTab = .controls
+    @State private var hub = FeatureHub.shared
+    /// Groups the user collapsed in the Tính năng tab. Windows starts open, the rest closed.
+    @State private var collapsedGroups: Set<FeatureGroup> = [.clipboard, .tools, .voice]
     @AppStorage("menubar.showBattery") private var showBattery = true
     @AppStorage("menubar.showNetwork") private var showNetwork = true
     @AppStorage("notes.edgeEnabled") private var edgeNotesEnabled = false
 
     enum FlyoutTab: String, CaseIterable, Identifiable {
-        case controls, antiSleep, system, network, storage, battery, notes
+        case controls, antiSleep, system, network, storage, battery, notes, features
         var id: String { rawValue }
         var icon: String {
             switch self {
@@ -150,6 +153,7 @@ struct MenubarFlyoutView: View {
             case .storage:   return "internaldrive"
             case .battery:   return "battery.100"
             case .notes:     return "note.text"
+            case .features:  return "switch.2"
             }
         }
         var titleVI: String {
@@ -161,6 +165,7 @@ struct MenubarFlyoutView: View {
             case .storage:   return L10n.t("Ổ đĩa")
             case .battery:   return L10n.t("Pin")
             case .notes:     return L10n.t("Ghi chú")
+            case .features:  return L10n.t("Tính năng")
             }
         }
         var destination: SidebarDestination {
@@ -172,6 +177,7 @@ struct MenubarFlyoutView: View {
             case .storage:   return .storage
             case .battery:   return .pin
             case .notes:     return .notes
+            case .features:  return .features
             }
         }
     }
@@ -222,12 +228,14 @@ struct MenubarFlyoutView: View {
         .onAppear {
             volumeObserver.retain()
             audioOutputs.retain()
+            hub.retain()
             systemMonitor.retain()
             batteryStore.retain()
         }
         .onDisappear {
             volumeObserver.release()
             audioOutputs.release()
+            hub.release()
             systemMonitor.release()
             batteryStore.release()
         }
@@ -236,11 +244,26 @@ struct MenubarFlyoutView: View {
     // MARK: Chrome
 
     private var header: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "square.grid.2x2.fill")
-                .foregroundColor(.accentColor)
-            Text("XFinder").font(.system(size: 15, weight: .semibold))
-            Spacer()
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable().frame(width: 38, height: 38)
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("XFinder").font(.system(size: 17, weight: .bold))
+                    // The pill reports ONE true thing: whether the Mac is being kept awake.
+                    if caffeine.isActive {
+                        HStack(spacing: 5) {
+                            Circle().fill(Color.yellow).frame(width: 7, height: 7)
+                            Text(L10n.t("Mac đang được giữ thức"))
+                                .font(.system(size: 11, weight: .medium)).foregroundColor(.yellow)
+                        }
+                        .padding(.horizontal, 9).padding(.vertical, 3)
+                        .background(Capsule().fill(Color.yellow.opacity(0.14)))
+                    }
+                }
+                Spacer()
+            }
         }
         .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 8)
     }
@@ -269,23 +292,24 @@ struct MenubarFlyoutView: View {
     }
 
     private var tabStrip: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 2) {
             ForEach(visibleTabs) { t in
                 Button { tab = t } label: {
                     Image(systemName: t.icon)
-                        .font(.system(size: 13))
-                        .frame(width: 34, height: 26)
+                        .font(.system(size: 14))
+                        .frame(maxWidth: .infinity, minHeight: 30)
                         .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(tab == t ? Color.accentColor : Color.clear))
-                        .foregroundColor(tab == t ? .white : .primary)
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(tab == t ? Color.accentColor.opacity(0.28) : Color.clear))
+                        .foregroundColor(tab == t ? .accentColor : .secondary)
                 }
                 .buttonStyle(.plain)
                 .help(t.titleVI)
             }
-            Spacer()
         }
-        .padding(.horizontal, 12).padding(.bottom, 10)
+        .padding(4)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(0.06)))
+        .padding(.horizontal, 14).padding(.bottom, 10)
     }
 
     private var sectionHeader: some View {
@@ -313,6 +337,7 @@ struct MenubarFlyoutView: View {
         case .storage:   storageSection
         case .battery:   batterySection
         case .notes:     notesSection
+        case .features:  featuresSection
         }
     }
 
@@ -499,6 +524,57 @@ struct MenubarFlyoutView: View {
     }
 
     // MARK: Fixed lists
+
+    // MARK: Tính năng tab
+
+    /// Every switchable feature, grouped and collapsible, bound to the SAME keys as the Features hub
+    /// and each feature's own page (`FeatureHub`). Counts are n on / N in the group.
+    private var featuresSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(FeatureGroup.allCases, id: \.self) { group in
+                let items = FeatureCatalog.features(in: group)
+                let onCount = items.filter { hub.isOn($0) }.count
+                let open = !collapsedGroups.contains(group)
+                Button {
+                    if open { collapsedGroups.insert(group) } else { collapsedGroups.remove(group) }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: open ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 10, weight: .bold)).foregroundColor(.secondary).frame(width: 12)
+                        Text(L10n.t(group.titleKey).uppercased())
+                            .font(.system(size: 11, weight: .semibold)).foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(onCount)/\(items.count)")
+                            .font(.system(size: 11, weight: .semibold)).foregroundColor(.accentColor).monospacedDigit()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                if open {
+                    ForEach(items, id: \.id) { f in featureCard(f) }
+                }
+            }
+        }
+    }
+
+    private func featureCard(_ f: FeatureDef) -> some View {
+        let on = hub.isOn(f)
+        return HStack(spacing: 10) {
+            Image(systemName: f.symbol)
+                .font(.system(size: 16)).foregroundColor(.accentColor).frame(width: 24)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L10n.t(f.titleKey)).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                Text(L10n.t(f.subtitleKey)).font(.system(size: 11)).foregroundColor(.secondary)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            Toggle("", isOn: Binding(get: { on }, set: { hub.set(f.id, on: $0) }))
+                .toggleStyle(.switch).labelsHidden().controlSize(.small)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 9)
+        .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(Color.primary.opacity(0.06)))
+    }
 
     private var actionList: some View {
         VStack(spacing: 0) {

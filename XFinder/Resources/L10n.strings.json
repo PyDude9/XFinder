@@ -6526,6 +6526,10 @@
     "Dùng bởi: ": {
       "en": "Used by: ",
       "scope": "fragment"
+    },
+    "Mac đang được giữ thức": {
+      "en": "Mac is being kept awake",
+      "scope": "sentence"
     }
   }
 }
