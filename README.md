@@ -20,6 +20,8 @@ Tiện ích hệ thống + quản lý clipboard cho macOS. Gọn nhẹ, chạy n
 
 **Ghi chú** — ghi chú dán mép màn hình, hiện ra khi rê chuột.
 
+**Nhập bằng giọng nói** — giữ phím, nói, thả ra là chữ vào đúng ô đang gõ. Sáu chế độ (chép nguyên văn · tút lại & xóa từ thừa · soạn email · văn phong chuyên nghiệp · gạch đầu dòng · câu lệnh riêng), thanh trạng thái nổi vẽ sóng âm theo **buffer âm thanh thật**, xem lại dạng so sánh trước khi chèn, và bốn tầng mô hình: **Apple Intelligence trên máy** · **Ollama** · **khoá API riêng** (OpenAI/Groq/Anthropic/Gemini/OpenRouter/DeepSeek) · *đăng nhập tài khoản ChatGPT/Claude*. Khoá API lưu trong **Keychain**, không bao giờ nằm trong tệp cấu hình. Chi tiết: [docs/VOICE.md](docs/VOICE.md).
+
 **Công cụ** — đổi tên hàng loạt (có hoàn tác), nén/giải nén, công cụ PDF, khay thả file, Quick Look nâng cao, tìm kiếm Spotlight + tìm kiếm bằng ngôn ngữ tự nhiên (xử lý hoàn toàn trên máy).
 
 ---
@@ -44,7 +46,8 @@ Trong app, mở **Giới thiệu → Kiểm tra cập nhật** để so sánh ph
 
 XFinder hỏi quyền đúng lúc cần và nói rõ thiếu quyền nào:
 
-- **Trợ năng (Accessibility)** — bắt dính cửa sổ, xem trước cửa sổ, phím tắt toàn hệ thống, nút độ sáng, **cử chỉ chuột**.
+- **Trợ năng (Accessibility)** — bắt dính cửa sổ, xem trước cửa sổ, phím tắt toàn hệ thống, nút độ sáng, **cử chỉ chuột**, **nhập bằng giọng nói**.
+- **Micro + Nhận dạng giọng nói** — chỉ khi bạn dùng **nhập bằng giọng nói**.
 - **Tự động hoá (Automation)** — chuyển giao diện Sáng/Tối toàn hệ thống.
 
 ### Cử chỉ chuột — bắt đầu nhanh
@@ -127,6 +130,28 @@ Hai bản trước gửi hai cơ chế đều sai, và cả hai đều đo đư�
 chỉ định nghĩa tới `NX_KEYTYPE_MENU = 25`). Đó chính là nguyên nhân của báo cáo “nhận dạng cho
 có, không làm việc”. App **không có** preset riêng thì mới dùng bảng này; app **đã có preset
 nhưng hướng đó “—”** thì **không** rơi về Global — nó không gửi gì.
+
+---
+
+## Nhập bằng giọng nói — bắt đầu nhanh
+
+1. **CÔNG CỤ → Nhập bằng giọng nói** → bật công tắc, rồi cấp **Trợ năng**, **Micro** và
+   **Nhận dạng giọng nói** (mỗi dòng quyền có nút yêu cầu ngay cạnh).
+2. Đặt con trỏ vào ô văn bản bất kỳ, **giữ Option Phải (⌥)**, nói, rồi **thả ra**.
+
+Xong — chữ vào đúng ô đang gõ. Chưa cấu hình nhà cung cấp AI thì XFinder chèn **bản gốc**
+(chế độ *Chép nguyên văn* không cần AI), chứ không làm mất lời bạn vừa nói.
+
+Trong phiên nói: **`Space`** chèn ngay bản gốc (không đợi AI), **`Esc`** hủy và khôi phục
+clipboard. Bật *Xem lại trước khi chèn* thì **`Return`** chèn bản đã tút, **`Esc`** bỏ.
+
+> **Đăng nhập tài khoản ChatGPT Plus / Claude Pro không được hỗ trợ, và đây là lý do thật:**
+> không có OAuth công khai nào cấp quyền dùng API cho hai gói đó, nên cách duy nhất để "đăng
+> nhập hộ" là dùng cookie phiên trình duyệt của bạn để gọi endpoint nội bộ của web app — vi
+> phạm điều khoản của cả hai, hỏng mỗi lần họ đổi giao diện. Trang nói rõ điều đó và trỏ
+> sang khoá API thay vì ship một nút đăng nhập không thể chạy.
+
+Chi tiết đầy đủ: [docs/VOICE.md](docs/VOICE.md).
 
 ---
 
