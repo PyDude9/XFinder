@@ -39,8 +39,14 @@ final class ClipboardShelfController {
     /// The app to paste back into — captured before the shelf appears.
     private(set) var targetPID: pid_t?
 
+    /// Suggestions are only on when the tab was picked AND the setting allows it, so
+    /// turning the setting off mid-session falls back to the board instead of a stale tab.
+    var suggestionsActive: Bool {
+        showingSuggestions && ClipboardIntelligenceEngine.shared.isEnabled
+    }
+
     var items: [ClipboardRecord] {
-        if showingSuggestions {
+        if suggestionsActive {
             let all = ClipboardManager.shared.filteredHistory()
             return ClipboardIntelligenceEngine.shared.rankSuggestions(from: all, forTargetPID: targetPID)
         }
@@ -481,29 +487,32 @@ private struct ClipboardShelfView: View {
             // Pinboards & Category Tabs (Scrollable)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
-                    // 1. Suggestions Tab (✨ Gợi ý)
-                    Button {
-                        controller.showingSuggestions = true
-                        controller.selectedIndex = 0
-                    } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 11, weight: .semibold))
-                            Text(L10n.t("Gợi ý"))
-                                .font(.system(size: 12, weight: .medium))
+                    // 1. Suggestions Tab (✨ Gợi ý) — only when `clipboard.intelligentSuggestions`
+                    // is on; the setting is read at the point of use, so no re-arm is needed.
+                    if ClipboardIntelligenceEngine.shared.isEnabled {
+                        Button {
+                            controller.showingSuggestions = true
+                            controller.selectedIndex = 0
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 11, weight: .semibold))
+                                Text(L10n.t("Gợi ý"))
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 7)
+                                    .fill(controller.suggestionsActive ? Color.purple.opacity(0.85) : Color.primary.opacity(0.06))
+                            )
+                            .foregroundColor(controller.suggestionsActive ? .white : .primary)
                         }
-                        .padding(.horizontal, 10).padding(.vertical, 5)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7)
-                                .fill(controller.showingSuggestions ? Color.purple.opacity(0.85) : Color.primary.opacity(0.06))
-                        )
-                        .foregroundColor(controller.showingSuggestions ? .white : .primary)
+                        .buttonStyle(.plain)
+                        .help(L10n.t("Xếp hạng lịch sử theo ứng dụng sắp dán vào"))
                     }
-                    .buttonStyle(.plain)
-                    .help(L10n.t("Gợi ý thông minh"))
 
                     // 2. All History (🕒 Lịch sử Clipboard)
-                    let isHistorySel = !controller.showingSuggestions && manager.currentPinboardID == nil && manager.selectedSlice == .all
+                    let isHistorySel = !controller.suggestionsActive && manager.currentPinboardID == nil && manager.selectedSlice == .all
                     boardChip(
                         title: L10n.t("Lịch sử Clipboard"),
                         icon: "clock.arrow.circlepath",
@@ -790,7 +799,7 @@ private struct ClipboardShelfView: View {
 
     private var realDeck: some View {
         VStack(alignment: .leading, spacing: 4) {
-            if controller.showingSuggestions {
+            if controller.suggestionsActive {
                 HStack(spacing: 6) {
                     Image(systemName: "sparkles")
                         .font(.system(size: 11, weight: .semibold))
@@ -798,7 +807,7 @@ private struct ClipboardShelfView: View {
                     Text("\(L10n.t("Gợi ý cho "))\(ClipboardIntelligenceEngine.shared.targetAppName(forTargetPID: controller.targetPID))")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.primary)
-                    Text("· Apple Intelligence")
+                    Text(L10n.t("· xếp hạng theo ngữ cảnh"))
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.secondary)
                     Spacer()

@@ -53,6 +53,8 @@ enum WindowManager {
     static func listWindows() -> [WindowInfo] {
         guard let raw = CGWindowListCopyWindowInfo(.optionAll, kCGNullWindowID) as? [[String: Any]]
         else { return [] }
+        // Same hidden-app rule as the switcher's lister, read through its single accessor.
+        let showHidden = WindowPreviewStore.showsHiddenWindows
         var out: [WindowInfo] = []
         for dict in raw {
             guard let owner = dict[kCGWindowOwnerName as String] as? String,
@@ -81,7 +83,7 @@ enum WindowManager {
             if sharing == 0 { continue }
             if bounds.width < 50 || bounds.height < 50 { continue }
             if bundleID == "com.apple.dock" || bundleID == "com.apple.WindowManager" || owner == "XFinder" || owner == "WindowManager" || owner == "Window Server" || owner == "Dock" { continue }
-            if isHidden { continue }
+            if !WindowPreviewStore.listsWindow(ofHiddenApp: isHidden, showHidden: showHidden) { continue }
             if let app = runningApp, app.activationPolicy != .regular { continue }
 
             let isMinimized = isWindowMinimized(windowID: wid, pid: pid)

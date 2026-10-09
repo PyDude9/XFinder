@@ -57,7 +57,6 @@ private struct ClipboardSettingsBody: View {
     @AppStorage("clipboard.customExcludedApps") private var customExcludedApps = ""
     @AppStorage("clipboard.textSize") private var textSize: Double = 13.5
     @AppStorage("clipboard.touchIDLock") private var touchIDLock = false
-    @AppStorage("clipboard.linkPreviews") private var linkPreviews = true
     @AppStorage("clipboard.intelligentSuggestions") private var intelligentSuggestions = true
 
     @State private var cloud = CloudSyncController.shared
@@ -111,10 +110,13 @@ private struct ClipboardSettingsBody: View {
                 }
             }
 
-            SettingsCard(title: L10n.t("Apple Intelligence & Gợi ý thông minh")) {
+            // Rule-based ranking (recency · usage · pinned · app role from bundle ID).
+            // Not a model — do not call it Apple Intelligence here; see
+            // ClipboardIntelligenceEngine's doc comment.
+            SettingsCard(title: L10n.t("Gợi ý theo ngữ cảnh")) {
                 VStack(alignment: .leading, spacing: 10) {
-                    ToggleRow(title: L10n.t("Gợi ý thông minh"),
-                              subtitle: L10n.t("Tự động dự đoán và đưa clipboard phù hợp với ứng dụng đang dùng dựa trên ngữ cảnh và Apple Intelligence trên thiết bị."),
+                    ToggleRow(title: L10n.t("Tab Gợi ý trong khay ⌘⇧V"),
+                              subtitle: L10n.t("Xếp hạng lịch sử theo ứng dụng sắp dán vào, độ mới, tần suất dùng và mục đã ghim. Chạy hoàn toàn trên máy bằng quy tắc, không dùng mô hình AI."),
                               isOn: $intelligentSuggestions)
                 }
             }
@@ -237,9 +239,9 @@ private struct ClipboardSettingsBody: View {
                     ToggleRow(title: L10n.t("Ảnh chụp / hình ảnh"), isOn: $captureImages)
                     ToggleRow(title: L10n.t("Đường link"), isOn: $captureLinks)
                     ToggleRow(title: L10n.t("Nhận diện chữ (OCR)"), subtitle: "Vision Framework", isOn: $enableOCR)
-                    ToggleRow(title: L10n.t("Tải trước ảnh xem trước liên kết"),
-                              subtitle: L10n.t("Tự động tải ảnh xem trước cho các liên kết web được sao chép"),
-                              isOn: $linkPreviews)
+                    // "Tải trước ảnh xem trước liên kết" was removed here: nothing ever read
+                    // `clipboard.linkPreviews`, and fetching every copied URL would also break
+                    // the local-only promise. A switch with no reader is a lie (Part 0 §6).
                     ToggleRow(title: L10n.t("Âm thanh khi sao chép/dán"), subtitle: L10n.t("Tink/Pop hệ thống"), isOn: $sounds)
                 }
             }

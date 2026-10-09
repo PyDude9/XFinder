@@ -846,4 +846,38 @@ final class WindowPreviewStoreTests: XCTestCase {
         XCTAssertEqual(browserPanelDimensions(tabCount: 0), browserPanelDimensions(tabCount: 1))
         XCTAssertEqual(browserPanelDimensions(tabCount: 10), browserPanelDimensions(tabCount: 5))
     }
+
+
+    // MARK: - Hidden-app windows (windowPreview.showHiddenWindows)
+
+    /// The switch on the Xem trước cửa sổ page promises that windows of HIDDEN apps
+    /// (⌘H, or Spotify/Slack hiding their last window on close) appear in the switcher.
+    /// Before this rule existed the lister dropped them unconditionally, so the toggle
+    /// changed nothing — a control with no reader (Part 0 §6). The rule is pure so a
+    /// test can pin it without a window server.
+    func testHiddenAppWindowsAreListedOnlyWhenTheSwitchIsOn() {
+        // Visible app: always listed, regardless of the switch.
+        XCTAssertTrue(WindowPreviewStore.listsWindow(ofHiddenApp: false, showHidden: false))
+        XCTAssertTrue(WindowPreviewStore.listsWindow(ofHiddenApp: false, showHidden: true))
+        // Hidden app: the switch decides.
+        XCTAssertFalse(WindowPreviewStore.listsWindow(ofHiddenApp: true, showHidden: false),
+                       "switch off must keep the old behaviour: hidden apps stay out")
+        XCTAssertTrue(WindowPreviewStore.listsWindow(ofHiddenApp: true, showHidden: true),
+                      "switch on must admit hidden apps — that is the whole promise of the toggle")
+    }
+
+    /// The accessor is the single reader of the key; its default must be `false`, the
+    /// pre-existing behaviour, so nobody who never touched the switch sees new windows.
+    func testShowsHiddenWindowsDefaultsToFalseWhenTheKeyIsAbsent() {
+        let key = "windowPreview.showHiddenWindows"
+        let saved = UserDefaults.standard.object(forKey: key)
+        defer {
+            if let saved { UserDefaults.standard.set(saved, forKey: key) }
+            else { UserDefaults.standard.removeObject(forKey: key) }
+        }
+        UserDefaults.standard.removeObject(forKey: key)
+        XCTAssertFalse(WindowPreviewStore.showsHiddenWindows)
+        UserDefaults.standard.set(true, forKey: key)
+        XCTAssertTrue(WindowPreviewStore.showsHiddenWindows, "the accessor must read the live key, not a cached value")
+    }
 }

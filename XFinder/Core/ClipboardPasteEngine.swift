@@ -406,14 +406,26 @@ enum ClipboardClassifier {
     }
 }
 
-/// On-device intelligent suggestions powered by Apple Intelligence / contextual understanding.
-/// Predicts and ranks clipboard history items tailored to the user's active application context.
+/// Context ranking for the shelf's "Gợi ý" tab.
+///
+/// This is a **rule-based heuristic**, not a model: recency, usage count, pinned/saved
+/// state, and a workflow role inferred from the target app's bundle ID. It never calls
+/// FoundationModels or any Apple Intelligence API, and the UI must not say it does —
+/// an earlier label claimed "Apple Intelligence" for exactly this code (Part 0 §6).
 @MainActor
 @Observable
 final class ClipboardIntelligenceEngine {
     static let shared = ClipboardIntelligenceEngine()
 
     private init() {}
+
+    /// The ONE reader of `clipboard.intelligentSuggestions`. The Clipboard settings page
+    /// binds the key; the shelf asks this accessor at the point of use, so the switch takes
+    /// effect without a re-arm. Default `true` must equal the view's `@AppStorage` default
+    /// (`FeatureKeyDefaultsTests` checks both declarations).
+    nonisolated var isEnabled: Bool {
+        UserDefaults.standard.object(forKey: "clipboard.intelligentSuggestions") as? Bool ?? true
+    }
 
     /// Workflow categories for macOS destination applications.
     enum AppWorkflowRole {

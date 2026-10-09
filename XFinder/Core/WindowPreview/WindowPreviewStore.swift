@@ -30,6 +30,24 @@ private func checkWindowMinimized(windowID: CGWindowID, pid: pid_t) -> Bool {
 public final class WindowPreviewStore {
     public static let shared = WindowPreviewStore()
 
+    // MARK: Hidden-app windows (the "Hiện cả cửa sổ ẩn" switch)
+
+    /// The ONE reader of `windowPreview.showHiddenWindows`. The Xem trước cửa sổ page binds
+    /// this key; `WindowManager.listWindows()` calls this accessor rather than reading the
+    /// key again, so the default cannot drift between two copies (CLAUDE.md Part 0 §4/§5).
+    /// Default `false` must equal the view's `@AppStorage` default —
+    /// `FeatureKeyDefaultsTests` parses both and fails if they differ.
+    public nonisolated static var showsHiddenWindows: Bool {
+        UserDefaults.standard.object(forKey: "windowPreview.showHiddenWindows") as? Bool ?? false
+    }
+
+    /// Whether a window whose owning app is hidden (⌘H, or an app that hides its last
+    /// window on close — Spotify, Slack) belongs in the list. Pure so the rule is testable
+    /// without a real window server: hidden apps are listed only when the switch is on.
+    public nonisolated static func listsWindow(ofHiddenApp isHidden: Bool, showHidden: Bool) -> Bool {
+        !isHidden || showHidden
+    }
+
     public struct WindowRef: Identifiable, Sendable {
         public let id: CGWindowID
         public let ownerPID: pid_t
@@ -84,6 +102,7 @@ public final class WindowPreviewStore {
 
     public var windowLister: () -> [WindowRef] = {
         guard let raw = CGWindowListCopyWindowInfo(.optionAll, kCGNullWindowID) as? [[String: Any]] else { return [] }
+        let showHidden = WindowPreviewStore.showsHiddenWindows
         var out: [WindowRef] = []
         for dict in raw {
             guard let owner = dict[kCGWindowOwnerName as String] as? String,
@@ -112,7 +131,7 @@ public final class WindowPreviewStore {
             if sharing == 0 { continue }
             if bounds.width < 50 || bounds.height < 50 { continue }
             if bundleID == "com.apple.dock" || bundleID == "com.apple.WindowManager" || owner == "XFinder" || owner == "WindowManager" || owner == "Window Server" || owner == "Dock" { continue }
-            if isHidden { continue }
+            if !WindowPreviewStore.listsWindow(ofHiddenApp: isHidden, showHidden: showHidden) { continue }
             if let app = runningApp, app.activationPolicy != .regular { continue }
 
             let isMinimized = checkWindowMinimized(windowID: wid, pid: pid)

@@ -333,10 +333,6 @@
       "en": "Apple Intelligence",
       "scope": "sentence"
     },
-    "Apple Intelligence & Gợi ý thông minh": {
-      "en": "Apple Intelligence & Smart Suggestions",
-      "scope": "sentence"
-    },
     "Apple Intelligence (trên máy)": {
       "en": "Apple Intelligence (on-device)",
       "scope": "sentence"
@@ -1979,10 +1975,6 @@
     },
     "Gợi ý hàng đầu": {
       "en": "Top Suggestion",
-      "scope": "sentence"
-    },
-    "Gợi ý thông minh": {
-      "en": "Intelligent Suggestions",
       "scope": "sentence"
     },
     "Gợi ý: loại (ảnh, video, pdf, thư mục…) + thời gian (hôm nay, tuần này…) + tên trong “ngoặc kép”.": {
@@ -4637,10 +4629,6 @@
       "en": "Upload…",
       "scope": "sentence"
     },
-    "Tải trước ảnh xem trước liên kết": {
-      "en": "Load link preview images",
-      "scope": "sentence"
-    },
     "Tải về": {
       "en": "Download",
       "scope": "sentence"
@@ -4765,10 +4753,6 @@
       "en": "Auto-paste after selection",
       "scope": "sentence"
     },
-    "Tự động dự đoán và đưa clipboard phù hợp với ứng dụng đang dùng dựa trên ngữ cảnh và Apple Intelligence trên thiết bị.": {
-      "en": "Automatically predicts and suggests clipboard items matching your active app using on-device context and Apple Intelligence.",
-      "scope": "sentence"
-    },
     "Tự động hóa (đổi giao diện Sáng/Tối)": {
       "en": "Automation (light/dark appearance)",
       "scope": "sentence"
@@ -4783,10 +4767,6 @@
     },
     "Tự động thêm dấu câu": {
       "en": "Add punctuation automatically",
-      "scope": "sentence"
-    },
-    "Tự động tải ảnh xem trước cho các liên kết web được sao chép": {
-      "en": "Automatically load preview images for copied web links",
       "scope": "sentence"
     },
     "Tự động xóa sau": {
@@ -6213,6 +6193,26 @@
     },
     "⌘⇧V mở khay clipboard nổi trên mọi ứng dụng": {
       "en": "⌘⇧V opens the floating clipboard shelf over any app",
+      "scope": "sentence"
+    },
+    "Gợi ý theo ngữ cảnh": {
+      "en": "Context suggestions",
+      "scope": "sentence"
+    },
+    "Tab Gợi ý trong khay ⌘⇧V": {
+      "en": "Suggestions tab in the ⌘⇧V shelf",
+      "scope": "sentence"
+    },
+    "Xếp hạng lịch sử theo ứng dụng sắp dán vào, độ mới, tần suất dùng và mục đã ghim. Chạy hoàn toàn trên máy bằng quy tắc, không dùng mô hình AI.": {
+      "en": "Ranks history by the app you are about to paste into, recency, how often you use an item, and pinned items. Runs entirely on this Mac with rules — no AI model.",
+      "scope": "sentence"
+    },
+    "· xếp hạng theo ngữ cảnh": {
+      "en": "· ranked by context",
+      "scope": "sentence"
+    },
+    "Xếp hạng lịch sử theo ứng dụng sắp dán vào": {
+      "en": "Ranks history by the app you are about to paste into",
       "scope": "sentence"
     }
   }
