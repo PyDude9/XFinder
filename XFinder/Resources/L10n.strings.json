@@ -6546,6 +6546,126 @@
     "Chọn XFinder chạy những gì, chỉnh máy Mac và xem nó được phép làm gì.": {
       "en": "Choose what XFinder runs, adjust your Mac and see what it may do.",
       "scope": "sentence"
+    },
+    "Cổng đang mở": {
+      "en": "Open ports",
+      "scope": "sentence"
+    },
+    "Tiến trình nào đang giữ một cổng mạng, và có dừng được không.": {
+      "en": "Which process holds a network port, and whether you can stop it.",
+      "scope": "sentence"
+    },
+    "Lọc theo cổng hoặc tên tiến trình": {
+      "en": "Filter by port or process name",
+      "scope": "sentence"
+    },
+    "Làm mới": {
+      "en": "Refresh",
+      "scope": "sentence"
+    },
+    "Buộc dừng tiến trình?": {
+      "en": "Force-stop this process?",
+      "scope": "sentence"
+    },
+    "Dừng tiến trình?": {
+      "en": "Stop this process?",
+      "scope": "sentence"
+    },
+    "Buộc dừng": {
+      "en": "Force stop",
+      "scope": "sentence"
+    },
+    "Dừng": {
+      "en": "Stop",
+      "scope": "sentence"
+    },
+    "Không có cổng nào đang lắng nghe.": {
+      "en": "No ports are listening.",
+      "scope": "sentence"
+    },
+    "Không có cổng hoặc tiến trình nào khớp bộ lọc.": {
+      "en": "No port or process matches the filter.",
+      "scope": "sentence"
+    },
+    "Đang đọc danh sách cổng…": {
+      "en": "Reading the port list…",
+      "scope": "sentence"
+    },
+    "Không dừng được": {
+      "en": "Cannot stop",
+      "scope": "sentence"
+    },
+    "Tiến trình này không thuộc về bạn (hoặc là hệ thống, hoặc chính XFinder) nên macOS không cho XFinder dừng nó.": {
+      "en": "This process is not yours (or is a system process, or XFinder itself), so macOS does not let XFinder stop it.",
+      "scope": "sentence"
+    },
+    "Mọi mạng": {
+      "en": "All networks",
+      "scope": "sentence"
+    },
+    "Máy khác trong cùng mạng có thể kết nối tới cổng này.": {
+      "en": "Other devices on the same network can connect to this port.",
+      "scope": "sentence"
+    },
+    "Chỉ máy này": {
+      "en": "This Mac only",
+      "scope": "sentence"
+    },
+    "Chỉ ứng dụng trên máy này kết nối được (loopback).": {
+      "en": "Only apps on this Mac can connect (loopback).",
+      "scope": "sentence"
+    },
+    "Một địa chỉ": {
+      "en": "One address",
+      "scope": "sentence"
+    },
+    "Lắng nghe trên một địa chỉ mạng cụ thể.": {
+      "en": "Listening on one specific network address.",
+      "scope": "sentence"
+    },
+    " cổng đang lắng nghe": {
+      "en": " ports listening",
+      "scope": "fragment"
+    },
+    "cập nhật ": {
+      "en": "updated ",
+      "scope": "fragment"
+    },
+    " đang giữ cổng ": {
+      "en": " is holding port ",
+      "scope": "fragment"
+    },
+    "Buộc dừng kết thúc tiến trình ngay, không cho nó lưu hay dọn dẹp.": {
+      "en": "Force stop ends the process immediately, without letting it save or clean up.",
+      "scope": "sentence"
+    },
+    "Mọi kết nối tới cổng này sẽ đóng và việc chưa lưu trong tiến trình có thể mất.": {
+      "en": "Every connection to this port will close and unsaved work in the process may be lost.",
+      "scope": "sentence"
+    },
+    " đã dừng.": {
+      "en": " stopped.",
+      "scope": "fragment"
+    },
+    " chưa thoát sau 2 giây — nó có thể đang bỏ qua yêu cầu dừng.": {
+      "en": " has not exited after 2 seconds — it may be ignoring the stop request.",
+      "scope": "fragment"
+    },
+    " không còn khớp với danh sách (đã thoát hoặc đổi chủ), nên XFinder không gửi gì. Danh sách đã được làm mới.": {
+      "en": " no longer matches the list (it exited or changed owner), so XFinder sent nothing. The list has been refreshed.",
+      "scope": "fragment"
+    },
+    "Không dừng được: ": {
+      "en": "Could not stop: ",
+      "scope": "fragment"
+    },
+    "Không đọc được danh sách tiến trình. Đây không phải là “không có cổng nào mở” — hãy bấm Làm mới.": {
+      "en": "Could not read the process list. That is not the same as “no ports open” — press Refresh.",
+      "scope": "sentence"
+    },
+    " tiến trình khác (của hệ thống hoặc người dùng khác) macOS không cho XFinder xem, nên cổng do chúng giữ có thể không hiện ở đây.": {
+      "en": " other processes (system or another user's) are off limits to XFinder, so ports they hold may not appear here.",
+      "scope": "fragment"
     }
   }
 }

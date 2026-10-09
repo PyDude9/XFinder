@@ -12,7 +12,7 @@ Tiện ích hệ thống + quản lý clipboard cho macOS. Gọn nhẹ, chạy n
 
 ### Chỉ bật thứ bạn dùng
 
-Trang **Tính năng & Quyền** (sidebar → CHUNG) có ba tab — *Tính năng*, *Điều khiển* (âm lượng, thiết bị âm thanh ra, độ sáng, giao diện sáng/tối, chống ngủ, tự ẩn Dock, ẩn icon Desktop) và *Quyền* — và gom mọi tính năng chạy nền vào một chỗ:
+Trang **Tính năng & Quyền** (sidebar → CHUNG) có hai tab — *Tính năng* (đầu trang là các điều khiển máy: âm lượng, thiết bị âm thanh ra, độ sáng, giao diện sáng/tối, chống ngủ, tự ẩn Dock, ẩn icon Desktop) và *Quyền* — và gom mọi tính năng chạy nền vào một chỗ:
 
 - **Công tắc từng tính năng** — mỗi công tắc ghi đúng khoá mà chính tính năng đó đọc, nên trang riêng của tính năng và trang này không bao giờ lệch nhau. Tắt là **ngừng hẳn** bộ lắng nghe/hẹn giờ, không chỉ ẩn.
 - **Nhãn chi phí khi rảnh** — "Không chạy nền", "Lắng nghe bàn phím", "Lắng nghe chuột", "Có bộ hẹn giờ". Nhãn phải đúng: tính năng nào cài event tap hay timer thì không được tự nhận là "không chạy nền" (có test chặn).
@@ -36,6 +36,7 @@ Một biểu tượng, các mục tách thành tab: **Điều khiển · Chống
 | Công cụ | Bảng lệnh ⌘K · Ghi chú mép màn hình · Khay thả file · Đồng bộ thư mục · **Lấy màu từ màn hình** (chép dạng `#RRGGBB`) | |
 | Giọng nói | Nhập bằng giọng nói | cần Trợ năng + Micro + Nhận dạng giọng nói |
 | Âm thanh | **Chọn thiết bị âm thanh ra** ngay trong popover | chỉ hiện khi có từ 2 thiết bị trở lên |
+| Cổng mạng | **Cổng đang mở** (sidebar → KẾT NỐI): tiến trình nào đang giữ cổng, kèm nhãn *Mọi mạng / Chỉ máy này*, nút **Dừng** (SIGTERM, hỏi xác nhận) và **Buộc dừng** (SIGKILL) nếu tiến trình phớt lờ | chỉ dừng được tiến trình của chính bạn; tiến trình hệ thống/người dùng khác macOS không cho XFinder xem nên được đếm và nói rõ, không giả vờ danh sách đầy đủ |
 | Giám sát | CPU · **GPU %** (đọc từ IORegistry) · RAM · ổ đĩa kèm **trạng thái SMART** · pin · mạng | không có số nào bị bịa — xem mục *Giới hạn đã biết* |
 
 **Giám sát hệ thống** — CPU, RAM, ổ đĩa, pin (độ chai, số chu kỳ, công suất), mạng (↓/↑ theo thời gian thực, speedtest).

@@ -36,6 +36,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case sync
     case remoteConnect
     case quickShare
+    case ports
     // CÔNG CỤ
     case voiceTyping
     // CÀI ĐẶT
@@ -79,6 +80,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .sync: return L10n.t("Đồng bộ")
         case .remoteConnect: return L10n.t("Kết nối từ xa")
         case .quickShare: return L10n.t("Chia sẻ nhanh")
+        case .ports: return L10n.t("Cổng đang mở")
         case .voiceTyping: return L10n.t("Nhập bằng giọng nói")
         case .settingsClipboard: return L10n.t("Cài đặt Clipboard")
         case .about: return L10n.t("Giới thiệu")
@@ -118,6 +120,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .sync: return "arrow.triangle.2.circlepath"
         case .remoteConnect: return "display.2"
         case .quickShare: return "square.and.arrow.up"
+        case .ports: return "point.3.connected.trianglepath.dotted"
         case .voiceTyping: return "mic.fill"
         case .settingsClipboard: return "gearshape"
         case .about: return "info.circle"
@@ -139,7 +142,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .actionHistory]),
             ("CÔNG CỤ", [.voiceTyping, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
-            ("KẾT NỐI", [.sync, .remoteConnect, .quickShare]),
+            ("KẾT NỐI", [.sync, .remoteConnect, .quickShare, .ports]),
             ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat]),
         ]
     }

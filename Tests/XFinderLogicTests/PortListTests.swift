@@ -1,127 +1,57 @@
 import XCTest
 import Foundation
+import Darwin
 
 final class PortListTests: XCTestCase {
 
-    // Lines copied from `netstat -anv -p tcp` on this Mac (2026-10-09, macOS 27.0), except the one
-    // marked SYNTHESISED, which reproduces the real column layout around a name with spaces.
-    private let header = """
-    Active Internet connections (including servers)
-    Proto Recv-Q Send-Q  Local Address          Foreign Address        (state)          rxbytes      txbytes  rhiwat  shiwat          process:pid    state  options
-    """
-    private let real = """
-    tcp4       0      0  127.0.0.1.52478        *.*                    LISTEN                 0            0  131072  131072  language_server:32865  00100 00000006 0000000000
-    tcp4       0      0  127.0.0.1.52476        *.*                    LISTEN                 0            0  131072  131072      Antigravity:32703  00100 00000106 0000000000
-    tcp46      0      0  *.61357                *.*                    LISTEN                 0            0  131072  131072         rapportd:452    00100 00000006 0000000000
-    tcp6       0      0  *.5000                 *.*                    LISTEN                 0            0  131072  131072    ControlCenter:504    00100 00000006 0000000000
-    tcp4       0      0  *.5000                 *.*                    LISTEN                 0            0  131072  131072    ControlCenter:504    00100 00000006 0000000000
-    """
-    // SYNTHESISED: the process column holds a name with spaces.
-    private let spaced = "tcp4       0      0  127.0.0.1.9222         *.*                    LISTEN                 0            0  131072  131072  Google Chrome Helper:2221  00100 00000006 0000000000"
-
-    // MARK: - netstat parsing
-
-    func testParsesRealLinesIncludingBothIPFamilies() {
-        let p = PortList.parseNetstat(header + "\n" + real)
-        XCTAssertEqual(p.listenLines, 5)
-        XCTAssertEqual(p.listeners.count, 5)
-        XCTAssertEqual(p.unparsed, 0)
-        XCTAssertEqual(p.listeners[0], .init(port: 52478, address: "127.0.0.1", pid: 32865, command: "language_server"))
-        XCTAssertEqual(p.listeners[2], .init(port: 61357, address: "*", pid: 452, command: "rapportd"))
+    private func l(_ port: Int, _ addr: String, _ pid: Int32, _ cmd: String) -> PortList.RawListener {
+        .init(port: port, address: addr, pid: pid, command: cmd)
     }
-
-    func testProcessNamesWithSpacesAreNotTruncated() {
-        let p = PortList.parseNetstat(spaced)
-        XCTAssertEqual(p.listeners, [.init(port: 9222, address: "127.0.0.1", pid: 2221, command: "Google Chrome Helper")],
-                       "an awk-style whitespace split would have produced a pid-less 'Chrome' and dropped the row")
+    /// Shaped like a real scan of this Mac (2026-10-09): ControlCenter appears once per address family.
+    private var sample: [PortList.RawListener] {
+        [l(52478, "127.0.0.1", 32865, "language_server"), l(52476, "127.0.0.1", 32703, "Antigravity"),
+         l(61357, "*", 452, "rapportd"), l(5000, "*", 504, "ControlCenter"), l(5000, "*", 504, "ControlCenter"),
+         l(5000, "::1", 504, "ControlCenter")]
     }
-
-    func testNonListenLinesAndHeadersAreIgnoredAndNotCounted() {
-        let text = header + "\n" + """
-        tcp4       0      0  192.168.1.5.52000      17.253.1.1.443         ESTABLISHED       100          200  131072  131072          Safari:900    00100 00000006 0000000000
-        tcp4       0      0  192.168.1.5.52001      17.253.1.1.443         TIME_WAIT           0            0  131072  131072          kernel:0    00100 00000006 0000000000
-        udp4       0      0  *.5353                 *.*                                        0            0  196724    9216      Chrome:2221  00000 00000000 0000000000
-        """
-        let p = PortList.parseNetstat(text)
-        XCTAssertEqual(p.listenLines, 0)
-        XCTAssertTrue(p.listeners.isEmpty)
+    private func scan(_ ls: [PortList.RawListener], uninspectable: Int = 0, ok: Bool = true) -> PortList.ListenerScan {
+        .init(listeners: ls, readSucceeded: ok, uninspectable: uninspectable)
     }
-
-    /// The page must be able to say "this list is incomplete". A LISTEN line the parser cannot read
-    /// must show up as `unparsed`, not vanish.
-    func testAnUnreadableListenLineIsCountedNotSilentlyDropped() {
-        let bad = "tcp4  0  0  127.0.0.1.8080  *.*  LISTEN  no-process-column-at-all"
-        let p = PortList.parseNetstat(real + "\n" + bad)
-        XCTAssertEqual(p.listenLines, 6)
-        XCTAssertEqual(p.listeners.count, 5)
-        XCTAssertEqual(p.unparsed, 1)
-        let built = PortList.build(netstat: p, owners: [:], currentUID: 502, selfPID: 1)
-        XCTAssertEqual(built.unparsedLines, 1, "the build result carries the warning to the UI")
-    }
-
-    func testLocalAddressSplitsOnTheLastDot() {
-        XCTAssertTrue(PortList.splitLocal("127.0.0.1.52478")! == ("127.0.0.1", 52478))
-        XCTAssertTrue(PortList.splitLocal("*.61357")! == ("*", 61357))
-        XCTAssertTrue(PortList.splitLocal("::1.3000")! == ("::1", 3000))
-        XCTAssertTrue(PortList.splitLocal("fe80::1%lo0.8080")! == ("fe80::1%lo0", 8080))
-        XCTAssertNil(PortList.splitLocal("*.0"), "port 0 is not a listening port")
-        XCTAssertNil(PortList.splitLocal("*.99999"))
-        XCTAssertNil(PortList.splitLocal("nodot"))
-        XCTAssertNil(PortList.splitLocal(".80"))
-    }
-
-    // MARK: - ps parsing
-
-    func testParsesPsOwnersIncludingUnderscoreUsersAndLeadingSpaces() {
-        let ps = """
-          452   502 wolong
-          252    65 _mdnsresponder
-            1     0 root
-        garbage line
-        """
-        let map = PortList.parsePs(ps)
-        XCTAssertEqual(map[452], .init(uid: 502, user: "wolong"))
-        XCTAssertEqual(map[252], .init(uid: 65, user: "_mdnsresponder"))
-        XCTAssertEqual(map[1]?.uid, 0)
-        XCTAssertEqual(map.count, 3, "the malformed line is skipped, not turned into an entry")
-    }
-
-    // MARK: - exposure
-
-    func testExposureClassification() {
-        for a in ["*", "0.0.0.0", "::"] { XCTAssertEqual(PortList.exposure(ofAddress: a), .allInterfaces, a) }
-        for a in ["127.0.0.1", "127.1.2.3", "::1", "localhost"] { XCTAssertEqual(PortList.exposure(ofAddress: a), .localOnly, a) }
-        XCTAssertEqual(PortList.exposure(ofAddress: "192.168.1.5"), .specific)
-        XCTAssertEqual(PortList.exposure(ofAddress: "fe80::1%lo0"), .specific, "link-local is not loopback")
-    }
-
-    func testTheMostExposedTwinWins() {
-        XCTAssertEqual(PortList.combine(.localOnly, .allInterfaces), .allInterfaces)
-        XCTAssertEqual(PortList.combine(.allInterfaces, .localOnly), .allInterfaces)
-        XCTAssertEqual(PortList.combine(.localOnly, .specific), .specific)
-        XCTAssertEqual(PortList.combine(.localOnly, .localOnly), .localOnly)
-    }
-
-    // MARK: - building rows
-
     private let owners: [Int32: PortList.Owner] = [
         32865: .init(uid: 502, user: "wolong"), 32703: .init(uid: 502, user: "wolong"),
         452: .init(uid: 502, user: "wolong"), 504: .init(uid: 502, user: "wolong"),
         252: .init(uid: 65, user: "_mdnsresponder"),
     ]
 
-    func testIPv4AndIPv6TwinsOfOneSocketBecomeOneRow() {
-        let built = PortList.build(netstat: PortList.parseNetstat(real), owners: owners, currentUID: 502, selfPID: 99_999)
-        // 5 netstat lines, but ControlCenter's *.5000 is listed as tcp6 AND tcp4 → 4 rows.
-        XCTAssertEqual(built.rows.count, 4)
+    // MARK: - exposure
+
+    func testExposureClassification() {
+        XCTAssertEqual(PortList.exposure(ofAddress: "*"), .allInterfaces)
+        XCTAssertEqual(PortList.exposure(ofAddress: "0.0.0.0"), .allInterfaces)
+        XCTAssertEqual(PortList.exposure(ofAddress: "::"), .allInterfaces)
+        XCTAssertEqual(PortList.exposure(ofAddress: "127.0.0.1"), .localOnly)
+        XCTAssertEqual(PortList.exposure(ofAddress: "::1"), .localOnly)
+        XCTAssertEqual(PortList.exposure(ofAddress: "192.168.1.7"), .specific)
+    }
+
+    func testTheMostExposedTwinWins() {
+        XCTAssertEqual(PortList.combine(.localOnly, .allInterfaces), .allInterfaces)
+        XCTAssertEqual(PortList.combine(.localOnly, .specific), .specific)
+        XCTAssertEqual(PortList.combine(.localOnly, .localOnly), .localOnly)
+    }
+
+    // MARK: - building rows
+
+    func testAddressFamilyTwinsOfOneSocketBecomeOneRow() {
+        let built = PortList.build(scan: scan(sample), owners: owners, currentUID: 502, selfPID: 99_999)
+        XCTAssertEqual(built.rows.count, 4, "ControlCenter's three listeners on :5000 are one row")
         let cc = built.rows.first { $0.pid == 504 }
         XCTAssertEqual(cc?.port, 5000)
-        XCTAssertEqual(cc?.addresses, ["*"], "the same address from both families is not repeated")
-        XCTAssertEqual(cc?.exposure, .allInterfaces)
+        XCTAssertEqual(cc?.addresses, ["*", "::1"], "the same address twice is not repeated")
+        XCTAssertEqual(cc?.exposure, .allInterfaces, "also open on * ⇒ reachable from the LAN")
     }
 
     func testRowsAreSortedByPortThenPid() {
-        let built = PortList.build(netstat: PortList.parseNetstat(real), owners: owners, currentUID: 502, selfPID: 99_999)
+        let built = PortList.build(scan: scan(sample), owners: owners, currentUID: 502, selfPID: 99_999)
         XCTAssertEqual(built.rows.map(\.port), built.rows.map(\.port).sorted())
         XCTAssertEqual(built.rows.first?.port, 5000)
     }
@@ -144,20 +74,19 @@ final class PortListTests: XCTestCase {
     }
 
     func testRowsCarryCanTerminateFromThoseRules() {
-        let mixed = PortList.parseNetstat(real + "\n" + "tcp4 0 0 *.5353 *.* LISTEN 0 0 131072 131072 mDNSResponder:252 00100 00000006 0000000000")
-        let built = PortList.build(netstat: mixed, owners: owners, currentUID: 502, selfPID: 99_999)
+        let mixed = scan(sample + [l(5353, "*", 252, "mDNSResponder")])
+        let built = PortList.build(scan: mixed, owners: owners, currentUID: 502, selfPID: 99_999)
         XCTAssertEqual(built.rows.first { $0.pid == 252 }?.canTerminate, false)
         XCTAssertEqual(built.rows.first { $0.pid == 252 }?.isMine, false, "shown, but not stoppable")
         XCTAssertEqual(built.rows.first { $0.pid == 452 }?.canTerminate, true)
-        XCTAssertEqual(built.rows.count, 5, "the root-owned listener is SHOWN — hiding it would claim the port is free")
+        XCTAssertEqual(built.rows.count, 5, "a visible root-owned listener is SHOWN — hiding it would claim the port is free")
     }
 
     // MARK: - PID reuse (a stale Stop button must not hit a stranger)
 
     func testStaleStopIsRefusedWhenThePidNowBelongsToSomethingElse() {
-        let ok = PortList.isSafeToSignal(pid: 452, listedCommand: "rapportd", currentCommand: "rapportd",
-                                         currentOwnerUID: 502, currentUID: 502, selfPID: 99_999)
-        XCTAssertTrue(ok)
+        XCTAssertTrue(PortList.isSafeToSignal(pid: 452, listedCommand: "rapportd", currentCommand: "rapportd",
+                                              currentOwnerUID: 502, currentUID: 502, selfPID: 99_999))
         XCTAssertFalse(PortList.isSafeToSignal(pid: 452, listedCommand: "rapportd", currentCommand: "Safari",
                                                currentOwnerUID: 502, currentUID: 502, selfPID: 99_999),
                        "pid reused by Safari after the list was drawn")
@@ -170,7 +99,6 @@ final class PortListTests: XCTestCase {
     }
 
     func testTruncatedCommandNamesStillMatchEitherWay() {
-        // ps/netstat truncate p_comm; the listed name may be a prefix of the live one or the reverse.
         XCTAssertTrue(PortList.isSafeToSignal(pid: 10, listedCommand: "Google Chrome He", currentCommand: "Google Chrome Helper",
                                               currentOwnerUID: 502, currentUID: 502, selfPID: 1_000))
         XCTAssertTrue(PortList.isSafeToSignal(pid: 10, listedCommand: "Google Chrome Helper", currentCommand: "Google Chrome He",
@@ -185,7 +113,8 @@ final class PortListTests: XCTestCase {
     // MARK: - filter
 
     func testFilterMatchesPortByDigitsAndCommandByText() {
-        let built = PortList.build(netstat: PortList.parseNetstat(real + "\n" + spaced), owners: owners, currentUID: 502, selfPID: 99_999)
+        let built = PortList.build(scan: scan(sample + [l(9222, "127.0.0.1", 2221, "Google Chrome Helper")]),
+                                   owners: owners, currentUID: 502, selfPID: 99_999)
         XCTAssertEqual(PortList.filter(built.rows, query: "").count, built.rows.count)
         XCTAssertEqual(PortList.filter(built.rows, query: "5000").map(\.pid), [504])
         XCTAssertEqual(PortList.filter(built.rows, query: "9222").map(\.command), ["Google Chrome Helper"])
@@ -195,42 +124,81 @@ final class PortListTests: XCTestCase {
         XCTAssertEqual(PortList.filter(built.rows, query: "  5000  ").count, 1, "surrounding spaces are ignored")
     }
 
-    // MARK: - A failed read is not an empty list
+    // MARK: - A failed scan is not an empty list; an incomplete one says so
 
-    /// Measured: from some restricted parent processes `netstat -anv -p tcp` exits 0 with ZERO
-    /// bytes. A page that rendered that as "no open ports" would be a false all-clear.
-    func testEmptyNetstatOutputIsAFailedReadNotAnEmptyList() {
-        let empty = PortList.parseNetstat("")
-        XCTAssertFalse(empty.sawHeader)
-        let built = PortList.build(netstat: empty, owners: [:], currentUID: 502, selfPID: 1)
-        XCTAssertFalse(built.netstatWasValid, "the UI must show an error here")
+    func testAFailedScanIsNotAnEmptyList() {
+        let built = PortList.build(scan: scan([], ok: false), owners: [:], currentUID: 502, selfPID: 1)
+        XCTAssertFalse(built.scanSucceeded, "the UI must show an error, never 'no open ports'")
         XCTAssertTrue(built.rows.isEmpty)
     }
 
-    func testRealOutputWithNothingListeningIsStillValid() {
-        // A quiet machine: the title and column header, but no LISTEN line. Valid, and genuinely empty.
-        let quiet = PortList.parseNetstat(header)
-        XCTAssertTrue(quiet.sawHeader)
-        let built = PortList.build(netstat: quiet, owners: [:], currentUID: 502, selfPID: 1)
-        XCTAssertTrue(built.netstatWasValid, "nothing listening is a real answer, unlike no output at all")
+    func testAQuietMachineIsAValidEmptyAnswer() {
+        let built = PortList.build(scan: scan([]), owners: [:], currentUID: 502, selfPID: 1)
+        XCTAssertTrue(built.scanSucceeded)
         XCTAssertTrue(built.rows.isEmpty)
     }
 
-    func testGarbageOutputIsNotMistakenForNetstat() {
-        XCTAssertFalse(PortList.parseNetstat("netstat: sysctl: Operation not permitted\n").sawHeader)
-        XCTAssertFalse(PortList.parseNetstat("\n\n").sawHeader)
-        XCTAssertTrue(PortList.parseNetstat(header + "\n" + real).sawHeader)
+    func testUninspectableProcessesAreCarriedThroughSoTheListIsNeverPresentedAsComplete() {
+        let built = PortList.build(scan: scan(sample, uninspectable: 303), owners: owners, currentUID: 502, selfPID: 1)
+        XCTAssertEqual(built.uninspectable, 303)
     }
 
-    // MARK: - ps for a single pid (re-check at click time)
+    // MARK: - The real scanner, against a real socket
 
-    func testParsesPsForOnePidAndReducesThePathToItsBasename() {
-        XCTAssertTrue(PortList.parsePsProcess("  502 /usr/sbin/rapportd\n")! == (502, "rapportd"))
-        XCTAssertTrue(PortList.parsePsProcess("502 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper")!
-                      == (502, "Google Chrome Helper"), "a path with spaces keeps the full last component")
-        XCTAssertNil(PortList.parsePsProcess(""), "the process is gone")
-        XCTAssertNil(PortList.parsePsProcess("   \n"))
-        XCTAssertNil(PortList.parsePsProcess("notanumber /bin/sh"))
-        XCTAssertNil(PortList.parsePsProcess("502"), "a uid with no command is not a process")
+    /// Opens a genuine listening socket in THIS process and requires the scanner to find it with the
+    /// right port, pid, owner and address — and to stop reporting it once closed. No fixture can
+    /// stand in for this: the bugs it would catch are byte-order and struct-layout mistakes.
+    func testScannerFindsARealListenerAndForgetsItWhenClosed() throws {
+        let fd = socket(AF_INET, SOCK_STREAM, 0)
+        XCTAssertGreaterThanOrEqual(fd, 0)
+        var addr = sockaddr_in()
+        addr.sin_family = sa_family_t(AF_INET)
+        addr.sin_addr.s_addr = inet_addr("127.0.0.1")
+        addr.sin_port = 0
+        let bound = withUnsafePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.bind(fd, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) }
+        }
+        XCTAssertEqual(bound, 0)
+        XCTAssertEqual(listen(fd, 1), 0)
+        var len = socklen_t(MemoryLayout<sockaddr_in>.size)
+        let named = withUnsafeMutablePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { getsockname(fd, $0, &len) }
+        }
+        XCTAssertEqual(named, 0)
+        let port = Int(UInt16(bigEndian: addr.sin_port))
+        XCTAssertGreaterThan(port, 0)
+
+        // Add ESTABLISHED sockets in this same process (a client and the accepted peer). They are TCP
+        // sockets too; reporting them as listeners would be the bug this guards against.
+        let client = socket(AF_INET, SOCK_STREAM, 0)
+        let connected = withUnsafePointer(to: &addr) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.connect(client, $0, socklen_t(MemoryLayout<sockaddr_in>.size)) }
+        }
+        XCTAssertEqual(connected, 0)
+        let accepted = accept(fd, nil, nil)
+        XCTAssertGreaterThanOrEqual(accepted, 0)
+        defer { close(client); close(accepted) }
+
+        let found = PortScanner.scan()
+        XCTAssertTrue(found.scan.readSucceeded)
+        XCTAssertEqual(found.scan.listeners.filter { $0.pid == getpid() }.count, 1,
+                       "only the LISTEN socket counts — the connected client and accepted peer are not listeners")
+        let mine = found.scan.listeners.filter { $0.pid == getpid() && $0.port == port }
+        XCTAssertEqual(mine.count, 1, "the scanner must find this process's listener on :\(port)")
+        XCTAssertEqual(mine.first?.address, "127.0.0.1")
+        XCTAssertEqual(found.owners[getpid()]?.uid, getuid())
+
+        close(fd)
+        let after = PortScanner.scan()
+        XCTAssertFalse(after.scan.listeners.contains { $0.pid == getpid() && $0.port == port },
+                       "a closed socket must disappear")
+    }
+
+    func testScannerReportsAProcessItCannotSeeAsUninspectableNotAsEmpty() {
+        let found = PortScanner.scan()
+        XCTAssertGreaterThan(found.scan.uninspectable, 0, "launchd and other users' processes are not inspectable")
+        XCTAssertNil(PortScanner.process(pid: 99_999_999), "a pid that does not exist has no owner")
+        let me = PortScanner.process(pid: getpid())
+        XCTAssertEqual(me?.uid, getuid())
     }
 }

@@ -126,6 +126,8 @@ struct DetailHostView: View {
                     .environment(systemMonitorManager)
             case .voiceTyping:
                 VoiceDetailView()
+            case .ports:
+                PortsDetailView()
             case .settingsClipboard:
                 SettingsDetailView(destination: selection)
             case .compress:
