@@ -273,15 +273,21 @@ struct DropTrayDetailView: View {
         guard let dest = chooseFolder() else { return }
         let items = liveItems()
         guard !items.isEmpty else { return }
-        let archive = dest.appendingPathComponent("Khay-\(Int(Date().timeIntervalSince1970)).zip")
+        let base = dest.appendingPathComponent("Khay-\(Int(Date().timeIntervalSince1970)).zip")
+        guard case .write(let archive) = ArchiveEngine.destination(
+            base: base, policy: .keepBoth, exists: { FileManager.default.fileExists(atPath: $0.path) }) else { return }
         Task {
-            let ok = await Task.detached {
-                DropTrayStore.runZip(sources: items, dest: archive)
-            }.value
+            // The shared runner: the old `ditto … src1 src2 dst` refused every tray with 2+ items.
+            let result = await ArchiveRunner.compress(sources: items, format: .zip, output: archive)
+            let ok: Bool
+            if case .success = result { ok = true } else { ok = false }
             self.history.record(kind: "compress",
                            summary: ok ? "\(L10n.t("Nén "))\(items.count)\(L10n.t(" mục từ khay → "))\(archive.lastPathComponent)" : L10n.t("Nén khay thất bại"),
                            reversible: false)
-            self.outcome = ok ? "\(L10n.t("Đã nén "))\(items.count)\(L10n.t(" mục → "))\(archive.lastPathComponent)." : L10n.t("Nén thất bại.")
+            switch result {
+            case .success: self.outcome = "\(L10n.t("Đã nén "))\(items.count)\(L10n.t(" mục → "))\(archive.lastPathComponent)."
+            case .failure(let f): self.outcome = "\(L10n.t("Nén thất bại.")) \(L10n.t(f.messageKey)) \(f.detail ?? "")"
+            }
         }
     }
 
@@ -405,17 +411,4 @@ final class DropTrayStore {
 
     /// Synchronous ZIP via ditto (small tray ops; runs on main-thread caller —
     /// view calls it after picking a folder, files are few).
-    nonisolated static func runZip(sources: [URL], dest: URL) -> Bool {
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-        p.arguments = ["-c", "-k", "--sequesterRsrc", "--keepParent"]
-            + sources.map(\.path) + [dest.path]
-        p.standardOutput = Pipe()
-        p.standardError = Pipe()
-        do {
-            try p.run()
-            p.waitUntilExit()
-            return p.terminationStatus == 0
-        } catch { return false }
-    }
 }

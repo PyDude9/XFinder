@@ -166,6 +166,10 @@ struct CompressDetailView: View {
                                     .font(XFinderTokens.Font.rowValue)
                             }
                             .padding(.horizontal, XFinderTokens.Space.page)
+                            if !password.isEmpty {
+                                InlineNote(text: L10n.t("Mật khẩu dùng mã hoá ZIP truyền thống (ZipCrypto): đủ chặn người xem tình cờ, không phải mã hoá mạnh. Mật khẩu không nằm trong dòng lệnh và XFinder không lưu nó."))
+                                    .padding(.horizontal, XFinderTokens.Space.page)
+                            }
                             HStack {
                                 Text(L10n.t("Mức nén:")).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                                 Picker("", selection: $level) {
@@ -214,8 +218,8 @@ struct CompressDetailView: View {
                     }
                     .padding(.horizontal, XFinderTokens.Space.page)
                     InlineNote(text: conflictPolicy == .keepBoth ? L10n.t("Giữ cả hai lưu một bản sao riêng (\"Report 2\").")
-                         : conflictPolicy == .merge ? L10n.t("Gộp thêm file vào thư mục hiện có và khôi phục nếu giải nén thất bại.")
-                         : L10n.t("Hỏi trước khi ghi đè."))
+                         : conflictPolicy == .merge ? L10n.t("Khi giải nén: gộp vào thư mục có sẵn, thay file trùng tên. Nếu giải nén lỗi, thư mục đích không bị đụng tới. Khi nén: tệp nén cũ không bao giờ bị ghi thêm, bản mới được giữ cả hai.")
+                         : L10n.t("Hiện hộp thoại trước khi ghi đè: giữ cả hai, thay thế hoặc huỷ. Thay thế đưa bản cũ vào Thùng rác."))
                         .padding(.horizontal, XFinderTokens.Space.page)
                 }
                 Divider().padding(.horizontal, XFinderTokens.Space.page)
@@ -224,14 +228,14 @@ struct CompressDetailView: View {
                     VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                         SectionHeader(icon: "checkmark.circle.fill", title: L10n.t("Mặc định giải nén"))
                         LabeledLine(label: L10n.t("Bộ máy nén và giải nén"), value: L10n.t("ditto, zip, tar có sẵn của macOS"))
-                        InlineNote(text: L10n.t("Dùng công cụ nén có sẵn của macOS (ditto cho ZIP, tar cho TAR.GZ), không cần cài thêm gì. Không bao giờ ghi đè — mục trùng tên được đổi tên (\"Report 2\") hoặc gộp theo lựa chọn bên trên."))
+                        InlineNote(text: L10n.t("Dùng công cụ có sẵn của macOS: ditto cho ZIP một mục (giữ metadata của Mac), zip cho nhiều mục hoặc có mật khẩu, tar cho TAR.GZ. Không cần cài thêm gì. Chỉ ghi đè khi bạn chọn Gộp hoặc Thay thế."))
                             .padding(.horizontal, XFinderTokens.Space.page)
                     }
                     Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                     VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                         SectionHeader(icon: "square.stack.3d.up.fill", title: L10n.t("Tách tác vụ nén và giải nén hoạt động"))
-                        InlineNote(text: L10n.t("Tạo file ZIP hoặc TAR.GZ và giải nén ZIP, TAR, TAR.GZ. XFinder không bao giờ ghi đè file hiện có."))
+                        InlineNote(text: L10n.t("Tạo ZIP hoặc TAR.GZ từ nhiều mục ở nhiều thư mục khác nhau; giải nén ZIP, TAR, TAR.GZ, TAR.BZ2. Tệp nén được đọc lại sau khi tạo để chắc không thiếu mục nào."))
                             .padding(.horizontal, XFinderTokens.Space.page)
                     }
                     Divider().padding(.horizontal, XFinderTokens.Space.page)
@@ -347,9 +351,7 @@ struct CompressDetailView: View {
 
     private func resolvedDestDir(for src: URL) -> URL {
         switch extractionDestination {
-        case .newFolderBesideArchive:
-            return src.deletingLastPathComponent()
-        case .sameFolder:
+        case .newFolderBesideArchive, .sameFolder:
             return src.deletingLastPathComponent()
         case .downloads:
             return FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first
@@ -359,111 +361,124 @@ struct CompressDetailView: View {
         }
     }
 
-    private func uniqueDestURL(base: URL) -> URL {
-        // keepBoth: "Report" → "Report 2", "Report 2" → "Report 3"
+    private var enginePolicy: ArchiveEngine.ConflictPolicy {
         switch conflictPolicy {
-        case .keepBoth:
-            if !FileManager.default.fileExists(atPath: base.path) { return base }
-            let dir = base.deletingLastPathComponent()
-            let ext = base.pathExtension
-            let stem = base.deletingPathExtension().lastPathComponent
-            var i = 2
-            while true {
-                let cand = ext.isEmpty ? dir.appendingPathComponent("\(stem) \(i)")
-                                       : dir.appendingPathComponent("\(stem) \(i).\(ext)")
-                if !FileManager.default.fileExists(atPath: cand.path) { return cand }
-                i += 1
-            }
-        case .ask:
-            if FileManager.default.fileExists(atPath: base.path) {
-                // Caller should have asked; fallback to keepBoth naming.
-                return uniqueDestURL(base: base) // recurse into keepBoth branch requires manual — just suffix
-            }
-            return base
-        case .merge:
-            return base
+        case .keepBoth: return .keepBoth
+        case .ask: return .ask
+        case .merge: return .merge
         }
     }
 
-    private func compress() async {
-        var destDir = outputFolder ?? sources[0].deletingLastPathComponent()
-        if mode == .extract {} else {
-            // compress destination: picker is about extraction; compress always beside first source
-            destDir = sources[0].deletingLastPathComponent()
+    private static func exists(_ url: URL) -> Bool { FileManager.default.fileExists(atPath: url.path) }
+
+    private enum ConflictChoice { case keepBoth, replace, cancel }
+
+    /// The real "Hỏi" (Ask). The old branch recursed into itself forever the moment a name existed.
+    private func askConflict(names: [String], replaceTitle: String) -> ConflictChoice {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "\(names.count)\(L10n.t(" mục đã tồn tại ở nơi đích."))"
+        alert.informativeText = names.prefix(6).joined(separator: "\n") + (names.count > 6 ? "\n…" : "")
+        alert.addButton(withTitle: L10n.t("Giữ cả hai"))
+        alert.addButton(withTitle: replaceTitle)
+        alert.addButton(withTitle: L10n.t("Hủy"))
+        switch alert.runModal() {
+        case .alertFirstButtonReturn: return .keepBoth
+        case .alertSecondButtonReturn: return .replace
+        default: return .cancel
         }
-        let exe: String
-        let args: [String]
-        let cwd: URL?
-        let finalDest: URL
-        switch format {
-        case .tarGz:
-            exe = "/usr/bin/tar"
-            finalDest = uniqueDestURL(base: destDir.appendingPathComponent("\(sanitizedName).tar.gz"))
-            let parent = sources[0].deletingLastPathComponent().path
-            args = ["-czf", finalDest.path, "-C", parent] + sources.map(\.lastPathComponent)
-            cwd = nil
-        case .zip:
-            finalDest = uniqueDestURL(base: destDir.appendingPathComponent("\(sanitizedName).zip"))
-            if password.isEmpty && level == 6 {
-                // ditto giữ resource fork / metadata macOS; không mã hoá.
-                exe = "/usr/bin/ditto"
-                args = ["-c", "-k", "--sequesterRsrc", "--keepParent"]
-                    + sources.map(\.path) + [finalDest.path]
-                cwd = nil
-            } else {
-                // zip khi cần mật khẩu / mức nén khác mặc định.
-                exe = "/usr/bin/zip"
-                var a = ["-r", "-\(level)", "-q"]
-                if !password.isEmpty { a += ["-P", password] }
-                a += [finalDest.path] + sources.map(\.lastPathComponent)
-                args = a
-                cwd = sources[0].deletingLastPathComponent()
+    }
+
+    private func failureLine(_ f: ArchiveRunner.Failure) -> String {
+        if let d = f.detail, !d.isEmpty { return "\(L10n.t(f.messageKey)) \(d)" }
+        return L10n.t(f.messageKey)
+    }
+
+    private var engineFormat: ArchiveEngine.Format { format == .zip ? .zip : .tarGz }
+
+    private func compress() async {
+        guard let first = sources.first else { return }
+        let base = first.deletingLastPathComponent()
+            .appendingPathComponent("\(ArchiveEngine.archiveName(archiveName)).\(engineFormat.fileExtension)")
+        // "Gộp" only means something for extraction; an existing archive is never appended to.
+        let policy: ArchiveEngine.ConflictPolicy = enginePolicy == .merge ? .keepBoth : enginePolicy
+        var output: URL
+        switch ArchiveEngine.destination(base: base, policy: policy, exists: Self.exists) {
+        case .write(let url): output = url
+        case .needsDecision(let existing):
+            switch askConflict(names: [existing.lastPathComponent], replaceTitle: L10n.t("Thay thế")) {
+            case .cancel: appendLog(L10n.t("Đã hủy.")); return
+            case .replace:
+                // Replace = the old archive goes to the Trash first. Never a hard delete.
+                do { try FileManager.default.trashItem(at: existing, resultingItemURL: nil) }
+                catch { appendLog(L10n.t("Không đưa được tệp cũ vào Thùng rác.")); return }
+                output = existing
+            case .keepBoth:
+                guard case .write(let url) = ArchiveEngine.destination(base: base, policy: .keepBoth, exists: Self.exists) else { return }
+                output = url
             }
         }
-        let ok = await runProcess(exe: exe, args: args, cwd: cwd)
-        appendLog(ok ? "\(L10n.t("Đã nén → "))\(finalDest.lastPathComponent)" : "\(L10n.t("Thất bại khi nén "))\(sources.count)\(L10n.t(" mục"))")
-        if ok {
-            resultURL = finalDest
+        let result = await ArchiveRunner.compress(sources: sources, format: engineFormat, level: level,
+                                                  password: password.isEmpty ? nil : password, output: output)
+        switch result {
+        case .success(let url):
+            appendLog("\(L10n.t("Đã nén → "))\(url.lastPathComponent)")
+            resultURL = url
             ActionHistoryStore.shared.record(
                 kind: "compress",
-                summary: "\(L10n.t("Nén "))\(sources.count)\(L10n.t(" mục → "))\(finalDest.lastPathComponent)",
-                detail: finalDest.path,
+                summary: "\(L10n.t("Nén "))\(sources.count)\(L10n.t(" mục → "))\(url.lastPathComponent)",
+                detail: url.path,
                 reversible: false)
+        case .failure(let f):
+            appendLog("\(L10n.t("Thất bại khi nén "))\(sources.count)\(L10n.t(" mục"))")
+            appendLog(failureLine(f))
         }
     }
 
     private func extract() async {
         var okCount = 0
         for src in sources {
-            let destBase = resolvedDestDir(for: src)
-            let destDir: URL
-            // MFinder: newFolderBesideArchive → folder named after archive beside it.
+            var dest = resolvedDestDir(for: src)
+            var policy = enginePolicy
             if extractionDestination == .newFolderBesideArchive {
-                destDir = uniqueDestURL(base: destBase.appendingPathComponent(src.deletingPathExtension().lastPathComponent))
-                try? FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
-            } else {
-                destDir = destBase
-                if destDir.path != src.deletingLastPathComponent().path {
-                    try? FileManager.default.createDirectory(at: destDir, withIntermediateDirectories: true)
+                let folder = dest.appendingPathComponent(ArchiveEngine.folderName(forArchive: src))
+                switch ArchiveEngine.destination(base: folder, policy: policy, exists: Self.exists) {
+                case .write(let url): dest = url
+                case .needsDecision(let existing):
+                    switch askConflict(names: [existing.lastPathComponent], replaceTitle: L10n.t("Gộp")) {
+                    case .cancel: appendLog("\(L10n.t("Bỏ qua "))\(src.lastPathComponent)"); continue
+                    case .replace: dest = existing; policy = .merge
+                    case .keepBoth:
+                        guard case .write(let url) = ArchiveEngine.destination(base: folder, policy: .keepBoth, exists: Self.exists) else { continue }
+                        dest = url; policy = .keepBoth
+                    }
                 }
             }
-            let ext = src.pathExtension.lowercased()
-            let exe: String
-            let args: [String]
-            let destURL: URL
-            if ext == "zip" {
-                exe = "/usr/bin/ditto"
-                destURL = destDir
-                args = ["-x", "-k", src.path, destDir.path]
-            } else {
-                exe = "/usr/bin/tar"
-                destURL = destDir
-                args = ["-xzf", src.path, "-C", destDir.path]
+            // Extract into a private staging folder first: ditto and tar overwrite silently.
+            let staged = await ArchiveRunner.extractToStaging(archive: src, near: dest)
+            guard case .success(let batch) = staged else {
+                if case .failure(let f) = staged { appendLog("\(L10n.t("Lỗi: không giải được "))\(src.lastPathComponent)"); appendLog(failureLine(f)) }
+                continue
             }
-            if await runProcess(exe: exe, args: args) {
+            let clashes = ArchiveRunner.conflicts(batch, in: dest)
+            if policy == .ask {
+                if clashes.isEmpty { policy = .keepBoth }
+                else {
+                    switch askConflict(names: clashes, replaceTitle: L10n.t("Gộp")) {
+                    case .cancel: ArchiveRunner.discard(batch); appendLog("\(L10n.t("Bỏ qua "))\(src.lastPathComponent)"); continue
+                    case .replace: policy = .merge
+                    case .keepBoth: policy = .keepBoth
+                    }
+                }
+            }
+            switch await ArchiveRunner.place(batch, into: dest, policy: policy) {
+            case .success(let placed):
                 okCount += 1
-                resultURL = destURL
-            } else { appendLog("\(L10n.t("Lỗi: không giải được "))\(src.lastPathComponent)") }
+                resultURL = placed.count == 1 ? placed[0] : dest
+            case .failure(let f):
+                appendLog("\(L10n.t("Lỗi: không giải được "))\(src.lastPathComponent)")
+                appendLog(failureLine(f))
+            }
         }
         appendLog("\(L10n.t("Đã giải "))\(okCount)/\(sources.count)\(L10n.t(" tập tin"))")
         if okCount > 0 {
@@ -472,29 +487,6 @@ struct CompressDetailView: View {
                 summary: "\(L10n.t("Giải "))\(okCount)/\(sources.count)\(L10n.t(" tập tin"))",
                 reversible: false)
         }
-    }
-
-    private var sanitizedName: String {
-        let t = archiveName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.isEmpty ? "Archive" : t
-    }
-
-    private func runProcess(exe: String, args: [String], cwd: URL? = nil) async -> Bool {
-        await Task.detached(priority: .userInitiated) {
-            let p = Process()
-            p.executableURL = URL(fileURLWithPath: exe)
-            p.arguments = args
-            if let cwd { p.currentDirectoryURL = cwd }
-            p.standardOutput = Pipe()
-            p.standardError = Pipe()
-            do {
-                try p.run()
-                p.waitUntilExit()
-                return p.terminationStatus == 0
-            } catch {
-                return false
-            }
-        }.value
     }
 
     private func appendLog(_ line: String) {

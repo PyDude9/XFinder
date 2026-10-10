@@ -1945,10 +1945,6 @@
       "en": "Merge requires at least 2 clips",
       "scope": "sentence"
     },
-    "Gộp thêm file vào thư mục hiện có và khôi phục nếu giải nén thất bại.": {
-      "en": "Merge extra files into the existing folder and roll back if extraction fails.",
-      "scope": "sentence"
-    },
     "Gộp thư mục": {
       "en": "Merge folders",
       "scope": "sentence"
@@ -2163,10 +2159,6 @@
     },
     "Hỏi bằng câu tự nhiên": {
       "en": "Ask in natural language",
-      "scope": "sentence"
-    },
-    "Hỏi trước khi ghi đè.": {
-      "en": "Ask before overwriting.",
       "scope": "sentence"
     },
     "Hỗ trợ AirPods, chuột, bàn phím Bluetooth/HID": {
@@ -7043,14 +7035,6 @@
       "en": "macOS's own ditto, zip and tar",
       "scope": "sentence"
     },
-    "Dùng công cụ nén có sẵn của macOS (ditto cho ZIP, tar cho TAR.GZ), không cần cài thêm gì. Không bao giờ ghi đè — mục trùng tên được đổi tên (\"Report 2\") hoặc gộp theo lựa chọn bên trên.": {
-      "en": "Uses the compression tools macOS already ships (ditto for ZIP, tar for TAR.GZ); nothing to install. Never overwrites — a name clash is renamed (\"Report 2\") or merged, as chosen above.",
-      "scope": "sentence"
-    },
-    "Tạo file ZIP hoặc TAR.GZ và giải nén ZIP, TAR, TAR.GZ. XFinder không bao giờ ghi đè file hiện có.": {
-      "en": "Creates ZIP or TAR.GZ and extracts ZIP, TAR and TAR.GZ. XFinder never overwrites an existing file.",
-      "scope": "sentence"
-    },
     "Chọn các mục xuất hiện trong menu ngữ cảnh Finder.": {
       "en": "Choose which items appear in Finder's context menu.",
       "scope": "sentence"
@@ -7137,6 +7121,70 @@
     },
     "Kéo để dời khay": {
       "en": "Drag to move the tray",
+      "scope": "sentence"
+    },
+    "Đã hủy.": {
+      "en": "Cancelled.",
+      "scope": "sentence"
+    },
+    "Thay thế": {
+      "en": "Replace",
+      "scope": "sentence"
+    },
+    "Bỏ qua ": {
+      "en": "Skipped ",
+      "scope": "fragment"
+    },
+    " mục đã tồn tại ở nơi đích.": {
+      "en": " items already exist at the destination.",
+      "scope": "fragment"
+    },
+    "Không đưa được tệp cũ vào Thùng rác.": {
+      "en": "Could not move the old file to the Trash.",
+      "scope": "sentence"
+    },
+    "Mật khẩu dùng mã hoá ZIP truyền thống (ZipCrypto): đủ chặn người xem tình cờ, không phải mã hoá mạnh. Mật khẩu không nằm trong dòng lệnh và XFinder không lưu nó.": {
+      "en": "The password uses classic ZIP encryption (ZipCrypto): enough to stop a casual look, not strong encryption. It never appears on the command line and XFinder does not store it.",
+      "scope": "sentence"
+    },
+    "Khi giải nén: gộp vào thư mục có sẵn, thay file trùng tên. Nếu giải nén lỗi, thư mục đích không bị đụng tới. Khi nén: tệp nén cũ không bao giờ bị ghi thêm, bản mới được giữ cả hai.": {
+      "en": "When extracting: merge into the existing folder, replacing same-named files. If extraction fails, the destination is left untouched. When compressing: an existing archive is never appended to; the new one is kept alongside.",
+      "scope": "sentence"
+    },
+    "Hiện hộp thoại trước khi ghi đè: giữ cả hai, thay thế hoặc huỷ. Thay thế đưa bản cũ vào Thùng rác.": {
+      "en": "Shows a dialog before overwriting: keep both, replace or cancel. Replace moves the old copy to the Trash.",
+      "scope": "sentence"
+    },
+    "Dùng công cụ có sẵn của macOS: ditto cho ZIP một mục (giữ metadata của Mac), zip cho nhiều mục hoặc có mật khẩu, tar cho TAR.GZ. Không cần cài thêm gì. Chỉ ghi đè khi bạn chọn Gộp hoặc Thay thế.": {
+      "en": "Uses the tools built into macOS: ditto for a single-item ZIP (keeps Mac metadata), zip for several items or a password, tar for TAR.GZ. Nothing to install. Overwrites only when you choose Merge or Replace.",
+      "scope": "sentence"
+    },
+    "Tạo ZIP hoặc TAR.GZ từ nhiều mục ở nhiều thư mục khác nhau; giải nén ZIP, TAR, TAR.GZ, TAR.BZ2. Tệp nén được đọc lại sau khi tạo để chắc không thiếu mục nào.": {
+      "en": "Creates ZIP or TAR.GZ from items in different folders; extracts ZIP, TAR, TAR.GZ, TAR.BZ2. A new ZIP is read back after it is made to confirm nothing is missing.",
+      "scope": "sentence"
+    },
+    "Chưa chọn gì để xử lý.": {
+      "en": "Nothing selected to process.",
+      "scope": "sentence"
+    },
+    "Một số mục không còn tồn tại nên chưa nén gì.": {
+      "en": "Some items no longer exist, so nothing was compressed.",
+      "scope": "sentence"
+    },
+    "Không chuẩn bị được thư mục tạm.": {
+      "en": "Could not prepare a temporary folder.",
+      "scope": "sentence"
+    },
+    "Công cụ nén của macOS báo lỗi.": {
+      "en": "The macOS archive tool reported an error.",
+      "scope": "sentence"
+    },
+    "Tệp nén thiếu dữ liệu nên đã bị xoá.": {
+      "en": "The archive was missing data, so it was deleted.",
+      "scope": "sentence"
+    },
+    "Không đặt được tệp đã giải nén vào thư mục đích.": {
+      "en": "Could not place the extracted files in the destination folder.",
       "scope": "sentence"
     }
   }

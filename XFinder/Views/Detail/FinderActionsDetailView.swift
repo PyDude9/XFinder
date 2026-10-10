@@ -292,26 +292,23 @@ struct FinderActionsDetailView: View {
         guard let first = selection.first else { return }
         busy = true
         let items = selection
-        let output = first.deletingLastPathComponent()
+        let base = first.deletingLastPathComponent()
             .appendingPathComponent("XFinder-\(Int(Date().timeIntervalSince1970)).zip")
-        Task.detached {
-            let p = Process()
-            p.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-            p.arguments = ["-c", "-k", "--sequesterRsrc", "--keepParent"]
-                + items.map(\.path) + [output.path]
-            p.standardOutput = Pipe(); p.standardError = Pipe()
-            try? p.run()
-            p.waitUntilExit()
-            let ok = p.terminationStatus == 0
-            await MainActor.run {
-                busy = false
-                status = ok ? "\(L10n.t("Đã nén thành "))\(output.lastPathComponent)."
-                            : L10n.t("Nén thất bại.")
-                if ok {
-                    ActionHistoryStore.shared.record(
-                        kind: "compress",
-                        summary: "\(L10n.t("Nén "))\(items.count)\(L10n.t(" mục → "))\(output.lastPathComponent)")
-                }
+        guard case .write(let output) = ArchiveEngine.destination(
+            base: base, policy: .keepBoth, exists: { FileManager.default.fileExists(atPath: $0.path) }) else { busy = false; return }
+        Task {
+            // The shared runner: `ditto` alone refuses more than one source, which made this button
+            // fail for every multi-item selection.
+            let result = await ArchiveRunner.compress(sources: items, format: .zip, output: output)
+            busy = false
+            switch result {
+            case .success(let url):
+                status = "\(L10n.t("Đã nén thành "))\(url.lastPathComponent)."
+                ActionHistoryStore.shared.record(
+                    kind: "compress",
+                    summary: "\(L10n.t("Nén "))\(items.count)\(L10n.t(" mục → "))\(url.lastPathComponent)")
+            case .failure(let f):
+                status = "\(L10n.t("Nén thất bại.")) \(L10n.t(f.messageKey)) \(f.detail ?? "")"
             }
         }
     }

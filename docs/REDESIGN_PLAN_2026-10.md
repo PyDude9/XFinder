@@ -212,6 +212,9 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
    (test: notch thật từ `auxiliaryTop*Area`; Pill cho màn không notch; đa màn hình) + panel `SurfacePanel(.notch)`; 3 trạng thái
    thu gọn/peek/mở với `Motion.surface`. **Wire thật** `dropTray.hoverEnabled` và `dropTray.notchDropEnabled` (hover mở peek; kéo
    file vào vùng notch mở hub) — hoặc xoá khoá. Lắc giữ nguyên.
+- [x] **B2a (2026-10-10)** `Core/Archive/ArchiveEngine` (thuần) + `ArchiveRunner` (Process, test tích hợp với công cụ thật);
+  3 chỗ gọi ZIP chuyển sang. Phát hiện: `ditto` từ chối >1 nguồn nên **nén 2+ mục chưa bao giờ chạy**; `zip` bỏ sót tệp mà vẫn
+  thoát 0; "Hỏi" đệ quy vô hạn; giải nén ghi đè im lặng. PDF/ảnh/AirDrop/TaskProgress còn lại (B2b–B2d).
 2. Action hub: tách `CompressEngine`, `PdfEngine` ra khỏi view (thuần, test), thêm `BackgroundRemover`, `AirDropShare`,
    `ImageConverter` (ImageIO: HEIC→JPG/PNG/WebP nếu encoder có). `TaskProgress` thuần (0–100 %, huỷ được) hiện trên notch; kết quả
    cạnh file gốc + Reveal/Copy/Share. Mọi việc nặng `Task.detached`, UI không chặn (đo bằng tap latency).
