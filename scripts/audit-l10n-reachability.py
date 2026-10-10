@@ -53,7 +53,7 @@ DECLARING_DIRS = ["XFinder/Core", "XFinder/Models"]
 WRAPPERS = [
     "Text", "Label", "Button", "Toggle", "Picker", "TextField", "SecureField",
     "Section", "Stepper", "Link", "NavigationLink", "Menu", "DisclosureGroup",
-    ".help", "accessibilityLabel", "SettingsCard", "ToggleRow", "PageHeader",
+    ".help", "accessibilityLabel", "TileCard", "ToggleRow", "PageHeader",
     "SectionHeader", "StatusChecklistRow", "LabeledLine", "MeterRow",
 ]
 

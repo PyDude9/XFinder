@@ -27,7 +27,3 @@ struct TileCard<Content: View>: View {
         .overlay(RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous).strokeBorder(XFinderTokens.Fill.hairline, lineWidth: 1))
     }
 }
-
-/// Transitional alias while the 12 boxed pages are flattened (Phase A.3). Delete it when
-/// `grep -rn "SettingsCard(" XFinder/Views/Detail` returns nothing.
-typealias SettingsCard = TileCard
