@@ -205,7 +205,7 @@ struct DropTrayDetailView: View {
                         Text(L10n.t("Cao")).tag("high")
                     }
                 }
-                InlineNote(text: L10n.t("Trên màn hình không có notch, khay mở từ giữa cạnh trên; số tệp đang giữ chỉ hiện trên màn hình có notch."))
+                InlineNote(text: L10n.t("Trên màn hình không có notch, khay mở từ giữa cạnh trên và không có huy hiệu đếm tệp; rê chuột vào giữa cạnh trên để xem các tệp đang giữ."))
             }
             .padding(.horizontal, XFinderTokens.Space.page)
         }
@@ -330,24 +330,36 @@ final class DropTrayStore {
 
     private init() { load() }
 
+    /// Adds in ONE assignment: `items` has a `didSet` that tells the Notch surface the count changed,
+    /// and appending per file fired one surface render per file (1 000 files ⇒ 1 000 passes, B1 review).
+    /// Also de-duplicates within the batch itself, not only against what is already held.
     func add(urls: [URL]) {
-        let existing = Set(items.map(\.path))
+        var seen = Set(items.map(\.path))
+        var next = items
         let fm = FileManager.default
-        for url in urls where !existing.contains(url.path) {
+        for url in urls where seen.insert(url.path).inserted {
             var isDir: ObjCBool = false
             _ = fm.fileExists(atPath: url.path, isDirectory: &isDir)
-            items.append(Item(path: url.path, isDir: isDir.boolValue, isMissing: false))
+            next.append(Item(path: url.path, isDir: isDir.boolValue, isMissing: false))
         }
-        refreshMissing()
+        items = Self.markingMissing(next)
         persist()
     }
 
-    func add(providers: [NSItemProvider]) {
-        for p in providers {
-            _ = p.loadObject(ofClass: URL.self) { url, _ in
-                guard let url else { return }
-                Task { @MainActor in self.add(urls: [url]) }
+    /// `NSItemProvider.loadObject` is asynchronous: the URLs arrive after the drop returns. Collect
+    /// them all, add them in one batch, THEN call `completion` — so a caller that needs the new count
+    /// (the Notch surface's "dropped" event) reads the real one, not the count from before the drop.
+    func add(providers: [NSItemProvider], completion: (@MainActor () -> Void)? = nil) {
+        Task { @MainActor in
+            var urls: [URL] = []
+            for p in providers {
+                let url: URL? = await withCheckedContinuation { c in
+                    _ = p.loadObject(ofClass: URL.self) { url, _ in c.resume(returning: url) }
+                }
+                if let url { urls.append(url) }
             }
+            self.add(urls: urls)
+            completion?()
         }
     }
 
@@ -368,10 +380,13 @@ final class DropTrayStore {
     }
 
     private func refreshMissing() {
+        items = Self.markingMissing(items)
+    }
+
+    /// Mutates a copy, so the caller assigns `items` once (one `didSet`), never once per element.
+    private static func markingMissing(_ list: [Item]) -> [Item] {
         let fm = FileManager.default
-        for i in items.indices {
-            items[i].isMissing = !fm.fileExists(atPath: items[i].path)
-        }
+        return list.map { var i = $0; i.isMissing = !fm.fileExists(atPath: i.path); return i }
     }
 
     private func load() {

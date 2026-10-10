@@ -164,8 +164,12 @@ final class NotchSurfaceController {
             // Never collapse mid-drag — the drag may come back; the leave clock restarts after the release.
             leftAt = nil; graceWork?.cancel(); graceWork = nil
             zoneEnteredAt = nil; dwellWork?.cancel(); dwellWork = nil
+            // Neither drag trigger on ⇒ nothing to decide, so never touch the drag pasteboard (a
+            // pasteboard-server round trip) on the user's window and text drags.
+            let s = settings
+            guard s.dragIntoNotchOpens || s.shakeOpens else { return }
             let pb = NSPasteboard(name: .drag)
-            guard dragSession.carriesFiles(changeCount: pb.changeCount,
+            guard dragSession.carriesFiles(now: now, changeCount: { pb.changeCount },
                                            types: { (pb.types ?? []).map(\.rawValue) }) else { return }
             samples.append((point, now))
             let cutoff = now.addingTimeInterval(-0.6)          // keep ~0.6 s of movement for the shake
@@ -265,10 +269,13 @@ final class NotchSurfaceController {
     /// the frame is owned by `NotchSurfaceLayout`, and the drawn shape animates inside it.
     private func prepare() {
         let p = SurfacePanel(kind: .notch, size: CGSize(width: 440, height: 222))
-        let hc = NSHostingController(rootView: NotchSurfaceView(model: model))
-        hc.sizingOptions = []
-        hc.view.frame = NSRect(origin: .zero, size: p.frame.size)
-        p.contentViewController = hc
+        // A hosting VIEW subclass, not a controller: it must answer acceptsFirstMouse = true or every
+        // control needs two clicks while another app is frontmost (the panel is never made key).
+        let host = FirstMouseHostingView(rootView: NotchSurfaceView(model: model))
+        host.sizingOptions = []
+        host.frame = NSRect(origin: .zero, size: p.frame.size)
+        host.autoresizingMask = [.width, .height]
+        p.contentView = host
         panel = p
     }
 
@@ -303,6 +310,12 @@ final class NotchSurfaceController {
             withTransaction(t) { applyModel(notch: notch) }
             panel.setFrame(target, display: true)
             if !wasVisible { panel.orderFrontRegardless() }   // never key: the user's app keeps focus
+            return
+        }
+        // A tray at the pointer may have been dragged aside by its title strip; it has one fixed size,
+        // so an update (a file added, a count change) keeps it where the user put it.
+        if machine.anchor == .pointer, panel.frame.size == target.size {
+            applyModel(notch: notch)
             return
         }
         if target.width >= panel.frame.width && target.height >= panel.frame.height {

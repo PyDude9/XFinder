@@ -7127,12 +7127,16 @@
       "en": "High",
       "scope": "sentence"
     },
-    "Trên màn hình không có notch, khay mở từ giữa cạnh trên; số tệp đang giữ chỉ hiện trên màn hình có notch.": {
-      "en": "On a screen without a notch the tray opens from the top centre; the held-file count only shows on a screen with a notch.",
-      "scope": "sentence"
-    },
     "Giữ tệp tạm ở notch: kéo vào để giữ, kéo ra để dùng.": {
       "en": "Hold files in the notch: drag them in to keep, drag them out to use.",
+      "scope": "sentence"
+    },
+    "Trên màn hình không có notch, khay mở từ giữa cạnh trên và không có huy hiệu đếm tệp; rê chuột vào giữa cạnh trên để xem các tệp đang giữ.": {
+      "en": "On a screen without a notch the tray opens from the top centre and has no count badge; rest the pointer at the top centre to see the files you are holding.",
+      "scope": "sentence"
+    },
+    "Kéo để dời khay": {
+      "en": "Drag to move the tray",
       "scope": "sentence"
     }
   }

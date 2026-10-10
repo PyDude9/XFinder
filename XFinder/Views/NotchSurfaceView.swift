@@ -55,10 +55,11 @@ struct NotchSurfaceView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(XFinderTokens.Motion.surface, value: model.state)
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
-            store.add(providers: providers)
             ClipboardSounds.playCopy()
-            // Deliberately keeps the surface open: dropping is the START of the task.
-            NotchSurfaceController.shared.filesDropped()
+            // The URLs load asynchronously; report the drop only once they are in the store, so the
+            // machine sees the real count (a shaken tray with files must not think it is empty).
+            // Dropping keeps the surface open: it is the START of the task.
+            store.add(providers: providers) { NotchSurfaceController.shared.filesDropped() }
             return true
         }
     }
@@ -111,10 +112,16 @@ struct NotchSurfaceView: View {
     private var hub: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             HStack {
-                Image(systemName: "tray.and.arrow.down.fill").foregroundColor(.accentColor)
-                Text(L10n.t("Khay thả")).font(XFinderTokens.Font.sectionTitle)
-                Text("\(store.items.count)").font(XFinderTokens.Font.caption).opacity(0.65)
-                Spacer()
+                HStack {
+                    Image(systemName: "tray.and.arrow.down.fill").foregroundColor(.accentColor)
+                    Text(L10n.t("Khay thả")).font(XFinderTokens.Font.sectionTitle)
+                    Text("\(store.items.count)").font(XFinderTokens.Font.caption).opacity(0.65)
+                    Spacer()
+                }
+                // A tray opened at the pointer often lands on the very window the files are going to;
+                // its title strip moves it out of the way (the old tray could, the B1 rewrite had lost
+                // it). Only the strip — never the deck — so a file drag out still starts normally.
+                .overlay { if !atNotch { WindowDragHandle().help(L10n.t("Kéo để dời khay")) } }
                 Button { NotchSurfaceController.shared.dismiss() } label: {
                     Image(systemName: "xmark.circle.fill").opacity(0.65)
                 }
@@ -202,6 +209,24 @@ struct NotchShape: InsettableShape {
         s.inset += amount
         return s
     }
+}
+
+/// Moves its window when pressed and dragged. A separate view so the window drag is confined to the
+/// strip it covers: blanket-forwarding `mouseDown` swallowed every file drag once (CLAUDE.md Part 3c).
+struct WindowDragHandle: NSViewRepresentable {
+    final class HandleView: NSView {
+        override func mouseDown(with event: NSEvent) { window?.performDrag(with: event) }
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    }
+    func makeNSView(context: Context) -> HandleView { HandleView() }
+    func updateNSView(_ nsView: HandleView, context: Context) {}
+}
+
+/// The surface's hosting view. `NSHostingView.acceptsFirstMouse` is `false` (measured by the B1
+/// review), and the panel is ordered front without becoming key, so every control needed TWO clicks
+/// while another app was frontmost. The deleted tray overrode this on its container; so does this.
+final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 
 // MARK: - Shared tray pieces (also used by the detail grid window)

@@ -48,7 +48,7 @@ run() {   # run <name> <file> <old> <new>
 }
 
 run "M1 drag pasteboard: trust stale types" XFinder/Core/Notch/NotchDragSession.swift \
-  "'        guard changeCount != changeCountAtPress else { return false }   // no new drag session yet\n'" "''"
+  "'        guard changeCount() != changeCountAtPress else { return false }   // no new drag session yet\n'" "''"
 run "M2 hover reveals an empty tray" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'guard s.hoverToPeek, itemCount > 0, state == .collapsed,'" "'guard s.hoverToPeek, state == .collapsed,'"
 run "M3 shaken tray with files auto-closes" XFinder/Core/Notch/NotchSurfaceMachine.swift \
@@ -62,6 +62,8 @@ run "M6 hover zone always takes the title-bar strip" XFinder/Core/Notch/NotchSur
   "'let lip = itemCount > 0 ? m.badgeLip : 0'" "'let lip = m.badgeLip'"
 run "M7 a drag at the notch yanks the pointer tray" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if case .expanded = state, anchor == .pointer { return }\n'" "''"
+run "M9 pasteboard read on every drag event (throttle removed)" XFinder/Core/Notch/NotchDragSession.swift \
+  "'        if let lastCheck, now.timeIntervalSince(lastCheck) < Self.recheckInterval { return false }\n'" "''"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 
