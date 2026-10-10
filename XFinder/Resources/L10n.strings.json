@@ -7022,6 +7022,22 @@
     "GPU": {
       "en": "GPU",
       "scope": "sentence"
+    },
+    "Ngoài ra mô tả HID còn khai báo các mã điều khiển trên trang Consumer: ": {
+      "en": "The HID descriptor also declares control codes on the Consumer page: ",
+      "scope": "fragment"
+    },
+    " Số đó không phải số nút và XFinder không đánh số được chúng.": {
+      "en": " Those are not button numbers and XFinder cannot number them.",
+      "scope": "fragment"
+    },
+    "Đặt nút này làm nút giữ": {
+      "en": "Use this button as the hold button",
+      "scope": "sentence"
+    },
+    "Bấm “Ghi” rồi bấm nút thật trước khi đặt làm nút giữ.": {
+      "en": "Press “Record”, then press the real button, before making it the hold button.",
+      "scope": "sentence"
     }
   }
 }
