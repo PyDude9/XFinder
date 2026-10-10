@@ -15,6 +15,8 @@ final class NotchSurfaceModel {
     var task: NotchTask?
     /// A one-line store key shown under the action row (e.g. AirDrop unavailable).
     var notice: String?
+    /// The live activity on screen (B4).
+    var activity: LiveActivity.Item?
 }
 
 /// Root of the Notch surface window. The window is sized by `NotchSurfaceLayout`; this view draws
@@ -42,7 +44,7 @@ struct NotchSurfaceView: View {
     private var bottomRadius: CGFloat {
         switch model.state {
         case .collapsed: return 9
-        case .peek: return 14
+        case .peek, .activity: return 14
         case .expanded: return XFinderTokens.Radius.surface
         }
     }
@@ -72,6 +74,7 @@ struct NotchSurfaceView: View {
         switch model.state {
         case .collapsed: badge
         case .peek: peek
+        case .activity: activityStrip
         case .expanded: hub
         }
     }
@@ -111,6 +114,30 @@ struct NotchSurfaceView: View {
         .foregroundColor(.white)
         .frame(maxWidth: .infinity)
         .frame(height: NotchSurfaceLayout.Metrics.standard.peekDrop)
+    }
+
+    /// A live activity: icon, headline, detail — one line under the notch, white on black.
+    private var activityStrip: some View {
+        HStack(spacing: XFinderTokens.Space.tight + 2) {
+            if let a = model.activity {
+                Image(systemName: a.symbol).font(XFinderTokens.Font.row).foregroundColor(tint(a.tint))
+                Text(L10n.t(a.titleKey)).font(XFinderTokens.Font.row).lineLimit(1)
+                if let d = a.detail { Text(d).font(XFinderTokens.Font.caption).opacity(0.7).lineLimit(1).truncationMode(.middle) }
+            }
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: NotchSurfaceLayout.Metrics.standard.activityDrop)
+        .padding(.horizontal, XFinderTokens.Space.inline)
+    }
+
+    private func tint(_ t: LiveActivity.Tint) -> Color {
+        switch t {
+        case .neutral: return .white
+        case .good: return .green
+        case .warning: return .orange
+        case .bad: return .red
+        }
     }
 
     private var hub: some View {

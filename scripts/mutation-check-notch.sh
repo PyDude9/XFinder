@@ -11,12 +11,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notch.XXXXXX)
-FILES="XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Views/Detail/DropTrayDetailView.swift"
+FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Views/Detail/DropTrayDetailView.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='NotchSurface|NotchDrag|NotchTask|FeatureKeyDefaults'
+FILTER='NotchSurface|NotchDrag|NotchTask|LiveActivity|FeatureKeyDefaults'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -50,12 +50,12 @@ run() {   # run <name> <file> <old> <new>
 run "M1 drag pasteboard: trust stale types" XFinder/Core/Notch/NotchDragSession.swift \
   "'        guard changeCount() != changeCountAtPress else { return false }   // no new drag session yet\n'" "''"
 run "M2 hover reveals an empty tray" XFinder/Core/Notch/NotchSurfaceMachine.swift \
-  "'guard s.hoverToPeek, itemCount > 0, state == .collapsed,'" "'guard s.hoverToPeek, state == .collapsed,'"
+  "'guard s.hoverToPeek, itemCount > 0, state.isIdle,'" "'guard s.hoverToPeek, state.isIdle,'"
 run "M3 shaken tray with files auto-closes" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if case .expanded = state, anchor == .pointer, itemCount > 0 { return }\n'" "''"
 run "M4 pointer away never collapses" XFinder/Core/Notch/NotchSurfaceMachine.swift \
-  "'guard state.isOpen, now.timeIntervalSince(since) >= s.leaveGrace else { return }'" \
-  "'guard state.isOpen, now.timeIntervalSince(since) >= s.leaveGrace, Bool(\"false\") == true else { return }'"
+  "'guard state.isOpen, state != .activity, now.timeIntervalSince(since) >= s.leaveGrace else { return }'" \
+  "'guard state.isOpen, state != .activity, now.timeIntervalSince(since) >= s.leaveGrace, Bool(\"false\") == true else { return }'"
 run "M5 notchDrop switch ignored" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                guard s.dragIntoNotchOpens else { return }\n'" "''"
 run "M6 hover zone always takes the title-bar strip" XFinder/Core/Notch/NotchSurfaceLayout.swift \
@@ -68,6 +68,12 @@ run "M10 a step after Cancel still counts" XFinder/Core/Notch/NotchTask.swift \
   "'    mutating func stepSucceeded(output: URL?) {\n        guard isRunning else { return }\n'" "'    mutating func stepSucceeded(output: URL?) {\n'"
 run "M11 the hub collapses mid-job" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if taskRunning { return }\n'" "''"
+run "M12 same-kind notices stack instead of replacing" XFinder/Core/Notch/LiveActivity.swift \
+  "'            if current?.kind == item.kind { current = item; return true }\n'" "''"
+run "M13 a notice interrupts the open hub" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                if state.isIdle { state = .activity; anchor = .notch }'" "'                state = .activity; anchor = .notch'"
+run "M14 low battery repeats every percent" XFinder/Core/Notch/LiveActivity.swift \
+  "'            } else if n <= lowBattery && o > lowBattery {'" "'            } else if n <= lowBattery {'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 

@@ -18,8 +18,13 @@ enum NotchSurfaceMachine {
         case peek
         /// The full surface with a page.
         case expanded(Page)
+        /// A live activity (B4): a short notice under the notch. Only replaces `collapsed`; it ends on
+        /// its own timer, never because the pointer is elsewhere (it usually is).
+        case activity
 
         var isOpen: Bool { if case .collapsed = self { return false }; return true }
+        /// Collapsed or showing a notice — i.e. the user has not opened anything.
+        var isIdle: Bool { self == .collapsed || self == .activity }
     }
 
     /// Where the open surface lives. A shake opens it where the hand already is (ShakePin), so an
@@ -58,6 +63,9 @@ enum NotchSurfaceMachine {
         /// or its progress would vanish mid-job.
         case taskStarted
         case taskEnded
+        /// A live activity is ready / its time is up.
+        case activityShown
+        case activityEnded
         /// The close button.
         case dismiss
         /// The feature was switched off.
@@ -76,6 +84,10 @@ enum NotchSurfaceMachine {
             switch e {
             case .disabled, .dismiss:
                 collapse()
+            case .activityShown:
+                if state.isIdle { state = .activity; anchor = .notch }   // never interrupts a peek or the hub
+            case .activityEnded:
+                if state == .activity { state = .collapsed }
             case .taskStarted:
                 taskRunning = true
             case .taskEnded:
@@ -88,7 +100,7 @@ enum NotchSurfaceMachine {
                 // A tray already open at the pointer stays put: moving it under a live drag would
                 // pull the target away from the hand.
                 if case .expanded = state, anchor == .pointer { return }
-                open(at: .notch)
+                open(at: .notch)                     // also from .activity: the notice yields
             case .shake:
                 guard s.shakeOpens else { return }
                 if case .expanded = state { return }
@@ -101,14 +113,14 @@ enum NotchSurfaceMachine {
                 if n == 0, state == .peek { collapse() }
             case .hoverInZone(let since):
                 // Hover only reveals files already held — never an empty tray (CLAUDE.md Part 3c).
-                guard s.hoverToPeek, itemCount > 0, state == .collapsed,
+                guard s.hoverToPeek, itemCount > 0, state.isIdle,
                       now.timeIntervalSince(since) >= s.hoverDwell else { return }
                 state = .peek
                 anchor = .notch
             case .pointerOnSurface:
                 break                               // whatever is open stays open
             case .pointerAway(let since):
-                guard state.isOpen, now.timeIntervalSince(since) >= s.leaveGrace else { return }
+                guard state.isOpen, state != .activity, now.timeIntervalSince(since) >= s.leaveGrace else { return }
                 if taskRunning { return }
                 // The shaken-open tray holding files never auto-closes: the user dropped them to
                 // act on them next, and a tray that vanished mid-task was a reported bug. At the

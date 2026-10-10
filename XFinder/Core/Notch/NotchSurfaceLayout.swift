@@ -16,6 +16,9 @@ enum NotchSurfaceLayout {
         /// Expanded surface: width, and height below the notch (or total height at the pointer).
         var expandedWidth: CGFloat = 440
         var expandedDrop: CGFloat = 222   // B2d: + action row and result line
+        /// Live activity strip (B4): extra width each side of the notch, and its depth below it.
+        var activityWing: CGFloat = 130
+        var activityDrop: CGFloat = 36
         /// Stand-in notch width on a screen without one (external display / iMac).
         var virtualNotchWidth: CGFloat = 185
         /// The drag zone reaches this far beyond each side of the notch, and this far below the top edge,
@@ -44,6 +47,8 @@ enum NotchSurfaceLayout {
             return CGSize(width: notch.width, height: notch.height + m.badgeLip)
         case .peek:
             return CGSize(width: notch.width + 2 * m.peekWing, height: notch.height + m.peekDrop)
+        case .activity:
+            return CGSize(width: notch.width + 2 * m.activityWing, height: notch.height + m.activityDrop)
         case .expanded where anchor == .pointer:
             return CGSize(width: m.expandedWidth, height: m.expandedDrop)
         case .expanded:

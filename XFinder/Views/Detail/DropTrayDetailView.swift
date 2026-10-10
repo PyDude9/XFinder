@@ -20,6 +20,13 @@ struct DropTrayDetailView: View {
     @AppStorage("dropTray.notchDropEnabled") private var notchDropEnabled = true
     @AppStorage("dropTray.shakeEnabled") private var shakeEnabled = true
     @AppStorage("dropTray.shakeSensitivity") private var shakeSensitivity = "medium"
+    // B4 live activities. Reader: LiveActivityMonitor (defaults must match — FeatureKeyDefaultsTests).
+    @AppStorage("notch.activities") private var activities = true
+    @AppStorage("notch.activity.power") private var actPower = true
+    @AppStorage("notch.activity.network") private var actNetwork = true
+    @AppStorage("notch.activity.capsLock") private var actCapsLock = true
+    @AppStorage("notch.activity.bluetooth") private var actBluetooth = true
+    @AppStorage("notch.activity.alerts") private var actAlerts = true
 
     var body: some View {
         ScrollView {
@@ -67,6 +74,8 @@ struct DropTrayDetailView: View {
                 if notchEnabled {
                     Divider().padding(.horizontal, XFinderTokens.Space.page)
                     openingSection
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    activitiesSection
                 }
 
                 if !tray.items.isEmpty {
@@ -206,6 +215,31 @@ struct DropTrayDetailView: View {
                     }
                 }
                 InlineNote(text: L10n.t("Trên màn hình không có notch, khay mở từ giữa cạnh trên và không có huy hiệu đếm tệp; rê chuột vào giữa cạnh trên để xem các tệp đang giữ."))
+            }
+            .padding(.horizontal, XFinderTokens.Space.page)
+        }
+    }
+
+    /// The user comes here to choose which short notices the notch may show.
+    private var activitiesSection: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(icon: "bell.badge",
+                          title: L10n.t("Thông báo trên notch"),
+                          subtitle: L10n.t("Thông báo ngắn hiện dưới notch vài giây rồi tự tắt; không bao giờ chen vào khi bạn đang mở khay."))
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                ToggleRow(title: L10n.t("Hiện thông báo trên notch"), isOn: $activities)
+                    .onChange(of: activities) { LiveActivityMonitor.shared.applySettings() }
+                if activities {
+                    ToggleRow(title: L10n.t("Sạc và pin"), subtitle: L10n.t("Cắm, rút sạc, pin đầy, pin yếu (20%) và rất yếu (10%)."), isOn: $actPower)
+                        .onChange(of: actPower) { LiveActivityMonitor.shared.applySettings() }
+                    ToggleRow(title: L10n.t("Mất và có lại mạng"), isOn: $actNetwork)
+                        .onChange(of: actNetwork) { LiveActivityMonitor.shared.applySettings() }
+                    ToggleRow(title: L10n.t("Caps Lock"), subtitle: L10n.t("Cần quyền Trợ năng khi XFinder không ở phía trước."), isOn: $actCapsLock)
+                        .onChange(of: actCapsLock) { LiveActivityMonitor.shared.applySettings() }
+                    ToggleRow(title: L10n.t("Thiết bị Bluetooth kết nối, ngắt kết nối"), subtitle: L10n.t("Cần quyền Bluetooth."), isOn: $actBluetooth)
+                        .onChange(of: actBluetooth) { LiveActivityMonitor.shared.applySettings() }
+                    ToggleRow(title: L10n.t("Cảnh báo hệ thống"), subtitle: L10n.t("Cảnh báo từ trang Cảnh báo hiện ở notch thay vì góc trên bên phải."), isOn: $actAlerts)
+                }
             }
             .padding(.horizontal, XFinderTokens.Space.page)
         }

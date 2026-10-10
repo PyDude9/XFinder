@@ -144,12 +144,15 @@ final class NotchSurfaceMachineTests: XCTestCase {
     func testNoShortSequenceLeavesTheSurfaceStuckOpen() {
         let events: [M.Event] = [.hoverInZone(since: t0), .fileDragInZone, .shake, .activate,
                                  .dropped(count: 2), .itemsChanged(count: 0), .pointerOnSurface, .dismiss,
-                                 .taskStarted, .taskEnded]
+                                 .taskStarted, .taskEnded, .activityShown, .activityEnded]
         var visited = 0, stuck = 0, undismissable = 0
         func walk(_ m: M.Machine, _ depth: Int) {
             visited += 1
             var away = m; away.handle(.pointerAway(since: at(100)), settings: s, now: at(200))
             let sanctioned = (away.state == .expanded(.files) && away.anchor == .pointer && away.itemCount > 0) || away.taskRunning
+                || away.state == .activity                          // a notice ends on its timer, not on the pointer
+            var ended = m; ended.handle(.activityEnded, settings: s, now: at(250))
+            if ended.state == .activity { undismissable += 1 }
             if away.state.isOpen && !sanctioned { stuck += 1 }
             var closed = m; closed.handle(.dismiss, settings: s, now: at(300))
             if closed.state != .collapsed || closed.anchor != .notch { undismissable += 1 }
@@ -157,7 +160,7 @@ final class NotchSurfaceMachineTests: XCTestCase {
             for e in events { var n = m; n.handle(e, settings: s, now: at(Double(depth) + 1)); walk(n, depth + 1) }
         }
         walk(M.Machine(), 0)
-        XCTAssertEqual(visited, 11111, "the walk must cover the whole tree (10 events, depth 4)")
+        XCTAssertEqual(visited, 22621, "the walk must cover the whole tree (12 events, depth 4)")
         XCTAssertEqual(stuck, 0)
         XCTAssertEqual(undismissable, 0)
     }
@@ -188,4 +191,25 @@ final class NotchSurfaceMachineTests: XCTestCase {
         d.handle(.dismiss, settings: s, now: at(1))
         XCTAssertEqual(d.state, .collapsed, "the close button always closes")
     }
+
+    func testAnActivityShowsOnlyWhileIdleAndYieldsToTheUser() {
+        var m = M.Machine(); m.handle(.activityShown, settings: s, now: t0)
+        XCTAssertEqual(m.state, .activity)
+        m.handle(.pointerAway(since: t0), settings: s, now: at(10))
+        XCTAssertEqual(m.state, .activity, "the pointer is usually elsewhere; the timer ends a notice")
+        m.handle(.activityEnded, settings: s, now: at(11))
+        XCTAssertEqual(m.state, .collapsed)
+        var hub = M.Machine(); hub.handle(.activate, settings: s, now: t0)
+        hub.handle(.activityShown, settings: s, now: at(1))
+        XCTAssertEqual(hub.state, .expanded(.files), "a notice never interrupts the open hub")
+        var drag = M.Machine(); drag.handle(.activityShown, settings: s, now: t0)
+        drag.handle(.fileDragInZone, settings: s, now: at(1))
+        XCTAssertEqual(drag.state, .expanded(.files), "a file drag takes over from a notice")
+        drag.handle(.activityEnded, settings: s, now: at(2))
+        XCTAssertEqual(drag.state, .expanded(.files), "the notice's timer must not close the hub that replaced it")
+        var held = holding(2); held.handle(.activityShown, settings: s, now: t0)
+        held.handle(.hoverInZone(since: at(1)), settings: s, now: at(2))
+        XCTAssertEqual(held.state, .peek, "hovering during a notice still peeks the held files")
+    }
 }
+

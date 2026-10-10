@@ -136,7 +136,15 @@ final class AlertMonitor: NSObject, UNUserNotificationCenterDelegate {
         let title = (test ? L10n.t("Thử: ") : "") + L10n.t(e.kind.titleKey)
         let (key, value) = AlertRules.bodyKeyAndValue(for: e)
         let body = "\(L10n.t(key))\(value)"
-        banner.show(symbol: e.kind.symbol, title: title, body: body)
+        // B4: at the notch when the surface is on and the user keeps alert notices there; the banner
+        // stays the fallback, so turning the notch off never silences an alert.
+        if LiveActivityMonitor.shared.routesAlertsToNotch {
+            NotchSurfaceController.shared.present(LiveActivity.Item(kind: .alert, symbol: e.kind.symbol, titleKey: e.kind.titleKey,
+                                                                    detail: test ? "\(L10n.t("Thử: "))\(body)" : body,
+                                                                    tint: .warning, duration: 6))
+        } else {
+            banner.show(symbol: e.kind.symbol, title: title, body: body)
+        }
         // Best effort only: refused for self-signed builds (see the type comment).
         guard notificationsAuthorized == true else { return }
         let content = UNMutableNotificationContent()

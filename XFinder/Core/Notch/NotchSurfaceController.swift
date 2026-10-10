@@ -116,6 +116,8 @@ final class NotchSurfaceController {
         for m in monitors { NSEvent.removeMonitor(m) }
         monitors.removeAll()
         cancelWork()
+        activityWork?.cancel(); activityWork = nil
+        activityQueue.clear()
         samples.removeAll()
         machine.handle(.disabled, settings: settings, now: Date())
         state = machine.state
@@ -336,6 +338,42 @@ final class NotchSurfaceController {
         model.anchor = machine.anchor
         model.itemCount = machine.itemCount
         model.state = machine.state
+    }
+
+    // MARK: - Live activities (B4)
+
+    private var activityQueue = LiveActivity.Queue()
+    private var activityWork: DispatchWorkItem?
+
+    /// True when a notice can actually be drawn (the surface exists and is on). Callers with a
+    /// fallback (AlertMonitor's banner) check this first.
+    var canPresentActivities: Bool { enabled && panel != nil }
+
+    func present(_ item: LiveActivity.Item) {
+        guard canPresentActivities else { return }
+        if activityQueue.push(item) { showCurrentActivity() }
+    }
+
+    private func showCurrentActivity() {
+        activityWork?.cancel(); activityWork = nil
+        guard let item = activityQueue.current else { return }
+        model.activity = item
+        if machine.state.isIdle {
+            if machine.state == .activity { render() } else { dispatch(.activityShown) }
+        }
+        let work = DispatchWorkItem { [weak self] in MainActor.assumeIsolated { self?.activityTimeUp() } }
+        activityWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + item.duration, execute: work)
+    }
+
+    private func activityTimeUp() {
+        activityWork = nil
+        if activityQueue.advance() != nil {
+            showCurrentActivity()
+        } else {
+            model.activity = nil
+            dispatch(.activityEnded)
+        }
     }
 
     // MARK: - Hub actions (B2d)

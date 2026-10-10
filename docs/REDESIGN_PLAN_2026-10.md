@@ -227,6 +227,8 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
   + tập trung, hàng bố cục khi kéo cửa sổ tới notch (`snapzones.notchRow`), ⌃⌥D/F/G. **Chưa kéo thử sống.**
 3. Snap tại notch: `SnapZoneController` thêm vùng kích hoạt "đỉnh màn hình quanh notch khi đang kéo cửa sổ" → hàng bố cục; thêm
    `SnapTarget.leftThird/centerThird/rightThird/focus`.
+- [x] **B4a (code, 2026-10-10)** thông báo sống: sạc/pin, mạng, Caps Lock, Bluetooth, cảnh báo → notch; hàng đợi gộp cùng loại;
+  sự kiện hệ thống, không polling. **Còn B4b:** HUD âm lượng/độ sáng + hẹn giờ. **Chưa thử sống.**
 4. Live activities: BT connect/battery (BatteryStore), sạc/pin yếu/đầy + Caps Lock + mất mạng (`AlertRules` thêm quy tắc, banner
    chuyển vào notch), hẹn giờ, HUD âm lượng/độ sáng *song song* hệ thống.
 5. Trang Clipboard trên notch (deck của shelf) + @filter + ⌘-click stack + menu Transform/Dịch/Đi tới nguồn.

@@ -71,6 +71,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         QuitProtectionController.shared.applySettings()
         AlertMonitor.shared.applySettings()
         NotchSurfaceController.shared.applySettings()
+        LiveActivityMonitor.shared.applySettings()   // B4: after the surface exists
         QuickSearchPanelController.shared.applySettings()
         VoiceManager.shared.setup()
         // No permission prompts at launch: first-run setup (`OnboardingView`) asks for exactly the

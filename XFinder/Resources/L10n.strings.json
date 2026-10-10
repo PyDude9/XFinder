@@ -7330,6 +7330,82 @@
     "Kéo cửa sổ lên giữa cạnh trên: một hàng bố cục hiện ra (nửa, ba phần, tập trung, toàn màn hình). Thả lên một ô để đặt cửa sổ. Tắt thì cạnh trên vẫn phóng to như trước.": {
       "en": "Drag a window to the middle of the top edge: a row of layouts appears (halves, thirds, focus, full screen). Drop on a tile to place the window. When off, the top edge still maximises as before.",
       "scope": "sentence"
+    },
+    "Đã cắm sạc, đang giữ mức pin": {
+      "en": "Plugged in, holding the charge level",
+      "scope": "sentence"
+    },
+    "Đang dùng pin": {
+      "en": "On battery",
+      "scope": "sentence"
+    },
+    "Pin đã đầy": {
+      "en": "Battery full",
+      "scope": "sentence"
+    },
+    "Pin rất yếu": {
+      "en": "Battery critically low",
+      "scope": "sentence"
+    },
+    "Đã có mạng trở lại": {
+      "en": "Back online",
+      "scope": "sentence"
+    },
+    "Mất kết nối mạng": {
+      "en": "Network connection lost",
+      "scope": "sentence"
+    },
+    "Caps Lock đang bật": {
+      "en": "Caps Lock on",
+      "scope": "sentence"
+    },
+    "Caps Lock đã tắt": {
+      "en": "Caps Lock off",
+      "scope": "sentence"
+    },
+    "Thông báo trên notch": {
+      "en": "Notices at the notch",
+      "scope": "sentence"
+    },
+    "Thông báo ngắn hiện dưới notch vài giây rồi tự tắt; không bao giờ chen vào khi bạn đang mở khay.": {
+      "en": "Short notices appear under the notch for a few seconds, then go away; they never interrupt the open tray.",
+      "scope": "sentence"
+    },
+    "Hiện thông báo trên notch": {
+      "en": "Show notices at the notch",
+      "scope": "sentence"
+    },
+    "Sạc và pin": {
+      "en": "Charging and battery",
+      "scope": "sentence"
+    },
+    "Cắm, rút sạc, pin đầy, pin yếu (20%) và rất yếu (10%).": {
+      "en": "Plugged in, unplugged, full, low (20%) and critically low (10%).",
+      "scope": "sentence"
+    },
+    "Mất và có lại mạng": {
+      "en": "Network lost and restored",
+      "scope": "sentence"
+    },
+    "Cần quyền Trợ năng khi XFinder không ở phía trước.": {
+      "en": "Needs Accessibility when XFinder is not frontmost.",
+      "scope": "sentence"
+    },
+    "Thiết bị Bluetooth kết nối, ngắt kết nối": {
+      "en": "Bluetooth devices connecting and disconnecting",
+      "scope": "sentence"
+    },
+    "Cần quyền Bluetooth.": {
+      "en": "Needs Bluetooth permission.",
+      "scope": "sentence"
+    },
+    "Cảnh báo từ trang Cảnh báo hiện ở notch thay vì góc trên bên phải.": {
+      "en": "Alerts from the Alerts page appear at the notch instead of the top-right corner.",
+      "scope": "sentence"
+    },
+    "Caps Lock": {
+      "en": "Caps Lock",
+      "scope": "sentence"
     }
   }
 }

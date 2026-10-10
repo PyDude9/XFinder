@@ -178,6 +178,8 @@
 		7F1A0208 /* Notch/NotchSurfaceLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0207 /* Notch/NotchSurfaceLayout.swift */; };
 		7F1A020A /* Notch/NotchSurfaceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0209 /* Notch/NotchSurfaceController.swift */; };
 		7F1A020E /* Notch/NotchDragSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A020D /* Notch/NotchDragSession.swift */; };
+		7F1A0224 /* Notch/LiveActivityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0223 /* Notch/LiveActivityMonitor.swift */; };
+		7F1A0222 /* Notch/LiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0221 /* Notch/LiveActivity.swift */; };
 		7F1A021E /* Snap/SnapLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A021D /* Snap/SnapLayout.swift */; };
 		7F1A021C /* Notch/NotchTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A021B /* Notch/NotchTask.swift */; };
 		7F1A0210 /* Archive/ArchiveEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A020F /* Archive/ArchiveEngine.swift */; };
@@ -319,6 +321,8 @@
 		7F1A0207 /* Notch/NotchSurfaceLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchSurfaceLayout.swift; sourceTree = "<group>"; };
 		7F1A0209 /* Notch/NotchSurfaceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchSurfaceController.swift; sourceTree = "<group>"; };
 		7F1A020D /* Notch/NotchDragSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchDragSession.swift; sourceTree = "<group>"; };
+		7F1A0223 /* Notch/LiveActivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/LiveActivityMonitor.swift; sourceTree = "<group>"; };
+		7F1A0221 /* Notch/LiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/LiveActivity.swift; sourceTree = "<group>"; };
 		7F1A021D /* Snap/SnapLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snap/SnapLayout.swift; sourceTree = "<group>"; };
 		7F1A021B /* Notch/NotchTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchTask.swift; sourceTree = "<group>"; };
 		7F1A020F /* Archive/ArchiveEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Archive/ArchiveEngine.swift; sourceTree = "<group>"; };
@@ -555,6 +559,8 @@
 				7F1A0207 /* Notch/NotchSurfaceLayout.swift */,
 				7F1A0209 /* Notch/NotchSurfaceController.swift */,
 				7F1A020D /* Notch/NotchDragSession.swift */,
+				7F1A0223 /* Notch/LiveActivityMonitor.swift */,
+				7F1A0221 /* Notch/LiveActivity.swift */,
 				7F1A021D /* Snap/SnapLayout.swift */,
 				7F1A021B /* Notch/NotchTask.swift */,
 				7F1A020F /* Archive/ArchiveEngine.swift */,
@@ -936,6 +942,8 @@
 				7F1A0208 /* Notch/NotchSurfaceLayout.swift in Sources */,
 				7F1A020A /* Notch/NotchSurfaceController.swift in Sources */,
 				7F1A020E /* Notch/NotchDragSession.swift in Sources */,
+				7F1A0224 /* Notch/LiveActivityMonitor.swift in Sources */,
+				7F1A0222 /* Notch/LiveActivity.swift in Sources */,
 				7F1A021E /* Snap/SnapLayout.swift in Sources */,
 				7F1A021C /* Notch/NotchTask.swift in Sources */,
 				7F1A0210 /* Archive/ArchiveEngine.swift in Sources */,
