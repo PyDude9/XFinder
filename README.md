@@ -46,6 +46,7 @@ Một biểu tượng, các mục tách thành tab: **Điều khiển · Chống
 | Công cụ | Bảng lệnh ⌘K · Ghi chú mép màn hình · Khay thả file · Đồng bộ thư mục · **Lấy màu từ màn hình** (chép dạng `#RRGGBB`) | |
 | Giọng nói | Nhập bằng giọng nói | cần Trợ năng + Micro + Nhận dạng giọng nói |
 | Âm thanh | **Chọn thiết bị âm thanh ra** ngay trong popover | chỉ hiện khi có từ 2 thiết bị trở lên |
+| Chụp & chữ | **Chép chữ từ màn hình** (flyout): kéo chọn vùng bằng công cụ chọn vùng của macOS (`screencapture -i`), nhận chữ bằng Vision ngay trên máy rồi chép vào clipboard; ảnh chụp bị xoá ngay | cần Ghi màn hình (kiểm trước và nói rõ nếu thiếu); dấu hỏi trên chữ u/ư có thể rơi ở cỡ chữ nhỏ (`Thuỷ`→`Thuy` — đo được) |
 | Cổng mạng | **Cổng đang mở** (sidebar → KẾT NỐI): tiến trình nào đang giữ cổng, kèm nhãn *Mọi mạng / Chỉ máy này*, nút **Dừng** (SIGTERM, hỏi xác nhận) và **Buộc dừng** (SIGKILL) nếu tiến trình phớt lờ | chỉ dừng được tiến trình của chính bạn; tiến trình hệ thống/người dùng khác macOS không cho XFinder xem nên được đếm và nói rõ, không giả vờ danh sách đầy đủ |
 | Giám sát | CPU · **GPU %** (đọc từ IORegistry) · RAM · ổ đĩa kèm **trạng thái SMART** · pin · mạng | không có số nào bị bịa — xem mục *Giới hạn đã biết* |
 

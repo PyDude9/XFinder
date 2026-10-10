@@ -6834,6 +6834,30 @@
     "Nóng nhất": {
       "en": "Hottest",
       "scope": "sentence"
+    },
+    "Chép chữ từ màn hình": {
+      "en": "Copy text from screen",
+      "scope": "sentence"
+    },
+    "Cần quyền Ghi màn hình": {
+      "en": "Screen Recording permission needed",
+      "scope": "sentence"
+    },
+    "Cấp quyền trong Tính năng & Quyền rồi thử lại.": {
+      "en": "Grant it in Features & Permissions, then try again.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy chữ": {
+      "en": "No text found",
+      "scope": "sentence"
+    },
+    "Thử chọn vùng lớn hơn hoặc chữ rõ hơn.": {
+      "en": "Try a larger area or clearer text.",
+      "scope": "sentence"
+    },
+    " dòng": {
+      "en": " lines",
+      "scope": "fragment"
     }
   }
 }

@@ -625,6 +625,11 @@ struct MenubarFlyoutView: View {
                 closePopover()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { ScreenColorPicker.shared.pick() }
             }
+            actionRow(L10n.t("Chép chữ từ màn hình"), "text.viewfinder") {
+                // Same as the colour picker: let the popover close first so it is not in the capture.
+                closePopover()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { ScreenTextCopier.shared.start() }
+            }
             actionRow(L10n.t("Đồng bộ thư mục"), "arrow.triangle.2.circlepath") { navigate(.sync) }
             HStack {
                 Image(systemName: "magnifyingglass").frame(width: 18).foregroundColor(.secondary)
