@@ -71,6 +71,10 @@ docs/probes/ hoặc scratchpad             một probe đo trên app đã cài
 Gate mới `scripts/check-feature-contract.py`: với mỗi `FeatureCatalog` entry, phải tìm thấy file Model + symlink test + reader
 canonical; fail khi thiếu. (Mở rộng `FeatureKeyDefaultsTests` hiện có.)
 
+- [x] **§2.1 gate (2026-10-10)** làm thành test `FeatureContractTests` (chạy cùng `swift test`, không phải script): bảng khai
+  báo tính năng → file luật thuần, 8 thuần + 6 miễn trừ có ghi cách trả nợ, miễn trừ chỉ được giảm. Quy ước đặt tên ở trên
+  **chỉ khớp 2/14** nên không dùng làm luật; package test biên dịch được AppKit/IOKit (đo: 12 file) nên chỉ cấm SwiftUI.
+
 ### 2.2 Hệ thống thiết kế — `XFinderTokens.swift` là nguồn chân lý duy nhất
 
 **Quyết định**: dùng token *native* của prompt UI/UX (mục 2), **bác** bảng màu web của `implementation_plan.md`
