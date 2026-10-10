@@ -229,29 +229,17 @@ final class QuitHoldHUDModel {
 @MainActor
 final class QuitHoldHUD {
     private let model = QuitHoldHUDModel()
-    private var panel: NSPanel?
+    private var panel: SurfacePanel?
 
-    /// Build the panel and render it once, hidden, so the first real hold pays no creation cost.
+    /// Build the panel and render it once, hidden, so the first real hold pays no creation cost
+    /// (measured: an NSHostingController built in the tap callback cost 0.15–0.65 s).
     func prepare() {
         guard panel == nil else { return }
         // 82 pt is the height SwiftUI fits to this content (measured via CGWindowList).
-        let size = NSSize(width: 340, height: 82)
-        let host = NSHostingController(rootView: QuitHoldHUDView(model: model))
-        host.view.frame = NSRect(origin: .zero, size: size)
-
-        let p = NSPanel(contentRect: NSRect(origin: .zero, size: size),
-                        styleMask: [.borderless, .nonactivatingPanel],
-                        backing: .buffered, defer: false)
-        p.contentViewController = host
-        p.isOpaque = false
-        p.backgroundColor = .clear
-        p.hasShadow = true
-        p.level = .statusBar
-        p.hidesOnDeactivate = false
-        p.ignoresMouseEvents = true
-        p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
+        let p = SurfacePanel(kind: .passive, size: NSSize(width: 340, height: 82))
+        p.host(QuitHoldHUDView(model: model))
         // Lay the content out now (still ordered out) so the first show is just an order-front.
-        host.view.layoutSubtreeIfNeeded()
+        p.contentViewController?.view.layoutSubtreeIfNeeded()
         panel = p
     }
 
@@ -262,25 +250,17 @@ final class QuitHoldHUD {
         model.duration = duration
         model.startedAt = startedAt
         model.generation += 1
-
-        // Top-centre of the screen the pointer is on.
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) })
-            ?? NSScreen.main ?? NSScreen.screens.first
-        if let frame = screen?.visibleFrame {
-            p.setFrameOrigin(NSPoint(x: frame.midX - p.frame.width / 2, y: frame.maxY - p.frame.height - 72))
-        }
-        p.orderFrontRegardless()
+        p.show(anchor: .topCenter(inset: 72))   // top-centre of the screen the pointer is on
     }
 
     func hide() {
-        panel?.orderOut(nil)
+        panel?.hide()
     }
 
     /// Release the panel entirely — used when the feature is switched off, so "disabled" really
     /// holds no window.
     func destroy() {
-        panel?.orderOut(nil)
+        panel?.hide()
         panel = nil
     }
 }
