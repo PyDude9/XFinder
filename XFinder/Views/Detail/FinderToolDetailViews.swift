@@ -21,21 +21,24 @@ struct MediaCompatDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(L10n.t("Tương thích media"))
-                    .font(.system(size: 22, weight: .bold))
-                    .padding(.horizontal, 20).padding(.top, 16)
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
+                PageHeader(icon: "play.rectangle.fill", title: L10n.t("Tương thích media"))
 
-                SettingsCard(title: L10n.t("Tập tin cần kiểm tra"),
-                             subtitle: files.isEmpty ? L10n.t("Chưa chọn") : "\(files.count)\(L10n.t(" tập tin"))") {
-                    HStack {
-                        Button(L10n.t("Chọn tập tin…")) { pick() }
-                        if !files.isEmpty {
-                            Button(L10n.t("Xóa")) { files = []; rows = [] }.font(.system(size: 12))
-                        }
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "doc.badge.plus", title: L10n.t("Tập tin cần kiểm tra"),
+                                  subtitle: files.isEmpty ? L10n.t("Chưa chọn") : "\(files.count)\(L10n.t(" tập tin"))")
+                    ActionRow(title: L10n.t("Chọn tập tin…"),
+                              buttonTitle: L10n.t("Chọn…")) { pick() }
+                        .padding(.horizontal, XFinderTokens.Space.page)
+                    if !files.isEmpty {
+                        ActionRow(title: L10n.t("Xóa danh sách"),
+                                  buttonTitle: L10n.t("Xóa"),
+                                  destructive: true) { files = []; rows = [] }
+                            .padding(.horizontal, XFinderTokens.Space.page)
                     }
                 }
-                .padding(.horizontal, 20)
+
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 Button {
                     check()
@@ -48,41 +51,45 @@ struct MediaCompatDetailView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(files.isEmpty || checking)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
-                SettingsCard(title: L10n.t("Kết quả"),
-                             subtitle: L10n.t("Nguồn: AVFoundation — thiết bị này có/mở được không")) {
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "checklist", title: L10n.t("Kết quả"),
+                                  subtitle: L10n.t("Nguồn: AVFoundation — thiết bị này có/mở được không"))
                     if rows.isEmpty {
                         Text(L10n.t("Chọn tập tin và bấm Kiểm tra phát."))
-                            .font(.caption).foregroundColor(.secondary)
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                            .padding(.horizontal, XFinderTokens.Space.page)
                     } else {
-                        VStack(spacing: 6) {
+                        VStack(spacing: 0) {
                             ForEach(rows) { r in
                                 HStack {
                                     Image(systemName: r.playable ? "checkmark.circle.fill" : "xmark.circle.fill")
                                         .foregroundColor(r.playable ? .green : .red)
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(r.name).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                                        Text(r.name).font(XFinderTokens.Font.row).fileNameRowSafe()
                                         Text("\(r.container) · \(r.codecs)")
-                                            .font(.system(size: 10, design: .monospaced))
-                                            .foregroundColor(.secondary).lineLimit(1)
+                                            .font(XFinderTokens.Font.mono)
+                                            .foregroundColor(.secondary)
+                                            .fileNameRowSafe()
                                     }
-                                    Spacer()
+                                    Spacer(minLength: XFinderTokens.Space.inline)
                                     Text(r.playable ? L10n.t("Phát được") : L10n.t("Không"))
-                                        .font(.system(size: 11, weight: .medium))
+                                        .font(XFinderTokens.Font.rowValue)
                                         .foregroundColor(r.playable ? .green : .red)
                                 }
-                                .padding(.horizontal, 10).padding(.vertical, 6)
-                                .background(Color(.controlBackgroundColor).opacity(0.6))
-                                .cornerRadius(6)
+                                .padding(.vertical, XFinderTokens.Space.tight)
+                                Divider()
                             }
                         }
+                        .padding(.horizontal, XFinderTokens.Space.page)
                     }
                 }
-                .padding(.horizontal, 20).padding(.bottom, 20)
             }
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
     }
 
     private func pick() {

@@ -9,14 +9,14 @@ struct QuickShareDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(
                     icon: "square.and.arrow.up.on.square",
                     title: L10n.t("Chia sẻ nhanh"),
                     subtitle: L10n.t("Chia sẻ file qua mạng nội bộ bằng một liên kết."),
                     trailing: AnyView(
                         Text(controller.isRunning ? L10n.t("Đang chạy") : L10n.t("Đang tắt"))
-                            .font(.system(size: 12))
+                            .font(XFinderTokens.Font.rowValue)
                             .foregroundColor(controller.isRunning ? .green : .secondary)
                     ))
 
@@ -31,77 +31,74 @@ struct QuickShareDetailView: View {
                             .buttonStyle(.bordered).controlSize(.small)
                     }
                     Spacer()
-                    HStack(spacing: 6) {
-                        Text(L10n.t("Hết hạn sau")).font(.system(size: 12)).foregroundColor(.secondary)
-                        Picker("", selection: $expiryHours) {
-                            Text(L10n.t("1 giờ")).tag(1.0)
-                            Text(L10n.t("6 giờ")).tag(6.0)
-                            Text(L10n.t("24 giờ")).tag(24.0)
-                            Text(L10n.t("7 ngày")).tag(168.0)
-                        }
-                        .labelsHidden().frame(width: 100)
+                    PickerRow(title: L10n.t("Hết hạn sau"), selection: $expiryHours, width: 100) {
+                        Text(L10n.t("1 giờ")).tag(1.0)
+                        Text(L10n.t("6 giờ")).tag(6.0)
+                        Text(L10n.t("24 giờ")).tag(24.0)
+                        Text(L10n.t("7 ngày")).tag(168.0)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
                 if let err = controller.lastError {
-                    Text(err).font(.system(size: 11)).foregroundColor(.red)
-                        .padding(.horizontal, 20)
+                    Text(err).font(XFinderTokens.Font.caption).foregroundColor(.red)
+                        .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
                 if controller.shares.isEmpty {
-                    VStack(spacing: 8) {
+                    VStack(spacing: XFinderTokens.Space.inline) {
                         Image(systemName: "link")
-                            .font(.system(size: 34)).foregroundColor(.secondary)
+                            .font(XFinderTokens.Font.pageIcon).foregroundColor(.secondary)
                         Text(L10n.t("Chưa chia sẻ file nào"))
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(XFinderTokens.Font.sectionTitle)
                         Text(L10n.t("Chọn file để tạo liên kết cho thiết bị trong cùng mạng Wi-Fi."))
-                            .font(.system(size: 12)).foregroundColor(.secondary)
+                            .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                     }
-                    .frame(maxWidth: .infinity).padding(.vertical, 24)
+                    .frame(maxWidth: .infinity).padding(.vertical, XFinderTokens.Space.section)
                 } else {
-                    VStack(spacing: 8) {
+                    VStack(spacing: XFinderTokens.Space.inline) {
                         ForEach(controller.shares) { share in
                             shareRow(share)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(L10n.t("Cách hoạt động")).font(.system(size: 14, weight: .semibold))
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                    SectionHeader(icon: "questionmark.circle", title: L10n.t("Cách hoạt động"))
                     note(L10n.t("File **ở nguyên trên máy Mac này**. XFinder mở một máy chủ HTTP nhỏ trong mạng nội bộ và trả về liên kết."))
                     note(L10n.t("Chỉ thiết bị trong **cùng mạng Wi-Fi/LAN** mở được liên kết. Không có tài khoản, không qua máy chủ trung gian."))
                     note(L10n.t("Mỗi liên kết có mã ngẫu nhiên 160-bit và tự hết hạn; máy chủ tự tắt khi không còn liên kết nào."))
                     note(L10n.t("Cần gửi ra ngoài mạng nội bộ? Dùng AirDrop hoặc ứng dụng cloud sẵn có — XFinder không có hạ tầng cloud và sẽ không giả vờ là có."))
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
     }
 
     private func note(_ t: String) -> some View {
-        Text(.init(t)).font(.system(size: 12)).foregroundColor(.secondary)
+        Text(.init(t)).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
     }
 
     private func shareRow(_ share: QuickShareController.Share) -> some View {
         let link = controller.link(for: share)
-        return HStack(spacing: 10) {
+        return HStack(spacing: XFinderTokens.Space.inline) {
             Image(nsImage: NSWorkspace.shared.icon(forFile: share.url.path))
                 .resizable().frame(width: 26, height: 26)
             VStack(alignment: .leading, spacing: 2) {
-                Text(share.name).font(.system(size: 13, weight: .medium)).lineLimit(1)
+                Text(share.name).font(XFinderTokens.Font.row).fileNameRowSafe()
                 Text(link ?? L10n.t("Đang chờ địa chỉ mạng…"))
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.secondary).lineLimit(1)
+                    .font(XFinderTokens.Font.mono)
+                    .foregroundColor(.secondary).fileNameRowSafe()
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: XFinderTokens.Space.inline)
             Text(expiryText(share))
-                .font(.system(size: 11)).foregroundColor(.secondary)
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             Button(copied == share.id ? L10n.t("Đã chép") : L10n.t("Chép link")) {
                 guard let link else { return }
                 NSPasteboard.general.clearContents()
@@ -115,8 +112,8 @@ struct QuickShareDetailView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.04)))
+        .padding(XFinderTokens.Space.row)
+        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control, style: .continuous).fill(XFinderTokens.Fill.inset))
     }
 
     private func expiryText(_ share: QuickShareController.Share) -> String {

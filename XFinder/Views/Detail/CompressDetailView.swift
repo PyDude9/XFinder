@@ -32,6 +32,18 @@ struct CompressDetailView: View {
         }
     }
 
+    enum CompressionLevel: Int, CaseIterable, Identifiable {
+        case fast = 1, normal = 6, max = 9
+        var id: Int { rawValue }
+        var titleVI: String {
+            switch self {
+            case .fast: return L10n.t("Nhanh")
+            case .normal: return L10n.t("Thường")
+            case .max: return L10n.t("Tối đa")
+            }
+        }
+    }
+
     @State private var mode: Mode = .compress
     @State private var sources: [URL] = []
     @State private var outputFolder: URL? = nil
@@ -72,154 +84,157 @@ struct CompressDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 headerSection
+
                 Picker(L10n.t("Chế độ"), selection: $mode) {
-                    ForEach(Mode.allCases) { m in Text(m.titleVI).tag(m) }
+                    Text(Mode.compress.titleVI).tag(Mode.compress)
+                    Text(Mode.extract.titleVI).tag(Mode.extract)
                 }
                 .pickerStyle(.segmented)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
                 .onChange(of: mode) { sources = [] }
 
-                SettingsCard(
-                    title: mode == .compress ? L10n.t("Tập tin / thư mục cần nén") : L10n.t("Tập tin nén cần giải"),
-                    subtitle: sources.isEmpty
-                        ? L10n.t("Chưa chọn gì")
-                        : "\(sources.count)\(L10n.t(" mục đã chọn"))"
-                ) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Button(L10n.t("Chọn…")) { pickSources() }
-                        if !sources.isEmpty {
-                            ForEach(sources.prefix(8), id: \.self) { url in
-                                HStack {
-                                    Image(systemName: mode == .compress ? "doc.fill" : "archivebox.fill")
-                                        .foregroundColor(.secondary)
-                                    Text(url.lastPathComponent)
-                                        .font(.system(size: 12))
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
-                                    Spacer()
-                                    Button {
-                                        sources.removeAll { $0 == url }
-                                    } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                            if sources.count > 8 {
-                                Text("\(L10n.t("…và "))\(sources.count - 8)\(L10n.t(" mục nữa"))")
-                                    .font(.system(size: 11))
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(
+                        icon: mode == .compress ? "doc.fill" : "archivebox.fill",
+                        title: mode == .compress ? L10n.t("Tập tin / thư mục cần nén") : L10n.t("Tập tin nén cần giải"),
+                        subtitle: sources.isEmpty
+                            ? L10n.t("Chưa chọn gì")
+                            : "\(sources.count)\(L10n.t(" mục đã chọn"))"
+                    )
+                    Button(L10n.t("Chọn…")) { pickSources() }
+                        .padding(.horizontal, XFinderTokens.Space.page)
+                    if !sources.isEmpty {
+                        ForEach(sources.prefix(8), id: \.self) { url in
+                            HStack {
+                                Image(systemName: mode == .compress ? "doc.fill" : "archivebox.fill")
                                     .foregroundColor(.secondary)
+                                Text(url.lastPathComponent)
+                                    .font(XFinderTokens.Font.rowValue)
+                                    .fileNameRowSafe()
+                                Spacer()
+                                Button {
+                                    sources.removeAll { $0 == url }
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.secondary)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            Button(L10n.t("Xóa hết")) { sources = [] }
-                                .font(.system(size: 12))
-                                .foregroundColor(.red)
+                            .padding(.horizontal, XFinderTokens.Space.page)
+                            Divider().padding(.horizontal, XFinderTokens.Space.page)
                         }
+                        if sources.count > 8 {
+                            Text("\(L10n.t("…và "))\(sources.count - 8)\(L10n.t(" mục nữa"))")
+                                .font(XFinderTokens.Font.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, XFinderTokens.Space.page)
+                        }
+                        Button(L10n.t("Xóa hết")) { sources = [] }
+                            .font(XFinderTokens.Font.rowValue)
+                            .foregroundColor(.red)
+                            .padding(.horizontal, XFinderTokens.Space.page)
                     }
                 }
-                .padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 if mode == .compress {
-                    SettingsCard(title: L10n.t("Định dạng & tên")) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Picker(L10n.t("Định dạng"), selection: $format) {
-                                ForEach(ArchiveFormat.allCases) { f in Text(f.titleVI).tag(f) }
-                            }
-                            .pickerStyle(.segmented)
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "doc.badge.gearshape", title: L10n.t("Định dạng & tên"))
+                        Picker(L10n.t("Định dạng"), selection: $format) {
+                            Text(ArchiveFormat.zip.titleVI).tag(ArchiveFormat.zip)
+                            Text(ArchiveFormat.tarGz.titleVI).tag(ArchiveFormat.tarGz)
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, XFinderTokens.Space.page)
+                        HStack {
+                            Text(L10n.t("Tên tập tin:")).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                            TextField("Archive", text: $archiveName)
+                                .textFieldStyle(.roundedBorder)
+                                .font(XFinderTokens.Font.rowValue)
+                            Text(".\(format.fileExtension)")
+                                .font(XFinderTokens.Font.rowValue)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(.horizontal, XFinderTokens.Space.page)
+                        if format == .zip {
                             HStack {
-                                Text(L10n.t("Tên tập tin:")).font(.system(size: 12)).foregroundColor(.secondary)
-                                TextField("Archive", text: $archiveName)
+                                Text(L10n.t("Mật khẩu (tuỳ chọn):")).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                                SecureField(L10n.t("để trống nếu không khoá"), text: $password)
                                     .textFieldStyle(.roundedBorder)
-                                    .font(.system(size: 12))
-                                Text(".\(format.fileExtension)")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.secondary)
+                                    .font(XFinderTokens.Font.rowValue)
                             }
-                            if format == .zip {
-                                HStack {
-                                    Text(L10n.t("Mật khẩu (tuỳ chọn):")).font(.system(size: 12)).foregroundColor(.secondary)
-                                    SecureField(L10n.t("để trống nếu không khoá"), text: $password)
-                                        .textFieldStyle(.roundedBorder)
-                                        .font(.system(size: 12))
-                                }
-                                HStack {
-                                    Text(L10n.t("Mức nén:")).font(.system(size: 12)).foregroundColor(.secondary)
-                                    Picker("", selection: $level) {
-                                        Text("Nhanh").tag(1)
-                                        Text(L10n.t("Thường")).tag(6)
-                                        Text(L10n.t("Tối đa")).tag(9)
-                                    }
-                                    .pickerStyle(.segmented)
-                                    .frame(maxWidth: 240)
-                                }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                }
-
-                SettingsCard(
-                    title: L10n.t("Giải nén vào"),
-                    subtitle: extractionDestination.titleVI
-                ) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Picker(L10n.t("Giải nén vào"), selection: $extractionDestination) {
-                            ForEach(ExtractionDestination.allCases) { d in Text(d.titleVI).tag(d) }
-                        }
-                        .pickerStyle(.menu)
-                        .frame(maxWidth: 320)
-                        if extractionDestination == .custom {
+                            .padding(.horizontal, XFinderTokens.Space.page)
                             HStack {
-                                Button(L10n.t("Chọn thư mục đích…")) { pickOutputFolder() }
-                                if let f = outputFolder {
-                                    Text(f.lastPathComponent).font(.system(size: 11)).foregroundColor(.secondary).lineLimit(1)
+                                Text(L10n.t("Mức nén:")).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                                Picker("", selection: $level) {
+                                    Text(CompressionLevel.fast.titleVI).tag(CompressionLevel.fast.rawValue)
+                                    Text(CompressionLevel.normal.titleVI).tag(CompressionLevel.normal.rawValue)
+                                    Text(CompressionLevel.max.titleVI).tag(CompressionLevel.max.rawValue)
                                 }
-                                if outputFolder != nil {
-                                    Button(L10n.t("Mặc định")) { outputFolder = nil; extractionDestination = .newFolderBesideArchive }
-                                        .font(.system(size: 12))
-                                }
+                                .pickerStyle(.segmented)
+                                .frame(maxWidth: 240)
                             }
+                            .padding(.horizontal, XFinderTokens.Space.page)
                         }
                     }
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
                 }
-                .padding(.horizontal, 20)
 
-                SettingsCard(
-                    title: L10n.t("Khi tên đã tồn tại"),
-                    subtitle: conflictPolicy.titleVI
-                ) {
-                    Picker(L10n.t("Khi tên đã tồn tại"), selection: $conflictPolicy) {
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "tray.and.arrow.down.fill", title: L10n.t("Giải nén vào"))
+                    PickerRow(title: L10n.t("Giải nén vào"), selection: $extractionDestination, width: 220) {
+                        ForEach(ExtractionDestination.allCases) { d in Text(d.titleVI).tag(d) }
+                    }
+                    .padding(.horizontal, XFinderTokens.Space.page)
+                    if extractionDestination == .custom {
+                        HStack {
+                            Button(L10n.t("Chọn thư mục đích…")) { pickOutputFolder() }
+                            if let f = outputFolder {
+                                Text(f.lastPathComponent)
+                                    .font(XFinderTokens.Font.caption)
+                                    .foregroundColor(.secondary)
+                                    .fileNameRowSafe()
+                            }
+                            if outputFolder != nil {
+                                Button(L10n.t("Mặc định")) { outputFolder = nil; extractionDestination = .newFolderBesideArchive }
+                                    .font(XFinderTokens.Font.rowValue)
+                            }
+                        }
+                        .padding(.horizontal, XFinderTokens.Space.page)
+                    }
+                }
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
+
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "exclamationmark.triangle", title: L10n.t("Khi tên đã tồn tại"))
+                    PickerRow(title: L10n.t("Khi tên đã tồn tại"), selection: $conflictPolicy, width: 180) {
                         ForEach(ConflictPolicy.allCases) { p in Text(p.titleVI).tag(p) }
                     }
-                    .pickerStyle(.menu)
-                    .frame(maxWidth: 200)
-                    Text(conflictPolicy == .keepBoth ? L10n.t("Giữ cả hai lưu một bản sao riêng (\"Report 2\").")
+                    .padding(.horizontal, XFinderTokens.Space.page)
+                    InlineNote(text: conflictPolicy == .keepBoth ? L10n.t("Giữ cả hai lưu một bản sao riêng (\"Report 2\").")
                          : conflictPolicy == .merge ? L10n.t("Gộp thêm file vào thư mục hiện có và khôi phục nếu giải nén thất bại.")
                          : L10n.t("Hỏi trước khi ghi đè."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .padding(.horizontal, XFinderTokens.Space.page)
                 }
-                .padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 if mode == .compress {
-                    SettingsCard(title: L10n.t("Mặc định giải nén")) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
-                            Text(L10n.t("Bộ máy nén và giải nén")).font(.system(size: 13))
-                            Spacer()
-                            Text(L10n.t("7-Zip 26.02 tích hợp sẵn")).font(.system(size: 11)).foregroundColor(.secondary)
-                        }
-                        Text(L10n.t("MFinder tích hợp sẵn bộ máy 7-Zip; không cần cài thêm ứng dụng nén và giải nén. Không bao giờ ghi đè — mục trùng tên sẽ được đổi tên (\"Report 2\") hoặc gộp."))
-                            .font(.system(size: 11)).foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "checkmark.circle.fill", title: L10n.t("Mặc định giải nén"))
+                        LabeledLine(label: L10n.t("Bộ máy nén và giải nén"), value: L10n.t("ditto, zip, tar có sẵn của macOS"))
+                        InlineNote(text: L10n.t("Dùng công cụ nén có sẵn của macOS (ditto cho ZIP, tar cho TAR.GZ), không cần cài thêm gì. Không bao giờ ghi đè — mục trùng tên được đổi tên (\"Report 2\") hoặc gộp theo lựa chọn bên trên."))
+                            .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                    SettingsCard(title: L10n.t("Tách tác vụ nén và giải nén hoạt động")) {
-                        Text(L10n.t("Tạo file ZIP hoặc 7Z và giải nén ZIP, 7Z, RAR, TAR, GZ, XZ cùng các định dạng phổ biến khác. MFinder không bao giờ ghi đè file hiện có."))
-                            .font(.system(size: 11)).foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "square.stack.3d.up.fill", title: L10n.t("Tách tác vụ nén và giải nén hoạt động"))
+                        InlineNote(text: L10n.t("Tạo file ZIP hoặc TAR.GZ và giải nén ZIP, TAR, TAR.GZ. XFinder không bao giờ ghi đè file hiện có."))
+                            .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
                 }
 
                 Button {
@@ -234,10 +249,11 @@ struct CompressDetailView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(sources.isEmpty || isRunning)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
                 if let resultURL {
-                    SettingsCard(title: L10n.t("Việc tiếp theo")) {
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "arrow.right.circle", title: L10n.t("Việc tiếp theo"))
                         HStack {
                             Menu {
                                 if mode == .compress {
@@ -264,29 +280,30 @@ struct CompressDetailView: View {
                             }
                             .fixedSize()
                         }
+                        .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
                 }
 
                 if !log.isEmpty {
-                    SettingsCard(title: L10n.t("Kết quả")) {
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "list.bullet.rectangle", title: L10n.t("Kết quả"))
                         VStack(alignment: .leading, spacing: 4) {
                             ForEach(log.indices.reversed().prefix(10), id: \.self) { i in
                                 Text(log[i])
-                                    .font(.system(size: 11, design: .monospaced))
+                                    .font(XFinderTokens.Font.mono)
                                     .foregroundColor(log[i].hasPrefix(L10n.t("Lỗi")) || log[i].hasPrefix(L10n.t("Thất bại")) ? .red : .primary)
                                     .lineLimit(3)
                             }
                         }
+                        .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                } else {
-                    Spacer().padding(.bottom, 20)
                 }
             }
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
     }
 
     // MARK: - Pickers

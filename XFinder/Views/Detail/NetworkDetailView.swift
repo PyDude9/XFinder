@@ -12,29 +12,30 @@ struct NetworkDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(icon: "globe",
                            title: L10n.t("Mạng"),
                            subtitle: L10n.t("Lưu lượng, ứng dụng dùng mạng và tốc độ kết nối."))
 
                 rateRow
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 LabeledLine(label: L10n.t("Giao diện vật lý"), value: primaryInterface)
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 appsSection
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 LabeledLine(label: L10n.t("Phiên này"),
                             value: "↓\(fmtBytes(monitor.sessionBytesRX))  ↑\(fmtBytes(monitor.sessionBytesTX))")
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 speedSection
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
         // Only sample metrics while a page that shows them is on screen.
         .onAppear { SystemMonitorManager.shared.retain() }
         .onDisappear { SystemMonitorManager.shared.release() }
@@ -57,16 +58,16 @@ struct NetworkDetailView: View {
                      value: monitor.currentMetrics.networkUpload,
                      label: L10n.t("Tải lên"))
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func rateCell(icon: String, tint: Color, value: Double, label: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon).foregroundColor(tint).font(.system(size: 15, weight: .semibold))
+        HStack(spacing: XFinderTokens.Space.inline) {
+            Image(systemName: icon).foregroundColor(tint).font(XFinderTokens.Font.sectionTitle)
             VStack(alignment: .leading, spacing: 1) {
                 Text(monitor.metricsHistory.isEmpty ? L10n.t("Đang đo…") : rateString(value))
-                    .font(.system(size: 15, weight: .semibold))
-                Text(label).font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.sectionTitle)
+                Text(label).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             }
             Spacer()
         }
@@ -91,12 +92,12 @@ struct NetworkDetailView: View {
     // MARK: Apps
 
     private var appsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
             HStack {
-                Text(L10n.t("Ứng dụng dùng mạng")).font(.system(size: 13, weight: .medium))
+                Text(L10n.t("Ứng dụng dùng mạng")).font(XFinderTokens.Font.row)
                 Spacer()
                 if sampling && appRows.isEmpty {
-                    Text(L10n.t("Đang chờ dữ liệu…")).font(.system(size: 11)).foregroundColor(.secondary)
+                    Text(L10n.t("Đang chờ dữ liệu…")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 }
             }
 
@@ -104,23 +105,23 @@ struct NetworkDetailView: View {
                 Text(sampling
                      ? L10n.t("Đang lấy mẫu qua nettop (≈, cập nhật mỗi 2 giây).")
                      : L10n.t("Chưa có dữ liệu."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             } else {
                 ForEach(appRows) { row in
                     HStack {
-                        Text(row.name).font(.system(size: 12)).lineLimit(1)
+                        Text(row.name).font(XFinderTokens.Font.rowValue).lineLimit(1)
                         Spacer()
                         Text(String(format: "↓ %@  ↑ %@", rateString(row.downKBs), rateString(row.upKBs)))
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(XFinderTokens.Font.mono)
                             .foregroundColor(.secondary)
                     }
                     .padding(.vertical, 2)
                 }
                 Text(L10n.t("Số liệu xấp xỉ từ nettop — không có API công khai cho lưu lượng theo tiến trình."))
-                    .font(.system(size: 10)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     /// Repeating 2s sample while the page is visible; cancelled on disappear so
@@ -141,7 +142,7 @@ struct NetworkDetailView: View {
     // MARK: Speed test
 
     private var speedSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
             switch speed.state {
             case .idle:
                 Button { speed.start() } label: {
@@ -149,33 +150,33 @@ struct NetworkDetailView: View {
                 }
                 .buttonStyle(.bordered).controlSize(.small)
             case .running:
-                HStack(spacing: 10) {
+                HStack(spacing: XFinderTokens.Space.row) {
                     ProgressView().scaleEffect(0.6)
-                    Text(L10n.t("Đang đo…")).font(.system(size: 12))
+                    Text(L10n.t("Đang đo…")).font(XFinderTokens.Font.rowValue)
                     Button(L10n.t("Hủy")) { speed.cancel() }
                         .buttonStyle(.bordered).controlSize(.small)
                 }
             case .done(let mbps, let seconds):
-                HStack(spacing: 10) {
+                HStack(spacing: XFinderTokens.Space.row) {
                     Text(String(format: "%.1f Mbps", mbps))
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(XFinderTokens.Font.sectionTitle)
                     Text(String(format: L10n.t("25 MB trong %.1f giây"), seconds))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     Button(L10n.t("Đo lại")) { speed.start() }
                         .buttonStyle(.bordered).controlSize(.small)
                 }
             case .failed(let msg):
-                HStack(spacing: 10) {
-                    Text(msg).font(.system(size: 12)).foregroundColor(.red)
+                HStack(spacing: XFinderTokens.Space.row) {
+                    Text(msg).font(XFinderTokens.Font.rowValue).foregroundColor(.red)
                     Button(L10n.t("Thử lại")) { speed.start() }
                         .buttonStyle(.bordered).controlSize(.small)
                 }
             }
 
             Text(L10n.t("Phép đo dùng dữ liệu Internet. Đóng tất cả màn hình theo dõi mạng để hủy."))
-                .font(.system(size: 11)).foregroundColor(.secondary)
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func fmtBytes(_ b: UInt64) -> String {
@@ -185,5 +186,3 @@ struct NetworkDetailView: View {
         return f.string(fromByteCount: Int64(b))
     }
 }
-
-/// Plain label ⟷ value line used by the compact pages.

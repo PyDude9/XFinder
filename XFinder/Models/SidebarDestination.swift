@@ -10,8 +10,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case storage
     case pin
     case alerts
-    // Clipboard & Ghi chú
-    case clipboard
+    // Ghi chú (clipboard content lives in the ⌘⇧V shelf and the Notch — decision 2026-10-10; no page)
     case notes
     // CỬA SỔ — real except menuIcons (private API)
     case windowPreview
@@ -62,7 +61,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .storage: return "Ổ đĩa"
         case .pin: return "Pin"
         case .alerts: return "Cảnh báo"
-        case .clipboard: return "Clipboard"
         case .notes: return "Ghi chú"
         case .windowPreview: return "Xem trước cửa sổ"
         case .mouseGestures: return "Chuột & cử chỉ"
@@ -103,7 +101,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .storage: return "internaldrive.fill"
         case .pin: return "battery.100"
         case .alerts: return "bell.badge"
-        case .clipboard: return "doc.on.clipboard.fill"
         case .notes: return "note.text"
         case .windowPreview: return "macwindow.badge.plus"
         case .mouseGestures: return "computermouse"

@@ -9,72 +9,72 @@ struct RemoteConnectDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(icon: "externaldrive.connected.to.line.below",
                            title: L10n.t("Kết nối từ xa"),
                            subtitle: L10n.t("Tải file và thư mục đã chọn lên đích từ xa."))
 
                 HStack {
                     Text("\(controller.destinations.count)\(L10n.t(" kết nối"))")
-                        .font(.system(size: 13)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.row).foregroundColor(.secondary)
                     Spacer()
                     Button { showAdd = true } label: {
                         Label(L10n.t("Thêm kết nối…"), systemImage: "plus")
                     }
                     .buttonStyle(.borderedProminent).controlSize(.small)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
                 if controller.destinations.isEmpty {
-                    VStack(spacing: 8) {
+                    VStack(spacing: XFinderTokens.Space.inline) {
                         Image(systemName: "globe")
-                            .font(.system(size: 38)).foregroundColor(.secondary)
+                            .font(XFinderTokens.Font.pageIcon).foregroundColor(.secondary)
                         Text(L10n.t("Chưa có kết nối từ xa"))
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(XFinderTokens.Font.pageSubtitle.weight(.semibold))
                         Text(L10n.t("Thêm máy chủ để tải lên từ XFinder."))
-                            .font(.system(size: 13)).foregroundColor(.secondary)
+                            .font(XFinderTokens.Font.row).foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 30)
                 } else {
-                    VStack(spacing: 8) {
+                    VStack(spacing: XFinderTokens.Space.inline) {
                         ForEach(controller.destinations) { dest in
                             row(dest)
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
                 if case .running(let msg) = controller.state {
-                    HStack(spacing: 8) {
+                    HStack(spacing: XFinderTokens.Space.inline) {
                         ProgressView().scaleEffect(0.6)
-                        Text(msg).font(.system(size: 12)).foregroundColor(.secondary)
+                        Text(msg).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 } else if case .done(let msg) = controller.state {
                     Label(msg, systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 12)).foregroundColor(.green)
-                        .padding(.horizontal, 20)
+                        .font(XFinderTokens.Font.rowValue).foregroundColor(.green)
+                        .padding(.horizontal, XFinderTokens.Space.page)
                 } else if case .failed(let msg) = controller.state {
                     Label(msg, systemImage: "exclamationmark.triangle.fill")
-                        .font(.system(size: 12)).foregroundColor(.red)
-                        .padding(.horizontal, 20)
+                        .font(XFinderTokens.Font.rowValue).foregroundColor(.red)
+                        .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(L10n.t("Cách hoạt động")).font(.system(size: 14, weight: .semibold))
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "questionmark.circle", title: L10n.t("Cách hoạt động"))
                     note(L10n.t("Dùng `scp` qua SSH — cùng cơ chế Terminal, không có dịch vụ trung gian."))
                     note(L10n.t("Xác thực bằng **khóa SSH**, không lưu mật khẩu. XFinder chỉ ghi nhớ host/user/đường dẫn và *vị trí* file khóa."))
                     note(L10n.t("File chỉ rời khỏi máy Mac khi bạn bấm Tải lên. Không có đồng bộ nền."))
                     note(L10n.t("Chưa có khóa? Chạy `ssh-keygen -t ed25519` rồi `ssh-copy-id user@host` trong Terminal một lần."))
                 }
-                .padding(.horizontal, 20)
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
         .sheet(isPresented: $showAdd) {
             DestinationSheet(destination: nil, isPresented: $showAdd)
         }
@@ -84,19 +84,21 @@ struct RemoteConnectDetailView: View {
     }
 
     private func note(_ t: String) -> some View {
-        Text(.init(t)).font(.system(size: 12)).foregroundColor(.secondary)
+        Text(.init(t)).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+            .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func row(_ dest: RemoteConnectController.Destination) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: XFinderTokens.Space.row) {
             Image(systemName: "server.rack").foregroundColor(.accentColor).frame(width: 20)
             VStack(alignment: .leading, spacing: 2) {
-                Text(dest.name).font(.system(size: 13, weight: .medium))
+                Text(dest.name).font(XFinderTokens.Font.row)
                 Text(dest.displayTarget)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.secondary).lineLimit(1)
+                    .font(XFinderTokens.Font.mono)
+                    .foregroundColor(.secondary)
+                    .fileNameRowSafe()
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: XFinderTokens.Space.inline)
             Button(L10n.t("Tải lên…")) { pickAndUpload(dest) }
                 .buttonStyle(.bordered).controlSize(.small)
             Menu {
@@ -109,7 +111,7 @@ struct RemoteConnectDetailView: View {
             .frame(width: 24)
         }
         .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.04)))
+        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control, style: .continuous).fill(XFinderTokens.Fill.inset))
     }
 
     private func pickAndUpload(_ dest: RemoteConnectController.Destination) {
@@ -149,14 +151,14 @@ private struct DestinationSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(isNew ? L10n.t("Thêm kết nối từ xa") : L10n.t("Sửa kết nối"))
-                .font(.system(size: 15, weight: .semibold))
+                .font(XFinderTokens.Font.sectionTitle)
 
             field(L10n.t("Tên hiển thị"), text: $draft.name, placeholder: L10n.t("NAS phòng làm việc"))
             field(L10n.t("Máy chủ"), text: $draft.host, placeholder: L10n.t("192.168.1.10 hoặc nas.local"))
             HStack {
                 field(L10n.t("Người dùng"), text: $draft.user, placeholder: NSUserName())
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(L10n.t("Cổng")).font(.system(size: 11)).foregroundColor(.secondary)
+                    Text(L10n.t("Cổng")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     TextField("22", value: $draft.port, format: .number)
                         .textFieldStyle(.roundedBorder).frame(width: 70)
                 }
@@ -165,7 +167,7 @@ private struct DestinationSheet: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(L10n.t("Khóa SSH (để trống = dùng khóa mặc định)"))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 HStack {
                     TextField("~/.ssh/id_ed25519", text: $draft.keyPath)
                         .textFieldStyle(.roundedBorder)
@@ -175,7 +177,7 @@ private struct DestinationSheet: View {
             }
 
             Text("\(L10n.t("XFinder không lưu mật khẩu. Nếu chưa có khóa, chạy")) `ssh-keygen -t ed25519` \(L10n.t("rồi")) `ssh-copy-id \(draft.user)@\(draft.host.isEmpty ? "host" : draft.host)`.")
-                .font(.system(size: 11)).foregroundColor(.secondary)
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
 
             HStack {
                 Button(L10n.t("Kiểm tra")) { Task { await controller.test(draft) } }
@@ -195,7 +197,7 @@ private struct DestinationSheet: View {
 
     private func field(_ label: String, text: Binding<String>, placeholder: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(.system(size: 11)).foregroundColor(.secondary)
+            Text(label).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             TextField(placeholder, text: text).textFieldStyle(.roundedBorder)
         }
     }

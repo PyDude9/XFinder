@@ -34,22 +34,22 @@ struct FinderActionsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(icon: "contextualmenu.and.cursorarrow",
                            title: L10n.t("Thao tác Finder"),
-                           subtitle: L10n.t("Chọn các mục xuất hiện trong menu ngữ cảnh MFinder."))
+                           subtitle: L10n.t("Chọn các mục xuất hiện trong menu ngữ cảnh Finder."))
 
                 menuConfigSection
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                SectionHeader(icon: "cursorarrow.click.2",
-                              title: L10n.t("Tệp đang chọn trong Finder"),
-                              subtitle: selection.isEmpty
-                                  ? L10n.t("Chọn vài tệp trong Finder rồi bấm Đọc lựa chọn.")
-                                  : "\(selection.count)\(L10n.t(" mục"))")
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "cursorarrow.click.2",
+                                  title: L10n.t("Tệp đang chọn trong Finder"),
+                                  subtitle: selection.isEmpty
+                                      ? L10n.t("Chọn vài tệp trong Finder rồi bấm Đọc lựa chọn.")
+                                      : "\(selection.count)\(L10n.t(" mục"))")
 
-                VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         Button(L10n.t("Đọc lựa chọn")) { readSelection() }
                             .buttonStyle(.borderedProminent).controlSize(.small)
@@ -59,60 +59,65 @@ struct FinderActionsDetailView: View {
                                 .buttonStyle(.bordered).controlSize(.small)
                         }
                     }
+                    .padding(.horizontal, XFinderTokens.Space.page)
 
                     if !selection.isEmpty {
                         VStack(alignment: .leading, spacing: 3) {
                             ForEach(selection.prefix(8), id: \.self) { url in
                                 Text(url.lastPathComponent)
-                                    .font(.system(size: 12)).lineLimit(1)
+                                    .font(XFinderTokens.Font.rowValue)
+                                    .fileNameRowSafe()
                             }
                             if selection.count > 8 {
                                 Text("\(L10n.t("… và "))\(selection.count - 8)\(L10n.t(" mục nữa"))")
-                                    .font(.system(size: 11)).foregroundColor(.secondary)
+                                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                             }
                         }
+                        .padding(.horizontal, XFinderTokens.Space.page)
                     }
                 }
-                .padding(.horizontal, 20)
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                SectionHeader(icon: "bolt",
-                              title: L10n.t("Thao tác nhanh"),
-                              subtitle: L10n.t("Áp dụng cho các mục vừa đọc ở trên."))
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "bolt",
+                                  title: L10n.t("Thao tác nhanh"),
+                                  subtitle: L10n.t("Áp dụng cho các mục vừa đọc ở trên."))
 
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 165), spacing: 8)], spacing: 8) {
-                    actionButton(L10n.t("Sao chép đường dẫn"), "doc.on.doc") { copyPaths() }
-                        .opacity(showCopy ? 1 : 0.4)
-                    actionButton(L10n.t("Nén thành ZIP"), "archivebox") { compress() }
-                        .opacity(showCompress ? 1 : 0.4)
-                    actionButton(L10n.t("Đổi tên hàng loạt…"), "textformat.abc") {
-                        AppState.shared.navigate(to: .batchRename)
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 165), spacing: 8)], spacing: 8) {
+                        actionButton(L10n.t("Sao chép đường dẫn"), "doc.on.doc") { copyPaths() }
+                            .opacity(showCopy ? 1 : 0.4)
+                        actionButton(L10n.t("Nén thành ZIP"), "archivebox") { compress() }
+                            .opacity(showCompress ? 1 : 0.4)
+                        actionButton(L10n.t("Đổi tên hàng loạt…"), "textformat.abc") {
+                            AppState.shared.navigate(to: .batchRename)
+                        }
+                        actionButton(L10n.t("Thêm vào Khay thả"), "tray.and.arrow.down") { addToTray() }
+                        actionButton(L10n.t("Chuyển vào Thùng rác"), "trash", destructive: true) { trash() }
+                            .opacity(showCleanup ? 1 : 0.4)
+                        actionButton(L10n.t("Hiện trong Finder"), "folder") { reveal() }
+                            .opacity(showShowInFinder ? 1 : 0.4)
                     }
-                    actionButton(L10n.t("Thêm vào Khay thả"), "tray.and.arrow.down") { addToTray() }
-                    actionButton(L10n.t("Chuyển vào Thùng rác"), "trash", destructive: true) { trash() }
-                        .opacity(showCleanup ? 1 : 0.4)
-                    actionButton(L10n.t("Hiện trong Finder"), "folder") { reveal() }
-                        .opacity(showShowInFinder ? 1 : 0.4)
-                }
-                .padding(.horizontal, 20)
+                    .padding(.horizontal, XFinderTokens.Space.page)
 
-                if let status {
-                    Text(status)
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 20)
+                    if let status {
+                        Text(status)
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, XFinderTokens.Space.page)
+                    }
                 }
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                SectionHeader(icon: "puzzlepiece.extension",
-                              title: L10n.t("Menu chuột phải trong Finder"),
-                              subtitle: L10n.t("Thêm mục vào menu ngữ cảnh của Finder."))
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "puzzlepiece.extension",
+                                  title: L10n.t("Menu chuột phải trong Finder"),
+                                  subtitle: L10n.t("Thêm mục vào menu ngữ cảnh của Finder."))
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.t("macOS không có API công khai cho phép một ứng dụng thường thêm mục vào menu chuột phải của Finder. Cách được Apple hỗ trợ là Quick Action (Shortcuts/Automator) hoặc một Finder Sync Extension riêng. Các toggle ở trên lọc những thao tác hiển thị khi bạn dùng XFinder qua các Thao tác nhanh trong Finder."))
-                        .font(.system(size: 12)).foregroundColor(.secondary)
+                    InlineNote(text: L10n.t("macOS không có API công khai cho phép một ứng dụng thường thêm mục vào menu chuột phải của Finder. Cách được Apple hỗ trợ là Quick Action (Shortcuts/Automator) hoặc một Finder Sync Extension riêng. Các toggle ở trên lọc những thao tác hiển thị khi bạn dùng XFinder qua các Thao tác nhanh trong Finder."))
+                        .padding(.horizontal, XFinderTokens.Space.page)
+
                     HStack(spacing: 8) {
                         Button(L10n.t("Mở Tiện ích mở rộng…")) { openExtensionsPane() }
                             .buttonStyle(.bordered).controlSize(.small)
@@ -121,48 +126,49 @@ struct FinderActionsDetailView: View {
                         }
                         .buttonStyle(.bordered).controlSize(.small)
                     }
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
-                .padding(.horizontal, 20)
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
     }
 
     // MARK: - Menu config
 
     private var menuConfigSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(icon: "slider.horizontal.3",
                           title: L10n.t("Cấu hình menu"),
                           subtitle: L10n.t("Thay đổi sẽ xuất hiện khi menu ngữ cảnh Finder được mở lần tiếp theo."))
 
-            HStack {
-                Text(L10n.t("Bố cục menu")).font(.system(size: 13))
-                Spacer()
-                Picker("", selection: $menuLayout) {
-                    Text(L10n.t("Gọn")).tag("compact")
-                    Text(L10n.t("Đầy đủ")).tag("full")
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(L10n.t("Bố cục menu")).font(XFinderTokens.Font.row)
+                    Spacer()
+                    Picker("", selection: $menuLayout) {
+                        Text(L10n.t("Gọn")).tag("compact")
+                        Text(L10n.t("Đầy đủ")).tag("full")
+                    }
+                    .pickerStyle(.segmented).frame(width: 160)
                 }
-                .pickerStyle(.segmented).frame(width: 160)
+                Text(menuLayout == "full" ? L10n.t("Full: Open In và Copy mở thành menu con, liệt kê mọi terminal đã cài và đủ kiểu copy. Các nhóm khác không đổi.")
+                                          : L10n.t("Gọn: menu một cấp, chỉ nhóm chính."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             }
-            Text(menuLayout == "full" ? L10n.t("Full: Open In và Copy mở thành menu con, liệt kê mọi terminal đã cài và đủ kiểu copy. Các nhóm khác không đổi.")
-                                      : L10n.t("Gọn: menu một cấp, chỉ nhóm chính."))
-                .font(.system(size: 11)).foregroundColor(.secondary)
+            .padding(.horizontal, XFinderTokens.Space.page)
 
-            HStack {
-                Text(L10n.t("Terminal mặc định")).font(.system(size: 13))
-                Spacer()
-                Picker("", selection: $defaultTerminal) {
-                    Text("Terminal").tag("Terminal")
-                    Text("iTerm2").tag("iTerm2")
-                    Text("kitty").tag("kitty")
-                    Text("Alacritty").tag("Alacritty")
-                }
-                .pickerStyle(.menu).frame(width: 140)
+            PickerRow(title: L10n.t("Terminal mặc định"), selection: $defaultTerminal, width: 140) {
+                Text("Terminal").tag("Terminal")
+                Text("iTerm2").tag("iTerm2")
+                Text("kitty").tag("kitty")
+                Text("Alacritty").tag("Alacritty")
             }
+            .padding(.horizontal, XFinderTokens.Space.page)
 
-            Text(L10n.t("Các nhóm hiển thị")).font(.system(size: 13, weight: .medium)).padding(.top, 4)
+            Text(L10n.t("Các nhóm hiển thị")).font(XFinderTokens.Font.row).padding(.top, 4)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 ToggleRow(title: L10n.t("Mở trong"), isOn: $showOpenIn)
@@ -178,8 +184,8 @@ struct FinderActionsDetailView: View {
                 ToggleRow(title: L10n.t("Chống ghi"), isOn: $showWriteProtect)
                 ToggleRow(title: L10n.t("Khóa thư mục"), isOn: $showFolderLock)
             }
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
-        .padding(.horizontal, 20)
     }
 
     private func actionButton(_ title: String, _ icon: String,
@@ -187,7 +193,7 @@ struct FinderActionsDetailView: View {
                               action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: icon)
-                .font(.system(size: 12))
+                .font(XFinderTokens.Font.rowValue)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 4)
         }

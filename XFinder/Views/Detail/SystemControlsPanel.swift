@@ -1,4 +1,5 @@
 import SwiftUI
+// audit-ui-tokens: embedded-panel — rendered inside FeaturesHubView, which owns the PageHeader.
 import AppKit
 
 /// Điều khiển hệ thống — the "Điều khiển" tab of Tính năng & Quyền: machine-wide switches
@@ -60,7 +61,7 @@ struct SystemControlsPanel: View {
     // MARK: - Hệ thống
 
     private var systemSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(icon: "desktopcomputer",
                           title: L10n.t("Hệ thống"),
                           subtitle: L10n.t("Áp dụng cho toàn máy, không chỉ XFinder."))
@@ -69,7 +70,7 @@ struct SystemControlsPanel: View {
                 // Volume — real, and live via the CoreAudio listener.
                 HStack(spacing: 12) {
                     Label {
-                        Text(L10n.t("Âm lượng")).font(.system(size: 13))
+                        Text(L10n.t("Âm lượng")).font(XFinderTokens.Font.row)
                     } icon: {
                         Image(systemName: volumeObserver.isMuted || volumeObserver.volume == 0
                               ? "speaker.slash.fill"
@@ -84,7 +85,7 @@ struct SystemControlsPanel: View {
                         .tint(.blue)
 
                     Text("\(Int(volumeObserver.volume * 100))%")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(XFinderTokens.Font.mono)
                         .frame(width: 38, alignment: .trailing)
                 }
 
@@ -93,7 +94,7 @@ struct SystemControlsPanel: View {
                 // as a plain readout and says why, instead of a one-item picker.
                 HStack(spacing: 12) {
                     Label {
-                        Text(L10n.t("Âm thanh ra")).font(.system(size: 13))
+                        Text(L10n.t("Âm thanh ra")).font(XFinderTokens.Font.row)
                     } icon: {
                         Image(systemName: audioOutputs.current?.symbol ?? "speaker.wave.2")
                             .foregroundColor(.secondary)
@@ -115,19 +116,18 @@ struct SystemControlsPanel: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     } else {
                         Text(audioOutputs.current?.name ?? "—")
-                            .font(.system(size: 12)).foregroundColor(.secondary)
-                            .lineLimit(1).truncationMode(.middle)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                            .fileNameRowSafe()
                     }
                 }
                 if audioOutputs.devices.count <= 1 {
                     Text(L10n.t("Chỉ có một thiết bị âm thanh ra — cắm tai nghe hoặc kết nối loa để chọn thiết bị khác."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let err = audioOutputs.lastError {
                     Text("\(L10n.t("Không đổi được thiết bị âm thanh ra: "))\(err)")
-                        .font(.system(size: 11)).foregroundColor(.red)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.red)
                 }
 
                 ToggleRow(title: L10n.t("Tắt tiếng"),
@@ -151,7 +151,7 @@ struct SystemControlsPanel: View {
                 // control never moved and felt decorative.
                 HStack(spacing: 12) {
                     Label {
-                        Text(L10n.t("Độ sáng màn hình")).font(.system(size: 13))
+                        Text(L10n.t("Độ sáng màn hình")).font(XFinderTokens.Font.row)
                     } icon: {
                         Image(systemName: "sun.max.fill").foregroundColor(.secondary)
                     }
@@ -167,7 +167,7 @@ struct SystemControlsPanel: View {
                         .disabled(brightDenied || brightness.level == nil)
 
                     Text(brightness.level == nil ? "—" : "\(Int(brightnessSlider * 100))%")
-                        .font(.system(size: 11, design: .monospaced))
+                        .font(XFinderTokens.Font.mono)
                         .frame(width: 38, alignment: .trailing)
                 }
                 .onChange(of: brightness.level) { _, newValue in
@@ -176,21 +176,21 @@ struct SystemControlsPanel: View {
                 }
 
                 if brightDenied {
-                    permissionNote(
-                        L10n.t("Chưa có quyền Trợ năng — kéo thanh trượt sẽ không đổi được độ sáng."),
-                        button: L10n.t("Cấp quyền Trợ năng…"),
-                        action: {
-                            if !WindowManager.requestAccessibilityTrust() {
-                                WindowManager.openAccessibilityPane()
-                            }
-                        })
+                    InlineNote(kind: .warning,
+                               text: L10n.t("Chưa có quyền Trợ năng — kéo thanh trượt sẽ không đổi được độ sáng."),
+                               buttonTitle: L10n.t("Cấp quyền Trợ năng…"),
+                               action: {
+                                   if !WindowManager.requestAccessibilityTrust() {
+                                       WindowManager.openAccessibilityPane()
+                                   }
+                               })
                 } else if brightness.level == nil {
                     Text(L10n.t("Không đọc được độ sáng — máy này có thể chỉ dùng màn hình ngoài."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     Text(L10n.t("macOS không cho đọc lại % chính xác (trên Apple Silicon giá trị registry thường kẹt), nên % bám theo vị trí bạn kéo — con số thật cho thanh trượt. XFinder gửi từng nấc như phím bấm."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
@@ -199,7 +199,7 @@ struct SystemControlsPanel: View {
                 // System-wide appearance.
                 HStack(spacing: 12) {
                     Label {
-                        Text(L10n.t("Chế độ giao diện")).font(.system(size: 13))
+                        Text(L10n.t("Chế độ giao diện")).font(XFinderTokens.Font.row)
                     } icon: {
                         Image(systemName: "circle.lefthalf.filled").foregroundColor(.secondary)
                     }
@@ -212,7 +212,7 @@ struct SystemControlsPanel: View {
                             Text(mode.titleVI).tag(mode)
                         }
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.segmented)   // segmented-ok: 3 cases (Sáng/Tối/Hệ thống)
                     .labelsHidden()
                     .frame(width: 230)
                     .disabled(appearanceBusy)
@@ -220,9 +220,10 @@ struct SystemControlsPanel: View {
                 }
 
                 if let err = appearanceError {
-                    permissionNote(err,
-                                   button: L10n.t("Mở Cài đặt Tự động hóa"),
-                                   action: { SystemControls.openAutomationPane() })
+                    InlineNote(kind: .warning,
+                               text: err,
+                               buttonTitle: L10n.t("Mở Cài đặt Tự động hóa"),
+                               action: { SystemControls.openAutomationPane() })
                 }
 
                 Divider()
@@ -245,24 +246,11 @@ struct SystemControlsPanel: View {
                         DesktopIconsPrefs.setShowIcons(!hide)
                     }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
     // MARK: - Helpers
-
-    private func permissionNote(_ message: String,
-                                button: String,
-                                action: @escaping () -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(message)
-                .font(.system(size: 11)).foregroundColor(.orange)
-                .fixedSize(horizontal: false, vertical: true)
-            Button(button, action: action)
-                .buttonStyle(.bordered).controlSize(.small)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
 
     private func applyAppearance(_ mode: SystemControls.AppearanceMode) {
         guard !appearanceBusy else { return }

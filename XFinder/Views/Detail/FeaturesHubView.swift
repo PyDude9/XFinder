@@ -17,7 +17,7 @@ struct FeaturesHubView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(icon: "square.grid.2x2",
                            title: L10n.t("Tính năng & Quyền"),
                            subtitle: L10n.t("Chọn XFinder chạy những gì, chỉnh máy Mac và xem nó được phép làm gì."))
@@ -29,17 +29,17 @@ struct FeaturesHubView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 .frame(width: 260)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
                 switch tab {
                 case .features: featuresTab
                 case .permissions: permissionsTab
                 }
             }
-            .padding(.bottom, 24)
+            .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
         .onAppear { hub.retain() }
         .onDisappear { hub.release() }
     }
@@ -47,21 +47,21 @@ struct FeaturesHubView: View {
     // MARK: - Features tab
 
     private var featuresTab: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
             // Machine-wide controls (volume, output, brightness, appearance…) used to be a tab of
             // their own; they live here so the page is one scroll, not two places to look.
             SystemControlsPanel()
 
-            Divider().padding(.horizontal, 20)
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
 
             // Summary
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 Text(L10n.t("Chỉ bật thứ bạn dùng. Tính năng đã tắt sẽ ngừng chạy nền."))
-                    .font(.system(size: 12)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                 Divider()
                 HStack {
                     Text("\(hub.onCount) / \(FeatureCatalog.all.count)\(L10n.t(" tính năng đang bật"))")
-                        .font(.system(size: 12)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                         .monospacedDigit()
                     Spacer()
                     Button(L10n.t("Chạy lại thiết lập")) { OnboardingWindow.shared.show() }
@@ -72,39 +72,39 @@ struct FeaturesHubView: View {
                 }
                 .controlSize(.small)
             }
-            .padding(14)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)))
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
+
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
 
             // Bundles
-            VStack(alignment: .leading, spacing: 10) {
-                Text(L10n.t("Bắt đầu bằng một gói")).font(.system(size: 15, weight: .semibold))
-                    .padding(.horizontal, 20)
-                HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                SectionHeader(icon: "square.stack", title: L10n.t("Bắt đầu bằng một gói"))
+                HStack(alignment: .top, spacing: XFinderTokens.Space.row) {
                     ForEach(FeatureCatalog.bundles, id: \.id) { bundle in
                         bundleCard(bundle)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
                 Text(L10n.t("Một cú bấm đặt sẵn theo cách bạn dùng máy. Mọi thứ còn lại vẫn cách một cú bấm."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
-                    .padding(.horizontal, 20)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    .padding(.horizontal, XFinderTokens.Space.page)
             }
 
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
+
             ForEach(FeatureGroup.allCases, id: \.self) { group in
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(L10n.t(group.titleKey)).font(.system(size: 15, weight: .semibold))
-                        .padding(.horizontal, 20)
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                    SectionHeader(icon: "square.grid.2x2", title: L10n.t(group.titleKey))
                     VStack(spacing: 0) {
                         let items = FeatureCatalog.features(in: group)
                         ForEach(Array(items.enumerated()), id: \.element.id) { index, f in
                             featureRow(f)
-                            if index < items.count - 1 { Divider().padding(.leading, 60) }
+                            if index < items.count - 1 { Divider().padding(.leading, XFinderTokens.Space.page) }
                         }
                     }
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)))
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
             }
 
             backupSection
@@ -116,74 +116,71 @@ struct FeaturesHubView: View {
     @State private var transfer = SettingsTransferController.shared
 
     private var backupSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(L10n.t("Sao lưu cài đặt")).font(.system(size: 15, weight: .semibold)).padding(.horizontal, 20)
-            VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(icon: "arrow.up.arrow.down.circle", title: L10n.t("Sao lưu cài đặt"))
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 Text(L10n.t("Xuất cài đặt XFinder ra một tệp để chuyển sang máy Mac khác hoặc khôi phục sau khi cài lại. Không gồm lịch sử clipboard, ghi chú, khoá API (nằm trong Keychain) hay thứ riêng của máy này như vị trí cửa sổ."))
-                    .font(.system(size: 12)).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
+                    .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: XFinderTokens.Space.inline) {
                     Button(L10n.t("Xuất…")) { transfer.exportSettings() }
                     Button(L10n.t("Nhập…")) { transfer.importSettings() }
                 }
                 .controlSize(.small)
                 if let status = transfer.status {
-                    Text(status).font(.system(size: 11))
+                    Text(status).font(XFinderTokens.Font.caption)
                         .foregroundColor(transfer.statusIsError ? .orange : .secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)))
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
     private func bundleCard(_ b: FeatureBundle) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
             Label(L10n.t(b.titleKey), systemImage: b.symbol)
-                .font(.system(size: 13, weight: .semibold))
+                .font(XFinderTokens.Font.row)
                 .lineLimit(1)
             Text(L10n.t(b.descriptionKey))
-                .font(.system(size: 11)).foregroundColor(.secondary)
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
             Button(L10n.t("Áp dụng")) { hub.apply(b) }
                 .controlSize(.small)
         }
-        .padding(12)
+        .padding(XFinderTokens.Space.inline)
         .frame(maxWidth: .infinity, minHeight: 112, alignment: .topLeading)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.06)))
+        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile).fill(XFinderTokens.Fill.inset))
     }
 
     private func featureRow(_ f: FeatureDef) -> some View {
         let on = hub.isOn(f)
         let granted = hub.granted()
         let missing = on ? f.permissions.filter { !(granted[$0] ?? false) } : []
-        return HStack(alignment: .center, spacing: 12) {
+        return HStack(alignment: .center, spacing: XFinderTokens.Space.inline) {
             Image(systemName: f.symbol)
-                .font(.system(size: 17))
+                .font(XFinderTokens.Font.sectionTitle)
                 .foregroundColor(on ? .white : .secondary)
                 .frame(width: 36, height: 36)
-                .background(RoundedRectangle(cornerRadius: 9).fill(on ? Color.accentColor : Color.primary.opacity(0.10)))
+                .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(on ? Color.accentColor : XFinderTokens.Fill.inset))
 
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 8) {
-                    Text(L10n.t(f.titleKey)).font(.system(size: 14, weight: .semibold)).lineLimit(1)
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                HStack(spacing: XFinderTokens.Space.inline) {
+                    Text(L10n.t(f.titleKey)).font(XFinderTokens.Font.row).lineLimit(1)
                     Text(L10n.t(f.idle.badgeKey))
-                        .font(.system(size: 10))
+                        .font(XFinderTokens.Font.caption)
                         .foregroundColor(.secondary)
-                        .padding(.horizontal, 7).padding(.vertical, 2)
-                        .background(Capsule().fill(Color.primary.opacity(0.08)))
+                        .padding(.horizontal, XFinderTokens.Space.tight).padding(.vertical, 2)
+                        .background(Capsule().fill(XFinderTokens.Fill.inset))
                         .lineLimit(1)
                     if !missing.isEmpty {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 11)).foregroundColor(.orange)
+                            .font(XFinderTokens.Font.caption).foregroundColor(.orange)
                             .help("\(L10n.t("Thiếu quyền: "))\(missing.map { L10n.t($0.titleKey) }.joined(separator: ", "))")
                     }
                 }
                 Text(L10n.t(f.subtitleKey))
-                    .font(.system(size: 12)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                     .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             }
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
@@ -192,68 +189,63 @@ struct FeaturesHubView: View {
                 .controlSize(.small)
                 .frame(minWidth: 52)
         }
-        .padding(.horizontal, 12).padding(.vertical, 10)
+        .padding(.vertical, XFinderTokens.Space.row)
     }
 
     // MARK: - Permissions tab
 
     private var permissionsTab: some View {
         let rows = FeatureCatalog.permissionRows(enabled: hub.enabledSet, granted: hub.granted())
-        return VStack(alignment: .leading, spacing: 14) {
+        return VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             Text(L10n.t("Mỗi quyền làm gì và tính năng nào dùng nó."))
-                .font(.system(size: 12)).foregroundColor(.secondary)
-                .padding(.horizontal, 20)
+                .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
             VStack(spacing: 0) {
                 ForEach(Array(rows.enumerated()), id: \.element.permission) { index, row in
                     permissionRow(row)
-                    if index < rows.count - 1 { Divider().padding(.leading, 56) }
+                    if index < rows.count - 1 { Divider().padding(.leading, XFinderTokens.Space.page) }
                 }
             }
-            .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)))
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
 
             Text(L10n.t("Mọi quyền đều tùy chọn: bỏ qua một quyền thì tính năng cần nó đứng yên, phần còn lại vẫn chạy."))
-                .font(.system(size: 11)).foregroundColor(.secondary)
-                .padding(.horizontal, 20)
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
     private func permissionRow(_ r: FeatureCatalog.PermissionRow) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 12) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            HStack(alignment: .top, spacing: XFinderTokens.Space.inline) {
                 Image(systemName: r.permission.symbol)
-                    .font(.system(size: 18)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.sectionTitle).foregroundColor(.secondary)
                     .frame(width: 32, height: 32)
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Text(L10n.t(r.permission.titleKey)).font(.system(size: 14, weight: .semibold))
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                    HStack(spacing: XFinderTokens.Space.inline) {
+                        Text(L10n.t(r.permission.titleKey)).font(XFinderTokens.Font.row)
                         HStack(spacing: 4) {
                             Circle().fill(r.granted ? Color.green : Color.orange).frame(width: 7, height: 7)
                             Text(r.granted ? L10n.t("Đã cấp") : L10n.t("Chưa cấp"))
-                                .font(.system(size: 11)).foregroundColor(.secondary)
+                                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         }
                     }
-                    Text(L10n.t(r.permission.purposeKey)).font(.system(size: 12)).foregroundColor(.secondary)
+                    Text(L10n.t(r.permission.purposeKey)).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                     Text(r.activeUsers == 0
                          ? L10n.t("Hiện không tính năng nào đang bật cần quyền này.")
                          : "\(L10n.t("Dùng bởi: "))\(r.usedBy.map { L10n.t($0) }.joined(separator: ", "))")
-                        .font(.system(size: 11)).foregroundColor(.secondary.opacity(0.8))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary.opacity(0.8))
                         .fixedSize(horizontal: false, vertical: true)
 
                     if r.isUnneeded {
-                        Text(L10n.t("Bạn đã cấp quyền này nhưng không gì đang bật cần nó. Nếu muốn, hãy thu hồi trong Cài đặt hệ thống."))
-                            .font(.system(size: 11))
-                            .padding(8)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(RoundedRectangle(cornerRadius: 7).fill(Color.primary.opacity(0.07)))
+                        InlineNote(kind: .warning,
+                                   text: L10n.t("Bạn đã cấp quyền này nhưng không gì đang bật cần nó. Nếu muốn, hãy thu hồi trong Cài đặt hệ thống."))
                     }
                     if r.isMissingForActive {
-                        Text(L10n.t("Có tính năng đang bật nhưng chưa có quyền này nên nó chưa hoạt động."))
-                            .font(.system(size: 11)).foregroundColor(.orange)
-                            .fixedSize(horizontal: false, vertical: true)
+                        InlineNote(kind: .warning,
+                                   text: L10n.t("Có tính năng đang bật nhưng chưa có quyền này nên nó chưa hoạt động."))
                     }
-                    HStack(spacing: 8) {
+                    HStack(spacing: XFinderTokens.Space.inline) {
                         if !r.granted {
                             Button(L10n.t("Cấp quyền…")) { hub.request(r.permission) }.controlSize(.small)
                         }
@@ -265,6 +257,6 @@ struct FeaturesHubView: View {
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 12)
+        .padding(.vertical, XFinderTokens.Space.row)
     }
 }

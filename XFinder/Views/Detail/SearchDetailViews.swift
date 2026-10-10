@@ -10,21 +10,21 @@ struct FileResultRow: View {
             Image(systemName: NSWorkspace.shared.icon(forFile: item.path).isTemplate ? "doc.fill" : "doc.fill")
                 .foregroundColor(.secondary)
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.name).font(.system(size: 12, weight: .medium)).lineLimit(1)
-                Text(item.path).font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(.secondary).lineLimit(1).truncationMode(.middle)
+                Text(item.name).font(XFinderTokens.Font.row).lineLimit(1).fileNameRowSafe()
+                Text(item.path).font(XFinderTokens.Font.mono)
+                    .foregroundColor(.secondary).fileNameRowSafe()
             }
             Spacer()
             Button(L10n.t("Mở")) { NSWorkspace.shared.open(URL(fileURLWithPath: item.path)) }
-                .buttonStyle(.link).font(.system(size: 11))
+                .buttonStyle(.link).font(XFinderTokens.Font.caption)
             Button(L10n.t("Hiện trong Finder")) {
                 NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: item.path)])
             }
-            .buttonStyle(.link).font(.system(size: 11))
+            .buttonStyle(.link).font(XFinderTokens.Font.caption)
         }
         .padding(.horizontal, 10).padding(.vertical, 6)
-        .background(Color(.controlBackgroundColor).opacity(0.6))
-        .cornerRadius(6)
+        .background(XFinderTokens.Fill.inset)
+        .cornerRadius(XFinderTokens.Radius.control)
     }
 }
 
@@ -48,114 +48,98 @@ struct FinderSearchDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(L10n.t("Tìm kiếm"))
-                    .font(.system(size: 22, weight: .bold))
-                    .padding(.horizontal, 20).padding(.top, 16)
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
+                PageHeader(
+                    icon: "magnifyingglass",
+                    title: L10n.t("Tìm kiếm"),
+                    subtitle: L10n.t("Tìm nhanh ứng dụng, liên kết và tập tin, hoặc lọc theo tên/loại/thời gian")
+                )
 
-                if quickSearchEnabled {
-                    quickSearchCard
-                        .padding(.horizontal, 20)
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    if quickSearchEnabled {
+                        quickSearchSection
+                    }
+                    paletteSection
+                    quicklinksSection
                 }
 
-                paletteCard
-                    .padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                quicklinksCard
-                    .padding(.horizontal, 20)
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "line.3.horizontal.decrease.circle", title: L10n.t("Tìm nâng cao"))
 
-                Text(L10n.t("Tìm nâng cao"))
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 20)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.t("Tên tập tin")).font(XFinderTokens.Font.row)
+                        TextField(L10n.t("Ví dụ: báo cáo"), text: $criteria.nameContains)
+                            .textFieldStyle(.roundedBorder)
+                            .font(XFinderTokens.Font.rowValue)
+                            .onSubmit { run() }
+                    }
+                    .padding(.horizontal, XFinderTokens.Space.page)
 
-                SettingsCard(title: L10n.t("Tên tập tin")) {
-                    TextField(L10n.t("Ví dụ: báo cáo"), text: $criteria.nameContains)
-                        .textFieldStyle(.roundedBorder).font(.system(size: 12))
-                        .onSubmit { run() }
-                }
-                .padding(.horizontal, 20)
-
-                SettingsCard(title: L10n.t("Loại & thời gian")) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Picker(L10n.t("Loại"), selection: $criteria.kind) {
-                            ForEach(FileSearchEngine.Criteria.KindFilter.allCases) { k in
-                                Text(k.titleVI).tag(k)
-                            }
+                    PickerRow(title: L10n.t("Loại"), selection: $criteria.kind, width: 180) {
+                        ForEach(FileSearchEngine.Criteria.KindFilter.allCases) { k in
+                            Text(k.titleVI).tag(k)
                         }
-                        .pickerStyle(.menu).frame(maxWidth: 220)
-                        Picker(L10n.t("Sửa đổi"), selection: Binding(
+                    }
+                    .padding(.horizontal, XFinderTokens.Space.page)
+
+                    PickerRow(
+                        title: L10n.t("Sửa đổi"),
+                        selection: Binding(
                             get: { criteria.modifiedWithinDays ?? 0 },
-                            set: { criteria.modifiedWithinDays = $0 == 0 ? nil : $0 })) {
-                                Text(L10n.t("Mọi lúc")).tag(0)
-                                Text(L10n.t("Hôm nay")).tag(1)
-                                Text(L10n.t("7 ngày qua")).tag(7)
-                                Text(L10n.t("30 ngày qua")).tag(30)
-                        }
-                        .pickerStyle(.segmented)
+                            set: { criteria.modifiedWithinDays = $0 == 0 ? nil : $0 }),
+                        width: 140
+                    ) {
+                        Text(L10n.t("Mọi lúc")).tag(0)
+                        Text(L10n.t("Hôm nay")).tag(1)
+                        Text(L10n.t("7 ngày qua")).tag(7)
+                        Text(L10n.t("30 ngày qua")).tag(30)
                     }
-                }
-                .padding(.horizontal, 20)
+                    .padding(.horizontal, XFinderTokens.Space.page)
 
-                SettingsCard(title: L10n.t("Phạm vi"),
-                             subtitle: scopes.isEmpty ? L10n.t("Toàn máy") : "\(scopes.count)\(L10n.t(" thư mục"))") {
-                    VStack(alignment: .leading, spacing: 8) {
+                    scopeSection
+
+                    Button {
+                        run()
+                    } label: {
                         HStack {
-                            Button(L10n.t("Thêm thư mục…")) {
-                                let panel = NSOpenPanel()
-                                panel.canChooseFiles = false
-                                panel.canChooseDirectories = true
-                                panel.allowsMultipleSelection = true
-                                if panel.runModal() == .OK { scopes = panel.urls }
-                            }
-                            if !scopes.isEmpty {
-                                Button(L10n.t("Toàn máy")) { scopes = [] }.font(.system(size: 12))
-                            }
+                            if isSearching { ProgressView().scaleEffect(0.7) }
+                            Text(isSearching ? L10n.t("Đang tìm…") : L10n.t("Tìm kiếm"))
+                                .fontWeight(.semibold)
                         }
-                        ForEach(scopes, id: \.self) { url in
-                            HStack {
-                                Text(url.path).font(.system(size: 11, design: .monospaced)).lineLimit(1)
-                                Spacer()
-                                Button { scopes.removeAll { $0 == url } } label: {
-                                    Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
-                                }.buttonStyle(.plain)
-                            }
-                        }
+                        .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isSearching)
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
-                .padding(.horizontal, 20)
 
-                Button {
-                    run()
-                } label: {
-                    HStack {
-                        if isSearching { ProgressView().scaleEffect(0.7) }
-                        Text(isSearching ? L10n.t("Đang tìm…") : L10n.t("Tìm kiếm"))
-                            .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isSearching)
-                .padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                SettingsCard(title: searched
-                             ? (results.isEmpty ? L10n.t("Không tìm thấy gì") : "\(results.count)\(L10n.t(" kết quả"))")
-                             : L10n.t("Kết quả")) {
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(
+                        icon: "list.bullet",
+                        title: searched
+                            ? (results.isEmpty ? L10n.t("Không tìm thấy gì") : "\(results.count)\(L10n.t(" kết quả"))")
+                            : L10n.t("Kết quả")
+                    )
                     VStack(spacing: 6) {
                         ForEach(results.prefix(50)) { item in
                             FileResultRow(item: item)
                         }
                         if results.count > 50 {
                             Text("\(L10n.t("…và "))\(results.count - 50)\(L10n.t(" kết quả nữa — hãy thu hẹp điều kiện."))")
-                                .font(.caption).foregroundColor(.secondary)
+                                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         }
                     }
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
-                .padding(.horizontal, 20).padding(.bottom, 20)
             }
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
         .sheet(isPresented: $showQuicklinkSheet) {
             QuicklinkEditorSheet(isPresented: $showQuicklinkSheet, link: editingQuicklink)
         }
@@ -163,11 +147,14 @@ struct FinderSearchDetailView: View {
 
     // MARK: - Tìm nhanh (kiểu TinyCast)
 
-    private var quickSearchCard: some View {
-        SettingsCard(
-            title: L10n.t("Tìm nhanh"),
-            subtitle: L10n.t("Ứng dụng · Liên kết nhanh · Phép tính · Tập tin — gõ là ra")
-        ) {
+    private var quickSearchSection: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(
+                icon: "bolt.fill",
+                title: L10n.t("Tìm nhanh"),
+                subtitle: L10n.t("Ứng dụng · Liên kết nhanh · Phép tính · Tập tin — gõ là ra")
+            )
+
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass").foregroundColor(.secondary)
@@ -188,19 +175,20 @@ struct FinderSearchDetailView: View {
                     }
                 }
                 .padding(.horizontal, 8).padding(.vertical, 6)
-                .background(Color(.controlBackgroundColor).opacity(0.7))
-                .cornerRadius(6)
+                .background(XFinderTokens.Fill.inset)
+                .cornerRadius(XFinderTokens.Radius.control)
 
                 if !quickSearch.results.isEmpty {
                     quickResultsSection
                 } else if !quickQuery.isEmpty && !quickSearch.isSearching {
                     Text("\(L10n.t("Không có gì khớp “"))\(quickQuery)”.")
-                        .font(.caption).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 }
 
                 Text(L10n.t("Ứng dụng: tên khớp mờ (saf → Safari) · Liên kết: gõ từ khóa · Phép tính: nút Mở sao chép kết quả · Tập tin: qua Spotlight. Nhấn ↵ để mở kết quả đầu tiên."))
-                    .font(.caption).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             }
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
@@ -211,7 +199,7 @@ struct FinderSearchDetailView: View {
                 if let items = grouped[type], !items.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(type.titleVI)
-                            .font(.system(size: 10, weight: .semibold)).foregroundColor(.secondary)
+                            .font(XFinderTokens.Font.caption).fontWeight(.semibold).foregroundColor(.secondary)
                         ForEach(items.prefix(5)) { result in
                             QuickSearchResultRow(result: result)
                         }
@@ -222,9 +210,14 @@ struct FinderSearchDetailView: View {
     }
 
     /// Phím tắt toàn cục — công tắc bật/tắt Quick Search + ô ghi hotkey.
-    private var paletteCard: some View {
-        SettingsCard(title: L10n.t("Phím tắt toàn cục"),
-                     subtitle: "\(palette.hotkeyLabel)\(L10n.t(" mở bảng lệnh nổi kiểu Spotlight / Raycast / TinyCast"))") {
+    private var paletteSection: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(
+                icon: "command",
+                title: L10n.t("Phím tắt toàn cục"),
+                subtitle: "\(palette.hotkeyLabel)\(L10n.t(" mở bảng lệnh nổi kiểu Spotlight / Raycast / TinyCast"))"
+            )
+
             VStack(alignment: .leading, spacing: 8) {
                 ToggleRow(title: L10n.t("Bật Tìm nhanh (Quick Search)"),
                           subtitle: L10n.t("Bảng lệnh toàn cục + ô tìm nhanh trong trang này"),
@@ -237,12 +230,12 @@ struct FinderSearchDetailView: View {
                     // Ô phím tắt: hiển thị tổ hợp hiện tại + nút ghi tổ hợp mới.
                     HStack(spacing: 10) {
                         Text(L10n.t("Phím tắt"))
-                            .font(.system(size: 12))
+                            .font(XFinderTokens.Font.rowValue)
                         Text(palette.hotkeyLabel)
-                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .font(XFinderTokens.Font.mono).fontWeight(.semibold)
                             .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background(Color(.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
-                            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.primary.opacity(0.08)))
+                            .background(XFinderTokens.Fill.surface, in: RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge))
+                            .overlay(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).stroke(XFinderTokens.Fill.hairline))
                         Button {
                             if palette.isRecording {
                                 palette.cancelRecording()
@@ -258,36 +251,43 @@ struct FinderSearchDetailView: View {
 
                     if palette.isRecording {
                         Text(L10n.t("Đang ghi — nhấn tổ hợp phím mới (phải có ⌘/⌥/⌃, ví dụ ⌘Space). Esc để hủy."))
-                            .font(.system(size: 11)).foregroundColor(.orange)
+                            .font(XFinderTokens.Font.caption).foregroundColor(.orange)
                             .fixedSize(horizontal: false, vertical: true)
                     } else {
                         Text(L10n.t("Chọn phím theo thói quen — ví dụ ⌘Space hoặc ⌥Space. Nếu chọn ⌘Space, hãy tắt ⌘Space của Spotlight trong Cài đặt → Bàn phím → Phím tắt để tránh mở cả hai cùng lúc."))
-                            .font(.system(size: 11)).foregroundColor(.secondary)
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
-    private var quicklinksCard: some View {
-        SettingsCard(title: L10n.t("Liên kết nhanh"), subtitle: "\(quicklinks.links.count)\(L10n.t(" từ khóa"))") {
+    private var quicklinksSection: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(
+                icon: "link",
+                title: L10n.t("Liên kết nhanh"),
+                subtitle: "\(quicklinks.links.count)\(L10n.t(" từ khóa"))"
+            )
+
             VStack(alignment: .leading, spacing: 8) {
                 if quicklinks.links.isEmpty {
                     Text(L10n.t("Chưa có liên kết nào."))
-                        .font(.caption).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 }
                 ForEach(quicklinks.links) { link in
                     HStack(spacing: 10) {
                         Image(systemName: "link").foregroundColor(.purple)
                         Text(link.keyword)
-                            .font(.system(size: 11, design: .monospaced))
+                            .font(XFinderTokens.Font.mono)
                             .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(Color(.controlBackgroundColor))
-                            .cornerRadius(4)
+                            .background(XFinderTokens.Fill.surface)
+                            .cornerRadius(XFinderTokens.Radius.badge)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(link.title).font(.system(size: 12, weight: .medium))
-                            Text(link.url).font(.system(size: 10))
+                            Text(link.title).font(XFinderTokens.Font.row)
+                            Text(link.url).font(XFinderTokens.Font.caption)
                                 .foregroundColor(.secondary).lineLimit(1)
                         }
                         Spacer()
@@ -306,8 +306,8 @@ struct FinderSearchDetailView: View {
                         .buttonStyle(.plain)
                     }
                     .padding(8)
-                    .background(Color(.controlBackgroundColor).opacity(0.5))
-                    .cornerRadius(6)
+                    .background(XFinderTokens.Fill.inset)
+                    .cornerRadius(XFinderTokens.Radius.control)
                 }
                 Button(L10n.t("Thêm liên kết")) {
                     editingQuicklink = nil
@@ -316,7 +316,44 @@ struct FinderSearchDetailView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
             }
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
+    }
+
+    private var scopeSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(L10n.t("Phạm vi")).font(XFinderTokens.Font.row)
+                Spacer()
+                Text(scopes.isEmpty ? L10n.t("Toàn máy") : "\(scopes.count)\(L10n.t(" thư mục"))")
+                    .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+            }
+            HStack {
+                Button(L10n.t("Thêm thư mục…")) {
+                    let panel = NSOpenPanel()
+                    panel.canChooseFiles = false
+                    panel.canChooseDirectories = true
+                    panel.allowsMultipleSelection = true
+                    if panel.runModal() == .OK { scopes = panel.urls }
+                }
+                .controlSize(.small)
+                if !scopes.isEmpty {
+                    Button(L10n.t("Toàn máy")) { scopes = [] }
+                        .font(XFinderTokens.Font.rowValue)
+                        .controlSize(.small)
+                }
+            }
+            ForEach(scopes, id: \.self) { url in
+                HStack {
+                    Text(url.path).font(XFinderTokens.Font.mono).fileNameRowSafe()
+                    Spacer()
+                    Button { scopes.removeAll { $0 == url } } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+                    }.buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func openTopQuickResult() {
@@ -353,61 +390,79 @@ struct AiSearchDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(L10n.t("Tìm kiếm AI"))
-                    .font(.system(size: 22, weight: .bold))
-                    .padding(.horizontal, 20).padding(.top, 16)
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
+                PageHeader(
+                    icon: "wand.and.stars",
+                    title: L10n.t("Tìm kiếm AI"),
+                    subtitle: L10n.t("Hiểu câu tự nhiên và tự tạo câu truy vấn Spotlight — 100% trên máy")
+                )
 
-                SettingsCard(title: L10n.t("Hỏi bằng câu tự nhiên"),
-                             subtitle: L10n.t("100% trên máy — ví dụ: “ảnh sửa tuần này”")) {
-                    VStack(alignment: .leading, spacing: 10) {
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(
+                        icon: "text.bubble",
+                        title: L10n.t("Hỏi bằng câu tự nhiên"),
+                        subtitle: L10n.t("100% trên máy — ví dụ: “ảnh sửa tuần này”")
+                    )
+
+                    VStack(alignment: .leading, spacing: 2) {
                         TextField(L10n.t("Ví dụ: video mới tháng này, pdf báo cáo…"), text: $queryText)
-                            .textFieldStyle(.roundedBorder).font(.system(size: 12))
+                            .textFieldStyle(.roundedBorder)
+                            .font(XFinderTokens.Font.rowValue)
                             .onSubmit { run() }
                         Text(L10n.t("Gợi ý: loại (ảnh, video, pdf, thư mục…) + thời gian (hôm nay, tuần này…) + tên trong “ngoặc kép”."))
-                            .font(.caption).foregroundColor(.secondary)
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     }
-                }
-                .padding(.horizontal, 20)
+                    .padding(.horizontal, XFinderTokens.Space.page)
 
-                Button {
-                    run()
-                } label: {
-                    HStack {
-                        if isSearching { ProgressView().scaleEffect(0.7) }
-                        Text(isSearching ? L10n.t("Đang tìm…") : L10n.t("Tìm bằng AI"))
-                            .fontWeight(.semibold)
+                    Button {
+                        run()
+                    } label: {
+                        HStack {
+                            if isSearching { ProgressView().scaleEffect(0.7) }
+                            Text(isSearching ? L10n.t("Đang tìm…") : L10n.t("Tìm bằng AI"))
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
+                    .buttonStyle(.borderedProminent)
+                    .disabled(queryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching)
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(queryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSearching)
-                .padding(.horizontal, 20)
 
                 if let expl = explanation {
-                    SettingsCard(title: L10n.t("AI hiểu")) {
-                        Text(expl).font(.system(size: 12)).foregroundColor(.secondary)
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "sparkles", title: L10n.t("AI hiểu"))
+                        Text(expl).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                            .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
                 }
 
-                SettingsCard(title: searched
-                             ? (results.isEmpty ? L10n.t("Không tìm thấy gì") : "\(results.count)\(L10n.t(" kết quả"))")
-                             : L10n.t("Kết quả")) {
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
+
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(
+                        icon: "list.bullet",
+                        title: searched
+                            ? (results.isEmpty ? L10n.t("Không tìm thấy gì") : "\(results.count)\(L10n.t(" kết quả"))")
+                            : L10n.t("Kết quả")
+                    )
                     VStack(spacing: 6) {
                         ForEach(results.prefix(50)) { item in
                             FileResultRow(item: item)
                         }
                         if results.count > 50 {
                             Text("\(L10n.t("…và "))\(results.count - 50)\(L10n.t(" kết quả nữa."))")
-                                .font(.caption).foregroundColor(.secondary)
+                                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         }
                     }
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
-                .padding(.horizontal, 20).padding(.bottom, 20)
             }
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
     }
 
     private func run() {
@@ -440,18 +495,18 @@ struct QuickSearchResultRow: View {
                     .foregroundColor(.secondary)
             }
             VStack(alignment: .leading, spacing: 1) {
-                Text(result.title).font(.system(size: 12, weight: .medium)).lineLimit(1)
+                Text(result.title).font(XFinderTokens.Font.row).lineLimit(1).fileNameRowSafe()
                 Text(result.subtitle)
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(.secondary).lineLimit(1).truncationMode(.middle)
+                    .font(XFinderTokens.Font.mono)
+                    .foregroundColor(.secondary).fileNameRowSafe()
             }
             Spacer()
             Button(result.type == .calculator ? L10n.t("Sao chép") : L10n.t("Mở")) { result.action() }
-                .buttonStyle(.link).font(.system(size: 11))
+                .buttonStyle(.link).font(XFinderTokens.Font.caption)
         }
         .padding(.horizontal, 8).padding(.vertical, 5)
-        .background(Color(.controlBackgroundColor).opacity(0.6))
-        .cornerRadius(6)
+        .background(XFinderTokens.Fill.inset)
+        .cornerRadius(XFinderTokens.Radius.control)
         .contentShape(Rectangle())
         .onTapGesture { result.action() }
     }
@@ -468,20 +523,20 @@ private struct QuicklinkEditorSheet: View {
     var body: some View {
         VStack(spacing: 16) {
             Text(link == nil ? L10n.t("Thêm liên kết nhanh") : L10n.t("Sửa liên kết nhanh"))
-                .font(.system(size: 16, weight: .semibold))
+                .font(XFinderTokens.Font.sectionTitle)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.t("Tiêu đề")).font(.system(size: 12, weight: .medium))
+                Text(L10n.t("Tiêu đề")).font(XFinderTokens.Font.row)
                 TextField("Google", text: $title).textFieldStyle(.roundedBorder)
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("URL").font(.system(size: 12, weight: .medium))
+                Text("URL").font(XFinderTokens.Font.row)
                 TextField("https://google.com", text: $url).textFieldStyle(.roundedBorder)
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.t("Từ khóa")).font(.system(size: 12, weight: .medium))
+                Text(L10n.t("Từ khóa")).font(XFinderTokens.Font.row)
                 TextField("gg", text: $keyword).textFieldStyle(.roundedBorder)
             }
 

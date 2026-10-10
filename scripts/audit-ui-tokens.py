@@ -29,17 +29,22 @@ for f in PAGES:
         if RADIUS.search(line):
             problems.append(f"{rel}:{i}: literal corner radius — use XFinderTokens.Radius")
     # bare title: the first Text( inside the first VStack of body with a 22/26 bold font
-    m = re.search(r"var body: some View \{(.*?)\n    \}", text, re.S)
-    if m and "PageHeader(" not in text:
+    # A file may declare itself an embedded panel (no page chrome of its own) with this marker.
+    if "PageHeader(" not in text and "audit-ui-tokens: embedded-panel" not in text:
         problems.append(f"{rel}: page has no PageHeader")
-    # segmented pickers: count tags between Picker( ... ) .pickerStyle(.segmented)
-    for pm in re.finditer(r"Picker\((.*?)\.pickerStyle\(\.segmented\)", text, re.S):
-        block = pm.group(1)
+    # Segmented pickers: scope each `.pickerStyle(.segmented)` to the NEAREST preceding `Picker(` so
+    # two pickers on one page are never read as one (that false positive once pushed a 2-option
+    # picker into a menu). `// segmented-ok` on the pickerStyle line asserts the ForEach has ≤ 4 cases.
+    for sm in re.finditer(r"\.pickerStyle\(\.segmented\)([^\n]*)", text):
+        if "segmented-ok" in sm.group(1): continue
+        start = text.rfind("Picker(", 0, sm.start())
+        block = text[start:sm.start()] if start >= 0 else ""
         tags = len(re.findall(r"\.tag\(", block))
+        line = text.count("\n", 0, sm.start()) + 1
         if "ForEach" in block:
-            problems.append(f"{rel}: segmented picker over a ForEach (unbounded options) — use PickerRow/.menu")
+            problems.append(f"{rel}:{line}: segmented picker over a ForEach — add `// segmented-ok` if the enum has ≤ 4 cases, else use PickerRow/.menu")
         elif tags > 4:
-            problems.append(f"{rel}: segmented picker with {tags} options — use PickerRow/.menu")
+            problems.append(f"{rel}:{line}: segmented picker with {tags} options — use PickerRow/.menu")
 for p in problems: print("PROBLEM", p)
 files = {p.split(":")[0] for p in problems}
 print(f"TOTAL {len(problems)} problems across {len(files)} files")

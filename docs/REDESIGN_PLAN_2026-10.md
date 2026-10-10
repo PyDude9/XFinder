@@ -168,6 +168,14 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
 > **Baseline đo bằng gate mới (2026-10-10, sau A1):** `audit-ui-tokens.py` → **606 vấn đề / 32 trang**. Phần lớn là cỡ chữ và bán kính
 > literal, không chỉ 12 trang card. A3 vì thế là *mọi* trang trong `Views/Detail/`, ưu tiên 12 trang card trước; con số phải về 0.
 
+- [x] **A2a** `Core/Surface/SurfaceGeometry.swift` (thuần: anchor/clamp/notch/pill/expanded, 6 test, 3 mutation đỏ) + `SurfacePanel`
+  (`.interactive/.passive/.notch`, prepare-once, `show(anchor:)`, `hide(after:)`) + `ClickOutsideDismisser`. **Chưa** chuyển 8 chỗ cũ sang (A2b).
+- [x] **A3** 32/32 trang phẳng — `audit-ui-tokens.py` 606 → **0**; build xanh; 456 test; sweep AX 33 trang × 2 ngôn ngữ (`scripts/sweep-pages-ax.py`,
+  qua `xfinder://settings?page=…`) 0 rò. Sửa kèm: 2 control cùng khoá ở Cài đặt Clipboard; picker volume → menu; `notchSettings` chết và `header`
+  chết bị xoá; 3 hàng tên file có `fileNameRowSafe()`; `ClipboardTabView` + case `.clipboard` bị xoá (quyết định #2; `ClipboardQLController` tách ra
+  `Views/ClipboardQuickLook.swift` vì shelf còn dùng). **Hai lỗi có sẵn lộ ra khi quét**: khoá store giữ dấu `\"` nên không bao giờ khớp (3 khoá —
+  `audit-l10n-literals.py` nay so chuỗi *runtime*); trang Nén khẳng định **"7-Zip 26.02 tích hợp sẵn"/giải nén 7Z, RAR, XZ** trong khi chỉ có
+  ditto/zip/tar — đã sửa thành sự thật. Hai agent báo gate đẩy picker 2 lựa chọn sang menu vì regex gộp hai picker — gate đã scope theo từng `Picker(`.
 - [x] **A1** `XFinderTokens.swift` · `FlatRows.swift` (PickerRow/ActionRow/InlineNote) · `SettingsCard`→`TileCard` (+typealias tạm) ·
   PageHeader/SectionHeader/StatusChecklistRow/ToggleRow/MetricBigNumber đọc token · `scripts/audit-ui-tokens.py`.
 1. `XFinderTokens.swift` + `audit-ui-tokens.py` (gate đỏ ngay vì 12 trang) + `PickerRow`/`ActionRow`/`InlineNote`; `PageHeader`,

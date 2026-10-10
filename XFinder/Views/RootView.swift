@@ -65,7 +65,7 @@ struct DetailHostView: View {
     var body: some View {
         Group {
             switch selection {
-            case .clipboard, .settingsClipboard:
+            case .settingsClipboard:
                 SettingsDetailView(destination: .settingsClipboard)
             case .features:
                 FeaturesHubView()

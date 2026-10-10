@@ -55,7 +55,10 @@ def main() -> int:
             if line.strip().startswith("//"):
                 continue
             for match in STRING.finditer(line):
-                literal = match.group(1)
+                # The regex yields the SOURCE spelling; L10n.t receives the RUNTIME string. A Swift
+                # `\"` is a plain `"` at runtime — comparing the escaped form let two keys that could
+                # never match sit in the store while the English UI showed Vietnamese (2026-10-10).
+                literal = match.group(1).replace('\\"', '"').replace("\\\\", "\\")
                 if not VIETNAMESE.search(literal):
                     continue
                 prefix = line[:match.start()].rstrip()

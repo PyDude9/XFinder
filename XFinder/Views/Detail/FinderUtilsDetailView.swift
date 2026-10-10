@@ -22,24 +22,25 @@ struct FinderUtilsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(icon: "puzzlepiece.extension",
                            title: L10n.t("Tiện ích Finder"),
                            subtitle: L10n.t("Kết nối các lệnh XFinder với Finder."))
 
                 integrationStatus
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 finderPrefs
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 explainer
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
         .onAppear {
             readBack()
             Task { extensionStatus = await FinderExtensionStatus.probe() }
@@ -66,7 +67,7 @@ struct FinderUtilsDetailView: View {
     }
 
     private var integrationStatus: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(icon: "checkmark.seal",
                           title: L10n.t("Trạng thái tích hợp"),
                           subtitle: L10n.t("Những gì macOS cho phép XFinder gắn vào Finder."))
@@ -90,11 +91,11 @@ struct FinderUtilsDetailView: View {
                     actionTitle: L10n.t("Mở cài đặt"),
                     action: { openExtensionsPane() })
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                 Text(extensionExplanation)
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 // The user reported the button "does not go straight to the
@@ -104,10 +105,10 @@ struct FinderUtilsDetailView: View {
                 // and give the exact path to click instead of implying the
                 // button lands on the switch.
                 Text(L10n.md("Lưu ý: macOS chỉ cho mở tới trang cài đặt, không cho nhảy thẳng tới từng mục. Sau khi bấm nút trên, vào **Cài đặt hệ thống → Chung → Login Items & Extensions**, kéo xuống mục **Tiện ích mở rộng**, bấm ⓘ ở dòng **Finder** rồi bật ứng dụng bạn muốn hiện trong menu chuột phải."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
@@ -130,17 +131,17 @@ struct FinderUtilsDetailView: View {
     // MARK: - Tùy chọn Finder
 
     private var finderPrefs: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(icon: "folder",
                           title: L10n.t("Tùy chọn Finder"),
                           subtitle: L10n.t("Các khóa cấu hình Finder mà Apple hỗ trợ công khai."))
 
-            VStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 ToggleRow(title: L10n.t("Hiện phần mở rộng tập tin"), isOn: $showExtensions)
                 ToggleRow(title: L10n.t("Hiện tập tin ẩn"), isOn: $showHidden)
                 ToggleRow(title: L10n.t("Hiện đường dẫn đầy đủ ở tiêu đề"), isOn: $showFullPath)
 
-                HStack(spacing: 8) {
+                HStack(spacing: XFinderTokens.Space.inline) {
                     Button(isApplying ? L10n.t("Đang áp dụng…") : L10n.t("Áp dụng & khởi động lại Finder")) {
                         applyAll()
                     }
@@ -149,40 +150,40 @@ struct FinderUtilsDetailView: View {
                     .disabled(isApplying)
 
                     if let s = status {
-                        Text(s).font(.system(size: 11)).foregroundColor(.secondary)
+                        Text(s).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     }
                     Spacer()
                 }
 
                 Text(L10n.t("Finder chỉ đọc các khóa này khi khởi động lại, nên XFinder sẽ khởi động lại Finder sau khi áp dụng. Cửa sổ Finder đang mở sẽ đóng lại."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
     // MARK: - Giải thích
 
     private var explainer: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
             SectionHeader(icon: "info.circle",
                           title: L10n.t("XFinder thêm gì vào Finder"),
                           subtitle: nil)
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                 bullet(L10n.t("Thao tác Finder: chạy lệnh của XFinder trên đúng các mục bạn đang chọn trong Finder."))
                 bullet(L10n.t("Bàn phím Finder: viết lại phím tắt Cắt/Dán/Xóa/Mở trước khi Finder nhận được."))
                 bullet(L10n.t("Đổi tên hàng loạt và Lịch sử thao tác: nhận trực tiếp mục đang chọn, và hoàn tác được."))
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
     private func bullet(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text("•").font(.system(size: 12)).foregroundColor(.secondary)
-            Text(text).font(.system(size: 12)).foregroundColor(.secondary)
+        HStack(alignment: .top, spacing: XFinderTokens.Space.inline) {
+            Text("•").font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+            Text(text).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }

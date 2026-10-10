@@ -35,31 +35,31 @@ struct PdfToolsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(L10n.t("Công cụ PDF"))
-                    .font(.system(size: 22, weight: .bold))
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
+                PageHeader(icon: "doc.richtext.fill",
+                           title: L10n.t("Công cụ PDF"))
 
                 Picker(L10n.t("Công cụ"), selection: $tool) {
                     ForEach(Tool.allCases) { t in Text(t.titleVI).tag(t) }
                 }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 20)
+                .pickerStyle(.segmented)   // segmented-ok: 3 cases
+                .padding(.horizontal, XFinderTokens.Space.page)
 
-                SettingsCard(
-                    title: tool == .merge ? L10n.t("Các tập tin PDF cần gộp (theo thứ tự)") : L10n.t("Tập tin PDF nguồn"),
-                    subtitle: sources.isEmpty ? L10n.t("Chưa chọn gì") : "\(sources.count)\(L10n.t(" tập tin"))"
-                ) {
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(
+                        icon: "doc.on.doc",
+                        title: tool == .merge ? L10n.t("Các tập tin PDF cần gộp (theo thứ tự)") : L10n.t("Tập tin PDF nguồn"),
+                        subtitle: sources.isEmpty ? L10n.t("Chưa chọn gì") : "\(sources.count)\(L10n.t(" tập tin"))"
+                    )
+
                     VStack(alignment: .leading, spacing: 10) {
                         Button(L10n.t("Chọn PDF…")) { pickSources() }
                         ForEach(sources, id: \.self) { url in
                             HStack {
                                 Image(systemName: "doc.richtext.fill").foregroundColor(.red.opacity(0.8))
                                 Text(url.lastPathComponent)
-                                    .font(.system(size: 12))
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
+                                    .font(XFinderTokens.Font.rowValue)
+                                    .fileNameRowSafe()
                                 Spacer()
                                 if tool == .merge, sources.count > 1 {
                                     Button {
@@ -83,24 +83,28 @@ struct PdfToolsDetailView: View {
                         }
                         if !sources.isEmpty, tool != .merge, inspectedPageCount > 0 {
                             Text("\(L10n.t("Tài liệu có "))\(inspectedPageCount) trang")
-                                .font(.system(size: 11))
+                                .font(XFinderTokens.Font.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
-                .padding(.horizontal, 20)
 
                 if tool == .extract {
-                    SettingsCard(title: L10n.t("Trang cần tách"), subtitle: L10n.t("Ví dụ: 1-3 hoặc 2,5,7")) {
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "scissors", title: L10n.t("Trang cần tách"), subtitle: L10n.t("Ví dụ: 1-3 hoặc 2,5,7"))
                         TextField("1-3", text: $pageRangeText)
                             .textFieldStyle(.roundedBorder)
-                            .font(.system(size: 12, design: .monospaced))
+                            .font(XFinderTokens.Font.mono)
+                            .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
                 }
 
                 if tool == .rotate {
-                    SettingsCard(title: L10n.t("Góc xoay & trang")) {
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "rotate.right", title: L10n.t("Góc xoay & trang"))
                         VStack(alignment: .leading, spacing: 10) {
                             Picker(L10n.t("Góc"), selection: $angle) {
                                 Text("90°").tag(90)
@@ -110,16 +114,20 @@ struct PdfToolsDetailView: View {
                             .pickerStyle(.segmented)
                             TextField(L10n.t("Trang (1-3 hoặc 2,5,7 — để trống = tất cả)"), text: $pageRangeText)
                                 .textFieldStyle(.roundedBorder)
-                                .font(.system(size: 12, design: .monospaced))
+                                .font(XFinderTokens.Font.mono)
                         }
+                        .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
                 }
 
-                SettingsCard(
-                    title: L10n.t("Thư mục đích"),
-                    subtitle: outputFolder?.path ?? L10n.t("Mặc định: cùng thư mục với tập tin đầu tiên")
-                ) {
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
+
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(
+                        icon: "folder",
+                        title: L10n.t("Thư mục đích"),
+                        subtitle: outputFolder?.path ?? L10n.t("Mặc định: cùng thư mục với tập tin đầu tiên")
+                    )
                     HStack {
                         Button(L10n.t("Chọn thư mục đích…")) {
                             let panel = NSOpenPanel()
@@ -129,11 +137,13 @@ struct PdfToolsDetailView: View {
                             if panel.runModal() == .OK { outputFolder = panel.url }
                         }
                         if outputFolder != nil {
-                            Button(L10n.t("Mặc định")) { outputFolder = nil }.font(.system(size: 12))
+                            Button(L10n.t("Mặc định")) { outputFolder = nil }.font(XFinderTokens.Font.rowValue)
                         }
                     }
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
-                .padding(.horizontal, 20)
+
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 Button {
                     Task.detached(priority: .userInitiated) {
@@ -149,22 +159,23 @@ struct PdfToolsDetailView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!canRun || isRunning)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
                 if let msg = resultMessage {
-                    SettingsCard(title: isError ? L10n.t("Lỗi") : L10n.t("Kết quả")) {
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: isError ? "exclamationmark.triangle.fill" : "checkmark.circle",
+                                      title: isError ? L10n.t("Lỗi") : L10n.t("Kết quả"))
                         Text(msg)
-                            .font(.system(size: 12))
+                            .font(XFinderTokens.Font.rowValue)
                             .foregroundColor(isError ? .red : .primary)
+                            .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                } else {
-                    Spacer().padding(.bottom, 20)
                 }
             }
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
     }
 
     private var canRun: Bool {

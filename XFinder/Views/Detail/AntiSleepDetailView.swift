@@ -10,56 +10,60 @@ struct AntiSleepDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(L10n.t("Chống ngủ"))
-                    .font(.system(size: 22, weight: .bold))
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
+                PageHeader(icon: "moon.zzz.fill", title: L10n.t("Chống ngủ"))
 
-                SettingsCard {
-                    VStack(spacing: 14) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(caffeine.isActive ? L10n.t("Đang ngăn chế độ ngủ") : L10n.t("Cho phép ngủ bình thường"))
-                                    .font(.system(size: 14, weight: .semibold))
-                                if let r = caffeine.remainingSeconds {
-                                    Text(String(format: L10n.t("Còn %02d:%02d"), r / 60, r % 60))
-                                        .font(.system(size: 24, weight: .bold, design: .rounded).monospacedDigit())
-                                        .foregroundColor(.orange)
-                                } else if caffeine.isActive {
-                                    Text(L10n.t("∞ Vô hạn")).font(.system(size: 24, weight: .bold, design: .rounded)).foregroundColor(.orange)
-                                }
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(caffeine.isActive ? L10n.t("Đang ngăn chế độ ngủ") : L10n.t("Cho phép ngủ bình thường"))
+                                .font(XFinderTokens.Font.sectionTitle)
+                            if let r = caffeine.remainingSeconds {
+                                Text(String(format: L10n.t("Còn %02d:%02d"), r / 60, r % 60))
+                                    .font(XFinderTokens.Font.metric)
+                                    .foregroundColor(.orange)
+                            } else if caffeine.isActive {
+                                Text(L10n.t("∞ Vô hạn")).font(XFinderTokens.Font.metric).foregroundColor(.orange)
                             }
-                            Spacer()
-                            Button(caffeine.isActive ? L10n.t("Tắt") : L10n.t("Bật")) {
-                                if caffeine.isActive { caffeine.deactivate() }
-                                else {
-                                    if let m = selectedMinutes { caffeine.activate(duration: .minutes(m)) }
-                                    else { caffeine.activate(duration: .indefinite) }
-                                }
+                        }
+                        Spacer()
+                        Button(caffeine.isActive ? L10n.t("Tắt") : L10n.t("Bật")) {
+                            if caffeine.isActive { caffeine.deactivate() }
+                            else {
+                                if let m = selectedMinutes { caffeine.activate(duration: .minutes(m)) }
+                                else { caffeine.activate(duration: .indefinite) }
                             }
-                            .buttonStyle(.borderedProminent)
-                            .tint(caffeine.isActive ? Color.red : Color.orange)
-                            .controlSize(.large)
                         }
-
-                        Picker(L10n.t("Thời lượng"), selection: $selectedMinutes) {
-                            ForEach(presets, id: \.label) { p in Text(p.label).tag(p.minutes) }
-                        }
-                        .pickerStyle(.segmented)
-                        .disabled(caffeine.isActive)
+                        .buttonStyle(.borderedProminent)
+                        .tint(caffeine.isActive ? Color.red : Color.orange)
+                        .controlSize(.large)
                     }
-                }
-                .padding(.horizontal, 20)
+                    .padding(.horizontal, XFinderTokens.Space.page)
 
-                SettingsCard(title: L10n.t("Lưu ý")) {
-                    Text(L10n.t("Khi bật, hệ thống sẽ không tự động ngủ hay tắt màn hình cho đến khi bạn tắt hoặc hết thời lượng đã chọn. Kiểm tra bằng `pmset -g assertions` trong Terminal."))
-                        .font(.system(size: 12)).foregroundColor(.secondary)
+                    Picker(L10n.t("Thời lượng"), selection: $selectedMinutes) {
+                        Text(presets[0].label).tag(presets[0].minutes)
+                        Text(presets[1].label).tag(presets[1].minutes)
+                        Text(presets[2].label).tag(presets[2].minutes)
+                        Text(presets[3].label).tag(presets[3].minutes)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .disabled(caffeine.isActive)
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
+
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "info.circle", title: L10n.t("Lưu ý"))
+                    Text(L10n.t("Khi bật, hệ thống sẽ không tự động ngủ hay tắt màn hình cho đến khi bạn tắt hoặc hết thời lượng đã chọn. Kiểm tra bằng `pmset -g assertions` trong Terminal."))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        .padding(.horizontal, XFinderTokens.Space.page)
+                }
             }
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
     }
 }

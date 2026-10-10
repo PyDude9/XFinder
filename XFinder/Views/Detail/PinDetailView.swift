@@ -10,34 +10,30 @@ struct PinDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Pin")
-                    .font(.system(size: 22, weight: .bold))
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
+                PageHeader(icon: "battery.100", title: L10n.t("Pin"))
 
                 if !hasBattery {
-                    SettingsCard {
-                        VStack(spacing: 8) {
-                            Image(systemName: "battery.0").font(.system(size: 28)).foregroundColor(.secondary)
-                            Text(L10n.t("Không có pin")).font(.system(size: 14, weight: .semibold))
-                            Text(L10n.t("Thiết bị này không có pin tích hợp.")).font(.system(size: 12)).foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    VStack(spacing: XFinderTokens.Space.inline) {
+                        Image(systemName: "battery.0").font(XFinderTokens.Font.pageIcon).foregroundColor(.secondary)
+                        Text(L10n.t("Không có pin")).font(XFinderTokens.Font.sectionTitle)
+                        Text(L10n.t("Thiết bị này không có pin tích hợp.")).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                     }
-                    .padding(.horizontal, 20)
+                    .frame(maxWidth: .infinity).padding(.vertical, XFinderTokens.Space.inline)
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 } else {
                     let m = monitor.currentMetrics
-                    SettingsCard {
-                        VStack(spacing: 12) {
-                            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "bolt.fill", title: L10n.t("Trạng thái"))
+                        VStack(spacing: XFinderTokens.Space.inline) {
+                            HStack(alignment: .firstTextBaseline, spacing: XFinderTokens.Space.inline) {
                                 MetricBigNumber(value: String(format: "%.0f", m.batteryLevel), unit: "%", label: m.isCharging ? L10n.t("Đang sạc") : L10n.t("Đang xả"), tint: m.batteryLevel < 20 ? .red : .green)
                                 Spacer()
-                                Text(m.batteryTimeString).font(.system(size: 13, weight: .medium, design: .rounded)).foregroundColor(.secondary)
+                                Text(m.batteryTimeString).font(XFinderTokens.Font.row).foregroundColor(.secondary)
                             }
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
-                                    Capsule().fill(Color.primary.opacity(0.12))
+                                    Capsule().fill(XFinderTokens.Fill.inset)
                                     Capsule().fill(m.batteryLevel < 20 ? Color.red : Color.green)
                                         .frame(width: max(0, CGFloat(m.batteryLevel / 100.0) * geo.size.width))
                                 }
@@ -48,13 +44,16 @@ struct PinDetailView: View {
                                 Spacer()
                                 Text(m.batteryTimeString).foregroundColor(.secondary)
                             }
-                            .font(.system(size: 12))
+                            .font(XFinderTokens.Font.rowValue)
                         }
+                        .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
 
-                    SettingsCard(title: L10n.t("Sức khỏe pin")) {
-                        VStack(spacing: 10) {
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "heart.fill", title: L10n.t("Sức khỏe pin"))
+                        VStack(spacing: XFinderTokens.Space.tight) {
                             // Health = NominalChargeCapacity / DesignCapacity.
                             // It used to divide MaxCapacity (a 0-100 PERCENT on
                             // Apple Silicon) by mAh, which is what rendered 1%.
@@ -103,42 +102,42 @@ struct PinDetailView: View {
                                 row(label: L10n.t("Số sê-ri"), value: s)
                             }
                         }
+                        .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
                 }
 
                 let externalDevices = batteryStore.allDevices.filter { $0.kind != .mac }
                 if !externalDevices.isEmpty {
-                    SettingsCard(title: L10n.t("Thiết bị đã kết nối")) {
-                        VStack(spacing: 12) {
-                            HStack {
-                                Toggle(L10n.t("Hiện thiết bị đã ngắt kết nối"), isOn: $showDisconnected)
-                                    .font(.system(size: 12))
-                                Spacer()
-                            }
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "externaldrive.connected.to.line.below", title: L10n.t("Thiết bị đã kết nối"))
+                        VStack(spacing: XFinderTokens.Space.inline) {
+                            ToggleRow(title: L10n.t("Hiện thiết bị đã ngắt kết nối"), isOn: $showDisconnected)
 
                             let displayDevices = externalDevices.filter { showDisconnected || $0.isConnected }
                             if displayDevices.isEmpty {
                                 Text(L10n.t("Không có thiết bị kết nối"))
-                                    .font(.system(size: 12))
+                                    .font(XFinderTokens.Font.rowValue)
                                     .foregroundColor(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .center)
-                                    .padding(.vertical, 8)
+                                    .padding(.vertical, XFinderTokens.Space.inline)
                             } else {
-                                VStack(spacing: 8) {
+                                VStack(spacing: XFinderTokens.Space.inline) {
                                     ForEach(displayDevices) { dev in
                                         LargeBatteryCardView(device: dev)
                                     }
                                 }
                             }
                         }
+                        .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
                 }
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
         // Only sample metrics while a page that shows them is on screen.
         .onAppear {
             SystemMonitorManager.shared.retain()
@@ -156,9 +155,9 @@ struct PinDetailView: View {
 
     private func row(label: String, value: String) -> some View {
         HStack {
-            Text(label).font(.system(size: 12)).foregroundColor(.secondary)
+            Text(label).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
             Spacer()
-            Text(value).font(.system(size: 12, design: .monospaced)).foregroundColor(.primary)
+            Text(value).font(XFinderTokens.Font.mono).foregroundColor(.primary)
         }
     }
 }

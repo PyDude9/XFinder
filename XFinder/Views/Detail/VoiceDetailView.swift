@@ -78,30 +78,29 @@ struct VoiceDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(
                     icon: "mic.fill",
                     title: L10n.t("Nhập bằng giọng nói"),
                     subtitle: L10n.t("Nói và chữ tự vào đúng ô đang gõ — kèm tút lại văn bản bằng AI.")
                 )
 
-                Divider()
-
                 activationSection
-                Divider()
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 dictationSection
-                Divider()
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 providerSection
-                Divider()
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 hudSection
-                Divider()
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 contextSection
-                Divider()
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 permissionsSection
             }
-            .padding(.bottom, 32)
+            .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
+        .background(XFinderTokens.Fill.window)
         .onAppear { reloadLocalState() }
         .onDisappear {
             if isTestingMic { stopMicTest() }
@@ -110,7 +109,7 @@ struct VoiceDetailView: View {
     // MARK: - 1. Activation
 
     private var activationSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(
                 icon: "keyboard",
                 title: L10n.t("Kích hoạt & phím tắt"),
@@ -169,7 +168,7 @@ struct VoiceDetailView: View {
                     action: { WindowManager.requestAccessibilityTrust() }
                 )
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
             .onChange(of: triggerKeyRaw) { _, _ in voiceManager.applySettings() }
             .onChange(of: activationModeRaw) { _, _ in voiceManager.applySettings() }
         }
@@ -178,7 +177,7 @@ struct VoiceDetailView: View {
     // MARK: - 2. Dictation mode
 
     private var dictationSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(
                 icon: "wand.and.sparkles",
                 title: L10n.t("Chế độ gõ"),
@@ -186,20 +185,22 @@ struct VoiceDetailView: View {
             )
 
             VStack(alignment: .leading, spacing: 12) {
-                Picker("", selection: $modeRaw) {
+                PickerRow(
+                    title: L10n.t("Chọn chế độ"),
+                    selection: $modeRaw,
+                    width: 200
+                ) {
                     ForEach(DictationMode.builtIn) { candidate in
                         Text(L10n.t(candidate.labelKey)).tag(candidate.rawValue)
                     }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
 
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: mode.icon)
                         .foregroundColor(.secondary)
                         .frame(width: 16)
                     Text(L10n.t(mode.detailKey))
-                        .font(.system(size: 12))
+                        .font(XFinderTokens.Font.rowValue)
                         .foregroundColor(.secondary)
                     Spacer(minLength: 0)
                 }
@@ -222,40 +223,41 @@ struct VoiceDetailView: View {
                     Divider()
                     VStack(alignment: .leading, spacing: 6) {
                         Text(L10n.t("Câu lệnh cho AI"))
-                            .font(.system(size: 13, weight: .medium))
+                            .font(XFinderTokens.Font.row)
                         Text(L10n.t("Ví dụ: dịch sang tiếng Anh; viết chú thích cho mã nguồn; tóm tắt thành báo cáo cuối ngày."))
-                            .font(.system(size: 11))
+                            .font(XFinderTokens.Font.caption)
                             .foregroundColor(.secondary)
                         TextEditor(text: $customInstruction)
-                            .font(.system(size: 12))
+                            .font(XFinderTokens.Font.rowValue)
                             .frame(height: 70)
                             .padding(6)
-                            .background(Color.white.opacity(0.06))
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .background(XFinderTokens.Fill.inset)
+                            .clipShape(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control))
                     }
                     Divider()
                     customModeLibrary
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
     private var customModeLibrary: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(L10n.t("Thư viện câu lệnh"))
-                .font(.system(size: 13, weight: .medium))
+                .font(XFinderTokens.Font.row)
             Text(L10n.t("Lưu sẵn những câu lệnh bạn hay dùng để chọn nhanh."))
-                .font(.system(size: 11))
+                .font(XFinderTokens.Font.caption)
                 .foregroundColor(.secondary)
 
             ForEach(customModes) { item in
                 HStack(spacing: 8) {
                     Text(item.name)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(XFinderTokens.Font.rowValue)
+                        .fontWeight(.medium)
                         .lineLimit(1)
                     Text(item.instruction)
-                        .font(.system(size: 11))
+                        .font(XFinderTokens.Font.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -283,7 +285,7 @@ struct VoiceDetailView: View {
     // MARK: - 3. Provider
 
     private var providerSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(
                 icon: "brain",
                 title: L10n.t("Mô hình AI tút văn bản"),
@@ -302,7 +304,7 @@ struct VoiceDetailView: View {
 
                 HStack(alignment: .top, spacing: 8) {
                     Image(systemName: tier.icon).foregroundColor(.secondary).frame(width: 16)
-                    Text(L10n.t(tier.detailKey)).font(.system(size: 12)).foregroundColor(.secondary)
+                    Text(L10n.t(tier.detailKey)).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                     Spacer(minLength: 0)
                 }
 
@@ -320,7 +322,7 @@ struct VoiceDetailView: View {
                     connectionResultRow(connectionResult)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
@@ -335,7 +337,7 @@ struct VoiceDetailView: View {
                 action: {}
             )
             Text(L10n.t("Văn bản không rời khỏi máy này. Miễn phí và không cần mạng."))
-                .font(.system(size: 11))
+                .font(XFinderTokens.Font.caption)
                 .foregroundColor(.secondary)
         }
     }
@@ -346,7 +348,7 @@ struct VoiceDetailView: View {
 
             HStack(spacing: 8) {
                 Text(L10n.t("Mô hình"))
-                    .font(.system(size: 13, weight: .medium))
+                    .font(XFinderTokens.Font.row)
                     .frame(width: 110, alignment: .leading)
                 if ollamaModels.isEmpty {
                     TextField(L10n.t("ví dụ: qwen2.5:7b"), text: $ollamaModel)
@@ -365,7 +367,7 @@ struct VoiceDetailView: View {
 
             if ollamaModels.isEmpty {
                 Text(L10n.t("Chưa đọc được danh sách mô hình. Hãy chắc rằng Ollama đang chạy."))
-                    .font(.system(size: 11))
+                    .font(XFinderTokens.Font.caption)
                     .foregroundColor(.secondary)
             }
 
@@ -374,10 +376,10 @@ struct VoiceDetailView: View {
     }
 
     private var apiTierBody: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             HStack(spacing: 8) {
                 Text(L10n.t("Nhà cung cấp"))
-                    .font(.system(size: 13, weight: .medium))
+                    .font(XFinderTokens.Font.row)
                     .frame(width: 110, alignment: .leading)
                 Picker("", selection: $providerRaw) {
                     ForEach(APIProviderKind.allCases) { Text(L10n.t($0.labelKey)).tag($0.rawValue) }
@@ -393,7 +395,7 @@ struct VoiceDetailView: View {
 
             HStack(spacing: 8) {
                 Text(L10n.t("Khoá API"))
-                    .font(.system(size: 13, weight: .medium))
+                    .font(XFinderTokens.Font.row)
                     .frame(width: 110, alignment: .leading)
                 SecureField(storedKeyMask ?? L10n.t("Dán khoá API"), text: $apiKeyInput)
                     .textFieldStyle(.roundedBorder)
@@ -407,7 +409,7 @@ struct VoiceDetailView: View {
 
             HStack(spacing: 8) {
                 Text(L10n.t("Mô hình"))
-                    .font(.system(size: 13, weight: .medium))
+                    .font(XFinderTokens.Font.row)
                     .frame(width: 110, alignment: .leading)
                 TextField(provider.defaultModel, text: $apiModel)
                     .textFieldStyle(.roundedBorder)
@@ -424,9 +426,9 @@ struct VoiceDetailView: View {
             }
 
             HStack(spacing: 6) {
-                Image(systemName: "lock.fill").font(.system(size: 10)).foregroundColor(.secondary)
+                Image(systemName: "lock.fill").font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 Text(L10n.t("Khoá được lưu trong Keychain của macOS, không nằm trong tệp cấu hình."))
-                    .font(.system(size: 11))
+                    .font(XFinderTokens.Font.caption)
                     .foregroundColor(.secondary)
                 if !provider.consoleURL.isEmpty, let url = URL(string: provider.consoleURL) {
                     Button(L10n.t("Lấy khoá")) { NSWorkspace.shared.open(url) }
@@ -451,7 +453,7 @@ struct VoiceDetailView: View {
                 action: {}
             )
             Text(L10n.t("ChatGPT Plus và Claude Pro không cấp quyền dùng API qua đăng nhập. Cách duy nhất để dùng chúng một cách chính thức là tạo khoá API ở trang quản trị của nhà cung cấp — XFinder không đăng nhập hộ và không dùng phiên trình duyệt của bạn."))
-                .font(.system(size: 11))
+                .font(XFinderTokens.Font.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
@@ -481,9 +483,10 @@ struct VoiceDetailView: View {
                 Image(systemName: "checkmark.circle.fill").foregroundColor(.green)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L10n.t("Kết nối thành công"))
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(XFinderTokens.Font.rowValue)
+                        .fontWeight(.semibold)
                     Text(text)
-                        .font(.system(size: 11))
+                        .font(XFinderTokens.Font.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(3)
                 }
@@ -491,9 +494,10 @@ struct VoiceDetailView: View {
                 Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L10n.t("Kết nối thất bại"))
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(XFinderTokens.Font.rowValue)
+                        .fontWeight(.semibold)
                     Text(text)
-                        .font(.system(size: 11))
+                        .font(XFinderTokens.Font.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(4)
                         .fixedSize(horizontal: false, vertical: true)
@@ -506,7 +510,7 @@ struct VoiceDetailView: View {
     // MARK: - 4. HUD
 
     private var hudSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(
                 icon: "rectangle.topthird.inset.filled",
                 title: L10n.t("Thanh trạng thái nổi"),
@@ -546,7 +550,7 @@ struct VoiceDetailView: View {
                     isOn: $restoreClipboard
                 )
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
             .onChange(of: hudAnchorRaw) { _, _ in voiceManager.applySettings() }
             .onChange(of: restoreClipboard) { _, _ in voiceManager.applySettings() }
         }
@@ -555,7 +559,7 @@ struct VoiceDetailView: View {
     // MARK: - 5. Context
 
     private var contextSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(
                 icon: "eye",
                 title: L10n.t("Ngữ cảnh màn hình"),
@@ -576,22 +580,22 @@ struct VoiceDetailView: View {
                 )
                 Divider().padding(.vertical, 8)
                 HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "lock.shield").font(.system(size: 12)).foregroundColor(.secondary).frame(width: 16)
+                    Image(systemName: "lock.shield").font(XFinderTokens.Font.rowValue).foregroundColor(.secondary).frame(width: 16)
                     Text(L10n.t("Không có ảnh chụp màn hình nào được gửi. XFinder chỉ đọc tên ứng dụng, tiêu đề cửa sổ và đoạn bạn bôi đen, và chỉ khi bạn bật ở trên."))
-                        .font(.system(size: 11))
+                        .font(XFinderTokens.Font.caption)
                         .foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
     // MARK: - 6. Permissions & live test
 
     private var permissionsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(
                 icon: "checkmark.shield",
                 title: L10n.t("Quyền & thử nghiệm"),
@@ -623,9 +627,9 @@ struct VoiceDetailView: View {
                     action: { Task { _ = await voiceManager.checkAndRequestPermissions() } }
                 )
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 HStack(spacing: 12) {
                     Button(action: toggleMicTest) {
                         HStack(spacing: 6) {
@@ -639,8 +643,8 @@ struct VoiceDetailView: View {
                     if isTestingMic {
                         GeometryReader { geometry in
                             ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 4).fill(Color.white.opacity(0.12))
-                                RoundedRectangle(cornerRadius: 4)
+                                RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).fill(XFinderTokens.Fill.inset)
+                                RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge)
                                     .fill(LinearGradient(colors: [.blue, .green, .red],
                                                          startPoint: .leading, endPoint: .trailing))
                                     .frame(width: max(4, geometry.size.width * CGFloat(testRMS)))
@@ -655,18 +659,19 @@ struct VoiceDetailView: View {
                 if !testText.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(L10n.t("Kết quả nhận dạng:"))
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(XFinderTokens.Font.caption)
+                            .fontWeight(.semibold)
                             .foregroundColor(.secondary)
                         Text(testText)
-                            .font(.system(size: 13, weight: .medium))
+                            .font(XFinderTokens.Font.row)
                             .padding(10)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white.opacity(0.08))
-                            .cornerRadius(8)
+                            .background(XFinderTokens.Fill.inset)
+                            .cornerRadius(XFinderTokens.Radius.control)
                     }
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
@@ -681,8 +686,8 @@ struct VoiceDetailView: View {
     ) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 13, weight: .medium))
-                Text(subtitle).font(.system(size: 11)).foregroundColor(.secondary)
+                Text(title).font(XFinderTokens.Font.row)
+                Text(subtitle).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             }
             Spacer(minLength: 12)
             Picker("", selection: selection) {
@@ -696,7 +701,7 @@ struct VoiceDetailView: View {
     private func labeledField(title: String, text: Binding<String>, placeholder: String) -> some View {
         HStack(spacing: 8) {
             Text(title)
-                .font(.system(size: 13, weight: .medium))
+                .font(XFinderTokens.Font.row)
                 .frame(width: 110, alignment: .leading)
             TextField(placeholder, text: text)
                 .textFieldStyle(.roundedBorder)

@@ -28,21 +28,22 @@ struct DashboardDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(icon: "square.grid.2x2",
                            title: L10n.t("Tổng quan"),
                            subtitle: L10n.t("Xem những gì đã sẵn sàng và hoàn tất thiết lập."))
 
                 quickGrantBannerIfNeeded
                 preferences
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 checklist
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 gettingStarted
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
         // Only sample metrics while a page that shows them is on screen.
         .onAppear { SystemMonitorManager.shared.retain() }
         .onDisappear { SystemMonitorManager.shared.release() }
@@ -89,9 +90,9 @@ struct DashboardDetailView: View {
         HStack(spacing: 10) {
             Image(systemName: "hand.raised.fill").foregroundColor(.orange)
             VStack(alignment: .leading, spacing: 2) {
-                Text(L10n.t("Cấp quyền nhanh")).font(.system(size: 13, weight: .semibold))
+                Text(L10n.t("Cấp quyền nhanh")).font(XFinderTokens.Font.row)
                 Text(L10n.t("Nhắc Trợ năng + Ghi màn hình cùng lúc; mở Cài đặt nếu vẫn thiếu."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
@@ -106,60 +107,46 @@ struct DashboardDetailView: View {
         }
         .padding(12)
         .background(Color.orange.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .padding(.horizontal, 20)
+        .clipShape(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control))
+        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private var preferences: some View {
         VStack(spacing: 0) {
-            HStack {
-                Image(systemName: "globe").foregroundColor(.secondary).frame(width: 20)
-                Text(L10n.t("Ngôn ngữ ứng dụng")).font(.system(size: 13))
-                Spacer()
-                Picker("", selection: Binding(get: { l10n.language },
-                                               set: { l10n.set($0) })) {
-                    ForEach(AppLanguage.allCases) { lang in
-                        Text(lang.displayName).tag(lang)
-                    }
+            PickerRow(title: L10n.t("Ngôn ngữ ứng dụng"),
+                      selection: Binding(get: { l10n.language }, set: { l10n.set($0) }),
+                      width: 140) {
+                ForEach(AppLanguage.allCases) { lang in
+                    Text(lang.displayName).tag(lang)
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .frame(width: 140)
             }
-            .padding(.vertical, 8)
+            .padding(.horizontal, XFinderTokens.Space.page)
 
-            Divider()
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-            HStack {
-                Image(systemName: "menubar.rectangle").foregroundColor(.secondary).frame(width: 20)
-                Text(L10n.t("Biểu tượng thanh menu")).font(.system(size: 13))
-                Spacer()
-                Picker("", selection: Binding(get: { menubarIcon }, set: { setMenubarIcon($0) })) {
-                    ForEach(MenubarController.iconChoices, id: \.id) { c in
-                        Image(systemName: c.symbol).tag(c.id)
-                    }
+            PickerRow(title: L10n.t("Biểu tượng thanh menu"),
+                      selection: Binding(get: { menubarIcon }, set: { setMenubarIcon($0) }),
+                      width: 80) {
+                ForEach(MenubarController.iconChoices, id: \.id) { c in
+                    Image(systemName: c.symbol).tag(c.id)
                 }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .frame(width: 80)
             }
-            .padding(.vertical, 8)
+            .padding(.horizontal, XFinderTokens.Space.page)
 
-            Divider()
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
 
             ToggleRow(title: L10n.t("Khởi động XFinder khi đăng nhập"), isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { LoginItemController.apply($0) }
-                .padding(.vertical, 4)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
-            Divider()
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
 
             ToggleRow(title: L10n.t("Hiện biểu tượng trong Dock"),
                       subtitle: L10n.t("Tắt để dùng XFinder thuần menubar."),
                       isOn: $showDockIcon)
                 .onChange(of: showDockIcon) { DockController.apply($0) }
-                .padding(.vertical, 4)
+                .padding(.horizontal, XFinderTokens.Space.page)
         }
-        .padding(.horizontal, 20)
     }
 
     // MARK: Checklist
@@ -251,41 +238,42 @@ struct DashboardDetailView: View {
                 actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .antiSleep) })
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     // MARK: Getting started
 
     private var gettingStarted: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(L10n.t("Bắt đầu")).font(.system(size: 14, weight: .semibold))
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            SectionHeader(icon: "flag.checkered", title: L10n.t("Bắt đầu"))
             shortcutLine("⌘⇧V", L10n.t("Mở khay Clipboard nổi ở bất kỳ đâu"))
             shortcutLine("⌘⇧C", L10n.t("Bắt đầu Paste Stack"))
             shortcutLine("⌃⌥ ←→↑↓", L10n.t("Bắt dính cửa sổ đang focus"))
             shortcutLine("⌘⇥", L10n.t("Chuyển cửa sổ kèm ảnh xem trước"))
             Text(L10n.t("Di chuột lên icon app trên Dock để xem trước cửa sổ; lắc chuột khi kéo file hoặc trỏ vào tai thỏ để mở Khay thả."))
-                .font(.system(size: 12)).foregroundColor(.secondary)
+                .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                .padding(.horizontal, XFinderTokens.Space.page)
             HStack(spacing: 8) {
                 Button(L10n.t("Tính năng & Quyền…")) { appState.navigate(to: .features) }
                     .buttonStyle(.bordered).controlSize(.small)
                 Button(L10n.t("Kiểm tra lại quyền")) { refreshPermissions() }
                     .buttonStyle(.bordered).controlSize(.small)
             }
+            .padding(.horizontal, XFinderTokens.Space.page)
             .padding(.top, 4)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 4)
     }
 
     private func shortcutLine(_ keys: String, _ label: String) -> some View {
         HStack(spacing: 8) {
             Text(keys)
-                .font(.system(size: 11, design: .monospaced))
+                .font(XFinderTokens.Font.mono)
                 .padding(.horizontal, 6).padding(.vertical, 2)
-                .background(RoundedRectangle(cornerRadius: 4).fill(Color.primary.opacity(0.07)))
-            Text(label).font(.system(size: 12)).foregroundColor(.secondary)
+                .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).fill(XFinderTokens.Fill.inset))
+            Text(label).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
             Spacer()
         }
+        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     /// Accessibility and Screen Recording expose real preflight checks.

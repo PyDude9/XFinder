@@ -157,7 +157,7 @@ struct MouseGesturesDetailView: View {
                     trailing: AnyView(
                         HStack(spacing: 6) {
                             Text(config.enabled ? L10n.t("Bật") : L10n.t("Tắt"))
-                                .font(.system(size: 12)).foregroundColor(.secondary)
+                                .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                             Toggle("", isOn: Binding(
                                 get: { config.enabled },
                                 set: { v in controller.update { $0.enabled = v } }))
@@ -265,8 +265,8 @@ struct MouseGesturesDetailView: View {
             return L10n.t("Chưa mở được Event Tap — cần quyền Trợ năng. Nhấn “Mở Cài đặt Trợ năng” ở trên.")
         }()
         return HStack(spacing: 8) {
-            Image(systemName: icon).foregroundColor(tint).font(.system(size: 12))
-            Text(text).font(.system(size: 12, weight: .medium)).foregroundColor(tint)
+            Image(systemName: icon).foregroundColor(tint).font(XFinderTokens.Font.rowValue)
+            Text(text).font(XFinderTokens.Font.rowValue.weight(.medium)).foregroundColor(tint)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
@@ -279,10 +279,10 @@ struct MouseGesturesDetailView: View {
     private var permissionBanner: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(L10n.t("Cần quyền Trợ năng"), systemImage: "exclamationmark.triangle.fill")
-                .font(.system(size: 13, weight: .medium))
+                .font(XFinderTokens.Font.row)
                 .foregroundColor(.orange)
             Text(L10n.t("XFinder chỉ nhận được nút chuột trước các ứng dụng khác khi bạn cấp quyền Trợ năng. Bật công tắc vẫn cần quyền này — thiếu quyền thì Event Tap không mở được và cử chỉ không chạy."))
-                .font(.system(size: 12)).foregroundColor(.secondary)
+                .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
                 Button(L10n.t("Mở Cài đặt Trợ năng")) { WindowManager.openAccessibilityPane() }
@@ -396,7 +396,7 @@ struct MouseGesturesDetailView: View {
     private var profileSidebar: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(L10n.t("Ứng dụng"))
-                .font(.system(size: 12, weight: .semibold))
+                .font(XFinderTokens.Font.rowValue.weight(.semibold))
             ForEach(orderedProfiles) { item in
                 profileRow(id: item.id, title: item.id == GestureProfiles.fallback ? L10n.t("Mặc định toàn cục") : item.name)
             }
@@ -410,14 +410,14 @@ struct MouseGesturesDetailView: View {
                 HStack(spacing: 4) {
                     Circle().fill(Color.orange).frame(width: 6, height: 6)
                     Text(L10n.t("Đang ghi — Esc để hủy"))
-                        .font(.system(size: 11)).foregroundColor(.orange)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.orange)
                 }
                 .padding(.top, 4)
             }
         }
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
         .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.secondary.opacity(0.05)))
+        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(Color.secondary.opacity(0.05)))
     }
 
     private func profileRow(id: String, title: String) -> some View {
@@ -431,10 +431,10 @@ struct MouseGesturesDetailView: View {
                     Image(nsImage: img).resizable().frame(width: 18, height: 18).cornerRadius(4)
                 } else {
                     Image(systemName: id == GestureProfiles.fallback ? "globe" : "app" )
-                        .font(.system(size: 13)).foregroundColor(.secondary).frame(width: 18)
+                        .font(XFinderTokens.Font.sectionIcon).foregroundColor(.secondary).frame(width: 18)
                 }
                 Text(title)
-                    .font(.system(size: 12, weight: id == profile ? .semibold : .regular))
+                    .font(XFinderTokens.Font.rowValue.weight(id == profile ? .semibold : .regular))
                     .lineLimit(1).truncationMode(.middle)
                 Spacer(minLength: 0)
             }
@@ -452,20 +452,20 @@ struct MouseGesturesDetailView: View {
     private var emptySelectionHint: some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: "hand.tap")
-                .font(.system(size: 22)).foregroundColor(.secondary.opacity(0.6))
+                .font(XFinderTokens.Font.pageIcon).foregroundColor(.secondary.opacity(0.6))
             Text(L10n.t("Bấm vào một mũi tên để xem chi tiết"))
-                .font(.system(size: 13, weight: .medium))
+                .font(XFinderTokens.Font.row)
             Text(L10n.t("Mỗi mũi tên là một động tác: giữ nút trên thân chuột rồi kéo theo hướng đó. Bấm vào mũi tên để xem và đổi phím nó gửi."))
-                .font(.system(size: 11)).foregroundColor(.secondary)
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Text(L10n.t("Ba bước: giữ nút → kéo quá ngưỡng → thả. Kéo chưa đủ xa thì XFinder phát lại click bình thường, nên không mất thao tác nào."))
-                .font(.system(size: 11)).foregroundColor(.secondary)
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .padding(14)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous)
                 .fill(Color.secondary.opacity(0.05))
         )
     }
@@ -484,11 +484,11 @@ struct MouseGesturesDetailView: View {
             if let img = appIcon {
                 Image(nsImage: img).resizable().frame(width: 20, height: 20).cornerRadius(4)
             } else {
-                Image(systemName: "globe").font(.system(size: 16)).foregroundColor(.secondary)
+                Image(systemName: "globe").font(XFinderTokens.Font.sectionIcon).foregroundColor(.secondary)
                     .frame(width: 20)
             }
             Text(profileDisplayName())
-                .font(.system(size: 13, weight: .medium))
+                .font(XFinderTokens.Font.row)
                 .lineLimit(1).truncationMode(.middle)
             Picker("", selection: $profile) {
                 ForEach(orderedProfiles) { item in
@@ -508,7 +508,7 @@ struct MouseGesturesDetailView: View {
                 HStack(spacing: 4) {
                     Circle().fill(Color.orange).frame(width: 6, height: 6)
                     Text(L10n.t("Đang ghi — Esc để hủy"))
-                        .font(.system(size: 11)).foregroundColor(.orange)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.orange)
                 }
             }
         }
@@ -542,27 +542,27 @@ struct MouseGesturesDetailView: View {
         return VStack(alignment: .leading, spacing: 4) {
             if front.isEmpty {
                 Text(L10n.t("Chưa xác định được ứng dụng đang mở phía trước."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             } else {
                 HStack(spacing: 6) {
                     Text(L10n.t("Ứng dụng đang dùng") + ": " + front)
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         .lineLimit(1).truncationMode(.middle)
                     Button(L10n.t("Xem")) { profile = front }.controlSize(.small)
                 }
                 if hasBuiltIn {
                     if hasOverride {
                         Text(L10n.t("Ứng dụng này có preset riêng, và bạn đã tự đặt một số hướng."))
-                            .font(.system(size: 11)).foregroundColor(.secondary)
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     } else {
                         Text(L10n.t("Ứng dụng này đang dùng preset có sẵn."))
-                            .font(.system(size: 11)).foregroundColor(.secondary)
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 } else {
                     Text(L10n.t("Ứng dụng này không có preset riêng — đang dùng bảng “Mặc định toàn cục”."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -574,19 +574,19 @@ struct MouseGesturesDetailView: View {
     private var deviceRow: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "computermouse")
-                .font(.system(size: 12)).foregroundColor(.secondary).frame(width: 16)
+                .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary).frame(width: 16)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(L10n.t("Chuột đang kết nối"))
-                        .font(.system(size: 11, weight: .medium)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption.weight(.medium)).foregroundColor(.secondary)
                     provenancePill
                 }
                 Text(deviceDescription)
-                    .font(.system(size: 12))
+                    .font(XFinderTokens.Font.rowValue)
                     .lineLimit(1).truncationMode(.middle)
                     .fixedSize(horizontal: false, vertical: true)
                 Text(deviceExplanation)
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -597,7 +597,7 @@ struct MouseGesturesDetailView: View {
     private var provenancePill: some View {
         let detected = provenance.isDetected
         return Text(detected ? L10n.t("Đã nhận diện") : L10n.t("Bạn tự đặt"))
-            .font(.system(size: 9, weight: .medium))
+            .font(XFinderTokens.Font.caption.weight(.medium))
             .foregroundColor(detected ? .green : .secondary)
             .padding(.horizontal, 6).padding(.vertical, 1)
             .background(Capsule().fill((detected ? Color.green : Color.secondary).opacity(0.14)))
@@ -616,11 +616,11 @@ struct MouseGesturesDetailView: View {
             VStack(alignment: .leading, spacing: 2) {
                 if hidDumpLoading {
                     Text(L10n.t("Đang đọc mô tả HID…"))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 } else {
                     ForEach(Array(hidDump.enumerated()), id: \.offset) { _, line in
                         Text(line)
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(XFinderTokens.Font.mono)
                             .foregroundColor(.secondary)
                             .textSelection(.enabled)
                             .fixedSize(horizontal: false, vertical: true)
@@ -632,9 +632,9 @@ struct MouseGesturesDetailView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "list.bullet.rectangle")
-                    .font(.system(size: 12)).foregroundColor(.secondary).frame(width: 16)
+                    .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary).frame(width: 16)
                 Text(L10n.t("Mô tả HID thô"))
-                    .font(.system(size: 11, weight: .medium)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption.weight(.medium)).foregroundColor(.secondary)
             }
         }
         .padding(.horizontal, 20)
@@ -667,12 +667,12 @@ struct MouseGesturesDetailView: View {
         if let observed = observedButton {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "dot.circle.and.hand.point.up.left.fill")
-                    .font(.system(size: 12)).foregroundColor(.accentColor).frame(width: 16)
+                    .font(XFinderTokens.Font.rowValue).foregroundColor(.accentColor).frame(width: 16)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L10n.t("Nút bạn vừa bấm: ") + "\(observed + 1)")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(XFinderTokens.Font.rowValue.weight(.medium))
                     Text(L10n.t("Đây là con số XFinder nhận được từ chuột. Bấm “Ghi nút” rồi bấm đúng nút đó để đặt nó làm nút giữ."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
@@ -750,7 +750,7 @@ struct MouseGesturesDetailView: View {
 
     private var legend: some View {
         Text(L10n.t("Mặc định = preset dựng sẵn · Tự đặt = bạn đã đổi hướng đó · Chưa gán = cố ý không gửi phím. Chưa gán trên ứng dụng đã có preset sẽ không rơi về bảng toàn cục. Biểu tượng ⇄ nhỏ nghĩa là hướng đó chuyển tiếp cuộn ngang nguyên bản của chuột."))
-            .font(.system(size: 11)).foregroundColor(.secondary)
+            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 20)
     }
@@ -793,15 +793,15 @@ struct MouseGesturesDetailView: View {
                     }
                 }))
             {
-                Text(L10n.t("Bật hai hướng nghiêng con lăn")).font(.system(size: 12))
+                Text(L10n.t("Bật hai hướng nghiêng con lăn")).font(XFinderTokens.Font.rowValue)
             }
             .toggleStyle(.switch).controlSize(.small)
             Text(L10n.t("Chỉ dùng cho chuột có con lăn nghiêng được và có driver gửi cuộn ngang rời rạc — ví dụ Logitech MX Master với Logi Options. Đo trên máy này: Razer Basilisk và Magic Mouse đều báo cuộn liên tục, nên hai hướng đó sẽ không bao giờ chạy; tắt để sơ đồ khỏi vẽ thừa. XFinder không thể tự dò ra phần cứng của bạn."))
-                .font(.system(size: 11)).foregroundColor(.secondary)
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if tiltArmsLive {
                 Text(L10n.t("Công tắc này vừa hiện hai mũi tên vừa cho engine xử lý nghiêng con lăn — trước đây nó chỉ hiện mũi tên, nên gán phím cho nghiêng xong vẫn không có gì chạy. Nghiêng chỉ chạy khi công tắc chính ở trên cũng đang bật."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -836,14 +836,14 @@ struct MouseGesturesDetailView: View {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L10n.t("Nút giữ"))
-                        .font(.system(size: 12, weight: .medium))
+                        .font(XFinderTokens.Font.rowValue.weight(.medium))
                     Text(L10n.t("Giữ nút này rồi kéo bốn hướng. Mặc định là nút hông — con số tuỳ chuột, nên hãy ghi lại nếu bạn muốn nút khác."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
                 Text(L10n.t(compactButton: config.trigger.key))
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(XFinderTokens.Font.rowValue.weight(.semibold))
                 Button(recordingTrigger ? L10n.t("Đang ghi…") : L10n.t("Ghi nút")) { triggerRecording() }
                     .buttonStyle(.bordered).controlSize(.small)
                     .disabled(controller.recording)
@@ -857,19 +857,19 @@ struct MouseGesturesDetailView: View {
                     get: { config.scrollButtonEnabled },
                     set: { v in controller.update { $0.scrollButtonEnabled = v } }))
                 {
-                    Text(L10n.t("Giữ nút cuộn rồi kéo để cuộn")).font(.system(size: 12))
+                    Text(L10n.t("Giữ nút cuộn rồi kéo để cuộn")).font(XFinderTokens.Font.rowValue)
                 }
                 .toggleStyle(.switch).controlSize(.small)
                 Text(L10n.t("Dành cho ứng dụng cần cuộn nhiều như Photoshop hay CapCut: giữ một nút hông rồi kéo là cuộn, không cần nhấc tay khỏi chuột. Nút đó vẫn bấm bình thường khi bạn không kéo. Mặc định tắt vì nó chiếm một nút bạn có thể đang dùng cho việc khác."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     Text(L10n.t("Nút cuộn"))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     Text(L10n.t(ButtonKey.index(config.scrollButton)))
-                        .font(.system(size: 11, weight: .medium))
+                        .font(XFinderTokens.Font.caption.weight(.medium))
                     Button(L10n.t("Ghi nút")) { triggerRecording() }
-                        .buttonStyle(.link).font(.system(size: 11))
+                        .buttonStyle(.link).font(XFinderTokens.Font.caption)
                     Spacer(minLength: 0)
                 }
             }
@@ -892,12 +892,12 @@ struct MouseGesturesDetailView: View {
                     Spacer(minLength: 0)
                 }
                 Text(L10n.t("Ứng dụng không có trong danh sách sẽ dùng bảng “Mặc định toàn cục”. Đặt Chưa gán cho một hướng nếu bạn không muốn nó gửi phím nào."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.top, 4)
         } label: {
-            Text(L10n.t("Nâng cao — ứng dụng khác")).font(.system(size: 12))
+            Text(L10n.t("Nâng cao — ứng dụng khác")).font(XFinderTokens.Font.rowValue)
         }
         .padding(.horizontal, 20)
     }
@@ -908,9 +908,9 @@ struct MouseGesturesDetailView: View {
     private var footerNote: some View {
         VStack(alignment: .leading, spacing: 6) {
             Button(L10n.t("Mở Phím tắt")) { WindowManager.openKeyboardShortcutsPane() }
-                .buttonStyle(.link).font(.system(size: 11))
+                .buttonStyle(.link).font(XFinderTokens.Font.caption)
             Text(L10n.t("Nếu không hoạt động: kiểm tra Trợ năng, bundle ID, phím tắt riêng của app và tắt mapping trùng trong phần mềm chuột khác. Tắt công tắc ở trên để ngừng xử lý cử chỉ."))
-                .font(.system(size: 11)).foregroundColor(.secondary)
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 20)

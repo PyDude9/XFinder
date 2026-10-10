@@ -13,13 +13,13 @@ struct SystemDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 PageHeader(icon: "cpu",
                            title: L10n.t("Hệ thống"),
                            subtitle: L10n.t("Xem nhanh CPU, đồ họa, bộ nhớ và nhiệt độ."))
 
                 temperatureRow
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 MeterRow(label: "CPU",
                          percent: monitor.currentMetrics.cpuUsage,
@@ -27,7 +27,7 @@ struct SystemDetailView: View {
                 if !monitor.metricsHistory.isEmpty {
                     SparklineView(values: monitor.metricsHistory.map(\.cpuUsage),
                                   yMax: 100, tint: .blue, height: 26)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
                 // GPU load: `IOAccelerator/PerformanceStatistics/Device Utilization %`, a
@@ -39,10 +39,10 @@ struct SystemDetailView: View {
                 if monitor.metricsHistory.contains(where: { $0.gpuUsage != nil }) {
                     SparklineView(values: monitor.metricsHistory.map { $0.gpuUsage ?? 0 },
                                   yMax: 100, tint: .teal, height: 26)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 LabeledLine(label: L10n.t("Bộ nhớ"),
                             value: "\(monitor.currentMetrics.memoryUsedString) / \(monitor.currentMetrics.memoryTotalString)")
@@ -58,19 +58,19 @@ struct SystemDetailView: View {
                 if !monitor.metricsHistory.isEmpty {
                     SparklineView(values: monitor.metricsHistory.map(\.memoryPercentage),
                                   yMax: 100, tint: .purple, height: 26)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 LabeledLine(label: L10n.t("Thời gian hoạt động"),
                             value: monitor.currentMetrics.uptimeString)
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 HStack {
                     Text(L10n.t("Tần suất cập nhật"))
-                        .font(.system(size: 13))
+                        .font(XFinderTokens.Font.row)
                     Spacer()
                     Picker("", selection: $updateInterval) {
                         Text("1s").tag(1)
@@ -84,11 +84,12 @@ struct SystemDetailView: View {
                         SystemMonitorManager.shared.applyUpdateInterval()
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
             }
-            .padding(.bottom, 20)
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
         // Only sample metrics while a page that shows them is on screen.
         .onAppear { SystemMonitorManager.shared.retain() }
         .onDisappear { SystemMonitorManager.shared.release() }
@@ -105,7 +106,7 @@ struct SystemDetailView: View {
             Divider().frame(height: 50)
             tempCell(title: L10n.t("Nóng nhất"), value: monitor.currentMetrics.socTempMax)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     /// SoC die temperature from the HID thermal sensors (see `ThermalSensors`): the mean and the
@@ -114,14 +115,14 @@ struct SystemDetailView: View {
     private func tempCell(title: String, value: Double?) -> some View {
         VStack(spacing: 3) {
             Text(title)
-                .font(.system(size: 11, weight: .medium))
+                .font(XFinderTokens.Font.caption)
                 .foregroundColor(.secondary)
             if let value {
                 Text(String(format: "%.0f °C", value))
-                    .font(.system(size: 15, weight: .medium)).monospacedDigit()
+                    .font(XFinderTokens.Font.sectionTitle).monospacedDigit()
             } else {
                 Text(L10n.t("Không khả dụng"))
-                    .font(.system(size: 15, weight: .medium))
+                    .font(XFinderTokens.Font.sectionTitle)
                     .foregroundColor(.secondary)
             }
         }
@@ -135,6 +136,3 @@ struct SystemDetailView: View {
         return f.string(fromByteCount: b)
     }
 }
-
-/// Label + right-aligned percent with a full-width bar underneath. `percent`
-/// of nil renders the honest "Không khả dụng" state with an empty track.

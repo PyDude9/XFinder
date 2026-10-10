@@ -21,26 +21,25 @@ struct WindowPreviewDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(icon: "macwindow.on.rectangle",
                            title: L10n.t("Xem trước cửa sổ"),
                            subtitle: L10n.t("Xem trước và chuyển cửa sổ ứng dụng ngay từ Dock."))
 
                 // Section 1: Switcher
-                SectionHeader(icon: "command",
-                              title: L10n.t("Chuyển cửa sổ bằng phím tắt"),
-                              subtitle: L10n.t("Chuyển trực tiếp giữa các cửa sổ bằng hình xem trước trực tiếp."))
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "command",
+                                  title: L10n.t("Chuyển cửa sổ bằng phím tắt"),
+                                  subtitle: L10n.t("Chuyển trực tiếp giữa các cửa sổ bằng hình xem trước trực tiếp."))
 
-                VStack(alignment: .leading, spacing: 10) {
                     ToggleRow(title: L10n.t("Bật bộ chuyển cửa sổ Liquid Glass"),
                               isOn: $commandTabEnabled)
                         .onChange(of: commandTabEnabled) { CommandTabController.shared.applySettings() }
-                    Text(L10n.t("Khi bật, XFinder xử lý chuyển cửa sổ thay cho bộ chuyển ứng dụng của macOS. Giữ phím tắt để duyệt danh sách, nhấn dấu phẩy (,) để tìm kiếm, thả phím để mở hoặc nhấn Escape để hủy."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                    InlineNote(text: L10n.t("Khi bật, XFinder xử lý chuyển cửa sổ thay cho bộ chuyển ứng dụng của macOS. Giữ phím tắt để duyệt danh sách, nhấn dấu phẩy (,) để tìm kiếm, thả phím để mở hoặc nhấn Escape để hủy."))
 
                     HStack {
                         Text(L10n.t("Phím tắt chuyển cửa sổ"))
-                            .font(.system(size: 13))
+                            .font(XFinderTokens.Font.row)
                         Spacer()
                         Picker("", selection: $switcherHotkey) {
                             Text("⌘ Tab").tag("commandTab")
@@ -55,29 +54,26 @@ struct WindowPreviewDetailView: View {
 
                     ToggleRow(title: L10n.t("Hiệu ứng chuyển động"),
                               isOn: $animationEnabled)
-                    Text(L10n.t("Mượt mà với hoạt cảnh co giãn và bóng mờ Liquid Glass."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                    InlineNote(text: L10n.t("Mượt mà với hoạt cảnh co giãn và bóng mờ Liquid Glass."))
 
                     ToggleRow(title: L10n.t("Hiện cả cửa sổ ẩn trong App Switcher"),
                               isOn: $showHiddenWindows)
-                    Text(L10n.t("Một số ứng dụng chỉ ẩn cửa sổ khi bạn đóng thay vì thoát — Spotify, Slack, Synology Chat. Liệt kê những cửa sổ đó cho phép Command-Tab gọi lại chúng, nhưng ứng dụng phải mở lại cửa sổ trước, nên sẽ hiện chậm hơn một chút."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                    InlineNote(text: L10n.t("Một số ứng dụng chỉ ẩn cửa sổ khi bạn đóng thay vì thoát — Spotify, Slack, Synology Chat. Liệt kê những cửa sổ đó cho phép Command-Tab gọi lại chúng, nhưng ứng dụng phải mở lại cửa sổ trước, nên sẽ hiện chậm hơn một chút."))
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 // Section 2: Dock
-                SectionHeader(icon: "square.on.square",
-                              title: L10n.t("Dải Dock Liquid Glass"),
-                              subtitle: L10n.t("Di chuột qua ứng dụng trên Dock để xem trước các cửa sổ."))
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "square.on.square",
+                                  title: L10n.t("Dải Dock Liquid Glass"),
+                                  subtitle: L10n.t("Di chuột qua ứng dụng trên Dock để xem trước các cửa sổ."))
 
-                VStack(alignment: .leading, spacing: 10) {
                     ToggleRow(title: L10n.t("Hiện bản xem trước cửa sổ khi di chuột qua ứng dụng trên Dock"),
                               isOn: $hoverEnabled)
                         .onChange(of: hoverEnabled) { controller.applySettings() }
-                    Text(L10n.t("XFinder chỉ chụp ảnh thu nhỏ khi bảng xem trước đang hiển thị."))
-                        .font(.system(size: 11)).foregroundColor(.secondary)
+                    InlineNote(text: L10n.t("XFinder chỉ chụp ảnh thu nhỏ khi bảng xem trước đang hiển thị."))
 
                     ToggleRow(title: L10n.t("Hiện dải ứng dụng Dock thay thế ở cạnh dưới màn hình"),
                               isOn: $customDockEnabled)
@@ -91,26 +87,27 @@ struct WindowPreviewDetailView: View {
                             DockPrefs.setAutohide(dockAutohide)
                         }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 // Section 3: Excluded Apps
-                SectionHeader(icon: "nosign",
-                              title: L10n.t("Ứng dụng loại trừ"),
-                              subtitle: L10n.t("Các ứng dụng này sẽ không xuất hiện trong bộ chuyển cửa sổ."))
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "nosign",
+                                  title: L10n.t("Ứng dụng loại trừ"),
+                                  subtitle: L10n.t("Các ứng dụng này sẽ không xuất hiện trong bộ chuyển cửa sổ."))
 
-                VStack(alignment: .leading, spacing: 8) {
                     if excludedApps.isEmpty {
                         Text(L10n.t("Chưa có ứng dụng nào bị loại trừ."))
-                            .font(.system(size: 12))
+                            .font(XFinderTokens.Font.rowValue)
                             .foregroundColor(.secondary)
                     } else {
-                        VStack(spacing: 4) {
+                        VStack(spacing: XFinderTokens.Space.tight) {
                             ForEach(excludedApps, id: \.self) { app in
                                 HStack {
                                     Text(app)
-                                        .font(.system(size: 12, design: .monospaced))
+                                        .font(XFinderTokens.Font.mono)
+                                        .fileNameRowSafe()
                                     Spacer()
                                     Button(action: {
                                         excludedApps.removeAll { $0 == app }
@@ -121,10 +118,10 @@ struct WindowPreviewDetailView: View {
                                     }
                                     .buttonStyle(.plain)
                                 }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color(.controlBackgroundColor).opacity(0.4))
-                                .cornerRadius(6)
+                                .padding(.horizontal, XFinderTokens.Space.inline)
+                                .padding(.vertical, XFinderTokens.Space.tight)
+                                .background(XFinderTokens.Fill.inset)
+                                .cornerRadius(XFinderTokens.Radius.badge)
                             }
                         }
                     }
@@ -145,16 +142,16 @@ struct WindowPreviewDetailView: View {
                         .disabled(newExcludedApp.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
-                Divider().padding(.horizontal, 20)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 // Section 4: Permissions
-                SectionHeader(icon: "lock.shield",
-                              title: L10n.t("Quyền cần thiết"),
-                              subtitle: L10n.t("Trợ năng nhận diện ứng dụng trên Dock; Ghi màn hình hiển thị ảnh thu nhỏ trực tiếp."))
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                    SectionHeader(icon: "lock.shield",
+                                  title: L10n.t("Quyền cần thiết"),
+                                  subtitle: L10n.t("Trợ năng nhận diện ứng dụng trên Dock; Ghi màn hình hiển thị ảnh thu nhỏ trực tiếp."))
 
-                VStack(spacing: 10) {
                     PermissionRow(title: L10n.t("Trợ năng"),
                                   granted: trusted,
                                   grantedText: L10n.t("Đã cấp")) {
@@ -166,11 +163,12 @@ struct WindowPreviewDetailView: View {
                         WindowManager.openScreenRecordingPane()
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
             }
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
         .onAppear {
             trusted = WindowManager.isTrusted
             canRecord = WindowManager.canRecordScreen
@@ -190,13 +188,13 @@ struct PermissionRow: View {
     let onGrant: () -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: XFinderTokens.Space.inline) {
             Image(systemName: granted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                 .foregroundColor(granted ? .green : .orange)
-            Text(title).font(.system(size: 13))
+            Text(title).font(XFinderTokens.Font.row)
             Spacer()
             Text(granted ? grantedText : L10n.t("Chưa cấp"))
-                .font(.system(size: 12)).foregroundColor(.secondary)
+                .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
             Button(L10n.t("Cấp…")) { onGrant() }
                 .buttonStyle(.bordered).controlSize(.small)
         }
@@ -222,239 +220,170 @@ struct SnapZonesDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
+                PageHeader(icon: "rectangle.split.2x2",
+                           title: L10n.t("Vùng bắt dính"),
+                           subtitle: L10n.t("Bắt dính cửa sổ bằng cách kéo chúng đến cạnh và góc màn hình."))
+
                 if !trusted {
                     permissionBanner
                 }
 
-                card1General
-                card2DragBehavior
-                card3Shortcuts
-                card4VisualGuideAndSnapNow
+                section1General
+                section2DragBehavior
+                section3Shortcuts
+                section4VisualGuideAndSnapNow
             }
-            .frame(maxWidth: 760)
-            .padding(20)
-            .frame(maxWidth: .infinity)
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
         .onAppear {
             trusted = WindowManager.isTrusted
             controller.applySettings()
         }
     }
 
-    // MARK: - Reusable Card Container
-    private func snapCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            content()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(.controlBackgroundColor))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-        )
-    }
+    // MARK: - Section 1: General
 
-    // MARK: - Card 1: General
-    private var card1General: some View {
-        snapCard {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: "rectangle.split.2x2")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(.accentColor)
-                    .frame(width: 28, height: 28)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L10n.t("Vùng bắt dính"))
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.primary)
-                    Text(L10n.t("Bắt dính cửa sổ bằng cách kéo chúng đến cạnh và góc màn hình."))
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                HStack(spacing: 6) {
-                    Text(snapEnabled ? L10n.t("Bật") : L10n.t("Tắt"))
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                    Toggle("", isOn: $snapEnabled)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .onChange(of: snapEnabled) { controller.applySettings() }
-                }
-            }
+    private var section1General: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            ToggleRow(title: L10n.t("Vùng bắt dính"),
+                      subtitle: L10n.t("Bắt dính cửa sổ bằng cách kéo chúng đến cạnh và góc màn hình."),
+                      isOn: $snapEnabled)
+                .onChange(of: snapEnabled) { controller.applySettings() }
+                .padding(.horizontal, XFinderTokens.Space.page)
 
             if snapEnabled {
-                Divider().opacity(0.15)
-
-                VStack(spacing: 10) {
-                    ToggleRow(title: L10n.t("Khôi phục kích thước cửa sổ khi gỡ bắt dính"), isOn: $restoreOnUnsnap)
-                    Divider().opacity(0.15)
-                    ToggleRow(title: L10n.t("Tạo hiệu ứng cho vùng xem trước"), isOn: $showPreview)
-                    Divider().opacity(0.15)
-                    ToggleRow(title: L10n.t("Phản hồi rung"), isOn: $hapticEnabled)
-                }
+                ToggleRow(title: L10n.t("Khôi phục kích thước cửa sổ khi gỡ bắt dính"), isOn: $restoreOnUnsnap)
+                    .padding(.horizontal, XFinderTokens.Space.page)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                ToggleRow(title: L10n.t("Tạo hiệu ứng cho vùng xem trước"), isOn: $showPreview)
+                    .padding(.horizontal, XFinderTokens.Space.page)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                ToggleRow(title: L10n.t("Phản hồi rung"), isOn: $hapticEnabled)
+                    .padding(.horizontal, XFinderTokens.Space.page)
             }
+
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
         }
         .animation(.default, value: snapEnabled)
     }
 
-    // MARK: - Card 2: Drag Behavior
-    private var card2DragBehavior: some View {
-        snapCard {
-            HStack(spacing: 8) {
-                Image(systemName: "hand.draw")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.accentColor)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L10n.t("Kéo tới mép màn hình"))
-                        .font(.system(size: 13, weight: .semibold))
-                    Text(L10n.t("Kéo cửa sổ tới mép; vùng đích sẽ sáng lên, thả chuột để bắt dính."))
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-            }
+    // MARK: - Section 2: Drag Behavior
 
-            Divider().opacity(0.15)
+    private var section2DragBehavior: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(icon: "hand.draw",
+                          title: L10n.t("Kéo tới mép màn hình"),
+                          subtitle: L10n.t("Kéo cửa sổ tới mép; vùng đích sẽ sáng lên, thả chuột để bắt dính."))
 
-            HStack {
-                Text(L10n.t("Bật bắt dính khi kéo tới mép"))
-                    .font(.system(size: 13, weight: .medium))
-                Spacer()
-                Toggle("", isOn: $dragEnabled)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .onChange(of: dragEnabled) { controller.applySettings() }
-                    .disabled(!trusted || !snapEnabled)
-            }
+            ToggleRow(title: L10n.t("Bật bắt dính khi kéo tới mép"), isOn: $dragEnabled)
+                .onChange(of: dragEnabled) { controller.applySettings() }
+                .disabled(!trusted || !snapEnabled)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
             if dragEnabled && snapEnabled {
-                Divider().opacity(0.15)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                    HStack(spacing: XFinderTokens.Space.inline) {
                         Text(L10n.t("Độ nhạy mép"))
-                            .font(.system(size: 13))
+                            .font(XFinderTokens.Font.row)
                             .frame(width: 120, alignment: .leading)
                         Slider(value: $edgeMargin, in: 8...60, step: 1)
                             .onChange(of: edgeMargin) { controller.applySettings() }
                             .disabled(!trusted)
                         Text("\(Int(edgeMargin)) pt")
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .font(XFinderTokens.Font.mono)
                             .foregroundColor(.secondary)
                             .frame(width: 45, alignment: .trailing)
                     }
                     Text(L10n.t("Mép trái/phải → nửa màn hình · góc → một phần tư · mép trên → toàn màn hình · mép dưới → nửa dưới."))
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary.opacity(0.8))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
                 }
+                .padding(.horizontal, XFinderTokens.Space.page)
 
-                Divider().opacity(0.15)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text(L10n.t("Chừa mép trái cho Stage Manager"))
-                            .font(.system(size: 13, weight: .medium))
-                        Spacer()
-                        Toggle("", isOn: $reserveStage)
-                            .labelsHidden()
-                            .toggleStyle(.switch)
-                    }
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.inline) {
+                    ToggleRow(title: L10n.t("Chừa mép trái cho Stage Manager"), isOn: $reserveStage)
 
                     if reserveStage {
-                        HStack(spacing: 12) {
+                        HStack(spacing: XFinderTokens.Space.inline) {
                             Text(L10n.t("Bề rộng chừa"))
-                                .font(.system(size: 13))
+                                .font(XFinderTokens.Font.row)
                                 .frame(width: 120, alignment: .leading)
                             Slider(value: $stageInset, in: 48...140, step: 2)
                             Text("\(Int(stageInset)) pt")
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .font(XFinderTokens.Font.mono)
                                 .foregroundColor(.secondary)
                                 .frame(width: 45, alignment: .trailing)
                         }
                         Text(L10n.t("macOS không tự thu nhỏ vùng làm việc cho Stage Manager, nên XFinder chừa mép trái để bạn vẫn thấy icon app đang xếp ở đó. Kéo nhỏ lại nếu bạn chỉ cần thấy icon."))
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary.opacity(0.8))
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
                     }
                 }
+                .padding(.horizontal, XFinderTokens.Space.page)
             }
+
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
         }
         .animation(.default, value: dragEnabled)
         .animation(.default, value: reserveStage)
     }
 
-    // MARK: - Card 3: Shortcuts
-    private var card3Shortcuts: some View {
-        snapCard {
-            HStack(spacing: 8) {
-                Image(systemName: "keyboard")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.accentColor)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L10n.t("Phím tắt toàn hệ thống"))
-                        .font(.system(size: 13, weight: .semibold))
-                    Text(L10n.t("Áp dụng cho cửa sổ đang được focus."))
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-            }
+    // MARK: - Section 3: Shortcuts
 
-            Divider().opacity(0.15)
+    private var section3Shortcuts: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(icon: "keyboard",
+                          title: L10n.t("Phím tắt toàn hệ thống"),
+                          subtitle: L10n.t("Áp dụng cho cửa sổ đang được focus."))
 
-            HStack {
-                Text(L10n.t("Bật phím tắt bắt dính"))
-                    .font(.system(size: 13, weight: .medium))
-                Spacer()
-                Toggle("", isOn: $hotkeysEnabled)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .onChange(of: hotkeysEnabled) { controller.applySettings() }
-                    .disabled(!trusted || !snapEnabled)
-            }
+            ToggleRow(title: L10n.t("Bật phím tắt bắt dính"), isOn: $hotkeysEnabled)
+                .onChange(of: hotkeysEnabled) { controller.applySettings() }
+                .disabled(!trusted || !snapEnabled)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
             if hotkeysEnabled && snapEnabled {
-                Divider().opacity(0.15)
+                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                HStack(alignment: .top, spacing: 24) {
-                    VStack(spacing: 8) {
+                HStack(alignment: .top, spacing: XFinderTokens.Space.section) {
+                    VStack(spacing: XFinderTokens.Space.inline) {
                         shortcutItem(label: L10n.t("Nửa trái"), keys: ["⌃", "⌥", "←"])
                         shortcutItem(label: L10n.t("Toàn màn hình"), keys: ["⌃", "⌥", "↑"])
                         shortcutItem(label: L10n.t("Giữa màn hình"), keys: ["⌃", "⌥", "↩"])
                     }
                     .frame(maxWidth: .infinity)
 
-                    VStack(spacing: 8) {
+                    VStack(spacing: XFinderTokens.Space.inline) {
                         shortcutItem(label: L10n.t("Nửa phải"), keys: ["⌃", "⌥", "→"])
                         shortcutItem(label: L10n.t("Nửa dưới"), keys: ["⌃", "⌥", "↓"])
                         Spacer()
                     }
                     .frame(maxWidth: .infinity)
                 }
+                .padding(.horizontal, XFinderTokens.Space.page)
                 .padding(.vertical, 2)
             }
+
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
         }
         .animation(.default, value: hotkeysEnabled)
     }
 
-    // MARK: - Card 4: Visual Guide & Snap Now
-    private var card4VisualGuideAndSnapNow: some View {
-        snapCard {
+    // MARK: - Section 4: Visual Guide & Snap Now
+
+    private var section4VisualGuideAndSnapNow: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             // Header with Segmented Control
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L10n.t("Hướng dẫn chia cửa sổ"))
-                        .font(.system(size: 13, weight: .semibold))
-                    Text(L10n.t("Kéo đến cạnh hoặc góc màn hình, rồi thả."))
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
+                SectionHeader(icon: "square.grid.3x3",
+                              title: L10n.t("Hướng dẫn chia cửa sổ"),
+                              subtitle: L10n.t("Kéo đến cạnh hoặc góc màn hình, rồi thả."))
                 Spacer()
                 Picker("", selection: Binding(
                     get: { UserDefaults.standard.string(forKey: "snapzones.orientation") ?? "horizontal" },
@@ -465,14 +394,13 @@ struct SnapZonesDetailView: View {
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 140)
+                .padding(.trailing, XFinderTokens.Space.page)
             }
 
-            Divider().opacity(0.15)
-
-            // 3-Column Visual Guide
-            HStack(alignment: .center, spacing: 14) {
+            // 3-Column Visual Guide — true grid, keeps the tile look
+            HStack(alignment: .center, spacing: XFinderTokens.Space.inline) {
                 // Cột trái
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                     guideItem(title: L10n.t("Trên bên trái"), subtitle: L10n.t("Một phần tư trên bên trái"))
                     guideItem(title: L10n.t("Trái"), subtitle: L10n.t("Cạnh trái, nửa trên/dưới khi gần góc"))
                     guideItem(title: L10n.t("Dưới bên trái"), subtitle: L10n.t("Một phần tư dưới bên trái"))
@@ -480,7 +408,7 @@ struct SnapZonesDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 // Cột giữa (bản đồ 3x3 trực quan)
-                VStack(spacing: 6) {
+                VStack(spacing: XFinderTokens.Space.tight) {
                     guideItemCenter(title: L10n.t("Trên"), subtitle: L10n.t("Phóng to"))
 
                     snapMap3x3
@@ -490,40 +418,38 @@ struct SnapZonesDetailView: View {
                 .frame(width: 150)
 
                 // Cột phải
-                VStack(alignment: .trailing, spacing: 14) {
+                VStack(alignment: .trailing, spacing: XFinderTokens.Space.section) {
                     guideItem(title: L10n.t("Trên bên phải"), subtitle: L10n.t("Một phần tư trên bên phải"), trailing: true)
                     guideItem(title: L10n.t("Phải"), subtitle: L10n.t("Cạnh phải, nửa trên/dưới khi gần góc"), trailing: true)
                     guideItem(title: L10n.t("Dưới bên phải"), subtitle: L10n.t("Một phần tư dưới bên phải"), trailing: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
             }
+            .padding(.horizontal, XFinderTokens.Space.page)
             .padding(.vertical, 4)
 
             // Footer of visual guide
             HStack {
                 Text(L10n.t("Các lựa chọn được áp dụng cho mọi màn hình có cùng hướng này."))
-                    .font(.system(size: 11))
+                    .font(XFinderTokens.Font.caption)
                     .foregroundColor(.secondary)
                 Spacer()
                 Button(L10n.t("Khôi phục mặc định")) { resetSnapDefaults() }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
             }
+            .padding(.horizontal, XFinderTokens.Space.page)
 
-            Divider().opacity(0.15)
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
 
             // Snap Now section
-            VStack(alignment: .leading, spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L10n.t("Bắt dính ngay"))
-                        .font(.system(size: 13, weight: .semibold))
-                    Text(L10n.t("Bấm một vùng để áp dụng cho cửa sổ vừa dùng."))
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                SectionHeader(icon: "square.and.arrow.down.on.square",
+                              title: L10n.t("Bắt dính ngay"),
+                              subtitle: L10n.t("Bấm một vùng để áp dụng cho cửa sổ vừa dùng."))
 
-                let cols = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
-                LazyVGrid(columns: cols, spacing: 8) {
+                let cols = Array(repeating: GridItem(.flexible(), spacing: XFinderTokens.Space.tight), count: 4)
+                LazyVGrid(columns: cols, spacing: XFinderTokens.Space.tight) {
                     // Row 1
                     snapNowButton(.leftHalf, title: L10n.t("Nửa trái"), icon: "rectangle.lefthalf.filled", isPrimary: true)
                     snapNowButton(.rightHalf, title: L10n.t("Nửa phải"), icon: "rectangle.righthalf.filled", isPrimary: true)
@@ -545,19 +471,20 @@ struct SnapZonesDetailView: View {
 
                 if let msg = controller.lastOutcome {
                     Text(msg)
-                        .font(.system(size: 11))
+                        .font(XFinderTokens.Font.caption)
                         .foregroundColor(.secondary)
                         .padding(.top, 2)
                 }
             }
+            .padding(.horizontal, XFinderTokens.Space.page)
 
-            Divider().opacity(0.15)
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
 
             // macOS Window Tiling disclosure
             DisclosureGroup(L10n.t("Chia cửa sổ của macOS")) {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                     Text(L10n.t("macOS Sequoia có tính năng chia cửa sổ riêng (Window Tiling). Mở Cài đặt hệ thống → Màn hình & Dock → Chia cửa sổ để cấu hình."))
-                        .font(.system(size: 11))
+                        .font(XFinderTokens.Font.caption)
                         .foregroundColor(.secondary)
                     Button(L10n.t("Mở Cài đặt Màn hình & Dock")) {
                         if let url = URL(string: "x-apple.systempreferences:com.apple.Desktop-Settings.extension") {
@@ -565,11 +492,12 @@ struct SnapZonesDetailView: View {
                         }
                     }
                     .buttonStyle(.link)
-                    .font(.system(size: 11))
+                    .font(XFinderTokens.Font.caption)
                 }
                 .padding(.top, 4)
             }
-            .font(.system(size: 12))
+            .font(XFinderTokens.Font.rowValue)
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
@@ -588,10 +516,10 @@ struct SnapZonesDetailView: View {
                     snapAction(.maximize)
                 } label: {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous)
                             .fill(Color.accentColor.opacity(0.85))
                         Image(systemName: "macwindow")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(XFinderTokens.Font.sectionTitle)
                             .foregroundColor(.white)
                     }
                     .frame(width: 34, height: 26)
@@ -609,9 +537,9 @@ struct SnapZonesDetailView: View {
         }
         .padding(6)
         .background(Color.accentColor.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous)
                 .stroke(Color.accentColor.opacity(0.25), lineWidth: 1)
         )
     }
@@ -621,11 +549,11 @@ struct SnapZonesDetailView: View {
             snapAction(target)
         } label: {
             Image(systemName: icon)
-                .font(.system(size: 11, weight: .medium))
+                .font(XFinderTokens.Font.rowValue)
                 .foregroundColor(.accentColor)
                 .frame(width: 34, height: 26)
                 .background(Color.accentColor.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous))
         }
         .buttonStyle(.plain)
         .help(target.titleVI)
@@ -635,23 +563,23 @@ struct SnapZonesDetailView: View {
         Button {
             snapAction(target)
         } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: XFinderTokens.Space.tight) {
                 Image(systemName: icon)
-                    .font(.system(size: 11, weight: isPrimary ? .semibold : .regular))
+                    .font(XFinderTokens.Font.caption)
                     .foregroundColor(isPrimary ? .accentColor : .primary.opacity(0.8))
                 Text(title)
-                    .font(.system(size: 11, weight: isPrimary ? .medium : .regular))
+                    .font(XFinderTokens.Font.caption)
                     .foregroundColor(isPrimary ? .accentColor : .primary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 32)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: XFinderTokens.Radius.control, style: .continuous)
                     .fill(isPrimary ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.05))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: XFinderTokens.Radius.control, style: .continuous)
                     .stroke(isPrimary ? Color.accentColor.opacity(0.3) : Color.primary.opacity(0.08), lineWidth: 0.5)
             )
         }
@@ -670,25 +598,25 @@ struct SnapZonesDetailView: View {
     }
 
     private func guideItem(title: String, subtitle: String, trailing: Bool = false) -> some View {
-        HStack(alignment: .top, spacing: 6) {
+        HStack(alignment: .top, spacing: XFinderTokens.Space.tight) {
             if !trailing {
                 Image(systemName: "checkmark.square.fill")
                     .foregroundColor(.accentColor)
-                    .font(.system(size: 13))
+                    .font(XFinderTokens.Font.sectionTitle)
                     .padding(.top, 1)
             }
             VStack(alignment: trailing ? .trailing : .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(XFinderTokens.Font.caption)
                 Text(subtitle)
-                    .font(.system(size: 9))
+                    .font(XFinderTokens.Font.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(trailing ? .trailing : .leading)
             }
             if trailing {
                 Image(systemName: "checkmark.square.fill")
                     .foregroundColor(.accentColor)
-                    .font(.system(size: 13))
+                    .font(XFinderTokens.Font.sectionTitle)
                     .padding(.top, 1)
             }
         }
@@ -698,11 +626,11 @@ struct SnapZonesDetailView: View {
         VStack(spacing: 2) {
             Image(systemName: "checkmark.square.fill")
                 .foregroundColor(.accentColor)
-                .font(.system(size: 13))
+                .font(XFinderTokens.Font.sectionTitle)
             Text(title)
-                .font(.system(size: 11, weight: .medium))
+                .font(XFinderTokens.Font.caption)
             Text(subtitle)
-                .font(.system(size: 9))
+                .font(XFinderTokens.Font.caption)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -711,20 +639,20 @@ struct SnapZonesDetailView: View {
     private func shortcutItem(label: String, keys: [String]) -> some View {
         HStack {
             Text(label)
-                .font(.system(size: 12))
+                .font(XFinderTokens.Font.rowValue)
                 .foregroundColor(.primary)
             Spacer()
             HStack(spacing: 3) {
                 ForEach(keys, id: \.self) { key in
                     Text(key)
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .font(XFinderTokens.Font.mono)
                         .foregroundColor(.primary.opacity(0.85))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2.5)
                         .background(Color.primary.opacity(0.06))
-                        .cornerRadius(4)
+                        .cornerRadius(XFinderTokens.Radius.badge)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 4)
+                            RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge)
                                 .stroke(Color.primary.opacity(0.12), lineWidth: 0.5)
                         )
                 }
@@ -745,26 +673,24 @@ struct SnapZonesDetailView: View {
     }
 
     private var permissionBanner: some View {
-        snapCard {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(L10n.t("Cần quyền Trợ năng"), systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.orange)
-                Text(L10n.t("macOS chỉ cho phép di chuyển cửa sổ của ứng dụng khác khi bạn cấp quyền Trợ năng cho XFinder."))
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                HStack {
-                    Button(L10n.t("Mở Cài đặt Trợ năng")) { WindowManager.openAccessibilityPane() }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                    Button(L10n.t("Kiểm tra lại")) {
-                        trusted = WindowManager.isTrusted
-                        controller.applySettings()
-                    }
-                    .buttonStyle(.bordered)
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            Label(L10n.t("Cần quyền Trợ năng"), systemImage: "exclamationmark.triangle.fill")
+                .font(XFinderTokens.Font.row)
+                .foregroundColor(.orange)
+            InlineNote(kind: .warning,
+                       text: L10n.t("macOS chỉ cho phép di chuyển cửa sổ của ứng dụng khác khi bạn cấp quyền Trợ năng cho XFinder."))
+            HStack {
+                Button(L10n.t("Mở Cài đặt Trợ năng")) { WindowManager.openAccessibilityPane() }
+                    .buttonStyle(.borderedProminent)
                     .controlSize(.small)
+                Button(L10n.t("Kiểm tra lại")) {
+                    trusted = WindowManager.isTrusted
+                    controller.applySettings()
                 }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
             }
         }
+        .padding(.horizontal, XFinderTokens.Space.page)
     }
 }

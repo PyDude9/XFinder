@@ -13,17 +13,12 @@ struct DropTrayDetailView: View {
     @State private var showDetailGrid = true
 
     // Tai thỏ / notch — tạm ẩn theo yêu cầu (giữ key để bật lại sau).
-    // Các @AppStorage này vẫn persist nhưng không render trong UI.
+    // @AppStorage này vẫn persist nhưng không render trong UI.
     @AppStorage("dropTray.notchEnabled") private var notchEnabled = true
-    @AppStorage("dropTray.shakeEnabled") private var shakeEnabled = true
-    @AppStorage("dropTray.shakeSensitivity") private var shakeSensitivity = "medium"
-    @AppStorage("dropTray.notchDropEnabled") private var notchDropEnabled = true
-    @AppStorage("dropTray.hoverEnabled") private var hoverEnabled = true
-    @AppStorage("dropTray.autoCloseDelay") private var autoCloseDelay = 3.0
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(
                     icon: "tray.and.arrow.down",
                     title: L10n.t("Khay thả"),
@@ -31,107 +26,123 @@ struct DropTrayDetailView: View {
                     trailing: AnyView(
                         HStack(spacing: 6) {
                             Text(notchEnabled ? L10n.t("Bật") : L10n.t("Tắt"))
-                                .font(.system(size: 12)).foregroundColor(.secondary)
+                                .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                             Toggle("", isOn: $notchEnabled)
                                 .labelsHidden()
                                 .onChange(of: notchEnabled) { NotchDropController.shared.applySettings() }
                         }
                     ))
 
-                // notchSettings — tạm ẩn (giữ engine, ẩn UI)
-
                 // Drop zone
                 VStack(spacing: 8) {
                     Image(systemName: "tray.and.arrow.down.fill")
-                        .font(.system(size: 34))
+                        .font(XFinderTokens.Font.pageIcon)
                         .foregroundColor(isTargeted ? .accentColor : .secondary)
                     Text(tray.items.isEmpty
                          ? L10n.t("Kéo tập tin vào đây")
                          : "\(tray.items.count)\(L10n.t(" mục trong khay"))")
-                        .font(.headline)
+                        .font(XFinderTokens.Font.sectionTitle)
                     Text(L10n.t("hoặc"))
-                        .font(.caption).foregroundColor(.secondary)
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     Button(L10n.t("Thêm tập tin…")) { pickFiles() }
                         .buttonStyle(.bordered).controlSize(.small)
                 }
                 .frame(maxWidth: .infinity).padding(.vertical, 24)
-                .background(isTargeted ? Color.accentColor.opacity(0.12)
-                                       : Color(.controlBackgroundColor).opacity(0.6))
-                .cornerRadius(12)
-                .overlay(RoundedRectangle(cornerRadius: 12)
+                .background(isTargeted ? Color.accentColor.opacity(0.12) : XFinderTokens.Fill.inset)
+                .cornerRadius(XFinderTokens.Radius.tile)
+                .overlay(RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile)
                     .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
                     .foregroundColor(isTargeted ? .accentColor : .secondary.opacity(0.5)))
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
                 .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
                     tray.add(providers: providers)
                     return true
                 }
 
                 if !tray.items.isEmpty {
-                    SettingsCard(title: "Trong khay (\(tray.items.count))") {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("\(tray.items.count)\(L10n.t(" mục"))").font(.system(size: 11)).foregroundColor(.secondary)
-                                Spacer()
-                                Button(showDetailGrid ? L10n.t("Thu gọn") : L10n.t("Xem chi tiết")) { showDetailGrid.toggle() }
-                                    .buttonStyle(.bordered).controlSize(.small)
-                            }
-                            // Inline grid ngay dưới header — không mở window lung tung.
-                            if showDetailGrid {
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 8) {
-                                    ForEach(tray.items) { item in
-                                        VStack(spacing: 6) {
-                                            Image(systemName: item.isDir ? "folder.fill" : "doc.fill")
-                                                .font(.system(size: 22)).foregroundColor(.secondary)
-                                            Text(item.name).font(.system(size: 11)).lineLimit(2).multilineTextAlignment(.center)
-                                            if item.isMissing {
-                                                Text(L10n.t("(không còn tồn tại)")).font(.caption2).foregroundColor(.red)
-                                            }
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(
+                            icon: "tray.full",
+                            title: "\(L10n.t("Trong khay ("))\(tray.items.count))",
+                            subtitle: "\(tray.items.count)\(L10n.t(" mục"))"
+                        )
+                        HStack {
+                            Spacer()
+                            Button(showDetailGrid ? L10n.t("Thu gọn") : L10n.t("Xem chi tiết")) { showDetailGrid.toggle() }
+                                .buttonStyle(.bordered).controlSize(.small)
+                        }
+                        .padding(.horizontal, XFinderTokens.Space.page)
+
+                        // Inline grid ngay dưới header — không mở window lung tung.
+                        if showDetailGrid {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 8) {
+                                ForEach(tray.items) { item in
+                                    VStack(spacing: 6) {
+                                        Image(systemName: item.isDir ? "folder.fill" : "doc.fill")
+                                            .font(XFinderTokens.Font.sectionTitle).foregroundColor(.secondary)
+                                        Text(item.name)
+                                            .font(XFinderTokens.Font.caption)
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.center)
+                                        if item.isMissing {
+                                            Text(L10n.t("(không còn tồn tại)")).font(XFinderTokens.Font.caption).foregroundColor(.red)
                                         }
-                                        .frame(maxWidth: .infinity).padding(8)
-                                        .background(Color(.controlBackgroundColor).opacity(0.6))
-                                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                                        .overlay(
-                                            HStack {
-                                                Spacer()
-                                                Button { tray.remove(item) } label: {
-                                                    Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
-                                                }.buttonStyle(.plain).padding(4)
-                                            }.frame(maxHeight: .infinity, alignment: .top)
-                                        )
                                     }
-                                }
-                            } else {
-                                // Compact list fallback khi thu gọn.
-                                VStack(spacing: 6) {
-                                    ForEach(tray.items.prefix(15)) { item in
+                                    .frame(maxWidth: .infinity).padding(8)
+                                    .background(XFinderTokens.Fill.inset)
+                                    .clipShape(RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile))
+                                    .overlay(RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile)
+                                        .strokeBorder(XFinderTokens.Fill.hairline, lineWidth: 1))
+                                    .overlay(
                                         HStack {
-                                            Image(systemName: item.isDir ? "folder.fill" : "doc.fill")
-                                                .foregroundColor(.secondary).font(.caption)
-                                            Text(item.name).font(.system(size: 12)).lineLimit(1)
-                                                .truncationMode(.middle)
-                                            if item.isMissing {
-                                                Text(L10n.t("(không còn tồn tại)"))
-                                                    .font(.caption2).foregroundColor(.red)
-                                            }
                                             Spacer()
                                             Button { tray.remove(item) } label: {
-                                                Image(systemName: "xmark.circle.fill")
-                                                    .foregroundColor(.secondary)
-                                            }.buttonStyle(.plain)
+                                                Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+                                            }.buttonStyle(.plain).padding(4)
+                                        }.frame(maxHeight: .infinity, alignment: .top)
+                                    )
+                                }
+                            }
+                            .padding(.horizontal, XFinderTokens.Space.page)
+                        } else {
+                            // Compact list fallback khi thu gọn.
+                            VStack(spacing: 0) {
+                                ForEach(tray.items.prefix(15)) { item in
+                                    HStack {
+                                        Image(systemName: item.isDir ? "folder.fill" : "doc.fill")
+                                            .foregroundColor(.secondary).font(XFinderTokens.Font.caption)
+                                        Text(item.name)
+                                            .font(XFinderTokens.Font.rowValue)
+                                            .fileNameRowSafe()
+                                        if item.isMissing {
+                                            Text(L10n.t("(không còn tồn tại)"))
+                                                .font(XFinderTokens.Font.caption).foregroundColor(.red)
                                         }
+                                        Spacer()
+                                        Button { tray.remove(item) } label: {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .foregroundColor(.secondary)
+                                        }.buttonStyle(.plain)
                                     }
-                                    if tray.items.count > 15 {
-                                        Text("\(L10n.t("…và "))\(tray.items.count - 15)\(L10n.t(" mục nữa"))")
-                                            .font(.caption).foregroundColor(.secondary)
-                                    }
+                                    .padding(.horizontal, XFinderTokens.Space.page)
+                                    .padding(.vertical, 4)
+                                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+                                }
+                                if tray.items.count > 15 {
+                                    Text("\(L10n.t("…và "))\(tray.items.count - 15)\(L10n.t(" mục nữa"))")
+                                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                                        .padding(.horizontal, XFinderTokens.Space.page)
                                 }
                             }
                         }
                     }
-                    .padding(.horizontal, 20)
 
-                    SettingsCard(title: L10n.t("Thao tác cho cả khay")) {
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "bolt.fill", title: L10n.t("Thao tác cho cả khay"))
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 8) {
                             trayButton(L10n.t("Di chuyển…"), icon: "folder.fill") { moveOrCopy(move: true) }
                             trayButton(L10n.t("Sao chép…"), icon: "doc.on.doc.fill") { moveOrCopy(move: false) }
@@ -140,101 +151,36 @@ struct DropTrayDetailView: View {
                             trayButton(L10n.t("Bỏ vào Rác"), icon: "trash.fill", destructive: true) { trashAll() }
                             trayButton(L10n.t("Dọn khay"), icon: "xmark.circle", destructive: true) { tray.clear() }
                         }
+                        .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20)
                 }
 
                 if let msg = outcome {
-                    SettingsCard(title: L10n.t("Kết quả")) {
-                        Text(msg).font(.system(size: 12))
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        SectionHeader(icon: "checkmark.circle", title: L10n.t("Kết quả"))
+                        Text(msg)
+                            .font(XFinderTokens.Font.rowValue)
+                            .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    .padding(.horizontal, 20).padding(.bottom, 20)
-                } else {
-                    Spacer().padding(.bottom, 20)
                 }
             }
+            .padding(.bottom, XFinderTokens.Space.section)
+            .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
     }
 
     private func trayButton(_ title: String, icon: String, destructive: Bool = false,
                             action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: icon)
-                .font(.system(size: 12))
+                .font(XFinderTokens.Font.rowValue)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 4)
         }
         .buttonStyle(.bordered)
         .foregroundColor(destructive ? .red : .primary)
-    }
-
-    /// ShakePin-style summoning options.
-    private var notchSettings: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(icon: "cursorarrow.motionlines",
-                          title: L10n.t("Cách mở khay"))
-
-            VStack(alignment: .leading, spacing: 10) {
-                ToggleRow(title: L10n.t("Lắc để mở khay khi kéo file"), isOn: $shakeEnabled)
-                    .onChange(of: shakeEnabled) { NotchDropController.shared.applySettings() }
-                    .disabled(!notchEnabled)
-
-                HStack {
-                    Text(L10n.t("Độ nhạy khi lắc")).font(.system(size: 13))
-                    Spacer()
-                    Picker("", selection: $shakeSensitivity) {
-                        Text(L10n.t("Thấp")).tag("low")
-                        Text(L10n.t("Vừa")).tag("medium")
-                        Text("Cao").tag("high")
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .frame(width: 220)
-                    .disabled(!notchEnabled || !shakeEnabled)
-                }
-
-                ToggleRow(title: L10n.t("Thả vào tai thỏ"),
-                          subtitle: L10n.t("Kéo file vào vùng tai thỏ của màn hình để mở khay."),
-                          isOn: $notchDropEnabled)
-                    .onChange(of: notchDropEnabled) { NotchDropController.shared.applySettings() }
-                    .disabled(!notchEnabled)
-
-                ToggleRow(title: L10n.t("Di chuột vào tai thỏ để mở khay"),
-                          subtitle: L10n.t("Mở khay cả khi không kéo file — tiện để lấy lại file đã giữ."),
-                          isOn: $hoverEnabled)
-                    .onChange(of: hoverEnabled) { NotchDropController.shared.applySettings() }
-                    .disabled(!notchEnabled)
-            }
-            .padding(.horizontal, 20)
-
-            SectionHeader(icon: "square.on.square", title: L10n.t("Giao diện"))
-
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text(L10n.t("Vị trí khay")).font(.system(size: 13))
-                    Spacer()
-                    Text(L10n.t("Luôn ở tai thỏ")).font(.system(size: 12)).foregroundColor(.secondary)
-                }
-                Text(L10n.t("Khay luôn mở ngay dưới tai thỏ — một vị trí cố định để bạn nhớ thao tác, thay vì bám theo con trỏ."))
-                    .font(.system(size: 11)).foregroundColor(.secondary)
-
-                HStack {
-                    Text(L10n.t("Tự đóng sau khi rời chuột")).font(.system(size: 13))
-                    Spacer()
-                    Picker("", selection: $autoCloseDelay) {
-                        Text(L10n.t("2 giây")).tag(2.0)
-                        Text(L10n.t("3 giây")).tag(3.0)
-                        Text(L10n.t("5 giây")).tag(5.0)
-                        Text(L10n.t("10 giây")).tag(10.0)
-                    }
-                    .labelsHidden()
-                    .frame(width: 110)
-                    .disabled(!notchEnabled)
-                }
-            }
-            .padding(.horizontal, 20)
-        }
     }
 
     private func pickFiles() {

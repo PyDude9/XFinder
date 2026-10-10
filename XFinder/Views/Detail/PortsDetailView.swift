@@ -17,7 +17,7 @@ struct PortsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(icon: "point.3.connected.trianglepath.dotted",
                            title: L10n.t("Cổng đang mở"),
                            subtitle: L10n.t("Tiến trình nào đang giữ một cổng mạng, và có dừng được không."))
@@ -30,16 +30,16 @@ struct PortsDetailView: View {
                     }
                     .disabled(manager.isLoading)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, XFinderTokens.Space.page)
 
                 if let status { statusBanner(status) }
 
                 content
             }
-            .padding(.bottom, 24)
+            .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(Color(.windowBackgroundColor))
+        .background(XFinderTokens.Fill.window)
         .task { await manager.refresh() }
         .alert(item: $pending) { p in
             Alert(title: Text(p.force ? L10n.t("Buộc dừng tiến trình?") : L10n.t("Dừng tiến trình?")),
@@ -66,11 +66,10 @@ struct PortsDetailView: View {
                     VStack(spacing: 0) {
                         ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                             rowView(row)
-                            if index < rows.count - 1 { Divider().padding(.leading, 20) }
+                            if index < rows.count - 1 { Divider().padding(.leading, XFinderTokens.Space.page) }
                         }
                     }
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)))
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
                 footer(count: result.rows.count)
                 if result.uninspectable > 0 {
@@ -81,25 +80,25 @@ struct PortsDetailView: View {
         } else {
             HStack(spacing: 8) {
                 ProgressView().controlSize(.small)
-                Text(L10n.t("Đang đọc danh sách cổng…")).font(.system(size: 12)).foregroundColor(.secondary)
+                Text(L10n.t("Đang đọc danh sách cổng…")).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
     private func rowView(_ r: PortList.Row) -> some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: XFinderTokens.Space.inline) {
             Text(String(r.port))
-                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .font(XFinderTokens.Font.mono)
                 .frame(width: 64, alignment: .trailing)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
-                    Text(r.command).font(.system(size: 13, weight: .semibold)).lineLimit(1).truncationMode(.middle)
+                    Text(r.command).font(XFinderTokens.Font.row).lineLimit(1).truncationMode(.middle)
                     exposureBadge(r.exposure)
                 }
                 Text("PID \(r.pid) · \(r.owner?.user ?? "—") · \(r.addresses.joined(separator: ", "))")
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .lineLimit(1).truncationMode(.middle)
             }
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
@@ -111,11 +110,11 @@ struct PortsDetailView: View {
                     .controlSize(.small)
             } else {
                 Label(L10n.t("Không dừng được"), systemImage: "lock.fill")
-                    .font(.system(size: 11)).foregroundColor(.secondary)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .help(L10n.t("Tiến trình này không thuộc về bạn (hoặc là hệ thống, hoặc chính XFinder) nên macOS không cho XFinder dừng nó."))
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 9)
+        .padding(.horizontal, XFinderTokens.Space.inline).padding(.vertical, 9)
     }
 
     private func exposureBadge(_ e: PortList.Exposure) -> some View {
@@ -127,7 +126,7 @@ struct PortsDetailView: View {
             }
         }()
         return Text(L10n.t(key))
-            .font(.system(size: 10)).foregroundColor(color)
+            .font(XFinderTokens.Font.caption).foregroundColor(color)
             .padding(.horizontal, 7).padding(.vertical, 2)
             .background(Capsule().fill(color.opacity(0.14)))
             .help(L10n.t(help))
@@ -140,19 +139,19 @@ struct PortsDetailView: View {
                 Text("· \(L10n.t("cập nhật ")) \(t.formatted(date: .omitted, time: .standard))")
             }
         }
-        .font(.system(size: 11)).foregroundColor(.secondary)
-        .padding(.horizontal, 20)
+        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func note(_ text: String, color: Color) -> some View {
-        Text(text).font(.system(size: 12)).foregroundColor(color)
+        Text(text).font(XFinderTokens.Font.rowValue).foregroundColor(color)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func statusBanner(_ s: Status) -> some View {
         HStack(spacing: 10) {
-            Text(s.text).font(.system(size: 12)).foregroundColor(s.isError ? .orange : .primary)
+            Text(s.text).font(XFinderTokens.Font.rowValue).foregroundColor(s.isError ? .orange : .primary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
             if let row = s.forceRow {
@@ -161,8 +160,8 @@ struct PortsDetailView: View {
             Button { status = nil } label: { Image(systemName: "xmark") }.buttonStyle(.plain)
         }
         .padding(10)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color.primary.opacity(0.07)))
-        .padding(.horizontal, 20)
+        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(XFinderTokens.Fill.inset))
+        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     // MARK: - Actions

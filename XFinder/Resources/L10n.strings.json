@@ -305,10 +305,6 @@
       "en": "Last 7 days",
       "scope": "sentence"
     },
-    "7-Zip 26.02 tích hợp sẵn": {
-      "en": "7-Zip 26.02 built in",
-      "scope": "sentence"
-    },
     "90 ngày": {
       "en": "90 days",
       "scope": "sentence"
@@ -1081,10 +1077,6 @@
       "en": "Choose PDF…",
       "scope": "sentence"
     },
-    "Chọn các mục xuất hiện trong menu ngữ cảnh MFinder.": {
-      "en": "Choose which items appear in Finder's context menu.",
-      "scope": "sentence"
-    },
     "Chọn file để chia sẻ…": {
       "en": "Choose a file to share…",
       "scope": "sentence"
@@ -1823,10 +1815,6 @@
     },
     "Giữ cả hai": {
       "en": "Keep both",
-      "scope": "sentence"
-    },
-    "Giữ cả hai lưu một bản sao riêng (\\\"Report 2\\\").": {
-      "en": "Keep both saves a separate copy (\\\"Report 2\\\").",
       "scope": "sentence"
     },
     "Giữ file tạm để xử lý hàng loạt.": {
@@ -2839,10 +2827,6 @@
     },
     "Lớn (15.5pt)": {
       "en": "Large (15.5pt)",
-      "scope": "sentence"
-    },
-    "MFinder tích hợp sẵn bộ máy 7-Zip; không cần cài thêm ứng dụng nén và giải nén. Không bao giờ ghi đè — mục trùng tên sẽ được đổi tên (\\\"Report 2\\\") hoặc gộp.": {
-      "en": "XFinder ships with the 7-Zip engine built in; you do not need to install another archiver. It never overwrites — items with the same name are renamed (\\\"Report 2\\\") or merged.",
       "scope": "sentence"
     },
     "Markdown và danh sách công việc vẫn chỉnh sửa được dưới dạng văn bản thuần.": {
@@ -4581,10 +4565,6 @@
       "en": "Create a new board",
       "scope": "sentence"
     },
-    "Tạo file ZIP hoặc 7Z và giải nén ZIP, 7Z, RAR, TAR, GZ, XZ cùng các định dạng phổ biến khác. MFinder không bao giờ ghi đè file hiện có.": {
-      "en": "Create ZIP or 7Z files and extract ZIP, 7Z, RAR, TAR, GZ, XZ and other common formats. XFinder never overwrites existing files.",
-      "scope": "sentence"
-    },
     "Tạo file mới": {
       "en": "New file",
       "scope": "sentence"
@@ -4944,10 +4924,6 @@
     "XFinder nhận được ": {
       "en": "XFinder received ",
       "scope": "fragment"
-    },
-    "XFinder sẽ ghi nội dung vào clipboard, chuyển tới ứng dụng trước đó và mô phỏng ⌘V. Sao chép vào clipboard vẫn dùng được (bấm \\\"Sao chép\\\" trong menu chuột phải).": {
-      "en": "XFinder writes the content to the clipboard, switches to the previous app and simulates ⌘V. Copying to the clipboard still works (click \\\"Copy\\\" in the context menu).",
-      "scope": "sentence"
     },
     "XFinder thêm gì vào Finder": {
       "en": "What XFinder adds to Finder",
@@ -7037,6 +7013,62 @@
     },
     "Mỗi lần cập nhật là một lần đọc số liệu (nhanh hơn khi một trang số liệu đang mở); tắt thì không có bộ hẹn giờ nào.": {
       "en": "Each update is one metrics read (faster while a metrics page is open); off means no timer at all.",
+      "scope": "sentence"
+    },
+    "Tìm nhanh ứng dụng, liên kết và tập tin, hoặc lọc theo tên/loại/thời gian": {
+      "en": "Quickly find apps, links and files, or filter by name/kind/time",
+      "scope": "sentence"
+    },
+    "Hiểu câu tự nhiên và tự tạo câu truy vấn Spotlight — 100% trên máy": {
+      "en": "Understands natural language and builds a Spotlight query itself — 100% on-device",
+      "scope": "sentence"
+    },
+    "Chọn chế độ": {
+      "en": "Choose mode",
+      "scope": "sentence"
+    },
+    "Nhanh": {
+      "en": "Fast",
+      "scope": "sentence"
+    },
+    "Best-effort qua .stationary": {
+      "en": "Best-effort via .stationary",
+      "scope": "sentence"
+    },
+    "Tiện ích xem trước": {
+      "en": "Preview extensions",
+      "scope": "sentence"
+    },
+    "Trong khay (": {
+      "en": "In tray (",
+      "scope": "fragment"
+    },
+    "Xóa danh sách": {
+      "en": "Clear list",
+      "scope": "sentence"
+    },
+    "Giữ cả hai lưu một bản sao riêng (\"Report 2\").": {
+      "en": "Keep both saves a separate copy (\"Report 2\").",
+      "scope": "sentence"
+    },
+    "XFinder sẽ ghi nội dung vào clipboard, chuyển tới ứng dụng trước đó và mô phỏng ⌘V. Sao chép vào clipboard vẫn dùng được (bấm \"Sao chép\" trong menu chuột phải).": {
+      "en": "XFinder writes the content to the clipboard, switches to the previous app and simulates ⌘V. Copying to the clipboard still works (click \"Copy\" in the context menu).",
+      "scope": "sentence"
+    },
+    "ditto, zip, tar có sẵn của macOS": {
+      "en": "macOS's own ditto, zip and tar",
+      "scope": "sentence"
+    },
+    "Dùng công cụ nén có sẵn của macOS (ditto cho ZIP, tar cho TAR.GZ), không cần cài thêm gì. Không bao giờ ghi đè — mục trùng tên được đổi tên (\"Report 2\") hoặc gộp theo lựa chọn bên trên.": {
+      "en": "Uses the compression tools macOS already ships (ditto for ZIP, tar for TAR.GZ); nothing to install. Never overwrites — a name clash is renamed (\"Report 2\") or merged, as chosen above.",
+      "scope": "sentence"
+    },
+    "Tạo file ZIP hoặc TAR.GZ và giải nén ZIP, TAR, TAR.GZ. XFinder không bao giờ ghi đè file hiện có.": {
+      "en": "Creates ZIP or TAR.GZ and extracts ZIP, TAR and TAR.GZ. XFinder never overwrites an existing file.",
+      "scope": "sentence"
+    },
+    "Chọn các mục xuất hiện trong menu ngữ cảnh Finder.": {
+      "en": "Choose which items appear in Finder's context menu.",
       "scope": "sentence"
     }
   }
