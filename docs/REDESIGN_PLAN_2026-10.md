@@ -243,7 +243,11 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
   trang trong hub (tiến trình nội suy, Mở <app>), hàng flyout, công tắc `notch.nowPlaying` (mặc định **tắt**). **Đã probe với
   nhạc "đang phát"** (publisher `MPNowPlayingInfoCenter` câm): MediaRemote **từ chối** tiến trình thường (trả rỗng khi đang phát),
   **trả đủ** khi dylib được nạp vào `/usr/bin/perl` (Apple ký) — nên đọc qua helper perl, không polling, ~18 MB; **gửi lệnh** thì
-  app tự gửi được. Không AppleScript (chỉ Music/Spotify, cần Automation từng app, không trình duyệt). **Chưa bấm thử sống.**
+  app tự gửi được. Không AppleScript (chỉ Music/Spotify, cần Automation từng app, không trình duyệt). **Đã bấm thử sống
+  qua app đã cài (2026-10-11): 13/13** — công tắc → helper → badge → bấm badge mở trang → Next/Play tới player → tắt → perl
+  thoát; helper 0.01 s CPU / 17.6 MB. Player thật (Music/YouTube) chưa đo.
+- [x] **fix kèm theo (2026-10-11)** callback IOBluetooth (B4a) đến trên `coordinatorQueue`, `assumeIsolated` làm app crash ngay
+  khi mở với chuột BT đang kết nối (3 report). Nay `runOnMainActor`; gate `CallbackIsolationTests` đọc source.
 6. Now Playing: **probe trước** (nhạc đang phát, so MediaRemote vs AppleScript). Không probe xong không ship.
 7. Cài đặt notch về trang Khay thả (đổi tên "Notch & Khay thả"): bật từng live activity, Pill cho màn ngoài, độ nhạy hover,
    ẩn khi quay màn hình.

@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import os
 
 /// Runs the Now Playing helper and owns what it reports (B6). The helper is `XFinderNowPlaying.dylib`
 /// (built from `Helpers/NowPlaying/nowplaying-adapter.c`) hosted by Apple-signed `/usr/bin/perl` —
@@ -36,11 +37,14 @@ final class NowPlayingMonitor {
 
     private init() {}
 
+    private let log = Logger(subsystem: "com.xfinder.app", category: "nowplaying")
+
     // MARK: Settings (the ONE reader of this key — FeatureKeyDefaultsTests)
 
     var enabled: Bool { UserDefaults.standard.object(forKey: "notch.nowPlaying") as? Bool ?? false }
 
     func applySettings() {
+        log.info("applySettings enabled=\(self.enabled) process=\(self.process != nil) availability=\(String(describing: self.availability))")
         if enabled { start() } else { stop() }
     }
 
@@ -63,8 +67,8 @@ final class NowPlayingMonitor {
     private func launch() {
         restartWork = nil
         let helper = Self.helperURL
-        guard FileManager.default.fileExists(atPath: helper.path) else { fail(.missingHelper); return }
-        guard FileManager.default.isExecutableFile(atPath: Self.perlPath) else { fail(.missingPerl); return }
+        guard FileManager.default.fileExists(atPath: helper.path) else { log.error("helper missing at \(helper.path)"); fail(.missingHelper); return }
+        guard FileManager.default.isExecutableFile(atPath: Self.perlPath) else { log.error("no perl"); fail(.missingPerl); return }
 
         let p = Process()
         p.executableURL = URL(fileURLWithPath: Self.perlPath)
@@ -89,7 +93,8 @@ final class NowPlayingMonitor {
         p.terminationHandler = { [weak self] _ in
             DispatchQueue.main.async { MainActor.assumeIsolated { self?.helperEnded(gen) } }
         }
-        do { try p.run() } catch { fail(.gaveUp); return }
+        do { try p.run() } catch { log.error("perl run failed: \(error.localizedDescription)"); fail(.gaveUp); return }
+        log.info("helper launched pid=\(p.processIdentifier) gen=\(gen)")
         process = p
         stdinPipe = input
         stdoutPipe = output
@@ -108,6 +113,7 @@ final class NowPlayingMonitor {
     }
 
     func stop() {
+        log.info("stop() process=\(self.process != nil) availability=\(String(describing: self.availability))")
         restartWork?.cancel(); restartWork = nil
         helloWork?.cancel(); helloWork = nil
         if let p = process {
@@ -141,6 +147,7 @@ final class NowPlayingMonitor {
         stdinPipe = nil; stdoutPipe = nil
         guard enabled else { setAvailability(.off); return }
         let uptime = startedAt.map { Date().timeIntervalSince($0) } ?? 0
+        log.info("helper ended after \(uptime, format: .fixed(precision: 1)) s")
         switch supervisor.helperExited(afterUptime: uptime) {
         case .restart(let delay):
             setAvailability(.starting)
@@ -168,6 +175,7 @@ final class NowPlayingMonitor {
     private func handle(_ line: NowPlaying.Line) {
         switch line {
         case .hello:
+            log.info("hello from helper")
             helloWork?.cancel(); helloWork = nil
             setAvailability(.ready)
         case .empty:

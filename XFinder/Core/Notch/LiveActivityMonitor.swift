@@ -187,16 +187,19 @@ final class LiveActivityMonitor: NSObject {
         disconnectNotes.withLockUnchecked { notes in notes.forEach { $0.unregister() }; notes.removeAll() }
     }
 
-    // IOBluetooth calls back on the run loop the registration was made on (main). Registration and
-    // bookkeeping happen right here; only the device NAME crosses to the main actor.
+    // IOBluetooth does NOT always call back on the main thread. Measured 2026-10-11 (crash report
+    // XFinder-2026-10-11-061620): a real connect arrived on `com.apple.bluetooth.iobluetooth.coordinatorQueue`
+    // (CoreBluetooth's XPC path), and `MainActor.assumeIsolated` here trapped the whole app the moment
+    // the user's Bluetooth device reconnected. Registration and bookkeeping stay here (lock-protected);
+    // only the device NAME crosses, through `runOnMainActor` — synchronous on main, a hop otherwise.
     @objc nonisolated private func deviceConnected(_ note: IOBluetoothUserNotification, device: IOBluetoothDevice) {
         if let n = device.register(forDisconnectNotification: self, selector: #selector(deviceDisconnected(_:device:))) {
             disconnectNotes.withLockUnchecked { $0.append(n) }
         }
         let name = device.name ?? "Bluetooth"
-        MainActor.assumeIsolated {
-            guard Date() >= armedAt else { return }        // already connected at registration: baseline
-            present(LiveActivity.bluetoothItem(name: name, connected: true))
+        runOnMainActor { [weak self] in
+            guard let self, Date() >= self.armedAt else { return }   // already connected at registration: baseline
+            self.present(LiveActivity.bluetoothItem(name: name, connected: true))
         }
     }
 
@@ -204,6 +207,6 @@ final class LiveActivityMonitor: NSObject {
         note.unregister()
         disconnectNotes.withLockUnchecked { notes in notes.removeAll { $0 === note } }
         let name = device.name ?? "Bluetooth"
-        MainActor.assumeIsolated { present(LiveActivity.bluetoothItem(name: name, connected: false)) }
+        runOnMainActor { [weak self] in self?.present(LiveActivity.bluetoothItem(name: name, connected: false)) }
     }
 }
