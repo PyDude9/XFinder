@@ -69,6 +69,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ClipboardShelfController.shared.applySettings()
         FinderKeyboardController.shared.applySettings()
         QuitProtectionController.shared.applySettings()
+        AlertMonitor.shared.applySettings()
         NotchDropController.shared.applySettings()
         QuickSearchPanelController.shared.applySettings()
         VoiceManager.shared.setup()

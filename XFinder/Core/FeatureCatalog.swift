@@ -79,6 +79,7 @@ enum FeatureID: String, CaseIterable {
     case clipboardShelf, cleanURLs, suggestions
     case quickSearch, edgeNotes, dropTray, folderSync
     case voice
+    case alerts
 }
 
 struct FeatureDef: Equatable {
@@ -152,6 +153,11 @@ enum FeatureCatalog {
         FeatureDef(id: .folderSync, titleKey: "Đồng bộ thư mục tự động",
                    subtitleKey: "Sao chép một chiều theo lịch hoặc khi có thay đổi.",
                    symbol: "arrow.triangle.2.circlepath", group: .tools, enabledKey: "sync.autoEnabled",
+                   defaultOn: false, permissions: [], idle: .timerWhileActive),
+
+        FeatureDef(id: .alerts, titleKey: "Cảnh báo hệ thống",
+                   subtitleKey: "Thông báo khi CPU, bộ nhớ, ổ đĩa, nhiệt độ hay pin có vấn đề kéo dài.",
+                   symbol: "bell.badge", group: .tools, enabledKey: "alerts.enabled",
                    defaultOn: false, permissions: [], idle: .timerWhileActive),
 
         FeatureDef(id: .voice, titleKey: "Nhập bằng giọng nói",

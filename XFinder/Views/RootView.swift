@@ -128,6 +128,8 @@ struct DetailHostView: View {
                 VoiceDetailView()
             case .ports:
                 PortsDetailView()
+            case .alerts:
+                AlertsDetailView()
             case .settingsClipboard:
                 SettingsDetailView(destination: selection)
             case .compress:

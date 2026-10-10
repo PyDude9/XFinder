@@ -9,6 +9,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case network
     case storage
     case pin
+    case alerts
     // Clipboard & Ghi chú
     case clipboard
     case notes
@@ -60,6 +61,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .network: return "Mạng"
         case .storage: return "Ổ đĩa"
         case .pin: return "Pin"
+        case .alerts: return "Cảnh báo"
         case .clipboard: return "Clipboard"
         case .notes: return "Ghi chú"
         case .windowPreview: return "Xem trước cửa sổ"
@@ -100,6 +102,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .network: return "network"
         case .storage: return "internaldrive.fill"
         case .pin: return "battery.100"
+        case .alerts: return "bell.badge"
         case .clipboard: return "doc.on.clipboard.fill"
         case .notes: return "note.text"
         case .windowPreview: return "macwindow.badge.plus"
@@ -141,7 +144,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     static var groups: [(header: String, items: [SidebarDestination])] {
         [
-            ("CHUNG", [.dashboard, .features, .antiSleep, .system, .network, .storage, .pin]),
+            ("CHUNG", [.dashboard, .features, .antiSleep, .system, .network, .storage, .pin, .alerts]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .mouseGestures, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .actionHistory]),

@@ -6858,6 +6858,134 @@
     " dòng": {
       "en": " lines",
       "scope": "fragment"
+    },
+    "Cảnh báo": {
+      "en": "Alerts",
+      "scope": "sentence"
+    },
+    "Cảnh báo hệ thống": {
+      "en": "System alerts",
+      "scope": "sentence"
+    },
+    "Thông báo khi CPU, bộ nhớ, ổ đĩa, nhiệt độ hay pin có vấn đề kéo dài.": {
+      "en": "Notifies you when CPU, memory, disk, temperature or battery stay in trouble.",
+      "scope": "sentence"
+    },
+    "CPU cao kéo dài": {
+      "en": "Sustained high CPU",
+      "scope": "sentence"
+    },
+    "Ổ đĩa sắp đầy": {
+      "en": "Disk almost full",
+      "scope": "sentence"
+    },
+    "Nhiệt độ SoC cao": {
+      "en": "High SoC temperature",
+      "scope": "sentence"
+    },
+    "Pin yếu": {
+      "en": "Low battery",
+      "scope": "sentence"
+    },
+    "CPU đã ở mức ": {
+      "en": "CPU has been at ",
+      "scope": "fragment"
+    },
+    "Áp lực bộ nhớ ở mức ": {
+      "en": "Memory pressure is ",
+      "scope": "fragment"
+    },
+    "Ổ khởi động chỉ còn trống ": {
+      "en": "The boot drive has only ",
+      "scope": "fragment"
+    },
+    "Nhiệt độ SoC ": {
+      "en": "SoC temperature ",
+      "scope": "fragment"
+    },
+    "Pin còn ": {
+      "en": "Battery at ",
+      "scope": "fragment"
+    },
+    "Thử: ": {
+      "en": "Test: ",
+      "scope": "fragment"
+    },
+    "Một thông báo khi máy gặp vấn đề kéo dài — không lặp lại mỗi 30 giây.": {
+      "en": "One notification when the Mac stays in trouble — not one every 30 seconds.",
+      "scope": "sentence"
+    },
+    "Bật cảnh báo": {
+      "en": "Enable alerts",
+      "scope": "sentence"
+    },
+    "Kiểm tra mỗi 30 giây khi bật; tắt thì không có bộ hẹn giờ nào.": {
+      "en": "Checks every 30 seconds while on; off means no timer at all.",
+      "scope": "sentence"
+    },
+    "Quy tắc": {
+      "en": "Rules",
+      "scope": "sentence"
+    },
+    "Điều kiện phải kéo dài đủ lâu mới báo; báo rồi phải hạ xuống mới báo lại.": {
+      "en": "A condition must last long enough to alert; after an alert it must clear before alerting again.",
+      "scope": "sentence"
+    },
+    "còn trống ": {
+      "en": "free ",
+      "scope": "fragment"
+    },
+    "Phải kéo dài": {
+      "en": "Must last",
+      "scope": "sentence"
+    },
+    "Ngay lập tức": {
+      "en": "Immediately",
+      "scope": "sentence"
+    },
+    "Không báo lại trong": {
+      "en": "Do not repeat within",
+      "scope": "sentence"
+    },
+    "Gần đây": {
+      "en": "Recent",
+      "scope": "sentence"
+    },
+    "Chưa có cảnh báo nào trong phiên này.": {
+      "en": "No alerts in this session yet.",
+      "scope": "sentence"
+    },
+    "Gửi thông báo thử": {
+      "en": "Send a test notification",
+      "scope": "sentence"
+    },
+    "Chưa đọc lần nào — bật cảnh báo để bắt đầu.": {
+      "en": "Nothing read yet — enable alerts to start.",
+      "scope": "sentence"
+    },
+    "Lần đọc cuối ": {
+      "en": "Last read ",
+      "scope": "fragment"
+    },
+    "Đang hỏi quyền thông báo…": {
+      "en": "Asking for notification permission…",
+      "scope": "sentence"
+    },
+    "Hiện tại: ": {
+      "en": "Now: ",
+      "scope": "fragment"
+    },
+    "Không đọc được trên máy này — quy tắc bị bỏ qua.": {
+      "en": "Not readable on this Mac — the rule is skipped.",
+      "scope": "sentence"
+    },
+    "Cảnh báo hiện dưới dạng biểu ngữ của XFinder và trong Trung tâm thông báo.": {
+      "en": "Alerts appear as XFinder's own banner and in Notification Center.",
+      "scope": "sentence"
+    },
+    "Cảnh báo hiện dưới dạng biểu ngữ của XFinder. Trung tâm thông báo của macOS từ chối bản ký bằng chứng chỉ tự tạo, nên không có thông báo hệ thống.": {
+      "en": "Alerts appear as XFinder's own banner. macOS Notification Center refuses builds signed with a self-made certificate, so there is no system notification.",
+      "scope": "sentence"
     }
   }
 }

@@ -94,6 +94,7 @@ final class FeatureHub {
         case .dropTray:        NotchDropController.shared.applySettings()
         case .folderSync:      FolderSyncController.shared.applySettings()
         case .voice:           VoiceManager.shared.applySettings()
+        case .alerts:          AlertMonitor.shared.applySettings()
         // Read at the point of use by the clipboard engine; nothing to re-arm.
         case .cleanURLs, .suggestions: break
         }

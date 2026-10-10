@@ -48,6 +48,9 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "clipboard.autoClearSeconds",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
                reader: "XFinder/Core/ClipboardManager.swift"),
+        Switch(key: "alerts.enabled",
+               views: ["XFinder/Views/Detail/AlertsDetailView.swift"],
+               reader: "XFinder/Core/AlertMonitor.swift"),
         Switch(key: "quitProtection.enabled",
                views: [],   // bound only through FeatureHub now (the old page was merged away)
                reader: "XFinder/Core/QuitProtectionController.swift"),
