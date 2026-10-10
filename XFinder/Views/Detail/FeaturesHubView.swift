@@ -106,6 +106,36 @@ struct FeaturesHubView: View {
                     .padding(.horizontal, 20)
                 }
             }
+
+            backupSection
+        }
+    }
+
+    // MARK: Backup
+
+    @State private var transfer = SettingsTransferController.shared
+
+    private var backupSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(L10n.t("Sao lưu cài đặt")).font(.system(size: 15, weight: .semibold)).padding(.horizontal, 20)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L10n.t("Xuất cài đặt XFinder ra một tệp để chuyển sang máy Mac khác hoặc khôi phục sau khi cài lại. Không gồm lịch sử clipboard, ghi chú, khoá API (nằm trong Keychain) hay thứ riêng của máy này như vị trí cửa sổ."))
+                    .font(.system(size: 12)).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    Button(L10n.t("Xuất…")) { transfer.exportSettings() }
+                    Button(L10n.t("Nhập…")) { transfer.importSettings() }
+                }
+                .controlSize(.small)
+                if let status = transfer.status {
+                    Text(status).font(.system(size: 11))
+                        .foregroundColor(transfer.statusIsError ? .orange : .secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.05)))
+            .padding(.horizontal, 20)
         }
     }
 

@@ -25,6 +25,10 @@ Tính năng đã tắt **không** làm biến mất hàng trong sidebar — tran
 
 Lần chạy đầu XFinder mở một cửa sổ thiết lập: chọn gói **Tối giản / Hằng ngày / Tất cả** (hoặc tự bật từng tính năng), rồi chỉ xin **đúng những quyền mà lựa chọn đó dùng** — chọn Tối giản thì không xin quyền nào. XFinder không còn tự xin Trợ năng, Ghi màn hình và Bluetooth ngay khi mở như trước. Chạy lại bằng nút **Chạy lại thiết lập** ở trang Tính năng & Quyền; nút **Cấp quyền…** ở tab Quyền gọi hộp xin quyền của hệ thống trước (macOS chỉ liệt kê một app trong mục Quyền riêng tư sau khi app đã xin).
 
+### Sao lưu và chuyển cài đặt
+
+Trang **Tính năng & Quyền → Sao lưu cài đặt**: **Xuất…** ra một tệp JSON và **Nhập…** trên máy khác. Chỉ chuyển *cài đặt*: không gồm lịch sử clipboard, ghi chú, pinboard, lịch sử thao tác, khoá API (nằm trong Keychain), vị trí cửa sổ/biểu tượng menu, cờ migration, hay giá trị là đường dẫn riêng của máy (số lượng bị bỏ được báo sau khi xuất). Tệp nhập được coi là **đầu vào không tin cậy**: áp dụng đúng bộ luật như lúc xuất, nên một tệp tự chế không thể đặt `startPage`, khoá hệ thống `NS…` hay cờ migration; giá trị sai kiểu bị từ chối chứ không ép kiểu. Nhập chỉ ghi các khoá có trong tệp và hỏi xác nhận trước; công tắc tính năng áp dụng ngay, phần còn lại có hiệu lực khi mở lại XFinder.
+
 ### Popover trên thanh menu
 
 Một biểu tượng, các mục tách thành tab: **Điều khiển · Chống ngủ · Hệ thống · Mạng · Ổ đĩa · Pin · Ghi chú**. Tab *Điều khiển* có âm lượng, chọn thiết bị âm thanh ra, chống ngủ, chế độ tối, tắt tiếng và **các công tắc tính năng nhóm theo Cửa sổ / Clipboard / Công cụ / Giọng nói** (cùng khoá với trang Tính năng & Quyền).

@@ -45,6 +45,9 @@ final class FeatureHub {
         observers = []
     }
 
+    /// Re-read every switch (after settings were changed from outside, e.g. an import).
+    func refresh() { revision += 1 }
+
     // MARK: State
 
     func isOn(_ f: FeatureDef) -> Bool {

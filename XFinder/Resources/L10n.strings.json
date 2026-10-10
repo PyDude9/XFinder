@@ -6734,6 +6734,98 @@
     "Chạy lại thiết lập": {
       "en": "Run setup again",
       "scope": "sentence"
+    },
+    "Sao lưu cài đặt": {
+      "en": "Back up settings",
+      "scope": "sentence"
+    },
+    "Xuất cài đặt XFinder ra một tệp để chuyển sang máy Mac khác hoặc khôi phục sau khi cài lại. Không gồm lịch sử clipboard, ghi chú, khoá API (nằm trong Keychain) hay thứ riêng của máy này như vị trí cửa sổ.": {
+      "en": "Export XFinder's settings to a file to move to another Mac or restore after a reinstall. It does not include clipboard history, notes, API keys (they live in the Keychain) or anything specific to this Mac such as window positions.",
+      "scope": "sentence"
+    },
+    "Chọn nơi lưu tệp cài đặt.": {
+      "en": "Choose where to save the settings file.",
+      "scope": "sentence"
+    },
+    "Chọn tệp cài đặt XFinder đã xuất.": {
+      "en": "Choose an exported XFinder settings file.",
+      "scope": "sentence"
+    },
+    "Đã xuất ": {
+      "en": "Exported ",
+      "scope": "fragment"
+    },
+    " cài đặt": {
+      "en": " settings",
+      "scope": "fragment"
+    },
+    "; đã bỏ ": {
+      "en": "; left out ",
+      "scope": "fragment"
+    },
+    " giá trị là đường dẫn riêng của máy này.": {
+      "en": " values that are paths on this Mac.",
+      "scope": "fragment"
+    },
+    "Không ghi được tệp: ": {
+      "en": "Could not write the file: ",
+      "scope": "fragment"
+    },
+    "Không đọc được tệp.": {
+      "en": "Could not read the file.",
+      "scope": "sentence"
+    },
+    "Đã nhập ": {
+      "en": "Imported ",
+      "scope": "fragment"
+    },
+    " cài đặt. Công tắc tính năng đã áp dụng ngay; phần còn lại có hiệu lực khi mở lại XFinder.": {
+      "en": " settings. Feature switches took effect now; the rest apply when XFinder is reopened.",
+      "scope": "fragment"
+    },
+    "Nhập cài đặt?": {
+      "en": "Import settings?",
+      "scope": "sentence"
+    },
+    "Tệp có ": {
+      "en": "The file has ",
+      "scope": "fragment"
+    },
+    " cài đặt. Cài đặt hiện tại cùng tên sẽ bị ghi đè.": {
+      "en": " settings. Current settings with the same name will be overwritten.",
+      "scope": "fragment"
+    },
+    " Bỏ qua ": {
+      "en": " Skipping ",
+      "scope": "fragment"
+    },
+    " mục không phải cài đặt hoặc không hợp lệ.": {
+      "en": " entries that are not settings or are invalid.",
+      "scope": "fragment"
+    },
+    "Nhập": {
+      "en": "Import",
+      "scope": "sentence"
+    },
+    "Tệp quá lớn để là tệp cài đặt.": {
+      "en": "The file is too large to be a settings file.",
+      "scope": "sentence"
+    },
+    "Đây không phải tệp cài đặt của XFinder.": {
+      "en": "This is not an XFinder settings file.",
+      "scope": "sentence"
+    },
+    "Tệp không có cài đặt nào dùng được.": {
+      "en": "The file has no usable settings.",
+      "scope": "sentence"
+    },
+    "Tệp này do bản XFinder mới hơn tạo ra (định dạng ": {
+      "en": "This file was made by a newer XFinder (format ",
+      "scope": "fragment"
+    },
+    "); hãy cập nhật XFinder.": {
+      "en": "); please update XFinder.",
+      "scope": "fragment"
     }
   }
 }

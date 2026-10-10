@@ -168,6 +168,8 @@
 		7F1A018F /* MenuBar/Layout/AccessibilityMenuBarInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A018E /* MenuBar/Layout/AccessibilityMenuBarInventory.swift */; };
 		7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A00DD /* XFinder/Resources/AppIcon.icns */; };
 		7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0073 /* ClipboardPasteEngine.swift */; };
+		7F1A01E0 /* SettingsTransferController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01DF /* SettingsTransferController.swift */; };
+		7F1A01DE /* SettingsTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01DD /* SettingsTransfer.swift */; };
 		7F1A01DC /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01DB /* OnboardingView.swift */; };
 		7F1A01DA /* Onboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01D9 /* Onboarding.swift */; };
 		7F1A01D8 /* SidebarSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01D7 /* SidebarSearch.swift */; };
@@ -276,6 +278,8 @@
 		7F1A0071 /* Detail/QuickLookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/QuickLookDetailView.swift; sourceTree = "<group>"; };
 		7F1A0072 /* Detail/FinderToolDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FinderToolDetailViews.swift; sourceTree = "<group>"; };
 		7F1A0073 /* ClipboardPasteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardPasteEngine.swift; sourceTree = "<group>"; };
+		7F1A01DF /* SettingsTransferController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTransferController.swift; sourceTree = "<group>"; };
+		7F1A01DD /* SettingsTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTransfer.swift; sourceTree = "<group>"; };
 		7F1A01DB /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		7F1A01D9 /* Onboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding.swift; sourceTree = "<group>"; };
 		7F1A01D7 /* SidebarSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarSearch.swift; sourceTree = "<group>"; };
@@ -484,6 +488,8 @@
 				7F1A0068 /* BatchRenameEngine.swift */,
 				7F1A0069 /* FileSearchEngine.swift */,
 				7F1A0073 /* ClipboardPasteEngine.swift */,
+				7F1A01DF /* SettingsTransferController.swift */,
+				7F1A01DD /* SettingsTransfer.swift */,
 				7F1A01D9 /* Onboarding.swift */,
 				7F1A01D7 /* SidebarSearch.swift */,
 				7F1A01D5 /* PortScanner.swift */,
@@ -829,6 +835,8 @@
 				7F1A008A /* Detail/WindowDetailViews.swift in Sources */,
 				7F1A008B /* Detail/QuickLookDetailView.swift in Sources */,
 				7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */,
+				7F1A01E0 /* SettingsTransferController.swift in Sources */,
+				7F1A01DE /* SettingsTransfer.swift in Sources */,
 				7F1A01DC /* OnboardingView.swift in Sources */,
 				7F1A01DA /* Onboarding.swift in Sources */,
 				7F1A01D8 /* SidebarSearch.swift in Sources */,
