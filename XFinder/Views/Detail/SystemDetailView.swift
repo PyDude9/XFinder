@@ -3,10 +3,10 @@ import SwiftUI
 /// Hệ thống — layout mirrors the reference screenshot: two temperature
 /// readouts across the top, CPU and GPU meters, a flat memory table, uptime.
 ///
-/// Honesty Rule: CPU/GPU temperature has no public macOS API (SMC is private),
-/// so those slots render "Đang thu thập…" — never a number. GPU *load* IS
-/// public (`IOAccelerator/PerformanceStatistics`, see `GPUUtilization`) and is
-/// shown; it renders "Không khả dụng" only when the hardware publishes no value.
+/// Honesty Rule: the temperature slots show the SoC die sensors read through the HID thermal
+/// interface (`ThermalSensors`, measured on macOS 27 without root). They are labelled SoC, not
+/// CPU, and render "Không khả dụng" — never a number — when no sensor is readable. GPU *load* is
+/// read from `IOAccelerator/PerformanceStatistics` (see `GPUUtilization`).
 struct SystemDetailView: View {
     @Environment(SystemMonitorManager.self) var monitor
     @AppStorage("menubar.updateInterval") private var updateInterval = 2
@@ -101,22 +101,29 @@ struct SystemDetailView: View {
 
     private var temperatureRow: some View {
         HStack(spacing: 0) {
-            tempCell(title: "CPU")
+            tempCell(title: L10n.t("Nhiệt độ SoC"), value: monitor.currentMetrics.socTempAverage)
             Divider().frame(height: 50)
-            tempCell(title: "GPU")
+            tempCell(title: L10n.t("Nóng nhất"), value: monitor.currentMetrics.socTempMax)
         }
         .padding(.horizontal, 20)
     }
 
-    /// No public API exposes die temperature — show the honest placeholder.
-    private func tempCell(title: String) -> some View {
+    /// SoC die temperature from the HID thermal sensors (see `ThermalSensors`): the mean and the
+    /// hottest die sensor. Labelled SoC, not CPU — no key says which sensors belong to CPU cores.
+    /// nil (no readable sensor) renders "Không khả dụng", never 0 °C.
+    private func tempCell(title: String, value: Double?) -> some View {
         VStack(spacing: 3) {
             Text(title)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.secondary)
-            Text(L10n.t("Đang thu thập…"))
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.secondary)
+            if let value {
+                Text(String(format: "%.0f °C", value))
+                    .font(.system(size: 15, weight: .medium)).monospacedDigit()
+            } else {
+                Text(L10n.t("Không khả dụng"))
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
         }
         .frame(maxWidth: .infinity)
     }

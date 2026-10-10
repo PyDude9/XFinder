@@ -18,6 +18,10 @@ struct SystemMetrics: Codable, Sendable {
     /// purpose: nil means the hardware publishes no such key, and the meter must say
     /// "Không khả dụng" rather than draw a fabricated 0 % (Honesty Rule).
     let gpuUsage: Double?
+    /// SoC die temperature (°C) from the HID thermal sensors — nil when none is readable. Mean and
+    /// hottest of the `PMU tdie*` sensors; deliberately NOT called CPU (see `ThermalSensors`).
+    let socTempAverage: Double?
+    let socTempMax: Double?
     let memoryUsed: Int64
     let memoryTotal: Int64
     let diskUsed: Int64
@@ -63,10 +67,14 @@ struct SystemMetrics: Codable, Sendable {
         memoryWired: Int64 = 0,
         memoryCompressed: Int64 = 0,
         memoryCached: Int64 = 0,
-        swapUsed: Int64 = 0
+        swapUsed: Int64 = 0,
+        socTempAverage: Double? = nil,
+        socTempMax: Double? = nil
     ) {
         self.cpuUsage = cpuUsage
         self.gpuUsage = gpuUsage
+        self.socTempAverage = socTempAverage
+        self.socTempMax = socTempMax
         self.memoryUsed = memoryUsed
         self.memoryTotal = memoryTotal
         self.diskUsed = diskUsed

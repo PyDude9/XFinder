@@ -101,12 +101,14 @@ final class SystemMonitorManager {
     /// GPU `Device Utilization %` from the IORegistry (public; measured to follow real load —
     /// see `GPUUtilization`). nil ⇒ the meter shows "Không khả dụng", never 0.
     private let gpuReader = GPUUtilizationReader()
+    private let thermalReader = ThermalReader()
 
     private func collectMetrics() -> SystemMetrics {
         let now = Date()
 
         let cpuUsage = cpuUsagePercent(now: now)
         let gpuUsage = gpuReader.read()
+        let soc = ThermalSensors.summary(of: thermalReader.read())
         let cpuPerCore = coreUsagePercents(now: now)
         let mem = Self.readMemoryBreakdown()
         let (diskUsed, diskTotal) = Self.readDisk()
@@ -136,7 +138,9 @@ final class SystemMonitorManager {
             memoryWired: mem.wired,
             memoryCompressed: mem.compressed,
             memoryCached: mem.cached,
-            swapUsed: swapUsed
+            swapUsed: swapUsed,
+            socTempAverage: soc?.socAverage,
+            socTempMax: soc?.socMax
         )
     }
 

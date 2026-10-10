@@ -6826,6 +6826,14 @@
     "); hãy cập nhật XFinder.": {
       "en": "); please update XFinder.",
       "scope": "fragment"
+    },
+    "Nhiệt độ SoC": {
+      "en": "SoC temperature",
+      "scope": "sentence"
+    },
+    "Nóng nhất": {
+      "en": "Hottest",
+      "scope": "sentence"
     }
   }
 }

@@ -465,9 +465,9 @@ struct MenubarFlyoutView: View {
     private var systemSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 0) {
-                tempCell("CPU")
+                tempCell(L10n.t("Nhiệt độ SoC"), systemMonitor.currentMetrics.socTempAverage)
                 Divider().frame(height: 34)
-                tempCell("GPU")
+                tempCell(L10n.t("Nóng nhất"), systemMonitor.currentMetrics.socTempMax)
             }
             meter("CPU", systemMonitor.currentMetrics.cpuUsage, .blue)
             // GPU load from the IORegistry (public, load-tracking — see GPUUtilization);
@@ -714,11 +714,15 @@ struct MenubarFlyoutView: View {
         }
     }
 
-    /// CPU/GPU die temperature needs SMC access, which has no public API.
-    private func tempCell(_ title: String) -> some View {
+    /// SoC die temperature (HID thermal sensors); nil ⇒ "Không khả dụng", never 0 °C.
+    private func tempCell(_ title: String, _ value: Double?) -> some View {
         VStack(spacing: 2) {
             Text(title).font(.system(size: 10)).foregroundColor(.secondary)
-            Text(L10n.t("Đang thu thập…")).font(.system(size: 12)).foregroundColor(.secondary)
+            if let value {
+                Text(String(format: "%.0f °C", value)).font(.system(size: 12, weight: .medium)).monospacedDigit()
+            } else {
+                Text(L10n.t("Không khả dụng")).font(.system(size: 12)).foregroundColor(.secondary)
+            }
         }
         .frame(maxWidth: .infinity)
     }

@@ -69,7 +69,7 @@ Một biểu tượng, các mục tách thành tab: **Điều khiển · Chống
 
 Một số chỉ số macOS không cung cấp API công khai, XFinder hiển thị trạng thái thật thay vì số liệu suy đoán:
 
-- Nhiệt độ CPU / GPU: **không khả dụng** (SMC không có API công khai)
+- Nhiệt độ: hiển thị **nhiệt độ SoC** (trung bình và cảm biến nóng nhất trong các cảm biến `PMU tdie*`), đọc qua giao diện nhiệt HID *không công khai* (nạp bằng `dlsym`, thiếu thì hiện "Không khả dụng"). Gọi là SoC chứ không phải CPU vì không khoá nào cho biết cảm biến nào thuộc nhân CPU
 - % GPU: **có** — đọc từ IORegistry (`IOAccelerator`), đã đo bám tải thật; chỉ hiện "Không khả dụng" khi phần cứng không công bố giá trị
 - SMART ổ đĩa: chỉ trạng thái Verified/Failing (qua `diskutil`), **không** có bảng thuộc tính
 - Độ sáng màn hình: chỉ tăng/giảm, không hiện %
