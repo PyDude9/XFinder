@@ -164,7 +164,7 @@ struct BatchRenameDetailView: View {
                 .padding(.horizontal, XFinderTokens.Space.page)
 
                 if let msg = outcome {
-                    InlineNote(kind: isError ? .warning : .success, text: msg)
+                    InlineNote(kind: isError ? .error : .success, text: msg)
                         .padding(.horizontal, XFinderTokens.Space.page)
                 }
             }

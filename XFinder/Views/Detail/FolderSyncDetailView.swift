@@ -218,7 +218,8 @@ private struct PairSettingsSheet: View {
             VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 ToggleRow(title: L10n.t("Xóa tệp thừa ở đích (mirror hoàn toàn)"), isOn: $pair.deleteExtras)
                 if pair.deleteExtras {
-                    InlineNote(kind: .warning, text: L10n.t("Cảnh báo: tệp có ở đích nhưng không có ở nguồn sẽ bị XÓA VĨNH VIỄN, không vào Thùng rác."))
+                    // Red on purpose: this deletes for real, not to the Trash (CLAUDE.md contract).
+                    InlineNote(kind: .error, text: L10n.t("Cảnh báo: tệp có ở đích nhưng không có ở nguồn sẽ bị XÓA VĨNH VIỄN, không vào Thùng rác."))
                 }
             }
 

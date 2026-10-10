@@ -64,7 +64,9 @@ struct QuickLookDetailView: View {
                     SectionHeader(icon: "doc.text.magnifyingglass", title: L10n.t("Định dạng xem trước"))
                     VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                         line(L10n.t("Nhấn Space trên file .md, .mdx, .qmd hoặc .rmd trong Finder."))
-                        line(L10n.t("Nhấn Space trên file ZIP, 7Z, RAR, GZ hoặc TAR.GZ để xem nội dung mà không cần giải nén."))
+                        // Only what `unzip -Z1` / `tar -tf` can actually list. No 7Z, no RAR:
+                        // macOS ships no decoder for either and the previous copy promised both.
+                        line(L10n.t("Nhấn Space trên file ZIP, TAR, TAR.GZ hoặc TAR.BZ2 để xem nội dung mà không cần giải nén."))
                         line(L10n.t("Render tiêu đề, bảng, danh sách công việc, khối mã, front matter và ảnh local."))
                         line(L10n.t("Mã MDX, Quarto và R được hiển thị nhưng không bao giờ được thực thi."))
                         line(L10n.t("Bản xem trước file nén chỉ đọc header và không bao giờ tạo file đã giải nén."))
@@ -276,7 +278,9 @@ struct QuickLookPreviewerSheet: View {
 private extension URL {
     var isArchiveURL: Bool {
         let ext = pathExtension.lowercased()
-        return ["zip", "tar", "gz", "tgz", "bz2", "7z"].contains(ext)
+        // `7z` deliberately absent: Info-ZIP `unzip` cannot read it, so listing one
+        // returned [] and looked like a bug rather than an unsupported format.
+        return ["zip", "tar", "gz", "tgz", "bz2"].contains(ext)
     }
 }
 
@@ -353,7 +357,7 @@ enum ArchiveReader {
     static func listEntries(url: URL) -> [String] {
         let ext = url.pathExtension.lowercased()
         let p = Process()
-        if ext == "zip" || ext == "7z" {
+        if ext == "zip" {
             p.executableURL = URL(fileURLWithPath: "/usr/bin/unzip")
             p.arguments = ["-Z1", url.path]
         } else {

@@ -68,7 +68,11 @@ struct ActionRow: View {
 /// An explanatory note under a row: plain, a warning, or a permission that is missing (with the
 /// button that fixes it). Replaces the three hand-rolled `permissionNote`-style helpers.
 struct InlineNote: View {
-    enum Kind { case plain, warning, success }
+    /// `.warning` is cautionary (orange). `.error` is a failure or an irreversible
+    /// consequence (red) — a rename that failed, a sync that deletes for real. The
+    /// A3 flatten mapped both onto `.warning`, which read a permanent-delete warning
+    /// as merely cautionary; keep the two tiers distinct.
+    enum Kind { case plain, warning, error, success }
     var kind: Kind = .plain
     let text: String
     var buttonTitle: String? = nil
@@ -78,6 +82,7 @@ struct InlineNote: View {
         switch kind {
         case .plain: return .secondary
         case .warning: return .orange
+        case .error: return .red
         case .success: return .green
         }
     }

@@ -3317,10 +3317,6 @@
       "en": "Press Space on a .md, .mdx, .qmd or .rmd file in Finder.",
       "scope": "sentence"
     },
-    "Nhấn Space trên file ZIP, 7Z, RAR, GZ hoặc TAR.GZ để xem nội dung mà không cần giải nén.": {
-      "en": "Press Space on a ZIP, 7Z, RAR, GZ or TAR.GZ file to see its contents without extracting.",
-      "scope": "sentence"
-    },
     "Nhấn để chuyển": {
       "en": "Press to switch",
       "scope": "sentence"
@@ -7077,6 +7073,10 @@
     },
     "Cho Cảnh báo hiện thêm trong Trung tâm thông báo. Không bắt buộc: cảnh báo luôn hiện bằng biểu ngữ của XFinder. Bản ký bằng chứng chỉ tự tạo bị macOS từ chối quyền này.": {
       "en": "Lets Alerts also appear in Notification Center. Optional: alerts always show as XFinder's own banner. macOS refuses this permission to builds signed with a self-made certificate.",
+      "scope": "sentence"
+    },
+    "Nhấn Space trên file ZIP, TAR, TAR.GZ hoặc TAR.BZ2 để xem nội dung mà không cần giải nén.": {
+      "en": "Press Space on a ZIP, TAR, TAR.GZ or TAR.BZ2 file to list its contents without extracting.",
       "scope": "sentence"
     }
   }

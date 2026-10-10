@@ -339,10 +339,18 @@ private struct ClipboardSettingsBody: View {
                     HStack(spacing: XFinderTokens.Space.inline) {
                         Circle().fill(board.color.color).frame(width: 10, height: 10)
                         Image(systemName: board.icon).font(.caption).foregroundColor(.secondary)
-                        Text(board.name).font(XFinderTokens.Font.rowValue).fileNameRowSafe()
-                        if board.isBuiltIn {
-                            Text(L10n.t("mặc định")).font(.caption2).foregroundColor(.secondary)
+                        // Name + badge share ONE flexible region so the badge stays snug
+                        // against the name while the buttons sit flush right. A
+                        // `maxWidth: .infinity` on the name alone pushed the badge to the
+                        // trailing edge next to the buttons (A3 review finding).
+                        HStack(spacing: XFinderTokens.Space.tight) {
+                            Text(board.name).font(XFinderTokens.Font.rowValue)
+                                .lineLimit(1).truncationMode(.middle)
+                            if board.isBuiltIn {
+                                Text(L10n.t("mặc định")).font(.caption2).foregroundColor(.secondary)
+                            }
                         }
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                         Button(L10n.t("Sửa")) {
                             editingBoard = board
                             showRenameBoard = true

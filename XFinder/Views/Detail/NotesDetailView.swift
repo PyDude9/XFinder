@@ -150,12 +150,15 @@ struct NotesDetailView: View {
             .cornerRadius(XFinderTokens.Radius.control)
             .frame(maxWidth: 260)
 
-            PickerRow(title: "", selection: $selectedColorName, width: 130) {
+            // A labelled menu picker, not `PickerRow(title: "")`: PickerRow hides the
+            // native label, so the filter lost its "Màu" caption (A3 review finding).
+            Picker(L10n.t("Màu"), selection: $selectedColorName) {
                 Text(L10n.t("Mọi màu")).tag(nil as String?)
                 ForEach(CodableColor.presetNames, id: \.self) { name in
                     Text(name).tag(name as String?)
                 }
             }
+            .pickerStyle(.menu).frame(width: 170)
 
             // Two short labels: segmented is the right control (the gate allows ≤ 4).
             Picker("", selection: $showArchived) {
