@@ -168,6 +168,13 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
 > **Baseline đo bằng gate mới (2026-10-10, sau A1):** `audit-ui-tokens.py` → **606 vấn đề / 32 trang**. Phần lớn là cỡ chữ và bán kính
 > literal, không chỉ 12 trang card. A3 vì thế là *mọi* trang trong `Views/Detail/`, ưu tiên 12 trang card trước; con số phải về 0.
 
+- [x] **A2b (một phần)** `ToastSurface` trên `SurfacePanel(.passive)`: ColorToast/TextToast/AlertBanner thành wrapper mỏng (e2e màu 6/6,
+  banner 380×68 đo được); `QuitHoldHUD` trên `SurfacePanel` (e2e giữ ⌘Q 10/10). **Còn lại 5 chỗ tương tác** (Shelf, QuickSearch, EdgeNotes,
+  DockPreview, NotchDrop) — chuyển khi chạm tới từng tính năng (B/C/D), không chuyển mù.
+- [x] **A4a** Tab Quyền thêm hàng **Thông báo** (tùy chọn; nói thẳng bị từ chối với chữ ký tự tạo). Lịch/Toàn quyền đĩa **hoãn** tới Phase F —
+  thêm hàng quyền mà chưa tính năng nào dùng là một control không có việc.
+- [x] **A5 (đo lần 1, 2026-10-10)** idle CPU **0,02 s / 60 s ≈ 0,03 %** với `HIDIdleTime` tăng đủ 60 s (người dùng thật sự rảnh) — các số
+  2 % đo trước đó là lúc người dùng đang dùng máy. Dirty memory **61,6 MB** khi mở trang Tính năng (48,4 MB trên trang Giới thiệu) → Phase G.
 - [x] **A2a** `Core/Surface/SurfaceGeometry.swift` (thuần: anchor/clamp/notch/pill/expanded, 6 test, 3 mutation đỏ) + `SurfacePanel`
   (`.interactive/.passive/.notch`, prepare-once, `show(anchor:)`, `hide(after:)`) + `ClickOutsideDismisser`. **Chưa** chuyển 8 chỗ cũ sang (A2b).
 - [x] **A3** 32/32 trang phẳng — `audit-ui-tokens.py` 606 → **0**; build xanh; 456 test; sweep AX 33 trang × 2 ngôn ngữ (`scripts/sweep-pages-ax.py`,
