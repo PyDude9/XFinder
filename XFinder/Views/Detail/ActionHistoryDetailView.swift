@@ -93,6 +93,7 @@ struct ActionHistoryDetailView: View {
         case "compress": return "archivebox.fill"
         case "extract": return "archivebox"
         case "pdf": return "doc.richtext.fill"
+        case "image": return "photo.fill"
         case "trash": return "trash.fill"
         default: return "circle.fill"
         }
@@ -103,6 +104,7 @@ struct ActionHistoryDetailView: View {
         case "rename": return .blue
         case "compress", "extract": return .orange
         case "pdf": return .red
+        case "image": return .purple
         case "trash": return .gray
         default: return .secondary
         }

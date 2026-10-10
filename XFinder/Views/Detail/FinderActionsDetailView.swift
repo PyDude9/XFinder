@@ -108,6 +108,11 @@ struct FinderActionsDetailView: View {
                     }
                 }
 
+                if !imageSelection.isEmpty {
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    imageSection
+                }
+
                 Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
@@ -185,6 +190,70 @@ struct FinderActionsDetailView: View {
                 ToggleRow(title: L10n.t("Khóa thư mục"), isOn: $showFolderLock)
             }
             .padding(.horizontal, XFinderTokens.Space.page)
+        }
+    }
+
+    // MARK: Images (B2c) — ImageRunner on the image files in the selection
+
+    private var imageSelection: [URL] { selection.filter(ImageEngine.isImage) }
+
+    /// Only formats this Mac can encode (measured: no WebP encoder on macOS 27).
+    private var imageTargets: [ImageEngine.Target] { ImageEngine.availableTargets(encodable: ImageRunner.encodableTypes) }
+
+    private var imageSection: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(icon: "photo.on.rectangle",
+                          title: L10n.t("Ảnh"),
+                          subtitle: "\(imageSelection.count)\(L10n.t(" ảnh trong các mục đã chọn. Kết quả nằm cạnh ảnh gốc; ảnh gốc không bị đổi."))")
+            HStack(spacing: XFinderTokens.Space.inline) {
+                Menu(L10n.t("Chuyển định dạng")) {
+                    ForEach(imageTargets, id: \.self) { t in
+                        Button(t.label) { runImages(.convert(t)) }
+                    }
+                }
+                .fixedSize()
+                Menu(L10n.t("Giảm kích thước")) {
+                    ForEach(ImageEngine.resizePresets, id: \.self) { px in
+                        Button("\(px) px") { runImages(.resize(maxPixels: px)) }
+                    }
+                }
+                .fixedSize()
+                Button(L10n.t("Tách nền")) { runImages(.removeBackground) }
+                    .help(L10n.t("Dùng Vision trên máy, không gửi ảnh đi đâu. Lần đầu mất vài giây để nạp mô hình."))
+            }
+            .disabled(busy)
+            .padding(.horizontal, XFinderTokens.Space.page)
+        }
+    }
+
+    private func runImages(_ op: ImageEngine.Operation) {
+        let files = imageSelection.filter { url in
+            if case .convert(let t) = op { return !ImageEngine.isSameFormat(url, t) }
+            return true
+        }
+        guard !files.isEmpty else { status = L10n.t("Các ảnh đã ở định dạng này."); return }
+        busy = true
+        status = L10n.t("Đang xử lý…")
+        Task {
+            let results: [Result<URL, ImageRunner.Failure>] = await Task.detached(priority: .userInitiated) {
+                files.map { url in
+                    switch op {
+                    case .convert(let t): return ImageRunner.convert(url, to: t)
+                    case .resize(let px): return ImageRunner.resize(url, maxPixels: px)
+                    case .removeBackground: return ImageRunner.removeBackground(url)
+                    }
+                }
+            }.value
+            busy = false
+            let made = results.compactMap { if case .success(let u) = $0 { return u } else { return nil } }
+            let firstFailure = results.lazy.compactMap { r -> ImageRunner.Failure? in if case .failure(let f) = r { return f } else { return nil } }.first
+            var line = "\(L10n.t("Đã tạo "))\(made.count)/\(files.count)\(L10n.t(" ảnh."))"
+            if let f = firstFailure { line += " \(L10n.t(f.messageKey))\(f.detail)" }
+            status = line
+            if !made.isEmpty {
+                ActionHistoryStore.shared.record(kind: "image", summary: line, detail: made.map(\.path).joined(separator: "\n"))
+                NSWorkspace.shared.activateFileViewerSelecting(made)
+            }
         }
     }
 

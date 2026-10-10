@@ -7222,6 +7222,62 @@
     "Tệp nén chứa liên kết trỏ ra ngoài nên đã bị từ chối, không giải nén gì: ": {
       "en": "The archive contains links that point outside it, so it was refused and nothing was extracted: ",
       "scope": "fragment"
+    },
+    "Không đọc được ảnh: ": {
+      "en": "Could not read the image: ",
+      "scope": "fragment"
+    },
+    "Máy này không ghi được định dạng: ": {
+      "en": "This Mac cannot write the format: ",
+      "scope": "fragment"
+    },
+    "Không ghi được ảnh: ": {
+      "en": "Could not write the image: ",
+      "scope": "fragment"
+    },
+    "Không tìm thấy chủ thể để tách nền trong: ": {
+      "en": "No subject found to cut out in: ",
+      "scope": "fragment"
+    },
+    "Tách nền thất bại: ": {
+      "en": "Background removal failed: ",
+      "scope": "fragment"
+    },
+    "Ảnh": {
+      "en": "Images",
+      "scope": "sentence"
+    },
+    " ảnh trong các mục đã chọn. Kết quả nằm cạnh ảnh gốc; ảnh gốc không bị đổi.": {
+      "en": " images in the selection. Results go next to the originals; the originals are not changed.",
+      "scope": "fragment"
+    },
+    "Chuyển định dạng": {
+      "en": "Convert format",
+      "scope": "sentence"
+    },
+    "Tách nền": {
+      "en": "Remove background",
+      "scope": "sentence"
+    },
+    "Dùng Vision trên máy, không gửi ảnh đi đâu. Lần đầu mất vài giây để nạp mô hình.": {
+      "en": "Uses Vision on this Mac; images never leave it. The first run takes a few seconds to load the model.",
+      "scope": "sentence"
+    },
+    "Các ảnh đã ở định dạng này.": {
+      "en": "The images are already in this format.",
+      "scope": "sentence"
+    },
+    "Đã tạo ": {
+      "en": "Created ",
+      "scope": "fragment"
+    },
+    " ảnh.": {
+      "en": " images.",
+      "scope": "fragment"
+    },
+    "Giảm kích thước": {
+      "en": "Make smaller",
+      "scope": "sentence"
     }
   }
 }
