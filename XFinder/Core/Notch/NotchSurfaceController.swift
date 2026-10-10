@@ -321,8 +321,8 @@ final class NotchSurfaceController {
     /// collapsed badge appears or disappears with the track.
     private func nowPlayingChanged() {
         let m = NowPlayingMonitor.shared
-        model.nowPlaying = m.snapshot
-        model.nowPlayingArtwork = m.artwork
+        model.nowPlaying = m.liveSnapshot          // nil unless the helper is alive (review 2026-10-11)
+        model.nowPlayingArtwork = m.liveArtwork
         model.nowPlayingAvailability = m.availability
         let app = m.playerApp
         model.nowPlayingAppName = app?.localizedName

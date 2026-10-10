@@ -48,8 +48,16 @@ final class NowPlayingMonitor {
         if enabled { start() } else { stop() }
     }
 
-    /// A track is known — the badge and the hover peek may show it.
-    var hasTrack: Bool { snapshot?.hasTrack == true }
+    /// A track is known AND the helper that reported it is alive — the badge and the hover peek may
+    /// show it. Gated on `availability.isLive` so nothing from a dead helper is ever drawn as live.
+    var hasTrack: Bool { availability.isLive && snapshot?.hasTrack == true }
+    /// The snapshot to display: nil unless the helper is live.
+    var liveSnapshot: NowPlaying.Snapshot? { availability.isLive ? snapshot : nil }
+    var liveArtwork: NSImage? { availability.isLive ? artwork : nil }
+
+    /// A single stdout line (metadata + base64 artwork) never legitimately approaches this; a line
+    /// that does is a runaway publisher, and the buffer is dropped rather than grown without bound.
+    static let maxLineBytes = 16 * 1024 * 1024
 
     static let perlPath = "/usr/bin/perl"
     static var helperURL: URL {
@@ -122,9 +130,9 @@ final class NowPlayingMonitor {
             stopping[gen] = p
             stdoutPipe?.fileHandleForReading.readabilityHandler = nil
             try? stdinPipe?.fileHandleForWriting.close()          // the helper exits on EOF
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
                 MainActor.assumeIsolated {
-                    if let late = self.stopping.removeValue(forKey: gen), late.isRunning { late.terminate() }
+                    if let late = self?.stopping.removeValue(forKey: gen), late.isRunning { late.terminate() }
                 }
             }
         }
@@ -148,6 +156,9 @@ final class NowPlayingMonitor {
         guard enabled else { setAvailability(.off); return }
         let uptime = startedAt.map { Date().timeIntervalSince($0) } ?? 0
         log.info("helper ended after \(uptime, format: .fixed(precision: 1)) s")
+        // Whatever the helper last said is no longer known — a dead helper reports nothing. Clear
+        // BEFORE announcing the restart, or the badge keeps the old track at "playing" opacity.
+        snapshot = nil; artwork = nil
         switch supervisor.helperExited(afterUptime: uptime) {
         case .restart(let delay):
             setAvailability(.starting)
@@ -164,6 +175,11 @@ final class NowPlayingMonitor {
     private func consume(_ data: Data, gen: Int) {
         guard gen == generation, process != nil else { return }
         buffer.append(data)
+        if buffer.count > Self.maxLineBytes, !buffer.contains(0x0A) {
+            log.error("dropping a \(self.buffer.count)-byte line with no newline — runaway publisher?")
+            buffer.removeAll(keepingCapacity: false)
+            return
+        }
         while let nl = buffer.firstIndex(of: 0x0A) {
             let lineData = buffer[buffer.startIndex..<nl]
             buffer.removeSubrange(buffer.startIndex...nl)

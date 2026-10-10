@@ -100,6 +100,12 @@ final class NowPlayingTests: XCTestCase {
         }
     }
 
+    func testOnlyAReadyHelperIsLive() {
+        for a in NP.Availability.allCases {
+            XCTAssertEqual(a.isLive, a == .ready, "\(a): a dead or restarting helper knows nothing — nothing from it may show as live")
+        }
+    }
+
     func testHostScriptLoadsTheDylibThenSleeps() {
         let s = NP.hostScript()
         XCTAssertTrue(s.contains("DynaLoader::dl_load_file($ARGV[0], 0)"))

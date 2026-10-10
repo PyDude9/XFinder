@@ -123,7 +123,9 @@ static void emitSnapshot(CFDictionaryRef d, Boolean playing, int pid) {
     char *artID = NULL;
     cfStringToUTF8(CFDictionaryGetValue(d, KEY("ArtworkIdentifier")), &artID);
     CFTypeRef art = CFDictionaryGetValue(d, KEY("ArtworkData"));
-    if (art && CFGetTypeID(art) == CFDataGetTypeID() && CFDataGetLength(art) > 0) {
+    /* Artwork is emitted only up to 4 MB (measured artwork: 865 B … a few hundred KB). A publisher
+       handing out a 50 MB bitmap would otherwise become a 67 MB JSON line in XFinder's buffer. */
+    if (art && CFGetTypeID(art) == CFDataGetTypeID() && CFDataGetLength(art) > 0 && CFDataGetLength(art) <= 4 * 1024 * 1024) {
         char fallback[32];
         if (!artID) { snprintf(fallback, sizeof fallback, "len:%ld", (long)CFDataGetLength(art)); artID = strdup(fallback); }
         fputs(",\"artworkId\":\"", stdout); emitEscaped(artID); fputc('"', stdout);

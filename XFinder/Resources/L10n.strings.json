@@ -7718,6 +7718,14 @@
     "Cửa sổ notch được đánh dấu không chia sẻ (sharingType none) nên screencapture, quay màn hình và chia sẻ qua Zoom/FaceTime không thấy nó. Đo được: kCGWindowSharingState = 0.": {
       "en": "The notch window is marked not shareable (sharingType none), so screencapture, screen recording and sharing over Zoom/FaceTime do not see it. Measured: kCGWindowSharingState = 0.",
       "scope": "sentence"
+    },
+    "Một tiến trình phụ": {
+      "en": "One helper process",
+      "scope": "sentence"
+    },
+    "Bài đang phát, ảnh bìa và nút điều khiển ở notch; đọc qua một tiến trình trợ giúp nhỏ.": {
+      "en": "The playing track, artwork and controls at the notch; read through a small helper process.",
+      "scope": "sentence"
     }
   }
 }

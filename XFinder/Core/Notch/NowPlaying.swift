@@ -136,6 +136,11 @@ enum NowPlaying {
         }
 
         static let allCases: [Availability] = [.off, .starting, .ready, .missingHelper, .missingPerl, .gaveUp]
+
+        /// Only a READY helper's snapshot may be shown as live. A dead or restarting helper knows
+        /// nothing about the player any more (review 2026-10-11: the old track stayed on the badge
+        /// at "playing" opacity while the helper was down, and the page read "Đang khởi động… · Đang phát: …").
+        var isLive: Bool { self == .ready }
     }
 
     /// The perl one-liner that hosts the dylib. `select` with no descriptors is a plain sleep; the

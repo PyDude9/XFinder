@@ -53,6 +53,8 @@ enum AppPermission: String, CaseIterable, Equatable {
 /// with a polling timer is not "nothing at rest".
 enum IdleCost: String, Equatable {
     case nothingAtRest, listensToKeyboard, listensToMouse, timerWhileActive
+    /// A child process stays alive while the feature is on (B6: the Now Playing helper in /usr/bin/perl).
+    case helperProcess
 
     var badgeKey: String {
         switch self {
@@ -60,6 +62,7 @@ enum IdleCost: String, Equatable {
         case .listensToKeyboard: return "Lắng nghe bàn phím"
         case .listensToMouse:    return "Lắng nghe chuột"
         case .timerWhileActive:  return "Có bộ hẹn giờ"
+        case .helperProcess:     return "Một tiến trình phụ"
         }
     }
     /// Whether it keeps something running that the "quiet" bundle should switch off.
@@ -81,7 +84,7 @@ enum FeatureGroup: String, CaseIterable {
 enum FeatureID: String, CaseIterable {
     case dockPreview, commandTab, snapZones, quitProtection
     case clipboardShelf, cleanURLs, suggestions
-    case quickSearch, edgeNotes, dropTray, folderSync
+    case quickSearch, edgeNotes, dropTray, nowPlaying, folderSync
     case voice
     case alerts
     case menuBarReadouts
@@ -155,6 +158,12 @@ enum FeatureCatalog {
                    subtitleKey: "Giữ tệp tạm ở notch: kéo vào để giữ, kéo ra để dùng.",
                    symbol: "tray.and.arrow.down", group: .tools, enabledKey: "dropTray.notchEnabled",
                    defaultOn: true, permissions: [], idle: .listensToMouse),
+        // B6. Its own row so "Tắt tất cả" and the Yên tĩnh bundle really end the helper process —
+        // it used to be reachable only as a sub-switch of dropTray (review 2026-10-11).
+        FeatureDef(id: .nowPlaying, titleKey: "Đang phát trên notch",
+                   subtitleKey: "Bài đang phát, ảnh bìa và nút điều khiển ở notch; đọc qua một tiến trình trợ giúp nhỏ.",
+                   symbol: "music.note", group: .tools, enabledKey: "notch.nowPlaying",
+                   defaultOn: false, permissions: [], idle: .helperProcess),
         FeatureDef(id: .folderSync, titleKey: "Đồng bộ thư mục tự động",
                    subtitleKey: "Sao chép một chiều theo lịch hoặc khi có thay đổi.",
                    symbol: "arrow.triangle.2.circlepath", group: .tools, enabledKey: "sync.autoEnabled",

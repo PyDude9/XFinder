@@ -166,7 +166,7 @@ final class FeatureCatalogTests: XCTestCase {
         XCTAssertEqual(FeatureCatalog.def(.folderSync).idle, .timerWhileActive)
         XCTAssertEqual(IdleCost.nothingAtRest.badgeKey, "Không chạy nền")
         XCTAssertFalse(IdleCost.nothingAtRest.isBackgroundActive)
-        for c: IdleCost in [.listensToKeyboard, .listensToMouse, .timerWhileActive] {
+        for c: IdleCost in [.listensToKeyboard, .listensToMouse, .timerWhileActive, .helperProcess] {
             XCTAssertTrue(c.isBackgroundActive)
             XCTAssertFalse(c.badgeKey.isEmpty)
         }
@@ -186,7 +186,7 @@ final class FeatureCatalogTests: XCTestCase {
         for f in FeatureCatalog.all { keys += [f.titleKey, f.subtitleKey] }
         for g in FeatureGroup.allCases { keys.append(g.titleKey) }
         for p in AppPermission.allCases { keys += [p.titleKey, p.purposeKey] }
-        for c: IdleCost in [.nothingAtRest, .listensToKeyboard, .listensToMouse, .timerWhileActive] { keys.append(c.badgeKey) }
+        for c: IdleCost in [.nothingAtRest, .listensToKeyboard, .listensToMouse, .timerWhileActive, .helperProcess] { keys.append(c.badgeKey) }
         for b in FeatureCatalog.bundles { keys += [b.titleKey, b.descriptionKey] }
         XCTAssertGreaterThanOrEqual(Set(keys).count, 40, "the vocabulary walk collapsed")
         let sameByDesign = try L10nFixture.allowlist()

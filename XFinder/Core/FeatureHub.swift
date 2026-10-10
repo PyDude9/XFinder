@@ -96,6 +96,7 @@ final class FeatureHub {
         case .quickSearch:     QuickSearchPanelController.shared.applySettings()
         case .edgeNotes:       EdgeNotesController.shared.applySettings()
         case .dropTray:        NotchSurfaceController.shared.applySettings()
+        case .nowPlaying:      NotchSurfaceController.shared.applySettings()   // applies the monitor under the master
         case .folderSync:      FolderSyncController.shared.applySettings()
         case .voice:           VoiceManager.shared.applySettings()
         case .alerts:          AlertMonitor.shared.applySettings()

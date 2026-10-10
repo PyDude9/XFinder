@@ -110,6 +110,13 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "dropTray.shakeEnabled",
                views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
                reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
+        // String-valued pickers (review 2026-10-11): the same Part 0 §5 rule, a quoted literal.
+        Switch(key: "dropTray.shakeSensitivity",
+               views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
+               reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
+        Switch(key: "notch.hoverSpeed",
+               views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
+               reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
     ]
 
     // MARK: - Source access
@@ -134,16 +141,19 @@ final class FeatureKeyDefaultsTests: XCTestCase {
     /// All `@AppStorage("<key>") … = <literal>` defaults declared in one view file. The literal is
     /// `true`/`false` or an integer, kept as text so Bool and Int keys share one gate.
     static func viewDefaults(forKey key: String, in text: String) -> [String] {
-        let pattern = #"@AppStorage\(\s*""# + NSRegularExpression.escapedPattern(for: key)
-            + #""\s*\)[^=\n]*=\s*(true|false|-?\d+)\b"#
+        let k = NSRegularExpression.escapedPattern(for: key)
+        // Bool / Int literal, or (review 2026-10-11) a String literal — `"medium"` and friends.
+        let pattern = #"@AppStorage\(\s*""# + k + #""\s*\)[^=\n]*=\s*(true|false|-?\d+|"[^"\n]*")"#
         return matches(pattern, in: text)
     }
 
-    /// All `object(forKey: "<key>") as? Bool|Int ?? <literal>` reads in one Core file.
+    /// All `object(forKey: "<key>") as? Bool|Int ?? <literal>` and `string(forKey: "<key>") ?? "<literal>"`
+    /// reads in one Core file.
     static func readerDefaults(forKey key: String, in text: String) -> [String] {
-        let pattern = #"object\(forKey:\s*""# + NSRegularExpression.escapedPattern(for: key)
-            + #""\s*\)\s*as\?\s*(?:Bool|Int)\s*\?\?\s*(true|false|-?\d+)\b"#
-        return matches(pattern, in: text)
+        let k = NSRegularExpression.escapedPattern(for: key)
+        let scalar = #"object\(forKey:\s*""# + k + #""\s*\)\s*as\?\s*(?:Bool|Int)\s*\?\?\s*(true|false|-?\d+)\b"#
+        let string = #"string\(forKey:\s*""# + k + #""\s*\)\s*\?\?\s*("[^"\n]*")"#
+        return matches(scalar, in: text) + matches(string, in: text)
     }
 
     private static func matches(_ pattern: String, in text: String) -> [String] {

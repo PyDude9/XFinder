@@ -25,7 +25,8 @@ final class FeatureContractTests: XCTestCase {
 
     static let contract: [FeatureID: Contract] = [
         .dropTray: .pure(["Core/Notch/NotchSurfaceMachine.swift", "Core/Notch/NotchSurfaceLayout.swift",
-                          "Core/Notch/NotchDragSession.swift", "Core/Notch/NowPlaying.swift"]),
+                          "Core/Notch/NotchDragSession.swift"]),
+        .nowPlaying: .pure(["Core/Notch/NowPlaying.swift"]),
         .quitProtection: .pure(["Core/QuitHold.swift"]),
         .cleanURLs: .pure(["Core/URLCleaner.swift"]),
         .alerts: .pure(["Core/AlertRules.swift"]),

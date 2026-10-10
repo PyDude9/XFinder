@@ -314,7 +314,7 @@ struct DropTrayDetailView: View {
                 HStack(spacing: XFinderTokens.Space.tight) {
                     Text(L10n.t("Trạng thái: ")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     Text(L10n.t(nowPlayingMonitor.availability.messageKey)).font(XFinderTokens.Font.caption)
-                    if let np = nowPlayingMonitor.snapshot, np.hasTrack {
+                    if let np = nowPlayingMonitor.liveSnapshot, np.hasTrack {
                         Text("· \(L10n.t("Đang phát: "))\(np.headline)").font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                             .lineLimit(1).truncationMode(.tail)
                     }

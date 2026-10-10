@@ -117,6 +117,7 @@ struct NotchSurfaceView: View {
                 artworkThumb(size: 14)
                 Text(np.headline).font(XFinderTokens.Font.caption).lineLimit(1).truncationMode(.tail)
                     .frame(maxWidth: 110)
+                    .layoutPriority(-1)                      // the count and the timer keep their digits; the title truncates
                     .opacity(np.playing ? 1 : 0.6)
             }
         }
@@ -288,12 +289,13 @@ struct NotchSurfaceView: View {
                     if model.nowPlayingAvailability != .off {   // B6: only while the switch is on
                         pageTab(.nowPlaying, icon: "music.note", title: L10n.t("Đang phát"), badge: nil, current: page)
                     }
+                    // A tray opened at the pointer often lands on the very window the files are going
+                    // to; the EMPTY part of its title strip moves it out of the way. Only that part:
+                    // an NSView overlay wins AppKit hit-testing, so one laid over the tabs swallowed
+                    // their clicks (review 2026-10-11), and one over the deck would swallow file drags.
                     Spacer()
+                        .overlay { if !atNotch { WindowDragHandle().help(L10n.t("Kéo để dời khay")) } }
                 }
-                // A tray opened at the pointer often lands on the very window the files are going to;
-                // its title strip moves it out of the way (the old tray could, the B1 rewrite had lost
-                // it). Only the strip — never the deck — so a file drag out still starts normally.
-                .overlay { if !atNotch { WindowDragHandle().help(L10n.t("Kéo để dời khay")) } }
                 Button { NotchSurfaceController.shared.dismiss() } label: {
                     Image(systemName: "xmark.circle.fill").opacity(0.65)
                 }
