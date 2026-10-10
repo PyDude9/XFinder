@@ -126,11 +126,25 @@ extension ArchiveEngineTests {
     /// Every failure sentence the runner can produce reaches the English UI translated.
     func testEveryFailureMessageKeyIsInTheStore() throws {
         let store = try L10nFixture.load()
-        XCTAssertEqual(ArchiveRunner.Failure.examples.count, 7, "a case was added without an example")
+        XCTAssertEqual(ArchiveRunner.Failure.examples.count, 8, "a case was added without an example")
         for f in ArchiveRunner.Failure.examples {
             let entry = store.entries[f.messageKey]
             XCTAssertNotNil(entry, "\(f.messageKey) is not in L10n.strings.json")
             XCTAssertNotEqual(entry?.en ?? f.messageKey, f.messageKey)
         }
+    }
+}
+
+extension ArchiveEngineTests {
+    func testLinksThatLeaveTheArchiveAreFlagged() {
+        let links: [(path: String, target: String)] = [
+            ("Project/config/settings.json", "/Users/me/secret.json"),   // absolute
+            ("Project/up", "../../outside"),                             // climbs above the root
+            ("Project/a/sibling", "../b/file"),                          // stays inside
+            ("Project/self", "./x"),                                     // stays inside
+            ("top", ".."),                                               // root's parent
+            ("Project/home", "~/x"),
+        ]
+        XCTAssertEqual(E.escapingLinks(links), ["Project/config/settings.json", "Project/up", "top", "Project/home"])
     }
 }

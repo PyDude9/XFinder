@@ -29,6 +29,8 @@ enum ArchiveRunner {
         case missingData(stderr: String)
         case cancelled
         case placement(String)
+        /// The archive holds symlinks that point outside it; nothing was placed.
+        case unsafeLinks([String])
     }
 
     // MARK: Process
@@ -140,6 +142,17 @@ enum ArchiveRunner {
         }
         // ditto -x -k leaves a __MACOSX folder only for archives made elsewhere; it is resource-fork
         // debris, never user content.
+        // Refuse the whole archive if any link inside it escapes — before a single item is placed.
+        var links: [(path: String, target: String)] = []
+        if let walker = fm.enumerator(atPath: dir.path) {
+            while let rel = walker.nextObject() as? String {
+                if let target = try? fm.destinationOfSymbolicLink(atPath: dir.appendingPathComponent(rel).path) {
+                    links.append((rel, target))
+                }
+            }
+        }
+        let escaping = ArchiveEngine.escapingLinks(links)
+        guard escaping.isEmpty else { try? fm.removeItem(at: dir); return .failure(.unsafeLinks(escaping.sorted())) }
         let items = ((try? fm.contentsOfDirectory(atPath: dir.path)) ?? []).filter { $0 != "__MACOSX" && $0 != ".DS_Store" }.sorted()
         return .success(ExtractedBatch(staging: dir, items: items))
     }
@@ -200,12 +213,13 @@ extension ArchiveRunner.Failure {
         case .missingData: return "Tệp nén thiếu dữ liệu nên đã bị xoá."
         case .cancelled: return "Đã hủy."
         case .placement: return "Không đặt được tệp đã giải nén vào thư mục đích."
+        case .unsafeLinks: return "Tệp nén chứa liên kết trỏ ra ngoài nên đã bị từ chối, không giải nén gì: "
         }
     }
 
     var detail: String? {
         switch self {
-        case .missingSource(let names): return names.joined(separator: ", ")
+        case .missingSource(let names), .unsafeLinks(let names): return names.joined(separator: ", ")
         case .staging(let s), .placement(let s): return s
         case .tool(_, let stderr), .missingData(let stderr): return stderr.trimmingCharacters(in: .whitespacesAndNewlines)
         case .nothingToDo, .cancelled: return nil
@@ -215,6 +229,6 @@ extension ArchiveRunner.Failure {
     /// One value of every case — lets a test resolve every key against the shipped store.
     static let examples: [ArchiveRunner.Failure] = [
         .nothingToDo, .missingSource(["a"]), .staging("x"), .tool(status: 1, stderr: "x"),
-        .missingData(stderr: "x"), .cancelled, .placement("x"),
+        .missingData(stderr: "x"), .cancelled, .placement("x"), .unsafeLinks(["a"]),
     ]
 }

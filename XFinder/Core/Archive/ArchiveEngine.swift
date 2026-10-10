@@ -181,6 +181,23 @@ enum ArchiveEngine {
         }
     }
 
+    /// Symlinks inside an extracted archive that point OUT of it: an absolute target, or a relative one
+    /// that climbs above the archive root. `ditto -x` and `tar -x` keep them verbatim, and a merge then
+    /// copies them into the user's folder — replacing a real file and aliasing an outside path for
+    /// every later write (B2a review, reproduced end to end). `links` are (path relative to the
+    /// extraction root, raw link target). Returns the offending relative paths.
+    static func escapingLinks(_ links: [(path: String, target: String)]) -> [String] {
+        links.compactMap { link in
+            if link.target.hasPrefix("/") || link.target.hasPrefix("~") { return link.path }
+            var depth = link.path.split(separator: "/").count - 1      // directories the link sits in
+            for part in link.target.split(separator: "/") {
+                if part == ".." { depth -= 1; if depth < 0 { return link.path } }
+                else if part != "." { depth += 1 }
+            }
+            return nil
+        }
+    }
+
     /// A stderr line that means data was left out even though the tool exited 0.
     static func stderrSignalsMissingData(_ stderr: String) -> Bool {
         stderr.contains("name not matched") || stderr.contains("Cannot stat") || stderr.contains("No such file")

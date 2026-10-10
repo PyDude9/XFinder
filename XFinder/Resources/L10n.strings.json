@@ -7218,6 +7218,10 @@
     " trang": {
       "en": " pages",
       "scope": "fragment"
+    },
+    "Tệp nén chứa liên kết trỏ ra ngoài nên đã bị từ chối, không giải nén gì: ": {
+      "en": "The archive contains links that point outside it, so it was refused and nothing was extracted: ",
+      "scope": "fragment"
     }
   }
 }

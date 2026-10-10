@@ -146,4 +146,21 @@ final class ArchiveRunnerTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(started), 5, "cancel did not stop the process")
         XCTAssertNotEqual(r.status, 0)
     }
+
+    /// B2a review, reproduced: a nested link to an outside file, merged into an existing folder,
+    /// replaced the user's file and wrote through to the outside target. Now nothing is placed.
+    func testAnArchiveWithAnEscapingLinkIsRefusedBeforeAnythingIsPlaced() async throws {
+        let secret = url("secret.txt"); try "SECRET".write(to: secret, atomically: true, encoding: .utf8)
+        let src = url("evil/Project/config")
+        try fm.createDirectory(at: src, withIntermediateDirectories: true)
+        try fm.createSymbolicLink(atPath: src.appendingPathComponent("settings.json").path, withDestinationPath: secret.path)
+        _ = sh("/usr/bin/ditto", ["-c", "-k", "--keepParent", url("evil/Project").path, url("out/evil.zip").path])
+        try fm.createDirectory(at: url("dest/Project/config"), withIntermediateDirectories: true)
+        try "ORIGINAL".write(to: url("dest/Project/config/settings.json"), atomically: true, encoding: .utf8)
+        let r = await ArchiveRunner.extractToStaging(archive: url("out/evil.zip"), near: url("dest"))
+        XCTAssertEqual(r, .failure(.unsafeLinks(["Project/config/settings.json"])))
+        XCTAssertEqual(try String(contentsOf: url("dest/Project/config/settings.json"), encoding: .utf8), "ORIGINAL")
+        XCTAssertEqual(try String(contentsOf: secret, encoding: .utf8), "SECRET")
+    }
 }
+

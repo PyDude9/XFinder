@@ -64,6 +64,8 @@ run "A6 placements reuse a name within one batch" XFinder/Core/Archive/ArchiveEn
 run "A7 tar stores the staging symlinks" XFinder/Core/Archive/ArchiveEngine.swift \
   "'arguments: [\"-czhf\", output.path] + names,'" "'arguments: [\"-czf\", output.path] + names,'"
 
+run "A8 escaping links inside an archive are accepted" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        guard escaping.isEmpty else { try? fm.removeItem(at: dir); return .failure(.unsafeLinks(escaping.sorted())) }\n'" "''"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)
