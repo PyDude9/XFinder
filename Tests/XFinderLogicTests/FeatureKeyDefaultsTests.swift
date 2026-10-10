@@ -48,6 +48,12 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "clipboard.autoClearSeconds",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
                reader: "XFinder/Core/ClipboardManager.swift"),
+        Switch(key: "menubar.readoutsEnabled",
+               views: [],   // bound only through FeatureHub (popover edit mode + Features hub)
+               reader: "XFinder/Core/MenuBarReadoutsController.swift"),
+        Switch(key: "menubar.readoutInterval",
+               views: [],
+               reader: "XFinder/Core/MenuBarReadoutsController.swift"),
         Switch(key: "alerts.enabled",
                views: ["XFinder/Views/Detail/AlertsDetailView.swift"],
                reader: "XFinder/Core/AlertMonitor.swift"),

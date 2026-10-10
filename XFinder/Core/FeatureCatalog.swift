@@ -80,6 +80,7 @@ enum FeatureID: String, CaseIterable {
     case quickSearch, edgeNotes, dropTray, folderSync
     case voice
     case alerts
+    case menuBarReadouts
 }
 
 struct FeatureDef: Equatable {
@@ -158,6 +159,11 @@ enum FeatureCatalog {
         FeatureDef(id: .alerts, titleKey: "Cảnh báo hệ thống",
                    subtitleKey: "Thông báo khi CPU, bộ nhớ, ổ đĩa, nhiệt độ hay pin có vấn đề kéo dài.",
                    symbol: "bell.badge", group: .tools, enabledKey: "alerts.enabled",
+                   defaultOn: false, permissions: [], idle: .timerWhileActive),
+
+        FeatureDef(id: .menuBarReadouts, titleKey: "Số liệu trên thanh menu",
+                   subtitleKey: "CPU, bộ nhớ, nhiệt độ… hiện cạnh biểu tượng XFinder; chọn số liệu trong popover (biểu tượng con mắt).",
+                   symbol: "gauge.with.dots.needle.33percent", group: .tools, enabledKey: "menubar.readoutsEnabled",
                    defaultOn: false, permissions: [], idle: .timerWhileActive),
 
         FeatureDef(id: .voice, titleKey: "Nhập bằng giọng nói",

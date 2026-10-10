@@ -95,6 +95,7 @@ final class FeatureHub {
         case .folderSync:      FolderSyncController.shared.applySettings()
         case .voice:           VoiceManager.shared.applySettings()
         case .alerts:          AlertMonitor.shared.applySettings()
+        case .menuBarReadouts: MenuBarReadoutsController.shared.applySettings()
         // Read at the point of use by the clipboard engine; nothing to re-arm.
         case .cleanURLs, .suggestions: break
         }

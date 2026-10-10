@@ -6986,6 +6986,42 @@
     "Cảnh báo hiện dưới dạng biểu ngữ của XFinder. Trung tâm thông báo của macOS từ chối bản ký bằng chứng chỉ tự tạo, nên không có thông báo hệ thống.": {
       "en": "Alerts appear as XFinder's own banner. macOS Notification Center refuses builds signed with a self-made certificate, so there is no system notification.",
       "scope": "sentence"
+    },
+    "Bộ nhớ đã dùng": {
+      "en": "Memory used",
+      "scope": "sentence"
+    },
+    "PIN": {
+      "en": "BAT",
+      "scope": "sentence"
+    },
+    "Số liệu trên thanh menu": {
+      "en": "Menu bar readouts",
+      "scope": "sentence"
+    },
+    "CPU, bộ nhớ, nhiệt độ… hiện cạnh biểu tượng XFinder; chọn số liệu trong popover (biểu tượng con mắt).": {
+      "en": "CPU, memory, temperature… next to the XFinder icon; pick them in the popover (eye icon).",
+      "scope": "sentence"
+    },
+    "Cập nhật mỗi": {
+      "en": "Update every",
+      "scope": "sentence"
+    },
+    "Mỗi lần cập nhật là một lần đọc số liệu; tắt thì không có bộ hẹn giờ nào.": {
+      "en": "Each update is one metrics read; off means no timer at all.",
+      "scope": "sentence"
+    },
+    "CPU": {
+      "en": "CPU",
+      "scope": "sentence"
+    },
+    "RAM": {
+      "en": "RAM",
+      "scope": "sentence"
+    },
+    "GPU": {
+      "en": "GPU",
+      "scope": "sentence"
     }
   }
 }

@@ -14,6 +14,7 @@ class MenubarController: NSObject, NSPopoverDelegate {
         if let button = statusItem?.button {
             button.action = #selector(togglePopover(_:))
             button.target = self
+            MenuBarReadoutsController.shared.attach(button)
         }
         applyIcon()
         setupPopover()
@@ -135,6 +136,7 @@ struct MenubarFlyoutView: View {
     @ObservedObject private var permissionManager = PermissionManager.shared
     @State private var tab: FlyoutTab = .controls
     @State private var hub = FeatureHub.shared
+    @State private var readouts = MenuBarReadoutsController.shared
     /// Groups the user collapsed in the Tính năng tab. Windows starts open, the rest closed.
     @State private var collapsedGroups: Set<FeatureGroup> = [.clipboard, .tools, .voice]
     /// HIDDEN tab ids (see `FlyoutLayout`). Optional: nil = never customised, which is what lets the
@@ -374,6 +376,55 @@ struct MenubarFlyoutView: View {
                 }
                 .padding(.horizontal, 10).padding(.vertical, 7)
                 .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(0.06)))
+            }
+            Divider().padding(.vertical, 4)
+            readoutsPicker
+        }
+    }
+
+    /// Live numbers beside the menu-bar icon. The master switch is the catalogue feature
+    /// (`menubar.readoutsEnabled`, via `FeatureHub` like every other feature switch); the set and
+    /// the cadence are the controller's own keys.
+    private var readoutsPicker: some View {
+        let def = FeatureCatalog.def(.menuBarReadouts)
+        let on = hub.isOn(def)
+        let selected = readouts.selection
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 10) {
+                Image(systemName: def.symbol).frame(width: 20).foregroundColor(.accentColor)
+                Text(L10n.t("Số liệu trên thanh menu")).font(.system(size: 13, weight: .semibold))
+                Spacer()
+                Toggle("", isOn: Binding(get: { on }, set: { hub.set(.menuBarReadouts, on: $0) }))
+                    .toggleStyle(.switch).labelsHidden().controlSize(.small)
+            }
+            .padding(.horizontal, 10).padding(.vertical, 7)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(0.06)))
+            if on {
+                HStack {
+                    Text(L10n.t("Cập nhật mỗi")).font(.system(size: 12))
+                    Spacer()
+                    Picker("", selection: Binding(get: { readouts.interval }, set: { readouts.interval = $0 })) {
+                        ForEach(MenuBarReadouts.intervalChoices, id: \.self) { s in Text("\(s) s").tag(s) }
+                    }
+                    .pickerStyle(.menu).labelsHidden().frame(width: 80)
+                }
+                .padding(.horizontal, 10)
+                ForEach(MenuBarReadouts.Kind.allCases, id: \.self) { k in
+                    HStack(spacing: 10) {
+                        Image(systemName: k.symbol).frame(width: 20).foregroundColor(.secondary)
+                        Text(L10n.t(k.titleKey)).font(.system(size: 13))
+                        Spacer()
+                        Toggle("", isOn: Binding(get: { selected.contains(k) }, set: { want in
+                            var sel = readouts.selection
+                            if want { if !sel.contains(k) { sel.append(k) } } else { sel.removeAll { $0 == k } }
+                            readouts.selection = sel
+                        }))
+                        .toggleStyle(.switch).labelsHidden().controlSize(.small)
+                    }
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                }
+                Text(L10n.t("Mỗi lần cập nhật là một lần đọc số liệu; tắt thì không có bộ hẹn giờ nào."))
+                    .font(.system(size: 11)).foregroundColor(.secondary).padding(.horizontal, 10)
             }
         }
     }

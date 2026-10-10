@@ -46,6 +46,13 @@ final class SystemMonitorManager {
     /// CPU, disk, per-interface network) every 2 s with nothing on screen to
     /// show them cost ~2.3 % CPU forever — it is the app's largest idle draw.
     private var consumers = 0
+    var hasConsumers: Bool { consumers > 0 }
+    /// Fired after every metrics update (menu-bar readouts render from it). No Combine: Observation
+    /// has no publishers, and the readout controller is not a view.
+    var onUpdate: (() -> Void)?
+
+    /// One sample, no timer — for a consumer that ticks on its own slow cadence.
+    func sampleNow() { updateMetrics() }
 
     func retain() {
         consumers += 1
@@ -96,6 +103,7 @@ final class SystemMonitorManager {
         currentMetrics = metrics
         metricsHistory.append(metrics)
         if metricsHistory.count > 60 { metricsHistory.removeFirst() }
+        onUpdate?()
     }
 
     /// GPU `Device Utilization %` from the IORegistry (public; measured to follow real load —
