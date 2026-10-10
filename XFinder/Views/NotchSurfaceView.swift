@@ -17,6 +17,8 @@ final class NotchSurfaceModel {
     var notice: String?
     /// The live activity on screen (B4).
     var activity: LiveActivity.Item?
+    /// Remaining time of a running countdown ("12:34"), shown in the collapsed badge (B4b).
+    var timerText: String?
 }
 
 /// Root of the Notch surface window. The window is sized by `NotchSurfaceLayout`; this view draws
@@ -31,7 +33,8 @@ struct NotchSurfaceView: View {
     private var size: CGSize {
         let notch = CGRect(origin: .zero, size: model.notchSize)
         return NotchSurfaceLayout.size(for: model.state, anchor: model.anchor,
-                                       itemCount: model.itemCount, notch: notch) ?? .zero
+                                       itemCount: model.itemCount, notch: notch,
+                                       timerActive: model.timerText != nil) ?? .zero
     }
 
     /// At the notch the top edge is flush with the screen (the notch has no top edge); a tray opened
@@ -81,16 +84,22 @@ struct NotchSurfaceView: View {
 
     /// Count hanging under the notch while files are held and the surface is collapsed.
     private var badge: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "tray.fill").font(XFinderTokens.Font.caption)
-            Text("\(model.itemCount)").font(XFinderTokens.Font.caption).monospacedDigit()
+        HStack(spacing: XFinderTokens.Space.tight) {
+            if model.itemCount > 0 {
+                Image(systemName: "tray.fill").font(XFinderTokens.Font.caption)
+                Text("\(model.itemCount)").font(XFinderTokens.Font.caption).monospacedDigit()
+            }
+            if let t = model.timerText {
+                Image(systemName: "timer").font(XFinderTokens.Font.caption)
+                Text(t).font(XFinderTokens.Font.caption).monospacedDigit()
+            }
         }
         .foregroundColor(.white)
         .frame(maxWidth: .infinity)
         .frame(height: NotchSurfaceLayout.Metrics.standard.badgeLip)
         .contentShape(Rectangle())
-        .onTapGesture { NotchSurfaceController.shared.reveal() }
-        .help(L10n.t("Bấm để mở"))
+        .onTapGesture { if model.itemCount > 0 { NotchSurfaceController.shared.reveal() } }
+        .help(model.itemCount > 0 ? L10n.t("Bấm để mở") : "")
     }
 
     /// Peek only exists while files are held (the machine never peeks an empty tray). The left icon
@@ -123,6 +132,9 @@ struct NotchSurfaceView: View {
                 Image(systemName: a.symbol).font(XFinderTokens.Font.row).foregroundColor(tint(a.tint))
                 Text(L10n.t(a.titleKey)).font(XFinderTokens.Font.row).lineLimit(1)
                 if let d = a.detail { Text(d).font(XFinderTokens.Font.caption).opacity(0.7).lineLimit(1).truncationMode(.middle) }
+                if let level = a.level {
+                    ProgressView(value: level).progressViewStyle(.linear).tint(.white).frame(width: 90)
+                }
             }
         }
         .foregroundColor(.white)

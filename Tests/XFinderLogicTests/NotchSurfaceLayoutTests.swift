@@ -91,4 +91,14 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         let zv = L.dragZone(notch: v, screen: external)
         XCTAssertGreaterThan(zv.height, 0, "a notch-less screen still gets a reachable target")
     }
+
+    /// B4b: a running countdown shows the badge even with no files held — on a real notch only.
+    func testTheBadgeAlsoShowsForARunningTimer() {
+        XCTAssertNotNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch, timerActive: true))
+        XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch, timerActive: false))
+        let v = L.notch(screen: external, auxLeft: nil, auxRight: nil)
+        XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: v, timerActive: true),
+                     "nothing to hang a badge from on a notch-less screen")
+    }
 }
+

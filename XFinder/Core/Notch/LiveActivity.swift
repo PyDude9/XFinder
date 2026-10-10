@@ -6,7 +6,7 @@ import Foundation
 /// flagsChanged, IOBluetooth connect notifications); nothing polls.
 enum LiveActivity {
 
-    enum Kind: String, CaseIterable { case power, network, capsLock, bluetooth, alert }
+    enum Kind: String, CaseIterable { case power, network, capsLock, bluetooth, alert, volume, timer }
 
     enum Tint: Equatable { case neutral, good, warning, bad }
 
@@ -19,6 +19,8 @@ enum LiveActivity {
         let detail: String?
         let tint: Tint
         var duration: TimeInterval = 3
+        /// 0…1 for a level bar (volume). nil ⇒ no bar.
+        var level: Double? = nil
     }
 
     // MARK: Power
@@ -79,6 +81,55 @@ enum LiveActivity {
         Item(kind: .bluetooth, symbol: connected ? "headphones" : "headphones.slash" ,
              titleKey: connected ? "Đã kết nối" : "Đã ngắt kết nối", detail: name,
              tint: connected ? .good : .neutral)
+    }
+
+    // MARK: Volume HUD (B4b) — alongside the system's own HUD, from the real CoreAudio value
+
+    struct VolumeState: Equatable { var level: Double; var muted: Bool }
+
+    /// Brightness has NO HUD on purpose: on Apple Silicon / macOS 27 the readable brightness value is
+    /// stuck (measured, CLAUDE.md), so a brightness bar would have to invent its number.
+    static func volumeItem(old: VolumeState?, new: VolumeState) -> Item? {
+        guard let old else { return nil }                                  // baseline
+        let changed = old.muted != new.muted || abs(old.level - new.level) >= 0.005
+        guard changed else { return nil }                                  // CoreAudio reports each change on 2 elements
+        let level = min(max(new.level, 0), 1)
+        if new.muted || level == 0 {
+            return Item(kind: .volume, symbol: "speaker.slash.fill", titleKey: "Đã tắt tiếng", detail: nil,
+                        tint: .neutral, duration: 1.5, level: 0)
+        }
+        let symbol = level < 0.34 ? "speaker.wave.1.fill" : level < 0.67 ? "speaker.wave.2.fill" : "speaker.wave.3.fill"
+        return Item(kind: .volume, symbol: symbol, titleKey: "Âm lượng", detail: "\(Int((level * 100).rounded()))%",
+                    tint: .neutral, duration: 1.5, level: level)
+    }
+
+    // MARK: Countdown timer (B4b)
+
+    struct Countdown: Equatable {
+        let duration: TimeInterval
+        let endsAt: Date
+
+        init(minutes: Int, now: Date) {
+            duration = TimeInterval(max(minutes, 1) * 60)
+            endsAt = now.addingTimeInterval(duration)
+        }
+
+        func remaining(at now: Date) -> TimeInterval { max(0, endsAt.timeIntervalSince(now)) }
+        func isFinished(at now: Date) -> Bool { remaining(at: now) <= 0 }
+
+        /// "4:05", "59:59", "1:02:03" — whole seconds rounded UP, so the label never reads 0:00 early.
+        func label(at now: Date) -> String {
+            let t = Int(remaining(at: now).rounded(.up))
+            let h = t / 3600, m = (t % 3600) / 60, sec = t % 60
+            return h > 0 ? String(format: "%d:%02d:%02d", h, m, sec) : String(format: "%d:%02d", m, sec)
+        }
+    }
+
+    static let timerPresets = [5, 10, 15, 25, 45, 60]
+
+    static func timerFinishedItem(_ c: Countdown) -> Item {
+        Item(kind: .timer, symbol: "timer", titleKey: "Hết giờ", detail: String(format: "%d:00", Int(c.duration / 60)),
+             tint: .warning, duration: 8)
     }
 
     // MARK: Queue

@@ -92,7 +92,37 @@ final class LiveActivityTests: XCTestCase {
             A.capsLockItem(wasOn: !b, isOn: b).map { keys.insert($0.titleKey) }
             keys.insert(A.bluetoothItem(name: "x", connected: b).titleKey)
         }
-        XCTAssertEqual(keys.count, 12, "the vocabulary walk collapsed")
+        keys.insert(A.volumeItem(old: .init(level: 0.5, muted: false), new: .init(level: 0.6, muted: false))!.titleKey)
+        keys.insert(A.volumeItem(old: .init(level: 0.5, muted: false), new: .init(level: 0.5, muted: true))!.titleKey)
+        keys.insert(A.timerFinishedItem(A.Countdown(minutes: 5, now: Date())).titleKey)
+        XCTAssertEqual(keys.count, 15, "the vocabulary walk collapsed")
         for k in keys { XCTAssertNotNil(store.entries[k], k) }
     }
+
+    // MARK: B4b
+
+    func testVolumeHUDOnlyOnARealChange() {
+        let v = { (l: Double, m: Bool) in A.VolumeState(level: l, muted: m) }
+        XCTAssertNil(A.volumeItem(old: nil, new: v(0.5, false)), "baseline")
+        XCTAssertNil(A.volumeItem(old: v(0.5, false), new: v(0.5, false)), "CoreAudio reports one change twice")
+        let up = A.volumeItem(old: v(0.5, false), new: v(0.5625, false))
+        XCTAssertEqual(up?.detail, "56%"); XCTAssertEqual(up?.level ?? -1, 0.5625, accuracy: 1e-9)
+        XCTAssertEqual(A.volumeItem(old: v(0.5, false), new: v(0.5, true))?.titleKey, "Đã tắt tiếng")
+        XCTAssertEqual(A.volumeItem(old: v(0.5, false), new: v(0.5, true))?.level, 0)
+        XCTAssertEqual(A.volumeItem(old: v(0.1, false), new: v(0.9, false))?.symbol, "speaker.wave.3.fill")
+    }
+
+    func testCountdownLabelNeverReadsZeroEarlyAndFinishesOnTime() {
+        let t0 = Date(timeIntervalSince1970: 3_000_000)
+        let c = A.Countdown(minutes: 25, now: t0)
+        XCTAssertEqual(c.label(at: t0), "25:00")
+        XCTAssertEqual(c.label(at: t0.addingTimeInterval(0.4)), "25:00", "rounded up: 24:59.6 still reads 25:00")
+        XCTAssertEqual(c.label(at: t0.addingTimeInterval(1499.5)), "0:01", "half a second left is not 0:00")
+        XCTAssertFalse(c.isFinished(at: t0.addingTimeInterval(1499.5)))
+        XCTAssertTrue(c.isFinished(at: t0.addingTimeInterval(1500)))
+        XCTAssertEqual(c.label(at: t0.addingTimeInterval(2000)), "0:00")
+        XCTAssertEqual(A.Countdown(minutes: 90, now: t0).label(at: t0), "1:30:00")
+        XCTAssertEqual(A.Countdown(minutes: 0, now: t0).duration, 60, "a zero-minute timer is one minute, not instant")
+    }
 }
+

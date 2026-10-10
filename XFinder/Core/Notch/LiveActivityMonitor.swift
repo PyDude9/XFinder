@@ -22,6 +22,7 @@ final class LiveActivityMonitor: NSObject {
     private var capsLockOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.capsLock") as? Bool ?? true }
     private var bluetoothOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.bluetooth") as? Bool ?? true }
     private var alertsOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.alerts") as? Bool ?? true }
+    private var volumeOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.volume") as? Bool ?? true }
 
     /// AlertMonitor asks this before choosing between the notch and its own banner.
     var routesAlertsToNotch: Bool { master && alertsOn && NotchSurfaceController.shared.canPresentActivities }
@@ -32,6 +33,7 @@ final class LiveActivityMonitor: NSObject {
         on && networkOn ? startNetwork() : stopNetwork()
         on && capsLockOn ? startCapsLock() : stopCapsLock()
         on && bluetoothOn ? startBluetooth() : stopBluetooth()
+        on && volumeOn ? startVolume() : stopVolume()
     }
 
     private func present(_ item: LiveActivity.Item?) {
@@ -135,6 +137,33 @@ final class LiveActivityMonitor: NSObject {
     private func capsChanged(_ on: Bool) {
         present(LiveActivity.capsLockItem(wasOn: lastCaps, isOn: on))
         lastCaps = on
+    }
+
+    // MARK: Volume — VolumeObserver's CoreAudio listeners (ref-counted; held only while this switch is on)
+
+    private var volumeRetained = false
+    private var lastVolume: LiveActivity.VolumeState?
+
+    private func startVolume() {
+        guard !volumeRetained else { return }
+        let obs = VolumeObserver.shared
+        obs.retain()
+        volumeRetained = true
+        lastVolume = .init(level: obs.volume, muted: obs.isMuted)
+        obs.onChange = { [weak self] level, muted in self?.volumeChanged(level, muted) }
+    }
+
+    private func stopVolume() {
+        guard volumeRetained else { return }
+        VolumeObserver.shared.onChange = nil
+        VolumeObserver.shared.release()
+        volumeRetained = false; lastVolume = nil
+    }
+
+    private func volumeChanged(_ level: Double, _ muted: Bool) {
+        let now = LiveActivity.VolumeState(level: level, muted: muted)
+        present(LiveActivity.volumeItem(old: lastVolume, new: now))
+        lastVolume = now
     }
 
     // MARK: Bluetooth — connect notification, then a per-device disconnect notification

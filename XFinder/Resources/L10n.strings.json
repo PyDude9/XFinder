@@ -7406,6 +7406,26 @@
     "Caps Lock": {
       "en": "Caps Lock",
       "scope": "sentence"
+    },
+    "Đã tắt tiếng": {
+      "en": "Muted",
+      "scope": "sentence"
+    },
+    "Hết giờ": {
+      "en": "Time's up",
+      "scope": "sentence"
+    },
+    "Mức âm lượng thật từ CoreAudio, hiện song song HUD của macOS. Không có HUD độ sáng: trên máy này giá trị độ sáng đọc được bị kẹt nên sẽ phải bịa số.": {
+      "en": "The real volume level from CoreAudio, shown alongside macOS's own HUD. There is no brightness HUD: on this Mac the readable brightness value is stuck, so it would have to invent a number.",
+      "scope": "sentence"
+    },
+    "Hẹn giờ trên notch": {
+      "en": "Timer on the notch",
+      "scope": "sentence"
+    },
+    "Hủy hẹn giờ": {
+      "en": "Cancel timer",
+      "scope": "sentence"
     }
   }
 }

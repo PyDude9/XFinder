@@ -40,10 +40,10 @@ enum NotchSurfaceLayout {
     /// Size of the drawn surface for a state; nil ⇒ nothing is drawn. The collapsed badge needs a real
     /// notch to hang from — a pill for notch-less screens is a later phase (B7).
     static func size(for state: NotchSurfaceMachine.State, anchor: NotchSurfaceMachine.Anchor,
-                     itemCount: Int, notch: CGRect, metrics m: Metrics = .standard) -> CGSize? {
+                     itemCount: Int, notch: CGRect, timerActive: Bool = false, metrics m: Metrics = .standard) -> CGSize? {
         switch state {
         case .collapsed:
-            guard itemCount > 0, notch.height > 0 else { return nil }
+            guard itemCount > 0 || timerActive, notch.height > 0 else { return nil }
             return CGSize(width: notch.width, height: notch.height + m.badgeLip)
         case .peek:
             return CGSize(width: notch.width + 2 * m.peekWing, height: notch.height + m.peekDrop)
@@ -61,8 +61,8 @@ enum NotchSurfaceLayout {
     /// by `pointerGap`, clamped to the VISIBLE frame (it must never land under the menu bar or Dock).
     static func frame(for state: NotchSurfaceMachine.State, anchor: NotchSurfaceMachine.Anchor,
                       itemCount: Int, notch: CGRect, screen: CGRect, visible: CGRect,
-                      pointer: CGPoint, metrics m: Metrics = .standard) -> CGRect? {
-        guard let size = size(for: state, anchor: anchor, itemCount: itemCount, notch: notch, metrics: m) else { return nil }
+                      pointer: CGPoint, timerActive: Bool = false, metrics m: Metrics = .standard) -> CGRect? {
+        guard let size = size(for: state, anchor: anchor, itemCount: itemCount, notch: notch, timerActive: timerActive, metrics: m) else { return nil }
         if case .expanded = state, anchor == .pointer {
             let centre = CGPoint(x: pointer.x, y: pointer.y - m.pointerGap - size.height / 2)
             return SurfaceGeometry.frame(size: size, anchor: .pointer(centre), screen: screen, visible: visible)

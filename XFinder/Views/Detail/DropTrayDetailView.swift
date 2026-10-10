@@ -27,6 +27,7 @@ struct DropTrayDetailView: View {
     @AppStorage("notch.activity.capsLock") private var actCapsLock = true
     @AppStorage("notch.activity.bluetooth") private var actBluetooth = true
     @AppStorage("notch.activity.alerts") private var actAlerts = true
+    @AppStorage("notch.activity.volume") private var actVolume = true
 
     var body: some View {
         ScrollView {
@@ -239,6 +240,8 @@ struct DropTrayDetailView: View {
                     ToggleRow(title: L10n.t("Thiết bị Bluetooth kết nối, ngắt kết nối"), subtitle: L10n.t("Cần quyền Bluetooth."), isOn: $actBluetooth)
                         .onChange(of: actBluetooth) { LiveActivityMonitor.shared.applySettings() }
                     ToggleRow(title: L10n.t("Cảnh báo hệ thống"), subtitle: L10n.t("Cảnh báo từ trang Cảnh báo hiện ở notch thay vì góc trên bên phải."), isOn: $actAlerts)
+                    ToggleRow(title: L10n.t("Âm lượng"), subtitle: L10n.t("Mức âm lượng thật từ CoreAudio, hiện song song HUD của macOS. Không có HUD độ sáng: trên máy này giá trị độ sáng đọc được bị kẹt nên sẽ phải bịa số."), isOn: $actVolume)
+                        .onChange(of: actVolume) { LiveActivityMonitor.shared.applySettings() }
                 }
             }
             .padding(.horizontal, XFinderTokens.Space.page)

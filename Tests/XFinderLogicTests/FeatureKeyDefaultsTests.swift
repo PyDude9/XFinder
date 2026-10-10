@@ -81,6 +81,9 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "notch.activity.alerts",
                views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
                reader: "XFinder/Core/Notch/LiveActivityMonitor.swift"),
+        Switch(key: "notch.activity.volume",
+               views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
+               reader: "XFinder/Core/Notch/LiveActivityMonitor.swift"),
         // Notch surface (B1). These two were DEAD keys for a year — stored, never read. Now the
         // machine gates on them, and the page binds them.
         Switch(key: "dropTray.hoverEnabled",

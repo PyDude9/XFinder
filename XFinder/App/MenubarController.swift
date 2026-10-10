@@ -681,6 +681,7 @@ struct MenubarFlyoutView: View {
                 closePopover()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { ScreenTextCopier.shared.start() }
             }
+            timerRow
             actionRow(L10n.t("Đồng bộ thư mục"), "arrow.triangle.2.circlepath") { navigate(.sync) }
             HStack {
                 Image(systemName: "magnifyingglass").frame(width: 18).foregroundColor(.secondary)
@@ -725,6 +726,24 @@ struct MenubarFlyoutView: View {
             Spacer()
             Toggle("", isOn: isOn).labelsHidden().controlSize(.mini)
         }
+    }
+
+    /// B4b: start a countdown; the notch badge shows what is left and announces the end.
+    private var timerRow: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "timer").frame(width: 18).foregroundColor(.secondary)
+            Text(L10n.t("Hẹn giờ trên notch")).font(.system(size: 12))
+            Spacer()
+            Menu {
+                ForEach(LiveActivity.timerPresets, id: \.self) { m in
+                    Button(String(format: "%d:00", m)) { NotchSurfaceController.shared.startTimer(minutes: m) }
+                }
+                Divider()
+                Button(L10n.t("Hủy hẹn giờ")) { NotchSurfaceController.shared.cancelTimer() }
+            } label: { Text(L10n.t("Chọn…")).font(.system(size: 11)) }
+            .menuStyle(.borderlessButton).fixedSize()
+        }
+        .padding(.horizontal, 14).padding(.vertical, 7)
     }
 
     private func actionRow(_ title: String, _ icon: String, action: @escaping () -> Void) -> some View {

@@ -239,6 +239,8 @@ final class VolumeObserver {
 
     var volume: Double = SystemControls.getVolume()
     var isMuted: Bool = SystemControls.isMuted()
+    /// Plain callback for non-view observers (Observation has no publishers) — the notch volume HUD.
+    @ObservationIgnored var onChange: (@MainActor (Double, Bool) -> Void)?
 
     private var deviceID = AudioDeviceID(0)
     private var listening = false
@@ -345,6 +347,7 @@ final class VolumeObserver {
                 guard let self else { return }
                 self.volume = SystemControls.getVolume()
                 self.isMuted = SystemControls.isMuted()
+                self.onChange?(self.volume, self.isMuted)
             }
         }
         listenerBlock = block

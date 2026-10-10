@@ -118,6 +118,7 @@ final class NotchSurfaceController {
         cancelWork()
         activityWork?.cancel(); activityWork = nil
         activityQueue.clear()
+        countdownTicker?.invalidate(); countdownTicker = nil; countdown = nil; model.timerText = nil
         samples.removeAll()
         machine.handle(.disabled, settings: settings, now: Date())
         state = machine.state
@@ -295,7 +296,7 @@ final class NotchSurfaceController {
         guard let target = NotchSurfaceLayout.frame(for: machine.state, anchor: machine.anchor,
                                                     itemCount: machine.itemCount, notch: notch,
                                                     screen: screen.frame, visible: screen.visibleFrame,
-                                                    pointer: shakePoint) else {
+                                                    pointer: shakePoint, timerActive: countdown != nil) else {
             model.state = .collapsed
             model.itemCount = machine.itemCount
             panel.hide()
@@ -374,6 +375,45 @@ final class NotchSurfaceController {
             model.activity = nil
             dispatch(.activityEnded)
         }
+    }
+
+    // MARK: - Countdown timer (B4b)
+
+    private var countdown: LiveActivity.Countdown?
+    private var countdownTicker: Timer?
+
+    var timerRunning: Bool { countdown != nil }
+
+    /// A 1 s ticker exists ONLY while a countdown runs (it drives the badge's seconds); none otherwise.
+    func startTimer(minutes: Int) {
+        guard enabled, panel != nil else { return }
+        countdown = LiveActivity.Countdown(minutes: minutes, now: Date())
+        countdownTicker?.invalidate()
+        let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.tickCountdown() } }
+        RunLoop.main.add(t, forMode: .common)
+        countdownTicker = t
+        tickCountdown()
+    }
+
+    func cancelTimer() {
+        countdownTicker?.invalidate(); countdownTicker = nil
+        countdown = nil
+        model.timerText = nil
+        render()
+    }
+
+    private func tickCountdown() {
+        guard let c = countdown else { return }
+        let now = Date()
+        if c.isFinished(at: now) {
+            cancelTimer()
+            NSSound(named: "Glass")?.play()
+            present(LiveActivity.timerFinishedItem(c))
+            return
+        }
+        let wasHidden = model.timerText == nil
+        model.timerText = c.label(at: now)
+        if wasHidden { render() }        // the badge appears; afterwards only its text changes
     }
 
     // MARK: - Hub actions (B2d)

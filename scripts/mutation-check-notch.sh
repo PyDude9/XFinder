@@ -74,6 +74,12 @@ run "M13 a notice interrupts the open hub" XFinder/Core/Notch/NotchSurfaceMachin
   "'                if state.isIdle { state = .activity; anchor = .notch }'" "'                state = .activity; anchor = .notch'"
 run "M14 low battery repeats every percent" XFinder/Core/Notch/LiveActivity.swift \
   "'            } else if n <= lowBattery && o > lowBattery {'" "'            } else if n <= lowBattery {'"
+run "M15 the volume HUD fires on a repeated report" XFinder/Core/Notch/LiveActivity.swift \
+  "'        guard changed else { return nil }                                  // CoreAudio reports each change on 2 elements\n'" "''"
+run "M16 the countdown reads 0:00 early" XFinder/Core/Notch/LiveActivity.swift \
+  "'let t = Int(remaining(at: now).rounded(.up))'" "'let t = Int(remaining(at: now).rounded(.down))'"
+run "M17 no badge for a running timer" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'guard itemCount > 0 || timerActive, notch.height > 0 else { return nil }'" "'guard itemCount > 0, notch.height > 0 else { return nil }'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 
