@@ -164,6 +164,12 @@ on-device + khoá API riêng người dùng tự nhập, như Voice đã làm).
 Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong phase là thứ tự làm.
 
 ### Phase A — Nền tảng UI/UX đồng nhất (làm trước mọi tính năng mới)
+
+> **Baseline đo bằng gate mới (2026-10-10, sau A1):** `audit-ui-tokens.py` → **606 vấn đề / 32 trang**. Phần lớn là cỡ chữ và bán kính
+> literal, không chỉ 12 trang card. A3 vì thế là *mọi* trang trong `Views/Detail/`, ưu tiên 12 trang card trước; con số phải về 0.
+
+- [x] **A1** `XFinderTokens.swift` · `FlatRows.swift` (PickerRow/ActionRow/InlineNote) · `SettingsCard`→`TileCard` (+typealias tạm) ·
+  PageHeader/SectionHeader/StatusChecklistRow/ToggleRow/MetricBigNumber đọc token · `scripts/audit-ui-tokens.py`.
 1. `XFinderTokens.swift` + `audit-ui-tokens.py` (gate đỏ ngay vì 12 trang) + `PickerRow`/`ActionRow`/`InlineNote`; `PageHeader`,
    `SectionHeader`, `ToggleRow`, `MetricBigNumber` chuyển sang đọc token (không đổi hình).
 2. `SurfacePanel` + `ClickOutsideDismisser`; chuyển `ColorToast` và `AlertBanner` trước (passive, rủi ro thấp), rồi QuitHoldHUD,
@@ -245,9 +251,9 @@ release tự ký như 1.2.0.
 
 ---
 
-## 7. Quyết định cần chủ dự án chốt trước khi gõ code Phase A
+## 7. Quyết định đã chốt (chủ dự án, 2026-10-10)
 
-1. **`SettingsCard` → `TileCard`** chỉ cho lưới thẻ; mọi trang cài đặt phẳng 100 % — đồng ý?
-2. **Thư viện Clipboard** là một trang sidebar (OneNotch có cửa sổ riêng) hay chỉ sống trong notch + shelf?
-3. **Now Playing / HUD hệ thống**: chấp nhận "song song, probe-gated" hay bỏ hẳn hai mục này?
-4. Tên nhánh/giai đoạn: mỗi Phase một PR hay commit thẳng `main` như hiện nay?
+1. **Đồng ý**: `SettingsCard` → `TileCard` chỉ cho lưới thẻ; mọi trang cài đặt phẳng 100 %. (`typealias SettingsCard = TileCard` tạm thời tới khi 12 trang xong.)
+2. **Clipboard sống trong notch + shelf.** Không có trang sidebar riêng → `ClipboardTabView` (0 call site) và case `.clipboard` mồ côi bị **xoá** trong Phase A; deck của shelf là nơi duy nhất.
+3. **Song song, probe-gated**: HUD của XFinder hiện cạnh HUD hệ thống; Now Playing chỉ ship sau probe với nhạc đang phát.
+4. **Commit thẳng `main`, mỗi commit một việc, message bắt đầu bằng mã hạng mục** (`A1`, `A3-compress`, `B2`…) để đọc lại `git log` là thấy đang ở đâu; không PR (repo một người, PR chỉ thêm bước). Checklist §4 được tích dần trong file này.

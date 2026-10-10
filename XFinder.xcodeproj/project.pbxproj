@@ -35,7 +35,9 @@
 		7F1A004C /* Services/SystemControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0043 /* Services/SystemControls.swift */; };
 		7F1A01C2 /* Services/AudioOutputDevices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01C1 /* Services/AudioOutputDevices.swift */; };
 		7F1A01C0 /* Services/AudioOutputList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01BF /* Services/AudioOutputList.swift */; };
-		7F1A004D /* Components/SettingsCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0044 /* Components/SettingsCard.swift */; };
+		7F1A004D /* Components/TileCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0044 /* Components/TileCard.swift */; };
+		7F1A01FC /* Components/FlatRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01FB /* Components/FlatRows.swift */; };
+		7F1A01FA /* Components/XFinderTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01F9 /* Components/XFinderTokens.swift */; };
 		7F1A004E /* Components/MetricBigNumber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0045 /* Components/MetricBigNumber.swift */; };
 		7F1A004F /* Components/StatBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0046 /* Components/StatBarView.swift */; };
 		7F1A0050 /* Components/SparklineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0047 /* Components/SparklineView.swift */; };
@@ -260,7 +262,9 @@
 		7F1A0043 /* Services/SystemControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/SystemControls.swift; sourceTree = "<group>"; };
 		7F1A01C1 /* Services/AudioOutputDevices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/AudioOutputDevices.swift; sourceTree = "<group>"; };
 		7F1A01BF /* Services/AudioOutputList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/AudioOutputList.swift; sourceTree = "<group>"; };
-		7F1A0044 /* Components/SettingsCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/SettingsCard.swift; sourceTree = "<group>"; };
+		7F1A0044 /* Components/TileCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/TileCard.swift; sourceTree = "<group>"; };
+		7F1A01FB /* Components/FlatRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/FlatRows.swift; sourceTree = "<group>"; };
+		7F1A01F9 /* Components/XFinderTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/XFinderTokens.swift; sourceTree = "<group>"; };
 		7F1A0045 /* Components/MetricBigNumber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/MetricBigNumber.swift; sourceTree = "<group>"; };
 		7F1A0046 /* Components/StatBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/StatBarView.swift; sourceTree = "<group>"; };
 		7F1A0047 /* Components/SparklineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/SparklineView.swift; sourceTree = "<group>"; };
@@ -649,7 +653,9 @@
 				7F1A0037 /* RootView.swift */,
 				7F1A0038 /* Sidebar/SidebarView.swift */,
 				7F1A0039 /* Detail/PlaceholderDetailView.swift */,
-				7F1A0044 /* Components/SettingsCard.swift */,
+				7F1A0044 /* Components/TileCard.swift */,
+				7F1A01FB /* Components/FlatRows.swift */,
+				7F1A01F9 /* Components/XFinderTokens.swift */,
 				7F1A00A0 /* Components/PageHeader.swift */,
 				7F1A00CE /* Components/PageWidth.swift */,
 				7F1A0045 /* Components/MetricBigNumber.swift */,
@@ -839,7 +845,9 @@
 				7F1A01C0 /* Services/AudioOutputList.swift in Sources */,
 				7F1A00D1 /* Services/ScreenBrightness.swift in Sources */,
 				7F1A0131 /* Services/PermissionManager.swift in Sources */,
-				7F1A004D /* Components/SettingsCard.swift in Sources */,
+				7F1A004D /* Components/TileCard.swift in Sources */,
+				7F1A01FC /* Components/FlatRows.swift in Sources */,
+				7F1A01FA /* Components/XFinderTokens.swift in Sources */,
 				7F1A00A1 /* Components/PageHeader.swift in Sources */,
 				7F1A00CF /* Components/PageWidth.swift in Sources */,
 				7F1A004E /* Components/MetricBigNumber.swift in Sources */,

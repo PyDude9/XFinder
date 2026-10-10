@@ -13,16 +13,16 @@ struct PageHeader: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 24, weight: .regular))
+                .font(XFinderTokens.Font.pageIcon)
                 .foregroundColor(.primary)
                 .frame(width: 30, height: 30)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 26, weight: .bold))
+                    .font(XFinderTokens.Font.pageTitle)
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 13))
+                        .font(XFinderTokens.Font.pageSubtitle)
                         .foregroundColor(.secondary)
                 }
             }
@@ -31,7 +31,7 @@ struct PageHeader: View {
 
             if let trailing { trailing }
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, XFinderTokens.Space.page)
         .padding(.top, 18)
         .padding(.bottom, 4)
     }
@@ -46,22 +46,22 @@ struct SectionHeader: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: icon)
-                .font(.system(size: 13))
+                .font(XFinderTokens.Font.sectionIcon)
                 .foregroundColor(.secondary)
                 .frame(width: 18)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(XFinderTokens.Font.sectionTitle)
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 12))
+                        .font(XFinderTokens.Font.sectionSubtitle)
                         .foregroundColor(.secondary)
                 }
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 6)
+        .padding(.horizontal, XFinderTokens.Space.page)
+        .padding(.top, XFinderTokens.Space.tight)
     }
 }
 
@@ -101,10 +101,10 @@ struct StatusChecklistRow: View {
                 .foregroundColor(state.color)
                 .frame(width: 18)
             Text(title)
-                .font(.system(size: 13))
-            Spacer(minLength: 12)
+                .font(XFinderTokens.Font.row)
+            Spacer(minLength: XFinderTokens.Space.inline)
             Text(status)
-                .font(.system(size: 12))
+                .font(XFinderTokens.Font.rowValue)
                 .foregroundColor(.secondary)
             if let actionTitle, let action {
                 Button(actionTitle) { action() }

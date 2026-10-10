@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A labeled Toggle with description, matching the card aesthetic of SettingsCard.
+/// A labeled Toggle with description — the standard boolean settings row.
 struct ToggleRow: View {
     let title: String
     var subtitle: String? = nil
@@ -8,14 +8,14 @@ struct ToggleRow: View {
     var tint: Color = .accentColor
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: XFinderTokens.Space.inline) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(XFinderTokens.Font.row)
                     .foregroundColor(.primary)
                 if let subtitle = subtitle {
                     Text(subtitle)
-                        .font(.system(size: 11))
+                        .font(XFinderTokens.Font.caption)
                         .foregroundColor(.secondary)
                 }
             }

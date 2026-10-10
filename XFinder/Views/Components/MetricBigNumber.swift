@@ -13,18 +13,18 @@ struct MetricBigNumber: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .font(XFinderTokens.Font.metric)
                     .foregroundColor(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                 if !unit.isEmpty {
                     Text(unit)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(XFinderTokens.Font.metricUnit)
                         .foregroundColor(.secondary)
                 }
             }
             Text(label)
-                .font(.system(size: 11))
+                .font(XFinderTokens.Font.caption)
                 .foregroundColor(.secondary)
         }
         .accessibilityElement(children: .combine)
