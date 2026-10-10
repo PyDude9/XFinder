@@ -9,7 +9,7 @@ import Foundation
 /// the files the user just dropped.
 enum NotchSurfaceMachine {
 
-    enum Page: String, Equatable, Codable { case files, clipboard }
+    enum Page: String, Equatable, Codable { case files, clipboard, nowPlaying }
 
     enum State: Equatable {
         /// Nothing drawn — except, when files are held on a notched screen, a count badge under the notch.
@@ -37,6 +37,9 @@ enum NotchSurfaceMachine {
         /// B5: resting on the notch while NO files are held opens the clipboard page. Off by default —
         /// an empty tray never opens on hover (Part 3c), and this is the one deliberate exception.
         var hoverOpensClipboard = false
+        /// B6: a track is known (and the Now Playing switch is on). Hover may then peek it even with no
+        /// files held — a playing track is never "empty" — and the peek survives the tray emptying.
+        var nowPlayingActive = false
         var dragIntoNotchOpens = true
         var shakeOpens = true
         /// Pointer must rest in the notch zone this long before hover counts (accidental passes are shorter).
@@ -117,11 +120,13 @@ enum NotchSurfaceMachine {
                 state = .expanded(.files)           // dropping is the START of the task — stay open
             case .itemsChanged(let n):
                 itemCount = n
-                if n == 0, state == .peek { collapse() }
+                // The peek shows held files or the playing track; with neither left it has nothing to say.
+                if n == 0, state == .peek, !s.nowPlayingActive { collapse() }
             case .hoverInZone(let since):
                 guard s.hoverToPeek, state.isIdle, now.timeIntervalSince(since) >= s.hoverDwell else { return }
-                if itemCount > 0 {
-                    // Hover reveals files already held — never an empty tray (CLAUDE.md Part 3c).
+                if itemCount > 0 || s.nowPlayingActive {
+                    // Hover reveals files already held, or the track that is playing — never an empty
+                    // tray (CLAUDE.md Part 3c).
                     state = .peek
                     anchor = .notch
                 } else if s.hoverOpensClipboard {

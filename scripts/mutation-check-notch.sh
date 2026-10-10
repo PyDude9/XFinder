@@ -11,12 +11,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notch.XXXXXX)
-FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Views/Detail/DropTrayDetailView.swift"
+FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='NotchSurface|NotchDrag|NotchTask|LiveActivity|FeatureKeyDefaults'
+FILTER='NotchSurface|NotchDrag|NotchTask|LiveActivity|NowPlaying|NotchNowPlaying|FeatureKeyDefaults'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -49,8 +49,8 @@ run() {   # run <name> <file> <old> <new>
 
 run "M1 drag pasteboard: trust stale types" XFinder/Core/Notch/NotchDragSession.swift \
   "'        guard changeCount() != changeCountAtPress else { return false }   // no new drag session yet\n'" "''"
-run "M2 hover reveals an empty tray" XFinder/Core/Notch/NotchSurfaceMachine.swift \
-  "'                if itemCount > 0 {\n                    // Hover reveals files already held'" "'                if true {\n                    // Hover reveals files already held'"
+run "M2 hover peeks with the master hover switch off" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                guard s.hoverToPeek, state.isIdle, now.timeIntervalSince(since) >= s.hoverDwell else { return }'" "'                guard state.isIdle, now.timeIntervalSince(since) >= s.hoverDwell else { return }'"
 run "M3 shaken tray with files auto-closes" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if case .expanded = state, anchor == .pointer, itemCount > 0 { return }\n'" "''"
 run "M4 pointer away never collapses" XFinder/Core/Notch/NotchSurfaceMachine.swift \
@@ -59,7 +59,7 @@ run "M4 pointer away never collapses" XFinder/Core/Notch/NotchSurfaceMachine.swi
 run "M5 notchDrop switch ignored" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                guard s.dragIntoNotchOpens else { return }\n'" "''"
 run "M6 hover zone always takes the title-bar strip" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'let lip = itemCount > 0 ? m.badgeLip : 0'" "'let lip = m.badgeLip'"
+  "'let lip = (itemCount > 0 || nowPlayingActive) ? m.badgeLip : 0'" "'let lip = m.badgeLip'"
 run "M7 a drag at the notch yanks the pointer tray" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if case .expanded = state, anchor == .pointer { return }\n'" "''"
 run "M9 pasteboard read on every drag event (throttle removed)" XFinder/Core/Notch/NotchDragSession.swift \
@@ -79,11 +79,19 @@ run "M15 the volume HUD fires on a repeated report" XFinder/Core/Notch/LiveActiv
 run "M16 the countdown reads 0:00 early" XFinder/Core/Notch/LiveActivity.swift \
   "'let t = Int(remaining(at: now).rounded(.up))'" "'let t = Int(remaining(at: now).rounded(.down))'"
 run "M17 no badge for a running timer" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'guard itemCount > 0 || timerActive, notch.height > 0 else { return nil }'" "'guard itemCount > 0, notch.height > 0 else { return nil }'"
+  "'guard itemCount > 0 || timerActive || nowPlayingActive, notch.height > 0 else { return nil }'" "'guard itemCount > 0 || nowPlayingActive, notch.height > 0 else { return nil }'"
 run "M18 a page switch opens a closed surface" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if case .expanded = state { state = .expanded(page) }'" "'                state = .expanded(page)'"
 run "M19 hover opens the clipboard without the opt-in" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                } else if s.hoverOpensClipboard {'" "'                } else {'"
+run "M20 the playhead keeps moving while paused" XFinder/Core/Notch/NowPlaying.swift \
+  "'        let rate = s.playing ? (s.rate ?? 1) : 0'" "'        let rate = s.rate ?? 1'"
+run "M21 a crash-looping helper is restarted forever" XFinder/Core/Notch/NowPlaying.swift \
+  "'            return attempts > Self.maxAttempts ? .giveUp : .restart(after: Self.delay(forAttempt: attempts))'" "'            return .restart(after: Self.delay(forAttempt: attempts))'"
+run "M22 hover peeks an empty tray with nothing playing" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                if itemCount > 0 || s.nowPlayingActive {'" "'                if true {'"
+run "M23 the now-playing peek collapses when the tray empties" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                if n == 0, state == .peek, !s.nowPlayingActive { collapse() }'" "'                if n == 0, state == .peek { collapse() }'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 

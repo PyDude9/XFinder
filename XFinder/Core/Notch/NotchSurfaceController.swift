@@ -87,15 +87,22 @@ final class NotchSurfaceController {
     }
     private var settings: NotchSurfaceMachine.Settings {
         NotchSurfaceMachine.Settings(enabled: enabled, hoverToPeek: hoverEnabled, hoverOpensClipboard: clipboardOnHover,
+                                     nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
                                      dragIntoNotchOpens: notchDropEnabled, shakeOpens: shakeEnabled)
     }
 
     func applySettings() {
-        if enabled { start() } else { stop() }
+        if enabled {
+            start()
+            NowPlayingMonitor.shared.applySettings()      // B6: its own switch, under the master
+        } else {
+            stop()
+        }
     }
 
     private func start() {
         if panel == nil { prepare() }
+        NowPlayingMonitor.shared.onChange = { [weak self] in self?.nowPlayingChanged() }
         if monitors.isEmpty {
             let mask: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .leftMouseDown, .leftMouseUp]
             if let global = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { [weak self] event in
@@ -124,6 +131,10 @@ final class NotchSurfaceController {
         activityWork?.cancel(); activityWork = nil
         activityQueue.clear()
         countdownTicker?.invalidate(); countdownTicker = nil; countdown = nil; model.timerText = nil
+        NowPlayingMonitor.shared.stop()
+        nowPlayingTicker?.invalidate(); nowPlayingTicker = nil
+        model.nowPlaying = nil; model.nowPlayingArtwork = nil; model.nowPlayingPosition = nil
+        model.nowPlayingAvailability = .off
         samples.removeAll()
         machine.handle(.disabled, settings: settings, now: Date())
         state = machine.state
@@ -197,7 +208,8 @@ final class NotchSurfaceController {
             return
         }
 
-        let zone = NotchSurfaceLayout.hoverZone(notch: notch, screen: screen.frame, itemCount: machine.itemCount)
+        let zone = NotchSurfaceLayout.hoverZone(notch: notch, screen: screen.frame, itemCount: machine.itemCount,
+                                                nowPlayingActive: NowPlayingMonitor.shared.hasTrack)
         if zone.contains(point) {
             leftAt = nil; graceWork?.cancel(); graceWork = nil
             if zoneEnteredAt == nil {
@@ -275,7 +287,51 @@ final class NotchSurfaceController {
         state = machine.state
         render()
         syncClipboardKeyboard()
+        syncNowPlayingTicker()
     }
+
+    // MARK: - Now Playing (B6)
+
+    private var nowPlayingTicker: Timer?
+
+    /// The helper reported something (or went away): mirror it into the model, let the machine
+    /// re-decide (a peek that showed only the track collapses when it ends), and redraw — the
+    /// collapsed badge appears or disappears with the track.
+    private func nowPlayingChanged() {
+        let m = NowPlayingMonitor.shared
+        model.nowPlaying = m.snapshot
+        model.nowPlayingArtwork = m.artwork
+        model.nowPlayingAvailability = m.availability
+        let app = m.playerApp
+        model.nowPlayingAppName = app?.localizedName
+        model.nowPlayingAppIcon = app?.icon
+        model.nowPlayingPosition = m.snapshot.flatMap { NowPlaying.position(of: $0, at: Date()) }
+        dispatch(.itemsChanged(count: machine.itemCount))
+        render()
+        syncNowPlayingTicker()
+    }
+
+    /// A 1 s ticker exists ONLY while the Now Playing page is open and the track is moving — it drives
+    /// the progress bar from the last report (the helper never ticks). Otherwise none.
+    private func syncNowPlayingTicker() {
+        let wanted = machine.state == .expanded(.nowPlaying) && model.nowPlaying?.playing == true
+        if wanted, nowPlayingTicker == nil {
+            let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    guard let self, let s = self.model.nowPlaying else { return }
+                    self.model.nowPlayingPosition = NowPlaying.position(of: s, at: Date())
+                }
+            }
+            RunLoop.main.add(t, forMode: .common)
+            nowPlayingTicker = t
+        } else if !wanted, let t = nowPlayingTicker {
+            t.invalidate(); nowPlayingTicker = nil
+        }
+    }
+
+    func nowPlayingCommand(_ c: NowPlayingMonitor.Command) { NowPlayingMonitor.shared.send(c) }
+
+    func openPlayer() { NowPlayingMonitor.shared.openPlayer() }
 
     // MARK: - Clipboard page (B5)
 
@@ -383,7 +439,8 @@ final class NotchSurfaceController {
         guard let target = NotchSurfaceLayout.frame(for: machine.state, anchor: machine.anchor,
                                                     itemCount: machine.itemCount, notch: notch,
                                                     screen: screen.frame, visible: screen.visibleFrame,
-                                                    pointer: shakePoint, timerActive: countdown != nil) else {
+                                                    pointer: shakePoint, timerActive: countdown != nil,
+                                                    nowPlayingActive: NowPlayingMonitor.shared.hasTrack) else {
             model.state = .collapsed
             model.itemCount = machine.itemCount
             panel.hide()

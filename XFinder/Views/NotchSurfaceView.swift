@@ -21,6 +21,14 @@ final class NotchSurfaceModel {
     var timerText: String?
     /// The clipboard page's own state (B5).
     let clipboard = NotchClipboardModel()
+    /// What is playing (B6), as the helper last reported it; nil ⇒ nothing / feature off.
+    var nowPlaying: NowPlaying.Snapshot?
+    var nowPlayingArtwork: NSImage?
+    /// Playhead in seconds, interpolated by the controller's ticker while the page is open.
+    var nowPlayingPosition: Double?
+    var nowPlayingAppName: String?
+    var nowPlayingAppIcon: NSImage?
+    var nowPlayingAvailability: NowPlaying.Availability = .off
 }
 
 /// Root of the Notch surface window. The window is sized by `NotchSurfaceLayout`; this view draws
@@ -36,8 +44,11 @@ struct NotchSurfaceView: View {
         let notch = CGRect(origin: .zero, size: model.notchSize)
         return NotchSurfaceLayout.size(for: model.state, anchor: model.anchor,
                                        itemCount: model.itemCount, notch: notch,
-                                       timerActive: model.timerText != nil) ?? .zero
+                                       timerActive: model.timerText != nil,
+                                       nowPlayingActive: nowPlayingActive) ?? .zero
     }
+
+    private var nowPlayingActive: Bool { model.nowPlaying?.hasTrack == true }
 
     /// At the notch the top edge is flush with the screen (the notch has no top edge); a tray opened
     /// at the pointer is a free-standing card, rounded on all four corners.
@@ -78,7 +89,7 @@ struct NotchSurfaceView: View {
     @ViewBuilder private var content: some View {
         switch model.state {
         case .collapsed: badge
-        case .peek: peek
+        case .peek: if model.itemCount > 0 { peek } else { nowPlayingStrip }   // the machine peeks only with files or a track
         case .activity: activityStrip
         case .expanded(let page): hubShell(page)
         }
@@ -95,13 +106,119 @@ struct NotchSurfaceView: View {
                 Image(systemName: "timer").font(XFinderTokens.Font.caption)
                 Text(t).font(XFinderTokens.Font.caption).monospacedDigit()
             }
+            if let np = model.nowPlaying, np.hasTrack {
+                // B6: the track, as small as the lip allows — artwork (or a note) and the headline.
+                artworkThumb(size: 14)
+                Text(np.headline).font(XFinderTokens.Font.caption).lineLimit(1).truncationMode(.tail)
+                    .frame(maxWidth: 110)
+                    .opacity(np.playing ? 1 : 0.6)
+            }
         }
         .foregroundColor(.white)
         .frame(maxWidth: .infinity)
         .frame(height: NotchSurfaceLayout.Metrics.standard.badgeLip)
         .contentShape(Rectangle())
-        .onTapGesture { if model.itemCount > 0 { NotchSurfaceController.shared.reveal() } }
-        .help(model.itemCount > 0 ? L10n.t("Bấm để mở") : "")
+        .onTapGesture {
+            if model.itemCount > 0 { NotchSurfaceController.shared.reveal() }
+            else if nowPlayingActive { NotchSurfaceController.shared.reveal(page: .nowPlaying) }
+        }
+        .help(model.itemCount > 0 || nowPlayingActive ? L10n.t("Bấm để mở") : "")
+    }
+
+    @ViewBuilder private func artworkThumb(size: CGFloat) -> some View {
+        if let img = model.nowPlayingArtwork {
+            Image(nsImage: img).resizable().aspectRatio(contentMode: .fill)
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: max(2, size / 8)))
+        } else if let icon = model.nowPlayingAppIcon {
+            Image(nsImage: icon).resizable().frame(width: size, height: size)
+        } else {
+            Image(systemName: "music.note").font(.system(size: size * 0.75))
+                .frame(width: size, height: size)
+        }
+    }
+
+    /// Prev / play-pause / next. Plain white glyphs — they sit on the black surface.
+    private func nowPlayingControls(size: CGFloat) -> some View {
+        HStack(spacing: XFinderTokens.Space.tight + 2) {
+            Button { NotchSurfaceController.shared.nowPlayingCommand(.previousTrack) } label: {
+                Image(systemName: "backward.fill").font(.system(size: size))
+            }.buttonStyle(.plain).help(L10n.t("Bài trước"))
+            Button { NotchSurfaceController.shared.nowPlayingCommand(.togglePlayPause) } label: {
+                Image(systemName: model.nowPlaying?.playing == true ? "pause.fill" : "play.fill").font(.system(size: size + 2))
+            }.buttonStyle(.plain).help(L10n.t("Phát hoặc tạm dừng"))
+            Button { NotchSurfaceController.shared.nowPlayingCommand(.nextTrack) } label: {
+                Image(systemName: "forward.fill").font(.system(size: size))
+            }.buttonStyle(.plain).help(L10n.t("Bài tiếp"))
+        }
+    }
+
+    /// The hover peek when no files are held but a track plays: artwork, title/artist, controls.
+    private var nowPlayingStrip: some View {
+        HStack(spacing: XFinderTokens.Space.tight + 2) {
+            artworkThumb(size: 28)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(model.nowPlaying?.headline ?? "").font(XFinderTokens.Font.row).lineLimit(1).truncationMode(.tail)
+                let sub = model.nowPlaying?.subline ?? ""
+                if !sub.isEmpty { Text(sub).font(XFinderTokens.Font.caption).opacity(0.65).lineLimit(1).truncationMode(.tail) }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture { NotchSurfaceController.shared.reveal(page: .nowPlaying) }
+            nowPlayingControls(size: 11)
+        }
+        .padding(.horizontal, XFinderTokens.Space.inline)
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: NotchSurfaceLayout.Metrics.standard.peekDrop)
+    }
+
+    /// The hub page (B6): artwork, titles, a progress bar from the last report, controls, open the player.
+    @ViewBuilder private var nowPlayingPage: some View {
+        if let np = model.nowPlaying, np.hasTrack {
+            HStack(alignment: .top, spacing: XFinderTokens.Space.inline + 2) {
+                artworkThumb(size: 72)
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                    Text(np.headline).font(XFinderTokens.Font.row).lineLimit(2)
+                    if !np.subline.isEmpty {
+                        Text(np.subline).font(XFinderTokens.Font.caption).opacity(0.65).lineLimit(1).truncationMode(.tail)
+                    }
+                    if let d = np.duration, d > 0 {
+                        let pos = model.nowPlayingPosition ?? NowPlaying.position(of: np, at: Date()) ?? 0
+                        ProgressView(value: min(pos, d), total: d).progressViewStyle(.linear).tint(.white)
+                        HStack {
+                            Text(NowPlaying.timeLabel(pos)).font(XFinderTokens.Font.caption).monospacedDigit().opacity(0.65)
+                            Spacer()
+                            if !np.playing { Text(L10n.t("Đang tạm dừng")).font(XFinderTokens.Font.caption).opacity(0.65) }
+                            Spacer()
+                            Text(NowPlaying.timeLabel(d)).font(XFinderTokens.Font.caption).monospacedDigit().opacity(0.65)
+                        }
+                    } else if !np.playing {
+                        Text(L10n.t("Đang tạm dừng")).font(XFinderTokens.Font.caption).opacity(0.65)
+                    }
+                    HStack {
+                        nowPlayingControls(size: 14)
+                        Spacer()
+                        if let app = model.nowPlayingAppName {
+                            Button("\(L10n.t("Mở "))\(app)") { NotchSurfaceController.shared.openPlayer() }
+                                .buttonStyle(.bordered).controlSize(.mini)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        } else {
+            VStack(spacing: XFinderTokens.Space.tight) {
+                Image(systemName: "music.note").font(XFinderTokens.Font.pageIcon).opacity(0.65)
+                Text(L10n.t("Không có gì đang phát.")).font(XFinderTokens.Font.caption).opacity(0.65)
+                if model.nowPlayingAvailability != .ready {
+                    Text(L10n.t(model.nowPlayingAvailability.messageKey)).font(XFinderTokens.Font.caption).opacity(0.5)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
     }
 
     /// Peek only exists while files are held (the machine never peeks an empty tray). The left icon
@@ -162,6 +279,9 @@ struct NotchSurfaceView: View {
                     pageTab(.files, icon: "tray.and.arrow.down.fill", title: L10n.t("Khay"),
                             badge: store.items.isEmpty ? nil : "\(store.items.count)", current: page)
                     pageTab(.clipboard, icon: "doc.on.clipboard.fill", title: "Clipboard", badge: nil, current: page)
+                    if model.nowPlayingAvailability != .off {   // B6: only while the switch is on
+                        pageTab(.nowPlaying, icon: "music.note", title: L10n.t("Đang phát"), badge: nil, current: page)
+                    }
                     Spacer()
                 }
                 // A tray opened at the pointer often lands on the very window the files are going to;
@@ -178,6 +298,7 @@ struct NotchSurfaceView: View {
             switch page {
             case .files: filesPage
             case .clipboard: NotchClipboardView(model: model.clipboard)
+            case .nowPlaying: nowPlayingPage
             }
         }
         .foregroundColor(.white)

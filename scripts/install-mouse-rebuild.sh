@@ -52,6 +52,16 @@ PLIST
   fi
   echo "--- appex sandbox entitlement: present ---"
 fi
+# B6: the Now Playing helper dylib (loaded into /usr/bin/perl) is nested code too — sign it
+# explicitly, same reason as the appex, and refuse to ship a build that lost it: the Run Script
+# phase that builds it is hand-authored in the pbxproj and would fail silently otherwise.
+HELPER="$STAGE/Contents/Helpers/XFinderNowPlaying.dylib"
+if [ -f "$HELPER" ]; then
+  codesign --force --sign "XFinder Dev" --identifier com.xfinder.app.nowplaying-adapter "$HELPER"
+  echo "--- now-playing helper signed: $(codesign -dv --verbose=2 "$HELPER" 2>&1 | sed -n 's/^Identifier=//p') ---"
+else
+  echo "FATAL: now-playing helper missing from the build ($HELPER) — the 'Build Now Playing helper' phase did not run"; exit 1
+fi
 codesign --force --sign "XFinder Dev" --identifier com.xfinder.app "$STAGE"
 
 pkill -x XFinder 2>/dev/null || true

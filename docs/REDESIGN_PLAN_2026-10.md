@@ -239,6 +239,11 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
     dán đọc snippet. Đo trên `xfinder.db`: **227 bản ghi** 201–4096 ký tự chỉ còn 200 — không khôi phục được. `ClipboardText`
     (thuần) giữ luật; mutation C7/C8 tiêm lại cả hai nửa.
 5. Trang Clipboard trên notch (deck của shelf) + @filter + ⌘-click stack + menu Transform/Dịch/Đi tới nguồn.
+- [x] **B6 (code, 2026-10-11)** Đang phát trên notch: badge (ảnh bìa + tên bài), peek khi rê chuột (tên/nghệ sĩ + ⏮⏯⏭),
+  trang trong hub (tiến trình nội suy, Mở <app>), hàng flyout, công tắc `notch.nowPlaying` (mặc định **tắt**). **Đã probe với
+  nhạc "đang phát"** (publisher `MPNowPlayingInfoCenter` câm): MediaRemote **từ chối** tiến trình thường (trả rỗng khi đang phát),
+  **trả đủ** khi dylib được nạp vào `/usr/bin/perl` (Apple ký) — nên đọc qua helper perl, không polling, ~18 MB; **gửi lệnh** thì
+  app tự gửi được. Không AppleScript (chỉ Music/Spotify, cần Automation từng app, không trình duyệt). **Chưa bấm thử sống.**
 6. Now Playing: **probe trước** (nhạc đang phát, so MediaRemote vs AppleScript). Không probe xong không ship.
 7. Cài đặt notch về trang Khay thả (đổi tên "Notch & Khay thả"): bật từng live activity, Pill cho màn ngoài, độ nhạy hover,
    ẩn khi quay màn hình.

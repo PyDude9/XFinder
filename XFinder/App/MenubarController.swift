@@ -686,6 +686,12 @@ struct MenubarFlyoutView: View {
                 closePopover()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { NotchSurfaceController.shared.reveal(page: .clipboard) }
             }
+            if NowPlayingMonitor.shared.availability != .off {       // B6: only while its switch is on
+                actionRow(L10n.t("Đang phát trên notch"), "music.note") {
+                    closePopover()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { NotchSurfaceController.shared.reveal(page: .nowPlaying) }
+                }
+            }
             actionRow(L10n.t("Đồng bộ thư mục"), "arrow.triangle.2.circlepath") { navigate(.sync) }
             HStack {
                 Image(systemName: "magnifyingglass").frame(width: 18).foregroundColor(.secondary)

@@ -68,6 +68,12 @@ for r in L10n.strings.json L10n.allowlist.json; do
   fi
 done
 
+# B6: the Now Playing helper is produced by a Run Script phase, not a Sources entry, so the
+# SwiftFileList cannot show it either — check the bundle.
+echo "--- now-playing helper ---"
+H="$OUT/out/XFinder.app/Contents/Helpers/XFinderNowPlaying.dylib"
+if [ -f "$H" ]; then echo "  OK   XFinderNowPlaying.dylib ($(lipo -archs "$H"))"; else echo "  MISS XFinderNowPlaying.dylib"; fi
+
 echo "--- archs ---"
 lipo -archs "$OUT/out/XFinder.app/Contents/MacOS/XFinder"
 

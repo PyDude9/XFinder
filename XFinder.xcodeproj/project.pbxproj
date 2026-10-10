@@ -179,6 +179,8 @@
 		7F1A0208 /* Notch/NotchSurfaceLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0207 /* Notch/NotchSurfaceLayout.swift */; };
 		7F1A020A /* Notch/NotchSurfaceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0209 /* Notch/NotchSurfaceController.swift */; };
 		7F1A020E /* Notch/NotchDragSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A020D /* Notch/NotchDragSession.swift */; };
+		7F1A0230 /* Notch/NowPlaying.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A022F /* Notch/NowPlaying.swift */; };
+		7F1A0232 /* Notch/NowPlayingMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0231 /* Notch/NowPlayingMonitor.swift */; };
 		7F1A022A /* Clipboard/PasteQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0229 /* Clipboard/PasteQueue.swift */; };
 		7F1A022E /* Clipboard/ClipboardText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A022D /* Clipboard/ClipboardText.swift */; };
 		7F1A0228 /* Clipboard/ClipboardTransform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0227 /* Clipboard/ClipboardTransform.swift */; };
@@ -327,6 +329,8 @@
 		7F1A0207 /* Notch/NotchSurfaceLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchSurfaceLayout.swift; sourceTree = "<group>"; };
 		7F1A0209 /* Notch/NotchSurfaceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchSurfaceController.swift; sourceTree = "<group>"; };
 		7F1A020D /* Notch/NotchDragSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchDragSession.swift; sourceTree = "<group>"; };
+		7F1A022F /* Notch/NowPlaying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NowPlaying.swift; sourceTree = "<group>"; };
+		7F1A0231 /* Notch/NowPlayingMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NowPlayingMonitor.swift; sourceTree = "<group>"; };
 		7F1A0229 /* Clipboard/PasteQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/PasteQueue.swift; sourceTree = "<group>"; };
 		7F1A022D /* Clipboard/ClipboardText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipboardText.swift; sourceTree = "<group>"; };
 		7F1A0227 /* Clipboard/ClipboardTransform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipboardTransform.swift; sourceTree = "<group>"; };
@@ -569,6 +573,8 @@
 				7F1A0207 /* Notch/NotchSurfaceLayout.swift */,
 				7F1A0209 /* Notch/NotchSurfaceController.swift */,
 				7F1A020D /* Notch/NotchDragSession.swift */,
+				7F1A022F /* Notch/NowPlaying.swift */,
+				7F1A0231 /* Notch/NowPlayingMonitor.swift */,
 				7F1A0229 /* Clipboard/PasteQueue.swift */,
 				7F1A022D /* Clipboard/ClipboardText.swift */,
 				7F1A0227 /* Clipboard/ClipboardTransform.swift */,
@@ -810,6 +816,7 @@
 			buildPhases = (
 				7F1A001D /* Sources */,
 				7F1A00DF /* Resources */,
+				7F1A0233 /* Build Now Playing helper */,
 				205EC421305AD1CE0094A78B /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -874,6 +881,29 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		7F1A0233 /* Build Now Playing helper */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/XFinder/Helpers/NowPlaying/nowplaying-adapter.c",
+			);
+			name = "Build Now Playing helper";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/XFinderNowPlaying.dylib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nOUT=\"$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/Helpers\"\nmkdir -p \"$OUT\"\nARCHFLAGS=\"\"; for a in $ARCHS; do ARCHFLAGS=\"$ARCHFLAGS -arch $a\"; done\nxcrun clang -fblocks -shared $ARCHFLAGS -mmacosx-version-min=\"$MACOSX_DEPLOYMENT_TARGET\" -o \"$OUT/XFinderNowPlaying.dylib\" \"$SRCROOT/XFinder/Helpers/NowPlaying/nowplaying-adapter.c\" -framework CoreFoundation\ncodesign --force --sign - \"$OUT/XFinderNowPlaying.dylib\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		205EC415305AD1CE0094A78B /* Sources */ = {
@@ -958,6 +988,8 @@
 				7F1A0208 /* Notch/NotchSurfaceLayout.swift in Sources */,
 				7F1A020A /* Notch/NotchSurfaceController.swift in Sources */,
 				7F1A020E /* Notch/NotchDragSession.swift in Sources */,
+				7F1A0230 /* Notch/NowPlaying.swift in Sources */,
+				7F1A0232 /* Notch/NowPlayingMonitor.swift in Sources */,
 				7F1A022A /* Clipboard/PasteQueue.swift in Sources */,
 				7F1A022E /* Clipboard/ClipboardText.swift in Sources */,
 				7F1A0228 /* Clipboard/ClipboardTransform.swift in Sources */,

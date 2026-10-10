@@ -11,6 +11,8 @@ enum NotchSurfaceLayout {
         var badgeLip: CGFloat = 18
         /// Extra width on EACH side of the notch for the peek strip.
         var peekWing: CGFloat = 56
+        /// B6: the peek of a playing track (no files held) needs room for title, artist and three controls.
+        var nowPlayingPeekWing: CGFloat = 118
         /// Height of the peek strip below the notch.
         var peekDrop: CGFloat = 40
         /// Expanded surface: width, and height below the notch (or total height at the pointer).
@@ -40,13 +42,16 @@ enum NotchSurfaceLayout {
     /// Size of the drawn surface for a state; nil ⇒ nothing is drawn. The collapsed badge needs a real
     /// notch to hang from — a pill for notch-less screens is a later phase (B7).
     static func size(for state: NotchSurfaceMachine.State, anchor: NotchSurfaceMachine.Anchor,
-                     itemCount: Int, notch: CGRect, timerActive: Bool = false, metrics m: Metrics = .standard) -> CGSize? {
+                     itemCount: Int, notch: CGRect, timerActive: Bool = false, nowPlayingActive: Bool = false,
+                     metrics m: Metrics = .standard) -> CGSize? {
         switch state {
         case .collapsed:
-            guard itemCount > 0 || timerActive, notch.height > 0 else { return nil }
+            guard itemCount > 0 || timerActive || nowPlayingActive, notch.height > 0 else { return nil }
             return CGSize(width: notch.width, height: notch.height + m.badgeLip)
         case .peek:
-            return CGSize(width: notch.width + 2 * m.peekWing, height: notch.height + m.peekDrop)
+            // Files take precedence in the strip; the wider now-playing strip only when none are held.
+            let wing = (itemCount == 0 && nowPlayingActive) ? m.nowPlayingPeekWing : m.peekWing
+            return CGSize(width: notch.width + 2 * wing, height: notch.height + m.peekDrop)
         case .activity:
             return CGSize(width: notch.width + 2 * m.activityWing, height: notch.height + m.activityDrop)
         case .expanded where anchor == .pointer:
@@ -61,8 +66,10 @@ enum NotchSurfaceLayout {
     /// by `pointerGap`, clamped to the VISIBLE frame (it must never land under the menu bar or Dock).
     static func frame(for state: NotchSurfaceMachine.State, anchor: NotchSurfaceMachine.Anchor,
                       itemCount: Int, notch: CGRect, screen: CGRect, visible: CGRect,
-                      pointer: CGPoint, timerActive: Bool = false, metrics m: Metrics = .standard) -> CGRect? {
-        guard let size = size(for: state, anchor: anchor, itemCount: itemCount, notch: notch, timerActive: timerActive, metrics: m) else { return nil }
+                      pointer: CGPoint, timerActive: Bool = false, nowPlayingActive: Bool = false,
+                      metrics m: Metrics = .standard) -> CGRect? {
+        guard let size = size(for: state, anchor: anchor, itemCount: itemCount, notch: notch,
+                              timerActive: timerActive, nowPlayingActive: nowPlayingActive, metrics: m) else { return nil }
         if case .expanded = state, anchor == .pointer {
             let centre = CGPoint(x: pointer.x, y: pointer.y - m.pointerGap - size.height / 2)
             return SurfaceGeometry.frame(size: size, anchor: .pointer(centre), screen: screen, visible: visible)
@@ -71,14 +78,16 @@ enum NotchSurfaceLayout {
     }
 
     /// Where the pointer must rest for a hover. Only the notch itself — plus the badge lip under it
-    /// when files are held, so resting on the count peeks too. Without files the zone stays the bare
-    /// notch: the strip under it is the centre of every window's title bar, and grabbing a title bar
-    /// must never count as hovering the tray. Notch-less screen: an 8 pt strip at the top centre.
-    static func hoverZone(notch: CGRect, screen: CGRect, itemCount: Int, metrics m: Metrics = .standard) -> CGRect {
+    /// when files are held (or a track is playing — B6), so resting on the badge peeks too. Otherwise
+    /// the zone stays the bare notch: the strip under it is the centre of every window's title bar,
+    /// and grabbing a title bar must never count as hovering the tray. Notch-less screen: an 8 pt
+    /// strip at the top centre.
+    static func hoverZone(notch: CGRect, screen: CGRect, itemCount: Int, nowPlayingActive: Bool = false,
+                          metrics m: Metrics = .standard) -> CGRect {
         guard notch.height > 0 else {
             return CGRect(x: notch.minX, y: screen.maxY - 8, width: notch.width, height: 8)
         }
-        let lip = itemCount > 0 ? m.badgeLip : 0
+        let lip = (itemCount > 0 || nowPlayingActive) ? m.badgeLip : 0
         return CGRect(x: notch.minX, y: notch.minY - lip, width: notch.width, height: notch.height + lip)
     }
 

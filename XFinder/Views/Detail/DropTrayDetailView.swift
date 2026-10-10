@@ -29,6 +29,10 @@ struct DropTrayDetailView: View {
     @AppStorage("notch.activity.bluetooth") private var actBluetooth = true
     @AppStorage("notch.activity.alerts") private var actAlerts = true
     @AppStorage("notch.activity.volume") private var actVolume = true
+    // B6 Now Playing. Reader: NowPlayingMonitor (default must match — FeatureKeyDefaultsTests). Off by
+    // default: it runs a helper process and rides a private framework, so the user opts in.
+    @AppStorage("notch.nowPlaying") private var nowPlaying = false
+    @State private var nowPlayingMonitor = NowPlayingMonitor.shared
 
     var body: some View {
         ScrollView {
@@ -78,6 +82,7 @@ struct DropTrayDetailView: View {
                     openingSection
                     Divider().padding(.horizontal, XFinderTokens.Space.page)
                     activitiesSection
+                    nowPlayingSection
                 }
 
                 if !tray.items.isEmpty {
@@ -248,6 +253,32 @@ struct DropTrayDetailView: View {
                     ToggleRow(title: L10n.t("Âm lượng"), subtitle: L10n.t("Mức âm lượng thật từ CoreAudio, hiện song song HUD của macOS. Không có HUD độ sáng: trên máy này giá trị độ sáng đọc được bị kẹt nên sẽ phải bịa số."), isOn: $actVolume)
                         .onChange(of: actVolume) { LiveActivityMonitor.shared.applySettings() }
                 }
+            }
+            .padding(.horizontal, XFinderTokens.Space.page)
+        }
+    }
+
+    /// The user comes here to decide whether the notch shows what is playing — and to read, in plain
+    /// words, what that costs and what it rests on.
+    private var nowPlayingSection: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(icon: "music.note",
+                          title: L10n.t("Đang phát trên notch"),
+                          subtitle: L10n.t("Bài đang phát hiện dưới notch; rê chuột để xem và điều khiển, bấm để mở trang Đang phát trong khay."))
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                ToggleRow(title: L10n.t("Hiện bài đang phát ở notch"),
+                          subtitle: L10n.t("Tên bài, nghệ sĩ, ảnh bìa và nút điều khiển cho app đang phát — kể cả trình duyệt. Mặc định tắt."),
+                          isOn: $nowPlaying)
+                    .onChange(of: nowPlaying) { NotchSurfaceController.shared.applySettings() }
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    Text(L10n.t("Trạng thái: ")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    Text(L10n.t(nowPlayingMonitor.availability.messageKey)).font(XFinderTokens.Font.caption)
+                    if let np = nowPlayingMonitor.snapshot, np.hasTrack {
+                        Text("· \(L10n.t("Đang phát: "))\(np.headline)").font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                            .lineLimit(1).truncationMode(.tail)
+                    }
+                }
+                InlineNote(text: L10n.t("Đọc qua MediaRemote, API riêng của Apple. Từ macOS 15.4 chỉ tiến trình do Apple ký mới đọc được, nên khi bật, XFinder nhờ /usr/bin/perl của hệ thống nạp một thư viện nhỏ và nhận dữ liệu qua pipe: thêm một tiến trình khoảng 18 MB, không polling. Apple có thể đóng đường này ở bất kỳ bản cập nhật nào — khi đó dòng trạng thái sẽ báo không khả dụng thay vì bịa. Nút điều khiển gửi lệnh trực tiếp từ XFinder."))
             }
             .padding(.horizontal, XFinderTokens.Space.page)
         }

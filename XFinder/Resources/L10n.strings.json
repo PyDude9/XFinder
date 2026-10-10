@@ -7606,6 +7606,74 @@
     "Mặc định tắt: khay trống không bao giờ tự mở khi rê chuột. Bật thì dừng con trỏ ở notch sẽ mở trang Clipboard thay vì không làm gì.": {
       "en": "Off by default: an empty tray never opens on hover. When on, resting the pointer on the notch opens the Clipboard page instead of doing nothing.",
       "scope": "sentence"
+    },
+    "Đang phát": {
+      "en": "Now Playing",
+      "scope": "sentence"
+    },
+    "Không có gì đang phát.": {
+      "en": "Nothing is playing.",
+      "scope": "sentence"
+    },
+    "Bài trước": {
+      "en": "Previous track",
+      "scope": "sentence"
+    },
+    "Phát hoặc tạm dừng": {
+      "en": "Play or pause",
+      "scope": "sentence"
+    },
+    "Bài tiếp": {
+      "en": "Next track",
+      "scope": "sentence"
+    },
+    "Đang tạm dừng": {
+      "en": "Paused",
+      "scope": "sentence"
+    },
+    "Đang phát trên notch": {
+      "en": "Now Playing on the notch",
+      "scope": "sentence"
+    },
+    "Bài đang phát hiện dưới notch; rê chuột để xem và điều khiển, bấm để mở trang Đang phát trong khay.": {
+      "en": "The playing track shows under the notch; hover to see and control it, click to open the Now Playing page in the tray.",
+      "scope": "sentence"
+    },
+    "Hiện bài đang phát ở notch": {
+      "en": "Show the playing track at the notch",
+      "scope": "sentence"
+    },
+    "Tên bài, nghệ sĩ, ảnh bìa và nút điều khiển cho app đang phát — kể cả trình duyệt. Mặc định tắt.": {
+      "en": "Title, artist, artwork and controls for whatever app is playing — browsers included. Off by default.",
+      "scope": "sentence"
+    },
+    "Đọc qua MediaRemote, API riêng của Apple. Từ macOS 15.4 chỉ tiến trình do Apple ký mới đọc được, nên khi bật, XFinder nhờ /usr/bin/perl của hệ thống nạp một thư viện nhỏ và nhận dữ liệu qua pipe: thêm một tiến trình khoảng 18 MB, không polling. Apple có thể đóng đường này ở bất kỳ bản cập nhật nào — khi đó dòng trạng thái sẽ báo không khả dụng thay vì bịa. Nút điều khiển gửi lệnh trực tiếp từ XFinder.": {
+      "en": "Read through MediaRemote, Apple's private API. Since macOS 15.4 only Apple-signed processes may read it, so when on, XFinder has the system's /usr/bin/perl load a small library and receives the data over a pipe: one extra process of about 18 MB, no polling. Apple can close this path in any update — the status line will then say unavailable instead of inventing anything. The controls send commands straight from XFinder.",
+      "scope": "sentence"
+    },
+    "Đang khởi động trợ giúp…": {
+      "en": "Starting the helper…",
+      "scope": "sentence"
+    },
+    "Không khả dụng: thiếu thư viện trợ giúp trong gói ứng dụng.": {
+      "en": "Unavailable: the helper library is missing from the app bundle.",
+      "scope": "sentence"
+    },
+    "Không khả dụng: máy này không có /usr/bin/perl.": {
+      "en": "Unavailable: this Mac has no /usr/bin/perl.",
+      "scope": "sentence"
+    },
+    "Không khả dụng: tiến trình trợ giúp thoát liên tục.": {
+      "en": "Unavailable: the helper process keeps exiting.",
+      "scope": "sentence"
+    },
+    "Trạng thái: ": {
+      "en": "Status: ",
+      "scope": "fragment"
+    },
+    "Đang phát: ": {
+      "en": "Playing: ",
+      "scope": "fragment"
     }
   }
 }
