@@ -71,23 +71,12 @@ done
 echo "--- archs ---"
 lipo -archs "$OUT/out/XFinder.app/Contents/MacOS/XFinder"
 
-echo "--- code sign with XFinder Dev ---"
-if security find-identity -p codesigning -v | grep -q "XFinder Dev"; then
-  codesign --force --deep --sign "XFinder Dev" "$OUT/out/XFinder.app" 2>/dev/null || codesign --force --deep --sign - "$OUT/out/XFinder.app"
-  echo "signed with XFinder Dev or ad-hoc"
-else
-  codesign --force --deep --sign - "$OUT/out/XFinder.app"
-  echo "signed ad-hoc"
-fi
-
-echo "--- deploy to /Applications and launch ---"
-pkill -9 XFinder 2>/dev/null || true
-sleep 1
-rm -rf /Applications/XFinder.app
-ditto "$OUT/out/XFinder.app" /Applications/XFinder.app
-xattr -cr /Applications/XFinder.app
-if security find-identity -p codesigning -v | grep -q "XFinder Dev"; then
-  codesign --force --deep --sign "XFinder Dev" /Applications/XFinder.app 2>/dev/null || codesign --force --deep --sign - /Applications/XFinder.app
-fi
-open /Applications/XFinder.app
-echo "app launched from /Applications/XFinder.app"
+# This script BUILDS and CHECKS. It does not sign or install, on purpose (2026-10-10):
+# it used to `pkill -9 XFinder`, replace /Applications/XFinder.app and re-sign it with
+# `codesign --deep` — killing the user's running app on every build, and the deep re-sign
+# DROPPED the Finder Sync extension's sandbox entitlement, so pkd refused the extension
+# and XFinder's Finder menu vanished (measured: entitlement count 0, no pluginkit entry).
+# CLAUDE.md had already recorded that exact trap for the install script.
+echo "--- not installed ---"
+echo "build output: $OUT/out/XFinder.app"
+echo "to install and launch (signs the extension correctly): sh scripts/install-mouse-rebuild.sh"
