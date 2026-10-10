@@ -1,0 +1,346 @@
+import SwiftUI
+import AppKit
+import QuickLookThumbnailing
+
+/// What the Notch surface shows. Mutated only by `NotchSurfaceController.render()`.
+@MainActor
+@Observable
+final class NotchSurfaceModel {
+    var state: NotchSurfaceMachine.State = .collapsed
+    var anchor: NotchSurfaceMachine.Anchor = .notch
+    var itemCount = 0
+    /// Size of the physical notch (height 0 on a screen without one).
+    var notchSize = CGSize(width: 185, height: 32)
+}
+
+/// Root of the Notch surface window. The window is sized by `NotchSurfaceLayout`; this view draws
+/// a black shape of the SAME layout size for the current state and animates between states with
+/// `Motion.surface`, so the surface appears to grow out of the notch. Everything is white-on-black
+/// on purpose — it must read as part of the notch, not as a floating card.
+struct NotchSurfaceView: View {
+    var model: NotchSurfaceModel
+    @State private var store = DropTrayStore.shared
+    @State private var isTargeted = false
+
+    private var size: CGSize {
+        let notch = CGRect(origin: .zero, size: model.notchSize)
+        return NotchSurfaceLayout.size(for: model.state, anchor: model.anchor,
+                                       itemCount: model.itemCount, notch: notch) ?? .zero
+    }
+
+    /// At the notch the top edge is flush with the screen (the notch has no top edge); a tray opened
+    /// at the pointer is a free-standing card, rounded on all four corners.
+    private var atNotch: Bool { model.anchor == .notch }
+    private var shape: NotchShape {
+        NotchShape(bottomRadius: bottomRadius, topRadius: atNotch ? 0 : bottomRadius)
+    }
+
+    private var bottomRadius: CGFloat {
+        switch model.state {
+        case .collapsed: return 9
+        case .peek: return 14
+        case .expanded: return XFinderTokens.Radius.surface
+        }
+    }
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            shape.fill(Color.black)
+            shape.strokeBorder(isTargeted ? Color.accentColor : Color.white.opacity(0.12), lineWidth: isTargeted ? 2 : 1)
+            content
+                .padding(.top, atNotch ? model.notchSize.height : 0)
+        }
+        .frame(width: size.width, height: size.height)
+        .clipShape(shape)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .animation(XFinderTokens.Motion.surface, value: model.state)
+        .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
+            store.add(providers: providers)
+            ClipboardSounds.playCopy()
+            // Deliberately keeps the surface open: dropping is the START of the task.
+            NotchSurfaceController.shared.filesDropped()
+            return true
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch model.state {
+        case .collapsed: badge
+        case .peek: peek
+        case .expanded: hub
+        }
+    }
+
+    /// Count hanging under the notch while files are held and the surface is collapsed.
+    private var badge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "tray.fill").font(XFinderTokens.Font.caption)
+            Text("\(model.itemCount)").font(XFinderTokens.Font.caption).monospacedDigit()
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: NotchSurfaceLayout.Metrics.standard.badgeLip)
+        .contentShape(Rectangle())
+        .onTapGesture { NotchSurfaceController.shared.reveal() }
+        .help(L10n.t("Bấm để mở"))
+    }
+
+    /// Peek only exists while files are held (the machine never peeks an empty tray). The left icon
+    /// is a drag handle for EVERY held file — so files stay one drag away even collapsed — and the
+    /// text opens the hub. They are separate regions because one press cannot be both a drag and a click.
+    private var peek: some View {
+        HStack(spacing: XFinderTokens.Space.tight + 2) {
+            Image(systemName: "tray.full.fill")
+                .font(XFinderTokens.Font.row)
+                .frame(width: 28, height: 28)
+                .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).fill(Color.white.opacity(0.12)))
+                .overlay(MultiFileDragSource(paths: store.items.map(\.path)))
+                .help(L10n.t("Kéo cả chồng ra để dùng một lần."))
+            HStack(spacing: XFinderTokens.Space.tight) {
+                Text("\(model.itemCount)\(L10n.t(" tệp đang giữ"))").font(XFinderTokens.Font.row)
+                Text(L10n.t("Bấm để mở")).font(XFinderTokens.Font.caption).opacity(0.65)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { NotchSurfaceController.shared.reveal() }
+        }
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .frame(height: NotchSurfaceLayout.Metrics.standard.peekDrop)
+    }
+
+    private var hub: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            HStack {
+                Image(systemName: "tray.and.arrow.down.fill").foregroundColor(.accentColor)
+                Text(L10n.t("Khay thả")).font(XFinderTokens.Font.sectionTitle)
+                Text("\(store.items.count)").font(XFinderTokens.Font.caption).opacity(0.65)
+                Spacer()
+                Button { NotchSurfaceController.shared.dismiss() } label: {
+                    Image(systemName: "xmark.circle.fill").opacity(0.65)
+                }
+                .buttonStyle(.plain)
+                .help(L10n.t("Đóng"))
+            }
+
+            if store.items.isEmpty {
+                VStack(spacing: XFinderTokens.Space.tight) {
+                    Image(systemName: "arrow.down.doc").font(XFinderTokens.Font.pageIcon).opacity(0.65)
+                    Text(L10n.t("Thả file vào đây để giữ tạm"))
+                        .font(XFinderTokens.Font.caption).opacity(0.65)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                stackedDeck
+            }
+        }
+        .foregroundColor(.white)
+        .padding(XFinderTokens.Space.inline)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Overlapping deck + a count; dragging the deck hands over EVERY held file at once, which is
+    /// the whole point of staging them together.
+    private var stackedDeck: some View {
+        HStack(spacing: XFinderTokens.Space.inline + 2) {
+            ZStack {
+                ForEach(Array(store.items.prefix(4).enumerated().reversed()), id: \.element.id) { index, item in
+                    Image(nsImage: NSWorkspace.shared.icon(forFile: item.path))
+                        .resizable()
+                        .frame(width: 46, height: 46)
+                        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(Color.white.opacity(0.08)))
+                        .rotationEffect(.degrees(Double(index) * -4))
+                        .offset(x: CGFloat(index) * 7, y: CGFloat(index) * -3)
+                        .shadow(color: .black.opacity(0.4), radius: 3, x: 0, y: 1)
+                }
+            }
+            .frame(width: 78, height: 62)
+            // SwiftUI's `.onDrag` vends ONE provider and `.itemProviders` does not exist on
+            // macOS 14 — the whole stack needs an AppKit drag session.
+            .overlay(MultiFileDragSource(paths: store.items.map(\.path)))
+
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                Text("\(store.items.count)\(L10n.t(" tệp đang giữ"))")
+                    .font(XFinderTokens.Font.row)
+                Text(L10n.t("Kéo cả chồng ra để dùng một lần."))
+                    .font(XFinderTokens.Font.caption).opacity(0.65)
+                HStack(spacing: XFinderTokens.Space.tight + 2) {
+                    Button(L10n.t("Xem chi tiết")) { NotchSurfaceController.shared.toggleDetail() }
+                        .buttonStyle(.bordered).controlSize(.mini)
+                    Button(L10n.t("Xóa hết")) { store.removePaths(store.items.map(\.path)) }
+                        .buttonStyle(.plain)
+                        .font(XFinderTokens.Font.caption)
+                        .opacity(0.65)
+                }
+            }
+            Spacer()
+        }
+        .contentShape(Rectangle())
+        .frame(maxHeight: .infinity)
+    }
+}
+
+/// Flush with the top of the screen at the notch (`topRadius` 0); fully rounded at the pointer.
+struct NotchShape: InsettableShape {
+    var bottomRadius: CGFloat
+    var topRadius: CGFloat = 0
+    var inset: CGFloat = 0
+
+    var animatableData: CGFloat {
+        get { bottomRadius }
+        set { bottomRadius = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        UnevenRoundedRectangle(topLeadingRadius: topRadius, bottomLeadingRadius: bottomRadius,
+                               bottomTrailingRadius: bottomRadius, topTrailingRadius: topRadius,
+                               style: .continuous)
+            .path(in: rect.insetBy(dx: inset, dy: inset))
+    }
+
+    func inset(by amount: CGFloat) -> NotchShape {
+        var s = self
+        s.inset += amount
+        return s
+    }
+}
+
+// MARK: - Shared tray pieces (also used by the detail grid window)
+
+/// Drags every staged file at once via `beginDraggingSession(with:)`.
+struct MultiFileDragSource: NSViewRepresentable {
+    let paths: [String]
+
+    func makeNSView(context: Context) -> DragSourceView {
+        let v = DragSourceView()
+        v.paths = paths
+        return v
+    }
+
+    func updateNSView(_ nsView: DragSourceView, context: Context) {
+        nsView.paths = paths
+    }
+
+    final class DragSourceView: NSView {
+        var paths: [String] = []
+
+        override func mouseDown(with event: NSEvent) {
+            guard !paths.isEmpty else { return super.mouseDown(with: event) }
+            let items: [NSDraggingItem] = paths.compactMap { path in
+                let url = URL(fileURLWithPath: path) as NSURL
+                let item = NSDraggingItem(pasteboardWriter: url)
+                let icon = NSWorkspace.shared.icon(forFile: path)
+                // Every item needs a frame + image or the session shows nothing.
+                item.setDraggingFrame(NSRect(x: 0, y: 0, width: 48, height: 48), contents: icon)
+                return item
+            }
+            guard !items.isEmpty else { return }
+            beginDraggingSession(with: items, event: event, source: self)
+        }
+
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    }
+}
+
+extension MultiFileDragSource.DragSourceView: NSDraggingSource {
+    func draggingSession(_ session: NSDraggingSession,
+                         sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
+        // `.copy` outside the app: the tray keeps its files — "Kéo ra sẽ sao chép file và giữ các mục trong khay".
+        [.copy]
+    }
+}
+
+/// One staged file with a real QuickLook thumbnail, so "Screenshot 1, Screenshot 2" stay tellable apart.
+struct TrayFileTile: View {
+    let item: DropTrayStore.Item
+    let url: URL
+    let onRemove: () -> Void
+
+    @State private var thumb: NSImage?
+
+    var body: some View {
+        VStack(spacing: 4) {
+            ZStack {
+                RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge)
+                    .fill(Color.primary.opacity(0.05))
+                if let thumb {
+                    Image(nsImage: thumb)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .clipShape(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge))
+                } else {
+                    Image(nsImage: NSWorkspace.shared.icon(forFile: item.path))
+                        .resizable().frame(width: 30, height: 30)
+                }
+            }
+            .frame(width: 62, height: 62)
+
+            Text(item.name)
+                .font(XFinderTokens.Font.caption)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(width: 66)
+        }
+        .padding(5)
+        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(XFinderTokens.Fill.inset))
+        .onDrag { NSItemProvider(contentsOf: url) ?? NSItemProvider() }
+        .contextMenu {
+            Button(L10n.t("Hiện trong Finder")) {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
+            Button(L10n.t("Mở")) { NSWorkspace.shared.open(url) }
+            Divider()
+            Button(L10n.t("Bỏ khỏi khay"), action: onRemove)
+        }
+        .help(item.path)
+        .task { thumb = await FileThumbnailer.thumbnail(for: url) }
+    }
+}
+
+/// QuickLook thumbnails, off the main thread; falls back to the type icon when a format has no previewer.
+enum FileThumbnailer {
+    static func thumbnail(for url: URL) async -> NSImage? {
+        let scale = NSScreen.main?.backingScaleFactor ?? 2
+        let request = QLThumbnailGenerator.Request(
+            fileAt: url,
+            size: CGSize(width: 120, height: 120),
+            scale: scale,
+            representationTypes: .all)
+        return await withCheckedContinuation { continuation in
+            QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { rep, _ in
+                continuation.resume(returning: rep?.nsImage)
+            }
+        }
+    }
+}
+
+/// Detail window of the tray — a grid of every file (each draggable on its own). Capped so a
+/// thousand-file tray does not draw a thousand tiles at once.
+struct DropTrayDetailGrid: View {
+    @State private var store = DropTrayStore.shared
+    private let cap = 400
+
+    private let columns = [GridItem(.adaptive(minimum: 110, maximum: 160), spacing: 10)]
+
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(store.items.prefix(cap)) { item in
+                    TrayFileTile(item: item, url: URL(fileURLWithPath: item.path)) {
+                        store.remove(item)
+                    }
+                }
+            }
+            .padding(XFinderTokens.Space.inline)
+        }
+        .frame(minWidth: 480, minHeight: 360)
+        .overlay(alignment: .bottom) {
+            if store.items.count > cap {
+                Text("\(L10n.t("Hiện "))\(cap)/\(store.items.count)\(L10n.t(" mục — kéo cả chồng ở khay để thao tác cả lô."))")
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    .padding(.vertical, XFinderTokens.Space.tight)
+                    .frame(maxWidth: .infinity)
+                    .background(XFinderTokens.Fill.surface.opacity(0.9))
+            }
+        }
+    }
+}

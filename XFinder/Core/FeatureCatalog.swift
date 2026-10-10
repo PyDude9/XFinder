@@ -152,7 +152,7 @@ enum FeatureCatalog {
                    symbol: "note.text", group: .tools, enabledKey: "notes.edgeEnabled",
                    defaultOn: false, permissions: [], idle: .listensToMouse),
         FeatureDef(id: .dropTray, titleKey: "Khay thả file",
-                   subtitleKey: "Giữ tệp tạm trên khay, kéo thả đi nơi khác.",
+                   subtitleKey: "Giữ tệp tạm ở notch: kéo vào để giữ, kéo ra để dùng.",
                    symbol: "tray.and.arrow.down", group: .tools, enabledKey: "dropTray.notchEnabled",
                    defaultOn: true, permissions: [], idle: .listensToMouse),
         FeatureDef(id: .folderSync, titleKey: "Đồng bộ thư mục tự động",

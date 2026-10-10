@@ -1993,10 +1993,6 @@
       "en": "Understood: ",
       "scope": "fragment"
     },
-    "Hiện \\(cap)/\\(store.items.count) mục — kéo cả chồng ở khay để thao tác cả lô.": {
-      "en": "Showing \\(cap)/\\(store.items.count) items — drag the whole stack from the tray to act on them in a batch.",
-      "scope": "fragment"
-    },
     "Hiện biểu tượng trong Dock": {
       "en": "Show icon in Dock",
       "scope": "sentence"
@@ -5109,10 +5105,6 @@
       "en": "\\(s.count) characters",
       "scope": "fragment"
     },
-    "\\(store.items.count) tệp đang giữ": {
-      "en": "\\(store.items.count) files held",
-      "scope": "fragment"
-    },
     "bấm để đổi": {
       "en": "click to change",
       "scope": "fragment"
@@ -6451,10 +6443,6 @@
       "en": "File drop tray",
       "scope": "sentence"
     },
-    "Giữ tệp tạm trên khay, kéo thả đi nơi khác.": {
-      "en": "Hold files on a tray and drag them elsewhere.",
-      "scope": "sentence"
-    },
     "Đồng bộ thư mục tự động": {
       "en": "Automatic folder sync",
       "scope": "sentence"
@@ -7077,6 +7065,74 @@
     },
     "Nhấn Space trên file ZIP, TAR, TAR.GZ hoặc TAR.BZ2 để xem nội dung mà không cần giải nén.": {
       "en": "Press Space on a ZIP, TAR, TAR.GZ or TAR.BZ2 file to list its contents without extracting.",
+      "scope": "sentence"
+    },
+    " tệp đang giữ": {
+      "en": " files held",
+      "scope": "fragment"
+    },
+    "Bấm để mở": {
+      "en": "Click to open",
+      "scope": "sentence"
+    },
+    "Bỏ khỏi khay": {
+      "en": "Remove from tray",
+      "scope": "sentence"
+    },
+    "Hiện ": {
+      "en": "Showing ",
+      "scope": "fragment"
+    },
+    " mục — kéo cả chồng ở khay để thao tác cả lô.": {
+      "en": " items — drag the whole stack from the tray to act on all of them.",
+      "scope": "fragment"
+    },
+    "Mở khay từ notch": {
+      "en": "Open the tray from the notch",
+      "scope": "sentence"
+    },
+    "Khay sống ở notch: thu gọn khi không dùng, mở ra khi bạn cần.": {
+      "en": "The tray lives in the notch: tucked away when idle, open when you need it.",
+      "scope": "sentence"
+    },
+    "Kéo file vào notch để mở khay": {
+      "en": "Drag files onto the notch to open the tray",
+      "scope": "sentence"
+    },
+    "Chỉ phản ứng với thao tác kéo tệp thật, không phải kéo chữ hay kéo cửa sổ.": {
+      "en": "Reacts only to a real file drag, never to dragging text or a window.",
+      "scope": "sentence"
+    },
+    "Rê chuột vào notch để xem nhanh": {
+      "en": "Hover the notch for a quick look",
+      "scope": "sentence"
+    },
+    "Dừng con trỏ ở notch một chút để hiện các tệp đang giữ. Khay trống thì không hiện gì.": {
+      "en": "Rest the pointer on the notch for a moment to see the files you are holding. An empty tray shows nothing.",
+      "scope": "sentence"
+    },
+    "Lắc khi đang kéo file để mở khay tại con trỏ": {
+      "en": "Shake while dragging files to open the tray at the pointer",
+      "scope": "sentence"
+    },
+    "Khay mở ngay dưới tay bạn và không tự đóng khi đang giữ tệp.": {
+      "en": "The tray opens right under your hand and does not close itself while it holds files.",
+      "scope": "sentence"
+    },
+    "Độ nhạy lắc": {
+      "en": "Shake sensitivity",
+      "scope": "sentence"
+    },
+    "Cao": {
+      "en": "High",
+      "scope": "sentence"
+    },
+    "Trên màn hình không có notch, khay mở từ giữa cạnh trên; số tệp đang giữ chỉ hiện trên màn hình có notch.": {
+      "en": "On a screen without a notch the tray opens from the top centre; the held-file count only shows on a screen with a notch.",
+      "scope": "sentence"
+    },
+    "Giữ tệp tạm ở notch: kéo vào để giữ, kéo ra để dùng.": {
+      "en": "Hold files in the notch: drag them in to keep, drag them out to use.",
       "scope": "sentence"
     }
   }

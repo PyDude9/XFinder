@@ -12,9 +12,14 @@ struct DropTrayDetailView: View {
     @State private var outcome: String? = nil
     @State private var showDetailGrid = true
 
-    // Tai thỏ / notch — tạm ẩn theo yêu cầu (giữ key để bật lại sau).
-    // @AppStorage này vẫn persist nhưng không render trong UI.
+    // Master switch of the Notch surface (also the Features hub entry for this feature).
     @AppStorage("dropTray.notchEnabled") private var notchEnabled = true
+    // The three ways to open the tray. Read at point of use by NotchSurfaceController; defaults
+    // must equal its reader (FeatureKeyDefaultsTests). Two of these were dead keys until B1.
+    @AppStorage("dropTray.hoverEnabled") private var hoverEnabled = true
+    @AppStorage("dropTray.notchDropEnabled") private var notchDropEnabled = true
+    @AppStorage("dropTray.shakeEnabled") private var shakeEnabled = true
+    @AppStorage("dropTray.shakeSensitivity") private var shakeSensitivity = "medium"
 
     var body: some View {
         ScrollView {
@@ -29,7 +34,7 @@ struct DropTrayDetailView: View {
                                 .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                             Toggle("", isOn: $notchEnabled)
                                 .labelsHidden()
-                                .onChange(of: notchEnabled) { NotchDropController.shared.applySettings() }
+                                .onChange(of: notchEnabled) { NotchSurfaceController.shared.applySettings() }
                         }
                     ))
 
@@ -57,6 +62,11 @@ struct DropTrayDetailView: View {
                 .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
                     tray.add(providers: providers)
                     return true
+                }
+
+                if notchEnabled {
+                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    openingSection
                 }
 
                 if !tray.items.isEmpty {
@@ -171,6 +181,36 @@ struct DropTrayDetailView: View {
         .background(XFinderTokens.Fill.window)
     }
 
+    /// The user comes here to choose how the tray appears when they need it. Three triggers, one row
+    /// each; the sensitivity only exists while shaking is on.
+    private var openingSection: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(icon: "rectangle.topthird.inset.filled",
+                          title: L10n.t("Mở khay từ notch"),
+                          subtitle: L10n.t("Khay sống ở notch: thu gọn khi không dùng, mở ra khi bạn cần."))
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                ToggleRow(title: L10n.t("Kéo file vào notch để mở khay"),
+                          subtitle: L10n.t("Chỉ phản ứng với thao tác kéo tệp thật, không phải kéo chữ hay kéo cửa sổ."),
+                          isOn: $notchDropEnabled)
+                ToggleRow(title: L10n.t("Rê chuột vào notch để xem nhanh"),
+                          subtitle: L10n.t("Dừng con trỏ ở notch một chút để hiện các tệp đang giữ. Khay trống thì không hiện gì."),
+                          isOn: $hoverEnabled)
+                ToggleRow(title: L10n.t("Lắc khi đang kéo file để mở khay tại con trỏ"),
+                          subtitle: L10n.t("Khay mở ngay dưới tay bạn và không tự đóng khi đang giữ tệp."),
+                          isOn: $shakeEnabled)
+                if shakeEnabled {
+                    PickerRow(title: L10n.t("Độ nhạy lắc"), selection: $shakeSensitivity, width: 120) {
+                        Text(L10n.t("Thấp")).tag("low")
+                        Text(L10n.t("Vừa")).tag("medium")
+                        Text(L10n.t("Cao")).tag("high")
+                    }
+                }
+                InlineNote(text: L10n.t("Trên màn hình không có notch, khay mở từ giữa cạnh trên; số tệp đang giữ chỉ hiện trên màn hình có notch."))
+            }
+            .padding(.horizontal, XFinderTokens.Space.page)
+        }
+    }
+
     private func trayButton(_ title: String, icon: String, destructive: Bool = false,
                             action: @escaping () -> Void) -> some View {
         Button(action: action) {
@@ -280,7 +320,12 @@ final class DropTrayStore {
         var isMissing: Bool
     }
 
-    private(set) var items: [Item] = []
+    /// Observation has no publishers; the Notch surface needs a plain callback to learn the count
+    /// changed (same pattern as `NoteStore.onChange`).
+    var onItemsChanged: (@MainActor (Int) -> Void)?
+    private(set) var items: [Item] = [] {
+        didSet { onItemsChanged?(items.count) }
+    }
     private let key = "XFinder.DropTray"
 
     private init() { load() }

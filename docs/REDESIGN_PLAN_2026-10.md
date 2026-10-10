@@ -200,6 +200,10 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
    HIDIdleTime ≥ 55 s/60 s · vmmap dirty ghi lại (chưa cần giảm).
 
 ### Phase B — Notch Surface (hồi sinh, không viết lại từ đầu)
+- [x] **B1 (code, 2026-10-10)** `Core/Notch/` (máy trạng thái + layout + phiên kéo, thuần, 32 test, mutation 8/8 đỏ) +
+  `NotchSurfaceController` + `NotchSurfaceView`; `NotchDropController` đã xoá. Hai khoá chết `dropTray.hoverEnabled` /
+  `notchDropEnabled` **được nối thật** và có công tắc trên trang Khay thả. Phát hiện: pasteboard kéo-thả giữ cú kéo file cũ
+  vĩnh viễn ⇒ `dragCarriesFiles()` cũ sai, thay bằng `NotchDragSession`. **Hành vi sống CHƯA đo** (màn hình khoá suốt lượt).
 1. `NotchSurfaceController` (đổi tên từ `NotchDropController`, giữ monitor pair + `dragCarriesFiles`) + `NotchGeometry` thuần
    (test: notch thật từ `auxiliaryTop*Area`; Pill cho màn không notch; đa màn hình) + panel `SurfacePanel(.notch)`; 3 trạng thái
    thu gọn/peek/mở với `Motion.surface`. **Wire thật** `dropTray.hoverEnabled` và `dropTray.notchDropEnabled` (hover mở peek; kéo

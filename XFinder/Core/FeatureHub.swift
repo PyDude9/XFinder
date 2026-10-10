@@ -95,7 +95,7 @@ final class FeatureHub {
         case .clipboardShelf:  ClipboardShelfController.shared.applySettings()
         case .quickSearch:     QuickSearchPanelController.shared.applySettings()
         case .edgeNotes:       EdgeNotesController.shared.applySettings()
-        case .dropTray:        NotchDropController.shared.applySettings()
+        case .dropTray:        NotchSurfaceController.shared.applySettings()
         case .folderSync:      FolderSyncController.shared.applySettings()
         case .voice:           VoiceManager.shared.applySettings()
         case .alerts:          AlertMonitor.shared.applySettings()

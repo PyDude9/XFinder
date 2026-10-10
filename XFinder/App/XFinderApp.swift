@@ -70,7 +70,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         FinderKeyboardController.shared.applySettings()
         QuitProtectionController.shared.applySettings()
         AlertMonitor.shared.applySettings()
-        NotchDropController.shared.applySettings()
+        NotchSurfaceController.shared.applySettings()
         QuickSearchPanelController.shared.applySettings()
         VoiceManager.shared.setup()
         // No permission prompts at launch: first-run setup (`OnboardingView`) asks for exactly the
@@ -151,7 +151,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if let path {
                 Task { @MainActor in
                     DropTrayStore.shared.add(urls: [URL(fileURLWithPath: path)])
-                    NotchDropController.shared.show()
+                    NotchSurfaceController.shared.reveal()
                 }
             }
         case "settings":

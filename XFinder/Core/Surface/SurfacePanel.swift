@@ -84,6 +84,20 @@ final class SurfacePanel: NSPanel {
     }
 }
 
+/// Run `body` on the main actor from an NSEvent GLOBAL-monitor handler. AppKit delivers those on the
+/// main thread in practice, but it is not a documented contract, and `MainActor.assumeIsolated` traps
+/// if it is ever wrong — on the first mouse move, system-wide. Every live-verified monitor in this app
+/// hops with a `Task`; this keeps the synchronous path (no allocation per mouse move) when we are on
+/// main and falls back to a `Task` otherwise. Local monitors run inside our own event dispatch and
+/// may keep `assumeIsolated`.
+nonisolated func runOnMainActor(_ body: @escaping @MainActor @Sendable () -> Void) {
+    if Thread.isMainThread {
+        MainActor.assumeIsolated { body() }
+    } else {
+        Task { @MainActor in body() }
+    }
+}
+
 /// Owns the global+local mouse-down monitor pair. Call `invalidate()` to remove both — there is no
 /// `deinit` on purpose: a nonisolated deinit may not touch MainActor state under Swift 6, and
 /// `SurfacePanel.hide()` is the single owner that always invalidates before dropping it.
@@ -95,7 +109,7 @@ final class ClickOutsideDismisser {
     init(panel: NSPanel, onDismiss: @escaping @MainActor () -> Void) {
         let mask: NSEvent.EventTypeMask = [.leftMouseDown, .rightMouseDown]
         global = NSEvent.addGlobalMonitorForEvents(matching: mask) { [weak panel] _ in
-            MainActor.assumeIsolated {
+            runOnMainActor {
                 guard let panel, panel.isVisible, !panel.frame.contains(NSEvent.mouseLocation) else { return }
                 onDismiss()
             }
