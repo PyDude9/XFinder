@@ -144,12 +144,16 @@ final class NotchSurfaceMachineTests: XCTestCase {
     func testNoShortSequenceLeavesTheSurfaceStuckOpen() {
         let events: [M.Event] = [.hoverInZone(since: t0), .fileDragInZone, .shake, .activate,
                                  .dropped(count: 2), .itemsChanged(count: 0), .pointerOnSurface, .dismiss,
-                                 .taskStarted, .taskEnded, .activityShown, .activityEnded]
+                                 .taskStarted, .taskEnded, .activityShown, .activityEnded,
+                                 .switchPage(.clipboard), .switchPage(.files)]
         var visited = 0, stuck = 0, undismissable = 0
         func walk(_ m: M.Machine, _ depth: Int) {
             visited += 1
             var away = m; away.handle(.pointerAway(since: at(100)), settings: s, now: at(200))
-            let sanctioned = (away.state == .expanded(.files) && away.anchor == .pointer && away.itemCount > 0) || away.taskRunning
+            // A shaken-open tray holding files never auto-closes, whichever page it shows.
+            var pointerTrayWithFiles = false
+            if case .expanded = away.state, away.anchor == .pointer, away.itemCount > 0 { pointerTrayWithFiles = true }
+            let sanctioned = pointerTrayWithFiles || away.taskRunning
                 || away.state == .activity                          // a notice ends on its timer, not on the pointer
             var ended = m; ended.handle(.activityEnded, settings: s, now: at(250))
             if ended.state == .activity { undismissable += 1 }
@@ -160,7 +164,7 @@ final class NotchSurfaceMachineTests: XCTestCase {
             for e in events { var n = m; n.handle(e, settings: s, now: at(Double(depth) + 1)); walk(n, depth + 1) }
         }
         walk(M.Machine(), 0)
-        XCTAssertEqual(visited, 22621, "the walk must cover the whole tree (12 events, depth 4)")
+        XCTAssertEqual(visited, 41371, "the walk must cover the whole tree (14 events, depth 4)")
         XCTAssertEqual(stuck, 0)
         XCTAssertEqual(undismissable, 0)
     }
@@ -210,6 +214,43 @@ final class NotchSurfaceMachineTests: XCTestCase {
         var held = holding(2); held.handle(.activityShown, settings: s, now: t0)
         held.handle(.hoverInZone(since: at(1)), settings: s, now: at(2))
         XCTAssertEqual(held.state, .peek, "hovering during a notice still peeks the held files")
+    }
+
+    // MARK: B5 — the clipboard page
+
+    func testSwitchPageOnlyChangesAnOpenHub() {
+        var m = M.Machine(); m.handle(.switchPage(.clipboard), settings: s, now: t0)
+        XCTAssertEqual(m.state, .collapsed, "a page switch never opens the surface")
+        m.handle(.activate, settings: s, now: t0)
+        m.handle(.switchPage(.clipboard), settings: s, now: at(1))
+        XCTAssertEqual(m.state, .expanded(.clipboard))
+        XCTAssertEqual(m.anchor, .notch); XCTAssertEqual(m.itemCount, 0)
+        m.handle(.switchPage(.files), settings: s, now: at(2))
+        XCTAssertEqual(m.state, .expanded(.files))
+        var p = holding(2); p.handle(.hoverInZone(since: t0), settings: s, now: at(1))
+        XCTAssertEqual(p.state, .peek)
+        p.handle(.switchPage(.clipboard), settings: s, now: at(2))
+        XCTAssertEqual(p.state, .peek, "a peek is not a hub; it has no tabs")
+    }
+
+    func testHoverOpensClipboardOnlyWhenOptedInAndNothingIsHeld() {
+        var m = M.Machine(); m.handle(.hoverInZone(since: t0), settings: s, now: at(1))
+        XCTAssertEqual(m.state, .collapsed, "default: an empty tray never opens on hover")
+        var on = s; on.hoverOpensClipboard = true
+        var e = M.Machine(); e.handle(.hoverInZone(since: t0), settings: on, now: at(1))
+        XCTAssertEqual(e.state, .expanded(.clipboard))
+        var h = holding(3); h.handle(.hoverInZone(since: t0), settings: on, now: at(1))
+        XCTAssertEqual(h.state, .peek, "with files held, hover still peeks the files")
+        var off = on; off.hoverToPeek = false
+        var d = M.Machine(); d.handle(.hoverInZone(since: t0), settings: off, now: at(1))
+        XCTAssertEqual(d.state, .collapsed, "the master hover switch gates both")
+    }
+
+    func testEveryOpenPathStillLandsOnTheFilesPage() {
+        for e in [M.Event.fileDragInZone, .shake, .activate, .dropped(count: 1)] {
+            var m = M.Machine(); m.handle(e, settings: s, now: t0)
+            XCTAssertEqual(m.state, .expanded(.files), "\(e)")
+        }
     }
 }
 

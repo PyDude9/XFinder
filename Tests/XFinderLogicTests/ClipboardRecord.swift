@@ -1,0 +1,1 @@
+../../XFinder/Models/ClipboardRecord.swift

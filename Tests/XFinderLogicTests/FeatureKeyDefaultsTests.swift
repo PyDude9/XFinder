@@ -42,6 +42,9 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "notes.edgeEnabled",
                views: ["XFinder/Views/Detail/NotesDetailView.swift"],
                reader: "XFinder/Core/EdgeNotesController.swift"),
+        Switch(key: "clipboard.autoPasteAfterSelection",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
+               reader: "XFinder/Core/ClipboardShelfController.swift"),
         Switch(key: "clipboard.cleanURLs",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
                reader: "XFinder/Core/ClipboardManager.swift"),
@@ -84,6 +87,9 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "notch.activity.volume",
                views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
                reader: "XFinder/Core/Notch/LiveActivityMonitor.swift"),
+        Switch(key: "notch.clipboardOnHover",
+               views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
+               reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
         // Notch surface (B1). These two were DEAD keys for a year — stored, never read. Now the
         // machine gates on them, and the page binds them.
         Switch(key: "dropTray.hoverEnabled",

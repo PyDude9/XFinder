@@ -50,7 +50,7 @@ run() {   # run <name> <file> <old> <new>
 run "M1 drag pasteboard: trust stale types" XFinder/Core/Notch/NotchDragSession.swift \
   "'        guard changeCount() != changeCountAtPress else { return false }   // no new drag session yet\n'" "''"
 run "M2 hover reveals an empty tray" XFinder/Core/Notch/NotchSurfaceMachine.swift \
-  "'guard s.hoverToPeek, itemCount > 0, state.isIdle,'" "'guard s.hoverToPeek, state.isIdle,'"
+  "'                if itemCount > 0 {\n                    // Hover reveals files already held'" "'                if true {\n                    // Hover reveals files already held'"
 run "M3 shaken tray with files auto-closes" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if case .expanded = state, anchor == .pointer, itemCount > 0 { return }\n'" "''"
 run "M4 pointer away never collapses" XFinder/Core/Notch/NotchSurfaceMachine.swift \
@@ -80,6 +80,10 @@ run "M16 the countdown reads 0:00 early" XFinder/Core/Notch/LiveActivity.swift \
   "'let t = Int(remaining(at: now).rounded(.up))'" "'let t = Int(remaining(at: now).rounded(.down))'"
 run "M17 no badge for a running timer" XFinder/Core/Notch/NotchSurfaceLayout.swift \
   "'guard itemCount > 0 || timerActive, notch.height > 0 else { return nil }'" "'guard itemCount > 0, notch.height > 0 else { return nil }'"
+run "M18 a page switch opens a closed surface" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                if case .expanded = state { state = .expanded(page) }'" "'                state = .expanded(page)'"
+run "M19 hover opens the clipboard without the opt-in" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                } else if s.hoverOpensClipboard {'" "'                } else {'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 

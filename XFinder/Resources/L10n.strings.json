@@ -7426,6 +7426,186 @@
     "Hủy hẹn giờ": {
       "en": "Cancel timer",
       "scope": "sentence"
+    },
+    "Cắt khoảng trắng hai đầu": {
+      "en": "Trim surrounding whitespace",
+      "scope": "sentence"
+    },
+    "Gom khoảng trắng": {
+      "en": "Collapse whitespace",
+      "scope": "sentence"
+    },
+    "Bỏ xuống dòng": {
+      "en": "Remove line breaks",
+      "scope": "sentence"
+    },
+    "VIẾT HOA": {
+      "en": "UPPERCASE",
+      "scope": "sentence"
+    },
+    "viết thường": {
+      "en": "lowercase",
+      "scope": "sentence"
+    },
+    "Viết Hoa Chữ Đầu": {
+      "en": "Title Case",
+      "scope": "sentence"
+    },
+    "Sắp xếp dòng": {
+      "en": "Sort lines",
+      "scope": "sentence"
+    },
+    "Bỏ dòng trùng": {
+      "en": "Remove duplicate lines",
+      "scope": "sentence"
+    },
+    "Đảo thứ tự dòng": {
+      "en": "Reverse lines",
+      "scope": "sentence"
+    },
+    "JSON dễ đọc (sắp xếp khoá)": {
+      "en": "Pretty JSON (sorts keys)",
+      "scope": "sentence"
+    },
+    "JSON một dòng": {
+      "en": "Minified JSON",
+      "scope": "sentence"
+    },
+    "Mã hoá Base64": {
+      "en": "Encode Base64",
+      "scope": "sentence"
+    },
+    "Giải mã Base64": {
+      "en": "Decode Base64",
+      "scope": "sentence"
+    },
+    "Mã hoá URL": {
+      "en": "URL-encode",
+      "scope": "sentence"
+    },
+    "Giải mã URL": {
+      "en": "URL-decode",
+      "scope": "sentence"
+    },
+    "Bỏ tham số theo dõi trong link": {
+      "en": "Strip tracking parameters from the link",
+      "scope": "sentence"
+    },
+    "MD5 (mã kiểm, không bảo mật)": {
+      "en": "MD5 (checksum, not security)",
+      "scope": "sentence"
+    },
+    "Không có gì để đổi.": {
+      "en": "Nothing to change.",
+      "scope": "sentence"
+    },
+    "Nội dung không phải JSON.": {
+      "en": "The content is not JSON.",
+      "scope": "sentence"
+    },
+    "Nội dung không phải Base64.": {
+      "en": "The content is not Base64.",
+      "scope": "sentence"
+    },
+    "Nội dung không có phần mã hoá URL hợp lệ.": {
+      "en": "The content has no valid URL encoding.",
+      "scope": "sentence"
+    },
+    "Nội dung không phải một link.": {
+      "en": "The content is not a link.",
+      "scope": "sentence"
+    },
+    "Tìm, hoặc @ảnh @link @tênapp…": {
+      "en": "Search, or @image @link @appname…",
+      "scope": "sentence"
+    },
+    "Chưa có gì trong clipboard.": {
+      "en": "Nothing in the clipboard yet.",
+      "scope": "sentence"
+    },
+    "Không có mục nào khớp.": {
+      "en": "Nothing matches.",
+      "scope": "sentence"
+    },
+    "Toàn bộ lịch sử": {
+      "en": "Whole history",
+      "scope": "sentence"
+    },
+    "Bảng ghim": {
+      "en": "Pinboards",
+      "scope": "sentence"
+    },
+    "Dán": {
+      "en": "Paste",
+      "scope": "sentence"
+    },
+    "Bỏ khỏi Paste Stack": {
+      "en": "Remove from Paste Stack",
+      "scope": "sentence"
+    },
+    "Thêm vào Paste Stack": {
+      "en": "Add to Paste Stack",
+      "scope": "sentence"
+    },
+    "Biến đổi": {
+      "en": "Transform",
+      "scope": "sentence"
+    },
+    " từ · ": {
+      "en": " words · ",
+      "scope": "fragment"
+    },
+    " ký tự · ": {
+      "en": " characters · ",
+      "scope": "fragment"
+    },
+    "Mở ": {
+      "en": "Open ",
+      "scope": "fragment"
+    },
+    "Mở trang nguồn": {
+      "en": "Open the source page",
+      "scope": "sentence"
+    },
+    "Mỗi ⌘V dán mục kế tiếp.": {
+      "en": "Each ⌘V pastes the next item.",
+      "scope": "sentence"
+    },
+    "Bấm Dán tiếp để dán từng mục.": {
+      "en": "Press Paste next to paste one at a time.",
+      "scope": "sentence"
+    },
+    "Dán tiếp": {
+      "en": "Paste next",
+      "scope": "sentence"
+    },
+    "Bấm để dán · ⌘-bấm để xếp vào Paste Stack · chuột phải để biến đổi": {
+      "en": "Click to paste · ⌘-click to stack · right-click to transform",
+      "scope": "sentence"
+    },
+    "Khay": {
+      "en": "Tray",
+      "scope": "sentence"
+    },
+    "Đã sao chép — dán bằng ⌘V.": {
+      "en": "Copied — paste with ⌘V.",
+      "scope": "sentence"
+    },
+    "Đã sao chép kết quả.": {
+      "en": "Result copied.",
+      "scope": "sentence"
+    },
+    "Clipboard trên notch": {
+      "en": "Clipboard on the notch",
+      "scope": "sentence"
+    },
+    "Rê chuột vào notch mở Clipboard khi khay trống": {
+      "en": "Hover the notch to open Clipboard when the tray is empty",
+      "scope": "sentence"
+    },
+    "Mặc định tắt: khay trống không bao giờ tự mở khi rê chuột. Bật thì dừng con trỏ ở notch sẽ mở trang Clipboard thay vì không làm gì.": {
+      "en": "Off by default: an empty tray never opens on hover. When on, resting the pointer on the notch opens the Clipboard page instead of doing nothing.",
+      "scope": "sentence"
     }
   }
 }

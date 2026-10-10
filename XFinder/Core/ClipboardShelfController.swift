@@ -67,6 +67,14 @@ final class ClipboardShelfController {
         UserDefaults.standard.object(forKey: "clipboard.globalHotkey") as? Bool ?? true
     }
 
+    /// True while the global event tap exists — the Paste Stack can then intercept ⌘V.
+    var tapIsLive: Bool { eventTap != nil }
+
+    /// The ONE reader of `clipboard.autoPasteAfterSelection` (the notch's clipboard page asks here too).
+    var autoPasteAfterSelection: Bool {
+        UserDefaults.standard.object(forKey: "clipboard.autoPasteAfterSelection") as? Bool ?? true
+    }
+
     func applySettings() {
         guard hotkeyEnabled, WindowManager.isTrusted else {
             teardownTap()
@@ -131,6 +139,16 @@ final class ClipboardShelfController {
         if cmd, shift, keyCode == 9 { // V
             Task { @MainActor in self.toggle() }
             return nil
+        }
+
+        // ⌘V while a Paste Stack is active (B5): put the next item on the pasteboard, then let the
+        // user's own ⌘V THROUGH so the frontmost app pastes it. The decision must be synchronous —
+        // the pasteboard has to change before the keystroke lands — so this runs on the main actor
+        // directly: the tap was installed from the main run loop (CFRunLoopGetCurrent in setupTap),
+        // and its callback is delivered there. No keystroke is synthesized, so nothing re-enters.
+        if cmd, !shift, !flags.contains(.maskAlternate), !flags.contains(.maskControl), keyCode == 9 {
+            MainActor.assumeIsolated { _ = ClipboardManager.shared.pasteNextFromStack() }
+            return Unmanaged.passUnretained(event)
         }
 
         // Everything below only applies while the shelf is showing. `isOpen`
@@ -352,8 +370,7 @@ final class ClipboardShelfController {
         let record = list[index]
         let pid = targetPID
         close()
-        let autoPaste = UserDefaults.standard.object(forKey: "clipboard.autoPasteAfterSelection") as? Bool ?? true
-        if autoPaste && WindowManager.isTrusted {
+        if autoPasteAfterSelection && WindowManager.isTrusted {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 ClipboardPasteEngine.paste(record: record, to: pid, plainText: plainText)
             }

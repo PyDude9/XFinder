@@ -20,6 +20,7 @@ struct DropTrayDetailView: View {
     @AppStorage("dropTray.notchDropEnabled") private var notchDropEnabled = true
     @AppStorage("dropTray.shakeEnabled") private var shakeEnabled = true
     @AppStorage("dropTray.shakeSensitivity") private var shakeSensitivity = "medium"
+    @AppStorage("notch.clipboardOnHover") private var clipboardOnHover = false
     // B4 live activities. Reader: LiveActivityMonitor (defaults must match — FeatureKeyDefaultsTests).
     @AppStorage("notch.activities") private var activities = true
     @AppStorage("notch.activity.power") private var actPower = true
@@ -208,6 +209,10 @@ struct DropTrayDetailView: View {
                 ToggleRow(title: L10n.t("Lắc khi đang kéo file để mở khay tại con trỏ"),
                           subtitle: L10n.t("Khay mở ngay dưới tay bạn và không tự đóng khi đang giữ tệp."),
                           isOn: $shakeEnabled)
+                ToggleRow(title: L10n.t("Rê chuột vào notch mở Clipboard khi khay trống"),
+                          subtitle: L10n.t("Mặc định tắt: khay trống không bao giờ tự mở khi rê chuột. Bật thì dừng con trỏ ở notch sẽ mở trang Clipboard thay vì không làm gì."),
+                          isOn: $clipboardOnHover)
+                    .disabled(!hoverEnabled)
                 if shakeEnabled {
                     PickerRow(title: L10n.t("Độ nhạy lắc"), selection: $shakeSensitivity, width: 120) {
                         Text(L10n.t("Thấp")).tag("low")

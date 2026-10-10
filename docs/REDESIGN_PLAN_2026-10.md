@@ -232,6 +232,9 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
 - [x] **B4b (code, 2026-10-10)** HUD âm lượng (CoreAudio thật) + hẹn giờ trên notch. **Không làm HUD độ sáng**: giá trị đọc được bị kẹt.
 4. Live activities: BT connect/battery (BatteryStore), sạc/pin yếu/đầy + Caps Lock + mất mạng (`AlertRules` thêm quy tắc, banner
    chuyển vào notch), hẹn giờ, HUD âm lượng/độ sáng *song song* hệ thống.
+- [x] **B5 (code, 2026-10-10)** tab Clipboard trong hub notch: @filter, ⌘-bấm xếp Paste Stack (**vòng tiêu thụ ⌘V mới có từ đây** —
+  trước đó `popNext()` không ai gọi), menu Biến đổi (17 phép, thuần) + Đi tới nguồn (app / trang nguồn Chromium / Finder).
+  **Không có Dịch**: `translationd` từ chối binary ad-hoc, chưa đo từ app ký. **Chưa bấm thử sống.**
 5. Trang Clipboard trên notch (deck của shelf) + @filter + ⌘-click stack + menu Transform/Dịch/Đi tới nguồn.
 6. Now Playing: **probe trước** (nhạc đang phát, so MediaRemote vs AppleScript). Không probe xong không ship.
 7. Cài đặt notch về trang Khay thả (đổi tên "Notch & Khay thả"): bật từng live activity, Pill cho màn ngoài, độ nhạy hover,

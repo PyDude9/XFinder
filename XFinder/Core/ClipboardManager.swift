@@ -466,13 +466,21 @@ final class ClipboardManager {
             if text.count > 4096 {
                 payloadPath = ClipboardPayloadStore.storeText(text)
             }
+            var meta = ["length": "\(text.count)",
+                        "url": kind == .link ? text.trimmingCharacters(in: .whitespacesAndNewlines) : ""]
+            // B5 "Đi tới nguồn": Chromium-based browsers attach the page a selection was copied from
+            // (measured on this Mac: `org.chromium.source-url`, plain text, no entitlement). Safari's
+            // equivalent is unverified, so only this one type is read; nothing is guessed.
+            if let src = pb.string(forType: NSPasteboard.PasteboardType("org.chromium.source-url")),
+               let u = URL(string: src), ["http", "https"].contains(u.scheme ?? "") {
+                meta["sourceURL"] = src
+            }
             let record = ClipboardRecord(
                 type: kind,
                 sourceBundleID: bundleID, sourceAppName: appName,
                 textSnippet: String(text.prefix(200)),
                 payloadPath: payloadPath,
-                metadata: ["length": "\(text.count)",
-                           "url": kind == .link ? text.trimmingCharacters(in: .whitespacesAndNewlines) : ""]
+                metadata: meta
             )
             addToHistory(record)
             ClipboardSounds.playCopy()
@@ -784,6 +792,36 @@ final class ClipboardManager {
 
     func stopPasteStack() {
         pasteStack.stop()
+    }
+
+    /// ⌘-click on a card (B5): in the stack ⇒ out, out ⇒ appended.
+    func togglePasteStackItem(_ record: ClipboardRecord) {
+        if pasteStack.items.contains(record) { pasteStack.remove(record) } else { pasteStack.append(record) }
+    }
+
+    /// The Paste Stack's consumer — the piece that was missing (measured before B5: `popNext()`
+    /// had no call site). Called by the shelf's event tap when ⌘V is pressed while a stack is
+    /// active: rewrites the pasteboard with the next item and returns true; the caller then lets
+    /// the ORIGINAL ⌘V through, so the app pastes the new content. Nothing is synthesized.
+    @discardableResult
+    func pasteNextFromStack() -> Bool {
+        guard pasteStack.active, let next = pasteStack.popNext() else { return false }
+        guard ClipboardPasteEngine.writeToPasteboard(record: next) else { return false }
+        incrementUsage(next.id)
+        return true
+    }
+
+    /// The manual path ("Dán tiếp" on the notch): pops the next item and pastes it into the app the
+    /// user came from (Accessibility-gated, like every paste).
+    func pasteNextManually() {
+        guard pasteStack.active, let next = pasteStack.popNext() else { return }
+        if WindowManager.isTrusted {
+            ClipboardPasteEngine.paste(record: next, to: lastExternalPID)
+        } else {
+            ClipboardPasteEngine.writeToPasteboard(record: next)
+            ClipboardSounds.playCopy()
+        }
+        incrementUsage(next.id)
     }
 
     // MARK: - Pinboards

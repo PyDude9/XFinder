@@ -19,6 +19,8 @@ final class NotchSurfaceModel {
     var activity: LiveActivity.Item?
     /// Remaining time of a running countdown ("12:34"), shown in the collapsed badge (B4b).
     var timerText: String?
+    /// The clipboard page's own state (B5).
+    let clipboard = NotchClipboardModel()
 }
 
 /// Root of the Notch surface window. The window is sized by `NotchSurfaceLayout`; this view draws
@@ -78,7 +80,7 @@ struct NotchSurfaceView: View {
         case .collapsed: badge
         case .peek: peek
         case .activity: activityStrip
-        case .expanded: hub
+        case .expanded(let page): hubShell(page)
         }
     }
 
@@ -152,13 +154,14 @@ struct NotchSurfaceView: View {
         }
     }
 
-    private var hub: some View {
+    /// The hub: one header with two page tabs (files / clipboard) and the close button, then the page.
+    private func hubShell(_ page: NotchSurfaceMachine.Page) -> some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            HStack {
-                HStack {
-                    Image(systemName: "tray.and.arrow.down.fill").foregroundColor(.accentColor)
-                    Text(L10n.t("Khay thả")).font(XFinderTokens.Font.sectionTitle)
-                    Text("\(store.items.count)").font(XFinderTokens.Font.caption).opacity(0.65)
+            HStack(spacing: XFinderTokens.Space.tight) {
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    pageTab(.files, icon: "tray.and.arrow.down.fill", title: L10n.t("Khay"),
+                            badge: store.items.isEmpty ? nil : "\(store.items.count)", current: page)
+                    pageTab(.clipboard, icon: "doc.on.clipboard.fill", title: "Clipboard", badge: nil, current: page)
                     Spacer()
                 }
                 // A tray opened at the pointer often lands on the very window the files are going to;
@@ -172,21 +175,43 @@ struct NotchSurfaceView: View {
                 .help(L10n.t("Đóng"))
             }
 
-            if store.items.isEmpty {
-                VStack(spacing: XFinderTokens.Space.tight) {
-                    Image(systemName: "arrow.down.doc").font(XFinderTokens.Font.pageIcon).opacity(0.65)
-                    Text(L10n.t("Thả file vào đây để giữ tạm"))
-                        .font(XFinderTokens.Font.caption).opacity(0.65)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                stackedDeck
-                actionArea
+            switch page {
+            case .files: filesPage
+            case .clipboard: NotchClipboardView(model: model.clipboard)
             }
         }
         .foregroundColor(.white)
         .padding(XFinderTokens.Space.inline)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func pageTab(_ page: NotchSurfaceMachine.Page, icon: String, title: String, badge: String?,
+                         current: NotchSurfaceMachine.Page) -> some View {
+        Button { NotchSurfaceController.shared.switchPage(page) } label: {
+            HStack(spacing: 4) {
+                Image(systemName: icon).font(XFinderTokens.Font.caption)
+                Text(title).font(XFinderTokens.Font.caption)
+                if let badge { Text(badge).font(XFinderTokens.Font.caption).opacity(0.7).monospacedDigit() }
+            }
+            .padding(.horizontal, XFinderTokens.Space.tight + 2).padding(.vertical, 3)
+            .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge)
+                .fill(current == page ? Color.white.opacity(0.18) : Color.clear))
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder private var filesPage: some View {
+        if store.items.isEmpty {
+            VStack(spacing: XFinderTokens.Space.tight) {
+                Image(systemName: "arrow.down.doc").font(XFinderTokens.Font.pageIcon).opacity(0.65)
+                Text(L10n.t("Thả file vào đây để giữ tạm"))
+                    .font(XFinderTokens.Font.caption).opacity(0.65)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            stackedDeck
+            actionArea
+        }
     }
 
     /// Overlapping deck + a count; dragging the deck hands over EVERY held file at once, which is

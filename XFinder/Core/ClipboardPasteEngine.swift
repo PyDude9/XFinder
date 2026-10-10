@@ -79,35 +79,9 @@ enum ClipboardPasteEngine {
     }
 }
 
-/// Paste Stack: sequential queue — repeat ⌘V pastes queue items FIFO.
-/// Modelled as plain state on ClipboardManager; the view renders the mini-HUD.
-struct PasteStack {
-    private(set) var items: [ClipboardRecord] = []
-    private(set) var active = false
-
-    var remaining: Int { items.count }
-
-    mutating func start(with items: [ClipboardRecord]) {
-        self.items = items
-        self.active = !items.isEmpty
-    }
-
-    mutating func stop() {
-        items = []
-        active = false
-    }
-
-    /// Write the next item to the pasteboard; deactivate when drained.
-    mutating func popNext() -> ClipboardRecord? {
-        guard active, !items.isEmpty else {
-            active = false
-            return nil
-        }
-        let next = items.removeFirst()
-        if items.isEmpty { active = false }
-        return next
-    }
-}
+/// Paste Stack: items pasted one per ⌘V, in order. The queue itself is the pure, tested
+/// `PasteQueue` (Core/Clipboard); the consumer is `ClipboardManager.pasteNextFromStack()`.
+typealias PasteStack = PasteQueue<ClipboardRecord>
 
 /// Subtle paste/copy sounds via system sounds (Tink/Pop) + haptics where available.
 enum ClipboardSounds {

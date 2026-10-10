@@ -7,8 +7,9 @@ import SwiftUI
 /// Measured in QuitProtection: creating an `NSHostingController` inside the hot path cost
 /// 0.15–0.65 s, which is why a surface must never be built on the way to the screen.
 ///
-/// `canBecomeKey` is true (via `KeyablePanel`) only for `.interactive`; a borderless panel that
-/// needs typing must become key WITHOUT `NSApp.activate` (which would raise every XFinder window).
+/// `canBecomeKey` is true for `.interactive` AND `.notch` (false only for `.passive`); a borderless
+/// panel that needs typing must become key WITHOUT `NSApp.activate` (which would raise every
+/// XFinder window) — call `makeKeyAndOrderFront(nil)` on the panel itself.
 @MainActor
 final class SurfacePanel: NSPanel {
 

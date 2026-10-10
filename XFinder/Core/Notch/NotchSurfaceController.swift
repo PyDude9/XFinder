@@ -69,6 +69,10 @@ final class NotchSurfaceController {
     private var notchDropEnabled: Bool {
         UserDefaults.standard.object(forKey: "dropTray.notchDropEnabled") as? Bool ?? true
     }
+    /// B5: resting on the notch with NO files held opens the clipboard page. Off by default.
+    private var clipboardOnHover: Bool {
+        UserDefaults.standard.object(forKey: "notch.clipboardOnHover") as? Bool ?? false
+    }
     /// Shaking a file drag opens the hub at the pointer.
     private var shakeEnabled: Bool {
         UserDefaults.standard.object(forKey: "dropTray.shakeEnabled") as? Bool ?? true
@@ -82,7 +86,7 @@ final class NotchSurfaceController {
         }
     }
     private var settings: NotchSurfaceMachine.Settings {
-        NotchSurfaceMachine.Settings(enabled: enabled, hoverToPeek: hoverEnabled,
+        NotchSurfaceMachine.Settings(enabled: enabled, hoverToPeek: hoverEnabled, hoverOpensClipboard: clipboardOnHover,
                                      dragIntoNotchOpens: notchDropEnabled, shakeOpens: shakeEnabled)
     }
 
@@ -116,6 +120,7 @@ final class NotchSurfaceController {
         for m in monitors { NSEvent.removeMonitor(m) }
         monitors.removeAll()
         cancelWork()
+        if let m = clipboardKeyMonitor { NSEvent.removeMonitor(m); clipboardKeyMonitor = nil }
         activityWork?.cancel(); activityWork = nil
         activityQueue.clear()
         countdownTicker?.invalidate(); countdownTicker = nil; countdown = nil; model.timerText = nil
@@ -129,11 +134,15 @@ final class NotchSurfaceController {
 
     // MARK: Public intents
 
-    /// Deliberate open: badge / peek click, or the Finder-extension URL.
-    func reveal() {
+    /// Deliberate open: badge / peek click, or the Finder-extension URL. `page` lands on that page.
+    func reveal(page: NotchSurfaceMachine.Page = .files) {
         if !state.isOpen { surfaceScreen = WindowManager.screenUnderPointer() }
         dispatch(.activate)
+        if page != .files { dispatch(.switchPage(page)) }
     }
+
+    /// A tab in the open hub (B5).
+    func switchPage(_ page: NotchSurfaceMachine.Page) { dispatch(.switchPage(page)) }
 
     func dismiss() { dispatch(.dismiss) }
 
@@ -265,6 +274,83 @@ final class NotchSurfaceController {
         guard machine != before else { return }
         state = machine.state
         render()
+        syncClipboardKeyboard()
+    }
+
+    // MARK: - Clipboard page (B5)
+
+    private var clipboardKeyMonitor: Any?
+
+    /// The clipboard page needs typing (its search field) and arrow keys. The panel becomes key
+    /// WITHOUT `NSApp.activate` (which would raise every XFinder window); `orderOut` on collapse
+    /// gives the keyboard back. A LOCAL monitor is enough: the keys matter only while our panel is key.
+    private func syncClipboardKeyboard() {
+        if case .expanded(.clipboard) = machine.state {
+            guard clipboardKeyMonitor == nil else { return }
+            panel?.makeKeyAndOrderFront(nil)
+            clipboardKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
+                guard let self, self.panel?.isKeyWindow == true else { return e }
+                let items = self.model.clipboard.items(from: ClipboardManager.shared)
+                switch e.keyCode {
+                case 53: self.dismiss(); return nil                                   // Esc
+                case 123: self.model.clipboard.moveSelection(-1, in: items); return nil
+                case 124: self.model.clipboard.moveSelection(1, in: items); return nil
+                case 36:                                                              // Return
+                    if let id = self.model.clipboard.selectedID, let r = items.first(where: { $0.id == id }) {
+                        self.pasteFromClipboardPage(r); return nil
+                    }
+                    return e
+                default: return e
+                }
+            }
+        } else if let m = clipboardKeyMonitor {
+            NSEvent.removeMonitor(m)
+            clipboardKeyMonitor = nil
+        }
+    }
+
+    /// Whether the shelf's event tap is alive — the Paste Stack can then intercept ⌘V system-wide.
+    var pasteStackInterceptsCommandV: Bool { ClipboardShelfController.shared.tapIsLive }
+
+    /// Paste into the app the user came from and get out of the way. Without Accessibility (or
+    /// with auto-paste off) the item is copied and the page says to press ⌘V — never a silent nothing.
+    func pasteFromClipboardPage(_ record: ClipboardRecord) {
+        let pid = ClipboardManager.shared.lastExternalPID
+        ClipboardManager.shared.incrementUsage(record.id)
+        if ClipboardShelfController.shared.autoPasteAfterSelection, WindowManager.isTrusted {
+            dismiss()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { ClipboardPasteEngine.paste(record: record, to: pid) }
+        } else {
+            ClipboardPasteEngine.writeToPasteboard(record: record)
+            ClipboardSounds.playCopy()
+            model.clipboard.notice = "Đã sao chép — dán bằng ⌘V."
+        }
+    }
+
+    func pasteNextFromStack() { ClipboardManager.shared.pasteNextManually() }
+
+    /// Runs a transform on the record's text and copies the result, which the monitor then records
+    /// as a new clip. A transform that changes nothing says so instead of pretending.
+    func applyTransform(_ t: ClipboardTransform, to record: ClipboardRecord) {
+        let text = record.textSnippet ?? ""
+        switch t.apply(to: text) {
+        case .success(let out):
+            let pb = NSPasteboard.general
+            pb.clearContents(); pb.setString(out, forType: .string)
+            ClipboardSounds.playCopy()
+            model.clipboard.notice = "Đã sao chép kết quả."
+        case .failure(let f):
+            model.clipboard.notice = f.messageKey
+        }
+    }
+
+    /// "Đi tới nguồn": bring the source app forward (always possible from a bundle id).
+    func openSourceApp(bundleID: String) {
+        if let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
+            app.activate(options: [.activateAllWindows])
+        } else if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+        }
     }
 
     /// Build the panel ONCE — a hosting controller created on the way to the screen cost 0.15–0.65 s

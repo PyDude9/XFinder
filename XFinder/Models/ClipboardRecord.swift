@@ -157,7 +157,7 @@ struct ClipDayGroup: Identifiable {
     var records: [ClipboardRecord]
 }
 
-struct ClipboardRecord: Identifiable, Codable, Sendable {
+struct ClipboardRecord: Identifiable, Codable, Sendable, Equatable {
     let id: UUID
     let type: ContentType
     let timestamp: Date

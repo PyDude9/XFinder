@@ -9,7 +9,7 @@ import Foundation
 /// the files the user just dropped.
 enum NotchSurfaceMachine {
 
-    enum Page: String, Equatable, Codable { case files }
+    enum Page: String, Equatable, Codable { case files, clipboard }
 
     enum State: Equatable {
         /// Nothing drawn — except, when files are held on a notched screen, a count badge under the notch.
@@ -34,6 +34,9 @@ enum NotchSurfaceMachine {
     struct Settings: Equatable {
         var enabled = true
         var hoverToPeek = true
+        /// B5: resting on the notch while NO files are held opens the clipboard page. Off by default —
+        /// an empty tray never opens on hover (Part 3c), and this is the one deliberate exception.
+        var hoverOpensClipboard = false
         var dragIntoNotchOpens = true
         var shakeOpens = true
         /// Pointer must rest in the notch zone this long before hover counts (accidental passes are shorter).
@@ -55,6 +58,8 @@ enum NotchSurfaceMachine {
         case shake
         /// Deliberate open: a click on the badge / peek strip, or the Finder-extension URL.
         case activate
+        /// A tab in the open hub (B5). Only changes the page of an EXPANDED surface — never opens one.
+        case switchPage(Page)
         /// Files were dropped onto the surface; `count` is the tray's new total.
         case dropped(count: Int)
         /// The tray's item count changed elsewhere (the Khay thả page, "Xóa hết", the extension).
@@ -95,6 +100,8 @@ enum NotchSurfaceMachine {
             case .activate:
                 if case .expanded = state { return }
                 open(at: .notch)
+            case .switchPage(let page):
+                if case .expanded = state { state = .expanded(page) }
             case .fileDragInZone:
                 guard s.dragIntoNotchOpens else { return }
                 // A tray already open at the pointer stays put: moving it under a live drag would
@@ -112,11 +119,14 @@ enum NotchSurfaceMachine {
                 itemCount = n
                 if n == 0, state == .peek { collapse() }
             case .hoverInZone(let since):
-                // Hover only reveals files already held — never an empty tray (CLAUDE.md Part 3c).
-                guard s.hoverToPeek, itemCount > 0, state.isIdle,
-                      now.timeIntervalSince(since) >= s.hoverDwell else { return }
-                state = .peek
-                anchor = .notch
+                guard s.hoverToPeek, state.isIdle, now.timeIntervalSince(since) >= s.hoverDwell else { return }
+                if itemCount > 0 {
+                    // Hover reveals files already held — never an empty tray (CLAUDE.md Part 3c).
+                    state = .peek
+                    anchor = .notch
+                } else if s.hoverOpensClipboard {
+                    open(at: .notch, page: .clipboard)   // the opt-in exception: clips are never "empty"
+                }
             case .pointerOnSurface:
                 break                               // whatever is open stays open
             case .pointerAway(let since):
@@ -130,8 +140,8 @@ enum NotchSurfaceMachine {
             }
         }
 
-        private mutating func open(at a: Anchor) {
-            state = .expanded(.files)
+        private mutating func open(at a: Anchor, page: Page = .files) {
+            state = .expanded(page)
             anchor = a
         }
 

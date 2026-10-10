@@ -49,6 +49,7 @@
 		7F1A005D /* Detail/StorageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0056 /* Detail/StorageDetailView.swift */; };
 		7F1A005E /* Detail/SystemControlsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0057 /* Detail/SystemControlsPanel.swift */; };
 		7F1A020C /* NotchSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A020B /* NotchSurfaceView.swift */; };
+		7F1A022C /* NotchClipboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A022B /* NotchClipboardView.swift */; };
 		7F1A0220 /* SnapRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A021F /* SnapRowView.swift */; };
 		7F1A01CE /* Detail/FeaturesHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01CD /* Detail/FeaturesHubView.swift */; };
 		7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0058 /* Detail/AntiSleepDetailView.swift */; };
@@ -178,6 +179,9 @@
 		7F1A0208 /* Notch/NotchSurfaceLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0207 /* Notch/NotchSurfaceLayout.swift */; };
 		7F1A020A /* Notch/NotchSurfaceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0209 /* Notch/NotchSurfaceController.swift */; };
 		7F1A020E /* Notch/NotchDragSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A020D /* Notch/NotchDragSession.swift */; };
+		7F1A022A /* Clipboard/PasteQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0229 /* Clipboard/PasteQueue.swift */; };
+		7F1A0228 /* Clipboard/ClipboardTransform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0227 /* Clipboard/ClipboardTransform.swift */; };
+		7F1A0226 /* Clipboard/ClipboardFilterToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0225 /* Clipboard/ClipboardFilterToken.swift */; };
 		7F1A0224 /* Notch/LiveActivityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0223 /* Notch/LiveActivityMonitor.swift */; };
 		7F1A0222 /* Notch/LiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0221 /* Notch/LiveActivity.swift */; };
 		7F1A021E /* Snap/SnapLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A021D /* Snap/SnapLayout.swift */; };
@@ -294,6 +298,7 @@
 		7F1A0056 /* Detail/StorageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/StorageDetailView.swift; sourceTree = "<group>"; };
 		7F1A0057 /* Detail/SystemControlsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SystemControlsPanel.swift; sourceTree = "<group>"; };
 		7F1A020B /* NotchSurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSurfaceView.swift; sourceTree = "<group>"; };
+		7F1A022B /* NotchClipboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchClipboardView.swift; sourceTree = "<group>"; };
 		7F1A021F /* SnapRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapRowView.swift; sourceTree = "<group>"; };
 		7F1A01CD /* Detail/FeaturesHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FeaturesHubView.swift; sourceTree = "<group>"; };
 		7F1A0058 /* Detail/AntiSleepDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/AntiSleepDetailView.swift; sourceTree = "<group>"; };
@@ -321,6 +326,9 @@
 		7F1A0207 /* Notch/NotchSurfaceLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchSurfaceLayout.swift; sourceTree = "<group>"; };
 		7F1A0209 /* Notch/NotchSurfaceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchSurfaceController.swift; sourceTree = "<group>"; };
 		7F1A020D /* Notch/NotchDragSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchDragSession.swift; sourceTree = "<group>"; };
+		7F1A0229 /* Clipboard/PasteQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/PasteQueue.swift; sourceTree = "<group>"; };
+		7F1A0227 /* Clipboard/ClipboardTransform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipboardTransform.swift; sourceTree = "<group>"; };
+		7F1A0225 /* Clipboard/ClipboardFilterToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipboardFilterToken.swift; sourceTree = "<group>"; };
 		7F1A0223 /* Notch/LiveActivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/LiveActivityMonitor.swift; sourceTree = "<group>"; };
 		7F1A0221 /* Notch/LiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/LiveActivity.swift; sourceTree = "<group>"; };
 		7F1A021D /* Snap/SnapLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snap/SnapLayout.swift; sourceTree = "<group>"; };
@@ -559,6 +567,9 @@
 				7F1A0207 /* Notch/NotchSurfaceLayout.swift */,
 				7F1A0209 /* Notch/NotchSurfaceController.swift */,
 				7F1A020D /* Notch/NotchDragSession.swift */,
+				7F1A0229 /* Clipboard/PasteQueue.swift */,
+				7F1A0227 /* Clipboard/ClipboardTransform.swift */,
+				7F1A0225 /* Clipboard/ClipboardFilterToken.swift */,
 				7F1A0223 /* Notch/LiveActivityMonitor.swift */,
 				7F1A0221 /* Notch/LiveActivity.swift */,
 				7F1A021D /* Snap/SnapLayout.swift */,
@@ -731,6 +742,7 @@
 				7F1A0056 /* Detail/StorageDetailView.swift */,
 				7F1A0057 /* Detail/SystemControlsPanel.swift */,
 				7F1A020B /* NotchSurfaceView.swift */,
+				7F1A022B /* NotchClipboardView.swift */,
 				7F1A021F /* SnapRowView.swift */,
 				7F1A01F1 /* Detail/AlertsDetailView.swift */,
 				7F1A01DB /* OnboardingView.swift */,
@@ -915,6 +927,7 @@
 				7F1A005D /* Detail/StorageDetailView.swift in Sources */,
 				7F1A005E /* Detail/SystemControlsPanel.swift in Sources */,
 				7F1A020C /* NotchSurfaceView.swift in Sources */,
+				7F1A022C /* NotchClipboardView.swift in Sources */,
 				7F1A0220 /* SnapRowView.swift in Sources */,
 				7F1A01CE /* Detail/FeaturesHubView.swift in Sources */,
 				7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */,
@@ -942,6 +955,9 @@
 				7F1A0208 /* Notch/NotchSurfaceLayout.swift in Sources */,
 				7F1A020A /* Notch/NotchSurfaceController.swift in Sources */,
 				7F1A020E /* Notch/NotchDragSession.swift in Sources */,
+				7F1A022A /* Clipboard/PasteQueue.swift in Sources */,
+				7F1A0228 /* Clipboard/ClipboardTransform.swift in Sources */,
+				7F1A0226 /* Clipboard/ClipboardFilterToken.swift in Sources */,
 				7F1A0224 /* Notch/LiveActivityMonitor.swift in Sources */,
 				7F1A0222 /* Notch/LiveActivity.swift in Sources */,
 				7F1A021E /* Snap/SnapLayout.swift in Sources */,

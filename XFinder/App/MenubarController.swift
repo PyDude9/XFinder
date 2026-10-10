@@ -682,6 +682,10 @@ struct MenubarFlyoutView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { ScreenTextCopier.shared.start() }
             }
             timerRow
+            actionRow(L10n.t("Clipboard trên notch"), "doc.on.clipboard") {
+                closePopover()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { NotchSurfaceController.shared.reveal(page: .clipboard) }
+            }
             actionRow(L10n.t("Đồng bộ thư mục"), "arrow.triangle.2.circlepath") { navigate(.sync) }
             HStack {
                 Image(systemName: "magnifyingglass").frame(width: 18).foregroundColor(.secondary)
