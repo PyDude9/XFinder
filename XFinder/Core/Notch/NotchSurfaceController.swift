@@ -329,10 +329,11 @@ final class NotchSurfaceController {
 
     func pasteNextFromStack() { ClipboardManager.shared.pasteNextManually() }
 
-    /// Runs a transform on the record's text and copies the result, which the monitor then records
-    /// as a new clip. A transform that changes nothing says so instead of pretending.
+    /// Runs a transform on the record's FULL text (the snippet is a 200-character preview; long
+    /// clips live in a payload file) and copies the result, which the monitor then records as a
+    /// new clip. A transform that changes nothing says so instead of pretending.
     func applyTransform(_ t: ClipboardTransform, to record: ClipboardRecord) {
-        let text = record.textSnippet ?? ""
+        let text = ClipboardText.fullText(snippet: record.textSnippet, payloadPath: record.payloadPath) ?? ""
         switch t.apply(to: text) {
         case .success(let out):
             let pb = NSPasteboard.general

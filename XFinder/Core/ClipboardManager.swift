@@ -462,8 +462,9 @@ final class ClipboardManager {
 
             let kind = ClipboardClassifier.classify(text: text)
             if kind == .link, !captureLinks { return }
+            // The snippet is a preview; anything longer is kept whole in a payload file (see ClipboardText).
             var payloadPath: String?
-            if text.count > 4096 {
+            if ClipboardText.needsPayload(text) {
                 payloadPath = ClipboardPayloadStore.storeText(text)
             }
             var meta = ["length": "\(text.count)",
@@ -478,7 +479,7 @@ final class ClipboardManager {
             let record = ClipboardRecord(
                 type: kind,
                 sourceBundleID: bundleID, sourceAppName: appName,
-                textSnippet: String(text.prefix(200)),
+                textSnippet: ClipboardText.preview(text),
                 payloadPath: payloadPath,
                 metadata: meta
             )

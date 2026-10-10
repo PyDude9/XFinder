@@ -42,7 +42,9 @@ enum ClipboardPasteEngine {
         pb.clearContents()
         switch record.type {
         case .text, .code, .markdown, .color, .merged:
-            guard let s = record.textSnippet ?? record.ocrText else { return false }
+            // The WHOLE text — the snippet is a 200-character preview (see ClipboardText).
+            guard let s = ClipboardText.fullText(snippet: record.textSnippet, payloadPath: record.payloadPath) ?? record.ocrText
+            else { return false }
             return pb.setString(s, forType: .string)
         case .link:
             let url = record.metadata["url"] ?? record.textSnippet ?? ""

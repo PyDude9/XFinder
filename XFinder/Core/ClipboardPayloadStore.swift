@@ -35,7 +35,7 @@ enum ClipboardPayloadStore {
 
     /// Write raw text payload (>4KB snippets) so history stays light in RAM.
     static func storeText(_ text: String) -> String? {
-        guard text.count > 4096 else { return nil }
+        guard ClipboardText.needsPayload(text) else { return nil }
         let stamp = String(Int(Date().timeIntervalSince1970 * 1000))
         let url = baseDir().appendingPathComponent("txt-\(stamp).txt")
         do {

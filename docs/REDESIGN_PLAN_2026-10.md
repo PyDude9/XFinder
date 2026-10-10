@@ -235,6 +235,9 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
 - [x] **B5 (code, 2026-10-10)** tab Clipboard trong hub notch: @filter, ⌘-bấm xếp Paste Stack (**vòng tiêu thụ ⌘V mới có từ đây** —
   trước đó `popNext()` không ai gọi), menu Biến đổi (17 phép, thuần) + Đi tới nguồn (app / trang nguồn Chromium / Finder).
   **Không có Dịch**: `translationd` từ chối binary ad-hoc, chưa đo từ app ký. **Chưa bấm thử sống.**
+  - [x] **fix kèm theo (2026-10-10)** dán clip dài hơn 200 ký tự bị **cắt**: snippet lưu 200 ký tự, payload chỉ ghi khi >4096,
+    dán đọc snippet. Đo trên `xfinder.db`: **227 bản ghi** 201–4096 ký tự chỉ còn 200 — không khôi phục được. `ClipboardText`
+    (thuần) giữ luật; mutation C7/C8 tiêm lại cả hai nửa.
 5. Trang Clipboard trên notch (deck của shelf) + @filter + ⌘-click stack + menu Transform/Dịch/Đi tới nguồn.
 6. Now Playing: **probe trước** (nhạc đang phát, so MediaRemote vs AppleScript). Không probe xong không ship.
 7. Cài đặt notch về trang Khay thả (đổi tên "Notch & Khay thả"): bật từng live activity, Pill cho màn ngoài, độ nhạy hover,

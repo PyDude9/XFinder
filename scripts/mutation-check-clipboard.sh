@@ -11,12 +11,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-clipboard.XXXXXX)
-FILES="XFinder/Core/Clipboard/ClipboardFilterToken.swift XFinder/Core/Clipboard/ClipboardTransform.swift XFinder/Core/Clipboard/PasteQueue.swift"
+FILES="XFinder/Core/Clipboard/ClipboardFilterToken.swift XFinder/Core/Clipboard/ClipboardTransform.swift XFinder/Core/Clipboard/PasteQueue.swift XFinder/Core/Clipboard/ClipboardText.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='ClipboardFilterToken|ClipboardTransform|PasteQueue'
+FILTER='ClipboardFilterToken|ClipboardTransform|PasteQueue|ClipboardText'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -59,6 +59,11 @@ run "C5 a no-op transform pretends it changed something" XFinder/Core/Clipboard/
   "'        return out == text ? .failure(.noChange) : .success(out)'" "'        return .success(out)'"
 run "C6 the drained stack stays active (the next ⌘V would paste nothing)" XFinder/Core/Clipboard/PasteQueue.swift \
   "'        if items.isEmpty { active = false }\n        return next'" "'        return next'"
+run "C7 the measured bug: only clips above 4 096 characters get a payload" XFinder/Core/Clipboard/ClipboardText.swift \
+  "'static func needsPayload(_ text: String) -> Bool { text.count > previewLength }'" "'static func needsPayload(_ text: String) -> Bool { text.count > 4096 }'"
+run "C8 pasting reads the 200-character preview instead of the payload" XFinder/Core/Clipboard/ClipboardText.swift \
+  "'        if let p = payloadPath, !p.isEmpty, let full = read(p), !full.isEmpty { return full }\n'" "''"
+
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)
