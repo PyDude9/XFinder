@@ -97,3 +97,50 @@ struct InlineNote: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+/// Label on the left, value on the right. The most common settings/readout row.
+/// (Moved here from NetworkDetailView.swift — it was a shared component living inside a page.)
+struct LabeledLine: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack {
+            Text(label).font(XFinderTokens.Font.row)
+            Spacer()
+            Text(value).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+        }
+        .padding(.horizontal, XFinderTokens.Space.page)
+    }
+}
+
+/// A label, a percentage, and a thin bar. `percent == nil` renders "Không khả dụng" with an empty
+/// track — never a fabricated 0 %. (Moved here from SystemDetailView.swift.)
+struct MeterRow: View {
+    let label: String
+    let percent: Double?
+    let tint: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            HStack {
+                Text(label).font(XFinderTokens.Font.row)
+                Spacer()
+                Text(percent.map { String(format: "%.0f%%", $0) } ?? L10n.t("Không khả dụng"))
+                    .font(percent == nil ? XFinderTokens.Font.rowValue : XFinderTokens.Font.row)
+                    .foregroundColor(percent == nil ? .secondary : .primary)
+                    .monospacedDigit()
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(XFinderTokens.Fill.inset)
+                    if let percent {
+                        Capsule().fill(tint).frame(width: geo.size.width * min(max(percent / 100, 0), 1))
+                    }
+                }
+            }
+            .frame(height: 6)
+        }
+        .padding(.horizontal, XFinderTokens.Space.page)
+    }
+}

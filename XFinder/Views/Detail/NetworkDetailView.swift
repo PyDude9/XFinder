@@ -187,18 +187,3 @@ struct NetworkDetailView: View {
 }
 
 /// Plain label ⟷ value line used by the compact pages.
-struct LabeledLine: View {
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack {
-            Text(label).font(.system(size: 13))
-            Spacer()
-            Text(value)
-                .font(.system(size: 12))
-                .foregroundColor(.secondary)
-        }
-        .padding(.horizontal, 20)
-    }
-}

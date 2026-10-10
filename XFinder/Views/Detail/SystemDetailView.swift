@@ -138,33 +138,3 @@ struct SystemDetailView: View {
 
 /// Label + right-aligned percent with a full-width bar underneath. `percent`
 /// of nil renders the honest "Không khả dụng" state with an empty track.
-struct MeterRow: View {
-    let label: String
-    let percent: Double?
-    let tint: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(label).font(.system(size: 13))
-                Spacer()
-                Text(percent.map { String(format: "%.0f%%", $0) } ?? L10n.t("Không khả dụng"))
-                    .font(.system(size: 13, weight: percent == nil ? .regular : .semibold))
-                    .foregroundColor(percent == nil ? .secondary : .primary)
-            }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.primary.opacity(0.10))
-                    if let percent {
-                        Capsule()
-                            .fill(tint)
-                            .frame(width: geo.size.width * min(max(percent / 100, 0), 1))
-                    }
-                }
-            }
-            .frame(height: 6)
-        }
-        .padding(.horizontal, 20)
-    }
-}
