@@ -423,7 +423,7 @@ struct MenubarFlyoutView: View {
                     }
                     .padding(.horizontal, 10).padding(.vertical, 5)
                 }
-                Text(L10n.t("Mỗi lần cập nhật là một lần đọc số liệu; tắt thì không có bộ hẹn giờ nào."))
+                Text(L10n.t("Mỗi lần cập nhật là một lần đọc số liệu (nhanh hơn khi một trang số liệu đang mở); tắt thì không có bộ hẹn giờ nào."))
                     .font(.system(size: 11)).foregroundColor(.secondary).padding(.horizontal, 10)
             }
         }

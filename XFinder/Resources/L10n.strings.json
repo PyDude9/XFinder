@@ -7007,10 +7007,6 @@
       "en": "Update every",
       "scope": "sentence"
     },
-    "Mỗi lần cập nhật là một lần đọc số liệu; tắt thì không có bộ hẹn giờ nào.": {
-      "en": "Each update is one metrics read; off means no timer at all.",
-      "scope": "sentence"
-    },
     "CPU": {
       "en": "CPU",
       "scope": "sentence"
@@ -7037,6 +7033,10 @@
     },
     "Bấm “Ghi” rồi bấm nút thật trước khi đặt làm nút giữ.": {
       "en": "Press “Record”, then press the real button, before making it the hold button.",
+      "scope": "sentence"
+    },
+    "Mỗi lần cập nhật là một lần đọc số liệu (nhanh hơn khi một trang số liệu đang mở); tắt thì không có bộ hẹn giờ nào.": {
+      "en": "Each update is one metrics read (faster while a metrics page is open); off means no timer at all.",
       "scope": "sentence"
     }
   }
