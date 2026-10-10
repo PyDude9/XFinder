@@ -7674,6 +7674,50 @@
     "Đang phát: ": {
       "en": "Playing: ",
       "scope": "fragment"
+    },
+    "Notch & Khay thả": {
+      "en": "Notch & Drop Tray",
+      "scope": "sentence"
+    },
+    "Trên màn hình không có notch, các bề mặt treo ngay dưới thanh menu, ở giữa; rê chuột vào giữa thanh menu để xem các tệp đang giữ.": {
+      "en": "On a screen without a notch the surfaces hang right under the menu bar, centred; rest the pointer on the middle of the menu bar to see the files you are holding.",
+      "scope": "sentence"
+    },
+    "Hành vi notch": {
+      "en": "Notch behaviour",
+      "scope": "sentence"
+    },
+    "Áp dụng cho mọi thứ hiện ở notch: khay, clipboard, thông báo, bài đang phát.": {
+      "en": "Applies to everything shown at the notch: tray, clipboard, notices, the playing track.",
+      "scope": "sentence"
+    },
+    "Độ nhạy rê chuột": {
+      "en": "Hover sensitivity",
+      "scope": "sentence"
+    },
+    "Con trỏ phải đứng yên ở notch bao lâu thì tính là rê vào: 0,12 · 0,25 · 0,5 giây.": {
+      "en": "How long the pointer must rest at the notch before it counts as a hover: 0.12 · 0.25 · 0.5 s.",
+      "scope": "sentence"
+    },
+    "Chậm": {
+      "en": "Slow",
+      "scope": "sentence"
+    },
+    "Pill trên màn hình không có notch": {
+      "en": "Pill on screens without a notch",
+      "scope": "sentence"
+    },
+    "Màn hình ngoài / iMac: tệp đang giữ, hẹn giờ và bài đang phát hiện trong một viên thuốc nhỏ treo dưới thanh menu. Chưa đo trên màn hình thật — chỉ hình học.": {
+      "en": "External display / iMac: held files, the timer and the playing track show in a small pill hanging under the menu bar. Not measured on a real display yet — geometry only.",
+      "scope": "sentence"
+    },
+    "Không hiện trong ảnh chụp, quay và chia sẻ màn hình": {
+      "en": "Keep out of screenshots, recordings and screen sharing",
+      "scope": "sentence"
+    },
+    "Cửa sổ notch được đánh dấu không chia sẻ (sharingType none) nên screencapture, quay màn hình và chia sẻ qua Zoom/FaceTime không thấy nó. Đo được: kCGWindowSharingState = 0.": {
+      "en": "The notch window is marked not shareable (sharingType none), so screencapture, screen recording and sharing over Zoom/FaceTime do not see it. Measured: kCGWindowSharingState = 0.",
+      "scope": "sentence"
     }
   }
 }

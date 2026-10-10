@@ -41,11 +41,33 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         XCTAssertLessThan(b.height, p.height); XCTAssertLessThan(p.height, e.height)
     }
 
-    func testCollapsedDrawsNothingWithoutFilesOrWithoutARealNotch() {
+    func testCollapsedDrawsNothingWithoutFilesAndAPillOnlyWhenAllowed() {
         XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch), "no files ⇒ no badge")
         let v = L.notch(screen: external, auxLeft: nil, auxRight: nil)
-        XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 5, notch: v), "a badge needs a notch to hang from (pill = B7)")
+        XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: v), "nothing held ⇒ no pill either")
+        let pill = L.size(for: .collapsed, anchor: .notch, itemCount: 5, notch: v)
+        XCTAssertEqual(pill, CGSize(width: L.Metrics.standard.pillWidth, height: L.Metrics.standard.pillHeight), "B7: a pill stands in for the badge")
+        XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 5, notch: v, pillOnPlainScreens: false), "the pill is a switch")
         XCTAssertNotNil(L.size(for: .peek, anchor: .notch, itemCount: 5, notch: v))
+    }
+
+    /// B7: on a plain screen every state hangs from the bottom of the menu bar, never over it.
+    func testPlainScreenSurfacesHangUnderTheMenuBar() {
+        let ext = CGRect(x: 1728, y: 0, width: 2560, height: 1440)
+        let extVisible = CGRect(x: 1728, y: 0, width: 2560, height: 1440 - 24)   // 24 pt menu bar, no Dock
+        let v = L.notch(screen: ext, auxLeft: nil, auxRight: nil)
+        for state in [S.collapsed, .peek, .expanded(.files)] {
+            guard let f = L.frame(for: state, anchor: .notch, itemCount: 2, notch: v, screen: ext, visible: extVisible, pointer: .zero)
+            else { return XCTFail("\(state) drew nothing") }
+            XCTAssertEqual(f.maxY, extVisible.maxY, accuracy: 0.001, "\(state) must start right under the menu bar")
+            XCTAssertEqual(f.midX, ext.midX, accuracy: 0.001)
+            XCTAssertLessThan(f.maxY, ext.maxY, "never over the menu bar")
+        }
+        let pill = L.pillRect(notch: v, visible: extVisible)
+        XCTAssertEqual(pill, L.frame(for: .collapsed, anchor: .notch, itemCount: 2, notch: v, screen: ext, visible: extVisible, pointer: .zero))
+        // A real notch is unaffected: still glued to the screen top.
+        let f = L.frame(for: .collapsed, anchor: .notch, itemCount: 2, notch: notch, screen: screen, visible: visible, pointer: .zero)!
+        XCTAssertEqual(f.maxY, screen.maxY)
     }
 
     func testPointerTraySitsUnderThePointerInsideTheVisibleFrame() {
@@ -77,7 +99,12 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         XCTAssertEqual(held.minY, notch.minY - L.Metrics.standard.badgeLip)
         let v = L.notch(screen: external, auxLeft: nil, auxRight: nil)
         let zv = L.hoverZone(notch: v, screen: external, itemCount: 2)
-        XCTAssertEqual(zv.height, 8); XCTAssertEqual(zv.maxY, external.maxY)
+        XCTAssertEqual(zv.height, 8); XCTAssertEqual(zv.maxY, external.maxY, "no pill shown ⇒ the bare strip in the menu bar")
+        // B7: while the pill hangs under the menu bar, it is the hover target.
+        let extVisible = CGRect(x: external.minX, y: 0, width: external.width, height: external.height - 24)
+        let zp = L.hoverZone(notch: v, screen: external, itemCount: 2, visible: extVisible, pillShown: true)
+        XCTAssertEqual(zp, L.pillRect(notch: v, visible: extVisible))
+        XCTAssertLessThan(zp.maxY, external.maxY, "the pill zone is below the menu bar, not in it")
     }
 
     func testDragZoneIsWiderAndDeeperThanTheNotchAndTouchesTheTop() {
@@ -97,8 +124,9 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         XCTAssertNotNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch, timerActive: true))
         XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch, timerActive: false))
         let v = L.notch(screen: external, auxLeft: nil, auxRight: nil)
-        XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: v, timerActive: true),
-                     "nothing to hang a badge from on a notch-less screen")
+        XCTAssertNotNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: v, timerActive: true),
+                        "B7: on a notch-less screen the timer shows in the pill")
+        XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: v, timerActive: true, pillOnPlainScreens: false))
     }
 }
 

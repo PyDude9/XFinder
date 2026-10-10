@@ -33,13 +33,17 @@ struct DropTrayDetailView: View {
     // default: it runs a helper process and rides a private framework, so the user opts in.
     @AppStorage("notch.nowPlaying") private var nowPlaying = false
     @State private var nowPlayingMonitor = NowPlayingMonitor.shared
+    // B7 notch behaviour. Readers: NotchSurfaceController (defaults must match — FeatureKeyDefaultsTests).
+    @AppStorage("notch.hideFromCapture") private var hideFromCapture = true
+    @AppStorage("notch.pillOnPlainScreens") private var pillOnPlainScreens = true
+    @AppStorage("notch.hoverSpeed") private var hoverSpeed = "medium"
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
                 PageHeader(
                     icon: "tray.and.arrow.down",
-                    title: L10n.t("Khay thả"),
+                    title: L10n.t("Notch & Khay thả"),
                     subtitle: L10n.t("Giữ file tạm để xử lý hàng loạt."),
                     trailing: AnyView(
                         HStack(spacing: 6) {
@@ -81,6 +85,7 @@ struct DropTrayDetailView: View {
                     Divider().padding(.horizontal, XFinderTokens.Space.page)
                     openingSection
                     Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    notchBehaviourSection
                     activitiesSection
                     nowPlayingSection
                 }
@@ -225,7 +230,43 @@ struct DropTrayDetailView: View {
                         Text(L10n.t("Cao")).tag("high")
                     }
                 }
-                InlineNote(text: L10n.t("Trên màn hình không có notch, khay mở từ giữa cạnh trên và không có huy hiệu đếm tệp; rê chuột vào giữa cạnh trên để xem các tệp đang giữ."))
+                InlineNote(text: L10n.t("Trên màn hình không có notch, các bề mặt treo ngay dưới thanh menu, ở giữa; rê chuột vào giữa thanh menu để xem các tệp đang giữ."))
+            }
+            .padding(.horizontal, XFinderTokens.Space.page)
+        }
+    }
+
+    /// The user comes here to tune how the notch surface behaves on this Mac: how fast a hover counts,
+    /// whether a notch-less screen gets a pill, and whether recordings see it.
+    private var notchBehaviourSection: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(icon: "rectangle.topthird.inset.filled",
+                          title: L10n.t("Hành vi notch"),
+                          subtitle: L10n.t("Áp dụng cho mọi thứ hiện ở notch: khay, clipboard, thông báo, bài đang phát."))
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.t("Độ nhạy rê chuột")).font(XFinderTokens.Font.row)
+                        Text(L10n.t("Con trỏ phải đứng yên ở notch bao lâu thì tính là rê vào: 0,12 · 0,25 · 0,5 giây."))
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Picker("", selection: $hoverSpeed) {
+                        Text(L10n.t("Nhanh")).tag("fast")
+                        Text(L10n.t("Vừa")).tag("medium")
+                        Text(L10n.t("Chậm")).tag("slow")
+                    }
+                    .pickerStyle(.segmented).labelsHidden().frame(width: 190)
+                    .onChange(of: hoverSpeed) { NotchSurfaceController.shared.applySettings() }
+                }
+                ToggleRow(title: L10n.t("Pill trên màn hình không có notch"),
+                          subtitle: L10n.t("Màn hình ngoài / iMac: tệp đang giữ, hẹn giờ và bài đang phát hiện trong một viên thuốc nhỏ treo dưới thanh menu. Chưa đo trên màn hình thật — chỉ hình học."),
+                          isOn: $pillOnPlainScreens)
+                    .onChange(of: pillOnPlainScreens) { NotchSurfaceController.shared.applySettings() }
+                ToggleRow(title: L10n.t("Không hiện trong ảnh chụp, quay và chia sẻ màn hình"),
+                          subtitle: L10n.t("Cửa sổ notch được đánh dấu không chia sẻ (sharingType none) nên screencapture, quay màn hình và chia sẻ qua Zoom/FaceTime không thấy nó. Đo được: kCGWindowSharingState = 0."),
+                          isOn: $hideFromCapture)
+                    .onChange(of: hideFromCapture) { NotchSurfaceController.shared.applySettings() }
             }
             .padding(.horizontal, XFinderTokens.Space.page)
         }

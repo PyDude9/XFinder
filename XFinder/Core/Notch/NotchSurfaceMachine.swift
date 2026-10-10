@@ -44,6 +44,15 @@ enum NotchSurfaceMachine {
         var shakeOpens = true
         /// Pointer must rest in the notch zone this long before hover counts (accidental passes are shorter).
         var hoverDwell: TimeInterval = 0.25
+
+        /// B7: the "Độ nhạy rê chuột" picker. Unknown values read as medium, never as 0.
+        static func hoverDwell(forSpeed speed: String) -> TimeInterval {
+            switch speed {
+            case "fast": return 0.12
+            case "slow": return 0.5
+            default: return 0.25
+            }
+        }
         /// Pointer must be away this long before the surface collapses.
         var leaveGrace: TimeInterval = 0.8
     }

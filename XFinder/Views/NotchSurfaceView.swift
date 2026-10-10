@@ -29,6 +29,8 @@ final class NotchSurfaceModel {
     var nowPlayingAppName: String?
     var nowPlayingAppIcon: NSImage?
     var nowPlayingAvailability: NowPlaying.Availability = .off
+    /// B7: whether a screen without a notch gets a pill (mirrors the `notch.pillOnPlainScreens` reader).
+    var pillOnPlainScreens = true
 }
 
 /// Root of the Notch surface window. The window is sized by `NotchSurfaceLayout`; this view draws
@@ -45,8 +47,12 @@ struct NotchSurfaceView: View {
         return NotchSurfaceLayout.size(for: model.state, anchor: model.anchor,
                                        itemCount: model.itemCount, notch: notch,
                                        timerActive: model.timerText != nil,
-                                       nowPlayingActive: nowPlayingActive) ?? .zero
+                                       nowPlayingActive: nowPlayingActive,
+                                       pillOnPlainScreens: model.pillOnPlainScreens) ?? .zero
     }
+
+    /// A screen without a notch: the surface hangs under the menu bar as a free-standing card / pill.
+    private var plainScreen: Bool { model.notchSize.height == 0 }
 
     private var nowPlayingActive: Bool { model.nowPlaying?.hasTrack == true }
 
@@ -54,12 +60,12 @@ struct NotchSurfaceView: View {
     /// at the pointer is a free-standing card, rounded on all four corners.
     private var atNotch: Bool { model.anchor == .notch }
     private var shape: NotchShape {
-        NotchShape(bottomRadius: bottomRadius, topRadius: atNotch ? 0 : bottomRadius)
+        NotchShape(bottomRadius: bottomRadius, topRadius: (atNotch && !plainScreen) ? 0 : bottomRadius)
     }
 
     private var bottomRadius: CGFloat {
         switch model.state {
-        case .collapsed: return 9
+        case .collapsed: return plainScreen ? NotchSurfaceLayout.Metrics.standard.pillHeight / 2 : 9
         case .peek, .activity: return 14
         case .expanded: return XFinderTokens.Radius.surface
         }
@@ -116,7 +122,7 @@ struct NotchSurfaceView: View {
         }
         .foregroundColor(.white)
         .frame(maxWidth: .infinity)
-        .frame(height: NotchSurfaceLayout.Metrics.standard.badgeLip)
+        .frame(height: plainScreen ? NotchSurfaceLayout.Metrics.standard.pillHeight : NotchSurfaceLayout.Metrics.standard.badgeLip)
         .contentShape(Rectangle())
         .onTapGesture {
             if model.itemCount > 0 { NotchSurfaceController.shared.reveal() }

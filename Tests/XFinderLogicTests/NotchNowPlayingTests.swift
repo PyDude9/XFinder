@@ -71,7 +71,7 @@ final class NotchNowPlayingTests: XCTestCase {
         XCTAssertEqual(L.hoverZone(notch: notch, screen: screen, itemCount: 0).height, 32)
         XCTAssertEqual(L.hoverZone(notch: notch, screen: screen, itemCount: 0, nowPlayingActive: true).height, 32 + 18,
                        "resting on the track badge counts as hovering")
-        XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: CGRect(x: 0, y: 0, width: 185, height: 0), nowPlayingActive: true),
-                     "no physical notch ⇒ no badge to hang (B7)")
+        XCTAssertEqual(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: CGRect(x: 0, y: 0, width: 185, height: 0), nowPlayingActive: true)?.height,
+                       L.Metrics.standard.pillHeight, "no physical notch ⇒ the track shows in the pill (B7)")
     }
 }

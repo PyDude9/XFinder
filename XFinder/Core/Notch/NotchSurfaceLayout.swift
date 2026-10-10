@@ -23,6 +23,10 @@ enum NotchSurfaceLayout {
         var activityDrop: CGFloat = 36
         /// Stand-in notch width on a screen without one (external display / iMac).
         var virtualNotchWidth: CGFloat = 185
+        /// B7: on a screen without a notch the collapsed state is a free-standing pill hanging under the
+        /// menu bar (there is no notch to hang a lip from, and the menu bar centre must stay clickable).
+        var pillWidth: CGFloat = 170
+        var pillHeight: CGFloat = 22
         /// The drag zone reaches this far beyond each side of the notch, and this far below the top edge,
         /// so a file drag does not have to land on the notch to the pixel.
         var dragMargin: CGFloat = 60
@@ -39,15 +43,17 @@ enum NotchSurfaceLayout {
         return CGRect(x: screen.midX - m.virtualNotchWidth / 2, y: screen.maxY, width: m.virtualNotchWidth, height: 0)
     }
 
-    /// Size of the drawn surface for a state; nil ⇒ nothing is drawn. The collapsed badge needs a real
-    /// notch to hang from — a pill for notch-less screens is a later phase (B7).
+    /// Size of the drawn surface for a state; nil ⇒ nothing is drawn. Collapsed: a badge under a real
+    /// notch, or (B7, `pillOnPlainScreens`) a pill under the menu bar of a screen without one.
     static func size(for state: NotchSurfaceMachine.State, anchor: NotchSurfaceMachine.Anchor,
                      itemCount: Int, notch: CGRect, timerActive: Bool = false, nowPlayingActive: Bool = false,
-                     metrics m: Metrics = .standard) -> CGSize? {
+                     pillOnPlainScreens: Bool = true, metrics m: Metrics = .standard) -> CGSize? {
         switch state {
         case .collapsed:
-            guard itemCount > 0 || timerActive || nowPlayingActive, notch.height > 0 else { return nil }
-            return CGSize(width: notch.width, height: notch.height + m.badgeLip)
+            guard itemCount > 0 || timerActive || nowPlayingActive else { return nil }
+            if notch.height > 0 { return CGSize(width: notch.width, height: notch.height + m.badgeLip) }
+            guard pillOnPlainScreens else { return nil }
+            return CGSize(width: m.pillWidth, height: m.pillHeight)
         case .peek:
             // Files take precedence in the strip; the wider now-playing strip only when none are held.
             let wing = (itemCount == 0 && nowPlayingActive) ? m.nowPlayingPeekWing : m.peekWing
@@ -61,20 +67,29 @@ enum NotchSurfaceLayout {
         }
     }
 
-    /// Window frame for a state; nil ⇒ order the window out. At the notch: glued to the top of the
-    /// screen, centred on the notch, clamped to the screen. At the pointer: centred under the pointer
-    /// by `pointerGap`, clamped to the VISIBLE frame (it must never land under the menu bar or Dock).
+    /// Window frame for a state; nil ⇒ order the window out. At a real notch: glued to the top of the
+    /// screen, centred on the notch. On a screen WITHOUT a notch (B7): the same shapes hang from the
+    /// bottom of the menu bar instead — the top edge there is the menu bar, which must stay usable.
+    /// At the pointer: centred under the pointer by `pointerGap`, clamped to the VISIBLE frame.
     static func frame(for state: NotchSurfaceMachine.State, anchor: NotchSurfaceMachine.Anchor,
                       itemCount: Int, notch: CGRect, screen: CGRect, visible: CGRect,
                       pointer: CGPoint, timerActive: Bool = false, nowPlayingActive: Bool = false,
-                      metrics m: Metrics = .standard) -> CGRect? {
+                      pillOnPlainScreens: Bool = true, metrics m: Metrics = .standard) -> CGRect? {
         guard let size = size(for: state, anchor: anchor, itemCount: itemCount, notch: notch,
-                              timerActive: timerActive, nowPlayingActive: nowPlayingActive, metrics: m) else { return nil }
+                              timerActive: timerActive, nowPlayingActive: nowPlayingActive,
+                              pillOnPlainScreens: pillOnPlainScreens, metrics: m) else { return nil }
         if case .expanded = state, anchor == .pointer {
             let centre = CGPoint(x: pointer.x, y: pointer.y - m.pointerGap - size.height / 2)
             return SurfaceGeometry.frame(size: size, anchor: .pointer(centre), screen: screen, visible: visible)
         }
-        return SurfaceGeometry.expandedNotchFrame(collapsed: notch, size: size, screen: screen)
+        if notch.height > 0 { return SurfaceGeometry.expandedNotchFrame(collapsed: notch, size: size, screen: screen) }
+        let w = min(size.width, screen.width)
+        return SurfaceGeometry.clamp(CGRect(x: notch.midX - w / 2, y: visible.maxY - size.height, width: w, height: size.height), into: screen)
+    }
+
+    /// The pill's own rect on a plain screen (what the hover zone becomes while it is shown).
+    static func pillRect(notch: CGRect, visible: CGRect, metrics m: Metrics = .standard) -> CGRect {
+        CGRect(x: notch.midX - m.pillWidth / 2, y: visible.maxY - m.pillHeight, width: m.pillWidth, height: m.pillHeight)
     }
 
     /// Where the pointer must rest for a hover. Only the notch itself — plus the badge lip under it
@@ -83,8 +98,11 @@ enum NotchSurfaceLayout {
     /// and grabbing a title bar must never count as hovering the tray. Notch-less screen: an 8 pt
     /// strip at the top centre.
     static func hoverZone(notch: CGRect, screen: CGRect, itemCount: Int, nowPlayingActive: Bool = false,
-                          metrics m: Metrics = .standard) -> CGRect {
+                          visible: CGRect? = nil, pillShown: Bool = false, metrics m: Metrics = .standard) -> CGRect {
         guard notch.height > 0 else {
+            // B7: while the pill hangs under the menu bar it IS the hover target; otherwise the bare
+            // 8 pt strip in the menu bar (never the title-bar strip below it).
+            if pillShown, let visible { return pillRect(notch: notch, visible: visible, metrics: m) }
             return CGRect(x: notch.minX, y: screen.maxY - 8, width: notch.width, height: 8)
         }
         let lip = (itemCount > 0 || nowPlayingActive) ? m.badgeLip : 0

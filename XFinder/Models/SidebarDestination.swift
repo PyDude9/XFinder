@@ -72,7 +72,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .aiSearch: return "Tìm kiếm AI"
         case .batchRename: return "Đổi tên hàng loạt"
         case .actionHistory: return "Lịch sử thao tác"
-        case .dropTray: return "Khay thả"
+        case .dropTray: return "Notch & Khay thả"
         case .compress: return "Nén & Giải nén"
         case .pdfTools: return "Công cụ PDF"
         case .folderLock: return "Khóa thư mục"

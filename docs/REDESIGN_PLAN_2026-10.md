@@ -249,6 +249,9 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
 - [x] **fix kèm theo (2026-10-11)** callback IOBluetooth (B4a) đến trên `coordinatorQueue`, `assumeIsolated` làm app crash ngay
   khi mở với chuột BT đang kết nối (3 report). Nay `runOnMainActor`; gate `CallbackIsolationTests` đọc source.
 6. Now Playing: **probe trước** (nhạc đang phát, so MediaRemote vs AppleScript). Không probe xong không ship.
+- [x] **B7 (code, 2026-10-11)** trang đổi tên **Notch & Khay thả**; mục "Hành vi notch": độ nhạy rê chuột (0,12/0,25/0,5 s),
+  pill dưới thanh menu cho màn không notch (**chỉ hình học — máy này một màn, có notch**), và **ẩn khỏi ảnh chụp/quay/chia sẻ**
+  (`sharingType .none`; đo trên app đã cài: `kCGWindowSharingState` 0 ↔ 1 theo công tắc, 5/5). Per-activity switch đã có từ B4.
 7. Cài đặt notch về trang Khay thả (đổi tên "Notch & Khay thả"): bật từng live activity, Pill cho màn ngoài, độ nhạy hover,
    ẩn khi quay màn hình.
 

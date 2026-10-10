@@ -16,7 +16,7 @@ for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='NotchSurface|NotchDrag|NotchTask|LiveActivity|NowPlaying|NotchNowPlaying|FeatureKeyDefaults'
+FILTER='NotchSurface|NotchDrag|NotchTask|LiveActivity|NowPlaying|NotchNowPlaying|NotchBehaviour|FeatureKeyDefaults'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -79,7 +79,7 @@ run "M15 the volume HUD fires on a repeated report" XFinder/Core/Notch/LiveActiv
 run "M16 the countdown reads 0:00 early" XFinder/Core/Notch/LiveActivity.swift \
   "'let t = Int(remaining(at: now).rounded(.up))'" "'let t = Int(remaining(at: now).rounded(.down))'"
 run "M17 no badge for a running timer" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'guard itemCount > 0 || timerActive || nowPlayingActive, notch.height > 0 else { return nil }'" "'guard itemCount > 0 || nowPlayingActive, notch.height > 0 else { return nil }'"
+  "'            guard itemCount > 0 || timerActive || nowPlayingActive else { return nil }'" "'            guard itemCount > 0 || nowPlayingActive else { return nil }'"
 run "M18 a page switch opens a closed surface" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if case .expanded = state { state = .expanded(page) }'" "'                state = .expanded(page)'"
 run "M19 hover opens the clipboard without the opt-in" XFinder/Core/Notch/NotchSurfaceMachine.swift \
@@ -92,6 +92,12 @@ run "M22 hover peeks an empty tray with nothing playing" XFinder/Core/Notch/Notc
   "'                if itemCount > 0 || s.nowPlayingActive {'" "'                if true {'"
 run "M23 the now-playing peek collapses when the tray empties" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if n == 0, state == .peek, !s.nowPlayingActive { collapse() }'" "'                if n == 0, state == .peek { collapse() }'"
+run "M24 the pill ignores its switch" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'            guard pillOnPlainScreens else { return nil }\n'" "''"
+run "M25 'slow' hover reads as medium" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'            case \"slow\": return 0.5'" "'            case \"slow\": return 0.25'"
+run "M26 the plain-screen hover zone ignores the pill" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'            if pillShown, let visible { return pillRect(notch: notch, visible: visible, metrics: m) }\n'" "''"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 

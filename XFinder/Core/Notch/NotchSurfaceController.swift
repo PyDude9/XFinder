@@ -73,6 +73,19 @@ final class NotchSurfaceController {
     private var clipboardOnHover: Bool {
         UserDefaults.standard.object(forKey: "notch.clipboardOnHover") as? Bool ?? false
     }
+    /// B7: keep the surface out of screenshots, recordings and screen sharing (`NSWindow.sharingType = .none`;
+    /// measured as `kCGWindowSharingState = 0`). On by default — an overlay in a recording is noise.
+    private var hideFromCapture: Bool {
+        UserDefaults.standard.object(forKey: "notch.hideFromCapture") as? Bool ?? true
+    }
+    /// B7: on a screen without a notch, draw the collapsed state as a pill under the menu bar.
+    private var pillOnPlainScreens: Bool {
+        UserDefaults.standard.object(forKey: "notch.pillOnPlainScreens") as? Bool ?? true
+    }
+    /// B7: "fast" | "medium" | "slow" — how long the pointer must rest before a hover counts.
+    private var hoverSpeed: String {
+        UserDefaults.standard.string(forKey: "notch.hoverSpeed") ?? "medium"
+    }
     /// Shaking a file drag opens the hub at the pointer.
     private var shakeEnabled: Bool {
         UserDefaults.standard.object(forKey: "dropTray.shakeEnabled") as? Bool ?? true
@@ -88,12 +101,19 @@ final class NotchSurfaceController {
     private var settings: NotchSurfaceMachine.Settings {
         NotchSurfaceMachine.Settings(enabled: enabled, hoverToPeek: hoverEnabled, hoverOpensClipboard: clipboardOnHover,
                                      nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
-                                     dragIntoNotchOpens: notchDropEnabled, shakeOpens: shakeEnabled)
+                                     dragIntoNotchOpens: notchDropEnabled, shakeOpens: shakeEnabled,
+                                     hoverDwell: NotchSurfaceMachine.Settings.hoverDwell(forSpeed: hoverSpeed))
     }
+
+    /// Something is on the collapsed surface (badge or pill): files, a countdown, a track.
+    private var badgeShown: Bool { machine.itemCount > 0 || countdown != nil || NowPlayingMonitor.shared.hasTrack }
 
     func applySettings() {
         if enabled {
             start()
+            panel?.sharingType = hideFromCapture ? .none : .readOnly   // B7, live
+            model.pillOnPlainScreens = pillOnPlainScreens
+            render()
             NowPlayingMonitor.shared.applySettings()      // B6: its own switch, under the master
         } else {
             stop()
@@ -209,7 +229,9 @@ final class NotchSurfaceController {
         }
 
         let zone = NotchSurfaceLayout.hoverZone(notch: notch, screen: screen.frame, itemCount: machine.itemCount,
-                                                nowPlayingActive: NowPlayingMonitor.shared.hasTrack)
+                                                nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
+                                                visible: screen.visibleFrame,
+                                                pillShown: pillOnPlainScreens && badgeShown && machine.state == .collapsed)
         if zone.contains(point) {
             leftAt = nil; graceWork?.cancel(); graceWork = nil
             if zoneEnteredAt == nil {
@@ -415,6 +437,7 @@ final class NotchSurfaceController {
     /// the frame is owned by `NotchSurfaceLayout`, and the drawn shape animates inside it.
     private func prepare() {
         let p = SurfacePanel(kind: .notch, size: CGSize(width: 440, height: 222))
+        p.sharingType = hideFromCapture ? .none : .readOnly          // B7: invisible to capture by default
         // A hosting VIEW subclass, not a controller: it must answer acceptsFirstMouse = true or every
         // control needs two clicks while another app is frontmost (the panel is never made key).
         let host = FirstMouseHostingView(rootView: NotchSurfaceView(model: model))
@@ -440,7 +463,8 @@ final class NotchSurfaceController {
                                                     itemCount: machine.itemCount, notch: notch,
                                                     screen: screen.frame, visible: screen.visibleFrame,
                                                     pointer: shakePoint, timerActive: countdown != nil,
-                                                    nowPlayingActive: NowPlayingMonitor.shared.hasTrack) else {
+                                                    nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
+                                                    pillOnPlainScreens: pillOnPlainScreens) else {
             model.state = .collapsed
             model.itemCount = machine.itemCount
             panel.hide()
