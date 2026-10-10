@@ -35,7 +35,7 @@ final class FeatureContractTests: XCTestCase {
         .dockPreview: .pure(["Core/WindowPreview/WindowPreviewStore.swift", "Core/WindowPreview/PreviewItem.swift"]),
         .commandTab: .pure(["Core/WindowPreview/WindowPreviewStore.swift"]),
 
-        .snapZones: .exempt("Snap-target rects and the Stage Manager inset are tested through a DUPLICATED copy (CLAUDE.md Part 4 trade-off). Fix: move SnapTarget's geometry into a Foundation-only file and symlink it."),
+        .snapZones: .pure(["Core/Snap/SnapLayout.swift"]),
         .clipboardShelf: .exempt("Classification and the privacy filter are tested through duplicated copies (ClipboardClassifierTests). Fix: extract them from ClipboardManager into a symlinked file."),
         .suggestions: .exempt("ClipboardIntelligenceEngine's ranking lives inside ClipboardPasteEngine.swift with AppKit imports. Fix: extract the scoring into a pure file."),
         .quickSearch: .exempt("Calculator / quicklink matching live in Core/QuickSearch beside AppKit code and are untested. Fix: symlink the calculator and fuzzy matcher."),
@@ -123,6 +123,6 @@ final class FeatureContractTests: XCTestCase {
             XCTAssertTrue(reason.contains("Fix:"), "\(id): an exemption must name the fix, so it can be paid down")
         }
         // Exemptions may only shrink. Raise this number only with a reason in the commit message.
-        XCTAssertLessThanOrEqual(exempt, 6, "a new exemption was added — a new feature must ship with a pure, tested model")
+        XCTAssertLessThanOrEqual(exempt, 5, "a new exemption was added — a new feature must ship with a pure, tested model")
     }
 }

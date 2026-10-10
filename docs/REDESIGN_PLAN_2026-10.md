@@ -223,6 +223,8 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
 2. Action hub: tách `CompressEngine`, `PdfEngine` ra khỏi view (thuần, test), thêm `BackgroundRemover`, `AirDropShare`,
    `ImageConverter` (ImageIO: HEIC→JPG/PNG/WebP nếu encoder có). `TaskProgress` thuần (0–100 %, huỷ được) hiện trên notch; kết quả
    cạnh file gốc + Reveal/Copy/Share. Mọi việc nặng `Task.detached`, UI không chặn (đo bằng tap latency).
+- [x] **B3 (code, 2026-10-10)** `Core/Snap/SnapLayout` thuần (hình học snap thật được test, bỏ bản sao), chia ba + hai phần ba
+  + tập trung, hàng bố cục khi kéo cửa sổ tới notch (`snapzones.notchRow`), ⌃⌥D/F/G. **Chưa kéo thử sống.**
 3. Snap tại notch: `SnapZoneController` thêm vùng kích hoạt "đỉnh màn hình quanh notch khi đang kéo cửa sổ" → hàng bố cục; thêm
    `SnapTarget.leftThird/centerThird/rightThird/focus`.
 4. Live activities: BT connect/battery (BatteryStore), sạc/pin yếu/đầy + Caps Lock + mất mạng (`AlertRules` thêm quy tắc, banner

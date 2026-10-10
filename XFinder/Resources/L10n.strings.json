@@ -7298,6 +7298,38 @@
     "Từ notch: ": {
       "en": "From the notch: ",
       "scope": "fragment"
+    },
+    "Một phần ba bên trái": {
+      "en": "Left third",
+      "scope": "sentence"
+    },
+    "Một phần ba ở giữa": {
+      "en": "Center third",
+      "scope": "sentence"
+    },
+    "Một phần ba bên phải": {
+      "en": "Right third",
+      "scope": "sentence"
+    },
+    "Hai phần ba bên trái": {
+      "en": "Left two thirds",
+      "scope": "sentence"
+    },
+    "Hai phần ba bên phải": {
+      "en": "Right two thirds",
+      "scope": "sentence"
+    },
+    "Tập trung (giữa, 60% bề ngang)": {
+      "en": "Focus (centred, 60% width)",
+      "scope": "sentence"
+    },
+    "Hàng bố cục khi kéo cửa sổ tới notch": {
+      "en": "Layout row when dragging a window to the notch",
+      "scope": "sentence"
+    },
+    "Kéo cửa sổ lên giữa cạnh trên: một hàng bố cục hiện ra (nửa, ba phần, tập trung, toàn màn hình). Thả lên một ô để đặt cửa sổ. Tắt thì cạnh trên vẫn phóng to như trước.": {
+      "en": "Drag a window to the middle of the top edge: a row of layouts appears (halves, thirds, focus, full screen). Drop on a tile to place the window. When off, the top edge still maximises as before.",
+      "scope": "sentence"
     }
   }
 }

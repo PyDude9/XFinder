@@ -60,6 +60,9 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "quitProtection.enabled",
                views: [],   // bound only through FeatureHub now (the old page was merged away)
                reader: "XFinder/Core/QuitProtectionController.swift"),
+        Switch(key: "snapzones.notchRow",
+               views: ["XFinder/Views/Detail/WindowDetailViews.swift"],
+               reader: "XFinder/Core/SnapZoneController.swift"),
         // Notch surface (B1). These two were DEAD keys for a year — stored, never read. Now the
         // machine gates on them, and the page binds them.
         Switch(key: "dropTray.hoverEnabled",

@@ -45,6 +45,10 @@ final class SnapZoneController {
     private var hapticEnabled: Bool {
         UserDefaults.standard.object(forKey: "snapzones.haptic") as? Bool ?? false
     }
+    /// B3: dragging a window to the notch shows a layout row instead of maximising there.
+    private var notchRowEnabled: Bool {
+        UserDefaults.standard.object(forKey: "snapzones.notchRow") as? Bool ?? true
+    }
     private var restoreOnUnsnap: Bool {
         UserDefaults.standard.object(forKey: "snapzones.restoreOnUnsnap") as? Bool ?? true
     }
@@ -98,6 +102,7 @@ final class SnapZoneController {
         if let dragMonitor { NSEvent.removeMonitor(dragMonitor) }
         dragMonitor = nil
         hideOverlay()
+        hideRow()
         wasDragging = false
     }
 
@@ -117,7 +122,24 @@ final class SnapZoneController {
             guard dragIsWindowMove else { return }
 
             let screen = WindowManager.screenUnderPointer()
-            if let zone = zone(for: mouse, on: screen) {
+            let notch = NotchSurfaceLayout.notch(screen: screen.frame, auxLeft: screen.auxiliaryTopLeftArea,
+                                                 auxRight: screen.auxiliaryTopRightArea)
+            let decision = SnapLayout.decide(point: mouse, screen: screen.frame, notch: notch, edgeMargin: edgeMargin,
+                                             rowEnabled: notchRowEnabled, rowVisible: rowPanel?.isVisible ?? false)
+            if case .row(let tile) = decision {
+                showRow(highlight: tile, notch: notch, on: screen)
+                let target = tile.map { SnapLayout.rowTargets[$0] }
+                if target != activeZone {
+                    activeZone = target
+                    if let target, showPreview { showOverlay(zone: target, on: screen) } else { hideOverlay() }
+                    if target != nil, hapticEnabled {
+                        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+                    }
+                }
+                return
+            }
+            hideRow()
+            if case .edge(let edge) = decision, let zone = edge {
                 if zone != activeZone {
                     activeZone = zone
                     if showPreview {
@@ -139,6 +161,7 @@ final class SnapZoneController {
             wasDragging = false
             let wasWindowMove = dragIsWindowMove
             dragIsWindowMove = false
+            hideRow()
             guard wasWindowMove else { return }
             if let zone = activeZone {
                 hideOverlay()
@@ -205,25 +228,26 @@ final class SnapZoneController {
         return role == (kAXWindowRole as String) || role == "AXToolbar"
     }
 
-    /// Screen-edge hit test in AppKit coordinates (origin bottom-left).
-    private func zone(for point: CGPoint, on screen: NSScreen) -> WindowManager.SnapTarget? {
-        let f = screen.frame
-        let m = edgeMargin
-        let nearLeft = point.x <= f.minX + m
-        let nearRight = point.x >= f.maxX - m
-        let nearTop = point.y >= f.maxY - m
-        let nearBottom = point.y <= f.minY + m
-        // Corners win over edges; a corner region is 25% of the screen height.
-        let cornerY = f.height * 0.25
-        if nearLeft && point.y >= f.maxY - cornerY { return .topLeft }
-        if nearLeft && point.y <= f.minY + cornerY { return .bottomLeft }
-        if nearRight && point.y >= f.maxY - cornerY { return .topRight }
-        if nearRight && point.y <= f.minY + cornerY { return .bottomRight }
-        if nearLeft { return .leftHalf }
-        if nearRight { return .rightHalf }
-        if nearTop { return .maximize }
-        if nearBottom { return .bottomHalf }
-        return nil
+    // MARK: Notch layout row (B3)
+
+    private var rowPanel: SurfacePanel?
+    private let rowModel = SnapRowModel()
+
+    private func showRow(highlight: Int?, notch: CGRect, on screen: NSScreen) {
+        let frame = SnapLayout.rowFrame(count: SnapLayout.rowTargets.count, notch: notch, screen: screen.frame)
+        if rowPanel == nil {
+            let p = SurfacePanel(kind: .passive, size: frame.size)       // mouse-transparent: the drag continues underneath
+            p.host(SnapRowView(model: rowModel))
+            rowPanel = p
+        }
+        rowModel.highlighted = highlight
+        rowPanel?.setFrame(frame, display: true)
+        if rowPanel?.isVisible != true { rowPanel?.orderFrontRegardless() }
+    }
+
+    private func hideRow() {
+        rowModel.highlighted = nil
+        rowPanel?.orderOut(nil)
     }
 
     private func showOverlay(zone: WindowManager.SnapTarget, on screen: NSScreen) {
@@ -311,6 +335,9 @@ final class SnapZoneController {
         case 126: target = .maximize     // ↑
         case 125: target = .bottomHalf   // ↓
         case 36:  target = .center       // Return
+        case 2:   target = .leftThird    // D
+        case 3:   target = .centerThird  // F
+        case 5:   target = .rightThird   // G
         default:  target = nil
         }
         guard let target else { return Unmanaged.passUnretained(event) }

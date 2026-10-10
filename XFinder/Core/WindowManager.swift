@@ -358,44 +358,9 @@ enum WindowManager {
 
     // MARK: - Snap targets
 
-    enum SnapTarget: String, CaseIterable, Identifiable {
-        case leftHalf, rightHalf, topHalf, bottomHalf
-        case topLeft, topRight, bottomLeft, bottomRight
-        case maximize, center
-        var id: String { rawValue }
-        var titleVI: String {
-            switch self {
-            case .leftHalf: return L10n.t("Trái nửa màn hình")
-            case .rightHalf: return L10n.t("Phải nửa màn hình")
-            case .topHalf: return L10n.t("Trên nửa màn hình")
-            case .bottomHalf: return L10n.t("Dưới nửa màn hình")
-            case .topLeft: return L10n.t("Góc trên-trái")
-            case .topRight: return L10n.t("Góc trên-phải")
-            case .bottomLeft: return L10n.t("Góc dưới-trái")
-            case .bottomRight: return L10n.t("Góc dưới-phải")
-            case .maximize: return L10n.t("Toàn màn hình")
-            case .center: return L10n.t("Giữa màn hình")
-            }
-        }
-
-        func rect(in screen: CGRect) -> CGRect {
-            let w = screen.width, h = screen.height, x = screen.minX, y = screen.minY
-            switch self {
-            case .leftHalf:    return CGRect(x: x, y: y, width: w / 2, height: h)
-            case .rightHalf:   return CGRect(x: x + w / 2, y: y, width: w / 2, height: h)
-            case .topHalf:     return CGRect(x: x, y: y, width: w, height: h / 2)
-            case .bottomHalf:  return CGRect(x: x, y: y + h / 2, width: w, height: h / 2)
-            case .topLeft:     return CGRect(x: x, y: y, width: w / 2, height: h / 2)
-            case .topRight:    return CGRect(x: x + w / 2, y: y, width: w / 2, height: h / 2)
-            case .bottomLeft:  return CGRect(x: x, y: y + h / 2, width: w / 2, height: h / 2)
-            case .bottomRight: return CGRect(x: x + w / 2, y: y + h / 2, width: w / 2, height: h / 2)
-            case .maximize:    return screen
-            case .center:
-                let cw = min(w * 0.7, 1100), ch = min(h * 0.75, 750)
-                return CGRect(x: x + (w - cw) / 2, y: y + (h - ch) / 2, width: cw, height: ch)
-            }
-        }
-    }
+    /// The geometry lives in the pure `SnapLayout` (tested directly since B3); this name stays so the
+    /// call sites read as before.
+    typealias SnapTarget = SnapLayout.Target
 
     static func mainScreenFrame() -> CGRect {
         NSScreen.main?.visibleFrame ?? CGRect(x: 0, y: 0, width: 1440, height: 900)
@@ -418,15 +383,10 @@ enum WindowManager {
     /// hard-coded behaviour so an existing install does not change under the
     /// user's feet.
     static var stageManagerInset: CGFloat {
-        guard isStageManagerEnabled else { return 0 }
-        let reserve = UserDefaults.standard.object(forKey: "snapzones.reserveStage") as? Bool ?? true
-        guard reserve else { return 0 }
-        let custom = UserDefaults.standard.object(forKey: "snapzones.stageInset") as? Double
-        // Clamp to the slider's own range. A value below 48 pt is too narrow to
-        // show an app icon, and an install from before the floor existed can
-        // still hold one — clamping here keeps the stored value and the UI in
-        // agreement instead of honouring a width the slider cannot express.
-        return min(max(CGFloat(custom ?? 68), 48), 140)
+        SnapLayout.stageInset(
+            stageManagerOn: isStageManagerEnabled,
+            reserve: UserDefaults.standard.object(forKey: "snapzones.reserveStage") as? Bool ?? true,
+            custom: UserDefaults.standard.object(forKey: "snapzones.stageInset") as? Double)
     }
 
     /// `visibleFrame` is in AppKit coordinates (origin bottom-left) while
@@ -482,4 +442,8 @@ enum WindowManager {
         let rect = target.rect(in: axVisibleFrame(for: screenUnderPointer()))
         return setFrontWindow(pid: app.processIdentifier, rect: rect)
     }
+}
+
+extension SnapLayout.Target {
+    var titleVI: String { L10n.t(titleKey) }
 }

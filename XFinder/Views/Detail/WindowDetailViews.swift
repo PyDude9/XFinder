@@ -215,6 +215,8 @@ struct SnapZonesDetailView: View {
     @AppStorage("snapzones.edgeMargin") private var edgeMargin = 20.0
     @AppStorage("snapzones.stageInset") private var stageInset = 68.0
     @AppStorage("snapzones.reserveStage") private var reserveStage = true
+    // B3: dragging a window to the notch shows a layout row. Reader: SnapZoneController (default must match).
+    @AppStorage("snapzones.notchRow") private var notchRow = true
     @State private var controller = SnapZoneController.shared
     @State private var trusted = WindowManager.isTrusted
 
@@ -281,6 +283,12 @@ struct SnapZonesDetailView: View {
             ToggleRow(title: L10n.t("Bật bắt dính khi kéo tới mép"), isOn: $dragEnabled)
                 .onChange(of: dragEnabled) { controller.applySettings() }
                 .disabled(!trusted || !snapEnabled)
+                .padding(.horizontal, XFinderTokens.Space.page)
+
+            ToggleRow(title: L10n.t("Hàng bố cục khi kéo cửa sổ tới notch"),
+                      subtitle: L10n.t("Kéo cửa sổ lên giữa cạnh trên: một hàng bố cục hiện ra (nửa, ba phần, tập trung, toàn màn hình). Thả lên một ô để đặt cửa sổ. Tắt thì cạnh trên vẫn phóng to như trước."),
+                      isOn: $notchRow)
+                .disabled(!trusted || !snapEnabled || !dragEnabled)
                 .padding(.horizontal, XFinderTokens.Space.page)
 
             if dragEnabled && snapEnabled {
@@ -465,6 +473,10 @@ struct SnapZonesDetailView: View {
                     // Row 3
                     snapNowButton(.maximize, title: L10n.t("Toàn màn hình"), icon: "rectangle.fill")
                     snapNowButton(.center, title: L10n.t("Giữa màn hình"), icon: "rectangle.center.inset.filled")
+                    snapNowButton(.leftThird, title: L10n.t("Một phần ba bên trái"), icon: "rectangle.leadingthird.inset.filled")
+                    snapNowButton(.centerThird, title: L10n.t("Một phần ba ở giữa"), icon: "rectangle.center.inset.filled")
+                    snapNowButton(.rightThird, title: L10n.t("Một phần ba bên phải"), icon: "rectangle.trailingthird.inset.filled")
+                    snapNowButton(.focus, title: L10n.t("Tập trung (giữa, 60% bề ngang)"), icon: "rectangle.inset.filled")
                     Color.clear.frame(height: 32)
                     Color.clear.frame(height: 32)
                 }
