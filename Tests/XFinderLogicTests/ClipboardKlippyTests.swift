@@ -84,7 +84,9 @@ final class ClipboardKlippyTests: XCTestCase {
 
     func testDateFilterToday() {
         let calendar = Calendar.current
-        let now = Date()
+        // Noon, not the wall clock: "two hours ago" crossed midnight when the suite ran between
+        // 00:00 and 02:00, and the test failed for two hours every night (seen 2026-10-11 00:14).
+        let now = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: Date()) ?? Date()
         let twoHoursAgo = now.addingTimeInterval(-7200)
         let twoDaysAgo = now.addingTimeInterval(-172800)
 
