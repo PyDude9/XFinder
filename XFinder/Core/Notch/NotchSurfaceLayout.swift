@@ -15,7 +15,7 @@ enum NotchSurfaceLayout {
         var peekDrop: CGFloat = 40
         /// Expanded surface: width, and height below the notch (or total height at the pointer).
         var expandedWidth: CGFloat = 440
-        var expandedDrop: CGFloat = 190
+        var expandedDrop: CGFloat = 222   // B2d: + action row and result line
         /// Stand-in notch width on a screen without one (external display / iMac).
         var virtualNotchWidth: CGFloat = 185
         /// The drag zone reaches this far beyond each side of the notch, and this far below the top edge,

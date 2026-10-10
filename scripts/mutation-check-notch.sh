@@ -11,12 +11,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notch.XXXXXX)
-FILES="XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Views/Detail/DropTrayDetailView.swift"
+FILES="XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Views/Detail/DropTrayDetailView.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='NotchSurface|NotchDrag|FeatureKeyDefaults'
+FILTER='NotchSurface|NotchDrag|NotchTask|FeatureKeyDefaults'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -64,6 +64,10 @@ run "M7 a drag at the notch yanks the pointer tray" XFinder/Core/Notch/NotchSurf
   "'                if case .expanded = state, anchor == .pointer { return }\n'" "''"
 run "M9 pasteboard read on every drag event (throttle removed)" XFinder/Core/Notch/NotchDragSession.swift \
   "'        if let lastCheck, now.timeIntervalSince(lastCheck) < Self.recheckInterval { return false }\n'" "''"
+run "M10 a step after Cancel still counts" XFinder/Core/Notch/NotchTask.swift \
+  "'    mutating func stepSucceeded(output: URL?) {\n        guard isRunning else { return }\n'" "'    mutating func stepSucceeded(output: URL?) {\n'"
+run "M11 the hub collapses mid-job" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                if taskRunning { return }\n'" "''"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 

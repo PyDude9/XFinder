@@ -11,6 +11,10 @@ final class NotchSurfaceModel {
     var itemCount = 0
     /// Size of the physical notch (height 0 on a screen without one).
     var notchSize = CGSize(width: 185, height: 32)
+    /// The hub action that is running or last finished (B2d).
+    var task: NotchTask?
+    /// A one-line store key shown under the action row (e.g. AirDrop unavailable).
+    var notice: String?
 }
 
 /// Root of the Notch surface window. The window is sized by `NotchSurfaceLayout`; this view draws
@@ -138,6 +142,7 @@ struct NotchSurfaceView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 stackedDeck
+                actionArea
             }
         }
         .foregroundColor(.white)
@@ -182,7 +187,78 @@ struct NotchSurfaceView: View {
             Spacer()
         }
         .contentShape(Rectangle())
-        .frame(maxHeight: .infinity)
+    }
+
+    // MARK: Action row (B2d)
+
+    private var actions: [NotchActions.Action] {
+        NotchActions.available(for: store.items.filter { !$0.isMissing }.map { URL(fileURLWithPath: $0.path) },
+                               encodable: ImageRunner.encodableTypes)
+    }
+
+    private func title(_ a: NotchActions.Action) -> String {
+        switch a {
+        case .zip: return L10n.t("Nén ZIP")
+        case .mergePDFs: return L10n.t("Gộp PDF")
+        case .convert(let t): return "\(L10n.t("Sang "))\(t.label)"
+        case .removeBackground: return L10n.t("Tách nền")
+        case .airDrop: return "AirDrop"
+        }
+    }
+
+    private func symbol(_ a: NotchActions.Action) -> String {
+        switch a {
+        case .zip: return "archivebox"
+        case .mergePDFs: return "doc.on.doc"
+        case .convert: return "photo"
+        case .removeBackground: return "person.crop.rectangle"
+        case .airDrop: return "airplayaudio"
+        }
+    }
+
+    @ViewBuilder private var actionArea: some View {
+        if let t = model.task, t.isRunning {
+            HStack(spacing: XFinderTokens.Space.tight + 2) {
+                ProgressView(value: t.fraction).progressViewStyle(.linear).tint(.white)
+                Text("\(t.done + t.failed)/\(t.total)").font(XFinderTokens.Font.caption).monospacedDigit()
+                Button(L10n.t("Hủy")) { NotchSurfaceController.shared.cancelTask() }
+                    .buttonStyle(.bordered).controlSize(.mini)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    ForEach(actions, id: \.self) { a in
+                        Button { NotchSurfaceController.shared.run(a) } label: {
+                            Label(title(a), systemImage: symbol(a)).labelStyle(.iconOnly)
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+                        .help(title(a))
+                    }
+                }
+                if let t = model.task {
+                    resultLine(t)
+                } else if let n = model.notice {
+                    Text(L10n.t(n)).font(XFinderTokens.Font.caption).opacity(0.65)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private func resultLine(_ t: NotchTask) -> some View {
+        HStack(spacing: XFinderTokens.Space.tight) {
+            if t.phase == .cancelled {
+                Text(L10n.t("Đã hủy.")).font(XFinderTokens.Font.caption).opacity(0.65)
+            } else {
+                Text("\(L10n.t("Xong: "))\(t.outputs.count)/\(t.total)").font(XFinderTokens.Font.caption)
+                if let f = t.firstFailure {
+                    Text("\(L10n.t(f.key))\(f.detail)").font(XFinderTokens.Font.caption).foregroundColor(.orange).lineLimit(1)
+                }
+            }
+            if !t.outputs.isEmpty {
+                Button(L10n.t("Hiện trong Finder")) { NotchSurfaceController.shared.revealResults() }
+                    .buttonStyle(.plain).font(XFinderTokens.Font.caption).underline()
+            }
+        }
     }
 }
 

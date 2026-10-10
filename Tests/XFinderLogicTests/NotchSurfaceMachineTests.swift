@@ -107,7 +107,7 @@ final class NotchSurfaceMachineTests: XCTestCase {
         m.handle(.hoverInZone(since: at(11)), settings: s, now: at(11.3))
         XCTAssertEqual(m.state, .peek, "hovering the badge peeks the held files")
         m.handle(.activate, settings: s, now: at(12))
-        XCTAssertEqual(m, M.Machine(state: .expanded(.files), anchor: .notch, itemCount: 3))
+        XCTAssertEqual(m, M.Machine(state: .expanded(.files), anchor: .notch, itemCount: 3, taskRunning: false))
     }
 
     func testPeekCollapsesWhenTheLastFileIsRemovedElsewhere() {
@@ -143,12 +143,13 @@ final class NotchSurfaceMachineTests: XCTestCase {
     /// and an explicit dismiss always closes it. This is the "never closes" bug as a property.
     func testNoShortSequenceLeavesTheSurfaceStuckOpen() {
         let events: [M.Event] = [.hoverInZone(since: t0), .fileDragInZone, .shake, .activate,
-                                 .dropped(count: 2), .itemsChanged(count: 0), .pointerOnSurface, .dismiss]
+                                 .dropped(count: 2), .itemsChanged(count: 0), .pointerOnSurface, .dismiss,
+                                 .taskStarted, .taskEnded]
         var visited = 0, stuck = 0, undismissable = 0
         func walk(_ m: M.Machine, _ depth: Int) {
             visited += 1
             var away = m; away.handle(.pointerAway(since: at(100)), settings: s, now: at(200))
-            let sanctioned = away.state == .expanded(.files) && away.anchor == .pointer && away.itemCount > 0
+            let sanctioned = (away.state == .expanded(.files) && away.anchor == .pointer && away.itemCount > 0) || away.taskRunning
             if away.state.isOpen && !sanctioned { stuck += 1 }
             var closed = m; closed.handle(.dismiss, settings: s, now: at(300))
             if closed.state != .collapsed || closed.anchor != .notch { undismissable += 1 }
@@ -156,7 +157,7 @@ final class NotchSurfaceMachineTests: XCTestCase {
             for e in events { var n = m; n.handle(e, settings: s, now: at(Double(depth) + 1)); walk(n, depth + 1) }
         }
         walk(M.Machine(), 0)
-        XCTAssertEqual(visited, 4681, "the walk must cover the whole tree")
+        XCTAssertEqual(visited, 11111, "the walk must cover the whole tree (10 events, depth 4)")
         XCTAssertEqual(stuck, 0)
         XCTAssertEqual(undismissable, 0)
     }
@@ -173,5 +174,18 @@ final class NotchSurfaceMachineTests: XCTestCase {
         }
         walk(M.Machine(), 0)
         XCTAssertEqual(bad, 0)
+    }
+
+    func testARunningTaskKeepsTheHubOpenButCloseStillCloses() {
+        var m = holding(2); m.handle(.activate, settings: s, now: t0)
+        m.handle(.taskStarted, settings: s, now: t0)
+        m.handle(.pointerAway(since: at(1)), settings: s, now: at(60))
+        XCTAssertEqual(m.state, .expanded(.files), "progress must not vanish mid-job")
+        m.handle(.taskEnded, settings: s, now: at(61))
+        m.handle(.pointerAway(since: at(61)), settings: s, now: at(63))
+        XCTAssertEqual(m.state, .collapsed)
+        var d = holding(1); d.handle(.activate, settings: s, now: t0); d.handle(.taskStarted, settings: s, now: t0)
+        d.handle(.dismiss, settings: s, now: at(1))
+        XCTAssertEqual(d.state, .collapsed, "the close button always closes")
     }
 }

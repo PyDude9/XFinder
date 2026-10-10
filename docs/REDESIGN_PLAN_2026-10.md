@@ -218,6 +218,8 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
 - [x] **B2b (2026-10-10)** `Core/Pdf/` — hết ghi đè im lặng; rò ngôn ngữ dạng #7 + gate `audit-l10n-interpolations.py`.
 - [x] **B2c (2026-10-10)** `Core/Image/` — chuyển định dạng (không có WebP: đo được máy không có encoder), giảm kích thước,
   tách nền Vision; gắn vào Thao tác Finder. Còn B2d: TaskProgress + hàng hành động trên notch + AirDrop.
+- [x] **B2d (code, 2026-10-10)** hàng hành động trên hub notch (ZIP, gộp PDF, sang JPEG/PNG, tách nền, AirDrop) + `NotchTask`
+  (tiến trình theo số tệp, huỷ được). **Chưa bấm thử sống; AirDrop từ panel không kích hoạt chưa kiểm chứng.**
 2. Action hub: tách `CompressEngine`, `PdfEngine` ra khỏi view (thuần, test), thêm `BackgroundRemover`, `AirDropShare`,
    `ImageConverter` (ImageIO: HEIC→JPG/PNG/WebP nếu encoder có). `TaskProgress` thuần (0–100 %, huỷ được) hiện trên notch; kết quả
    cạnh file gốc + Reveal/Copy/Share. Mọi việc nặng `Task.detached`, UI không chặn (đo bằng tap latency).

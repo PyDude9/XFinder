@@ -7278,6 +7278,26 @@
     "Giảm kích thước": {
       "en": "Make smaller",
       "scope": "sentence"
+    },
+    " tệp kết quả": {
+      "en": " result files",
+      "scope": "fragment"
+    },
+    "AirDrop không khả dụng cho các tệp này trên máy này.": {
+      "en": "AirDrop is not available for these files on this Mac.",
+      "scope": "sentence"
+    },
+    "Sang ": {
+      "en": "To ",
+      "scope": "fragment"
+    },
+    "Xong: ": {
+      "en": "Done: ",
+      "scope": "fragment"
+    },
+    "Từ notch: ": {
+      "en": "From the notch: ",
+      "scope": "fragment"
     }
   }
 }

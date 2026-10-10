@@ -338,6 +338,100 @@ final class NotchSurfaceController {
         model.state = machine.state
     }
 
+    // MARK: - Hub actions (B2d)
+
+    private var job: Task<Void, Never>?
+
+    /// Runs one action on the held files. One job at a time; progress is counted in files done.
+    func run(_ action: NotchActions.Action) {
+        guard model.task?.isRunning != true else { return }
+        let items = DropTrayStore.shared.items.filter { !$0.isMissing }.map { URL(fileURLWithPath: $0.path) }
+        model.notice = nil
+        if action == .airDrop { shareViaAirDrop(items); return }
+        let inputs = NotchActions.inputs(for: action, from: items)
+        guard !inputs.isEmpty else { return }
+        model.task = NotchTask(action: action, total: NotchActions.stepCount(for: action, inputs: inputs.count))
+        dispatch(.taskStarted)
+        job = Task { [weak self] in
+            await self?.execute(action, inputs: inputs)
+            self?.finishJob()
+        }
+    }
+
+    func cancelTask() {
+        job?.cancel()                       // ArchiveRunner terminates its child; per-file loops stop
+        model.task?.cancel()
+        dispatch(.taskEnded)
+    }
+
+    func revealResults() {
+        guard let outs = model.task?.outputs, !outs.isEmpty else { return }
+        NSWorkspace.shared.activateFileViewerSelecting(outs)
+    }
+
+    private func execute(_ action: NotchActions.Action, inputs: [URL]) async {
+        let exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }
+        switch action {
+        case .zip:
+            let base = inputs[0].deletingLastPathComponent().appendingPathComponent("XFinder.zip")
+            guard case .write(let out) = ArchiveEngine.destination(base: base, policy: .keepBoth, exists: exists) else { return }
+            switch await ArchiveRunner.compress(sources: inputs, format: .zip, output: out) {
+            case .success(let url): model.task?.stepSucceeded(output: url)
+            case .failure(let f): model.task?.stepFailed(key: f.messageKey, detail: f.detail ?? "")
+            }
+        case .mergePDFs:
+            let folder = inputs[0].deletingLastPathComponent()
+            switch await Task.detached(priority: .userInitiated, operation: { PdfRunner.merge(inputs, into: folder) }).value {
+            case .success(let o): model.task?.stepSucceeded(output: o.url)
+            case .failure(let f): model.task?.stepFailed(key: f.messageKey, detail: f.detail)
+            }
+        case .convert, .removeBackground:
+            for url in inputs {
+                if Task.isCancelled || model.task?.isRunning != true { break }
+                let r = await Task.detached(priority: .userInitiated, operation: { () -> Result<URL, ImageRunner.Failure> in
+                    if case .convert(let t) = action { return ImageRunner.convert(url, to: t) }
+                    return ImageRunner.removeBackground(url)
+                }).value
+                switch r {
+                case .success(let out): model.task?.stepSucceeded(output: out)
+                case .failure(let f): model.task?.stepFailed(key: f.messageKey, detail: f.detail)
+                }
+            }
+        case .airDrop:
+            break
+        }
+    }
+
+    private func finishJob() {
+        job = nil
+        if let t = model.task, !t.outputs.isEmpty {
+            ActionHistoryStore.shared.record(kind: Self.historyKind(t.action),
+                                             summary: "\(L10n.t("Từ notch: "))\(t.outputs.count)\(L10n.t(" tệp kết quả"))",
+                                             detail: t.outputs.map(\.path).joined(separator: "\n"))
+        }
+        dispatch(.taskEnded)
+    }
+
+    private static func historyKind(_ a: NotchActions.Action) -> String {
+        switch a {
+        case .zip: return "compress"
+        case .mergePDFs: return "pdf"
+        case .convert, .removeBackground: return "image"
+        case .airDrop: return "other"
+        }
+    }
+
+    /// AirDrop through the system sharing service. NOT verified live yet: whether the AirDrop picker
+    /// opens from a non-activating status-bar panel needs a human at the screen.
+    private func shareViaAirDrop(_ items: [URL]) {
+        guard !items.isEmpty, let service = NSSharingService(named: .sendViaAirDrop) else { return }
+        guard service.canPerform(withItems: items) else {
+            model.notice = "AirDrop không khả dụng cho các tệp này trên máy này."
+            return
+        }
+        service.perform(withItems: items)
+    }
+
     // MARK: - Detail window (grid of every staged file)
 
     func toggleDetail() {

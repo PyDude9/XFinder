@@ -54,6 +54,10 @@ enum NotchSurfaceMachine {
         case dropped(count: Int)
         /// The tray's item count changed elsewhere (the Khay thả page, "Xóa hết", the extension).
         case itemsChanged(count: Int)
+        /// A hub action started / ended (B2d). While one runs the surface does not collapse on its own,
+        /// or its progress would vanish mid-job.
+        case taskStarted
+        case taskEnded
         /// The close button.
         case dismiss
         /// The feature was switched off.
@@ -64,6 +68,7 @@ enum NotchSurfaceMachine {
         var state: State = .collapsed
         var anchor: Anchor = .notch
         var itemCount = 0
+        var taskRunning = false
 
         /// Advance. `now` makes dwell/grace decisions deterministic.
         mutating func handle(_ e: Event, settings s: Settings, now: Date) {
@@ -71,6 +76,10 @@ enum NotchSurfaceMachine {
             switch e {
             case .disabled, .dismiss:
                 collapse()
+            case .taskStarted:
+                taskRunning = true
+            case .taskEnded:
+                taskRunning = false
             case .activate:
                 if case .expanded = state { return }
                 open(at: .notch)
@@ -100,6 +109,7 @@ enum NotchSurfaceMachine {
                 break                               // whatever is open stays open
             case .pointerAway(let since):
                 guard state.isOpen, now.timeIntervalSince(since) >= s.leaveGrace else { return }
+                if taskRunning { return }
                 // The shaken-open tray holding files never auto-closes: the user dropped them to
                 // act on them next, and a tray that vanished mid-task was a reported bug. At the
                 // notch the files are not lost either — the collapsed badge keeps showing them.
