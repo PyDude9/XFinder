@@ -16,6 +16,10 @@ echo "=== 2. Every wrapped literal in the app resolves to a translation ==="
 python3 scripts/audit-l10n-literals.py 2>&1 | sed -n '1,3p'
 
 echo
+echo "=== 2b. No Vietnamese left outside \\( ) in an interpolated string (leak shape #7) ==="
+python3 scripts/audit-l10n-interpolations.py
+
+echo
 echo "=== 3. Reachability audit: Vietnamese-returning declarations in Core/ ==="
 python3 scripts/audit-l10n-reachability.py 2>&1 | tail -3
 

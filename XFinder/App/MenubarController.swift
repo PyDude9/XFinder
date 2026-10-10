@@ -605,7 +605,7 @@ struct MenubarFlyoutView: View {
                 closePopover()
                 EdgeNotesController.shared.revealAll()
             }
-            Text(L10n.t("\(noteStore.notes.filter { !$0.isArchived }.count) ghi chú đang dùng"))
+            Text("\(noteStore.notes.filter { !$0.isArchived }.count)\(L10n.t(" ghi chú đang dùng"))")
                 .font(.system(size: 11)).foregroundColor(.secondary)
             if !edgeNotesEnabled {
                 Text(L10n.t("Bật “Ghi chú ở mép màn hình” trong Cài đặt để dùng."))

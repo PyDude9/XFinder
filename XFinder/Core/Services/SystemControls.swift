@@ -155,7 +155,7 @@ enum SystemControls {
             if code == -1743 || code == -600 {
                 return .notPermitted
             }
-            return .failed((err[NSAppleScript.errorMessage] as? String) ?? "Lỗi \(code)")
+            return .failed((err[NSAppleScript.errorMessage] as? String) ?? "\(L10n.t("Lỗi "))\(code)")
         }.value
 
         guard case .ok = runResult else { return runResult }

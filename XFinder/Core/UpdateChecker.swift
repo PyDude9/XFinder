@@ -61,7 +61,7 @@ final class UpdateChecker {
                     return
                 }
                 guard code == 200 else {
-                    state = .failed("GitHub trả về mã \(code)")
+                    state = .failed("\(L10n.t("GitHub trả về mã "))\(code)")
                     return
                 }
                 let release = try JSONDecoder().decode(Release.self, from: data)

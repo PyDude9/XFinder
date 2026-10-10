@@ -114,7 +114,7 @@ final class QuickShareController {
                         self?.port = listener.port?.rawValue ?? 0
                         self?.isRunning = true
                     case .failed(let error):
-                        self?.lastError = "Không mở được cổng: \(error.localizedDescription)"
+                        self?.lastError = "\(L10n.t("Không mở được cổng: "))\(error.localizedDescription)"
                         self?.stop()
                     default: break
                     }
@@ -124,7 +124,7 @@ final class QuickShareController {
             self.listener = listener
             startSweep()
         } catch {
-            lastError = "Không khởi động được máy chủ: \(error.localizedDescription)"
+            lastError = "\(L10n.t("Không khởi động được máy chủ: "))\(error.localizedDescription)"
         }
     }
 

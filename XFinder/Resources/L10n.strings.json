@@ -2225,10 +2225,6 @@
       "en": "Date range",
       "scope": "sentence"
     },
-    "Khoảng trang không hợp lệ (tài liệu có ": {
-      "en": "Invalid page range (document has ",
-      "scope": "fragment"
-    },
     "Khóa SSH (để trống = dùng khóa mặc định)": {
       "en": "SSH key (blank = use default key)",
       "scope": "sentence"
@@ -2331,10 +2327,6 @@
     },
     "Không dùng cách “ẩn thư mục” (chflags hidden) vì ai cũng có thể hiện lại trong vài giây — đó không phải bảo mật thật.": {
       "en": "Does not use the “hide the folder” trick (chflags hidden), because anyone can reveal it again in seconds — that is not real security.",
-      "scope": "sentence"
-    },
-    "Không ghi được tập tin đích": {
-      "en": "Couldn't write the destination file",
       "scope": "sentence"
     },
     "Không ghi được vào Keychain.": {
@@ -2463,10 +2455,6 @@
     },
     "Không đọc được trạng thái SMART của ổ này": {
       "en": "Couldn't read this drive's SMART status",
-      "scope": "sentence"
-    },
-    "Không đọc được tập tin PDF": {
-      "en": "Couldn't read the PDF file",
       "scope": "sentence"
     },
     "Không đọc được độ sáng — máy này có thể chỉ dùng màn hình ngoài.": {
@@ -7186,6 +7174,50 @@
     "Không đặt được tệp đã giải nén vào thư mục đích.": {
       "en": "Could not place the extracted files in the destination folder.",
       "scope": "sentence"
+    },
+    "Không đọc được tập tin PDF: ": {
+      "en": "Could not read the PDF file: ",
+      "scope": "fragment"
+    },
+    "Khoảng trang không hợp lệ. Số trang của tài liệu: ": {
+      "en": "Invalid page range. Pages in the document: ",
+      "scope": "fragment"
+    },
+    "Không ghi được tập tin đích: ": {
+      "en": "Could not write the output file: ",
+      "scope": "fragment"
+    },
+    " trang) → ": {
+      "en": " pages) → ",
+      "scope": "fragment"
+    },
+    " trang → ": {
+      "en": " pages → ",
+      "scope": "fragment"
+    },
+    " trang ": {
+      "en": " pages ",
+      "scope": "fragment"
+    },
+    "Không mở được cổng: ": {
+      "en": "Could not open the port: ",
+      "scope": "fragment"
+    },
+    "Không khởi động được máy chủ: ": {
+      "en": "Could not start the server: ",
+      "scope": "fragment"
+    },
+    "GitHub trả về mã ": {
+      "en": "GitHub returned status ",
+      "scope": "fragment"
+    },
+    "Lỗi ": {
+      "en": "Error ",
+      "scope": "fragment"
+    },
+    " trang": {
+      "en": " pages",
+      "scope": "fragment"
     }
   }
 }

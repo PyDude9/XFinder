@@ -82,7 +82,7 @@ struct PdfToolsDetailView: View {
                             }
                         }
                         if !sources.isEmpty, tool != .merge, inspectedPageCount > 0 {
-                            Text("\(L10n.t("Tài liệu có "))\(inspectedPageCount) trang")
+                            Text("\(L10n.t("Tài liệu có "))\(inspectedPageCount)\(L10n.t(" trang"))")
                                 .font(XFinderTokens.Font.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -146,9 +146,7 @@ struct PdfToolsDetailView: View {
                 Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 Button {
-                    Task.detached(priority: .userInitiated) {
-                        await run()
-                    }
+                    Task { await run() }
                 } label: {
                     HStack {
                         if isRunning { ProgressView().scaleEffect(0.7) }
@@ -206,111 +204,35 @@ struct PdfToolsDetailView: View {
         sources.swapAt(i, i + 1)
     }
 
-    // MARK: - Page range parsing ("1-3", "2,5,7", "" = all)
-
-    private func parsePages(total: Int, allowEmptyAll: Bool) -> [Int]? {
-        let t = pageRangeText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if t.isEmpty { return allowEmptyAll ? Array(0..<total) : nil }
-        var pages = Set<Int>()
-        for part in t.split(separator: ",") {
-            let p = part.trimmingCharacters(in: .whitespaces)
-            if p.contains("-") {
-                let bounds = p.split(separator: "-").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
-                guard bounds.count == 2, bounds[0] >= 1, bounds[1] <= total, bounds[0] <= bounds[1] else { return nil }
-                pages.formUnion(bounds[0]...bounds[1])
-            } else if let n = Int(p), n >= 1, n <= total {
-                pages.insert(n)
-            } else {
-                return nil
-            }
-        }
-        return pages.sorted().map { $0 - 1 }
-    }
-
-    // MARK: - Run (background thread; PDFKit is thread-safe for this use)
+    // MARK: - Run — PdfRunner does the work off the main thread; output names never replace a file
 
     private func run() async {
         await MainActor.run { isRunning = true; resultMessage = nil }
-        defer { Task { await MainActor.run { isRunning = false } } }
-        switch tool {
-        case .merge: await doMerge()
-        case .extract: await doExtract()
-        case .rotate: await doRotate()
-        }
-    }
-
-    private func destDir(first: URL) -> URL {
-        outputFolder ?? first.deletingLastPathComponent()
-    }
-
-    private func doMerge() async {
-        var docs: [PDFDocument] = []
-        for url in sources {
-            guard let d = PDFDocument(url: url) else {
-                return finish(error: "\(L10n.t("Không đọc được "))\(url.lastPathComponent)")
+        let tool = self.tool, sources = self.sources, range = pageRangeText, angle = self.angle
+        let folder = outputFolder ?? sources.first?.deletingLastPathComponent() ?? FileManager.default.temporaryDirectory
+        let outcome: Result<PdfRunner.Output, PdfRunner.Failure> = await Task.detached(priority: .userInitiated) {
+            switch tool {
+            case .merge: return PdfRunner.merge(sources, into: folder)
+            case .extract: return PdfRunner.extract(sources[0], range: range, into: folder)
+            case .rotate: return PdfRunner.rotate(sources[0], range: range, degrees: angle, into: folder)
             }
-            docs.append(d)
-        }
-        let out = PDFDocument()
-        var idx = 0
-        for d in docs {
-            for i in 0..<d.pageCount {
-                guard let page = d.page(at: i) else { continue }
-                out.insert(page, at: idx)
-                idx += 1
+        }.value
+        await MainActor.run {
+            isRunning = false
+            switch outcome {
+            case .failure(let f):
+                finish(error: "\(L10n.t(f.messageKey))\(f.detail)")
+            case .success(let o):
+                let name = o.url.lastPathComponent
+                switch tool {
+                case .merge:
+                    finish(error: nil, message: "\(L10n.t("Đã gộp "))\(sources.count)\(L10n.t(" tập tin ("))\(o.pages)\(L10n.t(" trang) → "))\(name)")
+                case .extract:
+                    finish(error: nil, message: "\(L10n.t("Đã tách "))\(o.pages)\(L10n.t(" trang → "))\(name)")
+                case .rotate:
+                    finish(error: nil, message: "\(L10n.t("Đã xoay "))\(o.pages)\(L10n.t(" trang "))\(angle)° → \(name)")
+                }
             }
-        }
-        let dest = destDir(first: sources[0])
-            .appendingPathComponent("Merged-\(Int(Date().timeIntervalSince1970))")
-            .appendingPathExtension("pdf")
-        if out.write(to: dest) {
-            finish(error: nil, message: "\(L10n.t("Đã gộp "))\(sources.count)\(L10n.t(" tập tin ("))\(idx) trang) → \(dest.lastPathComponent)")
-        } else {
-            finish(error: L10n.t("Không ghi được tập tin đích"))
-        }
-    }
-
-    private func doExtract() async {
-        guard let src = sources.first, let doc = PDFDocument(url: src) else {
-            return finish(error: L10n.t("Không đọc được tập tin PDF"))
-        }
-        guard let pages = parsePages(total: doc.pageCount, allowEmptyAll: false) else {
-            return finish(error: "\(L10n.t("Khoảng trang không hợp lệ (tài liệu có "))\(doc.pageCount) trang)")
-        }
-        let out = PDFDocument()
-        for (i, p) in pages.enumerated() {
-            guard let page = doc.page(at: p) else { continue }
-            out.insert(page, at: i)
-        }
-        let dest = destDir(first: src)
-            .appendingPathComponent("\(src.deletingPathExtension().lastPathComponent)-pages")
-            .appendingPathExtension("pdf")
-        if out.write(to: dest) {
-            finish(error: nil, message: "\(L10n.t("Đã tách "))\(pages.count) trang → \(dest.lastPathComponent)")
-        } else {
-            finish(error: L10n.t("Không ghi được tập tin đích"))
-        }
-    }
-
-    private func doRotate() async {
-        guard let src = sources.first, let doc = PDFDocument(url: src) else {
-            return finish(error: L10n.t("Không đọc được tập tin PDF"))
-        }
-        guard let pages = parsePages(total: doc.pageCount, allowEmptyAll: true) else {
-            return finish(error: "\(L10n.t("Khoảng trang không hợp lệ (tài liệu có "))\(doc.pageCount) trang)")
-        }
-        for p in pages {
-            if let page = doc.page(at: p) {
-                page.rotation = (page.rotation + angle) % 360
-            }
-        }
-        let dest = destDir(first: src)
-            .appendingPathComponent("\(src.deletingPathExtension().lastPathComponent)-rotated")
-            .appendingPathExtension("pdf")
-        if doc.write(to: dest) {
-            finish(error: nil, message: "\(L10n.t("Đã xoay "))\(pages.count) trang \(angle)° → \(dest.lastPathComponent)")
-        } else {
-            finish(error: L10n.t("Không ghi được tập tin đích"))
         }
     }
 
