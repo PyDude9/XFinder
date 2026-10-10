@@ -30,3 +30,4 @@ claude.md
 .v2c/
 .zcode/
 .zcodeignore
+dist/

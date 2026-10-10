@@ -81,6 +81,8 @@ Một số chỉ số macOS không cung cấp API công khai, XFinder hiển th�
 
 Tải bản mới nhất ở trang [Releases](https://github.com/PyDude9/XFinder/releases), giải nén và kéo `XFinder.app` vào thư mục `/Applications`.
 
+**Bản phát hành được ký bằng chứng chỉ tự tạo** (chưa có Developer ID, chưa được Apple notarize), nên macOS sẽ chặn lần mở đầu của bản tải về (đã đo: `spctl` trả `rejected`). Cách mở: vào **Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Vẫn mở**, hoặc gỡ cờ cách ly bằng `xattr -dr com.apple.quarantine /Applications/XFinder.app`. Đối chiếu tệp tải về với `.sha256` đi kèm. Chỉ Apple Silicon (arm64).
+
 Trong app, mở **Giới thiệu → Kiểm tra cập nhật** để so sánh phiên bản đang chạy với bản phát hành mới nhất trên GitHub.
 
 ### Quyền cần cấp

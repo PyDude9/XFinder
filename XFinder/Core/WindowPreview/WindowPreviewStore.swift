@@ -2,9 +2,6 @@ import Foundation
 import AppKit
 import ApplicationServices
 
-@_silgen_name("_AXUIElementGetWindow")
-private func _AXUIElementGetWindowFromRef(_ element: AXUIElement, _ identifier: UnsafeMutablePointer<CGWindowID>) -> AXError
-
 private func checkWindowMinimized(windowID: CGWindowID, pid: pid_t) -> Bool {
     let appElement = AXUIElementCreateApplication(pid)
     var windowsRef: CFTypeRef?
@@ -12,7 +9,7 @@ private func checkWindowMinimized(windowID: CGWindowID, pid: pid_t) -> Bool {
        let windows = windowsRef as? [AXUIElement] {
         for win in windows {
             var wid: CGWindowID = 0
-            if _AXUIElementGetWindowFromRef(win, &wid) == .success, wid == windowID {
+            if axGetWindowID(win, &wid) == .success, wid == windowID {
                 var minRef: CFTypeRef?
                 if AXUIElementCopyAttributeValue(win, kAXMinimizedAttribute as CFString, &minRef) == .success,
                    let isMini = minRef as? Bool {

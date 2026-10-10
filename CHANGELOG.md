@@ -2,6 +2,32 @@
 
 Tất cả thay đổi đáng chú ý của XFinder được ghi ở đây, mới nhất ở trên.
 
+## [1.2.0] — 2026-10
+
+Gộp luôn các thay đổi của 1.1.1 (chưa từng được phát hành riêng) bên dưới.
+
+### Tính năng & Quyền (trang mới) và thiết lập lần đầu
+- Trang **Tính năng & Quyền**: công tắc từng tính năng chạy nền (ghi đúng khoá mà chính tính năng đó đọc), nhãn chi phí khi rảnh, ba gói (Cửa sổ / Clipboard / Yên tĩnh), tab **Quyền** (đã cấp/chưa, ai dùng, cảnh báo quyền thừa). Các điều khiển máy (âm lượng, thiết bị âm thanh ra, độ sáng, sáng/tối, chống ngủ, tự ẩn Dock) dồn vào đầu tab Tính năng; trang "Điều khiển nhanh" cũ đã gộp vào đây.
+- **Thiết lập lần đầu**: chọn gói Tối giản / Hằng ngày / Tất cả rồi chỉ xin quyền mà lựa chọn đó dùng. XFinder không còn tự xin Trợ năng, Ghi màn hình, Bluetooth ngay khi mở.
+- **Sao lưu cài đặt**: xuất/nhập JSON (chỉ cài đặt; tệp nhập được coi là đầu vào không tin cậy).
+- Ô **tìm trang** ở sidebar (gõ không dấu, khớp cả hai ngôn ngữ).
+
+### Tính năng mới
+- **Cổng đang mở**: tiến trình nào đang giữ cổng, Dừng / Buộc dừng có xác nhận. Quét bằng `libproc` (netstat trả 0 byte khi bị spawn); không thấy tiến trình hệ thống/người dùng khác và nói rõ điều đó.
+- **Giữ ⌘Q để thoát** (opt-in), **Làm sạch liên kết** khi sao chép, **Tự xoá clipboard**, **chọn thiết bị âm thanh ra**, **lấy màu từ màn hình**.
+- **Popover thanh menu** dựng lại: tab, công tắc tính năng nhóm gập, chọn mục hiển thị.
+- **GPU %** (đọc từ IORegistry) và **SMART** hiển thị thật thay cho placeholder sai.
+
+### Sửa lỗi đáng kể
+- `VolumeObserver` đăng ký listener nhân đôi mỗi lần đổi thiết bị (63 lần rebind trên 6 lần đổi) và điếc khi không có output.
+- Ba công tắc không nối vào đâu (xem cửa sổ ẩn ⌘-Tab, gợi ý clipboard, xem trước liên kết): hai cái được nối thật, một cái bị gỡ.
+- Cửa sổ thiết lập không dùng sheet vì sheet làm ⌘Q không thoát được.
+
+### Giới hạn đã biết
+- Bản này **ký bằng chứng chỉ tự tạo**, không có Developer ID và chưa được Apple notarize; Gatekeeper sẽ chặn lần mở đầu — xem ghi chú phát hành để mở.
+- Chỉ Apple Silicon (arm64).
+- Chưa kiểm bằng chuột/micro thật: cử chỉ chuột chạy thật, nhập giọng nói.
+
 ## [1.1.1] — 2026-09
 
 ### Chuột & cử chỉ

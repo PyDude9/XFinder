@@ -3,6 +3,14 @@ import AppKit
 import Combine
 import ScreenCaptureKit
 
+/// The ONE declaration of the private `_AXUIElementGetWindow` symbol. It is a FREE function on
+/// purpose: a `@_silgen_name` on a `static` method is compiled with the method convention (an extra
+/// metatype argument), and with a second declaration of the same symbol elsewhere the Release
+/// (whole-module) build fails with "function type mismatch" while Debug silently built — the app
+/// could not be released until this was the only declaration.
+@_silgen_name("_AXUIElementGetWindow")
+func axGetWindowID(_ element: AXUIElement, _ identifier: UnsafeMutablePointer<CGWindowID>) -> AXError
+
 /// Window operations on public APIs only:
 /// - Listing: `CGWindowListCopyWindowInfo` (public, no entitlement).
 /// - Thumbnails: **ScreenCaptureKit** (`SCScreenshotManager`). The old
@@ -26,9 +34,6 @@ enum WindowManager {
         var isOnScreen: Bool
     }
 
-    @_silgen_name("_AXUIElementGetWindow")
-    private static func _AXUIElementGetWindow(_ element: AXUIElement, _ identifier: UnsafeMutablePointer<CGWindowID>) -> AXError
-
     public static func isWindowMinimized(windowID: CGWindowID, pid: pid_t) -> Bool {
         let appElement = AXUIElementCreateApplication(pid)
         var windowsRef: CFTypeRef?
@@ -36,7 +41,7 @@ enum WindowManager {
            let windows = windowsRef as? [AXUIElement] {
             for win in windows {
                 var wid: CGWindowID = 0
-                if _AXUIElementGetWindow(win, &wid) == .success, wid == windowID {
+                if axGetWindowID(win, &wid) == .success, wid == windowID {
                     var minRef: CFTypeRef?
                     if AXUIElementCopyAttributeValue(win, kAXMinimizedAttribute as CFString, &minRef) == .success,
                        let isMini = minRef as? Bool {
