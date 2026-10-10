@@ -7,7 +7,7 @@ import Foundation
 ///
 /// The job (Part 0): *"choose what XFinder runs, and see what it is allowed to do."*
 enum AppPermission: String, CaseIterable, Equatable {
-    case accessibility, screenRecording, microphone, speechRecognition
+    case accessibility, screenRecording, microphone, speechRecognition, notifications
 
     /// L10n store keys (Vietnamese literals, translated at the view).
     var titleKey: String {
@@ -16,6 +16,7 @@ enum AppPermission: String, CaseIterable, Equatable {
         case .screenRecording:   return "Ghi màn hình"
         case .microphone:        return "Micro"
         case .speechRecognition: return "Nhận dạng giọng nói"
+        case .notifications:     return "Thông báo"
         }
     }
     var purposeKey: String {
@@ -24,6 +25,7 @@ enum AppPermission: String, CaseIterable, Equatable {
         case .screenRecording:   return "Cho phép hiện ảnh thu nhỏ cửa sổ."
         case .microphone:        return "Cho phép nghe giọng bạn khi nhập bằng giọng nói."
         case .speechRecognition: return "Cho phép chuyển giọng nói thành chữ."
+        case .notifications:     return "Cho Cảnh báo hiện thêm trong Trung tâm thông báo. Không bắt buộc: cảnh báo luôn hiện bằng biểu ngữ của XFinder. Bản ký bằng chứng chỉ tự tạo bị macOS từ chối quyền này."
         }
     }
     var symbol: String {
@@ -32,6 +34,7 @@ enum AppPermission: String, CaseIterable, Equatable {
         case .screenRecording:   return "rectangle.dashed.badge.record"
         case .microphone:        return "mic.fill"
         case .speechRecognition: return "waveform"
+        case .notifications:     return "bell.badge"
         }
     }
     /// Deep link to the pane. macOS opens a PANE, never a row inside it (CLAUDE.md Part 3c).
@@ -41,6 +44,7 @@ enum AppPermission: String, CaseIterable, Equatable {
         case .screenRecording:   return "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"
         case .microphone:        return "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
         case .speechRecognition: return "x-apple.systempreferences:com.apple.preference.security?Privacy_SpeechRecognition"
+        case .notifications:     return "x-apple.systempreferences:com.apple.Notifications-Settings.extension"
         }
     }
 }

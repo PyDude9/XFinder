@@ -118,7 +118,8 @@ final class FeatureCatalogTests: XCTestCase {
     func testEveryPermissionHasTextASymbolAndAPaneLink() {
         for p in AppPermission.allCases {
             XCTAssertFalse(p.titleKey.isEmpty); XCTAssertFalse(p.purposeKey.isEmpty)
-            XCTAssertTrue(p.settingsURL.hasPrefix("x-apple.systempreferences:com.apple.preference.security?Privacy_"))
+            XCTAssertTrue(p.settingsURL.hasPrefix("x-apple.systempreferences:com.apple.preference.security?Privacy_")
+                          || p.settingsURL == "x-apple.systempreferences:com.apple.Notifications-Settings.extension", p.settingsURL)
             XCTAssertNotNil(URL(string: p.settingsURL))
         }
         XCTAssertEqual(Set(AppPermission.allCases.map(\.settingsURL)).count, AppPermission.allCases.count)

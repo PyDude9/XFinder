@@ -31,7 +31,11 @@ final class OnboardingTests: XCTestCase {
         XCTAssertEqual(Onboarding.neededPermissions(for: [.voice, .dockPreview]),
                        [.accessibility, .screenRecording, .microphone, .speechRecognition], "no duplicates, stable order")
         XCTAssertEqual(Onboarding.neededPermissions(for: []), [])
-        XCTAssertEqual(Onboarding.neededPermissions(for: Set(FeatureID.allCases)), AppPermission.allCases)
+        // Every permission some feature lists — not every case: `.notifications` is optional (Alerts
+        // always draw their own banner), so no feature requires it and setup must not ask for it.
+        let referenced = AppPermission.allCases.filter { p in FeatureCatalog.all.contains { $0.permissions.contains(p) } }
+        XCTAssertEqual(Onboarding.neededPermissions(for: Set(FeatureID.allCases)), referenced)
+        XCTAssertFalse(referenced.contains(.notifications), "no feature may REQUIRE Notification Center (refused for self-signed builds)")
     }
 
     func testAPermissionIsNeverRequestedForAFeatureThatIsOff() {

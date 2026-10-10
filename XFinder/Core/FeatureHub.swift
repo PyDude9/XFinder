@@ -1,6 +1,7 @@
 import AppKit
 import AVFoundation
 import Speech
+import UserNotifications
 
 /// The live half of the Features hub. It owns NO state of its own: a feature is on or off
 /// according to the same UserDefaults key its engine reads (`FeatureCatalog` is verified against
@@ -18,6 +19,8 @@ final class FeatureHub {
     private(set) var revision = 0
 
     private var refCount = 0
+    /// Notification Center authorization is async; cached here and refreshed on retain()/activation.
+    private var notificationsGranted = false
     private var observers: [NSObjectProtocol] = []
 
     init() {}
@@ -28,8 +31,9 @@ final class FeatureHub {
         refCount += 1
         guard refCount == 1 else { return }
         let bump: @Sendable (Notification) -> Void = { [weak self] _ in
-            Task { @MainActor in self?.revision += 1 }
+            Task { @MainActor in self?.refreshNotificationStatus(); self?.revision += 1 }
         }
+        refreshNotificationStatus()
         observers = [
             NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main, using: bump),
             // Returning from System Settings after granting a permission.
@@ -103,6 +107,14 @@ final class FeatureHub {
 
     // MARK: Permissions
 
+    private func refreshNotificationStatus() {
+        Task { @MainActor in
+            let s = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+            let granted = s == .authorized || s == .provisional
+            if granted != notificationsGranted { notificationsGranted = granted; revision += 1 }
+        }
+    }
+
     func granted() -> [AppPermission: Bool] {
         _ = revision
         return [
@@ -110,6 +122,7 @@ final class FeatureHub {
             .screenRecording: CGPreflightScreenCaptureAccess(),
             .microphone: AVCaptureDevice.authorizationStatus(for: .audio) == .authorized,
             .speechRecognition: SFSpeechRecognizer.authorizationStatus() == .authorized,
+            .notifications: notificationsGranted,
         ]
     }
 
@@ -131,6 +144,14 @@ final class FeatureHub {
             if SFSpeechRecognizer.authorizationStatus() == .notDetermined {
                 SFSpeechRecognizer.requestAuthorization { _ in Task { @MainActor in self.revision += 1 } }
             } else { openSettings(for: p) }
+        case .notifications:
+            // Measured: self-signed builds get `.denied` without a prompt and are not listed in the
+            // pane. Ask anyway (a Developer-ID build will prompt), then show the pane.
+            Task { @MainActor in
+                _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
+                refreshNotificationStatus()
+                openSettings(for: p)
+            }
         }
     }
 
