@@ -80,57 +80,11 @@ final class ScreenTextCopier {
     }
 }
 
-/// A short confirmation panel, same behaviour as the colour picker's: non-activating,
-/// mouse-transparent, one one-shot hide.
+/// OCR confirmations — a `ToastSurface(.toast)`.
 @MainActor
 final class TextToast {
-    private var panel: NSPanel?
-    private var hideWork: DispatchWorkItem?
-
+    private let surface = ToastSurface(style: .toast)
     func show(icon: String, title: String, detail: String) {
-        hideWork?.cancel()
-        panel?.orderOut(nil)
-        let size = NSSize(width: 340, height: 62)
-        let host = NSHostingController(rootView: TextToastView(icon: icon, title: title, detail: detail))
-        host.view.frame = NSRect(origin: .zero, size: size)
-        let p = NSPanel(contentRect: NSRect(origin: .zero, size: size),
-                        styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-        p.contentViewController = host
-        p.isOpaque = false
-        p.backgroundColor = .clear
-        p.hasShadow = true
-        p.level = .statusBar
-        p.hidesOnDeactivate = false
-        p.ignoresMouseEvents = true
-        p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main ?? NSScreen.screens.first
-        if let frame = screen?.visibleFrame {
-            p.setFrameOrigin(NSPoint(x: frame.midX - size.width / 2, y: frame.maxY - size.height - 72))
-        }
-        p.orderFrontRegardless()
-        panel = p
-        let work = DispatchWorkItem { [weak self] in
-            MainActor.assumeIsolated { self?.panel?.orderOut(nil); self?.panel = nil }
-        }
-        hideWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4, execute: work)
-    }
-}
-
-struct TextToastView: View {
-    let icon: String, title: String, detail: String
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon).font(.system(size: 20)).foregroundColor(.accentColor).frame(width: 28)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.system(size: 13, weight: .semibold))
-                Text(detail).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 16).padding(.vertical, 10)
-        .frame(width: 340, height: 62)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        surface.show(symbol: icon, title: title, detail: detail, duration: 2.4)
     }
 }

@@ -51,74 +51,12 @@ final class ScreenColorPicker {
     }
 }
 
-/// A short "Copied #RRGGBB" confirmation. The flyout that started the pick has already closed, so
-/// without this the user would get no sign anything happened. Non-activating and
-/// mouse-transparent, like the other floating panels (never `NSApp.activate`).
+/// "Copied #RRGGBB" confirmation — a `ToastSurface(.compact)` showing the colour as a swatch.
+/// Kept as a named type so the picker's call site and the e2e probe (230×54 panel) stay unchanged.
 @MainActor
 final class ColorToast {
-    private var panel: NSPanel?
-    private var hideWork: DispatchWorkItem?
-
+    private let surface = ToastSurface(style: .compact)
     func show(hex: String, color: NSColor) {
-        hideWork?.cancel()
-        panel?.orderOut(nil)
-        let size = NSSize(width: 230, height: 54)
-        let host = NSHostingController(rootView: ColorToastView(hex: hex, color: color))
-        host.view.frame = NSRect(origin: .zero, size: size)
-        let p = NSPanel(contentRect: NSRect(origin: .zero, size: size),
-                        styleMask: [.borderless, .nonactivatingPanel],
-                        backing: .buffered, defer: false)
-        p.contentViewController = host
-        p.isOpaque = false
-        p.backgroundColor = .clear
-        p.hasShadow = true
-        p.level = .statusBar
-        p.hidesOnDeactivate = false
-        p.ignoresMouseEvents = true
-        p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient, .ignoresCycle]
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) })
-            ?? NSScreen.main ?? NSScreen.screens.first
-        if let frame = screen?.visibleFrame {
-            p.setFrameOrigin(NSPoint(x: frame.midX - size.width / 2, y: frame.maxY - size.height - 72))
-        }
-        p.orderFrontRegardless()
-        panel = p
-
-        // One one-shot hide; nothing runs after it.
-        let work = DispatchWorkItem { [weak self] in
-            MainActor.assumeIsolated {
-                self?.panel?.orderOut(nil)
-                self?.panel = nil
-            }
-        }
-        hideWork = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8, execute: work)
-    }
-}
-
-struct ColorToastView: View {
-    let hex: String
-    let color: NSColor
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(Color(nsColor: color))
-                .frame(width: 26, height: 26)
-                .overlay(Circle().strokeBorder(Color.primary.opacity(0.25), lineWidth: 1))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(L10n.t("Đã sao chép"))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                Text(hex)
-                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .frame(width: 230, height: 54)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        surface.show(symbol: "eyedropper", title: L10n.t("Đã sao chép"), detail: hex, swatch: color, duration: 1.8)
     }
 }
