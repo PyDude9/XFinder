@@ -14,7 +14,12 @@ VI=re.compile(r"[À-ỹ]")
 orig_lang=sh("defaults","read",D,"AppLanguage").stdout.strip() or "vietnamese"
 def dump():
     sh("osascript","-e",'tell application "XFinder" to activate'); time.sleep(0.4)
-    out=sh("/usr/bin/env","swift",f"{REPO}/docs/probes/probe-ax-dump.swift",pid()).stdout
+    r=sh("/usr/bin/env","swift",f"{REPO}/docs/probes/probe-ax-dump.swift",pid())
+    out=r.stdout
+    # The probe exits 3 when the session is locked: AX then hides every window, and a page full of
+    # zeros would read as a blank UI. Abort the whole sweep rather than report 33 fake failures.
+    if r.returncode==3 or "SCREEN LOCKED" in out:
+        sys.exit("ABORT: screen is locked — AX cannot see any window. Unlock and re-run; nothing was measured.")
     # restrict to the DETAIL side: drop the sidebar outline block
     lines=[l.strip() for l in out.splitlines() if l.strip().startswith(("AXStaticText:","AXButton:","AXCheckBox","AXHeading","AXRadioButton","AXPopUpButton","AXTextField","AXSlider"))]
     return lines

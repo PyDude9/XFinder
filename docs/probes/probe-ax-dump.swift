@@ -22,6 +22,17 @@ let maxDepth = args.count >= 3 ? (Int(args[2]) ?? 12) : 12
 
 print("AXIsProcessTrusted (this process): \(AXIsProcessTrusted())")
 
+// A locked session is not an empty page. Measured 2026-10-10 (macOS 27): while the screen is
+// locked, every app's AX server answers `AXWindows` / `AXFocusedWindow` with its own APPLICATION
+// element — Calculator included, with XFinder not even running — and System Events reports
+// "Invalid index" for window 1. TCC still says allowed (authValue=2). So a sweep run while the user
+// is away prints "0 text nodes" for every page and reads exactly like a blank UI. Refuse instead.
+if let session = CGSessionCopyCurrentDictionary() as? [String: Any],
+   (session["CGSSessionScreenIsLocked"] as? Bool) == true || (session["CGSSessionScreenIsLocked"] as? Int) == 1 {
+    print("SCREEN LOCKED — AX hides every window while the session is locked; this is not a measurement.")
+    exit(3)
+}
+
 let app = AXUIElementCreateApplication(pid)
 
 func attr(_ el: AXUIElement, _ name: String) -> CFTypeRef? {
