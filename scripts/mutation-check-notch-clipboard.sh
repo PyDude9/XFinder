@@ -48,6 +48,8 @@ run "D6 the Accessibility warning shows even with auto-paste off" $R \
   "'        if autoPaste && !accessibilityTrusted { return .accessibilityMissing }'" "'        if !accessibilityTrusted { return .accessibilityMissing }'"
 run "D7 the clipboard page is as short as the tray" XFinder/Core/Notch/NotchSurfaceLayout.swift \
   "'            page == .clipboard ? clipboardExpandedDrop : expandedDrop'" "'            expandedDrop'"
+run "D9 the clipboard page is as narrow as the tray (four cards cannot fit)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'            page == .clipboard ? clipboardExpandedWidth : expandedWidth'" "'            expandedWidth'"
 run "D8 the hotkey-surface reader defaults to the shelf (view says notch)" XFinder/Core/ClipboardShelfController.swift \
   "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"notch\"'" "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"shelf\"'"
 restore

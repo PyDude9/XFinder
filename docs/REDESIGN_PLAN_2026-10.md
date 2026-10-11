@@ -268,11 +268,13 @@ xem trước link **opt-in** (mạng).
 
 **D0 ✅ 2026-10-11** — Shelf ⌘⇧V dồn vào notch (wireframe B, `uiux/wf/wireframe.html?v=b`): một khoá
 `clipboard.hotkeySurface` (`notch` mặc định / `shelf`, một picker ở Cài đặt Clipboard), tap CGEvent của
-`ClipboardShelfController` giữ làm engine (⌘⇧V + chặn ⌘V cho Paste Stack), panel cũ chỉ còn sau picker. Trang notch:
-chip loại có số đếm (trên 1 000 mục đang nạp), menu Bảng ⌘1–9 (Lịch sử · Đã ghim · Đã lưu · Gợi ý · bảng), lưới 3×2 thẻ
-tối `NotchClipCardView`, phím ⇧↩/Space/⌘P/⌘⌫/⌘F/↑↓, khoá Touch ID, menu chuột phải đủ việc của shelf, hub cao theo
-trang (334 drop). Luật thuần `NotchClipboardRules` 11 test + 8 mutation. **Chưa đo tay thật ⌘⇧V** — đo qua
-`xfinder://clipboard` + CGWindowList.
+`ClipboardShelfController` giữ làm engine (⌘⇧V + chặn ⌘V cho Paste Stack), panel cũ chỉ còn sau picker. Trang notch
+(bản 2, theo ảnh + video OneNotch người dùng gửi): hub **752×232** dùng cả dải hai bên notch (tab trái, ô tìm + ✕ phải),
+hàng chip = Tất cả · Đã ghim · Đã lưu · Gợi ý · chip loại có số đếm · bảng · "+", menu Sắp xếp ở mép phải, **deck ngang**
+4 thẻ 174×122 (`NotchClipCardView`), phím ⇧↩/Space/⌘P/⌘⌫/⌘F/⌘1–9, khoá Touch ID, menu chuột phải đủ việc của shelf
+(+ Bảng ghim ▸). Hub theo trang: `NotchSurfaceLayout.expandedWidth/Drop(for:)`. Luật thuần `NotchClipboardRules` 11 test
++ 9 mutation. Fix kèm: lịch sử nạp rỗng lúc khởi động (DB mở sau fetch). **Chưa đo tay thật ⌘⇧V** — đo qua
+`xfinder://clipboard` + CGWindowList (752×232 tại x 488) + cây AX.
 
 ### Phase E — Smart Selection
 Lớp phát hiện vùng chọn qua AX (`kAXSelectedTextAttribute`, cần Trợ năng) + popup `SurfacePanel(.pointer)`; dịch (15+),

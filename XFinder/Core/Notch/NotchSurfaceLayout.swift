@@ -18,9 +18,16 @@ enum NotchSurfaceLayout {
         /// Expanded surface: width, and height below the notch (or total height at the pointer).
         var expandedWidth: CGFloat = 440
         var expandedDrop: CGFloat = 222   // B2d: + action row and result line
-        /// D0: the clipboard page is a 3×2 card grid with a chip row (wireframe B, 2026-10-11) and needs
-        /// more room than the tray or the player. The hub's height follows the page (review row 7).
-        var clipboardExpandedDrop: CGFloat = 334
+        /// D0: the clipboard page follows the OneNotch reference the user supplied — a WIDE hub whose top
+        /// band sits either side of the notch (tabs left, search right), a chip row, then ONE horizontal row
+        /// of four 174×122 cards. 752 = 4 × 174 + 3 × 8 + 2 × 12 (hub inset); its drop is 200 (band 32 +
+        /// chips + deck + footer). The hub's size follows the page; the other pages keep 440 × 222.
+        var clipboardExpandedWidth: CGFloat = 752
+        var clipboardExpandedDrop: CGFloat = 200
+
+        func expandedWidth(for page: NotchSurfaceMachine.Page) -> CGFloat {
+            page == .clipboard ? clipboardExpandedWidth : expandedWidth
+        }
 
         func expandedDrop(for page: NotchSurfaceMachine.Page) -> CGFloat {
             page == .clipboard ? clipboardExpandedDrop : expandedDrop
@@ -68,9 +75,9 @@ enum NotchSurfaceLayout {
         case .activity:
             return CGSize(width: notch.width + 2 * m.activityWing, height: notch.height + m.activityDrop)
         case .expanded(let page) where anchor == .pointer:
-            return CGSize(width: m.expandedWidth, height: m.expandedDrop(for: page))
+            return CGSize(width: m.expandedWidth(for: page), height: m.expandedDrop(for: page))
         case .expanded(let page):
-            return CGSize(width: max(m.expandedWidth, notch.width), height: notch.height + m.expandedDrop(for: page))
+            return CGSize(width: max(m.expandedWidth(for: page), notch.width), height: notch.height + m.expandedDrop(for: page))
         }
     }
 

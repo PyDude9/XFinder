@@ -12,8 +12,11 @@ struct NotchClipCardView: View {
     /// Position in the Paste Stack (1-based) while the stack holds this clip.
     let stackIndex: Int?
     let now: Date
+    /// 92 in a 3×2 grid; 122 in the horizontal deck (D0, OneNotch reference). Text lines follow it.
+    var height: CGFloat = 92
 
     private static let radius = XFinderTokens.Radius.tile
+    private var textLines: Int { height >= 120 ? 6 : 4 }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -22,7 +25,7 @@ struct NotchClipCardView: View {
                 .clipped()
             footer
         }
-        .frame(height: 92)
+        .frame(height: height)
         .background(RoundedRectangle(cornerRadius: Self.radius, style: .continuous).fill(Color.white.opacity(0.10)))
         .overlay(RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
             .strokeBorder(selected ? Color.accentColor : Color.clear, lineWidth: 2))
@@ -40,17 +43,17 @@ struct NotchClipCardView: View {
         case .link:
             Text(record.metadata["url"]?.isEmpty == false ? record.metadata["url"]! : record.displayPreview)
                 .font(.system(size: 11)).foregroundColor(.accentColor)
-                .lineLimit(4).multilineTextAlignment(.leading)
+                .lineLimit(textLines).multilineTextAlignment(.leading)
                 .padding(.horizontal, 9).padding(.top, 7)
         case .code, .markdown:
             Text(record.displayPreview)
                 .font(.system(size: 10.5, design: .monospaced)).foregroundColor(.white)
-                .lineLimit(4).multilineTextAlignment(.leading)
+                .lineLimit(textLines).multilineTextAlignment(.leading)
                 .padding(.horizontal, 9).padding(.top, 7)
         case .text, .merged:
             Text(record.displayPreview)
                 .font(.system(size: 11)).foregroundColor(.white)
-                .lineLimit(4).multilineTextAlignment(.leading)
+                .lineLimit(textLines).multilineTextAlignment(.leading)
                 .padding(.horizontal, 9).padding(.top, 7)
         }
     }

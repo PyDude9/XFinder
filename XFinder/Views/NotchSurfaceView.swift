@@ -76,7 +76,7 @@ struct NotchSurfaceView: View {
             shape.fill(Color.black)
             shape.strokeBorder(isTargeted ? Color.accentColor : Color.white.opacity(0.12), lineWidth: isTargeted ? 2 : 1)
             content
-                .padding(.top, atNotch ? model.notchSize.height : 0)
+                .padding(.top, (atNotch && !isClipboardHub) ? model.notchSize.height : 0)   // D0: that hub USES the notch band
         }
         .frame(width: size.width, height: size.height)
         .clipShape(shape)
@@ -97,7 +97,60 @@ struct NotchSurfaceView: View {
         case .collapsed: badge
         case .peek: if model.itemCount > 0 { peek } else { nowPlayingStrip }   // the machine peeks only with files or a track
         case .activity: activityStrip
+        case .expanded(.clipboard): clipboardShell
         case .expanded(let page): hubShell(page)
+        }
+    }
+
+    private var isClipboardHub: Bool { model.state == .expanded(.clipboard) }
+
+    /// D0, after the OneNotch reference the user supplied: the clipboard hub is wide enough to use the
+    /// band EITHER SIDE of the notch — page tabs on the left wing, search + close on the right — then
+    /// the chip row, one horizontal row of cards and the footer. The wings are symmetric so nothing is
+    /// drawn under the notch; at the pointer (a shaken tray switched to this tab) or on a screen without a
+    /// notch the gap is zero and the band is one continuous row.
+    private var clipboardShell: some View {
+        let inset = XFinderTokens.Space.inline
+        let notchGap: CGFloat = (atNotch && !plainScreen) ? model.notchSize.width : 0
+        let bandHeight: CGFloat = max(model.notchSize.height, 32)
+        let wing = max(0, (size.width - notchGap) / 2 - inset)
+        return VStack(alignment: .leading, spacing: XFinderTokens.Space.tight + 2) {
+            HStack(spacing: 0) {
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    pageTabs(current: .clipboard)
+                    // The empty part of the band moves a pointer-anchored tray (B1b rule: never over controls).
+                    Spacer(minLength: 0)
+                        .overlay { if !atNotch { WindowDragHandle().help(L10n.t("Kéo để dời khay")) } }
+                }
+                .frame(width: wing, alignment: .leading)
+                Color.clear.frame(width: notchGap)
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    NotchClipboardSearchField(model: model.clipboard)
+                    Button { NotchSurfaceController.shared.dismiss() } label: {
+                        Image(systemName: "xmark.circle.fill").opacity(0.65)
+                    }
+                    .buttonStyle(.plain)
+                    .help(L10n.t("Đóng"))
+                }
+                .frame(width: wing, alignment: .trailing)
+            }
+            .frame(height: bandHeight)
+
+            NotchClipboardView(model: model.clipboard)
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, inset)
+        .padding(.bottom, inset)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    /// The three page tabs (Now Playing only while its switch is on), shared by both hub shells.
+    @ViewBuilder private func pageTabs(current page: NotchSurfaceMachine.Page) -> some View {
+        pageTab(.files, icon: "tray.and.arrow.down.fill", title: L10n.t("Khay"),
+                badge: store.items.isEmpty ? nil : "\(store.items.count)", current: page)
+        pageTab(.clipboard, icon: "doc.on.clipboard.fill", title: "Clipboard", badge: nil, current: page)
+        if model.nowPlayingAvailability != .off {   // B6: only while the switch is on
+            pageTab(.nowPlaying, icon: "music.note", title: L10n.t("Đang phát"), badge: nil, current: page)
         }
     }
 
