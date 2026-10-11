@@ -18,6 +18,13 @@ enum NotchSurfaceLayout {
         /// Expanded surface: width, and height below the notch (or total height at the pointer).
         var expandedWidth: CGFloat = 440
         var expandedDrop: CGFloat = 222   // B2d: + action row and result line
+        /// D0: the clipboard page is a 3×2 card grid with a chip row (wireframe B, 2026-10-11) and needs
+        /// more room than the tray or the player. The hub's height follows the page (review row 7).
+        var clipboardExpandedDrop: CGFloat = 334
+
+        func expandedDrop(for page: NotchSurfaceMachine.Page) -> CGFloat {
+            page == .clipboard ? clipboardExpandedDrop : expandedDrop
+        }
         /// Live activity strip (B4): extra width each side of the notch, and its depth below it.
         var activityWing: CGFloat = 130
         var activityDrop: CGFloat = 36
@@ -60,10 +67,10 @@ enum NotchSurfaceLayout {
             return CGSize(width: notch.width + 2 * wing, height: notch.height + m.peekDrop)
         case .activity:
             return CGSize(width: notch.width + 2 * m.activityWing, height: notch.height + m.activityDrop)
-        case .expanded where anchor == .pointer:
-            return CGSize(width: m.expandedWidth, height: m.expandedDrop)
-        case .expanded:
-            return CGSize(width: max(m.expandedWidth, notch.width), height: notch.height + m.expandedDrop)
+        case .expanded(let page) where anchor == .pointer:
+            return CGSize(width: m.expandedWidth, height: m.expandedDrop(for: page))
+        case .expanded(let page):
+            return CGSize(width: max(m.expandedWidth, notch.width), height: notch.height + m.expandedDrop(for: page))
         }
     }
 

@@ -120,6 +120,15 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "notch.hoverSpeed",
                views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
                reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
+        // D0: where ⌘⇧V lands, and the Touch ID lock the notch page now honours (the shelf's own view
+        // binds the same key with @AppStorage inside the Core file — listed as a view on purpose).
+        Switch(key: "clipboard.hotkeySurface",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
+               reader: "XFinder/Core/ClipboardShelfController.swift"),
+        Switch(key: "clipboard.touchIDLock",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift",
+                       "XFinder/Core/ClipboardShelfController.swift"],
+               reader: "XFinder/Core/ClipboardShelfController.swift"),
     ]
 
     // MARK: - Source access

@@ -266,6 +266,14 @@ Thư viện Clipboard (hồi sinh `ClipboardTabView`, dọn `.clipboard`), board
 highlight code (xử lý trên máy), MCP server target (stdio), xuất `.xfinderclip` gộp cả board (mở rộng `SettingsTransfer`),
 xem trước link **opt-in** (mạng).
 
+**D0 ✅ 2026-10-11** — Shelf ⌘⇧V dồn vào notch (wireframe B, `uiux/wf/wireframe.html?v=b`): một khoá
+`clipboard.hotkeySurface` (`notch` mặc định / `shelf`, một picker ở Cài đặt Clipboard), tap CGEvent của
+`ClipboardShelfController` giữ làm engine (⌘⇧V + chặn ⌘V cho Paste Stack), panel cũ chỉ còn sau picker. Trang notch:
+chip loại có số đếm (trên 1 000 mục đang nạp), menu Bảng ⌘1–9 (Lịch sử · Đã ghim · Đã lưu · Gợi ý · bảng), lưới 3×2 thẻ
+tối `NotchClipCardView`, phím ⇧↩/Space/⌘P/⌘⌫/⌘F/↑↓, khoá Touch ID, menu chuột phải đủ việc của shelf, hub cao theo
+trang (334 drop). Luật thuần `NotchClipboardRules` 11 test + 8 mutation. **Chưa đo tay thật ⌘⇧V** — đo qua
+`xfinder://clipboard` + CGWindowList.
+
 ### Phase E — Smart Selection
 Lớp phát hiện vùng chọn qua AX (`kAXSelectedTextAttribute`, cần Trợ năng) + popup `SurfacePanel(.pointer)`; dịch (15+),
 tiền tệ (opt-in mạng), đơn vị, múi giờ, ngày → sự kiện Lịch (EventKit).

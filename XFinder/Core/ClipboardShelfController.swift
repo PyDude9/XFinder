@@ -75,6 +75,31 @@ final class ClipboardShelfController {
         UserDefaults.standard.object(forKey: "clipboard.autoPasteAfterSelection") as? Bool ?? true
     }
 
+    /// The ONE Core reader of `clipboard.touchIDLock` (the shelf's own view binds it with @AppStorage).
+    var touchIDLockEnabled: Bool {
+        UserDefaults.standard.object(forKey: "clipboard.touchIDLock") as? Bool ?? false
+    }
+
+    /// D0 — the ONE reader of `clipboard.hotkeySurface`: where ⌘⇧V lands. "notch" by default; the
+    /// floating shelf below stays available behind this setting.
+    var hotkeySurface: NotchClipboardRules.HotkeySurface {
+        NotchClipboardRules.hotkeySurface(parsing: UserDefaults.standard.string(forKey: "clipboard.hotkeySurface") ?? "notch")
+    }
+
+    /// ⌘⇧V (and the settings page's button). This controller stays the ENGINE — the event tap, the
+    /// Paste Stack's ⌘V interception — whichever surface the clip deck is drawn on. With the notch
+    /// surface switched off the hotkey still has to open something, so it falls back to the shelf.
+    func hotkeyPressed() {
+        switch NotchClipboardRules.surfaceToOpen(preferred: hotkeySurface,
+                                                 notchSurfaceEnabled: NotchSurfaceController.shared.isEnabled) {
+        case .notch:
+            if isOpen { close() }
+            NotchSurfaceController.shared.toggleClipboardFromHotkey()
+        case .shelf:
+            toggle()
+        }
+    }
+
     func applySettings() {
         guard hotkeyEnabled, WindowManager.isTrusted else {
             teardownTap()
@@ -135,9 +160,9 @@ final class ClipboardShelfController {
         let cmd = flags.contains(.maskCommand)
         let shift = flags.contains(.maskShift)
 
-        // ⌘⇧V — toggle the shelf.
+        // ⌘⇧V — the clipboard hotkey; which surface it opens is a setting (D0, `hotkeyPressed`).
         if cmd, shift, keyCode == 9 { // V
-            Task { @MainActor in self.toggle() }
+            Task { @MainActor in self.hotkeyPressed() }
             return nil
         }
 

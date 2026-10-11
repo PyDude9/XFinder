@@ -51,6 +51,9 @@ private struct ClipboardSettingsBody: View {
     @AppStorage("sync.icloudClipboard") private var icloudSync = false
     /// ⌘⇧V global shelf hotkey — read by `ClipboardShelfController.applySettings`.
     @AppStorage("clipboard.globalHotkey") private var globalHotkey = true
+    /// D0: where ⌘⇧V lands — the notch's clipboard page, or the old floating shelf. One reader:
+    /// `ClipboardShelfController.hotkeySurface`.
+    @AppStorage("clipboard.hotkeySurface") private var hotkeySurface = "notch"
     @AppStorage("clipboard.autoPasteAfterSelection") private var autoPaste = true
     @AppStorage("clipboard.excludeCreditCards") private var excludeCreditCards = true
     @AppStorage("clipboard.customExcludedApps") private var customExcludedApps = ""
@@ -88,11 +91,11 @@ private struct ClipboardSettingsBody: View {
             // chỉnh. Một nút nhảy sang trang nội dung để không mất lối tới.
             HStack(spacing: XFinderTokens.Space.inline) {
                 Image(systemName: "square.on.square").foregroundColor(.accentColor)
-                Text(L10n.t("Lịch sử copy hiển thị ở khay ⌘⇧V."))
+                Text(L10n.t("Lịch sử copy mở bằng ⌘⇧V, ở notch hoặc khay nổi."))
                     .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 Spacer()
-                Button(L10n.t("Mở khay clipboard (⌘⇧V)")) {
-                    ClipboardShelfController.shared.toggle()
+                Button(L10n.t("Mở clipboard (⌘⇧V)")) {
+                    ClipboardShelfController.shared.hotkeyPressed()
                 }
                 .buttonStyle(.bordered).controlSize(.small)
             }
@@ -103,13 +106,20 @@ private struct ClipboardSettingsBody: View {
             VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 SectionHeader(icon: "command",
                               title: L10n.t("Phím tắt & quyền"),
-                              subtitle: L10n.t("⌘⇧V mở khay clipboard nổi trên mọi ứng dụng"))
+                              subtitle: L10n.t("⌘⇧V mở clipboard trên mọi ứng dụng"))
 
                 ToggleRow(title: L10n.t("Phím tắt toàn cục ⌘⇧V"), isOn: $globalHotkey)
                     .padding(.horizontal, XFinderTokens.Space.page)
                     .onChange(of: globalHotkey) {
                         ClipboardShelfController.shared.applySettings()
                     }
+
+                // D0: one control, one key. The old shelf is kept behind it, not deleted.
+                PickerRow(title: L10n.t("⌘⇧V mở ở"), selection: $hotkeySurface, width: 150) {
+                    Text(L10n.t("Ở notch")).tag("notch")
+                    Text(L10n.t("Khay nổi cũ")).tag("shelf")
+                }
+                .padding(.horizontal, XFinderTokens.Space.page)
 
                 if !WindowManager.isTrusted {
                     InlineNote(kind: .warning,

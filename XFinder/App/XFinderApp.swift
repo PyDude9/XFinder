@@ -161,6 +161,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     .flatMap { SidebarDestination(rawValue: $0) } ?? .features
                 AppState.shared.navigate(to: dest)
             }
+        case "clipboard":
+            // D0: `xfinder://clipboard` = the ⌘⇧V hotkey (Shortcuts, scripts, probes) — the same router,
+            // so it honours `clipboard.hotkeySurface` and the notch surface's master switch.
+            Task { @MainActor in ClipboardShelfController.shared.hotkeyPressed() }
         default:
             break
         }
@@ -221,7 +225,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func toggleClipboardWindow() {
-        Task { @MainActor in ClipboardShelfController.shared.toggle() }
+        // D0: the in-app ⌘⇧V goes through the same router as the global one (notch or shelf).
+        Task { @MainActor in ClipboardShelfController.shared.hotkeyPressed() }
     }
 
     @objc func toggleToolsWindow() {

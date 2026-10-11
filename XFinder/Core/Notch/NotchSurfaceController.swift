@@ -1,4 +1,5 @@
 import AppKit
+import LocalAuthentication
 import SwiftUI
 
 /// The Notch surface — one floating surface that lives at the notch (or the top centre of a screen
@@ -355,31 +356,36 @@ final class NotchSurfaceController {
 
     func openPlayer() { NowPlayingMonitor.shared.openPlayer() }
 
-    // MARK: - Clipboard page (B5)
+    // MARK: - Clipboard page (B5; D0: the ⌘⇧V shelf lives here)
 
     private var clipboardKeyMonitor: Any?
+    private let quickLook = ClipboardQLController()
 
-    /// The clipboard page needs typing (its search field) and arrow keys. The panel becomes key
-    /// WITHOUT `NSApp.activate` (which would raise every XFinder window); `orderOut` on collapse
+    /// The surface's master switch, for the ⌘⇧V router in `ClipboardShelfController`.
+    var isEnabled: Bool { enabled }
+
+    /// ⌘⇧V, routed here while `clipboard.hotkeySurface` is "notch": toggles the clipboard page. The app
+    /// to paste back into is captured NOW, before anything appears (the shelf's `targetPID` rule);
+    /// pressing the hotkey from inside XFinder falls back to the last external app.
+    func toggleClipboardFromHotkey() {
+        if case .expanded(.clipboard) = state { dismiss(); return }
+        let front = NSWorkspace.shared.frontmostApplication
+        let pid = front?.bundleIdentifier == Bundle.main.bundleIdentifier ? ClipboardManager.shared.lastExternalPID : front?.processIdentifier
+        model.clipboard.beginSession(lockOn: ClipboardShelfController.shared.touchIDLockEnabled, targetPID: pid)
+        reveal(page: .clipboard)
+    }
+
+    /// The clipboard page needs typing (its search field) and the keys the shelf had. The panel becomes
+    /// key WITHOUT `NSApp.activate` (which would raise every XFinder window); `orderOut` on collapse
     /// gives the keyboard back. A LOCAL monitor is enough: the keys matter only while our panel is key.
     private func syncClipboardKeyboard() {
         if case .expanded(.clipboard) = machine.state {
             guard clipboardKeyMonitor == nil else { return }
+            model.clipboard.armLock(ClipboardShelfController.shared.touchIDLockEnabled)
             panel?.makeKeyAndOrderFront(nil)
             clipboardKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
                 guard let self, self.panel?.isKeyWindow == true else { return e }
-                let items = self.model.clipboard.items(from: ClipboardManager.shared)
-                switch e.keyCode {
-                case 53: self.dismiss(); return nil                                   // Esc
-                case 123: self.model.clipboard.moveSelection(-1, in: items); return nil
-                case 124: self.model.clipboard.moveSelection(1, in: items); return nil
-                case 36:                                                              // Return
-                    if let id = self.model.clipboard.selectedID, let r = items.first(where: { $0.id == id }) {
-                        self.pasteFromClipboardPage(r); return nil
-                    }
-                    return e
-                default: return e
-                }
+                return self.handleClipboardKey(e) ? nil : e
             }
         } else if let m = clipboardKeyMonitor {
             NSEvent.removeMonitor(m)
@@ -387,25 +393,123 @@ final class NotchSurfaceController {
         }
     }
 
+    /// Esc · ←/→/↑/↓ · Return (⇧ = plain text) · Space Quick Look (unless typing) · ⌘1–9 scope ·
+    /// ⌘P pin · ⌘⌫ delete · ⌘F search — the shelf's table, on the grid. Returns true when consumed.
+    private func handleClipboardKey(_ e: NSEvent) -> Bool {
+        let m = model.clipboard
+        let cmd = e.modifierFlags.contains(.command), shift = e.modifierFlags.contains(.shift)
+        let locked = ClipboardShelfController.shared.touchIDLockEnabled && !m.unlocked
+        if e.keyCode == 53 {                                                      // Esc: clear the search first, then close
+            if !m.query.isEmpty, !locked { m.query = "" } else { dismiss() }
+            return true
+        }
+        if locked { return false }
+        let items = m.items(from: ClipboardManager.shared)
+        if cmd, let slot = NotchClipboardRules.slot(forKeyCode: e.keyCode) {
+            let boards = ClipboardManager.shared.pinboards.filter { !$0.isBuiltIn }.map(\.id)
+            if let s = NotchClipboardRules.scope(forSlot: slot, boardIDs: boards) { m.scope = s; m.selectedID = nil }
+            return true
+        }
+        switch e.keyCode {
+        case 123: m.move(.left, in: items); return true
+        case 124: m.move(.right, in: items); return true
+        case 126: m.move(.up, in: items); return true
+        case 125: m.move(.down, in: items); return true
+        case 36:                                                                  // Return
+            guard let r = m.selected(in: items) else { return false }
+            pasteFromClipboardPage(r, plainText: shift); return true
+        case 49 where !m.searchFocused:                                           // Space
+            if let r = m.selected(in: items) { quickLook(r) }
+            return true
+        case 35 where cmd:                                                        // ⌘P
+            if let r = m.selected(in: items) { ClipboardManager.shared.togglePin(r.id) }
+            return true
+        case 51 where cmd:                                                        // ⌘⌫
+            if let r = m.selected(in: items) { deleteFromClipboardPage(r) }
+            return true
+        case 3 where cmd:                                                         // ⌘F
+            m.focusSearchRequest += 1; return true
+        default: return false
+        }
+    }
+
     /// Whether the shelf's event tap is alive — the Paste Stack can then intercept ⌘V system-wide.
+    /// (The tap stays with `ClipboardShelfController` on purpose: it is the engine, the shelf panel is
+    /// only one of its two surfaces.)
     var pasteStackInterceptsCommandV: Bool { ClipboardShelfController.shared.tapIsLive }
 
     /// Paste into the app the user came from and get out of the way. Without Accessibility (or
     /// with auto-paste off) the item is copied and the page says to press ⌘V — never a silent nothing.
-    func pasteFromClipboardPage(_ record: ClipboardRecord) {
-        let pid = ClipboardManager.shared.lastExternalPID
+    func pasteFromClipboardPage(_ record: ClipboardRecord, plainText: Bool = false) {
+        let pid = model.clipboard.targetPID ?? ClipboardManager.shared.lastExternalPID
         ClipboardManager.shared.incrementUsage(record.id)
         if ClipboardShelfController.shared.autoPasteAfterSelection, WindowManager.isTrusted {
             dismiss()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { ClipboardPasteEngine.paste(record: record, to: pid) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                ClipboardPasteEngine.paste(record: record, to: pid, plainText: plainText)
+            }
         } else {
-            ClipboardPasteEngine.writeToPasteboard(record: record)
+            ClipboardPasteEngine.writeToPasteboard(record: record, plainText: plainText)
             ClipboardSounds.playCopy()
             model.clipboard.notice = "Đã sao chép — dán bằng ⌘V."
         }
     }
 
     func pasteNextFromStack() { ClipboardManager.shared.pasteNextManually() }
+
+    /// Space: the system Quick Look panel for clips that have a file (images, files, long text payloads).
+    /// A short text clip has nothing to preview and says so, instead of a silent key press.
+    func quickLook(_ record: ClipboardRecord) {
+        if let path = record.payloadPath ?? record.thumbnailPath, FileManager.default.fileExists(atPath: path) {
+            quickLook.present(url: URL(fileURLWithPath: path))
+        } else {
+            model.clipboard.notice = "Mục này không có tệp để xem nhanh."
+        }
+    }
+
+    /// ⌘⌫ / "Xóa": remove the record and keep the selection on the card that slid into its place.
+    func deleteFromClipboardPage(_ record: ClipboardRecord) {
+        let before = model.clipboard.items(from: ClipboardManager.shared)
+        let index = before.firstIndex { $0.id == record.id } ?? 0
+        ClipboardManager.shared.deleteRecord(record.id)
+        let after = model.clipboard.items(from: ClipboardManager.shared)
+        if let i = NotchClipboardRules.selectionAfterDeleting(index: index, newCount: after.count) {
+            model.clipboard.selectedID = after[i].id
+        } else {
+            model.clipboard.selectedID = nil
+        }
+    }
+
+    /// OCR text of an image clip (or any text) → the pasteboard; the monitor records it as a new clip.
+    func copyText(_ text: String) {
+        let pb = NSPasteboard.general
+        pb.clearContents(); pb.setString(text, forType: .string)
+        ClipboardSounds.playCopy()
+        model.clipboard.notice = "Đã sao chép kết quả."
+    }
+
+    /// `clipboard.touchIDLock`: Touch ID or the login password, once per opening of the page. A Mac
+    /// without biometrics that cannot evaluate the policy is not locked out — the shelf's rule.
+    func unlockClipboard() {
+        let context = LAContext()
+        var error: NSError?
+        let reason = L10n.t("Xác thực bằng Touch ID hoặc mật khẩu để xem lịch sử clipboard")
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
+            model.clipboard.unlocked = true
+            return
+        }
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, _ in
+            Task { @MainActor in if success { NotchSurfaceController.shared.model.clipboard.unlocked = true } }
+        }
+    }
+
+    /// "Tạo bảng ghim mới": boards are made on the Cài đặt Clipboard page (one place, not an overlay
+    /// inside a 440 pt hub); the hub closes so the window is not behind it.
+    func openClipboardSettings() {
+        dismiss()
+        AppState.shared.navigate(to: .settingsClipboard)
+        AppState.shared.bringMainWindowFront()
+    }
 
     /// Runs a transform on the record's FULL text (the snippet is a 200-character preview; long
     /// clips live in a payload file) and copies the result, which the monitor then records as a
@@ -438,6 +542,10 @@ final class NotchSurfaceController {
     private func prepare() {
         let p = SurfacePanel(kind: .notch, size: CGSize(width: 440, height: 222))
         p.sharingType = hideFromCapture ? .none : .readOnly          // B7: invisible to capture by default
+        // The surface is black in every state; system controls on it (menus, text-field placeholders,
+        // selection colours) must think they are in Dark mode. Measured on the Light-appearance panel:
+        // the search placeholder rendered (13,13,13) on (25,25,25) — 1.1:1 (review row 1).
+        p.appearance = NSAppearance(named: .darkAqua)
         // A hosting VIEW subclass, not a controller: it must answer acceptsFirstMouse = true or every
         // control needs two clicks while another app is frontmost (the panel is never made key).
         let host = FirstMouseHostingView(rootView: NotchSurfaceView(model: model))

@@ -33,6 +33,20 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         }
     }
 
+    /// D0: the hub's height follows the page — the clipboard grid needs more than the tray; the
+    /// other pages keep the B2d height, at the notch and at the pointer alike.
+    func testTheClipboardPageIsTallerThanTheOtherPagesAndOnlyThatPage() {
+        let files = L.size(for: .expanded(.files), anchor: .notch, itemCount: 1, notch: notch)!
+        let clip = L.size(for: .expanded(.clipboard), anchor: .notch, itemCount: 1, notch: notch)!
+        let player = L.size(for: .expanded(.nowPlaying), anchor: .notch, itemCount: 1, notch: notch)!
+        XCTAssertEqual(files.height, notch.height + 222)
+        XCTAssertEqual(player.height, files.height, "only the clipboard page grows")
+        XCTAssertGreaterThan(clip.height, files.height + 80)
+        XCTAssertEqual(clip.width, files.width, "the width is the surface's, not the page's")
+        let pointerClip = L.size(for: .expanded(.clipboard), anchor: .pointer, itemCount: 1, notch: notch)!
+        XCTAssertEqual(pointerClip.height, clip.height - notch.height, "at the pointer there is no notch band to add")
+    }
+
     func testSizesGrowBadgeToPeekToExpanded() {
         let b = L.size(for: .collapsed, anchor: .notch, itemCount: 1, notch: notch)!
         let p = L.size(for: .peek, anchor: .notch, itemCount: 1, notch: notch)!

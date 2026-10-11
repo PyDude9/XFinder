@@ -7746,6 +7746,62 @@
     "Nhiều màn hình: danh sách chỉ gồm cửa sổ nằm (một phần hoặc toàn bộ) trên màn hình đang có con trỏ.": {
       "en": "Multiple displays: the list holds only windows that lie (partly or wholly) on the screen the pointer is on.",
       "scope": "sentence"
+    },
+    "⌘⇧V mở ở": {
+      "en": "⌘⇧V opens in",
+      "scope": "sentence"
+    },
+    "Ở notch": {
+      "en": "At the notch",
+      "scope": "sentence"
+    },
+    "Khay nổi cũ": {
+      "en": "Old floating shelf",
+      "scope": "sentence"
+    },
+    "Lịch sử copy mở bằng ⌘⇧V, ở notch hoặc khay nổi.": {
+      "en": "Copy history opens with ⌘⇧V, at the notch or in the floating shelf.",
+      "scope": "sentence"
+    },
+    "⌘⇧V mở clipboard trên mọi ứng dụng": {
+      "en": "⌘⇧V opens the clipboard over any app",
+      "scope": "sentence"
+    },
+    "Mở clipboard (⌘⇧V)": {
+      "en": "Open clipboard (⌘⇧V)",
+      "scope": "sentence"
+    },
+    "↩ dán · ⇧↩ thuần · Space xem · ⌘P ghim · ⌘⌫ xoá · ⌘1–9 bảng": {
+      "en": "↩ paste · ⇧↩ plain · Space view · ⌘P pin · ⌘⌫ delete · ⌘1–9 boards",
+      "scope": "sentence"
+    },
+    "Chưa có Trợ năng: ↩ chỉ sao chép, dán bằng ⌘V.": {
+      "en": "No Accessibility yet: ↩ only copies, paste with ⌘V.",
+      "scope": "sentence"
+    },
+    "Mục này không có tệp để xem nhanh.": {
+      "en": "This item has no file to Quick Look.",
+      "scope": "sentence"
+    },
+    "Đi tới nguồn": {
+      "en": "Go to source",
+      "scope": "sentence"
+    },
+    "Vừa xong": {
+      "en": "Just now",
+      "scope": "sentence"
+    },
+    "phút": {
+      "en": "min",
+      "scope": "fragment"
+    },
+    "giờ": {
+      "en": "h",
+      "scope": "fragment"
+    },
+    "ngày": {
+      "en": "d",
+      "scope": "fragment"
     }
   }
 }
