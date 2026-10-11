@@ -23,6 +23,7 @@ actor DatabaseService {
     }
 
     func initialize() {
+        guard db == nil else { return }                     // idempotent: `openIfNeeded` may have run first
         guard sqlite3_open(dbPath, &db) == SQLITE_OK else {
             print("❌ Failed to open database")
             return
@@ -30,6 +31,17 @@ actor DatabaseService {
 
         createTables()
         print("✅ Database initialized at \(dbPath)")
+    }
+
+    /// Every query goes through this, not through `db` directly. Measured 2026-10-11: `ClipboardManager`
+    /// is created in `applicationDidFinishLaunching` and schedules its history fetch at once, while
+    /// `initialize()` runs in a separate Task — whichever reached this actor first won. When the fetch
+    /// won, `db` was nil, it returned `[]`, nothing retried, and the app ran all day with an EMPTY
+    /// history while every later copy was written fine (the DB had opened by then): 1 826 rows on
+    /// disk, 1 on screen. Opening on first use makes the order irrelevant.
+    private func openIfNeeded() -> OpaquePointer? {
+        if db == nil { initialize() }
+        return db
     }
 
     private func createTables() {
@@ -131,7 +143,7 @@ actor DatabaseService {
     }
 
     func insertClipboardRecord(_ record: ClipboardRecord) async -> Bool {
-        guard let db = db else { return false }
+        guard let db = openIfNeeded() else { return false }
 
         let query = """
         INSERT OR REPLACE INTO clipboard_records
@@ -163,7 +175,7 @@ actor DatabaseService {
     }
 
     func insertQuickNote(_ note: QuickNote) async -> Bool {
-        guard let db = db else { return false }
+        guard let db = openIfNeeded() else { return false }
 
         let query = """
         INSERT OR REPLACE INTO quick_notes
@@ -197,7 +209,7 @@ actor DatabaseService {
     }
 
     func fetchClipboardRecords(limit: Int = 1000) -> [ClipboardRecord] {
-        guard let db = db else { return [] }
+        guard let db = openIfNeeded() else { return [] }
         let query = """
         SELECT id, type, timestamp, sourceBundleID, sourceAppName, textSnippet,
                thumbnailPath, payloadPath, ocrText, pinboardID, metadata
@@ -235,7 +247,7 @@ actor DatabaseService {
     }
 
     func deleteClipboardRecord(_ id: UUID) {
-        guard let db = db else { return }
+        guard let db = openIfNeeded() else { return }
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(db, "DELETE FROM clipboard_records WHERE id = ?", -1, &statement, nil) == SQLITE_OK else { return }
         defer { sqlite3_finalize(statement) }
@@ -244,7 +256,7 @@ actor DatabaseService {
     }
 
     func deleteClipboardRecords(olderThan cutoff: Date) {
-        guard let db = db else { return }
+        guard let db = openIfNeeded() else { return }
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(db, "DELETE FROM clipboard_records WHERE timestamp < ?", -1, &statement, nil) == SQLITE_OK else { return }
         defer { sqlite3_finalize(statement) }
