@@ -256,6 +256,7 @@ Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong pha
    ẩn khi quay màn hình.
 
 ### Phase C — Switcher ⌘-Tab
+**C1 ✅ 2026-10-11** — Q/H/Space/`` ` ``, lọc theo màn hình con trỏ, `excludedApps` một reader, `Motion.overlayIn`; 9 test + 5 mutation đỏ. Hành vi phím thật trong switcher **chưa đo** (`windowPreview.commandTabEnabled` của máy này = 0).
 Q (AX `kAXCloseButtonAttribute` → press), H (`NSRunningApplication.hide`), Space (phóng thumbnail), lọc theo màn hình chứa con trỏ,
 `` ` `` chuyển app↔cửa sổ (store đã gộp theo app; thêm lister theo cửa sổ), `Motion.overlayIn` 0.16 s, một reader cho
 `excludedApps`. Trang `.windowPreview` phẳng theo A.3.

@@ -77,7 +77,9 @@ public final class PreviewOverlayWindow: NSPanel {
         let searchPillHeight: CGFloat = LiquidGlassTokens.SearchPill.height
         let spacingAboveContainer: CGFloat = 10
 
-        let totalH = searchPillHeight + spacingAboveContainer + containerHeight
+        // Phase C: room for the mode line, the key legend, and the zoomed capture when on.
+        let extrasH: CGFloat = 18 + 18 + (WindowPreviewStore.shared.isZoomed ? min(screen.frame.height * 0.45, 460) + 10 : 0)
+        let totalH = searchPillHeight + spacingAboveContainer + containerHeight + extrasH
         let windowY = screen.frame.midY - totalH / 2
         let windowX = screen.frame.midX - containerWidth / 2
 
@@ -120,6 +122,15 @@ struct PreviewOverlayContentView: View {
                     store.searchQuery = ""
                 }
             )
+
+            // Phase C: which deck this is — all apps, or the windows of one app.
+            if case .windows(let bundleID) = store.mode {
+                let name = store.filteredPreviewItems.first?.appName ?? bundleID
+                Text("\(L10n.t("Cửa sổ của "))\(name)")
+                    .font(.system(size: 11, weight: .medium)).foregroundColor(.white.opacity(0.75)).lineLimit(1)
+            } else {
+                Text(L10n.t("Ứng dụng")).font(.system(size: 11, weight: .medium)).foregroundColor(.white.opacity(0.55))
+            }
 
             // Horizontal container for cards
             let items = store.filteredPreviewItems
@@ -183,6 +194,26 @@ struct PreviewOverlayContentView: View {
             .frame(height: containerHeight)
             .liquidGlassContainer(cornerRadius: LiquidGlassTokens.Container.cornerRadius)
 
+            // Phase C: Space — the selected window, large.
+            if store.isZoomed, store.filteredPreviewItems.indices.contains(store.selectedIndex) {
+                let current = store.filteredPreviewItems[store.selectedIndex]
+                let maxH = min((NSScreen.main?.frame.height ?? 1000) * 0.45, 460)
+                Group {
+                    if let img = store.zoomImage ?? current.thumbnail {
+                        Image(nsImage: img).resizable().aspectRatio(contentMode: .fit)
+                    } else {
+                        Image(systemName: "macwindow").font(.system(size: 40)).foregroundColor(.white.opacity(0.5))
+                    }
+                }
+                .frame(maxWidth: 900, maxHeight: maxH)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .liquidGlassContainer(cornerRadius: 14)
+            }
+
+            // Phase C: the keys, where the user is looking.
+            Text(L10n.t("Q đóng cửa sổ · H ẩn ứng dụng · Space phóng to · ` cửa sổ của ứng dụng · , tìm"))
+                .font(.system(size: 10)).foregroundColor(.white.opacity(0.45)).lineLimit(1)
+
             // Special previews for active highlighted window (Calendar / Weather only)
             if store.filteredPreviewItems.indices.contains(store.selectedIndex) {
                 let current = store.filteredPreviewItems[store.selectedIndex]
@@ -210,7 +241,7 @@ struct PreviewOverlayContentView: View {
         .onAppear {
             let animEnabled = UserDefaults.standard.object(forKey: "windowPreview.animationEnabled") as? Bool ?? true
             if animEnabled {
-                withAnimation(.easeOut(duration: 0.18)) {
+                withAnimation(.easeOut(duration: XFinderTokens.Motion.overlayIn)) {
                     scale = LiquidGlassTokens.Motion.scaleFinal
                     opacity = 1.0
                     blur = 0.0

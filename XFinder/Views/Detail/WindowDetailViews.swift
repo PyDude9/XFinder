@@ -12,8 +12,10 @@ struct WindowPreviewDetailView: View {
     @AppStorage("windowPreview.switcherHotkey") private var switcherHotkey = "commandTab"
     @AppStorage("windowPreview.animationEnabled") private var animationEnabled = true
     @AppStorage("windowPreview.customDockEnabled") private var customDockEnabled = false
+    // Phase C. Reader: WindowPreviewStore.currentScreenOnly (default must match — FeatureKeyDefaultsTests).
+    @AppStorage("windowPreview.currentScreenOnly") private var currentScreenOnly = false
     @State private var dockAutohide = DockPrefs.autohide()
-    @State private var excludedApps: [String] = UserDefaults.standard.stringArray(forKey: "windowPreview.excludedApps") ?? []
+    @State private var excludedApps: [String] = WindowPreviewStore.excludedApps
     @State private var newExcludedApp: String = ""
     @State private var controller = DockPreviewController.shared
     @State private var trusted = WindowManager.isTrusted
@@ -35,7 +37,11 @@ struct WindowPreviewDetailView: View {
                     ToggleRow(title: L10n.t("Bật bộ chuyển cửa sổ Liquid Glass"),
                               isOn: $commandTabEnabled)
                         .onChange(of: commandTabEnabled) { CommandTabController.shared.applySettings() }
-                    InlineNote(text: L10n.t("Khi bật, XFinder xử lý chuyển cửa sổ thay cho bộ chuyển ứng dụng của macOS. Giữ phím tắt để duyệt danh sách, nhấn dấu phẩy (,) để tìm kiếm, thả phím để mở hoặc nhấn Escape để hủy."))
+                    InlineNote(text: L10n.t("Khi bật, XFinder xử lý chuyển cửa sổ thay cho bộ chuyển ứng dụng của macOS. Giữ phím tắt để duyệt; trong lúc giữ: Q đóng cửa sổ đang chọn, H ẩn ứng dụng, Space phóng to ảnh, dấu huyền (`) chuyển giữa một thẻ mỗi ứng dụng và từng cửa sổ của ứng dụng đó, dấu phẩy (,) để tìm; thả phím để mở, Escape để hủy."))
+
+                    ToggleRow(title: L10n.t("Chỉ cửa sổ trên màn hình có con trỏ"),
+                              subtitle: L10n.t("Nhiều màn hình: danh sách chỉ gồm cửa sổ nằm (một phần hoặc toàn bộ) trên màn hình đang có con trỏ."),
+                              isOn: $currentScreenOnly)
 
                     HStack {
                         Text(L10n.t("Phím tắt chuyển cửa sổ"))
@@ -111,7 +117,7 @@ struct WindowPreviewDetailView: View {
                                     Spacer()
                                     Button(action: {
                                         excludedApps.removeAll { $0 == app }
-                                        UserDefaults.standard.set(excludedApps, forKey: "windowPreview.excludedApps")
+                                        WindowPreviewStore.setExcludedApps(excludedApps)
                                     }) {
                                         Image(systemName: "xmark.circle.fill")
                                             .foregroundColor(.secondary)
@@ -133,7 +139,7 @@ struct WindowPreviewDetailView: View {
                             let trimmed = newExcludedApp.trimmingCharacters(in: .whitespaces)
                             if !trimmed.isEmpty && !excludedApps.contains(trimmed) {
                                 excludedApps.append(trimmed)
-                                UserDefaults.standard.set(excludedApps, forKey: "windowPreview.excludedApps")
+                                WindowPreviewStore.setExcludedApps(excludedApps)
                                 newExcludedApp = ""
                             }
                         }
@@ -173,7 +179,7 @@ struct WindowPreviewDetailView: View {
             trusted = WindowManager.isTrusted
             canRecord = WindowManager.canRecordScreen
             dockAutohide = DockPrefs.autohide()
-            excludedApps = UserDefaults.standard.stringArray(forKey: "windowPreview.excludedApps") ?? []
+            excludedApps = WindowPreviewStore.excludedApps
             controller.applySettings()
         }
     }

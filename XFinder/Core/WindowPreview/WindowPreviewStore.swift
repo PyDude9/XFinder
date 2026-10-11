@@ -45,6 +45,79 @@ public final class WindowPreviewStore {
         !isHidden || showHidden
     }
 
+    // MARK: Phase C — the ONE reader of each switcher key, and the pure rules behind the keys
+
+    /// Bundle ids the switcher never lists. Read here and only here (the page writes through
+    /// `setExcludedApps`); before Phase C the page and the store each read the key themselves.
+    public nonisolated static var excludedApps: [String] {
+        UserDefaults.standard.stringArray(forKey: "windowPreview.excludedApps") ?? []
+    }
+    public nonisolated static func setExcludedApps(_ apps: [String]) {
+        UserDefaults.standard.set(apps, forKey: "windowPreview.excludedApps")
+    }
+    /// A window with no resolvable bundle id is never excluded — an empty string must not match an empty list entry.
+    public nonisolated static func isExcluded(bundleID: String, excluded: Set<String>) -> Bool {
+        !bundleID.isEmpty && excluded.contains(bundleID)
+    }
+
+    /// Multi-display: list only windows on the screen under the pointer. Off by default — the
+    /// user's list must not shrink silently. Default must equal the page's `@AppStorage` (FeatureKeyDefaultsTests).
+    public nonisolated static var currentScreenOnly: Bool {
+        UserDefaults.standard.object(forKey: "windowPreview.currentScreenOnly") as? Bool ?? false
+    }
+    /// `CGWindowListCopyWindowInfo` bounds are top-left origin; `NSScreen.frame` is bottom-left. Both
+    /// share the primary screen's height as the flip, so the two can be compared in CG space.
+    public nonisolated static func cgRect(forAppKitFrame f: CGRect, primaryHeight: CGFloat) -> CGRect {
+        CGRect(x: f.minX, y: primaryHeight - f.maxY, width: f.width, height: f.height)
+    }
+    /// A window counts as "on this screen" when any part of it is — a window straddling two
+    /// displays belongs to both.
+    public nonisolated static func isOnScreen(_ w: WindowRef, screenCG: CGRect) -> Bool {
+        w.bounds.intersects(screenCG)
+    }
+
+    /// One card per app (`apps`) or one card per window of one app (`windows`) — the ` key flips.
+    public enum Mode: Equatable { case apps, windows(bundleID: String) }
+    public var mode: Mode = .apps
+    /// Space: a large capture of the selected window below the deck.
+    public var isZoomed = false
+    public var zoomImage: NSImage?
+    /// Windows that survived exclusion and the screen filter, front-to-back, with their bundle ids.
+    private var allowedWins: [WindowRef] = []
+    private var bundleByWindow: [CGWindowID: String] = [:]
+    private var appItems: [PreviewItem] = []
+    private var lastScreenCG: CGRect?
+
+    /// One card per window of `bundleID`, in z-order, titled by the window (or the app when untitled).
+    public nonisolated static func windowItems(for bundleID: String, wins: [WindowRef], appName: String) -> [PreviewItem] {
+        wins.map { w in
+            PreviewItem(windowID: w.id, bundleID: bundleID, title: w.title.isEmpty ? appName : w.title, appName: appName,
+                        isOnOtherSpace: !w.isOnCurrentSpace, isGroup: false, windowCount: 1, windowIDs: [w.id],
+                        isStageMiniature: w.isStageMiniature)
+        }
+    }
+
+    /// The deck after a window was closed (Q): the card of a one-window app disappears; a group
+    /// shrinks, and if its representative window was the one closed the next window stands in.
+    public nonisolated static func removing(windowID: CGWindowID, from items: [PreviewItem]) -> [PreviewItem] {
+        items.compactMap { item in
+            guard item.windowIDs.contains(windowID) else { return item }
+            let rest = item.windowIDs.filter { $0 != windowID }
+            guard let first = rest.first else { return nil }
+            return PreviewItem(windowID: item.windowID == windowID ? first : item.windowID,
+                               bundleID: item.bundleID, title: item.title, appName: item.appName,
+                               thumbnail: item.windowID == windowID ? nil : item.thumbnail,
+                               isFrozen: item.isFrozen, tabs: item.tabs, isOnOtherSpace: item.isOnOtherSpace,
+                               isGroup: rest.count > 1, windowCount: rest.count, windowIDs: rest,
+                               isStageMiniature: item.isStageMiniature)
+        }
+    }
+
+    /// A selection that always points at a card (or 0 when there is none).
+    public nonisolated static func clampedSelection(_ index: Int, count: Int) -> Int {
+        count <= 0 ? 0 : min(max(0, index), count - 1)
+    }
+
     public struct WindowRef: Identifiable, Sendable {
         public let id: CGWindowID
         public let ownerPID: pid_t
@@ -248,20 +321,24 @@ public final class WindowPreviewStore {
     }
 
     /// Load all switchable windows for Cmd+Tab overlay (1 preview card per application).
-    public func loadSwitchableWindows() {
-        let excluded = Set(UserDefaults.standard.stringArray(forKey: "windowPreview.excludedApps") ?? [])
+    /// `screenCG`: when set (Phase C, `currentScreenOnly`), only windows intersecting it are listed.
+    public func loadSwitchableWindows(screenCG: CGRect? = nil) {
+        let excluded = Set(Self.excludedApps)
         let allWins = windowLister()
-        let wins = allWins.filter { $0.bounds.width >= 40 && $0.bounds.height >= 40 }
+        var wins = allWins.filter { $0.bounds.width >= 40 && $0.bounds.height >= 40 }
+        if let screenCG { wins = wins.filter { Self.isOnScreen($0, screenCG: screenCG) } }
+        lastScreenCG = screenCG
 
         // Filter excluded apps
         let allowedWins = wins.filter { win in
             let bID = NSRunningApplication(processIdentifier: win.ownerPID)?.bundleIdentifier ?? ""
-            return bID.isEmpty || !excluded.contains(bID)
+            return !Self.isExcluded(bundleID: bID, excluded: excluded)
         }
 
         // Group by bundleID preserving front-to-back z-order
         var orderedBundleIDs: [String] = []
         var winsByBundle: [String: [WindowRef]] = [:]
+        var bundleByWindow: [CGWindowID: String] = [:]
         for win in allowedWins {
             let bID = NSRunningApplication(processIdentifier: win.ownerPID)?.bundleIdentifier ?? (win.ownerName.isEmpty ? "unknown" : win.ownerName)
             if winsByBundle[bID] == nil {
@@ -269,7 +346,13 @@ public final class WindowPreviewStore {
                 winsByBundle[bID] = []
             }
             winsByBundle[bID]?.append(win)
+            bundleByWindow[win.id] = bID
         }
+        self.allowedWins = allowedWins
+        self.bundleByWindow = bundleByWindow
+        self.mode = .apps
+        self.isZoomed = false
+        self.zoomImage = nil
 
         var items: [PreviewItem] = []
         for bID in orderedBundleIDs {
@@ -303,18 +386,10 @@ public final class WindowPreviewStore {
         }
 
         self.previewItems = items
+        self.appItems = items
         self.selectedIndex = self.previewItems.count > 1 ? 1 : 0
         self.isScreenRecordingDenied = !captureProvider.isScreenRecordingAllowed()
-
-        let ids = self.previewItems.filter { $0.windowID != 0 }.map { $0.windowID }
-        Task {
-            let thumbs = await captureProvider.captureWindows(windowIDs: ids, maxSize: 800)
-            for (idx, item) in self.previewItems.enumerated() {
-                if let thumb = thumbs[item.windowID] {
-                    self.previewItems[idx].thumbnail = thumb
-                }
-            }
-        }
+        fetchThumbnails()
 
         // Switcher does NOT show Open Tabs
         self.activeBrowserTabs = []
@@ -323,6 +398,96 @@ public final class WindowPreviewStore {
             if current.bundleID == "com.apple.iCal" || current.bundleID == "com.apple.weather" {
                 loadSpecialPreviews(for: current)
             }
+        }
+    }
+
+    private func fetchThumbnails() {
+        let ids = self.previewItems.filter { $0.windowID != 0 }.map { $0.windowID }
+        guard !ids.isEmpty else { return }
+        Task {
+            let thumbs = await captureProvider.captureWindows(windowIDs: ids, maxSize: 800)
+            for (idx, item) in self.previewItems.enumerated() {
+                if let thumb = thumbs[item.windowID] {
+                    self.previewItems[idx].thumbnail = thumb
+                }
+            }
+        }
+    }
+
+    // MARK: Phase C — app ⇄ window mode, zoom, close/hide bookkeeping
+
+    /// ` : one card per window of the selected app, and back. Selection lands on the first window,
+    /// and returns to the app's card on the way back.
+    public func toggleMode() {
+        isZoomed = false; zoomImage = nil
+        switch mode {
+        case .apps:
+            guard let current = commitSelection() else { return }
+            let wins = allowedWins.filter { bundleByWindow[$0.id] == current.bundleID }
+            guard !wins.isEmpty else { return }
+            mode = .windows(bundleID: current.bundleID)
+            previewItems = Self.windowItems(for: current.bundleID, wins: wins, appName: current.appName).map { item in
+                var i = item; i.thumbnail = (captureProvider as? ScreenCaptureProvider)?.cache.get(i.windowID); return i
+            }
+            selectedIndex = 0
+            fetchThumbnails()
+        case .windows(let bundleID):
+            mode = .apps
+            previewItems = appItems
+            selectedIndex = Self.clampedSelection(appItems.firstIndex { $0.bundleID == bundleID } ?? 0, count: appItems.count)
+        }
+    }
+
+    /// Space: a large capture of the selected window. Re-fetched on every step while zoomed.
+    public func toggleZoom() {
+        isZoomed.toggle()
+        if isZoomed { refreshZoom() } else { zoomImage = nil }
+    }
+
+    public func refreshZoom() {
+        guard isZoomed, let item = commitSelection(), item.windowID != 0 else { zoomImage = nil; return }
+        zoomImage = item.thumbnail
+        let id = item.windowID
+        Task {
+            let big = await captureProvider.captureWindows(windowIDs: [id], maxSize: 1600)
+            if self.isZoomed, self.commitSelection()?.windowID == id, let img = big[id] { self.zoomImage = img }
+        }
+    }
+
+    /// Q: the window is gone — update both decks locally (the window server lags the AX press).
+    public func removeWindow(id: CGWindowID) {
+        allowedWins.removeAll { $0.id == id }
+        bundleByWindow[id] = nil
+        appItems = Self.removing(windowID: id, from: appItems)
+        previewItems = Self.removing(windowID: id, from: previewItems)
+        if case .windows = mode, previewItems.isEmpty { mode = .apps; previewItems = appItems }
+        selectedIndex = Self.clampedSelection(selectedIndex, count: previewItems.count)
+        if isZoomed { refreshZoom() }
+    }
+
+    /// H: every card of the app is gone.
+    public func removeApp(bundleID: String) {
+        allowedWins.removeAll { bundleByWindow[$0.id] == bundleID }
+        bundleByWindow = bundleByWindow.filter { $0.value != bundleID }
+        appItems.removeAll { $0.bundleID == bundleID }
+        if case .windows(let b) = mode, b == bundleID { mode = .apps }
+        previewItems = (mode == .apps) ? appItems : previewItems.filter { $0.bundleID != bundleID }
+        selectedIndex = Self.clampedSelection(selectedIndex, count: previewItems.count)
+        if isZoomed { refreshZoom() }
+    }
+
+    /// Re-list after Q/H settled, keeping the mode (the window server is the truth; the local
+    /// removal above was only the immediate feedback).
+    public func reload() {
+        let keep = mode
+        let sel = commitSelection()
+        loadSwitchableWindows(screenCG: lastScreenCG)
+        if case .windows(let b) = keep, let idx = appItems.firstIndex(where: { $0.bundleID == b }) {
+            selectedIndex = idx
+            toggleMode()
+            if let sel, let i = previewItems.firstIndex(where: { $0.windowID == sel.windowID }) { selectedIndex = i }
+        } else if let sel, let i = previewItems.firstIndex(where: { $0.bundleID == sel.bundleID }) {
+            selectedIndex = i
         }
     }
 
@@ -377,6 +542,8 @@ public final class WindowPreviewStore {
     }
 
     public func clear() {
+        mode = .apps; isZoomed = false; zoomImage = nil
+        allowedWins = []; bundleByWindow = [:]; appItems = []; lastScreenCG = nil
         previewItems = []
         activeBrowserTabs = []
         calendarEvents = []

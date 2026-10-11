@@ -7726,6 +7726,26 @@
     "Bài đang phát, ảnh bìa và nút điều khiển ở notch; đọc qua một tiến trình trợ giúp nhỏ.": {
       "en": "The playing track, artwork and controls at the notch; read through a small helper process.",
       "scope": "sentence"
+    },
+    "Cửa sổ của ": {
+      "en": "Windows of ",
+      "scope": "fragment"
+    },
+    "Q đóng cửa sổ · H ẩn ứng dụng · Space phóng to · ` cửa sổ của ứng dụng · , tìm": {
+      "en": "Q closes the window · H hides the app · Space zooms · ` the app's windows · , search",
+      "scope": "sentence"
+    },
+    "Khi bật, XFinder xử lý chuyển cửa sổ thay cho bộ chuyển ứng dụng của macOS. Giữ phím tắt để duyệt; trong lúc giữ: Q đóng cửa sổ đang chọn, H ẩn ứng dụng, Space phóng to ảnh, dấu huyền (`) chuyển giữa một thẻ mỗi ứng dụng và từng cửa sổ của ứng dụng đó, dấu phẩy (,) để tìm; thả phím để mở, Escape để hủy.": {
+      "en": "When on, XFinder handles window switching instead of the macOS app switcher. Hold the shortcut to browse; while holding: Q closes the selected window, H hides the app, Space zooms the thumbnail, backquote (`) flips between one card per app and that app's windows, comma (,) searches; release to open, Escape to cancel.",
+      "scope": "sentence"
+    },
+    "Chỉ cửa sổ trên màn hình có con trỏ": {
+      "en": "Only windows on the screen under the pointer",
+      "scope": "sentence"
+    },
+    "Nhiều màn hình: danh sách chỉ gồm cửa sổ nằm (một phần hoặc toàn bộ) trên màn hình đang có con trỏ.": {
+      "en": "Multiple displays: the list holds only windows that lie (partly or wholly) on the screen the pointer is on.",
+      "scope": "sentence"
     }
   }
 }

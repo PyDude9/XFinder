@@ -86,6 +86,9 @@ final class CommandTabController {
     }
 
     private let isActiveSnapshot = Locked<Bool>(false)
+    /// Mirrors the store's `isSearchActive` for the tap thread: while the user types a query, Q/H/Space/`
+    /// are letters, not commands.
+    private let searchActiveSnapshot = Locked<Bool>(false)
 
     nonisolated private var hotkeyPreference: String {
         UserDefaults.standard.string(forKey: "windowPreview.switcherHotkey") ?? "commandTab"
@@ -118,10 +121,23 @@ final class CommandTabController {
         if isActiveSnapshot.value {
             // Comma (,) focuses search field
             if type == .keyDown, keyCode == 43 {
+                searchActiveSnapshot.value = true
                 Task { @MainActor in
                     PreviewOverlayWindow.shared.focusSearch()
                 }
                 return nil
+            }
+
+            // Phase C — while NOT typing a query: Q closes the selected window, H hides its app,
+            // Space zooms the thumbnail, ` flips between one card per app and one per window.
+            if type == .keyDown, !searchActiveSnapshot.value {
+                switch keyCode {
+                case 12: Task { @MainActor in self.closeSelected() }; return nil          // Q
+                case 4:  Task { @MainActor in self.hideSelectedApp() }; return nil        // H
+                case 49: Task { @MainActor in self.toggleZoom() }; return nil             // Space
+                case 50: Task { @MainActor in self.toggleMode() }; return nil             // `
+                default: break
+                }
             }
 
             // Left arrow
@@ -144,6 +160,7 @@ final class CommandTabController {
 
             // Escape
             if type == .keyDown, keyCode == 53 {
+                searchActiveSnapshot.value = false
                 Task { @MainActor in
                     if WindowPreviewStore.shared.isSearchActive {
                         WindowPreviewStore.shared.isSearchActive = false
@@ -172,7 +189,13 @@ final class CommandTabController {
 
     private func step(backwards: Bool) {
         if !isActive {
-            WindowPreviewStore.shared.loadSwitchableWindows()
+            // Phase C: optionally only the screen under the pointer (CG space for the window bounds).
+            var screenCG: CGRect?
+            if WindowPreviewStore.currentScreenOnly, let primary = NSScreen.screens.first {
+                let screen = WindowManager.screenUnderPointer()
+                screenCG = WindowPreviewStore.cgRect(forAppKitFrame: screen.frame, primaryHeight: primary.frame.height)
+            }
+            WindowPreviewStore.shared.loadSwitchableWindows(screenCG: screenCG)
             let items = WindowPreviewStore.shared.filteredPreviewItems
             guard !items.isEmpty else { return }
             selection = items.count > 1 ? 1 : 0
@@ -203,7 +226,56 @@ final class CommandTabController {
         }
         WindowPreviewStore.shared.step(forward: !backwards)
         selection = WindowPreviewStore.shared.selectedIndex
+        if WindowPreviewStore.shared.isZoomed { WindowPreviewStore.shared.refreshZoom() }
         PreviewOverlayWindow.shared.updateSelection(selection)
+    }
+
+    // MARK: - Phase C actions (all while the switcher is up and the modifier held)
+
+    private func syncOverlay() {
+        selection = WindowPreviewStore.shared.selectedIndex
+        if WindowPreviewStore.shared.filteredPreviewItems.isEmpty { dismiss(activate: false); return }
+        PreviewOverlayWindow.shared.updateSelection(selection)
+    }
+
+    /// Q: close the selected window (the app's representative window in app mode) via its AX close button.
+    private func closeSelected() {
+        let store = WindowPreviewStore.shared
+        guard isActive, let item = store.commitSelection(), item.windowID != 0,
+              let win = WindowManager.listWindows().first(where: { $0.id == item.windowID }) else { return }
+        guard WindowManager.closeWindow(win) else { return }     // no AX ⇒ nothing happens, nothing pretends to
+        store.removeWindow(id: item.windowID)
+        syncOverlay()
+        // The window server lags the press; converge on the truth once it has settled.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, self.isActive else { return }
+                store.reload(); self.syncOverlay()
+            }
+        }
+    }
+
+    /// H: hide the selected app (`NSRunningApplication.hide`), drop its cards.
+    private func hideSelectedApp() {
+        let store = WindowPreviewStore.shared
+        guard isActive, let item = store.commitSelection() else { return }
+        let app = NSRunningApplication.runningApplications(withBundleIdentifier: item.bundleID).first
+            ?? WindowManager.listWindows().first(where: { $0.id == item.windowID }).flatMap { NSRunningApplication(processIdentifier: $0.ownerPID) }
+        guard let app, app.hide() else { return }
+        store.removeApp(bundleID: item.bundleID)
+        syncOverlay()
+    }
+
+    private func toggleZoom() {
+        guard isActive else { return }
+        WindowPreviewStore.shared.toggleZoom()
+        PreviewOverlayWindow.shared.updateSelection(selection)   // the panel grows/shrinks for the zoom
+    }
+
+    private func toggleMode() {
+        guard isActive else { return }
+        WindowPreviewStore.shared.toggleMode()
+        syncOverlay()
     }
 
     private func dismiss(activate: Bool) {
@@ -225,6 +297,7 @@ final class CommandTabController {
         }
         isActive = false
         isActiveSnapshot.value = false
+        searchActiveSnapshot.value = false
         selection = 0
         PreviewOverlayWindow.shared.dismiss()
         WindowPreviewStore.shared.clear()

@@ -229,6 +229,34 @@ enum WindowManager {
     /// single window, so match the CoreGraphics window by title+position and
     /// send it `AXRaise`. Falls back to app activation when AX is unavailable,
     /// so the switcher still works without the permission — just less precisely.
+    /// Phase C: the switcher's Q. Presses the window's own close button through Accessibility — the
+    /// same thing the user's click does, so "save changes?" sheets still appear. Matched by window id
+    /// first (`_AXUIElementGetWindow`), then by title/position like `raiseWindow`.
+    @discardableResult
+    static func closeWindow(_ info: WindowInfo) -> Bool {
+        guard isTrusted else { return false }
+        let appEl = AXUIElementCreateApplication(info.ownerPID)
+        var windowsRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appEl, kAXWindowsAttribute as CFString, &windowsRef) == .success,
+              let axWindows = windowsRef as? [AXUIElement], !axWindows.isEmpty else { return false }
+        let byID = axWindows.first { el in var wid: CGWindowID = 0; return axGetWindowID(el, &wid) == .success && wid == info.id }
+        let target = byID ?? axWindows.first { el in
+            var titleRef: CFTypeRef?
+            let title = AXUIElementCopyAttributeValue(el, kAXTitleAttribute as CFString, &titleRef) == .success ? (titleRef as? String ?? "") : ""
+            if !info.title.isEmpty, title == info.title { return true }
+            var posRef: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(el, kAXPositionAttribute as CFString, &posRef) == .success, let posVal = posRef else { return false }
+            var point = CGPoint.zero
+            guard AXValueGetValue(posVal as! AXValue, .cgPoint, &point) else { return false }
+            return abs(point.x - info.bounds.origin.x) < 4 && abs(point.y - info.bounds.origin.y) < 4
+        }
+        guard let target else { return false }
+        var buttonRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(target, kAXCloseButtonAttribute as CFString, &buttonRef) == .success,
+              let button = buttonRef else { return false }
+        return AXUIElementPerformAction(button as! AXUIElement, kAXPressAction as CFString) == .success
+    }
+
     @discardableResult
     static func raiseWindow(_ info: WindowInfo) -> Bool {
         guard let app = NSRunningApplication(processIdentifier: info.ownerPID) else { return false }
