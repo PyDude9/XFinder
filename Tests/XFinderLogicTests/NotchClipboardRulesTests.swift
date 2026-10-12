@@ -108,6 +108,19 @@ final class NotchClipboardRulesTests: XCTestCase {
         XCTAssertEqual(R.footer(pasteStackActive: false, remaining: 0, interceptsCommandV: false, notice: nil, autoPaste: true, accessibilityTrusted: true), .hints)
     }
 
+    // MARK: Image tiles
+
+    func testImagesFillTheTileOnlyWhenTheirShapeIsCloseToIt() {
+        let tile = 174.0 / 100.0                                   // the deck card's picture area
+        XCTAssertEqual(R.imageScaling(imageAspect: 2722.0 / 1562.0, tileAspect: tile), .fill, "a screen-shaped shot fills")
+        XCTAssertEqual(R.imageScaling(imageAspect: 16.0 / 9.0, tileAspect: tile), .fill)
+        XCTAssertEqual(R.imageScaling(imageAspect: 1280.0 / 460.0, tileAspect: tile), .fit, "the reported 2.8:1 settings shot is fitted, not zoomed")
+        XCTAssertEqual(R.imageScaling(imageAspect: 1, tileAspect: tile), .fit, "a square is 1.74× off ⇒ fitted")
+        XCTAssertEqual(R.imageScaling(imageAspect: 0.5, tileAspect: tile), .fit, "portrait")
+        XCTAssertEqual(R.imageScaling(imageAspect: tile * 1.49, tileAspect: tile), .fill, "just inside the tolerance")
+        XCTAssertEqual(R.imageScaling(imageAspect: 0, tileAspect: tile), .fit, "no size known ⇒ never crop")
+    }
+
     // MARK: Card footer facts
 
     func testAgeBuckets() {

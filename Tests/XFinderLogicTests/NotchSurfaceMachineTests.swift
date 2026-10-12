@@ -9,6 +9,24 @@ final class NotchSurfaceMachineTests: XCTestCase {
 
     func holding(_ n: Int) -> M.Machine { var m = M.Machine(); m.itemCount = n; return m }
 
+    // MARK: Opening straight onto a page (D0c)
+
+    func testActivateOnOpensStraightOnThePageAndOnlySwitchesWhenAlreadyOpen() {
+        var m = holding(0)
+        m.handle(.activateOn(.clipboard), settings: s, now: t0)
+        XCTAssertEqual(m.state, .expanded(.clipboard), "one transition, no tray page in between")
+        XCTAssertEqual(m.anchor, .notch)
+        m.handle(.activateOn(.nowPlaying), settings: s, now: t0)
+        XCTAssertEqual(m.state, .expanded(.nowPlaying), "already open ⇒ just the page")
+        var pointer = holding(2); pointer.handle(.shake, settings: s, now: t0)
+        XCTAssertEqual(pointer.anchor, .pointer)
+        pointer.handle(.activateOn(.clipboard), settings: s, now: t0)
+        XCTAssertEqual(pointer.anchor, .pointer, "a tray already at the pointer is not yanked to the notch")
+        var off = M.Settings(); off.enabled = false
+        var closed = holding(0); closed.handle(.activateOn(.clipboard), settings: off, now: t0)
+        XCTAssertEqual(closed.state, .collapsed, "disabled surface never opens")
+    }
+
     // MARK: Hover
 
     func testHoverNeedsDwellAndHeldFiles() {

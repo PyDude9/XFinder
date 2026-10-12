@@ -127,6 +127,20 @@ enum NotchClipboardRules {
         return .hints
     }
 
+    // MARK: - Image tiles
+
+    enum ImageScaling: Equatable { case fill, fit }
+
+    /// Fill the tile when the picture's shape is close to the tile's; otherwise fit it whole on a backdrop.
+    /// A 1280×460 settings screenshot (2.8:1) filled into a 1.74:1 tile is a zoomed-in centre crop that looks
+    /// nothing like the clip (reported 2026-10-12); a square or portrait image crops just as badly. The
+    /// threshold is 1.5× either way — a 16:9 photo in a 1.74 tile still fills.
+    static func imageScaling(imageAspect: Double, tileAspect: Double, tolerance: Double = 1.5) -> ImageScaling {
+        guard imageAspect > 0, tileAspect > 0, tolerance >= 1 else { return .fit }
+        let r = imageAspect / tileAspect
+        return (r > tolerance || r < 1 / tolerance) ? .fit : .fill
+    }
+
     // MARK: - Card footer facts
 
     /// Age of a clip in the footer's short form. `older` keeps the date so the view can format it.

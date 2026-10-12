@@ -546,9 +546,14 @@ final class ClipboardManager {
     }
 
 
+    /// The ONE reader of `clipboard.maxHistory` (0 = no cap): the in-memory cap AND how many rows are loaded
+    /// from the database at launch — before 2026-10-12 the load was a hard-coded 1 000, so "5 000 items"
+    /// never loaded more than 1 000 and "Unlimited" meant 1 000.
+    var historyCap: Int { UserDefaults.standard.object(forKey: "clipboard.maxHistory") as? Int ?? 1000 }
+
     /// Settings-wired cap (`clipboard.maxHistory`).
     func trimToCap() {
-        let cap = UserDefaults.standard.object(forKey: "clipboard.maxHistory") as? Int ?? 1000
+        let cap = historyCap
         guard cap > 0 else { return }
         if history.count > cap {
             history = Array(history.prefix(cap))
@@ -911,7 +916,8 @@ final class ClipboardManager {
     /// Hydrate from SQLite (was a placeholder that dropped all history).
     private func loadHistoryFromDB() {
         Task {
-            let rows = await DatabaseService.shared.fetchClipboardRecords(limit: 1000)
+            let cap = historyCap
+            let rows = await DatabaseService.shared.fetchClipboardRecords(limit: cap > 0 ? cap : -1)   // SQLite: LIMIT -1 = all
             await MainActor.run {
                 // Purge rows whose image files vanished completely (stale disk refs).
                 self.history = rows.filter { r in

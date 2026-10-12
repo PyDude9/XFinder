@@ -72,6 +72,10 @@ enum NotchSurfaceMachine {
         case activate
         /// A tab in the open hub (B5). Only changes the page of an EXPANDED surface — never opens one.
         case switchPage(Page)
+        /// Deliberate open straight ONTO a page (⌘⇧V → clipboard, badge click → Now Playing). One
+        /// transition: `activate` + `switchPage` rendered the 440-pt tray first and let the wider hub grow
+        /// from the tray's origin — measured 2026-10-12 as a window at x 649 that jumped to x 488.
+        case activateOn(Page)
         /// Files were dropped onto the surface; `count` is the tray's new total.
         case dropped(count: Int)
         /// The tray's item count changed elsewhere (the Khay thả page, "Xóa hết", the extension).
@@ -112,6 +116,9 @@ enum NotchSurfaceMachine {
             case .activate:
                 if case .expanded = state { return }
                 open(at: .notch)
+            case .activateOn(let page):
+                if case .expanded = state { state = .expanded(page); return }   // already open ⇒ just the page, keep the anchor
+                open(at: .notch, page: page)
             case .switchPage(let page):
                 if case .expanded = state { state = .expanded(page) }
             case .fileDragInZone:

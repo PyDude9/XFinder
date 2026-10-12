@@ -129,6 +129,10 @@ final class FeatureKeyDefaultsTests: XCTestCase {
                views: ["XFinder/Views/Detail/SettingsDetailView.swift",
                        "XFinder/Core/ClipboardShelfController.swift"],
                reader: "XFinder/Core/ClipboardShelfController.swift"),
+        // D0c: the history cap now also decides how many rows are loaded — one reader for both.
+        Switch(key: "clipboard.maxHistory",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
+               reader: "XFinder/Core/ClipboardManager.swift"),
     ]
 
     // MARK: - Source access

@@ -230,7 +230,7 @@ struct DropTrayDetailView: View {
                         Text(L10n.t("Cao")).tag("high")
                     }
                 }
-                InlineNote(text: L10n.t("Trên màn hình không có notch, các bề mặt treo ngay dưới thanh menu, ở giữa; rê chuột vào giữa thanh menu để xem các tệp đang giữ."))
+                InlineNote(text: L10n.t("Trên màn hình không có notch, XFinder vẽ một notch ảo: các bề mặt dính mép trên, ở giữa thanh menu, y như ở notch thật; rê chuột vào giữa mép trên để xem các tệp đang giữ."))
             }
             .padding(.horizontal, XFinderTokens.Space.page)
         }
@@ -260,7 +260,7 @@ struct DropTrayDetailView: View {
                     .onChange(of: hoverSpeed) { NotchSurfaceController.shared.applySettings() }
                 }
                 ToggleRow(title: L10n.t("Pill trên màn hình không có notch"),
-                          subtitle: L10n.t("Màn hình ngoài / iMac: tệp đang giữ, hẹn giờ và bài đang phát hiện trong một viên thuốc nhỏ treo dưới thanh menu. Chưa đo trên màn hình thật — chỉ hình học."),
+                          subtitle: L10n.t("Màn hình ngoài / iMac: tệp đang giữ, hẹn giờ và bài đang phát hiện trong một viên thuốc nhỏ dính mép trên, giữa thanh menu. Chưa đo trên màn hình thật — chỉ hình học."),
                           isOn: $pillOnPlainScreens)
                     .onChange(of: pillOnPlainScreens) { NotchSurfaceController.shared.applySettings() }
                 ToggleRow(title: L10n.t("Không hiện trong ảnh chụp, quay và chia sẻ màn hình"),

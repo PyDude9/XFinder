@@ -172,13 +172,21 @@ private struct ClipboardSettingsBody: View {
             VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 SectionHeader(icon: "archivebox", title: L10n.t("Lưu trữ & Hiển thị"))
 
+                // Three sizes (user, 2026-10-12). A value stored by an older build (200, 5000, 0 = unlimited)
+                // keeps a row of its own, so the control always shows what is in effect instead of a blank.
                 PickerRow(title: L10n.t("Giới hạn lịch sử"),
                           subtitle: L10n.t("Số lượng mục lưu tối đa trong lịch sử clipboard"),
                           selection: $maxHistory) {
-                    Text(L10n.t("200 mục")).tag(200)
+                    Text(L10n.t("20 mục")).tag(20)
+                    Text(L10n.t("100 mục")).tag(100)
                     Text(L10n.t("1000 mục")).tag(1000)
-                    Text(L10n.t("5000 mục")).tag(5000)
-                    Text(L10n.t("Không giới hạn")).tag(0)
+                    if ![20, 100, 1000].contains(maxHistory) {
+                        if maxHistory == 0 {
+                            Text(L10n.t("Không giới hạn")).tag(0)
+                        } else {
+                            Text("\(maxHistory)\(L10n.t(" mục"))").tag(maxHistory)
+                        }
+                    }
                 }
                 .padding(.horizontal, XFinderTokens.Space.page)
                 .onChange(of: maxHistory) { clipboard.trimToCap() }

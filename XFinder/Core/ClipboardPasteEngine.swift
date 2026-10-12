@@ -109,12 +109,35 @@ enum ClipboardSounds {
     }
 }
 
-/// App-icon accent helper: icon of the source app for card headers.
+/// App-icon accent helper: icon of the source app for card headers. Main-actor: every caller is a view, and
+/// the cache below is per-process state SwiftUI reads during layout.
+@MainActor
 enum ClipboardAppIcon {
+    /// One LaunchServices lookup + one icon render per bundle id per process. Measured 2026-10-12: the notch
+    /// deck asked for every visible card's icon on EVERY SwiftUI render (selection moves, hover, each key
+    /// press), and `urlForApplication` + `icon(forFile:)` are not cheap — that was most of the "lag khi loading".
+    private static let cache = NSCache<NSString, NSImage>()
+    private static let missing = NSImage()          // sentinel: an app we could not resolve is not asked again
+
     static func icon(forBundleID bundleID: String?) -> NSImage? {
-        guard let id = bundleID,
-              let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else { return nil }
-        return NSWorkspace.shared.icon(forFile: url.path)
+        guard let id = bundleID, !id.isEmpty else { return nil }
+        if let hit = cache.object(forKey: id as NSString) { return hit === missing ? nil : hit }
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else {
+            cache.setObject(missing, forKey: id as NSString)
+            return nil
+        }
+        let icon = NSWorkspace.shared.icon(forFile: url.path)
+        cache.setObject(icon, forKey: id as NSString)
+        return icon
+    }
+
+    /// Icon of a file on disk, once per path (file cards in the notch deck asked on every render).
+    private static let fileCache: NSCache<NSString, NSImage> = { let c = NSCache<NSString, NSImage>(); c.countLimit = 200; return c }()
+    static func fileIcon(forPath path: String) -> NSImage {
+        if let hit = fileCache.object(forKey: path as NSString) { return hit }
+        let icon = NSWorkspace.shared.icon(forFile: path)
+        fileCache.setObject(icon, forKey: path as NSString)
+        return icon
     }
 }
 

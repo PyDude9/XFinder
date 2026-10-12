@@ -1,5 +1,48 @@
 import SwiftUI
 import AppKit
+import ImageIO
+
+/// Decoded, downsampled thumbnails for the deck. Measured 2026-10-12: the cards decoded their picture with
+/// `NSImage(contentsOfFile:)` on every render — a 2722×1562 PNG for a 174×100 tile, again on each key press.
+/// ImageIO's thumbnail path decodes at most `maxPixel` on the long side (and applies EXIF rotation); the
+/// result is kept per path. Payload files are written once, so a path never changes meaning.
+@MainActor
+enum NotchThumbnailCache {
+    private static let cache: NSCache<NSString, NSImage> = { let c = NSCache<NSString, NSImage>(); c.countLimit = 120; return c }()
+    private static let missing = NSImage()
+
+    static func image(atPath path: String, maxPixel: Int = 480) -> NSImage? {
+        let key = "\(path)#\(maxPixel)" as NSString
+        if let hit = cache.object(forKey: key) { return hit === missing ? nil : hit }
+        let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
+                                     kCGImageSourceCreateThumbnailWithTransform: true,
+                                     kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+                                     kCGImageSourceShouldCache: false]
+        guard let src = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
+              let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary) else {
+            cache.setObject(missing, forKey: key)
+            return nil
+        }
+        let img = NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
+        cache.setObject(img, forKey: key)
+        return img
+    }
+}
+
+/// The full text of a clip for the footer's word/line count, read from its payload file ONCE per path.
+/// Before this the deck re-read every visible payload file on each render.
+@MainActor
+enum NotchTextCache {
+    private static let cache: NSCache<NSString, NSString> = { let c = NSCache<NSString, NSString>(); c.countLimit = 200; return c }()
+
+    static func fullText(snippet: String?, payloadPath: String?) -> String? {
+        guard let p = payloadPath, !p.isEmpty else { return snippet }
+        if let hit = cache.object(forKey: p as NSString) { return hit as String }
+        let full = ClipboardText.fullText(snippet: snippet, payloadPath: p) ?? snippet
+        if let full { cache.setObject(full as NSString, forKey: p as NSString) }
+        return full
+    }
+}
 
 /// One clip as a card on the BLACK notch surface (D0, wireframe B): a 130×92 tile with the content on
 /// top and a 22 pt footer — source-app icon · age · pin · one fact (`NotchClipboardRules.meta`).
@@ -61,9 +104,17 @@ struct NotchClipCardView: View {
     private var imageBody: some View {
         ZStack(alignment: .topTrailing) {
             if let path = record.thumbnailPath ?? record.payloadPath ?? record.metadata["path"],
-               let img = NSImage(contentsOfFile: path) {
-                Image(nsImage: img).resizable().aspectRatio(contentMode: .fill)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
+               let img = NotchThumbnailCache.image(atPath: path) {
+                // Picture area = card minus the 22-pt footer. Fill when the shapes are close, fit (whole picture
+                // on a backdrop) when they are not — a 2.8:1 screenshot filled here was a zoomed centre crop.
+                let tileAspect = Double(174) / Double(max(1, height - 22))
+                let fits = NotchClipboardRules.imageScaling(imageAspect: Double(img.size.width) / Double(max(1, img.size.height)),
+                                                            tileAspect: tileAspect) == .fit
+                ZStack {
+                    if fits { Color.black.opacity(0.28) }
+                    Image(nsImage: img).resizable().aspectRatio(contentMode: fits ? .fit : .fill)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity).clipped()
+                }
             } else {
                 Image(systemName: "photo").font(XFinderTokens.Font.pageIcon).opacity(0.5)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -91,7 +142,7 @@ struct NotchClipCardView: View {
     private var fileBody: some View {
         HStack(alignment: .center, spacing: 8) {
             if let path = record.payloadPath ?? record.metadata["path"], FileManager.default.fileExists(atPath: path) {
-                Image(nsImage: NSWorkspace.shared.icon(forFile: path)).resizable().frame(width: 28, height: 28)
+                Image(nsImage: ClipboardAppIcon.fileIcon(forPath: path)).resizable().frame(width: 28, height: 28)
             } else {
                 Image(systemName: "doc").font(.system(size: 22)).opacity(0.65).frame(width: 28, height: 28)
             }
@@ -105,7 +156,7 @@ struct NotchClipCardView: View {
     private var meta: NotchClipboardRules.Meta? {
         NotchClipboardRules.meta(type: record.type, dimensions: record.metadata["dimensions"],
                                  path: record.payloadPath ?? record.metadata["path"],
-                                 text: ClipboardText.fullText(snippet: record.textSnippet, payloadPath: record.type == .file ? nil : record.payloadPath))
+                                 text: NotchTextCache.fullText(snippet: record.textSnippet, payloadPath: record.type == .file ? nil : record.payloadPath))
     }
 
     private var footer: some View {

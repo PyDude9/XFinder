@@ -168,11 +168,12 @@ struct NotchClipboardView: View {
     static let cardHeight: CGFloat = 122
 
     var body: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight + 2) {
+        let list = items          // once per render — filter + sort of the loaded history, not once per use
+        return VStack(alignment: .leading, spacing: XFinderTokens.Space.tight + 2) {
             chipRow.disabled(locked).opacity(locked ? 0.35 : 1)
             if locked { lockView }
-            else if items.isEmpty { emptyView }
-            else { deck }
+            else if list.isEmpty { emptyView }
+            else { deck(list) }
             footer
         }
         .environment(manager)
@@ -278,9 +279,8 @@ struct NotchClipboardView: View {
 
     // MARK: The deck, the lock, the empty state
 
-    private var deck: some View {
-        let list = items
-        return ScrollViewReader { proxy in
+    private func deck(_ list: [ClipboardRecord]) -> some View {
+        ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 8) {
                     ForEach(list) { record in

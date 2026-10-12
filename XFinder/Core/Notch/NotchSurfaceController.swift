@@ -169,8 +169,7 @@ final class NotchSurfaceController {
     /// Deliberate open: badge / peek click, or the Finder-extension URL. `page` lands on that page.
     func reveal(page: NotchSurfaceMachine.Page = .files) {
         if !state.isOpen { surfaceScreen = WindowManager.screenUnderPointer() }
-        dispatch(.activate)
-        if page != .files { dispatch(.switchPage(page)) }
+        dispatch(.activateOn(page))     // ONE transition — see the machine's note on activateOn
     }
 
     /// A tab in the open hub (B5).
@@ -585,10 +584,22 @@ final class NotchSurfaceController {
         panel.hasShadow = machine.anchor == .pointer      // at the notch a shadow would reveal the rect
 
         if !wasVisible || anchorChanged {
+            // D0c: at the notch the surface GROWS OUT OF THE NOTCH — the window is given its final frame at
+            // once (never animated), the shape starts at the notch's own size and springs to the state's size
+            // on the next run-loop turn. At the pointer (a shake) it still appears instantly under the hand.
+            let grow = !wasVisible && machine.anchor == .notch
             var t = Transaction(); t.disablesAnimations = true
-            withTransaction(t) { applyModel(notch: notch) }
+            withTransaction(t) {
+                model.appearFromNotch = grow
+                applyModel(notch: notch)
+            }
             panel.setFrame(target, display: true)
             if !wasVisible { panel.orderFrontRegardless() }   // never key: the user's app keeps focus
+            if grow {
+                DispatchQueue.main.async { [weak self] in
+                    MainActor.assumeIsolated { self?.model.appearFromNotch = false }
+                }
+            }
             return
         }
         // A tray at the pointer may have been dragged aside by its title strip; it has one fixed size,
@@ -601,6 +612,12 @@ final class NotchSurfaceController {
             panel.setFrame(target, display: true)
             applyModel(notch: notch)
         } else {
+            // One axis shrinks (maybe while the other grows — tray 440×254 → clipboard 752×232): give the
+            // window the UNION of both frames now so the shape can animate without being clipped, and
+            // settle on the exact target once the spring has run. Measured before this: the clipboard hub
+            // grew inside the tray's 440-pt window for 0.32 s and then jumped 156 pt to the left.
+            let union = panel.frame.union(target)
+            if union != panel.frame { panel.setFrame(union, display: true) }
             applyModel(notch: notch)
             let work = DispatchWorkItem { [weak self] in
                 MainActor.assumeIsolated { self?.panel?.setFrame(target, display: true) }

@@ -31,6 +31,9 @@ final class NotchSurfaceModel {
     var nowPlayingAvailability: NowPlaying.Availability = .off
     /// B7: whether a screen without a notch gets a pill (mirrors the `notch.pillOnPlainScreens` reader).
     var pillOnPlainScreens = true
+    /// D0c: true for the first frame of a surface opening at the notch — the shape is drawn at the notch's
+    /// own size and the controller flips this on the next run-loop turn, so the hub springs out of the notch.
+    var appearFromNotch = false
 }
 
 /// Root of the Notch surface window. The window is sized by `NotchSurfaceLayout`; this view draws
@@ -42,13 +45,19 @@ struct NotchSurfaceView: View {
     @State private var store = DropTrayStore.shared
     @State private var isTargeted = false
 
-    private var size: CGSize {
+    /// The state's own size — what the content is laid out at (once per state, not once per animation frame).
+    private var stateSize: CGSize {
         let notch = CGRect(origin: .zero, size: model.notchSize)
         return NotchSurfaceLayout.size(for: model.state, anchor: model.anchor,
                                        itemCount: model.itemCount, notch: notch,
                                        timerActive: model.timerText != nil,
                                        nowPlayingActive: nowPlayingActive,
                                        pillOnPlainScreens: model.pillOnPlainScreens) ?? .zero
+    }
+
+    /// The drawn (animated) size: the notch itself on the first frame of an opening (D0c), else the state's.
+    private var size: CGSize {
+        model.appearFromNotch ? model.notchSize : stateSize
     }
 
     /// A screen without a notch: the surface hangs under the menu bar as a free-standing card / pill.
@@ -59,8 +68,10 @@ struct NotchSurfaceView: View {
     /// At the notch the top edge is flush with the screen (the notch has no top edge); a tray opened
     /// at the pointer is a free-standing card, rounded on all four corners.
     private var atNotch: Bool { model.anchor == .notch }
+    /// At the notch — real or virtual (D0c: a plain screen's surface hangs from the top edge too) — the top
+    /// edge is flush with the bezel; a tray opened at the pointer is a free-standing card, rounded all round.
     private var shape: NotchShape {
-        NotchShape(bottomRadius: bottomRadius, topRadius: (atNotch && !plainScreen) ? 0 : bottomRadius)
+        NotchShape(bottomRadius: bottomRadius, topRadius: atNotch ? 0 : bottomRadius)
     }
 
     private var bottomRadius: CGFloat {
@@ -71,17 +82,30 @@ struct NotchSurfaceView: View {
         }
     }
 
+    /// Measured 2026-10-12 with `sample` during an open: 214 of 565 main-thread samples sat in
+    /// `-[NSAnimation _runBlocking]` under `NSHostingView.layout` — the hosting view was ANIMATING THE
+    /// WINDOW'S FRAME to follow this view's ideal size (`sizingOptions = []` does not stop it), and
+    /// AppKit's window animation blocks the main thread, so the SwiftUI spring could not render: the
+    /// hub grew in steps and the whole app stalled ~200 ms per open. The root is therefore a
+    /// `GeometryReader`, whose ideal size is fixed, so the window (sized by the controller before it is
+    /// shown) never moves; only the shape inside animates, and the content is laid out ONCE at the
+    /// state's size while the clip grows over it.
     var body: some View {
-        ZStack(alignment: .top) {
-            shape.fill(Color.black)
-            shape.strokeBorder(isTargeted ? Color.accentColor : Color.white.opacity(0.12), lineWidth: isTargeted ? 2 : 1)
-            content
-                .padding(.top, (atNotch && !isClipboardHub) ? model.notchSize.height : 0)   // D0: that hub USES the notch band
+        GeometryReader { _ in
+            ZStack(alignment: .top) {
+                shape.fill(Color.black)
+                shape.strokeBorder(isTargeted ? Color.accentColor : Color.white.opacity(0.12), lineWidth: isTargeted ? 2 : 1)
+                content
+                    .padding(.top, (atNotch && !isClipboardHub) ? model.notchSize.height : 0)   // D0: that hub USES the notch band
+                    .frame(width: stateSize.width, height: stateSize.height, alignment: .top)
+                    .opacity(model.appearFromNotch ? 0 : 1)                                     // fades in as the shape grows
+            }
+            .frame(width: size.width, height: size.height, alignment: .top)
+            .clipShape(shape)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .animation(XFinderTokens.Motion.surface, value: model.state)
+            .animation(XFinderTokens.Motion.surface, value: model.appearFromNotch)
         }
-        .frame(width: size.width, height: size.height)
-        .clipShape(shape)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .animation(XFinderTokens.Motion.surface, value: model.state)
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
             ClipboardSounds.playCopy()
             // The URLs load asynchronously; report the drop only once they are in the store, so the

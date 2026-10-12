@@ -97,13 +97,16 @@ enum NotchSurfaceLayout {
             return SurfaceGeometry.frame(size: size, anchor: .pointer(centre), screen: screen, visible: visible)
         }
         if notch.height > 0 { return SurfaceGeometry.expandedNotchFrame(collapsed: notch, size: size, screen: screen) }
+        // D0c (user, 2026-10-12, after the OneNotch reference): a screen WITHOUT a notch gets a VIRTUAL one —
+        // every state hangs from the top edge over the menu bar's centre, exactly as at a real notch, so the
+        // surface looks the same on an external display. (B7 hung it under the menu bar; that is withdrawn.)
         let w = min(size.width, screen.width)
-        return SurfaceGeometry.clamp(CGRect(x: notch.midX - w / 2, y: visible.maxY - size.height, width: w, height: size.height), into: screen)
+        return SurfaceGeometry.clamp(CGRect(x: notch.midX - w / 2, y: notch.maxY - size.height, width: w, height: size.height), into: screen)
     }
 
-    /// The pill's own rect on a plain screen (what the hover zone becomes while it is shown).
+    /// The pill's own rect on a plain screen (what the hover zone becomes while it is shown): at the top edge.
     static func pillRect(notch: CGRect, visible: CGRect, metrics m: Metrics = .standard) -> CGRect {
-        CGRect(x: notch.midX - m.pillWidth / 2, y: visible.maxY - m.pillHeight, width: m.pillWidth, height: m.pillHeight)
+        CGRect(x: notch.midX - m.pillWidth / 2, y: notch.maxY - m.pillHeight, width: m.pillWidth, height: m.pillHeight)
     }
 
     /// Where the pointer must rest for a hover. Only the notch itself — plus the badge lip under it

@@ -50,6 +50,8 @@ run "D7 the clipboard page is as short as the tray" XFinder/Core/Notch/NotchSurf
   "'            page == .clipboard ? clipboardExpandedDrop : expandedDrop'" "'            expandedDrop'"
 run "D9 the clipboard page is as narrow as the tray (four cards cannot fit)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
   "'            page == .clipboard ? clipboardExpandedWidth : expandedWidth'" "'            expandedWidth'"
+run "D10 every image fills the tile (the 2.8:1 screenshot is a zoomed centre crop again)" $R \
+  "'        return (r > tolerance || r < 1 / tolerance) ? .fit : .fill'" "'        return .fill'"
 run "D8 the hotkey-surface reader defaults to the shelf (view says notch)" XFinder/Core/ClipboardShelfController.swift \
   "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"notch\"'" "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"shelf\"'"
 restore
