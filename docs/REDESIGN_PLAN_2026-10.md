@@ -163,6 +163,55 @@ on-device + khoá API riêng người dùng tự nhập, như Voice đã làm).
 
 ---
 
+## 3b. Đối chiếu lại với trang Tính năng OneNotch (2026-10-12, 50 mục, có kiểm chứng)
+
+Nguồn: ảnh chụp trang "Tính năng" của OneNotch (50 mục) người dùng gửi. Cách làm: một agent chỉ-đọc gán trạng thái từng mục
+theo code + plan (file:line), bốn agent khác đi bác từng dòng chưa "xong" — **0 bất đồng**. Bảng đầy đủ ở
+`scratchpad/plan-reconcile/map/table.md` (phiên); dưới đây là phần làm thay đổi kế hoạch.
+
+**Đã có (17)**: lịch sử clipboard · Copy Stack (⌘-bấm + ⌘V thay cho nhấn đúp ⌘C) · bảng & ghim · tìm `@` · dán khi bấm ·
+xuất/nhập cài đặt · riêng tư clipboard · pin & sạc · Đang phát · mọi nguồn phát (MediaRemote) · Bluetooth · Caps Lock ·
+mất mạng · hẹn giờ · chia cửa sổ ở notch · xử lý file ở notch · ẩn khi quay màn hình. Live-verify còn nợ ở các mục B4/B6
+đã ghi trong CLAUDE.md.
+
+**Việc nhanh (vừa với manager sẵn có, 0 % idle) → Phase D1, làm ngay sau D0c**:
+
+| # | Mục | Dựa trên | Ghi chú |
+|:--|:--|:--|:--|
+| 3 | Kéo thẻ lên chip bảng để ghim vào bảng | chip bảng đã có; `addItemToPinboard` | menu chuột phải "Bảng ghim ▸" đã có từ D0b |
+| 6 | Phím ⌘⌥C mở **khay nổi cũ** (panel thứ hai), ghim panel luôn mở | `ClipboardShelfController` còn nguyên | một hotkey nữa cho bề mặt sẵn có |
+| 7 | Nhận diện `rgb()` / `hsl()` ngoài `#hex` | `ClipboardClassifier.color(from:)` | parser thuần + test |
+| 9 | Cửa sổ sửa text của một mục (sửa rồi copy lại) | `ClipboardTransform` đã có 17 phép | sheet mỏng |
+| 14 | Nút "Tạm dừng ghi clipboard" (một công tắc, một reader) | monitor có `wakeAndCheck` | nay chỉ có bỏ-qua-app |
+| 16 | Chọn âm khi copy | `ClipboardSounds` | một khoá + picker |
+| 36 | Phát âm văn bản (TTS on-device, `AVSpeechSynthesizer`) | menu chuột phải thẻ | không mạng |
+| 43 | Vuốt hai ngón đổi trang / cuộn ngang trên hub | monitor `scrollWheel` chỉ khi hub mở | 0 % idle |
+| 44 | Bật/tắt + sắp xếp các trang trên notch | `Page` + một khoá thứ tự | nay bật/tắt riêng từng trang |
+| 47 | Màu nhấn tuỳ chọn cho bề mặt notch | `XFinderTokens` | không làm "Liquid Glass" giả |
+
+**Vừa (trang/card mới, timer theo nhu cầu) → xếp vào D/E/F sẵn có**: #4 Thư viện Clipboard (D, đã có) · #12 xuất
+`.xfinderclip` kèm media (D, đã có) · #13 tô màu code on-device (D, đã có) · #11 iCloud bằng
+`NSUbiquitousKeyValueStore` **cần entitlement + kiểm thật trước khi gọi là có** (nay `isAvailable` báo chưa cấu hình) · #20 nút
+player tuỳ biến (**probe mã `MRMediaRemoteSendCommand` shuffle/repeat trước**) · #26 Lịch & lời nhắc trên notch (F, EventKit) ·
+#35 từ điển (E, **Dictionary Services `DCSCopyTextDefinition` là API công khai, on-device** — không phải mạng) · #39 hiện trên nhiều
+màn hình cùng lúc (nay một màn một lúc; notch ảo trên màn không notch đã có từ D0c).
+
+**Tham vọng (target/quyền/API riêng) → F, mỗi cái phải có probe trước**: #21 sóng nhạc thời gian thực (`CATapDescription`
+process tap, macOS 14.2+, cần quyền) · #29 dịch nhanh (E; `translationd` từ chối binary ad-hoc — đo lại với chữ ký XFinder Dev) ·
+#30 chụp & chú thích (F) · #33 nhắc họp (F, sau #26) · #37 hạn mức Claude/Codex (F, đọc file cục bộ `~/.claude` — đo định dạng
+trước) · #38 thay thế vùng chọn (E, Smart Selection) · #40 theo dõi agent (F) · #41 duyệt yêu cầu agent trên notch (F, cần hook
+quyền của Claude Code — chưa rõ cơ chế) · #42 Clipboard MCP (D) · #48 19 ngôn ngữ (kiến trúc L10n hai ngôn ngữ — chỉ khi có
+người dịch thật).
+
+**Không làm, lý do đo được**: #8 xem trước link chỉ **opt-in mạng** như D đã ghi · #15 lời bài hát (mạng bên thứ ba) · #22 player
+màn hình khoá (private) · #25 thay HUD hệ thống (chỉ song song; OSDUIHelper private) · #34 engine dịch cloud (chỉ Apple on-device +
+khoá API tự nhập) · #45 ẩn icon app khác (chết trên macOS 27, đã đo) · #49 tự cập nhật nền (`UpdateChecker` do người dùng bấm là đủ
+cho MIT, không telemetry) · #50 Free/Pro.
+
+**Thứ tự tiếp theo của plan**: D0c ✅ → **D1 (bảng việc nhanh trên)** → D (Thư viện, tô màu code, MCP, xuất) → E → F → G.
+
+---
+
 ## 4. Lộ trình (UI/UX trước, đúng yêu cầu)
 
 Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong phase là thứ tự làm.
@@ -275,6 +324,13 @@ hàng chip = Tất cả · Đã ghim · Đã lưu · Gợi ý · chip loại có
 (+ Bảng ghim ▸). Hub theo trang: `NotchSurfaceLayout.expandedWidth/Drop(for:)`. Luật thuần `NotchClipboardRules` 11 test
 + 9 mutation. Fix kèm: lịch sử nạp rỗng lúc khởi động (DB mở sau fetch). **Chưa đo tay thật ⌘⇧V** — đo qua
 `xfinder://clipboard` + CGWindowList (752×232 tại x 488) + cây AX.
+
+**D0c ✅ 2026-10-12** — tốc độ & chuyển động: mở bằng một bước (`activateOn(page)`, hết nhảy x 649→488), hub **nở ra từ
+notch** (`appearFromNotch`), frame hợp khi đổi trang, **`SurfacePanel.animationBehavior = .none`** (zoom order-front của AppKit
+chặn main thread 214 mẫu/mở — đo bằng `sample`), root `GeometryReader` + nội dung layout một lần; cache icon app/file, thumbnail
+ImageIO ≤ 480 px, text payload; ảnh lệch tỉ lệ > 1,5× thì fit (luật thuần, mutation D10); History limit 20 · 100 · 1000 với dòng
+"hiện tại" cho giá trị cũ, cap là một reader và cũng giới hạn số dòng nạp; **màn không notch = notch ảo dính mép trên** (đảo B7).
+Đo: cửa sổ hiện một mẫu 752×232 (106 ms sau URL; 258 ms lần đầu), `_runBlocking` 0; CPU/mở+đóng ≈ 0,45 s **chưa giảm**.
 
 ### Phase E — Smart Selection
 Lớp phát hiện vùng chọn qua AX (`kAXSelectedTextAttribute`, cần Trợ năng) + popup `SurfacePanel(.pointer)`; dịch (15+),
