@@ -238,7 +238,8 @@ một lần Touch ID. Hàng rào: MCP và xuất `.xfinderclip` bỏ dòng khoá
 Secure Enclave thật 15/15 (không còn chữ rõ trong tệp mã hoá). Ba lỗi an toàn dữ liệu bắt được khi đọc code agent (xem CLAUDE.md "D4").
 **Chưa đo tay:** bước mở bằng Touch ID, huỷ Touch ID, mọi click. **Chưa làm (D4b):** xem trước link opt-in.
 
-**Thứ tự tiếp theo của plan**: D0c ✅ → D1 ✅ → D2 ✅ → D3 ✅ → D4a ✅ → **D4b (xem trước link opt-in, mạng)** → E → F → G.
+**Thứ tự tiếp theo của plan**: D0c ✅ → D1 ✅ → D2 ✅ → D3 ✅ → D4a ✅ → §3e N1–N8 + D4b ✅ (2026-10-13, dựng + test, **chưa đo live**) →
+**đo live cả đợt** (probe click-xuyên → cài → e2e N1/N3 → AX → CPU) → N5b (badge trên vùng chọn) → E → F → G.
 
 ### 3d. Brief D4 — Bảng khoá (U1/U2, 2026-10-12; **đã chọn B — hỏi Touch ID từng thẻ; thẻ khoá ở notch/shelf = placeholder 🔒**)
 
