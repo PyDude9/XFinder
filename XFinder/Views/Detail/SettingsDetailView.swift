@@ -45,6 +45,10 @@ private struct ClipboardSettingsBody: View {
     @AppStorage("clipboard.maxHistory") private var maxHistory = 1000
     @AppStorage("clipboard.autoDeleteDays") private var autoDeleteDays = 30
     @AppStorage("clipboard.sounds") private var sounds = true
+    /// D1 #16 — which system sound plays on copy; one reader: `ClipboardSounds.copySoundName`.
+    @AppStorage("clipboard.copySound") private var copySound = "Pop"
+    /// D1 #14 — pause recording; one reader: `ClipboardManager.isPaused`.
+    @AppStorage("clipboard.paused") private var paused = false
     /// Privacy lives here, not on its own page: excluding password managers is
     /// a property of *what the clipboard records*, not a separate feature.
     @AppStorage("privacy.excludePasswordManagers") private var excludePW = true
@@ -222,6 +226,10 @@ private struct ClipboardSettingsBody: View {
                               title: L10n.t("Riêng tư"),
                               subtitle: L10n.t("Ứng dụng không bao giờ được ghi vào Clipboard."))
 
+                ToggleRow(title: L10n.t("Tạm dừng ghi clipboard"),
+                          subtitle: L10n.t("Không ghi gì vào lịch sử cho tới khi bật lại. ⌘⇧V vẫn mở được; trang notch báo đang tạm dừng."),
+                          isOn: $paused)
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 ToggleRow(title: L10n.t("Bỏ qua trình quản lý mật khẩu"),
                           subtitle: "1Password, Bitwarden, LastPass, KeePassXC, Dashlane, Keychain",
                           isOn: $excludePW)
@@ -344,6 +352,11 @@ private struct ClipboardSettingsBody: View {
                 // the local-only promise. A switch with no reader is a lie (Part 0 §6).
                 ToggleRow(title: L10n.t("Âm thanh khi sao chép/dán"), subtitle: L10n.t("Tink/Pop hệ thống"), isOn: $sounds)
                     .padding(.horizontal, XFinderTokens.Space.page)
+                PickerRow(title: L10n.t("Âm sao chép"), selection: $copySound, width: 120) {
+                    ForEach(ClipboardSounds.copySoundChoices, id: \.self) { Text($0).tag($0) }
+                }
+                .padding(.horizontal, XFinderTokens.Space.page)
+                .disabled(!sounds)
             }
 
             Divider().padding(.horizontal, XFinderTokens.Space.page)

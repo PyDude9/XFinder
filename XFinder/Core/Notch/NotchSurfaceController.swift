@@ -1,5 +1,7 @@
 import AppKit
+import AVFoundation
 import LocalAuthentication
+import NaturalLanguage
 import SwiftUI
 
 /// The Notch surface — one floating surface that lives at the notch (or the top centre of a screen
@@ -508,6 +510,45 @@ final class NotchSurfaceController {
         dismiss()
         AppState.shared.navigate(to: .settingsClipboard)
         AppState.shared.bringMainWindowFront()
+    }
+
+    // MARK: - D1: speak, edit
+
+    private let speech = AVSpeechSynthesizer()
+    var isSpeaking: Bool { speech.isSpeaking }
+
+    /// D1 #36 — read a clip aloud with the system voice (on-device `AVSpeechSynthesizer`; the voice follows
+    /// the text's dominant language when a matching voice is installed). Pressing again stops.
+    func speak(_ record: ClipboardRecord) {
+        if speech.isSpeaking { speech.stopSpeaking(at: .immediate); return }
+        guard let text = NotchTextCache.fullText(snippet: record.textSnippet, payloadPath: record.payloadPath),
+              !text.isEmpty else { return }
+        let utterance = AVSpeechUtterance(string: text)
+        if let lang = NLLanguageRecognizer.dominantLanguage(for: text)?.rawValue,
+           let voice = AVSpeechSynthesisVoice(language: lang) {
+            utterance.voice = voice
+        }
+        speech.speak(utterance)
+    }
+
+    private var editorPanel: SurfacePanel?
+    private let editorModel = NotchTextEditorModel()
+
+    /// D1 #9 — open the clip's full text in the editor panel (built once, Spotlight position); "Sao chép"
+    /// copies the edited text, which the monitor records as a new clip. The hub closes first.
+    func editText(_ record: ClipboardRecord) {
+        editorModel.text = NotchTextCache.fullText(snippet: record.textSnippet, payloadPath: record.payloadPath) ?? ""
+        editorModel.sourceType = record.type
+        editorModel.onCopy = { [weak self] text in self?.copyText(text); self?.editorPanel?.hide() }
+        editorModel.onClose = { [weak self] in self?.editorPanel?.hide() }
+        if editorPanel == nil {
+            let p = SurfacePanel(kind: .interactive, size: CGSize(width: 560, height: 380))
+            p.host(NotchTextEditorView(model: editorModel))
+            editorPanel = p
+        }
+        dismiss()
+        editorPanel?.show(anchor: .spotlight)
+        editorPanel?.installClickOutside { [weak self] in self?.editorPanel?.hide() }
     }
 
     /// Runs a transform on the record's FULL text (the snippet is a 200-character preview; long

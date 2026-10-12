@@ -106,6 +106,10 @@ final class NotchClipboardRulesTests: XCTestCase {
         XCTAssertEqual(R.footer(pasteStackActive: false, remaining: 0, interceptsCommandV: false, notice: nil, autoPaste: false, accessibilityTrusted: false),
                        .hints, "auto-paste off ⇒ Return copies by design, nothing to warn about")
         XCTAssertEqual(R.footer(pasteStackActive: false, remaining: 0, interceptsCommandV: false, notice: nil, autoPaste: true, accessibilityTrusted: true), .hints)
+        XCTAssertEqual(R.footer(pasteStackActive: false, remaining: 0, interceptsCommandV: false, notice: nil, paused: true, autoPaste: true, accessibilityTrusted: false),
+                       .paused, "paused outranks the Accessibility warning — nothing is being recorded at all")
+        XCTAssertEqual(R.footer(pasteStackActive: false, remaining: 0, interceptsCommandV: false, notice: "n", paused: true, autoPaste: true, accessibilityTrusted: true),
+                       .notice("n"), "but a fresh action's result still shows first")
     }
 
     // MARK: Image tiles

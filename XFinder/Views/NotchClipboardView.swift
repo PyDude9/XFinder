@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 /// State of the notch's clipboard page. Owned by `NotchSurfaceController` so the keyboard handler and
 /// the view share one selection. D0: this page IS the ⌘⇧V clipboard — the floating shelf's job
@@ -198,6 +199,11 @@ struct NotchClipboardView: View {
                          on: model.scope == .history && type == nil, help: "\(L10n.t("Lịch sử Clipboard")) · ⌘1") { model.choose(scope: .history) }
                     chip(label: L10n.t("Đã ghim"), icon: "pin.fill", count: pinned, tint: .orange,
                          on: model.scope == .pinned, help: "⌘2") { model.choose(scope: .pinned) }
+                        .onDrop(of: [.plainText], isTargeted: nil) { providers in
+                            Self.dropRecordID(providers) { id in
+                                if let r = ClipboardManager.shared.history.first(where: { $0.id == id }), !r.isPinned { ClipboardManager.shared.togglePin(id) }
+                            }
+                        }
                     if saved > 0 {
                         chip(label: L10n.t("Đã lưu"), icon: "bookmark.fill", count: saved,
                              on: model.scope == .saved, help: "⌘3") { model.choose(scope: .saved) }
@@ -219,6 +225,9 @@ struct NotchClipboardView: View {
                              on: model.scope == .board(b.id), help: i + 4 <= 9 ? "⌘\(i + 4)" : "") {
                             model.choose(scope: .board(b.id))
                         }
+                        .onDrop(of: [.plainText], isTargeted: nil) { providers in
+                            Self.dropRecordID(providers) { id in ClipboardManager.shared.addItemToPinboard(id, pinboardID: b.id) }
+                        }
                     }
                     // "+" — boards are made on the Cài đặt Clipboard page, not in an overlay inside the hub.
                     Button { NotchSurfaceController.shared.openClipboardSettings() } label: {
@@ -235,6 +244,16 @@ struct NotchClipboardView: View {
             sortMenu
         }
         .frame(height: 22)
+    }
+
+    /// D1 #3 — a card dragged onto a chip carries its record id as plain text; the chip's action runs on the main actor.
+    private static func dropRecordID(_ providers: [NSItemProvider], _ action: @escaping @MainActor @Sendable (UUID) -> Void) -> Bool {
+        guard let p = providers.first(where: { $0.canLoadObject(ofClass: NSString.self) }) else { return false }
+        _ = p.loadObject(ofClass: NSString.self) { obj, _ in
+            guard let s = obj as? String, let id = UUID(uuidString: s) else { return }
+            Task { @MainActor in action(id) }
+        }
+        return true
     }
 
     private func chip(label: String?, icon: String?, count: Int?, tint: Color? = nil, on: Bool, help: String,
@@ -299,6 +318,7 @@ struct NotchClipboardView: View {
         let stackIndex = manager.pasteStack.items.firstIndex(of: record).map { $0 + 1 }
         return NotchClipCardView(record: record, selected: selected, stackIndex: stackIndex, now: now, height: Self.cardHeight)
             .frame(width: Self.cardWidth)
+            .onDrag { NSItemProvider(object: record.id.uuidString as NSString) }   // D1 #3: drop on a board chip
             .onTapGesture { select(record) }
             .contextMenu { contextMenu(record) }
             .help("\(record.type.titleVI) · \(record.sourceAppName ?? "") · \(NotchClipCardView.ageLabel(record.timestamp, now: now))")
@@ -345,6 +365,7 @@ struct NotchClipboardView: View {
                                                   remaining: manager.pasteStack.remaining,
                                                   interceptsCommandV: NotchSurfaceController.shared.pasteStackInterceptsCommandV,
                                                   notice: model.notice,
+                                                  paused: manager.isPaused,
                                                   autoPaste: ClipboardShelfController.shared.autoPasteAfterSelection,
                                                   accessibilityTrusted: WindowManager.isTrusted)
         HStack(spacing: XFinderTokens.Space.tight) {
@@ -364,6 +385,11 @@ struct NotchClipboardView: View {
                 Button(L10n.t("Hủy")) { manager.stopPasteStack() }.buttonStyle(NotchPillButtonStyle(primary: false))
             case .notice(let key):
                 Text(L10n.t(key)).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65)).lineLimit(1)
+            case .paused:
+                Image(systemName: "pause.circle.fill").font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                Text(L10n.t("Đang tạm dừng ghi clipboard.")).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65)).lineLimit(1)
+                Spacer(minLength: 4)
+                Button(L10n.t("Mở Cài đặt")) { NotchSurfaceController.shared.openClipboardSettings() }.buttonStyle(NotchPillButtonStyle(primary: false))
             case .accessibilityMissing:
                 Image(systemName: "exclamationmark.triangle.fill").font(XFinderTokens.Font.caption).foregroundColor(.orange)
                 Text(L10n.t("Chưa có Trợ năng: ↩ chỉ sao chép, dán bằng ⌘V."))
@@ -381,6 +407,14 @@ struct NotchClipboardView: View {
         Button(L10n.t("Dán (Return)")) { NotchSurfaceController.shared.pasteFromClipboardPage(record) }
         Button(L10n.t("Dán dạng text thuần (⇧Return)")) { NotchSurfaceController.shared.pasteFromClipboardPage(record, plainText: true) }
         Button(L10n.t("Xem nhanh (Space)")) { NotchSurfaceController.shared.quickLook(record) }
+        if record.type != .image, record.type != .file, record.type != .color {
+            Button(L10n.t("Sửa văn bản…")) { NotchSurfaceController.shared.editText(record) }
+            if NotchSurfaceController.shared.isSpeaking {
+                Button(L10n.t("Dừng phát âm")) { NotchSurfaceController.shared.speak(record) }
+            } else {
+                Button(L10n.t("Phát âm")) { NotchSurfaceController.shared.speak(record) }
+            }
+        }
         Divider()
         if record.isPinned {
             Button(L10n.t("Bỏ ghim")) { manager.togglePin(record.id) }

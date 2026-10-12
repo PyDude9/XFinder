@@ -7818,6 +7818,46 @@
     "Màn hình ngoài / iMac: tệp đang giữ, hẹn giờ và bài đang phát hiện trong một viên thuốc nhỏ dính mép trên, giữa thanh menu. Chưa đo trên màn hình thật — chỉ hình học.": {
       "en": "External display / iMac: held files, the timer and the playing track show in a small pill flush with the top edge, centred in the menu bar. Not measured on a real display yet — geometry only.",
       "scope": "sentence"
+    },
+    "Tạm dừng ghi clipboard": {
+      "en": "Pause clipboard recording",
+      "scope": "sentence"
+    },
+    "Không ghi gì vào lịch sử cho tới khi bật lại. ⌘⇧V vẫn mở được; trang notch báo đang tạm dừng.": {
+      "en": "Nothing is recorded until you turn this off. ⌘⇧V still opens; the notch page says recording is paused.",
+      "scope": "sentence"
+    },
+    "Đang tạm dừng ghi clipboard.": {
+      "en": "Clipboard recording is paused.",
+      "scope": "sentence"
+    },
+    "Âm sao chép": {
+      "en": "Copy sound",
+      "scope": "sentence"
+    },
+    "Sửa văn bản…": {
+      "en": "Edit text…",
+      "scope": "sentence"
+    },
+    "Sửa văn bản": {
+      "en": "Edit text",
+      "scope": "sentence"
+    },
+    "Phát âm": {
+      "en": "Speak",
+      "scope": "sentence"
+    },
+    "Dừng phát âm": {
+      "en": "Stop speaking",
+      "scope": "sentence"
+    },
+    "Ghim khay (không đóng khi bấm ra ngoài)": {
+      "en": "Pin the shelf (stays open when you click outside)",
+      "scope": "sentence"
+    },
+    "Bỏ ghim khay": {
+      "en": "Unpin the shelf",
+      "scope": "sentence"
     }
   }
 }

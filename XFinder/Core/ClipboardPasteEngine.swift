@@ -100,9 +100,15 @@ enum ClipboardSounds {
         NSSound(named: "Tink")?.play()
     }
 
+    /// D1 #16 — the ONE reader of `clipboard.copySound`. System sound names; "Pop" is what shipped before.
+    static let copySoundChoices = ["Pop", "Tink", "Glass", "Purr", "Blow", "Frog"]
+    private static var copySoundName: String {
+        UserDefaults.standard.string(forKey: "clipboard.copySound") ?? "Pop"
+    }
+
     static func playCopy() {
         guard soundsOn else { return }
-        NSSound(named: "Pop")?.play()
+        NSSound(named: NSSound.Name(copySoundName))?.play()
         if #available(macOS 12.0, *) {
             NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .now)
         }
@@ -262,15 +268,12 @@ enum ClipboardAppColor {
 /// Content-type classifier: code / color / file / link / image / text.
 /// Pure + nonisolated so capture paths can call it off the main actor.
 enum ClipboardClassifier {
-    private static let hexRE = try? NSRegularExpression(pattern: #"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"#)
 
     static func classify(text: String) -> ContentType {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty else { return .text }
-        if t.count <= 9, let re = hexRE,
-           re.firstMatch(in: t, range: NSRange(t.startIndex..., in: t)) != nil {
-            return .color
-        }
+        // D1 #7: #hex, rgb(), hsl() — whole-string only (`ColorFormat.parse`, pure, tested).
+        if ColorFormat.parse(t) != nil { return .color }
         if t.count < 2000, let u = URL(string: t),
            let scheme = u.scheme?.lowercased(), ["http", "https"].contains(scheme) {
             return .link
@@ -310,24 +313,10 @@ enum ClipboardClassifier {
     }
 
     /// NSColor from a #RGB/RRGGBB/RRGGBBAA string; nil when unparseable.
-    static func color(from hex: String) -> NSColor? {
-        var h = hex.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard h.hasPrefix("#") else { return nil }
-        h.removeFirst()
-        if h.count == 3 { h = h.map { "\($0)\($0)" }.joined() }
-        var value: UInt64 = 0
-        guard Scanner(string: h).scanHexInt64(&value) else { return nil }
-        if h.count == 6 {
-            return NSColor(srgbRed: CGFloat((value >> 16) & 0xFF) / 255,
-                           green: CGFloat((value >> 8) & 0xFF) / 255,
-                           blue: CGFloat(value & 0xFF) / 255, alpha: 1)
-        } else if h.count == 8 {
-            return NSColor(srgbRed: CGFloat((value >> 24) & 0xFF) / 255,
-                           green: CGFloat((value >> 16) & 0xFF) / 255,
-                           blue: CGFloat((value >> 8) & 0xFF) / 255,
-                           alpha: CGFloat(value & 0xFF) / 255)
-        }
-        return nil
+    /// Any colour notation `ColorFormat.parse` knows (#hex, rgb(), hsl()) → an sRGB NSColor.
+    static func color(from text: String) -> NSColor? {
+        guard let c = ColorFormat.parse(text) else { return nil }
+        return NSColor(srgbRed: c.red, green: c.green, blue: c.blue, alpha: c.alpha)
     }
 
     /// Detects credit card numbers (Luhn candidate, 13-19 digits) to prevent saving payment secrets.

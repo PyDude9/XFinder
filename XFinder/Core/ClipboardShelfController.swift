@@ -36,6 +36,8 @@ final class ClipboardShelfController {
     }
 
     var showingSuggestions: Bool = false
+    /// D1 #6: a pinned shelf ignores clicks outside (Esc and the close button still close it).
+    var isPinned = false
     /// The app to paste back into — captured before the shelf appears.
     private(set) var targetPID: pid_t?
 
@@ -163,6 +165,11 @@ final class ClipboardShelfController {
         // ⌘⇧V — the clipboard hotkey; which surface it opens is a setting (D0, `hotkeyPressed`).
         if cmd, shift, keyCode == 9 { // V
             Task { @MainActor in self.hotkeyPressed() }
+            return nil
+        }
+        // ⌘⌥C — D1 #6: the floating shelf itself, whatever ⌘⇧V is set to (the reference's second surface).
+        if cmd, flags.contains(.maskAlternate), !shift, !flags.contains(.maskControl), keyCode == 8 { // C
+            Task { @MainActor in self.toggle() }
             return nil
         }
 
@@ -306,7 +313,7 @@ final class ClipboardShelfController {
     }
 
     private func dismissIfClickedOutside() {
-        guard isOpen, let panel else { return }
+        guard isOpen, !isPinned, let panel else { return }
         if !panel.frame.contains(NSEvent.mouseLocation) { close() }
     }
 
@@ -658,6 +665,17 @@ private struct ClipboardShelfView: View {
                     RoundedRectangle(cornerRadius: 7)
                         .fill(Color.primary.opacity(0.06))
                 )
+
+                // D1 #6 — pin: the shelf stays open when you click into the app you are pasting into.
+                Button {
+                    controller.isPinned.toggle()
+                } label: {
+                    Image(systemName: controller.isPinned ? "pin.fill" : "pin")
+                        .font(.system(size: 12))
+                        .foregroundColor(controller.isPinned ? .accentColor : .secondary)
+                }
+                .buttonStyle(.plain)
+                .help(controller.isPinned ? L10n.t("Bỏ ghim khay") : L10n.t("Ghim khay (không đóng khi bấm ra ngoài)"))
 
                 if manager.pasteStack.active {
                     PasteStackHUD()

@@ -208,7 +208,12 @@ màn hình khoá (private) · #25 thay HUD hệ thống (chỉ song song; OSDUIH
 khoá API tự nhập) · #45 ẩn icon app khác (chết trên macOS 27, đã đo) · #49 tự cập nhật nền (`UpdateChecker` do người dùng bấm là đủ
 cho MIT, không telemetry) · #50 Free/Pro.
 
-**Thứ tự tiếp theo của plan**: D0c ✅ → **D1 (bảng việc nhanh trên)** → D (Thư viện, tô màu code, MCP, xuất) → E → F → G.
+**D1 — tiến độ**: nhóm 1 ✅ 2026-10-12 (#7 màu rgb/hsl · #14 tạm dừng ghi · #16 âm copy · #36 phát âm · #9 sửa văn bản ·
+#6 ⌘⌥C + ghim khay · #3 kéo thẻ lên chip bảng — đo: pasteboard thật ghi `color` cho rgb()/hsl(), tạm dừng không ghi dòng
+nào, footer notch báo; chưa đo tay: phát âm, editor, ⌘⌥C, kéo-thả). Nhóm 2 còn lại: #43 vuốt đổi trang · #44 bật/tắt +
+sắp xếp trang · #47 màu nhấn.
+
+**Thứ tự tiếp theo của plan**: D0c ✅ → D1 nhóm 1 ✅ → **D1 nhóm 2** → D (Thư viện, tô màu code, MCP, xuất) → E → F → G.
 
 ---
 

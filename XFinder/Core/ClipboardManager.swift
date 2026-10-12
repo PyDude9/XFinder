@@ -167,13 +167,17 @@ final class ClipboardManager {
         }
     }
 
+    /// D1 #14 — the ONE reader of `clipboard.paused`: while on, nothing is recorded (the change count
+    /// still advances so un-pausing does not swallow the stale item as new). Auto-clear still runs.
+    var isPaused: Bool { UserDefaults.standard.object(forKey: "clipboard.paused") as? Bool ?? false }
+
     @discardableResult
     private func checkPasteboard() -> Bool {
         let pb = NSPasteboard.general
         let now = pb.changeCount
         guard now != lastChangeCount else { return false }
         lastChangeCount = now
-        captureClipboardContent()
+        if !isPaused { captureClipboardContent() }
         // After capture, not before: cleaning may have rewritten the pasteboard (new count), and
         // a copy that was NOT ingested (concealed / password-manager) still needs its timer —
         // that is the copy auto-clear matters most for.

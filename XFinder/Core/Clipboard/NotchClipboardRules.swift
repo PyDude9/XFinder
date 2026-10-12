@@ -113,16 +113,19 @@ enum NotchClipboardRules {
         case hints
         case pasteStack(remaining: Int, interceptsCommandV: Bool)
         case notice(String)
+        case paused
         case accessibilityMissing
     }
 
     /// The one-line footer, most urgent first: a running Paste Stack, then the last action's notice,
-    /// then the standing warning that Return can only COPY (auto-paste on, no Accessibility — the
-    /// user must learn this before the first click, not after), then the key hints.
+    /// then "recording is paused" (D1 #14 — the deck looks normal while nothing new arrives, so the
+    /// page must say so), then the standing warning that Return can only COPY (auto-paste on, no
+    /// Accessibility — the user must learn this before the first click, not after), then the key hints.
     static func footer(pasteStackActive: Bool, remaining: Int, interceptsCommandV: Bool,
-                       notice: String?, autoPaste: Bool, accessibilityTrusted: Bool) -> Footer {
+                       notice: String?, paused: Bool = false, autoPaste: Bool, accessibilityTrusted: Bool) -> Footer {
         if pasteStackActive { return .pasteStack(remaining: remaining, interceptsCommandV: interceptsCommandV) }
         if let notice, !notice.isEmpty { return .notice(notice) }
+        if paused { return .paused }
         if autoPaste && !accessibilityTrusted { return .accessibilityMissing }
         return .hints
     }

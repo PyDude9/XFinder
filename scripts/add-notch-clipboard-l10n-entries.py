@@ -38,6 +38,17 @@ ENTRIES: dict[str, tuple[str, str]] = {
     # D0c: plain screens get a virtual notch at the top edge (B7 hung the surfaces under the menu bar)
     "Trên màn hình không có notch, XFinder vẽ một notch ảo: các bề mặt dính mép trên, ở giữa thanh menu, y như ở notch thật; rê chuột vào giữa mép trên để xem các tệp đang giữ.": ("On a screen without a notch XFinder draws a virtual one: the surfaces sit flush with the top edge, centred in the menu bar, exactly as at a real notch; rest the pointer on the middle of the top edge to see the files you are holding.", "sentence"),
     "Màn hình ngoài / iMac: tệp đang giữ, hẹn giờ và bài đang phát hiện trong một viên thuốc nhỏ dính mép trên, giữa thanh menu. Chưa đo trên màn hình thật — chỉ hình học.": ("External display / iMac: held files, the timer and the playing track show in a small pill flush with the top edge, centred in the menu bar. Not measured on a real display yet — geometry only.", "sentence"),
+    # D1 quick wins
+    "Tạm dừng ghi clipboard": ("Pause clipboard recording", "sentence"),
+    "Không ghi gì vào lịch sử cho tới khi bật lại. ⌘⇧V vẫn mở được; trang notch báo đang tạm dừng.": ("Nothing is recorded until you turn this off. ⌘⇧V still opens; the notch page says recording is paused.", "sentence"),
+    "Đang tạm dừng ghi clipboard.": ("Clipboard recording is paused.", "sentence"),
+    "Âm sao chép": ("Copy sound", "sentence"),
+    "Sửa văn bản…": ("Edit text…", "sentence"),
+    "Sửa văn bản": ("Edit text", "sentence"),
+    "Phát âm": ("Speak", "sentence"),
+    "Dừng phát âm": ("Stop speaking", "sentence"),
+    "Ghim khay (không đóng khi bấm ra ngoài)": ("Pin the shelf (stays open when you click outside)", "sentence"),
+    "Bỏ ghim khay": ("Unpin the shelf", "sentence"),
 }
 
 

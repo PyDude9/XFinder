@@ -133,6 +133,13 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "clipboard.maxHistory",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
                reader: "XFinder/Core/ClipboardManager.swift"),
+        // D1: pause recording (Bool) and the copy sound (String).
+        Switch(key: "clipboard.paused",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
+               reader: "XFinder/Core/ClipboardManager.swift"),
+        Switch(key: "clipboard.copySound",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
+               reader: "XFinder/Core/ClipboardPasteEngine.swift"),
     ]
 
     // MARK: - Source access
