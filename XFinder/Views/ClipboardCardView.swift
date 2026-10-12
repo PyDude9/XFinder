@@ -239,8 +239,10 @@ struct ClipboardCardView: View {
     private var imageBody: some View {
         VStack(alignment: .center, spacing: 6) {
             ZStack(alignment: .bottomTrailing) {
+                // D3 review: decode through the shared ImageIO thumbnail cache (≤ 480 px) instead of
+                // `NSImage(contentsOfFile:)` in a computed property — the Library shows 60 of these at once.
                 if let path = record.thumbnailPath ?? record.payloadPath ?? record.metadata["path"],
-                   let img = NSImage(contentsOfFile: path) {
+                   let img = NotchThumbnailCache.image(atPath: path) {
                     Image(nsImage: img)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -345,7 +347,7 @@ struct ClipboardCardView: View {
     private var fileBody: some View {
         VStack(alignment: .leading, spacing: 6) {
             let path = record.metadata["path"] ?? record.payloadPath
-            if let path, let img = NSImage(contentsOfFile: path) {
+            if let path, let img = NotchThumbnailCache.image(atPath: path) {
                 ZStack(alignment: .bottomTrailing) {
                     Image(nsImage: img)
                         .resizable()

@@ -7990,6 +7990,126 @@
     "Không thực hiện được: ": {
       "en": "Could not finish: ",
       "scope": "fragment"
+    },
+    "Thư viện Clipboard": {
+      "en": "Clipboard Library",
+      "scope": "sentence"
+    },
+    " dòng · ": {
+      "en": " lines · ",
+      "scope": "fragment"
+    },
+    " lần": {
+      "en": " times",
+      "scope": "fragment"
+    },
+    " trong ": {
+      "en": " of ",
+      "scope": "fragment"
+    },
+    "+ Bảng mới": {
+      "en": "+ New board",
+      "scope": "sentence"
+    },
+    "Biến đổi ▸": {
+      "en": "Transform ▸",
+      "scope": "sentence"
+    },
+    "BẢNG": {
+      "en": "BOARDS",
+      "scope": "sentence"
+    },
+    "Bảng": {
+      "en": "Boards",
+      "scope": "sentence"
+    },
+    "Bảng ▸": {
+      "en": "Boards ▸",
+      "scope": "sentence"
+    },
+    "Dán vào app trước đó ": {
+      "en": "Paste into previous app ",
+      "scope": "fragment"
+    },
+    "Không rõ": {
+      "en": "Unknown",
+      "scope": "sentence"
+    },
+    "Kích thước": {
+      "en": "Size",
+      "scope": "sentence"
+    },
+    "LOẠI": {
+      "en": "TYPE",
+      "scope": "sentence"
+    },
+    "Lúc": {
+      "en": "When",
+      "scope": "sentence"
+    },
+    "LỌC": {
+      "en": "FILTER",
+      "scope": "sentence"
+    },
+    "Mở nguồn": {
+      "en": "Open source",
+      "scope": "sentence"
+    },
+    "Nguồn": {
+      "en": "Source",
+      "scope": "sentence"
+    },
+    "Theo loại": {
+      "en": "By type",
+      "scope": "sentence"
+    },
+    "Theo ứng dụng": {
+      "en": "By app",
+      "scope": "sentence"
+    },
+    "Thêm…": {
+      "en": "More…",
+      "scope": "sentence"
+    },
+    "Tìm một mục cũ trong toàn bộ lịch sử, lọc theo loại, ứng dụng, bảng hoặc thời gian.": {
+      "en": "Find an old item anywhere in the history, filtered by type, app, board or time.",
+      "scope": "sentence"
+    },
+    "Tìm… (⌘F, @ảnh @link …)": {
+      "en": "Search… (⌘F, @image @link …)",
+      "scope": "sentence"
+    },
+    "Tải thêm": {
+      "en": "Load more",
+      "scope": "sentence"
+    },
+    "Xem nhanh ": {
+      "en": "Quick Look ",
+      "scope": "fragment"
+    },
+    "Xoá": {
+      "en": "Delete",
+      "scope": "sentence"
+    },
+    "Đang nạp lịch sử…": {
+      "en": "Loading history…",
+      "scope": "sentence"
+    },
+    "Đã sao chép.": {
+      "en": "Copied.",
+      "scope": "sentence"
+    },
+    "ỨNG DỤNG": {
+      "en": "APPS",
+      "scope": "sentence"
+    },
+    "Không có app nào để dán — đã sao chép.": {
+      "en": "No app to paste into — copied instead.",
+      "scope": "sentence"
+    },
+    "Chưa cấp quyền Trợ năng nên chỉ sao chép, chưa dán.": {
+      "en": "Accessibility is not granted, so this was copied, not pasted.",
+      "scope": "sentence"
     }
   }
 }

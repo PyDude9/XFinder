@@ -208,42 +208,77 @@ actor DatabaseService {
         return sqlite3_step(statement) == SQLITE_DONE
     }
 
+    /// Shared row mapper for every clipboard SELECT below, so the capped fetch and the
+    /// library's uncapped fetch cannot drift apart on column order or JSON decoding.
+    /// `statement` must have been stepped to a row (`sqlite3_step == SQLITE_ROW`) and must
+    /// select exactly: id, type, timestamp, sourceBundleID, sourceAppName, textSnippet,
+    /// thumbnailPath, payloadPath, ocrText, pinboardID, metadata (in that column order).
+    private nonisolated static func mapClipboardRow(_ statement: OpaquePointer?) -> ClipboardRecord {
+        func col(_ i: Int32) -> String? {
+            guard let p = sqlite3_column_text(statement, i) else { return nil }
+            return String(cString: p)
+        }
+        let type = ContentType(rawValue: col(1) ?? "") ?? .text
+        var meta: [String: String] = [:]
+        if let m = col(10),
+           let d = m.data(using: .utf8),
+           let j = try? JSONSerialization.jsonObject(with: d) as? [String: String] {
+            meta = j
+        }
+        return ClipboardRecord(
+            id: UUID(uuidString: col(0) ?? "") ?? UUID(),
+            type: type,
+            timestamp: Date(timeIntervalSince1970: sqlite3_column_double(statement, 2)),
+            sourceBundleID: col(3), sourceAppName: col(4),
+            textSnippet: col(5), thumbnailPath: col(6),
+            payloadPath: col(7), ocrText: col(8),
+            pinboardID: col(9).flatMap(UUID.init(uuidString:)),
+            metadata: meta
+        )
+    }
+
+    private static let clipboardSelectColumns = """
+    id, type, timestamp, sourceBundleID, sourceAppName, textSnippet,
+           thumbnailPath, payloadPath, ocrText, pinboardID, metadata
+    """
+
     func fetchClipboardRecords(limit: Int = 1000) -> [ClipboardRecord] {
         guard let db = openIfNeeded() else { return [] }
-        let query = """
-        SELECT id, type, timestamp, sourceBundleID, sourceAppName, textSnippet,
-               thumbnailPath, payloadPath, ocrText, pinboardID, metadata
-        FROM clipboard_records ORDER BY timestamp DESC LIMIT ?
-        """
+        let query = "SELECT \(Self.clipboardSelectColumns) FROM clipboard_records ORDER BY timestamp DESC LIMIT ?"
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else { return [] }
         defer { sqlite3_finalize(statement) }
         sqlite3_bind_int(statement, 1, Int32(limit))
         var out: [ClipboardRecord] = []
         while sqlite3_step(statement) == SQLITE_ROW {
-            func col(_ i: Int32) -> String? {
-                guard let p = sqlite3_column_text(statement, i) else { return nil }
-                return String(cString: p)
-            }
-            let type = ContentType(rawValue: col(1) ?? "") ?? .text
-            var meta: [String: String] = [:]
-            if let m = col(10),
-               let d = m.data(using: .utf8),
-               let j = try? JSONSerialization.jsonObject(with: d) as? [String: String] {
-                meta = j
-            }
-            out.append(ClipboardRecord(
-                id: UUID(uuidString: col(0) ?? "") ?? UUID(),
-                type: type,
-                timestamp: Date(timeIntervalSince1970: sqlite3_column_double(statement, 2)),
-                sourceBundleID: col(3), sourceAppName: col(4),
-                textSnippet: col(5), thumbnailPath: col(6),
-                payloadPath: col(7), ocrText: col(8),
-                pinboardID: col(9).flatMap(UUID.init(uuidString:)),
-                metadata: meta
-            ))
+            out.append(Self.mapClipboardRow(statement))
         }
         return out
+    }
+
+    /// Every row, newest first, no cap — backs the Clipboard Library page (D3), which must see
+    /// everything in SQLite, not just `ClipboardManager`'s capped in-memory history.
+    func fetchAllClipboardRecords() -> [ClipboardRecord] {
+        guard let db = openIfNeeded() else { return [] }
+        let query = "SELECT \(Self.clipboardSelectColumns) FROM clipboard_records ORDER BY timestamp DESC"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(statement) }
+        var out: [ClipboardRecord] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            out.append(Self.mapClipboardRow(statement))
+        }
+        return out
+    }
+
+
+    /// Persist a row the library edited in place (pin toggle on a record outside `ClipboardManager`'s
+    /// capped history). Same column list and `INSERT OR REPLACE` shape as `insertClipboardRecord` —
+    /// this is that function under another name, kept separate because the Library contract calls
+    /// for one, but it must never drift from it, so it forwards there.
+    @discardableResult
+    func updateClipboardRecord(_ record: ClipboardRecord) async -> Bool {
+        await insertClipboardRecord(record)
     }
 
     func deleteClipboardRecord(_ id: UUID) {

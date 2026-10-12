@@ -223,8 +223,44 @@ tắc `clipboard.shelfHotkey`. Đo: server trả lời đúng qua stdio trên bi
 `clipboard_get` trả nguyên văn), `zip`/`tar` với đuôi `.xfinderclip` đo được, trang cài đặt EN 0 chữ Việt qua AX. **Chưa đo tay**:
 bấm Xuất/Nhập qua NSSavePanel, màu token bằng mắt, MCP từ Claude Code thật.
 
-**Thứ tự tiếp theo của plan**: D0c ✅ → D1 ✅ → D2 ✅ → **D3 (Thư viện Clipboard — qua cổng U1/U2/U3 của ui-ux; board khoá
-AES-GCM + Keychain; xem trước link opt-in)** → E → F → G.
+**D3 ✅ 2026-10-12 — Thư viện Clipboard, wireframe B** (chủ dự án chọn): hàng sidebar "Thư viện Clipboard" ở CÔNG CỤ,
+rail lọc 180 pt (Tất cả · Đã ghim · loại · app · bảng, có số đếm khớp SQLite), lưới `ClipboardCardView`, inspector 320 pt trượt
+từ phải, bàn phím ←→↑↓ ↩ ⇧↩ Space ⌘⌫ Esc ⌘F. Store riêng đọc **mọi** dòng SQLite (1 846), không đụng cap 200 của notch.
+Ba file viết song song theo hợp đồng (luật thuần 35 test · store · view), review đối kháng 35 agent: 11 xác nhận → sửa hết
+trừ 1 chấp nhận (reload cả bảng mỗi lần copy), 2 chia phiếu → sửa, 2 bác. Chưa đo tay: chọn thẻ/inspector/phím/dán vào app
+trước (thẻ là `.onTapGesture`, không bấm được qua AX; người dùng đang ở bàn phím nên không bắn sự kiện giả).
+
+**Thứ tự tiếp theo của plan**: D0c ✅ → D1 ✅ → D2 ✅ → D3 ✅ → **D4 (board khoá AES-GCM + Keychain; xem trước link opt-in)**
+→ E → F → G.
+
+### 3c. Brief D3 — Thư viện Clipboard (U1/U2, 2026-10-12; **đã chọn B, đã dựng**)
+
+**U1 — hiện trạng đo được.** Sidebar **không có** trang nội dung clipboard (quyết định 2026-10-10: nội dung ở ⌘⇧V/notch);
+`ClipboardTabView` đã bị xoá, `.clipboard` không còn trong enum. Hai bề mặt hiện có đều là *bề mặt nhanh*: notch = 4 thẻ,
+shelf = một hàng ngang + tìm. Lịch sử thật trên máy này: 1 846 bản ghi (text 1 020 · ảnh 295 · link 209 · markdown 190 · code 73 ·
+file 51 · màu 8), cap đang là 200 ⇒ **~1 600 bản ghi không có bề mặt nào với tới được**. Component có sẵn để tái dùng:
+`ClipboardCardView` (thẻ shelf, đủ loại), `NotchClipCardView`, `ClipboardQuickLook`, `HighlightedCodeText`, `PageHeader`/
+`SectionHeader`/`XFinderTokens`, bộ lọc `ClipboardFilterToken` (`@image @link …`), `ClipboardTransform` (17 phép), `ClipTransfer`.
+
+**U2 — việc chính.** *"Tôi cần tìm lại một clip cũ — ngoài 4 thẻ ở notch — lọc theo loại / app / bảng, xem kỹ, rồi dán, ghim
+vào bảng, hoặc dọn."* Thứ cần thấy ngay: **ô tìm**, **bộ lọc** (loại · app nguồn · bảng · thời gian), **lưới thẻ** (ảnh thấy
+ảnh, code có màu), **chi tiết một mục** (toàn văn / ảnh gốc, meta: app, lúc, kích thước; hành động: Dán · Sao chép · Ghim ·
+Bảng ▸ · Biến đổi ▸ · Xoá). Việc KHÔNG thuộc trang này (đã có chỗ): cài đặt (Cài đặt Clipboard), dán nhanh (notch/shelf),
+xuất/nhập (nút ở Cài đặt).
+
+**Ràng buộc.** Cap 200 là của notch — thư viện có **store riêng** nạp toàn bộ bảng một lần (`fetchAllClipboardRecords`, 1 846
+dòng = vài ms trên actor) rồi lọc/sắp xếp trong bộ nhớ bằng luật thuần có test; "trang" chỉ là cửa sổ hiển thị 60 thẻ.
+(Brief ban đầu định phân trang từ SQLite; đổi vì facet đếm đúng cần cả tập, và 1 846 dòng không đáng một đường paging thứ hai.) Không timer. Mọi chuỗi
+qua `L10n.t`. Hành động Dán cần app đích ⇒ từ trang chính chỉ "Sao chép" + "Dán vào app trước đó" (ẩn cửa sổ rồi ⌘V, như
+shelf). Quyết định cần chủ dự án chốt khi chọn wireframe: **đưa lại một hàng sidebar "Clipboard" ở CÔNG CỤ** (đảo quyết định
+2026-10-10) hay mở thư viện từ nút "Mở thư viện…" trong notch/shelf + Cài đặt (không hàng sidebar).
+
+**U3 — ba wireframe** (`scratchpad/uiux/lib/wireframe.html?v=a|b|c`, ảnh gửi kèm):
+A. **Ba cột** (rail lọc · lưới thẻ · inspector cố định) — kiểu Paste/OneNotch; thấy nhiều nhất, cần cửa sổ ≥ 1 100 pt.
+B. **Hai cột + inspector trượt** (rail lọc · lưới; chọn một thẻ thì inspector trượt từ phải, Esc đóng) — vừa cửa sổ 900 pt.
+C. **Một cột, chip lọc trên** (như trang notch phóng to: chip loại/app/bảng + lưới; chi tiết là sheet) — ít code nhất, tái dùng
+`NotchClipboardView`. **Khuyên dùng: B** — cùng lưới với A, không ép bề rộng, inspector không chiếm chỗ khi chỉ lướt.
+
 
 ---
 

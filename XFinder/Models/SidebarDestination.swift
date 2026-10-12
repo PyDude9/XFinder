@@ -39,6 +39,9 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case ports
     // CÔNG CỤ
     case voiceTyping
+    /// D3 (2026-10-12): the Clipboard LIBRARY — every row in SQLite, filter rail, inspector. Content
+    /// returns to the sidebar by the owner's choice (wireframe B); the notch/shelf stay the quick surfaces.
+    case clipboard
     // CÀI ĐẶT
     // `settingsGeneral` was removed: "Cài đặt chung" only held theme + Dock
     // icon, both of which already live on Tổng quan / Điều khiển nhanh. A
@@ -84,6 +87,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .quickShare: return "Chia sẻ nhanh"
         case .ports: return "Cổng đang mở"
         case .voiceTyping: return "Nhập bằng giọng nói"
+        case .clipboard: return "Thư viện Clipboard"
         case .settingsClipboard: return "Cài đặt Clipboard"
         case .about: return "Giới thiệu"
         }
@@ -126,6 +130,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .quickShare: return "square.and.arrow.up"
         case .ports: return "point.3.connected.trianglepath.dotted"
         case .voiceTyping: return "mic.fill"
+        case .clipboard: return "doc.on.clipboard"
         case .settingsClipboard: return "gearshape"
         case .about: return "info.circle"
         }
@@ -145,7 +150,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             ("CỬA SỔ", [.windowPreview, .snapZones, .mouseGestures, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .actionHistory]),
-            ("CÔNG CỤ", [.voiceTyping, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
+            ("CÔNG CỤ", [.voiceTyping, .clipboard, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare, .ports]),
             ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat]),
         ]

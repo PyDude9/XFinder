@@ -61,6 +61,9 @@
 		7F1A0242 /* Clipboard/ClipExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0243 /* Clipboard/ClipExport.swift */; };
 		7F1A0246 /* Components/HighlightedCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0247 /* Components/HighlightedCode.swift */; };
 		7F1A0248 /* Clipboard/ClipTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0249 /* Clipboard/ClipTransfer.swift */; };
+		7F1A024A /* Clipboard/ClipboardLibraryRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A024B /* Clipboard/ClipboardLibraryRules.swift */; };
+		7F1A024C /* Clipboard/ClipboardLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A024D /* Clipboard/ClipboardLibraryStore.swift */; };
+		7F1A024E /* Detail/ClipboardLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A024F /* Detail/ClipboardLibraryView.swift */; };
 		7F1A0220 /* SnapRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A021F /* SnapRowView.swift */; };
 		7F1A01CE /* Detail/FeaturesHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01CD /* Detail/FeaturesHubView.swift */; };
 		7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0058 /* Detail/AntiSleepDetailView.swift */; };
@@ -324,6 +327,9 @@
 		7F1A0243 /* Clipboard/ClipExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipExport.swift; sourceTree = "<group>"; };
 		7F1A0247 /* Components/HighlightedCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/HighlightedCode.swift; sourceTree = "<group>"; };
 		7F1A0249 /* Clipboard/ClipTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipTransfer.swift; sourceTree = "<group>"; };
+		7F1A024B /* Clipboard/ClipboardLibraryRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipboardLibraryRules.swift; sourceTree = "<group>"; };
+		7F1A024D /* Clipboard/ClipboardLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipboardLibraryStore.swift; sourceTree = "<group>"; };
+		7F1A024F /* Detail/ClipboardLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/ClipboardLibraryView.swift; sourceTree = "<group>"; };
 		7F1A021F /* SnapRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapRowView.swift; sourceTree = "<group>"; };
 		7F1A01CD /* Detail/FeaturesHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FeaturesHubView.swift; sourceTree = "<group>"; };
 		7F1A0058 /* Detail/AntiSleepDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/AntiSleepDetailView.swift; sourceTree = "<group>"; };
@@ -599,6 +605,8 @@
 				7F1A0241 /* Clipboard/CodeHighlighter.swift */,
 				7F1A0243 /* Clipboard/ClipExport.swift */,
 				7F1A0249 /* Clipboard/ClipTransfer.swift */,
+				7F1A024B /* Clipboard/ClipboardLibraryRules.swift */,
+				7F1A024D /* Clipboard/ClipboardLibraryStore.swift */,
 				7F1A0209 /* Notch/NotchSurfaceController.swift */,
 				7F1A020D /* Notch/NotchDragSession.swift */,
 				7F1A022F /* Notch/NowPlaying.swift */,
@@ -792,6 +800,7 @@
 				7F1A01CD /* Detail/FeaturesHubView.swift */,
 				7F1A0058 /* Detail/AntiSleepDetailView.swift */,
 				7F1A0060 /* Detail/SettingsDetailView.swift */,
+				7F1A024F /* Detail/ClipboardLibraryView.swift */,
 				7F1A0062 /* Detail/CompressDetailView.swift */,
 				7F1A0172 /* Detail/VoiceDetailView.swift */,
 				7F1A0063 /* Detail/PdfToolsDetailView.swift */,
@@ -1005,6 +1014,9 @@
 				7F1A0242 /* Clipboard/ClipExport.swift in Sources */,
 				7F1A0246 /* Components/HighlightedCode.swift in Sources */,
 				7F1A0248 /* Clipboard/ClipTransfer.swift in Sources */,
+				7F1A024A /* Clipboard/ClipboardLibraryRules.swift in Sources */,
+				7F1A024C /* Clipboard/ClipboardLibraryStore.swift in Sources */,
+				7F1A024E /* Detail/ClipboardLibraryView.swift in Sources */,
 				7F1A0220 /* SnapRowView.swift in Sources */,
 				7F1A01CE /* Detail/FeaturesHubView.swift in Sources */,
 				7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */,

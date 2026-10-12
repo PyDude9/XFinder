@@ -5,11 +5,11 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notchclip.XXXXXX)
-FILES="XFinder/Core/Clipboard/NotchClipboardRules.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/ClipboardShelfController.swift XFinder/Core/ColorFormat.swift XFinder/Core/Notch/NotchPages.swift XFinder/Core/MCP/MCPProtocol.swift XFinder/Core/Clipboard/CodeHighlighter.swift XFinder/Core/Clipboard/ClipExport.swift"
+FILES="XFinder/Core/Clipboard/NotchClipboardRules.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/ClipboardShelfController.swift XFinder/Core/ColorFormat.swift XFinder/Core/Notch/NotchPages.swift XFinder/Core/MCP/MCPProtocol.swift XFinder/Core/Clipboard/CodeHighlighter.swift XFinder/Core/Clipboard/ClipExport.swift XFinder/Core/Clipboard/ClipboardLibraryRules.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
-FILTER='NotchClipboardRules|NotchSurfaceLayout|FeatureKeyDefaults|ColorFormat|NotchPages|MCPProtocol|CodeHighlighter|ClipExport'
+FILTER='NotchClipboardRules|NotchSurfaceLayout|FeatureKeyDefaults|ColorFormat|NotchPages|MCPProtocol|CodeHighlighter|ClipExport|ClipboardLibraryRules'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -76,6 +76,15 @@ run "D21 export still ships password-manager records" XFinder/Core/Clipboard/Cli
   "'                skipped += 1\\n                continue'" "'                skipped += 1'"
 run "D22 import re-adds records the app already has" XFinder/Core/Clipboard/ClipExport.swift \
   "'            if existingIDs.contains(entry.id) {'" "'            if false {'"
+L=XFinder/Core/Clipboard/ClipboardLibraryRules.swift
+run "D23 library: the Pinned scope shows everything" $L \
+  "'            return records.filter(\\.isPinned)'" "'            return records'"
+run "D24 library: 'week' is wider than 7×24 h" $L \
+  "'            return now.timeIntervalSince(date) <= 7 * 24 * 3600'" "'            return now.timeIntervalSince(date) <= 8 * 24 * 3600'"
+run "D25 library: app facets sorted by name before count" $L \
+  "'                if lhs.count != rhs.count { return lhs.count > rhs.count }'" "'                if false { return lhs.count > rhs.count }'"
+run "D26 library: visibleCount is not clamped to the total" $L \
+  "'        min(total, max(1, pagesShown) * pageSize)'" "'        max(1, pagesShown) * pageSize'"
 run "D8 the hotkey-surface reader defaults to the shelf (view says notch)" XFinder/Core/ClipboardShelfController.swift \
   "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"notch\"'" "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"shelf\"'"
 restore

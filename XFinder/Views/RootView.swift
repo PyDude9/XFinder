@@ -67,6 +67,8 @@ struct DetailHostView: View {
             switch selection {
             case .settingsClipboard:
                 SettingsDetailView(destination: .settingsClipboard)
+            case .clipboard:
+                ClipboardLibraryView()
             case .features:
                 FeaturesHubView()
             case .notes:
@@ -132,6 +134,8 @@ struct DetailHostView: View {
                 AlertsDetailView()
             case .settingsClipboard:
                 SettingsDetailView(destination: selection)
+            case .clipboard:
+                ClipboardLibraryView()
             case .compress:
                 CompressDetailView()
             case .pdfTools:
