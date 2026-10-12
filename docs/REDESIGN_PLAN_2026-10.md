@@ -366,6 +366,10 @@ và bản ký XFinder Dev; "treo" ở B5 là do probe bị giết trước 8.5 s
 **N7 ✅ dựng + test** — Có gì mới một lần mỗi phiên bản cho người cũ (`WhatsNewRules` thuần 2 test, cửa sổ riêng); **tour đã có sẵn**
 (`Onboarding` c436b80: chọn preset + xin đúng quyền) — dòng "Chưa làm: onboarding" ở trên là cũ. Chưa đo live.
 
+**N5a ✅ dựng + test** — ⇧⌘G (Carbon, chữ ký riêng) đọc `AXSelectedText` → panel với `.translationPresentation` của Apple
+(macOS 15+); `TranslateSelectionRules` thuần 2 test; khoá `translate.hotkeyEnabled` mặc định tắt, mục trên trang Giọng nói + hub.
+Badge-trên-vùng-chọn (AXObserver theo app) chưa làm. Chưa đo live.
+
 **Không làm (bằng chứng, không phải sở thích):** lock screen (SkyLight/LoginUIKit private) · lời bài hát/visualizer (mạng
 bên thứ ba, mic) · iCloud (CloudKit cần tài khoản trả phí) · Sentry/TelemetryDeck/Sparkle tự tải (0 telemetry) · Pro/license ·
 camera "Mirror" (câu job: không ai tới notch để soi gương) · thay HUD độ sáng (không có đường ghi public).

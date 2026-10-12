@@ -94,6 +94,7 @@ enum FeatureID: String, CaseIterable {
     case clipboardShelf, cleanURLs, suggestions
     case quickSearch, edgeNotes, dropTray, nowPlaying, folderSync, agents, calendar
     case voice
+    case translateSelection
     case alerts
     case menuBarReadouts
 }
@@ -197,6 +198,11 @@ enum FeatureCatalog {
                    symbol: "gauge.with.dots.needle.33percent", group: .tools, enabledKey: "menubar.readoutsEnabled",
                    defaultOn: false, permissions: [], idle: .timerWhileActive),
 
+        // N5a. A Carbon hotkey (no idle cost beyond the registration) + an AX read on press.
+        FeatureDef(id: .translateSelection, titleKey: "Dịch vùng chọn (⇧⌘G)",
+                   subtitleKey: "Bôi đen chữ ở app bất kỳ, bấm ⇧⌘G: bản dịch của Apple ngay trên máy, không mạng.",
+                   symbol: "character.bubble", group: .tools, enabledKey: "translate.hotkeyEnabled",
+                   defaultOn: false, permissions: [.accessibility], idle: .listensToKeyboard),
         FeatureDef(id: .voice, titleKey: "Nhập bằng giọng nói",
                    subtitleKey: "Giữ phím, nói, thả ra là chữ vào ô đang gõ.",
                    symbol: "mic.fill", group: .voice, enabledKey: "voice.enabled",

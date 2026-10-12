@@ -50,6 +50,7 @@
 		7F1A005D /* Detail/StorageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0056 /* Detail/StorageDetailView.swift */; };
 		7F1A005E /* Detail/SystemControlsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0057 /* Detail/SystemControlsPanel.swift */; };
 		7F1A020C /* NotchSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A020B /* NotchSurfaceView.swift */; };
+		7F1A027A /* TranslateSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A027B /* TranslateSelectionView.swift */; };
 		7F1A0274 /* WhatsNewWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0275 /* WhatsNewWindow.swift */; };
 		7F1A022C /* NotchClipboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A022B /* NotchClipboardView.swift */; };
 		7F1A0234 /* Clipboard/NotchClipboardRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0235 /* Clipboard/NotchClipboardRules.swift */; };
@@ -68,6 +69,8 @@
 		7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0263 /* Agents/AgentHookInstaller.swift */; };
 		7F1A0266 /* Agents/AgentSessionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0267 /* Agents/AgentSessionMonitor.swift */; };
 		7F1A0268 /* Notch/NotchHoverOpen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0269 /* Notch/NotchHoverOpen.swift */; };
+		7F1A0278 /* Translate/TranslateSelectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0279 /* Translate/TranslateSelectionController.swift */; };
+		7F1A0276 /* Translate/TranslateSelectionRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0277 /* Translate/TranslateSelectionRules.swift */; };
 		7F1A0272 /* Onboarding/WhatsNewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0273 /* Onboarding/WhatsNewRules.swift */; };
 		7F1A0270 /* Calendar/CalendarGlanceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0271 /* Calendar/CalendarGlanceMonitor.swift */; };
 		7F1A026E /* Calendar/GlanceRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A026F /* Calendar/GlanceRules.swift */; };
@@ -329,6 +332,7 @@
 		7F1A0056 /* Detail/StorageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/StorageDetailView.swift; sourceTree = "<group>"; };
 		7F1A0057 /* Detail/SystemControlsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SystemControlsPanel.swift; sourceTree = "<group>"; };
 		7F1A020B /* NotchSurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSurfaceView.swift; sourceTree = "<group>"; };
+		7F1A027B /* TranslateSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslateSelectionView.swift; sourceTree = "<group>"; };
 		7F1A0275 /* WhatsNewWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewWindow.swift; sourceTree = "<group>"; };
 		7F1A022B /* NotchClipboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchClipboardView.swift; sourceTree = "<group>"; };
 		7F1A0235 /* Clipboard/NotchClipboardRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/NotchClipboardRules.swift; sourceTree = "<group>"; };
@@ -347,6 +351,8 @@
 		7F1A0263 /* Agents/AgentHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentHookInstaller.swift; sourceTree = "<group>"; };
 		7F1A0267 /* Agents/AgentSessionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentSessionMonitor.swift; sourceTree = "<group>"; };
 		7F1A0269 /* Notch/NotchHoverOpen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchHoverOpen.swift; sourceTree = "<group>"; };
+		7F1A0279 /* Translate/TranslateSelectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/TranslateSelectionController.swift; sourceTree = "<group>"; };
+		7F1A0277 /* Translate/TranslateSelectionRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/TranslateSelectionRules.swift; sourceTree = "<group>"; };
 		7F1A0273 /* Onboarding/WhatsNewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding/WhatsNewRules.swift; sourceTree = "<group>"; };
 		7F1A0271 /* Calendar/CalendarGlanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calendar/CalendarGlanceMonitor.swift; sourceTree = "<group>"; };
 		7F1A026F /* Calendar/GlanceRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calendar/GlanceRules.swift; sourceTree = "<group>"; };
@@ -637,6 +643,8 @@
 				7F1A0263 /* Agents/AgentHookInstaller.swift */,
 				7F1A0267 /* Agents/AgentSessionMonitor.swift */,
 				7F1A0269 /* Notch/NotchHoverOpen.swift */,
+				7F1A0279 /* Translate/TranslateSelectionController.swift */,
+				7F1A0277 /* Translate/TranslateSelectionRules.swift */,
 				7F1A0273 /* Onboarding/WhatsNewRules.swift */,
 				7F1A0271 /* Calendar/CalendarGlanceMonitor.swift */,
 				7F1A026F /* Calendar/GlanceRules.swift */,
@@ -828,6 +836,7 @@
 				7F1A0056 /* Detail/StorageDetailView.swift */,
 				7F1A0057 /* Detail/SystemControlsPanel.swift */,
 				7F1A020B /* NotchSurfaceView.swift */,
+				7F1A027B /* TranslateSelectionView.swift */,
 				7F1A0275 /* WhatsNewWindow.swift */,
 				7F1A022B /* NotchClipboardView.swift */,
 				7F1A0237 /* NotchClipCardView.swift */,
@@ -1043,6 +1052,7 @@
 				7F1A005D /* Detail/StorageDetailView.swift in Sources */,
 				7F1A005E /* Detail/SystemControlsPanel.swift in Sources */,
 				7F1A020C /* NotchSurfaceView.swift in Sources */,
+				7F1A027A /* TranslateSelectionView.swift in Sources */,
 				7F1A0274 /* WhatsNewWindow.swift in Sources */,
 				7F1A022C /* NotchClipboardView.swift in Sources */,
 				7F1A0234 /* Clipboard/NotchClipboardRules.swift in Sources */,
@@ -1061,6 +1071,8 @@
 				7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */,
 				7F1A0266 /* Agents/AgentSessionMonitor.swift in Sources */,
 				7F1A0268 /* Notch/NotchHoverOpen.swift in Sources */,
+				7F1A0278 /* Translate/TranslateSelectionController.swift in Sources */,
+				7F1A0276 /* Translate/TranslateSelectionRules.swift in Sources */,
 				7F1A0272 /* Onboarding/WhatsNewRules.swift in Sources */,
 				7F1A0270 /* Calendar/CalendarGlanceMonitor.swift in Sources */,
 				7F1A026E /* Calendar/GlanceRules.swift in Sources */,

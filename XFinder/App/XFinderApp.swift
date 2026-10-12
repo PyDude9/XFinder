@@ -78,6 +78,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         QuitProtectionController.shared.applySettings()
         AlertMonitor.shared.applySettings()
         NotchSurfaceController.shared.applySettings()
+        TranslateSelectionController.shared.applySettings()   // N5a: ⇧⌘G, AX-gated at press time
         LiveActivityMonitor.shared.applySettings()   // B4: after the surface exists
         QuickSearchPanelController.shared.applySettings()
         VoiceManager.shared.setup()
@@ -116,6 +117,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 ClipboardShelfController.shared.applySettings()
                 QuickSearchPanelController.shared.applySettings()
                 VoiceManager.shared.applySettings()
+                TranslateSelectionController.shared.applySettings()
                 GestureController.shared.start()
             }
         }

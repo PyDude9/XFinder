@@ -29,6 +29,7 @@ final class FeatureContractTests: XCTestCase {
         .nowPlaying: .pure(["Core/Notch/NowPlaying.swift"]),
         .agents: .pure(["Core/Agents/AgentEvents.swift", "Core/Agents/AgentHookInstaller.swift"]),
         .calendar: .pure(["Core/Calendar/GlanceRules.swift"]),
+        .translateSelection: .pure(["Core/Translate/TranslateSelectionRules.swift"]),
         .quitProtection: .pure(["Core/QuitHold.swift"]),
         .cleanURLs: .pure(["Core/URLCleaner.swift"]),
         .alerts: .pure(["Core/AlertRules.swift"]),

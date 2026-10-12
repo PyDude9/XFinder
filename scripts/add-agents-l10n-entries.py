@@ -113,6 +113,19 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Kéo thanh tiến trình để tua; xáo trộn và lặp lại trong menu của trang Đang phát.": ("Drag the progress bar to seek; shuffle and repeat in the Now Playing page's menus.", "sentence"),
     "Thư viện Clipboard và bảng khoá": ("Clipboard Library and locked boards", "sentence"),
     "Mọi clip từng copy, lọc theo loại / app / bảng / thời gian; bảng khoá mã hoá bằng Secure Enclave, mở từng thẻ bằng Touch ID.": ("Every clip you ever copied, filtered by type / app / board / time; locked boards encrypted with the Secure Enclave, each card unlocked with Touch ID.", "sentence"),
+    # N5a — translate selection (⇧⌘G)
+    "Dịch vùng chọn": ("Translate selection", "sentence"),
+    "Dịch vùng chọn (⇧⌘G)": ("Translate selection (⇧⌘G)", "sentence"),
+    "Bôi đen chữ ở app bất kỳ, bấm ⇧⌘G: bản dịch của Apple ngay trên máy, không mạng.": ("Select text in any app, press ⇧⌘G: Apple's translation, on this Mac, no network.", "sentence"),
+    "Bật phím ⇧⌘G dịch vùng chọn": ("Enable ⇧⌘G to translate the selection", "sentence"),
+    "Đọc chữ đang bôi đen qua Trợ năng rồi mở hộp dịch của Apple (macOS 15+). Không gửi gì đi; gói ngôn ngữ tải một lần theo cặp. App nào không cho Trợ năng đọc vùng chọn thì panel nói rõ.": ("Reads the selected text through Accessibility and opens Apple's translation popover (macOS 15+). Nothing is sent anywhere; a language pack downloads once per pair. When an app does not expose its selection to Accessibility, the panel says so.", "sentence"),
+    "Dịch": ("Translate", "sentence"),
+    "Sao chép bản dịch": ("Copy translation", "sentence"),
+    "Bản dịch của Apple chạy trên máy; lần đầu mỗi cặp ngôn ngữ macOS sẽ hỏi tải gói ngôn ngữ. Bấm \"Thay thế\" trong hộp dịch để nhận bản dịch về đây.": ("Apple's translation runs on this Mac; the first time for each language pair macOS offers to download its pack. Press \"Replace\" in the popover to bring the translation here.", "sentence"),
+    "Dịch tại chỗ cần macOS 15 trở lên (Translation framework của Apple).": ("In-place translation needs macOS 15 or later (Apple's Translation framework).", "sentence"),
+    "Chọn ít nhất hai ký tự để dịch.": ("Select at least two characters to translate.", "sentence"),
+    "Vùng chọn quá dài để dịch tại chỗ (tối đa 5 000 ký tự).": ("The selection is too long to translate in place (5,000 characters at most).", "sentence"),
+    "Không đọc được vùng chọn: app này không cho Trợ năng đọc, hoặc chưa cấp quyền Trợ năng.": ("Could not read the selection: this app does not expose it to Accessibility, or Accessibility is not granted.", "sentence"),
     # feature catalog
     "Phiên Claude Code đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ.": ("Claude Code sessions running in a terminal: status and permission approval at the notch; reads a local hook log.", "sentence"),
 }
