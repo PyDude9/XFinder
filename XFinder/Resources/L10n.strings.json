@@ -8506,6 +8506,66 @@
     "Lặp tất cả": {
       "en": "Repeat all",
       "scope": "sentence"
+    },
+    "Có gì mới trong ": {
+      "en": "What's new in ",
+      "scope": "fragment"
+    },
+    "Notch mượt hơn": {
+      "en": "A smoother notch",
+      "scope": "sentence"
+    },
+    "Một cửa sổ cố định cho mọi trạng thái — hub mở ra từ notch, không còn giật khi đổi trang.": {
+      "en": "One fixed window for every state — the hub grows out of the notch, no more jump when the page changes.",
+      "scope": "sentence"
+    },
+    "Rê chuột vào notch mở gì là tuỳ bạn": {
+      "en": "What a hover opens is your call",
+      "scope": "sentence"
+    },
+    "Chỉ xem nhanh, theo hoạt động, hay một trang cố định — một picker trong Notch & Khay thả.": {
+      "en": "Peek only, by activity, or a fixed page — one picker in Notch & Drop Tray.",
+      "scope": "sentence"
+    },
+    "Phiên Claude Code trên notch": {
+      "en": "Claude Code sessions at the notch",
+      "scope": "sentence"
+    },
+    "Trạng thái từng phiên và nút Cho phép / Từ chối cho yêu cầu quyền, qua hook công khai của Claude Code.": {
+      "en": "Each session's status and Allow / Deny for permission requests, through Claude Code's public hooks.",
+      "scope": "sentence"
+    },
+    "Trang Lịch": {
+      "en": "The Calendar page",
+      "scope": "sentence"
+    },
+    "Hôm nay có gì, việc kế tiếp, lịch âm theo giờ Việt Nam, nút Tham gia cho link họp.": {
+      "en": "What is on today, the next thing, the lunar date on Vietnam time, a Join button for meeting links.",
+      "scope": "sentence"
+    },
+    "Thêm việc cho tệp đang giữ": {
+      "en": "More to do with held files",
+      "scope": "sentence"
+    },
+    "Sang PDF, OCR, Thu nhỏ ảnh với preset khi giữ chuột — bên cạnh ZIP, Gộp PDF, Tách nền, AirDrop.": {
+      "en": "To PDF, OCR, Shrink image with presets on press-and-hold — beside ZIP, Merge PDFs, Remove background, AirDrop.",
+      "scope": "sentence"
+    },
+    "Tua, xáo trộn, lặp lại": {
+      "en": "Seek, shuffle, repeat",
+      "scope": "sentence"
+    },
+    "Kéo thanh tiến trình để tua; xáo trộn và lặp lại trong menu của trang Đang phát.": {
+      "en": "Drag the progress bar to seek; shuffle and repeat in the Now Playing page's menus.",
+      "scope": "sentence"
+    },
+    "Thư viện Clipboard và bảng khoá": {
+      "en": "Clipboard Library and locked boards",
+      "scope": "sentence"
+    },
+    "Mọi clip từng copy, lọc theo loại / app / bảng / thời gian; bảng khoá mã hoá bằng Secure Enclave, mở từng thẻ bằng Touch ID.": {
+      "en": "Every clip you ever copied, filtered by type / app / board / time; locked boards encrypted with the Secure Enclave, each card unlocked with Touch ID.",
+      "scope": "sentence"
     }
   }
 }

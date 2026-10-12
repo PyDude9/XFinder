@@ -94,6 +94,25 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Lặp lại: tắt": ("Repeat: off", "sentence"),
     "Lặp một bài": ("Repeat one", "sentence"),
     "Lặp tất cả": ("Repeat all", "sentence"),
+    # N7 — onboarding + What's New (OnboardingRules keys + window chrome)
+    "Có gì mới trong ": ("What's new in ", "fragment"),
+    # "Mở trang " already exists ("Open page ") — reused, not redefined
+    "Mở": ("Open", "sentence"),
+    "Xong": ("Done", "sentence"),
+    "Notch mượt hơn": ("A smoother notch", "sentence"),
+    "Một cửa sổ cố định cho mọi trạng thái — hub mở ra từ notch, không còn giật khi đổi trang.": ("One fixed window for every state — the hub grows out of the notch, no more jump when the page changes.", "sentence"),
+    "Rê chuột vào notch mở gì là tuỳ bạn": ("What a hover opens is your call", "sentence"),
+    "Chỉ xem nhanh, theo hoạt động, hay một trang cố định — một picker trong Notch & Khay thả.": ("Peek only, by activity, or a fixed page — one picker in Notch & Drop Tray.", "sentence"),
+    "Phiên Claude Code trên notch": ("Claude Code sessions at the notch", "sentence"),
+    "Trạng thái từng phiên và nút Cho phép / Từ chối cho yêu cầu quyền, qua hook công khai của Claude Code.": ("Each session's status and Allow / Deny for permission requests, through Claude Code's public hooks.", "sentence"),
+    "Trang Lịch": ("The Calendar page", "sentence"),
+    "Hôm nay có gì, việc kế tiếp, lịch âm theo giờ Việt Nam, nút Tham gia cho link họp.": ("What is on today, the next thing, the lunar date on Vietnam time, a Join button for meeting links.", "sentence"),
+    "Thêm việc cho tệp đang giữ": ("More to do with held files", "sentence"),
+    "Sang PDF, OCR, Thu nhỏ ảnh với preset khi giữ chuột — bên cạnh ZIP, Gộp PDF, Tách nền, AirDrop.": ("To PDF, OCR, Shrink image with presets on press-and-hold — beside ZIP, Merge PDFs, Remove background, AirDrop.", "sentence"),
+    "Tua, xáo trộn, lặp lại": ("Seek, shuffle, repeat", "sentence"),
+    "Kéo thanh tiến trình để tua; xáo trộn và lặp lại trong menu của trang Đang phát.": ("Drag the progress bar to seek; shuffle and repeat in the Now Playing page's menus.", "sentence"),
+    "Thư viện Clipboard và bảng khoá": ("Clipboard Library and locked boards", "sentence"),
+    "Mọi clip từng copy, lọc theo loại / app / bảng / thời gian; bảng khoá mã hoá bằng Secure Enclave, mở từng thẻ bằng Touch ID.": ("Every clip you ever copied, filtered by type / app / board / time; locked boards encrypted with the Secure Enclave, each card unlocked with Touch ID.", "sentence"),
     # feature catalog
     "Phiên Claude Code đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ.": ("Claude Code sessions running in a terminal: status and permission approval at the notch; reads a local hook log.", "sentence"),
 }

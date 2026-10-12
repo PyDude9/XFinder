@@ -359,6 +359,13 @@ Lịch/Lời nhắc vào tab Quyền; chưa đo live.
 **N8 ✅ dựng + đo cơ chế** — seek (slider), shuffle/repeat (menu 3 chế độ, không đọc được trạng thái nên không giả vờ hiện);
 probe publisher đo đúng số: SetShuffleMode 1/2/3 → off/collections/items, SetRepeatMode 1/2/3 → off/one/all; M32.
 
+**N5 probe ✅ (chưa dựng)** — `LanguageAvailability.status(en→vi)` trả `installed` sau 8.48 s, 47 ngôn ngữ, giống nhau cho bản ad-hoc
+và bản ký XFinder Dev; "treo" ở B5 là do probe bị giết trước 8.5 s. Dịch thật chỉ có qua `.translationTask`/`.translationPresentation`
+(SwiftUI, macOS 15) ⇒ badge dịch phải host trong panel SwiftUI, gate `#available(macOS 15, *)`.
+
+**N7 ✅ dựng + test** — Có gì mới một lần mỗi phiên bản cho người cũ (`WhatsNewRules` thuần 2 test, cửa sổ riêng); **tour đã có sẵn**
+(`Onboarding` c436b80: chọn preset + xin đúng quyền) — dòng "Chưa làm: onboarding" ở trên là cũ. Chưa đo live.
+
 **Không làm (bằng chứng, không phải sở thích):** lock screen (SkyLight/LoginUIKit private) · lời bài hát/visualizer (mạng
 bên thứ ba, mic) · iCloud (CloudKit cần tài khoản trả phí) · Sentry/TelemetryDeck/Sparkle tự tải (0 telemetry) · Pro/license ·
 camera "Mirror" (câu job: không ai tới notch để soi gương) · thay HUD độ sáng (không có đường ghi public).

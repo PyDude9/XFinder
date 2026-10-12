@@ -89,7 +89,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             BatteryStore.shared.start()
         }
 
-        if Onboarding.shouldShow(completedVersion: UserDefaults.standard.object(forKey: Onboarding.completedKey) as? Int) {
+        let setupShowing = Onboarding.shouldShow(completedVersion: UserDefaults.standard.object(forKey: Onboarding.completedKey) as? Int)
+        // N7: What's New once per version for existing users; a fresh install is on setup and records this version as seen.
+        WhatsNewWindowController.shared.presentIfNeeded(setupShowing: setupShowing)
+        if setupShowing {
             OnboardingWindow.shared.show()
         }
         if UserDefaults.standard.string(forKey: "startPage") != nil {

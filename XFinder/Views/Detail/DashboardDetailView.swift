@@ -39,6 +39,11 @@ struct DashboardDetailView: View {
                 checklist
                 Divider().padding(.horizontal, XFinderTokens.Space.page)
                 gettingStarted
+                Button("\(L10n.t("Có gì mới trong "))\(WhatsNewWindowController.shared.currentVersion)") {
+                    WhatsNewWindowController.shared.present(WhatsNewWindowController.shared.currentVersion)
+                }
+                .controlSize(.small)
+                .padding(.horizontal, XFinderTokens.Space.page)
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
