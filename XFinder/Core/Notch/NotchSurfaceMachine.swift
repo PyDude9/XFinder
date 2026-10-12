@@ -9,7 +9,7 @@ import Foundation
 /// the files the user just dropped.
 enum NotchSurfaceMachine {
 
-    enum Page: String, Equatable, Codable { case files, clipboard, nowPlaying }
+    enum Page: String, Equatable, Codable { case files, clipboard, nowPlaying, agents, calendar }   // N3 agents · N4 calendar
 
     enum State: Equatable {
         /// Nothing drawn — except, when files are held on a notched screen, a count badge under the notch.
@@ -34,9 +34,15 @@ enum NotchSurfaceMachine {
     struct Settings: Equatable {
         var enabled = true
         var hoverToPeek = true
-        /// B5: resting on the notch while NO files are held opens the clipboard page. Off by default —
-        /// an empty tray never opens on hover (Part 3c), and this is the one deliberate exception.
-        var hoverOpensClipboard = false
+        /// N2: what a dwelt hover opens — `.peek` (files / track only, the B1 rule) or a hub page, decided by
+        /// `NotchHoverOpen` from the activity below. Replaces B5's one-case Bool (`hoverOpensClipboard`).
+        var hoverOpens: NotchHoverOpen = .peek
+        /// N3: a Claude Code session is waiting for the person (feeds `.activity`).
+        var agentNeedsYou = false
+        /// The hub page that was open last (feeds `.lastPage`).
+        var lastPage: Page? = nil
+        /// The user's page order; a hover never opens a hidden page.
+        var shownPages: [Page] = NotchPages.defaultOrder
         /// B6: a track is known (and the Now Playing switch is on). Hover may then peek it even with no
         /// files held — a playing track is never "empty" — and the peek survives the tray emptying.
         var nowPlayingActive = false
@@ -140,13 +146,15 @@ enum NotchSurfaceMachine {
                 if n == 0, state == .peek, !s.nowPlayingActive { collapse() }
             case .hoverInZone(let since):
                 guard s.hoverToPeek, state.isIdle, now.timeIntervalSince(since) >= s.hoverDwell else { return }
-                if itemCount > 0 || s.nowPlayingActive {
+                let activity = NotchHoverOpen.Activity(itemCount: itemCount, trackPlaying: s.nowPlayingActive,
+                                                       agentNeedsYou: s.agentNeedsYou, lastPage: s.lastPage)
+                if let page = s.hoverOpens.page(for: activity, shown: s.shownPages) {
+                    open(at: .notch, page: page)         // N2: clips / agents / the player are never "empty"
+                } else if itemCount > 0 || s.nowPlayingActive {
                     // Hover reveals files already held, or the track that is playing — never an empty
                     // tray (CLAUDE.md Part 3c).
                     state = .peek
                     anchor = .notch
-                } else if s.hoverOpensClipboard {
-                    open(at: .notch, page: .clipboard)   // the opt-in exception: clips are never "empty"
                 }
             case .pointerOnSurface:
                 break                               // whatever is open stays open

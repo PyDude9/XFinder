@@ -8,8 +8,8 @@ enum NotchPages {
     // MARK: - Order and visibility (`notch.pages`, a comma list)
 
     static let key = "notch.pages"
-    static let defaultOrder: [Page] = [.files, .clipboard, .nowPlaying]
-    static let defaultRaw = "files,clipboard,nowPlaying"
+    static let defaultOrder: [Page] = [.files, .clipboard, .nowPlaying, .agents, .calendar]
+    static let defaultRaw = "files,clipboard,nowPlaying,agents,calendar"
 
     /// The stored list → pages. Unknown tokens are dropped, duplicates collapse to their first position,
     /// order is kept. An EMPTY result falls back to the default: a hub with no page is not a state the

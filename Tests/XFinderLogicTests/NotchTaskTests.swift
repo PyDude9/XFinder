@@ -8,21 +8,21 @@ final class NotchTaskTests: XCTestCase {
     func testActionsFollowWhatIsHeld() {
         XCTAssertEqual(NotchActions.available(for: [], encodable: enc), [], "nothing held, nothing offered")
         XCTAssertEqual(NotchActions.available(for: [u("a.txt")], encodable: enc), [.zip, .airDrop])
-        XCTAssertEqual(NotchActions.available(for: [u("a.pdf")], encodable: enc), [.zip, .airDrop], "one PDF cannot be merged")
-        XCTAssertEqual(NotchActions.available(for: [u("a.pdf"), u("b.PDF")], encodable: enc), [.zip, .mergePDFs, .airDrop])
+        XCTAssertEqual(NotchActions.available(for: [u("a.pdf")], encodable: enc), [.zip, .toPDF, .airDrop], "one PDF cannot be merged; N6 still offers a (copied) PDF of it")
+        XCTAssertEqual(NotchActions.available(for: [u("a.pdf"), u("b.PDF")], encodable: enc), [.zip, .mergePDFs, .toPDF, .airDrop])
         XCTAssertEqual(NotchActions.available(for: [u("p.heic")], encodable: enc),
-                       [.zip, .convert(.jpeg), .convert(.png), .removeBackground, .airDrop])
+                       [.zip, .toPDF, .convert(.jpeg), .convert(.png), .resize(maxPixels: 1600), .removeBackground, .ocr, .airDrop])
     }
 
     func testAConversionIsOfferedOnlyIfSomethingWouldChange() {
         XCTAssertEqual(NotchActions.available(for: [u("a.jpg")], encodable: enc),
-                       [.zip, .convert(.png), .removeBackground, .airDrop], "no JPEG→JPEG")
+                       [.zip, .toPDF, .convert(.png), .resize(maxPixels: 1600), .removeBackground, .ocr, .airDrop], "no JPEG→JPEG")
         XCTAssertEqual(NotchActions.inputs(for: .convert(.jpeg), from: [u("a.jpg"), u("b.png"), u("c.txt")]), [u("b.png")])
     }
 
     func testAMissingEncoderIsNeverOffered() {
         XCTAssertEqual(NotchActions.available(for: [u("p.heic")], encodable: ["public.jpeg"]),
-                       [.zip, .convert(.jpeg), .removeBackground, .airDrop])
+                       [.zip, .toPDF, .convert(.jpeg), .resize(maxPixels: 1600), .removeBackground, .ocr, .airDrop])
     }
 
     func testStepsAreFilesForPerFileJobsAndOneForCombiningJobs() {

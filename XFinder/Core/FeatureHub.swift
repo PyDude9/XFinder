@@ -2,6 +2,7 @@ import AppKit
 import AVFoundation
 import Speech
 import UserNotifications
+import EventKit
 
 /// The live half of the Features hub. It owns NO state of its own: a feature is on or off
 /// according to the same UserDefaults key its engine reads (`FeatureCatalog` is verified against
@@ -97,6 +98,8 @@ final class FeatureHub {
         case .edgeNotes:       EdgeNotesController.shared.applySettings()
         case .dropTray:        NotchSurfaceController.shared.applySettings()
         case .nowPlaying:      NotchSurfaceController.shared.applySettings()   // applies the monitor under the master
+        case .agents:          NotchSurfaceController.shared.applySettings()   // N3: same master
+        case .calendar:        NotchSurfaceController.shared.applySettings()   // N4: same master
         case .folderSync:      FolderSyncController.shared.applySettings()
         case .voice:           VoiceManager.shared.applySettings()
         case .alerts:          AlertMonitor.shared.applySettings()
@@ -124,6 +127,9 @@ final class FeatureHub {
             .microphone: AVCaptureDevice.authorizationStatus(for: .audio) == .authorized,
             .speechRecognition: SFSpeechRecognizer.authorizationStatus() == .authorized,
             .notifications: notificationsGranted,
+            // N4: full access is what reading needs; write-only (macOS 14+) is not enough for the Glance page.
+            .calendars: EKEventStore.authorizationStatus(for: .event) == .fullAccess,
+            .reminders: EKEventStore.authorizationStatus(for: .reminder) == .fullAccess,
         ]
     }
 
@@ -144,6 +150,18 @@ final class FeatureHub {
         case .speechRecognition:
             if SFSpeechRecognizer.authorizationStatus() == .notDetermined {
                 SFSpeechRecognizer.requestAuthorization { _ in Task { @MainActor in self.revision += 1 } }
+            } else { openSettings(for: p) }
+        case .calendars, .reminders:
+            // The system sheet appears only while the status is notDetermined; afterwards only the pane can change it.
+            let kind: EKEntityType = (p == .calendars) ? .event : .reminder
+            if EKEventStore.authorizationStatus(for: kind) == .notDetermined {
+                let store = EKEventStore()
+                Task { @MainActor in
+                    if kind == .event { _ = try? await store.requestFullAccessToEvents() }
+                    else { _ = try? await store.requestFullAccessToReminders() }
+                    self.revision += 1
+                    CalendarGlanceMonitor.shared.refetch()
+                }
             } else { openSettings(for: p) }
         case .notifications:
             // Measured: self-signed builds get `.denied` without a prompt and are not listed in the

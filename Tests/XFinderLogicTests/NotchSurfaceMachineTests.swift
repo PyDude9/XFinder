@@ -251,17 +251,22 @@ final class NotchSurfaceMachineTests: XCTestCase {
         XCTAssertEqual(p.state, .peek, "a peek is not a hub; it has no tabs")
     }
 
-    func testHoverOpensClipboardOnlyWhenOptedInAndNothingIsHeld() {
+    /// N2: the default (peek) never opens an empty tray; a fixed choice opens that page even over held files;
+    /// By activity opens the tray page for held files; the master hover switch gates all of it.
+    func testHoverOpensTheChosenPageAndPeekStaysTheDefault() {
         var m = M.Machine(); m.handle(.hoverInZone(since: t0), settings: s, now: at(1))
         XCTAssertEqual(m.state, .collapsed, "default: an empty tray never opens on hover")
-        var on = s; on.hoverOpensClipboard = true
+        var on = s; on.hoverOpens = .clipboard
         var e = M.Machine(); e.handle(.hoverInZone(since: t0), settings: on, now: at(1))
         XCTAssertEqual(e.state, .expanded(.clipboard))
         var h = holding(3); h.handle(.hoverInZone(since: t0), settings: on, now: at(1))
-        XCTAssertEqual(h.state, .peek, "with files held, hover still peeks the files")
+        XCTAssertEqual(h.state, .expanded(.clipboard), "a fixed choice is that page, files or not")
+        var act = s; act.hoverOpens = .activity
+        var a = holding(3); a.handle(.hoverInZone(since: t0), settings: act, now: at(1))
+        XCTAssertEqual(a.state, .expanded(.files), "By activity: held files open the tray page")
         var off = on; off.hoverToPeek = false
         var d = M.Machine(); d.handle(.hoverInZone(since: t0), settings: off, now: at(1))
-        XCTAssertEqual(d.state, .collapsed, "the master hover switch gates both")
+        XCTAssertEqual(d.state, .collapsed, "the master hover switch gates all of it")
     }
 
     func testEveryOpenPathStillLandsOnTheFilesPage() {

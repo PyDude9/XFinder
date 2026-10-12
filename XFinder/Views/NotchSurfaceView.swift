@@ -15,6 +15,8 @@ final class NotchSurfaceModel {
     var task: NotchTask?
     /// A one-line store key shown under the action row (e.g. AirDrop unavailable).
     var notice: String?
+    /// N6: the OCR result line, already localised (it carries a number).
+    var ocrSummary: String?
     /// The live activity on screen (B4).
     var activity: LiveActivity.Item?
     /// Remaining time of a running countdown ("12:34"), shown in the collapsed badge (B4b).
@@ -34,6 +36,16 @@ final class NotchSurfaceModel {
     /// D1 #44: the pages the hub shows, in order (`notch.pages`); #47: the accent, nil = the app's own.
     var pages: [NotchSurfaceMachine.Page] = NotchPages.defaultOrder
     var accent: Color?
+    /// N4: the Glance page — events + timed reminders in a ±5-day window, the access state, the all-day switch.
+    var calendarEvents: [GlanceEvent] = []
+    var calendarEnabled = false
+    var calendarAccess: CalendarGlanceMonitor.Access = .unknown
+    var calendarHidesAllDay = false
+    /// N3: Claude Code sessions (mirrored from `AgentSessionMonitor`), whether the feature is on, and whether the hook is installed.
+    var agents: [AgentSession] = []
+    var agentsEnabled = false
+    var agentHookInstalled = false
+    var agentsNeedingYou: Int { agents.filter(\.needsYou).count }
     /// D0c: true for the first frame of a surface opening at the notch — the shape is drawn at the notch's
     /// own size and the controller flips this on the next run-loop turn, so the hub springs out of the notch.
     var appearFromNotch = false
@@ -129,19 +141,21 @@ struct NotchSurfaceView: View {
             }
             .frame(width: size.width, height: size.height, alignment: .top)
             .clipShape(shape)
+            // N1: the window is larger than the shape (one fixed frame for every state), so the drop target is
+            // the DRAWN shape only — a file released on the transparent remainder lands on the window below.
+            .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
+                ClipboardSounds.playCopy()
+                // The URLs load asynchronously; report the drop only once they are in the store, so the
+                // machine sees the real count (a shaken tray with files must not think it is empty).
+                // Dropping keeps the surface open: it is the START of the task.
+                store.add(providers: providers) { NotchSurfaceController.shared.filesDropped() }
+                return true
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .animation(XFinderTokens.Motion.surface, value: model.state)
             .animation(XFinderTokens.Motion.surface, value: model.appearFromNotch)
         }
         .environment(\.notchAccent, model.accent ?? .accentColor)
-        .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
-            ClipboardSounds.playCopy()
-            // The URLs load asynchronously; report the drop only once they are in the store, so the
-            // machine sees the real count (a shaken tray with files must not think it is empty).
-            // Dropping keeps the surface open: it is the START of the task.
-            store.add(providers: providers) { NotchSurfaceController.shared.filesDropped() }
-            return true
-        }
     }
 
     @ViewBuilder private var content: some View {
@@ -209,6 +223,15 @@ struct NotchSurfaceView: View {
             case .nowPlaying:
                 if model.nowPlayingAvailability != .off {
                     pageTab(.nowPlaying, icon: "music.note", title: L10n.t("Đang phát"), badge: nil, current: page)
+                }
+            case .agents:
+                if model.agentsEnabled {
+                    pageTab(.agents, icon: "terminal", title: L10n.t("Agent AI"),
+                            badge: model.agentsNeedingYou > 0 ? "\(model.agentsNeedingYou)" : nil, current: page)
+                }
+            case .calendar:
+                if model.calendarEnabled {
+                    pageTab(.calendar, icon: "calendar", title: L10n.t("Lịch"), badge: nil, current: page)
                 }
             }
         }
@@ -294,6 +317,154 @@ struct NotchSurfaceView: View {
     }
 
     /// The hub page (B6): artwork, titles, a progress bar from the last report, controls, open the player.
+    // MARK: - N4: Glance (calendar)
+
+    /// OneNotch's calendar page re-derived: weekday + lunar date, a nine-day strip with dots, the greeting and
+    /// "up next" line, then today's list — a meeting link gets a Tham gia button. Access is asked from here,
+    /// never on the switch (the sheet must come from a click).
+    @ViewBuilder private var calendarPage: some View {
+        let now = Date()
+        let cal = Calendar.current
+        if model.calendarAccess != .granted {
+            VStack(spacing: XFinderTokens.Space.tight) {
+                Image(systemName: "calendar.badge.exclamationmark").font(XFinderTokens.Font.pageIcon).opacity(0.65)
+                Text(L10n.t(model.calendarAccess == .notDetermined || model.calendarAccess == .unknown
+                            ? "Chưa có quyền Lịch. Cấp quyền để thấy sự kiện hôm nay." : "Quyền Lịch bị từ chối — mở Cài đặt hệ thống ▸ Quyền riêng tư ▸ Lịch."))
+                    .font(XFinderTokens.Font.caption).opacity(0.65).multilineTextAlignment(.center)
+                Button(L10n.t("Cấp quyền Lịch")) { NotchSurfaceController.shared.requestCalendarAccess() }
+                    .buttonStyle(.bordered).controlSize(.mini)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            let strip = GlanceRules.weekStrip(around: now, calendar: cal)
+            let dots = GlanceRules.daysWithEvents(model.calendarEvents, strip: strip, calendar: cal)
+            let today = GlanceRules.dayEvents(model.calendarEvents, on: now, hideAllDay: model.calendarHidesAllDay, calendar: cal)
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(now.formatted(.dateTime.weekday(.wide))).font(XFinderTokens.Font.row).bold()
+                    Text("\(GlanceRules.lunarLabel(for: now)) \(L10n.t("ÂL"))").font(XFinderTokens.Font.caption).opacity(0.65)
+                    Spacer()
+                    Text(now.formatted(.dateTime.month(.abbreviated).year())).font(XFinderTokens.Font.caption).opacity(0.65)
+                    Button { NotchSurfaceController.shared.openCalendar(on: now) } label: { Image(systemName: "arrow.up.forward.app") }
+                        .buttonStyle(.plain).opacity(0.65).help(L10n.t("Mở Lịch"))
+                }
+                HStack(spacing: 0) {
+                    ForEach(strip, id: \.self) { d in
+                        let isToday = cal.isDate(d, inSameDayAs: now)
+                        VStack(spacing: 1) {
+                            Text("\(cal.component(.day, from: d))").font(XFinderTokens.Font.caption).monospacedDigit()
+                                .opacity(isToday ? 1 : 0.6)
+                            Circle().fill(dots.contains(d) ? accent : Color.clear).frame(width: 4, height: 4)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 2)
+                        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).fill(isToday ? Color.white.opacity(0.18) : Color.clear))
+                    }
+                }
+                let hour = cal.component(.hour, from: now)
+                if let next = GlanceRules.upNext(model.calendarEvents, now: now) {
+                    HStack(spacing: XFinderTokens.Space.tight) {
+                        Text("\(L10n.t(GlanceRules.greetingKey(hour: hour))) \(L10n.t("Tiếp theo: "))\(next.title) · \(next.start.formatted(date: .omitted, time: .shortened))")
+                            .font(XFinderTokens.Font.caption).lineLimit(1).truncationMode(.tail)
+                        if let c = GlanceRules.countdown(to: next.start, now: now) {
+                            Text("\(L10n.t("trong "))\(c.number) \(L10n.t(c.unitKey))").font(XFinderTokens.Font.caption).opacity(0.65)
+                        }
+                        if let u = GlanceRules.meetingURL(in: next) {
+                            Button(L10n.t("Tham gia")) { NSWorkspace.shared.open(u) }.buttonStyle(.borderedProminent).controlSize(.mini)
+                        }
+                    }
+                } else {
+                    Text("\(L10n.t(GlanceRules.greetingKey(hour: hour))) \(L10n.t("Hôm nay không còn gì nữa."))")
+                        .font(XFinderTokens.Font.caption).opacity(0.75)
+                }
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(today) { e in
+                            HStack(spacing: XFinderTokens.Space.tight) {
+                                Text(e.isAllDay ? L10n.t("Cả ngày") : e.start.formatted(date: .omitted, time: .shortened))
+                                    .font(XFinderTokens.Font.caption).monospacedDigit().opacity(0.65).frame(width: 52, alignment: .leading)
+                                Image(systemName: e.isReminder ? "checklist" : "circle.fill").font(.system(size: 6)).opacity(0.65)
+                                Text(e.title).font(XFinderTokens.Font.caption).lineLimit(1).truncationMode(.tail)
+                                    .opacity(e.end < now ? 0.45 : 1)
+                                Spacer()
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+    }
+
+    // MARK: - N3: AI agent sessions
+
+    /// Up to six sessions, those waiting for the person first. A permission request shows the tool and the one
+    /// input field that matters, with Cho phép / Từ chối — the hook is blocking on that file right now.
+    @ViewBuilder private var agentsPage: some View {
+        if model.agents.isEmpty {
+            VStack(spacing: XFinderTokens.Space.tight) {
+                Image(systemName: "terminal").font(XFinderTokens.Font.pageIcon).opacity(0.65)
+                if model.agentHookInstalled {
+                    Text(L10n.t("Chưa có phiên Claude Code nào.")).font(XFinderTokens.Font.caption).opacity(0.65)
+                } else {
+                    Text(L10n.t("Chưa cài hook — mở Notch & Khay thả để cài.")).font(XFinderTokens.Font.caption).opacity(0.65)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                    ForEach(Array(model.agents.prefix(6))) { s in agentRow(s) }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+    }
+
+    private func agentRow(_ s: AgentSession) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: XFinderTokens.Space.tight) {
+                Circle().fill(agentTint(s.status)).frame(width: 8, height: 8)
+                Text(s.displayName).font(XFinderTokens.Font.row).lineLimit(1)
+                Text(agentStatusText(s)).font(XFinderTokens.Font.caption).opacity(0.65).lineLimit(1).truncationMode(.tail)
+                Spacer()
+                if s.terminal.bundleID != nil, s.status != .ended {
+                    Button(L10n.t("Mở terminal")) { NotchSurfaceController.shared.openAgentTerminal(s) }
+                        .buttonStyle(.bordered).controlSize(.mini)
+                }
+            }
+            if case .waitingForPermission(let p) = s.status {
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    Text(p.toolName).font(XFinderTokens.Font.caption).bold()
+                    if let sum = p.summary {
+                        Text(sum).font(XFinderTokens.Font.caption).opacity(0.75).lineLimit(1).truncationMode(.middle)
+                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    } else { Spacer() }
+                    Button(L10n.t("Từ chối")) { NotchSurfaceController.shared.answerAgent(p, of: s, allow: false) }
+                        .buttonStyle(.bordered).controlSize(.mini)
+                    Button(L10n.t("Cho phép")) { NotchSurfaceController.shared.answerAgent(p, of: s, allow: true) }
+                        .buttonStyle(.borderedProminent).controlSize(.mini)
+                }
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func agentStatusText(_ s: AgentSession) -> String {
+        if case .running(let tool) = s.status, let tool { return L10n.t(AgentSessionRules.statusKey(s.status)) + tool }
+        return L10n.t(AgentSessionRules.statusKey(s.status))
+    }
+
+    private func agentTint(_ st: AgentSession.Status) -> Color {
+        switch st {
+        case .running: return accent
+        case .waitingForInput: return .yellow
+        case .waitingForPermission: return .orange
+        case .ended: return .white.opacity(0.3)
+        }
+    }
+
     @ViewBuilder private var nowPlayingPage: some View {
         if let np = model.nowPlaying, np.hasTrack {
             HStack(alignment: .top, spacing: XFinderTokens.Space.inline + 2) {
@@ -415,6 +586,8 @@ struct NotchSurfaceView: View {
             case .files: filesPage
             case .clipboard: NotchClipboardView(model: model.clipboard)
             case .nowPlaying: nowPlayingPage
+            case .agents: agentsPage
+            case .calendar: calendarPage
             }
         }
         .foregroundColor(.white)
@@ -505,6 +678,9 @@ struct NotchSurfaceView: View {
         case .convert(let t): return "\(L10n.t("Sang "))\(t.label)"
         case .removeBackground: return L10n.t("Tách nền")
         case .airDrop: return "AirDrop"
+        case .toPDF: return L10n.t("Sang PDF")
+        case .ocr: return "OCR"
+        case .resize(let px): return "\(L10n.t("Thu nhỏ ảnh còn "))\(px) px"
         }
     }
 
@@ -515,6 +691,9 @@ struct NotchSurfaceView: View {
         case .convert: return "photo"
         case .removeBackground: return "person.crop.rectangle"
         case .airDrop: return "airplayaudio"
+        case .toPDF: return "doc.richtext"
+        case .ocr: return "text.viewfinder"
+        case .resize: return "arrow.down.right.and.arrow.up.left"
         }
     }
 
@@ -530,15 +709,32 @@ struct NotchSurfaceView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: XFinderTokens.Space.tight) {
                     ForEach(actions, id: \.self) { a in
-                        Button { NotchSurfaceController.shared.run(a) } label: {
-                            Label(title(a), systemImage: symbol(a)).labelStyle(.iconOnly)
+                        if case .resize = a {
+                            // N6 "Drop to apply · Hold for options" (OneNotch): a click runs the default preset,
+                            // press-and-hold lists the others. Menu(primaryAction:) is exactly that control.
+                            Menu {
+                                ForEach(ImageEngine.resizePresets, id: \.self) { px in
+                                    Button("\(L10n.t("Thu nhỏ ảnh còn "))\(px) px") { NotchSurfaceController.shared.run(.resize(maxPixels: px)) }
+                                }
+                            } label: {
+                                Label(title(a), systemImage: symbol(a)).labelStyle(.iconOnly)
+                            } primaryAction: {
+                                NotchSurfaceController.shared.run(a)
+                            }
+                            .menuStyle(.borderedButton).controlSize(.small).fixedSize()
+                            .help("\(title(a)) — \(L10n.t("Giữ để chọn cỡ hoặc định dạng."))")
+                        } else {
+                            Button { NotchSurfaceController.shared.run(a) } label: {
+                                Label(title(a), systemImage: symbol(a)).labelStyle(.iconOnly)
+                            }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .help(title(a))
                         }
-                        .buttonStyle(.bordered).controlSize(.small)
-                        .help(title(a))
                     }
                 }
                 if let t = model.task {
                     resultLine(t)
+                    if let s = model.ocrSummary { Text(s).font(XFinderTokens.Font.caption).opacity(0.75).lineLimit(1) }
                 } else if let n = model.notice {
                     Text(L10n.t(n)).font(XFinderTokens.Font.caption).opacity(0.65)
                 }

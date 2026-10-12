@@ -60,7 +60,7 @@ done
 # built bundle directly. A missing translation store makes the whole app run in
 # Vietnamese with a single stderr line, and no compile check would notice.
 echo "--- bundled resources ---"
-for r in L10n.strings.json L10n.allowlist.json; do
+for r in L10n.strings.json L10n.allowlist.json xfinder-claude-hook.zsh; do
   if [ -f "$OUT/out/XFinder.app/Contents/Resources/$r" ]; then
     echo "  OK   $r ($(wc -c < "$OUT/out/XFinder.app/Contents/Resources/$r") bytes)"
   else

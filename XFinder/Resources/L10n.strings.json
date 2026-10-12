@@ -8222,6 +8222,258 @@
     "Gỡ khoá bảng trước khi xoá.": {
       "en": "Unlock the board before deleting it.",
       "scope": "sentence"
+    },
+    "Đang suy nghĩ": {
+      "en": "Thinking",
+      "scope": "sentence"
+    },
+    "Đang chạy ": {
+      "en": "Running ",
+      "scope": "fragment"
+    },
+    "Đang chờ bạn": {
+      "en": "Waiting for you",
+      "scope": "sentence"
+    },
+    "Chờ bạn duyệt": {
+      "en": "Needs your approval",
+      "scope": "sentence"
+    },
+    "Đã kết thúc": {
+      "en": "Ended",
+      "scope": "sentence"
+    },
+    "Agent AI": {
+      "en": "AI agents",
+      "scope": "sentence"
+    },
+    "Agent AI trên notch": {
+      "en": "AI agents on the notch",
+      "scope": "sentence"
+    },
+    "Các phiên Claude Code đang chạy trong terminal: đang làm gì, chờ bạn nhập hay chờ bạn duyệt quyền — duyệt ngay tại notch.": {
+      "en": "Your Claude Code sessions running in a terminal: what each is doing, whether it waits for your input or your approval — and approve right at the notch.",
+      "scope": "sentence"
+    },
+    "Hiện phiên Claude Code ở notch": {
+      "en": "Show Claude Code sessions at the notch",
+      "scope": "sentence"
+    },
+    "Đọc nhật ký do hook của XFinder ghi: tên sự kiện, công cụ, thư mục. Không đọc nội dung hội thoại, không gọi mạng. Mặc định tắt.": {
+      "en": "Reads the log XFinder's hook writes: event names, tools, folders. Never the conversation itself, never the network. Off by default.",
+      "scope": "sentence"
+    },
+    "Hook Claude Code: ": {
+      "en": "Claude Code hook: ",
+      "scope": "fragment"
+    },
+    "Gỡ hook": {
+      "en": "Remove hook",
+      "scope": "sentence"
+    },
+    "Cài hook vào ~/.claude/settings.json": {
+      "en": "Install hook into ~/.claude/settings.json",
+      "scope": "sentence"
+    },
+    "Cài hook = thêm các mục \"Managed by XFinder\" vào ~/.claude/settings.json (có bản sao lưu đặt cạnh) và chép một script zsh vào Application Support. Hook của app khác giữ nguyên. Mỗi sự kiện của Claude Code chạy script đó vài mili-giây. Khi Claude Code xin quyền, script chờ bạn bấm Cho phép hoặc Từ chối trên notch; XFinder không chạy thì Claude Code hỏi ở terminal như thường. Chỉ Claude Code trong terminal — app Claude để bàn không chạy hook.": {
+      "en": "Installing the hook adds \"Managed by XFinder\" entries to ~/.claude/settings.json (a backup is written beside it) and copies one zsh script into Application Support. Other apps' hooks are left alone. Every Claude Code event runs that script for a few milliseconds. When Claude Code asks for permission the script waits for you to press Allow or Deny on the notch; with XFinder not running, Claude Code asks in the terminal as usual. Terminal sessions only — the Claude desktop app runs no hooks.",
+      "scope": "sentence"
+    },
+    "Chưa cài": {
+      "en": "Not installed",
+      "scope": "sentence"
+    },
+    "Thiếu một phần": {
+      "en": "Partly installed",
+      "scope": "sentence"
+    },
+    "Không đọc được ~/.claude/settings.json": {
+      "en": "Cannot read ~/.claude/settings.json",
+      "scope": "sentence"
+    },
+    "Đã cài hook. Phiên Claude Code mới sẽ hiện trên notch.": {
+      "en": "Hook installed. New Claude Code sessions will show at the notch.",
+      "scope": "sentence"
+    },
+    "Đã gỡ hook.": {
+      "en": "Hook removed.",
+      "scope": "sentence"
+    },
+    "Không đổi được hook: ": {
+      "en": "Could not change the hook: ",
+      "scope": "fragment"
+    },
+    "Chưa có phiên Claude Code nào.": {
+      "en": "No Claude Code session yet.",
+      "scope": "sentence"
+    },
+    "Chưa cài hook — mở Notch & Khay thả để cài.": {
+      "en": "Hook not installed — open Notch & Drop Tray to install it.",
+      "scope": "sentence"
+    },
+    "Mở terminal": {
+      "en": "Open terminal",
+      "scope": "sentence"
+    },
+    "Từ chối": {
+      "en": "Deny",
+      "scope": "sentence"
+    },
+    "Cho phép": {
+      "en": "Allow",
+      "scope": "sentence"
+    },
+    "Phiên Claude Code đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ.": {
+      "en": "Claude Code sessions running in a terminal: status and permission approval at the notch; reads a local hook log.",
+      "scope": "sentence"
+    },
+    "Chỉ xem nhanh": {
+      "en": "Peek only",
+      "scope": "sentence"
+    },
+    "Theo hoạt động": {
+      "en": "By activity",
+      "scope": "sentence"
+    },
+    "Trang mở lần cuối": {
+      "en": "Last opened page",
+      "scope": "sentence"
+    },
+    "Rê chuột vào notch mở": {
+      "en": "Resting on the notch opens",
+      "scope": "sentence"
+    },
+    "Chỉ xem nhanh: dừng con trỏ hiện tệp đang giữ hoặc bài đang phát; khay trống không mở gì. Các lựa chọn khác mở thẳng trang đó. Theo hoạt động chọn trang theo việc đang diễn ra: agent chờ bạn → Agent AI, nhạc đang phát → Đang phát, có tệp → Khay, còn lại → Clipboard.": {
+      "en": "Peek only: resting the pointer shows the files you hold or the playing track; an empty tray opens nothing. The other choices open that page directly. By activity picks the page for what is going on: an agent waiting for you → AI agents, music playing → Now Playing, files held → Tray, otherwise → Clipboard.",
+      "scope": "sentence"
+    },
+    "Sang PDF": {
+      "en": "To PDF",
+      "scope": "sentence"
+    },
+    "Không có ảnh hay PDF nào để ghép.": {
+      "en": "No image or PDF to combine.",
+      "scope": "sentence"
+    },
+    "Không đọc được: ": {
+      "en": "Cannot read: ",
+      "scope": "fragment"
+    },
+    "Không ghi được PDF: ": {
+      "en": "Cannot write the PDF: ",
+      "scope": "fragment"
+    },
+    "Không thấy chữ nào trong: ": {
+      "en": "No text found in: ",
+      "scope": "fragment"
+    },
+    "Đã nhận dạng ": {
+      "en": "Recognised ",
+      "scope": "fragment"
+    },
+    " ký tự, đã sao chép và lưu .txt cạnh ảnh.": {
+      "en": " characters — copied, and saved as .txt beside the image.",
+      "scope": "fragment"
+    },
+    "Giữ để chọn cỡ hoặc định dạng.": {
+      "en": "Press and hold to pick a size or a format.",
+      "scope": "sentence"
+    },
+    "Thu nhỏ ảnh": {
+      "en": "Shrink image",
+      "scope": "sentence"
+    },
+    "Thu nhỏ ảnh còn ": {
+      "en": "Shrink image to ",
+      "scope": "fragment"
+    },
+    "Lịch": {
+      "en": "Calendar",
+      "scope": "sentence"
+    },
+    "Lời nhắc": {
+      "en": "Reminders",
+      "scope": "sentence"
+    },
+    "ÂL": {
+      "en": "lunar",
+      "scope": "sentence"
+    },
+    "Mở Lịch": {
+      "en": "Open Calendar",
+      "scope": "sentence"
+    },
+    "Tiếp theo: ": {
+      "en": "Up next: ",
+      "scope": "fragment"
+    },
+    "trong ": {
+      "en": "in ",
+      "scope": "fragment"
+    },
+    "Tham gia": {
+      "en": "Join",
+      "scope": "sentence"
+    },
+    "Hôm nay không còn gì nữa.": {
+      "en": "Nothing more today.",
+      "scope": "sentence"
+    },
+    "Chào buổi sáng.": {
+      "en": "Good morning.",
+      "scope": "sentence"
+    },
+    "Chào buổi chiều.": {
+      "en": "Good afternoon.",
+      "scope": "sentence"
+    },
+    "Chào buổi tối.": {
+      "en": "Good evening.",
+      "scope": "sentence"
+    },
+    "Chưa có quyền Lịch. Cấp quyền để thấy sự kiện hôm nay.": {
+      "en": "No Calendar access yet. Grant it to see today's events.",
+      "scope": "sentence"
+    },
+    "Quyền Lịch bị từ chối — mở Cài đặt hệ thống ▸ Quyền riêng tư ▸ Lịch.": {
+      "en": "Calendar access was denied — open System Settings ▸ Privacy ▸ Calendars.",
+      "scope": "sentence"
+    },
+    "Cấp quyền Lịch": {
+      "en": "Grant Calendar access",
+      "scope": "sentence"
+    },
+    "Lịch trên notch": {
+      "en": "Calendar on the notch",
+      "scope": "sentence"
+    },
+    "Hôm nay có gì, việc kế tiếp lúc mấy giờ, link họp để bấm vào — ngay tại notch.": {
+      "en": "What is on today, when the next thing is, a meeting link to click — right at the notch.",
+      "scope": "sentence"
+    },
+    "Hiện trang Lịch ở notch": {
+      "en": "Show the Calendar page at the notch",
+      "scope": "sentence"
+    },
+    "Sự kiện và lời nhắc có giờ trong ±5 ngày, đọc từ Lịch của macOS (EventKit). Không mạng, không ghi gì vào lịch của bạn. Cần quyền Lịch — trang sẽ hỏi khi bạn mở.": {
+      "en": "Events and timed reminders within ±5 days, read from the macOS Calendar (EventKit). No network, nothing written to your calendar. Needs Calendar access — the page asks when you open it.",
+      "scope": "sentence"
+    },
+    "Ẩn sự kiện cả ngày": {
+      "en": "Hide all-day events",
+      "scope": "sentence"
+    },
+    "Hôm nay có gì, việc kế tiếp và link họp — đọc từ Lịch của macOS, không mạng.": {
+      "en": "What is on today, the next thing and a meeting link — read from the macOS Calendar, no network.",
+      "scope": "sentence"
+    },
+    "Cho trang Lịch trên notch đọc sự kiện của bạn. Chỉ đọc, không ghi, không mạng.": {
+      "en": "Lets the Calendar page at the notch read your events. Read only, never written, no network.",
+      "scope": "sentence"
+    },
+    "Cho trang Lịch trên notch hiện lời nhắc có giờ. Chỉ đọc.": {
+      "en": "Lets the Calendar page at the notch show timed reminders. Read only.",
+      "scope": "sentence"
     }
   }
 }

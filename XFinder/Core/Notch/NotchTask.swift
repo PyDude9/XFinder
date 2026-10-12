@@ -14,7 +14,15 @@ enum NotchActions {
         case convert(ImageEngine.Target)           // each image
         case removeBackground                      // each image
         case airDrop                               // all held items
+        // N6 (2026-10-13, OneNotch's file actions re-derived): one PDF from every image/PDF held, text out of
+        // each image, and a longest-edge shrink — the tile's default preset, with the others under press-and-hold.
+        case toPDF
+        case ocr
+        case resize(maxPixels: Int)
     }
+
+    /// The shrink preset the tile runs on a plain click; the others are its press-and-hold variants.
+    static let defaultResize = ImageEngine.resizePresets[2]   // 1600 px
 
     /// Actions offered for `items`, in display order. Image targets come from the encoders this Mac
     /// has (`encodable`), and a target is offered only if at least one held image is not already in it.
@@ -23,11 +31,14 @@ enum NotchActions {
         var out: [Action] = [.zip]
         if items.filter({ $0.pathExtension.lowercased() == "pdf" }).count >= 2 { out.append(.mergePDFs) }
         let images = items.filter(ImageEngine.isImage)
+        if !PDFAssembler.inputs(from: items).isEmpty { out.append(.toPDF) }
         if !images.isEmpty {
             for t in ImageEngine.availableTargets(encodable: encodable) where [.jpeg, .png].contains(t) {
                 if images.contains(where: { !ImageEngine.isSameFormat($0, t) }) { out.append(.convert(t)) }
             }
+            out.append(.resize(maxPixels: defaultResize))
             out.append(.removeBackground)
+            out.append(.ocr)
         }
         out.append(.airDrop)
         return out
@@ -39,15 +50,16 @@ enum NotchActions {
         case .zip, .airDrop: return items
         case .mergePDFs: return items.filter { $0.pathExtension.lowercased() == "pdf" }
         case .convert(let t): return items.filter { ImageEngine.isImage($0) && !ImageEngine.isSameFormat($0, t) }
-        case .removeBackground: return items.filter(ImageEngine.isImage)
+        case .removeBackground, .ocr, .resize: return items.filter(ImageEngine.isImage)
+        case .toPDF: return PDFAssembler.inputs(from: items)
         }
     }
 
     /// Jobs that produce one output from all inputs count as ONE step; per-file jobs count each file.
     static func stepCount(for action: Action, inputs: Int) -> Int {
         switch action {
-        case .zip, .mergePDFs, .airDrop: return inputs > 0 ? 1 : 0
-        case .convert, .removeBackground: return inputs
+        case .zip, .mergePDFs, .airDrop, .toPDF: return inputs > 0 ? 1 : 0
+        case .convert, .removeBackground, .ocr, .resize: return inputs
         }
     }
 }

@@ -7,7 +7,7 @@ import Foundation
 ///
 /// The job (Part 0): *"choose what XFinder runs, and see what it is allowed to do."*
 enum AppPermission: String, CaseIterable, Equatable {
-    case accessibility, screenRecording, microphone, speechRecognition, notifications
+    case accessibility, screenRecording, microphone, speechRecognition, notifications, calendars, reminders
 
     /// L10n store keys (Vietnamese literals, translated at the view).
     var titleKey: String {
@@ -17,6 +17,8 @@ enum AppPermission: String, CaseIterable, Equatable {
         case .microphone:        return "Micro"
         case .speechRecognition: return "Nhận dạng giọng nói"
         case .notifications:     return "Thông báo"
+        case .calendars:         return "Lịch"
+        case .reminders:         return "Lời nhắc"
         }
     }
     var purposeKey: String {
@@ -26,6 +28,8 @@ enum AppPermission: String, CaseIterable, Equatable {
         case .microphone:        return "Cho phép nghe giọng bạn khi nhập bằng giọng nói."
         case .speechRecognition: return "Cho phép chuyển giọng nói thành chữ."
         case .notifications:     return "Cho Cảnh báo hiện thêm trong Trung tâm thông báo. Không bắt buộc: cảnh báo luôn hiện bằng biểu ngữ của XFinder. Bản ký bằng chứng chỉ tự tạo bị macOS từ chối quyền này."
+        case .calendars:         return "Cho trang Lịch trên notch đọc sự kiện của bạn. Chỉ đọc, không ghi, không mạng."
+        case .reminders:         return "Cho trang Lịch trên notch hiện lời nhắc có giờ. Chỉ đọc."
         }
     }
     var symbol: String {
@@ -35,6 +39,8 @@ enum AppPermission: String, CaseIterable, Equatable {
         case .microphone:        return "mic.fill"
         case .speechRecognition: return "waveform"
         case .notifications:     return "bell.badge"
+        case .calendars:         return "calendar"
+        case .reminders:         return "checklist"
         }
     }
     /// Deep link to the pane. macOS opens a PANE, never a row inside it (CLAUDE.md Part 3c).
@@ -45,6 +51,8 @@ enum AppPermission: String, CaseIterable, Equatable {
         case .microphone:        return "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"
         case .speechRecognition: return "x-apple.systempreferences:com.apple.preference.security?Privacy_SpeechRecognition"
         case .notifications:     return "x-apple.systempreferences:com.apple.Notifications-Settings.extension"
+        case .calendars:         return "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars"
+        case .reminders:         return "x-apple.systempreferences:com.apple.preference.security?Privacy_Reminders"
         }
     }
 }
@@ -84,7 +92,7 @@ enum FeatureGroup: String, CaseIterable {
 enum FeatureID: String, CaseIterable {
     case dockPreview, commandTab, snapZones, quitProtection
     case clipboardShelf, cleanURLs, suggestions
-    case quickSearch, edgeNotes, dropTray, nowPlaying, folderSync
+    case quickSearch, edgeNotes, dropTray, nowPlaying, folderSync, agents, calendar
     case voice
     case alerts
     case menuBarReadouts
@@ -164,6 +172,16 @@ enum FeatureCatalog {
                    subtitleKey: "Bài đang phát, ảnh bìa và nút điều khiển ở notch; đọc qua một tiến trình trợ giúp nhỏ.",
                    symbol: "music.note", group: .tools, enabledKey: "notch.nowPlaying",
                    defaultOn: false, permissions: [], idle: .helperProcess),
+        // N3. Files written by a hook script; a 20 s liveness timer only while a session is listed as alive.
+        FeatureDef(id: .agents, titleKey: "Agent AI trên notch",
+                   subtitleKey: "Phiên Claude Code đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ.",
+                   symbol: "terminal", group: .tools, enabledKey: "agents.enabled",
+                   defaultOn: false, permissions: [], idle: .timerWhileActive),
+        // N4. EventKit; a 60 s refetch only while the page is on screen, EKEventStoreChanged otherwise.
+        FeatureDef(id: .calendar, titleKey: "Lịch trên notch",
+                   subtitleKey: "Hôm nay có gì, việc kế tiếp và link họp — đọc từ Lịch của macOS, không mạng.",
+                   symbol: "calendar", group: .tools, enabledKey: "notch.calendar",
+                   defaultOn: false, permissions: [.calendars, .reminders], idle: .timerWhileActive),
         FeatureDef(id: .folderSync, titleKey: "Đồng bộ thư mục tự động",
                    subtitleKey: "Sao chép một chiều theo lịch hoặc khi có thay đổi.",
                    symbol: "arrow.triangle.2.circlepath", group: .tools, enabledKey: "sync.autoEnabled",

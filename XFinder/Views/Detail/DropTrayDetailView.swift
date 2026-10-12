@@ -20,7 +20,7 @@ struct DropTrayDetailView: View {
     @AppStorage("dropTray.notchDropEnabled") private var notchDropEnabled = true
     @AppStorage("dropTray.shakeEnabled") private var shakeEnabled = true
     @AppStorage("dropTray.shakeSensitivity") private var shakeSensitivity = "medium"
-    @AppStorage("notch.clipboardOnHover") private var clipboardOnHover = false
+    @AppStorage("notch.hoverOpens") private var hoverOpens = "peek"   // N2 (replaces notch.clipboardOnHover)
     // B4 live activities. Reader: LiveActivityMonitor (defaults must match — FeatureKeyDefaultsTests).
     @AppStorage("notch.activities") private var activities = true
     @AppStorage("notch.activity.power") private var actPower = true
@@ -38,7 +38,14 @@ struct DropTrayDetailView: View {
     @AppStorage("notch.pillOnPlainScreens") private var pillOnPlainScreens = true
     @AppStorage("notch.hoverSpeed") private var hoverSpeed = "medium"
     /// D1 #44 — page order + visibility; one reader: `NotchSurfaceController.pageOrderRaw`.
-    @AppStorage("notch.pages") private var pagesRaw = "files,clipboard,nowPlaying"
+    @AppStorage("notch.pages") private var pagesRaw = "files,clipboard,nowPlaying,agents,calendar"
+    // N3
+    @AppStorage("agents.enabled") private var agentsEnabled = false
+    // N4
+    @AppStorage("notch.calendar") private var calendarEnabled = false
+    @AppStorage("notch.calendar.hideAllDay") private var calendarHideAllDay = false
+    @State private var hookStatus: AgentSessionMonitor.HookStatus = .notInstalled
+    @State private var hookNotice: String?
     /// D1 #47 — accent of the notch surfaces; one reader: `NotchSurfaceController.accentName`.
     @AppStorage("notch.accent") private var accent = "system"
 
@@ -93,6 +100,8 @@ struct DropTrayDetailView: View {
                     pagesSection
                     activitiesSection
                     nowPlayingSection
+                    agentsSection
+                    calendarSection
                 }
 
                 if !tray.items.isEmpty {
@@ -224,9 +233,21 @@ struct DropTrayDetailView: View {
                 ToggleRow(title: L10n.t("Lắc khi đang kéo file để mở khay tại con trỏ"),
                           subtitle: L10n.t("Khay mở ngay dưới tay bạn và không tự đóng khi đang giữ tệp."),
                           isOn: $shakeEnabled)
-                ToggleRow(title: L10n.t("Rê chuột vào notch mở Clipboard khi khay trống"),
-                          subtitle: L10n.t("Mặc định tắt: khay trống không bao giờ tự mở khi rê chuột. Bật thì dừng con trỏ ở notch sẽ mở trang Clipboard thay vì không làm gì."),
-                          isOn: $clipboardOnHover)
+                HStack(alignment: .firstTextBaseline, spacing: XFinderTokens.Space.inline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.t("Rê chuột vào notch mở")).font(XFinderTokens.Font.row)
+                        Text(L10n.t("Chỉ xem nhanh: dừng con trỏ hiện tệp đang giữ hoặc bài đang phát; khay trống không mở gì. Các lựa chọn khác mở thẳng trang đó. Theo hoạt động chọn trang theo việc đang diễn ra: agent chờ bạn → Agent AI, nhạc đang phát → Đang phát, có tệp → Khay, còn lại → Clipboard."))
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Picker("", selection: $hoverOpens) {
+                        ForEach(NotchHoverOpen.allCases, id: \.rawValue) { h in
+                            Text(L10n.t(h.labelKey)).tag(h.rawValue)
+                        }
+                    }
+                    .labelsHidden().pickerStyle(.menu).frame(width: 170)
+                    .onChange(of: hoverOpens) { NotchSurfaceController.shared.applySettings() }
+                }
                     .disabled(!hoverEnabled)
                 if shakeEnabled {
                     PickerRow(title: L10n.t("Độ nhạy lắc"), selection: $shakeSensitivity, width: 120) {
@@ -331,6 +352,8 @@ struct DropTrayDetailView: View {
         case .files: return L10n.t("Khay")
         case .clipboard: return "Clipboard"
         case .nowPlaying: return L10n.t("Đang phát")
+        case .agents: return L10n.t("Agent AI")
+        case .calendar: return L10n.t("Lịch")
         }
     }
 
@@ -339,6 +362,8 @@ struct DropTrayDetailView: View {
         case .files: return "tray.and.arrow.down.fill"
         case .clipboard: return "doc.on.clipboard.fill"
         case .nowPlaying: return "music.note"
+        case .agents: return "terminal"
+        case .calendar: return "calendar"
         }
     }
 
@@ -367,6 +392,78 @@ struct DropTrayDetailView: View {
             }
             .padding(.horizontal, XFinderTokens.Space.page)
         }
+    }
+
+    /// N4 — the user comes here to put today's events on the notch. The switch only reads; the access sheet is
+    /// asked for from the page's own button, so a toggle never pops a system dialog.
+    private var calendarSection: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(icon: "calendar",
+                          title: L10n.t("Lịch trên notch"),
+                          subtitle: L10n.t("Hôm nay có gì, việc kế tiếp lúc mấy giờ, link họp để bấm vào — ngay tại notch."))
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                ToggleRow(title: L10n.t("Hiện trang Lịch ở notch"),
+                          subtitle: L10n.t("Sự kiện và lời nhắc có giờ trong ±5 ngày, đọc từ Lịch của macOS (EventKit). Không mạng, không ghi gì vào lịch của bạn. Cần quyền Lịch — trang sẽ hỏi khi bạn mở."),
+                          isOn: $calendarEnabled)
+                    .onChange(of: calendarEnabled) { NotchSurfaceController.shared.applySettings() }
+                ToggleRow(title: L10n.t("Ẩn sự kiện cả ngày"), isOn: $calendarHideAllDay)
+                    .onChange(of: calendarHideAllDay) { NotchSurfaceController.shared.applySettings() }
+                    .disabled(!calendarEnabled)
+            }
+            .padding(.horizontal, XFinderTokens.Space.page)
+        }
+    }
+
+    /// N3 — the user comes here to put their Claude Code sessions on the notch, and to install (or remove)
+    /// the hook that makes that possible — a step that edits ~/.claude/settings.json, so it is a button, never a switch.
+    private var agentsSection: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(icon: "terminal",
+                          title: L10n.t("Agent AI trên notch"),
+                          subtitle: L10n.t("Các phiên Claude Code đang chạy trong terminal: đang làm gì, chờ bạn nhập hay chờ bạn duyệt quyền — duyệt ngay tại notch."))
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                ToggleRow(title: L10n.t("Hiện phiên Claude Code ở notch"),
+                          subtitle: L10n.t("Đọc nhật ký do hook của XFinder ghi: tên sự kiện, công cụ, thư mục. Không đọc nội dung hội thoại, không gọi mạng. Mặc định tắt."),
+                          isOn: $agentsEnabled)
+                    .onChange(of: agentsEnabled) { NotchSurfaceController.shared.applySettings() }
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    Text(L10n.t("Hook Claude Code: ")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    Text(hookStatusText).font(XFinderTokens.Font.caption)
+                    Spacer()
+                    if hookStatus == .installed {
+                        Button(L10n.t("Gỡ hook")) { changeHook(install: false) }.controlSize(.small)
+                    } else {
+                        Button(L10n.t("Cài hook vào ~/.claude/settings.json")) { changeHook(install: true) }.controlSize(.small)
+                    }
+                }
+                if let hookNotice {
+                    Text(hookNotice).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                }
+                InlineNote(text: L10n.t("Cài hook = thêm các mục \"Managed by XFinder\" vào ~/.claude/settings.json (có bản sao lưu đặt cạnh) và chép một script zsh vào Application Support. Hook của app khác giữ nguyên. Mỗi sự kiện của Claude Code chạy script đó vài mili-giây. Khi Claude Code xin quyền, script chờ bạn bấm Cho phép hoặc Từ chối trên notch; XFinder không chạy thì Claude Code hỏi ở terminal như thường. Chỉ Claude Code trong terminal — app Claude để bàn không chạy hook."))
+            }
+            .padding(.horizontal, XFinderTokens.Space.page)
+        }
+        .onAppear { hookStatus = AgentSessionMonitor.shared.hookStatus() }
+    }
+
+    private var hookStatusText: String {
+        switch hookStatus {
+        case .installed: return L10n.t("Đã cài")
+        case .notInstalled: return L10n.t("Chưa cài")
+        case .partial(let missing): return L10n.t("Thiếu một phần") + " (" + missing.joined(separator: ", ") + ")"
+        case .settingsUnreadable: return L10n.t("Không đọc được ~/.claude/settings.json")
+        }
+    }
+
+    private func changeHook(install: Bool) {
+        do {
+            if install { try AgentSessionMonitor.shared.installHook() } else { try AgentSessionMonitor.shared.removeHook() }
+            hookNotice = L10n.t(install ? "Đã cài hook. Phiên Claude Code mới sẽ hiện trên notch." : "Đã gỡ hook.")
+        } catch {
+            hookNotice = "\(L10n.t("Không đổi được hook: "))\(error)"
+        }
+        hookStatus = AgentSessionMonitor.shared.hookStatus()
+        NotchSurfaceController.shared.applySettings()
     }
 
     /// The user comes here to decide whether the notch shows what is playing — and to read, in plain

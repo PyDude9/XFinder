@@ -21,11 +21,17 @@ final class NotchNowPlayingTests: XCTestCase {
         XCTAssertEqual(off.state, .collapsed, "without a track an empty tray never peeks (Part 3c)")
     }
 
-    func testFilesStillOutrankTheClipboardOptInAndSoDoesTheTrack() {
-        var s = playing; s.hoverOpensClipboard = true
+    /// N2: "By activity" opens the player while a track plays; a FIXED choice opens that page whatever plays —
+    /// the picker's label promises that page, so a track must not quietly override it.
+    func testByActivityOpensThePlayerWhileATrackPlaysAndAFixedChoiceOpensItsPage() {
+        var s = playing; s.hoverOpens = .activity
         var m = M.Machine()
         m.handle(.hoverInZone(since: t0), settings: s, now: at(1))
-        XCTAssertEqual(m.state, .peek, "a playing track peeks; the clipboard opt-in only applies with nothing else to show")
+        XCTAssertEqual(m.state, .expanded(.nowPlaying), "By activity: a playing track opens the player page")
+        var fixed = playing; fixed.hoverOpens = .clipboard
+        var f = M.Machine()
+        f.handle(.hoverInZone(since: t0), settings: fixed, now: at(1))
+        XCTAssertEqual(f.state, .expanded(.clipboard), "a fixed choice is that page, track or not")
     }
 
     func testThePeekSurvivesTheTrayEmptyingWhileATrackPlays() {

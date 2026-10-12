@@ -300,6 +300,66 @@ C. **Một cột, chip lọc trên** (như trang notch phóng to: chip loại/ap
 
 ---
 
+### 3e. Đối chiếu theo bằng chứng đo trên bundle OneNotch 2.0.5 (2026-10-13) — thay §3/§3b ở chỗ mâu thuẫn
+
+Nguồn: `docs/ONENOTCH_EVIDENCE_2026-10-13.md` (đo trực tiếp: plist, entitlements, chuỗi UI 2 471 mục, class name, defaults,
+SQLite, CGWindowList, AX, CPU) + `docs/ONENOTCH_WEB_RESEARCH_2026-10-13.md` (web). **OneNotch là mã đóng** (không có repo; chuỗi
+"open-source" trong app không kiểm chứng được) ⇒ chỉ học *cơ chế đo được*, không chép gì.
+
+Điều bằng chứng **sửa lại** trong kế hoạch cũ:
+
+| Mục cũ | Bằng chứng mới | Kế hoạch mới |
+|:--|:--|:--|
+| §3b #37/#40/#41 "theo dõi agent — chưa rõ cơ chế" | Cơ chế đo được (§7 evidence): hook Claude Code trong `~/.claude/settings.json` + script zsh ghi JSONL + jq; PermissionRequest chặn chờ file quyết định; không API riêng, không quyền | **N3** làm được bằng file + hook công khai |
+| §3 "HUD: không thể tắt HUD hệ thống" | OneNotch *thay* HUD bằng cách nuốt phím media (class `MediaKeyInterceptor`, cần AX) — suy ra từ tên class, chưa thấy tap | âm lượng: probe nuốt phím + CoreAudio; độ sáng vẫn không có đường ghi public (đã đo) ⇒ giữ song song cho độ sáng |
+| §3 "Now Playing probe-gated" | Cùng adapter perl (B6 đã làm); họ thêm `SetElapsedTime`, `SetShuffleMode`, `SetRepeatMode` | seek/shuffle/repeat là probe nhỏ cùng cơ chế (N8) |
+| §3 "Convert → WebP nếu encoder có" | Họ **biên dịch libwebp vào binary** (`WebPEncoder.swift`, `InitVP8Encoder`) | WebP = vendor libwebp (BSD) — hoãn, không phải "không có" |
+| §3b #45 ẩn icon thanh menu | changelog 2.0.3: *"menu bar icon hiding disabled on macOS 27"* | giữ explainer, đã được bên thứ ba xác nhận |
+| §3b "#22 player màn hình khoá (private)" | SkyLight (`SLSSpaceCreate`, `SLSSetLoginwindowConnection`), LoginUIKit | giữ: không làm |
+| Khoá bảng | Họ: passcode + AES-GCM + digest; XFinder D4a: Secure Enclave + HPKE | XFinder đã vượt; giữ |
+| Hồ sơ tài nguyên | OneNotch 168 MB + 48 MB helper, ≈4.9 % CPU "idle" | **không** chạy theo; mỗi mục N* phải giữ 0 % idle khi tắt |
+
+**Khác biệt kiến trúc lớn nhất đo được:** panel notch của OneNotch **cố định 700×745 pt** (poll 20 s không đổi 1 px), level
+`mainMenu + 3`; nội dung animate bên trong. XFinder `render()` đổi frame panel theo trạng thái (grow / shrink-sau-0.32 s /
+union) — chính nguồn của lỗi "giật" D0c phải vá. Tiền đề phải đo trước khi đổi: click trên vùng **alpha 0** của panel có xuyên
+xuống cửa sổ dưới không (`NSWindow.windowNumber(at:)`).
+
+**Thứ tự dựng mới (thay cho "D4b → E → F → G"):**
+
+| # | Việc | Dựa trên | Cổng đo |
+|:--|:--|:--|:--|
+| **N1** | Một panel notch cố định (max của mọi trạng thái ở notch), bỏ grow/shrink/union; tray tại con trỏ giữ nguyên | `NotchSurfaceLayout.panelFrame`, `render()` | CGWindowList: frame không đổi qua mọi trạng thái; click xuyên vùng trong suốt; test "mọi state ⊆ panelFrame" + mutation |
+| **N2** | "Mở khi hover" = trang cuối · **theo hoạt động** (nhạc → Đang phát, agent chạy → Agent, có file → Khay) · clipboard · khay | thay `notch.clipboardOnHover` bằng một picker (một khoá, một reader) | FeatureKeyDefaultsTests + test luật thuần |
+| **N3** | Trang **Agent AI** trên notch: cài hook Claude Code (có hỏi, nhãn "Managed by XFinder"), đọc JSONL, danh sách session (đang chạy tool / chờ nhập / **chờ duyệt quyền → Cho phép / Từ chối trên notch**), mở đúng terminal, tiêu thụ token "ước tính" | cơ chế §7 evidence; file + `DispatchSource` vnode; luật thuần `AgentSessions` | harness: bơm JSONL giả → trạng thái đúng; e2e với chính Claude Code này; không bao giờ tự trả lời quyền |
+| **N4** | Trang Lịch & Lời nhắc ("Glance"): hôm nay + dải tuần + "Tiếp theo", thêm sự kiện, link họp | EventKit (quyền Lịch/Lời nhắc vào tab Quyền) | AX dump trang; không mạng |
+| **N5** | Nút dịch khi bôi đen (badge AX) + ⇧⌘G | `AXSelectedText`, Translation (macOS 15 gate) | **probe `translationd` với chữ ký XFinder Dev trước**; thất bại ⇒ chỉ ⇧⌘G mở Dịch của Apple |
+| **N6** | File actions: Resize · To PDF · OCR trên file thả · "giữ để chọn biến thể" | `ImageRunner`, PDFKit, `ScreenTextRecognizer` | integration test như B2c |
+| **N7** | Onboarding 4 bước + What's New (tĩnh) | `lastSeenWhatsNewVersion` | AX dump |
+| **N8** | Now Playing: seek, shuffle, repeat | `MRMediaRemoteSetElapsedTime/SetShuffleMode/SetRepeatMode` qua cùng đường dlsym | probe với publisher im lặng như B6 |
+| — | D4b (xem trước link opt-in) | giữ, xếp sau N3 | — |
+
+**Tiến độ (2026-10-13):** **N1 ✅ dựng + test** — `panelSize/panelFrame`, `render()` một frame mỗi anchor, hit-test và drop theo
+`drawnFrame`; 28/28 mutation notch RED (M27/M28 mới); **chưa cài** vì probe click-xuyên vùng trong suốt chưa đo được (màn hình
+đang ngủ; watcher tự đo khi thức). **N3 ✅ dựng + test** — hook zsh (đo trong scratchpad 4/4), `AgentEvents`/`AgentSessionRules`/
+`AgentHookInstaller` 17 test, `AgentSessionMonitor`, trang Agent AI trên hub + mục cài hook ở Notch & Khay thả, catalog + gate;
+schema hook đối chiếu tài liệu chính thức (`decision.behavior`, exit 2 bị bỏ qua, `statusMessage`/`timeout` thật); **chưa đo
+live** (e2e `scratchpad/n3/e2e-agents.sh` chờ màn thức; phiên Claude Code thật chỉ sau khi người dùng bấm Cài hook).
+
+**N2 ✅ dựng + test** — picker `notch.hoverOpens` (7 lựa chọn) thay Bool `notch.clipboardOnHover` (migrate sang Theo hoạt động),
+`NotchHoverOpen` thuần 10 test, M29/M30 mới; chưa đo live.
+
+**N6 ✅ dựng + test** — Sang PDF (`PDFAssembler`, ảnh + PDF → một PDF cạnh tệp đầu), OCR tệp ảnh (`ImageTextOCR`, .txt cạnh ảnh
++ clipboard), Thu nhỏ ảnh với 5 preset qua press-and-hold (`Menu(primaryAction:)`); 8 test tích hợp trên ảnh sinh, M31; WebP vẫn
+hoãn (cần vendor libwebp). Chưa đo live (click trên hub).
+
+**N4 ✅ dựng + test** — trang Lịch (`GlanceRules` thuần 8 test + `VietnameseLunar` theo Hồ Ngọc Đức, ghim Tết 2024–2026,
+Trung thu 2026, nhuận 2025, lệch 1985), `CalendarGlanceMonitor` EventKit (fetch ±5 ngày, ticker 60 s chỉ khi trang mở), quyền
+Lịch/Lời nhắc vào tab Quyền; chưa đo live.
+
+**Không làm (bằng chứng, không phải sở thích):** lock screen (SkyLight/LoginUIKit private) · lời bài hát/visualizer (mạng
+bên thứ ba, mic) · iCloud (CloudKit cần tài khoản trả phí) · Sentry/TelemetryDeck/Sparkle tự tải (0 telemetry) · Pro/license ·
+camera "Mirror" (câu job: không ai tới notch để soi gương) · thay HUD độ sáng (không có đường ghi public).
+
 ## 4. Lộ trình (UI/UX trước, đúng yêu cầu)
 
 Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong phase là thứ tự làm.

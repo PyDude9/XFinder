@@ -50,7 +50,6 @@ final class NotchSurfaceController {
     private var leftAt: Date?
     private var dwellWork: DispatchWorkItem?
     private var graceWork: DispatchWorkItem?
-    private var shrinkWork: DispatchWorkItem?
 
     private init() {
         machine.itemCount = DropTrayStore.shared.items.count
@@ -73,9 +72,11 @@ final class NotchSurfaceController {
         UserDefaults.standard.object(forKey: "dropTray.notchDropEnabled") as? Bool ?? true
     }
     /// B5: resting on the notch with NO files held opens the clipboard page. Off by default.
-    private var clipboardOnHover: Bool {
-        UserDefaults.standard.object(forKey: "notch.clipboardOnHover") as? Bool ?? false
-    }
+    /// N2 — the ONE reader of `notch.hoverOpens` (what a dwelt hover opens). The D1 Bool it replaces is migrated
+    /// once in `applySettings()`.
+    private var hoverOpensRaw: String { UserDefaults.standard.string(forKey: "notch.hoverOpens") ?? "peek" }
+    /// The hub page that was open last, for `NotchHoverOpen.lastPage`.
+    private var lastHubPage: NotchSurfaceMachine.Page?
     /// B7: keep the surface out of screenshots, recordings and screen sharing (`NSWindow.sharingType = .none`;
     /// measured as `kCGWindowSharingState = 0`). On by default — an overlay in a recording is noise.
     private var hideFromCapture: Bool {
@@ -102,7 +103,8 @@ final class NotchSurfaceController {
         }
     }
     private var settings: NotchSurfaceMachine.Settings {
-        NotchSurfaceMachine.Settings(enabled: enabled, hoverToPeek: hoverEnabled, hoverOpensClipboard: clipboardOnHover,
+        NotchSurfaceMachine.Settings(enabled: enabled, hoverToPeek: hoverEnabled, hoverOpens: NotchHoverOpen.parse(hoverOpensRaw),
+                                     agentNeedsYou: model.agentsNeedingYou > 0, lastPage: lastHubPage, shownPages: model.pages,
                                      nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
                                      dragIntoNotchOpens: notchDropEnabled, shakeOpens: shakeEnabled,
                                      hoverDwell: NotchSurfaceMachine.Settings.hoverDwell(forSpeed: hoverSpeed))
@@ -112,13 +114,18 @@ final class NotchSurfaceController {
     private var badgeShown: Bool { machine.itemCount > 0 || countdown != nil || NowPlayingMonitor.shared.hasTrack }
 
     /// D1 #44 — the ONE reader of `notch.pages` (order + visibility, a comma list).
-    private var pageOrderRaw: String { UserDefaults.standard.string(forKey: "notch.pages") ?? "files,clipboard,nowPlaying" }
+    private var pageOrderRaw: String { UserDefaults.standard.string(forKey: "notch.pages") ?? "files,clipboard,nowPlaying,agents,calendar" }
     /// D1 #47 — the ONE reader of `notch.accent`.
     private var accentName: String { UserDefaults.standard.string(forKey: "notch.accent") ?? "system" }
     /// For the ⌘⇧V router: a hidden clipboard tab means the hotkey falls back to the floating shelf.
     var showsClipboardPage: Bool { model.pages.contains(.clipboard) }
 
     func applySettings() {
+        // N2 migration: a D1 user who turned "hover opens the clipboard" on keeps that behaviour under the new key.
+        let d = UserDefaults.standard
+        if d.string(forKey: NotchHoverOpen.key) == nil, d.object(forKey: NotchHoverOpen.legacyKey) as? Bool == true {
+            d.set(NotchHoverOpen.migrated(raw: nil, legacyClipboard: true).rawValue, forKey: NotchHoverOpen.key)
+        }
         if enabled {
             start()
             panel?.sharingType = hideFromCapture ? .none : .readOnly   // B7, live
@@ -130,14 +137,25 @@ final class NotchSurfaceController {
             }
             render()
             NowPlayingMonitor.shared.applySettings()      // B6: its own switch, under the master
+            AgentSessionMonitor.shared.applySettings(underMaster: true)   // N3: its own switch, under the master
+            CalendarGlanceMonitor.shared.applySettings(underMaster: true)  // N4: same
+            model.calendarEnabled = CalendarGlanceMonitor.shared.isEnabled
+            calendarChanged()
+            model.agentsEnabled = AgentSessionMonitor.shared.isEnabled
+            model.agents = AgentSessionMonitor.shared.sessions
+            refreshAgentHookStatus()
         } else {
             stop()
+            AgentSessionMonitor.shared.applySettings(underMaster: false)
+            CalendarGlanceMonitor.shared.applySettings(underMaster: false)
         }
     }
 
     private func start() {
         if panel == nil { prepare() }
         NowPlayingMonitor.shared.onChange = { [weak self] in self?.nowPlayingChanged() }
+        AgentSessionMonitor.shared.onChange = { [weak self] in self?.agentsChanged() }
+        CalendarGlanceMonitor.shared.onChange = { [weak self] in self?.calendarChanged() }
         if monitors.isEmpty {
             let mask: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .leftMouseDown, .leftMouseUp]
             if let global = NSEvent.addGlobalMonitorForEvents(matching: mask, handler: { [weak self] event in
@@ -216,7 +234,7 @@ final class NotchSurfaceController {
         let screen = NSScreen.screens.first(where: { $0.frame.contains(point) }) ?? WindowManager.screenUnderPointer()
         let notch = Self.notch(on: screen)
         let onSurface = (panel?.isVisible ?? false)
-            && (panel?.frame.insetBy(dx: -12, dy: -12).contains(point) ?? false)
+            && drawnFrame.insetBy(dx: -12, dy: -12).contains(point)   // N1: the drawn shape, never the (larger) window
 
         if NSEvent.pressedMouseButtons & 1 == 1 {
             // Never collapse mid-drag — the drag may come back; the leave clock restarts after the release.
@@ -284,8 +302,6 @@ final class NotchSurfaceController {
     }
 
     private func cancelWork() {
-        for w in [dwellWork, graceWork, shrinkWork] { w?.cancel() }
-        dwellWork = nil; graceWork = nil; shrinkWork = nil
         zoneEnteredAt = nil; leftAt = nil
     }
 
@@ -322,6 +338,8 @@ final class NotchSurfaceController {
         machine.handle(event, settings: settings, now: Date())
         guard machine != before else { return }
         state = machine.state
+        if case .expanded(let p) = machine.state { lastHubPage = p }   // N2: for "Trang mở lần cuối"
+        CalendarGlanceMonitor.shared.setPageOpen(machine.state == .expanded(.calendar))   // N4: the minute ticker only while shown
         render()
         syncClipboardKeyboard()
         syncHubSwipe()
@@ -344,7 +362,8 @@ final class NotchSurfaceController {
             swipeMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] e in
                 guard let self, let panel = self.panel, e.window === panel else { return e }
                 if e.phase == .ended || e.phase == .cancelled || e.momentumPhase == .ended { self.swipe.reset(); return e }
-                let bandTop = panel.frame.height, bandBottom = bandTop - max(self.model.notchSize.height, 32) - 28
+                let bandTop = self.drawnFrame.maxY - panel.frame.minY          // N1: the drawn shape's top, in window space
+                let bandBottom = bandTop - max(self.model.notchSize.height, 32) - 28
                 guard e.locationInWindow.y >= bandBottom, abs(e.scrollingDeltaX) > abs(e.scrollingDeltaY) else { return e }
                 if let dir = self.swipe.feed(deltaX: e.scrollingDeltaX),
                    case .expanded(let page) = self.machine.state,
@@ -360,6 +379,38 @@ final class NotchSurfaceController {
     }
 
     // MARK: - Now Playing (B6)
+
+    // MARK: - Calendar glance (N4)
+
+    private func calendarChanged() {
+        let m = CalendarGlanceMonitor.shared
+        model.calendarEvents = m.events + m.reminders
+        model.calendarAccess = m.eventAccess
+        model.calendarHidesAllDay = m.hidesAllDay
+    }
+
+    func requestCalendarAccess() { CalendarGlanceMonitor.shared.requestAccess() }
+    func openCalendar(on day: Date) { CalendarGlanceMonitor.shared.openCalendarApp(on: day) }
+
+    // MARK: - AI agent sessions (N3)
+
+    /// The monitor rebuilt its sessions: mirror them and redraw (the tab badge counts those waiting for you).
+    private func agentsChanged() {
+        model.agents = AgentSessionMonitor.shared.sessions
+        render()
+    }
+
+    func refreshAgentHookStatus() {
+        model.agentHookInstalled = AgentSessionMonitor.shared.hookStatus() == .installed
+    }
+
+    func answerAgent(_ p: AgentSession.PendingPermission, of session: AgentSession, allow: Bool) {
+        AgentSessionMonitor.shared.answer(p, of: session, allow: allow)
+    }
+
+    func openAgentTerminal(_ session: AgentSession) {
+        AgentSessionMonitor.shared.openTerminal(of: session)
+    }
 
     private var nowPlayingTicker: Timer?
 
@@ -656,16 +707,29 @@ final class NotchSurfaceController {
         panel = p
     }
 
-    /// Grow: set the window frame first, then let the shape animate up into it. Shrink: animate the
-    /// shape first, set the smaller frame once the spring has settled, or the content clips
-    /// mid-animation. An anchor change (pointer ⇄ notch) jumps with no animation.
+    /// Size of the DRAWN shape for the rendered state (nil while nothing is drawn). N1: the window itself is
+    /// bigger than the shape, so hit-tests and the drop target must use this, never `panel.frame`.
+    private var drawnSize: CGSize?
+
+    /// The drawn shape in screen space: the view lays it out top-centred in the window, so it follows the
+    /// window even after a pointer tray has been dragged aside by its title strip.
+    private var drawnFrame: CGRect {
+        guard let panel, panel.isVisible, let s = drawnSize else { return .zero }
+        return CGRect(x: panel.frame.midX - s.width / 2, y: panel.frame.maxY - s.height, width: s.width, height: s.height)
+    }
+
+    /// N1 (2026-10-13, after measuring OneNotch 2.0.5: its notch window is ONE fixed 700×745 frame that did not
+    /// move a pixel across 20 s of polling while the content animated inside it). The window now has ONE
+    /// frame per anchor — `NotchSurfaceLayout.panelFrame` at the notch, the same size top-centred on the
+    /// state's frame at the pointer — big enough for every state, so a state change never calls `setFrame`.
+    /// The D0c grow / shrink-after-0.32 s / union dance is gone with it. The transparent remainder of the
+    /// window passes clicks through (measured with `NSWindow.windowNumber(at:)` before this shipped).
     private func render() {
         guard let panel else { return }
-        guard enabled else { panel.hide(); return }
+        guard enabled else { panel.hide(); drawnSize = nil; return }
         var screen = surfaceScreen ?? WindowManager.screenUnderPointer()
         if machine.state == .collapsed, let notched = Self.notchedScreen { screen = notched }
         let notch = Self.notch(on: screen)
-        shrinkWork?.cancel(); shrinkWork = nil
 
         guard let target = NotchSurfaceLayout.frame(for: machine.state, anchor: machine.anchor,
                                                     itemCount: machine.itemCount, notch: notch,
@@ -676,25 +740,39 @@ final class NotchSurfaceController {
             model.state = .collapsed
             model.itemCount = machine.itemCount
             panel.hide()
+            drawnSize = nil
             renderedAnchor = .notch
             return
         }
+        drawnSize = target.size
         let wasVisible = panel.isVisible
         let anchorChanged = machine.anchor != renderedAnchor
         renderedAnchor = machine.anchor
         panel.hasShadow = machine.anchor == .pointer      // at the notch a shadow would reveal the rect
 
+        let fixed: CGRect
+        switch machine.anchor {
+        case .notch:
+            fixed = NotchSurfaceLayout.panelFrame(notch: notch, screen: screen.frame)
+        case .pointer:
+            // A tray at the pointer may have been dragged aside by its title strip: while it stays visible at
+            // the pointer, every update (a file added, a page change) keeps it where the user put it.
+            if wasVisible && !anchorChanged { applyModel(notch: notch); return }
+            let size = NotchSurfaceLayout.panelSize(notch: notch)
+            fixed = SurfaceGeometry.clamp(CGRect(x: target.midX - size.width / 2, y: target.maxY - size.height,
+                                                 width: size.width, height: size.height), into: screen.visibleFrame)
+        }
+        if panel.frame != fixed { panel.setFrame(fixed, display: true) }   // first show, anchor change or screen change only
+
         if !wasVisible || anchorChanged {
-            // D0c: at the notch the surface GROWS OUT OF THE NOTCH — the window is given its final frame at
-            // once (never animated), the shape starts at the notch's own size and springs to the state's size
-            // on the next run-loop turn. At the pointer (a shake) it still appears instantly under the hand.
+            // D0c: at the notch the surface GROWS OUT OF THE NOTCH — the shape starts at the notch's own size and
+            // springs to the state's size on the next run-loop turn. At the pointer (a shake) it appears at once.
             let grow = !wasVisible && machine.anchor == .notch
             var t = Transaction(); t.disablesAnimations = true
             withTransaction(t) {
                 model.appearFromNotch = grow
                 applyModel(notch: notch)
             }
-            panel.setFrame(target, display: true)
             if !wasVisible { panel.orderFrontRegardless() }   // never key: the user's app keeps focus
             if grow {
                 DispatchQueue.main.async { [weak self] in
@@ -703,29 +781,7 @@ final class NotchSurfaceController {
             }
             return
         }
-        // A tray at the pointer may have been dragged aside by its title strip; it has one fixed size,
-        // so an update (a file added, a count change) keeps it where the user put it.
-        if machine.anchor == .pointer, panel.frame.size == target.size {
-            applyModel(notch: notch)
-            return
-        }
-        if target.width >= panel.frame.width && target.height >= panel.frame.height {
-            panel.setFrame(target, display: true)
-            applyModel(notch: notch)
-        } else {
-            // One axis shrinks (maybe while the other grows — tray 440×254 → clipboard 752×232): give the
-            // window the UNION of both frames now so the shape can animate without being clipped, and
-            // settle on the exact target once the spring has run. Measured before this: the clipboard hub
-            // grew inside the tray's 440-pt window for 0.32 s and then jumped 156 pt to the left.
-            let union = panel.frame.union(target)
-            if union != panel.frame { panel.setFrame(union, display: true) }
-            applyModel(notch: notch)
-            let work = DispatchWorkItem { [weak self] in
-                MainActor.assumeIsolated { self?.panel?.setFrame(target, display: true) }
-            }
-            shrinkWork = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.32, execute: work)
-        }
+        applyModel(notch: notch)
     }
 
     private func applyModel(notch: CGRect) {
@@ -823,6 +879,7 @@ final class NotchSurfaceController {
         let inputs = NotchActions.inputs(for: action, from: items)
         guard !inputs.isEmpty else { return }
         model.task = NotchTask(action: action, total: NotchActions.stepCount(for: action, inputs: inputs.count))
+        model.ocrSummary = nil
         dispatch(.taskStarted)
         job = Task { [weak self] in
             await self?.execute(action, inputs: inputs)
@@ -869,6 +926,38 @@ final class NotchSurfaceController {
                 case .failure(let f): model.task?.stepFailed(key: f.messageKey, detail: f.detail)
                 }
             }
+        case .toPDF:
+            switch await Task.detached(priority: .userInitiated, operation: { PDFAssembler.assemble(inputs) }).value {
+            case .success(let out): model.task?.stepSucceeded(output: out)
+            case .failure(let f): model.task?.stepFailed(key: f.messageKey, detail: f.detail)
+            }
+        case .resize(let px):
+            for url in inputs {
+                if Task.isCancelled || model.task?.isRunning != true { break }
+                switch await Task.detached(priority: .userInitiated, operation: { ImageRunner.resize(url, maxPixels: px) }).value {
+                case .success(let out): model.task?.stepSucceeded(output: out)
+                case .failure(let f): model.task?.stepFailed(key: f.messageKey, detail: f.detail)
+                }
+            }
+        case .ocr:
+            // Each image's text goes beside it as .txt; all of it, in order, goes on the clipboard (the monitor
+            // records it as a clip). The summary line carries the one number that is measured: characters.
+            var texts: [String] = []
+            for url in inputs {
+                if Task.isCancelled || model.task?.isRunning != true { break }
+                switch await Task.detached(priority: .userInitiated, operation: { ImageTextOCR.recognize(url) }).value {
+                case .success(let text):
+                    let out = ImageTextOCR.outputURL(for: url, exists: exists)
+                    do { try text.write(to: out, atomically: true, encoding: .utf8); texts.append(text); model.task?.stepSucceeded(output: out) }
+                    catch { model.task?.stepFailed(key: "Không ghi được: ", detail: out.lastPathComponent) }
+                case .failure(let f): model.task?.stepFailed(key: f.messageKey, detail: f.detail)
+                }
+            }
+            if !texts.isEmpty {
+                let all = texts.joined(separator: "\n\n")
+                let pb = NSPasteboard.general; pb.clearContents(); pb.setString(all, forType: .string)
+                model.ocrSummary = "\(L10n.t("Đã nhận dạng "))\(all.count)\(L10n.t(" ký tự, đã sao chép và lưu .txt cạnh ảnh."))"
+            }
         case .airDrop:
             break
         }
@@ -888,8 +977,9 @@ final class NotchSurfaceController {
         switch a {
         case .zip: return "compress"
         case .mergePDFs: return "pdf"
-        case .convert, .removeBackground: return "image"
-        case .airDrop: return "other"
+        case .convert, .removeBackground, .resize: return "image"
+        case .toPDF: return "pdf"
+        case .ocr, .airDrop: return "other"
         }
     }
 

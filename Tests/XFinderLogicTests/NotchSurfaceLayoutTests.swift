@@ -154,5 +154,38 @@ final class NotchSurfaceLayoutTests: XCTestCase {
                         "B7: on a notch-less screen the timer shows in the pill")
         XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: v, timerActive: true, pillOnPlainScreens: false))
     }
-}
 
+    /// N1 (2026-10-13, after OneNotch's one fixed 700×745 window): every notch-anchored state — badge, peek with
+    /// files or a track, activity strip, every hub page, with or without a timer — fits inside the ONE fixed
+    /// panel, which is centred on the notch, glued to the top edge and never wider than the screen. That is
+    /// what lets a state change skip `setFrame` entirely. Checked on the notched screen AND a plain one.
+    func testEveryNotchAnchoredStateFitsInsideTheFixedPanel() {
+        let plain = L.notch(screen: external, auxLeft: nil, auxRight: nil)
+        let externalVisible = CGRect(x: external.minX, y: external.minY + 70, width: external.width, height: external.height - 102)
+        let states: [S] = [.collapsed, .peek, .activity, .expanded(.files), .expanded(.clipboard), .expanded(.nowPlaying)]
+        for (scr, vis, n) in [(screen, visible, notch), (external, externalVisible, plain)] {
+            let panel = L.panelFrame(notch: n, screen: scr)
+            XCTAssertEqual(panel.maxY, scr.maxY, accuracy: 0.001)
+            XCTAssertEqual(panel.midX, n.midX, accuracy: 0.001)
+            XCTAssertLessThanOrEqual(panel.width, scr.width)
+            var drawn = 0
+            for state in states { for items in [0, 3] { for np in [false, true] { for timer in [false, true] {
+                guard let f = L.frame(for: state, anchor: .notch, itemCount: items, notch: n, screen: scr, visible: vis,
+                                      pointer: .zero, timerActive: timer, nowPlayingActive: np) else { continue }
+                drawn += 1
+                XCTAssertTrue(panel.insetBy(dx: -0.001, dy: -0.001).contains(f),
+                              "\(state) items \(items) track \(np) timer \(timer): \(f) is not inside the fixed panel \(panel)")
+            } } } }
+            XCTAssertGreaterThan(drawn, 20, "the walk must actually draw states, or the test proves nothing")
+        }
+    }
+
+    /// The fixed panel is as wide as the widest state (the clipboard hub plus its two top fillets) and as tall as
+    /// the deepest drop below the notch — nothing more, so the transparent remainder stays small.
+    func testTheFixedPanelIsExactlyTheUnionOfTheStates() {
+        let m = L.Metrics.standard
+        let size = L.panelSize(notch: notch)
+        XCTAssertEqual(size.width, m.clipboardExpandedWidth + 2 * m.topFillet)
+        XCTAssertEqual(size.height, notch.height + m.expandedDrop)
+    }
+}

@@ -17,7 +17,7 @@ final class NotchPagesTests: XCTestCase {
     }
 
     func testHiddenPagesTrailInTheSettingsListAndRequestsResolveToAShownPage() {
-        XCTAssertEqual(P.allInOrder(shown: [.nowPlaying]), [.nowPlaying, .files, .clipboard])
+        XCTAssertEqual(P.allInOrder(shown: [.nowPlaying]), [.nowPlaying, .files, .clipboard, .agents, .calendar])   // N3/N4: hidden pages trail in default order
         XCTAssertEqual(P.resolve(.files, shown: [.clipboard, .nowPlaying]), .clipboard, "a hidden tray tab: the badge click opens the first shown page")
         XCTAssertEqual(P.resolve(.clipboard, shown: [.clipboard]), .clipboard)
     }

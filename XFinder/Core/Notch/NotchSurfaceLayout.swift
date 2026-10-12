@@ -109,6 +109,31 @@ enum NotchSurfaceLayout {
         return SurfaceGeometry.clamp(CGRect(x: notch.midX - w / 2, y: notch.maxY - size.height, width: w, height: size.height), into: screen)
     }
 
+    /// N1 (2026-10-13, after measuring OneNotch: its notch window is ONE fixed 700×745 panel whose frame
+    /// never changes while the content animates inside it). The surface at a notch now lives in a fixed
+    /// window big enough for EVERY notch-anchored state — collapsed badge, peek, activity strip, every
+    /// hub page — centred on the notch and glued to the top edge, so a state change never calls
+    /// `setFrame` (the grow / shrink-after-0.32 s / union dance of D0c is gone with it). The transparent
+    /// part of the window must let clicks through (measured with `NSWindow.windowNumber(at:)`), and the
+    /// drop target / hit-tests use `frame(for:)` of the DRAWN state, never this frame.
+    static func panelSize(notch: CGRect, timerActive: Bool = false, metrics m: Metrics = .standard) -> CGSize {
+        let widths: [CGFloat] = [
+            m.clipboardExpandedWidth, m.expandedWidth,
+            notch.width + 2 * m.nowPlayingPeekWing, notch.width + 2 * m.activityWing,
+            m.pillWidth,
+        ]
+        let drops: [CGFloat] = [m.expandedDrop, m.clipboardExpandedDrop, m.peekDrop, m.activityDrop, m.badgeLip, m.pillHeight]
+        return CGSize(width: (widths.max() ?? 0) + 2 * m.topFillet, height: notch.height + (drops.max() ?? 0))
+    }
+
+    /// The fixed window frame at a notch (real or virtual): `panelSize`, centred on the notch, top glued to
+    /// the screen's top edge, never wider than the screen.
+    static func panelFrame(notch: CGRect, screen: CGRect, metrics m: Metrics = .standard) -> CGRect {
+        let size = panelSize(notch: notch, metrics: m)
+        let w = min(size.width, screen.width)
+        return SurfaceGeometry.clamp(CGRect(x: notch.midX - w / 2, y: notch.maxY - size.height, width: w, height: size.height), into: screen)
+    }
+
     /// The pill's own rect on a plain screen (what the hover zone becomes while it is shown): at the top edge.
     static func pillRect(notch: CGRect, visible: CGRect, metrics m: Metrics = .standard) -> CGRect {
         CGRect(x: notch.midX - m.pillWidth / 2, y: notch.maxY - m.pillHeight, width: m.pillWidth, height: m.pillHeight)

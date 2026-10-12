@@ -11,12 +11,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notch.XXXXXX)
-FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift"
+FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchHoverOpen.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='NotchSurface|NotchDrag|NotchTask|LiveActivity|NowPlaying|NotchNowPlaying|NotchBehaviour|FeatureKeyDefaults'
+FILTER='NotchSurface|NotchDrag|NotchTask|NotchHoverOpen|LiveActivity|NowPlaying|NotchNowPlaying|NotchBehaviour|FeatureKeyDefaults'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -82,14 +82,18 @@ run "M17 no badge for a running timer" XFinder/Core/Notch/NotchSurfaceLayout.swi
   "'            guard itemCount > 0 || timerActive || nowPlayingActive else { return nil }'" "'            guard itemCount > 0 || nowPlayingActive else { return nil }'"
 run "M18 a page switch opens a closed surface" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if case .expanded = state { state = .expanded(page) }'" "'                state = .expanded(page)'"
-run "M19 hover opens the clipboard without the opt-in" XFinder/Core/Notch/NotchSurfaceMachine.swift \
-  "'                } else if s.hoverOpensClipboard {'" "'                } else {'"
+run "M19 hover opens the clipboard whatever the setting says" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                if let page = s.hoverOpens.page(for: activity, shown: s.shownPages) {'" "'                if let page = Optional(NotchSurfaceMachine.Page.clipboard) {'"
+run "M29 activity ignores a waiting agent" XFinder/Core/Notch/NotchHoverOpen.swift \
+  "'            if a.agentNeedsYou, let p = visible(.agents) { return p }\n'" "''"
+run "M30 hover opens an EMPTY tray" XFinder/Core/Notch/NotchHoverOpen.swift \
+  "'        case .files: return a.itemCount > 0 ? (visible(.files) ?? shown.first) : nil'" "'        case .files: return visible(.files) ?? shown.first'"
 run "M20 the playhead keeps moving while paused" XFinder/Core/Notch/NowPlaying.swift \
   "'        let rate = s.playing ? (s.rate ?? 1) : 0'" "'        let rate = s.rate ?? 1'"
 run "M21 a crash-looping helper is restarted forever" XFinder/Core/Notch/NowPlaying.swift \
   "'            return attempts > Self.maxAttempts ? .giveUp : .restart(after: Self.delay(forAttempt: attempts))'" "'            return .restart(after: Self.delay(forAttempt: attempts))'"
 run "M22 hover peeks an empty tray with nothing playing" XFinder/Core/Notch/NotchSurfaceMachine.swift \
-  "'                if itemCount > 0 || s.nowPlayingActive {'" "'                if true {'"
+  "'                } else if itemCount > 0 || s.nowPlayingActive {'" "'                } else if true {'"
 run "M23 the now-playing peek collapses when the tray empties" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if n == 0, state == .peek, !s.nowPlayingActive { collapse() }'" "'                if n == 0, state == .peek { collapse() }'"
 run "M24 the pill ignores its switch" XFinder/Core/Notch/NotchSurfaceLayout.swift \
@@ -98,6 +102,15 @@ run "M25 'slow' hover reads as medium" XFinder/Core/Notch/NotchSurfaceMachine.sw
   "'            case \"slow\": return 0.5'" "'            case \"slow\": return 0.25'"
 run "M26 the plain-screen hover zone ignores the pill" XFinder/Core/Notch/NotchSurfaceLayout.swift \
   "'            if pillShown, let visible { return pillRect(notch: notch, visible: visible, metrics: m) }\n'" "''"
+run "M27 the fixed panel forgets the hub's top fillets (clipboard hub wider than the window)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'        return CGSize(width: (widths.max() ?? 0) + 2 * m.topFillet, height: notch.height + (drops.max() ?? 0))'" \
+  "'        return CGSize(width: (widths.max() ?? 0), height: notch.height + (drops.max() ?? 0))'"
+run "M28 the fixed panel is shallower than the deepest hub" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'        let drops: [CGFloat] = [m.expandedDrop, m.clipboardExpandedDrop, m.peekDrop, m.activityDrop, m.badgeLip, m.pillHeight]'" \
+  "'        let drops: [CGFloat] = [m.clipboardExpandedDrop, m.peekDrop, m.activityDrop, m.badgeLip, m.pillHeight]'"
+run "M31 OCR offered with no image held" XFinder/Core/Notch/NotchTask.swift \
+  "'            out.append(.removeBackground)\n            out.append(.ocr)\n        }\n        out.append(.airDrop)'" \
+  "'            out.append(.removeBackground)\n        }\n        out.append(.ocr)\n        out.append(.airDrop)'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 
