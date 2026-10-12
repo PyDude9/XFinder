@@ -40,13 +40,14 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         let files = L.size(for: .expanded(.files), anchor: .notch, itemCount: 1, notch: notch)!
         let clip = L.size(for: .expanded(.clipboard), anchor: .notch, itemCount: 1, notch: notch)!
         let player = L.size(for: .expanded(.nowPlaying), anchor: .notch, itemCount: 1, notch: notch)!
-        XCTAssertEqual(files, CGSize(width: 440, height: notch.height + 222))
+        let fl = 2 * L.Metrics.standard.topFillet
+        XCTAssertEqual(files, CGSize(width: 440 + fl, height: notch.height + 222), "440 of content plus the two flares")
         XCTAssertEqual(player, files, "only the clipboard page changes")
         XCTAssertGreaterThan(clip.width, files.width + 250, "four 174-pt cards need the band beside the notch")
-        XCTAssertEqual(clip.height, notch.height + 200)
+        XCTAssertEqual(clip, CGSize(width: 752 + fl, height: notch.height + 200))
         XCTAssertLessThan(clip.width, screen.width, "still fits a 1728-pt screen with room to spare")
         let pointerClip = L.size(for: .expanded(.clipboard), anchor: .pointer, itemCount: 1, notch: notch)!
-        XCTAssertEqual(pointerClip.width, clip.width)
+        XCTAssertEqual(pointerClip.width, clip.width - fl, "a pointer tray has no top edge to flare into")
         XCTAssertEqual(pointerClip.height, clip.height - notch.height, "at the pointer there is no notch band to add")
         // The frame stays centred on the notch and inside the screen.
         let f = L.frame(for: .expanded(.clipboard), anchor: .notch, itemCount: 1, notch: notch, screen: screen, visible: visible, pointer: .zero)!

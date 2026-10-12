@@ -31,9 +31,21 @@ final class NotchSurfaceModel {
     var nowPlayingAvailability: NowPlaying.Availability = .off
     /// B7: whether a screen without a notch gets a pill (mirrors the `notch.pillOnPlainScreens` reader).
     var pillOnPlainScreens = true
+    /// D1 #44: the pages the hub shows, in order (`notch.pages`); #47: the accent, nil = the app's own.
+    var pages: [NotchSurfaceMachine.Page] = NotchPages.defaultOrder
+    var accent: Color?
     /// D0c: true for the first frame of a surface opening at the notch — the shape is drawn at the notch's
     /// own size and the controller flips this on the next run-loop turn, so the hub springs out of the notch.
     var appearFromNotch = false
+}
+
+/// D1 #47 — the notch's accent, read by every notch view instead of `Color.accentColor`.
+private struct NotchAccentKey: EnvironmentKey { static let defaultValue: Color = .accentColor }
+extension EnvironmentValues {
+    var notchAccent: Color {
+        get { self[NotchAccentKey.self] }
+        set { self[NotchAccentKey.self] = newValue }
+    }
 }
 
 /// Root of the Notch surface window. The window is sized by `NotchSurfaceLayout`; this view draws
@@ -44,6 +56,7 @@ struct NotchSurfaceView: View {
     var model: NotchSurfaceModel
     @State private var store = DropTrayStore.shared
     @State private var isTargeted = false
+    @Environment(\.notchAccent) private var accent
 
     /// The state's own size — what the content is laid out at (once per state, not once per animation frame).
     private var stateSize: CGSize {
@@ -71,14 +84,25 @@ struct NotchSurfaceView: View {
     /// At the notch — real or virtual (D0c: a plain screen's surface hangs from the top edge too) — the top
     /// edge is flush with the bezel; a tray opened at the pointer is a free-standing card, rounded all round.
     private var shape: NotchShape {
+        NotchShape(bottomRadius: bottomRadius, topRadius: atNotch ? 0 : bottomRadius, topFillet: filletNow)
+    }
+
+    /// The hub's body without the flares — what strokes and content insets are measured against.
+    private var bodyShape: NotchShape {
         NotchShape(bottomRadius: bottomRadius, topRadius: atNotch ? 0 : bottomRadius)
+    }
+
+    /// D1: the expanded hub at a notch (real or virtual) flares into the top edge; a pointer tray does not.
+    private var filletNow: CGFloat {
+        if case .expanded = model.state, atNotch { return NotchSurfaceLayout.Metrics.standard.topFillet }
+        return 0
     }
 
     private var bottomRadius: CGFloat {
         switch model.state {
         case .collapsed: return plainScreen ? NotchSurfaceLayout.Metrics.standard.pillHeight / 2 : 9
         case .peek, .activity: return 14
-        case .expanded: return XFinderTokens.Radius.surface
+        case .expanded: return XFinderTokens.Radius.hub
         }
     }
 
@@ -94,7 +118,10 @@ struct NotchSurfaceView: View {
         GeometryReader { _ in
             ZStack(alignment: .top) {
                 shape.fill(Color.black)
-                shape.strokeBorder(isTargeted ? Color.accentColor : Color.white.opacity(0.12), lineWidth: isTargeted ? 2 : 1)
+                // The hairline / drop ring follows the BODY: stroking the flared outline would draw lines where
+                // the flare subpaths meet the body.
+                bodyShape.strokeBorder(isTargeted ? accent : Color.white.opacity(0.12), lineWidth: isTargeted ? 2 : 1)
+                    .padding(.horizontal, filletNow)
                 content
                     .padding(.top, (atNotch && !isClipboardHub) ? model.notchSize.height : 0)   // D0: that hub USES the notch band
                     .frame(width: stateSize.width, height: stateSize.height, alignment: .top)
@@ -106,6 +133,7 @@ struct NotchSurfaceView: View {
             .animation(XFinderTokens.Motion.surface, value: model.state)
             .animation(XFinderTokens.Motion.surface, value: model.appearFromNotch)
         }
+        .environment(\.notchAccent, model.accent ?? .accentColor)
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
             ClipboardSounds.playCopy()
             // The URLs load asynchronously; report the drop only once they are in the store, so the
@@ -134,7 +162,7 @@ struct NotchSurfaceView: View {
     /// drawn under the notch; at the pointer (a shaken tray switched to this tab) or on a screen without a
     /// notch the gap is zero and the band is one continuous row.
     private var clipboardShell: some View {
-        let inset = XFinderTokens.Space.inline
+        let inset = XFinderTokens.Space.inline + filletNow     // the flares are outside the content
         let notchGap: CGFloat = (atNotch && !plainScreen) ? model.notchSize.width : 0
         let bandHeight: CGFloat = max(model.notchSize.height, 32)
         let wing = max(0, (size.width - notchGap) / 2 - inset)
@@ -169,12 +197,20 @@ struct NotchSurfaceView: View {
     }
 
     /// The three page tabs (Now Playing only while its switch is on), shared by both hub shells.
+    /// D1 #44: in the user's order, hidden ones left out; Now Playing additionally needs its own switch (B6).
     @ViewBuilder private func pageTabs(current page: NotchSurfaceMachine.Page) -> some View {
-        pageTab(.files, icon: "tray.and.arrow.down.fill", title: L10n.t("Khay"),
-                badge: store.items.isEmpty ? nil : "\(store.items.count)", current: page)
-        pageTab(.clipboard, icon: "doc.on.clipboard.fill", title: "Clipboard", badge: nil, current: page)
-        if model.nowPlayingAvailability != .off {   // B6: only while the switch is on
-            pageTab(.nowPlaying, icon: "music.note", title: L10n.t("Đang phát"), badge: nil, current: page)
+        ForEach(model.pages, id: \.self) { p in
+            switch p {
+            case .files:
+                pageTab(.files, icon: "tray.and.arrow.down.fill", title: L10n.t("Khay"),
+                        badge: store.items.isEmpty ? nil : "\(store.items.count)", current: page)
+            case .clipboard:
+                pageTab(.clipboard, icon: "doc.on.clipboard.fill", title: "Clipboard", badge: nil, current: page)
+            case .nowPlaying:
+                if model.nowPlayingAvailability != .off {
+                    pageTab(.nowPlaying, icon: "music.note", title: L10n.t("Đang phát"), badge: nil, current: page)
+                }
+            }
         }
     }
 
@@ -360,12 +396,7 @@ struct NotchSurfaceView: View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             HStack(spacing: XFinderTokens.Space.tight) {
                 HStack(spacing: XFinderTokens.Space.tight) {
-                    pageTab(.files, icon: "tray.and.arrow.down.fill", title: L10n.t("Khay"),
-                            badge: store.items.isEmpty ? nil : "\(store.items.count)", current: page)
-                    pageTab(.clipboard, icon: "doc.on.clipboard.fill", title: "Clipboard", badge: nil, current: page)
-                    if model.nowPlayingAvailability != .off {   // B6: only while the switch is on
-                        pageTab(.nowPlaying, icon: "music.note", title: L10n.t("Đang phát"), badge: nil, current: page)
-                    }
+                    pageTabs(current: page)
                     // A tray opened at the pointer often lands on the very window the files are going
                     // to; the EMPTY part of its title strip moves it out of the way. Only that part:
                     // an NSView overlay wins AppKit hit-testing, so one laid over the tabs swallowed
@@ -388,6 +419,7 @@ struct NotchSurfaceView: View {
         }
         .foregroundColor(.white)
         .padding(XFinderTokens.Space.inline)
+        .padding(.horizontal, filletNow)                  // D1: the flares are outside the content
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -533,21 +565,49 @@ struct NotchSurfaceView: View {
 }
 
 /// Flush with the top of the screen at the notch (`topRadius` 0); fully rounded at the pointer.
+/// The surface's outline. Bottom corners are continuous curves; the top is square where the shape meets
+/// the screen edge. `topFillet` (D1, OneNotch reference) adds the Dynamic-Island flare: two concave
+/// quarter-circles that blend the body's vertical edges INTO the top edge, so the hub looks poured out of
+/// the bezel instead of pasted under it. The fillets take `topFillet` pt on each side of the body, which is
+/// why the expanded widths carry `2 × Metrics.topFillet` beyond their content.
 struct NotchShape: InsettableShape {
     var bottomRadius: CGFloat
     var topRadius: CGFloat = 0
+    var topFillet: CGFloat = 0
     var inset: CGFloat = 0
 
-    var animatableData: CGFloat {
-        get { bottomRadius }
-        set { bottomRadius = newValue }
+    var animatableData: AnimatablePair<CGFloat, CGFloat> {
+        get { AnimatablePair(bottomRadius, topFillet) }
+        set { bottomRadius = newValue.first; topFillet = newValue.second }
     }
 
     func path(in rect: CGRect) -> Path {
-        UnevenRoundedRectangle(topLeadingRadius: topRadius, bottomLeadingRadius: bottomRadius,
-                               bottomTrailingRadius: bottomRadius, topTrailingRadius: topRadius,
-                               style: .continuous)
-            .path(in: rect.insetBy(dx: inset, dy: inset))
+        let r = rect.insetBy(dx: inset, dy: inset)
+        let f = min(topFillet, r.width / 4, r.height / 2)
+        let body = CGRect(x: r.minX + f, y: r.minY, width: r.width - 2 * f, height: r.height)
+        var p = UnevenRoundedRectangle(topLeadingRadius: topRadius, bottomLeadingRadius: bottomRadius,
+                                       bottomTrailingRadius: bottomRadius, topTrailingRadius: topRadius,
+                                       style: .continuous).path(in: body)
+        guard f > 0 else { return p }
+        // Left flare: top edge from the outer corner to the body, down the body edge to (f, f), then the
+        // concave arc (centre (0, f), radius f) back up to the outer corner. Mirrored on the right.
+        var left = Path()
+        left.move(to: CGPoint(x: r.minX, y: r.minY))
+        left.addLine(to: CGPoint(x: body.minX, y: r.minY))
+        left.addLine(to: CGPoint(x: body.minX, y: r.minY + f))
+        left.addArc(center: CGPoint(x: r.minX, y: r.minY + f), radius: f,
+                    startAngle: .degrees(0), endAngle: .degrees(-90), clockwise: true)
+        left.closeSubpath()
+        var right = Path()
+        right.move(to: CGPoint(x: r.maxX, y: r.minY))
+        right.addLine(to: CGPoint(x: body.maxX, y: r.minY))
+        right.addLine(to: CGPoint(x: body.maxX, y: r.minY + f))
+        right.addArc(center: CGPoint(x: r.maxX, y: r.minY + f), radius: f,
+                     startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
+        right.closeSubpath()
+        p.addPath(left)
+        p.addPath(right)
+        return p
     }
 
     func inset(by amount: CGFloat) -> NotchShape {

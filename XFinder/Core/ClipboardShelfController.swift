@@ -92,8 +92,9 @@ final class ClipboardShelfController {
     /// Paste Stack's ⌘V interception — whichever surface the clip deck is drawn on. With the notch
     /// surface switched off the hotkey still has to open something, so it falls back to the shelf.
     func hotkeyPressed() {
+        let notch = NotchSurfaceController.shared
         switch NotchClipboardRules.surfaceToOpen(preferred: hotkeySurface,
-                                                 notchSurfaceEnabled: NotchSurfaceController.shared.isEnabled) {
+                                                 notchSurfaceEnabled: notch.isEnabled && notch.showsClipboardPage) {
         case .notch:
             if isOpen { close() }
             NotchSurfaceController.shared.toggleClipboardFromHotkey()

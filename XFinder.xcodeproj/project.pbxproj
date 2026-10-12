@@ -53,6 +53,7 @@
 		7F1A0234 /* Clipboard/NotchClipboardRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0235 /* Clipboard/NotchClipboardRules.swift */; };
 		7F1A0236 /* NotchClipCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0237 /* NotchClipCardView.swift */; };
 		7F1A0238 /* NotchTextEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0239 /* NotchTextEditorView.swift */; };
+		7F1A023A /* Notch/NotchPages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A023B /* Notch/NotchPages.swift */; };
 		7F1A0220 /* SnapRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A021F /* SnapRowView.swift */; };
 		7F1A01CE /* Detail/FeaturesHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01CD /* Detail/FeaturesHubView.swift */; };
 		7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0058 /* Detail/AntiSleepDetailView.swift */; };
@@ -308,6 +309,7 @@
 		7F1A0235 /* Clipboard/NotchClipboardRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/NotchClipboardRules.swift; sourceTree = "<group>"; };
 		7F1A0237 /* NotchClipCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchClipCardView.swift; sourceTree = "<group>"; };
 		7F1A0239 /* NotchTextEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchTextEditorView.swift; sourceTree = "<group>"; };
+		7F1A023B /* Notch/NotchPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchPages.swift; sourceTree = "<group>"; };
 		7F1A021F /* SnapRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapRowView.swift; sourceTree = "<group>"; };
 		7F1A01CD /* Detail/FeaturesHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FeaturesHubView.swift; sourceTree = "<group>"; };
 		7F1A0058 /* Detail/AntiSleepDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/AntiSleepDetailView.swift; sourceTree = "<group>"; };
@@ -577,6 +579,7 @@
 				7F1A01FD /* Surface/SurfaceGeometry.swift */,
 				7F1A0205 /* Notch/NotchSurfaceMachine.swift */,
 				7F1A0207 /* Notch/NotchSurfaceLayout.swift */,
+				7F1A023B /* Notch/NotchPages.swift */,
 				7F1A0209 /* Notch/NotchSurfaceController.swift */,
 				7F1A020D /* Notch/NotchDragSession.swift */,
 				7F1A022F /* Notch/NowPlaying.swift */,
@@ -973,6 +976,7 @@
 				7F1A0234 /* Clipboard/NotchClipboardRules.swift in Sources */,
 				7F1A0236 /* NotchClipCardView.swift in Sources */,
 				7F1A0238 /* NotchTextEditorView.swift in Sources */,
+				7F1A023A /* Notch/NotchPages.swift in Sources */,
 				7F1A0220 /* SnapRowView.swift in Sources */,
 				7F1A01CE /* Detail/FeaturesHubView.swift in Sources */,
 				7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */,

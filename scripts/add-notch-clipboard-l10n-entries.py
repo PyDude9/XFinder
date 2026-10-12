@@ -49,6 +49,20 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Dừng phát âm": ("Stop speaking", "sentence"),
     "Ghim khay (không đóng khi bấm ra ngoài)": ("Pin the shelf (stays open when you click outside)", "sentence"),
     "Bỏ ghim khay": ("Unpin the shelf", "sentence"),
+    # D1 group 2: pages on the notch, accent
+    "Các trang trên notch": ("Pages on the notch", "sentence"),
+    "Bật, tắt và sắp xếp thứ tự các tab trong hub. Tắt Clipboard thì ⌘⇧V mở khay nổi cũ. Vuốt hai ngón ngang trên dải tab để đổi trang.": ("Turn the hub's tabs on or off and order them. With Clipboard off, ⌘⇧V opens the old floating shelf. Swipe sideways with two fingers over the tab band to change page.", "sentence"),
+    "Lên": ("Up", "sentence"),
+    "Xuống": ("Down", "sentence"),
+    "Màu nhấn": ("Accent colour", "sentence"),
+    "Màu của viền chọn, thẻ đang chọn và các điểm nhấn trên notch.": ("The colour of the focus ring, the selected card and the highlights on the notch.", "sentence"),
+    "Theo hệ thống": ("System", "sentence"),
+    "Xanh dương": ("Blue", "sentence"),
+    "Tím": ("Purple", "sentence"),
+    "Hồng": ("Pink", "sentence"),
+    "Cam": ("Orange", "sentence"),
+    "Xanh lá": ("Green", "sentence"),
+    "Xanh ngọc": ("Teal", "sentence"),
 }
 
 

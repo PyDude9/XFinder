@@ -24,12 +24,16 @@ enum XFinderTokens {
         static let tight: CGFloat = 6
     }
 
-    /// Corner radii. Four values; anything else is a design mistake, not a choice.
+    /// Corner radii. Five values; anything else is a design mistake, not a choice.
     enum Radius {
         static let badge: CGFloat = 6       // pills, chips, tags
         static let control: CGFloat = 8     // buttons, fields
         static let tile: CGFloat = 12       // grid tiles / thumbnails (TileCard)
-        static let surface: CGFloat = 24    // notch, switcher, HUD containers
+        static let surface: CGFloat = 24    // switcher, HUD containers, the notch's peek / pointer tray
+        /// The expanded notch hub (D1, user request after the OneNotch reference): on a 752-pt-wide panel a
+        /// 24-pt corner reads as a sharp rectangle; the reference's corners measure ≈ 0.155 × panel height
+        /// (232 pt ⇒ 36). Continuous (superellipse) curve, like every corner here.
+        static let hub: CGFloat = 36
     }
 
     /// Typography. Sizes are the ones PageHeader / SectionHeader / MetricBigNumber already used,

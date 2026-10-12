@@ -5,11 +5,11 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notchclip.XXXXXX)
-FILES="XFinder/Core/Clipboard/NotchClipboardRules.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/ClipboardShelfController.swift XFinder/Core/ColorFormat.swift"
+FILES="XFinder/Core/Clipboard/NotchClipboardRules.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/ClipboardShelfController.swift XFinder/Core/ColorFormat.swift XFinder/Core/Notch/NotchPages.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
-FILTER='NotchClipboardRules|NotchSurfaceLayout|FeatureKeyDefaults|ColorFormat'
+FILTER='NotchClipboardRules|NotchSurfaceLayout|FeatureKeyDefaults|ColorFormat|NotchPages'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -56,6 +56,14 @@ run "D11 hsl() hue does not wrap (hsl(390…) is not hsl(30…))" XFinder/Core/C
   "'        return wrapped < 0 ? wrapped + 360 : wrapped'" "'        return v'"
 run "D12 the footer ignores the recording pause" $R \
   "'        if paused { return .paused }'" "'        if false { return .paused }'"
+run "D13 a page listed twice is shown twice" XFinder/Core/Notch/NotchPages.swift \
+  "'            if let p = Page(rawValue: t), !out.contains(p) { out.append(p) }'" "'            if let p = Page(rawValue: t) { out.append(p) }'"
+run "D14 a request for a hidden page opens the hidden page" XFinder/Core/Notch/NotchPages.swift \
+  "'        shown.contains(page) ? page : (shown.first ?? defaultOrder[0])'" "'        page'"
+run "D15 a swipe keeps firing for the whole gesture" XFinder/Core/Notch/NotchPages.swift \
+  "'            if total <= -Self.threshold { fired = true; return 1 }'" "'            if total <= -Self.threshold { return 1 }'"
+run "D16 the flares eat the content (hub width does not grow by them)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'            return CGSize(width: max(m.expandedWidth(for: page), notch.width) + 2 * m.topFillet,'" "'            return CGSize(width: max(m.expandedWidth(for: page), notch.width),'"
 run "D8 the hotkey-surface reader defaults to the shelf (view says notch)" XFinder/Core/ClipboardShelfController.swift \
   "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"notch\"'" "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"shelf\"'"
 restore

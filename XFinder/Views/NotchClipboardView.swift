@@ -116,6 +116,7 @@ final class NotchClipboardModel {
 struct NotchClipboardSearchField: View {
     var model: NotchClipboardModel
     @FocusState private var searchFocused: Bool
+    @Environment(\.notchAccent) private var accent
 
     private var locked: Bool { ClipboardShelfController.shared.touchIDLockEnabled && !model.unlocked }
 
@@ -143,7 +144,7 @@ struct NotchClipboardSearchField: View {
         .frame(height: 26)
         .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(Color.white.opacity(0.10)))
         .overlay(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control)
-            .strokeBorder(searchFocused ? Color.accentColor : Color.clear, lineWidth: 1))
+            .strokeBorder(searchFocused ? accent : Color.clear, lineWidth: 1))
         .help(L10n.t("Tìm, hoặc @ảnh @link @tênapp…"))
         .disabled(locked).opacity(locked ? 0.35 : 1)
         .onAppear { searchFocused = !locked }
@@ -162,6 +163,7 @@ struct NotchClipboardView: View {
     var model: NotchClipboardModel
     @State private var manager = ClipboardManager.shared
     @State private var now = Date()
+    @Environment(\.notchAccent) private var accent
 
     private var items: [ClipboardRecord] { model.items(from: manager) }
     private var locked: Bool { ClipboardShelfController.shared.touchIDLockEnabled && !model.unlocked }
@@ -376,7 +378,7 @@ struct NotchClipboardView: View {
                         .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5)).lineLimit(1)
                 }
             case .pasteStack(let remaining, let intercepts):
-                Image(systemName: "square.stack.3d.up.fill").font(XFinderTokens.Font.caption).foregroundColor(.accentColor)
+                Image(systemName: "square.stack.3d.up.fill").font(XFinderTokens.Font.caption).foregroundColor(accent)
                 let how = intercepts ? L10n.t("Mỗi ⌘V dán mục kế tiếp.") : L10n.t("Bấm Dán tiếp để dán từng mục.")
                 Text("Paste Stack · \(remaining)\(L10n.t(" mục")) · \(how)")
                     .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65)).lineLimit(1)

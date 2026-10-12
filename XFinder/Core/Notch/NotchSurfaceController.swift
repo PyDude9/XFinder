@@ -111,11 +111,23 @@ final class NotchSurfaceController {
     /// Something is on the collapsed surface (badge or pill): files, a countdown, a track.
     private var badgeShown: Bool { machine.itemCount > 0 || countdown != nil || NowPlayingMonitor.shared.hasTrack }
 
+    /// D1 #44 — the ONE reader of `notch.pages` (order + visibility, a comma list).
+    private var pageOrderRaw: String { UserDefaults.standard.string(forKey: "notch.pages") ?? "files,clipboard,nowPlaying" }
+    /// D1 #47 — the ONE reader of `notch.accent`.
+    private var accentName: String { UserDefaults.standard.string(forKey: "notch.accent") ?? "system" }
+    /// For the ⌘⇧V router: a hidden clipboard tab means the hotkey falls back to the floating shelf.
+    var showsClipboardPage: Bool { model.pages.contains(.clipboard) }
+
     func applySettings() {
         if enabled {
             start()
             panel?.sharingType = hideFromCapture ? .none : .readOnly   // B7, live
             model.pillOnPlainScreens = pillOnPlainScreens
+            model.pages = NotchPages.parse(pageOrderRaw)
+            model.accent = NotchAccent.rgb(named: accentName).map { Color(red: $0.red, green: $0.green, blue: $0.blue) }
+            if case .expanded(let page) = machine.state, !model.pages.contains(page) {
+                dispatch(.switchPage(NotchPages.resolve(page, shown: model.pages)))   // the open page was just hidden
+            }
             render()
             NowPlayingMonitor.shared.applySettings()      // B6: its own switch, under the master
         } else {
@@ -151,6 +163,7 @@ final class NotchSurfaceController {
         monitors.removeAll()
         cancelWork()
         if let m = clipboardKeyMonitor { NSEvent.removeMonitor(m); clipboardKeyMonitor = nil }
+        if let m = swipeMonitor { NSEvent.removeMonitor(m); swipeMonitor = nil }
         activityWork?.cancel(); activityWork = nil
         activityQueue.clear()
         countdownTicker?.invalidate(); countdownTicker = nil; countdown = nil; model.timerText = nil
@@ -171,11 +184,11 @@ final class NotchSurfaceController {
     /// Deliberate open: badge / peek click, or the Finder-extension URL. `page` lands on that page.
     func reveal(page: NotchSurfaceMachine.Page = .files) {
         if !state.isOpen { surfaceScreen = WindowManager.screenUnderPointer() }
-        dispatch(.activateOn(page))     // ONE transition — see the machine's note on activateOn
+        dispatch(.activateOn(NotchPages.resolve(page, shown: model.pages)))   // ONE transition — see the machine's note on activateOn
     }
 
-    /// A tab in the open hub (B5).
-    func switchPage(_ page: NotchSurfaceMachine.Page) { dispatch(.switchPage(page)) }
+    /// A tab in the open hub (B5). A hidden page (D1 #44) resolves to the first shown one.
+    func switchPage(_ page: NotchSurfaceMachine.Page) { dispatch(.switchPage(NotchPages.resolve(page, shown: model.pages))) }
 
     func dismiss() { dispatch(.dismiss) }
 
@@ -311,7 +324,39 @@ final class NotchSurfaceController {
         state = machine.state
         render()
         syncClipboardKeyboard()
+        syncHubSwipe()
         syncNowPlayingTicker()
+    }
+
+    // MARK: - D1 #43: two-finger swipe over the tab band changes page
+
+    private var swipeMonitor: Any?
+    private var swipe = NotchPages.SwipeAccumulator()
+
+    /// A LOCAL scroll-wheel monitor only while the hub is open. Scroll events reach the window under the
+    /// pointer whether or not it is key, so the local monitor sees them without making the panel key.
+    /// Only the top band (tabs / search) is a swipe area — the clipboard deck and chip row scroll
+    /// sideways themselves and must keep their gesture.
+    private func syncHubSwipe() {
+        if case .expanded = machine.state {
+            guard swipeMonitor == nil else { return }
+            swipe.reset()
+            swipeMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] e in
+                guard let self, let panel = self.panel, e.window === panel else { return e }
+                if e.phase == .ended || e.phase == .cancelled || e.momentumPhase == .ended { self.swipe.reset(); return e }
+                let bandTop = panel.frame.height, bandBottom = bandTop - max(self.model.notchSize.height, 32) - 28
+                guard e.locationInWindow.y >= bandBottom, abs(e.scrollingDeltaX) > abs(e.scrollingDeltaY) else { return e }
+                if let dir = self.swipe.feed(deltaX: e.scrollingDeltaX),
+                   case .expanded(let page) = self.machine.state,
+                   let next = NotchPages.pageAfterSwipe(page, direction: dir, shown: self.model.pages) {
+                    self.switchPage(next)
+                }
+                return nil
+            }
+        } else if let m = swipeMonitor {
+            NSEvent.removeMonitor(m)
+            swipeMonitor = nil
+        }
     }
 
     // MARK: - Now Playing (B6)

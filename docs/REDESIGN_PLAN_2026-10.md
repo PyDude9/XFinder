@@ -210,10 +210,12 @@ cho MIT, không telemetry) · #50 Free/Pro.
 
 **D1 — tiến độ**: nhóm 1 ✅ 2026-10-12 (#7 màu rgb/hsl · #14 tạm dừng ghi · #16 âm copy · #36 phát âm · #9 sửa văn bản ·
 #6 ⌘⌥C + ghim khay · #3 kéo thẻ lên chip bảng — đo: pasteboard thật ghi `color` cho rgb()/hsl(), tạm dừng không ghi dòng
-nào, footer notch báo; chưa đo tay: phát âm, editor, ⌘⌥C, kéo-thả). Nhóm 2 còn lại: #43 vuốt đổi trang · #44 bật/tắt +
-sắp xếp trang · #47 màu nhấn.
+nào, footer notch báo; chưa đo tay: phát âm, editor, ⌘⌥C, kéo-thả). Nhóm 2 ✅ 2026-10-12 (#44 `notch.pages` bật/tắt + sắp
+xếp tab, đo thứ tự tab qua AX sau relaunch · #43 vuốt hai ngón trên dải tab đổi trang, chưa đo tay · #47 `notch.accent`
+7 màu, chưa đo mắt) + **bo góc hub** theo yêu cầu: bán kính 36 liên tục, fillet lõm 12 pt vào mép trên, hub đo 776×232.
+**D1 xong 10/10.**
 
-**Thứ tự tiếp theo của plan**: D0c ✅ → D1 nhóm 1 ✅ → **D1 nhóm 2** → D (Thư viện, tô màu code, MCP, xuất) → E → F → G.
+**Thứ tự tiếp theo của plan**: D0c ✅ → D1 ✅ → **D (Thư viện Clipboard, tô màu code, MCP, xuất `.xfinderclip`)** → E → F → G.
 
 ---
 

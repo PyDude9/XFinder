@@ -24,6 +24,10 @@ enum NotchSurfaceLayout {
         /// chips + deck + footer). The hub's size follows the page; the other pages keep 440 × 222.
         var clipboardExpandedWidth: CGFloat = 752
         var clipboardExpandedDrop: CGFloat = 200
+        /// D1 (OneNotch reference): the expanded hub at a notch flares into the top edge with two concave
+        /// 12-pt quarter-circles (`NotchShape.topFillet`); they sit OUTSIDE the content, so a hub at the notch
+        /// is 2 × 12 pt wider than its content. A pointer tray has no top edge to flare into.
+        var topFillet: CGFloat = 12
 
         func expandedWidth(for page: NotchSurfaceMachine.Page) -> CGFloat {
             page == .clipboard ? clipboardExpandedWidth : expandedWidth
@@ -77,7 +81,8 @@ enum NotchSurfaceLayout {
         case .expanded(let page) where anchor == .pointer:
             return CGSize(width: m.expandedWidth(for: page), height: m.expandedDrop(for: page))
         case .expanded(let page):
-            return CGSize(width: max(m.expandedWidth(for: page), notch.width), height: notch.height + m.expandedDrop(for: page))
+            return CGSize(width: max(m.expandedWidth(for: page), notch.width) + 2 * m.topFillet,
+                          height: notch.height + m.expandedDrop(for: page))
         }
     }
 

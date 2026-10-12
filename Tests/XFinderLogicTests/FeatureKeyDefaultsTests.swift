@@ -140,6 +140,13 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "clipboard.copySound",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
                reader: "XFinder/Core/ClipboardPasteEngine.swift"),
+        // D1 group 2: page order/visibility and the notch accent (both Strings).
+        Switch(key: "notch.pages",
+               views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
+               reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
+        Switch(key: "notch.accent",
+               views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
+               reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
     ]
 
     // MARK: - Source access

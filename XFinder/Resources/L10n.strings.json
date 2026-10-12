@@ -7858,6 +7858,58 @@
     "Bỏ ghim khay": {
       "en": "Unpin the shelf",
       "scope": "sentence"
+    },
+    "Các trang trên notch": {
+      "en": "Pages on the notch",
+      "scope": "sentence"
+    },
+    "Bật, tắt và sắp xếp thứ tự các tab trong hub. Tắt Clipboard thì ⌘⇧V mở khay nổi cũ. Vuốt hai ngón ngang trên dải tab để đổi trang.": {
+      "en": "Turn the hub's tabs on or off and order them. With Clipboard off, ⌘⇧V opens the old floating shelf. Swipe sideways with two fingers over the tab band to change page.",
+      "scope": "sentence"
+    },
+    "Lên": {
+      "en": "Up",
+      "scope": "sentence"
+    },
+    "Xuống": {
+      "en": "Down",
+      "scope": "sentence"
+    },
+    "Màu nhấn": {
+      "en": "Accent colour",
+      "scope": "sentence"
+    },
+    "Màu của viền chọn, thẻ đang chọn và các điểm nhấn trên notch.": {
+      "en": "The colour of the focus ring, the selected card and the highlights on the notch.",
+      "scope": "sentence"
+    },
+    "Theo hệ thống": {
+      "en": "System",
+      "scope": "sentence"
+    },
+    "Xanh dương": {
+      "en": "Blue",
+      "scope": "sentence"
+    },
+    "Tím": {
+      "en": "Purple",
+      "scope": "sentence"
+    },
+    "Hồng": {
+      "en": "Pink",
+      "scope": "sentence"
+    },
+    "Cam": {
+      "en": "Orange",
+      "scope": "sentence"
+    },
+    "Xanh lá": {
+      "en": "Green",
+      "scope": "sentence"
+    },
+    "Xanh ngọc": {
+      "en": "Teal",
+      "scope": "sentence"
     }
   }
 }

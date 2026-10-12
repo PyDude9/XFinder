@@ -37,6 +37,10 @@ struct DropTrayDetailView: View {
     @AppStorage("notch.hideFromCapture") private var hideFromCapture = true
     @AppStorage("notch.pillOnPlainScreens") private var pillOnPlainScreens = true
     @AppStorage("notch.hoverSpeed") private var hoverSpeed = "medium"
+    /// D1 #44 — page order + visibility; one reader: `NotchSurfaceController.pageOrderRaw`.
+    @AppStorage("notch.pages") private var pagesRaw = "files,clipboard,nowPlaying"
+    /// D1 #47 — accent of the notch surfaces; one reader: `NotchSurfaceController.accentName`.
+    @AppStorage("notch.accent") private var accent = "system"
 
     var body: some View {
         ScrollView {
@@ -86,6 +90,7 @@ struct DropTrayDetailView: View {
                     openingSection
                     Divider().padding(.horizontal, XFinderTokens.Space.page)
                     notchBehaviourSection
+                    pagesSection
                     activitiesSection
                     nowPlayingSection
                 }
@@ -269,6 +274,71 @@ struct DropTrayDetailView: View {
                     .onChange(of: hideFromCapture) { NotchSurfaceController.shared.applySettings() }
             }
             .padding(.horizontal, XFinderTokens.Space.page)
+        }
+    }
+
+    /// D1 #44 / #47: which tabs the hub shows and in what order, and the surfaces' accent.
+    private var pagesSection: some View {
+        let shown = NotchPages.parse(pagesRaw)
+        return VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SectionHeader(icon: "rectangle.3.group",
+                          title: L10n.t("Các trang trên notch"),
+                          subtitle: L10n.t("Bật, tắt và sắp xếp thứ tự các tab trong hub. Tắt Clipboard thì ⌘⇧V mở khay nổi cũ. Vuốt hai ngón ngang trên dải tab để đổi trang."))
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                ForEach(NotchPages.allInOrder(shown: shown), id: \.self) { page in
+                    let isShown = shown.contains(page)
+                    let index = shown.firstIndex(of: page)
+                    HStack(spacing: XFinderTokens.Space.inline) {
+                        Image(systemName: pageIcon(page)).font(XFinderTokens.Font.sectionIcon).foregroundColor(.secondary).frame(width: 18)
+                        Text(pageTitle(page)).font(XFinderTokens.Font.row)
+                        Spacer()
+                        Button { pagesRaw = NotchPages.serialize(NotchPages.moved(page, by: -1, in: shown)) } label: { Image(systemName: "chevron.up") }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .disabled(!isShown || index == 0)
+                            .help(L10n.t("Lên"))
+                        Button { pagesRaw = NotchPages.serialize(NotchPages.moved(page, by: 1, in: shown)) } label: { Image(systemName: "chevron.down") }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .disabled(!isShown || index == shown.count - 1)
+                            .help(L10n.t("Xuống"))
+                        Toggle("", isOn: Binding(get: { isShown },
+                                                 set: { _ in pagesRaw = NotchPages.serialize(NotchPages.toggled(page, in: shown)) }))
+                            .toggleStyle(.switch).labelsHidden().controlSize(.small)
+                            .disabled(isShown && shown.count == 1)
+                    }
+                }
+            }
+            .padding(.horizontal, XFinderTokens.Space.page)
+            .onChange(of: pagesRaw) { NotchSurfaceController.shared.applySettings() }
+
+            PickerRow(title: L10n.t("Màu nhấn"),
+                      subtitle: L10n.t("Màu của viền chọn, thẻ đang chọn và các điểm nhấn trên notch."),
+                      selection: $accent, width: 150) {
+                Text(L10n.t("Theo hệ thống")).tag("system")
+                Text(L10n.t("Xanh dương")).tag("blue")
+                Text(L10n.t("Tím")).tag("purple")
+                Text(L10n.t("Hồng")).tag("pink")
+                Text(L10n.t("Cam")).tag("orange")
+                Text(L10n.t("Xanh lá")).tag("green")
+                Text(L10n.t("Xanh ngọc")).tag("teal")
+            }
+            .padding(.horizontal, XFinderTokens.Space.page)
+            .onChange(of: accent) { NotchSurfaceController.shared.applySettings() }
+        }
+    }
+
+    private func pageTitle(_ p: NotchSurfaceMachine.Page) -> String {
+        switch p {
+        case .files: return L10n.t("Khay")
+        case .clipboard: return "Clipboard"
+        case .nowPlaying: return L10n.t("Đang phát")
+        }
+    }
+
+    private func pageIcon(_ p: NotchSurfaceMachine.Page) -> String {
+        switch p {
+        case .files: return "tray.and.arrow.down.fill"
+        case .clipboard: return "doc.on.clipboard.fill"
+        case .nowPlaying: return "music.note"
         }
     }
 

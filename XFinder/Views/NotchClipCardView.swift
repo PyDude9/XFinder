@@ -57,6 +57,7 @@ struct NotchClipCardView: View {
     let now: Date
     /// 92 in a 3×2 grid; 122 in the horizontal deck (D0, OneNotch reference). Text lines follow it.
     var height: CGFloat = 92
+    @Environment(\.notchAccent) private var accent
 
     private static let radius = XFinderTokens.Radius.tile
     private var textLines: Int { height >= 120 ? 6 : 4 }
@@ -71,7 +72,7 @@ struct NotchClipCardView: View {
         .frame(height: height)
         .background(RoundedRectangle(cornerRadius: Self.radius, style: .continuous).fill(Color.white.opacity(0.10)))
         .overlay(RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
-            .strokeBorder(selected ? Color.accentColor : Color.clear, lineWidth: 2))
+            .strokeBorder(selected ? accent : Color.clear, lineWidth: 2))
         .clipShape(RoundedRectangle(cornerRadius: Self.radius, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: Self.radius, style: .continuous))
     }
@@ -85,7 +86,7 @@ struct NotchClipCardView: View {
         case .file: fileBody
         case .link:
             Text(record.metadata["url"]?.isEmpty == false ? record.metadata["url"]! : record.displayPreview)
-                .font(.system(size: 11)).foregroundColor(.accentColor)
+                .font(.system(size: 11)).foregroundColor(accent)
                 .lineLimit(textLines).multilineTextAlignment(.leading)
                 .padding(.horizontal, 9).padding(.top, 7)
         case .code, .markdown:
@@ -163,7 +164,7 @@ struct NotchClipCardView: View {
         HStack(spacing: 5) {
             if let n = stackIndex {
                 Text("\(n)").font(.system(size: 9, weight: .bold)).foregroundColor(.black)
-                    .frame(width: 14, height: 14).background(Circle().fill(Color.accentColor))
+                    .frame(width: 14, height: 14).background(Circle().fill(accent))
                     .help(L10n.t("Thêm vào Paste Stack"))
             }
             if let icon = ClipboardAppIcon.icon(forBundleID: record.sourceBundleID) {
