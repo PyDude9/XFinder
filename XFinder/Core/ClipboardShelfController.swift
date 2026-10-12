@@ -77,6 +77,11 @@ final class ClipboardShelfController {
         UserDefaults.standard.object(forKey: "clipboard.autoPasteAfterSelection") as? Bool ?? true
     }
 
+    /// The ONE reader of `clipboard.shelfHotkey` (⌘⌥C opens the floating shelf). The tap callback is
+    /// nonisolated, so the value is mirrored into a snapshot in `applySettings()`, like `isOpen`.
+    var shelfHotkeyEnabled: Bool { UserDefaults.standard.object(forKey: "clipboard.shelfHotkey") as? Bool ?? false }
+    private let shelfHotkeySnapshot = Locked<Bool>(false)
+
     /// The ONE Core reader of `clipboard.touchIDLock` (the shelf's own view binds it with @AppStorage).
     var touchIDLockEnabled: Bool {
         UserDefaults.standard.object(forKey: "clipboard.touchIDLock") as? Bool ?? false
@@ -104,6 +109,7 @@ final class ClipboardShelfController {
     }
 
     func applySettings() {
+        shelfHotkeySnapshot.value = shelfHotkeyEnabled
         guard hotkeyEnabled, WindowManager.isTrusted else {
             teardownTap()
             return
@@ -168,8 +174,9 @@ final class ClipboardShelfController {
             Task { @MainActor in self.hotkeyPressed() }
             return nil
         }
-        // ⌘⌥C — D1 #6: the floating shelf itself, whatever ⌘⇧V is set to (the reference's second surface).
-        if cmd, flags.contains(.maskAlternate), !shift, !flags.contains(.maskControl), keyCode == 8 { // C
+        // ⌘⌥C — D1 #6: the floating shelf itself, whatever ⌘⇧V is set to. OFF by default (user, 2026-10-12:
+        // "tạm tắt, khi nào cần tôi bật trong settings"); the switch is `clipboard.shelfHotkey`.
+        if cmd, flags.contains(.maskAlternate), !shift, !flags.contains(.maskControl), keyCode == 8, shelfHotkeySnapshot.value { // C
             Task { @MainActor in self.toggle() }
             return nil
         }

@@ -215,7 +215,16 @@ xếp tab, đo thứ tự tab qua AX sau relaunch · #43 vuốt hai ngón trên 
 7 màu, chưa đo mắt) + **bo góc hub** theo yêu cầu: bán kính 36 liên tục, fillet lõm 12 pt vào mép trên, hub đo 776×232.
 **D1 xong 10/10.**
 
-**Thứ tự tiếp theo của plan**: D0c ✅ → D1 ✅ → **D (Thư viện Clipboard, tô màu code, MCP, xuất `.xfinderclip`)** → E → F → G.
+**D2 ✅ 2026-10-12** — ba mục "vừa" của §3b: #13 tô màu code on-device (`CodeHighlighter` thuần, 15 test; thẻ notch + thẻ shelf) ·
+#12 xuất/nhập `.xfinderclip` kèm ảnh + bảng (`ClipExport` thuần 8 test + `ClipTransfer` I/O, nút ở Cài đặt Clipboard; nhập không
+ghi đè, mục trình quản lý mật khẩu không xuất) · #42 Clipboard MCP (`XFinder --mcp`, stdio JSON-RPC, 3 tool, `MCPProtocol` thuần
+11 test; **tắt mặc định**, đoạn cấu hình để dán vào Claude Code). Kèm yêu cầu riêng của chủ dự án: **⌘⌥C tắt mặc định** sau công
+tắc `clipboard.shelfHotkey`. Đo: server trả lời đúng qua stdio trên binary đã build (tắt ⇒ −32000, bật ⇒ 3 dòng thật từ SQLite,
+`clipboard_get` trả nguyên văn), `zip`/`tar` với đuôi `.xfinderclip` đo được, trang cài đặt EN 0 chữ Việt qua AX. **Chưa đo tay**:
+bấm Xuất/Nhập qua NSSavePanel, màu token bằng mắt, MCP từ Claude Code thật.
+
+**Thứ tự tiếp theo của plan**: D0c ✅ → D1 ✅ → D2 ✅ → **D3 (Thư viện Clipboard — qua cổng U1/U2/U3 của ui-ux; board khoá
+AES-GCM + Keychain; xem trước link opt-in)** → E → F → G.
 
 ---
 
@@ -338,6 +347,12 @@ chặn main thread 214 mẫu/mở — đo bằng `sample`), root `GeometryReader
 ImageIO ≤ 480 px, text payload; ảnh lệch tỉ lệ > 1,5× thì fit (luật thuần, mutation D10); History limit 20 · 100 · 1000 với dòng
 "hiện tại" cho giá trị cũ, cap là một reader và cũng giới hạn số dòng nạp; **màn không notch = notch ảo dính mép trên** (đảo B7).
 Đo: cửa sổ hiện một mẫu 752×232 (106 ms sau URL; 258 ms lần đầu), `_runBlocking` 0; CPU/mở+đóng ≈ 0,45 s **chưa giảm**.
+
+**D2 ✅ 2026-10-12** — highlight code on-device (`Core/Clipboard/CodeHighlighter.swift` + `Views/Components/HighlightedCode.swift`),
+xuất `.xfinderclip` (`ClipExport` kế hoạch thuần + `ClipTransfer` panel/zip/unzip qua `ArchiveRunner`; `Pinboard.swift` tách
+Foundation/SwiftUI để symlink vào test), **MCP không phải target mới**: `XFinder --mcp` trong `XFinderApp.init` trước mọi scene
+(`Core/MCP/MCPProtocol.swift` thuần + `MCPServer.swift` đọc SQLite read-only). Khoá: `clipboard.mcpEnabled` (tắt),
+`clipboard.shelfHotkey` (tắt — ⌘⌥C). Chi tiết đo trong CLAUDE.md "D2".
 
 ### Phase E — Smart Selection
 Lớp phát hiện vùng chọn qua AX (`kAXSelectedTextAttribute`, cần Trợ năng) + popup `SurfacePanel(.pointer)`; dịch (15+),

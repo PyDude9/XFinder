@@ -1,0 +1,1 @@
+../../XFinder/Models/Pinboard.swift

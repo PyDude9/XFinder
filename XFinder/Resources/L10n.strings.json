@@ -7910,6 +7910,86 @@
     "Xanh ngọc": {
       "en": "Teal",
       "scope": "sentence"
+    },
+    "Phím ⌘⌥C mở khay nổi cũ": {
+      "en": "⌘⌥C opens the old floating shelf",
+      "scope": "sentence"
+    },
+    "Tắt mặc định. Bật nếu muốn khay nổi dưới màn hình song song với notch.": {
+      "en": "Off by default. Turn on if you want the floating shelf at the bottom of the screen alongside the notch.",
+      "scope": "sentence"
+    },
+    "Clipboard MCP cho agent AI": {
+      "en": "Clipboard MCP for AI agents",
+      "scope": "sentence"
+    },
+    "Claude Code, Cursor, Codex đọc được lịch sử clipboard qua MCP. Chỉ đọc, chỉ văn bản, không bao giờ trả mục từ trình quản lý mật khẩu; tắt công tắc thì mọi lệnh trả lỗi.": {
+      "en": "Claude Code, Cursor and Codex can read the clipboard history over MCP. Read-only, text only, never an item from a password manager; with the switch off every call returns an error.",
+      "scope": "sentence"
+    },
+    "Cho phép agent đọc clipboard qua MCP": {
+      "en": "Let agents read the clipboard over MCP",
+      "scope": "sentence"
+    },
+    "Dán đoạn này vào cấu hình MCP của agent (Claude Code: ~/.claude.json hoặc .mcp.json). Server chạy khi agent khởi động nó; XFinder không mở cổng mạng nào.": {
+      "en": "Paste this into the agent's MCP configuration (Claude Code: ~/.claude.json or .mcp.json). The server runs when the agent starts it; XFinder opens no network port.",
+      "scope": "sentence"
+    },
+    "Sao lưu & chuyển máy": {
+      "en": "Backup & move to another Mac",
+      "scope": "sentence"
+    },
+    "Xuất toàn bộ lịch sử và bảng ghim, kèm ảnh, thành một tệp .xfinderclip. Nhập không ghi đè mục đang có. Mục từ trình quản lý mật khẩu không bao giờ được xuất.": {
+      "en": "Export the whole history and the boards, with images, as one .xfinderclip file. Importing never overwrites existing items. Items from password managers are never exported.",
+      "scope": "sentence"
+    },
+    "Xuất tệp .xfinderclip…": {
+      "en": "Export .xfinderclip file…",
+      "scope": "sentence"
+    },
+    "Nhập tệp .xfinderclip…": {
+      "en": "Import .xfinderclip file…",
+      "scope": "sentence"
+    },
+    " tệp đính kèm": {
+      "en": " attached files",
+      "scope": "fragment"
+    },
+    " tệp không còn trên đĩa": {
+      "en": " files no longer on disk",
+      "scope": "fragment"
+    },
+    "bỏ qua ": {
+      "en": "skipped ",
+      "scope": "fragment"
+    },
+    " mục từ trình quản lý mật khẩu": {
+      "en": " items from password managers",
+      "scope": "fragment"
+    },
+    " mục trùng": {
+      "en": " duplicates",
+      "scope": "fragment"
+    },
+    " bảng mới": {
+      "en": " new boards",
+      "scope": "fragment"
+    },
+    " mục ảnh thiếu tệp": {
+      "en": " image items missing their file",
+      "scope": "fragment"
+    },
+    "Tệp này không phải tệp .xfinderclip hợp lệ.": {
+      "en": "This is not a valid .xfinderclip file.",
+      "scope": "sentence"
+    },
+    "Tệp được xuất từ bản XFinder mới hơn. Hãy cập nhật XFinder.": {
+      "en": "This file was exported by a newer XFinder. Update XFinder first.",
+      "scope": "sentence"
+    },
+    "Không thực hiện được: ": {
+      "en": "Could not finish: ",
+      "scope": "fragment"
     }
   }
 }

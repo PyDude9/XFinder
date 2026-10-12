@@ -89,7 +89,11 @@ struct NotchClipCardView: View {
                 .font(.system(size: 11)).foregroundColor(accent)
                 .lineLimit(textLines).multilineTextAlignment(.leading)
                 .padding(.horizontal, 9).padding(.top, 7)
-        case .code, .markdown:
+        case .code:
+            // D: on-device syntax colouring; the preview is the first 200 characters, so this is cheap.
+            HighlightedCodeText(text: record.displayPreview, dark: true, lineLimit: textLines)
+                .padding(.horizontal, 9).padding(.top, 7)
+        case .markdown:
             Text(record.displayPreview)
                 .font(.system(size: 10.5, design: .monospaced)).foregroundColor(.white)
                 .lineLimit(textLines).multilineTextAlignment(.leading)

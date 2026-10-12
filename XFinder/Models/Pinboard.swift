@@ -1,7 +1,9 @@
 import Foundation
-import SwiftUI
 
-struct Pinboard: Identifiable, Codable, Sendable {
+/// A clipboard board. Foundation-only on purpose (D, 2026-10-12): `ClipExport` writes boards into the
+/// `.xfinderclip` manifest, and the test package cannot compile SwiftUI — so the SwiftUI side
+/// (`Color` bridging, `defaultPinboards`, preset names) lives in `Pinboard+SwiftUI.swift`.
+struct Pinboard: Identifiable, Codable, Sendable, Equatable {
     let id: UUID
     var name: String
     let color: CodableColor
@@ -30,64 +32,20 @@ struct Pinboard: Identifiable, Codable, Sendable {
         self.createdAt = createdAt
         self.isBuiltIn = isBuiltIn
     }
-
-    static let defaultPinboards: [Pinboard] = [
-        Pinboard(
-            name: "Clipboard History",
-            color: CodableColor(color: .blue),
-            icon: "clock.fill",
-            isBuiltIn: true
-        ),
-        Pinboard(
-            name: "Code Snippets",
-            color: CodableColor(color: .green),
-            icon: "curlybraces",
-            isBuiltIn: false
-        ),
-        Pinboard(
-            name: "Design Assets",
-            color: CodableColor(color: .purple),
-            icon: "paintbrush.fill",
-            isBuiltIn: false
-        )
-    ]
 }
 
-struct CodableColor: Codable, Sendable {
+/// sRGB components, 0…1. The plain initializer is what the manifest round-trip and the tests use;
+/// `init(color:)` / `var color` (SwiftUI) are in `Pinboard+SwiftUI.swift`.
+struct CodableColor: Codable, Sendable, Equatable {
     let red: Double
     let green: Double
     let blue: Double
     let alpha: Double
 
-    init(color: Color) {
-        let converted = NSColor(color).usingColorSpace(.sRGB) ?? .black
-        self.red = Double(converted.redComponent)
-        self.green = Double(converted.greenComponent)
-        self.blue = Double(converted.blueComponent)
-        self.alpha = Double(converted.alphaComponent)
-    }
-
-    var color: Color {
-        return Color(red: red, green: green, blue: blue, opacity: alpha)
-    }
-}
-
-extension CodableColor {
-    /// Human label for the note color filter — matches the editor presets.
-    static let presetNames = ["Vàng", "Xanh dương", "Xanh lá", "Hồng", "Tím", "Cam", "Đỏ", "Xám"]
-
-    static func presetName(for color: CodableColor) -> String {
-        let candidates: [(String, Color)] = [
-            ("Vàng", .yellow), ("Xanh dương", .blue), ("Xanh lá", .green),
-            ("Hồng", .pink), ("Tím", .purple), ("Cam", .orange), ("Đỏ", .red), ("Xám", .gray)
-        ]
-        func dist(_ a: Color) -> Double {
-            let na = NSColor(a).usingColorSpace(.sRGB) ?? .black
-            let dr = na.redComponent - CGFloat(color.red)
-            let dg = na.greenComponent - CGFloat(color.green)
-            let db = na.blueComponent - CGFloat(color.blue)
-            return Double(dr * dr + dg * dg + db * db)
-        }
-        return candidates.min(by: { dist($0.1) < dist($1.1) })?.0 ?? "Vàng"
+    init(red: Double, green: Double, blue: Double, alpha: Double = 1) {
+        self.red = red
+        self.green = green
+        self.blue = blue
+        self.alpha = alpha
     }
 }

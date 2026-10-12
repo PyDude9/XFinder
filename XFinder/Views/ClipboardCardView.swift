@@ -11,6 +11,7 @@ struct ClipboardCardView: View {
 
     @Environment(ClipboardManager.self) private var clipboardManager
     @AppStorage("clipboard.textSize") private var textSize: Double = 13.5
+    @Environment(\.colorScheme) private var colorScheme
     @State private var hovering = false
     @State private var appIcon: NSImage?
 
@@ -224,10 +225,9 @@ struct ClipboardCardView: View {
     private var codeBody: some View {
         let text = fullText ?? record.displayPreview
         return VStack(alignment: .leading, spacing: 4) {
-            Text(text)
-                .font(.system(size: CGFloat(textSize - 2), design: .monospaced))
-                .foregroundColor(.primary)
-                .lineLimit(7)
+            // D: on-device syntax colouring (`CodeHighlighter`); palette follows the shelf's appearance.
+            HighlightedCodeText(text: text, font: .system(size: CGFloat(textSize - 2), design: .monospaced),
+                                dark: colorScheme == .dark, lineLimit: 7)
                 .padding(6)
                 .background(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)

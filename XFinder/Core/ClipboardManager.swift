@@ -65,7 +65,7 @@ final class ClipboardManager {
     ]
 
     /// Password managers / secret stores whose copies are always skipped.
-    private static let excludedAppKeywords: [String] = [
+    nonisolated private static let excludedAppKeywords: [String] = [   // Sendable `let`: readable off the main actor
         "1password",
         "onepassword",
         "bitwarden",
@@ -909,6 +909,33 @@ final class ClipboardManager {
             return
         }
         pinboards = Pinboard.defaultPinboards
+    }
+
+    /// Whether a bundle id belongs to a password manager / secret store (the same keyword rule the
+    /// capture filter applies). Used by `.xfinderclip` export and the MCP server as a second fence.
+    nonisolated static func isExcludedBundleID(_ bundleID: String) -> Bool {
+        let lower = bundleID.lowercased()
+        return excludedAppKeywords.contains { lower.contains($0) }
+    }
+
+    /// D — import from an `.xfinderclip`: new records are merged by timestamp (never replacing an
+    /// existing id), new boards appended, everything persisted. The cap still applies.
+    func importRecords(_ records: [ClipboardRecord], boards: [Pinboard]) {
+        let existing = Set(history.map(\.id))
+        let fresh = records.filter { !existing.contains($0.id) }
+        if !fresh.isEmpty {
+            history = (history + fresh).sorted { $0.timestamp > $1.timestamp }
+            trimToCap()
+            Task {
+                for r in fresh { _ = await DatabaseService.shared.insertClipboardRecord(r) }
+            }
+        }
+        let knownBoards = Set(pinboards.map(\.id))
+        let newBoards = boards.filter { !knownBoards.contains($0.id) }
+        if !newBoards.isEmpty {
+            pinboards.append(contentsOf: newBoards)
+            savePinboards()
+        }
     }
 
     private func savePinboards() {

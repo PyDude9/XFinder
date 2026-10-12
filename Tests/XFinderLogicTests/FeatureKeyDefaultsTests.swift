@@ -147,6 +147,13 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "notch.accent",
                views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
                reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
+        // D: the ⌘⌥C shelf hotkey (off by default, user) and the MCP server (off by default).
+        Switch(key: "clipboard.shelfHotkey",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
+               reader: "XFinder/Core/ClipboardShelfController.swift"),
+        Switch(key: "clipboard.mcpEnabled",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
+               reader: "XFinder/Core/MCP/MCPServer.swift"),
     ]
 
     // MARK: - Source access

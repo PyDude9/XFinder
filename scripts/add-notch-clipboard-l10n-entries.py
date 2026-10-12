@@ -63,6 +63,29 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Cam": ("Orange", "sentence"),
     "Xanh lá": ("Green", "sentence"),
     "Xanh ngọc": ("Teal", "sentence"),
+    # D: ⌘⌥C switch, MCP section
+    "Phím ⌘⌥C mở khay nổi cũ": ("⌘⌥C opens the old floating shelf", "sentence"),
+    "Tắt mặc định. Bật nếu muốn khay nổi dưới màn hình song song với notch.": ("Off by default. Turn on if you want the floating shelf at the bottom of the screen alongside the notch.", "sentence"),
+    "Clipboard MCP cho agent AI": ("Clipboard MCP for AI agents", "sentence"),
+    "Claude Code, Cursor, Codex đọc được lịch sử clipboard qua MCP. Chỉ đọc, chỉ văn bản, không bao giờ trả mục từ trình quản lý mật khẩu; tắt công tắc thì mọi lệnh trả lỗi.": ("Claude Code, Cursor and Codex can read the clipboard history over MCP. Read-only, text only, never an item from a password manager; with the switch off every call returns an error.", "sentence"),
+    "Cho phép agent đọc clipboard qua MCP": ("Let agents read the clipboard over MCP", "sentence"),
+    "Đã sao chép": ("Copied", "sentence"),
+    "Dán đoạn này vào cấu hình MCP của agent (Claude Code: ~/.claude.json hoặc .mcp.json). Server chạy khi agent khởi động nó; XFinder không mở cổng mạng nào.": ("Paste this into the agent's MCP configuration (Claude Code: ~/.claude.json or .mcp.json). The server runs when the agent starts it; XFinder opens no network port.", "sentence"),
+    # D: .xfinderclip export / import
+    "Sao lưu & chuyển máy": ("Backup & move to another Mac", "sentence"),
+    "Xuất toàn bộ lịch sử và bảng ghim, kèm ảnh, thành một tệp .xfinderclip. Nhập không ghi đè mục đang có. Mục từ trình quản lý mật khẩu không bao giờ được xuất.": ("Export the whole history and the boards, with images, as one .xfinderclip file. Importing never overwrites existing items. Items from password managers are never exported.", "sentence"),
+    "Xuất tệp .xfinderclip…": ("Export .xfinderclip file…", "sentence"),
+    "Nhập tệp .xfinderclip…": ("Import .xfinderclip file…", "sentence"),
+    " tệp đính kèm": (" attached files", "fragment"),
+    " tệp không còn trên đĩa": (" files no longer on disk", "fragment"),
+    "bỏ qua ": ("skipped ", "fragment"),
+    " mục từ trình quản lý mật khẩu": (" items from password managers", "fragment"),
+    " mục trùng": (" duplicates", "fragment"),
+    " bảng mới": (" new boards", "fragment"),
+    " mục ảnh thiếu tệp": (" image items missing their file", "fragment"),
+    "Tệp này không phải tệp .xfinderclip hợp lệ.": ("This is not a valid .xfinderclip file.", "sentence"),
+    "Tệp được xuất từ bản XFinder mới hơn. Hãy cập nhật XFinder.": ("This file was exported by a newer XFinder. Update XFinder first.", "sentence"),
+    "Không thực hiện được: ": ("Could not finish: ", "fragment"),
 }
 
 

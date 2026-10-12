@@ -5,11 +5,11 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notchclip.XXXXXX)
-FILES="XFinder/Core/Clipboard/NotchClipboardRules.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/ClipboardShelfController.swift XFinder/Core/ColorFormat.swift XFinder/Core/Notch/NotchPages.swift"
+FILES="XFinder/Core/Clipboard/NotchClipboardRules.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/ClipboardShelfController.swift XFinder/Core/ColorFormat.swift XFinder/Core/Notch/NotchPages.swift XFinder/Core/MCP/MCPProtocol.swift XFinder/Core/Clipboard/CodeHighlighter.swift XFinder/Core/Clipboard/ClipExport.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
-FILTER='NotchClipboardRules|NotchSurfaceLayout|FeatureKeyDefaults|ColorFormat|NotchPages'
+FILTER='NotchClipboardRules|NotchSurfaceLayout|FeatureKeyDefaults|ColorFormat|NotchPages|MCPProtocol|CodeHighlighter|ClipExport'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -64,6 +64,18 @@ run "D15 a swipe keeps firing for the whole gesture" XFinder/Core/Notch/NotchPag
   "'            if total <= -Self.threshold { fired = true; return 1 }'" "'            if total <= -Self.threshold { return 1 }'"
 run "D16 the flares eat the content (hub width does not grow by them)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
   "'            return CGSize(width: max(m.expandedWidth(for: page), notch.width) + 2 * m.topFillet,'" "'            return CGSize(width: max(m.expandedWidth(for: page), notch.width),'"
+run "D17 MCP returns password-manager records" XFinder/Core/MCP/MCPProtocol.swift \
+  "'            return !excludedBundleFragments.contains { bid.contains(\$0) }'" "'            return true'"
+run "D18 MCP answers tool calls while switched off" XFinder/Core/MCP/MCPProtocol.swift \
+  "'            guard context.enabled else {'" "'            guard false else {'"
+run "D19 MCP limit is not clamped" XFinder/Core/MCP/MCPProtocol.swift \
+  "'        return min(max(n, 1), maxLimit)'" "'        return n'"
+run "D20 highlighter cap excludes exactly 4000 chars" XFinder/Core/Clipboard/CodeHighlighter.swift \
+  "'        guard text.count <= maxLength else {'" "'        guard text.count < maxLength else {'"
+run "D21 export still ships password-manager records" XFinder/Core/Clipboard/ClipExport.swift \
+  "'                skipped += 1\\n                continue'" "'                skipped += 1'"
+run "D22 import re-adds records the app already has" XFinder/Core/Clipboard/ClipExport.swift \
+  "'            if existingIDs.contains(entry.id) {'" "'            if false {'"
 run "D8 the hotkey-surface reader defaults to the shelf (view says notch)" XFinder/Core/ClipboardShelfController.swift \
   "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"notch\"'" "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"shelf\"'"
 restore

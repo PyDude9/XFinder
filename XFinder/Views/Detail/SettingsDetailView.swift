@@ -49,6 +49,14 @@ private struct ClipboardSettingsBody: View {
     @AppStorage("clipboard.copySound") private var copySound = "Pop"
     /// D1 #14 — pause recording; one reader: `ClipboardManager.isPaused`.
     @AppStorage("clipboard.paused") private var paused = false
+    /// D1 #6 — ⌘⌥C opens the old floating shelf; OFF by default (user). One reader: `ClipboardShelfController.shelfHotkeyEnabled`.
+    @AppStorage("clipboard.shelfHotkey") private var shelfHotkey = false
+    /// D — the Clipboard MCP server (`XFinder --mcp`); OFF by default. One reader: `MCPServer.isEnabled`.
+    @AppStorage("clipboard.mcpEnabled") private var mcpEnabled = false
+    @State private var mcpSnippetCopied = false
+    /// D — `.xfinderclip` export/import; outcome worded below, nothing stored.
+    @State private var transferBusy = false
+    @State private var transferOutcome: ClipTransfer.Outcome?
     /// Privacy lives here, not on its own page: excluding password managers is
     /// a property of *what the clipboard records*, not a separate feature.
     @AppStorage("privacy.excludePasswordManagers") private var excludePW = true
@@ -82,6 +90,49 @@ private struct ClipboardSettingsBody: View {
         case 900: return L10n.t("15 phút")
         default:  return "\(seconds)s"
         }
+    }
+
+    /// One line for the last export/import. Counts are joined from fragments so both languages read
+    /// in their own word order.
+    private var transferLine: String? {
+        guard let outcome = transferOutcome else { return nil }
+        switch outcome {
+        case .cancelled:
+            return nil
+        case .exported(let records, let files, let missing, let skipped):
+            var s = "\(L10n.t("Đã xuất "))\(records)\(L10n.t(" mục"))"
+            if files > 0 { s += ", \(files)\(L10n.t(" tệp đính kèm"))" }
+            if missing > 0 { s += ", \(missing)\(L10n.t(" tệp không còn trên đĩa"))" }
+            if skipped > 0 { s += ", \(L10n.t("bỏ qua "))\(skipped)\(L10n.t(" mục từ trình quản lý mật khẩu"))" }
+            return s + "."
+        case .imported(let records, let duplicates, let boards, let rejected):
+            var s = "\(L10n.t("Đã nhập "))\(records)\(L10n.t(" mục"))"
+            if duplicates > 0 { s += ", \(L10n.t("bỏ qua "))\(duplicates)\(L10n.t(" mục trùng"))" }
+            if boards > 0 { s += ", \(boards)\(L10n.t(" bảng mới"))" }
+            if rejected > 0 { s += ", \(rejected)\(L10n.t(" mục ảnh thiếu tệp"))" }
+            return s + "."
+        case .failed(.notAManifest):
+            return L10n.t("Tệp này không phải tệp .xfinderclip hợp lệ.")
+        case .failed(.unsupportedVersion):
+            return L10n.t("Tệp được xuất từ bản XFinder mới hơn. Hãy cập nhật XFinder.")
+        case .failed(.detail(let d)):
+            return "\(L10n.t("Không thực hiện được: "))\(d)"
+        }
+    }
+
+    /// The MCP client configuration for THIS install (the binary's real path).
+    static var mcpConfigSnippet: String {
+        let exe = Bundle.main.executablePath ?? "/Applications/XFinder.app/Contents/MacOS/XFinder"
+        return """
+        {
+          "mcpServers": {
+            "xfinder-clipboard": {
+              "command": "\(exe)",
+              "args": ["--mcp"]
+            }
+          }
+        }
+        """
     }
 
     private static func time(_ d: Date) -> String {
@@ -124,6 +175,11 @@ private struct ClipboardSettingsBody: View {
                     Text(L10n.t("Khay nổi cũ")).tag("shelf")
                 }
                 .padding(.horizontal, XFinderTokens.Space.page)
+                ToggleRow(title: L10n.t("Phím ⌘⌥C mở khay nổi cũ"),
+                          subtitle: L10n.t("Tắt mặc định. Bật nếu muốn khay nổi dưới màn hình song song với notch."),
+                          isOn: $shelfHotkey)
+                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .onChange(of: shelfHotkey) { ClipboardShelfController.shared.applySettings() }
 
                 if !WindowManager.isTrusted {
                     InlineNote(kind: .warning,
@@ -217,6 +273,59 @@ private struct ClipboardSettingsBody: View {
                     Text(L10n.t("Lớn (15.5pt)")).tag(15.5)
                 }
                 .padding(.horizontal, XFinderTokens.Space.page)
+            }
+
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
+
+            // D — one file for the whole history + boards + media; import never overwrites.
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                SectionHeader(icon: "shippingbox",
+                              title: L10n.t("Sao lưu & chuyển máy"),
+                              subtitle: L10n.t("Xuất toàn bộ lịch sử và bảng ghim, kèm ảnh, thành một tệp .xfinderclip. Nhập không ghi đè mục đang có. Mục từ trình quản lý mật khẩu không bao giờ được xuất."))
+                HStack(spacing: XFinderTokens.Space.inline) {
+                    Button(L10n.t("Xuất tệp .xfinderclip…")) {
+                        Task { transferBusy = true; transferOutcome = await ClipTransfer.exportViaPanel(); transferBusy = false }
+                    }
+                    Button(L10n.t("Nhập tệp .xfinderclip…")) {
+                        Task { transferBusy = true; transferOutcome = await ClipTransfer.importViaPanel(); transferBusy = false }
+                    }
+                    if transferBusy { ProgressView().controlSize(.small) }
+                }
+                .disabled(transferBusy)
+                .padding(.horizontal, XFinderTokens.Space.page)
+                if let line = transferLine {
+                    Text(line).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        .padding(.horizontal, XFinderTokens.Space.page)
+                }
+            }
+
+            Divider().padding(.horizontal, XFinderTokens.Space.page)
+
+            // D — Clipboard MCP: the app binary as a stdio server for Claude Code / Cursor / Codex.
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                SectionHeader(icon: "terminal",
+                              title: L10n.t("Clipboard MCP cho agent AI"),
+                              subtitle: L10n.t("Claude Code, Cursor, Codex đọc được lịch sử clipboard qua MCP. Chỉ đọc, chỉ văn bản, không bao giờ trả mục từ trình quản lý mật khẩu; tắt công tắc thì mọi lệnh trả lỗi."))
+                ToggleRow(title: L10n.t("Cho phép agent đọc clipboard qua MCP"), isOn: $mcpEnabled)
+                    .padding(.horizontal, XFinderTokens.Space.page)
+                HStack(alignment: .top, spacing: XFinderTokens.Space.inline) {
+                    Text(Self.mcpConfigSnippet)
+                        .font(XFinderTokens.Font.mono)
+                        .textSelection(.enabled)
+                        .padding(XFinderTokens.Space.row)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(XFinderTokens.Fill.inset))
+                    Button(mcpSnippetCopied ? L10n.t("Đã sao chép") : L10n.t("Sao chép")) {
+                        let pb = NSPasteboard.general
+                        pb.clearContents(); pb.setString(Self.mcpConfigSnippet, forType: .string)
+                        mcpSnippetCopied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { mcpSnippetCopied = false }
+                    }
+                    .controlSize(.small)
+                }
+                .padding(.horizontal, XFinderTokens.Space.page)
+                InlineNote(text: L10n.t("Dán đoạn này vào cấu hình MCP của agent (Claude Code: ~/.claude.json hoặc .mcp.json). Server chạy khi agent khởi động nó; XFinder không mở cổng mạng nào."))
+                    .padding(.horizontal, XFinderTokens.Space.page)
             }
 
             Divider().padding(.horizontal, XFinderTokens.Space.page)

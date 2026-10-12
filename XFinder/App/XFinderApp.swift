@@ -4,6 +4,13 @@ import AppKit
 @main
 struct XFinderApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
+    /// `XFinder --mcp` (D): the binary is the Clipboard MCP server. Decided here, before any scene or
+    /// AppKit object exists; `MCPServer.run()` never returns.
+    init() {
+        if CommandLine.arguments.contains("--mcp") { MCPServer.run() }
+    }
+
     var body: some Scene {
         Settings {
             EmptyView()
