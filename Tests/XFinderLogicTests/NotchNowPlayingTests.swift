@@ -80,4 +80,14 @@ final class NotchNowPlayingTests: XCTestCase {
         XCTAssertEqual(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: CGRect(x: 0, y: 0, width: 185, height: 0), nowPlayingActive: true)?.height,
                        L.Metrics.standard.pillHeight, "no physical notch ⇒ the track shows in the pill (B7)")
     }
+
+    /// N8: the MediaRemote numbering measured with an MPRemoteCommandCenter publisher (2026-10-13):
+    /// SetShuffleMode 1/2/3 → MPShuffleType off/collections/items, SetRepeatMode 1/2/3 → off/one/all.
+    func testShuffleAndRepeatModesCarryTheMeasuredMediaRemoteNumbers() throws {
+        XCTAssertEqual(NowPlaying.ShuffleMode.off.rawValue, 1); XCTAssertEqual(NowPlaying.ShuffleMode.albums.rawValue, 2); XCTAssertEqual(NowPlaying.ShuffleMode.songs.rawValue, 3)
+        XCTAssertEqual(NowPlaying.RepeatMode.off.rawValue, 1); XCTAssertEqual(NowPlaying.RepeatMode.one.rawValue, 2); XCTAssertEqual(NowPlaying.RepeatMode.all.rawValue, 3)
+        let store = try L10nFixture.load()
+        for m in NowPlaying.ShuffleMode.allCases { XCTAssertNotNil(store.entries[m.labelKey], m.labelKey) }
+        for m in NowPlaying.RepeatMode.allCases { XCTAssertNotNil(store.entries[m.labelKey], m.labelKey) }
+    }
 }

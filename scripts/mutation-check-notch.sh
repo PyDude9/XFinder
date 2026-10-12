@@ -111,6 +111,8 @@ run "M28 the fixed panel is shallower than the deepest hub" XFinder/Core/Notch/N
 run "M31 OCR offered with no image held" XFinder/Core/Notch/NotchTask.swift \
   "'            out.append(.removeBackground)\n            out.append(.ocr)\n        }\n        out.append(.airDrop)'" \
   "'            out.append(.removeBackground)\n        }\n        out.append(.ocr)\n        out.append(.airDrop)'"
+run "M32 shuffle modes renumbered (0-based, like MPShuffleType)" XFinder/Core/Notch/NowPlaying.swift \
+  "'        case off = 1, albums = 2, songs = 3'" "'        case off = 0, albums = 2, songs = 1'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 

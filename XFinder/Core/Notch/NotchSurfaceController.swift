@@ -450,6 +450,13 @@ final class NotchSurfaceController {
     }
 
     func nowPlayingCommand(_ c: NowPlayingMonitor.Command) { NowPlayingMonitor.shared.send(c) }
+    // N8
+    func nowPlayingSeek(to seconds: Double) {
+        NowPlayingMonitor.shared.seek(to: seconds)
+        model.nowPlayingPosition = seconds          // the helper's next notification confirms; until then the slider stays put
+    }
+    func nowPlayingShuffle(_ m: NowPlaying.ShuffleMode) { NowPlayingMonitor.shared.setShuffle(m) }
+    func nowPlayingRepeat(_ m: NowPlaying.RepeatMode) { NowPlayingMonitor.shared.setRepeat(m) }
 
     func openPlayer() { NowPlayingMonitor.shared.openPlayer() }
 

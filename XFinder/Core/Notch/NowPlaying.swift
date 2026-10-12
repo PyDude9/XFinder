@@ -91,6 +91,24 @@ enum NowPlaying {
     }
 
     /// "m:ss", or "h:mm:ss" from one hour. Negative / non-finite input reads 0:00 — never a crash.
+    /// N8 — shuffle / repeat modes as MediaRemote numbers them. MEASURED (probe `n8`, a publisher registering
+    /// MPRemoteCommandCenter handlers): `MRMediaRemoteSetShuffleMode(1|2|3)` arrives as `MPShuffleType` 0 (off) /
+    /// 2 (collections) / 1 (items); `MRMediaRemoteSetRepeatMode(1|2|3)` as `MPRepeatType` 0 (off) / 1 (one) / 2 (all);
+    /// `MRMediaRemoteSetElapsedTime(123)` as `changePlaybackPosition 123.0`. The player's CURRENT mode is not in the
+    /// Now Playing info the helper reads, so the UI offers the three choices without claiming to know which is on.
+    enum ShuffleMode: UInt32, CaseIterable, Equatable {
+        case off = 1, albums = 2, songs = 3
+        var labelKey: String {
+            switch self { case .off: return "Xáo trộn: tắt"; case .albums: return "Xáo trộn album"; case .songs: return "Xáo trộn bài hát" }
+        }
+    }
+    enum RepeatMode: UInt32, CaseIterable, Equatable {
+        case off = 1, one = 2, all = 3
+        var labelKey: String {
+            switch self { case .off: return "Lặp lại: tắt"; case .one: return "Lặp một bài"; case .all: return "Lặp tất cả" }
+        }
+    }
+
     static func timeLabel(_ seconds: Double) -> String {
         guard seconds.isFinite, seconds > 0 else { return "0:00" }
         let total = Int(seconds.rounded(.down))

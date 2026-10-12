@@ -235,6 +235,26 @@ final class NowPlayingMonitor {
         Self.send?(c.rawValue, nil) ?? false
     }
 
+    // N8 — seek / shuffle / repeat: three more MediaRemote entry points, resolved the same way and measured to reach
+    // the player from an ad-hoc process (NowPlaying.ShuffleMode / RepeatMode carry the numbering).
+    private typealias SetDoubleFn = @convention(c) (Double) -> Void
+    private typealias SetU32Fn = @convention(c) (UInt32) -> Void
+    private static func symbol<T>(_ name: String, _ type: T.Type) -> T? {
+        guard let h = dlopen("/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote", RTLD_NOW),
+              let s = dlsym(h, name) else { return nil }
+        return unsafeBitCast(s, to: type)
+    }
+    private static let setElapsed: SetDoubleFn? = symbol("MRMediaRemoteSetElapsedTime", SetDoubleFn.self)
+    private static let setShuffle: SetU32Fn? = symbol("MRMediaRemoteSetShuffleMode", SetU32Fn.self)
+    private static let setRepeat: SetU32Fn? = symbol("MRMediaRemoteSetRepeatMode", SetU32Fn.self)
+
+    func seek(to seconds: Double) {
+        guard let d = snapshot?.duration, d > 0 else { return }
+        Self.setElapsed?(min(max(seconds, 0), d))
+    }
+    func setShuffle(_ m: NowPlaying.ShuffleMode) { Self.setShuffle?(m.rawValue) }
+    func setRepeat(_ m: NowPlaying.RepeatMode) { Self.setRepeat?(m.rawValue) }
+
     /// The app that is playing, from the pid the helper reports.
     var playerApp: NSRunningApplication? {
         guard let pid = snapshot?.pid, pid > 0 else { return nil }

@@ -476,7 +476,10 @@ struct NotchSurfaceView: View {
                     }
                     if let d = np.duration, d > 0 {
                         let pos = model.nowPlayingPosition ?? NowPlaying.position(of: np, at: Date()) ?? 0
-                        ProgressView(value: min(pos, d), total: d).progressViewStyle(.linear).tint(.white)
+                        // N8: the bar is a slider — release to seek (MRMediaRemoteSetElapsedTime, measured to reach the player)
+                        Slider(value: Binding(get: { min(pos, d) }, set: { model.nowPlayingPosition = $0 }), in: 0...d,
+                               onEditingChanged: { editing in if !editing { NotchSurfaceController.shared.nowPlayingSeek(to: model.nowPlayingPosition ?? pos) } })
+                            .controlSize(.mini).tint(.white).frame(height: 14)
                         HStack {
                             Text(NowPlaying.timeLabel(pos)).font(XFinderTokens.Font.caption).monospacedDigit().opacity(0.65)
                             Spacer()
@@ -489,6 +492,20 @@ struct NotchSurfaceView: View {
                     }
                     HStack {
                         nowPlayingControls(size: 14)
+                        // N8: shuffle / repeat as menus of the three modes — the player's current mode is not readable
+                        // from the Now Playing info, so nothing here pretends to show it.
+                        Menu {
+                            ForEach(NowPlaying.ShuffleMode.allCases, id: \.rawValue) { m in
+                                Button(L10n.t(m.labelKey)) { NotchSurfaceController.shared.nowPlayingShuffle(m) }
+                            }
+                        } label: { Image(systemName: "shuffle").font(.system(size: 12)) }
+                        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L10n.t("Xáo trộn"))
+                        Menu {
+                            ForEach(NowPlaying.RepeatMode.allCases, id: \.rawValue) { m in
+                                Button(L10n.t(m.labelKey)) { NotchSurfaceController.shared.nowPlayingRepeat(m) }
+                            }
+                        } label: { Image(systemName: "repeat").font(.system(size: 12)) }
+                        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L10n.t("Lặp lại"))
                         Spacer()
                         if let app = model.nowPlayingAppName {
                             Button("\(L10n.t("Mở "))\(app)") { NotchSurfaceController.shared.openPlayer() }

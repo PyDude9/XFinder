@@ -8474,6 +8474,38 @@
     "Cho trang Lịch trên notch hiện lời nhắc có giờ. Chỉ đọc.": {
       "en": "Lets the Calendar page at the notch show timed reminders. Read only.",
       "scope": "sentence"
+    },
+    "Xáo trộn": {
+      "en": "Shuffle",
+      "scope": "sentence"
+    },
+    "Lặp lại": {
+      "en": "Repeat",
+      "scope": "sentence"
+    },
+    "Xáo trộn: tắt": {
+      "en": "Shuffle: off",
+      "scope": "sentence"
+    },
+    "Xáo trộn album": {
+      "en": "Shuffle albums",
+      "scope": "sentence"
+    },
+    "Xáo trộn bài hát": {
+      "en": "Shuffle songs",
+      "scope": "sentence"
+    },
+    "Lặp lại: tắt": {
+      "en": "Repeat: off",
+      "scope": "sentence"
+    },
+    "Lặp một bài": {
+      "en": "Repeat one",
+      "scope": "sentence"
+    },
+    "Lặp tất cả": {
+      "en": "Repeat all",
+      "scope": "sentence"
     }
   }
 }

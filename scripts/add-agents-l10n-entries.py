@@ -85,6 +85,15 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Hôm nay có gì, việc kế tiếp và link họp — đọc từ Lịch của macOS, không mạng.": ("What is on today, the next thing and a meeting link — read from the macOS Calendar, no network.", "sentence"),
     "Cho trang Lịch trên notch đọc sự kiện của bạn. Chỉ đọc, không ghi, không mạng.": ("Lets the Calendar page at the notch read your events. Read only, never written, no network.", "sentence"),
     "Cho trang Lịch trên notch hiện lời nhắc có giờ. Chỉ đọc.": ("Lets the Calendar page at the notch show timed reminders. Read only.", "sentence"),
+    # N8 — Now Playing shuffle / repeat (NowPlaying.ShuffleMode/RepeatMode labelKey + two menu tooltips)
+    "Xáo trộn": ("Shuffle", "sentence"),
+    "Lặp lại": ("Repeat", "sentence"),
+    "Xáo trộn: tắt": ("Shuffle: off", "sentence"),
+    "Xáo trộn album": ("Shuffle albums", "sentence"),
+    "Xáo trộn bài hát": ("Shuffle songs", "sentence"),
+    "Lặp lại: tắt": ("Repeat: off", "sentence"),
+    "Lặp một bài": ("Repeat one", "sentence"),
+    "Lặp tất cả": ("Repeat all", "sentence"),
     # feature catalog
     "Phiên Claude Code đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ.": ("Claude Code sessions running in a terminal: status and permission approval at the notch; reads a local hook log.", "sentence"),
 }

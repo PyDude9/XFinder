@@ -356,6 +356,9 @@ hoãn (cần vendor libwebp). Chưa đo live (click trên hub).
 Trung thu 2026, nhuận 2025, lệch 1985), `CalendarGlanceMonitor` EventKit (fetch ±5 ngày, ticker 60 s chỉ khi trang mở), quyền
 Lịch/Lời nhắc vào tab Quyền; chưa đo live.
 
+**N8 ✅ dựng + đo cơ chế** — seek (slider), shuffle/repeat (menu 3 chế độ, không đọc được trạng thái nên không giả vờ hiện);
+probe publisher đo đúng số: SetShuffleMode 1/2/3 → off/collections/items, SetRepeatMode 1/2/3 → off/one/all; M32.
+
 **Không làm (bằng chứng, không phải sở thích):** lock screen (SkyLight/LoginUIKit private) · lời bài hát/visualizer (mạng
 bên thứ ba, mic) · iCloud (CloudKit cần tài khoản trả phí) · Sentry/TelemetryDeck/Sparkle tự tải (0 telemetry) · Pro/license ·
 camera "Mirror" (câu job: không ai tới notch để soi gương) · thay HUD độ sáng (không có đường ghi public).
