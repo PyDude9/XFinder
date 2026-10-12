@@ -115,6 +115,12 @@ enum ClipExport {
                 skipped += 1
                 continue
             }
+            // D4: a clip in a locked board never travels — not even its sealed envelope, which would
+            // be unreadable anywhere else anyway (the key is in THIS Mac's Secure Enclave).
+            if record.isLocked {
+                skipped += 1
+                continue
+            }
 
             var relativePayload: String?
             if let payloadPath = record.payloadPath {
@@ -165,12 +171,14 @@ enum ClipExport {
             ))
         }
 
+        // D4: locked boards stay home too — their public key is harmless, but a board whose items
+        // were all skipped would import as an empty shell claiming to be locked.
         let manifest = Manifest(
             version: formatVersion,
             exportedAt: date,
             appVersion: appVersion,
             records: entries,
-            boards: boards
+            boards: boards.filter { !$0.isLocked }
         )
 
         let encoder = JSONEncoder()

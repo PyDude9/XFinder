@@ -17,6 +17,10 @@ struct ClipboardLibraryView: View {
     @State private var gridColumns: Int = 1
     @State private var noticeVisible = false
     @State private var noticeWorkItem: DispatchWorkItem?
+    /// D4 — "Khoá bảng này…" confirmation (the honest explanation from the brief, not a generic
+    /// "are you sure?"). Identified by the board itself so re-tapping another board's lock row reuses
+    /// the same alert state cleanly.
+    @State private var pendingLockBoard: Pinboard?
 
     private let railWidth: CGFloat = 180
     private let inspectorWidth: CGFloat = 320
@@ -32,7 +36,7 @@ struct ClipboardLibraryView: View {
             )
 
             HStack(spacing: 0) {
-                FilterRail(store: store, appsExpanded: $appsExpanded)
+                FilterRail(store: store, appsExpanded: $appsExpanded, pendingLockBoard: $pendingLockBoard)
                     .frame(width: railWidth)
                     .padding(.leading, XFinderTokens.Space.page)
 
@@ -41,6 +45,7 @@ struct ClipboardLibraryView: View {
                 ZStack(alignment: .trailing) {
                     VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                         header
+                        if store.isLockedBoard(store.query.scope) { lockedBoardBanner }
                         LibraryGrid(
                             store: store,
                             clipboardManager: clipboardManager,
@@ -54,7 +59,7 @@ struct ClipboardLibraryView: View {
                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
 
                     if store.inspectorOpen, let selected = store.selected {
-                        LibraryInspector(store: store, record: selected, width: inspectorWidth)
+                        LibraryInspector(store: store, rawRecord: selected, width: inspectorWidth)
                             .frame(width: inspectorWidth)
                             .transition(.move(edge: .trailing).combined(with: .opacity))
                             .animation(XFinderTokens.Motion.surface, value: store.inspectorOpen)
@@ -79,7 +84,11 @@ struct ClipboardLibraryView: View {
         }
         .pageWidthSafe()
         .background(XFinderTokens.Fill.window)
-        .onAppear { store.reload() }
+        .onAppear {
+            store.unlockReason = L10n.t("Mở khoá clip trong bảng đã khoá")
+            store.reload()
+        }
+        .onDisappear { store.relockAll() }
         .onChange(of: clipboardManager.history.first?.id) { _, _ in store.reload() }
         .onChange(of: store.notice) { _, newValue in
             noticeWorkItem?.cancel()
@@ -89,6 +98,26 @@ struct ClipboardLibraryView: View {
             noticeWorkItem = work
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.6, execute: work)
         }
+        .alert(item: $pendingLockBoard) { board in
+            Alert(
+                title: Text("\(L10n.t("Khoá bảng "))“\(board.name)”?"),   // the name is a proper noun; never inside a key
+                message: Text(lockConfirmationMessage),
+                primaryButton: .destructive(Text(L10n.t("Khoá bảng"))) { store.lockBoard(board) },
+                secondaryButton: .cancel(Text(L10n.t("Hủy")))
+            )
+        }
+    }
+
+    /// The honest explanation (Part 0 §6 + the brief): what the lock protects against, what it does
+    /// not, where the key lives, and that export skips locked clips. Every claim here must be true of
+    /// `BoardLock`/`BoardLockKeys` — nothing here may promise more than the code does.
+    private var lockConfirmationMessage: String {
+        [
+            L10n.t("Mỗi clip trong bảng sẽ được mã hoá bằng một khoá riêng của Mac này, lưu trong Secure Enclave."),
+            L10n.t("Khoá này chống bị nhìn trộm, chống đọc được nếu ai đó sao chép tệp xfinder.db, và bị loại khỏi MCP cũng như khi xuất file."),
+            L10n.t("Nó KHÔNG chống lại người đã có phiên đăng nhập của bạn VÀ vượt qua được Touch ID."),
+            L10n.t("Khoá chỉ tồn tại trong Secure Enclave của Mac này — nếu Mac này hỏng, các clip đã khoá sẽ mất vĩnh viễn.")
+        ].joined(separator: "\n\n")
     }
 
     // MARK: Header — search, sort, period
@@ -144,6 +173,24 @@ struct ClipboardLibraryView: View {
         .padding(.top, XFinderTokens.Space.tight)
     }
 
+    // MARK: Locked-board banner (D4, wireframe B)
+
+    private var lockedBoardBanner: some View {
+        HStack(spacing: XFinderTokens.Space.tight) {
+            Image(systemName: "lock.fill").foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(L10n.t("Bảng này đang khoá"))
+                    .font(XFinderTokens.Font.row.weight(.semibold))
+                Text(L10n.t("Mỗi thẻ sẽ hỏi Touch ID riêng; nội dung chỉ được giải mã trong bộ nhớ cho tới khi bạn rời trang này."))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(XFinderTokens.Space.inline)
+        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile).fill(XFinderTokens.Fill.inset))
+    }
+
     // MARK: Footer — count + load more
 
     @ViewBuilder private var footer: some View {
@@ -177,6 +224,7 @@ struct ClipboardLibraryView: View {
 private struct FilterRail: View {
     var store: ClipboardLibraryStore
     @Binding var appsExpanded: Bool
+    @Binding var pendingLockBoard: Pinboard?
 
     private var facets: ClipboardLibrary.Facets { store.facets }   // memoised in the store
 
@@ -237,8 +285,7 @@ private struct FilterRail: View {
                 VStack(alignment: .leading, spacing: 2) {
                     sectionLabel(L10n.t("BẢNG"))
                     ForEach(store.boards) { b in
-                        railRow(title: scopeTitle(.board(b.id)), count: facets.byBoard[b.id] ?? 0,
-                                on: store.query.scope == .board(b.id)) {
+                        boardRow(b, count: facets.byBoard[b.id] ?? 0, on: store.query.scope == .board(b.id)) {
                             store.query.scope = .board(b.id)
                         }
                     }
@@ -282,6 +329,41 @@ private struct FilterRail: View {
         }
         .buttonStyle(.plain)
     }
+
+    /// D4 — a board row with a lock glyph when locked, and a context menu to lock / unlock it. Disabled
+    /// with an explanation when the Secure Enclave is unavailable, so the menu item never promises a
+    /// lock the hardware cannot actually create.
+    private func boardRow(_ b: Pinboard, count: Int, on: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: XFinderTokens.Space.tight) {
+                if b.isLocked {
+                    Image(systemName: "lock.fill").font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                }
+                Text(scopeTitle(.board(b.id)))
+                    .font(XFinderTokens.Font.row)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                Text(count.formatted())
+                    .font(XFinderTokens.Font.caption)
+                    .monospacedDigit()
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, XFinderTokens.Space.tight)
+            .padding(.vertical, 4)
+            .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).fill(on ? XFinderTokens.Fill.hover : .clear))
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            if b.isLocked {
+                Button(L10n.t("Gỡ khoá (giải mã lại)")) { store.unlockBoardPermanently(b) }
+            } else if BoardLockKeys.isAvailable {
+                Button(L10n.t("Khoá bảng này…")) { pendingLockBoard = b }
+            } else {
+                Text(L10n.t("Không khoá được — máy này không có Secure Enclave."))
+            }
+        }
+    }
 }
 
 // MARK: - Grid
@@ -310,10 +392,17 @@ private struct LibraryGrid: View {
                               spacing: spacing) {
                         ForEach(items) { record in
                             ClipboardCardView(
-                                record: record,
+                                record: store.display(record),
                                 selected: store.selectedID == record.id,
-                                onSelect: { store.select(record.id); gridFocused = true },
-                                onPreview: { store.quickLook(record) }
+                                onSelect: {
+                                    store.select(record.id)
+                                    gridFocused = true
+                                    // A still-locked card's tap is the unlock gesture (Touch ID), not a
+                                    // selection-only click — the user is already asking to see it.
+                                    if record.isLocked { store.unlock(record) }
+                                },
+                                onPreview: { store.quickLook(record) },
+                                lockedHint: L10n.t("Bấm để mở khoá (Touch ID)")
                             )
                             .frame(height: cardHeight)
                         }
@@ -380,9 +469,13 @@ private struct LibraryGrid: View {
 
 private struct LibraryInspector: View {
     var store: ClipboardLibraryStore
-    let record: ClipboardRecord
+    /// The row as stored — may still be locked. `record` below is the DISPLAY version.
+    let rawRecord: ClipboardRecord
     let width: CGFloat
     @Environment(\.colorScheme) private var colorScheme
+
+    private var record: ClipboardRecord { store.display(rawRecord) }
+    private var stillLocked: Bool { rawRecord.isLocked }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -399,15 +492,19 @@ private struct LibraryInspector: View {
 
             Divider()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    preview
-                    Divider()
-                    metaRows
-                    Divider()
-                    actions
+            if stillLocked {
+                lockedBody
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                        preview
+                        Divider()
+                        metaRows
+                        Divider()
+                        actions
+                    }
+                    .padding(XFinderTokens.Space.inline)
                 }
-                .padding(XFinderTokens.Space.inline)
             }
         }
         .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -416,13 +513,31 @@ private struct LibraryInspector: View {
         .shadow(color: .black.opacity(0.12), radius: 12, x: -2, y: 0)
     }
 
+    // MARK: Locked placeholder (D4)
+
+    private var lockedBody: some View {
+        VStack(spacing: XFinderTokens.Space.row) {
+            Spacer(minLength: 0)
+            Image(systemName: "lock.fill").font(XFinderTokens.Font.pageIcon).foregroundColor(.secondary)
+            Text(L10n.t("Đã khoá")).font(XFinderTokens.Font.row)
+            Button(L10n.t("Mở khoá (Touch ID)")) { store.unlock(rawRecord) }
+                .buttonStyle(.borderedProminent)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(XFinderTokens.Space.inline)
+    }
+
     // MARK: Preview
 
     @ViewBuilder private var preview: some View {
         let height: CGFloat = 190
         switch record.type {
         case .image:
-            if let p = record.payloadPath ?? record.thumbnailPath, let img = NSImage(contentsOfFile: p) {
+            // A row just unlocked in memory has no payload/thumbnail PATH (those live only on disk for
+            // plain rows) — `store.unlockedImage` reads the decrypted bytes directly for that case.
+            if let img = store.unlockedImage(rawRecord)
+                ?? (record.payloadPath ?? record.thumbnailPath).flatMap(NSImage.init(contentsOfFile:)) {
                 Image(nsImage: img).resizable().aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity, maxHeight: height)
                     .background(XFinderTokens.Fill.inset)

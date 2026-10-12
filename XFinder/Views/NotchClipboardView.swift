@@ -326,8 +326,14 @@ struct NotchClipboardView: View {
             .help("\(record.type.titleVI) · \(record.sourceAppName ?? "") · \(NotchClipCardView.ageLabel(record.timestamp, now: now))")
     }
 
-    /// Plain click pastes; ⌘-click toggles the Paste Stack membership.
+    /// Plain click pastes; ⌘-click toggles the Paste Stack membership. A LOCKED record never pastes —
+    /// the notch cannot prompt Touch ID and show a decrypted preview in a 174×122 tile, so selecting it
+    /// dismisses the surface and opens the Library at the board that holds it instead.
     private func select(_ record: ClipboardRecord) {
+        if record.isLocked {
+            NotchSurfaceController.shared.openLibraryForLocked(record)
+            return
+        }
         model.selectedID = record.id
         if NSEvent.modifierFlags.contains(.command) {
             manager.togglePasteStackItem(record)
@@ -406,6 +412,13 @@ struct NotchClipboardView: View {
     // MARK: Context menu — every shelf action that has no button of its own
 
     @ViewBuilder private func contextMenu(_ record: ClipboardRecord) -> some View {
+        if record.isLocked {
+            // D4: no paste / preview / speak / edit of a sealed clip from the notch — the Library prompts
+            // Touch ID and shows it; deleting the ciphertext row is still allowed here.
+            Button(L10n.t("Mở trong Thư viện")) { NotchSurfaceController.shared.openLibraryForLocked(record) }
+            Divider()
+            Button(L10n.t("Xoá"), role: .destructive) { NotchSurfaceController.shared.deleteFromClipboardPage(record) }
+        } else {
         Button(L10n.t("Dán (Return)")) { NotchSurfaceController.shared.pasteFromClipboardPage(record) }
         Button(L10n.t("Dán dạng text thuần (⇧Return)")) { NotchSurfaceController.shared.pasteFromClipboardPage(record, plainText: true) }
         Button(L10n.t("Xem nhanh (Space)")) { NotchSurfaceController.shared.quickLook(record) }
@@ -480,6 +493,7 @@ struct NotchClipboardView: View {
             Button(L10n.t("Bỏ qua ứng dụng này (không lưu vào Clipboard)")) { manager.excludeApp(bundleID: bid, appName: record.sourceAppName) }
         }
         Button(L10n.t("Xóa (⌘⌫)"), role: .destructive) { NotchSurfaceController.shared.deleteFromClipboardPage(record) }
+        }
     }
 
     /// The page a clip came from: the link itself for a copied URL, or the browser-reported source

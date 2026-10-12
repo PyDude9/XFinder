@@ -85,6 +85,9 @@ final class MainWindowController: NSObject, NSWindowDelegate {
 
     // MARK: - NSWindowDelegate
     func windowShouldClose(_ sender: NSWindow) -> Bool {
+        // D4: hiding the window does not remove the Library view from the hierarchy, so its
+        // .onDisappear never fires — relock here or decrypted clips outlive "leaving the page".
+        ClipboardLibraryStore.shared.relockAll()
         sender.orderOut(nil)
         return false
     }

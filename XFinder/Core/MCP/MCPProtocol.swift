@@ -122,9 +122,12 @@ enum MCP {
 
     // MARK: - Pure rules
 
-    /// Records a password manager produced never leave the machine, whatever the capture filter did.
+    /// Records a password manager produced never leave the machine, whatever the capture filter did —
+    /// and neither does a clip in a LOCKED board (D4): its row holds no text, but a reader must not even
+    /// list it, or `clipboard_get` by id would hand out whatever a future column carries.
     static func visible(_ records: [ClipboardRecord]) -> [ClipboardRecord] {
         records.filter { r in
+            guard !r.isLocked else { return false }
             let bid = (r.sourceBundleID ?? "").lowercased()
             return !excludedBundleFragments.contains { bid.contains($0) }
         }

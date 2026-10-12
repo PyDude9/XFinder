@@ -486,7 +486,19 @@ final class NotchSurfaceController {
 
     /// Paste into the app the user came from and get out of the way. Without Accessibility (or
     /// with auto-paste off) the item is copied and the page says to press ⌘V — never a silent nothing.
+    /// D4: a locked clip cannot be pasted, previewed, spoken or edited from the notch — it opens the
+    /// Library at its board instead (the only place that can prompt Touch ID and show it).
+    func openLibraryForLocked(_ record: ClipboardRecord) {
+        dismiss()
+        AppState.shared.navigate(to: .clipboard)
+        AppState.shared.bringMainWindowFront()
+        if let boardID = record.lockedBoardID {
+            ClipboardLibraryStore.shared.query.scope = .board(boardID)
+        }
+    }
+
     func pasteFromClipboardPage(_ record: ClipboardRecord, plainText: Bool = false) {
+        guard !record.isLocked else { openLibraryForLocked(record); return }
         let pid = model.clipboard.targetPID ?? ClipboardManager.shared.lastExternalPID
         ClipboardManager.shared.incrementUsage(record.id)
         if ClipboardShelfController.shared.autoPasteAfterSelection, WindowManager.isTrusted {
@@ -506,6 +518,7 @@ final class NotchSurfaceController {
     /// Space: the system Quick Look panel for clips that have a file (images, files, long text payloads).
     /// A short text clip has nothing to preview and says so, instead of a silent key press.
     func quickLook(_ record: ClipboardRecord) {
+        guard !record.isLocked else { openLibraryForLocked(record); return }   // the payload path IS the sealed envelope
         if let path = record.payloadPath ?? record.thumbnailPath, FileManager.default.fileExists(atPath: path) {
             quickLook.present(url: URL(fileURLWithPath: path))
         } else {
@@ -565,6 +578,7 @@ final class NotchSurfaceController {
     /// D1 #36 — read a clip aloud with the system voice (on-device `AVSpeechSynthesizer`; the voice follows
     /// the text's dominant language when a matching voice is installed). Pressing again stops.
     func speak(_ record: ClipboardRecord) {
+        guard !record.isLocked else { openLibraryForLocked(record); return }
         if speech.isSpeaking { speech.stopSpeaking(at: .immediate); return }
         guard let text = NotchTextCache.fullText(snippet: record.textSnippet, payloadPath: record.payloadPath),
               !text.isEmpty else { return }
@@ -582,6 +596,7 @@ final class NotchSurfaceController {
     /// D1 #9 — open the clip's full text in the editor panel (built once, Spotlight position); "Sao chép"
     /// copies the edited text, which the monitor records as a new clip. The hub closes first.
     func editText(_ record: ClipboardRecord) {
+        guard !record.isLocked else { openLibraryForLocked(record); return }
         editorModel.text = NotchTextCache.fullText(snippet: record.textSnippet, payloadPath: record.payloadPath) ?? ""
         editorModel.sourceType = record.type
         editorModel.onCopy = { [weak self] text in self?.copyText(text); self?.editorPanel?.hide() }

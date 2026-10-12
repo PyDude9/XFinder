@@ -497,10 +497,14 @@ private struct ClipboardSettingsBody: View {
                         }
                         .buttonStyle(.link).font(XFinderTokens.Font.caption)
                         if !board.isBuiltIn {
+                            // D4: deleting a LOCKED board would delete the only handle to its key; the
+                            // manager refuses, and the button says why instead of pretending.
                             Button(L10n.t("Xóa"), role: .destructive) {
                                 clipboard.deletePinboard(board.id)
                             }
                             .buttonStyle(.link).font(XFinderTokens.Font.caption)
+                            .disabled(board.isLocked)
+                            .help(board.isLocked ? L10n.t("Gỡ khoá bảng trước khi xoá.") : "")
                         }
                     }
                     .padding(.horizontal, XFinderTokens.Space.page)

@@ -80,30 +80,46 @@ struct NotchClipCardView: View {
     // MARK: Content
 
     @ViewBuilder private var content: some View {
-        switch record.type {
-        case .image: imageBody
-        case .color: colorBody
-        case .file: fileBody
-        case .link:
-            Text(record.metadata["url"]?.isEmpty == false ? record.metadata["url"]! : record.displayPreview)
-                .font(.system(size: 11)).foregroundColor(accent)
-                .lineLimit(textLines).multilineTextAlignment(.leading)
-                .padding(.horizontal, 9).padding(.top, 7)
-        case .code:
-            // D: on-device syntax colouring; the preview is the first 200 characters, so this is cheap.
-            HighlightedCodeText(text: record.displayPreview, dark: true, lineLimit: textLines)
-                .padding(.horizontal, 9).padding(.top, 7)
-        case .markdown:
-            Text(record.displayPreview)
-                .font(.system(size: 10.5, design: .monospaced)).foregroundColor(.white)
-                .lineLimit(textLines).multilineTextAlignment(.leading)
-                .padding(.horizontal, 9).padding(.top, 7)
-        case .text, .merged:
-            Text(record.displayPreview)
-                .font(.system(size: 11)).foregroundColor(.white)
-                .lineLimit(textLines).multilineTextAlignment(.leading)
-                .padding(.horizontal, 9).padding(.top, 7)
+        if record.isLocked {
+            lockedBody
+        } else {
+            switch record.type {
+            case .image: imageBody
+            case .color: colorBody
+            case .file: fileBody
+            case .link:
+                Text(record.metadata["url"]?.isEmpty == false ? record.metadata["url"]! : record.displayPreview)
+                    .font(.system(size: 11)).foregroundColor(accent)
+                    .lineLimit(textLines).multilineTextAlignment(.leading)
+                    .padding(.horizontal, 9).padding(.top, 7)
+            case .code:
+                // D: on-device syntax colouring; the preview is the first 200 characters, so this is cheap.
+                HighlightedCodeText(text: record.displayPreview, dark: true, lineLimit: textLines)
+                    .padding(.horizontal, 9).padding(.top, 7)
+            case .markdown:
+                Text(record.displayPreview)
+                    .font(.system(size: 10.5, design: .monospaced)).foregroundColor(.white)
+                    .lineLimit(textLines).multilineTextAlignment(.leading)
+                    .padding(.horizontal, 9).padding(.top, 7)
+            case .text, .merged:
+                Text(record.displayPreview)
+                    .font(.system(size: 11)).foregroundColor(.white)
+                    .lineLimit(textLines).multilineTextAlignment(.leading)
+                    .padding(.horizontal, 9).padding(.top, 7)
+            }
         }
+    }
+
+    /// D4 — never a preview for a locked clip; the notch/shelf never unlock in place (they navigate to
+    /// the Library, see `NotchClipboardView.select`/`ClipboardShelfController.pasteAt`).
+    private var lockedBody: some View {
+        VStack(spacing: 4) {
+            Image(systemName: "lock.fill").font(.system(size: 18)).foregroundColor(.white.opacity(0.7))
+            Text(L10n.t("Đã khoá")).font(.system(size: 11, weight: .semibold)).foregroundColor(.white)
+            Text(L10n.t("Mở trong Thư viện")).font(.system(size: 9.5)).foregroundColor(.white.opacity(0.65))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var imageBody: some View {

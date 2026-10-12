@@ -82,6 +82,18 @@ final class MCPProtocolTests: XCTestCase {
         XCTAssertEqual(MCP.visible([pw, ok]).map(\.id), [ok.id])
     }
 
+    func testLockedRecordsNeverAppearInAnyTool() {
+        let locked = ClipboardRecord(id: UUID(), type: .text, timestamp: t0, sourceBundleID: "com.apple.Notes", sourceAppName: "Ghi chú",
+                                     textSnippet: nil, thumbnailPath: nil, payloadPath: "/x/locked.env", ocrText: nil, pinboardID: nil,
+                                     metadata: ["locked": "1", "lockedBoard": UUID().uuidString])
+        let ok = rec("plain")
+        let c = ctx([locked, ok], full: [locked.id: "SHOULD-NEVER-LEAVE"])
+        XCTAssertEqual(MCP.visible([locked, ok]).map(\.id), [ok.id])
+        let get = json(MCP.handle(line: "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"clipboard_get\",\"arguments\":{\"id\":\"\(locked.id.uuidString)\"}}}", context: c))
+        XCTAssertEqual((get["result"] as? [String: Any])?["isError"] as? Bool, true)
+        XCTAssertFalse(toolText(MCP.handle(line: #"{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"clipboard_list_recent","arguments":{}}}"#, context: c)).contains(locked.id.uuidString))
+    }
+
     // MARK: Search, recent, get
 
     func testSearchMatchesSnippetOCRTitleAndAppCaseInsensitivelyNewestFirst() {

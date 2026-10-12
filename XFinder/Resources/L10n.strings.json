@@ -8110,6 +8110,118 @@
     "Chưa cấp quyền Trợ năng nên chỉ sao chép, chưa dán.": {
       "en": "Accessibility is not granted, so this was copied, not pasted.",
       "scope": "sentence"
+    },
+    "Bảng này đang khoá": {
+      "en": "This board is locked",
+      "scope": "sentence"
+    },
+    "Mỗi thẻ sẽ hỏi Touch ID riêng; nội dung chỉ được giải mã trong bộ nhớ cho tới khi bạn rời trang này.": {
+      "en": "Each card asks for Touch ID on its own; content is decrypted in memory only, until you leave this page.",
+      "scope": "sentence"
+    },
+    "Khoá bảng ": {
+      "en": "Lock board ",
+      "scope": "fragment"
+    },
+    "Mỗi clip trong bảng sẽ được mã hoá bằng một khoá riêng của Mac này, lưu trong Secure Enclave.": {
+      "en": "Every clip in the board will be encrypted with a key unique to this Mac, kept in its Secure Enclave.",
+      "scope": "sentence"
+    },
+    "Khoá này chống bị nhìn trộm, chống đọc được nếu ai đó sao chép tệp xfinder.db, và bị loại khỏi MCP cũng như khi xuất file.": {
+      "en": "This protects against shoulder-surfing and against anyone reading a copied xfinder.db, and locked clips are left out of MCP and of exports.",
+      "scope": "sentence"
+    },
+    "Nó KHÔNG chống lại người đã có phiên đăng nhập của bạn VÀ vượt qua được Touch ID.": {
+      "en": "It does NOT protect against someone who already has your unlocked session AND passes Touch ID.",
+      "scope": "sentence"
+    },
+    "Khoá chỉ tồn tại trong Secure Enclave của Mac này — nếu Mac này hỏng, các clip đã khoá sẽ mất vĩnh viễn.": {
+      "en": "The key exists only in this Mac's Secure Enclave — if this Mac dies, the locked clips are gone for good.",
+      "scope": "sentence"
+    },
+    "Khoá bảng": {
+      "en": "Lock board",
+      "scope": "sentence"
+    },
+    "Gỡ khoá (giải mã lại)": {
+      "en": "Unlock (decrypt again)",
+      "scope": "sentence"
+    },
+    "Khoá bảng này…": {
+      "en": "Lock this board…",
+      "scope": "sentence"
+    },
+    "Không khoá được — máy này không có Secure Enclave.": {
+      "en": "Cannot lock — this Mac has no Secure Enclave.",
+      "scope": "sentence"
+    },
+    "Đã khoá": {
+      "en": "Locked",
+      "scope": "sentence"
+    },
+    "Mở khoá (Touch ID)": {
+      "en": "Unlock (Touch ID)",
+      "scope": "sentence"
+    },
+    "Bấm để mở khoá (Touch ID)": {
+      "en": "Click to unlock (Touch ID)",
+      "scope": "sentence"
+    },
+    "Mở trong Thư viện": {
+      "en": "Open in the Library",
+      "scope": "sentence"
+    },
+    "Không mở khoá được.": {
+      "en": "Could not unlock.",
+      "scope": "sentence"
+    },
+    "Không khoá được bảng.": {
+      "en": "Could not lock the board.",
+      "scope": "sentence"
+    },
+    "Đã khoá bảng.": {
+      "en": "Board locked.",
+      "scope": "sentence"
+    },
+    "Đã gỡ khoá bảng.": {
+      "en": "Board unlocked.",
+      "scope": "sentence"
+    },
+    "Mở khoá thẻ này trước.": {
+      "en": "Unlock this card first.",
+      "scope": "sentence"
+    },
+    "Không gỡ được khỏi bảng.": {
+      "en": "Could not remove it from the board.",
+      "scope": "sentence"
+    },
+    "Không gỡ khoá được.": {
+      "en": "Could not unlock the board.",
+      "scope": "sentence"
+    },
+    "Mở khoá clip trong bảng đã khoá": {
+      "en": "Unlock a clip in a locked board",
+      "scope": "sentence"
+    },
+    "Gỡ khoá bảng này và giải mã lại mọi clip": {
+      "en": "Unlock this board and decrypt every clip again",
+      "scope": "sentence"
+    },
+    "Đã khoá bảng. Một số clip không mã hoá được và đã bị bỏ khỏi bảng.": {
+      "en": "Board locked. Some clips could not be encrypted and were removed from the board.",
+      "scope": "sentence"
+    },
+    "Một số clip chưa giải mã được — bảng vẫn khoá.": {
+      "en": "Some clips could not be decrypted — the board stays locked.",
+      "scope": "sentence"
+    },
+    "Không thêm được vào bảng khoá.": {
+      "en": "Could not add it to the locked board.",
+      "scope": "sentence"
+    },
+    "Gỡ khoá bảng trước khi xoá.": {
+      "en": "Unlock the board before deleting it.",
+      "scope": "sentence"
     }
   }
 }

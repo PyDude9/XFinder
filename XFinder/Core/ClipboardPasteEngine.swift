@@ -12,6 +12,7 @@ enum ClipboardPasteEngine {
     /// Activate `pid` then synthesize ⌘V after a short settle delay.
     @discardableResult
     static func paste(record: ClipboardRecord, to pid: pid_t?, plainText: Bool = false) -> Bool {
+        guard !record.isLocked else { return false }   // D4: a sealed row has nothing a user wants pasted — only ciphertext
         guard WindowManager.isTrusted else { return false }
         guard writeToPasteboard(record: record, plainText: plainText) else { return false }
         let mine = ProcessInfo.processInfo.processIdentifier
@@ -35,6 +36,7 @@ enum ClipboardPasteEngine {
     /// Write record content to the pasteboard without pasting (copy-back).
     @discardableResult
     static func writeToPasteboard(record: ClipboardRecord, plainText: Bool = false) -> Bool {
+        guard !record.isLocked else { return false }   // D4: never hand the sealed .env out as a file or text
         let pb = NSPasteboard.general
         // Tell the monitor this change is ours, after the writes below have bumped changeCount.
         // Link cleaning must never rewrite the pasteboard during a paste (see OwnWriteMark).
@@ -69,6 +71,76 @@ enum ClipboardPasteEngine {
             }
             return false
         }
+    }
+
+    // MARK: - D4 "Bảng khoá" — pasting an in-memory unlocked clip
+
+    /// Same shape as `writeToPasteboard(record:plainText:)`, but the content never touched disk as
+    /// plaintext: it comes from `BoardLock.UnlockedClip`, which `ClipboardLibraryStore.unlock(_:)`
+    /// produced by opening the Secure Enclave key (Touch ID) and decrypting in memory only.
+    @discardableResult
+    static func writeToPasteboard(unlocked: BoardLock.UnlockedClip, plainText: Bool = false) -> Bool {
+        let pb = NSPasteboard.general
+        defer { OwnWriteMark.shared.record(pb.changeCount) }
+        pb.clearContents()
+        let record = unlocked.record
+        switch record.type {
+        case .text, .code, .markdown, .merged:
+            let s: String?
+            if let data = unlocked.payloadData, let fromPayload = String(data: data, encoding: .utf8) {
+                s = fromPayload
+            } else {
+                s = record.textSnippet
+            }
+            guard let text = s else { return false }
+            return pb.setString(text, forType: .string)
+        case .color:
+            guard let s = record.textSnippet else { return false }
+            return pb.setString(s, forType: .string)
+        case .link:
+            let url = record.metadata["url"] ?? record.textSnippet ?? ""
+            guard !url.isEmpty else { return false }
+            pb.setString(url, forType: .string)
+            if !plainText, let u = URL(string: url) {
+                pb.writeObjects([u as NSURL])
+            }
+            return true
+        case .file:
+            // The locked row never kept a real path on disk (that was the whole point); offer the
+            // original file name back as text, which is all an unlock-in-memory can honestly restore.
+            guard let name = unlocked.originalPayloadFileName ?? record.metadata["path"] else { return false }
+            return pb.setString(name, forType: .string)
+        case .image:
+            if plainText, let ocr = record.ocrText, !ocr.isEmpty {
+                return pb.setString(ocr, forType: .string)
+            }
+            guard let data = unlocked.payloadData ?? unlocked.thumbnailData,
+                  let img = NSImage(data: data) else { return false }
+            pb.writeObjects([img])
+            return true
+        }
+    }
+
+    /// Same shape as `paste(record:to:plainText:)`: activates `pid`, lets it settle, then synthesizes
+    /// ⌘V — but writes the pasteboard from an `UnlockedClip`'s in-memory bytes, never from a sealed
+    /// row's (absent) plain fields.
+    @discardableResult
+    static func paste(unlocked: BoardLock.UnlockedClip, to pid: pid_t?, plainText: Bool = false) -> Bool {
+        guard WindowManager.isTrusted else { return false }
+        guard writeToPasteboard(unlocked: unlocked, plainText: plainText) else { return false }
+        let mine = ProcessInfo.processInfo.processIdentifier
+        guard let targetPID = pid, targetPID != mine else {
+            ClipboardSounds.playPaste()
+            return true
+        }
+        if let app = NSRunningApplication(processIdentifier: targetPID) {
+            app.activate(options: [.activateAllWindows])
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            synthesizeCommandV()
+        }
+        ClipboardSounds.playPaste()
+        return true
     }
 
     private static func synthesizeCommandV() {

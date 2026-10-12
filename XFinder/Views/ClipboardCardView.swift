@@ -8,6 +8,10 @@ struct ClipboardCardView: View {
     let selected: Bool
     var onSelect: (() -> Void)? = nil
     var onPreview: (() -> Void)? = nil
+    /// D4 — shown under "Đã khoá" when this card is locked. The Library passes
+    /// `L10n.t("Bấm để mở khoá (Touch ID)")`; the shelf passes nil, which falls back to
+    /// `L10n.t("Mở trong Thư viện")` (a shelf card never unlocks in place — it only navigates there).
+    var lockedHint: String? = nil
 
     @Environment(ClipboardManager.self) private var clipboardManager
     @AppStorage("clipboard.textSize") private var textSize: Double = 13.5
@@ -156,25 +160,47 @@ struct ClipboardCardView: View {
     @ViewBuilder
     private var bodyView: some View {
         VStack(alignment: .leading, spacing: 6) {
-            switch record.type {
-            case .text, .markdown:
-                formattedTextBody
-            case .code:
-                codeBody
-            case .image:
-                imageBody
-            case .link:
-                linkBody
-            case .color:
-                colorBody
-            case .file:
-                fileBody
-            case .merged:
-                mergedBody
+            if record.isLocked {
+                lockedBody
+            } else {
+                switch record.type {
+                case .text, .markdown:
+                    formattedTextBody
+                case .code:
+                    codeBody
+                case .image:
+                    imageBody
+                case .link:
+                    linkBody
+                case .color:
+                    colorBody
+                case .file:
+                    fileBody
+                case .merged:
+                    mergedBody
+                }
             }
             Spacer(minLength: 0)
         }
         .padding(12)
+    }
+
+    /// D4 — a locked clip never renders a preview, whatever its type. The footer's type label is left
+    /// alone (the type itself is not secret; the content is).
+    private var lockedBody: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 22))
+                .foregroundColor(.secondary)
+            Text(L10n.t("Đã khoá"))
+                .font(.system(size: 12, weight: .semibold))
+            Text(lockedHint ?? L10n.t("Mở trong Thư viện"))
+                .font(.system(size: 10.5))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 8)
     }
 
     private var formattedTextBody: some View {

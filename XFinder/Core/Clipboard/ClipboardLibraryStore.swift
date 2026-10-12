@@ -33,7 +33,25 @@ final class ClipboardLibraryStore {
     /// showing it — this type never renders a sentence itself (Core must not return display text).
     var notice: String?
 
-    private init() {}
+    /// D4 — clips the user has unlocked (Touch ID) THIS opening of the page, in memory only. Keyed by
+    /// record id so a reload (which replaces `records` wholesale) does not lose an in-flight unlock.
+    private(set) var unlocked: [UUID: BoardLock.UnlockedClip] = [:]
+
+    /// Display string for the Touch ID sheet. `L10n` is a SwiftUI-side type the store cannot import
+    /// (Core must stay Foundation/AppKit, not SwiftUI), so the VIEW sets this once on appear.
+    var unlockReason: String = ""
+
+    @ObservationIgnored private var screenLockObserver: NSObjectProtocol?
+
+    private init() {
+        // D4 — a locked screen must forget every unlocked clip; nothing decrypted stays in memory
+        // past the point the Mac itself is locked.
+        screenLockObserver = DistributedNotificationCenter.default().addObserver(
+            forName: Notification.Name("com.apple.screenIsLocked"), object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.relockAll() }
+        }
+    }
 
     var boards: [Pinboard] { ClipboardManager.shared.pinboards }
 
@@ -102,6 +120,107 @@ final class ClipboardLibraryStore {
     var selected: ClipboardRecord? {
         guard let id = selectedID else { return nil }
         return records.first { $0.id == id }
+    }
+
+    // MARK: - Board lock (D4)
+
+    func isLockedBoard(_ scope: ClipboardLibrary.Scope) -> Bool {
+        guard case .board(let id) = scope else { return false }
+        return boards.first { $0.id == id }?.isLocked ?? false
+    }
+
+    /// Opens the Secure Enclave key (prompts Touch ID / password via a FRESH `LAContext` each call —
+    /// `BoardLockKeys.recipient` never reuses one) and decrypts THIS clip into memory only. A
+    /// cancelled prompt shows no notice (the user just changed their mind); any other failure does.
+    func unlock(_ r: ClipboardRecord) {
+        guard r.isLocked else { return }
+        guard let boardID = r.lockedBoardID, let board = boards.first(where: { $0.id == boardID }),
+              let keyData = board.lockKeyData else {
+            notice = "Không mở khoá được."
+            return
+        }
+        do {
+            let recipient = try BoardLockKeys.recipient(keyData: keyData, reason: unlockReason)
+            let clip = try BoardLock.unlock(r, with: recipient, ops: BoardLockKeys.fileOps)
+            unlocked[r.id] = clip
+        } catch BoardLockKeys.Error.cancelled {
+            // User backed out of the prompt — not a failure worth a notice.
+        } catch let error where BoardLockKeys.isCancellation(error) {
+            // The enclave's own refusal when the sheet is dismissed arrives through CryptoKit/Security,
+            // not as BoardLockKeys.Error — same meaning, same silence.
+        } catch {
+            notice = "Không mở khoá được."
+        }
+    }
+
+    /// Clears every in-memory decrypted clip and deletes any Quick Look temp file written for one.
+    /// Called when the page disappears and when the screen locks — a decrypted clip that outlives
+    /// either of those is exactly what the lock exists to prevent.
+    func relockAll() {
+        // Review: the old loop removed only "<id>.txt", but Quick Look of an unlocked image/file writes
+        // "<id>.<original ext>" — those plaintext copies survived every relock. Remove EVERYTHING in the
+        // temp folder, whatever it is called and whether or not its clip is still in `unlocked`.
+        if let names = try? FileManager.default.contentsOfDirectory(atPath: qlTempDir.path) {
+            for name in names { try? FileManager.default.removeItem(at: qlTempDir.appendingPathComponent(name)) }
+        }
+        unlocked = [:]
+    }
+
+    /// The record to RENDER: the unlocked (plain) version if this page has decrypted it this
+    /// session, else the row as stored (locked rows render their placeholder body).
+    func display(_ r: ClipboardRecord) -> ClipboardRecord {
+        unlocked[r.id]?.record ?? r
+    }
+
+    func unlockedImage(_ r: ClipboardRecord) -> NSImage? {
+        guard let clip = unlocked[r.id] else { return nil }
+        if let data = clip.payloadData, let img = NSImage(data: data) { return img }
+        if let data = clip.thumbnailData, let img = NSImage(data: data) { return img }
+        return nil
+    }
+
+    /// "Khoá bảng này…": creates the enclave key and seals every member. Reloads afterward since
+    /// many rows change at once — the local-patch rules above are for single-row edits.
+    func lockBoard(_ board: Pinboard) {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                _ = try await ClipboardManager.shared.lockBoard(board.id)
+                self.unlocked = [:]
+                self.notice = "Đã khoá bảng."
+                self.reload()
+            } catch BoardLockFailure.partialLock {
+                // The board IS locked; the clips that could not be sealed were detached, never left readable.
+                self.unlocked = [:]
+                self.notice = "Đã khoá bảng. Một số clip không mã hoá được và đã bị bỏ khỏi bảng."
+                self.reload()
+            } catch {
+                self.notice = "Không khoá được bảng."
+            }
+        }
+    }
+
+    /// "Gỡ khoá (giải mã lại)": one Touch ID prompt, decrypts every member back to plain rows/files,
+    /// drops the key. Reloads afterward (every member's row shape changed).
+    func unlockBoardPermanently(_ board: Pinboard) {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                _ = try await ClipboardManager.shared.unlockBoardPermanently(board.id)
+                self.unlocked = [:]
+                self.notice = "Đã gỡ khoá bảng."
+                self.reload()
+            } catch BoardLockFailure.partialUnlock {
+                // Some rows came back plain, some did not open; the key is kept so they still can.
+                self.unlocked = [:]
+                self.notice = "Một số clip chưa giải mã được — bảng vẫn khoá."
+                self.reload()
+            } catch BoardLockKeys.Error.cancelled {
+                // The user dismissed the Touch ID sheet: nothing changed, nothing to say.
+            } catch {
+                self.notice = "Không gỡ khoá được."
+            }
+        }
     }
 
     // MARK: - Loading
@@ -188,7 +307,22 @@ final class ClipboardLibraryStore {
 
     // MARK: - Actions
 
+    /// `r` may be either the raw stored row or its display (post-unlock) version — both carry the same
+    /// `id`, which is what `isLockedForActions` keys on. Checking the id's unlock state rather than
+    /// `r.isLocked` is load-bearing: the Library passes `store.display(record)` into most call sites,
+    /// and the display version has already had its lock metadata stripped.
+    private func isLockedForActions(_ r: ClipboardRecord) -> Bool {
+        records.first(where: { $0.id == r.id })?.isLocked ?? r.isLocked
+    }
+
     func copy(_ r: ClipboardRecord, plainText: Bool = false) {
+        if isLockedForActions(r) {
+            guard let clip = unlocked[r.id] else { notice = "Mở khoá thẻ này trước."; return }
+            guard ClipboardPasteEngine.writeToPasteboard(unlocked: clip, plainText: plainText) else { return }
+            ClipboardSounds.playCopy()
+            notice = "Đã sao chép."
+            return
+        }
         guard ClipboardPasteEngine.writeToPasteboard(record: r, plainText: plainText) else { return }
         ClipboardSounds.playCopy()
         bumpUsage(r)
@@ -202,6 +336,11 @@ final class ClipboardLibraryStore {
     /// notice says so; no Accessibility ⇒ same, since ⌘V cannot be posted (Part 0 §6: the button must
     /// not claim a paste that did not happen).
     func pasteIntoPreviousApp(_ r: ClipboardRecord, plainText: Bool = false) {
+        if isLockedForActions(r) {
+            guard let clip = unlocked[r.id] else { notice = "Mở khoá thẻ này trước."; return }
+            pasteUnlockedIntoPreviousApp(clip, plainText: plainText)
+            return
+        }
         // Known before hiding: without Accessibility no ⌘V can be posted, so do not hide the window
         // for an attempt that cannot succeed (review) — copy, say so, stay put.
         guard WindowManager.isTrusted else {
@@ -226,6 +365,28 @@ final class ClipboardLibraryStore {
         }
     }
 
+    /// Same shape as `pasteIntoPreviousApp`, but for an already-unlocked clip — no usage bump (the
+    /// underlying row's metadata was stripped of everything but flags; bumping it here would write a
+    /// usage count onto a sealed row for no visible benefit).
+    private func pasteUnlockedIntoPreviousApp(_ clip: BoardLock.UnlockedClip, plainText: Bool) {
+        guard WindowManager.isTrusted else {
+            _ = ClipboardPasteEngine.writeToPasteboard(unlocked: clip, plainText: plainText)
+            notice = "Chưa cấp quyền Trợ năng nên chỉ sao chép, chưa dán."
+            return
+        }
+        let mine = ProcessInfo.processInfo.processIdentifier
+        NSApp.hide(nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            guard let self else { return }
+            guard let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier, pid != mine else {
+                _ = ClipboardPasteEngine.writeToPasteboard(unlocked: clip, plainText: plainText)
+                self.notice = "Không có app nào để dán — đã sao chép."
+                return
+            }
+            _ = ClipboardPasteEngine.paste(unlocked: clip, to: pid, plainText: plainText)
+        }
+    }
+
     /// `ClipboardManager.togglePin` only knows records inside its capped in-memory history. For a
     /// record the library loaded that is NOT in that capped window, flip the metadata flag here and
     /// persist directly, then reload so `records`/`facets` reflect it.
@@ -242,11 +403,32 @@ final class ClipboardLibraryStore {
         replaceLocal(updated)
     }
 
+    /// Adding to a locked board seals the clip (public key only, no prompt) — `addItemToPinboard`
+    /// already does that. Removing a locked clip FROM a locked board needs to decrypt it first (so the
+    /// row the user ends up with elsewhere is plain again), which needs a prompt — `removeItemFromPinboard`
+    /// does not do that, so a locked board's removal goes through `removeItemFromLockedBoard` instead.
     func toggleMembership(_ r: ClipboardRecord, board: Pinboard) {
-        if ClipboardLibrary.isMember(r, of: board) {
+        let isMember = ClipboardLibrary.isMember(r, of: board)
+        if isMember, board.isLocked, isLockedForActions(r) {
+            guard let keyData = board.lockKeyData else { notice = "Không gỡ được khỏi bảng."; return }
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    let recipient = try BoardLockKeys.recipient(keyData: keyData, reason: self.unlockReason)
+                    try await ClipboardManager.shared.removeItemFromLockedBoard(r.id, pinboardID: board.id, recipient: recipient)
+                    self.reload()
+                } catch BoardLockKeys.Error.cancelled {
+                    // User backed out of the prompt.
+                } catch {
+                    self.notice = "Không gỡ được khỏi bảng."
+                }
+            }
+            return
+        }
+        if isMember {
             ClipboardManager.shared.removeItemFromPinboard(r.id, pinboardID: board.id)
-        } else {
-            ClipboardManager.shared.addItemToPinboard(r.id, pinboardID: board.id)
+        } else if !ClipboardManager.shared.addItemToPinboard(r.id, pinboardID: board.id) {
+            notice = "Không thêm được vào bảng khoá."   // sealing failed ⇒ the clip was NOT added
         }
         reload()
     }
@@ -255,7 +437,13 @@ final class ClipboardLibraryStore {
     /// transform on the record's FULL text, copy the result. A transform that changes nothing, or
     /// cannot run, reports why instead of silently doing nothing.
     func applyTransform(_ t: ClipboardTransform, to r: ClipboardRecord) {
-        let text = ClipboardText.fullText(snippet: r.textSnippet, payloadPath: r.payloadPath) ?? ""
+        let text: String
+        if isLockedForActions(r) {
+            guard let clip = unlocked[r.id] else { notice = "Mở khoá thẻ này trước."; return }
+            text = ClipboardText.fullText(snippet: clip.record.textSnippet, payloadPath: clip.record.payloadPath) ?? ""
+        } else {
+            text = ClipboardText.fullText(snippet: r.textSnippet, payloadPath: r.payloadPath) ?? ""
+        }
         switch t.apply(to: text) {
         case .success(let out):
             let pb = NSPasteboard.general
@@ -273,7 +461,7 @@ final class ClipboardLibraryStore {
     func delete(_ r: ClipboardRecord) {
         let before = visible
         let index = before.firstIndex { $0.id == r.id }
-        ClipboardManager.shared.deleteRecord(r.id)
+        ClipboardManager.shared.deleteRecord(r)   // the record itself: its sealed files must go even when it is outside the capped history
         records.removeAll { $0.id == r.id }
         guard selectedID == r.id else { return }
         if let index, let newIndex = NotchClipboardRules.selectionAfterDeleting(index: index, newCount: visible.count) {
@@ -332,14 +520,21 @@ final class ClipboardLibraryStore {
     private let qlController = ClipboardQLController()
     private let qlTempDir: URL = {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("XFinderLibraryQuickLook", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true,
+                                                 attributes: [.posixPermissions: 0o700])
         return dir
     }()
 
     /// Mirrors how the notch/shelf present Quick Look (`ClipboardQLController` + the system
     /// `QLPreviewPanel`): image/file clips preview their file directly; text-like clips are written
-    /// to a temp `.txt` first, since `QLPreviewPanel` previews files, not strings.
+    /// to a temp `.txt` first, since `QLPreviewPanel` previews files, not strings. A locked, still
+    /// unopened clip needs to be unlocked first — Quick Look of ciphertext is not a preview.
     func quickLook(_ r: ClipboardRecord) {
+        if isLockedForActions(r) {
+            guard let clip = unlocked[r.id] else { notice = "Mở khoá thẻ này trước."; return }
+            quickLookUnlocked(clip)
+            return
+        }
         if let url = fileURL(r), r.type == .image || r.type == .file {
             qlController.present(url: url)
             return
@@ -351,6 +546,38 @@ final class ClipboardLibraryStore {
         let url = qlTempDir.appendingPathComponent("\(r.id.uuidString).txt")
         do {
             try text.write(to: url, atomically: true, encoding: .utf8)
+            qlController.present(url: url)
+        } catch {
+            notice = "Mục này không có tệp để xem nhanh."
+        }
+    }
+
+    /// Writes the decrypted bytes to a temp file in the 0700 QL folder (deleted on relock by
+    /// `relockAll()`) and previews that — never the sealed envelope on disk.
+    private func quickLookUnlocked(_ clip: BoardLock.UnlockedClip) {
+        let r = clip.record
+        if r.type == .image || r.type == .file, let data = clip.payloadData ?? clip.thumbnailData {
+            let ext = (clip.originalPayloadFileName as NSString?)?.pathExtension
+            let name = "\(r.id.uuidString).\(ext?.isEmpty == false ? ext! : (r.type == .image ? "png" : "bin"))"
+            let url = qlTempDir.appendingPathComponent(name)
+            do {
+                try data.write(to: url, options: .atomic)
+                try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+                qlController.present(url: url)
+            } catch {
+                notice = "Mục này không có tệp để xem nhanh."
+            }
+            return
+        }
+        guard let text = ClipboardText.fullText(snippet: r.textSnippet, payloadPath: nil) ?? (clip.payloadData.flatMap { String(data: $0, encoding: .utf8) }),
+              !text.isEmpty else {
+            notice = "Mục này không có tệp để xem nhanh."
+            return
+        }
+        let url = qlTempDir.appendingPathComponent("\(r.id.uuidString).txt")
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
             qlController.present(url: url)
         } catch {
             notice = "Mục này không có tệp để xem nhanh."

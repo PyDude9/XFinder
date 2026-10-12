@@ -131,6 +131,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
+    /// D4: a Quick Look temp copy of an unlocked clip must not survive the process.
+    func applicationWillTerminate(_ notification: Notification) {
+        ClipboardLibraryStore.shared.relockAll()
+    }
+
 
     /// Clicking the Dock icon must always surface the main window.
     ///

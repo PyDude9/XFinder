@@ -5,11 +5,11 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notchclip.XXXXXX)
-FILES="XFinder/Core/Clipboard/NotchClipboardRules.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/ClipboardShelfController.swift XFinder/Core/ColorFormat.swift XFinder/Core/Notch/NotchPages.swift XFinder/Core/MCP/MCPProtocol.swift XFinder/Core/Clipboard/CodeHighlighter.swift XFinder/Core/Clipboard/ClipExport.swift XFinder/Core/Clipboard/ClipboardLibraryRules.swift"
+FILES="XFinder/Core/Clipboard/NotchClipboardRules.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/ClipboardShelfController.swift XFinder/Core/ColorFormat.swift XFinder/Core/Notch/NotchPages.swift XFinder/Core/MCP/MCPProtocol.swift XFinder/Core/Clipboard/CodeHighlighter.swift XFinder/Core/Clipboard/ClipExport.swift XFinder/Core/Clipboard/ClipboardLibraryRules.swift XFinder/Core/Clipboard/BoardLock.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
-FILTER='NotchClipboardRules|NotchSurfaceLayout|FeatureKeyDefaults|ColorFormat|NotchPages|MCPProtocol|CodeHighlighter|ClipExport|ClipboardLibraryRules'
+FILTER='NotchClipboardRules|NotchSurfaceLayout|FeatureKeyDefaults|ColorFormat|NotchPages|MCPProtocol|CodeHighlighter|ClipExport|ClipboardLibraryRules|BoardLock'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -73,7 +73,9 @@ run "D19 MCP limit is not clamped" XFinder/Core/MCP/MCPProtocol.swift \
 run "D20 highlighter cap excludes exactly 4000 chars" XFinder/Core/Clipboard/CodeHighlighter.swift \
   "'        guard text.count <= maxLength else {'" "'        guard text.count < maxLength else {'"
 run "D21 export still ships password-manager records" XFinder/Core/Clipboard/ClipExport.swift \
-  "'                skipped += 1\\n                continue'" "'                skipped += 1'"
+  "'excludedBundleIDs.contains(bundleID) {\\n                skipped += 1\\n                continue'" "'excludedBundleIDs.contains(bundleID) {\\n                skipped += 1'"
+run "D21b export still ships locked rows" XFinder/Core/Clipboard/ClipExport.swift \
+  "'            if record.isLocked {\\n                skipped += 1\\n                continue'" "'            if record.isLocked {\\n                skipped += 1'"
 run "D22 import re-adds records the app already has" XFinder/Core/Clipboard/ClipExport.swift \
   "'            if existingIDs.contains(entry.id) {'" "'            if false {'"
 L=XFinder/Core/Clipboard/ClipboardLibraryRules.swift
@@ -85,6 +87,17 @@ run "D25 library: app facets sorted by name before count" $L \
   "'                if lhs.count != rhs.count { return lhs.count > rhs.count }'" "'                if false { return lhs.count > rhs.count }'"
 run "D26 library: visibleCount is not clamped to the total" $L \
   "'        min(total, max(1, pagesShown) * pageSize)'" "'        max(1, pagesShown) * pageSize'"
+K=XFinder/Core/Clipboard/BoardLock.swift
+run "D27 lock: the fence lets locked rows through (MCP/export)" $K \
+  "'        records.filter { !\$0.isLocked }'" "'        records'"
+run "D28 lock: a content key (url) stays on the locked row" $K \
+  "'    static let keptMetadataKeys: Set<String> = [\"isPinned\", \"usageCount\", \"isSaved\"]'" "'    static let keptMetadataKeys: Set<String> = [\"isPinned\", \"usageCount\", \"isSaved\", \"url\"]'"
+run "D29 lock: open() ignores the blob version byte" $K \
+  "'        guard blob.first == blobVersion else { throw Error.badBlob }'" "'        _ = blobVersion'"
+run "D31 lock: restorePlain honours a planted ../ file name" $K \
+  "'        guard let name, !name.isEmpty, !name.contains(\"/\"), name != \".\", name != \"..\", !name.hasPrefix(\"~\") else { return fallback }'" "'        guard let name, !name.isEmpty else { return fallback }'"
+run "D30 MCP lists locked rows" XFinder/Core/MCP/MCPProtocol.swift \
+  "'            guard !r.isLocked else { return false }'" "'            _ = r.isLocked'"
 run "D8 the hotkey-surface reader defaults to the shelf (view says notch)" XFinder/Core/ClipboardShelfController.swift \
   "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"notch\"'" "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"shelf\"'"
 restore

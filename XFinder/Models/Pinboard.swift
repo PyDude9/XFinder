@@ -12,6 +12,13 @@ struct Pinboard: Identifiable, Codable, Sendable, Equatable {
     let order: Int
     let createdAt: Date
     let isBuiltIn: Bool
+    /// D4 — a LOCKED board: `lockPublicKey` (P-256, X9.63, 65 bytes) seals every clip added to the
+    /// board without any prompt; `lockKeyData` is the Secure Enclave private key's opaque
+    /// `dataRepresentation`, usable only by this Mac's enclave and only after Touch ID / password
+    /// (`.userPresence`). Both nil ⇒ an ordinary board. Optionals so stored boards decode unchanged.
+    var lockPublicKey: Data? = nil
+    var lockKeyData: Data? = nil
+    var isLocked: Bool { lockPublicKey != nil && lockKeyData != nil }
 
     init(
         id: UUID = UUID(),

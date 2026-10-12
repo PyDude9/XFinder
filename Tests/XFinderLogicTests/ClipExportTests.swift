@@ -224,4 +224,26 @@ final class ClipExportTests: XCTestCase {
         let date = calendar.date(from: components)!
         XCTAssertEqual(X.suggestedFileName(for: date), "XFinder Clipboard 2026-10-12.xfinderclip")
     }
+
+    // MARK: - D4: locked rows and locked boards never travel
+
+    func testLockedRecordsAndLockedBoardsAreNotExported() throws {
+        let dir = url("d4-locked"); try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        let locked = ClipboardRecord(type: .text, sourceBundleID: "com.apple.Notes", textSnippet: nil, payloadPath: "/x/\(UUID().uuidString).env",
+                                     metadata: ["locked": "1", "lockedBoard": UUID().uuidString])
+        let plain = ClipboardRecord(type: .text, textSnippet: "plain text")
+        var lockedBoard = makeBoard(name: "Riêng tư")
+        lockedBoard.lockPublicKey = Data(repeating: 4, count: 65)
+        lockedBoard.lockKeyData = Data(repeating: 9, count: 284)
+        let openBoard = makeBoard(name: "Open")
+        let result = ClipExport.stage(records: [locked, plain], boards: [lockedBoard, openBoard], appVersion: "t", date: Date(),
+                                      excludedBundleIDs: [], into: dir.path, ops: Self.realOps)
+        guard case .success(let report) = result else { return XCTFail("stage failed") }
+        XCTAssertEqual(report.manifest.records.map(\.id), [plain.id], "the locked row is skipped")
+        XCTAssertEqual(report.skippedRecords, 1)
+        XCTAssertEqual(report.manifest.boards.map(\.id), [openBoard.id], "the locked board is skipped")
+        let json = try String(contentsOf: dir.appendingPathComponent("manifest.json"), encoding: .utf8)
+        XCTAssertFalse(json.contains(locked.id.uuidString))
+        XCTAssertFalse(json.contains(lockedBoard.id.uuidString))
+    }
 }

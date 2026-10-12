@@ -408,6 +408,10 @@ final class ClipboardShelfController {
         let list = items
         guard list.indices.contains(index) else { return }
         let record = list[index]
+        // D4 — a LOCKED record never pastes from the shelf: it cannot prompt Touch ID and show a
+        // decrypted preview in a floating card deck. Close the shelf and open the Library at the
+        // board that holds it instead, same as the notch's clipboard page.
+        guard !record.isLocked else { openLibraryForLocked(record); return }
         let pid = targetPID
         close()
         if autoPasteAfterSelection && WindowManager.isTrusted {
@@ -421,10 +425,22 @@ final class ClipboardShelfController {
         ClipboardManager.shared.incrementUsage(record.id)
     }
 
+    /// D4: a locked record cannot be pasted, previewed or copied from the shelf — it cannot prompt
+    /// Touch ID in a floating deck. Close the shelf and open the Library at its board instead.
+    func openLibraryForLocked(_ record: ClipboardRecord) {
+        close()
+        AppState.shared.navigate(to: .clipboard)
+        AppState.shared.bringMainWindowFront()
+        if let boardID = record.lockedBoardID {
+            ClipboardLibraryStore.shared.query.scope = .board(boardID)
+        }
+    }
+
     func quickLookSelected() {
         let list = items
         guard list.indices.contains(selectedIndex) else { return }
         let record = list[selectedIndex]
+        guard !record.isLocked else { openLibraryForLocked(record); return }   // the payload path IS the sealed envelope
         if let path = record.payloadPath ?? record.thumbnailPath,
            FileManager.default.fileExists(atPath: path) {
             quickLook.present(url: URL(fileURLWithPath: path))
@@ -1010,6 +1026,12 @@ private struct ClipboardShelfView: View {
 
     @ViewBuilder
     private func cardContextMenu(for record: ClipboardRecord, index: Int) -> some View {
+        if record.isLocked {
+            // D4: nothing of a sealed clip can be pasted, copied or previewed from here.
+            Button(L10n.t("Mở trong Thư viện")) { controller.openLibraryForLocked(record) }
+            Divider()
+            Button(L10n.t("Xoá"), role: .destructive) { manager.deleteRecord(record) }
+        } else {
         Button(L10n.t("Dán (Return)")) { controller.pasteAt(index, plainText: false) }
         Button(L10n.t("Dán dạng text thuần (⇧Return)")) { controller.pasteAt(index, plainText: true) }
         Button(L10n.t("Sao chép lại vào clipboard")) {
@@ -1055,6 +1077,7 @@ private struct ClipboardShelfView: View {
         }
         Button(L10n.t("Xóa (⌘⌫)"), role: .destructive) {
             manager.deleteRecord(record.id)
+        }
         }
     }
 

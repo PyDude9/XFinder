@@ -256,6 +256,20 @@ actor DatabaseService {
         return out
     }
 
+    /// One row by id, for callers (D4 board-lock sealing) that need a record `ClipboardManager`'s
+    /// capped in-memory `history` may have already trimmed away. Same row mapper as every other
+    /// clipboard SELECT, so it cannot drift on column order or JSON decoding.
+    func fetchClipboardRecord(id: UUID) -> ClipboardRecord? {
+        guard let db = openIfNeeded() else { return nil }
+        let query = "SELECT \(Self.clipboardSelectColumns) FROM clipboard_records WHERE id = ? LIMIT 1"
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else { return nil }
+        defer { sqlite3_finalize(statement) }
+        sqlite3_bind_text(statement, 1, id.uuidString, -1, SQLITE_TRANSIENT)
+        guard sqlite3_step(statement) == SQLITE_ROW else { return nil }
+        return Self.mapClipboardRow(statement)
+    }
+
     /// Every row, newest first, no cap — backs the Clipboard Library page (D3), which must see
     /// everything in SQLite, not just `ClipboardManager`'s capped in-memory history.
     func fetchAllClipboardRecords() -> [ClipboardRecord] {

@@ -201,6 +201,11 @@ struct ClipboardRecord: Identifiable, Codable, Sendable, Equatable {
         metadata["isPinned"] == "true"
     }
 
+    /// D4 — the row is sealed for a locked board: snippet/OCR/thumbnail are gone from the row, the
+    /// payload path points at the sealed envelope. Every reader that shows content must check this.
+    var isLocked: Bool { metadata["locked"] == "1" }
+    var lockedBoardID: UUID? { metadata["lockedBoard"].flatMap(UUID.init(uuidString:)) }
+
     var isSavedSnippet: Bool {
         metadata["isSaved"] == "true"
     }

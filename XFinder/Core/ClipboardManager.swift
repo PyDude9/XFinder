@@ -5,6 +5,15 @@ import SwiftUI
 
 /// Clipboard ingest: event-driven pasteboard monitoring (zero polling),
 /// privacy filtering, disk-offloaded payloads, Vision OCR, Paste Stack.
+/// D4 — outcomes of a board lock/unlock that finished but not for every member. The board's state is
+/// left HONEST in both cases: a lock detaches the members it could not seal (a locked board never
+/// contains a readable row), an unlock keeps the key while any member is still sealed (dropping it
+/// would make those rows unreadable forever).
+enum BoardLockFailure: Error, Equatable {
+    case partialLock(sealed: Int, detached: Int)
+    case partialUnlock(restored: Int, remaining: Int)
+}
+
 @MainActor
 @Observable
 final class ClipboardManager {
@@ -509,6 +518,12 @@ final class ClipboardManager {
 
     // MARK: - History
 
+    /// D4 note: checked every `ClipboardRecord(...)` construction on the capture path (the pasteboard
+    /// monitor's record-building sites above this function) — none of them passes `pinboardID:`, so a
+    /// freshly captured record's `pinboardID` is always the model's own `nil` default. A new clip is
+    /// therefore NEVER auto-filed into a locked board at capture time; the only paths that can assign a
+    /// board are `addItemToPinboard` (explicit user action) and `mergeRecords`/`appendToMergedRecord`
+    /// (which copy an existing record's `pinboardID`, itself never auto-set). Left unchanged, as instructed.
     func addToHistory(_ record: ClipboardRecord) {
         let stamped = ClipboardRecord(
             id: record.id, type: record.type, timestamp: Date(),
@@ -523,7 +538,28 @@ final class ClipboardManager {
         Task { await DatabaseService.shared.insertClipboardRecord(stamped) }
     }
 
+    /// Delete with the record in hand: removes a locked row's sealed files whether or not the row is
+    /// inside the capped history (the Library loads rows the history no longer holds).
+    func deleteRecord(_ record: ClipboardRecord) {
+        if record.isLocked {
+            let ops = BoardLockKeys.fileOps
+            for path in BoardLock.sealedFiles(of: record) { try? ops.remove(path) }
+        }
+        deleteRecord(record.id)
+    }
+
     func deleteRecord(_ id: UUID) {
+        // D4: a locked row's content lives only in its sealed envelope/payload/thumbnail files under
+        // BoardLockKeys.lockedDir() — the DB row carries no plaintext to lose, but those files are the
+        // only copy of the ciphertext, so they must go with the row or they become orphaned forever.
+        // (Before D4, deleteRecord never removed any payload/thumbnail file for an ordinary row either —
+        // this only adds cleanup for the locked case that D4 introduces.)
+        if let record = history.first(where: { $0.id == id }), record.isLocked {
+            let ops = BoardLockKeys.fileOps
+            for path in BoardLock.sealedFiles(of: record) {
+                try? ops.remove(path)
+            }
+        }
         history.removeAll { $0.id == id }
         if selectedItemID == id { selectedItemID = history.first?.id }
         Task { await DatabaseService.shared.deleteClipboardRecord(id) }
@@ -843,10 +879,15 @@ final class ClipboardManager {
         savePinboards()
     }
 
-    func deletePinboard(_ pinboardID: UUID) {
+    /// Refuses a LOCKED board (returns false): the board carries the only handle to its enclave key —
+    /// deleting it would turn every sealed clip into ciphertext nobody can open. Unlock first.
+    @discardableResult
+    func deletePinboard(_ pinboardID: UUID) -> Bool {
+        if let board = pinboards.first(where: { $0.id == pinboardID }), board.isLocked { return false }
         pinboards.removeAll { $0.id == pinboardID }
         if currentPinboardID == pinboardID { currentPinboardID = pinboards.first?.id }
         savePinboards()
+        return true
     }
 
     func renamePinboard(_ pinboardID: UUID, name: String) {
@@ -857,19 +898,238 @@ final class ClipboardManager {
         savePinboards()
     }
 
-    func addItemToPinboard(_ itemID: UUID, pinboardID: UUID) {
-        if let i = pinboards.firstIndex(where: { $0.id == pinboardID }),
-           !pinboards[i].itemIDs.contains(itemID) {
+    /// Adds `itemID` to the board. D4: if the board is LOCKED and the record is not already sealed,
+    /// the record is sealed right here, with the board's public key only — no Touch ID prompt, because
+    /// HPKE sealing needs only the public half of the pair. The record is looked up in `history` first
+    /// (the common case: the user just added something they can see), and falls back to SQLite for a
+    /// record the in-memory cap has already trimmed away.
+    /// Returns whether membership was recorded. For a LOCKED board the clip is sealed FIRST and joins
+    /// the board only if sealing succeeded — the earlier order (join, then try to seal) could leave a
+    /// readable row inside a locked board when sealing failed. A clip outside the capped history is
+    /// fetched, sealed and joined asynchronously; `true` then means "accepted", not yet "joined".
+    @discardableResult
+    func addItemToPinboard(_ itemID: UUID, pinboardID: UUID) -> Bool {
+        guard let i = pinboards.firstIndex(where: { $0.id == pinboardID }) else { return false }
+        guard !pinboards[i].itemIDs.contains(itemID) else { return true }
+        let board = pinboards[i]
+
+        guard board.isLocked, let publicKey = board.lockPublicKey else {
             pinboards[i].itemIDs.append(itemID)
             savePinboards()
+            return true
         }
+
+        if let hidx = history.firstIndex(where: { $0.id == itemID }) {
+            let record = history[hidx]
+            // A clip sealed for ANOTHER locked board does not get a second home (review): it would show
+            // as a lock placeholder inside a board that cannot open it.
+            if record.isLocked, record.lockedBoardID != pinboardID { return false }
+            if !record.isLocked {
+                guard sealAndPersist(record, boardID: pinboardID, publicKeyX963: publicKey, historyIndex: hidx) else { return false }
+            }
+            joinBoard(itemID, pinboardID: pinboardID)
+            return true
+        }
+        Task {
+            guard let record = await DatabaseService.shared.fetchClipboardRecord(id: itemID) else { return }
+            await MainActor.run {
+                // Re-read the board's CURRENT key: the board may have been unlocked while the fetch was
+                // in flight (review) — sealing with a captured, revoked key would orphan the row.
+                guard let current = self.pinboards.first(where: { $0.id == pinboardID }), current.isLocked,
+                      let liveKey = current.lockPublicKey else { return }
+                if record.isLocked, record.lockedBoardID != pinboardID { return }
+                if record.isLocked || self.sealAndPersist(record, boardID: pinboardID, publicKeyX963: liveKey, historyIndex: nil) {
+                    self.joinBoard(itemID, pinboardID: pinboardID)
+                }
+            }
+        }
+        return true
     }
 
+    private func joinBoard(_ itemID: UUID, pinboardID: UUID) {
+        guard let i = pinboards.firstIndex(where: { $0.id == pinboardID }), !pinboards[i].itemIDs.contains(itemID) else { return }
+        pinboards[i].itemIDs.append(itemID)
+        savePinboards()
+    }
+
+    /// Shared by `addItemToPinboard` (sync path) and `lockBoard` (bulk path): seals one record with
+    /// the board's public key and writes the result to the DB + `history` (when present there).
+    /// Returns false when sealing failed — the caller must then NOT treat the clip as protected.
+    @discardableResult
+    private func sealAndPersist(_ record: ClipboardRecord, boardID: UUID, publicKeyX963: Data, historyIndex: Int?) -> Bool {
+        guard let sealed = try? BoardLock.lock(
+            record, boardID: boardID, publicKeyX963: publicKeyX963,
+            lockedDir: BoardLockKeys.lockedDir(), ops: BoardLockKeys.fileOps
+        ) else { return false }
+        if let idx = historyIndex, idx < history.count, history[idx].id == sealed.id {
+            history[idx] = sealed
+        } else if let idx = history.firstIndex(where: { $0.id == sealed.id }) {
+            history[idx] = sealed
+        }
+        Task { await DatabaseService.shared.updateClipboardRecord(sealed) }
+        return true
+    }
+
+    /// Unchanged for an ordinary board. For a LOCKED board, removing a member needs the clip
+    /// decrypted first (so the file it is restored to on disk is plaintext again) — callers must use
+    /// `removeItemFromLockedBoard(_:pinboardID:recipient:)` for a locked board instead; this function's
+    /// behaviour is left exactly as it was.
     func removeItemFromPinboard(_ itemID: UUID, pinboardID: UUID) {
         if let i = pinboards.firstIndex(where: { $0.id == pinboardID }) {
             pinboards[i].itemIDs.removeAll { $0 == itemID }
             savePinboards()
         }
+    }
+
+    /// D4 — the LOCKED-board counterpart of `removeItemFromPinboard`. Removing a sealed clip from its
+    /// board means the clip stops being protected, so it must come back as a normal plaintext row —
+    /// which needs the Secure Enclave key open (one Touch ID prompt for the whole call, via `recipient`,
+    /// not per clip). `recipient` is supplied by the caller (`BoardLockKeys.recipient(keyData:reason:)`)
+    /// so this function itself never prompts twice.
+    func removeItemFromLockedBoard(_ itemID: UUID, pinboardID: UUID, recipient: SecureEnclave.P256.KeyAgreement.PrivateKey) async throws {
+        guard let locked = await DatabaseService.shared.fetchClipboardRecord(id: itemID) ?? history.first(where: { $0.id == itemID }),
+              locked.isLocked else {
+            await MainActor.run { self.detachFromBoard(itemID, pinboardID: pinboardID) }
+            return
+        }
+        let unlocked = try BoardLock.unlock(locked, with: recipient, ops: BoardLockKeys.fileOps)
+        let plain = try BoardLock.restorePlain(unlocked, lockedRecord: locked, plainDir: ClipboardPayloadStore.baseDir().path, ops: BoardLockKeys.fileOps)
+        await DatabaseService.shared.updateClipboardRecord(plain)
+        await MainActor.run {
+            if let idx = self.history.firstIndex(where: { $0.id == plain.id }) {
+                self.history[idx] = plain
+            }
+            self.detachFromBoard(itemID, pinboardID: pinboardID)
+        }
+    }
+
+    /// The membership-only half of `removeItemFromPinboard`, factored out so the locked path can
+    /// detach after restoring the clip without duplicating the array/save logic.
+    private func detachFromBoard(_ itemID: UUID, pinboardID: UUID) {
+        if let i = pinboards.firstIndex(where: { $0.id == pinboardID }) {
+            pinboards[i].itemIDs.removeAll { $0 == itemID }
+            savePinboards()
+        }
+    }
+
+    /// D4 "Bảng khoá" — seals the board: creates the Secure Enclave key (no prompt — key generation
+    /// needs no biometric, only key *use* does), then seals every member that is not already locked.
+    /// Members are resolved the same way the Library page does (`ClipboardLibrary.isMember`): captured
+    /// straight into the board (`pinboardID`) or added later (`itemIDs`). Returns the number of clips
+    /// sealed. The board's key material is written to disk (`savePinboards`) only after every member
+    /// that could be sealed has been — a crash mid-way leaves an unlocked board with some already-sealed
+    /// rows rather than a "locked" board whose key never got saved.
+    @discardableResult
+    func lockBoard(_ boardID: UUID) async throws -> Int {
+        guard let boardIdx = pinboards.firstIndex(where: { $0.id == boardID }) else { return 0 }
+
+        // The KEY goes to disk BEFORE any row is sealed (review: the old order — seal rows, save the key
+        // last — turned a crash mid-loop into keyless ciphertext). From here on a crash leaves a locked
+        // board with some members still plain, and calling lockBoard again finishes them: an already
+        // locked board reuses its key and seals whatever is still readable.
+        let publicKeyX963: Data
+        if let existing = pinboards[boardIdx].lockPublicKey, pinboards[boardIdx].lockKeyData != nil {
+            publicKeyX963 = existing
+        } else {
+            let created = try BoardLockKeys.createKey()
+            pinboards[boardIdx].lockPublicKey = created.publicKeyX963
+            pinboards[boardIdx].lockKeyData = created.keyData
+            savePinboards()
+            publicKeyX963 = created.publicKeyX963
+        }
+
+        let board = pinboards[boardIdx]
+        let allRecords = await DatabaseService.shared.fetchAllClipboardRecords()
+        let members = allRecords.filter { ClipboardLibrary.isMember($0, of: board) && !$0.isLocked }
+
+        // Seal off the main actor's history array first (this only touches the DB + disk); apply the
+        // actual `BoardLock.lock` results to `history` afterwards, so the in-memory copy is never a
+        // hand-reconstructed guess at what sealing does.
+        var sealedRecords: [ClipboardRecord] = []
+        var unsealable: [ClipboardRecord] = []
+        for record in members {
+            guard let sealed = try? BoardLock.lock(
+                record, boardID: boardID, publicKeyX963: publicKeyX963,
+                lockedDir: BoardLockKeys.lockedDir(), ops: BoardLockKeys.fileOps
+            ) else { unsealable.append(record); continue }
+            await DatabaseService.shared.updateClipboardRecord(sealed)
+            sealedRecords.append(sealed)
+        }
+        // A locked board must never hold a readable row: a member that could not be sealed (disk
+        // full, a payload file gone) is DETACHED from the board instead of staying plain inside it.
+        for record in unsealable where record.pinboardID == boardID {
+            let detached = ClipboardRecord(id: record.id, type: record.type, timestamp: record.timestamp,
+                                           sourceBundleID: record.sourceBundleID, sourceAppName: record.sourceAppName,
+                                           textSnippet: record.textSnippet, thumbnailPath: record.thumbnailPath,
+                                           payloadPath: record.payloadPath, ocrText: record.ocrText,
+                                           pinboardID: nil, metadata: record.metadata)
+            await DatabaseService.shared.updateClipboardRecord(detached)
+        }
+
+        await MainActor.run {
+            for sealed in sealedRecords {
+                if let idx = self.history.firstIndex(where: { $0.id == sealed.id }) {
+                    self.history[idx] = sealed
+                }
+            }
+            if let idx = self.pinboards.firstIndex(where: { $0.id == boardID }) {
+                self.pinboards[idx].itemIDs.removeAll { id in unsealable.contains { $0.id == id } }
+            }
+            self.savePinboards()
+        }
+        if !unsealable.isEmpty {
+            throw BoardLockFailure.partialLock(sealed: sealedRecords.count, detached: unsealable.count)
+        }
+        return sealedRecords.count
+    }
+
+    /// D4 "Gỡ khoá (giải mã lại)" — one Touch ID prompt for the whole board (`BoardLockKeys.recipient`
+    /// is called exactly once here), then every locked member is decrypted and written back to plain
+    /// rows/files. A member that fails to open (corrupt envelope, missing file) is skipped rather than
+    /// aborting the whole operation — throws only when NOTHING could be opened, so a partially-recovered
+    /// board is still reported as a success with a lower count. The board's key material is cleared
+    /// last, so a crash mid-way leaves the board still locked (and its still-sealed members unaffected)
+    /// rather than "unlocked" with ciphertext nobody can open anymore.
+    @discardableResult
+    func unlockBoardPermanently(_ boardID: UUID) async throws -> Int {
+        guard let boardIdx = pinboards.firstIndex(where: { $0.id == boardID }) else { return 0 }
+        let board = pinboards[boardIdx]
+        guard board.isLocked, let keyData = board.lockKeyData else { return 0 }
+
+        let reason = L10n.t("Gỡ khoá bảng này và giải mã lại mọi clip")
+        let recipient = try BoardLockKeys.recipient(keyData: keyData, reason: reason)
+
+        let allRecords = await DatabaseService.shared.fetchAllClipboardRecords()
+        let members = allRecords.filter { $0.isLocked && $0.lockedBoardID == boardID }
+
+        var restoredCount = 0
+        for locked in members {
+            guard let unlocked = try? BoardLock.unlock(locked, with: recipient, ops: BoardLockKeys.fileOps),
+                  let plain = try? BoardLock.restorePlain(unlocked, lockedRecord: locked, plainDir: ClipboardPayloadStore.baseDir().path, ops: BoardLockKeys.fileOps)
+            else { continue }
+            await DatabaseService.shared.updateClipboardRecord(plain)
+            restoredCount += 1
+            await MainActor.run {
+                if let idx = self.history.firstIndex(where: { $0.id == plain.id }) {
+                    self.history[idx] = plain
+                }
+            }
+        }
+
+        // The key is dropped ONLY when every member came back plain. One member that failed to open
+        // keeps the board locked: its row is still ciphertext, and the key is the only way back.
+        guard restoredCount == members.count else {
+            throw BoardLockFailure.partialUnlock(restored: restoredCount, remaining: members.count - restoredCount)
+        }
+
+        await MainActor.run {
+            if let idx = self.pinboards.firstIndex(where: { $0.id == boardID }) {
+                self.pinboards[idx].lockPublicKey = nil
+                self.pinboards[idx].lockKeyData = nil
+            }
+            self.savePinboards()
+        }
+        return restoredCount
     }
 
     /// Màu của bảng ghim (không kể bảng builtin) đầu tiên mà record này thuộc

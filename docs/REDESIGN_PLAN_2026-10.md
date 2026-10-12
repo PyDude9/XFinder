@@ -230,8 +230,44 @@ Ba file viết song song theo hợp đồng (luật thuần 35 test · store · 
 trừ 1 chấp nhận (reload cả bảng mỗi lần copy), 2 chia phiếu → sửa, 2 bác. Chưa đo tay: chọn thẻ/inspector/phím/dán vào app
 trước (thẻ là `.onTapGesture`, không bấm được qua AX; người dùng đang ở bàn phím nên không bắn sự kiện giả).
 
-**Thứ tự tiếp theo của plan**: D0c ✅ → D1 ✅ → D2 ✅ → D3 ✅ → **D4 (board khoá AES-GCM + Keychain; xem trước link opt-in)**
-→ E → F → G.
+**D4a ✅ 2026-10-12 — Bảng khoá (B).** Khoá riêng P-256 trong **Secure Enclave** (`.privateKeyUsage + .userPresence`), khoá công khai
+mã hoá clip qua HPKE/AES-GCM-256 không cần hỏi; dòng SQLite chỉ còn loại/thời gian/app/cờ, nội dung + tệp payload/thumbnail vào
+`Clipboard/Locked/<id>.{env,payload,thumb}` (0600/0700). Mở từng thẻ trong Thư viện (Touch ID mỗi lần), giữ trong bộ nhớ, quên khi rời
+trang hoặc khoá máy; notch/shelf hiện placeholder và mở Thư viện. "Khoá bảng này…" có hộp thoại nói thật bốn ý; "Gỡ khoá (giải mã lại)"
+một lần Touch ID. Hàng rào: MCP và xuất `.xfinderclip` bỏ dòng khoá lẫn bảng khoá. Luật thuần `BoardLock` 20 test; harness khoá
+Secure Enclave thật 15/15 (không còn chữ rõ trong tệp mã hoá). Ba lỗi an toàn dữ liệu bắt được khi đọc code agent (xem CLAUDE.md "D4").
+**Chưa đo tay:** bước mở bằng Touch ID, huỷ Touch ID, mọi click. **Chưa làm (D4b):** xem trước link opt-in.
+
+**Thứ tự tiếp theo của plan**: D0c ✅ → D1 ✅ → D2 ✅ → D3 ✅ → D4a ✅ → **D4b (xem trước link opt-in, mạng)** → E → F → G.
+
+### 3d. Brief D4 — Bảng khoá (U1/U2, 2026-10-12; **đã chọn B — hỏi Touch ID từng thẻ; thẻ khoá ở notch/shelf = placeholder 🔒**)
+
+**U1 — hiện trạng.** Bảng (`Pinboard`) là danh sách `itemIDs` trong UserDefaults; nội dung clip nằm **rõ chữ** trong
+`xfinder.db` (snippet 200 ký tự) và các tệp payload/thumbnail trong `Application Support/XFinder/Clipboard/`. Đã có
+`clipboard.touchIDLock` (hỏi Touch ID khi **mở** shelf/notch — khoá bề mặt, không khoá dữ liệu), `OwnWriteMark`, bộ lọc trình
+quản lý mật khẩu, MCP (chỉ đọc) và xuất `.xfinderclip` (cả hai đọc thẳng SQLite). `LAContext`/`SecAccessControl` chưa dùng ở đâu
+ngoài Touch ID của shelf. `CryptoKit` có sẵn (macOS 14).
+
+**U2 — việc chính.** *"Tôi có vài clip nhạy cảm (token, OTP, số tài khoản, ghi chú riêng) muốn giữ trong một bảng mà người nhìn
+qua vai, ai cầm máy đang mở khoá, hay ai đọc được tệp `xfinder.db` đều không thấy chữ."* Cơ chế đề xuất: mỗi bảng khoá có một khoá
+AES-256-GCM sinh ngẫu nhiên, lưu Keychain (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly` + `SecAccessControl .userPresence` ⇒
+đọc khoá cần Touch ID/mật khẩu máy); clip chuyển vào bảng khoá thì snippet + payload + thumbnail được mã hoá tại chỗ, dòng SQLite
+giữ placeholder; mở khoá bảng giải mã **trong bộ nhớ** một phiên 5 phút rồi quên; **MCP và xuất `.xfinderclip` không bao giờ trả
+mục trong bảng khoá**; notch/shelf hiện thẻ khoá (không xem trước, không Quick Look) cho tới khi mở. **Nói thật trên trang:** khoá
+sống trong Keychain đăng nhập — bảo vệ khỏi nhìn trộm, khỏi tệp DB bị sao chép, khỏi MCP/xuất; **không** bảo vệ trước ai đang có
+phiên đã mở khoá *và* vượt được Touch ID. Gỡ khoá bảng = giải mã lại tất cả rồi xoá khoá.
+
+**Đo trước khi dựng (2026-10-12, macOS 27):** CryptoKit HPKE chỉ có `P256_SHA256_AES_GCM_256` và `Curve25519_SHA256_ChachaPoly`
+(không có Curve25519 + AES-GCM) → dùng P-256 + AES-GCM-256; `SecureEnclave.isAvailable = true`, khoá P-256 trong Secure Enclave dùng
+được làm recipient HPKE và khôi phục từ `dataRepresentation` 284 byte; `SecAccessControl(.privateKeyUsage, .userPresence)` tạo được;
+Touch ID khả dụng. ⇒ **Khoá riêng nằm trong Secure Enclave**, mỗi lần dùng phải qua Touch ID; khoá công khai (65 byte) mã hoá clip mới
+thêm vào bảng mà không cần hỏi (HPKE một chiều). Hệ quả phải nói trên UI: khoá gắn với chính Secure Enclave của máy này — Mac hỏng =
+mất vĩnh viễn; xuất `.xfinderclip` và MCP không bao giờ chứa clip khoá.
+
+**Quyết định đã chốt (wireframe):** cách **mở khoá** khi đang xem — A. một nút "Mở khoá bảng" ở đầu lưới, mở cả bảng
+5 phút (khuyên dùng) · B. bấm từng thẻ, hỏi Touch ID từng lần (an toàn hơn, phiền hơn) · C. một công tắc "Mở khoá" chung ở
+hàng sidebar, mở mọi bảng khoá cùng lúc. Và: thẻ khoá trong **notch/shelf** hiện placeholder (đề xuất) hay ẩn hẳn khỏi hai bề mặt đó?
+
 
 ### 3c. Brief D3 — Thư viện Clipboard (U1/U2, 2026-10-12; **đã chọn B, đã dựng**)
 
