@@ -66,6 +66,8 @@
 		7F1A024A /* Clipboard/ClipboardLibraryRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A024B /* Clipboard/ClipboardLibraryRules.swift */; };
 		7F1A024C /* Clipboard/ClipboardLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A024D /* Clipboard/ClipboardLibraryStore.swift */; };
 		7F1A0250 /* Clipboard/BoardLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0251 /* Clipboard/BoardLock.swift */; };
+		7F1A027E /* Clipboard/LinkPreviewFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A027F /* Clipboard/LinkPreviewFetcher.swift */; };
+		7F1A027C /* Clipboard/LinkPreviewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A027D /* Clipboard/LinkPreviewRules.swift */; };
 		7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0263 /* Agents/AgentHookInstaller.swift */; };
 		7F1A0266 /* Agents/AgentSessionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0267 /* Agents/AgentSessionMonitor.swift */; };
 		7F1A0268 /* Notch/NotchHoverOpen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0269 /* Notch/NotchHoverOpen.swift */; };
@@ -348,6 +350,8 @@
 		7F1A024B /* Clipboard/ClipboardLibraryRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipboardLibraryRules.swift; sourceTree = "<group>"; };
 		7F1A024D /* Clipboard/ClipboardLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipboardLibraryStore.swift; sourceTree = "<group>"; };
 		7F1A0251 /* Clipboard/BoardLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/BoardLock.swift; sourceTree = "<group>"; };
+		7F1A027F /* Clipboard/LinkPreviewFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/LinkPreviewFetcher.swift; sourceTree = "<group>"; };
+		7F1A027D /* Clipboard/LinkPreviewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/LinkPreviewRules.swift; sourceTree = "<group>"; };
 		7F1A0263 /* Agents/AgentHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentHookInstaller.swift; sourceTree = "<group>"; };
 		7F1A0267 /* Agents/AgentSessionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentSessionMonitor.swift; sourceTree = "<group>"; };
 		7F1A0269 /* Notch/NotchHoverOpen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchHoverOpen.swift; sourceTree = "<group>"; };
@@ -640,6 +644,8 @@
 				7F1A024B /* Clipboard/ClipboardLibraryRules.swift */,
 				7F1A024D /* Clipboard/ClipboardLibraryStore.swift */,
 				7F1A0251 /* Clipboard/BoardLock.swift */,
+				7F1A027F /* Clipboard/LinkPreviewFetcher.swift */,
+				7F1A027D /* Clipboard/LinkPreviewRules.swift */,
 				7F1A0263 /* Agents/AgentHookInstaller.swift */,
 				7F1A0267 /* Agents/AgentSessionMonitor.swift */,
 				7F1A0269 /* Notch/NotchHoverOpen.swift */,
@@ -1068,6 +1074,8 @@
 				7F1A024A /* Clipboard/ClipboardLibraryRules.swift in Sources */,
 				7F1A024C /* Clipboard/ClipboardLibraryStore.swift in Sources */,
 				7F1A0250 /* Clipboard/BoardLock.swift in Sources */,
+				7F1A027E /* Clipboard/LinkPreviewFetcher.swift in Sources */,
+				7F1A027C /* Clipboard/LinkPreviewRules.swift in Sources */,
 				7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */,
 				7F1A0266 /* Agents/AgentSessionMonitor.swift in Sources */,
 				7F1A0268 /* Notch/NotchHoverOpen.swift in Sources */,

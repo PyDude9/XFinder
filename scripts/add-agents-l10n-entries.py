@@ -126,6 +126,11 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Chọn ít nhất hai ký tự để dịch.": ("Select at least two characters to translate.", "sentence"),
     "Vùng chọn quá dài để dịch tại chỗ (tối đa 5 000 ký tự).": ("The selection is too long to translate in place (5,000 characters at most).", "sentence"),
     "Không đọc được vùng chọn: app này không cho Trợ năng đọc, hoặc chưa cấp quyền Trợ năng.": ("Could not read the selection: this app does not expose it to Accessibility, or Accessibility is not granted.", "sentence"),
+    # D4b — link previews (opt-in network)
+    "Xem trước liên kết (mạng)": ("Link previews (network)", "sentence"),
+    "Tiêu đề và ảnh cho link đã copy, tải từ chính trang đó; mặc định tắt.": ("Title and image for copied links, fetched from the page itself; off by default.", "sentence"),
+    "Tải xem trước liên kết (mạng)": ("Fetch link previews (network)", "sentence"),
+    "Với mỗi link bạn copy, XFinder gửi một yêu cầu tới chính trang đó để lấy tiêu đề và ảnh (LinkPresentation của Apple). Đây là lần duy nhất clipboard chạm mạng; mặc định tắt. Không bao giờ tải link tới localhost hay mạng nội bộ.": ("For every link you copy, XFinder sends one request to that page for its title and image (Apple's LinkPresentation). It is the only time the clipboard touches the network; off by default. Links to localhost or a private network are never fetched.", "sentence"),
     # feature catalog
     "Phiên Claude Code đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ.": ("Claude Code sessions running in a terminal: status and permission approval at the notch; reads a local hook log.", "sentence"),
 }

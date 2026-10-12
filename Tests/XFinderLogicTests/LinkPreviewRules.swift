@@ -1,0 +1,1 @@
+../../XFinder/Core/Clipboard/LinkPreviewRules.swift

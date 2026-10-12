@@ -40,6 +40,7 @@ private struct ClipboardSettingsBody: View {
     @AppStorage("clipboard.captureImages") private var captureImages = true
     @AppStorage("clipboard.captureLinks") private var captureLinks = true
     @AppStorage("clipboard.cleanURLs") private var cleanURLs = false
+    @AppStorage("clipboard.linkPreviews") private var linkPreviews = false   // D4b
     @AppStorage("clipboard.autoClearSeconds") private var autoClearSeconds = 0
     @AppStorage("clipboard.enableOCR") private var enableOCR = true
     @AppStorage("clipboard.maxHistory") private var maxHistory = 1000
@@ -456,9 +457,13 @@ private struct ClipboardSettingsBody: View {
                 }
                 ToggleRow(title: L10n.t("Nhận diện chữ (OCR)"), subtitle: "Vision Framework", isOn: $enableOCR)
                     .padding(.horizontal, XFinderTokens.Space.page)
-                // "Tải trước ảnh xem trước liên kết" was removed here: nothing ever read
-                // `clipboard.linkPreviews`, and fetching every copied URL would also break
-                // the local-only promise. A switch with no reader is a lie (Part 0 §6).
+                // D4b: the switch is back WITH a reader (LinkPreviewFetcher) and honest copy — it is the one
+                // network action a copy can trigger, so it is opt-in and says what it sends.
+                ToggleRow(title: L10n.t("Tải xem trước liên kết (mạng)"),
+                          subtitle: L10n.t("Với mỗi link bạn copy, XFinder gửi một yêu cầu tới chính trang đó để lấy tiêu đề và ảnh (LinkPresentation của Apple). Đây là lần duy nhất clipboard chạm mạng; mặc định tắt. Không bao giờ tải link tới localhost hay mạng nội bộ."),
+                          isOn: $linkPreviews)
+                    .onChange(of: linkPreviews) { LinkPreviewFetcher.shared.applySettings() }
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 ToggleRow(title: L10n.t("Âm thanh khi sao chép/dán"), subtitle: L10n.t("Tink/Pop hệ thống"), isOn: $sounds)
                     .padding(.horizontal, XFinderTokens.Space.page)
                 PickerRow(title: L10n.t("Âm sao chép"), selection: $copySound, width: 120) {

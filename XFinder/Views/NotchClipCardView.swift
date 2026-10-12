@@ -88,10 +88,15 @@ struct NotchClipCardView: View {
             case .color: colorBody
             case .file: fileBody
             case .link:
-                Text(record.metadata["url"]?.isEmpty == false ? record.metadata["url"]! : record.displayPreview)
-                    .font(.system(size: 11)).foregroundColor(accent)
-                    .lineLimit(textLines).multilineTextAlignment(.leading)
-                    .padding(.horizontal, 9).padding(.top, 7)
+                VStack(alignment: .leading, spacing: 2) {
+                    if let title = record.metadata[LinkPreviewRules.titleKey] {        // D4b: the fetched title, when the opt-in is on
+                        Text(title).font(.system(size: 11, weight: .semibold)).foregroundColor(.white).lineLimit(2)
+                    }
+                    Text(record.metadata["url"]?.isEmpty == false ? record.metadata["url"]! : record.displayPreview)
+                        .font(.system(size: 11)).foregroundColor(accent)
+                        .lineLimit(record.metadata[LinkPreviewRules.titleKey] == nil ? textLines : max(1, textLines - 2)).multilineTextAlignment(.leading)
+                }
+                .padding(.horizontal, 9).padding(.top, 7)
             case .code:
                 // D: on-device syntax colouring; the preview is the first 200 characters, so this is cheap.
                 HighlightedCodeText(text: record.displayPreview, dark: true, lineLimit: textLines)

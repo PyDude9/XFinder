@@ -536,6 +536,32 @@ final class ClipboardManager {
         history.insert(stamped, at: 0)
         trimToCap()
         Task { await DatabaseService.shared.insertClipboardRecord(stamped) }
+        LinkPreviewFetcher.shared.enqueue(stamped)      // D4b: a no-op unless the opt-in switch is on
+    }
+
+    /// D4b — a link preview arrived (or its fetch failed): patch the row's metadata in memory when the history
+    /// holds it, and on disk either way, so every surface shows the same title and image.
+    func applyLinkPreview(id: UUID, patch: [String: String]) {
+        if let i = history.firstIndex(where: { $0.id == id }) {
+            let r = Self.patching(history[i], metadata: patch)
+            history[i] = r
+            Task { _ = await DatabaseService.shared.updateClipboardRecord(r) }
+        } else {
+            Task {
+                guard let r = await DatabaseService.shared.fetchClipboardRecord(id: id) else { return }
+                _ = await DatabaseService.shared.updateClipboardRecord(Self.patching(r, metadata: patch))
+            }
+        }
+    }
+
+    /// `metadata` is immutable on the record (every writer rebuilds it, like `togglePin`): the same record with
+    /// `patch` merged over its metadata.
+    nonisolated static func patching(_ r: ClipboardRecord, metadata patch: [String: String]) -> ClipboardRecord {
+        var meta = r.metadata
+        for (k, v) in patch { meta[k] = v }
+        return ClipboardRecord(id: r.id, type: r.type, timestamp: r.timestamp, sourceBundleID: r.sourceBundleID,
+                               sourceAppName: r.sourceAppName, textSnippet: r.textSnippet, thumbnailPath: r.thumbnailPath,
+                               payloadPath: r.payloadPath, ocrText: r.ocrText, pinboardID: r.pinboardID, metadata: meta)
     }
 
     /// Delete with the record in hand: removes a locked row's sealed files whether or not the row is

@@ -330,20 +330,32 @@ struct ClipboardCardView: View {
         let urlStr = record.metadata["url"]?.isEmpty == false ? record.metadata["url"]! : record.displayPreview
         let host = URL(string: urlStr)?.host ?? ""
 
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Image(systemName: "link")
-                    .font(.system(size: 12))
-                    .foregroundColor(accent)
-                Text(host.isEmpty ? urlStr : host)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(accent)
-                    .lineLimit(1)
+        // D4b: an opt-in preview (title + image fetched from the page) when the record carries one.
+        let title = record.metadata[LinkPreviewRules.titleKey]
+        let image = record.metadata[LinkPreviewRules.imageKey].flatMap { NotchThumbnailCache.image(atPath: $0, maxPixel: 160) }
+        return HStack(alignment: .top, spacing: 8) {
+            if let image {
+                Image(nsImage: image).resizable().aspectRatio(contentMode: .fill)
+                    .frame(width: 56, height: 56).clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
-            Text(urlStr)
-                .font(.system(size: 11))
-                .foregroundColor(.secondary)
-                .lineLimit(4)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: "link")
+                        .font(.system(size: 12))
+                        .foregroundColor(accent)
+                    Text(host.isEmpty ? urlStr : host)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(accent)
+                        .lineLimit(1)
+                }
+                if let title {
+                    Text(title).font(.system(size: 12, weight: .medium)).lineLimit(2)
+                }
+                Text(urlStr)
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                    .lineLimit(title == nil ? 4 : 2)
+            }
         }
     }
 

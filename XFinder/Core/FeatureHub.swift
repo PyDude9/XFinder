@@ -107,6 +107,7 @@ final class FeatureHub {
         case .menuBarReadouts: MenuBarReadoutsController.shared.applySettings()
         // Read at the point of use by the clipboard engine; nothing to re-arm.
         case .cleanURLs, .suggestions: break
+        case .linkPreviews:    LinkPreviewFetcher.shared.applySettings()   // D4b: backfill / cancel
         }
     }
 

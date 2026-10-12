@@ -111,6 +111,9 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "translate.hotkeyEnabled",
                views: ["XFinder/Views/Detail/VoiceDetailView.swift"],
                reader: "XFinder/Core/Translate/TranslateSelectionController.swift"),
+        Switch(key: "clipboard.linkPreviews",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
+               reader: "XFinder/Core/Clipboard/LinkPreviewFetcher.swift"),
         Switch(key: "notch.hoverOpens",
                views: ["XFinder/Views/Detail/DropTrayDetailView.swift"],
                reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
@@ -270,18 +273,6 @@ final class FeatureKeyDefaultsTests: XCTestCase {
 
     /// `clipboard.linkPreviews` had a toggle and no reader; it was removed rather than wired
     /// (fetching every copied URL would also break the local-only promise). This pins the removal.
-    func testRemovedLinkPreviewsKeyIsBoundNowhere() {
-        let dirs = ["XFinder/Views", "XFinder/Core", "XFinder/App"]
-        var hits: [String] = []
-        for dir in dirs {
-            let root = Self.repoRoot.appendingPathComponent(dir)
-            guard let e = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else { continue }
-            for case let url as URL in e where url.pathExtension == "swift" {
-                if let t = try? String(contentsOf: url, encoding: .utf8), t.contains("\"clipboard.linkPreviews\"") {
-                    hits.append(url.lastPathComponent)
-                }
-            }
-        }
-        XCTAssertEqual(hits, [], "clipboard.linkPreviews is back without a reader: \(hits)")
-    }
+    /// D4b: `clipboard.linkPreviews` is back WITH a reader (`LinkPreviewFetcher`); the Switch row above is its gate.
+    /// (The Phase 1 test that asserted the key was bound nowhere is retired with the reason, not deleted silently.)
 }

@@ -370,6 +370,10 @@ và bản ký XFinder Dev; "treo" ở B5 là do probe bị giết trước 8.5 s
 (macOS 15+); `TranslateSelectionRules` thuần 2 test; khoá `translate.hotkeyEnabled` mặc định tắt, mục trên trang Giọng nói + hub.
 Badge-trên-vùng-chọn (AXObserver theo app) chưa làm. Chưa đo live.
 
+**D4b ✅ dựng + test** — xem trước link opt-in (`LinkPreviewRules` thuần 5 test + D32, `LinkPreviewFetcher` qua `LPMetadataProvider`,
+ảnh ≤ 480 px vào `Clipboard/LinkPreviews/`, metadata `linkTitle/linkImage/linkFetched`), thẻ shelf/notch/Thư viện hiện tiêu đề + ảnh;
+chỉ host công cộng, không localhost/mạng nội bộ; mặc định tắt. Chưa đo live qua app.
+
 **Không làm (bằng chứng, không phải sở thích):** lock screen (SkyLight/LoginUIKit private) · lời bài hát/visualizer (mạng
 bên thứ ba, mic) · iCloud (CloudKit cần tài khoản trả phí) · Sentry/TelemetryDeck/Sparkle tự tải (0 telemetry) · Pro/license ·
 camera "Mirror" (câu job: không ai tới notch để soi gương) · thay HUD độ sáng (không có đường ghi public).

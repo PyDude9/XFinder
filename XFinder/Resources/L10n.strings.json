@@ -8614,6 +8614,22 @@
     "Không đọc được vùng chọn: app này không cho Trợ năng đọc, hoặc chưa cấp quyền Trợ năng.": {
       "en": "Could not read the selection: this app does not expose it to Accessibility, or Accessibility is not granted.",
       "scope": "sentence"
+    },
+    "Xem trước liên kết (mạng)": {
+      "en": "Link previews (network)",
+      "scope": "sentence"
+    },
+    "Tiêu đề và ảnh cho link đã copy, tải từ chính trang đó; mặc định tắt.": {
+      "en": "Title and image for copied links, fetched from the page itself; off by default.",
+      "scope": "sentence"
+    },
+    "Tải xem trước liên kết (mạng)": {
+      "en": "Fetch link previews (network)",
+      "scope": "sentence"
+    },
+    "Với mỗi link bạn copy, XFinder gửi một yêu cầu tới chính trang đó để lấy tiêu đề và ảnh (LinkPresentation của Apple). Đây là lần duy nhất clipboard chạm mạng; mặc định tắt. Không bao giờ tải link tới localhost hay mạng nội bộ.": {
+      "en": "For every link you copy, XFinder sends one request to that page for its title and image (Apple's LinkPresentation). It is the only time the clipboard touches the network; off by default. Links to localhost or a private network are never fetched.",
+      "scope": "sentence"
     }
   }
 }

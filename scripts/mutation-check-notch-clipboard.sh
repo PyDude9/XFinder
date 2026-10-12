@@ -5,11 +5,11 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notchclip.XXXXXX)
-FILES="XFinder/Core/Clipboard/NotchClipboardRules.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/ClipboardShelfController.swift XFinder/Core/ColorFormat.swift XFinder/Core/Notch/NotchPages.swift XFinder/Core/MCP/MCPProtocol.swift XFinder/Core/Clipboard/CodeHighlighter.swift XFinder/Core/Clipboard/ClipExport.swift XFinder/Core/Clipboard/ClipboardLibraryRules.swift XFinder/Core/Clipboard/BoardLock.swift"
+FILES="XFinder/Core/Clipboard/NotchClipboardRules.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/ClipboardShelfController.swift XFinder/Core/ColorFormat.swift XFinder/Core/Notch/NotchPages.swift XFinder/Core/MCP/MCPProtocol.swift XFinder/Core/Clipboard/CodeHighlighter.swift XFinder/Core/Clipboard/ClipExport.swift XFinder/Core/Clipboard/ClipboardLibraryRules.swift XFinder/Core/Clipboard/BoardLock.swift XFinder/Core/Clipboard/LinkPreviewRules.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
-FILTER='NotchClipboardRules|NotchSurfaceLayout|FeatureKeyDefaults|ColorFormat|NotchPages|MCPProtocol|CodeHighlighter|ClipExport|ClipboardLibraryRules|BoardLock'
+FILTER='NotchClipboardRules|LinkPreviewRules|NotchSurfaceLayout|FeatureKeyDefaults|ColorFormat|NotchPages|MCPProtocol|CodeHighlighter|ClipExport|ClipboardLibraryRules|BoardLock'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -100,6 +100,8 @@ run "D30 MCP lists locked rows" XFinder/Core/MCP/MCPProtocol.swift \
   "'            guard !r.isLocked else { return false }'" "'            _ = r.isLocked'"
 run "D8 the hotkey-surface reader defaults to the shelf (view says notch)" XFinder/Core/ClipboardShelfController.swift \
   "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"notch\"'" "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"shelf\"'"
+run "D32 a private host is eligible for a link preview" XFinder/Core/Clipboard/LinkPreviewRules.swift \
+  "'            if a == 10 || a == 127 || a == 0 || (a == 169 && b == 254) || (a == 172 && (16...31).contains(b)) || (a == 192 && b == 168) { return false }\n'" "''"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails); echo "suite after restore: $after failure(s)"

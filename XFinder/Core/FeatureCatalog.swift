@@ -91,7 +91,7 @@ enum FeatureGroup: String, CaseIterable {
 
 enum FeatureID: String, CaseIterable {
     case dockPreview, commandTab, snapZones, quitProtection
-    case clipboardShelf, cleanURLs, suggestions
+    case clipboardShelf, cleanURLs, suggestions, linkPreviews
     case quickSearch, edgeNotes, dropTray, nowPlaying, folderSync, agents, calendar
     case voice
     case translateSelection
@@ -146,6 +146,11 @@ enum FeatureCatalog {
                    subtitleKey: "Mở lịch sử clipboard ở mọi ứng dụng bằng phím tắt.",
                    symbol: "doc.on.clipboard", group: .clipboard, enabledKey: "clipboard.globalHotkey",
                    defaultOn: true, permissions: [.accessibility], idle: .listensToKeyboard),
+        // D4b. The one place a copy may cause a network request — off by default, says so on its row.
+        FeatureDef(id: .linkPreviews, titleKey: "Xem trước liên kết (mạng)",
+                   subtitleKey: "Tiêu đề và ảnh cho link đã copy, tải từ chính trang đó; mặc định tắt.",
+                   symbol: "link.badge.plus", group: .clipboard, enabledKey: "clipboard.linkPreviews",
+                   defaultOn: false, permissions: [], idle: .nothingAtRest),
         FeatureDef(id: .cleanURLs, titleKey: "Làm sạch liên kết khi sao chép",
                    subtitleKey: "Xóa tham số theo dõi khỏi liên kết bạn sao chép.",
                    symbol: "link", group: .clipboard, enabledKey: "clipboard.cleanURLs",
