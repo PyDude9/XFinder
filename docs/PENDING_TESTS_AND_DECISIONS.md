@@ -1,0 +1,100 @@
+# Việc chờ bạn: lựa chọn + test tay
+
+Một chỗ duy nhất cho mọi thứ còn phân vân. Mỗi mục có **mã** (ví dụ `Q-F4-2`, `T-B6`) để bạn nói lại cho nhanh
+("Q-F4-2 chọn b", "T-B6 hỏng: …"). Khi một mục xong, xoá nó khỏi file này trong cùng commit.
+
+Cập nhật: 2026-10-13.
+
+---
+
+## Phần 1 — Cần bạn chọn (Q)
+
+Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả lời thì giữ mặc định.
+
+### F4 · Chụp & chú thích ("làm y OneNotch trước")
+
+Bạn đã duyệt brief F4 với 5 câu trả lời mặc định, sau đó nói "cứ làm y OneNotch". Mấy chỗ dưới đây là nơi hai điều đó
+**mâu thuẫn**, nên tôi phải chọn một bên:
+
+| Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
+|:--|:--|:--|:--|
+| Q-F4-1 | Quay màn hình / GIF? | (a) chỉ chụp ảnh, quay để sau · (b) làm luôn quay video + GIF như OneNotch | **(a)** — brief đã chốt "không quay"; quay là một khối việc riêng (ScreenCaptureKit stream, mic, encoder) |
+| Q-F4-2 | Phím tắt mặc định? OneNotch trên máy này lưu: chụp vùng ⇧⌘4, toàn màn hình ⇧⌘3, cửa sổ ⇧⌘9, OCR ⇧⌘2, lấy màu ⇧⌘1, chụp cuộn ⇧⌘6 | (a) không gán sẵn, có nút "Dùng bộ phím giống OneNotch" · (b) gán sẵn ⇧⌘-số như OneNotch | **(a)** — ⇧⌘3 / ⇧⌘4 là của macOS; gán sẵn sẽ tranh phím với hệ thống cho mọi người dùng chưa tắt phím của macOS |
+| Q-F4-3 | Chọn vùng bằng gì? | (a) công cụ chọn vùng của macOS (`screencapture -i`: vùng, Space = cửa sổ, Esc huỷ) · (b) lớp phủ tự vẽ như OneNotch (kính lúp, đo pixel, chụp cuộn, nhận phần tử thông minh) | **(a)** — chắc chắn chạy, không cần tự vẽ; (b) là việc lớn, làm sau nếu bạn muốn |
+| Q-F4-4 | Thẻ xem trước nổi (Quick Access) bật lên ở cạnh nào? | Trái · Phải | **Trái dưới** — tránh chỗ ảnh thu nhỏ của chính macOS (phải dưới) |
+| Q-F4-5 | Ảnh chụp lưu ở đâu? | (a) luôn giữ một bản trong thư mục của XFinder (để có Lịch sử như OneNotch `Captures/`) + Lưu thì ghi thêm ra Desktop · (b) chỉ ghi file khi bấm Lưu | **(a)** — giống OneNotch; bản giữ lại nằm trong `~/Library/Application Support/XFinder/Captures/`, có nút xoá lịch sử |
+| Q-F4-6 | Bố cục trình chú thích | wireframe A (thanh công cụ trên cùng) · B (cột công cụ + bảng thuộc tính) · C (chú thích tại chỗ) | **A** — OneNotch dùng cửa sổ chú thích riêng, thanh công cụ ngang |
+
+### Khác
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-GIT | ~30 commit đang nằm local, chưa push. Push lên `PyDude9/XFinder` khi nào? | Chờ bạn nói "push" |
+| Q-CLIP-PAUSE | Máy này đang có `clipboard.paused = 1` (Clipboard ngừng ghi). Do bạn bật hay còn sót từ lần test D1? | Để nguyên — tôi không tự đổi cài đặt của bạn |
+| Q-NOTCH-SW | `dropTray.notchDropEnabled = 0` và `dropTray.hoverEnabled = 0` trên máy này (kéo tệp vào notch / rê chuột mở notch đang tắt). Bật lại không? | Để nguyên |
+| Q-GESTURE | Nút giữ cử chỉ chuột đang là Nút 3 (bấm con lăn). Đổi sang nút hông? (trang Chuột & cử chỉ có nút "Ghi lại nút giữ") | Để nguyên |
+
+---
+
+## Phần 2 — Cần test tay (T)
+
+Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
+
+### Notch
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-B1 | Kéo một tệp từ Finder lên notch (cần bật Q-NOTCH-SW) | Hub mở, thả vào thì tệp nằm trong khay |
+| T-B1b | Kéo thanh tiêu đề một cửa sổ đi ngang qua notch | Notch **không** mở |
+| T-B1c | Kéo tệp rồi lắc chuột | Khay mở ngay dưới con trỏ |
+| T-B1d | Khi khay có tệp: rê lên notch → kéo icon trái ra Finder | Kéo ra được **tất cả** tệp |
+| T-B2d | Hàng nút trên hub khi giữ tệp: ZIP, Gộp PDF, Sang JPEG/PNG, Tách nền, AirDrop | Mỗi nút tạo file cạnh tệp gốc; AirDrop mở bảng chọn thiết bị |
+| T-N6 | Hub: Sang PDF, OCR, Thu nhỏ ảnh (giữ chuột lên nút Thu nhỏ để chọn cỡ) | PDF/txt/ảnh nhỏ nằm cạnh tệp gốc; OCR chép chữ vào clipboard |
+| T-B3 | Kéo một cửa sổ lên vùng quanh notch | Hiện hàng 7 bố cục; thả lên một ô thì cửa sổ vào đúng ô |
+| T-B4 | Rút sạc · tắt Wi-Fi · bấm Caps Lock · kết nối AirPods/chuột Bluetooth | Notch báo từng việc; **app không crash** khi thiết bị Bluetooth kết nối |
+| T-B4b | Bấm phím âm lượng; Flyout ▸ Hẹn giờ trên notch 5 phút | Notch hiện thanh âm lượng; đếm ngược trên notch, hết giờ kêu "Glass" |
+| T-B6 | Bật Đang phát, mở Music / Spotify / YouTube trong Safari | Notch hiện bài + ảnh bìa; ⏮ ⏯ ⏭ điều khiển đúng player |
+| T-N8 | Trang Đang phát: kéo thanh tiến trình, chọn Trộn bài / Lặp lại | Player nhảy tới đúng chỗ; chế độ đổi trong player |
+| T-B7 | Cắm màn hình ngoài (không có notch) | Có "notch ảo" giữa mép trên; hover/hub chạy như màn chính |
+| T-N4 | Bật Lịch trên notch → cấp quyền Lịch + Lời nhắc | Trang Lịch hiện sự kiện hôm nay, ngày âm lịch; nút "Tham gia" mở link họp |
+| T-N3 | Notch & Khay thả ▸ Cài hook Claude Code, rồi mở một phiên Claude Code | Notch hiện phiên; khi Claude xin quyền, bấm Cho phép/Từ chối trên notch thì terminal nhận |
+| T-D1g2 | Vuốt hai ngón ngang trên dải tab của hub; đổi màu nhấn | Đổi trang; màu nhấn đổi trên notch |
+
+### Clipboard
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-D0 | Bấm ⌘⇧V ở một app bất kỳ | Clipboard mở trên notch; ↩ dán ngược vào app đó |
+| T-D0b | Cài đặt Clipboard ▸ khoá bằng Touch ID, mở lại ⌘⇧V | Hỏi Touch ID mỗi lần mở |
+| T-B5 | ⌘⇧C bắt đầu Paste Stack, copy 3 thứ, rồi ⌘V ba lần | Dán lần lượt từng thứ |
+| T-D1 | Trên thẻ clip: Phát âm · Sửa văn bản… · kéo thẻ lên chip Đã ghim / một bảng | Đọc to; sửa rồi Sao chép tạo clip mới; thẻ được ghim / vào bảng |
+| T-D2 | Cài đặt Clipboard ▸ Xuất rồi Nhập `.xfinderclip`; copy một đoạn code | File tạo ra và nhập lại được; thẻ code có màu cú pháp |
+| T-D2b | Bật Clipboard MCP, thêm `XFinder --mcp` vào Claude Code / Cursor | Client liệt kê 3 tool và đọc được clip |
+| T-D3 | Thư viện Clipboard: bấm một thẻ, dùng ←→, "Dán vào app trước đó" | Bảng chi tiết mở; dán vào đúng app trước |
+| T-D4 | Thư viện ▸ chuột phải một bảng ▸ Khoá bảng này… → bấm thẻ → Touch ID; **huỷ** Touch ID ở thẻ khác; rời trang rồi quay lại; Gỡ khoá | Thẻ hiện sau Touch ID; huỷ thì **không** báo lỗi; quay lại thì khoá lại; gỡ khoá một lần hỏi |
+| T-D4b | Bật Xem trước link, copy một link | Thẻ hiện tiêu đề + ảnh của trang |
+
+### Cửa sổ, chuột, bàn phím
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-C1 | Bật ⌘-Tab của XFinder; khi đang mở: Q · H · Space · ` · , | Đóng cửa sổ · ẩn app · phóng to ảnh · chuyển app ↔ cửa sổ · tìm |
+| T-GEST | Giữ nút cử chỉ rồi kéo lên / sang phải (profile Global) | Mission Control mở / chuyển Space |
+| T-QUIT | Bật Giữ ⌘Q; nhấn nhanh ⌘Q rồi giữ ⌘Q ở một app | Nhấn nhanh không thoát; giữ ~1 s thì thoát |
+| T-F3 | Thoát ứng dụng ▸ thêm Preview; đóng cửa sổ cuối của Preview; thu nhỏ cửa sổ (tắt Stage Manager) | Đóng hết thì Preview thoát; cửa sổ thu nhỏ thì **không** thoát |
+| T-AUDIO | Cắm tai nghe / AirPods, chọn trong Điều khiển nhanh | Âm thanh chuyển sang thiết bị đó |
+
+### Chọn văn bản, giọng nói, dịch
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-E | Bôi đen trong Safari, Chrome, VS Code: một số tiền, một ngày, `5 km`, `9am EST` | Huy hiệu hiện; quy đổi đúng; "Thêm vào Lịch" tạo sự kiện thật |
+| T-N5a | Bật ⇧⌘G, bôi đen chữ ở app khác, nhấn ⇧⌘G | Bảng dịch mở (macOS 15+) |
+| T-VOICE | Nhập bằng giọng nói: nói vào micro | Chữ được gõ ra đúng chỗ con trỏ |
+
+### Dọn dẹp
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-F1 | Dọn rác thư mục ▸ chọn một thư mục có `.DS_Store` ▸ Chuyển vào Thùng rác | Chỉ rác metadata vào Thùng rác |
+| T-F2 | Gỡ ứng dụng ▸ kéo một app thử vào | Liệt kê app + phần sót lại; bỏ chọn được; mọi thứ vào Thùng rác |
+
+### F4 (khi có bản build)
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-F4 | (điền khi F4 được cài) | |
