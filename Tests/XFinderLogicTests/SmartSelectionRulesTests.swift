@@ -109,6 +109,17 @@ final class SmartSelectionRulesTests: XCTestCase {
         }
     }
 
+    /// The measured failure: -25204 on an app still launching. Retry that, a few times; never retry a final error.
+    func testRegistrationRetriesOnlyCannotCompleteAndOnlyAFewTimes() {
+        XCTAssertEqual(R.registrationRetryDelay(attempt: 0, error: -25204), 0.5)
+        XCTAssertEqual(R.registrationRetryDelay(attempt: 2, error: -25204), 3.0)
+        XCTAssertNil(R.registrationRetryDelay(attempt: 3, error: -25204), "gives up after three retries")
+        for final in [Int32(-25207), -25211, -25202, 0] {
+            XCTAssertNil(R.registrationRetryDelay(attempt: 0, error: final), "error \(final) is not retried")
+        }
+        XCTAssertEqual(R.registrationRetryDelays.reduce(0, +), 5.0, "about five seconds of patience after a launch")
+    }
+
     // MARK: The show/hide machine
 
     /// The measured drag: one change per step, the mouse-up 50 ms after the last one, then quiet.

@@ -85,7 +85,9 @@ final class SelectionWatcher {
 
     // MARK: AX observer on the frontmost app
 
-    private func attach(to app: NSRunningApplication) {
+    private var attachRetry: DispatchWorkItem?
+
+    private func attach(to app: NSRunningApplication, attempt: Int = 0) {
         let pid = app.processIdentifier
         guard pid != observedPID else { return }
         detach()
@@ -103,16 +105,30 @@ final class SelectionWatcher {
         }
         guard AXObserverCreate(pid, callback, &obs) == .success, let o = obs else { return }
         let appElement = AXUIElementCreateApplication(pid)
-        AXUIElementSetMessagingTimeout(appElement, 0.3)
+        AXUIElementSetMessagingTimeout(appElement, 0.5)   // short: this runs on the main thread; -25204 is retried
         let sel = AXObserverAddNotification(o, appElement, kAXSelectedTextChangedNotification as CFString, nil)
         let foc = AXObserverAddNotification(o, appElement, kAXFocusedUIElementChangedNotification as CFString, nil)
-        log.info("observing \(app.bundleIdentifier ?? "?", privacy: .public) selection=\(sel.rawValue) focus=\(foc.rawValue)")
+        log.info("observing \(app.bundleIdentifier ?? "?", privacy: .public) selection=\(sel.rawValue) focus=\(foc.rawValue) attempt=\(attempt)")
+        guard sel == .success else {
+            // Not attached: do NOT remember the pid, or the app stays silent until the next app switch.
+            if let delay = SmartSelectionRules.registrationRetryDelay(attempt: attempt, error: sel.rawValue) {
+                let work = DispatchWorkItem { MainActor.assumeIsolated {
+                    let w = SelectionWatcher.shared
+                    guard w.isRunning, NSWorkspace.shared.frontmostApplication?.processIdentifier == pid else { return }
+                    w.attach(to: app, attempt: attempt + 1)
+                } }
+                attachRetry = work
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
+            }
+            return
+        }
         CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(o), .defaultMode)
         observer = o
         observedPID = pid
     }
 
     private func detach() {
+        attachRetry?.cancel(); attachRetry = nil
         if let o = observer { CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(o), .defaultMode) }
         observer = nil
         observedPID = 0
@@ -131,6 +147,7 @@ final class SelectionWatcher {
     /// The selected text and, when the app reports a real one, its screen rect (AX space). Falls back to WebKit's
     /// text-marker attributes when `AXSelectedText` is empty (Safari reported changes with an empty value in the probe).
     nonisolated static func readSelection(_ element: AXUIElement) -> (text: String, bounds: CGRect?) {
+        AXUIElementSetMessagingTimeout(element, 0.5)   // a hung app must not freeze the thread that reads it
         var value: CFTypeRef?
         var text = ""
         if AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &value) == .success, let s = value as? String {

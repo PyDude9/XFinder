@@ -72,6 +72,12 @@ run "T4  no daylight note when the region disagrees" $T \
   "'            if regionOffset != srcTZ.secondsFromGMT(for: instant) { note = RegionNote(regionID: id, regionOffset: regionOffset) }'" "'            _ = regionOffset'"
 run "S1  Apple Passwords is not a secret store" XFinder/Core/SecretApps.swift \
   "'\"keychain\", \"passwords\",'" "'\"keychain\",'"
+run "E9  every AX error is retried (a final -25207/-25211 retries forever)" $R \
+  "'        guard error == axCannotComplete, attempt >= 0, attempt < registrationRetryDelays.count else { return nil }'" "'        guard attempt >= 0, attempt < registrationRetryDelays.count else { return nil }'"
+# E10 drops the attempt bound from the guard AND clamps the index, so the mutant retries forever instead of trapping.
+# (Clamping the index alone was an EQUIVALENT mutant — the guard already returned nil at attempt 3 — and stayed GREEN.)
+run "E10 -25204 is retried without a limit" $R \
+  "'        guard error == axCannotComplete, attempt >= 0, attempt < registrationRetryDelays.count else { return nil }'" "'        guard error == axCannotComplete, attempt >= 0 else { return nil }; return registrationRetryDelays[min(attempt, registrationRetryDelays.count - 1)]'"
 echo "RESULT: $red/$total mutations RED"
 restore
 after=$(fails); echo "after restore failures: $after"

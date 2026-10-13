@@ -408,6 +408,20 @@ không một chuỗi UI nào — nên chỉ học phần đo được.
 | **E6** | Tiền tệ **opt-in mạng**: tỷ giá ECB hằng ngày (`eurofxref-daily.xml`, không khoá API), cache 12 h, hiện "≈" + ngày tỷ giá; tắt mặc định; nhãn nói rõ gửi gì đi đâu | `Core/SmartSelect/CurrencyRates.swift` (luật thuần + fetcher) | test parser trên XML mẫu; không request khi tắt |
 | **E7** | Đo live: e2e trên một tài liệu TextEdit do harness tạo (đặt vùng chọn bằng thuộc tính AX của chính tài liệu đó, không gửi phím/chuột) ⇒ huy hiệu hiện (CGWindowList + AX dump) ⇒ bảng đúng kết quả; probe Safari text-marker khi người dùng bôi đen | scratchpad harness | kết quả ghi vào commit |
 
+**Tiến độ đợt E (2026-10-13):** **E0 ✅** (`2ce9036`) ⌘K/Tìm nhanh không còn abort khi gõ `1+` — `NSExpression(format:)` ném
+NSException trên `1+`, `(1+2`, `1..2+3` (đều qua regex của `Calculator`) và trả `1/0 = 0`; `SafeArithmetic` thay thế, gate cấm
+`NSExpression(format:` trong toàn app. **E1–E3 ✅** (`72f83a2`) luật thuần + đổi đơn vị (hệ số CHÍNH XÁC — `Measurement` làm tròn
+6 chữ số: km/h, lb, gal) + múi giờ (bảng riêng: `TimeZone(abbreviation:)` cho EST = −4 tháng 10, CST → Chicago); `SecretApps` gom
+danh sách app mật khẩu (bản của MCP đã lệch). **E4–E5 ✅** (`af9e5c8`) watcher AX + huy hiệu + panel + trang "Chọn văn bản thông
+minh"; công tắc ⇧⌘G chuyển từ trang Giọng nói sang. **E7 ✅ đo live 13/13** trên app đã cài (harness `.app` riêng, chọn vùng bằng
+API của chính nó, MỘT nhả chuột tại vị trí con trỏ khi người dùng rời tay ≥ 20 s): huy hiệu hiện cho `5 km`/`3pm PST`/`12 * (3 + 4)`,
+panel đọc qua AX đúng `5 km ≈ 3.11 mi`, `15:00 PST (UTC−8) = …` + ghi chú `Los Angeles is on UTC−7 right now.`, `= 84`; không nhả
+chuột ⇒ không huy hiệu; app bị loại trừ ⇒ không huy hiệu; neo theo khung AX thật. **Lần chạy đầu 2/7** — nó tìm ra lỗi thật: app
+vừa mở trả `-25204` cho đăng ký observer (timeout 0,3 s) và watcher vẫn nhớ pid ⇒ tính năng câm tới lần đổi app sau; sửa bằng luật
+thử lại thuần (0,5/1,5/3 s, chỉ cho -25204), đo lại: lần 0 = −25204, 532 ms sau lần 1 = 0. **Chưa đo:** Safari (text marker),
+ghi vào Lịch thật, panel Dịch (macOS 15 + tay người), app Chromium/Electron với vùng chọn thật (probe thụ động đã thấy thông báo tới).
+**E6 (tiền tệ, opt-in mạng) chưa làm.**
+
 **Sau đợt E (giữ thứ tự, mỗi mục probe trước):** đo **B7 trên màn hình ngoài 1920×1080 vừa cắm** (notch ảo, hover, kéo cửa
 sổ) · F: Quit-on-close, Uninstaller (bắt buộc xem trước + chỉ vào Thùng rác), Cleaning Mode, studio chụp & chú thích · G: quy
 dirty memory về từng module (`vmmap -verbose`, `heap`), mục tiêu < 30 MB khi tắt hết tính năng nền.

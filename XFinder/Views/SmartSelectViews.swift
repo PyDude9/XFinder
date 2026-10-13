@@ -32,6 +32,7 @@ struct SmartSelectPanelView: View {
                 Button { SmartSelectionBadge.shared.closePanel() } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.plain).foregroundColor(.secondary)
                     .keyboardShortcut(.cancelAction).help(L10n.t("Đóng"))
+                    .accessibilityLabel(L10n.t("Đóng"))
             }
             Text(model.text.replacingOccurrences(of: "\n", with: " "))
                 .font(XFinderTokens.Font.caption).foregroundColor(.secondary)

@@ -157,6 +157,23 @@ enum SmartSelectionRules {
         static let all = [copied, calendarDenied, noDefaultCalendar, calendarAdded, calendarFailed]
     }
 
+    // MARK: Attaching to an app
+
+    /// Retry schedule for `AXObserverAddNotification` after `kAXErrorCannotComplete` (-25204).
+    ///
+    /// Measured on the installed app (e2e, 2026-10-13): an app activated while still launching answered BOTH
+    /// registrations with -25204 under a 0.3 s messaging timeout, and the watcher kept that pid as "attached", so the
+    /// feature stayed silent in that app until the user switched away and back. -25204 means "busy / not answering
+    /// yet" — worth a few more tries while the app stays frontmost. Every other error is final: -25207 the app does
+    /// not post that notification, -25211 Accessibility is not granted, -25202 the app is gone.
+    static let registrationRetryDelays: [TimeInterval] = [0.5, 1.5, 3.0]
+    static let axCannotComplete: Int32 = -25204
+
+    static func registrationRetryDelay(attempt: Int, error: Int32) -> TimeInterval? {
+        guard error == axCannotComplete, attempt >= 0, attempt < registrationRetryDelays.count else { return nil }
+        return registrationRetryDelays[attempt]
+    }
+
     // MARK: When to show the badge
 
     struct MouseUp: Equatable {
