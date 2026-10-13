@@ -95,15 +95,21 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-F1 | Dọn rác thư mục ▸ chọn một thư mục có `.DS_Store` ▸ Chuyển vào Thùng rác | Chỉ rác metadata vào Thùng rác |
 | T-F2 | Gỡ ứng dụng ▸ kéo một app thử vào | Liệt kê app + phần sót lại; bỏ chọn được; mọi thứ vào Thùng rác |
 
-### F4 (khi có bản build)
+### F4 · Chụp & chú thích (đã cài vào /Applications lúc 2026-10-13, chưa ai bấm thử)
 
-**Đang xây** (2026-10-13): 4 agent song song viết theo một CONTRACT chung (chụp màn hình + chú thích, kiểu OneNotch).
-Chưa có bản build để test tay. Khi gộp xong, điền các dòng dưới theo đúng 6 lựa chọn Q-F4-1…6 ở trên.
+Trang: CÔNG CỤ ▸ **Chụp & chú thích**. Cần quyền **Ghi màn hình** cho XFinder. Phím tắt mặc định **chưa gán** (Q-F4-2):
+bấm "Dùng bộ phím giống OneNotch" hoặc "Gán phím" từng dòng — hoặc chụp bằng flyout (Chụp vùng / cửa sổ / toàn màn hình).
 
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
-| T-F4-1 | ⇧⌘4-kiểu: chọn vùng, nhấn phím tắt đã gán | Ảnh vùng chọn lưu vào `Captures/`, thẻ xem trước nổi hiện ở trái-dưới |
-| T-F4-2 | Mở trình chú thích từ thẻ xem trước | Thanh công cụ ngang (wireframe A); vẽ mũi tên, làm mờ vùng, đóng khung số thứ tự |
-| T-F4-3 | Làm mờ một vùng rồi Lưu | Vùng đó thành khối (pixel liền kề giống nhau), phần còn lại nguyên |
-| T-F4-4 | Mở lịch sử chụp, xoá một ảnh | Ảnh biến mất khỏi `Captures/` và khỏi danh sách |
-| T-F4 | (điền thêm khi F4 được cài) | |
+| T-F4-1 | Flyout ▸ Chụp vùng → kéo khoanh một vùng | Ảnh vào clipboard ngay; thẻ xem trước hiện ở **góc trái dưới**; tự đóng sau 10 s |
+| T-F4-2 | Rê chuột lên thẻ rồi rời ra | Thanh đếm ngược **dừng** khi trỏ vào, chạy tiếp khi rời ra |
+| T-F4-3 | Trên thẻ: Sao chép · Lưu · Ghim lên màn hình · ✕; chuột phải: Chép chữ, Hiện trong Finder, Xoá | Lưu tạo file trên Desktop (đuôi theo Định dạng); Ghim mở cửa sổ nổi kéo được, ⌘+/⌘− đổi cỡ |
+| T-F4-4 | Kéo thẻ thả vào Finder / Slack | Thả ra một file PNG |
+| T-F4-5 | Vuốt hai ngón ngang trên thẻ | Thẻ trượt ra và đóng |
+| T-F4-6 | Bấm "Chú thích" trên thẻ: vẽ mũi tên, khung, chữ, số thứ tự, làm mờ địa chỉ email, tô sáng, cắt; ⌘Z / ⇧⌘Z; ↩ | Nét vẽ **đúng độ dày trên Retina** (không mảnh như sợi chỉ); vùng làm mờ thành khối; ↩ chép kết quả và đóng cửa sổ |
+| T-F4-7 | Chụp cửa sổ đang mở (đứng ở Safari) | Chỉ cửa sổ Safari, có bóng như ⇧⌘4-Space của macOS; không bao giờ là cửa sổ của XFinder |
+| T-F4-8 | Chụp toàn màn hình khi cắm 2 màn | Chỉ màn đang có con trỏ |
+| T-F4-9 | Gán ⇧⌘4 khi macOS vẫn giữ ⇧⌘4 | Dòng cảnh báo "Trùng với macOS Chụp vùng — macOS có thể giành trước." |
+| T-F4-10 | Thu hồi quyền Ghi màn hình rồi bấm phím chụp | Toast "Cần quyền Ghi màn hình để chụp ảnh." (không im lặng) |
+| T-F4-11 | Tắt "Giữ lịch sử ảnh chụp", chụp, đóng thẻ | Ảnh không ở lại trong `~/Library/Application Support/XFinder/Captures/` sau lần chụp kế tiếp |
