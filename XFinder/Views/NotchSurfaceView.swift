@@ -562,12 +562,29 @@ struct NotchSurfaceView: View {
                 if let level = a.level {
                     ProgressView(value: level).progressViewStyle(.linear).tint(.white).frame(width: 90)
                 }
+                ForEach(Array(a.buttons.enumerated()), id: \.offset) { _, b in
+                    Button { NotchSurfaceController.shared.pressActivityButton(b) } label: {
+                        activityButtonLabel(b).font(XFinderTokens.Font.caption).lineLimit(1)
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(Capsule().fill(Color.white.opacity(0.18)))
+                    }
+                    .buttonStyle(.plain)
+                    .fixedSize()
+                }
             }
         }
         .foregroundColor(.white)
         .frame(maxWidth: .infinity)
         .frame(height: NotchSurfaceLayout.Metrics.standard.activityDrop)
         .padding(.horizontal, XFinderTokens.Space.inline)
+    }
+
+    @ViewBuilder private func activityButtonLabel(_ b: LiveActivity.Button) -> some View {
+        switch b {
+        case .join: Text(L10n.t("Tham gia"))
+        case .snooze: Text(L10n.t("Hoãn 5 phút"))
+        case .openCalendar: Text(L10n.t("Mở Lịch"))
+        }
     }
 
     private func tint(_ t: LiveActivity.Tint) -> Color {

@@ -44,6 +44,10 @@ struct DropTrayDetailView: View {
     // N4
     @AppStorage("notch.calendar") private var calendarEnabled = false
     @AppStorage("notch.calendar.hideAllDay") private var calendarHideAllDay = false
+    // §3b #33
+    @AppStorage("notch.calendar.alerts") private var calendarAlerts = true
+    @AppStorage("notch.calendar.alertLead") private var calendarAlertLead = 5
+    @AppStorage("notch.calendar.alertSound") private var calendarAlertSound = true
     @State private var hookStatus: AgentSessionMonitor.HookStatus = .notInstalled
     @State private var hookNotice: String?
     /// D1 #47 — accent of the notch surfaces; one reader: `NotchSurfaceController.accentName`.
@@ -409,6 +413,25 @@ struct DropTrayDetailView: View {
                 ToggleRow(title: L10n.t("Ẩn sự kiện cả ngày"), isOn: $calendarHideAllDay)
                     .onChange(of: calendarHideAllDay) { NotchSurfaceController.shared.applySettings() }
                     .disabled(!calendarEnabled)
+                ToggleRow(title: L10n.t("Báo trước sự kiện ở notch"),
+                          subtitle: L10n.t("Một dòng dưới notch trước sự kiện có giờ và lời nhắc có giờ, với nút Tham gia (khi có link họp) và Hoãn 5 phút. Không báo sự kiện cả ngày."),
+                          isOn: $calendarAlerts)
+                    .onChange(of: calendarAlerts) { CalendarGlanceMonitor.shared.scheduleAlert() }
+                    .disabled(!calendarEnabled)
+                HStack {
+                    Text(L10n.t("Báo trước")).font(XFinderTokens.Font.row)
+                    Spacer()
+                    Picker("", selection: $calendarAlertLead) {
+                        ForEach(MeetingAlertRules.leadChoices, id: \.self) { m in
+                            Text("\(m)\(L10n.t(" phút trước sự kiện"))").tag(m)
+                        }
+                    }
+                    .labelsHidden().pickerStyle(.menu).frame(width: 170)
+                    .onChange(of: calendarAlertLead) { CalendarGlanceMonitor.shared.scheduleAlert() }
+                }
+                .disabled(!calendarEnabled || !calendarAlerts)
+                ToggleRow(title: L10n.t("Âm báo khi nhắc"), isOn: $calendarAlertSound)
+                    .disabled(!calendarEnabled || !calendarAlerts)
             }
             .padding(.horizontal, XFinderTokens.Space.page)
         }

@@ -9478,6 +9478,42 @@
     "Mở mục này trong ứng dụng Từ điển": {
       "en": "Open this entry in the Dictionary app",
       "scope": "sentence"
+    },
+    "Sắp đến giờ": {
+      "en": "Coming up",
+      "scope": "sentence"
+    },
+    "Đến giờ lời nhắc": {
+      "en": "Reminder due",
+      "scope": "sentence"
+    },
+    "đang bắt đầu": {
+      "en": "starting now",
+      "scope": "sentence"
+    },
+    "Hoãn 5 phút": {
+      "en": "Snooze 5 min",
+      "scope": "sentence"
+    },
+    "Báo trước sự kiện ở notch": {
+      "en": "Alert before events at the notch",
+      "scope": "sentence"
+    },
+    "Một dòng dưới notch trước sự kiện có giờ và lời nhắc có giờ, với nút Tham gia (khi có link họp) và Hoãn 5 phút. Không báo sự kiện cả ngày.": {
+      "en": "A line under the notch before timed events and timed reminders, with Join (when there is a meeting link) and Snooze 5 min. All-day events never alert.",
+      "scope": "sentence"
+    },
+    "Báo trước": {
+      "en": "Alert",
+      "scope": "sentence"
+    },
+    " phút trước sự kiện": {
+      "en": " min before",
+      "scope": "fragment"
+    },
+    "Âm báo khi nhắc": {
+      "en": "Sound with the alert",
+      "scope": "sentence"
     }
   }
 }

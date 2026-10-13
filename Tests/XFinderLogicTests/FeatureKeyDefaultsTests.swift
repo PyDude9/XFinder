@@ -23,6 +23,10 @@ final class FeatureKeyDefaultsTests: XCTestCase {
     /// Keys bound in more than one view are listed with every view on purpose — until a
     /// registry owns the default, all copies must agree.
     static let switches: [Switch] = [
+        // §3b #33 — meeting alerts
+        Switch(key: "notch.calendar.alerts", views: ["XFinder/Views/Detail/DropTrayDetailView.swift"], reader: "XFinder/Core/Calendar/CalendarGlanceMonitor.swift"),
+        Switch(key: "notch.calendar.alertLead", views: ["XFinder/Views/Detail/DropTrayDetailView.swift"], reader: "XFinder/Core/Calendar/CalendarGlanceMonitor.swift"),
+        Switch(key: "notch.calendar.alertSound", views: ["XFinder/Views/Detail/DropTrayDetailView.swift"], reader: "XFinder/Core/Calendar/CalendarGlanceMonitor.swift"),
         // F4 — Chụp & chú thích
         Switch(key: "capture.enabled", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
         Switch(key: "capture.after", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),

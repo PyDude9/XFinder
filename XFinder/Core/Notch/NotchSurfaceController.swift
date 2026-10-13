@@ -106,6 +106,7 @@ final class NotchSurfaceController {
         NotchSurfaceMachine.Settings(enabled: enabled, hoverToPeek: hoverEnabled, hoverOpens: NotchHoverOpen.parse(hoverOpensRaw),
                                      agentNeedsYou: model.agentsNeedingYou > 0, lastPage: lastHubPage, shownPages: model.pages,
                                      nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
+                                     activityHoldsHover: !(model.activity?.buttons.isEmpty ?? true),
                                      dragIntoNotchOpens: notchDropEnabled, shakeOpens: shakeEnabled,
                                      hoverDwell: NotchSurfaceMachine.Settings.hoverDwell(forSpeed: hoverSpeed))
     }
@@ -822,6 +823,17 @@ final class NotchSurfaceController {
         let work = DispatchWorkItem { [weak self] in MainActor.assumeIsolated { self?.activityTimeUp() } }
         activityWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + item.duration, execute: work)
+    }
+
+    /// §3b #33 — a button on the notice was pressed: end the notice at once, then do what it says.
+    func pressActivityButton(_ b: LiveActivity.Button) {
+        activityWork?.cancel(); activityWork = nil
+        activityTimeUp()
+        switch b {
+        case .join(let url): NSWorkspace.shared.open(url)
+        case .snooze(let key): CalendarGlanceMonitor.shared.snooze(key: key)
+        case .openCalendar: reveal(page: .calendar)
+        }
     }
 
     private func activityTimeUp() {

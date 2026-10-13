@@ -224,3 +224,54 @@ enum VietnameseLunar {
         return i - 1
     }
 }
+
+/// §3b #33 — "nhắc họp": an alert under the notch before a timed event (OneNotch: "Show alerts under the notch for
+/// upcoming events", a lead-time picker, snooze, a sound). Pure: which event is next to alert, and when.
+enum MeetingAlertRules {
+    static let leadChoices = [1, 5, 10, 15]
+    static let defaultLead = 5
+    /// Headline keys of the notice — they reach the screen through `L10n.t(item.titleKey)`, so a test resolves them.
+    static let eventHeadlineKey = "Sắp đến giờ"
+    static let reminderHeadlineKey = "Đến giờ lời nhắc"
+    static let startingNowKey = "đang bắt đầu"
+    static let snoozeMinutes = 5
+    /// An event that started less than this long ago still gets its alert (the Mac just woke, the store just refreshed).
+    static let lateGrace: TimeInterval = 60
+
+    /// One occurrence of an event. EventKit gives every occurrence of a repeating event the SAME identifier, so the
+    /// start time is part of the key — otherwise alerting Monday's stand-up would silence every later Monday.
+    static func key(_ e: GlanceEvent) -> String { "\(e.id)@\(Int(e.start.timeIntervalSince1970))" }
+
+    struct Plan: Equatable {
+        let key: String
+        let fireAt: Date
+    }
+
+    /// The next alert to fire: timed events only (never all-day), reminders only when asked, not yet alerted unless
+    /// snoozed; fire at `start − lead` (or the snooze time), never in the past. nil ⇒ nothing to schedule.
+    static func next(events: [GlanceEvent], now: Date, leadMinutes: Int, alerted: Set<String>,
+                     snoozedUntil: [String: Date], includeReminders: Bool) -> Plan? {
+        var best: (plan: Plan, start: Date)?
+        for e in events where !e.isAllDay && (includeReminders || !e.isReminder) {
+            let k = key(e)
+            let fire: Date
+            if let s = snoozedUntil[k] {
+                guard s < e.end else { continue }                     // snoozed past the end: nothing to join any more
+                fire = s
+            } else {
+                guard !alerted.contains(k), e.start > now.addingTimeInterval(-lateGrace) else { continue }
+                fire = e.start.addingTimeInterval(-TimeInterval(max(0, leadMinutes)) * 60)
+            }
+            let plan = Plan(key: k, fireAt: max(fire, now))
+            if best == nil || plan.fireAt < best!.plan.fireAt || (plan.fireAt == best!.plan.fireAt && e.start < best!.start) {
+                best = (plan, e.start)
+            }
+        }
+        return best?.plan
+    }
+
+    /// Whole minutes left before the start, rounded UP (an alert never says "0" while there is time), ≥ 0.
+    static func minutesUntil(_ start: Date, now: Date) -> Int {
+        max(0, Int((start.timeIntervalSince(now) / 60).rounded(.up)))
+    }
+}

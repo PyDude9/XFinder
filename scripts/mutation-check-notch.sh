@@ -11,12 +11,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notch.XXXXXX)
-FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchHoverOpen.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift"
+FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchHoverOpen.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift XFinder/Core/Calendar/GlanceRules.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='NotchSurface|NotchDrag|NotchTask|NotchHoverOpen|LiveActivity|NowPlaying|NotchNowPlaying|NotchBehaviour|FeatureKeyDefaults'
+FILTER='NotchSurface|NotchDrag|NotchTask|NotchHoverOpen|LiveActivity|NowPlaying|NotchNowPlaying|NotchBehaviour|FeatureKeyDefaults|MeetingAlertRules'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -113,6 +113,16 @@ run "M31 OCR offered with no image held" XFinder/Core/Notch/NotchTask.swift \
   "'            out.append(.removeBackground)\n        }\n        out.append(.ocr)\n        out.append(.airDrop)'"
 run "M32 shuffle modes renumbered (0-based, like MPShuffleType)" XFinder/Core/Notch/NowPlaying.swift \
   "'        case off = 1, albums = 2, songs = 3'" "'        case off = 0, albums = 2, songs = 1'"
+run "M33 a notice with buttons yields to the hover (they vanish under the pointer)" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                if state == .activity && s.activityHoldsHover { return }   // the pointer came to press a button'" "'                _ = s.activityHoldsHover'"
+run "M34 all-day events alert" XFinder/Core/Calendar/GlanceRules.swift \
+  "'        for e in events where !e.isAllDay && (includeReminders || !e.isReminder) {'" "'        for e in events where (includeReminders || !e.isReminder) {'"
+run "M35 one alert silences every later occurrence of a repeating event" XFinder/Core/Calendar/GlanceRules.swift \
+  "'    static func key(_ e: GlanceEvent) -> String { \"\\(e.id)@\\(Int(e.start.timeIntervalSince1970))\" }'" "'    static func key(_ e: GlanceEvent) -> String { e.id }'"
+run "M36 an alert scheduled in the past" XFinder/Core/Calendar/GlanceRules.swift \
+  "'            let plan = Plan(key: k, fireAt: max(fire, now))'" "'            let plan = Plan(key: k, fireAt: fire)'"
+run "M37 an alerted event alerts again" XFinder/Core/Calendar/GlanceRules.swift \
+  "'                guard !alerted.contains(k), e.start > now.addingTimeInterval(-lateGrace) else { continue }'" "'                guard e.start > now.addingTimeInterval(-lateGrace) else { continue }'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 

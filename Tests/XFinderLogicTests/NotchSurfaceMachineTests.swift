@@ -234,6 +234,19 @@ final class NotchSurfaceMachineTests: XCTestCase {
         XCTAssertEqual(held.state, .peek, "hovering during a notice still peeks the held files")
     }
 
+    /// §3b #33 — a meeting alert has buttons; the pointer that comes to press one must not turn it into a peek.
+    func testANoticeWithButtonsHoldsTheHover() {
+        var hold = s; hold.activityHoldsHover = true
+        var m = holding(2); m.handle(.activityShown, settings: hold, now: t0)
+        m.handle(.hoverInZone(since: at(1)), settings: hold, now: at(5))
+        XCTAssertEqual(m.state, .activity, "the buttons stay under the pointer")
+        m.handle(.fileDragInZone, settings: hold, now: at(6))
+        XCTAssertEqual(m.state, .expanded(.files), "a file drag still takes over — only the hover is held")
+        var plain = holding(2); plain.handle(.activityShown, settings: s, now: t0)
+        plain.handle(.hoverInZone(since: at(1)), settings: s, now: at(5))
+        XCTAssertEqual(plain.state, .peek, "a notice without buttons still yields to the hover")
+    }
+
     // MARK: B5 — the clipboard page
 
     func testSwitchPageOnlyChangesAnOpenHub() {

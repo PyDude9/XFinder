@@ -6,7 +6,7 @@ import Foundation
 /// flagsChanged, IOBluetooth connect notifications); nothing polls.
 enum LiveActivity {
 
-    enum Kind: String, CaseIterable { case power, network, capsLock, bluetooth, alert, volume, timer }
+    enum Kind: String, CaseIterable { case power, network, capsLock, bluetooth, alert, volume, timer, meeting }
 
     enum Tint: Equatable { case neutral, good, warning, bad }
 
@@ -21,6 +21,15 @@ enum LiveActivity {
         var duration: TimeInterval = 3
         /// 0…1 for a level bar (volume). nil ⇒ no bar.
         var level: Double? = nil
+        /// §3b #33 — buttons on the notice (a meeting alert: Tham gia / Hoãn / Mở Lịch). Non-empty ⇒ hovering the
+        /// notice must not turn it into a peek, or the buttons vanish under the pointer that came to press them.
+        var buttons: [Button] = []
+    }
+
+    enum Button: Equatable {
+        case join(URL)
+        case snooze(key: String)
+        case openCalendar
     }
 
     // MARK: Power

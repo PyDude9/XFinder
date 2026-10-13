@@ -46,6 +46,8 @@ enum NotchSurfaceMachine {
         /// B6: a track is known (and the Now Playing switch is on). Hover may then peek it even with no
         /// files held — a playing track is never "empty" — and the peek survives the tray emptying.
         var nowPlayingActive = false
+        /// §3b #33: the notice on screen has buttons — a hover must not replace it.
+        var activityHoldsHover = false
         var dragIntoNotchOpens = true
         var shakeOpens = true
         /// Pointer must rest in the notch zone this long before hover counts (accidental passes are shorter).
@@ -146,6 +148,7 @@ enum NotchSurfaceMachine {
                 if n == 0, state == .peek, !s.nowPlayingActive { collapse() }
             case .hoverInZone(let since):
                 guard s.hoverToPeek, state.isIdle, now.timeIntervalSince(since) >= s.hoverDwell else { return }
+                if state == .activity && s.activityHoldsHover { return }   // the pointer came to press a button
                 let activity = NotchHoverOpen.Activity(itemCount: itemCount, trackPlaying: s.nowPlayingActive,
                                                        agentNeedsYou: s.agentNeedsYou, lastPage: s.lastPage)
                 if let page = s.hoverOpens.page(for: activity, shown: s.shownPages) {
