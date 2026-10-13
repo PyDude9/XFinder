@@ -340,8 +340,7 @@ xuống cửa sổ dưới không (`NSWindow.windowNumber(at:)`).
 | — | D4b (xem trước link opt-in) | giữ, xếp sau N3 | — |
 
 **Tiến độ (2026-10-13):** **N1 ✅ dựng + test** — `panelSize/panelFrame`, `render()` một frame mỗi anchor, hit-test và drop theo
-`drawnFrame`; 28/28 mutation notch RED (M27/M28 mới); **chưa cài** vì probe click-xuyên vùng trong suốt chưa đo được (màn hình
-đang ngủ; watcher tự đo khi thức). **N3 ✅ dựng + test** — hook zsh (đo trong scratchpad 4/4), `AgentEvents`/`AgentSessionRules`/
+`drawnFrame`; 28/28 mutation notch RED (M27/M28 mới). **N1b (07:14–07:25):** probe click-xuyên đo được khi màn thức và báo **BLOCKS CLICKS** — nguyên nhân là chính dòng `ignoresMouseEvents = false` trong `SurfacePanel(.notch)`: chưa từng gán ⇒ vùng alpha 0 cho click lọt xuống; gán `false` (trước/sau order-front, true→false) ⇒ cả frame chặn; thuộc tính đọc ra `false` ở cả hai. Panel cố định 700×745 của OneNotch đo bằng cùng phép thử: thân notch trúng OneNotch, vùng trong suốt trúng cửa sổ bên dưới. Đã bỏ dòng gán, gate `SurfacePanelHitTestTests` (mutation tiêm lại dòng gán ⇒ đỏ), 793/0; đã cài 07:25. **Chưa đo trên panel thật của app đã cài**: probe e2e đầu tiên thiếu `NSApplication` nên trả "none" cho cả hai điểm (PASS giả, đã sửa thành INVALID); người dùng thoát XFinder lúc 07:29 trước khi đo lại. **N3 ✅ dựng + test** — hook zsh (đo trong scratchpad 4/4), `AgentEvents`/`AgentSessionRules`/
 `AgentHookInstaller` 17 test, `AgentSessionMonitor`, trang Agent AI trên hub + mục cài hook ở Notch & Khay thả, catalog + gate;
 schema hook đối chiếu tài liệu chính thức (`decision.behavior`, exit 2 bị bỏ qua, `statusMessage`/`timeout` thật); **chưa đo
 live** (e2e `scratchpad/n3/e2e-agents.sh` chờ màn thức; phiên Claude Code thật chỉ sau khi người dùng bấm Cài hook).

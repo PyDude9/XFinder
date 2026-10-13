@@ -46,7 +46,14 @@ final class SurfacePanel: NSPanel {
         switch kind {
         case .interactive: level = .floating; ignoresMouseEvents = false
         case .passive:     level = .statusBar; ignoresMouseEvents = true
-        case .notch:       level = .statusBar; ignoresMouseEvents = false
+        // N1b (2026-10-13), measured with NSWindow.windowNumber(at:) on a 600×300 clear panel holding one 100×100
+        // opaque square: NEVER assigned ⇒ the alpha-0 remainder falls through to the window below and only the
+        // square is hit; `ignoresMouseEvents = false` assigned (before or after order-front, or true→false) ⇒ the
+        // WHOLE frame is hit. The property reads `false` in both states — AppKit keeps a third, unset state that
+        // means "hit-test by shape", and the only way to stay in it is to never write the property. The notch
+        // panel is one fixed 776-pt-wide frame over every title bar under the notch (N1), so it must stay unset.
+        // Gate: SurfacePanelHitTestTests reads this file; e2e: scratchpad n1/e2e-fixed-panel.sh on the installed app.
+        case .notch:       level = .statusBar
         }
     }
 
