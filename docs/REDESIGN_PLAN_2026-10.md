@@ -378,6 +378,44 @@ chỉ host công cộng, không localhost/mạng nội bộ; mặc định tắt
 bên thứ ba, mic) · iCloud (CloudKit cần tài khoản trả phí) · Sentry/TelemetryDeck/Sparkle tự tải (0 telemetry) · Pro/license ·
 camera "Mirror" (câu job: không ai tới notch để soi gương) · thay HUD độ sáng (không có đường ghi public).
 
+### 3f. Đợt E — Chọn văn bản thông minh (kế hoạch sau đối chiếu, 2026-10-13)
+
+**Câu job:** *"Tôi vừa bôi đen một đoạn chữ ở app khác — tôi muốn dịch, đổi đơn vị, đổi múi giờ, tính, hoặc đưa ngày đó vào
+Lịch mà không rời app."* OneNotch (bằng chứng, không chép): huy hiệu tự hiện khi bôi đen (`SelectionTranslateMonitor`,
+`TranslateBadgeController`, cần AX), cài đặt **độ dài tối thiểu** + **danh sách app loại trừ** (Localizable 505/207/1091),
+⇧⌘G riêng, badge `smart-select` + `currency-conversion` trong `seenFeatureBadges`; quy đổi đơn vị/tiền **chỉ có trong quảng cáo**,
+không một chuỗi UI nào — nên chỉ học phần đo được.
+
+**Đo trước khi thiết kế (probe thụ động `scratchpad/e-probe/selwatch`, 10 phút, chỉ ghi độ dài, không ghi chữ):**
+
+| Sự thật | Số đo | Hệ quả thiết kế |
+|:--|:--|:--|
+| `AXObserverAddNotification(kAXSelectedTextChangedNotification)` | **= 0 (thành công) ở mọi app**, kể cả Chrome và Claude (Electron) — **không** cần ghi `AXManualAccessibility` | không đụng thuộc tính của app khác |
+| Tần suất | 110 lần Chrome, 46 Claude trong 10 phút; **mỗi bước kéo chuột một lần** (độ dài 1 → 11 → 14 → 17 → 20…) | phải chờ vùng chọn **đứng yên** + **nhả chuột** |
+| `kAXBoundsForRangeParameterizedAttribute` | Chrome **94/94**, Claude **42/42** trả `0,1117 0×0` (1117 = chiều cao màn hình chính tính bằng point ⇒ "không có dữ liệu") | **neo huy hiệu vào điểm nhả chuột**, chỉ dùng khung AX khi không suy biến |
+| Safari | 21 thông báo, `AXSelectedText` **luôn rỗng** | WebKit dùng text-marker — probe `AXSelectedTextMarkerRange` + `AXStringForTextMarkerRange`; nếu đúng thì **N5a ⇧⌘G cũng mù trong Safari** và phải sửa chung |
+| Bàn phím (⇧+mũi tên) | không có điểm con trỏ đáng tin | huy hiệu chỉ hiện cho vùng chọn bằng chuột; bàn phím dùng ⇧⌘G |
+
+**Hạng mục — mỗi mục một commit, có test + mutation + đo:**
+
+| # | Việc | File (thuần ⇒ symlink vào Tests) | Cổng |
+|:--|:--|:--|:--|
+| **E1** | Luật thuần: phân loại vùng chọn → hành động (dịch · đơn vị · múi giờ · ngày → Lịch · phép tính · tiền tệ nếu bật), máy trạng thái "đứng yên + nhả chuột", cổng độ dài/app loại trừ, chọn điểm neo (khung AX suy biến ⇒ điểm chuột; lật toạ độ AX→AppKit) | `Core/SmartSelect/SmartSelectionRules.swift` | test + mutation; tái dùng `Calculator` cho phép tính |
+| **E2** | Đổi đơn vị (Foundation `Measurement`): độ dài, khối lượng, nhiệt độ, thể tích, tốc độ; mét ↔ Anh/Mỹ; dấu phẩy thập phân tiếng Việt (`1,5 km`) vs dấu phân nghìn (`1,500 mi`) theo luật có test | `Core/SmartSelect/UnitConversion.swift` | test bảng giá trị chuẩn, mutation |
+| **E3** | Đổi múi giờ: `3pm PST`, `15:00 UTC`, `9:30 am EST` → giờ máy; bảng viết tắt **không mơ hồ** (IST/CST… bị loại, nói rõ), DST tính theo ngày tham chiếu | `Core/SmartSelect/TimeZoneConversion.swift` | test với ngày cố định qua mốc DST |
+| **E4** | `SelectionWatcher`: một `AXObserver` cho app phía trước (đổi khi kích hoạt app khác), cặp monitor nhả chuột global+local **chỉ khi bật**, một hẹn giờ một-lần 300 ms khi vùng chọn đang đổi; tắt ⇒ không observer, không monitor; loại XFinder + app trong danh sách; đường text-marker cho WebKit nếu probe xác nhận | `Core/SmartSelect/SelectionWatcher.swift` | idle 60 s Δ ≤ 0.05 s khi bật; FeatureCatalog `.smartSelect` (Trợ năng); FeatureKeyDefaults/Contract |
+| **E5** | Huy hiệu + bảng kết quả: `SurfacePanel` dựng một lần, viên thuốc nhỏ cạnh điểm nhả chuột (kẹp trong màn hình chứa điểm đó), ẩn khi bấm chỗ khác / đổi app / Esc / 6 s; bấm ⇒ bảng: kết quả quy đổi có nút Sao chép, Dịch ⇒ panel N5a (macOS 15+), Thêm vào Lịch ⇒ EventKit sau khi xác nhận. Trang **Chọn văn bản thông minh** (CÔNG CỤ): công tắc, độ dài tối thiểu, app loại trừ, và công tắc ⇧⌘G **chuyển** từ trang Giọng nói sang (một khoá, một control) | `Views/SmartSelect*.swift`, `Views/Detail/SmartSelectDetailView.swift` | AX dump EN/VI 0 rò rỉ; L10n 6 gate |
+| **E6** | Tiền tệ **opt-in mạng**: tỷ giá ECB hằng ngày (`eurofxref-daily.xml`, không khoá API), cache 12 h, hiện "≈" + ngày tỷ giá; tắt mặc định; nhãn nói rõ gửi gì đi đâu | `Core/SmartSelect/CurrencyRates.swift` (luật thuần + fetcher) | test parser trên XML mẫu; không request khi tắt |
+| **E7** | Đo live: e2e trên một tài liệu TextEdit do harness tạo (đặt vùng chọn bằng thuộc tính AX của chính tài liệu đó, không gửi phím/chuột) ⇒ huy hiệu hiện (CGWindowList + AX dump) ⇒ bảng đúng kết quả; probe Safari text-marker khi người dùng bôi đen | scratchpad harness | kết quả ghi vào commit |
+
+**Sau đợt E (giữ thứ tự, mỗi mục probe trước):** đo **B7 trên màn hình ngoài 1920×1080 vừa cắm** (notch ảo, hover, kéo cửa
+sổ) · F: Quit-on-close, Uninstaller (bắt buộc xem trước + chỉ vào Thùng rác), Cleaning Mode, studio chụp & chú thích · G: quy
+dirty memory về từng module (`vmmap -verbose`, `heap`), mục tiêu < 30 MB khi tắt hết tính năng nền.
+
+**Chỉ tay người làm được (không probe nào thay):** Touch ID mở/huỷ bảng khoá · mọi click trên Thư viện Clipboard · AirDrop từ hub ·
+kéo cửa sổ vào hàng snap ở notch · rút sạc / mất Wi-Fi / Caps Lock / nối AirPods cho live activity · ⌘⇧V và ⌘V Paste Stack bằng
+bàn phím thật · Now Playing với Music/Spotify/YouTube thật · nghe TTS · vuốt hai ngón đổi trang notch.
+
 ## 4. Lộ trình (UI/UX trước, đúng yêu cầu)
 
 Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong phase là thứ tự làm.
