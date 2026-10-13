@@ -5,11 +5,11 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-smartselect.XXXXXX)
-FILES="XFinder/Core/SmartSelect/SmartSelectionRules.swift XFinder/Core/SmartSelect/UnitConversion.swift XFinder/Core/SmartSelect/TimeZoneConversion.swift XFinder/Core/SecretApps.swift"
+FILES="XFinder/Core/SmartSelect/SmartSelectionRules.swift XFinder/Core/SmartSelect/UnitConversion.swift XFinder/Core/SmartSelect/TimeZoneConversion.swift XFinder/Core/SmartSelect/CurrencyConversion.swift XFinder/Core/SecretApps.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
-FILTER='SmartSelectionRules|UnitConversion|TimeZoneConversion|MCPProtocol'
+FILTER='SmartSelectionRules|UnitConversion|TimeZoneConversion|CurrencyConversion|MCPProtocol'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -78,6 +78,27 @@ run "E9  every AX error is retried (a final -25207/-25211 retries forever)" $R \
 # (Clamping the index alone was an EQUIVALENT mutant — the guard already returned nil at attempt 3 — and stayed GREEN.)
 run "E10 -25204 is retried without a limit" $R \
   "'        guard error == axCannotComplete, attempt >= 0, attempt < registrationRetryDelays.count else { return nil }'" "'        guard error == axCannotComplete, attempt >= 0 else { return nil }; return registrationRetryDelays[min(attempt, registrationRetryDelays.count - 1)]'"
+C=XFinder/Core/SmartSelect/CurrencyConversion.swift
+run "C1  one separator + three digits read as cents (1.500 € becomes 1.5)" $C \
+  "'        if tail.count == 3 && minorUnits(code) != 3 {'" "'        if tail.count == 3 && minorUnits(code) == 99 {'"
+run "C2  \$ is not marked as a guess" $C \
+  "'        if let c = assumed[marker] ?? assumed[lower] { return (c, marker) }'" "'        if let c = assumed[marker] ?? assumed[lower] { return (c, nil) }'"
+run "C3  the ECB cross is inverted" $C \
+  "'            value = a.value / s * t'" "'            value = a.value * s / t'"
+run "C4  Vietcombank read at the Transfer rate" $C \
+  "'rateAttribute: \"Sell\", textElement: \"DateTime\"'" "'rateAttribute: \"Transfer\", textElement: \"DateTime\"'"
+run "C5  a dash rate is kept as 0" $C \
+  "'            if let v = Double(cleaned), v > 0, v.isFinite { rates[code] = v }'" "'            rates[code] = Double(cleaned) ?? 0'"
+run "C6  a table never goes stale (one request ever)" $C \
+  "'        return age >= freshFor || age < 0'" "'        return age < 0'"
+run "C7  ambiguous symbols (¥, kr) are guessed as a currency" $C \
+  "'        guard !ambiguous.contains(marker), let (code, guess) = currency(for: marker),'" "'        guard let (code, guess) = currency(for: ambiguous.contains(marker) ? \"JP¥\" : marker),'"
+run "C8  the local currency is converted into itself" $C \
+  "'        guard let ctx = context, let a = parse(text), a.code != ctx.localCode,'" "'        guard let ctx = context, let a = parse(text),'"
+run "C9  a week-old rate is still shown" $C \
+  "'        return age >= -86_400 && age <= usableFor'" "'        return age >= -86_400'"
+run "C10 no back-off after a failure" $C \
+  "'        if let f = lastFailure, now.timeIntervalSince(f) < retryAfterFailure, now >= f { return false }'" "'        _ = lastFailure'"
 echo "RESULT: $red/$total mutations RED"
 restore
 after=$(fails); echo "after restore failures: $after"

@@ -67,6 +67,8 @@ struct SmartSelectPanelView: View {
             let src = "\(UnitConversion.format(r.source.value, decimalComma: decimalComma)) \(r.source.unit.symbol)"
             let dst = "\(UnitConversion.format(r.target.value, decimalComma: decimalComma)) \(r.target.unit.symbol)"
             resultRow(icon: "ruler", caption: "\(src) ≈", value: dst, copy: dst)
+        case .currency(let c):
+            currencyRow(c)
         case .time(let t):
             let src = "\(TimeZoneConversion.clockLabel(hour: t.sourceHour, minute: t.sourceMinute)) \(t.zoneLabel) (\(TimeZoneConversion.offsetLabel(t.sourceOffset)))"
             let local = TimeZoneConversion.clockLabel(hour: t.localHour, minute: t.localMinute)
@@ -112,6 +114,58 @@ struct SmartSelectPanelView: View {
                 }
             }
         }
+    }
+
+    /// E6. Every state has the same two-line height (`SmartSelectionBadge.panelHeight`), so a table arriving while
+    /// the panel is open swaps the row in place.
+    @ViewBuilder private func currencyRow(_ row: CurrencyConversion.Row) -> some View {
+        switch row {
+        case .converted(let r):
+            let src = CurrencyConversion.format(r.amount.value, code: r.amount.code, decimalComma: decimalComma)
+            let dst = CurrencyConversion.format(r.targetValue, code: r.targetCode, decimalComma: decimalComma)
+            let number = String(dst.dropLast(r.targetCode.count + 1))
+            VStack(alignment: .leading, spacing: 2) {
+                resultRow(icon: "banknote", caption: "\(src) ≈", value: dst, copy: number)
+                Text(rateSourceLine(r))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary).lineLimit(1)
+                    .padding(.leading, 26)
+            }
+        case .pending(let a, let to):
+            HStack(spacing: XFinderTokens.Space.tight) {
+                Image(systemName: "banknote").frame(width: 18)
+                ProgressView().controlSize(.small)
+                Text("\(CurrencyConversion.format(a.value, code: a.code, decimalComma: decimalComma)) → \(to)\(L10n.t(": đang lấy tỷ giá…"))")
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary).lineLimit(2)
+                Spacer(minLength: 0)
+            }
+            .frame(minHeight: 40)
+        case .failed:
+            HStack(spacing: XFinderTokens.Space.tight) {
+                Image(systemName: "banknote").frame(width: 18)
+                Text(L10n.t("Không lấy được tỷ giá. XFinder thử lại sau ít phút."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.orange).lineLimit(2)
+                Spacer(minLength: 0)
+            }
+            .frame(minHeight: 40)
+        }
+    }
+
+    /// "Vietcombank sell rate · 13/10 10:55 · $ read as USD" — where the number came from, and what was guessed.
+    private func rateSourceLine(_ r: CurrencyConversion.Result) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: L10n.isEnglish ? "en_US" : "vi_VN")
+        if r.publishedHasTime {
+            f.dateFormat = "dd/MM HH:mm"
+        } else {
+            f.dateFormat = "dd/MM/yyyy"
+            f.timeZone = TimeZone(identifier: "UTC")
+        }
+        let name = r.source == .vietcombank ? L10n.t("Giá bán Vietcombank") : L10n.t("Tỷ giá tham chiếu ECB")
+        var line = "\(name) · \(f.string(from: r.published))"
+        if let guess = r.amount.assumedFrom {
+            line += " · \(guess)\(L10n.t(" hiểu là "))\(r.amount.code)"
+        }
+        return line
     }
 
     private func resultRow(icon: String, caption: String, value: String, copy: String) -> some View {

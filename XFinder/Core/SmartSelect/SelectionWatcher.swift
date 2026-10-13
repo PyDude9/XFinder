@@ -207,14 +207,20 @@ final class SelectionWatcher {
                                                  frontBundleID: front?.bundleIdentifier, frontAppName: front?.localizedName,
                                                  ownBundleID: Bundle.main.bundleIdentifier ?? "com.xfinder.app",
                                                  excluded: excluded) else { watch.shown = false; return }
-        let actions = SmartSelectionRules.actions(for: currentText, now: Date(), localZone: .current)
+        let rates = CurrencyRateStore.shared
+        if rates.isEnabled, CurrencyConversion.parse(currentText) != nil { rates.refreshIfNeeded() }
+        let actions = SmartSelectionRules.actions(for: currentText, now: Date(), localZone: .current,
+                                                  currency: rates.context())
         guard !actions.isEmpty else { watch.shown = false; return }
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
         let anchor = SmartSelectionRules.anchor(axBounds: currentBounds, mouseUp: mouseUp, primaryScreenHeight: primaryHeight)
         let screen = NSScreen.screens.first { $0.frame.contains(anchor) } ?? NSScreen.main
         let frame = SmartSelectionRules.badgeFrame(anchor: anchor, visible: screen?.visibleFrame ?? .zero)
         let kinds = actions.map { a -> String in
-            switch a { case .unit: "unit"; case .time: "time"; case .arithmetic: "arithmetic"; case .calendar: "calendar"; case .translate: "translate" }
+            switch a {
+            case .unit: "unit"; case .currency: "currency"; case .time: "time"; case .arithmetic: "arithmetic"
+            case .calendar: "calendar"; case .translate: "translate"
+            }
         }.joined(separator: ",")
         log.notice("badge shown kinds=\(kinds, privacy: .public) length=\(self.currentText.count) anchor=\(self.currentBounds == nil ? "mouse" : "ax", privacy: .public) app=\(front?.bundleIdentifier ?? "?", privacy: .public) frame=\(Int(frame.minX)),\(Int(frame.minY))")
         SmartSelectionBadge.shared.showBadge(frame: frame, text: currentText, actions: actions,

@@ -420,7 +420,7 @@ chuột ⇒ không huy hiệu; app bị loại trừ ⇒ không huy hiệu; neo 
 vừa mở trả `-25204` cho đăng ký observer (timeout 0,3 s) và watcher vẫn nhớ pid ⇒ tính năng câm tới lần đổi app sau; sửa bằng luật
 thử lại thuần (0,5/1,5/3 s, chỉ cho -25204), đo lại: lần 0 = −25204, 532 ms sau lần 1 = 0. **Chưa đo:** Safari (text marker),
 ghi vào Lịch thật, panel Dịch (macOS 15 + tay người), app Chromium/Electron với vùng chọn thật (probe thụ động đã thấy thông báo tới).
-**E6 (tiền tệ, opt-in mạng) chưa làm.**
+**E6 ✅ (chưa đo live)** — đo trước khi viết: feed ECB có 29 đồng tiền và **không có VND**, trong khi vùng máy là `en_VN`; nguồn giờ theo tiền tệ địa phương: VND → XML công khai của Vietcombank (giá bán, 20 đồng tiền), còn lại → ECB. Đọc số tiền theo số chữ số lẻ ISO (`1.500 €` = 1 500, `KWD 1.500` = 1,5); `¥`/`kr` bị từ chối; `$` hiểu là USD và panel nói ra. Một request ≤ 12 giờ/lần, không timer, không gửi chữ đã chọn. 851 test, mutation 30/30 RED. E2e (`scratchpad/e6h/e2e.sh`, 14 kiểm tra) chưa chạy được: người dùng đang dùng máy.
 
 **Sau đợt E (giữ thứ tự, mỗi mục probe trước):** đo **B7 trên màn hình ngoài 1920×1080 vừa cắm** (notch ảo, hover, kéo cửa
 sổ) · F: Quit-on-close, Uninstaller (bắt buộc xem trước + chỉ vào Thùng rác), Cleaning Mode, studio chụp & chú thích · G: quy

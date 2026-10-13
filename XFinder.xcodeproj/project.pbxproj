@@ -14,6 +14,8 @@
 		7F1A0315 /* SmartSelect/SmartSelectionRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0314 /* SmartSelect/SmartSelectionRules.swift */; };
 		7F1A0317 /* SmartSelect/UnitConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0316 /* SmartSelect/UnitConversion.swift */; };
 		7F1A0319 /* SmartSelect/TimeZoneConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0318 /* SmartSelect/TimeZoneConversion.swift */; };
+		7F1A0323 /* SmartSelect/CurrencyConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0322 /* SmartSelect/CurrencyConversion.swift */; };
+		7F1A0325 /* SmartSelect/CurrencyRateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0324 /* SmartSelect/CurrencyRateStore.swift */; };
 		7F1A031B /* SmartSelect/SelectionWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031A /* SmartSelect/SelectionWatcher.swift */; };
 		7F1A031D /* SmartSelect/SmartSelectionBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031C /* SmartSelect/SmartSelectionBadge.swift */; };
 		7F1A001E /* XFinderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000B /* XFinderApp.swift */; };
@@ -305,6 +307,8 @@
 		7F1A0314 /* SmartSelect/SmartSelectionRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SmartSelectionRules.swift; sourceTree = "<group>"; };
 		7F1A0316 /* SmartSelect/UnitConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/UnitConversion.swift; sourceTree = "<group>"; };
 		7F1A0318 /* SmartSelect/TimeZoneConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/TimeZoneConversion.swift; sourceTree = "<group>"; };
+		7F1A0322 /* SmartSelect/CurrencyConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/CurrencyConversion.swift; sourceTree = "<group>"; };
+		7F1A0324 /* SmartSelect/CurrencyRateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/CurrencyRateStore.swift; sourceTree = "<group>"; };
 		7F1A031A /* SmartSelect/SelectionWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SelectionWatcher.swift; sourceTree = "<group>"; };
 		7F1A031C /* SmartSelect/SmartSelectionBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SmartSelectionBadge.swift; sourceTree = "<group>"; };
 		205EC419305AD1CE0094A78B /* XFinderSync.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = XFinderSync.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -750,6 +754,8 @@
 				7F1A0314 /* SmartSelect/SmartSelectionRules.swift */,
 				7F1A0316 /* SmartSelect/UnitConversion.swift */,
 				7F1A0318 /* SmartSelect/TimeZoneConversion.swift */,
+				7F1A0322 /* SmartSelect/CurrencyConversion.swift */,
+				7F1A0324 /* SmartSelect/CurrencyRateStore.swift */,
 				7F1A031A /* SmartSelect/SelectionWatcher.swift */,
 				7F1A031C /* SmartSelect/SmartSelectionBadge.swift */,
 				E38D74CB /* QuickSearch/Quicklinks.swift */,
@@ -1228,6 +1234,8 @@
 				7F1A0315 /* SmartSelect/SmartSelectionRules.swift in Sources */,
 				7F1A0317 /* SmartSelect/UnitConversion.swift in Sources */,
 				7F1A0319 /* SmartSelect/TimeZoneConversion.swift in Sources */,
+				7F1A0323 /* SmartSelect/CurrencyConversion.swift in Sources */,
+				7F1A0325 /* SmartSelect/CurrencyRateStore.swift in Sources */,
 				7F1A031B /* SmartSelect/SelectionWatcher.swift in Sources */,
 				7F1A031D /* SmartSelect/SmartSelectionBadge.swift in Sources */,
 				2535B74A /* QuickSearch/Quicklinks.swift in Sources */,

@@ -10,6 +10,9 @@ struct SmartSelectDetailView: View {
     // N5a — one key, one control: the switch moved here from the Voice page (same reader, TranslateSelectionController).
     @AppStorage("translate.hotkeyEnabled") private var translateEnabled = false
     @State private var trusted = WindowManager.isTrusted
+    // E6 — ONE reader: CurrencyRateStore.
+    @AppStorage("smartSelect.currency") private var currencyEnabled = false
+    private var rates: CurrencyRateStore { CurrencyRateStore.shared }
 
     private var excluded: [String] { SmartSelectionRules.parseExcluded(excludedRaw).sorted() }
 
@@ -95,12 +98,48 @@ struct SmartSelectDetailView: View {
                 LabeledLine(label: L10n.t("Đổi đơn vị"), value: "5 km ≈ 3.11 mi · 72°F ≈ 22.22°C")
                 LabeledLine(label: L10n.t("Đổi múi giờ"), value: "3pm PST = 06:00")
                 LabeledLine(label: L10n.t("Tính"), value: "12 * (3 + 4) = 84")
+                LabeledLine(label: L10n.t("Đổi tiền tệ"), value: "$20 ≈ 522,200 VND")
                 LabeledLine(label: L10n.t("Thêm vào Lịch"), value: L10n.t("Họp nhóm thứ Sáu 9 giờ"))
                 LabeledLine(label: L10n.t("Dịch"), value: L10n.t("macOS 15 trở lên, ngay trên máy"))
+                currencyControls
                 InlineNote(text: L10n.t("Múi giờ viết tắt có nhiều nghĩa (CST, IST, BST…) bị bỏ qua thay vì đoán. EST, PST… dùng đúng định nghĩa; nếu vùng đó đang dùng giờ mùa hè, panel ghi chú. Thêm vào Lịch chỉ ghi khi bạn bấm nút, và hỏi quyền Lịch lần đầu."))
                     .padding(.horizontal, XFinderTokens.Space.page)
             }
         }
+    }
+
+    /// E6 — the only network action of Smart Selection, so its label says what is sent and where.
+    @ViewBuilder private var currencyControls: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            if let local = rates.localCurrency, let source = rates.source {
+                ToggleRow(title: L10n.t("Đổi tiền tệ (cần mạng)"),
+                          subtitle: source == .vietcombank
+                            ? L10n.t("Khi bạn bôi đen một số tiền, tải bảng tỷ giá công khai từ portal.vietcombank.com.vn, tối đa 12 giờ một lần. Không gửi chữ bạn chọn. Đổi ra VND theo giá bán của Vietcombank.")
+                            : "\(L10n.t("Khi bạn bôi đen một số tiền, tải tỷ giá tham chiếu công khai của Ngân hàng Trung ương châu Âu (www.ecb.europa.eu), tối đa 12 giờ một lần. Không gửi chữ bạn chọn. Đổi ra: "))\(local)",
+                          isOn: $currencyEnabled)
+                    .onChange(of: currencyEnabled) { rates.applySettings() }
+                    .disabled(!enabled)
+                if currencyEnabled {
+                    Text(rateStatus).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                }
+            } else {
+                InlineNote(text: "\(L10n.t("Vùng của macOS dùng "))\(rates.localCurrency ?? "?")\(L10n.t(" — chưa có nguồn tỷ giá công khai cho đồng này, nên không có đổi tiền tệ."))")
+            }
+        }
+        .padding(.horizontal, XFinderTokens.Space.page)
+    }
+
+    private var rateStatus: String {
+        if rates.inFlight { return L10n.t("Đang tải bảng tỷ giá…") }
+        guard let t = rates.table, t.source == rates.source else {
+            return rates.lastFailure == nil ? L10n.t("Chưa tải bảng tỷ giá — sẽ tải khi bạn bôi đen một số tiền.")
+                                            : L10n.t("Lần tải gần nhất thất bại; XFinder thử lại sau ít phút.")
+        }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: L10n.isEnglish ? "en_US" : "vi_VN")
+        f.dateFormat = t.publishedHasTime ? "dd/MM/yyyy HH:mm" : "dd/MM/yyyy"
+        if !t.publishedHasTime { f.timeZone = TimeZone(identifier: "UTC") }
+        return "\(L10n.t("Bảng tỷ giá đang dùng: "))\(f.string(from: t.published)), \(t.rates.count)\(L10n.t(" đồng tiền."))"
     }
 
     /// N5a — moved from the Voice page.

@@ -78,11 +78,20 @@ final class SmartSelectionBadge {
         let rows = actions.reduce(CGFloat(0)) { sum, a in
             switch a {
             case .time(let t): return sum + (t.regionNote == nil ? 58 : 74)
-            case .calendar: return sum + 64
+            case .calendar, .currency: return sum + 64
             default: return sum + 50
             }
         }
         return min(520, 86 + rows + 26)
+    }
+
+    /// E6 — a rate table arrived (or the request failed) while the badge or panel shows a selection: recompute the
+    /// rows from the same text. Every currency row state has the same height, so the open panel keeps its frame.
+    func refreshCurrency() {
+        guard !model.text.isEmpty, (badge?.isVisible ?? false) || isPanelOpen else { return }
+        let fresh = SmartSelectionRules.actions(for: model.text, now: Date(), localZone: .current,
+                                                currency: CurrencyRateStore.shared.context())
+        if fresh != model.actions { model.actions = fresh }
     }
 
     // MARK: Actions

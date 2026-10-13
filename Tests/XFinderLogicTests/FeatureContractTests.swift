@@ -31,7 +31,7 @@ final class FeatureContractTests: XCTestCase {
         .calendar: .pure(["Core/Calendar/GlanceRules.swift"]),
         .translateSelection: .pure(["Core/Translate/TranslateSelectionRules.swift"]),
         .smartSelect: .pure(["Core/SmartSelect/SmartSelectionRules.swift", "Core/SmartSelect/UnitConversion.swift",
-                             "Core/SmartSelect/TimeZoneConversion.swift"]),
+                             "Core/SmartSelect/TimeZoneConversion.swift", "Core/SmartSelect/CurrencyConversion.swift"]),
         .linkPreviews: .pure(["Core/Clipboard/LinkPreviewRules.swift"]),
         .quitProtection: .pure(["Core/QuitHold.swift"]),
         .cleanURLs: .pure(["Core/URLCleaner.swift"]),

@@ -71,6 +71,26 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Không tìm thấy lịch mặc định để ghi.": ("No default calendar to write to.", S),
     "Đã thêm vào Lịch.": ("Added to Calendar.", S),
     "Không thêm được vào Lịch.": ("Could not add to Calendar.", S),
+    # E6 — currency (panel row + settings). Fragments are the halves joined to a runtime value.
+    ": đang lấy tỷ giá…": (": fetching the rate…", F),
+    "Không lấy được tỷ giá. XFinder thử lại sau ít phút.": ("Could not fetch the rates. XFinder will try again in a few minutes.", S),
+    "Giá bán Vietcombank": ("Vietcombank sell rate", F),
+    "Tỷ giá tham chiếu ECB": ("ECB reference rate", F),
+    " hiểu là ": (" read as ", F),
+    "Đổi tiền tệ": ("Convert currency", S),
+    "Đổi tiền tệ (cần mạng)": ("Convert currency (uses the network)", S),
+    "Khi bạn bôi đen một số tiền, tải bảng tỷ giá công khai từ portal.vietcombank.com.vn, tối đa 12 giờ một lần. Không gửi chữ bạn chọn. Đổi ra VND theo giá bán của Vietcombank.":
+        ("When you select an amount of money, downloads the public rate table from portal.vietcombank.com.vn, at most once every 12 hours. The text you select is not sent. Converts into VND at Vietcombank's sell rate.", S),
+    "Khi bạn bôi đen một số tiền, tải tỷ giá tham chiếu công khai của Ngân hàng Trung ương châu Âu (www.ecb.europa.eu), tối đa 12 giờ một lần. Không gửi chữ bạn chọn. Đổi ra: ":
+        ("When you select an amount of money, downloads the European Central Bank's public reference rates (www.ecb.europa.eu), at most once every 12 hours. The text you select is not sent. Converts into: ", F),
+    "Vùng của macOS dùng ": ("Your macOS region uses ", F),
+    " — chưa có nguồn tỷ giá công khai cho đồng này, nên không có đổi tiền tệ.":
+        (" — there is no public rate source for it, so currency conversion is not available.", F),
+    "Đang tải bảng tỷ giá…": ("Downloading the rate table…", S),
+    "Chưa tải bảng tỷ giá — sẽ tải khi bạn bôi đen một số tiền.": ("No rate table yet — it is downloaded when you select an amount of money.", S),
+    "Lần tải gần nhất thất bại; XFinder thử lại sau ít phút.": ("The last download failed; XFinder will try again in a few minutes.", S),
+    "Bảng tỷ giá đang dùng: ": ("Rate table in use: ", F),
+    " đồng tiền.": (" currencies.", F),
 }
 
 def main() -> None:

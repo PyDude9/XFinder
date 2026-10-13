@@ -59,6 +59,8 @@ enum SmartSelectionRules {
 
     enum Action: Equatable {
         case unit(UnitConversion.Result)
+        /// E6 — opt-in; absent unless `currency` context is passed.
+        case currency(CurrencyConversion.Row)
         case time(TimeZoneConversion.Result)
         case arithmetic(value: Double)
         /// `title` is the selection with the date words removed ("" ⇒ the panel uses a default title).
@@ -68,11 +70,13 @@ enum SmartSelectionRules {
 
     /// What XFinder can do with a selection, most specific first. Empty ⇒ no badge.
     static func actions(for text: String, now: Date, localZone: TimeZone,
+                        currency: CurrencyConversion.Context? = nil,
                         detectDate: (String) -> DateMatch? = SmartSelectionRules.detectDate) -> [Action] {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty, t.count <= maxLength else { return [] }
         var out: [Action] = []
         if let u = UnitConversion.convert(t) { out.append(.unit(u)) }
+        if let c = CurrencyConversion.row(for: t, context: currency, now: now) { out.append(.currency(c)) }
         if let tz = TimeZoneConversion.convert(t, now: now, to: localZone), !tz.isSameAsLocal { out.append(.time(tz)) }
         let dateMatch = t.count <= 200 ? detectDate(t) : nil
         if let v = arithmetic(t), dateMatch.map({ !covers($0.matched, t) }) ?? true { out.append(.arithmetic(value: v)) }

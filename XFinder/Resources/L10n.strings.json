@@ -8802,6 +8802,70 @@
     "Không thêm được vào Lịch.": {
       "en": "Could not add to Calendar.",
       "scope": "sentence"
+    },
+    ": đang lấy tỷ giá…": {
+      "en": ": fetching the rate…",
+      "scope": "fragment"
+    },
+    "Không lấy được tỷ giá. XFinder thử lại sau ít phút.": {
+      "en": "Could not fetch the rates. XFinder will try again in a few minutes.",
+      "scope": "sentence"
+    },
+    "Giá bán Vietcombank": {
+      "en": "Vietcombank sell rate",
+      "scope": "fragment"
+    },
+    "Tỷ giá tham chiếu ECB": {
+      "en": "ECB reference rate",
+      "scope": "fragment"
+    },
+    " hiểu là ": {
+      "en": " read as ",
+      "scope": "fragment"
+    },
+    "Đổi tiền tệ": {
+      "en": "Convert currency",
+      "scope": "sentence"
+    },
+    "Đổi tiền tệ (cần mạng)": {
+      "en": "Convert currency (uses the network)",
+      "scope": "sentence"
+    },
+    "Khi bạn bôi đen một số tiền, tải bảng tỷ giá công khai từ portal.vietcombank.com.vn, tối đa 12 giờ một lần. Không gửi chữ bạn chọn. Đổi ra VND theo giá bán của Vietcombank.": {
+      "en": "When you select an amount of money, downloads the public rate table from portal.vietcombank.com.vn, at most once every 12 hours. The text you select is not sent. Converts into VND at Vietcombank's sell rate.",
+      "scope": "sentence"
+    },
+    "Khi bạn bôi đen một số tiền, tải tỷ giá tham chiếu công khai của Ngân hàng Trung ương châu Âu (www.ecb.europa.eu), tối đa 12 giờ một lần. Không gửi chữ bạn chọn. Đổi ra: ": {
+      "en": "When you select an amount of money, downloads the European Central Bank's public reference rates (www.ecb.europa.eu), at most once every 12 hours. The text you select is not sent. Converts into: ",
+      "scope": "fragment"
+    },
+    "Vùng của macOS dùng ": {
+      "en": "Your macOS region uses ",
+      "scope": "fragment"
+    },
+    " — chưa có nguồn tỷ giá công khai cho đồng này, nên không có đổi tiền tệ.": {
+      "en": " — there is no public rate source for it, so currency conversion is not available.",
+      "scope": "fragment"
+    },
+    "Đang tải bảng tỷ giá…": {
+      "en": "Downloading the rate table…",
+      "scope": "sentence"
+    },
+    "Chưa tải bảng tỷ giá — sẽ tải khi bạn bôi đen một số tiền.": {
+      "en": "No rate table yet — it is downloaded when you select an amount of money.",
+      "scope": "sentence"
+    },
+    "Lần tải gần nhất thất bại; XFinder thử lại sau ít phút.": {
+      "en": "The last download failed; XFinder will try again in a few minutes.",
+      "scope": "sentence"
+    },
+    "Bảng tỷ giá đang dùng: ": {
+      "en": "Rate table in use: ",
+      "scope": "fragment"
+    },
+    " đồng tiền.": {
+      "en": " currencies.",
+      "scope": "fragment"
     }
   }
 }
