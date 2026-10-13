@@ -24,26 +24,39 @@ final class AgentSessionMonitor {
 
     // MARK: - Paths
 
-    static let supportDir: URL = {
+    /// `~/Library/Application Support/XFinder/Agents/<agent>` — the hook writes `events/` there and waits in `decisions/`.
+    static func supportDir(for agent: AgentKind) -> URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return base.appendingPathComponent("XFinder/Agents/claude", isDirectory: true)
-    }()
-    var eventsDir: URL { Self.supportDir.appendingPathComponent("events", isDirectory: true) }
-    var decisionsDir: URL { Self.supportDir.appendingPathComponent("decisions", isDirectory: true) }
-    var hookURL: URL { Self.supportDir.appendingPathComponent("bin/xfinder-claude-hook.zsh") }
+        return base.appendingPathComponent("XFinder/Agents/\(agent.rawValue)", isDirectory: true)
+    }
+    /// Claude's folder (the statusLine cache lives here too — `ClaudeStatusLine.supportDir(home:)`).
+    static let supportDir: URL = supportDir(for: .claude)
+    func eventsDir(for agent: AgentKind) -> URL { Self.supportDir(for: agent).appendingPathComponent("events", isDirectory: true) }
+    func decisionsDir(for agent: AgentKind) -> URL { Self.supportDir(for: agent).appendingPathComponent("decisions", isDirectory: true) }
+    /// Where the hook script is copied. Claude keeps its pre-P5 file name, so a hook installed by 1.3.0 still matches.
+    func hookURL(for agent: AgentKind) -> URL {
+        Self.supportDir(for: agent).appendingPathComponent(agent == .claude ? "bin/xfinder-claude-hook.zsh" : "bin/xfinder-agent-hook.zsh")
+    }
+    var hookURL: URL { hookURL(for: .claude) }
     static let claudeSettingsURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/settings.json")
+    /// Codex's user-level hook file (learn.chatgpt.com/docs/hooks). `CODEX_HOME` would move it, but an app launched
+    /// from the Dock never sees a shell's environment — ~/.codex is what Codex uses unless told otherwise.
+    static let codexHooksURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".codex/hooks.json")
+    static func hookFileURL(for agent: AgentKind) -> URL { agent == .codex ? codexHooksURL : claudeSettingsURL }
+
+    /// The agents whose hook logs are tailed.
+    static let hookAgents: [AgentKind] = AgentKind.allCases.filter(\.usesHookScript)
 
     // MARK: - Lifecycle
 
     private var running = false
-    private var dirSource: DispatchSourceFileSystemObject?
-    private var fileSource: DispatchSourceFileSystemObject?
-    private var watchedFile: URL?
-    private var offsets: [String: UInt64] = [:]
-    private var events: [AgentEvents.Event] = []
+    private var tails: [AgentKind: EventTail] = [:]
     private var answered: Set<String> = []
     private var reloadWork: DispatchWorkItem?
     private var livenessTimer: Timer?
+    /// When each agent's hook last wrote a line — the only proof that a hook really runs (Codex skips a hook until
+    /// the person trusts it in `/hooks`, and nothing else tells XFinder whether they did).
+    private(set) var lastEventAt: [AgentKind: Date] = [:]
 
     /// Under the notch master switch: a notch that is off has no page to show sessions on.
     func applySettings(underMaster master: Bool = true) {
@@ -53,107 +66,58 @@ final class AgentSessionMonitor {
     private func start() {
         guard !running else { return }
         running = true
-        ensureDirectories()
-        offsets = [:]; events = []
-        reload(full: true)
-        watchDirectory()
-        watchTodayFile()
+        answered = []
+        for agent in Self.hookAgents {
+            ensureDirectories(for: agent)
+            let tail = EventTail(agent: agent, eventsDir: eventsDir(for: agent))
+            tail.onChange = { [weak self] in self?.scheduleReload() }
+            tails[agent] = tail
+            tail.reload(full: true)
+            tail.watch()
+        }
+        rebuild()
     }
 
     private func stop() {
         guard running else { return }
         running = false
-        dirSource?.cancel(); dirSource = nil
-        fileSource?.cancel(); fileSource = nil; watchedFile = nil
+        for tail in tails.values { tail.cancel() }
+        tails = [:]
         livenessTimer?.invalidate(); livenessTimer = nil
         reloadWork?.cancel(); reloadWork = nil
-        offsets = [:]; events = []; answered = []
+        answered = []; lastEventAt = [:]
         if !sessions.isEmpty { sessions = []; onChange?() }
     }
 
-    private func ensureDirectories() {
+    private func ensureDirectories(for agent: AgentKind) {
         let fm = FileManager.default
-        for dir in [Self.supportDir, eventsDir, decisionsDir, hookURL.deletingLastPathComponent()] {
+        for dir in [Self.supportDir(for: agent), eventsDir(for: agent), decisionsDir(for: agent), hookURL(for: agent).deletingLastPathComponent()] {
             try? fm.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         }
-    }
-
-    // MARK: - Watching
-
-    private func watchDirectory() {
-        dirSource?.cancel()
-        let fd = open(eventsDir.path, O_EVTONLY)
-        guard fd >= 0 else { return }
-        let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write, .rename, .delete], queue: .main)
-        src.setEventHandler { [weak self] in
-            MainActor.assumeIsolated {       // queue: .main ⇒ the main thread; a documented contract, not a guess
-                self?.watchTodayFile()
-                self?.scheduleReload()
-            }
-        }
-        src.setCancelHandler { close(fd) }
-        src.resume()
-        dirSource = src
-    }
-
-    /// (Re)attach the file watch to today's file when it appears or the day rolls over.
-    private func watchTodayFile() {
-        let today = eventsDir.appendingPathComponent(AgentEvents.eventsFileName(for: Date()))
-        guard today != watchedFile || fileSource == nil else { return }
-        fileSource?.cancel(); fileSource = nil; watchedFile = nil
-        let fd = open(today.path, O_EVTONLY)
-        guard fd >= 0 else { return }                       // not written yet; the directory watch retries
-        let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write, .extend, .delete, .rename], queue: .main)
-        src.setEventHandler { [weak self] in MainActor.assumeIsolated { self?.scheduleReload() } }
-        src.setCancelHandler { close(fd) }
-        src.resume()
-        fileSource = src
-        watchedFile = today
     }
 
     /// Coalesce bursts (a tool call writes Pre + Post within milliseconds) into one rebuild.
     private func scheduleReload() {
         reloadWork?.cancel()
-        let w = DispatchWorkItem { [weak self] in MainActor.assumeIsolated { self?.reload(full: false) } }
+        let w = DispatchWorkItem { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                for tail in self.tails.values { tail.reload(full: false) }
+                self.rebuild()
+            }
+        }
         reloadWork = w
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: w)
     }
 
-    /// Read what is new in today's and yesterday's files (a session straddling midnight keeps its history).
-    private func reload(full: Bool) {
-        let now = Date()
-        let files = [AgentEvents.eventsFileName(for: now.addingTimeInterval(-86_400)), AgentEvents.eventsFileName(for: now)]
-            .map { eventsDir.appendingPathComponent($0) }
-        if full { events = []; offsets = [:] }
-        for url in files {
-            guard let h = try? FileHandle(forReadingFrom: url) else { continue }
-            defer { try? h.close() }
-            let start = offsets[url.lastPathComponent] ?? 0
-            let size = (try? h.seekToEnd()) ?? 0
-            guard size > start else {
-                if size < start { offsets[url.lastPathComponent] = 0 }   // truncated / replaced ⇒ re-read next time
-                continue
-            }
-            try? h.seek(toOffset: start)
-            guard let data = try? h.readToEnd(), !data.isEmpty else { continue }
-            // Only complete lines: the hook may be mid-write; the remainder is read on the next event.
-            var consumed = data
-            var carry: UInt64 = 0
-            if data.last != UInt8(ascii: "\n"), let nl = data.lastIndex(of: UInt8(ascii: "\n")) {
-                consumed = data[...nl]; carry = UInt64(data.count - consumed.count)
-            } else if data.last != UInt8(ascii: "\n") {
-                consumed = Data(); carry = UInt64(data.count)
-            }
-            offsets[url.lastPathComponent] = size - carry
-            if !consumed.isEmpty { events.append(contentsOf: AgentEvents.parse(jsonl: String(decoding: consumed, as: UTF8.self))) }
-        }
-        if events.count > 20_000 { events.removeFirst(events.count - 20_000) }
-        rebuild()
-    }
-
     private func rebuild() {
         let now = Date()
-        let new = AgentSessionRules.sessions(from: events, now: now, answered: answered, isAlive: Self.isAlive)
+        var all: [AgentEvents.Event] = []
+        for (agent, tail) in tails {
+            all.append(contentsOf: tail.events)
+            if let last = tail.events.last?.receivedAt { lastEventAt[agent] = last }
+        }
+        let new = AgentSessionRules.sessions(from: all, now: now, answered: answered, isAlive: Self.isAlive)
         if new != sessions {
             sessions = new
             onChange?()
@@ -161,7 +125,7 @@ final class AgentSessionMonitor {
         syncLivenessTimer()
     }
 
-    /// A 20 s re-evaluation while any listed session is not ended: a `claude` that quit without a SessionEnd
+    /// A 20 s re-evaluation while any listed session is not ended: an agent that quit without a SessionEnd
     /// (⌃C, a crash) is noticed by its pid disappearing. No timer while nothing is alive.
     private func syncLivenessTimer() {
         let anyAlive = sessions.contains { $0.status != .ended }
@@ -183,10 +147,11 @@ final class AgentSessionMonitor {
     // MARK: - Decisions
 
     /// Answer the pending permission request of a session: the hook polls for this file (every 0.25 s), prints its
-    /// content to Claude Code and exits. `answered` makes the row flip at once instead of waiting for the next event.
+    /// content to the agent and exits. `answered` makes the row flip at once instead of waiting for the next event.
     @discardableResult
     func answer(_ p: AgentSession.PendingPermission, of session: AgentSession, allow: Bool) -> Bool {
-        let url = decisionsDir.appendingPathComponent(AgentDecision.fileName(sessionID: session.id, requestID: p.requestID))
+        guard session.agent.usesHookScript else { return false }
+        let url = decisionsDir(for: session.agent).appendingPathComponent(AgentDecision.fileName(sessionID: session.id, requestID: p.requestID))
         let payload = AgentDecision.payload(allow: allow)
         do {
             try payload.write(to: url, atomically: true, encoding: .utf8)
@@ -213,12 +178,12 @@ final class AgentSessionMonitor {
 
     enum HookStatus: Equatable { case installed, partial(missing: [String]), notInstalled, settingsUnreadable }
 
-    func hookStatus() -> HookStatus {
-        guard FileManager.default.fileExists(atPath: hookURL.path) else { return .notInstalled }
-        switch readClaudeSettings() {
+    func hookStatus(for agent: AgentKind = .claude) -> HookStatus {
+        guard agent.usesHookScript, FileManager.default.fileExists(atPath: hookURL(for: agent).path) else { return .notInstalled }
+        switch readHookFile(for: agent) {
         case .failure: return .settingsUnreadable
         case .success(let s):
-            switch AgentHookInstaller.status(of: s, hookPath: hookURL.path) {
+            switch AgentHookInstaller.status(of: s, hookPath: hookURL(for: agent).path, agent: agent) {
             case .installed: return .installed
             case .partial(let m): return .partial(missing: m)
             case .notInstalled: return .notInstalled
@@ -226,37 +191,47 @@ final class AgentSessionMonitor {
         }
     }
 
+    func otherPermissionHookCount(for agent: AgentKind) -> Int {
+        guard case .success(let s) = readHookFile(for: agent) else { return 0 }
+        return AgentHookInstaller.otherPermissionHooks(in: s, hookPath: hookURL(for: agent).path)
+    }
+
+    /// Is any agent's hook installed? (The notch's empty state points to the settings page when none is.)
+    var anyHookInstalled: Bool { Self.hookAgents.contains { hookStatus(for: $0) == .installed } }
+
     enum HookError: Error { case bundleResourceMissing, settingsUnreadable }
 
-    /// Copy the bundled script into Application Support (so an app update or move never breaks the path Claude
-    /// Code holds), then merge XFinder's entries into `~/.claude/settings.json` — after writing a dated backup
-    /// of the file beside it. Other tools' hooks are untouched.
-    func installHook() throws {
-        ensureDirectories()
-        guard let src = Bundle.main.url(forResource: "xfinder-claude-hook", withExtension: "zsh") else { throw HookError.bundleResourceMissing }
+    /// Copy the bundled script into Application Support (so an app update or move never breaks the path the agent
+    /// holds), then merge XFinder's entries into the agent's hook file — after writing a dated backup of the file
+    /// beside it. Other tools' hooks are untouched.
+    func installHook(for agent: AgentKind = .claude) throws {
+        guard agent.usesHookScript else { return }
+        ensureDirectories(for: agent)
+        guard let src = Bundle.main.url(forResource: "xfinder-agent-hook", withExtension: "zsh") else { throw HookError.bundleResourceMissing }
         let fm = FileManager.default
+        let hook = hookURL(for: agent)
         let data = try Data(contentsOf: src)
-        try data.write(to: hookURL, options: .atomic)
-        try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: hookURL.path)
+        try data.write(to: hook, options: .atomic)
+        try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: hook.path)
         let settings: [String: Any]
-        switch readClaudeSettings() {
+        switch readHookFile(for: agent) {
         case .success(let s): settings = s
         case .failure: throw HookError.settingsUnreadable
         }
-        try backupClaudeSettings()
-        let merged = AgentHookInstaller.merged(settings, hookPath: hookURL.path)
-        try writeClaudeSettings(merged)
+        try backupHookFile(for: agent)
+        try writeHookFile(AgentHookInstaller.merged(settings, hookPath: hook.path, agent: agent), for: agent)
     }
 
-    func removeHook() throws {
-        guard case .success(let settings) = readClaudeSettings() else { throw HookError.settingsUnreadable }
-        try backupClaudeSettings()
-        try writeClaudeSettings(AgentHookInstaller.removed(settings, hookPath: hookURL.path))
-        try? FileManager.default.removeItem(at: hookURL)
+    func removeHook(for agent: AgentKind = .claude) throws {
+        guard agent.usesHookScript else { return }
+        guard case .success(let settings) = readHookFile(for: agent) else { throw HookError.settingsUnreadable }
+        try backupHookFile(for: agent)
+        try writeHookFile(AgentHookInstaller.removed(settings, hookPath: hookURL(for: agent).path), for: agent)
+        try? FileManager.default.removeItem(at: hookURL(for: agent))
     }
 
-    private func readClaudeSettings() -> Result<[String: Any], Error> {
-        let url = Self.claudeSettingsURL
+    private func readHookFile(for agent: AgentKind) -> Result<[String: Any], Error> {
+        let url = Self.hookFileURL(for: agent)
         guard FileManager.default.fileExists(atPath: url.path) else { return .success([:]) }
         do {
             let data = try Data(contentsOf: url)
@@ -267,19 +242,25 @@ final class AgentSessionMonitor {
         } catch { return .failure(error) }
     }
 
-    private func backupClaudeSettings() throws {
-        let url = Self.claudeSettingsURL
+    private func readClaudeSettings() -> Result<[String: Any], Error> { readHookFile(for: .claude) }
+
+    private func backupHookFile(for agent: AgentKind) throws {
+        let url = Self.hookFileURL(for: agent)
         guard FileManager.default.fileExists(atPath: url.path) else { return }
         let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyyMMdd-HHmmss"
-        let backup = url.deletingLastPathComponent().appendingPathComponent("settings.json.xfinder-backup-\(f.string(from: Date()))")
+        let backup = url.deletingLastPathComponent().appendingPathComponent("\(url.lastPathComponent).xfinder-backup-\(f.string(from: Date()))")
         try FileManager.default.copyItem(at: url, to: backup)
     }
 
-    private func writeClaudeSettings(_ settings: [String: Any]) throws {
-        let url = Self.claudeSettingsURL
+    private func backupClaudeSettings() throws { try backupHookFile(for: .claude) }
+
+    private func writeHookFile(_ settings: [String: Any], for agent: AgentKind) throws {
+        let url = Self.hookFileURL(for: agent)
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try AgentHookInstaller.data(for: settings).write(to: url, options: .atomic)
     }
+
+    private func writeClaudeSettings(_ settings: [String: Any]) throws { try writeHookFile(settings, for: .claude) }
 
     // MARK: - Claude Code statusLine (rate-limit cache) install (on request only)
 
@@ -322,7 +303,7 @@ final class AgentSessionMonitor {
     /// Copy the bundled statusLine script into Application Support, then point `~/.claude/settings.json` at it —
     /// chaining to whatever statusLine was there before (saved to disk so removal can restore it verbatim).
     func installStatusLine() throws {
-        ensureDirectories()
+        ensureDirectories(for: .claude)
         guard let src = Bundle.main.url(forResource: "xfinder-claude-statusline", withExtension: "sh") else {
             throw StatusLineError.bundleResourceMissing
         }
@@ -390,5 +371,100 @@ final class AgentSessionMonitor {
         try? fm.removeItem(at: statusLinePreviousJSONURL)
         try? fm.removeItem(at: statusLinePreviousCommandURL)
         try? fm.removeItem(at: statusLineCacheURL)
+    }
+}
+
+/// One agent's events folder, tailed: a directory source (a new day file appears) plus a source on today's file
+/// (appends do not change the directory, so a directory watch alone would miss every event after the first).
+/// Reads only complete lines, from the last offset, of today's and yesterday's files (a session straddling
+/// midnight keeps its history). Kernel-side sources, no polling.
+@MainActor
+private final class EventTail {
+    let agent: AgentKind
+    let eventsDir: URL
+    var onChange: (() -> Void)?
+    private(set) var events: [AgentEvents.Event] = []
+    private var offsets: [String: UInt64] = [:]
+    private var dirSource: DispatchSourceFileSystemObject?
+    private var fileSource: DispatchSourceFileSystemObject?
+    private var watchedFile: URL?
+
+    init(agent: AgentKind, eventsDir: URL) {
+        self.agent = agent
+        self.eventsDir = eventsDir
+    }
+
+    func watch() {
+        dirSource?.cancel()
+        let fd = open(eventsDir.path, O_EVTONLY)
+        guard fd >= 0 else { return }
+        let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write, .rename, .delete], queue: .main)
+        src.setEventHandler { [weak self] in
+            MainActor.assumeIsolated {       // queue: .main ⇒ the main thread; a documented contract, not a guess
+                self?.watchTodayFile()
+                self?.onChange?()
+            }
+        }
+        src.setCancelHandler { close(fd) }
+        src.resume()
+        dirSource = src
+        watchTodayFile()
+    }
+
+    func cancel() {
+        dirSource?.cancel(); dirSource = nil
+        fileSource?.cancel(); fileSource = nil; watchedFile = nil
+        offsets = [:]; events = []
+    }
+
+    /// (Re)attach the file watch to today's file when it appears or the day rolls over.
+    private func watchTodayFile() {
+        let today = eventsDir.appendingPathComponent(AgentEvents.eventsFileName(for: Date()))
+        guard today != watchedFile || fileSource == nil else { return }
+        fileSource?.cancel(); fileSource = nil; watchedFile = nil
+        let fd = open(today.path, O_EVTONLY)
+        guard fd >= 0 else { return }                       // not written yet; the directory watch retries
+        let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: [.write, .extend, .delete, .rename], queue: .main)
+        src.setEventHandler { [weak self] in MainActor.assumeIsolated { self?.onChange?() } }
+        src.setCancelHandler { close(fd) }
+        src.resume()
+        fileSource = src
+        watchedFile = today
+    }
+
+    func reload(full: Bool) {
+        let now = Date()
+        let files = [AgentEvents.eventsFileName(for: now.addingTimeInterval(-86_400)), AgentEvents.eventsFileName(for: now)]
+            .map { eventsDir.appendingPathComponent($0) }
+        if full { events = []; offsets = [:] }
+        for url in files {
+            guard let h = try? FileHandle(forReadingFrom: url) else { continue }
+            defer { try? h.close() }
+            let start = offsets[url.lastPathComponent] ?? 0
+            let size = (try? h.seekToEnd()) ?? 0
+            guard size > start else {
+                if size < start { offsets[url.lastPathComponent] = 0 }   // truncated / replaced ⇒ re-read next time
+                continue
+            }
+            try? h.seek(toOffset: start)
+            guard let data = try? h.readToEnd(), !data.isEmpty else { continue }
+            // Only complete lines: the hook may be mid-write; the remainder is read on the next event.
+            var consumed = data
+            var carry: UInt64 = 0
+            if data.last != UInt8(ascii: "\n"), let nl = data.lastIndex(of: UInt8(ascii: "\n")) {
+                consumed = data[...nl]; carry = UInt64(data.count - consumed.count)
+            } else if data.last != UInt8(ascii: "\n") {
+                consumed = Data(); carry = UInt64(data.count)
+            }
+            offsets[url.lastPathComponent] = size - carry
+            if !consumed.isEmpty {
+                // The folder decides the agent: a line written by a pre-P5 Claude hook carries no `agent` field.
+                let parsed = AgentEvents.parse(jsonl: String(decoding: consumed, as: UTF8.self)).map { e -> AgentEvents.Event in
+                    var e = e; e.agent = agent; return e
+                }
+                events.append(contentsOf: parsed)
+            }
+        }
+        if events.count > 20_000 { events.removeFirst(events.count - 20_000) }
     }
 }

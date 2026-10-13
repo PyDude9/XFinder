@@ -10,7 +10,7 @@ import Foundation
 /// (AppKit) does the file watching, liveness checks and the notch page.
 enum AgentEvents {
 
-    /// What the hook writes per line: `{"received_at", "request_id", "env": {...}, "payload": <Claude Code's
+    /// What the hook writes per line: `{"received_at", "request_id", "agent", "env": {...}, "payload": <the agent's
     /// hook input>}`. `payload.tool_response` is dropped by the hook (an image Read carries the base64 of the
     /// image — 650 KB measured on OneNotch's log); a payload over 256 KB is replaced by a stub with
     /// `xfinder_dropped: true` so one event can never push a day's log past what the reader keeps in memory.
@@ -22,8 +22,13 @@ enum AgentEvents {
             case stop = "Stop", subagentStop = "SubagentStop", preCompact = "PreCompact", postCompact = "PostCompact"
             case permissionRequest = "PermissionRequest", permissionDenied = "PermissionDenied"
             case messageDisplay = "MessageDisplay", stopFailure = "StopFailure"
+            /// Codex only (P5): the person interrupted a running turn — it is their turn again.
+            case interrupt = "Interrupt"
+            case subagentStart = "SubagentStart"
             case other = "?"
         }
+        /// Which agent's hook wrote the line (P5). Lines written before P5 carry no `agent` field: they are Claude's.
+        var agent: AgentKind = .claude
         var receivedAt: Date
         var name: Name
         /// The raw `hook_event_name`, kept so an event this build does not know still shows its name.
@@ -76,6 +81,7 @@ enum AgentEvents {
         var e = Event(receivedAt: received, name: Event.Name(rawValue: rawName) ?? .other, rawName: rawName, sessionID: sessionID,
                       terminal: Terminal())
         e.requestID = obj["request_id"] as? String
+        if let a = obj["agent"] as? String { e.agent = AgentKind(rawValue: a) ?? .claude }
         e.cwd = payload["cwd"] as? String
         e.transcriptPath = payload["transcript_path"] as? String
         e.toolName = payload["tool_name"] as? String
@@ -124,7 +130,7 @@ enum AgentEvents {
     }
 }
 
-/// One Claude Code session as the notch shows it.
+/// One agent session (Claude Code, Codex, OpenCode) as the notch shows it.
 struct AgentSession: Equatable, Identifiable {
     enum Status: Equatable {
         /// Between a prompt and the next Stop: thinking, or running the named tool.
@@ -144,7 +150,11 @@ struct AgentSession: Equatable, Identifiable {
         var since: Date
     }
 
+    /// The agent's own session id (what a decision file and a resume command are named after).
     var id: String
+    var agent: AgentKind = .claude
+    /// Unique across agents — two tools could in principle hand out the same id; a list keys on this.
+    var listID: String { "\(agent.rawValue):\(id)" }
     var cwd: String?
     var transcriptPath: String?
     var startedAt: Date
@@ -180,11 +190,12 @@ enum AgentSessionRules {
         var byID: [String: AgentSession] = [:]
         var order: [String] = []
         for e in events.sorted(by: { $0.receivedAt < $1.receivedAt }) {
-            var s = byID[e.sessionID] ?? {
-                order.append(e.sessionID)
-                return AgentSession(id: e.sessionID, cwd: e.cwd, transcriptPath: e.transcriptPath, startedAt: e.receivedAt,
-                                    updatedAt: e.receivedAt, status: .running(tool: nil), lastTool: nil, lastPrompt: nil,
-                                    agentPID: e.agentPID, terminal: e.terminal, eventCount: 0)
+            let key = "\(e.agent.rawValue):\(e.sessionID)"      // P5: one session per (agent, id)
+            var s = byID[key] ?? {
+                order.append(key)
+                return AgentSession(id: e.sessionID, agent: e.agent, cwd: e.cwd, transcriptPath: e.transcriptPath,
+                                    startedAt: e.receivedAt, updatedAt: e.receivedAt, status: .running(tool: nil),
+                                    lastTool: nil, lastPrompt: nil, agentPID: e.agentPID, terminal: e.terminal, eventCount: 0)
             }()
             s.eventCount += 1
             s.updatedAt = max(s.updatedAt, e.receivedAt)
@@ -221,14 +232,14 @@ enum AgentSessionRules {
                     if case .waitingForPermission = s.status {} else { s.status = .waitingForInput }
                 default: break
                 }
-            case .stop:
+            case .stop, .interrupt:
                 s.status = .waitingForInput
             case .sessionEnd:
                 s.status = .ended
-            case .subagentStop, .preCompact, .postCompact, .messageDisplay, .stopFailure, .other:
+            case .subagentStart, .subagentStop, .preCompact, .postCompact, .messageDisplay, .stopFailure, .other:
                 break
             }
-            byID[e.sessionID] = s
+            byID[key] = s
         }
         // Liveness and staleness, after the replay: a dead process ends the session whatever the log says.
         var out: [AgentSession] = []

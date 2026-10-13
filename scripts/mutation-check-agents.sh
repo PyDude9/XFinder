@@ -6,12 +6,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-agents.XXXXXX)
-FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift"
+FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='AgentSession|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
+FILTER='AgentSession|AgentCodex|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -96,6 +96,29 @@ run "A20 a bare object is taken as a save (a hand-edited or foreign file would b
 run "A21 a non-object previous statusLine is dropped (Gỡ would delete it)" $CSL \
   "'        guard let existing else { return Install(settings: out, previous: raw, previousCommand: nil) }'" \
   "'        guard let existing else { return Install(settings: out, previous: nil, previousCommand: nil) }'"
+
+# P5a — Codex beside Claude Code (one hook script, events tagged by agent, Codex's hooks.json merged in place).
+E=XFinder/Core/Agents/AgentEvents.swift
+H=XFinder/Core/Agents/AgentHookInstaller.swift
+Z=XFinder/Resources/Agents/xfinder-agent-hook.zsh
+run "A22 our entry goes in FRONT of another tool's (Codex trust is per position: theirs would be skipped)" $H \
+  "'            hooks[name] = list'" "'            hooks[name] = Array(list.reversed())'"
+run "A23 Claude's command gains an argument (a hook installed by 1.3.0 no longer matches)" $H \
+  "'        return agent == .claude ? quoted : quoted + \" \" + agent.rawValue'" "'        return quoted + \" \" + agent.rawValue'"
+run "A24 sessions keyed by id alone (a Claude and a Codex session with one id merge)" $E \
+  "r'            let key = \"\\(e.agent.rawValue):\\(e.sessionID)\"'" "'            let key = e.sessionID'"
+run "A25 Codex SessionEnd timeout above its 3 s cap" $H \
+  "'        (\"SessionStart\", 10), (\"SessionEnd\", 3), (\"UserPromptSubmit\", 10),'" "'        (\"SessionStart\", 10), (\"SessionEnd\", 10), (\"UserPromptSubmit\", 10),'"
+run "A26 the hook keeps Codex's answer text in the log" $Z \
+  "'del(.tool_response, .last_assistant_message)'" "'del(.tool_response)'"
+run "A27 the parser ignores the line's agent" $E \
+  "'        if let a = obj[\"agent\"] as? String { e.agent = AgentKind(rawValue: a) ?? .claude }'" "'        _ = obj[\"agent\"]'"
+run "A28 a Codex interrupt reads as still running" $E \
+  "'            case .stop, .interrupt:\n                s.status = .waitingForInput'" "'            case .stop, .interrupt:\n                s.status = e.name == .interrupt ? .running(tool: nil) : .waitingForInput'"
+run "A29 XFinder's own approval hook counted as another tool's" $H \
+  "'.filter { (\$0[\"command\"] as? String) != nil && !isOurs(\$0, hookPath: hookPath) }'" "'.filter { (\$0[\"command\"] as? String) != nil }'"
+run "A30 a Codex hook with no codex ancestor records the shell's pid" $Z \
+  "'if [ -z \"\$agent_pid\" ] && [ \"\$agent\" = \"claude\" ]; then'" "'if [ -z \"\$agent_pid\" ]; then'"
 
 # The restore check and the post-restore suite run come AFTER every mutation (they used to sit before A11, so the
 # later mutations ran unchecked — found while adding A20/A21).

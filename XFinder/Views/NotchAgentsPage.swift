@@ -7,7 +7,7 @@ import SwiftUI
 /// reference; the main session deletes that old code after integration) — nothing here changes what data is
 /// shown, only how.
 ///
-/// Job sentence: "I am at the notch because a Claude Code session needs me right now — show me which one, let
+/// Job sentence: "I am at the notch because a coding-agent session (Claude Code, Codex) needs me right now — show me which one, let
 /// me answer it without leaving, and tell me when it is just working so I don't have to watch it."
 struct NotchAgentsPage: View {
     var model: NotchSurfaceModel
@@ -76,7 +76,7 @@ struct NotchAgentsPage: View {
             let visible = Array(model.agents.prefix(6))
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: Self.m.agentRowGap) {
-                    ForEach(visible) { s in
+                    ForEach(visible, id: \.listID) { s in
                         AgentRow(session: s, accent: accent)
                     }
                 }
@@ -89,7 +89,7 @@ struct NotchAgentsPage: View {
         VStack(spacing: XFinderTokens.Space.tight) {
             Image(systemName: "terminal").font(XFinderTokens.Font.pageIcon).opacity(0.5)
             if model.agentHookInstalled {
-                Text(L10n.t("Chưa có phiên Claude Code nào."))
+                Text(L10n.t("Chưa có phiên agent nào."))
                     .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65))
                     .multilineTextAlignment(.center)
             } else {
@@ -135,6 +135,10 @@ private struct AgentRow: View {
             Circle().fill(tint).frame(width: 8, height: 8)
             Text(session.displayName)
                 .font(XFinderTokens.Font.row).foregroundColor(.white).lineLimit(1)
+            // P5: which agent — a product name, identical in both languages.
+            Text(session.agent.displayName)
+                .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.45))
+                .lineLimit(1).fixedSize()
             statusCapsule
             Text(NotchClipCardView.ageLabel(session.updatedAt, now: Date()))
                 .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))

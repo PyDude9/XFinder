@@ -484,7 +484,7 @@ minh giữ trang riêng · màn có ảnh OneNotch dựng thẳng theo ảnh, wi
 | P2 | Trang Agents + view hạn mức AI trên toolbar (Claude % qua statusLine, opt-in, nối chuỗi) + Lịch + Hẹn giờ tập trung | ✅ dựng + gate (CLAUDE.md "P2"); chưa kiểm trực tiếp — T-P2-* |
 | P3 | Vỏ cài đặt (sidebar 220 pt có ô màu, thẻ nhóm #F7F7F7 r10, header 52) + trang Giao diện / Media / AI / Lịch / Live Activities / Phím tắt; tách "Notch & Khay thả"; bỏ trùng (`notes.font` hai picker; gom phím tắt; đổi nhãn mặc định chụp "mặc định cho lần sau"; xoá tài liệu ⌥Space cũ) | ✅ dựng + gate (CLAUDE.md "P3"); quyết định mặc định Q-P3-1…9; chưa kiểm trực tiếp — T-P3-* |
 | P4 | Restyle các trang cài đặt còn lại qua component chung | ✅ 34 trang qua thẻ nhóm, gate check-presentation-only.py TOTAL 0 (CLAUDE.md "P4"); chưa kiểm trực tiếp — T-P4 |
-| P5 | Kết nối Codex / OpenCode / Cursor (probe trước) + thông báo + phiên gần đây | chưa |
+| P5 | Kết nối Codex / OpenCode / Cursor (probe trước) + thông báo + phiên gần đây | **P5a ✅** Codex qua cùng hook (đo: hook Codex phải được tin cậy bằng `/hooks`, cùng định dạng duyệt quyền với Claude); P5b OpenCode qua `opencode api` (đo: plugin v1 bị v2.0.27 từ chối, vòng duyệt quyền đã chạy trên server cô lập) · P5c thông báo + phiên gần đây + giải thích Cursor (đo: CLI 2025.09.17 chưa đăng nhập, hook không báo lúc Cursor đang chờ duyệt) — đang làm; chưa kiểm trực tiếp — T-P5-* |
 | P6 | Nói chuyện với phiên (probe kitty `send-text`, Terminal.app `do script`, socket nhắn tin của Claude) | chưa |
 | P7 | Crew + phiên không cửa sổ | chưa |
 

@@ -416,7 +416,7 @@ final class NotchSurfaceController {
     }
 
     func refreshAgentHookStatus() {
-        model.agentHookInstalled = AgentSessionMonitor.shared.hookStatus() == .installed
+        model.agentHookInstalled = AgentSessionMonitor.shared.anyHookInstalled
     }
 
     func answerAgent(_ p: AgentSession.PendingPermission, of session: AgentSession, allow: Bool) {

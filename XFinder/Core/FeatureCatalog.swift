@@ -193,7 +193,7 @@ enum FeatureCatalog {
                    defaultOn: false, permissions: [], idle: .helperProcess),
         // N3. Files written by a hook script; a 20 s liveness timer only while a session is listed as alive.
         FeatureDef(id: .agents, titleKey: "Agent AI trên notch",
-                   subtitleKey: "Phiên Claude Code đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ.",
+                   subtitleKey: "Phiên Claude Code và Codex đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ.",
                    symbol: "terminal", group: .tools, enabledKey: "agents.enabled",
                    defaultOn: false, permissions: [], idle: .timerWhileActive),
         // N4. EventKit; a 60 s refetch only while the page is on screen, EKEventStoreChanged otherwise.

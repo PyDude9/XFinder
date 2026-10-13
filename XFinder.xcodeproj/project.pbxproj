@@ -103,6 +103,7 @@
 		7F1A027E /* Clipboard/LinkPreviewFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A027F /* Clipboard/LinkPreviewFetcher.swift */; };
 		7F1A027C /* Clipboard/LinkPreviewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A027D /* Clipboard/LinkPreviewRules.swift */; };
 		7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0263 /* Agents/AgentHookInstaller.swift */; };
+		7F1A0302 /* Agents/AgentKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0303 /* Agents/AgentKind.swift */; };
 		7F1A035D /* Agents/ClaudeStatusLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A035C /* Agents/ClaudeStatusLine.swift */; };
 		7F1A0266 /* Agents/AgentSessionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0267 /* Agents/AgentSessionMonitor.swift */; };
 		7F1A034D /* Agents/AgentUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A034C /* Agents/AgentUsage.swift */; };
@@ -176,7 +177,7 @@
 		4C1A2B07 /* FinderExtensionStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1A2B06 /* FinderExtensionStatus.swift */; };
 		4C1A2B03 /* XFinder/Resources/L10n.strings.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C1A2B02 /* XFinder/Resources/L10n.strings.json */; };
 		4C1A2B05 /* XFinder/Resources/L10n.allowlist.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */; };
-		7F1A0264 /* XFinder/Resources/Agents/xfinder-claude-hook.zsh in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A0265 /* XFinder/Resources/Agents/xfinder-claude-hook.zsh */; };
+		7F1A0264 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A0265 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh */; };
 		7F1A035F /* XFinder/Resources/Agents/xfinder-claude-statusline.sh in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */; };
 		7F1A00E5 /* MouseGestures/GestureModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E4 /* MouseGestures/GestureModel.swift */; };
 		7F1A00E7 /* MouseGestures/GestureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E6 /* MouseGestures/GestureEngine.swift */; };
@@ -436,6 +437,7 @@
 		7F1A027F /* Clipboard/LinkPreviewFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/LinkPreviewFetcher.swift; sourceTree = "<group>"; };
 		7F1A027D /* Clipboard/LinkPreviewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/LinkPreviewRules.swift; sourceTree = "<group>"; };
 		7F1A0263 /* Agents/AgentHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentHookInstaller.swift; sourceTree = "<group>"; };
+		7F1A0303 /* Agents/AgentKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentKind.swift; sourceTree = "<group>"; };
 		7F1A035C /* Agents/ClaudeStatusLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/ClaudeStatusLine.swift; sourceTree = "<group>"; };
 		7F1A0267 /* Agents/AgentSessionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentSessionMonitor.swift; sourceTree = "<group>"; };
 		7F1A034C /* Agents/AgentUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentUsage.swift; sourceTree = "<group>"; };
@@ -571,7 +573,7 @@
 		4C1A2B06 /* FinderExtensionStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderExtensionStatus.swift; sourceTree = "<group>"; };
 		4C1A2B02 /* XFinder/Resources/L10n.strings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = XFinder/Resources/L10n.strings.json; sourceTree = SOURCE_ROOT; };
 		4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = XFinder/Resources/L10n.allowlist.json; sourceTree = SOURCE_ROOT; };
-		7F1A0265 /* XFinder/Resources/Agents/xfinder-claude-hook.zsh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = XFinder/Resources/Agents/xfinder-claude-hook.zsh; sourceTree = SOURCE_ROOT; };
+		7F1A0265 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = XFinder/Resources/Agents/xfinder-agent-hook.zsh; sourceTree = SOURCE_ROOT; };
 		7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = XFinder/Resources/Agents/xfinder-claude-statusline.sh; sourceTree = SOURCE_ROOT; };
 		7F1A00E4 /* MouseGestures/GestureModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureModel.swift; sourceTree = "<group>"; };
 		7F1A00E6 /* MouseGestures/GestureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureEngine.swift; sourceTree = "<group>"; };
@@ -747,6 +749,7 @@
 				7F1A027F /* Clipboard/LinkPreviewFetcher.swift */,
 				7F1A027D /* Clipboard/LinkPreviewRules.swift */,
 				7F1A0263 /* Agents/AgentHookInstaller.swift */,
+				7F1A0303 /* Agents/AgentKind.swift */,
 				7F1A035C /* Agents/ClaudeStatusLine.swift */,
 				7F1A036E /* Shortcuts/ShortcutCatalog.swift */,
 				7F1A0267 /* Agents/AgentSessionMonitor.swift */,
@@ -857,7 +860,7 @@
 				4C1A2B06 /* FinderExtensionStatus.swift */,
 				4C1A2B02 /* XFinder/Resources/L10n.strings.json */,
 				4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */,
-				7F1A0265 /* XFinder/Resources/Agents/xfinder-claude-hook.zsh */,
+				7F1A0265 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh */,
 				7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */,
 				7F1A00E4 /* MouseGestures/GestureModel.swift */,
 				7F1A00E6 /* MouseGestures/GestureEngine.swift */,
@@ -1120,7 +1123,7 @@
 				7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */,
 				4C1A2B03 /* XFinder/Resources/L10n.strings.json in Resources */,
 				4C1A2B05 /* XFinder/Resources/L10n.allowlist.json in Resources */,
-				7F1A0264 /* XFinder/Resources/Agents/xfinder-claude-hook.zsh in Resources */,
+				7F1A0264 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh in Resources */,
 				7F1A035F /* XFinder/Resources/Agents/xfinder-claude-statusline.sh in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1242,6 +1245,7 @@
 				7F1A027E /* Clipboard/LinkPreviewFetcher.swift in Sources */,
 				7F1A027C /* Clipboard/LinkPreviewRules.swift in Sources */,
 				7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */,
+				7F1A0302 /* Agents/AgentKind.swift in Sources */,
 				7F1A035D /* Agents/ClaudeStatusLine.swift in Sources */,
 				7F1A0266 /* Agents/AgentSessionMonitor.swift in Sources */,
 				7F1A034D /* Agents/AgentUsage.swift in Sources */,

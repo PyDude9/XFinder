@@ -10030,6 +10030,62 @@
     "Chưa cài hook — mở trang Agent AI để cài.": {
       "en": "Hook not installed — open the AI agents page to install it.",
       "scope": "sentence"
+    },
+    "Các phiên Claude Code và Codex đang chạy trong terminal: đang làm gì, chờ bạn nhập hay chờ bạn duyệt quyền — duyệt ngay tại notch.": {
+      "en": "Claude Code and Codex sessions running in a terminal: what they are doing, whether they wait for your input or your approval — approve right at the notch.",
+      "scope": "sentence"
+    },
+    "Phiên agent trên notch": {
+      "en": "Agent sessions on the notch",
+      "scope": "sentence"
+    },
+    "Hiện phiên agent ở notch": {
+      "en": "Show agent sessions on the notch",
+      "scope": "sentence"
+    },
+    "Đọc nhật ký do hook của XFinder ghi (Claude Code, Codex): tên sự kiện, công cụ, thư mục, câu lệnh bạn gõ và tóm tắt việc công cụ làm (lệnh, đường dẫn tệp) để hiện trên notch. Không đọc câu trả lời của agent, không gọi mạng. Mặc định tắt.": {
+      "en": "Reads the log XFinder's hook writes (Claude Code, Codex): event names, tools, folders, the prompts you type and a summary of what a tool does (command, file path) to show on the notch. Does not read the agent's answers, no network. Off by default.",
+      "scope": "sentence"
+    },
+    "Sự kiện gần nhất: ": {
+      "en": "Last event: ",
+      "scope": "fragment"
+    },
+    "Chưa nhận sự kiện nào trong hai ngày qua.": {
+      "en": "No event received in the last two days.",
+      "scope": "sentence"
+    },
+    "Tệp này còn ": {
+      "en": "This file has ",
+      "scope": "fragment"
+    },
+    " hook duyệt quyền của công cụ khác. Agent chạy tất cả cùng lúc — nếu nút trên notch không có tác dụng ngay, hãy tắt app kia hoặc gỡ hook của nó.": {
+      "en": " approval hook(s) from other tools. The agent runs them all at once — if the notch buttons do not take effect right away, quit that app or remove its hook.",
+      "scope": "fragment"
+    },
+    "Cài hook = thêm các mục \"Managed by XFinder\" vào cuối ~/.codex/hooks.json (có bản sao lưu đặt cạnh) và chép cùng script zsh vào Application Support. Codex chỉ chạy một hook sau khi bạn duyệt nó: mở Codex, gõ /hooks và chọn tin cậy các hook của XFinder — XFinder không tự duyệt thay bạn. Codex ghi nhận việc duyệt theo vị trí của hook trong tệp, nên gỡ hook của XFinder có thể khiến Codex hỏi duyệt lại các hook đứng sau nó. Câu trả lời của Codex (last_assistant_message) không được ghi lại.": {
+      "en": "Installing adds \"Managed by XFinder\" entries at the end of ~/.codex/hooks.json (a backup is written beside it) and copies the same zsh script into Application Support. Codex runs a hook only after you review it: open Codex, type /hooks and trust XFinder's hooks — XFinder never trusts them for you. Codex records that trust by the hook's position in the file, so removing XFinder's hook can make Codex ask you to review the hooks after it again. Codex's answers (last_assistant_message) are not logged.",
+      "scope": "sentence"
+    },
+    "Trạng thái hook: ": {
+      "en": "Hook status: ",
+      "scope": "fragment"
+    },
+    "Cài hook vào ~/.codex/hooks.json": {
+      "en": "Install the hook into ~/.codex/hooks.json",
+      "scope": "sentence"
+    },
+    "Đã cài hook. Mở Codex, gõ /hooks và chọn tin cậy các hook của XFinder — trước đó Codex bỏ qua chúng.": {
+      "en": "Hook installed. Open Codex, type /hooks and trust XFinder's hooks — until then Codex skips them.",
+      "scope": "sentence"
+    },
+    "Chưa có phiên agent nào.": {
+      "en": "No agent sessions yet.",
+      "scope": "sentence"
+    },
+    "Phiên Claude Code và Codex đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ.": {
+      "en": "Claude Code and Codex sessions running in a terminal: status and approvals at the notch; reads a local hook log.",
+      "scope": "sentence"
     }
   }
 }

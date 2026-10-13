@@ -58,7 +58,8 @@ MenuBarEngine.swift MenuBarEngineFactory.swift LegacyLengthEngine.swift
 NativeVisibilityEngine.swift NativeVisibilityBridge.swift AccessibilityMenuBarInventory.swift
 SettingsShell.swift NotchInterfaceDetailView.swift MediaDetailView.swift AIAgentsDetailView.swift
 CalendarSettingsDetailView.swift LiveActivitiesDetailView.swift ShortcutsDetailView.swift ShortcutCatalog.swift
-DropTrayDetailView.swift SidebarDestination.swift"
+DropTrayDetailView.swift SidebarDestination.swift
+AgentKind.swift AgentEvents.swift AgentHookInstaller.swift AgentSessionMonitor.swift NotchAgentsPage.swift"
 MISSING=0
 for f in $GESTURE_FILES; do
   if grep -q "/$f" "$LIST"; then echo "  OK   $f"; else echo "  MISS $f"; MISSING=$((MISSING + 1)); fi
@@ -68,7 +69,7 @@ done
 # built bundle directly. A missing translation store makes the whole app run in
 # Vietnamese with a single stderr line, and no compile check would notice.
 echo "--- bundled resources ---"
-for r in L10n.strings.json L10n.allowlist.json xfinder-claude-hook.zsh xfinder-claude-statusline.sh; do
+for r in L10n.strings.json L10n.allowlist.json xfinder-agent-hook.zsh xfinder-claude-statusline.sh; do
   if [ -f "$OUT/out/XFinder.app/Contents/Resources/$r" ]; then
     echo "  OK   $r ($(wc -c < "$OUT/out/XFinder.app/Contents/Resources/$r") bytes)"
   else

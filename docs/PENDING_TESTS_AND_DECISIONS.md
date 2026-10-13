@@ -115,6 +115,17 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-P4-METRICS | Mở Hệ thống, Mạng, Ổ đĩa, Pin để vài giây rồi chuyển trang khác | Số liệu chạy khi trang mở, đứng khi rời trang (CPU XFinder lúc rảnh vẫn ~0 %) |
 | T-P4-DARK | Bật chế độ tối, mở 3–4 trang | Thẻ vẫn thấy được, chữ phụ đọc rõ |
 
+### P5 · Agent ngoài Claude Code (dựng 2026-10-14)
+
+Trang: NOTCH ▸ **Agent AI**. Bật "Hiện phiên agent ở notch" trước.
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-P5-CODEX | Agent AI ▸ Codex ▸ **Cài hook vào ~/.codex/hooks.json**; mở `codex` trong terminal, gõ `/hooks`, tin cậy các hook "Managed by XFinder"; gõ một yêu cầu | Phiên Codex hiện trên notch (nhãn "Codex"); dòng "Sự kiện gần nhất" trên trang có thời gian. **Trước khi tin cậy: không có sự kiện nào** (Codex bỏ qua hook chưa duyệt — đúng như tài liệu) |
+| T-P5-CODEX-PERM | Trong phiên đó, để Codex xin quyền chạy một lệnh | Thẻ duyệt hiện trên notch; Cho phép / Từ chối có tác dụng trong Codex |
+| T-P5-MULTI | Có cả hook duyệt quyền của OneNotch / Notch Crew trong `~/.claude/settings.json` (máy này đang có cả hai), cài hook Claude của XFinder, để Claude Code xin quyền, bấm Cho phép trên notch của XFinder | **Chưa biết** — tài liệu Claude Code không nói nhiều hook PermissionRequest kết hợp thế nào. Ghi lại: lệnh chạy ngay, hay chờ app kia trả lời / hết giờ? Trang Agent AI đã cảnh báo số hook của công cụ khác |
+| T-P5-PID | Trong một phiên Codex, thoát `codex` bằng ⌃C | Phiên chuyển "Đã kết thúc" trong ≤ 20 s (hook tìm đúng tiến trình `codex` cha — đã đo bằng tiến trình giả tên `codex`, chưa đo với Codex thật) |
+
 ### Clipboard
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
