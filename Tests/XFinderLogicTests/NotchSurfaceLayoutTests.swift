@@ -29,30 +29,73 @@ final class NotchSurfaceLayoutTests: XCTestCase {
             XCTAssertEqual(f.maxY, screen.maxY, "\(state)")
             XCTAssertEqual(f.midX, notch.midX, accuracy: 0.001, "\(state)")
             XCTAssertGreaterThanOrEqual(f.width, notch.width, "\(state) must at least cover the notch")
-            XCTAssertGreaterThan(f.height, notch.height, "\(state) must reach below the notch or it is invisible")
+            if state == .collapsed {
+                XCTAssertEqual(f.height, notch.height, "P1: collapsed is notch-high, visible through its wings")
+                XCTAssertGreaterThan(f.width, notch.width, "collapsed must reach past the notch or it is invisible")
+            } else {
+                XCTAssertGreaterThan(f.height, notch.height, "\(state) must reach below the notch or it is invisible")
+            }
         }
     }
 
-    /// D0: the hub's size follows the page — the clipboard deck (OneNotch reference: a wide band either
-    /// side of the notch, four cards in a row) is far wider than the tray; the other pages keep 440 × 222,
-    /// at the notch and at the pointer alike.
-    func testTheClipboardPageIsWiderThanTheOtherPagesAndOnlyThatPage() {
-        let files = L.size(for: .expanded(.files), anchor: .notch, itemCount: 1, notch: notch)!
-        let clip = L.size(for: .expanded(.clipboard), anchor: .notch, itemCount: 1, notch: notch)!
-        let player = L.size(for: .expanded(.nowPlaying), anchor: .notch, itemCount: 1, notch: notch)!
+    /// P1 (measured on the owner's OneNotch screenshots): two bodies only — NARROW 382 × 168 (tray, Now Playing) and
+    /// WIDE 612 × 182 (Clipboard, Agents), the calendar 188 tall — each plus a 19-pt flare per side at the notch.
+    func testPagesUseTheTwoMeasuredBodiesPlusTheFlares() {
         let fl = 2 * L.Metrics.standard.topFillet
-        XCTAssertEqual(files, CGSize(width: 440 + fl, height: notch.height + 222), "440 of content plus the two flares")
-        XCTAssertEqual(player, files, "only the clipboard page changes")
-        XCTAssertGreaterThan(clip.width, files.width + 250, "four 174-pt cards need the band beside the notch")
-        XCTAssertEqual(clip, CGSize(width: 752 + fl, height: notch.height + 200))
-        XCTAssertLessThan(clip.width, screen.width, "still fits a 1728-pt screen with room to spare")
+        XCTAssertEqual(fl, 38, "650 top edge − 612 body, measured")
+        let files = L.size(for: .expanded(.files), anchor: .notch, itemCount: 1, notch: notch)!
+        let player = L.size(for: .expanded(.nowPlaying), anchor: .notch, itemCount: 1, notch: notch)!
+        let clip = L.size(for: .expanded(.clipboard), anchor: .notch, itemCount: 1, notch: notch)!
+        let agents = L.size(for: .expanded(.agents), anchor: .notch, itemCount: 1, notch: notch)!
+        let cal = L.size(for: .expanded(.calendar), anchor: .notch, itemCount: 1, notch: notch)!
+        XCTAssertEqual(player, CGSize(width: 382 + fl, height: 168), "Now Playing: 382 × 168 measured")
+        XCTAssertEqual(files, player, "the tray shares the narrow body")
+        XCTAssertEqual(clip, CGSize(width: 612 + fl, height: 182), "Clipboard: 612 × 182 measured")
+        XCTAssertEqual(agents, clip, "Agents shares the wide body")
+        XCTAssertEqual(cal, CGSize(width: 382 + fl, height: 188), "the calendar view is taller")
         let pointerClip = L.size(for: .expanded(.clipboard), anchor: .pointer, itemCount: 1, notch: notch)!
-        XCTAssertEqual(pointerClip.width, clip.width - fl, "a pointer tray has no top edge to flare into")
-        XCTAssertEqual(pointerClip.height, clip.height - notch.height, "at the pointer there is no notch band to add")
-        // The frame stays centred on the notch and inside the screen.
+        XCTAssertEqual(pointerClip, CGSize(width: 612, height: 182), "a pointer tray has no top edge to flare into, but keeps the band")
         let f = L.frame(for: .expanded(.clipboard), anchor: .notch, itemCount: 1, notch: notch, screen: screen, visible: visible, pointer: .zero)!
         XCTAssertEqual(f.midX, notch.midX, accuracy: 0.5)
         XCTAssertGreaterThanOrEqual(f.minX, 0); XCTAssertLessThanOrEqual(f.maxX, screen.width)
+    }
+
+    /// P1: the collapsed surface is exactly as tall as the notch (nothing hangs over the title bars below it) and
+    /// widens sideways — a wing each side, the fuller side setting both so the camera stays centred.
+    /// The two pages that fill their body to the point: the sum lives in one place now, and a drift on either side (a
+    /// taller card, a new inset) shows up here instead of as a clipped deck nobody measured (P1 review, mutation M49).
+    func testPageBudgetsFillTheirBodiesExactly() {
+        let m = L.Metrics.standard
+        XCTAssertEqual(m.clipboardTopInset + m.chipRowHeight + m.chipToDeckGap + m.clipCardHeight + m.clipboardBottomInset,
+                       m.expandedDrop(for: .clipboard), accuracy: 0.001, "clipboard: chip row + card row fill the wide body")
+        XCTAssertEqual(m.pageTopInset + m.artworkSide + m.artworkToProgressGap + m.progressAreaHeight + m.pageBottomInset,
+                       m.expandedDrop(for: .nowPlaying), accuracy: 0.001, "now playing: artwork row + progress fill the narrow body")
+        // Three and a half cards show in the wide body — the half card is what says "this row scrolls".
+        let visible = (m.wideWidth - 2 * 14 + m.clipCardGap) / (m.clipCardWidth + m.clipCardGap)
+        XCTAssertGreaterThan(visible, 3.2); XCTAssertLessThan(visible, 3.8)
+    }
+
+    func testCollapsedIsNotchHighWithSymmetricWings() {
+        let m = L.Metrics.standard
+        let one = L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch, nowPlayingActive: true)!
+        XCTAssertEqual(one.height, notch.height, "nothing below the notch")
+        XCTAssertEqual(one.width, notch.width + 2 * m.wingMin + 2 * m.collapsedFillet, "one item: the measured 262-pt body")
+        XCTAssertEqual(notch.width + 2 * m.wingMin, 262, accuracy: 0.001)
+        let busy = L.size(for: .collapsed, anchor: .notch, itemCount: 3, notch: notch, timerActive: true,
+                          nowPlayingActive: true, agentActive: true)!
+        XCTAssertGreaterThan(busy.width, one.width, "more items widen the wings")
+        let w = L.wingWidth(left: [.agent, .files], right: [.music, .timer])
+        XCTAssertEqual(busy.width, notch.width + 2 * w + 2 * m.collapsedFillet, "both wings take the fuller side's width")
+        XCTAssertEqual(L.wingWidth(left: [], right: []), 0)
+        // The wings follow the FULLER side, whichever it is: a track + a countdown with nothing on the left must still
+        // widen BOTH wings, or the camera would sit off-centre in the shape (mutation M44).
+        let rightHeavy = L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch, timerActive: true,
+                                nowPlayingActive: true)!
+        let rw = L.sideWidth([.music, .timer]) + m.wingInset
+        XCTAssertGreaterThan(rw, m.wingMin)
+        XCTAssertEqual(rightHeavy.width, notch.width + 2 * rw + 2 * m.collapsedFillet, accuracy: 0.001)
+        let sides = L.wingItems(itemCount: 2, timerActive: true, nowPlayingActive: true, agentActive: true)
+        XCTAssertEqual(sides.left, [.agent, .files]); XCTAssertEqual(sides.right, [.music, .timer])
     }
 
     func testSizesGrowBadgeToPeekToExpanded() {
@@ -68,7 +111,11 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         let v = L.notch(screen: external, auxLeft: nil, auxRight: nil)
         XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: v), "nothing held ⇒ no pill either")
         let pill = L.size(for: .collapsed, anchor: .notch, itemCount: 5, notch: v)
-        XCTAssertEqual(pill, CGSize(width: L.Metrics.standard.pillWidth, height: L.Metrics.standard.pillHeight), "B7: a pill stands in for the badge")
+        XCTAssertEqual(pill, CGSize(width: L.Metrics.standard.pillWidth, height: L.Metrics.standard.pillHeight), "one item fits the 120-pt pill")
+        let wide = L.size(for: .collapsed, anchor: .notch, itemCount: 5, notch: v, timerActive: true, nowPlayingActive: true, agentActive: true)!
+        XCTAssertGreaterThanOrEqual(wide.width, L.sideWidth([.agent, .files]) + L.sideWidth([.music, .timer]),
+                                    "the pill widens only when its content runs out of room")
+        XCTAssertEqual(wide.height, L.Metrics.standard.pillHeight)
         XCTAssertNil(L.size(for: .collapsed, anchor: .notch, itemCount: 5, notch: v, pillOnPlainScreens: false), "the pill is a switch")
         XCTAssertNotNil(L.size(for: .peek, anchor: .notch, itemCount: 5, notch: v))
     }
@@ -88,7 +135,8 @@ final class NotchSurfaceLayoutTests: XCTestCase {
             XCTAssertLessThanOrEqual(f.maxX, ext.maxX); XCTAssertGreaterThanOrEqual(f.minX, ext.minX)
         }
         let pill = L.pillRect(notch: v, visible: extVisible)
-        XCTAssertEqual(pill, L.frame(for: .collapsed, anchor: .notch, itemCount: 2, notch: v, screen: ext, visible: extVisible, pointer: .zero))
+        XCTAssertEqual(pill, L.frame(for: .collapsed, anchor: .notch, itemCount: 2, notch: v, screen: ext, visible: extVisible, pointer: .zero),
+                       "one item: the pill is exactly its default size")
         XCTAssertEqual(pill.maxY, ext.maxY, "the pill IS the virtual notch")
         // A real notch is unchanged: glued to the screen top.
         let f = L.frame(for: .collapsed, anchor: .notch, itemCount: 2, notch: notch, screen: screen, visible: visible, pointer: .zero)!
@@ -114,23 +162,29 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         XCTAssertLessThanOrEqual(f.width, tiny.width); XCTAssertGreaterThanOrEqual(f.minX, tiny.minX)
     }
 
-    /// The strip under the notch is the centre of every window's title bar; without files it must
-    /// not be part of the hover zone, or grabbing a title bar would count as hovering the tray.
-    func testHoverZoneGainsTheBadgeLipOnlyWhileFilesAreHeld() {
+    /// The strip under the notch is the centre of every window's title bar, so the hover zone NEVER reaches below
+    /// the notch (P1: the wings sit beside the camera, in the menu-bar strip). It is the collapsed shape as drawn
+    /// while something sits in the wings, else the bare notch.
+    func testHoverZoneIsTheDrawnWingsAndNeverReachesBelowTheNotch() {
         let empty = L.hoverZone(notch: notch, screen: screen, itemCount: 0)
         XCTAssertEqual(empty, notch)
-        let held = L.hoverZone(notch: notch, screen: screen, itemCount: 2)
+        let held = L.hoverZone(notch: notch, screen: screen, itemCount: 2, agentActive: true)
+        let drawn = L.size(for: .collapsed, anchor: .notch, itemCount: 2, notch: notch, agentActive: true)!
         XCTAssertEqual(held.maxY, screen.maxY)
-        XCTAssertEqual(held.minY, notch.minY - L.Metrics.standard.badgeLip)
+        XCTAssertEqual(held.minY, notch.minY, "never the title-bar strip below the notch")
+        XCTAssertEqual(held.width, drawn.width, "resting on a wing counts")
+        XCTAssertEqual(held.midX, notch.midX, accuracy: 0.001)
         let v = L.notch(screen: external, auxLeft: nil, auxRight: nil)
         let zv = L.hoverZone(notch: v, screen: external, itemCount: 2)
         XCTAssertEqual(zv.height, 8); XCTAssertEqual(zv.maxY, external.maxY, "no pill shown ⇒ the bare strip in the menu bar")
-        // While the pill (the virtual notch, D0c) is shown it is the hover target — flush with the top edge.
         let extVisible = CGRect(x: external.minX, y: 0, width: external.width, height: external.height - 24)
         let zp = L.hoverZone(notch: v, screen: external, itemCount: 2, visible: extVisible, pillShown: true)
         XCTAssertEqual(zp, L.pillRect(notch: v, visible: extVisible))
         XCTAssertEqual(zp.maxY, external.maxY, "the pill zone sits at the top edge like a notch")
         XCTAssertEqual(zp.height, L.Metrics.standard.pillHeight)
+        let zw = L.hoverZone(notch: v, screen: external, itemCount: 2, nowPlayingActive: true, timerActive: true,
+                             agentActive: true, visible: extVisible, pillShown: true)
+        XCTAssertGreaterThan(zw.width, zp.width, "a widened pill is hovered over its whole width")
     }
 
     func testDragZoneIsWiderAndDeeperThanTheNotchAndTouchesTheTop() {
@@ -162,30 +216,32 @@ final class NotchSurfaceLayoutTests: XCTestCase {
     func testEveryNotchAnchoredStateFitsInsideTheFixedPanel() {
         let plain = L.notch(screen: external, auxLeft: nil, auxRight: nil)
         let externalVisible = CGRect(x: external.minX, y: external.minY + 70, width: external.width, height: external.height - 102)
-        let states: [S] = [.collapsed, .peek, .activity, .expanded(.files), .expanded(.clipboard), .expanded(.nowPlaying)]
+        let states: [S] = [.collapsed, .peek, .activity, .expanded(.files), .expanded(.clipboard), .expanded(.nowPlaying),
+                           .expanded(.agents), .expanded(.calendar)]
         for (scr, vis, n) in [(screen, visible, notch), (external, externalVisible, plain)] {
             let panel = L.panelFrame(notch: n, screen: scr)
             XCTAssertEqual(panel.maxY, scr.maxY, accuracy: 0.001)
             XCTAssertEqual(panel.midX, n.midX, accuracy: 0.001)
             XCTAssertLessThanOrEqual(panel.width, scr.width)
             var drawn = 0
-            for state in states { for items in [0, 3] { for np in [false, true] { for timer in [false, true] {
+            for state in states { for items in [0, 3] { for np in [false, true] { for timer in [false, true] { for agent in [false, true] {
                 guard let f = L.frame(for: state, anchor: .notch, itemCount: items, notch: n, screen: scr, visible: vis,
-                                      pointer: .zero, timerActive: timer, nowPlayingActive: np) else { continue }
+                                      pointer: .zero, timerActive: timer, nowPlayingActive: np, agentActive: agent) else { continue }
                 drawn += 1
                 XCTAssertTrue(panel.insetBy(dx: -0.001, dy: -0.001).contains(f),
-                              "\(state) items \(items) track \(np) timer \(timer): \(f) is not inside the fixed panel \(panel)")
-            } } } }
+                              "\(state) items \(items) track \(np) timer \(timer) agent \(agent): \(f) is not inside the fixed panel \(panel)")
+            } } } } }
             XCTAssertGreaterThan(drawn, 20, "the walk must actually draw states, or the test proves nothing")
         }
     }
 
-    /// The fixed panel is as wide as the widest state (the clipboard hub plus its two top fillets) and as tall as
-    /// the deepest drop below the notch — nothing more, so the transparent remainder stays small.
+    /// The fixed panel is as wide as the widest state (the wide hub plus its two flares) and as tall as the deepest
+    /// page (the calendar view) — nothing more, so the transparent remainder stays small.
     func testTheFixedPanelIsExactlyTheUnionOfTheStates() {
         let m = L.Metrics.standard
         let size = L.panelSize(notch: notch)
-        XCTAssertEqual(size.width, m.clipboardExpandedWidth + 2 * m.topFillet)
-        XCTAssertEqual(size.height, notch.height + m.expandedDrop)
+        XCTAssertEqual(size.width, m.wideWidth + 2 * m.topFillet)
+        XCTAssertEqual(size.height, notch.height + m.calendarDrop)
+        XCTAssertEqual(size, CGSize(width: 650, height: 188), "650 × 188 — down from 776 × 254 before P1")
     }
 }

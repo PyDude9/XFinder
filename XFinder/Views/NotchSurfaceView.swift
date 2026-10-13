@@ -46,6 +46,8 @@ final class NotchSurfaceModel {
     var agentsEnabled = false
     var agentHookInstalled = false
     var agentsNeedingYou: Int { agents.filter(\.needsYou).count }
+    /// P1: a Claude Code session is alive (running or waiting) — the left wing of the collapsed notch shows it.
+    var agentActive: Bool { agentsEnabled && agents.contains { $0.status != .ended } }
     /// D0c: true for the first frame of a surface opening at the notch — the shape is drawn at the notch's
     /// own size and the controller flips this on the next run-loop turn, so the hub springs out of the notch.
     var appearFromNotch = false
@@ -60,15 +62,23 @@ extension EnvironmentValues {
     }
 }
 
-/// Root of the Notch surface window. The window is sized by `NotchSurfaceLayout`; this view draws
-/// a black shape of the SAME layout size for the current state and animates between states with
-/// `Motion.surface`, so the surface appears to grow out of the notch. Everything is white-on-black
-/// on purpose — it must read as part of the notch, not as a floating card.
+/// Root of the Notch surface window. The window is ONE fixed frame (N1); this view draws a black shape of the
+/// layout size for the current state, top-centred, and animates between states — the open spring overshoots a
+/// little, the close is quick (P1, OneNotch measured). White-on-black on purpose: it must read as part of the
+/// notch, not as a floating card.
+///
+/// P1 grammar (measured on OneNotch): collapsed = the notch's own height with a WING each side of the camera
+/// (left: agent / held files, right: track / countdown); expanded = a 32-pt band (page dots + search in the left
+/// wing, the toolbar in the right one) over one of two bodies, 382 or 612 wide. A page switch cross-fades.
 struct NotchSurfaceView: View {
     var model: NotchSurfaceModel
     @State private var store = DropTrayStore.shared
     @State private var isTargeted = false
     @Environment(\.notchAccent) private var accent
+
+    private typealias Page = NotchSurfaceMachine.Page
+    private typealias N = XFinderTokens.Notch
+    private static let m = NotchSurfaceLayout.Metrics.standard
 
     /// The state's own size — what the content is laid out at (once per state, not once per animation frame).
     private var stateSize: CGSize {
@@ -77,6 +87,7 @@ struct NotchSurfaceView: View {
                                        itemCount: model.itemCount, notch: notch,
                                        timerActive: model.timerText != nil,
                                        nowPlayingActive: nowPlayingActive,
+                                       agentActive: model.agentActive,
                                        pillOnPlainScreens: model.pillOnPlainScreens) ?? .zero
     }
 
@@ -85,57 +96,62 @@ struct NotchSurfaceView: View {
         model.appearFromNotch ? model.notchSize : stateSize
     }
 
-    /// A screen without a notch: the surface hangs under the menu bar as a free-standing card / pill.
+    /// A screen without a notch: the surface hangs from the top edge over a VIRTUAL notch (D0c).
     private var plainScreen: Bool { model.notchSize.height == 0 }
 
     private var nowPlayingActive: Bool { model.nowPlaying?.hasTrack == true }
 
-    /// At the notch the top edge is flush with the screen (the notch has no top edge); a tray opened
-    /// at the pointer is a free-standing card, rounded on all four corners.
+    /// At the notch the top edge is flush with the screen; a tray opened at the pointer is rounded all round.
     private var atNotch: Bool { model.anchor == .notch }
-    /// At the notch — real or virtual (D0c: a plain screen's surface hangs from the top edge too) — the top
-    /// edge is flush with the bezel; a tray opened at the pointer is a free-standing card, rounded all round.
-    private var shape: NotchShape {
-        NotchShape(bottomRadius: bottomRadius, topRadius: atNotch ? 0 : bottomRadius, topFillet: filletNow)
-    }
 
-    /// The hub's body without the flares — what strokes and content insets are measured against.
-    private var bodyShape: NotchShape {
-        NotchShape(bottomRadius: bottomRadius, topRadius: atNotch ? 0 : bottomRadius)
-    }
+    private var collapsed: Bool { model.state == .collapsed }
 
-    /// D1: the expanded hub at a notch (real or virtual) flares into the top edge; a pointer tray does not.
-    private var filletNow: CGFloat {
-        if case .expanded = model.state, atNotch { return NotchSurfaceLayout.Metrics.standard.topFillet }
-        return 0
+    /// The flare into the top edge (P1): the hub's 19 × 8, the collapsed wings' 6.5 × 4. None for a peek / activity
+    /// strip (their sizes carry no flare), a pointer tray (no top edge), the pill, or the first frame of an opening
+    /// (drawn at the notch's own size — the flare grows in with the shape).
+    private var flare: (width: CGFloat, depth: CGFloat) {
+        guard atNotch, !model.appearFromNotch else { return (0, 0) }
+        switch model.state {
+        case .collapsed: return plainScreen ? (0, 0) : (Self.m.collapsedFillet, Self.m.collapsedFilletDepth)
+        case .expanded: return (Self.m.topFillet, Self.m.topFilletDepth)
+        case .peek, .activity: return (0, 0)
+        }
     }
 
     private var bottomRadius: CGFloat {
         switch model.state {
-        case .collapsed: return plainScreen ? NotchSurfaceLayout.Metrics.standard.pillHeight / 2 : 9
+        case .collapsed: return plainScreen ? Self.m.pillHeight / 2 : Self.m.collapsedBottomRadius
         case .peek, .activity: return 14
-        case .expanded: return XFinderTokens.Radius.hub
+        case .expanded: return Self.m.expandedBottomRadius
         }
     }
 
-    /// Measured 2026-10-12 with `sample` during an open: 214 of 565 main-thread samples sat in
-    /// `-[NSAnimation _runBlocking]` under `NSHostingView.layout` — the hosting view was ANIMATING THE
-    /// WINDOW'S FRAME to follow this view's ideal size (`sizingOptions = []` does not stop it), and
-    /// AppKit's window animation blocks the main thread, so the SwiftUI spring could not render: the
-    /// hub grew in steps and the whole app stalled ~200 ms per open. The root is therefore a
-    /// `GeometryReader`, whose ideal size is fixed, so the window (sized by the controller before it is
-    /// shown) never moves; only the shape inside animates, and the content is laid out ONCE at the
-    /// state's size while the clip grows over it.
+    private var shape: NotchShape {
+        let f = flare
+        return NotchShape(bottomRadius: bottomRadius, topRadius: atNotch ? 0 : bottomRadius,
+                          flareWidth: f.width, flareDepth: f.depth)
+    }
+
+    /// The body without the flares — what the hairline follows (stroking the flared outline would draw lines where
+    /// the flare subpaths meet the body).
+    private var bodyShape: NotchShape {
+        NotchShape(bottomRadius: bottomRadius, topRadius: atNotch ? 0 : bottomRadius)
+    }
+
+    /// Measured 2026-10-12 with `sample` during an open: the hosting view animated the WINDOW's frame to follow
+    /// this view's ideal size and AppKit's window animation blocked the main thread. The root is therefore a
+    /// `GeometryReader` (fixed ideal size), so the window never moves; only the shape inside animates, and the
+    /// content is laid out ONCE at the state's size while the clip grows over it.
     var body: some View {
         GeometryReader { _ in
             ZStack(alignment: .top) {
                 shape.fill(Color.black)
-                // The hairline / drop ring follows the BODY: stroking the flared outline would draw lines where
-                // the flare subpaths meet the body.
-                bodyShape.strokeBorder(isTargeted ? accent : Color.white.opacity(0.12), lineWidth: isTargeted ? 2 : 1)
-                    .padding(.horizontal, filletNow)
+                // No hairline on the collapsed wings: they sit in the menu bar beside the camera and must read as
+                // part of the hardware notch, which has no outline.
+                bodyShape.strokeBorder(isTargeted ? accent : Color.white.opacity(collapsed ? 0 : 0.10),
+                                       lineWidth: isTargeted ? 2 : 1)
+                    .padding(.horizontal, flare.width)
                 content
-                    .padding(.top, (atNotch && !isClipboardHub) ? model.notchSize.height : 0)   // D0: that hub USES the notch band
                     .frame(width: stateSize.width, height: stateSize.height, alignment: .top)
                     .opacity(model.appearFromNotch ? 0 : 1)                                     // fades in as the shape grows
             }
@@ -152,127 +168,121 @@ struct NotchSurfaceView: View {
                 return true
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .animation(XFinderTokens.Motion.surface, value: model.state)
-            .animation(XFinderTokens.Motion.surface, value: model.appearFromNotch)
+            // Opening overshoots a little; collapsing is quick and never bounces (P1, OneNotch measured).
+            .animation(collapsed ? N.close : N.open, value: model.state)
+            .animation(N.open, value: model.appearFromNotch)
         }
         .environment(\.notchAccent, model.accent ?? .accentColor)
     }
 
     @ViewBuilder private var content: some View {
         switch model.state {
-        case .collapsed: badge
-        case .peek: if model.itemCount > 0 { peek } else { nowPlayingStrip }   // the machine peeks only with files or a track
-        case .activity: activityStrip
-        case .expanded(.clipboard): clipboardShell
-        case .expanded(let page): hubShell(page)
+        case .collapsed: wings
+        case .peek:
+            // The machine peeks only with files or a track.
+            Group { if model.itemCount > 0 { peek } else { nowPlayingStrip } }
+                .padding(.top, model.notchSize.height)
+        case .activity: activityStrip.padding(.top, model.notchSize.height)
+        case .expanded(let page): hub(page)
         }
     }
 
-    private var isClipboardHub: Bool { model.state == .expanded(.clipboard) }
+    // MARK: - Collapsed: the wings beside the camera
 
-    /// D0, after the OneNotch reference the user supplied: the clipboard hub is wide enough to use the
-    /// band EITHER SIDE of the notch — page tabs on the left wing, search + close on the right — then
-    /// the chip row, one horizontal row of cards and the footer. The wings are symmetric so nothing is
-    /// drawn under the notch; at the pointer (a shaken tray switched to this tab) or on a screen without a
-    /// notch the gap is zero and the band is one continuous row.
-    private var clipboardShell: some View {
-        let inset = XFinderTokens.Space.inline + filletNow     // the flares are outside the content
-        let notchGap: CGFloat = (atNotch && !plainScreen) ? model.notchSize.width : 0
-        let bandHeight: CGFloat = max(model.notchSize.height, 32)
-        let wing = max(0, (size.width - notchGap) / 2 - inset)
-        return VStack(alignment: .leading, spacing: XFinderTokens.Space.tight + 2) {
+    private var wingItems: (left: [NotchSurfaceLayout.WingItem], right: [NotchSurfaceLayout.WingItem]) {
+        NotchSurfaceLayout.wingItems(itemCount: model.itemCount, timerActive: model.timerText != nil,
+                                     nowPlayingActive: nowPlayingActive, agentActive: model.agentActive)
+    }
+
+    /// Each side's items sit at the OUTER edge of their wing (OneNotch measured ~9 pt in), so nothing crowds the
+    /// camera. On a screen without a notch both sides sit together in the middle of the pill.
+    @ViewBuilder private var wings: some View {
+        let items = wingItems
+        if plainScreen {
+            HStack(spacing: Self.m.wingSpacing * 2) {
+                wingSide(items.left)
+                wingSide(items.right)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            let wing = NotchSurfaceLayout.wingWidth(left: items.left, right: items.right)
             HStack(spacing: 0) {
-                HStack(spacing: XFinderTokens.Space.tight) {
-                    pageTabs(current: .clipboard)
-                    // The empty part of the band moves a pointer-anchored tray (B1b rule: never over controls).
-                    Spacer(minLength: 0)
-                        .overlay { if !atNotch { WindowDragHandle().help(L10n.t("Kéo để dời khay")) } }
-                }
-                .frame(width: wing, alignment: .leading)
-                Color.clear.frame(width: notchGap)
-                HStack(spacing: XFinderTokens.Space.tight) {
-                    NotchClipboardSearchField(model: model.clipboard)
-                    Button { NotchSurfaceController.shared.dismiss() } label: {
-                        Image(systemName: "xmark.circle.fill").opacity(0.65)
-                    }
-                    .buttonStyle(.plain)
-                    .help(L10n.t("Đóng"))
-                }
-                .frame(width: wing, alignment: .trailing)
+                wingSide(items.left).padding(.leading, 9).frame(width: wing, alignment: .leading)
+                Color.clear.frame(width: model.notchSize.width)
+                wingSide(items.right).padding(.trailing, 9).frame(width: wing, alignment: .trailing)
             }
-            .frame(height: bandHeight)
-
-            NotchClipboardView(model: model.clipboard)
-        }
-        .foregroundColor(.white)
-        .padding(.horizontal, inset)
-        .padding(.bottom, inset)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    /// The three page tabs (Now Playing only while its switch is on), shared by both hub shells.
-    /// D1 #44: in the user's order, hidden ones left out; Now Playing additionally needs its own switch (B6).
-    @ViewBuilder private func pageTabs(current page: NotchSurfaceMachine.Page) -> some View {
-        ForEach(model.pages, id: \.self) { p in
-            switch p {
-            case .files:
-                pageTab(.files, icon: "tray.and.arrow.down.fill", title: L10n.t("Khay"),
-                        badge: store.items.isEmpty ? nil : "\(store.items.count)", current: page)
-            case .clipboard:
-                pageTab(.clipboard, icon: "doc.on.clipboard.fill", title: "Clipboard", badge: nil, current: page)
-            case .nowPlaying:
-                if model.nowPlayingAvailability != .off {
-                    pageTab(.nowPlaying, icon: "music.note", title: L10n.t("Đang phát"), badge: nil, current: page)
-                }
-            case .agents:
-                if model.agentsEnabled {
-                    pageTab(.agents, icon: "terminal", title: L10n.t("Agent AI"),
-                            badge: model.agentsNeedingYou > 0 ? "\(model.agentsNeedingYou)" : nil, current: page)
-                }
-            case .calendar:
-                if model.calendarEnabled {
-                    pageTab(.calendar, icon: "calendar", title: L10n.t("Lịch"), badge: nil, current: page)
-                }
-            }
+            .padding(.horizontal, Self.m.collapsedFillet)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
-    /// Count hanging under the notch while files are held and the surface is collapsed.
-    private var badge: some View {
-        HStack(spacing: XFinderTokens.Space.tight) {
-            if model.itemCount > 0 {
-                Image(systemName: "tray.fill").font(XFinderTokens.Font.caption)
-                Text("\(model.itemCount)").font(XFinderTokens.Font.caption).monospacedDigit()
-            }
-            if let t = model.timerText {
-                Image(systemName: "timer").font(XFinderTokens.Font.caption)
-                Text(t).font(XFinderTokens.Font.caption).monospacedDigit()
-            }
-            if let np = model.nowPlaying, np.hasTrack {
-                // B6: the track, as small as the lip allows — artwork (or a note) and the headline.
-                artworkThumb(size: 14)
-                Text(np.headline).font(XFinderTokens.Font.caption).lineLimit(1).truncationMode(.tail)
-                    .frame(maxWidth: 110)
-                    .layoutPriority(-1)                      // the count and the timer keep their digits; the title truncates
-                    .opacity(np.playing ? 1 : 0.6)
-            }
+    private func wingSide(_ items: [NotchSurfaceLayout.WingItem]) -> some View {
+        HStack(spacing: Self.m.wingSpacing) {
+            ForEach(items, id: \.self) { wingItem($0) }
         }
         .foregroundColor(.white)
-        .frame(maxWidth: .infinity)
-        .frame(height: plainScreen ? NotchSurfaceLayout.Metrics.standard.pillHeight : NotchSurfaceLayout.Metrics.standard.badgeLip)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if model.itemCount > 0 { NotchSurfaceController.shared.reveal() }
-            else if nowPlayingActive { NotchSurfaceController.shared.reveal(page: .nowPlaying) }
+    }
+
+    @ViewBuilder private func wingItem(_ item: NotchSurfaceLayout.WingItem) -> some View {
+        let w = Self.m.wingItemWidth(item)
+        switch item {
+        case .agent:
+            // Each literal is its own `L10n.t` argument so the literal sweep sees both (a ternary INSIDE t() hides them).
+            let label = model.agentsNeedingYou > 0 ? L10n.t("Claude Code đang chờ bạn") : L10n.t("Claude Code đang chạy")
+            Image(systemName: "terminal.fill").font(.system(size: 12, weight: .semibold))
+                .foregroundColor(model.agentsNeedingYou > 0 ? .orange : .white.opacity(0.85))
+                .frame(width: w, height: 22)
+                .contentShape(Rectangle())
+                .onTapGesture { NotchSurfaceController.shared.reveal(page: .agents) }
+                .help(label)
+                .accessibilityLabel(label)
+                .accessibilityAddTraits(.isButton)
+        case .files:
+            HStack(spacing: 3) {
+                Image(systemName: "tray.fill").font(.system(size: 11))
+                Text("\(model.itemCount)").font(.system(size: 11, weight: .semibold)).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .frame(width: w, height: 22)
+            .contentShape(Rectangle())
+            .onTapGesture { NotchSurfaceController.shared.reveal() }
+            .help("\(model.itemCount)\(L10n.t(" tệp đang giữ"))")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(model.itemCount)\(L10n.t(" tệp đang giữ"))")
+            .accessibilityAddTraits(.isButton)
+        case .music:
+            Group {
+                // The live bars only while the tap really hears the player; otherwise the artwork (Honesty Rule:
+                // bars are never animated from nothing).
+                if AudioTapMonitor.shared.isRunning && !AudioTapMonitor.shared.looksDenied {
+                    WaveformBars().frame(width: 22, height: 11)
+                } else {
+                    artworkThumb(size: 18)
+                }
+            }
+            .frame(width: w, height: 22)
+            .opacity(model.nowPlaying?.playing == true ? 1 : 0.55)
+            .contentShape(Rectangle())
+            .onTapGesture { NotchSurfaceController.shared.reveal(page: .nowPlaying) }
+            .help(model.nowPlaying?.headline ?? "")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(L10n.t("Đang phát")): \(model.nowPlaying?.headline ?? "")")
+            .accessibilityAddTraits(.isButton)
+        case .timer:
+            HStack(spacing: 3) {
+                Image(systemName: "timer").font(.system(size: 11))
+                Text(model.timerText ?? "").font(.system(size: 11, weight: .semibold)).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.8)
+            }
+            .frame(width: w, height: 22)
         }
-        .help(model.itemCount > 0 || nowPlayingActive ? L10n.t("Bấm để mở") : "")
     }
 
     @ViewBuilder private func artworkThumb(size: CGFloat) -> some View {
         if let img = model.nowPlayingArtwork {
             Image(nsImage: img).resizable().aspectRatio(contentMode: .fill)
                 .frame(width: size, height: size)
-                .clipShape(RoundedRectangle(cornerRadius: max(2, size / 8)))
+                .clipShape(RoundedRectangle(cornerRadius: max(2, size / 6), style: .continuous))
         } else if let icon = model.nowPlayingAppIcon {
             Image(nsImage: icon).resizable().frame(width: size, height: size)
         } else {
@@ -314,10 +324,169 @@ struct NotchSurfaceView: View {
         .padding(.horizontal, XFinderTokens.Space.inline)
         .foregroundColor(.white)
         .frame(maxWidth: .infinity)
-        .frame(height: NotchSurfaceLayout.Metrics.standard.peekDrop)
+        .frame(height: Self.m.peekDrop)
     }
 
-    /// The hub page (B6): artwork, titles, a progress bar from the last report, controls, open the player.
+    // MARK: - Expanded: one band over the page
+
+    /// Band + page. The page body cross-fades on a page change (P1: ~200 ms measured) while the shape springs
+    /// between the two widths; a ZStack, so the outgoing and incoming pages overlap instead of stacking.
+    private func hub(_ page: Page) -> some View {
+        VStack(spacing: 0) {
+            band(page)
+            ZStack(alignment: .top) {
+                // The budgets live in Metrics and a test proves they fill each body (the clipboard is the tightest).
+                pageBody(page)
+                    .padding(.horizontal, page == .nowPlaying ? 16 : 14)
+                    .padding(.top, page == .clipboard ? Self.m.clipboardTopInset : Self.m.pageTopInset)
+                    .padding(.bottom, page == .clipboard ? Self.m.clipboardBottomInset : Self.m.pageBottomInset)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .id(page)
+                    .transition(.opacity)
+            }
+            .animation(N.pageFade, value: page)
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, flare.width)                 // the flares are outside the content
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    @ViewBuilder private func pageBody(_ page: Page) -> some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            switch page {
+            case .files: filesPage
+            case .clipboard: NotchClipboardView(model: model.clipboard)
+            case .nowPlaying: nowPlayingPage
+            case .agents: agentsPage
+            case .calendar: calendarPage
+            }
+        }
+    }
+
+    /// The 32-pt band, symmetric about the camera: page dots (+ search on the clipboard page) in the left wing,
+    /// the toolbar in the right one; nothing is drawn under the notch. At the pointer or on a screen without a
+    /// notch the gap is 0 and the band is one row; at the pointer the empty part of the band is also a drag strip.
+    private func band(_ page: Page) -> some View {
+        let bandHeight = max(model.notchSize.height, Self.m.bandHeight)
+        let notchGap: CGFloat = (atNotch && !plainScreen) ? model.notchSize.width : 0
+        let inner = stateSize.width - 2 * flare.width
+        let wing = max(0, (inner - notchGap) / 2 - 12)
+        return HStack(spacing: 0) {
+            HStack(spacing: 8) {
+                dotsCapsule(current: page)
+                if page == .clipboard {
+                    NotchClipboardSearchField(model: model.clipboard).layoutPriority(1)
+                }
+                // The empty part of the band moves a pointer-anchored tray (B1b rule: never over controls — an
+                // NSView overlay wins AppKit hit-testing over every SwiftUI control under it).
+                Spacer(minLength: 0)
+                    .overlay { if !atNotch { WindowDragHandle().help(L10n.t("Kéo để dời khay")) } }
+            }
+            .frame(width: wing, alignment: .leading)
+            Color.clear.frame(width: notchGap)
+            HStack(spacing: 8) {
+                Spacer(minLength: 0)
+                toolbarCapsule(current: page)
+                // On every page and at the notch too: Esc closes only the clipboard page (its key monitor), so on the
+                // other pages this is the one immediate way out besides leaving (P1 review — OneNotch has no ✕, but its
+                // pages are not keyboard-less in the same way).
+                Button { NotchSurfaceController.shared.dismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
+                        .foregroundColor(N.toolbarIcon)
+                        .frame(width: N.toolbarHeight, height: N.toolbarHeight)
+                        .background(Circle().fill(N.capsule))
+                }
+                .buttonStyle(.plain)
+                .help(L10n.t("Đóng"))
+                .accessibilityLabel(L10n.t("Đóng"))
+            }
+            .frame(width: wing, alignment: .trailing)
+        }
+        .padding(.horizontal, 12)
+        .frame(height: bandHeight)
+    }
+
+    /// A page the hub can show right now: Now Playing needs its switch (B6), Agents and the calendar theirs.
+    private func available(_ p: Page) -> Bool {
+        switch p {
+        case .files, .clipboard: return true
+        case .nowPlaying: return model.nowPlayingAvailability != .off
+        case .agents: return model.agentsEnabled
+        case .calendar: return model.calendarEnabled
+        }
+    }
+
+    private func pageTitle(_ p: Page) -> String {
+        switch p {
+        case .files: return L10n.t("Khay")
+        case .clipboard: return "Clipboard"
+        case .nowPlaying: return L10n.t("Đang phát")
+        case .agents: return L10n.t("Agent AI")
+        case .calendar: return L10n.t("Lịch")
+        }
+    }
+
+    /// One dot per swipeable page in the user's order (D1 #44); the lit dot is the current page (OneNotch measured:
+    /// dot 1 on Clipboard, dot 3 on Agents). Each dot is a button — the tooltip / VoiceOver label names the page
+    /// the dot alone cannot. An Agents dot turns orange while a session waits for you.
+    private func dotsCapsule(current: Page) -> some View {
+        let pages = NotchPages.dots(model.pages).filter(available)
+        return HStack(spacing: 0) {
+            ForEach(pages, id: \.self) { p in
+                Button { NotchSurfaceController.shared.switchPage(p) } label: {
+                    Circle().fill(dotColor(p, current: current))
+                        .frame(width: N.dotSize, height: N.dotSize)
+                        .frame(width: N.dotPitch, height: N.dotsCapsuleHeight)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(pageTitle(p))
+                .accessibilityLabel(pageTitle(p))
+                .accessibilityAddTraits(p == current ? .isSelected : [])
+            }
+        }
+        .padding(.horizontal, 4.5)                      // 15 n + 9: 54 pt for three dots, as measured
+        .background(Capsule().fill(N.capsule))
+    }
+
+    private func dotColor(_ p: Page, current: Page) -> Color {
+        if p == current { return N.dotLit }
+        if p == .agents, model.agentsNeedingYou > 0 { return .orange }
+        return N.dotDim
+    }
+
+    /// The toolbar: fixed destinations (the calendar now; the timer and AI usage in P2), lit while current.
+    @ViewBuilder private func toolbarCapsule(current: Page) -> some View {
+        let tools = NotchPages.toolbar(model.pages).filter(available)
+        if !tools.isEmpty {
+            HStack(spacing: 0) {
+                ForEach(tools, id: \.self) { p in
+                    Button { NotchSurfaceController.shared.switchPage(p) } label: {
+                        Image(systemName: toolIcon(p)).font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(p == current ? N.dotLit : N.toolbarIcon)
+                            .frame(width: N.toolbarIconPitch, height: N.toolbarHeight)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(pageTitle(p))
+                    .accessibilityLabel(pageTitle(p))
+                    .accessibilityAddTraits(p == current ? .isSelected : [])
+                }
+            }
+            .padding(.horizontal, 3)
+            .background(Capsule().fill(N.capsule))
+        }
+    }
+
+    private func toolIcon(_ p: Page) -> String {
+        switch p {
+        case .calendar: return "calendar"
+        case .files: return "tray.fill"
+        case .clipboard: return "doc.on.clipboard.fill"
+        case .nowPlaying: return "music.note"
+        case .agents: return "terminal.fill"
+        }
+    }
     // MARK: - N4: Glance (calendar)
 
     /// OneNotch's calendar page re-derived: weekday + lunar date, a nine-day strip with dots, the greeting and
@@ -498,79 +667,139 @@ struct NotchSurfaceView: View {
         }
     }
 
+    // MARK: - Now Playing (B6; P1 layout after OneNotch)
+
+    /// Artwork (with the player's icon on its corner — click it to open the player), title, artist, the live bars
+    /// top-right, the transport row; under them the seekable progress bar and the times. With nothing playing the
+    /// same frame stays, with a placeholder artwork and inert controls, so the page does not jump.
     @ViewBuilder private var nowPlayingPage: some View {
-        if let np = model.nowPlaying, np.hasTrack {
-            HStack(alignment: .top, spacing: XFinderTokens.Space.inline + 2) {
-                artworkThumb(size: 72)
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                    Text(np.headline).font(XFinderTokens.Font.row).lineLimit(2)
-                    if !np.subline.isEmpty {
-                        Text(np.subline).font(XFinderTokens.Font.caption).opacity(0.65).lineLimit(1).truncationMode(.tail)
+        let np = model.nowPlaying.flatMap { $0.hasTrack ? $0 : nil }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 16) {
+                nowPlayingArtwork(np)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(alignment: .center, spacing: 6) {
+                        Text(np?.headline ?? L10n.t("Không có gì đang phát."))
+                            .font(.system(size: 15, weight: .semibold)).lineLimit(1).truncationMode(.tail)
+                        Spacer(minLength: 4)
+                        waveformGlyph
                     }
-                    // §3b #21 — live bars from the player's own audio; a hint when the tap gets only digital silence.
-                    if AudioTapMonitor.shared.isRunning {
-                        if AudioTapMonitor.shared.looksDenied {
-                            Text(L10n.t("Sóng nhạc chỉ nhận được im lặng — có thể chưa cấp quyền Ghi âm thanh hệ thống."))
-                                .font(XFinderTokens.Font.caption).opacity(0.65).lineLimit(2)
-                        } else {
-                            WaveformBars().frame(height: 18)
+                    if let np {
+                        if !np.subline.isEmpty {
+                            Text(np.subline).font(XFinderTokens.Font.caption).opacity(0.6).lineLimit(1).truncationMode(.tail)
                         }
+                    } else if model.nowPlayingAvailability != .ready {
+                        Text(L10n.t(model.nowPlayingAvailability.messageKey)).font(XFinderTokens.Font.caption).opacity(0.5)
+                            .lineLimit(2)
                     }
-                    if let d = np.duration, d > 0 {
-                        let pos = model.nowPlayingPosition ?? NowPlaying.position(of: np, at: Date()) ?? 0
-                        // N8: the bar is a slider — release to seek (MRMediaRemoteSetElapsedTime, measured to reach the player)
-                        Slider(value: Binding(get: { min(pos, d) }, set: { model.nowPlayingPosition = $0 }), in: 0...d,
-                               onEditingChanged: { editing in if !editing { NotchSurfaceController.shared.nowPlayingSeek(to: model.nowPlayingPosition ?? pos) } })
-                            .controlSize(.mini).tint(.white).frame(height: 14)
-                        HStack {
-                            Text(NowPlaying.timeLabel(pos)).font(XFinderTokens.Font.caption).monospacedDigit().opacity(0.65)
-                            Spacer()
-                            if !np.playing { Text(L10n.t("Đang tạm dừng")).font(XFinderTokens.Font.caption).opacity(0.65) }
-                            Spacer()
-                            Text(NowPlaying.timeLabel(d)).font(XFinderTokens.Font.caption).monospacedDigit().opacity(0.65)
-                        }
-                    } else if !np.playing {
-                        Text(L10n.t("Đang tạm dừng")).font(XFinderTokens.Font.caption).opacity(0.65)
-                    }
-                    HStack {
-                        nowPlayingControls(size: 14)
-                        // N8: shuffle / repeat as menus of the three modes — the player's current mode is not readable
-                        // from the Now Playing info, so nothing here pretends to show it.
-                        Menu {
-                            ForEach(NowPlaying.ShuffleMode.allCases, id: \.rawValue) { m in
-                                Button(L10n.t(m.labelKey)) { NotchSurfaceController.shared.nowPlayingShuffle(m) }
-                            }
-                        } label: { Image(systemName: "shuffle").font(.system(size: 12)) }
-                        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L10n.t("Xáo trộn"))
-                        Menu {
-                            ForEach(NowPlaying.RepeatMode.allCases, id: \.rawValue) { m in
-                                Button(L10n.t(m.labelKey)) { NotchSurfaceController.shared.nowPlayingRepeat(m) }
-                            }
-                        } label: { Image(systemName: "repeat").font(.system(size: 12)) }
-                        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L10n.t("Lặp lại"))
-                        Spacer()
-                        if let app = model.nowPlayingAppName {
-                            Button("\(L10n.t("Mở "))\(app)") { NotchSurfaceController.shared.openPlayer() }
-                                .buttonStyle(.bordered).controlSize(.mini)
-                        }
-                    }
+                    Spacer(minLength: 0)
+                    transportRow(enabled: np != nil)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: Self.m.artworkSide)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        } else {
-            VStack(spacing: XFinderTokens.Space.tight) {
-                Image(systemName: "music.note").font(XFinderTokens.Font.pageIcon).opacity(0.65)
-                Text(L10n.t("Không có gì đang phát.")).font(XFinderTokens.Font.caption).opacity(0.65)
-                if model.nowPlayingAvailability != .ready {
-                    Text(L10n.t(model.nowPlayingAvailability.messageKey)).font(XFinderTokens.Font.caption).opacity(0.5)
-                        .multilineTextAlignment(.center)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Spacer(minLength: Self.m.artworkToProgressGap)
+            progressArea(np)
         }
     }
 
+    @ViewBuilder private func nowPlayingArtwork(_ np: NowPlaying.Snapshot?) -> some View {
+        ZStack(alignment: .bottomTrailing) {
+            Group {
+                if np != nil, let img = model.nowPlayingArtwork {
+                    Image(nsImage: img).resizable().aspectRatio(contentMode: .fill)
+                } else {
+                    ZStack {
+                        N.capsule
+                        Image(systemName: "music.note").font(.system(size: 28)).foregroundColor(N.toolbarIcon)
+                    }
+                }
+            }
+            .frame(width: Self.m.artworkSide, height: Self.m.artworkSide)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            if np != nil, let icon = model.nowPlayingAppIcon {
+                Button { NotchSurfaceController.shared.openPlayer() } label: {
+                    Image(nsImage: icon).resizable().frame(width: 24, height: 24)
+                        .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
+                }
+                .buttonStyle(.plain)
+                .offset(x: 6, y: 6)
+                .help(model.nowPlayingAppName.map { "\(L10n.t("Mở "))\($0)" } ?? "")
+            }
+        }
+        .frame(width: Self.m.artworkSide, height: Self.m.artworkSide)
+    }
+
+    /// §3b #21 — live bars from the player's own audio; a slashed glyph (its tooltip says why) when the tap hears
+    /// only digital silence. Nothing at all while the tap is off.
+    @ViewBuilder private var waveformGlyph: some View {
+        if AudioTapMonitor.shared.isRunning {
+            if AudioTapMonitor.shared.looksDenied {
+                Image(systemName: "waveform.slash").font(.system(size: 11)).foregroundColor(N.toolbarIcon)
+                    .help(L10n.t("Sóng nhạc chỉ nhận được im lặng — có thể chưa cấp quyền Ghi âm thanh hệ thống."))
+            } else {
+                WaveformBars().frame(width: 30, height: 14)
+            }
+        }
+    }
+
+    /// Shuffle / repeat are menus of the three modes (N8): the player's current mode is not readable from the Now
+    /// Playing info, so nothing here pretends to show it. Play/pause is the big one.
+    private func transportRow(enabled: Bool) -> some View {
+        HStack(spacing: 0) {
+            Menu {
+                ForEach(NowPlaying.ShuffleMode.allCases, id: \.rawValue) { m in
+                    Button(L10n.t(m.labelKey)) { NotchSurfaceController.shared.nowPlayingShuffle(m) }
+                }
+            } label: { Image(systemName: "shuffle").font(.system(size: 12)) }
+            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L10n.t("Xáo trộn"))
+            Spacer(minLength: 0)
+            Button { NotchSurfaceController.shared.nowPlayingCommand(.previousTrack) } label: {
+                Image(systemName: "backward.fill").font(.system(size: 15))
+            }.buttonStyle(.plain).help(L10n.t("Bài trước"))
+            Spacer(minLength: 0)
+            Button { NotchSurfaceController.shared.nowPlayingCommand(.togglePlayPause) } label: {
+                Image(systemName: model.nowPlaying?.playing == true ? "pause.fill" : "play.fill").font(.system(size: 22))
+                    .frame(width: 28)
+            }.buttonStyle(.plain).help(L10n.t("Phát hoặc tạm dừng"))
+            Spacer(minLength: 0)
+            Button { NotchSurfaceController.shared.nowPlayingCommand(.nextTrack) } label: {
+                Image(systemName: "forward.fill").font(.system(size: 15))
+            }.buttonStyle(.plain).help(L10n.t("Bài tiếp"))
+            Spacer(minLength: 0)
+            Menu {
+                ForEach(NowPlaying.RepeatMode.allCases, id: \.rawValue) { m in
+                    Button(L10n.t(m.labelKey)) { NotchSurfaceController.shared.nowPlayingRepeat(m) }
+                }
+            } label: { Image(systemName: "repeat").font(.system(size: 12)) }
+            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L10n.t("Lặp lại"))
+        }
+        .frame(height: 28)
+        .disabled(!enabled)
+        .opacity(enabled ? 1 : 0.35)
+    }
+
+    /// The full-width seek bar (N8: release to seek — `MRMediaRemoteSetElapsedTime`, measured to reach the player)
+    /// and the times. A fixed height either way, so a stream with no duration does not move the controls.
+    @ViewBuilder private func progressArea(_ np: NowPlaying.Snapshot?) -> some View {
+        VStack(spacing: 5) {
+            if let np, let d = np.duration, d > 0 {
+                let pos = min(d, model.nowPlayingPosition ?? NowPlaying.position(of: np, at: Date()) ?? 0)
+                NowPlayingSeekBar(position: pos, duration: d) { NotchSurfaceController.shared.nowPlayingSeek(to: $0) }
+                    .frame(height: 10)
+                HStack {
+                    Text(NowPlaying.timeLabel(pos)).monospacedDigit()
+                    Spacer()
+                    if !np.playing { Text(L10n.t("Đang tạm dừng")) }
+                    Spacer()
+                    Text(NowPlaying.timeLabel(d)).monospacedDigit()
+                }
+                .font(.system(size: 10)).opacity(0.6)
+            } else if let np, !np.playing {
+                Text(L10n.t("Đang tạm dừng")).font(.system(size: 10)).opacity(0.6)
+            }
+        }
+        .frame(height: Self.m.progressAreaHeight, alignment: .bottom)
+    }
     /// Peek only exists while files are held (the machine never peeks an empty tray). The left icon
     /// is a drag handle for EVERY held file — so files stay one drag away even collapsed — and the
     /// text opens the hub. They are separate regions because one press cannot be both a drag and a click.
@@ -636,55 +865,6 @@ struct NotchSurfaceView: View {
         case .warning: return .orange
         case .bad: return .red
         }
-    }
-
-    /// The hub: one header with two page tabs (files / clipboard) and the close button, then the page.
-    private func hubShell(_ page: NotchSurfaceMachine.Page) -> some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            HStack(spacing: XFinderTokens.Space.tight) {
-                HStack(spacing: XFinderTokens.Space.tight) {
-                    pageTabs(current: page)
-                    // A tray opened at the pointer often lands on the very window the files are going
-                    // to; the EMPTY part of its title strip moves it out of the way. Only that part:
-                    // an NSView overlay wins AppKit hit-testing, so one laid over the tabs swallowed
-                    // their clicks (review 2026-10-11), and one over the deck would swallow file drags.
-                    Spacer()
-                        .overlay { if !atNotch { WindowDragHandle().help(L10n.t("Kéo để dời khay")) } }
-                }
-                Button { NotchSurfaceController.shared.dismiss() } label: {
-                    Image(systemName: "xmark.circle.fill").opacity(0.65)
-                }
-                .buttonStyle(.plain)
-                .help(L10n.t("Đóng"))
-            }
-
-            switch page {
-            case .files: filesPage
-            case .clipboard: NotchClipboardView(model: model.clipboard)
-            case .nowPlaying: nowPlayingPage
-            case .agents: agentsPage
-            case .calendar: calendarPage
-            }
-        }
-        .foregroundColor(.white)
-        .padding(XFinderTokens.Space.inline)
-        .padding(.horizontal, filletNow)                  // D1: the flares are outside the content
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func pageTab(_ page: NotchSurfaceMachine.Page, icon: String, title: String, badge: String?,
-                         current: NotchSurfaceMachine.Page) -> some View {
-        Button { NotchSurfaceController.shared.switchPage(page) } label: {
-            HStack(spacing: 4) {
-                Image(systemName: icon).font(XFinderTokens.Font.caption)
-                Text(title).font(XFinderTokens.Font.caption)
-                if let badge { Text(badge).font(XFinderTokens.Font.caption).opacity(0.7).monospacedDigit() }
-            }
-            .padding(.horizontal, XFinderTokens.Space.tight + 2).padding(.vertical, 3)
-            .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge)
-                .fill(current == page ? Color.white.opacity(0.18) : Color.clear))
-        }
-        .buttonStyle(.plain)
     }
 
     @ViewBuilder private var filesPage: some View {
@@ -836,46 +1016,48 @@ struct NotchSurfaceView: View {
     }
 }
 
-/// Flush with the top of the screen at the notch (`topRadius` 0); fully rounded at the pointer.
-/// The surface's outline. Bottom corners are continuous curves; the top is square where the shape meets
-/// the screen edge. `topFillet` (D1, OneNotch reference) adds the Dynamic-Island flare: two concave
-/// quarter-circles that blend the body's vertical edges INTO the top edge, so the hub looks poured out of
-/// the bezel instead of pasted under it. The fillets take `topFillet` pt on each side of the body, which is
-/// why the expanded widths carry `2 × Metrics.topFillet` beyond their content.
+/// The surface's outline. Bottom corners are continuous curves; the top is square where the shape meets the
+/// screen edge (`topRadius` 0 at the notch) and rounded on a pointer tray. P1 (OneNotch measured): at the notch
+/// the body FLARES into the top edge — a short concave fillet `flareWidth` wide that settles `flareDepth` below
+/// the edge (19 × 8 on a hub, 6.5 × 4 on the collapsed wings). A quarter circle fitted the measured edge badly
+/// (it is snappy, not round), so the fillet is a quadratic curve. The flares sit outside the body, which is why
+/// the layout's sizes carry `2 × flareWidth` beyond their content.
 struct NotchShape: InsettableShape {
     var bottomRadius: CGFloat
     var topRadius: CGFloat = 0
-    var topFillet: CGFloat = 0
+    var flareWidth: CGFloat = 0
+    var flareDepth: CGFloat = 0
     var inset: CGFloat = 0
 
-    var animatableData: AnimatablePair<CGFloat, CGFloat> {
-        get { AnimatablePair(bottomRadius, topFillet) }
-        set { bottomRadius = newValue.first; topFillet = newValue.second }
+    var animatableData: AnimatablePair<CGFloat, AnimatablePair<CGFloat, CGFloat>> {
+        get { AnimatablePair(bottomRadius, AnimatablePair(flareWidth, flareDepth)) }
+        set { bottomRadius = newValue.first; flareWidth = newValue.second.first; flareDepth = newValue.second.second }
     }
 
     func path(in rect: CGRect) -> Path {
         let r = rect.insetBy(dx: inset, dy: inset)
-        let f = min(topFillet, r.width / 4, r.height / 2)
+        let f = max(0, min(flareWidth, r.width / 4))
+        let d = max(0, min(flareDepth, r.height / 2))
         let body = CGRect(x: r.minX + f, y: r.minY, width: r.width - 2 * f, height: r.height)
-        var p = UnevenRoundedRectangle(topLeadingRadius: topRadius, bottomLeadingRadius: bottomRadius,
-                                       bottomTrailingRadius: bottomRadius, topTrailingRadius: topRadius,
+        let radius = min(bottomRadius, body.height / 2, body.width / 2)
+        let top = min(topRadius, body.height / 2, body.width / 2)
+        var p = UnevenRoundedRectangle(topLeadingRadius: top, bottomLeadingRadius: radius,
+                                       bottomTrailingRadius: radius, topTrailingRadius: top,
                                        style: .continuous).path(in: body)
-        guard f > 0 else { return p }
-        // Left flare: top edge from the outer corner to the body, down the body edge to (f, f), then the
-        // concave arc (centre (0, f), radius f) back up to the outer corner. Mirrored on the right.
+        guard f > 0, d > 0 else { return p }
+        // Left flare: along the top edge from the outer corner to the body, down the body edge by the depth, then a
+        // concave curve back up to the outer corner (control point at the body's top corner). Mirrored on the right.
         var left = Path()
         left.move(to: CGPoint(x: r.minX, y: r.minY))
         left.addLine(to: CGPoint(x: body.minX, y: r.minY))
-        left.addLine(to: CGPoint(x: body.minX, y: r.minY + f))
-        left.addArc(center: CGPoint(x: r.minX, y: r.minY + f), radius: f,
-                    startAngle: .degrees(0), endAngle: .degrees(-90), clockwise: true)
+        left.addLine(to: CGPoint(x: body.minX, y: r.minY + d))
+        left.addQuadCurve(to: CGPoint(x: r.minX, y: r.minY), control: CGPoint(x: body.minX, y: r.minY))
         left.closeSubpath()
         var right = Path()
         right.move(to: CGPoint(x: r.maxX, y: r.minY))
         right.addLine(to: CGPoint(x: body.maxX, y: r.minY))
-        right.addLine(to: CGPoint(x: body.maxX, y: r.minY + f))
-        right.addArc(center: CGPoint(x: r.maxX, y: r.minY + f), radius: f,
-                     startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false)
+        right.addLine(to: CGPoint(x: body.maxX, y: r.minY + d))
+        right.addQuadCurve(to: CGPoint(x: r.maxX, y: r.minY), control: CGPoint(x: body.maxX, y: r.minY))
         right.closeSubpath()
         p.addPath(left)
         p.addPath(right)
@@ -1065,5 +1247,42 @@ struct WaveformBars: View {
             }
         }
         .accessibilityHidden(true)
+    }
+}
+
+/// The Now Playing progress bar (P1): a thin track (#818184, OneNotch measured) with the played part in white.
+/// Dragging scrubs locally and seeks on release, so the controller's 1 s ticker cannot yank the thumb mid-drag.
+struct NowPlayingSeekBar: View {
+    let position: Double
+    let duration: Double
+    let onCommit: (Double) -> Void
+    @State private var scrub: Double?
+
+    var body: some View {
+        GeometryReader { g in
+            let shown = scrub ?? position
+            let frac = duration > 0 ? max(0, min(1, shown / duration)) : 0
+            ZStack(alignment: .leading) {
+                Capsule().fill(XFinderTokens.Notch.progressTrack).frame(height: 4)
+                Capsule().fill(Color.white.opacity(0.9)).frame(width: max(4, g.size.width * frac), height: 4)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { v in scrub = Self.time(at: v.location.x, width: g.size.width, duration: duration) }
+                .onEnded { v in
+                    let t = Self.time(at: v.location.x, width: g.size.width, duration: duration)
+                    scrub = nil
+                    onCommit(t)
+                })
+        }
+        .accessibilityElement()
+        .accessibilityLabel(L10n.t("Tiến độ phát"))
+        .accessibilityValue(NowPlaying.timeLabel(scrub ?? position))
+    }
+
+    private static func time(at x: CGFloat, width: CGFloat, duration: Double) -> Double {
+        guard width > 0 else { return 0 }
+        return Double(max(0, min(1, x / width))) * duration
     }
 }

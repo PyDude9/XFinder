@@ -470,6 +470,24 @@ không lọc subrole. Thu nhỏ không tạo được khi Stage Manager bật (c
 0,5 MB, method cache 0,4 MB, CFString 0,37 MB, CoreSVG 0,1 MB. **CPU idle CHƯA đo được**: người dùng thao tác suốt cả hai cửa sổ 60 s
 (HIDIdle cuối cửa sổ = 0 s), nên 0,17 / 0,61 s không phải số idle. **CPU idle đo hợp lệ (12:57–12:58): 0,00 s / 60 s** (`0:00.44` → `0:00.44`), HIDIdle cuối cửa sổ 313 s, cấu hình của người dùng, bản build F3. Còn: xem phần phân mảnh malloc.
 
+### 3h. Brief v3 — UI/UX theo OneNotch, tính năng agent theo NotchCrew (chủ dự án duyệt 2026-10-13)
+
+Phạm vi UI/UX là OneNotch trước, cho toàn app; quy trình agent lấy từ NotchCrew (probe trước); trang AI là trang cài đặt
+của XFinder (không lấy UI cài đặt từ notch như NotchCrew). Năm câu hỏi của brief lấy mặc định: statusLine của XFinder nối
+vào statusLine đang có (opt-in, có sao lưu, gỡ được) · Claude + Codex + OpenCode trước, Cursor sau probe · thẻ duyệt quyền
+chỉ hiện khi hook của XFinder được cài, probe cách nhiều hook PermissionRequest kết hợp · Giọng nói và Chọn văn bản thông
+minh giữ trang riêng · màn có ảnh OneNotch dựng thẳng theo ảnh, wireframe chỉ cho phần riêng của XFinder.
+
+| Phase | Nội dung | Trạng thái |
+|:--|:--|:--|
+| P1 | Vỏ notch: cánh khi thu gọn (cao bằng notch), dải 32 pt (chấm trang + tìm / toolbar), hai thân 382 / 612, loe mép trên, mở nảy nhẹ / đóng nhanh / đổi trang mờ chéo; restyle Clipboard + Đang phát | ✅ dựng + gate (CLAUDE.md "P1"); chưa kiểm trực tiếp — T-P1a…d |
+| P2 | Trang Agents + view hạn mức AI trên toolbar (Claude % qua statusLine, opt-in, nối chuỗi) + Lịch + Hẹn giờ tập trung | chưa |
+| P3 | Vỏ cài đặt (sidebar 220 pt có ô màu, thẻ nhóm #F7F7F7 r10, header 52) + trang Giao diện / Media / AI / Lịch / Live Activities / Phím tắt; tách "Notch & Khay thả"; bỏ trùng (`notes.font` hai picker; gom phím tắt; đổi nhãn mặc định chụp "mặc định cho lần sau"; xoá tài liệu ⌥Space cũ) | chưa |
+| P4 | Restyle các trang cài đặt còn lại qua component chung | chưa |
+| P5 | Kết nối Codex / OpenCode / Cursor (probe trước) + thông báo + phiên gần đây | chưa |
+| P6 | Nói chuyện với phiên (probe kitty `send-text`, Terminal.app `do script`, socket nhắn tin của Claude) | chưa |
+| P7 | Crew + phiên không cửa sổ | chưa |
+
 ## 4. Lộ trình (UI/UX trước, đúng yêu cầu)
 
 Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong phase là thứ tự làm.

@@ -11,12 +11,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notch.XXXXXX)
-FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchHoverOpen.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift XFinder/Core/Calendar/GlanceRules.swift XFinder/Core/Notch/AudioWaveform.swift"
+FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchHoverOpen.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift XFinder/Core/Calendar/GlanceRules.swift XFinder/Core/Notch/AudioWaveform.swift XFinder/Core/Notch/NotchPages.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='NotchSurface|NotchDrag|NotchTask|NotchHoverOpen|LiveActivity|NowPlaying|NotchNowPlaying|NotchBehaviour|FeatureKeyDefaults|MeetingAlertRules|AudioWaveform'
+FILTER='NotchSurface|NotchDrag|NotchTask|NotchHoverOpen|LiveActivity|NowPlaying|NotchNowPlaying|NotchBehaviour|FeatureKeyDefaults|MeetingAlertRules|AudioWaveform|NotchPages'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -38,6 +38,8 @@ base=$(fails); echo "baseline failures: $base"
 
 red=0; total=0
 run() {   # run <name> <file> <old> <new>
+  # A target outside FILES is never restored — P1 found M40's mutant still on disk after a run. Refuse it.
+  case " $FILES " in *" $2 "*) ;; *) echo "HARNESS ERROR: $2 is not in FILES (it would never be restored)"; exit 2;; esac
   total=$((total+1)); mutate "$2" "$3" "$4" || exit 2
   n=$(fails); restore
   # No "Executed … with N failures" line means the mutant did not compile or the runner died.
@@ -58,8 +60,8 @@ run "M4 pointer away never collapses" XFinder/Core/Notch/NotchSurfaceMachine.swi
   "'guard state.isOpen, state != .activity, now.timeIntervalSince(since) >= s.leaveGrace, Bool(\"false\") == true else { return }'"
 run "M5 notchDrop switch ignored" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                guard s.dragIntoNotchOpens else { return }\n'" "''"
-run "M6 hover zone always takes the title-bar strip" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'let lip = (itemCount > 0 || nowPlayingActive) ? m.badgeLip : 0'" "'let lip = m.badgeLip'"
+run "M6 hover zone reaches below the notch (the title-bar strip)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'        return CGRect(x: notch.midX - c.width / 2, y: notch.minY, width: c.width, height: notch.height)'" "'        return CGRect(x: notch.midX - c.width / 2, y: notch.minY - 22, width: c.width, height: notch.height + 22)'"
 run "M7 a drag at the notch yanks the pointer tray" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if case .expanded = state, anchor == .pointer { return }\n'" "''"
 run "M9 pasteboard read on every drag event (throttle removed)" XFinder/Core/Notch/NotchDragSession.swift \
@@ -78,8 +80,8 @@ run "M15 the volume HUD fires on a repeated report" XFinder/Core/Notch/LiveActiv
   "'        guard changed else { return nil }                                  // CoreAudio reports each change on 2 elements\n'" "''"
 run "M16 the countdown reads 0:00 early" XFinder/Core/Notch/LiveActivity.swift \
   "'let t = Int(remaining(at: now).rounded(.up))'" "'let t = Int(remaining(at: now).rounded(.down))'"
-run "M17 no badge for a running timer" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'            guard itemCount > 0 || timerActive || nowPlayingActive else { return nil }'" "'            guard itemCount > 0 || nowPlayingActive else { return nil }'"
+run "M17 no wing for a running timer" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'        if timerActive { right.append(.timer) }\n'" "''"
 run "M18 a page switch opens a closed surface" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if case .expanded = state { state = .expanded(page) }'" "'                state = .expanded(page)'"
 run "M19 hover opens the clipboard whatever the setting says" XFinder/Core/Notch/NotchSurfaceMachine.swift \
@@ -101,13 +103,25 @@ run "M24 the pill ignores its switch" XFinder/Core/Notch/NotchSurfaceLayout.swif
 run "M25 'slow' hover reads as medium" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'            case \"slow\": return 0.5'" "'            case \"slow\": return 0.25'"
 run "M26 the plain-screen hover zone ignores the pill" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'            if pillShown, let visible { return pillRect(notch: notch, visible: visible, metrics: m) }\n'" "''"
+  "'            if pillShown, let visible { return pillRect(notch: notch, visible: visible, width: collapsed?.width, metrics: m) }\n'" "''"
 run "M27 the fixed panel forgets the hub's top fillets (clipboard hub wider than the window)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'        return CGSize(width: (widths.max() ?? 0) + 2 * m.topFillet, height: notch.height + (drops.max() ?? 0))'" \
-  "'        return CGSize(width: (widths.max() ?? 0), height: notch.height + (drops.max() ?? 0))'"
+  "'            max(m.wideWidth, m.narrowWidth, notch.width) + 2 * m.topFillet,          // every hub page, flares included'" \
+  "'            max(m.wideWidth, m.narrowWidth, notch.width),'"
 run "M28 the fixed panel is shallower than the deepest hub" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'        let drops: [CGFloat] = [m.expandedDrop, m.clipboardExpandedDrop, m.peekDrop, m.activityDrop, m.badgeLip, m.pillHeight]'" \
-  "'        let drops: [CGFloat] = [m.clipboardExpandedDrop, m.peekDrop, m.activityDrop, m.badgeLip, m.pillHeight]'"
+  "'        let drops: [CGFloat] = [m.narrowDrop, m.wideDrop, m.calendarDrop, m.peekDrop, m.activityDrop]'" \
+  "'        let drops: [CGFloat] = [m.narrowDrop, m.wideDrop, m.peekDrop, m.activityDrop]'"
+run "M44 the wings follow the left side only (an off-centre notch)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'        return max(m.wingMin, max(sideWidth(left, metrics: m), sideWidth(right, metrics: m)) + m.wingInset)'" "'        return max(m.wingMin, sideWidth(left, metrics: m) + m.wingInset)'"
+run "M45 the collapsed shape hangs below the notch" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'                return CGSize(width: notch.width + 2 * wing + 2 * m.collapsedFillet, height: notch.height)'" "'                return CGSize(width: notch.width + 2 * wing + 2 * m.collapsedFillet, height: notch.height + 8)'"
+run "M46 the calendar becomes a page dot" XFinder/Core/Notch/NotchPages.swift \
+  "'    static let toolbarPages: Set<Page> = [.calendar]'" "'    static let toolbarPages: Set<Page> = []'"
+run "M47 Agents gets the narrow body" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool { page == .clipboard || page == .agents }'" "'        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool { page == .clipboard }'"
+run "M48 a swipe on the calendar tool jumps to the first dot" XFinder/Core/Notch/NotchPages.swift \
+  "'        guard !toolbarPages.contains(current) else { return nil }\n'" "''"
+run "M49 a taller clipboard card (the deck overflows the wide body)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'        var clipCardHeight: CGFloat = 112'" "'        var clipCardHeight: CGFloat = 118'"
 run "M31 OCR offered with no image held" XFinder/Core/Notch/NotchTask.swift \
   "'            out.append(.removeBackground)\n            out.append(.ocr)\n        }\n        out.append(.airDrop)'" \
   "'            out.append(.removeBackground)\n        }\n        out.append(.ocr)\n        out.append(.airDrop)'"

@@ -61,37 +61,90 @@ enum NotchTextCache {
     }
 }
 
-/// One clip as a card on the BLACK notch surface (D0, wireframe B): a 130×92 tile with the content on
-/// top and a 22 pt footer — source-app icon · age · pin · one fact (`NotchClipboardRules.meta`).
-/// `ClipboardCardView` keeps its light look for the in-window page; a light card with a solid blue
-/// header was the only bright block on the notch (review row 3), so this card uses the surface's own
-/// fills: white 10 % body, black 28 % footer, accent only for the selection ring.
+/// One clip as a card on the BLACK notch surface. P1 (OneNotch grammar): a 162 × 112 tile — a type badge
+/// (and the pin / Paste Stack position) over the content, the content, and a 22-pt footer: source-app icon ·
+/// age · one fact (`NotchClipboardRules.meta`). The background is the surface's own dark fill tinted by the
+/// source app's colour (`ClipboardAppColor`, cached per app), so a column of cards reads by where they came from;
+/// accent only for the selection ring. `ClipboardCardView` keeps its own look for the in-window pages.
 struct NotchClipCardView: View {
     let record: ClipboardRecord
     let selected: Bool
     /// Position in the Paste Stack (1-based) while the stack holds this clip.
     let stackIndex: Int?
     let now: Date
-    /// 92 in a 3×2 grid; 122 in the horizontal deck (D0, OneNotch reference). Text lines follow it.
-    var height: CGFloat = 92
+    var width: CGFloat = 162
+    var height: CGFloat = 112
     @Environment(\.notchAccent) private var accent
 
     private static let radius = XFinderTokens.Radius.tile
-    private var textLines: Int { height >= 120 ? 6 : 4 }
+    private static let footerHeight: CGFloat = 22
+    /// Text starts under the badge row (6 + 16 + 4).
+    private static let textTop: CGFloat = 26
+    private var textLines: Int { height >= 110 ? 4 : 3 }
 
     var body: some View {
         VStack(spacing: 0) {
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .clipped()
+            ZStack(alignment: .top) {
+                content
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .clipped()
+                header
+            }
             footer
         }
         .frame(height: height)
-        .background(RoundedRectangle(cornerRadius: Self.radius, style: .continuous).fill(Color.white.opacity(0.10)))
+        .background(background)
         .overlay(RoundedRectangle(cornerRadius: Self.radius, style: .continuous)
-            .strokeBorder(selected ? accent : Color.clear, lineWidth: 2))
+            .strokeBorder(selected ? accent : XFinderTokens.Notch.cardStroke, lineWidth: selected ? 2 : 1))
         .clipShape(RoundedRectangle(cornerRadius: Self.radius, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: Self.radius, style: .continuous))
+    }
+
+    private var background: some View {
+        let tint = ClipboardAppColor.color(forBundleID: record.sourceBundleID, contentType: record.type)
+        return ZStack {
+            Color.white.opacity(0.07)
+            LinearGradient(colors: [tint.opacity(0.30), tint.opacity(0.06)], startPoint: .top, endPoint: .bottom)
+        }
+    }
+
+    // MARK: Header — type badge · pin · Paste Stack position
+
+    private var header: some View {
+        HStack(spacing: 4) {
+            typeBadge
+            Spacer(minLength: 0)
+            if record.isPinned {
+                Image(systemName: "pin.fill").font(.system(size: 9)).foregroundColor(.orange)
+                    .frame(width: 16, height: 16)
+                    .background(Circle().fill(Color.black.opacity(0.45)))
+                    .help(L10n.t("Đã ghim"))
+            }
+            if let n = stackIndex {
+                Text("\(n)").font(.system(size: 9, weight: .bold)).foregroundColor(.black)
+                    .frame(width: 16, height: 16).background(Circle().fill(accent))
+                    .help(L10n.t("Thêm vào Paste Stack"))
+            }
+        }
+        .padding(.horizontal, 7)
+        .padding(.top, 6)
+    }
+
+    /// The type, or for a picture its real dimensions (the one fact an image has); a lock for a sealed clip.
+    private var typeBadge: some View {
+        HStack(spacing: 3) {
+            Image(systemName: record.isLocked ? "lock.fill" : record.type.icon).font(.system(size: 8.5, weight: .bold))
+            Text(badgeLabel).font(.system(size: 9.5, weight: .semibold)).monospacedDigit().lineLimit(1)
+        }
+        .foregroundColor(.white.opacity(0.85))
+        .padding(.horizontal, 6)
+        .frame(height: 16)
+        .background(Capsule().fill(Color.black.opacity(0.45)))
+    }
+
+    private var badgeLabel: String {
+        if record.type == .image, !record.isLocked, case .dimensions(let d)? = meta { return d }
+        return record.type.titleVI
     }
 
     // MARK: Content
@@ -113,21 +166,21 @@ struct NotchClipCardView: View {
                         .font(.system(size: 11)).foregroundColor(accent)
                         .lineLimit(record.metadata[LinkPreviewRules.titleKey] == nil ? textLines : max(1, textLines - 2)).multilineTextAlignment(.leading)
                 }
-                .padding(.horizontal, 9).padding(.top, 7)
+                .padding(.horizontal, 9).padding(.top, Self.textTop)
             case .code:
                 // D: on-device syntax colouring; the preview is the first 200 characters, so this is cheap.
                 HighlightedCodeText(text: record.displayPreview, dark: true, lineLimit: textLines)
-                    .padding(.horizontal, 9).padding(.top, 7)
+                    .padding(.horizontal, 9).padding(.top, Self.textTop)
             case .markdown:
                 Text(record.displayPreview)
                     .font(.system(size: 10.5, design: .monospaced)).foregroundColor(.white)
                     .lineLimit(textLines).multilineTextAlignment(.leading)
-                    .padding(.horizontal, 9).padding(.top, 7)
+                    .padding(.horizontal, 9).padding(.top, Self.textTop)
             case .text, .merged:
                 Text(record.displayPreview)
                     .font(.system(size: 11)).foregroundColor(.white)
                     .lineLimit(textLines).multilineTextAlignment(.leading)
-                    .padding(.horizontal, 9).padding(.top, 7)
+                    .padding(.horizontal, 9).padding(.top, Self.textTop)
             }
         }
     }
@@ -141,16 +194,17 @@ struct NotchClipCardView: View {
             Text(L10n.t("Mở trong Thư viện")).font(.system(size: 9.5)).foregroundColor(.white.opacity(0.65))
                 .multilineTextAlignment(.center)
         }
+        .padding(.top, Self.textTop - 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    /// The picture fills the area above the footer (the badge sits over it). Fill when the shapes are close, fit
+    /// (whole picture on a backdrop) when they are not — a 2.8:1 screenshot filled here was a zoomed centre crop.
     private var imageBody: some View {
-        ZStack(alignment: .topTrailing) {
+        Group {
             if let path = record.thumbnailPath ?? record.payloadPath ?? record.metadata["path"],
                let img = NotchThumbnailCache.image(atPath: path) {
-                // Picture area = card minus the 22-pt footer. Fill when the shapes are close, fit (whole picture
-                // on a backdrop) when they are not — a 2.8:1 screenshot filled here was a zoomed centre crop.
-                let tileAspect = Double(174) / Double(max(1, height - 22))
+                let tileAspect = Double(width) / Double(max(1, height - Self.footerHeight))
                 let fits = NotchClipboardRules.imageScaling(imageAspect: Double(img.size.width) / Double(max(1, img.size.height)),
                                                             tileAspect: tileAspect) == .fit
                 ZStack {
@@ -162,12 +216,6 @@ struct NotchClipCardView: View {
                 Image(systemName: "photo").font(XFinderTokens.Font.pageIcon).opacity(0.5)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            if case .dimensions(let d)? = meta {
-                Text(d).font(.system(size: 10, weight: .semibold)).monospacedDigit()
-                    .padding(.horizontal, 5).padding(.vertical, 3)
-                    .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).fill(Color.black.opacity(0.65)))
-                    .padding(6)
-            }
         }
     }
 
@@ -178,7 +226,7 @@ struct NotchClipCardView: View {
                 .font(.system(size: 12, weight: .semibold, design: .monospaced))
                 .foregroundColor(.white)
                 .shadow(color: .black.opacity(0.6), radius: 1, y: 1)   // legible on any swatch colour
-                .padding(.horizontal, 9).padding(.top, 7)
+                .padding(.horizontal, 9).padding(.top, Self.textTop)
         }
     }
 
@@ -191,10 +239,10 @@ struct NotchClipCardView: View {
             }
             Text(record.displayPreview).font(.system(size: 11)).foregroundColor(.white).lineLimit(3)
         }
-        .padding(.horizontal, 9).padding(.vertical, 7)
+        .padding(.horizontal, 9).padding(.top, Self.textTop)
     }
 
-    // MARK: Footer
+    // MARK: Footer — app icon · age · one fact
 
     private var meta: NotchClipboardRules.Meta? {
         NotchClipboardRules.meta(type: record.type, dimensions: record.metadata["dimensions"],
@@ -204,34 +252,25 @@ struct NotchClipCardView: View {
 
     private var footer: some View {
         HStack(spacing: 5) {
-            if let n = stackIndex {
-                Text("\(n)").font(.system(size: 9, weight: .bold)).foregroundColor(.black)
-                    .frame(width: 14, height: 14).background(Circle().fill(accent))
-                    .help(L10n.t("Thêm vào Paste Stack"))
-            }
             if let icon = ClipboardAppIcon.icon(forBundleID: record.sourceBundleID) {
-                Image(nsImage: icon).resizable().frame(width: 13, height: 13)
+                Image(nsImage: icon).resizable().frame(width: 14, height: 14)
                     .help(record.sourceAppName ?? record.sourceBundleID ?? "")
             } else {
-                RoundedRectangle(cornerRadius: 3).fill(Color.white.opacity(0.25)).frame(width: 13, height: 13)
+                RoundedRectangle(cornerRadius: 3).fill(Color.white.opacity(0.25)).frame(width: 14, height: 14)
             }
             Text(Self.ageLabel(record.timestamp, now: now))
                 .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65))
                 .lineLimit(1).monospacedDigit()
             Spacer(minLength: 2)
-            if record.isPinned {
-                Image(systemName: "pin.fill").font(.system(size: 9)).foregroundColor(.orange).help(L10n.t("Đã ghim"))
-            }
-            if let m = meta, record.type != .image {        // the image shows its size on the picture itself
+            if let m = meta, record.type != .image {        // a picture's size is in its badge
                 Text(Self.metaLabel(m)).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
                     .lineLimit(1).monospacedDigit()
             }
         }
         .padding(.horizontal, 7)
-        .frame(height: 22)
-        .background(Color.black.opacity(0.28))
+        .frame(height: Self.footerHeight)
+        .background(Color.black.opacity(0.25))
     }
-
     /// "Vừa xong" · "5 phút" · "1 giờ" · "3 ngày" · a short date. The unit words are their own store
     /// keys (`phút`, `giờ`, `ngày`) — the existing " phút" fragment means " min LEFT" (the timer).
     static func ageLabel(_ date: Date, now: Date) -> String {

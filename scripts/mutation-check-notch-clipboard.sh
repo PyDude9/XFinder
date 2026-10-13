@@ -27,6 +27,8 @@ base=$(fails); echo "baseline failures: $base"
 [ "$base" = "0" ] || { echo "FAIL: baseline is not green"; exit 1; }
 red=0; total=0
 run() {
+  # A target outside FILES is never restored (P1, the notch script's M40). Refuse it.
+  case " $FILES " in *" $2 "*) ;; *) echo "HARNESS ERROR: $2 is not in FILES (it would never be restored)"; exit 2;; esac
   total=$((total+1)); mutate "$2" "$3" "$4" || exit 2
   n=$(fails); restore
   if [ "$n" = "NORESULT" ]; then echo "HARNESS ERROR: $1 produced no test result (mutant did not compile?)"; exit 2; fi
@@ -47,9 +49,9 @@ run "D5 a type with no record still gets a (dead) chip" $R \
 run "D6 the Accessibility warning shows even with auto-paste off" $R \
   "'        if autoPaste && !accessibilityTrusted { return .accessibilityMissing }'" "'        if !accessibilityTrusted { return .accessibilityMissing }'"
 run "D7 the clipboard page is as short as the tray" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'            page == .clipboard ? clipboardExpandedDrop : expandedDrop'" "'            expandedDrop'"
-run "D9 the clipboard page is as narrow as the tray (four cards cannot fit)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'            page == .clipboard ? clipboardExpandedWidth : expandedWidth'" "'            expandedWidth'"
+  "'            case .clipboard, .agents: return wideDrop'" "'            case .clipboard, .agents: return narrowDrop'"
+run "D9 the clipboard page is as narrow as the tray (the card row cannot fit)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'            Self.isWide(page) ? wideWidth : narrowWidth'" "'            narrowWidth'"
 run "D10 every image fills the tile (the 2.8:1 screenshot is a zoomed centre crop again)" $R \
   "'        return (r > tolerance || r < 1 / tolerance) ? .fit : .fill'" "'        return .fill'"
 run "D11 hsl() hue does not wrap (hsl(390…) is not hsl(30…))" XFinder/Core/ColorFormat.swift \

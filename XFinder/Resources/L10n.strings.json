@@ -9566,6 +9566,26 @@
     "Sóng nhạc chỉ nhận được im lặng — có thể chưa cấp quyền Ghi âm thanh hệ thống.": {
       "en": "The waveform only receives silence — the System Audio Recording permission may not be granted.",
       "scope": "sentence"
+    },
+    "Claude Code đang chờ bạn": {
+      "en": "Claude Code is waiting for you",
+      "scope": "sentence"
+    },
+    "Claude Code đang chạy": {
+      "en": "Claude Code is running",
+      "scope": "sentence"
+    },
+    "Xoá tìm kiếm": {
+      "en": "Clear search",
+      "scope": "sentence"
+    },
+    "Mở Thư viện Clipboard": {
+      "en": "Open the Clipboard Library",
+      "scope": "sentence"
+    },
+    "Tiến độ phát": {
+      "en": "Playback position",
+      "scope": "sentence"
     }
   }
 }

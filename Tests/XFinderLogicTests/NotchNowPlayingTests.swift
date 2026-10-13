@@ -70,13 +70,15 @@ final class NotchNowPlayingTests: XCTestCase {
             L.size(for: st, anchor: .notch, itemCount: items, notch: notch, nowPlayingActive: track)
         }
         XCTAssertNil(size(.collapsed, items: 0, track: false), "nothing held, nothing playing ⇒ no badge")
-        XCTAssertEqual(size(.collapsed, items: 0, track: true)?.height, 32 + 18, "a track hangs a badge")
+        XCTAssertEqual(size(.collapsed, items: 0, track: true)?.height, 32, "P1: a track sits in the right wing, notch-high")
+        XCTAssertGreaterThan(size(.collapsed, items: 0, track: true)?.width ?? 0, 185, "the wing reaches past the notch")
         let filesPeek = size(.peek, items: 1, track: false)!, trackPeek = size(.peek, items: 0, track: true)!
         XCTAssertGreaterThan(trackPeek.width, filesPeek.width, "title + artist + three controls need more room")
         XCTAssertEqual(size(.peek, items: 1, track: true), filesPeek, "files take precedence in the strip")
         XCTAssertEqual(L.hoverZone(notch: notch, screen: screen, itemCount: 0).height, 32)
-        XCTAssertEqual(L.hoverZone(notch: notch, screen: screen, itemCount: 0, nowPlayingActive: true).height, 32 + 18,
-                       "resting on the track badge counts as hovering")
+        XCTAssertEqual(L.hoverZone(notch: notch, screen: screen, itemCount: 0, nowPlayingActive: true).height, 32,
+                       "P1: a playing track widens the hover zone sideways (the right wing), never below the notch")
+        XCTAssertGreaterThan(L.hoverZone(notch: notch, screen: screen, itemCount: 0, nowPlayingActive: true).width, 185)
         XCTAssertEqual(L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: CGRect(x: 0, y: 0, width: 185, height: 0), nowPlayingActive: true)?.height,
                        L.Metrics.standard.pillHeight, "no physical notch ⇒ the track shows in the pill (B7)")
     }

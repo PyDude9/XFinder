@@ -72,6 +72,31 @@ enum XFinderTokens {
     }
 
     /// Motion. Two curves only: surfaces that expand (notch, panels) and overlays that appear.
+    /// P1 — the notch surface's own palette and motion, measured on the owner's OneNotch screenshots
+    /// (pt = px / 2 of its 700 × 745 window at 2×). Layout sizes live in `NotchSurfaceLayout.Metrics`.
+    enum Notch {
+        /// The page-dots capsule and the toolbar capsule in the band: #181818 on the black body.
+        static let capsule = Color(red: 0x18 / 255, green: 0x18 / 255, blue: 0x18 / 255)
+        static let dotLit = Color.white
+        static let dotDim = Color(red: 0x52 / 255, green: 0x52 / 255, blue: 0x54 / 255)
+        static let toolbarIcon = Color(red: 0x6B / 255, green: 0x6B / 255, blue: 0x6E / 255)
+        /// Dots capsule 54 × 20 holding up to 3 dots of 5.5 pt, 15 pt apart; search circle 24; toolbar 63 × 22.
+        static let dotsCapsuleHeight: CGFloat = 20
+        static let dotSize: CGFloat = 5.5
+        static let dotPitch: CGFloat = 15
+        static let searchDiameter: CGFloat = 24
+        static let toolbarHeight: CGFloat = 22
+        static let toolbarIconPitch: CGFloat = 19
+        /// The Now Playing progress track (#818184 measured) and a card's hairline.
+        static let progressTrack = Color(red: 0x81 / 255, green: 0x81 / 255, blue: 0x84 / 255).opacity(0.45)
+        static let cardStroke = Color.white.opacity(0.10)
+        /// Opening overshoots a little (OneNotch measured 87 → 93 → 87 px, ~4 %), closing is quick and never bounces
+        /// (~130 ms measured), and a page change cross-fades its content (~200 ms measured) while the shape springs.
+        static let open = Animation.spring(response: 0.36, dampingFraction: 0.76)
+        static let close = Animation.spring(response: 0.22, dampingFraction: 1.0)
+        static let pageFade = Animation.easeInOut(duration: 0.18)
+    }
+
     enum Motion {
         /// Notch / edge panel expand-collapse. `response 0.32, damping 0.82` reads as elastic, not snappy.
         static let surface = Animation.spring(response: 0.32, dampingFraction: 0.82)

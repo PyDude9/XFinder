@@ -112,7 +112,7 @@ final class NotchSurfaceController {
     }
 
     /// Something is on the collapsed surface (badge or pill): files, a countdown, a track.
-    private var badgeShown: Bool { machine.itemCount > 0 || countdown != nil || NowPlayingMonitor.shared.hasTrack }
+    private var badgeShown: Bool { machine.itemCount > 0 || countdown != nil || NowPlayingMonitor.shared.hasTrack || model.agentActive }
 
     /// D1 #44 — the ONE reader of `notch.pages` (order + visibility, a comma list).
     private var pageOrderRaw: String { UserDefaults.standard.string(forKey: "notch.pages") ?? "files,clipboard,nowPlaying,agents,calendar" }
@@ -264,6 +264,7 @@ final class NotchSurfaceController {
 
         let zone = NotchSurfaceLayout.hoverZone(notch: notch, screen: screen.frame, itemCount: machine.itemCount,
                                                 nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
+                                                timerActive: countdown != nil, agentActive: model.agentActive,
                                                 visible: screen.visibleFrame,
                                                 pillShown: pillOnPlainScreens && badgeShown && machine.state == .collapsed)
         if zone.contains(point) {
@@ -372,11 +373,13 @@ final class NotchSurfaceController {
                 guard let self, let panel = self.panel, e.window === panel else { return e }
                 if e.phase == .ended || e.phase == .cancelled || e.momentumPhase == .ended { self.swipe.reset(); return e }
                 let bandTop = self.drawnFrame.maxY - panel.frame.minY          // N1: the drawn shape's top, in window space
-                let bandBottom = bandTop - max(self.model.notchSize.height, 32) - 28
+                // P1: every page's dots sit IN the 32-pt band now, so the band is the whole swipe area. (It used to
+                // reach 28 pt lower for the old tab row — on the clipboard hub that swallowed the chip row's scroll.)
+                let bandBottom = bandTop - max(self.model.notchSize.height, 32)
                 guard e.locationInWindow.y >= bandBottom, abs(e.scrollingDeltaX) > abs(e.scrollingDeltaY) else { return e }
                 if let dir = self.swipe.feed(deltaX: e.scrollingDeltaX),
                    case .expanded(let page) = self.machine.state,
-                   let next = NotchPages.pageAfterSwipe(page, direction: dir, shown: self.model.pages) {
+                   let next = NotchPages.swipeTarget(from: page, direction: dir, pages: self.model.pages) {   // P1: the dots are the sequence; a tool does not swipe
                     self.switchPage(next)
                 }
                 return nil
@@ -638,6 +641,13 @@ final class NotchSurfaceController {
         AppState.shared.bringMainWindowFront()
     }
 
+    /// P1: the chip row's Library button — every clip, beyond the capped history the deck draws from (D3).
+    func openLibrary() {
+        dismiss()
+        AppState.shared.navigate(to: .clipboard)
+        AppState.shared.bringMainWindowFront()
+    }
+
     // MARK: - D1: speak, edit
 
     private let speech = AVSpeechSynthesizer()
@@ -753,6 +763,7 @@ final class NotchSurfaceController {
                                                     screen: screen.frame, visible: screen.visibleFrame,
                                                     pointer: shakePoint, timerActive: countdown != nil,
                                                     nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
+                                                    agentActive: model.agentActive,
                                                     pillOnPlainScreens: pillOnPlainScreens) else {
             model.state = .collapsed
             model.itemCount = machine.itemCount

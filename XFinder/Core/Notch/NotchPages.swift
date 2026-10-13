@@ -75,6 +75,22 @@ enum NotchPages {
         mutating func reset() { total = 0; fired = false }
     }
 
+    /// P1 (OneNotch grammar, measured): the hub has two ways in. The page DOTS in the left wing are a swipeable
+    /// sequence of content pages; the TOOLBAR capsule in the right wing holds fixed tools that are not part of the
+    /// sequence (a lit icon = that tool is open, and no dot is lit then). The calendar is a tool; Hẹn giờ and
+    /// Hạn mức AI join it in P2.
+    static let toolbarPages: Set<Page> = [.calendar]
+    static func dots(_ shown: [Page]) -> [Page] { shown.filter { !toolbarPages.contains($0) } }
+    static func toolbar(_ shown: [Page]) -> [Page] { shown.filter { toolbarPages.contains($0) } }
+
+    /// What a two-finger swipe over the band does on `current`: walk the dots, or nothing while a TOOL is open — the
+    /// calendar is not in the sequence, and `pageAfterSwipe`'s "not shown ⇒ first page" fallback would otherwise throw
+    /// the user from the calendar to the first dot whichever way they swiped (P1 review).
+    static func swipeTarget(from current: Page, direction: Int, pages: [Page]) -> Page? {
+        guard !toolbarPages.contains(current) else { return nil }
+        return pageAfterSwipe(current, direction: direction, shown: dots(pages))
+    }
+
     /// The page a swipe lands on, or nil at either end (no wrap: an end must feel like an end).
     static func pageAfterSwipe(_ current: Page, direction: Int, shown: [Page]) -> Page? {
         guard let i = shown.firstIndex(of: current) else { return shown.first }

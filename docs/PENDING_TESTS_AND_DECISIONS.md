@@ -65,6 +65,10 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-N33 | Bật Lịch trên notch (cấp quyền), tạo một sự kiện có link Zoom/Meet bắt đầu sau 6 phút | Sau ~1 phút: dòng "Sắp đến giờ · <tên> · còn 5 phút" dưới notch, có âm "Glass"; rê chuột tới **không** làm nó biến mất; "Tham gia" mở link; "Hoãn 5 phút" báo lại sau 5 phút; sự kiện cả ngày không bao giờ báo |
 | T-USAGE | Bật phiên Claude Code trên notch, mở trang Agents | Dòng "Claude Code · 5 giờ: …K token ra · 7 ngày: …M token ra" (rê chuột hiện giải thích: không phải %). Dùng Codex một lần rồi mở lại: "Codex · 5 giờ N% · tuần M%"; nếu lần Codex gần nhất đã qua giờ reset thì nói thế, không hiện % cũ |
 | T-D1g2 | Vuốt hai ngón ngang trên dải tab của hub; đổi màu nhấn | Đổi trang; màu nhấn đổi trên notch |
+| T-P1a | (P1, bản đã cài lúc XFinder đang tắt — mở app trước) Có tệp trong khay / đang phát nhạc / phiên Claude Code chạy: nhìn notch khi thu gọn, bấm từng cánh | Hai cánh bên camera, **cao đúng bằng notch**, không có gì thòng xuống; cánh trái: icon Claude (cam khi đang chờ bạn) + số tệp; cánh phải: sóng nhạc hoặc ảnh bìa + giờ đếm ngược; bấm cánh mở đúng trang |
+| T-P1b | Mở hub (⌘⇧V hoặc bấm cánh), bấm từng chấm trên dải trên cùng, vuốt hai ngón trên dải | Chấm sáng là trang hiện tại; rê lên chấm hiện tên trang; đổi trang thì nội dung mờ chéo, khung co giãn giữa hai cỡ; mở có nảy nhẹ, đóng nhanh không nảy |
+| T-P1c | Trang Clipboard: gõ ngay sau ⌘⇧V; bấm vòng tròn kính lúp; bắt đầu Paste Stack (⌘⇧C) | Gõ được ngay (ô tìm tự mở); viên trạng thái cuối hàng chip hiện "Paste Stack · n" + Dán tiếp; thẻ có màu theo app nguồn |
+| T-P1d | Trang Đang phát: kéo thanh tiến trình; bấm icon app ở góc ảnh bìa; khi không phát gì | Thả tay thì nhảy tới đúng chỗ; mở đúng player; không phát gì thì khung giữ nguyên, nút mờ |
 
 ### Clipboard
 | Mã | Làm gì | Mong đợi |

@@ -64,4 +64,16 @@ final class NotchPagesTests: XCTestCase {
         }
         XCTAssertEqual(NotchAccent.choices.first, "system")
     }
+
+    /// P1: the dots are the swipeable content pages; the calendar lives in the toolbar capsule instead.
+    func testTheCalendarIsAToolbarToolNotADot() {
+        let shown: [NotchSurfaceMachine.Page] = [.files, .calendar, .clipboard, .nowPlaying, .agents]
+        XCTAssertEqual(P.dots(shown), [.files, .clipboard, .nowPlaying, .agents], "order kept, the tool left out")
+        XCTAssertEqual(P.toolbar(shown), [.calendar])
+        XCTAssertEqual(P.pageAfterSwipe(.files, direction: 1, shown: P.dots(shown)), .clipboard, "a swipe skips the tool")
+        // On the tool itself a swipe does nothing — not "jump to the first dot" (P1 review, mutation M48).
+        XCTAssertNil(P.swipeTarget(from: .calendar, direction: 1, pages: shown))
+        XCTAssertNil(P.swipeTarget(from: .calendar, direction: -1, pages: shown))
+        XCTAssertEqual(P.swipeTarget(from: .files, direction: 1, pages: shown), .clipboard)
+    }
 }

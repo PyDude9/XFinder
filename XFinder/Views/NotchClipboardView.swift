@@ -111,42 +111,55 @@ final class NotchClipboardModel {
     }
 }
 
-/// The search field — drawn in the notch band's right wing by `NotchSurfaceView.clipboardShell`, so it is
-/// its own view. Own placeholder at white 50 %: the system one measured 1.1:1 on this black field.
+/// The search field — drawn in the notch band's LEFT wing, beside the page dots, by `NotchSurfaceView.band`, so it
+/// is its own view. P1 (OneNotch): a 24-pt circle that opens into a field while it is in use — focused or holding a
+/// query. The field is always in the hierarchy (zero-width while closed) so a click on the circle, ⌘F, or the page
+/// focusing it on open can give it focus; ⌘⇧V therefore still lands typing in it at once.
+/// Own placeholder at white 50 %: the system one measured 1.1:1 on this black field.
 struct NotchClipboardSearchField: View {
     var model: NotchClipboardModel
     @FocusState private var searchFocused: Bool
     @Environment(\.notchAccent) private var accent
 
+    private typealias N = XFinderTokens.Notch
     private var locked: Bool { ClipboardShelfController.shared.touchIDLockEnabled && !model.unlocked }
+    private var open: Bool { searchFocused || !model.query.isEmpty }
 
     var body: some View {
-        HStack(spacing: XFinderTokens.Space.tight) {
-            Image(systemName: "magnifyingglass").font(.system(size: 12)).foregroundColor(.white.opacity(0.65))
+        HStack(spacing: open ? 6 : 0) {
+            Image(systemName: "magnifyingglass").font(.system(size: 11, weight: .semibold))
+                .foregroundColor(open ? .white.opacity(0.65) : N.toolbarIcon)
             TextField("", text: Bindable(model).query)
                 .textFieldStyle(.plain)
                 .font(XFinderTokens.Font.rowValue)
                 .foregroundColor(.white)
                 .focused($searchFocused)
                 .overlay(alignment: .leading) {
-                    if model.query.isEmpty {
+                    if model.query.isEmpty, open {
                         Text(L10n.t("Tìm kiếm (⌘F)…"))
                             .font(XFinderTokens.Font.rowValue).foregroundColor(.white.opacity(0.5))
                             .lineLimit(1).allowsHitTesting(false)
                     }
                 }
+                .frame(width: open ? nil : 0)
+                .opacity(open ? 1 : 0)
             if !model.query.isEmpty {
                 Button { model.query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundColor(.white.opacity(0.65)) }
                     .buttonStyle(.plain)
+                    .help(L10n.t("Xoá tìm kiếm"))
             }
         }
-        .padding(.horizontal, 8)
-        .frame(height: 26)
-        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(Color.white.opacity(0.10)))
-        .overlay(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control)
-            .strokeBorder(searchFocused ? accent : Color.clear, lineWidth: 1))
+        .padding(.horizontal, open ? 9 : 0)
+        .frame(width: open ? nil : N.searchDiameter, height: N.searchDiameter)
+        .frame(maxWidth: open ? .infinity : nil, alignment: .leading)
+        .background(Capsule().fill(N.capsule))
+        .overlay(Capsule().strokeBorder(searchFocused ? accent.opacity(0.8) : Color.clear, lineWidth: 1))
+        .contentShape(Capsule())
+        .onTapGesture { if !locked { searchFocused = true } }
         .help(L10n.t("Tìm, hoặc @ảnh @link @tênapp…"))
+        .accessibilityLabel(L10n.t("Tìm kiếm (⌘F)…"))
         .disabled(locked).opacity(locked ? 0.35 : 1)
+        .animation(.easeOut(duration: 0.18), value: open)
         .onAppear { searchFocused = !locked }
         .onChange(of: searchFocused) { _, f in model.searchFocused = f }
         .onChange(of: model.focusSearchRequest) { searchFocused = true }
@@ -154,9 +167,11 @@ struct NotchClipboardSearchField: View {
     }
 }
 
-/// The clipboard page inside the notch hub (OneNotch reference, 2026-10-11): a chip row — Tất cả · Đã ghim ·
-/// Đã lưu · Gợi ý · one chip per content type with its count · custom boards · "+" — with the sort menu at
-/// its right end, then ONE horizontal row of `NotchClipCardView`s (four fit), then the footer line.
+/// The clipboard page inside the notch hub (P1, OneNotch grammar): a chip row — Tất cả · Đã ghim · Đã lưu ·
+/// Gợi ý · one chip per content type with its count · custom boards · "+" — with the status pill, the Library
+/// button and the sort menu at its right end, then ONE horizontal row of `NotchClipCardView`s (three and a half
+/// show, the rest scroll). The old footer line is gone: what it said lives in the status pill (Paste Stack, a
+/// notice, paused, no Accessibility) or, for the key hints, in that pill's tooltip.
 /// Click pastes into the app the user came from; ⌘-click queues the Paste Stack; right-click has every
 /// action the shelf had. Keys live in `NotchSurfaceController`'s monitor; the search field is in the band.
 struct NotchClipboardView: View {
@@ -165,19 +180,23 @@ struct NotchClipboardView: View {
     @State private var now = Date()
     @Environment(\.notchAccent) private var accent
 
+    private typealias N = XFinderTokens.Notch
     private var items: [ClipboardRecord] { model.items(from: manager) }
     private var locked: Bool { ClipboardShelfController.shared.touchIDLockEnabled && !model.unlocked }
-    static let cardWidth: CGFloat = 174
-    static let cardHeight: CGFloat = 122
+    /// P1: the card and chip-row sizes are the page budget in `NotchSurfaceLayout.Metrics` (a test proves they fill the
+    /// wide body exactly).
+    private static let m = NotchSurfaceLayout.Metrics.standard
+    static let cardWidth: CGFloat = m.clipCardWidth
+    static let cardHeight: CGFloat = m.clipCardHeight
+    static let cardGap: CGFloat = m.clipCardGap
 
     var body: some View {
         let list = items          // once per render — filter + sort of the loaded history, not once per use
-        return VStack(alignment: .leading, spacing: XFinderTokens.Space.tight + 2) {
-            chipRow.disabled(locked).opacity(locked ? 0.35 : 1)
+        return VStack(alignment: .leading, spacing: Self.m.chipToDeckGap) {
+            chipRow
             if locked { lockView }
             else if list.isEmpty { emptyView }
             else { deck(list) }
-            footer
         }
         .environment(manager)
         .onAppear { now = Date() }
@@ -234,18 +253,36 @@ struct NotchClipboardView: View {
                     // "+" — boards are made on the Cài đặt Clipboard page, not in an overlay inside the hub.
                     Button { NotchSurfaceController.shared.openClipboardSettings() } label: {
                         Image(systemName: "plus").font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.65))
+                            .foregroundColor(N.toolbarIcon)
                             .frame(width: 22, height: 22)
-                            .background(Circle().fill(Color.white.opacity(0.06)))
+                            .background(Circle().fill(N.capsule))
                     }
                     .buttonStyle(.plain)
                     .help(L10n.t("Tạo bảng ghim mới"))
+                    .accessibilityLabel(L10n.t("Tạo bảng ghim mới"))
                 }
             }
+            .disabled(locked).opacity(locked ? 0.35 : 1)
             Spacer(minLength: 0)
-            sortMenu
+            statusPill
+            if !locked {
+                roundButton("rectangle.stack", help: L10n.t("Mở Thư viện Clipboard")) { NotchSurfaceController.shared.openLibrary() }
+                sortMenu
+            }
         }
-        .frame(height: 22)
+        .frame(height: Self.m.chipRowHeight)
+    }
+
+    private func roundButton(_ symbol: String, help: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: 11, weight: .semibold))
+                .foregroundColor(N.toolbarIcon)
+                .frame(width: 22, height: 22)
+                .background(Circle().fill(N.capsule))
+        }
+        .buttonStyle(.plain)
+        .help(help)
+        .accessibilityLabel(help)
     }
 
     /// D1 #3 — a card dragged onto a chip carries its record id as plain text; the chip's action runs on the main actor.
@@ -270,9 +307,9 @@ struct NotchClipboardView: View {
                 if let count { Text(count.formatted()).font(.system(size: 10.5, weight: .medium)).monospacedDigit().opacity(on ? 0.6 : 0.8) }
             }
             .foregroundColor(on ? .black : .white.opacity(0.65))
-            .padding(.horizontal, label == nil ? 6 : 8)
+            .padding(.horizontal, label == nil ? 7 : 9)
             .frame(height: 22)
-            .background(Capsule().fill(on ? Color.white : Color.white.opacity(0.06)))
+            .background(Capsule().fill(on ? Color.white : N.capsule))
         }
         .buttonStyle(.plain)
         .help(help)
@@ -288,14 +325,15 @@ struct NotchClipboardView: View {
             }
         } label: {
             Image(systemName: "arrow.up.arrow.down").font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.white.opacity(0.65))
+                .foregroundColor(N.toolbarIcon)
                 .frame(width: 22, height: 22)
-                .background(Circle().fill(Color.white.opacity(0.06)))
+                .background(Circle().fill(N.capsule))
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .fixedSize()
         .help("\(L10n.t("Sắp xếp")) · \(model.sort.titleVI)")
+        .accessibilityLabel("\(L10n.t("Sắp xếp")) · \(model.sort.titleVI)")
     }
 
     // MARK: The deck, the lock, the empty state
@@ -303,7 +341,7 @@ struct NotchClipboardView: View {
     private func deck(_ list: [ClipboardRecord]) -> some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 8) {
+                LazyHStack(spacing: Self.cardGap) {
                     ForEach(list) { record in
                         card(record, selected: model.isSelected(record, in: list)).id(record.id)
                     }
@@ -318,7 +356,8 @@ struct NotchClipboardView: View {
 
     private func card(_ record: ClipboardRecord, selected: Bool) -> some View {
         let stackIndex = manager.pasteStack.items.firstIndex(of: record).map { $0 + 1 }
-        return NotchClipCardView(record: record, selected: selected, stackIndex: stackIndex, now: now, height: Self.cardHeight)
+        return NotchClipCardView(record: record, selected: selected, stackIndex: stackIndex, now: now,
+                                 width: Self.cardWidth, height: Self.cardHeight)
             .frame(width: Self.cardWidth)
             .onDrag { NSItemProvider(object: record.id.uuidString as NSString) }   // D1 #3: drop on a board chip
             .onTapGesture { select(record) }
@@ -366,9 +405,12 @@ struct NotchClipboardView: View {
         .frame(maxWidth: .infinity).frame(height: Self.cardHeight)
     }
 
-    // MARK: Footer
+    // MARK: Status pill — what the old footer line said, at the right end of the chip row
 
-    @ViewBuilder private var footer: some View {
+    /// `NotchClipboardRules.footer` still decides WHAT is shown and in which order (Paste Stack › notice › paused ›
+    /// no Accessibility › hints); P1 only moves it from a line under the deck into one pill, so the deck keeps the
+    /// height the measured 182-pt hub has. The full sentence is the pill's tooltip wherever the pill is shortened.
+    @ViewBuilder private var statusPill: some View {
         let decision = NotchClipboardRules.footer(pasteStackActive: manager.pasteStack.active,
                                                   remaining: manager.pasteStack.remaining,
                                                   interceptsCommandV: NotchSurfaceController.shared.pasteStackInterceptsCommandV,
@@ -376,37 +418,67 @@ struct NotchClipboardView: View {
                                                   paused: manager.isPaused,
                                                   autoPaste: ClipboardShelfController.shared.autoPasteAfterSelection,
                                                   accessibilityTrusted: WindowManager.isTrusted)
-        HStack(spacing: XFinderTokens.Space.tight) {
-            switch decision {
-            case .hints:
-                if !locked {
-                    Text(L10n.t("↩ dán · ⇧↩ thuần · Space xem · ⌘P ghim · ⌘⌫ xoá · ⌘1–9 bảng"))
-                        .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5)).lineLimit(1)
-                }
-            case .pasteStack(let remaining, let intercepts):
-                Image(systemName: "square.stack.3d.up.fill").font(XFinderTokens.Font.caption).foregroundColor(accent)
-                let how = intercepts ? L10n.t("Mỗi ⌘V dán mục kế tiếp.") : L10n.t("Bấm Dán tiếp để dán từng mục.")
-                Text("Paste Stack · \(remaining)\(L10n.t(" mục")) · \(how)")
-                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65)).lineLimit(1)
-                Spacer(minLength: 4)
-                Button(L10n.t("Dán tiếp")) { NotchSurfaceController.shared.pasteNextFromStack() }.buttonStyle(NotchPillButtonStyle(primary: true))
-                Button(L10n.t("Hủy")) { manager.stopPasteStack() }.buttonStyle(NotchPillButtonStyle(primary: false))
-            case .notice(let key):
-                Text(L10n.t(key)).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65)).lineLimit(1)
-            case .paused:
-                Image(systemName: "pause.circle.fill").font(XFinderTokens.Font.caption).foregroundColor(.orange)
-                Text(L10n.t("Đang tạm dừng ghi clipboard.")).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65)).lineLimit(1)
-                Spacer(minLength: 4)
-                Button(L10n.t("Mở Cài đặt")) { NotchSurfaceController.shared.openClipboardSettings() }.buttonStyle(NotchPillButtonStyle(primary: false))
-            case .accessibilityMissing:
-                Image(systemName: "exclamationmark.triangle.fill").font(XFinderTokens.Font.caption).foregroundColor(.orange)
-                Text(L10n.t("Chưa có Trợ năng: ↩ chỉ sao chép, dán bằng ⌘V."))
-                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65)).lineLimit(1)
-                Spacer(minLength: 4)
-                Button(L10n.t("Cấp quyền")) { _ = WindowManager.requestAccessibilityTrust() }.buttonStyle(NotchPillButtonStyle(primary: true))
+        switch decision {
+        case .hints:
+            if !locked {
+                Image(systemName: "keyboard").font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(N.toolbarIcon)
+                    .frame(width: 22, height: 22)
+                    .background(Circle().fill(N.capsule))
+                    .help(L10n.t("↩ dán · ⇧↩ thuần · Space xem · ⌘P ghim · ⌘⌫ xoá · ⌘1–9 bảng"))
+                    .accessibilityLabel(L10n.t("↩ dán · ⇧↩ thuần · Space xem · ⌘P ghim · ⌘⌫ xoá · ⌘1–9 bảng"))
             }
+        case .pasteStack(let remaining, let intercepts):
+            // HOW the stack pastes (⌘V or Dán tiếp) decides what the user does next, so it is text, not a tooltip; it
+            // truncates first and the whole line stays the tooltip (P1 review).
+            let how = intercepts ? L10n.t("Mỗi ⌘V dán mục kế tiếp.") : L10n.t("Bấm Dán tiếp để dán từng mục.")
+            pill {
+                Image(systemName: "square.stack.3d.up.fill").foregroundColor(accent)
+                Text("Paste Stack · \(remaining)\(L10n.t(" mục"))").monospacedDigit().fixedSize()
+                Text(how).lineLimit(1).truncationMode(.tail).opacity(0.75)
+                Button(L10n.t("Dán tiếp")) { NotchSurfaceController.shared.pasteNextFromStack() }.buttonStyle(NotchPillButtonStyle(primary: true))
+                    .fixedSize()
+                Button { manager.stopPasteStack() } label: { Image(systemName: "xmark").font(.system(size: 9, weight: .bold)) }
+                    .buttonStyle(.plain).help(L10n.t("Hủy")).accessibilityLabel(L10n.t("Hủy"))
+            }
+            .frame(maxWidth: 380)
+            .layoutPriority(1)
+            .help("Paste Stack · \(remaining)\(L10n.t(" mục")) · \(how)")
+        case .notice(let key):
+            pill { Text(L10n.t(key)).lineLimit(1).truncationMode(.tail) }
+                .frame(maxWidth: 260)
+                .help(L10n.t(key))
+        case .paused:
+            Button { NotchSurfaceController.shared.openClipboardSettings() } label: {
+                pill {
+                    Image(systemName: "pause.circle.fill").foregroundColor(.orange)
+                    Text(L10n.t("Đang tạm dừng ghi clipboard.")).lineLimit(1)
+                }
+            }
+            .buttonStyle(.plain)
+            .help(L10n.t("Mở Cài đặt"))
+        case .accessibilityMissing:
+            // D0's footer rule: the user must learn that ↩ only COPIES before the first click, not after — so the
+            // sentence is visible text, with the grant button beside it (P1 review).
+            pill {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
+                Text(L10n.t("Chưa có Trợ năng: ↩ chỉ sao chép, dán bằng ⌘V.")).lineLimit(1).truncationMode(.tail)
+                Button(L10n.t("Cấp quyền")) { _ = WindowManager.requestAccessibilityTrust() }
+                    .buttonStyle(NotchPillButtonStyle(primary: true)).fixedSize()
+            }
+            .frame(maxWidth: 380)
+            .layoutPriority(1)
+            .help(L10n.t("Chưa có Trợ năng: ↩ chỉ sao chép, dán bằng ⌘V."))
         }
-        .frame(height: 20)
+    }
+
+    private func pill<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        HStack(spacing: 5) { content() }
+            .font(.system(size: 11, weight: .medium))
+            .foregroundColor(.white.opacity(0.75))
+            .padding(.horizontal, 9)
+            .frame(height: 22)
+            .background(Capsule().fill(N.capsule))
     }
 
     // MARK: Context menu — every shelf action that has no button of its own
