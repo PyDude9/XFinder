@@ -105,6 +105,7 @@ final class FeatureHub {
         case .voice:           VoiceManager.shared.applySettings()
         case .translateSelection: TranslateSelectionController.shared.applySettings()   // N5a
         case .smartSelect:     SelectionWatcher.shared.applySettings()                  // E4
+        case .capture:         CaptureController.shared.applySettings()                 // F4
         case .alerts:          AlertMonitor.shared.applySettings()
         case .menuBarReadouts: MenuBarReadoutsController.shared.applySettings()
         // Read at the point of use by the clipboard engine; nothing to re-arm.

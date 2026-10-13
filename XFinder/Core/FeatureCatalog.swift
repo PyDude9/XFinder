@@ -99,6 +99,7 @@ enum FeatureID: String, CaseIterable {
     case voice
     case translateSelection
     case smartSelect
+    case capture
     case alerts
     case menuBarReadouts
 }
@@ -222,6 +223,11 @@ enum FeatureCatalog {
                    subtitleKey: "Bôi đen chữ ở app khác: nút nhỏ đổi đơn vị, đổi múi giờ, tính, thêm vào Lịch, dịch.",
                    symbol: "wand.and.stars", group: .tools, enabledKey: "smartSelect.enabled",
                    defaultOn: false, permissions: [.accessibility], idle: .listensToMouse),
+        // F4. Carbon hotkeys only for the shortcuts the user assigned (none by default); nothing runs between captures.
+        FeatureDef(id: .capture, titleKey: "Chụp & chú thích",
+                   subtitleKey: "Phím tắt chụp, thẻ xem trước nổi và trình chú thích.",
+                   symbol: "camera.viewfinder", group: .tools, enabledKey: "capture.enabled",
+                   defaultOn: true, permissions: [.screenRecording], idle: .nothingAtRest),
         FeatureDef(id: .voice, titleKey: "Nhập bằng giọng nói",
                    subtitleKey: "Giữ phím, nói, thả ra là chữ vào ô đang gõ.",
                    symbol: "mic.fill", group: .voice, enabledKey: "voice.enabled",

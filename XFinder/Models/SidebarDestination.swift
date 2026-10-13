@@ -44,6 +44,8 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case voiceTyping
     /// E5 (2026-10-13): Smart Selection — a badge beside text selected in other apps (+ ⇧⌘G, moved from Voice).
     case smartSelect
+    /// F4 (2026-10-13): Chụp & chú thích — capture shortcuts, a floating preview card and an annotate editor (OneNotch-like).
+    case capture
     /// D3 (2026-10-12): the Clipboard LIBRARY — every row in SQLite, filter rail, inspector. Content
     /// returns to the sidebar by the owner's choice (wireframe B); the notch/shelf stay the quick surfaces.
     case clipboard
@@ -96,6 +98,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .ports: return "Cổng đang mở"
         case .voiceTyping: return "Nhập bằng giọng nói"
         case .smartSelect: return "Chọn văn bản thông minh"
+        case .capture: return "Chụp & chú thích"
         case .clipboard: return "Thư viện Clipboard"
         case .settingsClipboard: return "Cài đặt Clipboard"
         case .about: return "Giới thiệu"
@@ -143,6 +146,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .ports: return "point.3.connected.trianglepath.dotted"
         case .voiceTyping: return "mic.fill"
         case .smartSelect: return "wand.and.stars"
+        case .capture: return "camera.viewfinder"
         case .clipboard: return "doc.on.clipboard"
         case .settingsClipboard: return "gearshape"
         case .about: return "info.circle"
@@ -163,7 +167,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             ("CỬA SỔ", [.windowPreview, .snapZones, .appQuit, .mouseGestures, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .junkCleanup, .actionHistory]),
-            ("CÔNG CỤ", [.voiceTyping, .smartSelect, .clipboard, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
+            ("CÔNG CỤ", [.voiceTyping, .smartSelect, .capture, .clipboard, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare, .ports]),
             ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat, .uninstaller]),
         ]

@@ -77,6 +77,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         FinderKeyboardController.shared.applySettings()
         QuitProtectionController.shared.applySettings()
         QuitOnCloseController.shared.applySettings()           // F3: AX observers only for listed apps
+        CaptureController.shared.applySettings()               // F4: Carbon hotkeys for the assigned capture shortcuts
         AlertMonitor.shared.applySettings()
         NotchSurfaceController.shared.applySettings()
         TranslateSelectionController.shared.applySettings()   // N5a: ⇧⌘G, AX-gated at press time

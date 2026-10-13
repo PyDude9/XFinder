@@ -676,6 +676,19 @@ struct MenubarFlyoutView: View {
                 closePopover()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { ScreenColorPicker.shared.pick() }
             }
+            actionRow(L10n.t("Chụp vùng"), "rectangle.dashed") {
+                // F4: the popover must not end up in the picture.
+                closePopover()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { CaptureController.shared.capture(.area) }
+            }
+            actionRow(L10n.t("Chụp cửa sổ đang mở"), "macwindow") {
+                closePopover()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { CaptureController.shared.capture(.window) }
+            }
+            actionRow(L10n.t("Chụp toàn màn hình"), "display") {
+                closePopover()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { CaptureController.shared.capture(.fullscreen) }
+            }
             actionRow(L10n.t("Chép chữ từ màn hình"), "text.viewfinder") {
                 // Same as the colour picker: let the popover close first so it is not in the capture.
                 closePopover()

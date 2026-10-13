@@ -136,6 +136,8 @@ struct DetailHostView: View {
                 VoiceDetailView()
             case .smartSelect:
                 SmartSelectDetailView()
+            case .capture:
+                CaptureDetailView()
             case .ports:
                 PortsDetailView()
             case .alerts:

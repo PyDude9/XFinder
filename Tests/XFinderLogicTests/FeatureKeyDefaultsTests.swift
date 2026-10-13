@@ -23,6 +23,18 @@ final class FeatureKeyDefaultsTests: XCTestCase {
     /// Keys bound in more than one view are listed with every view on purpose — until a
     /// registry owns the default, all copies must agree.
     static let switches: [Switch] = [
+        // F4 — Chụp & chú thích
+        Switch(key: "capture.enabled", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.after", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.cardSeconds", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.cardEdge", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.pauseOnHover", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.swipeDismiss", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.sound", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.format", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.keepHistory", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.annotate.color", views: ["XFinder/Views/Detail/CaptureDetailView.swift", "XFinder/Views/Capture/AnnotateWindow.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.annotate.width", views: ["XFinder/Views/Detail/CaptureDetailView.swift", "XFinder/Views/Capture/AnnotateWindow.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
         Switch(key: "windowPreview.showHiddenWindows",
                views: ["XFinder/Views/Detail/WindowDetailViews.swift"],
                reader: "XFinder/Core/WindowPreview/WindowPreviewStore.swift"),

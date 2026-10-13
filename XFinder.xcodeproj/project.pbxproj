@@ -20,6 +20,9 @@
 		7F1A032F /* Uninstall/UninstallRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A032E /* Uninstall/UninstallRules.swift */; };
 		7F1A0331 /* Uninstall/AppUninstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0330 /* Uninstall/AppUninstaller.swift */; };
 		7F1A0335 /* QuitOnClose/QuitOnCloseRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0334 /* QuitOnClose/QuitOnCloseRules.swift */; };
+		7F1A033B /* Capture/CaptureRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A033A /* Capture/CaptureRules.swift */; };
+		7F1A033D /* Capture/Annotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A033C /* Capture/Annotation.swift */; };
+		7F1A033F /* Capture/CaptureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A033E /* Capture/CaptureController.swift */; };
 		7F1A0337 /* QuitOnClose/QuitOnCloseController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */; };
 		7F1A031B /* SmartSelect/SelectionWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031A /* SmartSelect/SelectionWatcher.swift */; };
 		7F1A031D /* SmartSelect/SmartSelectionBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031C /* SmartSelect/SmartSelectionBadge.swift */; };
@@ -69,6 +72,10 @@
 		7F1A0234 /* Clipboard/NotchClipboardRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0235 /* Clipboard/NotchClipboardRules.swift */; };
 		7F1A0236 /* NotchClipCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0237 /* NotchClipCardView.swift */; };
 		7F1A031F /* SmartSelectViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031E /* SmartSelectViews.swift */; };
+		7F1A0341 /* Capture/QuickAccessCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0340 /* Capture/QuickAccessCardView.swift */; };
+		7F1A0343 /* Capture/PinnedImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0342 /* Capture/PinnedImageView.swift */; };
+		7F1A0345 /* Capture/AnnotateWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0344 /* Capture/AnnotateWindow.swift */; };
+		7F1A0347 /* Capture/AnnotateCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0346 /* Capture/AnnotateCanvas.swift */; };
 		7F1A0238 /* NotchTextEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0239 /* NotchTextEditorView.swift */; };
 		7F1A023A /* Notch/NotchPages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A023B /* Notch/NotchPages.swift */; };
 		7F1A023C /* MCP/MCPProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A023D /* MCP/MCPProtocol.swift */; };
@@ -111,6 +118,7 @@
 		7F1A032B /* Detail/JunkCleanupDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A032A /* Detail/JunkCleanupDetailView.swift */; };
 		7F1A0333 /* Detail/UninstallDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0332 /* Detail/UninstallDetailView.swift */; };
 		7F1A0339 /* Detail/AppQuitDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0338 /* Detail/AppQuitDetailView.swift */; };
+		7F1A0349 /* Detail/CaptureDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0348 /* Detail/CaptureDetailView.swift */; };
 		7F1A0087 /* Detail/ActionHistoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006D /* Detail/ActionHistoryDetailView.swift */; };
 		7F1A0088 /* Detail/SearchDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006E /* Detail/SearchDetailViews.swift */; };
 		7F1A0089 /* Detail/DropTrayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006F /* Detail/DropTrayDetailView.swift */; };
@@ -323,6 +331,9 @@
 		7F1A032E /* Uninstall/UninstallRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Uninstall/UninstallRules.swift; sourceTree = "<group>"; };
 		7F1A0330 /* Uninstall/AppUninstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Uninstall/AppUninstaller.swift; sourceTree = "<group>"; };
 		7F1A0334 /* QuitOnClose/QuitOnCloseRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitOnClose/QuitOnCloseRules.swift; sourceTree = "<group>"; };
+		7F1A033A /* Capture/CaptureRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/CaptureRules.swift; sourceTree = "<group>"; };
+		7F1A033C /* Capture/Annotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/Annotation.swift; sourceTree = "<group>"; };
+		7F1A033E /* Capture/CaptureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/CaptureController.swift; sourceTree = "<group>"; };
 		7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitOnClose/QuitOnCloseController.swift; sourceTree = "<group>"; };
 		7F1A031A /* SmartSelect/SelectionWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SelectionWatcher.swift; sourceTree = "<group>"; };
 		7F1A031C /* SmartSelect/SmartSelectionBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SmartSelectionBadge.swift; sourceTree = "<group>"; };
@@ -375,6 +386,10 @@
 		7F1A0235 /* Clipboard/NotchClipboardRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/NotchClipboardRules.swift; sourceTree = "<group>"; };
 		7F1A0237 /* NotchClipCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchClipCardView.swift; sourceTree = "<group>"; };
 		7F1A031E /* SmartSelectViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelectViews.swift; sourceTree = "<group>"; };
+		7F1A0340 /* Capture/QuickAccessCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/QuickAccessCardView.swift; sourceTree = "<group>"; };
+		7F1A0342 /* Capture/PinnedImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/PinnedImageView.swift; sourceTree = "<group>"; };
+		7F1A0344 /* Capture/AnnotateWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/AnnotateWindow.swift; sourceTree = "<group>"; };
+		7F1A0346 /* Capture/AnnotateCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/AnnotateCanvas.swift; sourceTree = "<group>"; };
 		7F1A0239 /* NotchTextEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchTextEditorView.swift; sourceTree = "<group>"; };
 		7F1A023B /* Notch/NotchPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchPages.swift; sourceTree = "<group>"; };
 		7F1A023D /* MCP/MCPProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCP/MCPProtocol.swift; sourceTree = "<group>"; };
@@ -417,6 +432,7 @@
 		7F1A032A /* Detail/JunkCleanupDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/JunkCleanupDetailView.swift; sourceTree = "<group>"; };
 		7F1A0332 /* Detail/UninstallDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/UninstallDetailView.swift; sourceTree = "<group>"; };
 		7F1A0338 /* Detail/AppQuitDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/AppQuitDetailView.swift; sourceTree = "<group>"; };
+		7F1A0348 /* Detail/CaptureDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/CaptureDetailView.swift; sourceTree = "<group>"; };
 		7F1A006D /* Detail/ActionHistoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/ActionHistoryDetailView.swift; sourceTree = "<group>"; };
 		7F1A006E /* Detail/SearchDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SearchDetailViews.swift; sourceTree = "<group>"; };
 		7F1A006F /* Detail/DropTrayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/DropTrayDetailView.swift; sourceTree = "<group>"; };
@@ -782,6 +798,9 @@
 				7F1A032E /* Uninstall/UninstallRules.swift */,
 				7F1A0330 /* Uninstall/AppUninstaller.swift */,
 				7F1A0334 /* QuitOnClose/QuitOnCloseRules.swift */,
+				7F1A033A /* Capture/CaptureRules.swift */,
+				7F1A033C /* Capture/Annotation.swift */,
+				7F1A033E /* Capture/CaptureController.swift */,
 				7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */,
 				7F1A031A /* SmartSelect/SelectionWatcher.swift */,
 				7F1A031C /* SmartSelect/SmartSelectionBadge.swift */,
@@ -908,6 +927,10 @@
 				7F1A022B /* NotchClipboardView.swift */,
 				7F1A0237 /* NotchClipCardView.swift */,
 				7F1A031E /* SmartSelectViews.swift */,
+				7F1A0340 /* Capture/QuickAccessCardView.swift */,
+				7F1A0342 /* Capture/PinnedImageView.swift */,
+				7F1A0344 /* Capture/AnnotateWindow.swift */,
+				7F1A0346 /* Capture/AnnotateCanvas.swift */,
 				7F1A0239 /* NotchTextEditorView.swift */,
 				7F1A021F /* SnapRowView.swift */,
 				7F1A01F1 /* Detail/AlertsDetailView.swift */,
@@ -926,6 +949,7 @@
 				7F1A032A /* Detail/JunkCleanupDetailView.swift */,
 				7F1A0332 /* Detail/UninstallDetailView.swift */,
 				7F1A0338 /* Detail/AppQuitDetailView.swift */,
+				7F1A0348 /* Detail/CaptureDetailView.swift */,
 				7F1A006D /* Detail/ActionHistoryDetailView.swift */,
 				7F1A006E /* Detail/SearchDetailViews.swift */,
 				7F1A006F /* Detail/DropTrayDetailView.swift */,
@@ -1130,6 +1154,10 @@
 				7F1A0234 /* Clipboard/NotchClipboardRules.swift in Sources */,
 				7F1A0236 /* NotchClipCardView.swift in Sources */,
 				7F1A031F /* SmartSelectViews.swift in Sources */,
+				7F1A0341 /* Capture/QuickAccessCardView.swift in Sources */,
+				7F1A0343 /* Capture/PinnedImageView.swift in Sources */,
+				7F1A0345 /* Capture/AnnotateWindow.swift in Sources */,
+				7F1A0347 /* Capture/AnnotateCanvas.swift in Sources */,
 				7F1A0238 /* NotchTextEditorView.swift in Sources */,
 				7F1A023A /* Notch/NotchPages.swift in Sources */,
 				7F1A023C /* MCP/MCPProtocol.swift in Sources */,
@@ -1173,6 +1201,7 @@
 				7F1A032B /* Detail/JunkCleanupDetailView.swift in Sources */,
 				7F1A0333 /* Detail/UninstallDetailView.swift in Sources */,
 				7F1A0339 /* Detail/AppQuitDetailView.swift in Sources */,
+				7F1A0349 /* Detail/CaptureDetailView.swift in Sources */,
 				7F1A0087 /* Detail/ActionHistoryDetailView.swift in Sources */,
 				7F1A0088 /* Detail/SearchDetailViews.swift in Sources */,
 				7F1A0089 /* Detail/DropTrayDetailView.swift in Sources */,
@@ -1275,6 +1304,9 @@
 				7F1A032F /* Uninstall/UninstallRules.swift in Sources */,
 				7F1A0331 /* Uninstall/AppUninstaller.swift in Sources */,
 				7F1A0335 /* QuitOnClose/QuitOnCloseRules.swift in Sources */,
+				7F1A033B /* Capture/CaptureRules.swift in Sources */,
+				7F1A033D /* Capture/Annotation.swift in Sources */,
+				7F1A033F /* Capture/CaptureController.swift in Sources */,
 				7F1A0337 /* QuitOnClose/QuitOnCloseController.swift in Sources */,
 				7F1A031B /* SmartSelect/SelectionWatcher.swift in Sources */,
 				7F1A031D /* SmartSelect/SmartSelectionBadge.swift in Sources */,

@@ -9166,6 +9166,286 @@
     "Chỉ với những app bạn chọn; Finder không bao giờ.": {
       "en": "Only the apps you choose; never Finder.",
       "scope": "sentence"
+    },
+    "Chụp & chú thích": {
+      "en": "Capture & Annotate",
+      "scope": "sentence"
+    },
+    "Phím tắt chụp, thẻ xem trước nổi và trình chú thích.": {
+      "en": "Capture shortcuts, a floating preview card and an annotation editor.",
+      "scope": "sentence"
+    },
+    "Chụp một vùng, cửa sổ hoặc cả màn hình; ảnh vào clipboard ngay, rồi chú thích, lưu hoặc ghim lên màn hình.": {
+      "en": "Capture an area, a window or the whole screen; it lands on the clipboard at once — then annotate it, save it or pin it to the screen.",
+      "scope": "sentence"
+    },
+    "Chưa có quyền Ghi màn hình — ảnh chụp sẽ chỉ có hình nền.": {
+      "en": "No Screen Recording permission yet — captures will show only the wallpaper.",
+      "scope": "sentence"
+    },
+    "Chụp vùng": {
+      "en": "Capture Area",
+      "scope": "sentence"
+    },
+    "Chụp cửa sổ đang mở": {
+      "en": "Capture Focused Window",
+      "scope": "sentence"
+    },
+    "Chụp toàn màn hình": {
+      "en": "Capture Full Screen",
+      "scope": "sentence"
+    },
+    "Chụp vùng rồi chú thích": {
+      "en": "Capture Area and Annotate",
+      "scope": "sentence"
+    },
+    "Kéo khoanh phần màn hình bạn muốn lấy": {
+      "en": "Drag out the part of the screen you want",
+      "scope": "sentence"
+    },
+    "Chụp đúng cửa sổ đang được chọn, không cần khoanh vùng": {
+      "en": "Takes the window that has focus — nothing to select",
+      "scope": "sentence"
+    },
+    "Chụp toàn bộ màn hình đang dùng": {
+      "en": "Takes the whole display you are on",
+      "scope": "sentence"
+    },
+    "Khoanh vùng rồi mở ngay cửa sổ chú thích": {
+      "en": "Select an area and open it straight in the editor",
+      "scope": "sentence"
+    },
+    "Nhận diện và sao chép chữ trong vùng bạn chọn": {
+      "en": "Recognises and copies the text in the area you select",
+      "scope": "sentence"
+    },
+    "Lấy mã màu tại điểm bạn trỏ tới": {
+      "en": "Copies the colour of the pixel you click",
+      "scope": "sentence"
+    },
+    "Sao chép và hiện thẻ xem trước — mặc định": {
+      "en": "Copy and show the preview card — default",
+      "scope": "sentence"
+    },
+    "Chỉ sao chép": {
+      "en": "Copy only",
+      "scope": "sentence"
+    },
+    "Mở chú thích ngay": {
+      "en": "Open the editor right away",
+      "scope": "sentence"
+    },
+    "Chụp": {
+      "en": "Capture",
+      "scope": "sentence"
+    },
+    "Không có phím tắt mặc định — ⇧⌘3, ⇧⌘4, ⇧⌘5 vẫn là của macOS.": {
+      "en": "No default shortcuts — ⇧⌘3, ⇧⌘4 and ⇧⌘5 still belong to macOS.",
+      "scope": "sentence"
+    },
+    "Bật phím tắt chụp": {
+      "en": "Enable capture shortcuts",
+      "scope": "sentence"
+    },
+    "Dùng bộ phím giống OneNotch": {
+      "en": "Use OneNotch-style shortcuts",
+      "scope": "sentence"
+    },
+    "⇧⌘ + số: 4 vùng · 3 toàn màn hình · 9 cửa sổ · 2 chép chữ · 1 lấy màu. Muốn dùng ⇧⌘3 và ⇧⌘4, hãy tắt hai phím đó của macOS trong Cài đặt hệ thống ▸ Bàn phím ▸ Phím tắt ▸ Ảnh màn hình.": {
+      "en": "⇧⌘ + digit: 4 area · 3 full screen · 9 window · 2 copy text · 1 pick colour. To use ⇧⌘3 and ⇧⌘4, first turn off macOS's own in System Settings ▸ Keyboard ▸ Keyboard Shortcuts ▸ Screenshots.",
+      "scope": "sentence"
+    },
+    "Mở Phím tắt bàn phím": {
+      "en": "Open Keyboard Shortcuts",
+      "scope": "sentence"
+    },
+    "Nhấn tổ hợp phím… (Esc để huỷ)": {
+      "en": "Press a key combination… (Esc to cancel)",
+      "scope": "sentence"
+    },
+    "Gán phím": {
+      "en": "Set Shortcut",
+      "scope": "sentence"
+    },
+    "Trùng với ": {
+      "en": "Same as ",
+      "scope": "fragment"
+    },
+    " — macOS có thể giành trước.": {
+      "en": " — macOS may take it first.",
+      "scope": "fragment"
+    },
+    " đã giữ tổ hợp này rồi.": {
+      "en": " already uses this shortcut.",
+      "scope": "fragment"
+    },
+    "Sau khi chụp": {
+      "en": "After capture",
+      "scope": "sentence"
+    },
+    "Thẻ xem trước tự đóng sau": {
+      "en": "Preview card closes after",
+      "scope": "sentence"
+    },
+    "Dừng đếm khi trỏ vào thẻ": {
+      "en": "Hold the countdown while pointing at the card",
+      "scope": "sentence"
+    },
+    "Vuốt hai ngón để đóng thẻ": {
+      "en": "Swipe with two fingers to dismiss the card",
+      "scope": "sentence"
+    },
+    "Âm thanh khi chụp": {
+      "en": "Capture sound",
+      "scope": "sentence"
+    },
+    "Không tự đóng": {
+      "en": "Never",
+      "scope": "sentence"
+    },
+    " giây": {
+      "en": " sec",
+      "scope": "fragment"
+    },
+    "Thư mục lưu": {
+      "en": "Save folder",
+      "scope": "sentence"
+    },
+    "Màu mặc định": {
+      "en": "Default colour",
+      "scope": "sentence"
+    },
+    "Độ dày nét": {
+      "en": "Stroke width",
+      "scope": "sentence"
+    },
+    "Giữ lịch sử ảnh chụp": {
+      "en": "Keep capture history",
+      "scope": "sentence"
+    },
+    "Tối đa 50 ảnh, trong thư mục của XFinder trên máy này.": {
+      "en": "Up to 50 images, in XFinder's own folder on this Mac.",
+      "scope": "sentence"
+    },
+    "Chưa có ảnh chụp nào.": {
+      "en": "No captures yet.",
+      "scope": "sentence"
+    },
+    "Xoá lịch sử": {
+      "en": "Clear History",
+      "scope": "sentence"
+    },
+    "Ghim lên màn hình": {
+      "en": "Pin to Screen",
+      "scope": "sentence"
+    },
+    "Chép chữ": {
+      "en": "Copy Text",
+      "scope": "sentence"
+    },
+    "Chú thích": {
+      "en": "Annotate",
+      "scope": "sentence"
+    },
+    "Cần quyền Ghi màn hình để chụp ảnh.": {
+      "en": "Screen Recording permission is needed to capture.",
+      "scope": "sentence"
+    },
+    "Không chạy được công cụ chụp màn hình.": {
+      "en": "Couldn't run the screenshot tool.",
+      "scope": "sentence"
+    },
+    "Không lưu được ảnh chụp.": {
+      "en": "Couldn't save the capture.",
+      "scope": "sentence"
+    },
+    "Không đọc được ảnh chụp.": {
+      "en": "Couldn't read the capture.",
+      "scope": "sentence"
+    },
+    "Không mã hoá được ảnh chụp.": {
+      "en": "Couldn't encode the capture.",
+      "scope": "sentence"
+    },
+    "Ảnh chụp": {
+      "en": "Screenshot",
+      "scope": "fragment"
+    },
+    " lúc ": {
+      "en": " at ",
+      "scope": "fragment"
+    },
+    "Ảnh chụp ": {
+      "en": "Screenshot ",
+      "scope": "fragment"
+    },
+    "Lưu…": {
+      "en": "Save…",
+      "scope": "sentence"
+    },
+    "Kéo ra để lưu vào nơi khác": {
+      "en": "Drag out to put it somewhere else",
+      "scope": "sentence"
+    },
+    " dấu": {
+      "en": " marks",
+      "scope": "fragment"
+    },
+    "Mũi tên": {
+      "en": "Arrow",
+      "scope": "sentence"
+    },
+    "Khung": {
+      "en": "Rectangle",
+      "scope": "sentence"
+    },
+    "Chữ": {
+      "en": "Text",
+      "scope": "sentence"
+    },
+    "Số thứ tự": {
+      "en": "Counter",
+      "scope": "sentence"
+    },
+    "Làm mờ": {
+      "en": "Blur",
+      "scope": "sentence"
+    },
+    "Tô sáng": {
+      "en": "Highlighter",
+      "scope": "sentence"
+    },
+    "Cắt": {
+      "en": "Crop",
+      "scope": "sentence"
+    },
+    "Mảnh": {
+      "en": "Thin",
+      "scope": "sentence"
+    },
+    "Dày": {
+      "en": "Thick",
+      "scope": "sentence"
+    },
+    "macOS Chụp toàn màn hình": {
+      "en": "macOS Capture Full Screen",
+      "scope": "sentence"
+    },
+    "macOS Chụp vùng": {
+      "en": "macOS Capture Area",
+      "scope": "sentence"
+    },
+    "macOS Sao chép toàn màn hình": {
+      "en": "macOS Copy Full Screen",
+      "scope": "sentence"
+    },
+    "macOS Sao chép vùng": {
+      "en": "macOS Copy Area",
+      "scope": "sentence"
+    },
+    "macOS Tùy chọn chụp và ghi màn hình": {
+      "en": "macOS Screenshot & Recording Options",
+      "scope": "sentence"
     }
   }
 }

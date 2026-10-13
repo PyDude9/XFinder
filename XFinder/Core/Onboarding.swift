@@ -24,8 +24,9 @@ enum Onboarding {
     /// Derived from the catalogue, never listed by hand: a feature added later lands in the right
     /// preset by its idle cost instead of silently missing from all of them.
     static var presets: [Preset] {
-        let quiet = Set(FeatureCatalog.all.filter { !$0.idle.isBackgroundActive }.map(\.id))
-        let everyday = quiet.union([.clipboardShelf, .dockPreview, .snapZones])
+        // Minimal = nothing running AND nothing to grant (F4: capture is idle at rest but needs Screen Recording).
+        let quiet = Set(FeatureCatalog.all.filter { !$0.idle.isBackgroundActive && $0.permissions.isEmpty }.map(\.id))
+        let everyday = quiet.union([.clipboardShelf, .dockPreview, .snapZones, .capture])
         return [
             Preset(id: "minimal", titleKey: "Tối giản",
                    descriptionKey: "Chỉ những gì không chạy nền: gợi ý clipboard, làm sạch liên kết, bảng lệnh ⌘K.",
