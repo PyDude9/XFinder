@@ -19,13 +19,10 @@ final class Calculator: Sendable {
             return nil
         }
 
-        // Dùng NSExpression để tính toán an toàn
-        let expr = NSExpression(format: query)
-        guard let result = expr.expressionValue(with: nil, context: nil) as? NSNumber else {
-            return nil
-        }
-
-        let resultValue = result.doubleValue
+        // Never NSExpression(format:): it raises an Objective-C exception on malformed input ("1+", "(1+2"),
+        // which Swift cannot catch — the whole app aborted mid-typing. SafeArithmetic returns nil instead,
+        // and refuses division by zero rather than answering 0.
+        guard let resultValue = SafeArithmetic.evaluate(query) else { return nil }
         let formatted = formatNumber(resultValue)
 
         return QuickSearchResult(

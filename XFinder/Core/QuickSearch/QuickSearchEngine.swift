@@ -5,7 +5,7 @@ import Observation
 /// bốn nguồn trong cùng một danh sách:
 ///   1. Liên kết nhanh (từ khóa → URL, khớp chính xác xếp trước)
 ///   2. Ứng dụng (fuzzy match trên danh sách app đã quét)
-///   3. Phép tính (NSExpression; nút Mở sao chép kết quả vào clipboard)
+///   3. Phép tính (SafeArithmetic — không bao giờ ném exception; nút Mở sao chép kết quả vào clipboard)
 ///   4. Tập tin (mdfind/Spotlight)
 /// Debounce 0.2s; quét app + mdfind chạy background task, phần còn lại instant.
 @MainActor @Observable
