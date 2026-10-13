@@ -246,3 +246,13 @@ tính năng agent bật): 56.30 s → 59.23 s = **2.93 s / 60 s ≈ 4.9 %**, RSS
   (tự nhận trong bài so NotchNook) — Smart File Actions chạy ngay khi thả; XFinder có khay giữ + hàng tác vụ (B1/B2d).
 
 **Click xuyên vùng trong suốt của panel cố định (đo 2026-10-13 07:17, màn thức, `NSWindow.windowNumber(at:)` — hit-test của window server, không có input giả).** Cửa sổ OneNotch #13634, layer 27, 700×745 tại x 514: điểm giữa thân notch (14 pt dưới mép) trúng **OneNotch**; ba điểm trong vùng trong suốt (300/200/700 pt dưới mép) trúng **cửa sổ bên dưới** (Claude). Nghĩa là panel cố định của họ không chặn thanh tiêu đề. Ma trận đối chứng trên panel tự dựng: thuộc tính `ignoresMouseEvents` **chưa từng gán** ⇒ vùng alpha 0 cho click lọt; **gán `false`** (trước hay sau khi order-front, hay true rồi false) ⇒ cả frame chặn, dù thuộc tính đọc ra `false` ở cả hai trạng thái. Đây là cơ chế, không phải code của họ: chuỗi `setIgnoresMouseEvents:` có trong binary của họ nhưng không nói họ gọi nó ở đâu.
+
+**`rea analyze` (rea-agents 6.4.0, provider Hopper, 2026-10-13 07:48–07:53).** Binary `Contents/MacOS/OneNotch`
+sha256 `07fdd008…48fb4`, Mach-O **thin arm64**, loader `-l Mach-O --aarch64`. Segments: `__TEXT` 27 721 728 B, `__DATA_CONST`
+884 736 B, `__DATA` 1 884 160 B, `__LINKEDIT` 1 196 032 B, External Symbols 49 320 B. **102 417 procedures, 33 385 strings.**
+This is the overview only: it confirms the shape already measured with `otool`/`strings` (single-arch, Swift-heavy, one large
+executable) and adds the counts. No function was decompiled and no code was read — the evidence in §1–§11 stays the
+measurement of behaviour. Two traps to get here: rea looks for Hopper only at `/Applications/…` (this Mac has it in
+`~/Applications`; `HOPPER_LAUNCHER_PATH` fixes it), and rea's Hopper startup timeout is hard-coded at 120 s while Hopper's first
+analysis of this binary took ~4 min CPU — the bridge socket appeared 2 min after rea had given up. The run that worked used a
+scratchpad copy of the package with the timeout raised to 900 s; the user's installed rea was not modified.
