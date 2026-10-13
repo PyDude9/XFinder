@@ -297,42 +297,22 @@ enum ClipboardAppColor {
         }
     }
 
+    /// The icon drawn at 32 × 32 and scored by `ClipPreviewRules.dominantColor`. Measured 2026-10-13: the old
+    /// `image.tiffRepresentation` rendered every icon representation into one uncompressed TIFF — ≈ 74 MB per source
+    /// app, freed at once but left dirty in the malloc zone, so the Clipboard Library page sat at 400–650 MB.
     private static func extractDominantColor(from image: NSImage) -> (r: Double, g: Double, b: Double)? {
-        guard let tiffData = image.tiffRepresentation,
-              let rep = NSBitmapImageRep(data: tiffData) else { return nil }
-        let w = rep.pixelsWide
-        let h = rep.pixelsHigh
-        guard w > 0, h > 0 else { return nil }
-
-        var bestColor: (r: Double, g: Double, b: Double)? = nil
-        var maxScore: Double = -1
-
-        let stepY = max(1, h / 16)
-        let stepX = max(1, w / 16)
-
-        for y in stride(from: 0, to: h, by: stepY) {
-            for x in stride(from: 0, to: w, by: stepX) {
-                guard let color = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else { continue }
-                if color.alphaComponent < 0.5 { continue }
-                let r = Double(color.redComponent)
-                let g = Double(color.greenComponent)
-                let b = Double(color.blueComponent)
-                let maxC = max(r, max(g, b))
-                let minC = min(r, min(g, b))
-                let delta = maxC - minC
-                let sat = maxC > 0.001 ? delta / maxC : 0
-                let light = (maxC + minC) / 2
-
-                if light > 0.18 && light < 0.85 && sat > 0.20 {
-                    let score = sat * 1.6 + (0.5 - abs(light - 0.5))
-                    if score > maxScore {
-                        maxScore = score
-                        bestColor = (r, g, b)
-                    }
-                }
-            }
-        }
-        return bestColor
+        let side = ClipPreviewRules.iconSampleSide
+        var proposed = NSRect(x: 0, y: 0, width: side, height: side)
+        guard let cg = image.cgImage(forProposedRect: &proposed, context: nil, hints: nil),
+              let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let ctx = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.interpolationQuality = .medium
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: side, height: side))
+        guard let data = ctx.data else { return nil }
+        let row = ctx.bytesPerRow
+        let bytes = Array(UnsafeBufferPointer(start: data.assumingMemoryBound(to: UInt8.self), count: row * side))
+        return ClipPreviewRules.dominantColor(rgba: bytes, width: side, height: side, bytesPerRow: row)
     }
 }
 
@@ -412,60 +392,39 @@ enum ClipboardClassifier {
         return sum % 10 == 0
     }
 
-    /// Resolves an NSImage if the record or text points to a screenshot or image file on disk.
+    /// A preview image when the record or its text points at an IMAGE file on disk. Never hands a non-image file to
+    /// a decoder and never decodes at full size: measured 2026-10-13, the old `NSImage(contentsOfFile:)` read a copied
+    /// 42 MB .mp4 in full — twice per render — to learn it was not an image. Main actor: every caller is a card view,
+    /// and the shared ImageIO cache (≤ 480 px, misses cached too) lives there.
+    @MainActor
     static func resolveCandidateImage(for record: ClipboardRecord) -> NSImage? {
-        if let p = record.thumbnailPath, FileManager.default.fileExists(atPath: p), let img = NSImage(contentsOfFile: p) {
-            return img
-        }
-        if let p = record.payloadPath, FileManager.default.fileExists(atPath: p), let img = NSImage(contentsOfFile: p) {
-            return img
-        }
-        if let p = record.metadata["path"], FileManager.default.fileExists(atPath: p), let img = NSImage(contentsOfFile: p) {
-            return img
+        for p in [record.thumbnailPath, record.payloadPath, record.metadata["path"]].compactMap({ $0 }) {
+            if let img = previewImage(atPath: p) { return img }
         }
 
         let rawText = record.textSnippet ?? record.displayPreview
-        let lines = rawText.components(separatedBy: .newlines)
-        for rawLine in lines {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let deskURL = home.appendingPathComponent("Desktop"), dlURL = home.appendingPathComponent("Downloads")
+        for rawLine in rawText.components(separatedBy: .newlines) {
             let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !line.isEmpty else { continue }
             let lower = line.lowercased()
-            let exts = [".png", ".jpg", ".jpeg", ".heic", ".webp", ".tiff", ".gif"]
-            let hasImgExt = exts.contains(where: { lower.hasSuffix($0) })
+            let hasImgExt = ClipPreviewRules.isImageFile(line)
             let isScreenshot = lower.contains("screenshot") || lower.contains("anh chup man hinh") || lower.contains("chụp màn hình")
-
-            if hasImgExt || isScreenshot {
-                // Direct path check
-                if FileManager.default.fileExists(atPath: line), let img = NSImage(contentsOfFile: line) {
-                    return img
-                }
-                // Check Desktop
-                let deskURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Desktop")
-                let deskPath = deskURL.appendingPathComponent(line).path
-                if FileManager.default.fileExists(atPath: deskPath), let img = NSImage(contentsOfFile: deskPath) {
-                    return img
-                }
-                if !hasImgExt {
-                    let deskPng = deskURL.appendingPathComponent(line + ".png").path
-                    if FileManager.default.fileExists(atPath: deskPng), let img = NSImage(contentsOfFile: deskPng) {
-                        return img
-                    }
-                }
-                // Check Downloads
-                let dlURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads")
-                let dlPath = dlURL.appendingPathComponent(line).path
-                if FileManager.default.fileExists(atPath: dlPath), let img = NSImage(contentsOfFile: dlPath) {
-                    return img
-                }
-                if !hasImgExt {
-                    let dlPng = dlURL.appendingPathComponent(line + ".png").path
-                    if FileManager.default.fileExists(atPath: dlPng), let img = NSImage(contentsOfFile: dlPng) {
-                        return img
-                    }
-                }
+            guard hasImgExt || isScreenshot else { continue }
+            var candidates = [line, deskURL.appendingPathComponent(line).path, dlURL.appendingPathComponent(line).path]
+            if !hasImgExt {
+                candidates += [deskURL.appendingPathComponent(line + ".png").path, dlURL.appendingPathComponent(line + ".png").path]
             }
+            for c in candidates { if let img = previewImage(atPath: c) { return img } }
         }
         return nil
+    }
+
+    @MainActor
+    private static func previewImage(atPath path: String) -> NSImage? {
+        guard ClipPreviewRules.isImageFile(path), FileManager.default.fileExists(atPath: path) else { return nil }
+        return NotchThumbnailCache.image(atPath: path)
     }
 }
 

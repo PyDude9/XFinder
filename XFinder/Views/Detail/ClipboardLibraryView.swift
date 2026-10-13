@@ -537,7 +537,7 @@ private struct LibraryInspector: View {
             // A row just unlocked in memory has no payload/thumbnail PATH (those live only on disk for
             // plain rows) — `store.unlockedImage` reads the decrypted bytes directly for that case.
             if let img = store.unlockedImage(rawRecord)
-                ?? (record.payloadPath ?? record.thumbnailPath).flatMap(NSImage.init(contentsOfFile:)) {
+                ?? (record.payloadPath ?? record.thumbnailPath).flatMap({ NotchThumbnailCache.image(atPath: $0, maxPixel: 1024) }) {
                 Image(nsImage: img).resizable().aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity, maxHeight: height)
                     .background(XFinderTokens.Fill.inset)

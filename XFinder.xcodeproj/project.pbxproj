@@ -213,6 +213,7 @@
 		7F1A0232 /* Notch/NowPlayingMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0231 /* Notch/NowPlayingMonitor.swift */; };
 		7F1A022A /* Clipboard/PasteQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0229 /* Clipboard/PasteQueue.swift */; };
 		7F1A022E /* Clipboard/ClipboardText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A022D /* Clipboard/ClipboardText.swift */; };
+		7F1A0301 /* Clipboard/ClipPreviewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0300 /* Clipboard/ClipPreviewRules.swift */; };
 		7F1A0228 /* Clipboard/ClipboardTransform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0227 /* Clipboard/ClipboardTransform.swift */; };
 		7F1A0226 /* Clipboard/ClipboardFilterToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0225 /* Clipboard/ClipboardFilterToken.swift */; };
 		7F1A0224 /* Notch/LiveActivityMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0223 /* Notch/LiveActivityMonitor.swift */; };
@@ -394,6 +395,7 @@
 		7F1A0231 /* Notch/NowPlayingMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NowPlayingMonitor.swift; sourceTree = "<group>"; };
 		7F1A0229 /* Clipboard/PasteQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/PasteQueue.swift; sourceTree = "<group>"; };
 		7F1A022D /* Clipboard/ClipboardText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipboardText.swift; sourceTree = "<group>"; };
+		7F1A0300 /* Clipboard/ClipPreviewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipPreviewRules.swift; sourceTree = "<group>"; };
 		7F1A0227 /* Clipboard/ClipboardTransform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipboardTransform.swift; sourceTree = "<group>"; };
 		7F1A0225 /* Clipboard/ClipboardFilterToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/ClipboardFilterToken.swift; sourceTree = "<group>"; };
 		7F1A0223 /* Notch/LiveActivityMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/LiveActivityMonitor.swift; sourceTree = "<group>"; };
@@ -662,6 +664,7 @@
 				7F1A0231 /* Notch/NowPlayingMonitor.swift */,
 				7F1A0229 /* Clipboard/PasteQueue.swift */,
 				7F1A022D /* Clipboard/ClipboardText.swift */,
+				7F1A0300 /* Clipboard/ClipPreviewRules.swift */,
 				7F1A0227 /* Clipboard/ClipboardTransform.swift */,
 				7F1A0225 /* Clipboard/ClipboardFilterToken.swift */,
 				7F1A0235 /* Clipboard/NotchClipboardRules.swift */,
@@ -1118,6 +1121,7 @@
 				7F1A0232 /* Notch/NowPlayingMonitor.swift in Sources */,
 				7F1A022A /* Clipboard/PasteQueue.swift in Sources */,
 				7F1A022E /* Clipboard/ClipboardText.swift in Sources */,
+				7F1A0301 /* Clipboard/ClipPreviewRules.swift in Sources */,
 				7F1A0228 /* Clipboard/ClipboardTransform.swift in Sources */,
 				7F1A0226 /* Clipboard/ClipboardFilterToken.swift in Sources */,
 				7F1A0224 /* Notch/LiveActivityMonitor.swift in Sources */,

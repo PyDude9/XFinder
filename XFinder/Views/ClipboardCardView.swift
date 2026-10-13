@@ -514,9 +514,10 @@ struct ClipboardCardView: View {
         return ClipboardAppColor.color(forBundleID: record.sourceBundleID, contentType: record.type)
     }
 
+    /// Read once per payload path (`NotchTextCache`), not on every render of every card.
     private var fullText: String? {
         if let p = record.payloadPath, record.type == .text,
-           let s = try? String(contentsOfFile: p, encoding: .utf8) {
+           let s = NotchTextCache.fullText(snippet: record.textSnippet, payloadPath: p) {
             return String(s.prefix(1200))
         }
         return record.textSnippet
