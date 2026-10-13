@@ -125,6 +125,7 @@ Trang: NOTCH ▸ **Agent AI**. Bật "Hiện phiên agent ở notch" trước.
 | T-P5-CODEX-PERM | Trong phiên đó, để Codex xin quyền chạy một lệnh | Thẻ duyệt hiện trên notch; Cho phép / Từ chối có tác dụng trong Codex |
 | T-P5-MULTI | Có cả hook duyệt quyền của OneNotch / Notch Crew trong `~/.claude/settings.json` (máy này đang có cả hai), cài hook Claude của XFinder, để Claude Code xin quyền, bấm Cho phép trên notch của XFinder | **Chưa biết** — tài liệu Claude Code không nói nhiều hook PermissionRequest kết hợp thế nào. Ghi lại: lệnh chạy ngay, hay chờ app kia trả lời / hết giờ? Trang Agent AI đã cảnh báo số hook của công cụ khác |
 | T-P5-PID | Trong một phiên Codex, thoát `codex` bằng ⌃C | Phiên chuyển "Đã kết thúc" trong ≤ 20 s (hook tìm đúng tiến trình `codex` cha — đã đo bằng tiến trình giả tên `codex`, chưa đo với Codex thật) |
+| T-P5-OPENCODE | Agent AI ▸ OpenCode ▸ bật "Theo dõi phiên OpenCode"; mở `opencode` trong terminal, nhờ nó chạy một lệnh shell | Phiên hiện trên notch với tiêu đề của OpenCode; khi OpenCode hỏi quyền, thẻ duyệt hiện trong ~2,5 s; Cho phép chạy lệnh đúng một lần (không tạo luật "always"); trả lời ở terminal thì thẻ biến mất |
 
 ### Clipboard
 | Mã | Làm gì | Mong đợi |

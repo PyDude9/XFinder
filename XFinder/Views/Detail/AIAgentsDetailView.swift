@@ -15,6 +15,10 @@ struct AIAgentsDetailView: View {
     @State private var codexNotice: String?
     @State private var lastEventAt: [AgentKind: Date] = [:]
     @State private var otherPermissionHooks: [AgentKind: Int] = [:]
+    // P5b — OpenCode
+    @AppStorage("agents.opencode") private var openCodeEnabled = false
+    @State private var openCodeState: OpenCodeMonitor.State = .off
+    @State private var openCodeBinary: String?
     // P2 — Claude Code statusLine (5h/7d usage %), a settings-only opt-in.
     @State private var statusLineState: AgentSessionMonitor.StatusLineState = .notInstalled
     @State private var statusLineNotice: String?
@@ -40,6 +44,7 @@ struct AIAgentsDetailView: View {
                 notchSection
                 sessionsSection
                 codexSection
+                openCodeSection
                 usageSection
             }
             .padding(.bottom, XFinderTokens.Space.section)
@@ -58,6 +63,49 @@ struct AIAgentsDetailView: View {
         codexHookStatus = m.hookStatus(for: .codex)
         lastEventAt = m.lastEventAt
         otherPermissionHooks = Dictionary(uniqueKeysWithValues: AgentSessionMonitor.hookAgents.map { ($0, m.otherPermissionHookCount(for: $0)) })
+        openCodeState = OpenCodeMonitor.shared.state
+        openCodeBinary = OpenCodeMonitor.shared.binaryPath ?? OpenCodeMonitor.findBinary()
+    }
+
+    private var openCodeSection: some View {
+        SettingsSection(
+            title: "OpenCode",                        // a product name, identical in both languages
+            footer: L10n.t("OpenCode 2 không còn nạp plugin kiểu cũ (chính OpenCode ghi lỗi đó khi khởi động), nên XFinder không cài plugin nào và không sửa cấu hình OpenCode. Mật khẩu của dịch vụ OpenCode nằm ở chỗ chỉ lệnh opencode đọc — XFinder không đọc nó. Cho phép trên notch trả lời \"once\" (chỉ lần này), không bao giờ \"always\", để không có luật nào bị ghi vào cấu hình của bạn.")
+        ) {
+            ToggleRow(title: L10n.t("Theo dõi phiên OpenCode"),
+                      subtitle: L10n.t("Khi cơ sở dữ liệu của OpenCode vừa được ghi, XFinder chạy chính lệnh opencode của bạn (opencode api) để biết phiên nào đang chạy và yêu cầu quyền nào đang chờ. Không đọc nội dung hội thoại. Không có ghi thì không chạy gì. Mặc định tắt."),
+                      isOn: $openCodeEnabled)
+                .onChange(of: openCodeEnabled) {
+                    NotchSurfaceController.shared.applySettings()
+                    refreshHookStates()
+                }
+                .disabled(!agentsEnabled)
+                .settingsRow()
+            SettingsDivider()
+            openCodeStatusLine.settingsRow()
+        }
+    }
+
+    @ViewBuilder private var openCodeStatusLine: some View {
+        if let bin = openCodeBinary {
+            VStack(alignment: .leading, spacing: 2) {
+                switch openCodeState {
+                case .failed(let msg):
+                    Text("\(L10n.t("OpenCode không trả lời: "))\(msg)")
+                        .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                case .ready where openCodeEnabled && agentsEnabled:
+                    Text(L10n.t("Đang theo dõi.")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                default:
+                    EmptyView()
+                }
+                Text(bin).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    .lineLimit(1).truncationMode(.middle).frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            Text(L10n.t("Không tìm thấy lệnh opencode (~/.opencode/bin, Homebrew, ~/.local/bin, ~/.bun/bin)."))
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+        }
     }
 
     private var notchSection: some View {

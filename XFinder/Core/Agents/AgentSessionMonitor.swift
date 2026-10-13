@@ -58,9 +58,12 @@ final class AgentSessionMonitor {
     /// the person trusts it in `/hooks`, and nothing else tells XFinder whether they did).
     private(set) var lastEventAt: [AgentKind: Date] = [:]
 
-    /// Under the notch master switch: a notch that is off has no page to show sessions on.
+    /// Under the notch master switch: a notch that is off has no page to show sessions on. OpenCode (P5b) rides
+    /// the same switches plus its own.
     func applySettings(underMaster master: Bool = true) {
         if master && isEnabled { start() } else { stop() }
+        OpenCodeMonitor.shared.onChange = { [weak self] in self?.rebuild() }
+        OpenCodeMonitor.shared.applySettings(underMaster: master && isEnabled)
     }
 
     private func start() {
@@ -117,7 +120,8 @@ final class AgentSessionMonitor {
             all.append(contentsOf: tail.events)
             if let last = tail.events.last?.receivedAt { lastEventAt[agent] = last }
         }
-        let new = AgentSessionRules.sessions(from: all, now: now, answered: answered, isAlive: Self.isAlive)
+        let hooked = running ? AgentSessionRules.sessions(from: all, now: now, answered: answered, isAlive: Self.isAlive) : []
+        let new = (hooked + OpenCodeMonitor.shared.sessions).sorted(by: AgentSessionRules.displayOrder)
         if new != sessions {
             sessions = new
             onChange?()
@@ -150,6 +154,7 @@ final class AgentSessionMonitor {
     /// content to the agent and exits. `answered` makes the row flip at once instead of waiting for the next event.
     @discardableResult
     func answer(_ p: AgentSession.PendingPermission, of session: AgentSession, allow: Bool) -> Bool {
+        if session.agent == .opencode { return OpenCodeMonitor.shared.answer(p, of: session, allow: allow) }
         guard session.agent.usesHookScript else { return false }
         let url = decisionsDir(for: session.agent).appendingPathComponent(AgentDecision.fileName(sessionID: session.id, requestID: p.requestID))
         let payload = AgentDecision.payload(allow: allow)

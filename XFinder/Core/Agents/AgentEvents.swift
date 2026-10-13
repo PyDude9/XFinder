@@ -165,12 +165,16 @@ struct AgentSession: Equatable, Identifiable {
     var agentPID: Int32?
     var terminal: AgentEvents.Terminal
     var eventCount: Int
+    /// A conversation title when the agent has one (OpenCode does; Claude Code and Codex hooks carry none).
+    var title: String? = nil
     /// `true` once something asked for the person: the badge and the live activity count these.
     var needsYou: Bool {
         switch status { case .waitingForInput, .waitingForPermission: return true; default: return false }
     }
-    /// What to call it: the folder's name (Claude Code has no session title in the hook input).
+    /// What to call it: the agent's own title when it has one, else the folder's name (Claude Code and Codex hooks
+    /// carry no session title).
     var displayName: String {
+        if let title, !title.isEmpty { return title }
         guard let cwd, !cwd.isEmpty else { return String(id.prefix(8)) }
         return (cwd as NSString).lastPathComponent
     }

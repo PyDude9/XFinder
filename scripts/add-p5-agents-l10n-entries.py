@@ -33,6 +33,16 @@ ENTRIES: dict[str, tuple[str, str]] = {
     # P5a — Features hub row
     "Phiên Claude Code và Codex đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ.":
         ("Claude Code and Codex sessions running in a terminal: status and approvals at the notch; reads a local hook log.", S),
+    # P5b — OpenCode
+    "OpenCode 2 không còn nạp plugin kiểu cũ (chính OpenCode ghi lỗi đó khi khởi động), nên XFinder không cài plugin nào và không sửa cấu hình OpenCode. Mật khẩu của dịch vụ OpenCode nằm ở chỗ chỉ lệnh opencode đọc — XFinder không đọc nó. Cho phép trên notch trả lời \"once\" (chỉ lần này), không bao giờ \"always\", để không có luật nào bị ghi vào cấu hình của bạn.":
+        ("OpenCode 2 no longer loads old-style plugins (OpenCode itself logs that error at startup), so XFinder installs no plugin and does not edit OpenCode's configuration. The OpenCode service's password sits where only the opencode command reads it — XFinder does not read it. Allow on the notch answers \"once\" (this time only), never \"always\", so no rule is written into your configuration.", S),
+    "Theo dõi phiên OpenCode": ("Follow OpenCode sessions", S),
+    "Khi cơ sở dữ liệu của OpenCode vừa được ghi, XFinder chạy chính lệnh opencode của bạn (opencode api) để biết phiên nào đang chạy và yêu cầu quyền nào đang chờ. Không đọc nội dung hội thoại. Không có ghi thì không chạy gì. Mặc định tắt.":
+        ("When OpenCode's database has just been written, XFinder runs your own opencode command (opencode api) to learn which sessions are running and which permission requests are waiting. Does not read conversation content. Nothing written, nothing runs. Off by default.", S),
+    "OpenCode không trả lời: ": ("OpenCode did not answer: ", F),
+    "Đang theo dõi.": ("Following.", S),
+    "Không tìm thấy lệnh opencode (~/.opencode/bin, Homebrew, ~/.local/bin, ~/.bun/bin).":
+        ("The opencode command was not found (~/.opencode/bin, Homebrew, ~/.local/bin, ~/.bun/bin).", S),
     # P5a — notch Agents page
     "Chưa có phiên agent nào.": ("No agent sessions yet.", S),
 }

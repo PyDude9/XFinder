@@ -6,12 +6,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-agents.XXXXXX)
-FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh"
+FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='AgentSession|AgentCodex|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
+FILTER='AgentSession|AgentCodex|OpenCodeRules|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -119,6 +119,23 @@ run "A29 XFinder's own approval hook counted as another tool's" $H \
   "'.filter { (\$0[\"command\"] as? String) != nil && !isOurs(\$0, hookPath: hookPath) }'" "'.filter { (\$0[\"command\"] as? String) != nil }'"
 run "A30 a Codex hook with no codex ancestor records the shell's pid" $Z \
   "'if [ -z \"\$agent_pid\" ] && [ \"\$agent\" = \"claude\" ]; then'" "'if [ -z \"\$agent_pid\" ]; then'"
+
+# P5b — OpenCode through its own CLI.
+O=XFinder/Core/Agents/OpenCodeRules.swift
+run "A31 Cho phép answers always (a rule would be saved in the person's OpenCode config)" $O \
+  "'        let body = allow ? #\"{\"decision\":\"once\"}\"# : #\"{\"decision\":\"reject\"}\"#'" "'        let body = allow ? #\"{\"decision\":\"always\"}\"# : #\"{\"decision\":\"reject\"}\"#'"
+run "A32 an id that is not ses_… reaches a process argument" $O \
+  "'        guard s.hasPrefix(prefix), s.count > prefix.count, s.count <= 80 else { return false }\n        return s.dropFirst(prefix.count).allSatisfy { \$0.isASCII && (\$0.isLetter || \$0.isNumber) }'" "'        return s.hasPrefix(prefix)'"
+run "A33 a subagent (child) session gets a row of its own" $O \
+  "'        for s in info where s.parentID == nil {'" "'        for s in info {'"
+run "A34 an idle session reads as waiting with no terminal client open" $O \
+  "'            } else if clientOpen, now.timeIntervalSince(s.updated) <= AgentSessionRules.staleAfter {'" "'            } else if now.timeIntervalSince(s.updated) <= AgentSessionRules.staleAfter {'"
+run "A35 the background service counts as a terminal client" $O \
+  "'            return !parts.dropFirst().contains(\"serve\")'" "'            return true'"
+run "A36 session times read as seconds (dates in 58 000 AD)" $O \
+  "'        if let n = ms as? NSNumber { return Date(timeIntervalSince1970: n.doubleValue / 1000) }'" "'        if let n = ms as? NSNumber { return Date(timeIntervalSince1970: n.doubleValue) }'"
+run "A37 an answered OpenCode request keeps its card" $O \
+  "'            let waiting = pending.filter { \$0.sessionID == s.id && !answered.contains(\$0.id) }'" "'            let waiting = pending.filter { \$0.sessionID == s.id }'"
 
 # The restore check and the post-restore suite run come AFTER every mutation (they used to sit before A11, so the
 # later mutations ran unchecked — found while adding A20/A21).

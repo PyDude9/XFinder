@@ -59,7 +59,8 @@ NativeVisibilityEngine.swift NativeVisibilityBridge.swift AccessibilityMenuBarIn
 SettingsShell.swift NotchInterfaceDetailView.swift MediaDetailView.swift AIAgentsDetailView.swift
 CalendarSettingsDetailView.swift LiveActivitiesDetailView.swift ShortcutsDetailView.swift ShortcutCatalog.swift
 DropTrayDetailView.swift SidebarDestination.swift
-AgentKind.swift AgentEvents.swift AgentHookInstaller.swift AgentSessionMonitor.swift NotchAgentsPage.swift"
+AgentKind.swift AgentEvents.swift AgentHookInstaller.swift AgentSessionMonitor.swift NotchAgentsPage.swift
+OpenCodeRules.swift OpenCodeMonitor.swift"
 MISSING=0
 for f in $GESTURE_FILES; do
   if grep -q "/$f" "$LIST"; then echo "  OK   $f"; else echo "  MISS $f"; MISSING=$((MISSING + 1)); fi
