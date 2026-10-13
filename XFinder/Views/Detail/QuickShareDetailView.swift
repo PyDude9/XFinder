@@ -9,10 +9,8 @@ struct QuickShareDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(
-                    icon: "square.and.arrow.up.on.square",
-                    title: L10n.t("Chia sẻ nhanh"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Chia sẻ nhanh"),
                     subtitle: L10n.t("Chia sẻ file qua mạng nội bộ bằng một liên kết."),
                     trailing: AnyView(
                         Text(controller.isRunning ? L10n.t("Đang chạy") : L10n.t("Đang tắt"))
@@ -64,16 +62,19 @@ struct QuickShareDetailView: View {
                     .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                    SectionHeader(icon: "questionmark.circle", title: L10n.t("Cách hoạt động"))
+                SettingsSection(title: L10n.t("Cách hoạt động")) {
                     note(L10n.t("File **ở nguyên trên máy Mac này**. XFinder mở một máy chủ HTTP nhỏ trong mạng nội bộ và trả về liên kết."))
+                        .settingsRow()
+                    SettingsDivider()
                     note(L10n.t("Chỉ thiết bị trong **cùng mạng Wi-Fi/LAN** mở được liên kết. Không có tài khoản, không qua máy chủ trung gian."))
+                        .settingsRow()
+                    SettingsDivider()
                     note(L10n.t("Mỗi liên kết có mã ngẫu nhiên 160-bit và tự hết hạn; máy chủ tự tắt khi không còn liên kết nào."))
+                        .settingsRow()
+                    SettingsDivider()
                     note(L10n.t("Cần gửi ra ngoài mạng nội bộ? Dùng AirDrop hoặc ứng dụng cloud sẵn có — XFinder không có hạ tầng cloud và sẽ không giả vờ là có."))
+                        .settingsRow()
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()

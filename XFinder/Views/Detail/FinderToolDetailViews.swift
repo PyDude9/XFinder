@@ -21,24 +21,22 @@ struct MediaCompatDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "play.rectangle.fill", title: L10n.t("Tương thích media"))
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Tương thích media"))
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "doc.badge.plus", title: L10n.t("Tập tin cần kiểm tra"),
-                                  subtitle: files.isEmpty ? L10n.t("Chưa chọn") : "\(files.count)\(L10n.t(" tập tin"))")
+                SettingsSection(title: L10n.t("Tập tin cần kiểm tra"),
+                                footer: files.isEmpty ? L10n.t("Chưa chọn") : "\(files.count)\(L10n.t(" tập tin"))") {
                     ActionRow(title: L10n.t("Chọn tập tin…"),
                               buttonTitle: L10n.t("Chọn…")) { pick() }
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                     if !files.isEmpty {
+                        SettingsDivider()
                         ActionRow(title: L10n.t("Xóa danh sách"),
                                   buttonTitle: L10n.t("Xóa"),
                                   destructive: true) { files = []; rows = [] }
-                            .padding(.horizontal, XFinderTokens.Space.page)
+                            .settingsRow()
                     }
                 }
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 Button {
                     check()
@@ -53,36 +51,33 @@ struct MediaCompatDetailView: View {
                 .disabled(files.isEmpty || checking)
                 .padding(.horizontal, XFinderTokens.Space.page)
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "checklist", title: L10n.t("Kết quả"),
-                                  subtitle: L10n.t("Nguồn: AVFoundation — thiết bị này có/mở được không"))
+                SettingsSection(title: L10n.t("Kết quả"),
+                                footer: L10n.t("Nguồn: AVFoundation — thiết bị này có/mở được không")) {
                     if rows.isEmpty {
                         Text(L10n.t("Chọn tập tin và bấm Kiểm tra phát."))
                             .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                            .padding(.horizontal, XFinderTokens.Space.page)
+                            .settingsRow()
                     } else {
-                        VStack(spacing: 0) {
-                            ForEach(rows) { r in
-                                HStack {
-                                    Image(systemName: r.playable ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                        .foregroundColor(r.playable ? .green : .red)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(r.name).font(XFinderTokens.Font.row).fileNameRowSafe()
-                                        Text("\(r.container) · \(r.codecs)")
-                                            .font(XFinderTokens.Font.mono)
-                                            .foregroundColor(.secondary)
-                                            .fileNameRowSafe()
-                                    }
-                                    Spacer(minLength: XFinderTokens.Space.inline)
-                                    Text(r.playable ? L10n.t("Phát được") : L10n.t("Không"))
-                                        .font(XFinderTokens.Font.rowValue)
-                                        .foregroundColor(r.playable ? .green : .red)
+                        ForEach(Array(rows.enumerated()), id: \.element.id) { entry in
+                            let r = entry.element
+                            if entry.offset > 0 { SettingsDivider() }
+                            HStack {
+                                Image(systemName: r.playable ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundColor(r.playable ? .green : .red)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(r.name).font(XFinderTokens.Font.row).fileNameRowSafe()
+                                    Text("\(r.container) · \(r.codecs)")
+                                        .font(XFinderTokens.Font.mono)
+                                        .foregroundColor(.secondary)
+                                        .fileNameRowSafe()
                                 }
-                                .padding(.vertical, XFinderTokens.Space.tight)
-                                Divider()
+                                Spacer(minLength: XFinderTokens.Space.inline)
+                                Text(r.playable ? L10n.t("Phát được") : L10n.t("Không"))
+                                    .font(XFinderTokens.Font.rowValue)
+                                    .foregroundColor(r.playable ? .green : .red)
                             }
+                            .settingsRow()
                         }
-                        .padding(.horizontal, XFinderTokens.Space.page)
                     }
                 }
             }

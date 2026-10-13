@@ -17,9 +17,7 @@ struct AIAgentsDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                PageHeader(
-                    icon: "sparkles",
-                    title: L10n.t("Agent AI"),
+                PageHeader(title: L10n.t("Agent AI"),
                     subtitle: L10n.t("Các phiên Claude Code đang chạy trong terminal: đang làm gì, chờ bạn nhập hay chờ bạn duyệt quyền — duyệt ngay tại notch.")
                 )
 

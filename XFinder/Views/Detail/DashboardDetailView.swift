@@ -28,16 +28,13 @@ struct DashboardDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "square.grid.2x2",
-                           title: L10n.t("Tổng quan"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Tổng quan"),
                            subtitle: L10n.t("Xem những gì đã sẵn sàng và hoàn tất thiết lập."))
 
                 quickGrantBannerIfNeeded
                 preferences
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 checklist
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 gettingStarted
                 Button("\(L10n.t("Có gì mới trong "))\(WhatsNewWindowController.shared.currentVersion)") {
                     WhatsNewWindowController.shared.present(WhatsNewWindowController.shared.currentVersion)
@@ -117,7 +114,7 @@ struct DashboardDetailView: View {
     }
 
     private var preferences: some View {
-        VStack(spacing: 0) {
+        SettingsSection {
             PickerRow(title: L10n.t("Ngôn ngữ ứng dụng"),
                       selection: Binding(get: { l10n.language }, set: { l10n.set($0) }),
                       width: 140) {
@@ -125,9 +122,9 @@ struct DashboardDetailView: View {
                     Text(lang.displayName).tag(lang)
                 }
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
+            SettingsDivider()
 
             PickerRow(title: L10n.t("Biểu tượng thanh menu"),
                       selection: Binding(get: { menubarIcon }, set: { setMenubarIcon($0) }),
@@ -136,34 +133,36 @@ struct DashboardDetailView: View {
                     Image(systemName: c.symbol).tag(c.id)
                 }
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
+            SettingsDivider()
 
             ToggleRow(title: L10n.t("Khởi động XFinder khi đăng nhập"), isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { LoginItemController.apply($0) }
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
+            SettingsDivider()
 
             ToggleRow(title: L10n.t("Hiện biểu tượng trong Dock"),
                       subtitle: L10n.t("Tắt để dùng XFinder thuần menubar."),
                       isOn: $showDockIcon)
                 .onChange(of: showDockIcon) { DockController.apply($0) }
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
         }
     }
 
     // MARK: Checklist
 
     private var checklist: some View {
-        VStack(spacing: 0) {
+        SettingsSection {
             StatusChecklistRow(
                 state: trusted ? .ok : .warning,
                 title: L10n.t("Trợ năng (cửa sổ, Dock, độ sáng)"),
                 status: trusted ? L10n.t("Đã cấp") : L10n.t("Chưa cấp"),
                 actionTitle: trusted ? nil : L10n.t("Mở…"),
                 action: trusted ? nil : { WindowManager.openAccessibilityPane() })
+                .settingsRow()
+            SettingsDivider()
 
             StatusChecklistRow(
                 state: canRecord ? .ok : .warning,
@@ -171,6 +170,8 @@ struct DashboardDetailView: View {
                 status: canRecord ? L10n.t("Đã cấp") : L10n.t("Chưa cấp"),
                 actionTitle: canRecord ? nil : L10n.t("Mở…"),
                 action: canRecord ? nil : { WindowManager.openScreenRecordingPane() })
+                .settingsRow()
+            SettingsDivider()
 
             StatusChecklistRow(
                 state: automationOK ? .ok : .warning,
@@ -178,6 +179,8 @@ struct DashboardDetailView: View {
                 status: automationOK ? L10n.t("Đã cấp") : L10n.t("Chưa xác định"),
                 actionTitle: automationOK ? nil : L10n.t("Mở…"),
                 action: automationOK ? nil : { SystemControls.openAutomationPane() })
+                .settingsRow()
+            SettingsDivider()
 
             // Hover preview needs BOTH the toggle and Screen Recording: the
             // thumbnails come from ScreenCaptureKit. Reporting L10n.t("Đã bật") while
@@ -190,6 +193,8 @@ struct DashboardDetailView: View {
                     : (canRecord ? L10n.t("Đã bật") : L10n.t("Thiếu quyền Ghi màn hình")),
                 actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .windowPreview) })
+                .settingsRow()
+            SettingsDivider()
 
             StatusChecklistRow(
                 state: .ok,
@@ -197,6 +202,8 @@ struct DashboardDetailView: View {
                 status: L10n.t("Đã sẵn sàng"),
                 actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .quickLookPage) })
+                .settingsRow()
+            SettingsDivider()
 
             StatusChecklistRow(
                 state: mediaPreviewInstalled ? .ok : .warning,
@@ -205,6 +212,8 @@ struct DashboardDetailView: View {
                     : L10n.t("Chưa cài — tải trong trang Quick Look"),
                 actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .quickLookPage) })
+                .settingsRow()
+            SettingsDivider()
 
             StatusChecklistRow(
                 state: appleIntelligence ? .ok : .neutral,
@@ -212,6 +221,8 @@ struct DashboardDetailView: View {
                 status: appleIntelligence ? L10n.t("Sẵn sàng") : L10n.t("Chưa sẵn sàng"),
                 actionTitle: nil,
                 action: nil)
+                .settingsRow()
+            SettingsDivider()
 
             // Đã đóng gói XFinderSync.appex — trạng thái thật lấy từ pluginkit.
             StatusChecklistRow(
@@ -220,6 +231,8 @@ struct DashboardDetailView: View {
                 status: finderSyncOn ? L10n.t("Đã bật") : L10n.t("Đang tắt"),
                 actionTitle: L10n.t("Mở…"),
                 action: { _ = WindowManager.openFinderExtensionsPane() })
+                .settingsRow()
+            SettingsDivider()
 
             StatusChecklistRow(
                 state: clipboardManager.history.isEmpty ? .neutral : .ok,
@@ -228,6 +241,8 @@ struct DashboardDetailView: View {
                     ? L10n.t("Chưa có mục") : "\(clipboardManager.history.count) " + L10n.t("mục"),
                 actionTitle: L10n.t("Mở…"),
                 action: { ClipboardShelfController.shared.toggle() })
+                .settingsRow()
+            SettingsDivider()
 
             StatusChecklistRow(
                 state: edgeNotesEnabled ? .ok : .neutral,
@@ -235,6 +250,8 @@ struct DashboardDetailView: View {
                 status: edgeNotesEnabled ? L10n.t("Đã bật") : L10n.t("Đang tắt"),
                 actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .notes) })
+                .settingsRow()
+            SettingsDivider()
 
             StatusChecklistRow(
                 state: CaffeineController.shared.isActive ? .ok : .neutral,
@@ -242,30 +259,30 @@ struct DashboardDetailView: View {
                 status: CaffeineController.shared.isActive ? L10n.t("Đang bật") : L10n.t("Đang tắt"),
                 actionTitle: L10n.t("Mở…"),
                 action: { appState.navigate(to: .antiSleep) })
+                .settingsRow()
         }
-        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     // MARK: Getting started
 
     private var gettingStarted: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-            SectionHeader(icon: "flag.checkered", title: L10n.t("Bắt đầu"))
-            shortcutLine("⌘⇧V", L10n.t("Mở khay Clipboard nổi ở bất kỳ đâu"))
-            shortcutLine("⌘⇧C", L10n.t("Bắt đầu Paste Stack"))
-            shortcutLine("⌃⌥ ←→↑↓", L10n.t("Bắt dính cửa sổ đang focus"))
-            shortcutLine("⌘⇥", L10n.t("Chuyển cửa sổ kèm ảnh xem trước"))
-            Text(L10n.t("Di chuột lên icon app trên Dock để xem trước cửa sổ; lắc chuột khi kéo file hoặc trỏ vào tai thỏ để mở Khay thả."))
-                .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
-                .padding(.horizontal, XFinderTokens.Space.page)
-            HStack(spacing: 8) {
-                Button(L10n.t("Tính năng & Quyền…")) { appState.navigate(to: .features) }
-                    .buttonStyle(.bordered).controlSize(.small)
-                Button(L10n.t("Kiểm tra lại quyền")) { refreshPermissions() }
-                    .buttonStyle(.bordered).controlSize(.small)
+        SettingsSection(title: L10n.t("Bắt đầu")) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                shortcutLine("⌘⇧V", L10n.t("Mở khay Clipboard nổi ở bất kỳ đâu"))
+                shortcutLine("⌘⇧C", L10n.t("Bắt đầu Paste Stack"))
+                shortcutLine("⌃⌥ ←→↑↓", L10n.t("Bắt dính cửa sổ đang focus"))
+                shortcutLine("⌘⇥", L10n.t("Chuyển cửa sổ kèm ảnh xem trước"))
+                Text(L10n.t("Di chuột lên icon app trên Dock để xem trước cửa sổ; lắc chuột khi kéo file hoặc trỏ vào tai thỏ để mở Khay thả."))
+                    .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                HStack(spacing: 8) {
+                    Button(L10n.t("Tính năng & Quyền…")) { appState.navigate(to: .features) }
+                        .buttonStyle(.bordered).controlSize(.small)
+                    Button(L10n.t("Kiểm tra lại quyền")) { refreshPermissions() }
+                        .buttonStyle(.bordered).controlSize(.small)
+                }
+                .padding(.top, 4)
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
-            .padding(.top, 4)
+            .settingsRow()
         }
     }
 
@@ -278,7 +295,6 @@ struct DashboardDetailView: View {
             Text(label).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
             Spacer()
         }
-        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     /// Accessibility and Screen Recording expose real preflight checks.

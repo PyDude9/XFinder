@@ -23,25 +23,27 @@ struct WindowPreviewDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "macwindow.on.rectangle",
-                           title: L10n.t("Xem trước cửa sổ"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Xem trước cửa sổ"),
                            subtitle: L10n.t("Xem trước và chuyển cửa sổ ứng dụng ngay từ Dock."))
 
                 // Section 1: Switcher
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "command",
-                                  title: L10n.t("Chuyển cửa sổ bằng phím tắt"),
-                                  subtitle: L10n.t("Chuyển trực tiếp giữa các cửa sổ bằng hình xem trước trực tiếp."))
-
+                SettingsSection(title: L10n.t("Chuyển cửa sổ bằng phím tắt"),
+                                footer: L10n.t("Chuyển trực tiếp giữa các cửa sổ bằng hình xem trước trực tiếp.")) {
                     ToggleRow(title: L10n.t("Bật bộ chuyển cửa sổ Liquid Glass"),
                               isOn: $commandTabEnabled)
                         .onChange(of: commandTabEnabled) { CommandTabController.shared.applySettings() }
+                        .settingsRow()
+                    SettingsDivider()
                     InlineNote(text: L10n.t("Khi bật, XFinder xử lý chuyển cửa sổ thay cho bộ chuyển ứng dụng của macOS. Giữ phím tắt để duyệt; trong lúc giữ: Q đóng cửa sổ đang chọn, H ẩn ứng dụng, Space phóng to ảnh, dấu huyền (`) chuyển giữa một thẻ mỗi ứng dụng và từng cửa sổ của ứng dụng đó, dấu phẩy (,) để tìm; thả phím để mở, Escape để hủy."))
+                        .settingsRow()
+                    SettingsDivider()
 
                     ToggleRow(title: L10n.t("Chỉ cửa sổ trên màn hình có con trỏ"),
                               subtitle: L10n.t("Nhiều màn hình: danh sách chỉ gồm cửa sổ nằm (một phần hoặc toàn bộ) trên màn hình đang có con trỏ."),
                               isOn: $currentScreenOnly)
+                        .settingsRow()
+                    SettingsDivider()
 
                     HStack {
                         Text(L10n.t("Phím tắt chuyển cửa sổ"))
@@ -57,81 +59,83 @@ struct WindowPreviewDetailView: View {
                             CommandTabController.shared.applySettings()
                         }
                     }
+                    .settingsRow()
+                    SettingsDivider()
 
                     ToggleRow(title: L10n.t("Hiệu ứng chuyển động"),
                               isOn: $animationEnabled)
+                        .settingsRow()
+                    SettingsDivider()
                     InlineNote(text: L10n.t("Mượt mà với hoạt cảnh co giãn và bóng mờ Liquid Glass."))
+                        .settingsRow()
+                    SettingsDivider()
 
                     ToggleRow(title: L10n.t("Hiện cả cửa sổ ẩn trong App Switcher"),
                               isOn: $showHiddenWindows)
+                        .settingsRow()
+                    SettingsDivider()
                     InlineNote(text: L10n.t("Một số ứng dụng chỉ ẩn cửa sổ khi bạn đóng thay vì thoát — Spotify, Slack, Synology Chat. Liệt kê những cửa sổ đó cho phép Command-Tab gọi lại chúng, nhưng ứng dụng phải mở lại cửa sổ trước, nên sẽ hiện chậm hơn một chút."))
+                        .settingsRow()
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 // Section 2: Dock
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "square.on.square",
-                                  title: L10n.t("Dải Dock Liquid Glass"),
-                                  subtitle: L10n.t("Di chuột qua ứng dụng trên Dock để xem trước các cửa sổ."))
-
+                SettingsSection(title: L10n.t("Dải Dock Liquid Glass"),
+                                footer: L10n.t("Di chuột qua ứng dụng trên Dock để xem trước các cửa sổ.")) {
                     ToggleRow(title: L10n.t("Hiện bản xem trước cửa sổ khi di chuột qua ứng dụng trên Dock"),
                               isOn: $hoverEnabled)
                         .onChange(of: hoverEnabled) { controller.applySettings() }
+                        .settingsRow()
+                    SettingsDivider()
                     InlineNote(text: L10n.t("XFinder chỉ chụp ảnh thu nhỏ khi bảng xem trước đang hiển thị."))
+                        .settingsRow()
+                    SettingsDivider()
 
                     ToggleRow(title: L10n.t("Hiện dải ứng dụng Dock thay thế ở cạnh dưới màn hình"),
                               isOn: $customDockEnabled)
                         .onChange(of: customDockEnabled) {
                             DockLayerController.shared.applySettings()
                         }
+                        .settingsRow()
+                    SettingsDivider()
 
                     ToggleRow(title: L10n.t("Tự động ẩn Dock của macOS"),
                               isOn: $dockAutohide)
                         .onChange(of: dockAutohide) {
                             DockPrefs.setAutohide(dockAutohide)
                         }
+                        .settingsRow()
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 // Section 3: Excluded Apps
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "nosign",
-                                  title: L10n.t("Ứng dụng loại trừ"),
-                                  subtitle: L10n.t("Các ứng dụng này sẽ không xuất hiện trong bộ chuyển cửa sổ."))
-
+                SettingsSection(title: L10n.t("Ứng dụng loại trừ"),
+                                footer: L10n.t("Các ứng dụng này sẽ không xuất hiện trong bộ chuyển cửa sổ.")) {
                     if excludedApps.isEmpty {
                         Text(L10n.t("Chưa có ứng dụng nào bị loại trừ."))
                             .font(XFinderTokens.Font.rowValue)
                             .foregroundColor(.secondary)
+                            .settingsRow()
                     } else {
-                        VStack(spacing: XFinderTokens.Space.tight) {
-                            ForEach(excludedApps, id: \.self) { app in
-                                HStack {
-                                    Text(app)
-                                        .font(XFinderTokens.Font.mono)
-                                        .fileNameRowSafe()
-                                    Spacer()
-                                    Button(action: {
-                                        excludedApps.removeAll { $0 == app }
-                                        WindowPreviewStore.setExcludedApps(excludedApps)
-                                    }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .buttonStyle(.plain)
+                        ForEach(Array(excludedApps.enumerated()), id: \.element) { index, app in
+                            if index > 0 { SettingsDivider() }
+                            HStack {
+                                Text(app)
+                                    .font(XFinderTokens.Font.mono)
+                                    .fileNameRowSafe()
+                                Spacer()
+                                Button(action: {
+                                    excludedApps.removeAll { $0 == app }
+                                    WindowPreviewStore.setExcludedApps(excludedApps)
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.secondary)
                                 }
-                                .padding(.horizontal, XFinderTokens.Space.inline)
-                                .padding(.vertical, XFinderTokens.Space.tight)
-                                .background(XFinderTokens.Fill.inset)
-                                .cornerRadius(XFinderTokens.Radius.badge)
+                                .buttonStyle(.plain)
                             }
+                            .settingsRow()
                         }
                     }
 
+                    SettingsDivider()
                     HStack {
                         TextField(L10n.t("Thêm ứng dụng..."), text: $newExcludedApp)
                             .textFieldStyle(.roundedBorder)
@@ -147,29 +151,26 @@ struct WindowPreviewDetailView: View {
                         .controlSize(.small)
                         .disabled(newExcludedApp.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
+                    .settingsRow()
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 // Section 4: Permissions
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "lock.shield",
-                                  title: L10n.t("Quyền cần thiết"),
-                                  subtitle: L10n.t("Trợ năng nhận diện ứng dụng trên Dock; Ghi màn hình hiển thị ảnh thu nhỏ trực tiếp."))
-
+                SettingsSection(title: L10n.t("Quyền cần thiết"),
+                                footer: L10n.t("Trợ năng nhận diện ứng dụng trên Dock; Ghi màn hình hiển thị ảnh thu nhỏ trực tiếp.")) {
                     PermissionRow(title: L10n.t("Trợ năng"),
                                   granted: trusted,
                                   grantedText: L10n.t("Đã cấp")) {
                         WindowManager.openAccessibilityPane()
                     }
+                    .settingsRow()
+                    SettingsDivider()
                     PermissionRow(title: L10n.t("Ghi màn hình"),
                                   granted: canRecord,
                                   grantedText: L10n.t("Đã cấp")) {
                         WindowManager.openScreenRecordingPane()
                     }
+                    .settingsRow()
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
@@ -228,9 +229,8 @@ struct SnapZonesDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "rectangle.split.2x2",
-                           title: L10n.t("Vùng bắt dính"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Vùng bắt dính"),
                            subtitle: L10n.t("Bắt dính cửa sổ bằng cách kéo chúng đến cạnh và góc màn hình."))
 
                 if !trusted {
@@ -255,25 +255,24 @@ struct SnapZonesDetailView: View {
     // MARK: - Section 1: General
 
     private var section1General: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+        SettingsSection {
             ToggleRow(title: L10n.t("Vùng bắt dính"),
                       subtitle: L10n.t("Bắt dính cửa sổ bằng cách kéo chúng đến cạnh và góc màn hình."),
                       isOn: $snapEnabled)
                 .onChange(of: snapEnabled) { controller.applySettings() }
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
 
             if snapEnabled {
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Khôi phục kích thước cửa sổ khi gỡ bắt dính"), isOn: $restoreOnUnsnap)
-                    .padding(.horizontal, XFinderTokens.Space.page)
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Tạo hiệu ứng cho vùng xem trước"), isOn: $showPreview)
-                    .padding(.horizontal, XFinderTokens.Space.page)
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Phản hồi rung"), isOn: $hapticEnabled)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
             }
-
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
         }
         .animation(.default, value: snapEnabled)
     }
@@ -281,24 +280,22 @@ struct SnapZonesDetailView: View {
     // MARK: - Section 2: Drag Behavior
 
     private var section2DragBehavior: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "hand.draw",
-                          title: L10n.t("Kéo tới mép màn hình"),
-                          subtitle: L10n.t("Kéo cửa sổ tới mép; vùng đích sẽ sáng lên, thả chuột để bắt dính."))
-
+        SettingsSection(title: L10n.t("Kéo tới mép màn hình"),
+                        footer: L10n.t("Kéo cửa sổ tới mép; vùng đích sẽ sáng lên, thả chuột để bắt dính.")) {
             ToggleRow(title: L10n.t("Bật bắt dính khi kéo tới mép"), isOn: $dragEnabled)
                 .onChange(of: dragEnabled) { controller.applySettings() }
                 .disabled(!trusted || !snapEnabled)
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
+            SettingsDivider()
 
             ToggleRow(title: L10n.t("Hàng bố cục khi kéo cửa sổ tới notch"),
                       subtitle: L10n.t("Kéo cửa sổ lên giữa cạnh trên: một hàng bố cục hiện ra (nửa, ba phần, tập trung, toàn màn hình). Thả lên một ô để đặt cửa sổ. Tắt thì cạnh trên vẫn phóng to như trước."),
                       isOn: $notchRow)
                 .disabled(!trusted || !snapEnabled || !dragEnabled)
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
 
             if dragEnabled && snapEnabled {
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                SettingsDivider()
 
                 VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                     HStack(spacing: XFinderTokens.Space.inline) {
@@ -317,9 +314,9 @@ struct SnapZonesDetailView: View {
                         .font(XFinderTokens.Font.caption)
                         .foregroundColor(.secondary)
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                SettingsDivider()
 
                 VStack(alignment: .leading, spacing: XFinderTokens.Space.inline) {
                     ToggleRow(title: L10n.t("Chừa mép trái cho Stage Manager"), isOn: $reserveStage)
@@ -340,10 +337,8 @@ struct SnapZonesDetailView: View {
                             .foregroundColor(.secondary)
                     }
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
             }
-
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
         }
         .animation(.default, value: dragEnabled)
         .animation(.default, value: reserveStage)
@@ -352,18 +347,15 @@ struct SnapZonesDetailView: View {
     // MARK: - Section 3: Shortcuts
 
     private var section3Shortcuts: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "keyboard",
-                          title: L10n.t("Phím tắt toàn hệ thống"),
-                          subtitle: L10n.t("Áp dụng cho cửa sổ đang được focus."))
-
+        SettingsSection(title: L10n.t("Phím tắt toàn hệ thống"),
+                        footer: L10n.t("Áp dụng cho cửa sổ đang được focus.")) {
             ToggleRow(title: L10n.t("Bật phím tắt bắt dính"), isOn: $hotkeysEnabled)
                 .onChange(of: hotkeysEnabled) { controller.applySettings() }
                 .disabled(!trusted || !snapEnabled)
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
 
             if hotkeysEnabled && snapEnabled {
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                SettingsDivider()
 
                 HStack(alignment: .top, spacing: XFinderTokens.Space.section) {
                     VStack(spacing: XFinderTokens.Space.inline) {
@@ -387,11 +379,8 @@ struct SnapZonesDetailView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
-                .padding(.vertical, 2)
+                .settingsRow()
             }
-
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
         }
         .animation(.default, value: hotkeysEnabled)
     }
@@ -461,6 +450,7 @@ struct SnapZonesDetailView: View {
             }
             .padding(.horizontal, XFinderTokens.Space.page)
 
+            // P4 review: this block stays flat (a guide + a button grid, not settings rows), so it keeps HEAD's separators.
             Divider().padding(.horizontal, XFinderTokens.Space.page)
 
             // Snap Now section
@@ -503,6 +493,7 @@ struct SnapZonesDetailView: View {
             }
             .padding(.horizontal, XFinderTokens.Space.page)
 
+            // P4 review: this block stays flat (a guide + a button grid, not settings rows), so it keeps HEAD's separators.
             Divider().padding(.horizontal, XFinderTokens.Space.page)
 
             // macOS Window Tiling disclosure

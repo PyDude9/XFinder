@@ -34,105 +34,21 @@ struct FinderActionsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "contextualmenu.and.cursorarrow",
-                           title: L10n.t("Thao tác Finder"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Thao tác Finder"),
                            subtitle: L10n.t("Chọn các mục xuất hiện trong menu ngữ cảnh Finder."))
 
                 menuConfigSection
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                selectionSection
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "cursorarrow.click.2",
-                                  title: L10n.t("Tệp đang chọn trong Finder"),
-                                  subtitle: selection.isEmpty
-                                      ? L10n.t("Chọn vài tệp trong Finder rồi bấm Đọc lựa chọn.")
-                                      : "\(selection.count)\(L10n.t(" mục"))")
-
-                    HStack(spacing: 8) {
-                        Button(L10n.t("Đọc lựa chọn")) { readSelection() }
-                            .buttonStyle(.borderedProminent).controlSize(.small)
-                            .disabled(busy)
-                        if !selection.isEmpty {
-                            Button(L10n.t("Bỏ chọn")) { selection = []; status = nil }
-                                .buttonStyle(.bordered).controlSize(.small)
-                        }
-                    }
-                    .padding(.horizontal, XFinderTokens.Space.page)
-
-                    if !selection.isEmpty {
-                        VStack(alignment: .leading, spacing: 3) {
-                            ForEach(selection.prefix(8), id: \.self) { url in
-                                Text(url.lastPathComponent)
-                                    .font(XFinderTokens.Font.rowValue)
-                                    .fileNameRowSafe()
-                            }
-                            if selection.count > 8 {
-                                Text("\(L10n.t("… và "))\(selection.count - 8)\(L10n.t(" mục nữa"))")
-                                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                            }
-                        }
-                        .padding(.horizontal, XFinderTokens.Space.page)
-                    }
-                }
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "bolt",
-                                  title: L10n.t("Thao tác nhanh"),
-                                  subtitle: L10n.t("Áp dụng cho các mục vừa đọc ở trên."))
-
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 165), spacing: 8)], spacing: 8) {
-                        actionButton(L10n.t("Sao chép đường dẫn"), "doc.on.doc") { copyPaths() }
-                            .opacity(showCopy ? 1 : 0.4)
-                        actionButton(L10n.t("Nén thành ZIP"), "archivebox") { compress() }
-                            .opacity(showCompress ? 1 : 0.4)
-                        actionButton(L10n.t("Đổi tên hàng loạt…"), "textformat.abc") {
-                            AppState.shared.navigate(to: .batchRename)
-                        }
-                        actionButton(L10n.t("Thêm vào Khay thả"), "tray.and.arrow.down") { addToTray() }
-                        actionButton(L10n.t("Chuyển vào Thùng rác"), "trash", destructive: true) { trash() }
-                            .opacity(showCleanup ? 1 : 0.4)
-                        actionButton(L10n.t("Hiện trong Finder"), "folder") { reveal() }
-                            .opacity(showShowInFinder ? 1 : 0.4)
-                    }
-                    .padding(.horizontal, XFinderTokens.Space.page)
-
-                    if let status {
-                        Text(status)
-                            .font(XFinderTokens.Font.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal, XFinderTokens.Space.page)
-                    }
-                }
+                quickActionsSection
 
                 if !imageSelection.isEmpty {
-                    Divider().padding(.horizontal, XFinderTokens.Space.page)
                     imageSection
                 }
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "puzzlepiece.extension",
-                                  title: L10n.t("Menu chuột phải trong Finder"),
-                                  subtitle: L10n.t("Thêm mục vào menu ngữ cảnh của Finder."))
-
-                    InlineNote(text: L10n.t("macOS không có API công khai cho phép một ứng dụng thường thêm mục vào menu chuột phải của Finder. Cách được Apple hỗ trợ là Quick Action (Shortcuts/Automator) hoặc một Finder Sync Extension riêng. Các toggle ở trên lọc những thao tác hiển thị khi bạn dùng XFinder qua các Thao tác nhanh trong Finder."))
-                        .padding(.horizontal, XFinderTokens.Space.page)
-
-                    HStack(spacing: 8) {
-                        Button(L10n.t("Mở Tiện ích mở rộng…")) { openExtensionsPane() }
-                            .buttonStyle(.bordered).controlSize(.small)
-                        Button(L10n.t("Mở Automator")) {
-                            NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Automator.app"))
-                        }
-                        .buttonStyle(.bordered).controlSize(.small)
-                    }
-                    .padding(.horizontal, XFinderTokens.Space.page)
-                }
+                contextMenuSection
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
@@ -143,26 +59,24 @@ struct FinderActionsDetailView: View {
     // MARK: - Menu config
 
     private var menuConfigSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "slider.horizontal.3",
-                          title: L10n.t("Cấu hình menu"),
-                          subtitle: L10n.t("Thay đổi sẽ xuất hiện khi menu ngữ cảnh Finder được mở lần tiếp theo."))
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text(L10n.t("Bố cục menu")).font(XFinderTokens.Font.row)
-                    Spacer()
-                    Picker("", selection: $menuLayout) {
-                        Text(L10n.t("Gọn")).tag("compact")
-                        Text(L10n.t("Đầy đủ")).tag("full")
-                    }
-                    .pickerStyle(.segmented).frame(width: 160)
+        SettingsSection(title: L10n.t("Cấu hình menu"),
+                        footer: L10n.t("Thay đổi sẽ xuất hiện khi menu ngữ cảnh Finder được mở lần tiếp theo.")) {
+            HStack {
+                Text(L10n.t("Bố cục menu")).font(XFinderTokens.Font.row)
+                Spacer()
+                Picker("", selection: $menuLayout) {
+                    Text(L10n.t("Gọn")).tag("compact")
+                    Text(L10n.t("Đầy đủ")).tag("full")
                 }
-                Text(menuLayout == "full" ? L10n.t("Full: Open In và Copy mở thành menu con, liệt kê mọi terminal đã cài và đủ kiểu copy. Các nhóm khác không đổi.")
-                                          : L10n.t("Gọn: menu một cấp, chỉ nhóm chính."))
-                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                .pickerStyle(.segmented).frame(width: 160)
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
+            SettingsDivider()
+            Text(menuLayout == "full" ? L10n.t("Full: Open In và Copy mở thành menu con, liệt kê mọi terminal đã cài và đủ kiểu copy. Các nhóm khác không đổi.")
+                                      : L10n.t("Gọn: menu một cấp, chỉ nhóm chính."))
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                .settingsRow()
+            SettingsDivider()
 
             PickerRow(title: L10n.t("Terminal mặc định"), selection: $defaultTerminal, width: 140) {
                 Text("Terminal").tag("Terminal")
@@ -170,11 +84,12 @@ struct FinderActionsDetailView: View {
                 Text("kitty").tag("kitty")
                 Text("Alacritty").tag("Alacritty")
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
+            SettingsDivider()
 
-            Text(L10n.t("Các nhóm hiển thị")).font(XFinderTokens.Font.row).padding(.top, 4)
-                .padding(.horizontal, XFinderTokens.Space.page)
-
+            Text(L10n.t("Các nhóm hiển thị")).font(XFinderTokens.Font.row)
+                .settingsRow()
+            SettingsDivider()
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 ToggleRow(title: L10n.t("Mở trong"), isOn: $showOpenIn)
                 ToggleRow(title: L10n.t("Tạo file mới"), isOn: $showCreateFile)
@@ -189,7 +104,94 @@ struct FinderActionsDetailView: View {
                 ToggleRow(title: L10n.t("Chống ghi"), isOn: $showWriteProtect)
                 ToggleRow(title: L10n.t("Khóa thư mục"), isOn: $showFolderLock)
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
+        }
+    }
+
+    // MARK: - Finder selection
+
+    private var selectionSection: some View {
+        SettingsSection(title: L10n.t("Tệp đang chọn trong Finder"),
+                        footer: selection.isEmpty
+                            ? L10n.t("Chọn vài tệp trong Finder rồi bấm Đọc lựa chọn.")
+                            : "\(selection.count)\(L10n.t(" mục"))") {
+            HStack(spacing: 8) {
+                Button(L10n.t("Đọc lựa chọn")) { readSelection() }
+                    .buttonStyle(.borderedProminent).controlSize(.small)
+                    .disabled(busy)
+                if !selection.isEmpty {
+                    Button(L10n.t("Bỏ chọn")) { selection = []; status = nil }
+                        .buttonStyle(.bordered).controlSize(.small)
+                }
+            }
+            .settingsRow()
+
+            if !selection.isEmpty {
+                SettingsDivider()
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(selection.prefix(8), id: \.self) { url in
+                        Text(url.lastPathComponent)
+                            .font(XFinderTokens.Font.rowValue)
+                            .fileNameRowSafe()
+                    }
+                    if selection.count > 8 {
+                        Text("\(L10n.t("… và "))\(selection.count - 8)\(L10n.t(" mục nữa"))")
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    }
+                }
+                .settingsRow()
+            }
+        }
+    }
+
+    // MARK: - Quick actions
+
+    private var quickActionsSection: some View {
+        SettingsSection(title: L10n.t("Thao tác nhanh"),
+                        footer: L10n.t("Áp dụng cho các mục vừa đọc ở trên.")) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 165), spacing: 8)], spacing: 8) {
+                actionButton(L10n.t("Sao chép đường dẫn"), "doc.on.doc") { copyPaths() }
+                    .opacity(showCopy ? 1 : 0.4)
+                actionButton(L10n.t("Nén thành ZIP"), "archivebox") { compress() }
+                    .opacity(showCompress ? 1 : 0.4)
+                actionButton(L10n.t("Đổi tên hàng loạt…"), "textformat.abc") {
+                    AppState.shared.navigate(to: .batchRename)
+                }
+                actionButton(L10n.t("Thêm vào Khay thả"), "tray.and.arrow.down") { addToTray() }
+                actionButton(L10n.t("Chuyển vào Thùng rác"), "trash", destructive: true) { trash() }
+                    .opacity(showCleanup ? 1 : 0.4)
+                actionButton(L10n.t("Hiện trong Finder"), "folder") { reveal() }
+                    .opacity(showShowInFinder ? 1 : 0.4)
+            }
+            .settingsRow()
+
+            if let status {
+                SettingsDivider()
+                Text(status)
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+                    .settingsRow()
+            }
+        }
+    }
+
+    // MARK: - Context menu
+
+    private var contextMenuSection: some View {
+        SettingsSection(title: L10n.t("Menu chuột phải trong Finder"),
+                        footer: L10n.t("Thêm mục vào menu ngữ cảnh của Finder.")) {
+            InlineNote(text: L10n.t("macOS không có API công khai cho phép một ứng dụng thường thêm mục vào menu chuột phải của Finder. Cách được Apple hỗ trợ là Quick Action (Shortcuts/Automator) hoặc một Finder Sync Extension riêng. Các toggle ở trên lọc những thao tác hiển thị khi bạn dùng XFinder qua các Thao tác nhanh trong Finder."))
+                .settingsRow()
+            SettingsDivider()
+            HStack(spacing: 8) {
+                Button(L10n.t("Mở Tiện ích mở rộng…")) { openExtensionsPane() }
+                    .buttonStyle(.bordered).controlSize(.small)
+                Button(L10n.t("Mở Automator")) {
+                    NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Automator.app"))
+                }
+                .buttonStyle(.bordered).controlSize(.small)
+            }
+            .settingsRow()
         }
     }
 
@@ -201,10 +203,8 @@ struct FinderActionsDetailView: View {
     private var imageTargets: [ImageEngine.Target] { ImageEngine.availableTargets(encodable: ImageRunner.encodableTypes) }
 
     private var imageSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "photo.on.rectangle",
-                          title: L10n.t("Ảnh"),
-                          subtitle: "\(imageSelection.count)\(L10n.t(" ảnh trong các mục đã chọn. Kết quả nằm cạnh ảnh gốc; ảnh gốc không bị đổi."))")
+        SettingsSection(title: L10n.t("Ảnh"),
+                        footer: "\(imageSelection.count)\(L10n.t(" ảnh trong các mục đã chọn. Kết quả nằm cạnh ảnh gốc; ảnh gốc không bị đổi."))") {
             HStack(spacing: XFinderTokens.Space.inline) {
                 Menu(L10n.t("Chuyển định dạng")) {
                     ForEach(imageTargets, id: \.self) { t in
@@ -222,7 +222,7 @@ struct FinderActionsDetailView: View {
                     .help(L10n.t("Dùng Vision trên máy, không gửi ảnh đi đâu. Lần đầu mất vài giây để nạp mô hình."))
             }
             .disabled(busy)
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
         }
     }
 

@@ -20,16 +20,15 @@ struct JunkCleanupDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "bubbles.and.sparkles",
-                           title: L10n.t("Dọn rác thư mục"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Dọn rác thư mục"),
                            subtitle: L10n.t("Gỡ .DS_Store, ._tên, __MACOSX, Thumbs.db… khỏi một thư mục trước khi nén, chép sang USB hay gửi cho máy Windows. Xem trước, chỉ vào Thùng rác."))
                 folderSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 resultSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-                InlineNote(text: L10n.t("Chỉ chọn siêu dữ liệu đã biết của Finder, AppleDouble, file nén và Windows — không bao giờ chọn \"file tạm\" chung chung. Không đi theo bí danh hay liên kết, không vào bên trong gói ứng dụng, không sang ổ khác, bỏ qua file iCloud chưa tải. Finder có thể tạo lại .DS_Store khi bạn mở thư mục."))
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                SettingsSection {
+                    InlineNote(text: L10n.t("Chỉ chọn siêu dữ liệu đã biết của Finder, AppleDouble, file nén và Windows — không bao giờ chọn \"file tạm\" chung chung. Không đi theo bí danh hay liên kết, không vào bên trong gói ứng dụng, không sang ổ khác, bỏ qua file iCloud chưa tải. Finder có thể tạo lại .DS_Store khi bạn mở thư mục."))
+                        .settingsRow()
+                }
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
@@ -40,9 +39,8 @@ struct JunkCleanupDetailView: View {
     // MARK: Folder
 
     private var folderSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "folder", title: L10n.t("Thư mục cần dọn"),
-                          subtitle: folder.map { $0.path } ?? L10n.t("Chưa chọn thư mục"))
+        SettingsSection(title: L10n.t("Thư mục cần dọn"),
+                        footer: folder.map { $0.path } ?? L10n.t("Chưa chọn thư mục")) {
             HStack(spacing: XFinderTokens.Space.tight) {
                 Button(L10n.t("Chọn thư mục…")) { pickFolder() }
                 Button(L10n.t("Dùng thư mục đang chọn trong Finder")) { useFinderSelection() }
@@ -51,7 +49,8 @@ struct JunkCleanupDetailView: View {
                 }
             }
             .disabled(working)
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
+            SettingsDivider()
             RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous)
                 .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
                 .foregroundColor(dropTargeted ? .accentColor : Color.primary.opacity(0.2))
@@ -66,34 +65,35 @@ struct JunkCleanupDetailView: View {
                     }
                     return true
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
         }
     }
 
     // MARK: Result
 
     @ViewBuilder private var resultSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "list.bullet", title: L10n.t("Sẽ chuyển vào Thùng rác"),
-                          subtitle: L10n.t("Bỏ chọn nhóm nào bạn muốn giữ lại."))
-            Group {
-                if scanning {
-                    HStack(spacing: XFinderTokens.Space.tight) {
-                        ProgressView().controlSize(.small)
-                        Text(L10n.t("Đang quét…")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                        Button(L10n.t("Hủy")) { scanHandle?.cancel() }.controlSize(.small)
-                    }
-                } else if let report {
-                    reportView(report)
-                } else {
-                    Text(L10n.t("Chọn một thư mục để xem có gì cần dọn."))
-                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+        SettingsSection(title: L10n.t("Sẽ chuyển vào Thùng rác"),
+                        footer: L10n.t("Bỏ chọn nhóm nào bạn muốn giữ lại.")) {
+            if scanning {
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    ProgressView().controlSize(.small)
+                    Text(L10n.t("Đang quét…")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    Button(L10n.t("Hủy")) { scanHandle?.cancel() }.controlSize(.small)
                 }
-                if let outcome {
-                    InlineNote(kind: outcomeIsError ? .warning : .success, text: outcome)
-                }
+                .settingsRow()
+            } else if let report {
+                reportView(report)
+                    .settingsRow()
+            } else {
+                Text(L10n.t("Chọn một thư mục để xem có gì cần dọn."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    .settingsRow()
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            if let outcome {
+                SettingsDivider()
+                InlineNote(kind: outcomeIsError ? .warning : .success, text: outcome)
+                    .settingsRow()
+            }
         }
     }
 

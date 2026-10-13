@@ -13,78 +13,95 @@ struct SystemDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                PageHeader(icon: "cpu",
-                           title: L10n.t("Hệ thống"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Hệ thống"),
                            subtitle: L10n.t("Xem nhanh CPU, đồ họa, bộ nhớ và nhiệt độ."))
 
-                temperatureRow
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                SettingsSection {
+                    temperatureRow
+                        .settingsRow()
+                    SettingsDivider()
 
-                MeterRow(label: "CPU",
-                         percent: monitor.currentMetrics.cpuUsage,
-                         tint: .blue)
-                if !monitor.metricsHistory.isEmpty {
-                    SparklineView(values: monitor.metricsHistory.map(\.cpuUsage),
-                                  yMax: 100, tint: .blue, height: 26)
-                        .padding(.horizontal, XFinderTokens.Space.page)
-                }
-
-                // GPU load: `IOAccelerator/PerformanceStatistics/Device Utilization %`, a
-                // public IORegistry read that was measured to track real load (idle 0–22 %,
-                // Metal burn 99–100 %). nil only when the hardware does not publish it.
-                MeterRow(label: "GPU",
-                         percent: monitor.currentMetrics.gpuUsage,
-                         tint: .teal)
-                if monitor.metricsHistory.contains(where: { $0.gpuUsage != nil }) {
-                    SparklineView(values: monitor.metricsHistory.map { $0.gpuUsage ?? 0 },
-                                  yMax: 100, tint: .teal, height: 26)
-                        .padding(.horizontal, XFinderTokens.Space.page)
-                }
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                LabeledLine(label: L10n.t("Bộ nhớ"),
-                            value: "\(monitor.currentMetrics.memoryUsedString) / \(monitor.currentMetrics.memoryTotalString)")
-                LabeledLine(label: L10n.t("Áp lực bộ nhớ"),
-                            value: monitor.currentMetrics.thermalState.label)
-                LabeledLine(label: L10n.t("Đã nén"),
-                            value: fmt(monitor.currentMetrics.memoryCompressed))
-                LabeledLine(label: L10n.t("Tệp trong bộ nhớ đệm"),
-                            value: fmt(monitor.currentMetrics.memoryCached))
-                LabeledLine(label: L10n.t("Swap đã dùng"),
-                            value: fmt(monitor.currentMetrics.swapUsed))
-
-                if !monitor.metricsHistory.isEmpty {
-                    SparklineView(values: monitor.metricsHistory.map(\.memoryPercentage),
-                                  yMax: 100, tint: .purple, height: 26)
-                        .padding(.horizontal, XFinderTokens.Space.page)
-                }
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                LabeledLine(label: L10n.t("Thời gian hoạt động"),
-                            value: monitor.currentMetrics.uptimeString)
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                HStack {
-                    Text(L10n.t("Tần suất cập nhật"))
-                        .font(XFinderTokens.Font.row)
-                    Spacer()
-                    Picker("", selection: $updateInterval) {
-                        Text("1s").tag(1)
-                        Text("2s").tag(2)
-                        Text("5s").tag(5)
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                        MeterRow(label: "CPU",
+                                 percent: monitor.currentMetrics.cpuUsage,
+                                 tint: .blue)
+                        if !monitor.metricsHistory.isEmpty {
+                            SparklineView(values: monitor.metricsHistory.map(\.cpuUsage),
+                                          yMax: 100, tint: .blue, height: 26)
+                        }
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .frame(width: 140)
-                    .onChange(of: updateInterval) { _ in
-                        SystemMonitorManager.shared.applyUpdateInterval()
+                    .settingsRow()
+                    SettingsDivider()
+
+                    // GPU load: `IOAccelerator/PerformanceStatistics/Device Utilization %`, a
+                    // public IORegistry read that was measured to track real load (idle 0–22 %,
+                    // Metal burn 99–100 %). nil only when the hardware does not publish it.
+                    VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                        MeterRow(label: "GPU",
+                                 percent: monitor.currentMetrics.gpuUsage,
+                                 tint: .teal)
+                        if monitor.metricsHistory.contains(where: { $0.gpuUsage != nil }) {
+                            SparklineView(values: monitor.metricsHistory.map { $0.gpuUsage ?? 0 },
+                                          yMax: 100, tint: .teal, height: 26)
+                        }
+                    }
+                    .settingsRow()
+                }
+
+                SettingsSection {
+                    LabeledLine(label: L10n.t("Bộ nhớ"),
+                                value: "\(monitor.currentMetrics.memoryUsedString) / \(monitor.currentMetrics.memoryTotalString)")
+                        .settingsRow()
+                    SettingsDivider()
+                    LabeledLine(label: L10n.t("Áp lực bộ nhớ"),
+                                value: monitor.currentMetrics.thermalState.label)
+                        .settingsRow()
+                    SettingsDivider()
+                    LabeledLine(label: L10n.t("Đã nén"),
+                                value: fmt(monitor.currentMetrics.memoryCompressed))
+                        .settingsRow()
+                    SettingsDivider()
+                    LabeledLine(label: L10n.t("Tệp trong bộ nhớ đệm"),
+                                value: fmt(monitor.currentMetrics.memoryCached))
+                        .settingsRow()
+                    SettingsDivider()
+                    LabeledLine(label: L10n.t("Swap đã dùng"),
+                                value: fmt(monitor.currentMetrics.swapUsed))
+                        .settingsRow()
+
+                    if !monitor.metricsHistory.isEmpty {
+                        SettingsDivider()
+                        SparklineView(values: monitor.metricsHistory.map(\.memoryPercentage),
+                                      yMax: 100, tint: .purple, height: 26)
+                            .settingsRow()
                     }
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
+
+                SettingsSection {
+                    LabeledLine(label: L10n.t("Thời gian hoạt động"),
+                                value: monitor.currentMetrics.uptimeString)
+                        .settingsRow()
+                    SettingsDivider()
+
+                    HStack {
+                        Text(L10n.t("Tần suất cập nhật"))
+                            .font(XFinderTokens.Font.row)
+                        Spacer()
+                        Picker("", selection: $updateInterval) {
+                            Text("1s").tag(1)
+                            Text("2s").tag(2)
+                            Text("5s").tag(5)
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 140)
+                        .onChange(of: updateInterval) { _ in
+                            SystemMonitorManager.shared.applyUpdateInterval()
+                        }
+                    }
+                    .settingsRow()
+                }
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
@@ -106,7 +123,6 @@ struct SystemDetailView: View {
             Divider().frame(height: 50)
             tempCell(title: L10n.t("Nóng nhất"), value: monitor.currentMetrics.socTempMax)
         }
-        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     /// SoC die temperature from the HID thermal sensors (see `ThermalSensors`): the mean and the

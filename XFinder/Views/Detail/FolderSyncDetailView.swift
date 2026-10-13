@@ -10,10 +10,8 @@ struct FolderSyncDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(
-                    icon: "arrow.triangle.2.circlepath",
-                    title: L10n.t("Đồng bộ thư mục"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Đồng bộ thư mục"),
                     subtitle: L10n.t("Sao lưu thư mục một chiều."),
                     trailing: AnyView(
                         VStack(alignment: .trailing, spacing: 2) {
@@ -84,17 +82,18 @@ struct FolderSyncDetailView: View {
                     }
                 }
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "questionmark.circle", title: L10n.t("Cách hoạt động"))
+                SettingsSection(title: L10n.t("Cách hoạt động")) {
                     note(L10n.md("Đồng bộ **một chiều**: nguồn → đích. Thay đổi ở đích không quay về nguồn."))
+                        .settingsRow()
+                    SettingsDivider()
                     InlineNote(text: L10n.t("Dùng rsync tăng dần — chỉ tệp thay đổi mới được chép, nên lần chạy sau rất nhanh."))
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
+                    SettingsDivider()
                     InlineNote(text: L10n.t("“Xóa tệp thừa ở đích” mặc định TẮT. Bật thì đích sẽ giống hệt nguồn, kể cả việc xóa."))
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
+                    SettingsDivider()
                     InlineNote(text: L10n.t("“Khi thay đổi” theo dõi thư mục nguồn và chờ 3 giây sau thay đổi cuối rồi mới chạy."))
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                 }
             }
             .padding(.bottom, XFinderTokens.Space.section)
@@ -115,7 +114,6 @@ struct FolderSyncDetailView: View {
             .foregroundColor(.secondary)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func pairRow(_ pair: FolderSyncController.Pair) -> some View {

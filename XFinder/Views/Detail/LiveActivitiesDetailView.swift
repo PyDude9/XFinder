@@ -17,9 +17,7 @@ struct LiveActivitiesDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                PageHeader(
-                    icon: "dot.radiowaves.left.and.right",
-                    title: L10n.t("Hoạt động trực tiếp"),
+                PageHeader(title: L10n.t("Hoạt động trực tiếp"),
                     subtitle: L10n.t("Thông báo ngắn hiện dưới notch vài giây rồi tự tắt; không bao giờ chen vào khi bạn đang mở khay.")
                 )
 

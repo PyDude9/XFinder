@@ -9,9 +9,8 @@ struct RemoteConnectDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "externaldrive.connected.to.line.below",
-                           title: L10n.t("Kết nối từ xa"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Kết nối từ xa"),
                            subtitle: L10n.t("Tải file và thư mục đã chọn lên đích từ xa."))
 
                 HStack {
@@ -61,14 +60,18 @@ struct RemoteConnectDetailView: View {
                         .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "questionmark.circle", title: L10n.t("Cách hoạt động"))
+                SettingsSection(title: L10n.t("Cách hoạt động")) {
                     note(L10n.t("Dùng `scp` qua SSH — cùng cơ chế Terminal, không có dịch vụ trung gian."))
+                        .settingsRow()
+                    SettingsDivider()
                     note(L10n.t("Xác thực bằng **khóa SSH**, không lưu mật khẩu. XFinder chỉ ghi nhớ host/user/đường dẫn và *vị trí* file khóa."))
+                        .settingsRow()
+                    SettingsDivider()
                     note(L10n.t("File chỉ rời khỏi máy Mac khi bạn bấm Tải lên. Không có đồng bộ nền."))
+                        .settingsRow()
+                    SettingsDivider()
                     note(L10n.t("Chưa có khóa? Chạy `ssh-keygen -t ed25519` rồi `ssh-copy-id user@host` trong Terminal một lần."))
+                        .settingsRow()
                 }
             }
             .padding(.bottom, XFinderTokens.Space.section)
@@ -85,7 +88,6 @@ struct RemoteConnectDetailView: View {
 
     private func note(_ t: String) -> some View {
         Text(.init(t)).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
-            .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func row(_ dest: RemoteConnectController.Destination) -> some View {

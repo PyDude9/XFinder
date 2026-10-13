@@ -25,9 +25,7 @@ struct DropTrayDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                PageHeader(
-                    icon: "tray.and.arrow.down",
-                    title: L10n.t("Khay thả"),
+                PageHeader(title: L10n.t("Khay thả"),
                     subtitle: L10n.t("Giữ file tạm để xử lý hàng loạt.")
                 )
 
@@ -70,17 +68,17 @@ struct DropTrayDetailView: View {
                 openingSection
 
                 if !tray.items.isEmpty {
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                        SectionHeader(
-                            icon: "tray.full",
-                            title: "\(L10n.t("Trong khay ("))\(tray.items.count))",
-                            subtitle: "\(tray.items.count)\(L10n.t(" mục"))"
-                        )
+                    SettingsSection(
+                        title: "\(L10n.t("Trong khay ("))\(tray.items.count))",
+                        footer: "\(tray.items.count)\(L10n.t(" mục"))"
+                    ) {
                         HStack {
                             Spacer()
                             Button(showDetailGrid ? L10n.t("Thu gọn") : L10n.t("Xem chi tiết")) { showDetailGrid.toggle() }
                                 .buttonStyle(.bordered).controlSize(.small)
                         }
+                        .settingsRow()
+                        SettingsDivider()
 
                         // Inline grid ngay dưới header — không mở window lung tung.
                         if showDetailGrid {
@@ -112,6 +110,7 @@ struct DropTrayDetailView: View {
                                     )
                                 }
                             }
+                            .settingsRow()
                         } else {
                             // Compact list fallback khi thu gọn.
                             VStack(spacing: 0) {
@@ -140,12 +139,11 @@ struct DropTrayDetailView: View {
                                         .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                                 }
                             }
+                            .settingsRow()
                         }
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
 
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                        SectionHeader(icon: "bolt.fill", title: L10n.t("Thao tác cho cả khay"))
+                    SettingsSection(title: L10n.t("Thao tác cho cả khay")) {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 8) {
                             trayButton(L10n.t("Di chuyển…"), icon: "folder.fill") { moveOrCopy(move: true) }
                             trayButton(L10n.t("Sao chép…"), icon: "doc.on.doc.fill") { moveOrCopy(move: false) }
@@ -154,17 +152,16 @@ struct DropTrayDetailView: View {
                             trayButton(L10n.t("Bỏ vào Rác"), icon: "trash.fill", destructive: true) { trashAll() }
                             trayButton(L10n.t("Dọn khay"), icon: "xmark.circle", destructive: true) { tray.clear() }
                         }
+                        .settingsRow()
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
                 if let msg = outcome {
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                        SectionHeader(icon: "checkmark.circle", title: L10n.t("Kết quả"))
+                    SettingsSection(title: L10n.t("Kết quả")) {
                         Text(msg)
                             .font(XFinderTokens.Font.rowValue)
+                            .settingsRow()
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
             }
             .padding(.bottom, XFinderTokens.Space.section)

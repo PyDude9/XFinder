@@ -10,10 +10,10 @@ struct AntiSleepDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "moon.zzz.fill", title: L10n.t("Chống ngủ"))
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Chống ngủ"))
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                SettingsSection {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(caffeine.isActive ? L10n.t("Đang ngăn chế độ ngủ") : L10n.t("Cho phép ngủ bình thường"))
@@ -38,7 +38,8 @@ struct AntiSleepDetailView: View {
                         .tint(caffeine.isActive ? Color.red : Color.orange)
                         .controlSize(.large)
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                    SettingsDivider()
 
                     Picker(L10n.t("Thời lượng"), selection: $selectedMinutes) {
                         Text(presets[0].label).tag(presets[0].minutes)
@@ -49,16 +50,16 @@ struct AntiSleepDetailView: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .disabled(caffeine.isActive)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
                 }
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "info.circle", title: L10n.t("Lưu ý"))
+                // P4 review: the note is the card's content — a footer under an EMPTY card drew a blank box.
+                SettingsSection(title: L10n.t("Lưu ý")) {
                     Text(L10n.t("Khi bật, hệ thống sẽ không tự động ngủ hay tắt màn hình cho đến khi bạn tắt hoặc hết thời lượng đã chọn. Kiểm tra bằng `pmset -g assertions` trong Terminal."))
-                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .settingsRow()
                 }
             }
             .padding(.bottom, XFinderTokens.Space.section)

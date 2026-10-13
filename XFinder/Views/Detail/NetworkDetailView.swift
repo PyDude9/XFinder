@@ -12,25 +12,31 @@ struct NetworkDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "globe",
-                           title: L10n.t("Mạng"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Mạng"),
                            subtitle: L10n.t("Lưu lượng, ứng dụng dùng mạng và tốc độ kết nối."))
 
-                rateRow
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                SettingsSection {
+                    rateRow
+                        .settingsRow()
+                    SettingsDivider()
 
-                LabeledLine(label: L10n.t("Giao diện vật lý"), value: primaryInterface)
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    LabeledLine(label: L10n.t("Giao diện vật lý"), value: primaryInterface)
+                        .settingsRow()
+                    SettingsDivider()
 
-                appsSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    appsSection
+                        .settingsRow()
+                    SettingsDivider()
 
-                LabeledLine(label: L10n.t("Phiên này"),
-                            value: "↓\(fmtBytes(monitor.sessionBytesRX))  ↑\(fmtBytes(monitor.sessionBytesTX))")
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    LabeledLine(label: L10n.t("Phiên này"),
+                                value: "↓\(fmtBytes(monitor.sessionBytesRX))  ↑\(fmtBytes(monitor.sessionBytesTX))")
+                        .settingsRow()
+                    SettingsDivider()
 
-                speedSection
+                    speedSection
+                        .settingsRow()
+                }
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
@@ -58,7 +64,6 @@ struct NetworkDetailView: View {
                      value: monitor.currentMetrics.networkUpload,
                      label: L10n.t("Tải lên"))
         }
-        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func rateCell(icon: String, tint: Color, value: Double, label: String) -> some View {
@@ -121,7 +126,6 @@ struct NetworkDetailView: View {
                     .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             }
         }
-        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     /// Repeating 2s sample while the page is visible; cancelled on disappear so
@@ -176,7 +180,6 @@ struct NetworkDetailView: View {
             Text(L10n.t("Phép đo dùng dữ liệu Internet. Đóng tất cả màn hình theo dõi mạng để hủy."))
                 .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
         }
-        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func fmtBytes(_ b: UInt64) -> String {

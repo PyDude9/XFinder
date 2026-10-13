@@ -10,19 +10,20 @@ struct StorageDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "internaldrive.fill", title: L10n.t("Ổ đĩa"))
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Ổ đĩa"))
 
                 if !disk.volumes.isEmpty {
-                    PickerRow(title: L10n.t("Ổ đĩa"), selection: $selectedMount, width: 220) {
-                        ForEach(disk.volumes) { v in Text("\(v.volumeName) (\(v.mount))").tag(v.mount) }
+                    SettingsSection {
+                        PickerRow(title: L10n.t("Ổ đĩa"), selection: $selectedMount, width: 220) {
+                            ForEach(disk.volumes) { v in Text("\(v.volumeName) (\(v.mount))").tag(v.mount) }
+                        }
+                        .settingsRow()
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
                 if let vol = disk.volumes.first(where: { $0.mount == selectedMount }) ?? disk.volumes.first {
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                        SectionHeader(icon: "chart.pie.fill", title: L10n.t("Dung lượng"))
+                    SettingsSection(title: L10n.t("Dung lượng")) {
                         VStack(spacing: XFinderTokens.Space.tight) {
                             HStack {
                                 Text(vol.volumeName)
@@ -48,37 +49,31 @@ struct StorageDetailView: View {
                             }
                             Text("\(L10n.t("Còn trống "))\(fmt(vol.free))").font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         }
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                     }
-                    Divider().padding(.horizontal, XFinderTokens.Space.page)
                 }
 
                 if disk.volumes.count > 1 {
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                        SectionHeader(icon: "externaldrive.fill", title: L10n.t("Tất cả phân vùng"))
-                        VStack(spacing: XFinderTokens.Space.tight) {
-                            ForEach(disk.volumes) { v in
-                                HStack {
-                                    Text(v.volumeName)
-                                        .font(XFinderTokens.Font.row)
-                                        .fileNameRowSafe()
-                                    Text(v.mount)
-                                        .font(XFinderTokens.Font.mono)
-                                        .foregroundColor(.secondary)
-                                        .fileNameRowSafe()
-                                    Spacer()
-                                    Text(String(format: "%.0f%%", v.percentUsed)).font(XFinderTokens.Font.mono)
-                                }
-                                .padding(.vertical, 2)
+                    SettingsSection(title: L10n.t("Tất cả phân vùng")) {
+                        ForEach(Array(disk.volumes.enumerated()), id: \.element.id) { index, v in
+                            if index > 0 { SettingsDivider() }
+                            HStack {
+                                Text(v.volumeName)
+                                    .font(XFinderTokens.Font.row)
+                                    .fileNameRowSafe()
+                                Text(v.mount)
+                                    .font(XFinderTokens.Font.mono)
+                                    .foregroundColor(.secondary)
+                                    .fileNameRowSafe()
+                                Spacer()
+                                Text(String(format: "%.0f%%", v.percentUsed)).font(XFinderTokens.Font.mono)
                             }
+                            .settingsRow()
                         }
-                        .padding(.horizontal, XFinderTokens.Space.page)
                     }
-                    Divider().padding(.horizontal, XFinderTokens.Space.page)
                 }
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "speedometer", title: L10n.t("Tốc độ I/O (KB/s)"))
+                SettingsSection(title: L10n.t("Tốc độ I/O (KB/s)")) {
                     VStack(spacing: XFinderTokens.Space.row) {
                         HStack(spacing: XFinderTokens.Space.inline) {
                             MetricBigNumber(value: String(format: "%.1f", disk.readKBs), unit: "KB/s", label: L10n.t("Đọc"), tint: .blue)
@@ -95,12 +90,10 @@ struct StorageDetailView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
                 }
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "heart.text.square.fill", title: L10n.t("SMART / Tình trạng ổ đĩa"))
+                SettingsSection(title: L10n.t("SMART / Tình trạng ổ đĩa")) {
                     VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                         HStack(spacing: XFinderTokens.Space.inline) {
                             if let raw = smartRaw {
@@ -138,7 +131,7 @@ struct StorageDetailView: View {
                         smartRaw = await DiskManager.smartStatus(forMount: selectedMount)
                         smartChecked = true
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
                 }
             }
             .padding(.bottom, XFinderTokens.Space.section)

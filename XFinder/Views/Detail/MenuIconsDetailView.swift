@@ -11,20 +11,15 @@ struct MenuIconsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(
-                    icon: "menubar.rectangle",
-                    title: L10n.t("Biểu tượng thanh menu"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Biểu tượng thanh menu"),
                     subtitle: L10n.t("Ẩn bớt biểu tượng trên thanh menu để gọn gàng hơn.")
                 )
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(
-                        icon: "chevron.left.chevron.right",
-                        title: L10n.t("Nút mũi tên ẩn biểu tượng"),
-                        subtitle: L10n.t("Ẩn các biểu tượng ứng dụng nằm bên trái mũi tên.")
-                    )
-
+                SettingsSection(
+                    title: L10n.t("Nút mũi tên ẩn biểu tượng"),
+                    footer: L10n.t("Ẩn các biểu tượng ứng dụng nằm bên trái mũi tên.")
+                ) {
                     ToggleRow(
                         title: L10n.t("Bật ẩn biểu tượng thanh menu"),
                         subtitle: L10n.t("Hiện nút mũi tên trên thanh menu để thu gọn hoặc mở rộng."),
@@ -36,10 +31,10 @@ struct MenuIconsDetailView: View {
                             }
                         )
                     )
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
 
                     if enabled {
-                        Divider().padding(.horizontal, XFinderTokens.Space.page)
+                        SettingsDivider()
 
                         ToggleRow(
                             title: L10n.t("Mặc định thu gọn khi mở app"),
@@ -52,9 +47,9 @@ struct MenuIconsDetailView: View {
                                 }
                             )
                         )
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
 
-                        Divider().padding(.horizontal, XFinderTokens.Space.page)
+                        SettingsDivider()
 
                         ToggleRow(
                             title: L10n.t("Tự động ẩn sau thời gian chờ"),
@@ -67,9 +62,10 @@ struct MenuIconsDetailView: View {
                                 }
                             )
                         )
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
 
                         if autoHideEnabled {
+                            SettingsDivider()
                             HStack {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(L10n.t("Thời gian tự động ẩn"))
@@ -95,12 +91,11 @@ struct MenuIconsDetailView: View {
                                     .font(XFinderTokens.Font.mono)
                                     .frame(width: 32, alignment: .trailing)
                             }
-                            .padding(.horizontal, XFinderTokens.Space.page)
-                            .padding(.top, 6)
+                            .settingsRow()
                         }
                     }
 
-                    Divider().padding(.horizontal, XFinderTokens.Space.page)
+                    SettingsDivider()
 
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
@@ -120,32 +115,32 @@ struct MenuIconsDetailView: View {
                             .background(XFinderTokens.Fill.inset)
                             .clipShape(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge))
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
                 }
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(
-                        icon: "questionmark.circle",
-                        title: L10n.t("Cách sử dụng"),
-                        subtitle: L10n.t("Sắp xếp biểu tượng linh hoạt bằng phím ⌘.")
-                    )
-
+                SettingsSection(
+                    title: L10n.t("Cách sử dụng"),
+                    footer: L10n.t("Sắp xếp biểu tượng linh hoạt bằng phím ⌘.")
+                ) {
                     VStack(alignment: .leading, spacing: 8) {
                         bullet(L10n.t("Nhấp vào nút mũi tên trên thanh menu để thu gọn hoặc mở rộng các biểu tượng."))
                         bullet(L10n.t("Giữ phím Command (⌘) và kéo thả bất kỳ biểu tượng nào sang bên phải mũi tên để luôn hiển thị."))
                         bullet(L10n.t("Các biểu tượng nằm bên trái mũi tên sẽ tự động được ẩn khi thu gọn."))
                         bullet(L10n.t("Các biểu tượng hệ thống (Đồng hồ, Wi-Fi, Pin, Trung tâm điều khiển) luôn luôn được giữ lại."))
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
 
-                    Button(L10n.t("Mở Cài đặt thanh menu của macOS")) {
-                        hider.openSystemMenuBarSettings()
+                    SettingsDivider()
+
+                    HStack {
+                        Button(L10n.t("Mở Cài đặt thanh menu của macOS")) {
+                            hider.openSystemMenuBarSettings()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                        Spacer()
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
                 }
             }
             .padding(.bottom, XFinderTokens.Space.section)

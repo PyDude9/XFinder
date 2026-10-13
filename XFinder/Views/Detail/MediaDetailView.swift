@@ -14,9 +14,7 @@ struct MediaDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                PageHeader(
-                    icon: "music.note",
-                    title: L10n.t("Đang phát"),
+                PageHeader(title: L10n.t("Đang phát"),
                     subtitle: L10n.t("Bài đang phát hiện dưới notch; rê chuột để xem và điều khiển, bấm để mở trang Đang phát trong khay.")
                 )
 

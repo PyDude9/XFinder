@@ -71,9 +71,11 @@ if old not in src:
 open(path, "w", encoding="utf-8").write(src.replace(old, new, 1))
 EOF
   if [ $? -ne 0 ]; then
-    echo "$NAME: HARNESS ERROR (anchor missing) — treat as inconclusive"
+    # P4 (2026-10-14): a missing anchor stops the run (it used to print "inconclusive" and carry on — the sibling
+    # gesture-buttons harness hid a rotten M9 that way for a whole release).
+    echo "$NAME: HARNESS ERROR (anchor missing)"
     restore
-    return
+    exit 2
   fi
   N=$(fails)
   if [ "$N" -gt 0 ]; then

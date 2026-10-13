@@ -10,21 +10,22 @@ struct PinDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "battery.100", title: L10n.t("Pin"))
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Pin"))
 
                 if !hasBattery {
-                    VStack(spacing: XFinderTokens.Space.inline) {
-                        Image(systemName: "battery.0").font(XFinderTokens.Font.pageIcon).foregroundColor(.secondary)
-                        Text(L10n.t("Không có pin")).font(XFinderTokens.Font.sectionTitle)
-                        Text(L10n.t("Thiết bị này không có pin tích hợp.")).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                    SettingsSection {
+                        VStack(spacing: XFinderTokens.Space.inline) {
+                            Image(systemName: "battery.0").font(XFinderTokens.Font.pageIcon).foregroundColor(.secondary)
+                            Text(L10n.t("Không có pin")).font(XFinderTokens.Font.sectionTitle)
+                            Text(L10n.t("Thiết bị này không có pin tích hợp.")).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity).padding(.vertical, XFinderTokens.Space.inline)
+                        .settingsRow()
                     }
-                    .frame(maxWidth: .infinity).padding(.vertical, XFinderTokens.Space.inline)
-                    .padding(.horizontal, XFinderTokens.Space.page)
                 } else {
                     let m = monitor.currentMetrics
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                        SectionHeader(icon: "bolt.fill", title: L10n.t("Trạng thái"))
+                    SettingsSection(title: L10n.t("Trạng thái")) {
                         VStack(spacing: XFinderTokens.Space.inline) {
                             HStack(alignment: .firstTextBaseline, spacing: XFinderTokens.Space.inline) {
                                 MetricBigNumber(value: String(format: "%.0f", m.batteryLevel), unit: "%", label: m.isCharging ? L10n.t("Đang sạc") : L10n.t("Đang xả"), tint: m.batteryLevel < 20 ? .red : .green)
@@ -46,13 +47,10 @@ struct PinDetailView: View {
                             }
                             .font(XFinderTokens.Font.rowValue)
                         }
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                     }
 
-                    Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                        SectionHeader(icon: "heart.fill", title: L10n.t("Sức khỏe pin"))
+                    SettingsSection(title: L10n.t("Sức khỏe pin")) {
                         VStack(spacing: XFinderTokens.Space.tight) {
                             // Health = NominalChargeCapacity / DesignCapacity.
                             // It used to divide MaxCapacity (a 0-100 PERCENT on
@@ -102,16 +100,13 @@ struct PinDetailView: View {
                                 row(label: L10n.t("Số sê-ri"), value: s)
                             }
                         }
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                     }
                 }
 
                 let externalDevices = batteryStore.allDevices.filter { $0.kind != .mac }
                 if !externalDevices.isEmpty {
-                    Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                        SectionHeader(icon: "externaldrive.connected.to.line.below", title: L10n.t("Thiết bị đã kết nối"))
+                    SettingsSection(title: L10n.t("Thiết bị đã kết nối")) {
                         VStack(spacing: XFinderTokens.Space.inline) {
                             ToggleRow(title: L10n.t("Hiện thiết bị đã ngắt kết nối"), isOn: $showDisconnected)
 
@@ -130,7 +125,7 @@ struct PinDetailView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                     }
                 }
             }

@@ -18,8 +18,7 @@ struct FeaturesHubView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "square.grid.2x2",
-                           title: L10n.t("Tính năng & Quyền"),
+                PageHeader(title: L10n.t("Tính năng & Quyền"),
                            subtitle: L10n.t("Chọn XFinder chạy những gì, chỉnh máy Mac và xem nó được phép làm gì."))
 
                 Picker("", selection: $tab) {
@@ -47,18 +46,17 @@ struct FeaturesHubView: View {
     // MARK: - Features tab
 
     private var featuresTab: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
             // Machine-wide controls (volume, output, brightness, appearance…) used to be a tab of
             // their own; they live here so the page is one scroll, not two places to look.
             SystemControlsPanel()
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
-
             // Summary
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            SettingsSection {
                 Text(L10n.t("Chỉ bật thứ bạn dùng. Tính năng đã tắt sẽ ngừng chạy nền."))
                     .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
-                Divider()
+                    .settingsRow()
+                SettingsDivider()
                 HStack {
                     Text("\(hub.onCount) / \(FeatureCatalog.all.count)\(L10n.t(" tính năng đang bật"))")
                         .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
@@ -71,40 +69,31 @@ struct FeaturesHubView: View {
                         .disabled(hub.onCount == 0)
                 }
                 .controlSize(.small)
+                .settingsRow()
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
-
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
 
             // Bundles
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                SectionHeader(icon: "square.stack", title: L10n.t("Bắt đầu bằng một gói"))
+            SettingsSection(
+                title: L10n.t("Bắt đầu bằng một gói"),
+                footer: L10n.t("Một cú bấm đặt sẵn theo cách bạn dùng máy. Mọi thứ còn lại vẫn cách một cú bấm.")
+            ) {
                 HStack(alignment: .top, spacing: XFinderTokens.Space.row) {
                     ForEach(FeatureCatalog.bundles, id: \.id) { bundle in
                         bundleCard(bundle)
                     }
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
-                Text(L10n.t("Một cú bấm đặt sẵn theo cách bạn dùng máy. Mọi thứ còn lại vẫn cách một cú bấm."))
-                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
             }
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
-
             ForEach(FeatureGroup.allCases, id: \.self) { group in
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                    SectionHeader(icon: "square.grid.2x2", title: L10n.t(group.titleKey))
-                    VStack(spacing: 0) {
-                        let items = FeatureCatalog.features(in: group)
-                        ForEach(Array(items.enumerated()), id: \.element.id) { index, f in
-                            featureRow(f)
-                            if index < items.count - 1 { Divider().padding(.leading, XFinderTokens.Space.page) }
-                        }
+                SettingsSection(title: L10n.t(group.titleKey)) {
+                    let items = FeatureCatalog.features(in: group)
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, f in
+                        featureRow(f)
+                            .settingsRow()
+                        if index < items.count - 1 { SettingsDivider() }
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
             }
 
             backupSection
@@ -116,8 +105,7 @@ struct FeaturesHubView: View {
     @State private var transfer = SettingsTransferController.shared
 
     private var backupSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "arrow.up.arrow.down.circle", title: L10n.t("Sao lưu cài đặt"))
+        SettingsSection(title: L10n.t("Sao lưu cài đặt")) {
             VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 Text(L10n.t("Xuất cài đặt XFinder ra một tệp để chuyển sang máy Mac khác hoặc khôi phục sau khi cài lại. Không gồm lịch sử clipboard, ghi chú, khoá API (nằm trong Keychain) hay thứ riêng của máy này như vị trí cửa sổ."))
                     .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -132,7 +120,7 @@ struct FeaturesHubView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
         }
     }
 
@@ -196,22 +184,19 @@ struct FeaturesHubView: View {
 
     private var permissionsTab: some View {
         let rows = FeatureCatalog.permissionRows(enabled: hub.enabledSet, granted: hub.granted())
-        return VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+        return SettingsSection(
+            footer: L10n.t("Mọi quyền đều tùy chọn: bỏ qua một quyền thì tính năng cần nó đứng yên, phần còn lại vẫn chạy.")
+        ) {
             Text(L10n.t("Mỗi quyền làm gì và tính năng nào dùng nó."))
                 .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
+            SettingsDivider()
 
-            VStack(spacing: 0) {
-                ForEach(Array(rows.enumerated()), id: \.element.permission) { index, row in
-                    permissionRow(row)
-                    if index < rows.count - 1 { Divider().padding(.leading, XFinderTokens.Space.page) }
-                }
+            ForEach(Array(rows.enumerated()), id: \.element.permission) { index, row in
+                permissionRow(row)
+                    .settingsRow()
+                if index < rows.count - 1 { SettingsDivider() }
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
-
-            Text(L10n.t("Mọi quyền đều tùy chọn: bỏ qua một quyền thì tính năng cần nó đứng yên, phần còn lại vẫn chạy."))
-                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 

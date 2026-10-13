@@ -17,24 +17,31 @@ struct PortsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "point.3.connected.trianglepath.dotted",
-                           title: L10n.t("Cổng đang mở"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Cổng đang mở"),
                            subtitle: L10n.t("Tiến trình nào đang giữ một cổng mạng, và có dừng được không."))
 
-                HStack(spacing: 10) {
-                    TextField(L10n.t("Lọc theo cổng hoặc tên tiến trình"), text: $query)
-                        .textFieldStyle(.roundedBorder)
-                    Button { Task { await manager.refresh() } } label: {
-                        Label(L10n.t("Làm mới"), systemImage: "arrow.clockwise")
+                SettingsSection {
+                    HStack(spacing: 10) {
+                        TextField(L10n.t("Lọc theo cổng hoặc tên tiến trình"), text: $query)
+                            .textFieldStyle(.roundedBorder)
+                        Button { Task { await manager.refresh() } } label: {
+                            Label(L10n.t("Làm mới"), systemImage: "arrow.clockwise")
+                        }
+                        .disabled(manager.isLoading)
                     }
-                    .disabled(manager.isLoading)
+                    .settingsRow()
+
+                    if let status {
+                        SettingsDivider()
+                        statusBanner(status)
+                            .settingsRow()
+                    }
+
+                    SettingsDivider()
+                    content
+                        .settingsRow()
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
-
-                if let status { statusBanner(status) }
-
-                content
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
@@ -69,7 +76,6 @@ struct PortsDetailView: View {
                             if index < rows.count - 1 { Divider().padding(.leading, XFinderTokens.Space.page) }
                         }
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
                 footer(count: result.rows.count)
                 if result.uninspectable > 0 {
@@ -82,7 +88,6 @@ struct PortsDetailView: View {
                 ProgressView().controlSize(.small)
                 Text(L10n.t("Đang đọc danh sách cổng…")).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
         }
     }
 
@@ -140,13 +145,11 @@ struct PortsDetailView: View {
             }
         }
         .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func note(_ text: String, color: Color) -> some View {
         Text(text).font(XFinderTokens.Font.rowValue).foregroundColor(color)
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     private func statusBanner(_ s: Status) -> some View {
@@ -161,7 +164,6 @@ struct PortsDetailView: View {
         }
         .padding(10)
         .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(XFinderTokens.Fill.inset))
-        .padding(.horizontal, XFinderTokens.Space.page)
     }
 
     // MARK: - Actions

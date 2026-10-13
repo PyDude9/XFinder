@@ -33,11 +33,17 @@ CAP_BAK=/tmp/DeviceCapabilityModel.swift.bak
 cp "$SRC" "$SRC_BAK"
 cp "$MODEL" "$MODEL_BAK"
 cp "$CAP" "$CAP_BAK"
+# P4 (2026-10-14): BUG 6 edits the L10n store; it used to be "restored" by re-running the add script, which
+# appended the key at the END — content equal, bytes not, and the post-run tree differed from the pre-run one.
+STORE=XFinder/Resources/L10n.strings.json
+STORE_BAK=$(mktemp /tmp/xf-mut-gesture-ui-store.XXXXXX)
+cp "$STORE" "$STORE_BAK"
 
 restore_all() {
   cp "$SRC_BAK" "$SRC"
   cp "$MODEL_BAK" "$MODEL"
   cp "$CAP_BAK" "$CAP"
+  cp "$STORE_BAK" "$STORE"
 }
 # Restore on ANY exit, including `set -e` aborting mid-mutation, so an interrupted
 # run can never strand a mutated source in the tree.
@@ -128,7 +134,7 @@ else
   echo "  !! STILL GREEN — this test cannot fail, it proves nothing"
   exit 1
 fi
-python3 scripts/add-gesture-l10n-entries.py > /dev/null
+cp "$STORE_BAK" "$STORE"
 
 # ── Bug 7 (R3/D2): an unattributable descriptor's *absence* is treated as
 # evidence, which greys out a working mouse and claims its hardware lacks a
@@ -151,6 +157,7 @@ restore_all
 diff -q "$SRC_BAK" "$SRC" && echo "restored byte-identical: GestureUIDisplay.swift"
 diff -q "$MODEL_BAK" "$MODEL" && echo "restored byte-identical: GestureModel.swift"
 diff -q "$CAP_BAK" "$CAP" && echo "restored byte-identical: DeviceCapabilityModel.swift"
+diff -q "$STORE_BAK" "$STORE" && echo "restored byte-identical: L10n.strings.json"
 
 echo "--- final ---"
 # Assert the tree is green, don't just report a count. The three sibling harnesses

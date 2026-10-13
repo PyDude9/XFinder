@@ -28,7 +28,7 @@ struct ShortcutsDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                PageHeader(icon: "command", title: L10n.t("Phím tắt"),
+                PageHeader(title: L10n.t("Phím tắt"),
                            subtitle: L10n.t("Xem mọi phím tắt XFinder đang dùng, đổi những phím đổi được, và phát hiện trùng lặp."))
                 captureSection
                 paletteSection

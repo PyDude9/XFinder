@@ -35,9 +35,8 @@ struct PdfToolsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "doc.richtext.fill",
-                           title: L10n.t("Công cụ PDF"))
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Công cụ PDF"))
 
                 Picker(L10n.t("Công cụ"), selection: $tool) {
                     ForEach(Tool.allCases) { t in Text(t.titleVI).tag(t) }
@@ -45,89 +44,80 @@ struct PdfToolsDetailView: View {
                 .pickerStyle(.segmented)   // segmented-ok: 3 cases
                 .padding(.horizontal, XFinderTokens.Space.page)
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(
-                        icon: "doc.on.doc",
-                        title: tool == .merge ? L10n.t("Các tập tin PDF cần gộp (theo thứ tự)") : L10n.t("Tập tin PDF nguồn"),
-                        subtitle: sources.isEmpty ? L10n.t("Chưa chọn gì") : "\(sources.count)\(L10n.t(" tập tin"))"
-                    )
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        Button(L10n.t("Chọn PDF…")) { pickSources() }
-                        ForEach(sources, id: \.self) { url in
-                            HStack {
-                                Image(systemName: "doc.richtext.fill").foregroundColor(.red.opacity(0.8))
-                                Text(url.lastPathComponent)
-                                    .font(XFinderTokens.Font.rowValue)
-                                    .fileNameRowSafe()
-                                Spacer()
-                                if tool == .merge, sources.count > 1 {
-                                    Button {
-                                        moveUp(url)
-                                    } label: { Image(systemName: "chevron.up") }
-                                    .buttonStyle(.plain)
-                                    .disabled(sources.first == url)
-                                    Button {
-                                        moveDown(url)
-                                    } label: { Image(systemName: "chevron.down") }
-                                    .buttonStyle(.plain)
-                                    .disabled(sources.last == url)
-                                }
+                SettingsSection(
+                    title: tool == .merge ? L10n.t("Các tập tin PDF cần gộp (theo thứ tự)") : L10n.t("Tập tin PDF nguồn"),
+                    footer: sources.isEmpty ? L10n.t("Chưa chọn gì") : "\(sources.count)\(L10n.t(" tập tin"))"
+                ) {
+                    Button(L10n.t("Chọn PDF…")) { pickSources() }
+                        .settingsRow()
+                    ForEach(sources, id: \.self) { url in
+                        SettingsDivider()
+                        HStack {
+                            Image(systemName: "doc.richtext.fill").foregroundColor(.red.opacity(0.8))
+                            Text(url.lastPathComponent)
+                                .font(XFinderTokens.Font.rowValue)
+                                .fileNameRowSafe()
+                            Spacer()
+                            if tool == .merge, sources.count > 1 {
                                 Button {
-                                    sources.removeAll { $0 == url }
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
-                                }
+                                    moveUp(url)
+                                } label: { Image(systemName: "chevron.up") }
                                 .buttonStyle(.plain)
+                                .disabled(sources.first == url)
+                                Button {
+                                    moveDown(url)
+                                } label: { Image(systemName: "chevron.down") }
+                                .buttonStyle(.plain)
+                                .disabled(sources.last == url)
                             }
+                            Button {
+                                sources.removeAll { $0 == url }
+                            } label: {
+                                Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        if !sources.isEmpty, tool != .merge, inspectedPageCount > 0 {
-                            Text("\(L10n.t("Tài liệu có "))\(inspectedPageCount)\(L10n.t(" trang"))")
-                                .font(XFinderTokens.Font.caption)
-                                .foregroundColor(.secondary)
-                        }
+                        .settingsRow()
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    if !sources.isEmpty, tool != .merge, inspectedPageCount > 0 {
+                        SettingsDivider()
+                        Text("\(L10n.t("Tài liệu có "))\(inspectedPageCount)\(L10n.t(" trang"))")
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
+                            .settingsRow()
+                    }
                 }
 
                 if tool == .extract {
-                    Divider().padding(.horizontal, XFinderTokens.Space.page)
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                        SectionHeader(icon: "scissors", title: L10n.t("Trang cần tách"), subtitle: L10n.t("Ví dụ: 1-3 hoặc 2,5,7"))
+                    SettingsSection(title: L10n.t("Trang cần tách"), footer: L10n.t("Ví dụ: 1-3 hoặc 2,5,7")) {
                         TextField("1-3", text: $pageRangeText)
                             .textFieldStyle(.roundedBorder)
                             .font(XFinderTokens.Font.mono)
-                            .padding(.horizontal, XFinderTokens.Space.page)
+                            .settingsRow()
                     }
                 }
 
                 if tool == .rotate {
-                    Divider().padding(.horizontal, XFinderTokens.Space.page)
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                        SectionHeader(icon: "rotate.right", title: L10n.t("Góc xoay & trang"))
-                        VStack(alignment: .leading, spacing: 10) {
-                            Picker(L10n.t("Góc"), selection: $angle) {
-                                Text("90°").tag(90)
-                                Text("180°").tag(180)
-                                Text("270°").tag(270)
-                            }
-                            .pickerStyle(.segmented)
-                            TextField(L10n.t("Trang (1-3 hoặc 2,5,7 — để trống = tất cả)"), text: $pageRangeText)
-                                .textFieldStyle(.roundedBorder)
-                                .font(XFinderTokens.Font.mono)
+                    SettingsSection(title: L10n.t("Góc xoay & trang")) {
+                        Picker(L10n.t("Góc"), selection: $angle) {
+                            Text("90°").tag(90)
+                            Text("180°").tag(180)
+                            Text("270°").tag(270)
                         }
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .pickerStyle(.segmented)
+                        .settingsRow()
+                        SettingsDivider()
+                        TextField(L10n.t("Trang (1-3 hoặc 2,5,7 — để trống = tất cả)"), text: $pageRangeText)
+                            .textFieldStyle(.roundedBorder)
+                            .font(XFinderTokens.Font.mono)
+                            .settingsRow()
                     }
                 }
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(
-                        icon: "folder",
-                        title: L10n.t("Thư mục đích"),
-                        subtitle: outputFolder?.path ?? L10n.t("Mặc định: cùng thư mục với tập tin đầu tiên")
-                    )
+                SettingsSection(
+                    title: L10n.t("Thư mục đích"),
+                    footer: outputFolder?.path ?? L10n.t("Mặc định: cùng thư mục với tập tin đầu tiên")
+                ) {
                     HStack {
                         Button(L10n.t("Chọn thư mục đích…")) {
                             let panel = NSOpenPanel()
@@ -140,10 +130,8 @@ struct PdfToolsDetailView: View {
                             Button(L10n.t("Mặc định")) { outputFolder = nil }.font(XFinderTokens.Font.rowValue)
                         }
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
                 }
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 Button {
                     Task { await run() }
@@ -160,13 +148,11 @@ struct PdfToolsDetailView: View {
                 .padding(.horizontal, XFinderTokens.Space.page)
 
                 if let msg = resultMessage {
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                        SectionHeader(icon: isError ? "exclamationmark.triangle.fill" : "checkmark.circle",
-                                      title: isError ? L10n.t("Lỗi") : L10n.t("Kết quả"))
+                    SettingsSection(title: isError ? L10n.t("Lỗi") : L10n.t("Kết quả")) {
                         Text(msg)
                             .font(XFinderTokens.Font.rowValue)
                             .foregroundColor(isError ? .red : .primary)
-                            .padding(.horizontal, XFinderTokens.Space.page)
+                            .settingsRow()
                     }
                 }
             }

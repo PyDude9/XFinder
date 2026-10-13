@@ -39,10 +39,8 @@ struct NotesDetailView: View {
     /// take space and split the same feature across two places.
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(
-                    icon: "note.text",
-                    title: L10n.t("Ghi chú"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Ghi chú"),
                     subtitle: L10n.t("Lưu ghi chú, danh sách công việc và ý tưởng ngay mép màn hình."),
                     trailing: AnyView(
                         HStack(spacing: 6) {
@@ -60,19 +58,12 @@ struct NotesDetailView: View {
                 filterRow
                 notesGrid
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 edgeNotesSection
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 appearanceSection
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 shortcutsSection
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 importExportSection
             }
-            .padding(.bottom, XFinderTokens.Space.section)
+            .padding(.bottom, 24)
             .pageWidthSafe()
         }
         .background(XFinderTokens.Settings.contentBackground)
@@ -210,13 +201,12 @@ private struct EdgeNotesSettingsSection: View {
     @State private var store = NoteStore.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "arrow.left.and.right.square",
-                          title: L10n.t("Ghi chú ở mép màn hình"),
-                          subtitle: store.notes.isEmpty
-                              ? L10n.t("Dải mép chỉ hiện khi có ít nhất một ghi chú.")
-                              : L10n.t("Di chuột tới mép màn hình để mở ghi chú."))
-
+        SettingsSection(
+            title: L10n.t("Ghi chú ở mép màn hình"),
+            footer: store.notes.isEmpty
+                ? L10n.t("Dải mép chỉ hiện khi có ít nhất một ghi chú.")
+                : L10n.t("Di chuột tới mép màn hình để mở ghi chú.")
+        ) {
             HStack(spacing: XFinderTokens.Space.inline) {
                 Text(L10n.t("Cạnh màn hình")).font(XFinderTokens.Font.row)
                 Spacer()
@@ -226,29 +216,30 @@ private struct EdgeNotesSettingsSection: View {
                 }
                 .pickerStyle(.segmented).labelsHidden().frame(width: 150)
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
             .onChange(of: edgeSide) { EdgeNotesController.shared.applySettings() }
-
+            .settingsRow()
+            SettingsDivider()
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(L10n.t("Độ nhạy vùng chạm "))\(Int(edgeHotspot)) pt")
                     .font(XFinderTokens.Font.row)
                 Slider(value: $edgeHotspot, in: 4...40, step: 1)
                     .onChange(of: edgeHotspot) { EdgeNotesController.shared.applySettings() }
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
-
+            .settingsRow()
+            SettingsDivider()
             ToggleRow(title: L10n.t("Hiện trên ứng dụng toàn màn hình"),
                       subtitle: L10n.t("Best-effort qua .stationary"),
                       isOn: $showFullscreen)
-                .padding(.horizontal, XFinderTokens.Space.page)
                 .onChange(of: showFullscreen) { EdgeNotesController.shared.applySettings() }
+                .settingsRow()
+            SettingsDivider()
             ToggleRow(title: L10n.t("Ẩn khi con trỏ rời khỏi"), isOn: $hideOnLeave)
-                .padding(.horizontal, XFinderTokens.Space.page)
                 .onChange(of: hideOnLeave) { EdgeNotesController.shared.applySettings() }
-
+                .settingsRow()
             if store.notes.isEmpty {
+                SettingsDivider()
                 InlineNote(text: L10n.t("Chưa có ghi chú — dải mép đang ẩn. Tạo ghi chú đầu tiên để dùng."))
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
             }
         }
     }
@@ -259,16 +250,15 @@ private struct AppearanceSection: View {
     @State private var store = NoteStore.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "textformat",
-                          title: L10n.t("Giao diện ghi chú"),
-                          subtitle: L10n.t("Markdown và danh sách công việc vẫn chỉnh sửa được dưới dạng văn bản thuần."))
-
+        SettingsSection(
+            title: L10n.t("Giao diện ghi chú"),
+            footer: L10n.t("Markdown và danh sách công việc vẫn chỉnh sửa được dưới dạng văn bản thuần.")
+        ) {
             PickerRow(title: L10n.t("Phông chữ"), selection: $noteFont, width: 120) {
                 ForEach(NoteStore.NoteFont.allCases) { f in Text(f.titleVI).tag(f.rawValue) }
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
-
+            .settingsRow()
+            SettingsDivider()
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(L10n.t("Cỡ chữ")) \(String(format: "%.1f", store.fontSize)) pt")
                     .font(XFinderTokens.Font.row)
@@ -277,25 +267,27 @@ private struct AppearanceSection: View {
                     set: { store.setFontSize($0) }
                 ), in: 11...20, step: 0.5)
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
-
+            .settingsRow()
+            SettingsDivider()
             ToggleRow(title: L10n.t("Định dạng Markdown khi nhập"), isOn: Binding(
                 get: { store.markdownEnabled },
                 set: { store.markdownEnabled = $0 }
             ))
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
         }
     }
 }
 
 private struct ShortcutsSection: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "keyboard", title: L10n.t("Phím tắt"),
-                          subtitle: L10n.t("Chỉ hoạt động khi XFinder đang ở phía trước."))
-
+        SettingsSection(
+            title: L10n.t("Phím tắt"),
+            footer: L10n.t("Chỉ hoạt động khi XFinder đang ở phía trước.")
+        ) {
             shortcutRow(L10n.t("Ghi chú mới"), keys: "⌥⌘N")
+            SettingsDivider()
             shortcutRow(L10n.t("Mở trang Ghi chú"), keys: "⌥⌘L")
+            SettingsDivider()
             shortcutRow(L10n.t("Ghim hoặc bỏ ghim ghi chú đầu danh sách (chưa lưu trữ)"), keys: "⌥⌘P")
         }
     }
@@ -310,7 +302,7 @@ private struct ShortcutsSection: View {
                 .background(XFinderTokens.Fill.inset)
                 .clipShape(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge))
         }
-        .padding(.horizontal, XFinderTokens.Space.page)
+        .settingsRow()
     }
 }
 
@@ -319,9 +311,7 @@ private struct ImportExportSection: View {
     @State private var store = NoteStore.shared
 
     var body: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "square.and.arrow.up.on.square", title: L10n.t("Nhập / Xuất ghi chú"))
-
+        SettingsSection(title: L10n.t("Nhập / Xuất ghi chú")) {
             HStack(spacing: XFinderTokens.Space.inline) {
                 Menu(L10n.t("Nhập…")) {
                     Button("Markdown (.md)") { pickImport(["md", "markdown"]) { store.importMarkdown($0) } }
@@ -337,14 +327,15 @@ private struct ImportExportSection: View {
                 .fixedSize()
                 Spacer()
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
-
+            .settingsRow()
+            SettingsDivider()
             InlineNote(text: L10n.t("Markdown/JSON tương thích các app ghi chú nhanh (Antinote, Simplenote…). Nhập sẽ thay thế toàn bộ danh sách hiện tại."))
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
 
             if let err = importError {
+                SettingsDivider()
                 Text(err).font(XFinderTokens.Font.caption).foregroundColor(.red)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
             }
         }
     }

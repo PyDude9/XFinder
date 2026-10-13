@@ -150,9 +150,7 @@ struct MouseGesturesDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                PageHeader(
-                    icon: "computermouse",
-                    title: L10n.t("Chuột & cử chỉ"),
+                PageHeader(title: L10n.t("Chuột & cử chỉ"),
                     subtitle: L10n.t("Giữ nút, kéo một hướng rồi thả — XFinder gửi phím tắt theo ứng dụng đang mở."),
                     trailing: AnyView(
                         HStack(spacing: 6) {
@@ -178,8 +176,6 @@ struct MouseGesturesDetailView: View {
 
                     activitySection
                 }
-
-                Divider().padding(.horizontal, 20)
 
                 switchesSection
 
@@ -828,11 +824,8 @@ struct MouseGesturesDetailView: View {
     // MARK: - Switches
 
     private var switchesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(icon: "switch.2",
-                          title: L10n.t("Nút giữ và cuộn"),
-                          subtitle: L10n.t("Nút giữ bắt đầu mọi cử chỉ. Nút cuộn là tuỳ chọn riêng, mặc định tắt."))
-
+        SettingsSection(title: L10n.t("Nút giữ và cuộn"),
+                        footer: L10n.t("Nút giữ bắt đầu mọi cử chỉ. Nút cuộn là tuỳ chọn riêng, mặc định tắt.")) {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L10n.t("Nút giữ"))
@@ -848,9 +841,9 @@ struct MouseGesturesDetailView: View {
                     .buttonStyle(.bordered).controlSize(.small)
                     .disabled(controller.recording)
             }
-            .padding(.horizontal, 20)
+            .settingsRow()
 
-            Divider().padding(.horizontal, 20)
+            SettingsDivider()
 
             VStack(alignment: .leading, spacing: 4) {
                 Toggle(isOn: Binding(
@@ -873,7 +866,7 @@ struct MouseGesturesDetailView: View {
                     Spacer(minLength: 0)
                 }
             }
-            .padding(.horizontal, 20)
+            .settingsRow()
         }
     }
 

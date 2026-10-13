@@ -78,21 +78,15 @@ struct VoiceDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(
-                    icon: "mic.fill",
-                    title: L10n.t("Nhập bằng giọng nói"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Nhập bằng giọng nói"),
                     subtitle: L10n.t("Nói và chữ tự vào đúng ô đang gõ — kèm tút lại văn bản bằng AI.")
                 )
 
                 activationSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 dictationSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 providerSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 hudSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 contextSection
                 permissionsSection
             }
@@ -108,136 +102,138 @@ struct VoiceDetailView: View {
     // MARK: - 1. Activation
 
     private var activationSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(
-                icon: "keyboard",
-                title: L10n.t("Kích hoạt & phím tắt"),
-                subtitle: L10n.t("Chọn phím để bắt đầu nói và cách nó hoạt động.")
+        SettingsSection(
+            title: L10n.t("Kích hoạt & phím tắt"),
+            footer: L10n.t("Chọn phím để bắt đầu nói và cách nó hoạt động.")
+        ) {
+            ToggleRow(
+                title: L10n.t("Bật nhập bằng giọng nói"),
+                subtitle: L10n.t("Cần quyền Trợ năng để nghe phím tắt toàn hệ thống."),
+                isOn: Binding(
+                    get: { voiceEnabled },
+                    set: { voiceEnabled = $0; voiceManager.isEnabled = $0 }
+                )
             )
+            .settingsRow()
 
-            VStack(spacing: 0) {
-                ToggleRow(
-                    title: L10n.t("Bật nhập bằng giọng nói"),
-                    subtitle: L10n.t("Cần quyền Trợ năng để nghe phím tắt toàn hệ thống."),
-                    isOn: Binding(
-                        get: { voiceEnabled },
-                        set: { voiceEnabled = $0; voiceManager.isEnabled = $0 }
-                    )
-                )
+            SettingsDivider()
 
-                Divider().padding(.vertical, 8)
-
-                pickerRow(
-                    title: L10n.t("Cách kích hoạt"),
-                    subtitle: L10n.t(activationMode.detailKey),
-                    selection: $activationModeRaw,
-                    options: VoiceActivationMode.allCases.map { ($0.rawValue, L10n.t($0.labelKey)) },
-                    width: 200
-                )
-
-                Divider().padding(.vertical, 8)
-
-                pickerRow(
-                    title: L10n.t("Phím kích hoạt"),
-                    subtitle: triggerKey.hintKey.map { L10n.t($0) } ?? L10n.t("Phân biệt Option Phải và Option Trái."),
-                    selection: $triggerKeyRaw,
-                    options: VoiceTriggerKey.allCases.map { ($0.rawValue, L10n.t($0.labelKey)) },
-                    width: 220
-                )
-
-                Divider().padding(.vertical, 8)
-
-                pickerRow(
-                    title: L10n.t("Ngôn ngữ nhận dạng"),
-                    subtitle: L10n.t("Mô hình Apple Speech Recognizer tích hợp."),
-                    selection: $voiceLanguage,
-                    options: [("vi-VN", L10n.t("Tiếng Việt (vi-VN)")), ("en-US", L10n.t("Tiếng Anh (en-US)"))],
-                    width: 230
-                )
-
-                Divider().padding(.vertical, 8)
-
-                StatusChecklistRow(
-                    state: voiceManager.isEventTapInstalled ? .ok : (voiceEnabled ? .warning : .neutral),
-                    title: L10n.t("Bộ nghe phím toàn hệ thống"),
-                    status: voiceManager.isEventTapInstalled
-                        ? L10n.t("Đang chạy")
-                        : (voiceEnabled ? L10n.t("Chưa chạy — cần quyền Trợ năng") : L10n.t("Đang tắt")),
-                    actionTitle: (!voiceManager.isEventTapInstalled && voiceEnabled) ? L10n.t("Cấp quyền") : nil,
-                    action: { WindowManager.requestAccessibilityTrust() }
-                )
-            }
-            .padding(.horizontal, XFinderTokens.Space.page)
-            .onChange(of: triggerKeyRaw) { _, _ in voiceManager.applySettings() }
+            pickerRow(
+                title: L10n.t("Cách kích hoạt"),
+                subtitle: L10n.t(activationMode.detailKey),
+                selection: $activationModeRaw,
+                options: VoiceActivationMode.allCases.map { ($0.rawValue, L10n.t($0.labelKey)) },
+                width: 200
+            )
             .onChange(of: activationModeRaw) { _, _ in voiceManager.applySettings() }
+            .settingsRow()
+
+            SettingsDivider()
+
+            pickerRow(
+                title: L10n.t("Phím kích hoạt"),
+                subtitle: triggerKey.hintKey.map { L10n.t($0) } ?? L10n.t("Phân biệt Option Phải và Option Trái."),
+                selection: $triggerKeyRaw,
+                options: VoiceTriggerKey.allCases.map { ($0.rawValue, L10n.t($0.labelKey)) },
+                width: 220
+            )
+            .onChange(of: triggerKeyRaw) { _, _ in voiceManager.applySettings() }
+            .settingsRow()
+
+            SettingsDivider()
+
+            pickerRow(
+                title: L10n.t("Ngôn ngữ nhận dạng"),
+                subtitle: L10n.t("Mô hình Apple Speech Recognizer tích hợp."),
+                selection: $voiceLanguage,
+                options: [("vi-VN", L10n.t("Tiếng Việt (vi-VN)")), ("en-US", L10n.t("Tiếng Anh (en-US)"))],
+                width: 230
+            )
+            .settingsRow()
+
+            SettingsDivider()
+
+            StatusChecklistRow(
+                state: voiceManager.isEventTapInstalled ? .ok : (voiceEnabled ? .warning : .neutral),
+                title: L10n.t("Bộ nghe phím toàn hệ thống"),
+                status: voiceManager.isEventTapInstalled
+                    ? L10n.t("Đang chạy")
+                    : (voiceEnabled ? L10n.t("Chưa chạy — cần quyền Trợ năng") : L10n.t("Đang tắt")),
+                actionTitle: (!voiceManager.isEventTapInstalled && voiceEnabled) ? L10n.t("Cấp quyền") : nil,
+                action: { WindowManager.requestAccessibilityTrust() }
+            )
+            .settingsRow()
         }
     }
 
     // MARK: - 2. Dictation mode
 
     private var dictationSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(
-                icon: "wand.and.sparkles",
-                title: L10n.t("Chế độ gõ"),
-                subtitle: L10n.t("Chọn lời nói của bạn biến thành dạng văn bản nào.")
-            )
-
-            VStack(alignment: .leading, spacing: 12) {
-                PickerRow(
-                    title: L10n.t("Chọn chế độ"),
-                    selection: $modeRaw,
-                    width: 200
-                ) {
-                    ForEach(DictationMode.builtIn) { candidate in
-                        Text(L10n.t(candidate.labelKey)).tag(candidate.rawValue)
-                    }
-                }
-
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: mode.icon)
-                        .foregroundColor(.secondary)
-                        .frame(width: 16)
-                    Text(L10n.t(mode.detailKey))
-                        .font(XFinderTokens.Font.rowValue)
-                        .foregroundColor(.secondary)
-                    Spacer(minLength: 0)
-                }
-
-                if mode == .cleanUp {
-                    Divider()
-                    ToggleRow(
-                        title: L10n.t("Bỏ từ đệm"),
-                        subtitle: L10n.t("Loại “à”, “ừm”, “kiểu như”, “um”, “uh”…"),
-                        isOn: $stripFillers
-                    )
-                    ToggleRow(
-                        title: L10n.t("Tự động thêm dấu câu"),
-                        subtitle: L10n.t("Sửa nói lắp, viết hoa đầu câu và tên riêng."),
-                        isOn: $autoPunctuation
-                    )
-                }
-
-                if mode == .custom {
-                    Divider()
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(L10n.t("Câu lệnh cho AI"))
-                            .font(XFinderTokens.Font.row)
-                        Text(L10n.t("Ví dụ: dịch sang tiếng Anh; viết chú thích cho mã nguồn; tóm tắt thành báo cáo cuối ngày."))
-                            .font(XFinderTokens.Font.caption)
-                            .foregroundColor(.secondary)
-                        TextEditor(text: $customInstruction)
-                            .font(XFinderTokens.Font.rowValue)
-                            .frame(height: 70)
-                            .padding(6)
-                            .background(XFinderTokens.Fill.inset)
-                            .clipShape(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control))
-                    }
-                    Divider()
-                    customModeLibrary
+        SettingsSection(
+            title: L10n.t("Chế độ gõ"),
+            footer: L10n.t("Chọn lời nói của bạn biến thành dạng văn bản nào.")
+        ) {
+            PickerRow(
+                title: L10n.t("Chọn chế độ"),
+                selection: $modeRaw,
+                width: 200
+            ) {
+                ForEach(DictationMode.builtIn) { candidate in
+                    Text(L10n.t(candidate.labelKey)).tag(candidate.rawValue)
                 }
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
+
+            SettingsDivider()
+
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: mode.icon)
+                    .foregroundColor(.secondary)
+                    .frame(width: 16)
+                Text(L10n.t(mode.detailKey))
+                    .font(XFinderTokens.Font.rowValue)
+                    .foregroundColor(.secondary)
+                Spacer(minLength: 0)
+            }
+            .settingsRow()
+
+            if mode == .cleanUp {
+                SettingsDivider()
+                ToggleRow(
+                    title: L10n.t("Bỏ từ đệm"),
+                    subtitle: L10n.t("Loại “à”, “ừm”, “kiểu như”, “um”, “uh”…"),
+                    isOn: $stripFillers
+                )
+                .settingsRow()
+                SettingsDivider()
+                ToggleRow(
+                    title: L10n.t("Tự động thêm dấu câu"),
+                    subtitle: L10n.t("Sửa nói lắp, viết hoa đầu câu và tên riêng."),
+                    isOn: $autoPunctuation
+                )
+                .settingsRow()
+            }
+
+            if mode == .custom {
+                SettingsDivider()
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L10n.t("Câu lệnh cho AI"))
+                        .font(XFinderTokens.Font.row)
+                    Text(L10n.t("Ví dụ: dịch sang tiếng Anh; viết chú thích cho mã nguồn; tóm tắt thành báo cáo cuối ngày."))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                    TextEditor(text: $customInstruction)
+                        .font(XFinderTokens.Font.rowValue)
+                        .frame(height: 70)
+                        .padding(6)
+                        .background(XFinderTokens.Fill.inset)
+                        .clipShape(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control))
+                }
+                .settingsRow()
+                SettingsDivider()
+                customModeLibrary
+                    .settingsRow()
+            }
         }
     }
 
@@ -284,44 +280,46 @@ struct VoiceDetailView: View {
     // MARK: - 3. Provider
 
     private var providerSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(
-                icon: "brain",
-                title: L10n.t("Mô hình AI tút văn bản"),
-                subtitle: L10n.t("Chọn nơi xử lý văn bản. Chế độ “Chép nguyên văn” không cần mục này.")
-            )
-
-            VStack(alignment: .leading, spacing: 12) {
-                Picker("", selection: $tierRaw) {
-                    ForEach(VoiceRefinerTier.allCases) { candidate in
-                        Text(L10n.t(candidate.labelKey)).tag(candidate.rawValue)
-                    }
+        SettingsSection(
+            title: L10n.t("Mô hình AI tút văn bản"),
+            footer: L10n.t("Chọn nơi xử lý văn bản. Chế độ “Chép nguyên văn” không cần mục này.")
+        ) {
+            Picker("", selection: $tierRaw) {
+                ForEach(VoiceRefinerTier.allCases) { candidate in
+                    Text(L10n.t(candidate.labelKey)).tag(candidate.rawValue)
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .frame(width: 320, alignment: .leading)
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: 320, alignment: .leading)
+            .settingsRow()
 
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: tier.icon).foregroundColor(.secondary).frame(width: 16)
-                    Text(L10n.t(tier.detailKey)).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
-                    Spacer(minLength: 0)
-                }
+            SettingsDivider()
 
-                Divider()
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: tier.icon).foregroundColor(.secondary).frame(width: 16)
+                Text(L10n.t(tier.detailKey)).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                Spacer(minLength: 0)
+            }
+            .settingsRow()
 
+            SettingsDivider()
+
+            Group {
                 switch tier {
                 case .appleOnDevice: appleTierBody
                 case .ollama: ollamaTierBody
                 case .customAPI: apiTierBody
                 case .subscription: subscriptionTierBody
                 }
-
-                if let connectionResult {
-                    Divider()
-                    connectionResultRow(connectionResult)
-                }
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
+
+            if let connectionResult {
+                SettingsDivider()
+                connectionResultRow(connectionResult)
+                    .settingsRow()
+            }
         }
     }
 
@@ -509,125 +507,127 @@ struct VoiceDetailView: View {
     // MARK: - 4. HUD
 
     private var hudSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(
-                icon: "rectangle.topthird.inset.filled",
-                title: L10n.t("Thanh trạng thái nổi"),
-                subtitle: L10n.t("Vị trí và phản hồi khi đang nói.")
+        SettingsSection(
+            title: L10n.t("Thanh trạng thái nổi"),
+            footer: L10n.t("Vị trí và phản hồi khi đang nói.")
+        ) {
+            pickerRow(
+                title: L10n.t("Vị trí hiển thị"),
+                subtitle: L10n.t(hudAnchor.detailKey),
+                selection: $hudAnchorRaw,
+                options: VoiceHUDAnchor.allCases.map { ($0.rawValue, L10n.t($0.labelKey)) },
+                width: 220
             )
-
-            VStack(spacing: 0) {
-                pickerRow(
-                    title: L10n.t("Vị trí hiển thị"),
-                    subtitle: L10n.t(hudAnchor.detailKey),
-                    selection: $hudAnchorRaw,
-                    options: VoiceHUDAnchor.allCases.map { ($0.rawValue, L10n.t($0.labelKey)) },
-                    width: 220
-                )
-                Divider().padding(.vertical, 8)
-                ToggleRow(
-                    title: L10n.t("Hiện sóng âm"),
-                    subtitle: L10n.t("Dải sóng nhấp nhô theo giọng nói thật."),
-                    isOn: $showWaveform
-                )
-                Divider().padding(.vertical, 8)
-                ToggleRow(
-                    title: L10n.t("Âm báo bắt đầu / kết thúc"),
-                    subtitle: L10n.t("Một tiếng “tách” rất nhẹ để không phải nhìn màn hình."),
-                    isOn: $audioCues
-                )
-                Divider().padding(.vertical, 8)
-                ToggleRow(
-                    title: L10n.t("Xem lại trước khi chèn"),
-                    subtitle: L10n.t("Hiện bảng so sánh chữ gốc và chữ đã tút. Return để chèn, Esc để hủy."),
-                    isOn: $diffReview
-                )
-                Divider().padding(.vertical, 8)
-                ToggleRow(
-                    title: L10n.t("Khôi phục clipboard"),
-                    subtitle: L10n.t("Trả lại nội dung clipboard cũ sau khi dán. Tắt nếu bạn muốn giữ văn bản vừa nói."),
-                    isOn: $restoreClipboard
-                )
-            }
-            .padding(.horizontal, XFinderTokens.Space.page)
             .onChange(of: hudAnchorRaw) { _, _ in voiceManager.applySettings() }
+            .settingsRow()
+
+            SettingsDivider()
+            ToggleRow(
+                title: L10n.t("Hiện sóng âm"),
+                subtitle: L10n.t("Dải sóng nhấp nhô theo giọng nói thật."),
+                isOn: $showWaveform
+            )
+            .settingsRow()
+
+            SettingsDivider()
+            ToggleRow(
+                title: L10n.t("Âm báo bắt đầu / kết thúc"),
+                subtitle: L10n.t("Một tiếng “tách” rất nhẹ để không phải nhìn màn hình."),
+                isOn: $audioCues
+            )
+            .settingsRow()
+
+            SettingsDivider()
+            ToggleRow(
+                title: L10n.t("Xem lại trước khi chèn"),
+                subtitle: L10n.t("Hiện bảng so sánh chữ gốc và chữ đã tút. Return để chèn, Esc để hủy."),
+                isOn: $diffReview
+            )
+            .settingsRow()
+
+            SettingsDivider()
+            ToggleRow(
+                title: L10n.t("Khôi phục clipboard"),
+                subtitle: L10n.t("Trả lại nội dung clipboard cũ sau khi dán. Tắt nếu bạn muốn giữ văn bản vừa nói."),
+                isOn: $restoreClipboard
+            )
             .onChange(of: restoreClipboard) { _, _ in voiceManager.applySettings() }
+            .settingsRow()
         }
     }
 
     // MARK: - 5. Context
 
     private var contextSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(
-                icon: "eye",
-                title: L10n.t("Ngữ cảnh màn hình"),
-                subtitle: L10n.t("Cho AI biết bạn đang viết trong ứng dụng nào, để câu chữ hợp ngữ cảnh hơn.")
+        SettingsSection(
+            title: L10n.t("Ngữ cảnh màn hình"),
+            footer: L10n.t("Cho AI biết bạn đang viết trong ứng dụng nào, để câu chữ hợp ngữ cảnh hơn.")
+        ) {
+            ToggleRow(
+                title: L10n.t("Gửi tên ứng dụng và tiêu đề cửa sổ"),
+                subtitle: L10n.t("Ví dụ: đang trả lời trong Mail thì AI biết đó là email."),
+                isOn: $screenContext
             )
+            .settingsRow()
 
-            VStack(spacing: 0) {
-                ToggleRow(
-                    title: L10n.t("Gửi tên ứng dụng và tiêu đề cửa sổ"),
-                    subtitle: L10n.t("Ví dụ: đang trả lời trong Mail thì AI biết đó là email."),
-                    isOn: $screenContext
-                )
-                Divider().padding(.vertical, 8)
-                ToggleRow(
-                    title: L10n.t("Gửi đoạn văn bản đang bôi đen"),
-                    subtitle: L10n.t("Chỉ đọc khi bạn đã bôi đen. Nội dung này được gửi tới nhà cung cấp AI bạn chọn."),
-                    isOn: $selectionContext
-                )
-                Divider().padding(.vertical, 8)
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "lock.shield").font(XFinderTokens.Font.rowValue).foregroundColor(.secondary).frame(width: 16)
-                    Text(L10n.t("Không có ảnh chụp màn hình nào được gửi. XFinder chỉ đọc tên ứng dụng, tiêu đề cửa sổ và đoạn bạn bôi đen, và chỉ khi bạn bật ở trên."))
-                        .font(XFinderTokens.Font.caption)
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
-                }
+            SettingsDivider()
+            ToggleRow(
+                title: L10n.t("Gửi đoạn văn bản đang bôi đen"),
+                subtitle: L10n.t("Chỉ đọc khi bạn đã bôi đen. Nội dung này được gửi tới nhà cung cấp AI bạn chọn."),
+                isOn: $selectionContext
+            )
+            .settingsRow()
+
+            SettingsDivider()
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "lock.shield").font(XFinderTokens.Font.rowValue).foregroundColor(.secondary).frame(width: 16)
+                Text(L10n.t("Không có ảnh chụp màn hình nào được gửi. XFinder chỉ đọc tên ứng dụng, tiêu đề cửa sổ và đoạn bạn bôi đen, và chỉ khi bạn bật ở trên."))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
         }
     }
 
     // MARK: - 6. Permissions & live test
 
     private var permissionsSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(
-                icon: "checkmark.shield",
-                title: L10n.t("Quyền & thử nghiệm"),
-                subtitle: L10n.t("Kiểm tra quyền hệ thống và thử micro ngay tại đây.")
+        SettingsSection(
+            title: L10n.t("Quyền & thử nghiệm"),
+            footer: L10n.t("Kiểm tra quyền hệ thống và thử micro ngay tại đây.")
+        ) {
+            StatusChecklistRow(
+                state: WindowManager.isTrusted ? .ok : .warning,
+                title: L10n.t("Quyền Trợ năng (Accessibility)"),
+                status: WindowManager.isTrusted ? L10n.t("Đã cấp") : L10n.t("Cần cấp quyền"),
+                actionTitle: WindowManager.isTrusted ? nil : L10n.t("Cấp quyền"),
+                action: { WindowManager.requestAccessibilityTrust() }
             )
+            .settingsRow()
 
-            VStack(spacing: 8) {
-                StatusChecklistRow(
-                    state: WindowManager.isTrusted ? .ok : .warning,
-                    title: L10n.t("Quyền Trợ năng (Accessibility)"),
-                    status: WindowManager.isTrusted ? L10n.t("Đã cấp") : L10n.t("Cần cấp quyền"),
-                    actionTitle: WindowManager.isTrusted ? nil : L10n.t("Cấp quyền"),
-                    action: { WindowManager.requestAccessibilityTrust() }
-                )
+            SettingsDivider()
+            StatusChecklistRow(
+                state: voiceManager.hasMicrophonePermission ? .ok : .warning,
+                title: L10n.t("Quyền Micro (Microphone)"),
+                status: voiceManager.hasMicrophonePermission ? L10n.t("Đã cấp") : L10n.t("Cần cấp quyền"),
+                actionTitle: voiceManager.hasMicrophonePermission ? nil : L10n.t("Yêu cầu"),
+                action: { Task { _ = await voiceManager.checkAndRequestPermissions() } }
+            )
+            .settingsRow()
 
-                StatusChecklistRow(
-                    state: voiceManager.hasMicrophonePermission ? .ok : .warning,
-                    title: L10n.t("Quyền Micro (Microphone)"),
-                    status: voiceManager.hasMicrophonePermission ? L10n.t("Đã cấp") : L10n.t("Cần cấp quyền"),
-                    actionTitle: voiceManager.hasMicrophonePermission ? nil : L10n.t("Yêu cầu"),
-                    action: { Task { _ = await voiceManager.checkAndRequestPermissions() } }
-                )
+            SettingsDivider()
+            StatusChecklistRow(
+                state: voiceManager.hasSpeechPermission ? .ok : .warning,
+                title: L10n.t("Quyền Nhận dạng giọng nói"),
+                status: voiceManager.hasSpeechPermission ? L10n.t("Đã cấp") : L10n.t("Cần cấp quyền"),
+                actionTitle: voiceManager.hasSpeechPermission ? nil : L10n.t("Yêu cầu"),
+                action: { Task { _ = await voiceManager.checkAndRequestPermissions() } }
+            )
+            .settingsRow()
 
-                StatusChecklistRow(
-                    state: voiceManager.hasSpeechPermission ? .ok : .warning,
-                    title: L10n.t("Quyền Nhận dạng giọng nói"),
-                    status: voiceManager.hasSpeechPermission ? L10n.t("Đã cấp") : L10n.t("Cần cấp quyền"),
-                    actionTitle: voiceManager.hasSpeechPermission ? nil : L10n.t("Yêu cầu"),
-                    action: { Task { _ = await voiceManager.checkAndRequestPermissions() } }
-                )
-            }
-            .padding(.horizontal, XFinderTokens.Space.page)
-
+            SettingsDivider()
             VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 HStack(spacing: 12) {
                     Button(action: toggleMicTest) {
@@ -670,7 +670,7 @@ struct VoiceDetailView: View {
                     }
                 }
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
         }
     }
 

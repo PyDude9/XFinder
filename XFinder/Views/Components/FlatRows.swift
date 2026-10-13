@@ -115,7 +115,7 @@ struct LabeledLine: View {
             Spacer()
             Text(value).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
         }
-        .padding(.horizontal, XFinderTokens.Space.page)
+        // P4: rows never pad themselves — the SettingsSection card does (a padded row inside a card was 30 pt in).
     }
 }
 
@@ -146,6 +146,6 @@ struct MeterRow: View {
             }
             .frame(height: 6)
         }
-        .padding(.horizontal, XFinderTokens.Space.page)
+        // P4: rows never pad themselves — the SettingsSection card does (a padded row inside a card was 30 pt in).
     }
 }

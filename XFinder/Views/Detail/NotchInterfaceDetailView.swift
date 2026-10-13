@@ -26,9 +26,7 @@ struct NotchInterfaceDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                PageHeader(
-                    icon: "rectangle.topthird.inset.filled",
-                    title: L10n.t("Giao diện notch"),
+                PageHeader(title: L10n.t("Giao diện notch"),
                     subtitle: L10n.t("Bật tắt notch, chỉnh cách rê chuột mở nó, hình dạng trên từng loại màn hình và các trang nó hiện."),
                     trailing: AnyView(
                         HStack(spacing: 6) {

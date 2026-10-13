@@ -12,9 +12,15 @@ cd "$(dirname "$0")/.."
 STORE=XFinder/Resources/L10n.strings.json
 BACKUP=/tmp/xfinder-l10n-mutation-backup.json
 cp "$STORE" "$BACKUP"
+# P4 (2026-10-14): the allowlist is backed up and restored by copy too. Re-adding the one removed name and writing
+# the list back SORTED reordered every name appended later (CPU, RAM, GPU, Caps Lock, Notch, NOTCH).
+ALLOW=XFinder/Resources/L10n.allowlist.json
+ALLOW_BACKUP=/tmp/xfinder-l10n-mutation-allowlist-backup.json
+cp "$ALLOW" "$ALLOW_BACKUP"
 
 restore() {
   cp "$BACKUP" "$STORE"
+  cp "$ALLOW_BACKUP" "$ALLOW"
 }
 trap restore EXIT
 
@@ -110,30 +116,17 @@ else
   echo "STAYED GREEN -- the allowlist is not actually consulted: OCR"
   exit 1
 fi
-python3 - <<'EOF'
-import json
-p = "XFinder/Resources/L10n.allowlist.json"
-d = json.load(open(p, encoding="utf-8"))
-# Restore **only** OCR, not the whole list.
-#
-# This used to assign the four original names literally, which silently deleted any
-# entry added since (`Mission Control`, added 2026-09-22 with the system-action work).
-# The script then reported a green mutation run while leaving the tree with a *stale*
-# allowlist — and the failure surfaced later as an unrelated red test. Re-adding the
-# single name it removed is the only restore that cannot eat someone else's edit.
-if "OCR" not in d["sameByDesign"]:
-    d["sameByDesign"].append("OCR")
-d["sameByDesign"] = sorted(set(d["sameByDesign"]))
-json.dump(d, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-open(p, "a", encoding="utf-8").write("\n")
-EOF
+# Restore by copy. Two earlier restores were each wrong in their own way: assigning the four original names
+# literally deleted every entry added since (`Mission Control`, 2026-09-22), and re-adding OCR then writing the list
+# back sorted reordered every later name (2026-10-14). Only a byte copy cannot eat or reorder someone else's edit.
+cp "$ALLOW_BACKUP" "$ALLOW"
 
 restore
 trap - EXIT
 
 echo
 echo "=== store restored byte-identical? ==="
-if cmp -s "$BACKUP" "$STORE"; then
+if cmp -s "$BACKUP" "$STORE" && cmp -s "$ALLOW_BACKUP" "$ALLOW"; then
   echo "yes"
 else
   echo "NO -- restore failed"

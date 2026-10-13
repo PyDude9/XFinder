@@ -19,13 +19,16 @@ struct SettingsSection<Content: View>: View {
                     .font(XFinderTokens.Settings.sectionTitle)
                     .padding(.leading, 2)
             }
-            VStack(alignment: .leading, spacing: 0) { content }
-                .padding(.horizontal, XFinderTokens.Settings.cardInset)
-                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: XFinderTokens.Settings.cardRadius, style: .continuous)
-                        .fill(XFinderTokens.Settings.cardFill)
-                )
+            // P4 review: `SettingsSection(title:, footer:) { }` drew an empty box above its footer. No content, no card.
+            if Content.self != EmptyView.self {
+                VStack(alignment: .leading, spacing: 0) { content }
+                    .padding(.horizontal, XFinderTokens.Settings.cardInset)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: XFinderTokens.Settings.cardRadius, style: .continuous)
+                            .fill(XFinderTokens.Settings.cardFill)
+                    )
+            }
             if let footer {
                 Text(footer)
                     .font(XFinderTokens.Font.caption)

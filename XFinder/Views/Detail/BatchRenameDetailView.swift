@@ -22,16 +22,12 @@ struct BatchRenameDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "textformat.abc.dottedunderline",
-                           title: L10n.t("Đổi tên hàng loạt"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Đổi tên hàng loạt"),
                            subtitle: L10n.t("Đổi tên hàng loạt và Lịch sử thao tác: nhận trực tiếp mục đang chọn, và hoàn tác được."))
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "doc.on.doc",
-                                  title: L10n.t("Tập tin cần đổi tên"),
-                                  subtitle: files.isEmpty ? L10n.t("Chưa chọn gì") : "\(files.count)\(L10n.t(" mục"))")
-
+                SettingsSection(title: L10n.t("Tập tin cần đổi tên"),
+                                footer: files.isEmpty ? L10n.t("Chưa chọn gì") : "\(files.count)\(L10n.t(" mục"))") {
                     HStack {
                         Button(L10n.t("Chọn tập tin…")) { pickFiles() }
                         if !files.isEmpty {
@@ -39,19 +35,16 @@ struct BatchRenameDetailView: View {
                                 .font(XFinderTokens.Font.rowValue).foregroundColor(.red)
                         }
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
                     if blocked > 0 {
+                        SettingsDivider()
                         Text("\(blocked)\(L10n.t(" mục bị chặn (trùng tên hoặc trùng đích)."))")
                             .font(XFinderTokens.Font.caption).foregroundColor(.orange)
-                            .padding(.horizontal, XFinderTokens.Space.page)
+                            .settingsRow()
                     }
                 }
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "textformat", title: L10n.t("Kiểu đổi tên"))
-
+                SettingsSection(title: L10n.t("Kiểu đổi tên")) {
                     // THE recurring window-resize culprit on this page.
                     //
                     // A 6-segment `.segmented` picker sums the intrinsic
@@ -70,7 +63,8 @@ struct BatchRenameDetailView: View {
                             Text(m.titleVI).tag(m)
                         }
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                    SettingsDivider()
 
                     Group {
                         switch options.mode {
@@ -102,21 +96,19 @@ struct BatchRenameDetailView: View {
                             EmptyView()
                         }
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                    SettingsDivider()
 
                     ToggleRow(title: L10n.t("Giữ phần mở rộng (.pdf, .jpg…)"),
                               isOn: $options.keepExtension)
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                 }
 
                 if !files.isEmpty {
-                    Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                        SectionHeader(icon: "eye",
-                                      title: "\(L10n.t("Xem trước ("))\(runnable.count)\(L10n.t(" sẽ đổi)"))")
-
-                        ForEach(plans.prefix(12)) { plan in
+                    SettingsSection(title: "\(L10n.t("Xem trước ("))\(runnable.count)\(L10n.t(" sẽ đổi)"))") {
+                        ForEach(Array(plans.prefix(12).enumerated()), id: \.element.id) { entry in
+                            let plan = entry.element
+                            if entry.offset > 0 { SettingsDivider() }
                             HStack {
                                 // `minWidth: 0` lets long file names actually
                                 // compress; without it the row keeps a wide
@@ -141,17 +133,16 @@ struct BatchRenameDetailView: View {
                                         .foregroundColor(.red).font(XFinderTokens.Font.caption)
                                 }
                             }
-                            .padding(.horizontal, XFinderTokens.Space.page)
+                            .settingsRow()
                         }
                         if plans.count > 12 {
+                            SettingsDivider()
                             Text("\(L10n.t("…và "))\(plans.count - 12)\(L10n.t(" mục nữa"))")
                                 .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                                .padding(.horizontal, XFinderTokens.Space.page)
+                                .settingsRow()
                         }
                     }
                 }
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 Button {
                     apply()

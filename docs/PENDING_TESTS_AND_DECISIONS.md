@@ -107,6 +107,14 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-P3-LINKS | Trang Chụp & chú thích và Tìm kiếm: bấm "Đổi phím tắt trong Phím tắt"; trang Chọn văn bản: đọc dòng ⇧⌘G | Link mở trang Phím tắt; không còn nút ghi phím ở hai trang kia; dòng ⇧⌘G nói rõ nó thay Find Next khi bật |
 | T-P3-DARK | Bật chế độ tối của macOS, mở Giao diện notch và Phím tắt | Thẻ nhóm vẫn thấy được (sáng hơn nền một chút), chữ đọc rõ, đường kẻ không biến mất |
 
+### P4 · Mọi trang cài đặt còn lại sang thẻ nhóm (2026-10-14, chưa ai bấm thử)
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-P4-PAGES | Lướt qua từng trang trong sidebar, nhất là Cài đặt Clipboard, Nhập bằng giọng nói, Chuột & cử chỉ, Nén & Giải nén, Tổng quan | Mỗi nhóm cài đặt là một thẻ bo góc có tiêu đề ở trên; không chữ nào dính mép, không hai đường kẻ liền nhau, không thẻ rỗng; trang không bị kéo rộng |
+| T-P4-METRICS | Mở Hệ thống, Mạng, Ổ đĩa, Pin để vài giây rồi chuyển trang khác | Số liệu chạy khi trang mở, đứng khi rời trang (CPU XFinder lúc rảnh vẫn ~0 %) |
+| T-P4-DARK | Bật chế độ tối, mở 3–4 trang | Thẻ vẫn thấy được, chữ phụ đọc rõ |
+
 ### Clipboard
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|

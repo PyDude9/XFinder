@@ -19,9 +19,7 @@ struct CalendarSettingsDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                PageHeader(
-                    icon: "calendar",
-                    title: L10n.t("Lịch & lời nhắc"),
+                PageHeader(title: L10n.t("Lịch & lời nhắc"),
                     subtitle: L10n.t("Hôm nay có gì, việc kế tiếp lúc mấy giờ, link họp để bấm vào — ngay tại notch.")
                 )
 

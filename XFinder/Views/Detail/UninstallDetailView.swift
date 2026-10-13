@@ -23,18 +23,17 @@ struct UninstallDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "xmark.bin",
-                           title: L10n.t("Gỡ ứng dụng"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Gỡ ứng dụng"),
                            subtitle: L10n.t("Chuyển một app và những gì nó để lại trong Thư viện của bạn vào Thùng rác — xem từng mục trước."))
                 pickerSection
                 if let app = selected {
-                    Divider().padding(.horizontal, XFinderTokens.Space.page)
                     detailSection(app)
                 }
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-                InlineNote(text: L10n.t("XFinder chỉ chọn sẵn những gì mang đúng mã nhận dạng (bundle id) của app. Thư mục trùng tên app chỉ là đoán nên để trống. Container của app (Thư viện ▸ Containers) được macOS bảo vệ — XFinder không chuyển được (đã đo); bấm Hiện trong Finder rồi kéo vào Thùng rác. Không gỡ app của Apple, app đang chạy hay chính XFinder."))
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                SettingsSection {
+                    InlineNote(text: L10n.t("XFinder chỉ chọn sẵn những gì mang đúng mã nhận dạng (bundle id) của app. Thư mục trùng tên app chỉ là đoán nên để trống. Container của app (Thư viện ▸ Containers) được macOS bảo vệ — XFinder không chuyển được (đã đo); bấm Hiện trong Finder rồi kéo vào Thùng rác. Không gỡ app của Apple, app đang chạy hay chính XFinder."))
+                        .settingsRow()
+                }
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
@@ -45,9 +44,8 @@ struct UninstallDetailView: View {
     // MARK: Picking an app
 
     private var pickerSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "app.dashed", title: L10n.t("Chọn ứng dụng"),
-                          subtitle: "\(apps.count)\(L10n.t(" app trong Applications"))")
+        SettingsSection(title: L10n.t("Chọn ứng dụng"),
+                        footer: "\(apps.count)\(L10n.t(" app trong Applications"))") {
             VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                 TextField(L10n.t("Tìm theo tên hoặc bundle id"), text: $query)
                     .textFieldStyle(.roundedBorder)
@@ -61,7 +59,7 @@ struct UninstallDetailView: View {
                 .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous)
                     .strokeBorder(Color.primary.opacity(0.12)))
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
         }
     }
 
@@ -85,13 +83,13 @@ struct UninstallDetailView: View {
     // MARK: One app
 
     @ViewBuilder private func detailSection(_ app: AppUninstaller.InstalledApp) -> some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "trash", title: "\(L10n.t("Gỡ "))\(app.name)",
-                          subtitle: L10n.t("Bỏ chọn mục nào bạn muốn giữ lại."))
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                if let refusal {
-                    refusalNote(refusal, app: app)
-                } else {
+        SettingsSection(title: "\(L10n.t("Gỡ "))\(app.name)",
+                        footer: L10n.t("Bỏ chọn mục nào bạn muốn giữ lại.")) {
+            if let refusal {
+                refusalNote(refusal, app: app)
+                    .settingsRow()
+            } else {
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                     itemRow(path: app.url.path, title: app.url.path, caption: L10n.t("Ứng dụng"), tickable: true, refusedAlways: false)
                     ForEach(Uninstall.Location.allCases, id: \.self) { loc in
                         let items = candidates.filter { $0.location == loc }
@@ -117,12 +115,14 @@ struct UninstallDetailView: View {
                     }
                     .padding(.top, 4)
                 }
-                if let summary {
-                    InlineNote(kind: outcomes.values.contains { if case .trashed = $0 { return false } else { return true } } ? .warning : .success,
-                               text: summary)
-                }
+                .settingsRow()
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            if let summary {
+                SettingsDivider()
+                InlineNote(kind: outcomes.values.contains { if case .trashed = $0 { return false } else { return true } } ? .warning : .success,
+                           text: summary)
+                    .settingsRow()
+            }
         }
     }
 

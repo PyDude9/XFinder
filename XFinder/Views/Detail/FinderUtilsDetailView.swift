@@ -22,18 +22,13 @@ struct FinderUtilsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "puzzlepiece.extension",
-                           title: L10n.t("Tiện ích Finder"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Tiện ích Finder"),
                            subtitle: L10n.t("Kết nối các lệnh XFinder với Finder."))
 
                 integrationStatus
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
                 finderPrefs
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
 
                 explainer
             }
@@ -67,31 +62,29 @@ struct FinderUtilsDetailView: View {
     }
 
     private var integrationStatus: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "checkmark.seal",
-                          title: L10n.t("Trạng thái tích hợp"),
-                          subtitle: L10n.t("Những gì macOS cho phép XFinder gắn vào Finder."))
+        SettingsSection(title: L10n.t("Trạng thái tích hợp"),
+                        footer: L10n.t("Những gì macOS cho phép XFinder gắn vào Finder.")) {
+            StatusChecklistRow(
+                state: .ok,
+                title: L10n.t("Thao tác trên mục đang chọn"),
+                status: L10n.t("Đã bật"),
+                actionTitle: L10n.t("Mở trang"),
+                action: { AppState.shared.navigate(to: .finderActions) })
+                .settingsRow()
 
-            VStack(spacing: 0) {
-                StatusChecklistRow(
-                    state: .ok,
-                    title: L10n.t("Thao tác trên mục đang chọn"),
-                    status: L10n.t("Đã bật"),
-                    actionTitle: L10n.t("Mở trang"),
-                    action: { AppState.shared.navigate(to: .finderActions) })
+            SettingsDivider()
 
-                Divider()
+            // Measured, not asserted: this row used to hard-code "Chưa có",
+            // which was true only while the appex failed to register.
+            StatusChecklistRow(
+                state: extensionRowState.state,
+                title: L10n.t("Tác vụ nhanh trong menu chuột phải"),
+                status: extensionRowState.status,
+                actionTitle: L10n.t("Mở cài đặt"),
+                action: { openExtensionsPane() })
+                .settingsRow()
 
-                // Measured, not asserted: this row used to hard-code "Chưa có",
-                // which was true only while the appex failed to register.
-                StatusChecklistRow(
-                    state: extensionRowState.state,
-                    title: L10n.t("Tác vụ nhanh trong menu chuột phải"),
-                    status: extensionRowState.status,
-                    actionTitle: L10n.t("Mở cài đặt"),
-                    action: { openExtensionsPane() })
-            }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            SettingsDivider()
 
             VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                 Text(extensionExplanation)
@@ -108,7 +101,7 @@ struct FinderUtilsDetailView: View {
                     .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
         }
     }
 
@@ -131,52 +124,53 @@ struct FinderUtilsDetailView: View {
     // MARK: - Tùy chọn Finder
 
     private var finderPrefs: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "folder",
-                          title: L10n.t("Tùy chọn Finder"),
-                          subtitle: L10n.t("Các khóa cấu hình Finder mà Apple hỗ trợ công khai."))
+        SettingsSection(title: L10n.t("Tùy chọn Finder"),
+                        footer: L10n.t("Các khóa cấu hình Finder mà Apple hỗ trợ công khai.")) {
+            ToggleRow(title: L10n.t("Hiện phần mở rộng tập tin"), isOn: $showExtensions)
+                .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Hiện tập tin ẩn"), isOn: $showHidden)
+                .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Hiện đường dẫn đầy đủ ở tiêu đề"), isOn: $showFullPath)
+                .settingsRow()
+            SettingsDivider()
 
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                ToggleRow(title: L10n.t("Hiện phần mở rộng tập tin"), isOn: $showExtensions)
-                ToggleRow(title: L10n.t("Hiện tập tin ẩn"), isOn: $showHidden)
-                ToggleRow(title: L10n.t("Hiện đường dẫn đầy đủ ở tiêu đề"), isOn: $showFullPath)
-
-                HStack(spacing: XFinderTokens.Space.inline) {
-                    Button(isApplying ? L10n.t("Đang áp dụng…") : L10n.t("Áp dụng & khởi động lại Finder")) {
-                        applyAll()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
-                    .disabled(isApplying)
-
-                    if let s = status {
-                        Text(s).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                    }
-                    Spacer()
+            HStack(spacing: XFinderTokens.Space.inline) {
+                Button(isApplying ? L10n.t("Đang áp dụng…") : L10n.t("Áp dụng & khởi động lại Finder")) {
+                    applyAll()
                 }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(isApplying)
 
-                Text(L10n.t("Finder chỉ đọc các khóa này khi khởi động lại, nên XFinder sẽ khởi động lại Finder sau khi áp dụng. Cửa sổ Finder đang mở sẽ đóng lại."))
-                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if let s = status {
+                    Text(s).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                }
+                Spacer()
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
+            SettingsDivider()
+
+            Text(L10n.t("Finder chỉ đọc các khóa này khi khởi động lại, nên XFinder sẽ khởi động lại Finder sau khi áp dụng. Cửa sổ Finder đang mở sẽ đóng lại."))
+                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .settingsRow()
         }
     }
 
     // MARK: - Giải thích
 
     private var explainer: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-            SectionHeader(icon: "info.circle",
-                          title: L10n.t("XFinder thêm gì vào Finder"),
-                          subtitle: nil)
-
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                bullet(L10n.t("Thao tác Finder: chạy lệnh của XFinder trên đúng các mục bạn đang chọn trong Finder."))
-                bullet(L10n.t("Bàn phím Finder: viết lại phím tắt Cắt/Dán/Xóa/Mở trước khi Finder nhận được."))
-                bullet(L10n.t("Đổi tên hàng loạt và Lịch sử thao tác: nhận trực tiếp mục đang chọn, và hoàn tác được."))
-            }
-            .padding(.horizontal, XFinderTokens.Space.page)
+        SettingsSection(title: L10n.t("XFinder thêm gì vào Finder")) {
+            bullet(L10n.t("Thao tác Finder: chạy lệnh của XFinder trên đúng các mục bạn đang chọn trong Finder."))
+                .settingsRow()
+            SettingsDivider()
+            bullet(L10n.t("Bàn phím Finder: viết lại phím tắt Cắt/Dán/Xóa/Mở trước khi Finder nhận được."))
+                .settingsRow()
+            SettingsDivider()
+            bullet(L10n.t("Đổi tên hàng loạt và Lịch sử thao tác: nhận trực tiếp mục đang chọn, và hoàn tác được."))
+                .settingsRow()
         }
     }
 

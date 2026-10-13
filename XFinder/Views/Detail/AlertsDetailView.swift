@@ -11,69 +11,82 @@ struct AlertsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "bell.badge", title: L10n.t("Cảnh báo"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Cảnh báo"),
                            subtitle: L10n.t("Một thông báo khi máy gặp vấn đề kéo dài — không lặp lại mỗi 30 giây."))
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                SettingsSection {
                     ToggleRow(title: L10n.t("Bật cảnh báo"),
                               subtitle: L10n.t("Kiểm tra mỗi 30 giây khi bật; tắt thì không có bộ hẹn giờ nào."),
                               isOn: $enabled)
                         .onChange(of: enabled) { monitor.applySettings() }
-                    authorizationRow
-                }
-                .padding(.horizontal, XFinderTokens.Space.page)
-
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "slider.horizontal.3", title: L10n.t("Quy tắc"),
-                                  subtitle: L10n.t("Điều kiện phải kéo dài đủ lâu mới báo; báo rồi phải hạ xuống mới báo lại."))
-                    VStack(spacing: XFinderTokens.Space.inline) {
-                        ruleRow(.cpu, value: $thresholds.cpuPercent, range: 10...100, step: 5, unit: "%", current: monitor.lastSample?.cpuPercent.map { String(format: "%.0f%%", $0) })
-                        pressureRow
-                        ruleRow(.diskSpace, value: $thresholds.diskFreePercent, range: 1...50, step: 1, unit: "%", current: monitor.lastSample?.diskFreePercent.map { "\(L10n.t("còn trống "))\(String(format: "%.0f%%", $0))" })
-                        ruleRow(.temperature, value: $thresholds.socTemperature, range: 50...120, step: 5, unit: " °C", current: monitor.lastSample?.socTemperature.map { String(format: "%.0f °C", $0) })
-                        ruleRow(.battery, value: $thresholds.batteryPercent, range: 5...50, step: 5, unit: "%", current: monitor.lastSample?.batteryPercent.map { String(format: "%.0f%%", $0) })
-                        Divider()
-                        PickerRow(title: L10n.t("Phải kéo dài"), selection: $thresholds.sustainedSeconds) {
-                            Text(L10n.t("Ngay lập tức")).tag(0.0)
-                            Text("1" + L10n.t(" phút")).tag(60.0)
-                            Text("2" + L10n.t(" phút")).tag(120.0)
-                            Text("5" + L10n.t(" phút")).tag(300.0)
-                        }
-                        PickerRow(title: L10n.t("Không báo lại trong"), selection: $thresholds.cooldownSeconds) {
-                            Text("5" + L10n.t(" phút")).tag(300.0)
-                            Text("30" + L10n.t(" phút")).tag(1800.0)
-                            Text("2" + L10n.t(" giờ")).tag(7200.0)
-                        }
+                        .settingsRow()
+                    if enabled {
+                        SettingsDivider()
+                        authorizationRow
+                            .settingsRow()
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
-                    .onChange(of: thresholds) { _, new in monitor.thresholds = new }
                 }
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                SettingsSection(
+                    title: L10n.t("Quy tắc"),
+                    footer: L10n.t("Điều kiện phải kéo dài đủ lâu mới báo; báo rồi phải hạ xuống mới báo lại.")
+                ) {
+                    ruleRow(.cpu, value: $thresholds.cpuPercent, range: 10...100, step: 5, unit: "%", current: monitor.lastSample?.cpuPercent.map { String(format: "%.0f%%", $0) })
+                        .settingsRow()
+                    SettingsDivider()
+                    pressureRow
+                        .settingsRow()
+                    SettingsDivider()
+                    ruleRow(.diskSpace, value: $thresholds.diskFreePercent, range: 1...50, step: 1, unit: "%", current: monitor.lastSample?.diskFreePercent.map { "\(L10n.t("còn trống "))\(String(format: "%.0f%%", $0))" })
+                        .settingsRow()
+                    SettingsDivider()
+                    ruleRow(.temperature, value: $thresholds.socTemperature, range: 50...120, step: 5, unit: " °C", current: monitor.lastSample?.socTemperature.map { String(format: "%.0f °C", $0) })
+                        .settingsRow()
+                    SettingsDivider()
+                    ruleRow(.battery, value: $thresholds.batteryPercent, range: 5...50, step: 5, unit: "%", current: monitor.lastSample?.batteryPercent.map { String(format: "%.0f%%", $0) })
+                        .settingsRow()
+                    SettingsDivider()
+                    PickerRow(title: L10n.t("Phải kéo dài"), selection: $thresholds.sustainedSeconds) {
+                        Text(L10n.t("Ngay lập tức")).tag(0.0)
+                        Text("1" + L10n.t(" phút")).tag(60.0)
+                        Text("2" + L10n.t(" phút")).tag(120.0)
+                        Text("5" + L10n.t(" phút")).tag(300.0)
+                    }
+                    .settingsRow()
+                    SettingsDivider()
+                    PickerRow(title: L10n.t("Không báo lại trong"), selection: $thresholds.cooldownSeconds) {
+                        Text("5" + L10n.t(" phút")).tag(300.0)
+                        Text("30" + L10n.t(" phút")).tag(1800.0)
+                        Text("2" + L10n.t(" giờ")).tag(7200.0)
+                    }
+                    .settingsRow()
+                }
+                .onChange(of: thresholds) { _, new in monitor.thresholds = new }
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "clock.arrow.circlepath", title: L10n.t("Gần đây"),
-                                  subtitle: lastTickText)
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                        if monitor.recent.isEmpty {
-                            Text(L10n.t("Chưa có cảnh báo nào trong phiên này.")).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                SettingsSection(title: L10n.t("Gần đây"), footer: lastTickText) {
+                    if monitor.recent.isEmpty {
+                        Text(L10n.t("Chưa có cảnh báo nào trong phiên này.")).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                            .settingsRow()
+                    }
+                    ForEach(Array(monitor.recent.enumerated()), id: \.offset) { index, e in
+                        if index > 0 { SettingsDivider() }
+                        let (k, v) = AlertRules.bodyKeyAndValue(for: e)
+                        HStack(spacing: XFinderTokens.Space.inline) {
+                            Image(systemName: e.kind.symbol).foregroundColor(.orange).frame(width: 18)
+                            Text("\(L10n.t(e.kind.titleKey)) — \(L10n.t(k))\(v)").font(XFinderTokens.Font.rowValue)
+                            Spacer()
+                            Text(e.at.formatted(date: .omitted, time: .shortened)).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         }
-                        ForEach(Array(monitor.recent.enumerated()), id: \.offset) { _, e in
-                            let (k, v) = AlertRules.bodyKeyAndValue(for: e)
-                            HStack(spacing: XFinderTokens.Space.inline) {
-                                Image(systemName: e.kind.symbol).foregroundColor(.orange).frame(width: 18)
-                                Text("\(L10n.t(e.kind.titleKey)) — \(L10n.t(k))\(v)").font(XFinderTokens.Font.rowValue)
-                                Spacer()
-                                Text(e.at.formatted(date: .omitted, time: .shortened)).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                            }
-                        }
+                        .settingsRow()
+                    }
+                    SettingsDivider()
+                    HStack {
                         Button(L10n.t("Gửi thông báo thử")) { monitor.sendTest() }
-                            .controlSize(.small).padding(.top, 4)
+                            .controlSize(.small)
+                        Spacer()
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
                 }
             }
             .padding(.bottom, XFinderTokens.Space.section)

@@ -11,8 +11,8 @@ struct SettingsDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "gearshape", title: destination.titleVI)
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: destination.titleVI)
 
                 Group {
                     switch destination {
@@ -21,7 +21,7 @@ struct SettingsDetailView: View {
                     }
                 }
             }
-            .padding(.bottom, XFinderTokens.Space.section)
+            .padding(.bottom, 24)
             .pageWidthSafe()
         }
         .background(XFinderTokens.Settings.contentBackground)
@@ -142,50 +142,51 @@ private struct ClipboardSettingsBody: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
             // Nội dung clipboard hiển thị ở khay ⌘⇧V / trang riêng; đây là tuỳ
             // chỉnh. Một nút nhảy sang trang nội dung để không mất lối tới.
-            HStack(spacing: XFinderTokens.Space.inline) {
-                Image(systemName: "square.on.square").foregroundColor(.accentColor)
-                Text(L10n.t("Lịch sử copy mở bằng ⌘⇧V, ở notch hoặc khay nổi."))
-                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                Spacer()
-                Button(L10n.t("Mở clipboard (⌘⇧V)")) {
-                    ClipboardShelfController.shared.hotkeyPressed()
+            SettingsSection {
+                HStack(spacing: XFinderTokens.Space.inline) {
+                    Image(systemName: "square.on.square").foregroundColor(.accentColor)
+                    Text(L10n.t("Lịch sử copy mở bằng ⌘⇧V, ở notch hoặc khay nổi."))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    Spacer()
+                    Button(L10n.t("Mở clipboard (⌘⇧V)")) {
+                        ClipboardShelfController.shared.hotkeyPressed()
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
                 }
-                .buttonStyle(.bordered).controlSize(.small)
+                .settingsRow()
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                SectionHeader(icon: "command",
-                              title: L10n.t("Phím tắt & quyền"),
-                              subtitle: L10n.t("⌘⇧V mở clipboard trên mọi ứng dụng"))
-
+            SettingsSection(title: L10n.t("Phím tắt & quyền"),
+                            footer: L10n.t("⌘⇧V mở clipboard trên mọi ứng dụng")) {
                 ToggleRow(title: L10n.t("Phím tắt toàn cục ⌘⇧V"), isOn: $globalHotkey)
-                    .padding(.horizontal, XFinderTokens.Space.page)
                     .onChange(of: globalHotkey) {
                         ClipboardShelfController.shared.applySettings()
                     }
+                    .settingsRow()
+                SettingsDivider()
 
                 // D0: one control, one key. The old shelf is kept behind it, not deleted.
                 PickerRow(title: L10n.t("⌘⇧V mở ở"), selection: $hotkeySurface, width: 150) {
                     Text(L10n.t("Ở notch")).tag("notch")
                     Text(L10n.t("Khay nổi cũ")).tag("shelf")
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Phím ⌘⌥C mở khay nổi cũ"),
                           subtitle: L10n.t("Tắt mặc định. Bật nếu muốn khay nổi dưới màn hình song song với notch."),
                           isOn: $shelfHotkey)
-                    .padding(.horizontal, XFinderTokens.Space.page)
                     .onChange(of: shelfHotkey) { ClipboardShelfController.shared.applySettings() }
+                    .settingsRow()
 
                 if !WindowManager.isTrusted {
+                    SettingsDivider()
                     InlineNote(kind: .warning,
                                text: L10n.t("XFinder chưa được cấp quyền Trợ năng — ⌘⇧V sẽ không mở được khay. Cấp quyền một lần là mọi tính năng cần Trợ năng (khay clipboard, dán phím, bảng lệnh ⌘K, đổi độ sáng) cùng sống lại."))
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
+                    SettingsDivider()
                     HStack {
                         Button(L10n.t("Cấp quyền Trợ năng…")) {
                             _ = WindowManager.requestAccessibilityTrust()
@@ -193,46 +194,35 @@ private struct ClipboardSettingsBody: View {
                         Button(L10n.t("Mở Cài đặt")) { WindowManager.openAccessibilityPane() }
                     }
                     .controlSize(.small)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
                 } else {
+                    SettingsDivider()
                     InlineNote(text: L10n.t("Đã có quyền Trợ năng — ⌘⇧V hoạt động ở mọi ứng dụng."))
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                 }
             }
-
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
 
             // Rule-based ranking (recency · usage · pinned · app role from bundle ID).
             // Not a model — do not call it Apple Intelligence here; see
             // ClipboardIntelligenceEngine's doc comment.
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                SectionHeader(icon: "wand.and.stars", title: L10n.t("Gợi ý theo ngữ cảnh"))
-
+            SettingsSection(title: L10n.t("Gợi ý theo ngữ cảnh")) {
                 ToggleRow(title: L10n.t("Tab Gợi ý trong khay ⌘⇧V"),
                           subtitle: L10n.t("Xếp hạng lịch sử theo ứng dụng sắp dán vào, độ mới, tần suất dùng và mục đã ghim. Chạy hoàn toàn trên máy bằng quy tắc, không dùng mô hình AI."),
                           isOn: $intelligentSuggestions)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
             }
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                SectionHeader(icon: "arrow.down.doc", title: L10n.t("Dán & Thao tác"))
-
+            SettingsSection(title: L10n.t("Dán & Thao tác")) {
                 ToggleRow(title: L10n.t("Tự động dán sau khi chọn"),
                           subtitle: L10n.t("Nhấn Return dán thẳng vào ứng dụng. Khi tắt: chỉ sao chép vào bộ nhớ tạm."),
                           isOn: $autoPaste)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
             }
-
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
 
             // REQUIRED dedup: maxHistory/autoDeleteDays were each bound by TWO controls
             // (the pickers here and the sliders in the old "Lịch sử" card). Keeping both
             // is the duplicate-control trap (CLAUDE.md Part 0 #4) — the sliders are gone.
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                SectionHeader(icon: "archivebox", title: L10n.t("Lưu trữ & Hiển thị"))
-
+            SettingsSection(title: L10n.t("Lưu trữ & Hiển thị")) {
                 // Three sizes (user, 2026-10-12). A value stored by an older build (200, 5000, 0 = unlimited)
                 // keeps a row of its own, so the control always shows what is in effect instead of a blank.
                 PickerRow(title: L10n.t("Giới hạn lịch sử"),
@@ -249,10 +239,10 @@ private struct ClipboardSettingsBody: View {
                         }
                     }
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
                 .onChange(of: maxHistory) { clipboard.trimToCap() }
+                .settingsRow()
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                SettingsDivider()
 
                 PickerRow(title: L10n.t("Tự động xóa sau"),
                           subtitle: L10n.t("Thời gian tự động dọn dẹp các mục cũ trong lịch sử"),
@@ -262,9 +252,9 @@ private struct ClipboardSettingsBody: View {
                     Text(L10n.t("90 ngày")).tag(90)
                     Text(L10n.t("Không bao giờ")).tag(0)
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
+                SettingsDivider()
 
                 PickerRow(title: L10n.t("Cỡ chữ thẻ"),
                           subtitle: L10n.t("Kích thước chữ trong nội dung thẻ clipboard"),
@@ -273,16 +263,14 @@ private struct ClipboardSettingsBody: View {
                     Text(L10n.t("Vừa (13.5pt)")).tag(13.5)
                     Text(L10n.t("Lớn (15.5pt)")).tag(15.5)
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
             }
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
-
             // D — one file for the whole history + boards + media; import never overwrites.
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                SectionHeader(icon: "shippingbox",
-                              title: L10n.t("Sao lưu & chuyển máy"),
-                              subtitle: L10n.t("Xuất toàn bộ lịch sử và bảng ghim, kèm ảnh, thành một tệp .xfinderclip. Nhập không ghi đè mục đang có. Mục từ trình quản lý mật khẩu không bao giờ được xuất."))
+            SettingsSection(
+                title: L10n.t("Sao lưu & chuyển máy"),
+                footer: L10n.t("Xuất toàn bộ lịch sử và bảng ghim, kèm ảnh, thành một tệp .xfinderclip. Nhập không ghi đè mục đang có. Mục từ trình quản lý mật khẩu không bao giờ được xuất.")
+            ) {
                 HStack(spacing: XFinderTokens.Space.inline) {
                     Button(L10n.t("Xuất tệp .xfinderclip…")) {
                         Task { transferBusy = true; transferOutcome = await ClipTransfer.exportViaPanel(); transferBusy = false }
@@ -293,22 +281,22 @@ private struct ClipboardSettingsBody: View {
                     if transferBusy { ProgressView().controlSize(.small) }
                 }
                 .disabled(transferBusy)
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
                 if let line = transferLine {
+                    SettingsDivider()
                     Text(line).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                 }
             }
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
-
             // D — Clipboard MCP: the app binary as a stdio server for Claude Code / Cursor / Codex.
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                SectionHeader(icon: "terminal",
-                              title: L10n.t("Clipboard MCP cho agent AI"),
-                              subtitle: L10n.t("Claude Code, Cursor, Codex đọc được lịch sử clipboard qua MCP. Chỉ đọc, chỉ văn bản, không bao giờ trả mục từ trình quản lý mật khẩu; tắt công tắc thì mọi lệnh trả lỗi."))
+            SettingsSection(
+                title: L10n.t("Clipboard MCP cho agent AI"),
+                footer: L10n.t("Claude Code, Cursor, Codex đọc được lịch sử clipboard qua MCP. Chỉ đọc, chỉ văn bản, không bao giờ trả mục từ trình quản lý mật khẩu; tắt công tắc thì mọi lệnh trả lỗi.")
+            ) {
                 ToggleRow(title: L10n.t("Cho phép agent đọc clipboard qua MCP"), isOn: $mcpEnabled)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 HStack(alignment: .top, spacing: XFinderTokens.Space.inline) {
                     Text(Self.mcpConfigSnippet)
                         .font(XFinderTokens.Font.mono)
@@ -324,34 +312,34 @@ private struct ClipboardSettingsBody: View {
                     }
                     .controlSize(.small)
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
+                SettingsDivider()
                 InlineNote(text: L10n.t("Dán đoạn này vào cấu hình MCP của agent (Claude Code: ~/.claude.json hoặc .mcp.json). Server chạy khi agent khởi động nó; XFinder không mở cổng mạng nào."))
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
             }
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                SectionHeader(icon: "hand.raised",
-                              title: L10n.t("Riêng tư"),
-                              subtitle: L10n.t("Ứng dụng không bao giờ được ghi vào Clipboard."))
-
+            SettingsSection(title: L10n.t("Riêng tư"),
+                            footer: L10n.t("Ứng dụng không bao giờ được ghi vào Clipboard.")) {
                 ToggleRow(title: L10n.t("Tạm dừng ghi clipboard"),
                           subtitle: L10n.t("Không ghi gì vào lịch sử cho tới khi bật lại. ⌘⇧V vẫn mở được; trang notch báo đang tạm dừng."),
                           isOn: $paused)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Bỏ qua trình quản lý mật khẩu"),
                           subtitle: "1Password, Bitwarden, LastPass, KeePassXC, Dashlane, Keychain",
                           isOn: $excludePW)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Bỏ qua số thẻ thanh toán (Credit Card)"),
                           subtitle: L10n.t("Tự động lọc số thẻ 13-19 số thỏa thuật toán Luhn"),
                           isOn: $excludeCreditCards)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Khóa Touch ID"),
                           subtitle: L10n.t("Yêu cầu Touch ID hoặc mật khẩu máy khi mở lịch sử"),
                           isOn: $touchIDLock)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
 
                 // `.menu`, not `.segmented`: five options would sum into a window-resizing
                 // ideal width (CLAUDE.md Part 3c). The copy states what this does NOT do —
@@ -364,20 +352,22 @@ private struct ClipboardSettingsBody: View {
                         Text(autoClearLabel(s)).tag(s)
                     }
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
+                .settingsRow()
 
                 if autoClearSeconds > 0 {
+                    SettingsDivider()
                     if let last = clipboard.lastAutoClear {
                         Text("\(L10n.t("Lần tự xóa gần nhất: "))\(last.formatted(date: .omitted, time: .standard))")
                             .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                            .padding(.horizontal, XFinderTokens.Space.page)
+                            .settingsRow()
                     } else {
                         Text(L10n.t("Chưa tự xóa lần nào kể từ khi mở XFinder."))
                             .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                            .padding(.horizontal, XFinderTokens.Space.page)
+                            .settingsRow()
                     }
                 }
 
+                SettingsDivider()
                 VStack(alignment: .leading, spacing: 4) {
                     Text(L10n.t("Bỏ qua ứng dụng tùy chỉnh"))
                         .font(XFinderTokens.Font.row)
@@ -387,100 +377,99 @@ private struct ClipboardSettingsBody: View {
                         .textFieldStyle(.roundedBorder)
                         .font(XFinderTokens.Font.rowValue)
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
-                .padding(.top, 2)
+                .settingsRow()
 
+                SettingsDivider()
                 InlineNote(text: L10n.t("Ngoài ra XFinder luôn bỏ qua nội dung được đánh dấu Concealed / AutoGenerated / Transient, kể cả khi tắt công tắc trên."))
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 InlineNote(text: L10n.t("Toàn bộ dữ liệu nằm trên máy này. Không telemetry, không gửi lên server."))
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
             }
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                SectionHeader(icon: "icloud",
-                              title: L10n.t("Đồng bộ iCloud"),
-                              subtitle: L10n.t("Cho ứng dụng Clipboard trên iPhone sau này."))
-
+            SettingsSection(title: L10n.t("Đồng bộ iCloud"),
+                            footer: L10n.t("Cho ứng dụng Clipboard trên iPhone sau này.")) {
                 ToggleRow(title: L10n.t("Đồng bộ clipboard qua iCloud"), isOn: $icloudSync)
-                    .padding(.horizontal, XFinderTokens.Space.page)
                     .onChange(of: icloudSync) { CloudSyncController.shared.applySettings() }
+                    .settingsRow()
+                SettingsDivider()
 
                 switch cloud.status {
                 case .disabled:
                     InlineNote(text: L10n.t("Đang tắt."))
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                 case .unavailable(let why):
                     InlineNote(kind: .warning, text: why)
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                 case .ready(let count, let last):
                     InlineNote(kind: .success,
                                text: "\(L10n.t("Sẵn sàng — "))\(count)\(L10n.t(" mục trên iCloud"))" +
                                    (last.map { L10n.t(" · lần cuối ") + Self.time($0) } ?? ""))
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                 }
 
+                SettingsDivider()
                 Text(L10n.md("Dùng iCloud Key-Value Store: giới hạn 1 MB của Apple nên **chỉ đồng bộ văn bản** (tối đa 60 mục, mỗi mục 2000 ký tự). Ảnh và tệp luôn ở lại máy Mac."))
                     .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 InlineNote(text: L10n.t("Cần entitlement iCloud + tài khoản Apple Developer trả phí. Khi chưa có, công tắc sẽ báo rõ thay vì giả vờ đồng bộ."))
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
             }
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                SectionHeader(icon: "tray.and.arrow.down", title: L10n.t("Thu thập"))
-
+            SettingsSection(title: L10n.t("Thu thập")) {
                 ToggleRow(title: L10n.t("Ảnh chụp / hình ảnh"), isOn: $captureImages)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Đường link"), isOn: $captureLinks)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Làm sạch liên kết khi sao chép"),
                           subtitle: L10n.t("Xóa tham số theo dõi (utm_*, fbclid, gclid…) khỏi liên kết bạn vừa sao chép bằng cách ghi lại clipboard. Chỉ áp dụng khi toàn bộ nội dung sao chép là một liên kết duy nhất."),
                           isOn: $cleanURLs)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
                 // The app rewrites what the user copied, so it shows what it did — the
                 // last cleaning this session — rather than asking to be trusted.
                 if cleanURLs {
+                    SettingsDivider()
                     if let last = clipboard.lastCleanedLink {
                         Text("\(L10n.t("Lần gần nhất: đã bỏ "))\(last.removed.joined(separator: ", "))\(L10n.t(" khỏi "))\(last.host)")
                             .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                            .padding(.horizontal, XFinderTokens.Space.page)
+                            .settingsRow()
                     } else {
                         Text(L10n.t("Chưa làm sạch liên kết nào kể từ khi mở XFinder."))
                             .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                            .padding(.horizontal, XFinderTokens.Space.page)
+                            .settingsRow()
                     }
                 }
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Nhận diện chữ (OCR)"), subtitle: "Vision Framework", isOn: $enableOCR)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 // D4b: the switch is back WITH a reader (LinkPreviewFetcher) and honest copy — it is the one
                 // network action a copy can trigger, so it is opt-in and says what it sends.
                 ToggleRow(title: L10n.t("Tải xem trước liên kết (mạng)"),
                           subtitle: L10n.t("Với mỗi link bạn copy, XFinder gửi một yêu cầu tới chính trang đó để lấy tiêu đề và ảnh (LinkPresentation của Apple). Đây là lần duy nhất clipboard chạm mạng; mặc định tắt. Không bao giờ tải link tới localhost hay mạng nội bộ."),
                           isOn: $linkPreviews)
                     .onChange(of: linkPreviews) { LinkPreviewFetcher.shared.applySettings() }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Âm thanh khi sao chép/dán"), subtitle: L10n.t("Tink/Pop hệ thống"), isOn: $sounds)
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
+                SettingsDivider()
                 PickerRow(title: L10n.t("Âm sao chép"), selection: $copySound, width: 120) {
                     ForEach(ClipboardSounds.copySoundChoices, id: \.self) { Text($0).tag($0) }
                 }
-                .padding(.horizontal, XFinderTokens.Space.page)
                 .disabled(!sounds)
+                .settingsRow()
             }
 
-            Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                SectionHeader(icon: "folder",
-                              title: L10n.t("Bảng ghim (Categories)"),
-                              subtitle: "\(clipboard.pinboards.count)\(L10n.t(" bảng — sửa tên hoặc xóa"))")
-
-                ForEach(clipboard.pinboards) { board in
+            SettingsSection(title: L10n.t("Bảng ghim (Categories)"),
+                            footer: "\(clipboard.pinboards.count)\(L10n.t(" bảng — sửa tên hoặc xóa"))") {
+                ForEach(Array(clipboard.pinboards.enumerated()), id: \.element.id) { entry in
+                    if entry.offset > 0 { SettingsDivider() }
+                    let board = entry.element
                     HStack(spacing: XFinderTokens.Space.inline) {
                         Circle().fill(board.color.color).frame(width: 10, height: 10)
                         Image(systemName: board.icon).font(.caption).foregroundColor(.secondary)
@@ -512,8 +501,7 @@ private struct ClipboardSettingsBody: View {
                             .help(board.isLocked ? L10n.t("Gỡ khoá bảng trước khi xoá.") : "")
                         }
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
-                    .padding(.vertical, 4)
+                    .settingsRow()
                 }
             }
         }

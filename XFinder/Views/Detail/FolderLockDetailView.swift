@@ -10,16 +10,14 @@ struct FolderLockDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "lock.shield",
-                           title: L10n.t("Khóa thư mục"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Khóa thư mục"),
                            subtitle: L10n.t("Mã hóa thư mục bằng mật khẩu — AES-256, hoàn toàn trên máy."))
 
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "plus.rectangle.on.folder",
-                                  title: L10n.t("Tạo vault mới"),
-                                  subtitle: L10n.t("Chọn một thư mục để mã hóa thành vault có mật khẩu."))
-
+                SettingsSection(
+                    title: L10n.t("Tạo vault mới"),
+                    footer: L10n.t("Chọn một thư mục để mã hóa thành vault có mật khẩu.")
+                ) {
                     VStack(alignment: .leading, spacing: 8) {
                         Button {
                             showCreate = true
@@ -41,30 +39,30 @@ struct FolderLockDetailView: View {
                             Text(err).font(XFinderTokens.Font.caption).foregroundColor(.red)
                         }
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
                 }
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "lock.doc",
-                                  title: L10n.t("Vault của bạn"),
-                                  subtitle: controller.vaults.isEmpty
-                                      ? L10n.t("Chưa có vault nào.")
-                                      : "\(controller.vaults.count) vault")
-
-                    VStack(spacing: 8) {
-                        ForEach(controller.vaults) { vault in
-                            vaultRow(vault)
+                // P4 review: left flat, this group sat between two cards with nothing separating it. The vault
+                // tiles keep their own inset fill inside the card (like the Features hub's bundle tiles).
+                SettingsSection(title: L10n.t("Vault của bạn")) {
+                    Text(controller.vaults.isEmpty
+                         ? L10n.t("Chưa có vault nào.")
+                         : "\(controller.vaults.count) vault")
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                        .settingsRow()
+                    if !controller.vaults.isEmpty {
+                        SettingsDivider()
+                        VStack(spacing: 8) {
+                            ForEach(controller.vaults) { vault in
+                                vaultRow(vault)
+                            }
                         }
+                        .settingsRow()
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                    SectionHeader(icon: "questionmark.circle", title: L10n.t("Cách hoạt động"))
+                SettingsSection(title: L10n.t("Cách hoạt động")) {
                     VStack(alignment: .leading, spacing: 7) {
                         line(L10n.t("Vault là một disk image mã hóa AES-256 (.sparsebundle) — cùng cơ chế Apple dùng cho ảnh đĩa mã hóa."))
                         line(L10n.t("Mở khóa: nhập mật khẩu → vault gắn vào máy như một ổ đĩa và mở trong Finder."))
@@ -73,11 +71,12 @@ struct FolderLockDetailView: View {
                         line(L10n.t("XFinder KHÔNG lưu mật khẩu. Mất mật khẩu là mất dữ liệu — hãy lưu vào Keychain hoặc trình quản lý mật khẩu."))
                         line(L10n.t("Thư mục gốc chỉ được chuyển vào Thùng rác sau khi đã kiểm tra bản mã hóa thành công."))
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .settingsRow()
 
+                    SettingsDivider()
                     InlineNote(kind: .warning,
                                text: L10n.t("Không dùng cách “ẩn thư mục” (chflags hidden) vì ai cũng có thể hiện lại trong vài giây — đó không phải bảo mật thật."))
-                        .padding(.horizontal, XFinderTokens.Space.page)
+                        .settingsRow()
                 }
             }
             .padding(.bottom, XFinderTokens.Space.section)

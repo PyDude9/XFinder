@@ -29,9 +29,7 @@ struct ClipboardLibraryView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            PageHeader(
-                icon: "tray.full",
-                title: L10n.t("Thư viện Clipboard"),
+            PageHeader(title: L10n.t("Thư viện Clipboard"),
                 subtitle: L10n.t("Tìm một mục cũ trong toàn bộ lịch sử, lọc theo loại, ứng dụng, bảng hoặc thời gian.")
             )
 

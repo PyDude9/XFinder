@@ -3,11 +3,9 @@ import SwiftUI
 /// OneNotch-style page header (P3, measured on its settings screenshots): a fixed-height title bar with a
 /// trailing control, a full-width hairline under it, then the subtitle below the hairline.
 ///
-/// `icon` is no longer drawn — the sidebar's coloured tile (`SidebarRow`) now carries the page's glyph, so
-/// showing it a second time here was the same icon twice for one page. The parameter stays so all 37 call
-/// sites keep compiling unchanged; P4 is expected to drop it once every page has been swept.
+/// No icon: the sidebar's coloured tile carries the page's glyph (P3), and P4 removed the dead parameter from all
+/// 45 call sites.
 struct PageHeader: View {
-    let icon: String
     let title: String
     var subtitle: String? = nil
     /// Optional trailing control (a master on/off switch, a picker).

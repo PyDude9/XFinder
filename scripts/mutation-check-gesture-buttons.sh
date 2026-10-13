@@ -100,17 +100,22 @@ if old not in src:
 open(path, "w", encoding="utf-8").write(src.replace(old, new, 1))
 EOF
   if [ $? -ne 0 ]; then
-    echo "$NAME: HARNESS ERROR (anchor missing) — treat as inconclusive"
+    # P4 (2026-10-14): this used to print "inconclusive" and carry on — M9's anchor had been rotten since ea3a98d and
+    # every run still ended looking green. A mutation that cannot be injected is a broken gate: stop the run.
+    echo "$NAME: HARNESS ERROR (anchor missing)"
     restore
-    return
+    exit 2
   fi
+  TOTAL=$((TOTAL + 1))
   N=$(fails)
   if [ "$N" -gt 0 ]; then
+    RED=$((RED + 1))
     echo "$NAME: RED as expected ($N failing test cases)"
   else
     echo "$NAME: *** STAYED GREEN — the test does not catch this ***"
   fi
 }
+RED=0; TOTAL=0
 
 # M1: usage 3 lands on event button 3 instead of 2, so every chip is off by one.
 mutate "M1 usage→event conversion loses the offset" "$CAP" \
@@ -180,8 +185,11 @@ mutate "M8 position caption emits a sentence instead of a key" "$CAP" \
 # M9: the raw dump stops listing the vendor page, so the evidence behind "there are extra
 # vendor controls" can no longer be checked.
 mutate "M9 raw dump hides the vendor page" "$TYPES_SRC" \
-  '            $0.usagePage == usagePageButton || $0.usagePage >= usagePageVendorDefined' \
-  '            $0.usagePage == usagePageButton'
+  '                || $0.usagePage == usagePageConsumer
+                || $0.usagePage >= usagePageVendorDefined
+        }' \
+  '                || $0.usagePage == usagePageConsumer
+        }'
 
 # M10: the "missing hardware buttons" prompt fires without evidence, i.e. on every mouse
 # that simply has fewer buttons.
@@ -225,5 +233,11 @@ if [ "$CAP_HASH" = "$AFTER_HASH" ] && [ "$LABEL_HASH" = "$LABEL_AFTER" ] \
 else
   echo "source restored byte-identical: NO — restore it from git"
 fi
-echo "post-restore suite: $(run_tests)"
+AFTER_SUITE=$(run_tests)
+echo "post-restore suite: $AFTER_SUITE"
 rm -rf "$SCRATCH"
+echo "RESULT: $RED/$TOTAL mutations RED"
+# P4: the result used to be printed only; a green mutant or an unrestored file now fails the run.
+[ "$RED" = "$TOTAL" ] && [ "$CAP_HASH" = "$AFTER_HASH" ] && [ "$LABEL_HASH" = "$LABEL_AFTER" ] \
+  && [ "$TYPES_HASH" = "$TYPES_AFTER" ] && [ "$UI_HASH" = "$UI_AFTER" ] \
+  && echo "$AFTER_SUITE" | grep -q "with 0 failures" || exit 1

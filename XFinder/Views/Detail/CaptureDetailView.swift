@@ -25,50 +25,47 @@ struct CaptureDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                PageHeader(icon: "camera.viewfinder",
-                           title: L10n.t("Chụp & chú thích"),
+            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                PageHeader(title: L10n.t("Chụp & chú thích"),
                            subtitle: L10n.t("Chụp một vùng, cửa sổ hoặc cả màn hình; ảnh vào clipboard ngay, rồi chú thích, lưu hoặc ghim lên màn hình."))
                 if !controller.isScreenRecordingGranted {
-                    InlineNote(kind: .warning,
-                               text: L10n.t("Chưa có quyền Ghi màn hình — ảnh chụp sẽ chỉ có hình nền."),
-                               buttonTitle: L10n.t("Mở Cài đặt")) {
-                        if let url = URL(string: AppPermission.screenRecording.settingsURL) {
-                            NSWorkspace.shared.open(url)
+                    SettingsSection {
+                        InlineNote(kind: .warning,
+                                   text: L10n.t("Chưa có quyền Ghi màn hình — ảnh chụp sẽ chỉ có hình nền."),
+                                   buttonTitle: L10n.t("Mở Cài đặt")) {
+                            if let url = URL(string: AppPermission.screenRecording.settingsURL) {
+                                NSWorkspace.shared.open(url)
+                            }
                         }
+                        .settingsRow()
                     }
-                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
                 captureSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 afterSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 saveSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 annotateSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
                 recentSection
             }
-            .padding(.bottom, XFinderTokens.Space.section)
+            .padding(.bottom, 24)
             .pageWidthSafe()
         }
+        .background(XFinderTokens.Settings.contentBackground)
     }
 
     // MARK: Chụp
 
     private var captureSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "keyboard", title: L10n.t("Chụp"),
-                          subtitle: L10n.t("Không có phím tắt mặc định — ⇧⌘3, ⇧⌘4, ⇧⌘5 vẫn là của macOS."))
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                ToggleRow(title: L10n.t("Bật phím tắt chụp"), isOn: $enabled)
-                    .onChange(of: enabled) { controller.applySettings() }
-                ForEach(CaptureMode.allCases, id: \.self) { mode in
-                    captureModeRow(mode)
-                }
-                SettingsLinkRow(title: L10n.t("Đổi phím tắt trong Phím tắt"), destination: .shortcuts)
+        SettingsSection(title: L10n.t("Chụp"),
+                        footer: L10n.t("Không có phím tắt mặc định — ⇧⌘3, ⇧⌘4, ⇧⌘5 vẫn là của macOS.")) {
+            ToggleRow(title: L10n.t("Bật phím tắt chụp"), isOn: $enabled)
+                .onChange(of: enabled) { controller.applySettings() }
+                .settingsRow()
+            ForEach(CaptureMode.allCases, id: \.self) { mode in
+                SettingsDivider()
+                captureModeRow(mode)
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            SettingsDivider()
+            SettingsLinkRow(title: L10n.t("Đổi phím tắt trong Phím tắt"), destination: .shortcuts)
         }
     }
 
@@ -104,7 +101,7 @@ struct CaptureDetailView: View {
                     .padding(.leading, 30)
             }
         }
-        .padding(.vertical, 2)
+        .settingsRow()
     }
 
     @ViewBuilder
@@ -120,50 +117,57 @@ struct CaptureDetailView: View {
     // MARK: Sau khi chụp
 
     private var afterSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "photo.on.rectangle", title: L10n.t("Sau khi chụp"))
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                HStack {
-                    Text(L10n.t("Sau khi chụp")).font(XFinderTokens.Font.row)
-                    Spacer()
-                    Picker("", selection: $afterRaw) {
-                        ForEach(CaptureAfter.allCases, id: \.self) { a in
-                            Text(L10n.t(a.titleKey)).tag(a.rawValue)
-                        }
+        SettingsSection(title: L10n.t("Sau khi chụp")) {
+            HStack {
+                Text(L10n.t("Sau khi chụp")).font(XFinderTokens.Font.row)
+                Spacer()
+                Picker("", selection: $afterRaw) {
+                    ForEach(CaptureAfter.allCases, id: \.self) { a in
+                        Text(L10n.t(a.titleKey)).tag(a.rawValue)
                     }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .frame(width: 260)
                 }
-                HStack {
-                    Text(L10n.t("Thẻ xem trước tự đóng sau")).font(XFinderTokens.Font.row)
-                    Spacer()
-                    Picker("", selection: $cardSeconds) {
-                        ForEach(CaptureRules.cardSecondsChoices, id: \.self) { seconds in
-                            cardSecondsLabel(seconds).tag(seconds)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .frame(width: 160)
-                }
-                HStack {
-                    Text(L10n.t("Cạnh màn hình")).font(XFinderTokens.Font.row)
-                    Spacer()
-                    Picker("", selection: $cardEdgeRaw) {
-                        ForEach(CaptureCardEdge.allCases, id: \.self) { edge in
-                            Text(L10n.t(edge.titleKey)).tag(edge.rawValue)
-                        }
-                    }
-                    .pickerStyle(.segmented) // segmented-ok: CaptureCardEdge has 2 cases
-                    .labelsHidden()
-                    .frame(width: 140)
-                }
-                ToggleRow(title: L10n.t("Dừng đếm khi trỏ vào thẻ"), isOn: $pauseOnHover)
-                ToggleRow(title: L10n.t("Vuốt hai ngón để đóng thẻ"), isOn: $swipeDismiss)
-                ToggleRow(title: L10n.t("Âm thanh khi chụp"), isOn: $sound)
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .frame(width: 260)
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
+            SettingsDivider()
+            HStack {
+                Text(L10n.t("Thẻ xem trước tự đóng sau")).font(XFinderTokens.Font.row)
+                Spacer()
+                Picker("", selection: $cardSeconds) {
+                    ForEach(CaptureRules.cardSecondsChoices, id: \.self) { seconds in
+                        cardSecondsLabel(seconds).tag(seconds)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .frame(width: 160)
+            }
+            .settingsRow()
+            SettingsDivider()
+            HStack {
+                Text(L10n.t("Cạnh màn hình")).font(XFinderTokens.Font.row)
+                Spacer()
+                Picker("", selection: $cardEdgeRaw) {
+                    ForEach(CaptureCardEdge.allCases, id: \.self) { edge in
+                        Text(L10n.t(edge.titleKey)).tag(edge.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented) // segmented-ok: CaptureCardEdge has 2 cases
+                .labelsHidden()
+                .frame(width: 140)
+            }
+            .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Dừng đếm khi trỏ vào thẻ"), isOn: $pauseOnHover)
+                .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Vuốt hai ngón để đóng thẻ"), isOn: $swipeDismiss)
+                .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Âm thanh khi chụp"), isOn: $sound)
+                .settingsRow()
         }
     }
 
@@ -179,44 +183,45 @@ struct CaptureDetailView: View {
     // MARK: Lưu
 
     private var saveSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "square.and.arrow.down", title: L10n.t("Lưu"))
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                HStack(spacing: XFinderTokens.Space.inline) {
-                    Text(L10n.t("Thư mục lưu"))
-                        .font(XFinderTokens.Font.row)
-                    Text(controller.saveFolder.lastPathComponent)
-                        .font(XFinderTokens.Font.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, XFinderTokens.Space.tight)
-                        .padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).fill(XFinderTokens.Fill.inset))
-                    Button("\(L10n.t("Chọn"))…") { controller.chooseSaveFolder() }
-                        .controlSize(.small)
-                }
-                HStack {
-                    Text(L10n.t("Định dạng")).font(XFinderTokens.Font.row)
-                    Spacer()
-                    Picker("", selection: $formatRaw) {
-                        Text("PNG").tag(CaptureFormat.png.rawValue)
-                        Text("JPEG").tag(CaptureFormat.jpg.rawValue)
-                        Text("HEIC").tag(CaptureFormat.heic.rawValue)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .frame(width: 200)
-                }
-                Text(exampleFileName())
+        SettingsSection(title: L10n.t("Lưu")) {
+            HStack(spacing: XFinderTokens.Space.inline) {
+                Text(L10n.t("Thư mục lưu"))
+                    .font(XFinderTokens.Font.row)
+                Text(controller.saveFolder.lastPathComponent)
                     .font(XFinderTokens.Font.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, XFinderTokens.Space.tight)
+                    .padding(.vertical, 2)
+                    .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).fill(XFinderTokens.Fill.inset))
+                Button("\(L10n.t("Chọn"))…") { controller.chooseSaveFolder() }
+                    .controlSize(.small)
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
+            SettingsDivider()
+            HStack {
+                Text(L10n.t("Định dạng")).font(XFinderTokens.Font.row)
+                Spacer()
+                Picker("", selection: $formatRaw) {
+                    Text("PNG").tag(CaptureFormat.png.rawValue)
+                    Text("JPEG").tag(CaptureFormat.jpg.rawValue)
+                    Text("HEIC").tag(CaptureFormat.heic.rawValue)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 200)
+            }
+            .settingsRow()
+            SettingsDivider()
+            Text(exampleFileName())
+                .font(XFinderTokens.Font.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                .settingsRow()
         }
     }
 
@@ -227,30 +232,29 @@ struct CaptureDetailView: View {
     // MARK: Chú thích
 
     private var annotateSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "pencil.and.outline", title: L10n.t("Chú thích"))
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                HStack(spacing: XFinderTokens.Space.inline) {
-                    Text(L10n.t("Màu mặc định cho lần sau")).font(XFinderTokens.Font.row)
-                    Spacer()
-                    ForEach(MarkColor.allCases, id: \.self) { color in
-                        colorSwatch(color)
-                    }
-                }
-                HStack {
-                    Text(L10n.t("Độ dày nét cho lần sau")).font(XFinderTokens.Font.row)
-                    Spacer()
-                    Picker("", selection: $annotateWidthRaw) {
-                        ForEach(StrokeWidth.allCases, id: \.self) { w in
-                            Text(L10n.t(w.titleKey)).tag(w.rawValue)
-                        }
-                    }
-                    .pickerStyle(.segmented) // segmented-ok: StrokeWidth has 3 cases
-                    .labelsHidden()
-                    .frame(width: 180)
+        SettingsSection(title: L10n.t("Chú thích")) {
+            HStack(spacing: XFinderTokens.Space.inline) {
+                Text(L10n.t("Màu mặc định cho lần sau")).font(XFinderTokens.Font.row)
+                Spacer()
+                ForEach(MarkColor.allCases, id: \.self) { color in
+                    colorSwatch(color)
                 }
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            .settingsRow()
+            SettingsDivider()
+            HStack {
+                Text(L10n.t("Độ dày nét cho lần sau")).font(XFinderTokens.Font.row)
+                Spacer()
+                Picker("", selection: $annotateWidthRaw) {
+                    ForEach(StrokeWidth.allCases, id: \.self) { w in
+                        Text(L10n.t(w.titleKey)).tag(w.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented) // segmented-ok: StrokeWidth has 3 cases
+                .labelsHidden()
+                .frame(width: 180)
+            }
+            .settingsRow()
         }
     }
 
@@ -270,25 +274,27 @@ struct CaptureDetailView: View {
     // MARK: Gần đây
 
     private var recentSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "clock", title: L10n.t("Gần đây"))
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                ToggleRow(title: L10n.t("Giữ lịch sử ảnh chụp"),
-                          subtitle: L10n.t("Tối đa 50 ảnh, trong thư mục của XFinder trên máy này."),
-                          isOn: $keepHistory)
-                if controller.history.isEmpty {
-                    Text(L10n.t("Chưa có ảnh chụp nào."))
-                        .font(XFinderTokens.Font.caption)
-                        .foregroundColor(.secondary)
-                } else {
-                    recentGrid
-                }
-                Button(L10n.t("Xoá lịch sử")) { controller.clearHistory() }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(controller.history.isEmpty)
+        SettingsSection(title: L10n.t("Gần đây")) {
+            ToggleRow(title: L10n.t("Giữ lịch sử ảnh chụp"),
+                      subtitle: L10n.t("Tối đa 50 ảnh, trong thư mục của XFinder trên máy này."),
+                      isOn: $keepHistory)
+                .settingsRow()
+            SettingsDivider()
+            if controller.history.isEmpty {
+                Text(L10n.t("Chưa có ảnh chụp nào."))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+                    .settingsRow()
+            } else {
+                recentGrid
+                    .settingsRow()
             }
-            .padding(.horizontal, XFinderTokens.Space.page)
+            SettingsDivider()
+            Button(L10n.t("Xoá lịch sử")) { controller.clearHistory() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(controller.history.isEmpty)
+                .settingsRow()
         }
     }
 

@@ -5,7 +5,7 @@ struct PlaceholderDetailView: View {
 
     var body: some View {
         VStack(spacing: XFinderTokens.Space.row) {
-            PageHeader(icon: destination.icon, title: destination.titleVI)
+            PageHeader(title: destination.titleVI)
             if destination.isComingSoon {
                 Text(L10n.t("Sắp có — sẽ làm ở mục riêng"))
                     .font(XFinderTokens.Font.rowValue)
