@@ -74,21 +74,7 @@ final class ClipboardManager {
     ]
 
     /// Password managers / secret stores whose copies are always skipped.
-    nonisolated private static let excludedAppKeywords: [String] = [   // Sendable `let`: readable off the main actor
-        "1password",
-        "onepassword",
-        "bitwarden",
-        "keepass",
-        "lastpass",
-        "dashlane",
-        "keychain",
-        "passwords",
-        "enpass",
-        "strongbox",
-        "proton.pass",
-        "roboform",
-        "nordpass"
-    ]
+    nonisolated private static let excludedAppKeywords: [String] = SecretApps.fragments   // one list, shared with MCP + Smart Selection
 
 
     // MARK: - Monitoring (guide §6: zero polling)

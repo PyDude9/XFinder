@@ -14,8 +14,8 @@ enum MCP {
     static let maxLimit = 100
     static let defaultLimit = 20
 
-    /// Bundle-id fragments of password managers (mirrors the capture filter's list in ClipboardManager).
-    static let excludedBundleFragments = ["1password", "bitwarden", "lastpass", "keepass", "dashlane", "keychainaccess", "nordpass", "enpass"]
+    /// Bundle-id fragments of password managers — the same list the capture filter uses (`SecretApps`).
+    static let excludedBundleFragments = SecretApps.fragments
 
     /// What the server needs from the outside, injected so tests run with fixtures.
     struct Context {

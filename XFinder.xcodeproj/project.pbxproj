@@ -11,6 +11,9 @@
 		2535B74A /* QuickSearch/Quicklinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = E38D74CB /* QuickSearch/Quicklinks.swift */; };
 		2BE39F5C /* QuickSearch/Calculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EC78A7D /* QuickSearch/Calculator.swift */; };
 		7F1A0311 /* QuickSearch/SafeArithmetic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0310 /* QuickSearch/SafeArithmetic.swift */; };
+		7F1A0315 /* SmartSelect/SmartSelectionRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0314 /* SmartSelect/SmartSelectionRules.swift */; };
+		7F1A0317 /* SmartSelect/UnitConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0316 /* SmartSelect/UnitConversion.swift */; };
+		7F1A0319 /* SmartSelect/TimeZoneConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0318 /* SmartSelect/TimeZoneConversion.swift */; };
 		7F1A001E /* XFinderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000B /* XFinderApp.swift */; };
 		7F1A001F /* MenubarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000C /* MenubarController.swift */; };
 		7F1A0020 /* ClipboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000D /* ClipboardManager.swift */; };
@@ -255,6 +258,7 @@
 		7F1A01C8 /* PortList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01C7 /* PortList.swift */; };
 		7F1A01C6 /* ScreenColorPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01C5 /* ScreenColorPicker.swift */; };
 		7F1A01C4 /* ColorFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01C3 /* ColorFormat.swift */; };
+		7F1A0313 /* SecretApps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0312 /* SecretApps.swift */; };
 		7F1A01BE /* QuitProtectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01BD /* QuitProtectionController.swift */; };
 		7F1A01BC /* QuitHold.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01BB /* QuitHold.swift */; };
 		7F1A01BA /* ClipboardAutoClear.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01B9 /* ClipboardAutoClear.swift */; };
@@ -294,6 +298,9 @@
 		0F2B7B75 /* QuickSearch/FileSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/FileSearch.swift; sourceTree = "<group>"; };
 		1EC78A7D /* QuickSearch/Calculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/Calculator.swift; sourceTree = "<group>"; };
 		7F1A0310 /* QuickSearch/SafeArithmetic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/SafeArithmetic.swift; sourceTree = "<group>"; };
+		7F1A0314 /* SmartSelect/SmartSelectionRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SmartSelectionRules.swift; sourceTree = "<group>"; };
+		7F1A0316 /* SmartSelect/UnitConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/UnitConversion.swift; sourceTree = "<group>"; };
+		7F1A0318 /* SmartSelect/TimeZoneConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/TimeZoneConversion.swift; sourceTree = "<group>"; };
 		205EC419305AD1CE0094A78B /* XFinderSync.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = XFinderSync.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F1A0009 /* XFinder/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = XFinder/Info.plist; sourceTree = SOURCE_ROOT; };
 		7F1A000A /* XFinder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XFinder.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -438,6 +445,7 @@
 		7F1A01C7 /* PortList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortList.swift; sourceTree = "<group>"; };
 		7F1A01C5 /* ScreenColorPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenColorPicker.swift; sourceTree = "<group>"; };
 		7F1A01C3 /* ColorFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorFormat.swift; sourceTree = "<group>"; };
+		7F1A0312 /* SecretApps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecretApps.swift; sourceTree = "<group>"; };
 		7F1A01BD /* QuitProtectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitProtectionController.swift; sourceTree = "<group>"; };
 		7F1A01BB /* QuitHold.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitHold.swift; sourceTree = "<group>"; };
 		7F1A01B9 /* ClipboardAutoClear.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardAutoClear.swift; sourceTree = "<group>"; };
@@ -705,6 +713,7 @@
 				7F1A01C7 /* PortList.swift */,
 				7F1A01C5 /* ScreenColorPicker.swift */,
 				7F1A01C3 /* ColorFormat.swift */,
+				7F1A0312 /* SecretApps.swift */,
 				7F1A01BD /* QuitProtectionController.swift */,
 				7F1A01BB /* QuitHold.swift */,
 				7F1A01B9 /* ClipboardAutoClear.swift */,
@@ -730,6 +739,9 @@
 				0F2B7B75 /* QuickSearch/FileSearch.swift */,
 				1EC78A7D /* QuickSearch/Calculator.swift */,
 				7F1A0310 /* QuickSearch/SafeArithmetic.swift */,
+				7F1A0314 /* SmartSelect/SmartSelectionRules.swift */,
+				7F1A0316 /* SmartSelect/UnitConversion.swift */,
+				7F1A0318 /* SmartSelect/TimeZoneConversion.swift */,
 				E38D74CB /* QuickSearch/Quicklinks.swift */,
 				7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */,
 				7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */,
@@ -1165,6 +1177,7 @@
 				7F1A01C8 /* PortList.swift in Sources */,
 				7F1A01C6 /* ScreenColorPicker.swift in Sources */,
 				7F1A01C4 /* ColorFormat.swift in Sources */,
+				7F1A0313 /* SecretApps.swift in Sources */,
 				7F1A01BE /* QuitProtectionController.swift in Sources */,
 				7F1A01BC /* QuitHold.swift in Sources */,
 				7F1A01BA /* ClipboardAutoClear.swift in Sources */,
@@ -1199,6 +1212,9 @@
 				FEDF1419 /* QuickSearch/FileSearch.swift in Sources */,
 				2BE39F5C /* QuickSearch/Calculator.swift in Sources */,
 				7F1A0311 /* QuickSearch/SafeArithmetic.swift in Sources */,
+				7F1A0315 /* SmartSelect/SmartSelectionRules.swift in Sources */,
+				7F1A0317 /* SmartSelect/UnitConversion.swift in Sources */,
+				7F1A0319 /* SmartSelect/TimeZoneConversion.swift in Sources */,
 				2535B74A /* QuickSearch/Quicklinks.swift in Sources */,
 				7F1A00D3 /* QuickSearch/QuickSearchEngine.swift in Sources */,
 				7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */,
