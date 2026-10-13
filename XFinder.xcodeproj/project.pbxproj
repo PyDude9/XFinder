@@ -92,6 +92,8 @@
 		7F1A027C /* Clipboard/LinkPreviewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A027D /* Clipboard/LinkPreviewRules.swift */; };
 		7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0263 /* Agents/AgentHookInstaller.swift */; };
 		7F1A0266 /* Agents/AgentSessionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0267 /* Agents/AgentSessionMonitor.swift */; };
+		7F1A034D /* Agents/AgentUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A034C /* Agents/AgentUsage.swift */; };
+		7F1A034F /* Agents/AgentUsageMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A034E /* Agents/AgentUsageMonitor.swift */; };
 		7F1A0268 /* Notch/NotchHoverOpen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0269 /* Notch/NotchHoverOpen.swift */; };
 		7F1A0278 /* Translate/TranslateSelectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0279 /* Translate/TranslateSelectionController.swift */; };
 		7F1A0276 /* Translate/TranslateSelectionRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0277 /* Translate/TranslateSelectionRules.swift */; };
@@ -407,6 +409,8 @@
 		7F1A027D /* Clipboard/LinkPreviewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/LinkPreviewRules.swift; sourceTree = "<group>"; };
 		7F1A0263 /* Agents/AgentHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentHookInstaller.swift; sourceTree = "<group>"; };
 		7F1A0267 /* Agents/AgentSessionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentSessionMonitor.swift; sourceTree = "<group>"; };
+		7F1A034C /* Agents/AgentUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentUsage.swift; sourceTree = "<group>"; };
+		7F1A034E /* Agents/AgentUsageMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentUsageMonitor.swift; sourceTree = "<group>"; };
 		7F1A0269 /* Notch/NotchHoverOpen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchHoverOpen.swift; sourceTree = "<group>"; };
 		7F1A0279 /* Translate/TranslateSelectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/TranslateSelectionController.swift; sourceTree = "<group>"; };
 		7F1A0277 /* Translate/TranslateSelectionRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/TranslateSelectionRules.swift; sourceTree = "<group>"; };
@@ -712,6 +716,8 @@
 				7F1A027D /* Clipboard/LinkPreviewRules.swift */,
 				7F1A0263 /* Agents/AgentHookInstaller.swift */,
 				7F1A0267 /* Agents/AgentSessionMonitor.swift */,
+				7F1A034C /* Agents/AgentUsage.swift */,
+				7F1A034E /* Agents/AgentUsageMonitor.swift */,
 				7F1A0269 /* Notch/NotchHoverOpen.swift */,
 				7F1A0279 /* Translate/TranslateSelectionController.swift */,
 				7F1A0277 /* Translate/TranslateSelectionRules.swift */,
@@ -1176,6 +1182,8 @@
 				7F1A027C /* Clipboard/LinkPreviewRules.swift in Sources */,
 				7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */,
 				7F1A0266 /* Agents/AgentSessionMonitor.swift in Sources */,
+				7F1A034D /* Agents/AgentUsage.swift in Sources */,
+				7F1A034F /* Agents/AgentUsageMonitor.swift in Sources */,
 				7F1A0268 /* Notch/NotchHoverOpen.swift in Sources */,
 				7F1A0278 /* Translate/TranslateSelectionController.swift in Sources */,
 				7F1A0276 /* Translate/TranslateSelectionRules.swift in Sources */,

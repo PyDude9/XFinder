@@ -27,7 +27,7 @@ final class FeatureContractTests: XCTestCase {
         .dropTray: .pure(["Core/Notch/NotchSurfaceMachine.swift", "Core/Notch/NotchSurfaceLayout.swift",
                           "Core/Notch/NotchDragSession.swift"]),
         .nowPlaying: .pure(["Core/Notch/NowPlaying.swift"]),
-        .agents: .pure(["Core/Agents/AgentEvents.swift", "Core/Agents/AgentHookInstaller.swift"]),
+        .agents: .pure(["Core/Agents/AgentEvents.swift", "Core/Agents/AgentHookInstaller.swift", "Core/Agents/AgentUsage.swift"]),
         .calendar: .pure(["Core/Calendar/GlanceRules.swift"]),
         .translateSelection: .pure(["Core/Translate/TranslateSelectionRules.swift"]),
         .quitOnClose: .pure(["Core/QuitOnClose/QuitOnCloseRules.swift"]),

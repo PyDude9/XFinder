@@ -6,12 +6,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-agents.XXXXXX)
-FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift"
+FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='AgentSession|FeatureContract|FeatureCatalog'
+FILTER='AgentSession|AgentUsage|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -69,5 +69,14 @@ restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)
 echo "suite after restore: $after failure(s)"
+U=XFinder/Core/Agents/AgentUsage.swift
+run "A11 repeated lines of one message are summed (2.6x the real tokens)" $U \
+  "'            if let cur = best[l.key], cur.output >= l.output { continue }'" "'            if false, let cur = best[l.key], cur.output >= l.output { continue }; best[UUID().uuidString] = l; continue'"
+run "A12 cache reads counted as input" $U \
+  "'            t.input += l.input + l.cacheCreate'" "'            t.input += l.input + l.cacheCreate + l.cacheRead'"
+run "A13 a Codex event with null windows becomes a 0 % record" $U \
+  "'        guard p != nil || s != nil else { return nil }'" "'        _ = 0'"
+run "A14 a window past its reset still reads as current" $U \
+  "'    static func isCurrent(_ w: CodexWindow, now: Date) -> Bool { w.resetsAt > now }'" "'    static func isCurrent(_ w: CodexWindow, now: Date) -> Bool { true }'"
 echo "RESULT: $red/$total mutations RED"
 [ "$after" = "0" ] && [ "$red" = "$total" ] || exit 1

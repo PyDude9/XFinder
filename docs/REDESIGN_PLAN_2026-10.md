@@ -198,8 +198,7 @@ màn hình cùng lúc (nay một màn một lúc; notch ảo trên màn không n
 
 **Tham vọng (target/quyền/API riêng) → F, mỗi cái phải có probe trước**: #21 sóng nhạc thời gian thực (`CATapDescription`
 process tap, macOS 14.2+, cần quyền) · #29 dịch nhanh (E; `translationd` từ chối binary ad-hoc — đo lại với chữ ký XFinder Dev) ·
-#30 chụp & chú thích (F) · #33 nhắc họp ✅ 2026-10-13 (live activity có nút Tham gia / Hoãn 5 phút / Mở Lịch; một Timer theo giờ thật cho lần báo kế tiếp; khoá mỗi lần lặp theo id+giờ bắt đầu) · #37 hạn mức Claude/Codex (F, đọc file cục bộ `~/.claude` — đo định dạng
-trước) · #38 thay thế vùng chọn (E, Smart Selection) · #40 theo dõi agent (F) · #41 duyệt yêu cầu agent trên notch (F, cần hook
+#30 chụp & chú thích (F) · #33 nhắc họp ✅ 2026-10-13 (live activity có nút Tham gia / Hoãn 5 phút / Mở Lịch; một Timer theo giờ thật cho lần báo kế tiếp; khoá mỗi lần lặp theo id+giờ bắt đầu) · #37 hạn mức Claude/Codex ✅ 2026-10-13 (Codex: % do chính nó ghi trong `~/.codex/sessions`; Claude Code không ghi % ra máy ⇒ chỉ token, nói rõ; gộp dòng trùng vì 5 882 dòng = 2 256 tin nhắn) · #38 thay thế vùng chọn (E, Smart Selection) · #40 theo dõi agent (F) · #41 duyệt yêu cầu agent trên notch (F, cần hook
 quyền của Claude Code — chưa rõ cơ chế) · #42 Clipboard MCP (D) · #48 19 ngôn ngữ (kiến trúc L10n hai ngôn ngữ — chỉ khi có
 người dịch thật).
 

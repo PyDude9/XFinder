@@ -341,6 +341,7 @@ final class NotchSurfaceController {
         state = machine.state
         if case .expanded(let p) = machine.state { lastHubPage = p }   // N2: for "Trang mở lần cuối"
         CalendarGlanceMonitor.shared.setPageOpen(machine.state == .expanded(.calendar))   // N4: the minute ticker only while shown
+        AgentUsageMonitor.shared.setPageOpen(machine.state == .expanded(.agents))         // §3b #37: usage scan only while shown
         render()
         syncClipboardKeyboard()
         syncHubSwipe()

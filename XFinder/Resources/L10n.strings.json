@@ -9522,6 +9522,38 @@
     "Bôi đen chữ ở app khác: đổi đơn vị, tiền tệ, múi giờ, tính, thêm vào Lịch, dịch, tra từ điển.": {
       "en": "Select text in another app: convert units, currencies and time zones, calculate, add to Calendar, translate, look it up in the dictionary.",
       "scope": "sentence"
+    },
+    " · 5 giờ: ": {
+      "en": " · 5 h: ",
+      "scope": "fragment"
+    },
+    " token ra": {
+      "en": " tokens out",
+      "scope": "fragment"
+    },
+    " · 7 ngày: ": {
+      "en": " · 7 days: ",
+      "scope": "fragment"
+    },
+    "Token đọc từ lịch sử phiên trên máy này. Claude Code không ghi phần trăm hạn mức ra máy, nên đây không phải %.": {
+      "en": "Tokens read from the session history on this Mac. Claude Code keeps no allowance percentage locally, so this is not a %.",
+      "scope": "sentence"
+    },
+    " · 5 giờ ": {
+      "en": " · 5 h ",
+      "scope": "fragment"
+    },
+    " · tuần ": {
+      "en": " · week ",
+      "scope": "fragment"
+    },
+    "Hạn mức do chính Codex ghi vào log của nó, ở lần dùng gần nhất.": {
+      "en": "Limits as Codex itself wrote them to its log, at its last use.",
+      "scope": "sentence"
+    },
+    " · đã qua giờ reset — số mới có sau lần dùng Codex kế tiếp": {
+      "en": " · past its reset — a new figure comes with the next Codex use",
+      "scope": "fragment"
     }
   }
 }

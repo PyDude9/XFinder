@@ -401,6 +401,38 @@ struct NotchSurfaceView: View {
     /// Up to six sessions, those waiting for the person first. A permission request shows the tool and the one
     /// input field that matters, with Cho phép / Từ chối — the hook is blocking on that file right now.
     @ViewBuilder private var agentsPage: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            agentUsageStrip
+            agentSessions
+        }
+    }
+
+    /// §3b #37 — what the agents themselves wrote on this Mac: Claude Code tokens (not a percentage — Claude Code keeps
+    /// no allowance figure locally) and Codex's own rate-limit windows, marked stale once their reset time has passed.
+    @ViewBuilder private var agentUsageStrip: some View {
+        let u = AgentUsageMonitor.shared.snapshot
+        let comma = !L10n.isEnglish
+        if u.scannedAt != nil {
+            VStack(alignment: .leading, spacing: 1) {
+                if u.claude7d.messages > 0 {
+                    Text("Claude Code\(L10n.t(" · 5 giờ: "))\(AgentUsage.compact(u.claude5h.output, decimalComma: comma))\(L10n.t(" token ra"))\(L10n.t(" · 7 ngày: "))\(AgentUsage.compact(u.claude7d.output, decimalComma: comma))\(L10n.t(" token ra"))")
+                        .help(L10n.t("Token đọc từ lịch sử phiên trên máy này. Claude Code không ghi phần trăm hạn mức ra máy, nên đây không phải %."))
+                }
+                if let c = u.codex {
+                    if let p = c.primary, AgentUsage.isCurrent(p, now: Date()) {
+                        let week = c.secondary.flatMap { AgentUsage.isCurrent($0, now: Date()) ? $0 : nil }
+                        Text("Codex\(L10n.t(" · 5 giờ "))\(Int(p.usedPercent.rounded()))%\(week.map { "\(L10n.t(" · tuần "))\(Int($0.usedPercent.rounded()))%" } ?? "")")
+                            .help(L10n.t("Hạn mức do chính Codex ghi vào log của nó, ở lần dùng gần nhất."))
+                    } else {
+                        Text("Codex\(L10n.t(" · đã qua giờ reset — số mới có sau lần dùng Codex kế tiếp"))")
+                    }
+                }
+            }
+            .font(XFinderTokens.Font.caption).opacity(0.7).lineLimit(1).truncationMode(.tail)
+        }
+    }
+
+    @ViewBuilder private var agentSessions: some View {
         if model.agents.isEmpty {
             VStack(spacing: XFinderTokens.Space.tight) {
                 Image(systemName: "terminal").font(XFinderTokens.Font.pageIcon).opacity(0.65)
