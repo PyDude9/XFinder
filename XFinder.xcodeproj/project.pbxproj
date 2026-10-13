@@ -17,6 +17,8 @@
 		7F1A0323 /* SmartSelect/CurrencyConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0322 /* SmartSelect/CurrencyConversion.swift */; };
 		7F1A0325 /* SmartSelect/CurrencyRateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0324 /* SmartSelect/CurrencyRateStore.swift */; };
 		7F1A0327 /* Cleanup/JunkCleanup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0326 /* Cleanup/JunkCleanup.swift */; };
+		7F1A032F /* Uninstall/UninstallRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A032E /* Uninstall/UninstallRules.swift */; };
+		7F1A0331 /* Uninstall/AppUninstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0330 /* Uninstall/AppUninstaller.swift */; };
 		7F1A031B /* SmartSelect/SelectionWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031A /* SmartSelect/SelectionWatcher.swift */; };
 		7F1A031D /* SmartSelect/SmartSelectionBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031C /* SmartSelect/SmartSelectionBadge.swift */; };
 		7F1A001E /* XFinderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000B /* XFinderApp.swift */; };
@@ -98,12 +100,14 @@
 		7F1A0080 /* NoteStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0066 /* NoteStore.swift */; };
 		7F1A0081 /* ActionHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0067 /* ActionHistoryStore.swift */; };
 		7F1A0329 /* FinderSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0328 /* FinderSelection.swift */; };
+		7F1A032D /* FileWalk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A032C /* FileWalk.swift */; };
 		7F1A0082 /* BatchRenameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0068 /* BatchRenameEngine.swift */; };
 		7F1A0083 /* FileSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0069 /* FileSearchEngine.swift */; };
 		7F1A0084 /* WindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006A /* WindowManager.swift */; };
 		7F1A0085 /* Detail/NotesDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006B /* Detail/NotesDetailView.swift */; };
 		7F1A0086 /* Detail/BatchRenameDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006C /* Detail/BatchRenameDetailView.swift */; };
 		7F1A032B /* Detail/JunkCleanupDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A032A /* Detail/JunkCleanupDetailView.swift */; };
+		7F1A0333 /* Detail/UninstallDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0332 /* Detail/UninstallDetailView.swift */; };
 		7F1A0087 /* Detail/ActionHistoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006D /* Detail/ActionHistoryDetailView.swift */; };
 		7F1A0088 /* Detail/SearchDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006E /* Detail/SearchDetailViews.swift */; };
 		7F1A0089 /* Detail/DropTrayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006F /* Detail/DropTrayDetailView.swift */; };
@@ -313,6 +317,8 @@
 		7F1A0322 /* SmartSelect/CurrencyConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/CurrencyConversion.swift; sourceTree = "<group>"; };
 		7F1A0324 /* SmartSelect/CurrencyRateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/CurrencyRateStore.swift; sourceTree = "<group>"; };
 		7F1A0326 /* Cleanup/JunkCleanup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cleanup/JunkCleanup.swift; sourceTree = "<group>"; };
+		7F1A032E /* Uninstall/UninstallRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Uninstall/UninstallRules.swift; sourceTree = "<group>"; };
+		7F1A0330 /* Uninstall/AppUninstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Uninstall/AppUninstaller.swift; sourceTree = "<group>"; };
 		7F1A031A /* SmartSelect/SelectionWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SelectionWatcher.swift; sourceTree = "<group>"; };
 		7F1A031C /* SmartSelect/SmartSelectionBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SmartSelectionBadge.swift; sourceTree = "<group>"; };
 		205EC419305AD1CE0094A78B /* XFinderSync.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = XFinderSync.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -397,12 +403,14 @@
 		7F1A0066 /* NoteStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteStore.swift; sourceTree = "<group>"; };
 		7F1A0067 /* ActionHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionHistoryStore.swift; sourceTree = "<group>"; };
 		7F1A0328 /* FinderSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderSelection.swift; sourceTree = "<group>"; };
+		7F1A032C /* FileWalk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileWalk.swift; sourceTree = "<group>"; };
 		7F1A0068 /* BatchRenameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchRenameEngine.swift; sourceTree = "<group>"; };
 		7F1A0069 /* FileSearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchEngine.swift; sourceTree = "<group>"; };
 		7F1A006A /* WindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowManager.swift; sourceTree = "<group>"; };
 		7F1A006B /* Detail/NotesDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/NotesDetailView.swift; sourceTree = "<group>"; };
 		7F1A006C /* Detail/BatchRenameDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/BatchRenameDetailView.swift; sourceTree = "<group>"; };
 		7F1A032A /* Detail/JunkCleanupDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/JunkCleanupDetailView.swift; sourceTree = "<group>"; };
+		7F1A0332 /* Detail/UninstallDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/UninstallDetailView.swift; sourceTree = "<group>"; };
 		7F1A006D /* Detail/ActionHistoryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/ActionHistoryDetailView.swift; sourceTree = "<group>"; };
 		7F1A006E /* Detail/SearchDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SearchDetailViews.swift; sourceTree = "<group>"; };
 		7F1A006F /* Detail/DropTrayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/DropTrayDetailView.swift; sourceTree = "<group>"; };
@@ -658,6 +666,7 @@
 				7F1A0066 /* NoteStore.swift */,
 				7F1A0067 /* ActionHistoryStore.swift */,
 				7F1A0328 /* FinderSelection.swift */,
+				7F1A032C /* FileWalk.swift */,
 				7F1A0068 /* BatchRenameEngine.swift */,
 				7F1A0069 /* FileSearchEngine.swift */,
 				7F1A0073 /* ClipboardPasteEngine.swift */,
@@ -764,6 +773,8 @@
 				7F1A0322 /* SmartSelect/CurrencyConversion.swift */,
 				7F1A0324 /* SmartSelect/CurrencyRateStore.swift */,
 				7F1A0326 /* Cleanup/JunkCleanup.swift */,
+				7F1A032E /* Uninstall/UninstallRules.swift */,
+				7F1A0330 /* Uninstall/AppUninstaller.swift */,
 				7F1A031A /* SmartSelect/SelectionWatcher.swift */,
 				7F1A031C /* SmartSelect/SmartSelectionBadge.swift */,
 				E38D74CB /* QuickSearch/Quicklinks.swift */,
@@ -905,6 +916,7 @@
 				7F1A006B /* Detail/NotesDetailView.swift */,
 				7F1A006C /* Detail/BatchRenameDetailView.swift */,
 				7F1A032A /* Detail/JunkCleanupDetailView.swift */,
+				7F1A0332 /* Detail/UninstallDetailView.swift */,
 				7F1A006D /* Detail/ActionHistoryDetailView.swift */,
 				7F1A006E /* Detail/SearchDetailViews.swift */,
 				7F1A006F /* Detail/DropTrayDetailView.swift */,
@@ -1142,6 +1154,7 @@
 				7F1A0080 /* NoteStore.swift in Sources */,
 				7F1A0081 /* ActionHistoryStore.swift in Sources */,
 				7F1A0329 /* FinderSelection.swift in Sources */,
+				7F1A032D /* FileWalk.swift in Sources */,
 				7F1A0082 /* BatchRenameEngine.swift in Sources */,
 				7F1A0083 /* FileSearchEngine.swift in Sources */,
 				7F1A0084 /* WindowManager.swift in Sources */,
@@ -1149,6 +1162,7 @@
 				7F1A0085 /* Detail/NotesDetailView.swift in Sources */,
 				7F1A0086 /* Detail/BatchRenameDetailView.swift in Sources */,
 				7F1A032B /* Detail/JunkCleanupDetailView.swift in Sources */,
+				7F1A0333 /* Detail/UninstallDetailView.swift in Sources */,
 				7F1A0087 /* Detail/ActionHistoryDetailView.swift in Sources */,
 				7F1A0088 /* Detail/SearchDetailViews.swift in Sources */,
 				7F1A0089 /* Detail/DropTrayDetailView.swift in Sources */,
@@ -1248,6 +1262,8 @@
 				7F1A0323 /* SmartSelect/CurrencyConversion.swift in Sources */,
 				7F1A0325 /* SmartSelect/CurrencyRateStore.swift in Sources */,
 				7F1A0327 /* Cleanup/JunkCleanup.swift in Sources */,
+				7F1A032F /* Uninstall/UninstallRules.swift in Sources */,
+				7F1A0331 /* Uninstall/AppUninstaller.swift in Sources */,
 				7F1A031B /* SmartSelect/SelectionWatcher.swift in Sources */,
 				7F1A031D /* SmartSelect/SmartSelectionBadge.swift in Sources */,
 				2535B74A /* QuickSearch/Quicklinks.swift in Sources */,

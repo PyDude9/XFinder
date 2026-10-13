@@ -5,7 +5,7 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-cleanup.XXXXXX)
-FILES="XFinder/Core/Cleanup/JunkCleanup.swift"
+FILES="XFinder/Core/Cleanup/JunkCleanup.swift XFinder/Core/FileWalk.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
@@ -34,6 +34,7 @@ run() {
   else echo "GREEN $1 (0) <-- the tests do not guard this"; fi
 }
 J=XFinder/Core/Cleanup/JunkCleanup.swift
+W=XFinder/Core/FileWalk.swift
 run "J1  a ._ name counts without the AppleDouble header" $J \
   "'                if readHeader(url).map(isAppleDouble) ?? false { report.items.append(Item(url: url, kind: kind, bytes: size)) }'" "'                report.items.append(Item(url: url, kind: kind, bytes: size))'"
 run "J2  packages are walked into" $J \
@@ -42,13 +43,13 @@ run "J3  volume system folders are walked into" $J \
   "'            if isDir, systemFolders.contains(name) { return .skip }'" "'            _ = systemFolders'"
 run "J4  a __MACOSX holding a real file counts as junk" $J \
   "'        return clean && !walked.truncated ? total : nil'" "'        return total'"
-run "J5  symlinks are followed" $J \
+run "J5  symlinks are followed" $W \
   "'fts_open(&argv, FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV, nil)'" "'fts_open(&argv, FTS_LOGICAL | FTS_NOCHDIR | FTS_XDEV, nil)'"
 run "J6  no re-check right before the Trash" $J \
   "'            guard stillJunk(item) else { out.changed += 1; continue }'" "'            _ = stillJunk'"
 run "J7  names compared case-sensitively (THUMBS.DB missed)" $J \
   "'        switch name.lowercased() {'" "'        switch name {'"
-run "J8  the entry limit is ignored" $J \
+run "J8  the entry limit is ignored" $W \
   "'            if entries > limit { return (entries, true, false) }'" "'            if entries < 0 { return (entries, true, false) }'"
 run "J9  FileManager listing (hides every ._ name) instead of fts" $J \
   "'        guard rootValues?.isDirectory == true, rootValues?.isSymbolicLink != true else { return report }'" "'        guard rootValues?.isDirectory == true, rootValues?.isSymbolicLink != true else { return report }\n        for n in (try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? [] where n.hasPrefix(\"._\") { report.items.append(Item(url: root.appendingPathComponent(n), kind: .appleDouble, bytes: 0)) }\n        if true { return report }'"

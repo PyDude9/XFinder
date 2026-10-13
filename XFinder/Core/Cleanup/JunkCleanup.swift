@@ -96,16 +96,13 @@ enum JunkCleanup {
     /// Walks `root` physically: never follows a link, never crosses into another volume, never enters a package.
     /// The caller runs it off the main thread.
     ///
-    /// `fts`, not `FileManager`: measured on macOS 27, EVERY FileManager listing API — `contentsOfDirectory(atPath:)`,
-    /// `contentsOfDirectory(at:)`, `enumerator(at:)`, `enumerator(atPath:)` — hides REGULAR FILES whose name starts with
-    /// "._" (with or without the AppleDouble header, even empty ones), while `readdir` lists them. Links and folders
-    /// named "._…" are still listed. AppleDouble files are regular files, so a FileManager scan can never find them.
-    /// (`stat`, `fileExists` and `trashItem` do work on them — only listing hides them.)
+    /// Walks with `FileWalk` (fts), never FileManager: FileManager's listings hide regular files named "._…", and
+    /// AppleDouble files are exactly that — a FileManager scan could never find them (measured, see `FileWalk`).
     static func scan(_ root: URL, limit: Int = maxEntries, isCancelled: () -> Bool = { false }) -> Report {
         var report = Report()
         let rootValues = try? root.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
         guard rootValues?.isDirectory == true, rootValues?.isSymbolicLink != true else { return report }
-        let walked = walk(root, limit: limit, isCancelled: isCancelled) { url, isDir, size in
+        let walked = FileWalk.walk(root, limit: limit, isCancelled: isCancelled) { url, isDir, size in
             let name = url.lastPathComponent
             if isDir, systemFolders.contains(name) { return .skip }
             if isDir, name.contains("."), (try? url.resourceValues(forKeys: [.isPackageKey]))?.isPackage == true {
@@ -143,7 +140,7 @@ enum JunkCleanup {
     static func macosxFolderBytes(_ folder: URL) -> Int64? {
         var total: Int64 = 0
         var clean = true
-        let walked = walk(folder, limit: 50_000, isCancelled: { false }, onOther: { clean = false }) { url, isDir, size in
+        let walked = FileWalk.walk(folder, limit: 50_000, isCancelled: { false }, onOther: { clean = false }) { url, isDir, size in
             guard clean else { return .skip }
             if isDir { return .descend }
             let name = url.lastPathComponent
@@ -155,33 +152,6 @@ enum JunkCleanup {
             return .descend
         }
         return clean && !walked.truncated ? total : nil
-    }
-
-    enum Visit { case descend, skip }
-
-    /// `fts` with `FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV`. The root itself is not visited. Links, unreadable folders
-    /// and stat errors are never handed to `body`; `onOther` hears about them (a `__MACOSX` holding a link is not junk).
-    private static func walk(_ root: URL, limit: Int, isCancelled: () -> Bool, onOther: () -> Void = {},
-                             _ body: (_ url: URL, _ isDirectory: Bool, _ size: Int64) -> Visit)
-        -> (entries: Int, truncated: Bool, cancelled: Bool) {
-        var argv: [UnsafeMutablePointer<CChar>?] = [strdup(root.path), nil]
-        defer { free(argv[0]) }
-        guard let fts = fts_open(&argv, FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV, nil) else { return (0, false, false) }
-        defer { fts_close(fts) }
-        var entries = 0
-        while let ent = fts_read(fts) {
-            let info = Int32(ent.pointee.fts_info)
-            if info == FTS_DP || ent.pointee.fts_level == 0 { continue }
-            if isCancelled() { return (entries, false, true) }
-            entries += 1
-            if entries > limit { return (entries, true, false) }
-            guard info == FTS_D || info == FTS_F, let cpath = ent.pointee.fts_path else { onOther(); continue }
-            let isDir = info == FTS_D
-            let size = isDir ? 0 : Int64(ent.pointee.fts_statp?.pointee.st_size ?? 0)
-            let url = URL(fileURLWithPath: String(cString: cpath), isDirectory: isDir)
-            if body(url, isDir, size) == .skip, isDir { fts_set(fts, ent, FTS_SKIP) }
-        }
-        return (entries, false, false)
     }
 
     // MARK: Moving to the Trash

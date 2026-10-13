@@ -1,0 +1,1 @@
+../../XFinder/Core/Uninstall/UninstallRules.swift

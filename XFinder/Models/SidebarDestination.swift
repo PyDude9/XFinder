@@ -25,6 +25,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     // CÔNG CỤ
     case batchRename
     case junkCleanup
+    case uninstaller
     case actionHistory
     case dropTray
     case compress
@@ -78,6 +79,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .aiSearch: return "Tìm kiếm AI"
         case .batchRename: return "Đổi tên hàng loạt"
         case .junkCleanup: return "Dọn rác thư mục"
+        case .uninstaller: return "Gỡ ứng dụng"
         case .actionHistory: return "Lịch sử thao tác"
         case .dropTray: return "Notch & Khay thả"
         case .compress: return "Nén & Giải nén"
@@ -123,6 +125,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .aiSearch: return "wand.and.stars"
         case .batchRename: return "textformat.abc.dottedunderline"
         case .junkCleanup: return "bubbles.and.sparkles"
+        case .uninstaller: return "xmark.bin"
         case .actionHistory: return "clock.arrow.circlepath"
         case .dropTray: return "tray.and.arrow.down.fill"
         case .compress: return "archivebox.fill"
@@ -159,7 +162,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
                                    .batchRename, .junkCleanup, .actionHistory]),
             ("CÔNG CỤ", [.voiceTyping, .smartSelect, .clipboard, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare, .ports]),
-            ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat]),
+            ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat, .uninstaller]),
         ]
     }
 }

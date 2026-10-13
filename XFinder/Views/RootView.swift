@@ -101,6 +101,8 @@ struct DetailHostView: View {
                 BatchRenameDetailView()
             case .junkCleanup:
                 JunkCleanupDetailView()
+            case .uninstaller:
+                UninstallDetailView()
             case .actionHistory:
                 ActionHistoryDetailView()
             case .dropTray:

@@ -55,6 +55,38 @@ ENTRIES: dict[str, tuple[str, str]] = {
         ("Created by Windows to show thumbnails. Windows recreates it when needed.", S),
     "Windows ghi biểu tượng và tên hiển thị của thư mục. Chỉ có tác dụng trên Windows.":
         ("Windows stores the folder's icon and display name here. It only has an effect on Windows.", S),
+    # F2 — Gỡ ứng dụng
+    "Gỡ ứng dụng": ("Uninstall Apps", S),
+    "Chuyển một app và những gì nó để lại trong Thư viện của bạn vào Thùng rác — xem từng mục trước.":
+        ("Move an app and what it left in your Library to the Trash — see every item first.", S),
+    "XFinder chỉ chọn sẵn những gì mang đúng mã nhận dạng (bundle id) của app. Thư mục trùng tên app chỉ là đoán nên để trống. Container của app (Thư viện ▸ Containers) được macOS bảo vệ — XFinder không chuyển được (đã đo); bấm Hiện trong Finder rồi kéo vào Thùng rác. Không gỡ app của Apple, app đang chạy hay chính XFinder.":
+        ("XFinder only pre-selects items that carry the app's exact identifier (bundle id). A folder that merely has the app's name is a guess and stays unticked. App containers (Library ▸ Containers) are protected by macOS — XFinder cannot move them (measured); click Show in Finder and drag them to the Trash. Apple's apps, running apps and XFinder itself are never removed.", S),
+    "Chọn ứng dụng": ("Choose an app", S),
+    " app trong Applications": (" apps in Applications", F),
+    "Tìm theo tên hoặc bundle id": ("Search by name or bundle id", S),
+    "Gỡ ": ("Uninstall ", F),
+    "Bỏ chọn mục nào bạn muốn giữ lại.": ("Untick anything you want to keep.", S),
+    "Không tìm thấy file nào app này để lại trong Thư viện.": ("Found nothing this app left in your Library.", S),
+    "Đã vào Thùng rác": ("In the Trash", S),
+    "macOS chặn": ("Blocked by macOS", S),
+    "Đã không còn": ("Already gone", S),
+    "Đúng bundle id": ("Exact bundle id", S),
+    "Thành phần phụ của app (helper, extension)": ("Part of the app (helper, extension)", S),
+    "Nhóm dữ liệu dùng chung của app": ("The app's shared data group", S),
+    "Trùng tên app — chỉ là đoán": ("Same name as the app — only a guess", S),
+    "Tác vụ chạy nền của app": ("The app's background task", S),
+    "macOS bảo vệ — dùng Finder": ("protected by macOS — use Finder", S),
+    "macOS có thể chặn": ("macOS may block it", S),
+    "App đang chạy. Thoát app trước để nó không ghi tiếp vào những file sắp chuyển đi.":
+        ("The app is running. Quit it first so it does not keep writing to the files about to be moved.", S),
+    "Thoát app": ("Quit the app", S),
+    "Đây là app của Apple — XFinder không gỡ app hệ thống.": ("This is an Apple app — XFinder does not remove system apps.", S),
+    "App nằm trong thư mục hệ thống — XFinder không gỡ.": ("The app is in a system folder — XFinder does not remove it.", S),
+    "Không thể tự gỡ XFinder từ chính nó — kéo XFinder vào Thùng rác trong Finder.":
+        ("XFinder cannot remove itself — drag XFinder to the Trash in Finder.", S),
+    "Không đọc được thông tin của app này.": ("Could not read this app's information.", S),
+    " mục bị macOS chặn — dùng Hiện trong Finder.": (" items were blocked by macOS — use Show in Finder.", F),
+    " mục không chuyển được.": (" items could not be moved.", F),
 }
 
 def main() -> None:

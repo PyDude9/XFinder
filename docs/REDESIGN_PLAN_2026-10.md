@@ -453,6 +453,12 @@ header AppleDouble hay không, kể cả file rỗng; symlink và thư mục tê
 (`FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV`). 861 test, mutation 9/9 RED; đo live bằng chính `JunkCleanup.swift` trên Thùng rác thật
 9/9 (5 mục vào `~/.Trash` rồi được chuyển ra lại); trang đo qua AX trên app đã cài, EN 9/9 chuỗi và VI 5/5. **Chưa đo:** bấm nút
 chuyển vào Thùng rác qua giao diện (cần chọn thư mục bằng NSOpenPanel / Finder / thả — tay người).
+**F2 ✅ đo live 18/18** — probe bằng một APP (không phải terminal): app bundle ở /Applications và ~/Applications, kể cả bản sao app
+ký Developer ID hardened runtime, và thư mục trong Application Support/Caches: `trashItem` được; **container sandbox của app khác:
+lỗi 513**, cả `NSWorkspace.recycle`. Cùng lệnh đó chạy từ terminal lại THÀNH CÔNG — TCC xét tiến trình chịu trách nhiệm, nên mọi
+câu hỏi quyền phải đo từ một app bundle. Trang: Containers không có ô chọn mà có "Hiện trong Finder"; Group Containers / Application
+Scripts vẫn cho thử (chưa đo được) và từng dòng báo kết quả thật. E2E trên app đã cài: preview đủ 4 mục + container được bảo vệ, bấm
+nút → đúng 4 mục vào `~/.Trash`, container còn nguyên; mọi thứ được chuyển ra lại. 871 test, mutation 9/9 RED.
 
 ## 4. Lộ trình (UI/UX trước, đúng yêu cầu)
 

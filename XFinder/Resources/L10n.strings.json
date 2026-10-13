@@ -9006,6 +9006,114 @@
     "Windows ghi biểu tượng và tên hiển thị của thư mục. Chỉ có tác dụng trên Windows.": {
       "en": "Windows stores the folder's icon and display name here. It only has an effect on Windows.",
       "scope": "sentence"
+    },
+    "Gỡ ứng dụng": {
+      "en": "Uninstall Apps",
+      "scope": "sentence"
+    },
+    "Chuyển một app và những gì nó để lại trong Thư viện của bạn vào Thùng rác — xem từng mục trước.": {
+      "en": "Move an app and what it left in your Library to the Trash — see every item first.",
+      "scope": "sentence"
+    },
+    "XFinder chỉ chọn sẵn những gì mang đúng mã nhận dạng (bundle id) của app. Thư mục trùng tên app chỉ là đoán nên để trống. Container của app (Thư viện ▸ Containers) được macOS bảo vệ — XFinder không chuyển được (đã đo); bấm Hiện trong Finder rồi kéo vào Thùng rác. Không gỡ app của Apple, app đang chạy hay chính XFinder.": {
+      "en": "XFinder only pre-selects items that carry the app's exact identifier (bundle id). A folder that merely has the app's name is a guess and stays unticked. App containers (Library ▸ Containers) are protected by macOS — XFinder cannot move them (measured); click Show in Finder and drag them to the Trash. Apple's apps, running apps and XFinder itself are never removed.",
+      "scope": "sentence"
+    },
+    "Chọn ứng dụng": {
+      "en": "Choose an app",
+      "scope": "sentence"
+    },
+    " app trong Applications": {
+      "en": " apps in Applications",
+      "scope": "fragment"
+    },
+    "Tìm theo tên hoặc bundle id": {
+      "en": "Search by name or bundle id",
+      "scope": "sentence"
+    },
+    "Gỡ ": {
+      "en": "Uninstall ",
+      "scope": "fragment"
+    },
+    "Bỏ chọn mục nào bạn muốn giữ lại.": {
+      "en": "Untick anything you want to keep.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy file nào app này để lại trong Thư viện.": {
+      "en": "Found nothing this app left in your Library.",
+      "scope": "sentence"
+    },
+    "Đã vào Thùng rác": {
+      "en": "In the Trash",
+      "scope": "sentence"
+    },
+    "macOS chặn": {
+      "en": "Blocked by macOS",
+      "scope": "sentence"
+    },
+    "Đã không còn": {
+      "en": "Already gone",
+      "scope": "sentence"
+    },
+    "Đúng bundle id": {
+      "en": "Exact bundle id",
+      "scope": "sentence"
+    },
+    "Thành phần phụ của app (helper, extension)": {
+      "en": "Part of the app (helper, extension)",
+      "scope": "sentence"
+    },
+    "Nhóm dữ liệu dùng chung của app": {
+      "en": "The app's shared data group",
+      "scope": "sentence"
+    },
+    "Trùng tên app — chỉ là đoán": {
+      "en": "Same name as the app — only a guess",
+      "scope": "sentence"
+    },
+    "Tác vụ chạy nền của app": {
+      "en": "The app's background task",
+      "scope": "sentence"
+    },
+    "macOS bảo vệ — dùng Finder": {
+      "en": "protected by macOS — use Finder",
+      "scope": "sentence"
+    },
+    "macOS có thể chặn": {
+      "en": "macOS may block it",
+      "scope": "sentence"
+    },
+    "App đang chạy. Thoát app trước để nó không ghi tiếp vào những file sắp chuyển đi.": {
+      "en": "The app is running. Quit it first so it does not keep writing to the files about to be moved.",
+      "scope": "sentence"
+    },
+    "Thoát app": {
+      "en": "Quit the app",
+      "scope": "sentence"
+    },
+    "Đây là app của Apple — XFinder không gỡ app hệ thống.": {
+      "en": "This is an Apple app — XFinder does not remove system apps.",
+      "scope": "sentence"
+    },
+    "App nằm trong thư mục hệ thống — XFinder không gỡ.": {
+      "en": "The app is in a system folder — XFinder does not remove it.",
+      "scope": "sentence"
+    },
+    "Không thể tự gỡ XFinder từ chính nó — kéo XFinder vào Thùng rác trong Finder.": {
+      "en": "XFinder cannot remove itself — drag XFinder to the Trash in Finder.",
+      "scope": "sentence"
+    },
+    "Không đọc được thông tin của app này.": {
+      "en": "Could not read this app's information.",
+      "scope": "sentence"
+    },
+    " mục bị macOS chặn — dùng Hiện trong Finder.": {
+      "en": " items were blocked by macOS — use Show in Finder.",
+      "scope": "fragment"
+    },
+    " mục không chuyển được.": {
+      "en": " items could not be moved.",
+      "scope": "fragment"
     }
   }
 }
