@@ -423,8 +423,9 @@ enum ClipboardClassifier {
 
     @MainActor
     private static func previewImage(atPath path: String) -> NSImage? {
-        guard ClipPreviewRules.isImageFile(path), FileManager.default.fileExists(atPath: path) else { return nil }
-        return NotchThumbnailCache.image(atPath: path)
+        let kind = ClipPreviewRules.previewKind(path)
+        guard kind != .none, FileManager.default.fileExists(atPath: path) else { return nil }
+        return kind == .pdf ? NotchThumbnailCache.pdfFirstPage(atPath: path) : NotchThumbnailCache.image(atPath: path)
     }
 }
 

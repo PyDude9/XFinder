@@ -27,6 +27,19 @@ enum NotchThumbnailCache {
         cache.setObject(img, forKey: key)
         return img
     }
+
+    /// Page 1 of a PDF at ≤ `maxPixel` (ImageIO cannot read PDF), kept per path like images. Misses are cached too.
+    static func pdfFirstPage(atPath path: String, maxPixel: Int = 480) -> NSImage? {
+        let key = "\(path)#pdf\(maxPixel)" as NSString
+        if let hit = cache.object(forKey: key) { return hit === missing ? nil : hit }
+        guard let cg = ClipPreviewRules.pdfFirstPage(atPath: path, maxPixel: maxPixel) else {
+            cache.setObject(missing, forKey: key)
+            return nil
+        }
+        let img = NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
+        cache.setObject(img, forKey: key)
+        return img
+    }
 }
 
 /// The full text of a clip for the footer's word/line count, read from its payload file ONCE per path.

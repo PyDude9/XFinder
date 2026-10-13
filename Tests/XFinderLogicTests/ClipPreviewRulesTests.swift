@@ -72,3 +72,60 @@ final class ClipPreviewRulesTests: XCTestCase {
                                  "the accent colour must come from a few KB, not a TIFF of every icon size")
     }
 }
+
+/// PDF previews: `NSImage(contentsOfFile:)` used to show page 1 of a copied PDF; the image-only rule above would
+/// have silently dropped that, so PDFs get their own kind and a one-page renderer.
+final class ClipPreviewPDFTests: XCTestCase {
+    typealias R = ClipPreviewRules
+
+    func testPreviewKindByExtensionOnly() {
+        XCTAssertEqual(R.previewKind("/x/statement.pdf"), .pdf)
+        XCTAssertEqual(R.previewKind("/x/STATEMENT.PDF"), .pdf)
+        XCTAssertEqual(R.previewKind("/x/a.png"), .image)
+        for none in ["/x/a.mp4", "/x/a.md", "/x/a.csv", "/x/folder", "/x/a.rtfd", ""] { XCTAssertEqual(R.previewKind(none), .none, none) }
+        XCTAssertFalse(R.isImageFile("/x/statement.pdf"), "a PDF is not an image for ImageIO")
+    }
+
+    /// A 600×800 pt page, red in its lower half (PDF space is bottom-up), rendered at ≤ 480 px.
+    private func makePDF(width: CGFloat = 600, height: CGFloat = 800) throws -> URL {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("xf-pdf-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url = dir.appendingPathComponent("page.pdf")
+        var box = CGRect(x: 0, y: 0, width: width, height: height)
+        let ctx = try XCTUnwrap(CGContext(url as CFURL, mediaBox: &box, nil))
+        ctx.beginPDFPage(nil)
+        ctx.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1)); ctx.fill(CGRect(x: 0, y: 0, width: width, height: height / 2))
+        ctx.endPDFPage(); ctx.closePDF()
+        addTeardownBlock { try? FileManager.default.removeItem(at: dir) }
+        return url
+    }
+
+    private func rgba(_ img: CGImage, x: Int, y: Int) -> [UInt8] {
+        var px = [UInt8](repeating: 0, count: 4)
+        let ctx = CGContext(data: &px, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+                            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        // Draw so that image pixel (x, y) — y counted from the TOP — lands on the single destination pixel.
+        ctx.draw(img, in: CGRect(x: -x, y: -(img.height - 1 - y), width: img.width, height: img.height))
+        return px
+    }
+
+    func testPageOneIsRenderedSmallUprightAndOnWhite() throws {
+        let url = try makePDF()
+        let img = try XCTUnwrap(R.pdfFirstPage(atPath: url.path, maxPixel: 480))
+        XCTAssertEqual(img.height, 480, "long side scaled to maxPixel")
+        XCTAssertEqual(img.width, 360, "aspect kept: 600 × 480 / 800")
+        let bottom = rgba(img, x: 180, y: 400), top = rgba(img, x: 180, y: 60)
+        XCTAssertGreaterThan(bottom[0], 200); XCTAssertLessThan(bottom[1], 60, "the red half is at the bottom, not flipped")
+        XCTAssertGreaterThan(top[0], 240); XCTAssertGreaterThan(top[1], 240); XCTAssertGreaterThan(top[2], 240)
+        XCTAssertEqual(top[3], 255, "white behind the page, never transparent")
+    }
+
+    func testLandscapeSmallMissingAndZero() throws {
+        let wide = try XCTUnwrap(R.pdfFirstPage(atPath: try makePDF(width: 800, height: 400).path, maxPixel: 480))
+        XCTAssertEqual(wide.width, 480); XCTAssertEqual(wide.height, 240)
+        let small = try XCTUnwrap(R.pdfFirstPage(atPath: try makePDF(width: 200, height: 100).path, maxPixel: 480))
+        XCTAssertEqual(small.width, 200, "never scaled UP past the page size")
+        XCTAssertNil(R.pdfFirstPage(atPath: "/nonexistent/x.pdf"))
+        XCTAssertNil(R.pdfFirstPage(atPath: try makePDF().path, maxPixel: 0))
+    }
+}
