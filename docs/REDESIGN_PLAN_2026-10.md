@@ -608,6 +608,11 @@ Chụp & chú thích studio · Lịch/lời nhắc trên notch + thẻ họp · 
 ### Phase G — Hiệu năng & phát hành 1.3
 Quy dirty 48 MB về từng module (`vmmap -verbose`, `heap`), mục tiêu <30 MB khi tắt hết tính năng nền; idle 0 % đo đúng cách;
 release tự ký như 1.2.0.
+**G1–G2 ✅ 2026-10-13** — đo bộ nhớ (26,7 / 25,1 MB physical footprint) + idle 0,00 s/60 s (xem §3g); **1.3.0**: Info.plist 1.3.0 (build 4),
+What's New chuyển sang "1.3" (các ghi chú đợt N từng gắn "1.2" dù zip 1.2.0 ra trước chúng) + 4 ghi chú mới (Chụp & chú thích, Chọn văn
+bản thông minh, Dọn rác/Gỡ app, Thoát ứng dụng), CHANGELOG 1.3.0 viết từ log 76 commit, `make-release.sh` giờ ký trợ giúp Now Playing
+bằng XFinder Dev + bắt buộc có nó và hook Claude Code + `--verify --deep`. `dist/XFinder-1.3.0-arm64.zip` 6,3 MB, giải nén ra vẫn
+hợp lệ chữ ký, checksum OK. **Chưa đăng** (Q-RELEASE). **G3 còn lại:** phân mảnh malloc 44 % — cần app chạy để đo (`heap`/`vmmap -verbose`).
 
 ---
 
@@ -633,7 +638,7 @@ release tự ký như 1.2.0.
 * Chữ ký tự tạo: không Notification Center, không iCloud/CloudKit, không App Store; Gatekeeper chặn lần đầu (đã đo `spctl rejected`).
 * `MediaRemote` private; HUD hệ thống không tắt được bằng API công khai; Translation chỉ 15+; tỷ giá/xem trước link cần mạng → opt-in.
 * Tách nền = người (Vision); OCR rơi dấu hỏi ở cỡ chữ nhỏ (đo `Thuỷ→Thuy`).
-* Dirty memory hiện 48,4 MB — ghi vào README cho tới khi Phase G đo lại.
+* Bộ nhớ: Phase G đo lại 2026-10-13 — physical footprint 26,7 MB (cài đặt thường) / 25,1 MB (tắt hết tính năng nền); con số 48,4 MB cũ là thước đo *dirty* của `vmmap` trên một bản cũ, không so thẳng được. Đã ghi vào CHANGELOG 1.3.0; phân mảnh malloc 44 % còn chưa xử lý.
 
 ---
 

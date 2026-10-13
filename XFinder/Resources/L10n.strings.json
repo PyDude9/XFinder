@@ -9446,6 +9446,26 @@
     "macOS Tùy chọn chụp và ghi màn hình": {
       "en": "macOS Screenshot & Recording Options",
       "scope": "sentence"
+    },
+    "Chụp vùng, cửa sổ hoặc cả màn hình; thẻ xem trước nổi để chú thích, lưu, ghim hoặc kéo đi.": {
+      "en": "Capture an area, a window or the whole screen; a floating preview card lets you annotate, save, pin or drag it away.",
+      "scope": "sentence"
+    },
+    "Bôi đen chữ ở app khác: đổi đơn vị, tiền tệ, múi giờ, tính, thêm vào Lịch, dịch.": {
+      "en": "Select text in another app: convert units, currencies and time zones, calculate, add to Calendar, translate.",
+      "scope": "sentence"
+    },
+    "Dọn rác thư mục và Gỡ ứng dụng": {
+      "en": "Folder Junk Cleanup and Uninstaller",
+      "scope": "sentence"
+    },
+    "Xem trước từng mục, mọi thứ chỉ vào Thùng rác.": {
+      "en": "See every item first; everything goes only to the Trash.",
+      "scope": "sentence"
+    },
+    "Giữ ⌘Q để thoát, và tự thoát app trong danh sách khi bạn đóng cửa sổ cuối.": {
+      "en": "Hold ⌘Q to quit, and quit listed apps when you close their last window.",
+      "scope": "sentence"
     }
   }
 }

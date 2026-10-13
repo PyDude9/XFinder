@@ -27,7 +27,7 @@ enum WhatsNewRules {
     /// Notes per version, matched on the first two components so a patch release carries its minor's story.
     static func notes(for version: String) -> [Note] {
         switch minor(version) {
-        case "1.2": return notes12
+        case "1.3": return notes13
         default: return []
         }
     }
@@ -37,7 +37,17 @@ enum WhatsNewRules {
         return parts.prefix(2).joined(separator: ".")
     }
 
-    static let notes12: [Note] = [
+    /// 1.3 = everything after the 1.2.0 zip: the OneNotch pass (N1–N8, D4b), Smart Selection (E), and wave F.
+    /// (These notes were keyed "1.2" while Info.plist still said 1.2.0, but the 1.2.0 zip predates every one of them.)
+    static let notes13: [Note] = [
+        Note(id: "capture", symbol: "camera.viewfinder", titleKey: "Chụp & chú thích",
+             bodyKey: "Chụp vùng, cửa sổ hoặc cả màn hình; thẻ xem trước nổi để chú thích, lưu, ghim hoặc kéo đi.", destinationRaw: "capture"),
+        Note(id: "smartSelect", symbol: "wand.and.stars", titleKey: "Chọn văn bản thông minh",
+             bodyKey: "Bôi đen chữ ở app khác: đổi đơn vị, tiền tệ, múi giờ, tính, thêm vào Lịch, dịch.", destinationRaw: "smartSelect"),
+        Note(id: "cleanup", symbol: "bubbles.and.sparkles", titleKey: "Dọn rác thư mục và Gỡ ứng dụng",
+             bodyKey: "Xem trước từng mục, mọi thứ chỉ vào Thùng rác.", destinationRaw: "junkCleanup"),
+        Note(id: "appQuit", symbol: "power", titleKey: "Thoát ứng dụng",
+             bodyKey: "Giữ ⌘Q để thoát, và tự thoát app trong danh sách khi bạn đóng cửa sổ cuối.", destinationRaw: "appQuit"),
         Note(id: "panel", symbol: "rectangle.topthird.inset.filled", titleKey: "Notch mượt hơn",
              bodyKey: "Một cửa sổ cố định cho mọi trạng thái — hub mở ra từ notch, không còn giật khi đổi trang.", destinationRaw: "dropTray"),
         Note(id: "hover", symbol: "cursorarrow.motionlines", titleKey: "Rê chuột vào notch mở gì là tuỳ bạn",

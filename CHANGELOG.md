@@ -2,6 +2,43 @@
 
 Tất cả thay đổi đáng chú ý của XFinder được ghi ở đây, mới nhất ở trên.
 
+## [1.3.0] — 2026-10
+
+### Notch (mới hoàn toàn)
+- **Khay thả sống ở notch**: kéo tệp lên notch để giữ, lắc chuột để mở khay dưới con trỏ, rê chuột xem nhanh, kéo ra để dùng. Hub làm việc trên tệp đang giữ: ZIP, Gộp PDF, Sang PDF, Sang JPEG/PNG, Thu nhỏ ảnh (giữ chuột để chọn cỡ), Tách nền, OCR, AirDrop.
+- **Live activity**: sạc / pin đầy, mất mạng, Caps Lock, Bluetooth kết nối, cảnh báo hệ thống, âm lượng, hẹn giờ.
+- **Đang phát**: bài đang phát từ mọi player (qua trợ giúp Apple ký), ⏮ ⏯ ⏭, tua, xáo trộn, lặp lại.
+- **Clipboard trên notch** (⌘⇧V mặc định mở ở đây): hàng thẻ ngang, lọc `@loại`/`@app`, Paste Stack, biến đổi văn bản, đi tới nguồn, khoá Touch ID.
+- **Phiên Claude Code**: trạng thái từng phiên và Cho phép / Từ chối yêu cầu quyền ngay trên notch (hook công khai, cài bằng nút).
+- **Lịch**: hôm nay, việc kế tiếp, âm lịch theo giờ Việt Nam, nút Tham gia cho link họp.
+- Chia cửa sổ ở notch (hàng 7 bố cục, phần ba, Tập trung); một cửa sổ cố định cho mọi trạng thái (không còn giật), bấm xuyên qua phần trong suốt; chọn trang, thứ tự, màu nhấn, độ nhạy rê chuột; notch ảo trên màn không notch; ẩn khỏi ảnh chụp/quay.
+
+### Clipboard
+- **Thư viện Clipboard**: mọi clip từng copy, lọc theo loại / app / bảng / thời gian, bảng chi tiết, dán vào app trước đó.
+- **Bảng khoá**: mã hoá bằng khoá Secure Enclave, mở từng thẻ bằng Touch ID; không bao giờ xuất qua MCP hay `.xfinderclip`.
+- Tô màu code, xuất/nhập `.xfinderclip`, **Clipboard MCP** (`XFinder --mcp`, tắt mặc định), màu `rgb()`/`hsl()`, tạm dừng ghi, chọn âm copy, phát âm, sửa văn bản, xem trước link (opt-in — lần duy nhất clipboard dùng mạng).
+
+### Công cụ mới
+- **Chụp & chú thích** (kiểu OneNotch): chụp vùng / cửa sổ / toàn màn hình, thẻ xem trước nổi (tự đóng, dừng khi trỏ vào, kéo thả, vuốt để đóng), trình chú thích (mũi tên, khung, chữ, số thứ tự, làm mờ, tô sáng, cắt), ghim ảnh lên màn hình. Phím tắt chưa gán sẵn; có nút dùng bộ phím giống OneNotch.
+- **Chọn văn bản thông minh**: bôi đen chữ ở app khác → đổi đơn vị, tiền tệ (opt-in, Vietcombank cho VND), múi giờ, tính, thêm vào Lịch, dịch (⇧⌘G).
+- **Dọn rác thư mục** (chỉ rác metadata đã biết), **Gỡ ứng dụng** (app + phần sót lại), **Thoát ứng dụng** (giữ ⌘Q; tự thoát app trong danh sách khi đóng cửa sổ cuối).
+- ⌘-Tab: Q đóng cửa sổ, H ẩn app, Space phóng ảnh, `` ` `` chuyển app ↔ cửa sổ. Chép chữ từ màn hình, nhiệt độ SoC, cảnh báo hệ thống, số liệu trên thanh menu.
+- Giao diện: mọi trang dùng chung một hệ token; cửa sổ **Có gì mới** mỗi phiên bản.
+
+### Sửa lỗi đáng kể
+- Nén từ hai mục trở lên **chưa bao giờ chạy** (`ditto` chỉ nhận một nguồn); giải nén không còn ghi đè im lặng; từ chối archive có link trỏ ra ngoài.
+- Dán một clip dài hơn 200 ký tự bị **cắt cụt** (227 mục trong lịch sử của máy đo đã mất phần đuôi — không khôi phục được).
+- Lịch sử clipboard **nạp rỗng** lúc khởi động; kết nối Bluetooth **làm sập app**; gõ `1+` vào ⌘K **làm sập app**.
+- Trang Thư viện từng chiếm **886 MB** (đọc nguyên video, TIFF icon app) — nay 79 MB.
+
+### Đo được
+- Bộ nhớ (physical footprint, app đã ổn định 90 s): **26,7 MB** với cài đặt thường, **25,1 MB** khi tắt mọi tính năng chạy nền. CPU khi rảnh: **0,00 s / 60 s**.
+
+### Giới hạn đã biết
+- Ký bằng chứng chỉ tự tạo, chưa notarize — Gatekeeper chặn lần mở đầu. Chỉ Apple Silicon.
+- Chưa có ai bấm thử bằng tay: xem `docs/PENDING_TESTS_AND_DECISIONS.md` (các mục T-*), gồm toàn bộ Chụp & chú thích.
+- Chưa quay màn hình; chưa ẩn được icon thanh menu của app khác trên macOS 27 (cơ chế không còn — đã đo).
+
 ## [1.2.0] — 2026-10
 
 Gộp luôn các thay đổi của 1.1.1 (chưa từng được phát hành riêng) bên dưới.

@@ -42,8 +42,13 @@ PLIST
   codesign --force --sign "XFinder Dev" --identifier com.xfinder.app.XFinderSync --entitlements "$ENT" "$APPEX"
   codesign -d --entitlements - "$APPEX" 2>&1 | grep -q app-sandbox || { echo "FATAL: appex lost its sandbox entitlement"; exit 1; }
 fi
+# B6: the Now Playing helper is nested code loaded by /usr/bin/perl — sign it like install-mouse-rebuild.sh does, and
+# refuse to ship without it (the page would promise a feature whose helper is missing).
+HELPER="$STAGE/Contents/Helpers/XFinderNowPlaying.dylib"
+[ -f "$HELPER" ] || { echo "FATAL: Now Playing helper missing from the bundle"; exit 1; }
+codesign --force --sign "XFinder Dev" "$HELPER"
 codesign --force --sign "XFinder Dev" --identifier com.xfinder.app "$STAGE"
-codesign --verify --strict "$STAGE"
+codesign --verify --deep --strict "$STAGE"
 
 # Facts the release must satisfy — fail loudly rather than ship the wrong thing.
 ARCHS=$(lipo -archs "$STAGE/Contents/MacOS/XFinder")
@@ -53,7 +58,7 @@ APPVER=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$STAGE/C
 [ ! -e "$STAGE/Contents/MacOS/XFinder.debug.dylib" ] || { echo "FATAL: a debug dylib is in the release"; exit 1; }
 APPEX_ID=$(codesign -dv --verbose=2 "$APPEX/Contents/MacOS/XFinderSync" 2>&1 | sed -n 's/^Identifier=//p')
 [ "$APPEX_ID" = "com.xfinder.app.XFinderSync" ] || { echo "FATAL: appex identifier '$APPEX_ID'"; exit 1; }
-for r in L10n.strings.json L10n.allowlist.json; do
+for r in L10n.strings.json L10n.allowlist.json xfinder-claude-hook.zsh; do
   find "$STAGE/Contents/Resources" -name "$r" | grep -q . || { echo "FATAL: $r missing from the bundle"; exit 1; }
 done
 

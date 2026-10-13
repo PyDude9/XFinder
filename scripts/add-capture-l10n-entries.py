@@ -68,6 +68,15 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "macOS Sao chép toàn màn hình": ("macOS Copy Full Screen", S),
     "macOS Sao chép vùng": ("macOS Copy Area", S),
     "macOS Tùy chọn chụp và ghi màn hình": ("macOS Screenshot & Recording Options", S),
+    # What's New 1.3 (WhatsNewRules.notes13)
+    "Chụp vùng, cửa sổ hoặc cả màn hình; thẻ xem trước nổi để chú thích, lưu, ghim hoặc kéo đi.":
+        ("Capture an area, a window or the whole screen; a floating preview card lets you annotate, save, pin or drag it away.", S),
+    "Bôi đen chữ ở app khác: đổi đơn vị, tiền tệ, múi giờ, tính, thêm vào Lịch, dịch.":
+        ("Select text in another app: convert units, currencies and time zones, calculate, add to Calendar, translate.", S),
+    "Dọn rác thư mục và Gỡ ứng dụng": ("Folder Junk Cleanup and Uninstaller", S),
+    "Xem trước từng mục, mọi thứ chỉ vào Thùng rác.": ("See every item first; everything goes only to the Trash.", S),
+    "Giữ ⌘Q để thoát, và tự thoát app trong danh sách khi bạn đóng cửa sổ cuối.":
+        ("Hold ⌘Q to quit, and quit listed apps when you close their last window.", S),
     # controller notices
     "Cần quyền Ghi màn hình để chụp ảnh.": ("Screen Recording permission is needed to capture.", S),
     "Không chạy được công cụ chụp màn hình.": ("Couldn't run the screenshot tool.", S),
