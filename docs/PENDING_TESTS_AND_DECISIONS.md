@@ -59,6 +59,7 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-B7 | Cắm màn hình ngoài (không có notch) | Có "notch ảo" giữa mép trên; hover/hub chạy như màn chính |
 | T-N4 | Bật Lịch trên notch → cấp quyền Lịch + Lời nhắc | Trang Lịch hiện sự kiện hôm nay, ngày âm lịch; nút "Tham gia" mở link họp |
 | T-N3 | Notch & Khay thả ▸ Cài hook Claude Code, rồi mở một phiên Claude Code | Notch hiện phiên; khi Claude xin quyền, bấm Cho phép/Từ chối trên notch thì terminal nhận |
+| T-N33 | Bật Lịch trên notch (cấp quyền), tạo một sự kiện có link Zoom/Meet bắt đầu sau 6 phút | Sau ~1 phút: dòng "Sắp đến giờ · <tên> · còn 5 phút" dưới notch, có âm "Glass"; rê chuột tới **không** làm nó biến mất; "Tham gia" mở link; "Hoãn 5 phút" báo lại sau 5 phút; sự kiện cả ngày không bao giờ báo |
 | T-D1g2 | Vuốt hai ngón ngang trên dải tab của hub; đổi màu nhấn | Đổi trang; màu nhấn đổi trên notch |
 
 ### Clipboard
