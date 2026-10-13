@@ -29,9 +29,10 @@ Bạn đã duyệt brief F4 với 5 câu trả lời mặc định, sau đó nó
 
 | Mã | Câu hỏi | Mặc định |
 |:--|:--|:--|
-| Q-WAVE | §3b #21 — sóng nhạc thời gian thực trên notch (như OneNotch). Cơ chế: process tap của CoreAudio (macOS 14.2+), cần quyền **ghi âm thanh hệ thống**. Muốn biết nó chạy được không phải probe — và probe sẽ làm macOS **bật hộp xin quyền** trên màn hình của bạn. Cho phép probe không? | Chưa làm, chờ bạn nói "probe sóng nhạc" |
 | Q-MULTIDISPLAY | §3b #39 — notch hiện trên mọi màn hình cùng lúc (nay: màn đang có con trỏ). Máy này một màn nên không đo được gì. Khi cắm màn ngoài, báo tôi để làm + đo | Chưa làm |
 | Q-GESTURE | Nút giữ cử chỉ chuột đang là Nút 3 (bấm con lăn). Đổi sang nút hông? (trang Chuột & cử chỉ có nút "Ghi lại nút giữ") | Để nguyên |
+
+~~Q-WAVE~~ — đã probe và làm 2026-10-13: bạn bấm Allow lúc 16:44; tap chạy, có tín hiệu nhạc thật (xem T-WAVE).
 
 ~~Q-GIT~~ / ~~Q-RELEASE~~ — đã xong 2026-10-13: push `main` tới `48546c5`, tag `v1.3.0`, [Release 1.3.0](https://github.com/PyDude9/XFinder/releases/tag/v1.3.0) với zip + .sha256 (tải lại từ GitHub: checksum OK, `codesign --verify --deep --strict` OK).
 
@@ -118,4 +119,5 @@ bấm "Dùng bộ phím giống OneNotch" hoặc "Gán phím" từng dòng — h
 | T-F4-8 | Chụp toàn màn hình khi cắm 2 màn | Chỉ màn đang có con trỏ |
 | T-F4-9 | Gán ⇧⌘4 khi macOS vẫn giữ ⇧⌘4 | Dòng cảnh báo "Trùng với macOS Chụp vùng — macOS có thể giành trước." |
 | T-F4-10 | Thu hồi quyền Ghi màn hình rồi bấm phím chụp | Toast "Cần quyền Ghi màn hình để chụp ảnh." (không im lặng) |
+| T-WAVE | Bật **Notch & Khay thả ▸ Sóng nhạc thời gian thực** (đang tắt — tôi trả khoá về như cũ sau khi đo), mở YouTube ở Chrome, rê vào notch / mở trang Đang phát | Cột sóng nhảy theo nhạc; tắt tiếng thông báo không làm cột nhảy; tạm dừng thì cột lặng; Safari cũng chạy (chưa đo) |
 | T-F4-11 | Tắt "Giữ lịch sử ảnh chụp", chụp, đóng thẻ | Ảnh không ở lại trong `~/Library/Application Support/XFinder/Captures/` sau lần chụp kế tiếp |

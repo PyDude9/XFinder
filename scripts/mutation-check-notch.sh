@@ -131,6 +131,10 @@ run "M40 one silent buffer reads as a denied permission" XFinder/Core/Notch/Audi
   "'            return now.timeIntervalSince(first) >= Self.grace'" "'            return true'"
 run "M41 no buffers at all reads as denied" XFinder/Core/Notch/AudioWaveform.swift \
   "'            guard let first = firstBuffer, !sawSignal else { return false }'" "'            guard !sawSignal else { return false }; let first = firstBuffer ?? .distantPast'"
+run "M42 the player's own pid only (browsers deliver no buffers)" XFinder/Core/Notch/AudioWaveform.swift \
+  "'            if let r = p.responsiblePID { return r == player }\n            return p.parentPID == player'" "'            return false'"
+run "M43 the parent pid outranks responsibility (Safari's WebKit.GPU is lost)" XFinder/Core/Notch/AudioWaveform.swift \
+  "'            if let r = p.responsiblePID { return r == player }'" "'            if p.parentPID == player { return true }'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 

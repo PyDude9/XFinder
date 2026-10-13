@@ -48,4 +48,31 @@ final class AudioWaveformTests: XCTestCase {
         w.observe(rms: 0.00001, at: t0.addingTimeInterval(2.2))
         XCTAssertFalse(w.looksDenied(now: t0.addingTimeInterval(9)), "any signal at all clears it")
     }
+
+    /// The measured process table from 2026-10-13 (Chrome playing; Safari, OneNotch, AirDrop also have WebKit.GPU).
+    private let measured: [W.AudioProcess] = [
+        .init(object: 119, pid: 66580, responsiblePID: 66530, parentPID: 66530),   // Chrome audio helper (out = 1)
+        .init(object: 120, pid: 66581, responsiblePID: 66530, parentPID: 66530),   // another Chrome helper
+        .init(object: 121, pid: 66530, responsiblePID: 66530, parentPID: 1),       // Chrome itself (out = 0)
+        .init(object: 125, pid: 52320, responsiblePID: 52320, parentPID: 1),       // Safari
+        .init(object: 128, pid: 41172, responsiblePID: 52320, parentPID: 1),       // Safari's WebKit.GPU
+        .init(object: 130, pid: 29956, responsiblePID: 29948, parentPID: 1),       // OneNotch's WebKit.GPU
+        .init(object: 122, pid: 66787, responsiblePID: 66780, parentPID: 1),       // AirDrop's WebKit.GPU
+    ]
+
+    func testAPlayerIsTappedWithEveryProcessItIsResponsibleFor() {
+        XCTAssertEqual(Set(W.playerProcesses(measured, player: 66530)), [119, 120, 121],
+                       "Chrome's sound comes from its helper — tapping the browser alone delivers no buffers")
+        XCTAssertEqual(Set(W.playerProcesses(measured, player: 52320)), [125, 128],
+                       "Safari's WebKit.GPU is found by responsibility (its parent is launchd)")
+        XCTAssertFalse(W.playerProcesses(measured, player: 52320).contains(130), "another app's WebKit.GPU is never mixed in")
+        XCTAssertEqual(W.playerProcesses(measured, player: 4242), [], "a player with no audio object taps nothing")
+    }
+
+    func testParentPIDIsOnlyAFallbackWhenResponsibilityIsUnknown() {
+        let noLookup = measured.map { W.AudioProcess(object: $0.object, pid: $0.pid, responsiblePID: nil, parentPID: $0.parentPID) }
+        XCTAssertEqual(Set(W.playerProcesses(noLookup, player: 66530)), [119, 120, 121], "children still found by parent")
+        let lying = [W.AudioProcess(object: 1, pid: 10, responsiblePID: 99, parentPID: 66530)]
+        XCTAssertEqual(W.playerProcesses(lying, player: 66530), [], "a known responsible pid outranks the parent")
+    }
 }

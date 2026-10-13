@@ -196,8 +196,8 @@ player tuỳ biến (**probe mã `MRMediaRemoteSendCommand` shuffle/repeat trư�
 #35 từ điển ✅ 2026-10-13 (dòng "Định nghĩa" trên huy hiệu Chọn văn bản thông minh; `DCSCopyTextDefinition` đo 1–73 ms, có cả từ điển Việt, nil cho từ không có) · #39 hiện trên nhiều
 màn hình cùng lúc (nay một màn một lúc; notch ảo trên màn không notch đã có từ D0c).
 
-**Tham vọng (target/quyền/API riêng) → F, mỗi cái phải có probe trước**: #21 sóng nhạc thời gian thực (`CATapDescription`
-process tap, macOS 14.2+, cần quyền) · #29 dịch nhanh (E; `translationd` từ chối binary ad-hoc — đo lại với chữ ký XFinder Dev) ·
+**Tham vọng (target/quyền/API riêng) → F, mỗi cái phải có probe trước**: #21 sóng nhạc thời gian thực ✅ 2026-10-13 (`CATapDescription`
+process tap, macOS 14.2+, cần quyền Ghi âm thanh hệ thống — kể cả tap theo process; tap gom player + mọi process macOS coi player chịu trách nhiệm, vì âm thanh Chrome ra từ helper, Safari từ WebKit.GPU; ~3 % CPU khi sóng đang hiện) · #29 dịch nhanh (E; `translationd` từ chối binary ad-hoc — đo lại với chữ ký XFinder Dev) ·
 #30 chụp & chú thích (F) · #33 nhắc họp ✅ 2026-10-13 (live activity có nút Tham gia / Hoãn 5 phút / Mở Lịch; một Timer theo giờ thật cho lần báo kế tiếp; khoá mỗi lần lặp theo id+giờ bắt đầu) · #37 hạn mức Claude/Codex ✅ 2026-10-13 (Codex: % do chính nó ghi trong `~/.codex/sessions`; Claude Code không ghi % ra máy ⇒ chỉ token, nói rõ; gộp dòng trùng vì 5 882 dòng = 2 256 tin nhắn) · #38 thay thế vùng chọn (E, Smart Selection) · #40 theo dõi agent (F) · #41 duyệt yêu cầu agent trên notch (F, cần hook
 quyền của Claude Code — chưa rõ cơ chế) · #42 Clipboard MCP (D) · #48 19 ngôn ngữ (kiến trúc L10n hai ngôn ngữ — chỉ khi có
 người dịch thật).

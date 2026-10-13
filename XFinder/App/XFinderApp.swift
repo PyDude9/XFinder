@@ -188,6 +188,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // D0: `xfinder://clipboard` = the ⌘⇧V hotkey (Shortcuts, scripts, probes) — the same router,
             // so it honours `clipboard.hotkeySurface` and the notch surface's master switch.
             Task { @MainActor in ClipboardShelfController.shared.hotkeyPressed() }
+        case "notch":
+            // `xfinder://notch?page=nowPlaying` opens the hub on a page (Shortcuts, scripts, probes). An unknown or
+            // hidden page resolves the same way a click would; no page = the tray.
+            let page = comps.queryItems?.first(where: { $0.name == "page" })?.value
+                .flatMap { NotchSurfaceMachine.Page(rawValue: $0) } ?? .files
+            Task { @MainActor in NotchSurfaceController.shared.reveal(page: page) }
         default:
             break
         }

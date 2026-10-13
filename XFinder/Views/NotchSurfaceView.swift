@@ -308,7 +308,7 @@ struct NotchSurfaceView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture { NotchSurfaceController.shared.reveal(page: .nowPlaying) }
-            if AudioTapMonitor.shared.isRunning { WaveformBars(levels: AudioTapMonitor.shared.meter.levels).frame(width: 46, height: 18) }
+            if AudioTapMonitor.shared.isRunning { WaveformBars().frame(width: 46, height: 18) }
             nowPlayingControls(size: 11)
         }
         .padding(.horizontal, XFinderTokens.Space.inline)
@@ -513,7 +513,7 @@ struct NotchSurfaceView: View {
                             Text(L10n.t("Sóng nhạc chỉ nhận được im lặng — có thể chưa cấp quyền Ghi âm thanh hệ thống."))
                                 .font(XFinderTokens.Font.caption).opacity(0.65).lineLimit(2)
                         } else {
-                            WaveformBars(levels: AudioTapMonitor.shared.meter.levels).frame(height: 18)
+                            WaveformBars().frame(height: 18)
                         }
                     }
                     if let d = np.duration, d > 0 {
@@ -1049,9 +1049,11 @@ struct DropTrayDetailGrid: View {
 }
 
 /// §3b #21 — the live waveform: one Canvas, `AudioWaveform.bars` rounded bars, newest on the right.
+/// It reads the meter ITSELF so only this view re-renders 30 times a second. Passing `levels` in from the page made
+/// the whole Now Playing page observe the meter — measured live 2026-10-13: 1.77 s of CPU over 30 s with the page open.
 struct WaveformBars: View {
-    let levels: [Float]
     var body: some View {
+        let levels = AudioTapMonitor.shared.meter.levels
         Canvas { ctx, size in
             let n = max(1, levels.count)
             let gap: CGFloat = 2

@@ -48,6 +48,29 @@ enum AudioWaveform {
         mutating func reset() { self = Meter() }
     }
 
+    /// A CoreAudio process object as the tap resolver sees it (plain integers so this file stays Foundation-only).
+    struct AudioProcess: Equatable {
+        let object: UInt32
+        let pid: Int32
+        /// The process macOS holds responsible for this one (nil when the lookup is unavailable).
+        let responsiblePID: Int32?
+        let parentPID: Int32?
+    }
+
+    /// The process objects to tap for a player: its own, plus every process macOS holds it responsible for.
+    /// Measured 2026-10-13 while Chrome played: the browser's own object (pid 66530) had `IsRunningOutput = 0`; the sound
+    /// came from `com.google.Chrome.helper` (pid 66580, parent and responsible = 66530). Safari's audio comes from a
+    /// `com.apple.WebKit.GPU` whose parent is launchd and whose responsible pid is Safari — and three other WebKit.GPU
+    /// processes on the same Mac belonged to OneNotch, AirDrop and a thumbnail extension, so "every WebKit.GPU" would mix
+    /// other apps in. The parent pid is only a fallback for when the responsibility lookup is unavailable.
+    static func playerProcesses(_ all: [AudioProcess], player: Int32) -> [UInt32] {
+        all.filter { p in
+            if p.pid == player { return true }
+            if let r = p.responsiblePID { return r == player }
+            return p.parentPID == player
+        }.map(\.object)
+    }
+
     /// "Probably not allowed": the track has been playing for `grace` seconds, buffers arrived, and every one of them
     /// was exact digital silence. A real song is never exactly zero for two seconds; a quiet passage still has noise.
     struct SilenceWatch: Equatable {
