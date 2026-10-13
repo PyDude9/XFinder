@@ -280,4 +280,115 @@ final class AgentSessionMonitor {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try AgentHookInstaller.data(for: settings).write(to: url, options: .atomic)
     }
+
+    // MARK: - Claude Code statusLine (rate-limit cache) install (on request only)
+
+    /// Paths for the statusLine script + cache, under the SAME support folder as the hook
+    /// (`AgentSessionMonitor.supportDir` == `ClaudeStatusLine.supportDir(home:)` — both resolve to
+    /// `~/Library/Application Support/XFinder/Agents/claude`).
+    private static let home = FileManager.default.homeDirectoryForCurrentUser
+    var statusLineScriptURL: URL { ClaudeStatusLine.scriptURL(home: Self.home) }
+    var statusLineCacheURL: URL { ClaudeStatusLine.cacheURL(home: Self.home) }
+    var statusLinePreviousCommandURL: URL { ClaudeStatusLine.previousCommandURL(home: Self.home) }
+    var statusLinePreviousJSONURL: URL { ClaudeStatusLine.previousJSONURL(home: Self.home) }
+
+    enum StatusLineState: Equatable { case notInstalled, installed, replaced, settingsUnreadable }
+
+    enum StatusLineError: Error {
+        case bundleResourceMissing
+        case settingsUnreadable
+        /// Removal was asked for, but `statusLine` currently points at something other than XFinder's script —
+        /// another tool's installer (or XFinder's own chain, saved by that tool) may lead back to us, so blindly
+        /// overwriting it could break that chain. Nothing is changed; the caller tells the person why.
+        case pointsAtAnotherCommand
+        /// The saved previous value exists but cannot be read back (P2 review: it used to be treated as "nothing was
+        /// there before" and the key was deleted). Nothing is changed; the dated settings.json backups still hold it.
+        case previousUnreadable
+    }
+
+    func statusLineState() -> StatusLineState {
+        switch readClaudeSettings() {
+        case .failure: return .settingsUnreadable
+        case .success(let settings):
+            let previousSaved = FileManager.default.fileExists(atPath: statusLinePreviousJSONURL.path)
+            switch ClaudeStatusLine.status(of: settings, scriptPath: statusLineScriptURL.path, previousSaved: previousSaved) {
+            case .notInstalled: return .notInstalled
+            case .installed: return .installed
+            case .replaced: return .replaced
+            }
+        }
+    }
+
+    /// Copy the bundled statusLine script into Application Support, then point `~/.claude/settings.json` at it —
+    /// chaining to whatever statusLine was there before (saved to disk so removal can restore it verbatim).
+    func installStatusLine() throws {
+        ensureDirectories()
+        guard let src = Bundle.main.url(forResource: "xfinder-claude-statusline", withExtension: "sh") else {
+            throw StatusLineError.bundleResourceMissing
+        }
+        let fm = FileManager.default
+        let scriptURL = statusLineScriptURL
+        try fm.createDirectory(at: scriptURL.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let data = try Data(contentsOf: src)
+        try data.write(to: scriptURL, options: .atomic)
+        try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: scriptURL.path)
+
+        let settings: [String: Any]
+        switch readClaudeSettings() {
+        case .success(let s): settings = s
+        case .failure: throw StatusLineError.settingsUnreadable
+        }
+        try backupClaudeSettings()
+
+        let install = ClaudeStatusLine.installing(settings, scriptPath: scriptURL.path)
+
+        // Only write the saved-previous files when this install actually captured a previous value (i.e. we were
+        // not already installed) — leaving an existing save alone if we were already ours.
+        if let previous = install.previous {
+            let json = try ClaudeStatusLine.encodePrevious(previous)
+            try json.write(to: statusLinePreviousJSONURL, options: .atomic)
+            try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: statusLinePreviousJSONURL.path)
+
+            let cmdURL = statusLinePreviousCommandURL
+            if let previousCommand = install.previousCommand {
+                try previousCommand.write(to: cmdURL, atomically: true, encoding: .utf8)
+                try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: cmdURL.path)
+            } else {
+                try? fm.removeItem(at: cmdURL)
+            }
+        }
+
+        try writeClaudeSettings(install.settings)
+    }
+
+    /// Undo the install: only when `statusLine` currently points at XFinder's script. Restores the saved
+    /// previous value verbatim (or deletes the key when there was none), then deletes the script and the saved
+    /// previous-value files and the rate-limit cache.
+    func removeStatusLine() throws {
+        let settings: [String: Any]
+        switch readClaudeSettings() {
+        case .success(let s): settings = s
+        case .failure: throw StatusLineError.settingsUnreadable
+        }
+        guard ClaudeStatusLine.isOurs(settings["statusLine"], scriptPath: statusLineScriptURL.path) else {
+            throw StatusLineError.pointsAtAnotherCommand
+        }
+
+        // No save ⇒ there was no statusLine before us ⇒ the key is deleted. A save that cannot be read ⇒ refuse.
+        var previous: Any?
+        if FileManager.default.fileExists(atPath: statusLinePreviousJSONURL.path) {
+            guard let data = try? Data(contentsOf: statusLinePreviousJSONURL),
+                  let value = ClaudeStatusLine.decodePrevious(data) else { throw StatusLineError.previousUnreadable }
+            previous = value
+        }
+
+        try backupClaudeSettings()
+        try writeClaudeSettings(ClaudeStatusLine.removing(settings, scriptPath: statusLineScriptURL.path, previous: previous))
+
+        let fm = FileManager.default
+        try? fm.removeItem(at: statusLineScriptURL)
+        try? fm.removeItem(at: statusLinePreviousJSONURL)
+        try? fm.removeItem(at: statusLinePreviousCommandURL)
+        try? fm.removeItem(at: statusLineCacheURL)
+    }
 }

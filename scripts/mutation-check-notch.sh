@@ -108,20 +108,34 @@ run "M27 the fixed panel forgets the hub's top fillets (clipboard hub wider than
   "'            max(m.wideWidth, m.narrowWidth, notch.width) + 2 * m.topFillet,          // every hub page, flares included'" \
   "'            max(m.wideWidth, m.narrowWidth, notch.width),'"
 run "M28 the fixed panel is shallower than the deepest hub" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'        let drops: [CGFloat] = [m.narrowDrop, m.wideDrop, m.calendarDrop, m.peekDrop, m.activityDrop]'" \
+  "'        let drops: [CGFloat] = [m.narrowDrop, m.wideDrop, m.toolDrop, m.peekDrop, m.activityDrop]'" \
   "'        let drops: [CGFloat] = [m.narrowDrop, m.wideDrop, m.peekDrop, m.activityDrop]'"
 run "M44 the wings follow the left side only (an off-centre notch)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
   "'        return max(m.wingMin, max(sideWidth(left, metrics: m), sideWidth(right, metrics: m)) + m.wingInset)'" "'        return max(m.wingMin, sideWidth(left, metrics: m) + m.wingInset)'"
 run "M45 the collapsed shape hangs below the notch" XFinder/Core/Notch/NotchSurfaceLayout.swift \
   "'                return CGSize(width: notch.width + 2 * wing + 2 * m.collapsedFillet, height: notch.height)'" "'                return CGSize(width: notch.width + 2 * wing + 2 * m.collapsedFillet, height: notch.height + 8)'"
 run "M46 the calendar becomes a page dot" XFinder/Core/Notch/NotchPages.swift \
-  "'    static let toolbarPages: Set<Page> = [.calendar]'" "'    static let toolbarPages: Set<Page> = []'"
+  "'    static let toolbarPages: Set<Page> = [.calendar, .timer, .aiUsage]'" "'    static let toolbarPages: Set<Page> = [.timer, .aiUsage]'"
 run "M47 Agents gets the narrow body" XFinder/Core/Notch/NotchSurfaceLayout.swift \
-  "'        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool { page == .clipboard || page == .agents }'" "'        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool { page == .clipboard }'"
+  "'        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool { page == .clipboard || page == .agents || page == .aiUsage }'" "'        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool { page == .clipboard || page == .aiUsage }'"
 run "M48 a swipe on the calendar tool jumps to the first dot" XFinder/Core/Notch/NotchPages.swift \
   "'        guard !toolbarPages.contains(current) else { return nil }\n'" "''"
 run "M49 a taller clipboard card (the deck overflows the wide body)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
   "'        var clipCardHeight: CGFloat = 112'" "'        var clipCardHeight: CGFloat = 118'"
+run "M50 a paused timer reads zero left" XFinder/Core/Notch/LiveActivity.swift \
+  "'            return max(0, pausedRemaining ?? 0)'" "'            return 0'"
+run "M51 minus five can drop the timer below a minute" XFinder/Core/Notch/LiveActivity.swift \
+  "'            let target = min(max(left + TimeInterval(minutes * 60), 60), TimeInterval(LiveActivity.timerMaxMinutes * 60))'" "'            let target = min(left + TimeInterval(minutes * 60), TimeInterval(LiveActivity.timerMaxMinutes * 60))'"
+run "M52 the idle stepper does not snap to the 5-minute grid" XFinder/Core/Notch/LiveActivity.swift \
+  "'        let snapped = direction > 0 ? (minutes / step + 1) * step : direction < 0 ? ((minutes + step - 1) / step - 1) * step : minutes'" "'        let snapped = minutes + direction * step'"
+run "M53 the timer becomes a page dot" XFinder/Core/Notch/NotchPages.swift \
+  "'    static let toolbarPages: Set<Page> = [.calendar, .timer, .aiUsage]'" "'    static let toolbarPages: Set<Page> = [.calendar, .aiUsage]'"
+run "M54 AI usage gets the narrow body" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool { page == .clipboard || page == .agents || page == .aiUsage }'" "'        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool { page == .clipboard || page == .agents }'"
+run "M55 the band's wing loses its inset twice (the toolbar no longer fits a narrow page)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'        max(0, (bodyWidth - notchWidth) / 2 - m.bandInset)'" "'        max(0, (bodyWidth - notchWidth) / 2 - 2 * m.bandInset)'"
+run "M56 wider page dots (the dots capsule overflows the left wing)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'        var dotPitch: CGFloat = 15'" "'        var dotPitch: CGFloat = 22'"
 run "M31 OCR offered with no image held" XFinder/Core/Notch/NotchTask.swift \
   "'            out.append(.removeBackground)\n            out.append(.ocr)\n        }\n        out.append(.airDrop)'" \
   "'            out.append(.removeBackground)\n        }\n        out.append(.ocr)\n        out.append(.airDrop)'"

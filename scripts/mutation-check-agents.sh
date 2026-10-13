@@ -6,12 +6,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-agents.XXXXXX)
-FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift"
+FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='AgentSession|AgentUsage|FeatureContract|FeatureCatalog'
+FILTER='AgentSession|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -32,6 +32,8 @@ base=$(fails); echo "baseline failures: $base"
 
 red=0; total=0
 run() {
+  # A target outside FILES is never restored (P1, the notch script's M40). Refuse it.
+  case " $FILES " in *" $2 "*) ;; *) echo "HARNESS ERROR: $2 is not in FILES (it would never be restored)"; exit 2;; esac
   total=$((total+1)); mutate "$2" "$3" "$4" || exit 2
   n=$(fails); restore
   if [ "$n" = "NORESULT" ]; then echo "HARNESS ERROR: $1 produced no test result (mutant did not compile?)"; exit 2; fi
@@ -65,10 +67,6 @@ run "A9 a line without a session id still becomes an event" XFinder/Core/Agents/
 run "A10 PermissionRequest timeout shrinks to the default (the hook would be killed while waiting)" XFinder/Core/Agents/AgentHookInstaller.swift \
   "'        (\"PermissionRequest\", 3600), (\"PermissionDenied\", 10),'" "'        (\"PermissionRequest\", 10), (\"PermissionDenied\", 10),'"
 
-restore
-for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
-after=$(fails)
-echo "suite after restore: $after failure(s)"
 U=XFinder/Core/Agents/AgentUsage.swift
 run "A11 repeated lines of one message are summed (2.6x the real tokens)" $U \
   "'            if let cur = best[l.key], cur.output >= l.output { continue }'" "'            if false, let cur = best[l.key], cur.output >= l.output { continue }; best[UUID().uuidString] = l; continue'"
@@ -78,5 +76,32 @@ run "A13 a Codex event with null windows becomes a 0 % record" $U \
   "'        guard p != nil || s != nil else { return nil }'" "'        _ = 0'"
 run "A14 a window past its reset still reads as current" $U \
   "'    static func isCurrent(_ w: CodexWindow, now: Date) -> Bool { w.resetsAt > now }'" "'    static func isCurrent(_ w: CodexWindow, now: Date) -> Bool { true }'"
+# P2 — ClaudeStatusLine.swift (install rules + rate-limit cache parser). Numbered from A16: A12-A14 belong to AgentUsage.swift.
+CSL=XFinder/Core/Agents/ClaudeStatusLine.swift
+run "A16 previousCommand allowed to point back at us" $CSL \
+  "'        if let existing, isOurs(existing, scriptPath: scriptPath) {'" \
+  "'        if false, let existing, isOurs(existing, scriptPath: scriptPath) {'"
+run "A17 removing() deletes the key even when not ours" $CSL \
+  "'        guard isOurs(settings[\"statusLine\"], scriptPath: scriptPath) else { return settings }\n'" \
+  "'        _ = isOurs(settings[\"statusLine\"], scriptPath: scriptPath)\n'"
+run "A18 isCurrent ignores resetsAt" $CSL \
+  "'        guard let resetsAt = w.resetsAt else { return true }\n        return resetsAt > now\n'" \
+  "'        _ = w.resetsAt\n        return true\n'"
+run "A19 installing() drops padding/refreshInterval" $CSL \
+  "'        var newValue: [String: Any] = existing ?? [:]\n'" \
+  "'        var newValue: [String: Any] = [:]\n'"
+run "A20 a bare object is taken as a save (a hand-edited or foreign file would be restored as if it were ours)" $CSL \
+  "'              obj.count == 1, let value = obj[\"statusLine\"] else { return nil }'" \
+  "'              let value = obj[\"statusLine\"] ?? (obj as Any?) else { return nil }'"
+run "A21 a non-object previous statusLine is dropped (Gỡ would delete it)" $CSL \
+  "'        guard let existing else { return Install(settings: out, previous: raw, previousCommand: nil) }'" \
+  "'        guard let existing else { return Install(settings: out, previous: nil, previousCommand: nil) }'"
+
+# The restore check and the post-restore suite run come AFTER every mutation (they used to sit before A11, so the
+# later mutations ran unchecked — found while adding A20/A21).
+restore
+for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
+after=$(fails)
+echo "suite after restore: $after failure(s)"
 echo "RESULT: $red/$total mutations RED"
 [ "$after" = "0" ] && [ "$red" = "$total" ] || exit 1

@@ -21,6 +21,11 @@ final class NotchSurfaceModel {
     var activity: LiveActivity.Item?
     /// Remaining time of a running countdown ("12:34"), shown in the collapsed badge (B4b).
     var timerText: String?
+    /// P2: the countdown itself (running or paused) for the Hẹn giờ page, the tick that drives its progress, and the
+    /// idle stepper's minutes (`notch.timer.minutes`). The controller owns all three; the page only reads them.
+    var timer: LiveActivity.Countdown?
+    var timerNow = Date()
+    var timerDraftMinutes = LiveActivity.timerDefaultMinutes
     /// The clipboard page's own state (B5).
     let clipboard = NotchClipboardModel()
     /// What is playing (B6), as the helper last reported it; nil ⇒ nothing / feature off.
@@ -270,7 +275,7 @@ struct NotchSurfaceView: View {
             .accessibilityAddTraits(.isButton)
         case .timer:
             HStack(spacing: 3) {
-                Image(systemName: "timer").font(.system(size: 11))
+                Image(systemName: model.timer?.isPaused == true ? "pause.fill" : "timer").font(.system(size: 11))
                 Text(model.timerText ?? "").font(.system(size: 11, weight: .semibold)).monospacedDigit()
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
@@ -357,8 +362,10 @@ struct NotchSurfaceView: View {
             case .files: filesPage
             case .clipboard: NotchClipboardView(model: model.clipboard)
             case .nowPlaying: nowPlayingPage
-            case .agents: agentsPage
-            case .calendar: calendarPage
+            case .agents: NotchAgentsPage(model: model)
+            case .calendar: NotchCalendarPage(model: model)
+            case .timer: NotchTimerPage(model: model)
+            case .aiUsage: NotchAIUsagePage(model: model)
             }
         }
     }
@@ -370,7 +377,7 @@ struct NotchSurfaceView: View {
         let bandHeight = max(model.notchSize.height, Self.m.bandHeight)
         let notchGap: CGFloat = (atNotch && !plainScreen) ? model.notchSize.width : 0
         let inner = stateSize.width - 2 * flare.width
-        let wing = max(0, (inner - notchGap) / 2 - 12)
+        let wing = NotchSurfaceLayout.bandWingWidth(bodyWidth: inner, notchWidth: notchGap)
         return HStack(spacing: 0) {
             HStack(spacing: 8) {
                 dotsCapsule(current: page)
@@ -384,47 +391,28 @@ struct NotchSurfaceView: View {
             }
             .frame(width: wing, alignment: .leading)
             Color.clear.frame(width: notchGap)
-            HStack(spacing: 8) {
+            HStack(spacing: 0) {
                 Spacer(minLength: 0)
                 toolbarCapsule(current: page)
-                // On every page and at the notch too: Esc closes only the clipboard page (its key monitor), so on the
-                // other pages this is the one immediate way out besides leaving (P1 review — OneNotch has no ✕, but its
-                // pages are not keyboard-less in the same way).
-                Button { NotchSurfaceController.shared.dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
-                        .foregroundColor(N.toolbarIcon)
-                        .frame(width: N.toolbarHeight, height: N.toolbarHeight)
-                        .background(Circle().fill(N.capsule))
-                }
-                .buttonStyle(.plain)
-                .help(L10n.t("Đóng"))
-                .accessibilityLabel(L10n.t("Đóng"))
             }
             .frame(width: wing, alignment: .trailing)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, Self.m.bandInset)
         .frame(height: bandHeight)
     }
 
     /// A page the hub can show right now: Now Playing needs its switch (B6), Agents and the calendar theirs.
+    /// The timer needs nothing; AI usage rides the "Agent AI trên notch" switch (it reads the agents' own files).
     private func available(_ p: Page) -> Bool {
         switch p {
-        case .files, .clipboard: return true
+        case .files, .clipboard, .timer: return true
         case .nowPlaying: return model.nowPlayingAvailability != .off
-        case .agents: return model.agentsEnabled
+        case .agents, .aiUsage: return model.agentsEnabled
         case .calendar: return model.calendarEnabled
         }
     }
 
-    private func pageTitle(_ p: Page) -> String {
-        switch p {
-        case .files: return L10n.t("Khay")
-        case .clipboard: return "Clipboard"
-        case .nowPlaying: return L10n.t("Đang phát")
-        case .agents: return L10n.t("Agent AI")
-        case .calendar: return L10n.t("Lịch")
-        }
-    }
+    private func pageTitle(_ p: Page) -> String { L10n.t(NotchPages.titleKey(p)) }
 
     /// One dot per swipeable page in the user's order (D1 #44); the lit dot is the current page (OneNotch measured:
     /// dot 1 on Clipboard, dot 3 on Agents). Each dot is a button — the tooltip / VoiceOver label names the page
@@ -445,7 +433,7 @@ struct NotchSurfaceView: View {
                 .accessibilityAddTraits(p == current ? .isSelected : [])
             }
         }
-        .padding(.horizontal, 4.5)                      // 15 n + 9: 54 pt for three dots, as measured
+        .padding(.horizontal, Self.m.dotsCapsulePadding)   // NotchSurfaceLayout.dotsCapsuleWidth: 15 n + 9
         .background(Capsule().fill(N.capsule))
     }
 
@@ -456,217 +444,39 @@ struct NotchSurfaceView: View {
     }
 
     /// The toolbar: fixed destinations (the calendar now; the timer and AI usage in P2), lit while current.
-    @ViewBuilder private func toolbarCapsule(current: Page) -> some View {
+    /// The tools, then the ✕ as the capsule's last slot. On every page and at the notch too: Esc closes only the
+    /// clipboard page (its key monitor), so elsewhere the ✕ is the one immediate way out besides leaving (P1 review).
+    /// Width = `NotchSurfaceLayout.toolbarCapsuleWidth(slots: tools + 1)` — tested to fit a narrow page's wing (P2 review).
+    private func toolbarCapsule(current: Page) -> some View {
         let tools = NotchPages.toolbar(model.pages).filter(available)
-        if !tools.isEmpty {
-            HStack(spacing: 0) {
-                ForEach(tools, id: \.self) { p in
-                    Button { NotchSurfaceController.shared.switchPage(p) } label: {
-                        Image(systemName: toolIcon(p)).font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(p == current ? N.dotLit : N.toolbarIcon)
-                            .frame(width: N.toolbarIconPitch, height: N.toolbarHeight)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help(pageTitle(p))
-                    .accessibilityLabel(pageTitle(p))
-                    .accessibilityAddTraits(p == current ? .isSelected : [])
+        return HStack(spacing: 0) {
+            ForEach(tools, id: \.self) { p in
+                Button { NotchSurfaceController.shared.switchPage(p) } label: {
+                    Image(systemName: toolIcon(p)).font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(p == current ? N.dotLit : N.toolbarIcon)
+                        .frame(width: Self.m.toolbarSlot, height: N.toolbarHeight)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .help(pageTitle(p))
+                .accessibilityLabel(pageTitle(p))
+                .accessibilityAddTraits(p == current ? .isSelected : [])
             }
-            .padding(.horizontal, 3)
-            .background(Capsule().fill(N.capsule))
-        }
-    }
-
-    private func toolIcon(_ p: Page) -> String {
-        switch p {
-        case .calendar: return "calendar"
-        case .files: return "tray.fill"
-        case .clipboard: return "doc.on.clipboard.fill"
-        case .nowPlaying: return "music.note"
-        case .agents: return "terminal.fill"
-        }
-    }
-    // MARK: - N4: Glance (calendar)
-
-    /// OneNotch's calendar page re-derived: weekday + lunar date, a nine-day strip with dots, the greeting and
-    /// "up next" line, then today's list — a meeting link gets a Tham gia button. Access is asked from here,
-    /// never on the switch (the sheet must come from a click).
-    @ViewBuilder private var calendarPage: some View {
-        let now = Date()
-        let cal = Calendar.current
-        if model.calendarAccess != .granted {
-            VStack(spacing: XFinderTokens.Space.tight) {
-                Image(systemName: "calendar.badge.exclamationmark").font(XFinderTokens.Font.pageIcon).opacity(0.65)
-                Text(L10n.t(model.calendarAccess == .notDetermined || model.calendarAccess == .unknown
-                            ? "Chưa có quyền Lịch. Cấp quyền để thấy sự kiện hôm nay." : "Quyền Lịch bị từ chối — mở Cài đặt hệ thống ▸ Quyền riêng tư ▸ Lịch."))
-                    .font(XFinderTokens.Font.caption).opacity(0.65).multilineTextAlignment(.center)
-                Button(L10n.t("Cấp quyền Lịch")) { NotchSurfaceController.shared.requestCalendarAccess() }
-                    .buttonStyle(.bordered).controlSize(.mini)
+            Button { NotchSurfaceController.shared.dismiss() } label: {
+                Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
+                    .foregroundColor(N.toolbarIcon)
+                    .frame(width: Self.m.toolbarSlot, height: N.toolbarHeight)
+                    .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            let strip = GlanceRules.weekStrip(around: now, calendar: cal)
-            let dots = GlanceRules.daysWithEvents(model.calendarEvents, strip: strip, calendar: cal)
-            let today = GlanceRules.dayEvents(model.calendarEvents, on: now, hideAllDay: model.calendarHidesAllDay, calendar: cal)
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(now.formatted(.dateTime.weekday(.wide))).font(XFinderTokens.Font.row).bold()
-                    Text("\(GlanceRules.lunarLabel(for: now)) \(L10n.t("ÂL"))").font(XFinderTokens.Font.caption).opacity(0.65)
-                    Spacer()
-                    Text(now.formatted(.dateTime.month(.abbreviated).year())).font(XFinderTokens.Font.caption).opacity(0.65)
-                    Button { NotchSurfaceController.shared.openCalendar(on: now) } label: { Image(systemName: "arrow.up.forward.app") }
-                        .buttonStyle(.plain).opacity(0.65).help(L10n.t("Mở Lịch"))
-                }
-                HStack(spacing: 0) {
-                    ForEach(strip, id: \.self) { d in
-                        let isToday = cal.isDate(d, inSameDayAs: now)
-                        VStack(spacing: 1) {
-                            Text("\(cal.component(.day, from: d))").font(XFinderTokens.Font.caption).monospacedDigit()
-                                .opacity(isToday ? 1 : 0.6)
-                            Circle().fill(dots.contains(d) ? accent : Color.clear).frame(width: 4, height: 4)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).fill(isToday ? Color.white.opacity(0.18) : Color.clear))
-                    }
-                }
-                let hour = cal.component(.hour, from: now)
-                if let next = GlanceRules.upNext(model.calendarEvents, now: now) {
-                    HStack(spacing: XFinderTokens.Space.tight) {
-                        Text("\(L10n.t(GlanceRules.greetingKey(hour: hour))) \(L10n.t("Tiếp theo: "))\(next.title) · \(next.start.formatted(date: .omitted, time: .shortened))")
-                            .font(XFinderTokens.Font.caption).lineLimit(1).truncationMode(.tail)
-                        if let c = GlanceRules.countdown(to: next.start, now: now) {
-                            Text("\(L10n.t("trong "))\(c.number) \(L10n.t(c.unitKey))").font(XFinderTokens.Font.caption).opacity(0.65)
-                        }
-                        if let u = GlanceRules.meetingURL(in: next) {
-                            Button(L10n.t("Tham gia")) { NSWorkspace.shared.open(u) }.buttonStyle(.borderedProminent).controlSize(.mini)
-                        }
-                    }
-                } else {
-                    Text("\(L10n.t(GlanceRules.greetingKey(hour: hour))) \(L10n.t("Hôm nay không còn gì nữa."))")
-                        .font(XFinderTokens.Font.caption).opacity(0.75)
-                }
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        ForEach(today) { e in
-                            HStack(spacing: XFinderTokens.Space.tight) {
-                                Text(e.isAllDay ? L10n.t("Cả ngày") : e.start.formatted(date: .omitted, time: .shortened))
-                                    .font(XFinderTokens.Font.caption).monospacedDigit().opacity(0.65).frame(width: 52, alignment: .leading)
-                                Image(systemName: e.isReminder ? "checklist" : "circle.fill").font(.system(size: 6)).opacity(0.65)
-                                Text(e.title).font(XFinderTokens.Font.caption).lineLimit(1).truncationMode(.tail)
-                                    .opacity(e.end < now ? 0.45 : 1)
-                                Spacer()
-                            }
-                        }
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .buttonStyle(.plain)
+            .help(L10n.t("Đóng"))
+            .accessibilityLabel(L10n.t("Đóng"))
         }
+        .padding(.horizontal, Self.m.toolbarCapsulePadding)
+        .background(Capsule().fill(N.capsule))
     }
 
-    // MARK: - N3: AI agent sessions
-
-    /// Up to six sessions, those waiting for the person first. A permission request shows the tool and the one
-    /// input field that matters, with Cho phép / Từ chối — the hook is blocking on that file right now.
-    @ViewBuilder private var agentsPage: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-            agentUsageStrip
-            agentSessions
-        }
-    }
-
-    /// §3b #37 — what the agents themselves wrote on this Mac: Claude Code tokens (not a percentage — Claude Code keeps
-    /// no allowance figure locally) and Codex's own rate-limit windows, marked stale once their reset time has passed.
-    @ViewBuilder private var agentUsageStrip: some View {
-        let u = AgentUsageMonitor.shared.snapshot
-        let comma = !L10n.isEnglish
-        if u.scannedAt != nil {
-            VStack(alignment: .leading, spacing: 1) {
-                if u.claude7d.messages > 0 {
-                    Text("Claude Code\(L10n.t(" · 5 giờ: "))\(AgentUsage.compact(u.claude5h.output, decimalComma: comma))\(L10n.t(" token ra"))\(L10n.t(" · 7 ngày: "))\(AgentUsage.compact(u.claude7d.output, decimalComma: comma))\(L10n.t(" token ra"))")
-                        .help(L10n.t("Token đọc từ lịch sử phiên trên máy này. Claude Code không ghi phần trăm hạn mức ra máy, nên đây không phải %."))
-                }
-                if let c = u.codex {
-                    if let p = c.primary, AgentUsage.isCurrent(p, now: Date()) {
-                        let week = c.secondary.flatMap { AgentUsage.isCurrent($0, now: Date()) ? $0 : nil }
-                        Text("Codex\(L10n.t(" · 5 giờ "))\(Int(p.usedPercent.rounded()))%\(week.map { "\(L10n.t(" · tuần "))\(Int($0.usedPercent.rounded()))%" } ?? "")")
-                            .help(L10n.t("Hạn mức do chính Codex ghi vào log của nó, ở lần dùng gần nhất."))
-                    } else {
-                        Text("Codex\(L10n.t(" · đã qua giờ reset — số mới có sau lần dùng Codex kế tiếp"))")
-                    }
-                }
-            }
-            .font(XFinderTokens.Font.caption).opacity(0.7).lineLimit(1).truncationMode(.tail)
-        }
-    }
-
-    @ViewBuilder private var agentSessions: some View {
-        if model.agents.isEmpty {
-            VStack(spacing: XFinderTokens.Space.tight) {
-                Image(systemName: "terminal").font(XFinderTokens.Font.pageIcon).opacity(0.65)
-                if model.agentHookInstalled {
-                    Text(L10n.t("Chưa có phiên Claude Code nào.")).font(XFinderTokens.Font.caption).opacity(0.65)
-                } else {
-                    Text(L10n.t("Chưa cài hook — mở Notch & Khay thả để cài.")).font(XFinderTokens.Font.caption).opacity(0.65)
-                        .multilineTextAlignment(.center)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                    ForEach(Array(model.agents.prefix(6))) { s in agentRow(s) }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        }
-    }
-
-    private func agentRow(_ s: AgentSession) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: XFinderTokens.Space.tight) {
-                Circle().fill(agentTint(s.status)).frame(width: 8, height: 8)
-                Text(s.displayName).font(XFinderTokens.Font.row).lineLimit(1)
-                Text(agentStatusText(s)).font(XFinderTokens.Font.caption).opacity(0.65).lineLimit(1).truncationMode(.tail)
-                Spacer()
-                if s.terminal.bundleID != nil, s.status != .ended {
-                    Button(L10n.t("Mở terminal")) { NotchSurfaceController.shared.openAgentTerminal(s) }
-                        .buttonStyle(.bordered).controlSize(.mini)
-                }
-            }
-            if case .waitingForPermission(let p) = s.status {
-                HStack(spacing: XFinderTokens.Space.tight) {
-                    Text(p.toolName).font(XFinderTokens.Font.caption).bold()
-                    if let sum = p.summary {
-                        Text(sum).font(XFinderTokens.Font.caption).opacity(0.75).lineLimit(1).truncationMode(.middle)
-                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                    } else { Spacer() }
-                    Button(L10n.t("Từ chối")) { NotchSurfaceController.shared.answerAgent(p, of: s, allow: false) }
-                        .buttonStyle(.bordered).controlSize(.mini)
-                    Button(L10n.t("Cho phép")) { NotchSurfaceController.shared.answerAgent(p, of: s, allow: true) }
-                        .buttonStyle(.borderedProminent).controlSize(.mini)
-                }
-            }
-        }
-        .padding(.vertical, 2)
-    }
-
-    private func agentStatusText(_ s: AgentSession) -> String {
-        if case .running(let tool) = s.status, let tool { return L10n.t(AgentSessionRules.statusKey(s.status)) + tool }
-        return L10n.t(AgentSessionRules.statusKey(s.status))
-    }
-
-    private func agentTint(_ st: AgentSession.Status) -> Color {
-        switch st {
-        case .running: return accent
-        case .waitingForInput: return .yellow
-        case .waitingForPermission: return .orange
-        case .ended: return .white.opacity(0.3)
-        }
-    }
-
+    private func toolIcon(_ p: Page) -> String { NotchPages.symbol(p) }
     // MARK: - Now Playing (B6; P1 layout after OneNotch)
 
     /// Artwork (with the player's icon on its corner — click it to open the player), title, artist, the live bars

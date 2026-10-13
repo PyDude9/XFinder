@@ -27,6 +27,8 @@ Bạn đã duyệt brief F4 với 5 câu trả lời mặc định, sau đó nó
 
 ### Khác
 
+~~Q-P2-SL~~ — đã trả lời 2026-10-13: tài khoản Pro/Max. Vậy % đến ở phiên `claude` trong terminal sau câu trả lời đầu (xem T-P2-SL).
+
 | Mã | Câu hỏi | Mặc định |
 |:--|:--|:--|
 | Q-MULTIDISPLAY | §3b #39 — notch hiện trên mọi màn hình cùng lúc (nay: màn đang có con trỏ). Máy này một màn nên không đo được gì. Khi cắm màn ngoài, báo tôi để làm + đo | Chưa làm |
@@ -69,6 +71,11 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-P1b | Mở hub (⌘⇧V hoặc bấm cánh), bấm từng chấm trên dải trên cùng, vuốt hai ngón trên dải | Chấm sáng là trang hiện tại; rê lên chấm hiện tên trang; đổi trang thì nội dung mờ chéo, khung co giãn giữa hai cỡ; mở có nảy nhẹ, đóng nhanh không nảy |
 | T-P1c | Trang Clipboard: gõ ngay sau ⌘⇧V; bấm vòng tròn kính lúp; bắt đầu Paste Stack (⌘⇧C) | Gõ được ngay (ô tìm tự mở); viên trạng thái cuối hàng chip hiện "Paste Stack · n" + Dán tiếp; thẻ có màu theo app nguồn |
 | T-P1d | Trang Đang phát: kéo thanh tiến trình; bấm icon app ở góc ảnh bìa; khi không phát gì | Thả tay thì nhảy tới đúng chỗ; mở đúng player; không phát gì thì khung giữ nguyên, nút mờ |
+| T-P2-SL | Notch & Khay thả ▸ Agent AI ▸ **Cài statusLine**; mở `claude` trong terminal, gửi một câu, đợi trả lời; mở notch ▸ Hạn mức AI | Hai vòng 5 giờ / 7 ngày có % và "lúc HH:mm"; dòng trạng thái của Claude Code trông y như trước (vẫn chạy lệnh của Notch Crew → OneNotch). **Gỡ statusLine** trả lại đúng cài đặt cũ |
+| T-P2-TIMER | Mở hub ▸ icon Hẹn giờ trên toolbar: − / + rồi ▶; đang chạy bấm ⏸, −5, +5, ✕ | Số phút nhảy bậc 5 (5…120); chạy thì cánh phải notch hiện ⏱ mm:ss; tạm dừng thì số đứng yên và cánh hiện biểu tượng pause; hết giờ kêu "Glass" + "Hết giờ" |
+| T-P2-AI | Hub ▸ icon Hạn mức AI: tab Hạn mức / Token | Chưa cài statusLine: không có vòng %, có nút "Bật trong Cài đặt"; tab Token: "Hôm nay" khác "7 ngày" và cả hai là token RA; Codex hiện % hoặc "đã qua giờ reset" |
+| T-P2-AGENTS | Mở một phiên `claude` trong terminal; mở hub ▸ chấm Agent AI | Dòng "n phiên"; hàng phiên có chấm trạng thái + tuổi; khi Claude xin quyền: thẻ có đồng hồ giây chạy + Cho phép / Từ chối hoạt động |
+| T-P2-CAL | Hub ▸ icon Lịch | Thứ in đậm, ngày/tháng + năm + âm lịch bên phải; dải 9 ngày với hôm nay trong ô tối; danh sách hôm nay cuộn được |
 
 ### Clipboard
 | Mã | Làm gì | Mong đợi |

@@ -17,7 +17,7 @@ final class NotchPagesTests: XCTestCase {
     }
 
     func testHiddenPagesTrailInTheSettingsListAndRequestsResolveToAShownPage() {
-        XCTAssertEqual(P.allInOrder(shown: [.nowPlaying]), [.nowPlaying, .files, .clipboard, .agents, .calendar])   // N3/N4: hidden pages trail in default order
+        XCTAssertEqual(P.allInOrder(shown: [.nowPlaying]), [.nowPlaying, .files, .clipboard, .agents, .calendar, .timer, .aiUsage])   // N3/N4/P2: hidden pages trail in default order
         XCTAssertEqual(P.resolve(.files, shown: [.clipboard, .nowPlaying]), .clipboard, "a hidden tray tab: the badge click opens the first shown page")
         XCTAssertEqual(P.resolve(.clipboard, shown: [.clipboard]), .clipboard)
     }
@@ -66,6 +66,39 @@ final class NotchPagesTests: XCTestCase {
     }
 
     /// P1: the dots are the swipeable content pages; the calendar lives in the toolbar capsule instead.
+    /// P2: the timer and AI usage are tools beside the calendar — never dots, never swiped to.
+    func testTheTimerAndAIUsageAreToolbarToolsToo() {
+        let shown = P.defaultOrder
+        XCTAssertEqual(P.dots(shown), [.files, .clipboard, .nowPlaying, .agents])
+        XCTAssertEqual(P.toolbar(shown), [.calendar, .timer, .aiUsage], "toolbar order = the user's order")
+        XCTAssertNil(P.swipeTarget(from: .timer, direction: 1, pages: shown))
+        XCTAssertNil(P.swipeTarget(from: .aiUsage, direction: -1, pages: shown))
+        XCTAssertEqual(P.parse("timer,aiUsage"), [.timer, .aiUsage], "the new raw values parse")
+    }
+
+    func testEveryPageTitleIsInTheStore() throws {
+        let store = try L10nFixture.load()
+        XCTAssertEqual(NotchSurfaceMachine.Page.allCases.count, 7, "a new page needs a title, a symbol and a store entry")
+        for p in NotchSurfaceMachine.Page.allCases {
+            let k = P.titleKey(p)
+            XCTAssertFalse(P.symbol(p).isEmpty)
+            if k == "Clipboard" { continue }   // proper noun, allowlisted
+            guard let e = store.entries[k] else { XCTFail("\(k.debugDescription) not in the store"); continue }
+            XCTAssertFalse(e.en.isEmpty)
+        }
+    }
+
+    /// The settings page binds `notch.pages` with its own literal default; it must be the reader's default, or a user who
+    /// never touched the list sees one order in Settings and another on the notch (Part 0 §5).
+    func testTheSettingsDefaultIsTheReadersDefault() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("XFinder/Views/Detail/DropTrayDetailView.swift")
+        let src = try String(contentsOf: url, encoding: .utf8)
+        let line = src.split(separator: "\n").first { $0.contains("@AppStorage(\"notch.pages\")") }
+        let literal = try XCTUnwrap(line?.split(separator: "\"").dropFirst(3).first, "the binding was not found — the anchor rotted")
+        XCTAssertEqual(String(literal), P.defaultRaw)
+    }
+
     func testTheCalendarIsAToolbarToolNotADot() {
         let shown: [NotchSurfaceMachine.Page] = [.files, .calendar, .clipboard, .nowPlaying, .agents]
         XCTAssertEqual(P.dots(shown), [.files, .clipboard, .nowPlaying, .agents], "order kept, the tool left out")

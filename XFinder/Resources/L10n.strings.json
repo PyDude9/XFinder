@@ -9586,6 +9586,178 @@
     "Tiến độ phát": {
       "en": "Playback position",
       "scope": "sentence"
+    },
+    "Hẹn giờ": {
+      "en": "Timer",
+      "scope": "sentence"
+    },
+    "Hạn mức AI": {
+      "en": "AI usage",
+      "scope": "sentence"
+    },
+    " phiên": {
+      "en": " sessions",
+      "scope": "fragment"
+    },
+    " chờ bạn": {
+      "en": " need you",
+      "scope": "fragment"
+    },
+    "Chọn thời gian": {
+      "en": "Pick a duration",
+      "scope": "sentence"
+    },
+    "Tạm dừng": {
+      "en": "Pause",
+      "scope": "sentence"
+    },
+    "Bắt đầu hẹn giờ": {
+      "en": "Start timer",
+      "scope": "sentence"
+    },
+    "Dừng hẹn giờ": {
+      "en": "Stop timer",
+      "scope": "sentence"
+    },
+    "Bớt 5 phút": {
+      "en": "5 min less",
+      "scope": "sentence"
+    },
+    "Thêm 5 phút": {
+      "en": "5 min more",
+      "scope": "sentence"
+    },
+    "Giảm": {
+      "en": "Decrease",
+      "scope": "sentence"
+    },
+    "Tăng": {
+      "en": "Increase",
+      "scope": "sentence"
+    },
+    "Thước thời gian hẹn giờ": {
+      "en": "Timer ruler",
+      "scope": "sentence"
+    },
+    "Hạn mức": {
+      "en": "Quota",
+      "scope": "sentence"
+    },
+    "Token": {
+      "en": "Tokens",
+      "scope": "sentence"
+    },
+    "Cập nhật ": {
+      "en": "Updated ",
+      "scope": "fragment"
+    },
+    "5 giờ": {
+      "en": "5 h",
+      "scope": "sentence"
+    },
+    "tuần": {
+      "en": "week",
+      "scope": "sentence"
+    },
+    "lúc ": {
+      "en": "at ",
+      "scope": "fragment"
+    },
+    "đã qua giờ reset": {
+      "en": "past its reset",
+      "scope": "sentence"
+    },
+    "đã qua giờ reset — số mới có sau lần dùng Codex kế tiếp": {
+      "en": "past its reset — a new figure comes with the next Codex use",
+      "scope": "sentence"
+    },
+    "Chưa có dữ liệu Codex trên máy này.": {
+      "en": "No Codex data on this Mac.",
+      "scope": "sentence"
+    },
+    "Chưa đọc % hạn mức Claude.": {
+      "en": "Claude's usage % is not being read.",
+      "scope": "sentence"
+    },
+    "Bật trong Cài đặt": {
+      "en": "Turn on in Settings",
+      "scope": "sentence"
+    },
+    "Chưa nhận được % — Claude Code chỉ gửi nó cho phiên claude trong terminal, tài khoản Pro/Max, sau câu trả lời đầu.": {
+      "en": "No % received yet — Claude Code sends it only to a claude session in a terminal, on a Pro/Max account, after the first reply.",
+      "scope": "sentence"
+    },
+    "5 giờ: ": {
+      "en": "5 h: ",
+      "scope": "fragment"
+    },
+    " token": {
+      "en": " tokens",
+      "scope": "fragment"
+    },
+    "Không có hoạt động trong 7 ngày.": {
+      "en": "No activity in the last 7 days.",
+      "scope": "sentence"
+    },
+    "vào ": {
+      "en": "in ",
+      "scope": "fragment"
+    },
+    "Đặt lại sau ": {
+      "en": "Resets in ",
+      "scope": "fragment"
+    },
+    " phút nữa": {
+      "en": " min",
+      "scope": "fragment"
+    },
+    " giờ nữa": {
+      "en": " h",
+      "scope": "fragment"
+    },
+    " ngày nữa": {
+      "en": " d",
+      "scope": "fragment"
+    },
+    "Gỡ statusLine": {
+      "en": "Remove statusLine",
+      "scope": "sentence"
+    },
+    "Cài statusLine": {
+      "en": "Install statusLine",
+      "scope": "sentence"
+    },
+    "Cài đặt đang trỏ sang lệnh khác": {
+      "en": "Settings point at another command",
+      "scope": "sentence"
+    },
+    "Không đổi được statusLine: ": {
+      "en": "Could not change the statusLine: ",
+      "scope": "fragment"
+    },
+    "Đã cài statusLine. Phiên Claude Code mới sẽ ghi % hạn mức vào bộ nhớ đệm của XFinder.": {
+      "en": "statusLine installed. New Claude Code sessions will write the usage % into XFinder's cache.",
+      "scope": "sentence"
+    },
+    "Đã gỡ statusLine.": {
+      "en": "statusLine removed.",
+      "scope": "sentence"
+    },
+    "Cài đặt statusLine hiện đang trỏ sang một lệnh khác (có thể là của một công cụ khác bọc quanh statusLine của XFinder). Gỡ ở đây sẽ làm đứt chuỗi lệnh đó — hãy gỡ statusLine ở công cụ kia trước, rồi quay lại đây.": {
+      "en": "The statusLine setting now points at another command (possibly another tool wrapping XFinder's statusLine). Removing it here would break that chain — remove the statusLine in that tool first, then come back here.",
+      "scope": "sentence"
+    },
+    "Claude Code chỉ đưa % hạn mức 5 giờ / 7 ngày cho dòng trạng thái (statusLine) của chính nó. statusLine của XFinder chỉ lưu lại đúng con số đó rồi chạy tiếp dòng trạng thái bạn đang có — những gì bạn thấy ở terminal không đổi. Cài sẽ ghi bản sao lưu ~/.claude/settings.json có ngày giờ trước khi sửa; Gỡ statusLine khôi phục đúng lệnh cũ. Chỉ có số khi: đang ở phiên Claude Code trong terminal (app Claude để bàn không chạy statusLine), tài khoản Pro/Max đăng nhập bằng claude.ai, và sau câu trả lời đầu tiên của phiên đó.": {
+      "en": "Claude Code gives the 5-hour / 7-day usage % only to its own status line. XFinder's statusLine stores just that number, then runs the status line you already had — what you see in the terminal does not change. Installing writes a dated backup of ~/.claude/settings.json first; Remove statusLine restores the exact previous command. There is a number only when you are in a Claude Code session in a terminal (the Claude desktop app does not run status lines), on a Pro/Max account signed in with claude.ai, after that session's first reply.",
+      "scope": "sentence"
+    },
+    "Không đọc được bản lưu statusLine cũ, nên XFinder không gỡ — gỡ bây giờ sẽ làm mất cài đặt cũ của bạn. Các bản sao lưu settings.json có ngày giờ vẫn nằm trong ~/.claude.": {
+      "en": "XFinder cannot read the saved previous statusLine, so it did not remove anything — removing now would lose your old setting. The dated settings.json backups are still in ~/.claude.",
+      "scope": "sentence"
+    },
+    "Bản cài XFinder thiếu script statusLine — hãy cài lại XFinder.": {
+      "en": "This copy of XFinder is missing the statusLine script — reinstall XFinder.",
+      "scope": "sentence"
     }
   }
 }

@@ -46,7 +46,8 @@ enum NotchSurfaceLayout {
         var wideWidth: CGFloat = 612
         var narrowDrop: CGFloat = 136     // 168 − 32
         var wideDrop: CGFloat = 150       // 182 − 32
-        var calendarDrop: CGFloat = 156   // 188 − 32
+        /// The tools (calendar, timer, AI usage): 188 tall in OneNotch's views (estimated from screenshots), 188 − 32.
+        var toolDrop: CGFloat = 156
         /// The expanded shape flares into the top edge: the top edge is 650 / 420 for a 612 / 382 body (measured),
         /// so 19 pt each side, settling within a few points of height. The flares sit OUTSIDE the content, so a hub
         /// at the notch is 2 × 19 pt wider than its body. A pointer tray has no top edge to flare into.
@@ -55,7 +56,7 @@ enum NotchSurfaceLayout {
         /// Measured per-row insets of the tall shapes fit a continuous corner of ≈ 30 (a circle needs r ≈ 35).
         var expandedBottomRadius: CGFloat = 30
 
-        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool { page == .clipboard || page == .agents }
+        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool { page == .clipboard || page == .agents || page == .aiUsage }
 
         /// P1 page budgets. Two pages fill their body to the point, so the numbers live HERE, the views read them, and
         /// `testPageBudgetsFillTheirBodiesExactly` asserts they add up (P1 review: the two halves of each sum had lived in
@@ -76,6 +77,36 @@ enum NotchSurfaceLayout {
         var artworkSide: CGFloat = 88
         var artworkToProgressGap: CGFloat = 6
         var progressAreaHeight: CGFloat = 26
+        /// P2. Agents (wide, 150): 4 + header 18 + 6 + two 52-pt rows 6 apart + 12.
+        var agentsHeaderHeight: CGFloat = 18
+        var agentsHeaderGap: CGFloat = 6
+        var agentRowHeight: CGFloat = 52
+        var agentRowGap: CGFloat = 6
+        /// AI usage (wide, 156): 4 + header (provider tabs, Quota | Tokens) 22 + 6 + two columns 112 + 12.
+        var usageHeaderHeight: CGFloat = 22
+        var usageHeaderGap: CGFloat = 6
+        var usageColumnsHeight: CGFloat = 112
+        /// Calendar (narrow, 156): 4 + header 28 + 4 + nine-day strip 40 + 6 + list 62 + 12.
+        var calendarHeaderHeight: CGFloat = 28
+        var calendarHeaderGap: CGFloat = 4
+        var calendarStripHeight: CGFloat = 40
+        var calendarStripGap: CGFloat = 6
+        var calendarListHeight: CGFloat = 62
+        /// Timer (narrow, 156): 4 + title 16 + 6 + time 46 + 4 + ruler 22 + 6 + controls 40 + 12.
+        var timerTitleHeight: CGFloat = 16
+        var timerTitleGap: CGFloat = 6
+        var timerTimeHeight: CGFloat = 46
+        var timerTimeGap: CGFloat = 4
+        var timerRulerHeight: CGFloat = 22
+        var timerRulerGap: CGFloat = 6
+        var timerControlsHeight: CGFloat = 40
+        /// The band's capsules (P2 review: three tools + a separate ✕ needed 93 pt in a narrow page's 86.5-pt right wing).
+        /// The ✕ is now the toolbar capsule's last slot; `testTheBandsCapsulesFitTheirWings` keeps both wings honest.
+        var bandInset: CGFloat = 12
+        var dotPitch: CGFloat = 15
+        var dotsCapsulePadding: CGFloat = 4.5
+        var toolbarSlot: CGFloat = 19
+        var toolbarCapsulePadding: CGFloat = 3
 
         func expandedWidth(for page: NotchSurfaceMachine.Page) -> CGFloat {
             Self.isWide(page) ? wideWidth : narrowWidth
@@ -85,7 +116,7 @@ enum NotchSurfaceLayout {
         func expandedDrop(for page: NotchSurfaceMachine.Page) -> CGFloat {
             switch page {
             case .clipboard, .agents: return wideDrop
-            case .calendar: return calendarDrop
+            case .calendar, .timer, .aiUsage: return toolDrop
             case .files, .nowPlaying: return narrowDrop
             }
         }
@@ -105,6 +136,21 @@ enum NotchSurfaceLayout {
         /// A shaken-open tray sits this far below the pointer, as the old ShakePin tray did.
         var pointerGap: CGFloat = 24
         static let standard = Metrics()
+    }
+
+    /// One wing of the expanded band: half of what the body leaves beside the camera, minus the band's inset.
+    static func bandWingWidth(bodyWidth: CGFloat, notchWidth: CGFloat, metrics m: Metrics = .standard) -> CGFloat {
+        max(0, (bodyWidth - notchWidth) / 2 - m.bandInset)
+    }
+
+    /// 15 n + 9: 54 pt for three dots, as measured on OneNotch.
+    static func dotsCapsuleWidth(dots: Int, metrics m: Metrics = .standard) -> CGFloat {
+        CGFloat(dots) * m.dotPitch + 2 * m.dotsCapsulePadding
+    }
+
+    /// One slot per tool plus the ✕ (always the last slot).
+    static func toolbarCapsuleWidth(slots: Int, metrics m: Metrics = .standard) -> CGFloat {
+        CGFloat(slots) * m.toolbarSlot + 2 * m.toolbarCapsulePadding
     }
 
     /// The physical notch, or a zero-height stand-in centred at the top of a screen without one.
@@ -210,7 +256,7 @@ enum NotchSurfaceLayout {
             notch.width + 2 * m.nowPlayingPeekWing, notch.width + 2 * m.activityWing,
             max(m.pillWidth, sideWidth(all, metrics: m) + 2 * m.wingSpacing + 2 * m.wingInset),
         ]
-        let drops: [CGFloat] = [m.narrowDrop, m.wideDrop, m.calendarDrop, m.peekDrop, m.activityDrop]
+        let drops: [CGFloat] = [m.narrowDrop, m.wideDrop, m.toolDrop, m.peekDrop, m.activityDrop]
         let band = max(notch.height, m.bandHeight)
         return CGSize(width: widths.max() ?? 0, height: max(band + (drops.max() ?? 0), m.pillHeight))
     }

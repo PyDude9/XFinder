@@ -70,6 +70,10 @@
 		7F1A027A /* TranslateSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A027B /* TranslateSelectionView.swift */; };
 		7F1A0274 /* WhatsNewWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0275 /* WhatsNewWindow.swift */; };
 		7F1A022C /* NotchClipboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A022B /* NotchClipboardView.swift */; };
+		7F1A035B /* NotchAIUsagePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A035A /* NotchAIUsagePage.swift */; };
+		7F1A0359 /* NotchTimerPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0358 /* NotchTimerPage.swift */; };
+		7F1A0357 /* NotchCalendarPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0356 /* NotchCalendarPage.swift */; };
+		7F1A0355 /* NotchAgentsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0354 /* NotchAgentsPage.swift */; };
 		7F1A0234 /* Clipboard/NotchClipboardRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0235 /* Clipboard/NotchClipboardRules.swift */; };
 		7F1A0236 /* NotchClipCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0237 /* NotchClipCardView.swift */; };
 		7F1A031F /* SmartSelectViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031E /* SmartSelectViews.swift */; };
@@ -91,6 +95,7 @@
 		7F1A027E /* Clipboard/LinkPreviewFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A027F /* Clipboard/LinkPreviewFetcher.swift */; };
 		7F1A027C /* Clipboard/LinkPreviewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A027D /* Clipboard/LinkPreviewRules.swift */; };
 		7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0263 /* Agents/AgentHookInstaller.swift */; };
+		7F1A035D /* Agents/ClaudeStatusLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A035C /* Agents/ClaudeStatusLine.swift */; };
 		7F1A0266 /* Agents/AgentSessionMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0267 /* Agents/AgentSessionMonitor.swift */; };
 		7F1A034D /* Agents/AgentUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A034C /* Agents/AgentUsage.swift */; };
 		7F1A034F /* Agents/AgentUsageMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A034E /* Agents/AgentUsageMonitor.swift */; };
@@ -164,6 +169,7 @@
 		4C1A2B03 /* XFinder/Resources/L10n.strings.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C1A2B02 /* XFinder/Resources/L10n.strings.json */; };
 		4C1A2B05 /* XFinder/Resources/L10n.allowlist.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */; };
 		7F1A0264 /* XFinder/Resources/Agents/xfinder-claude-hook.zsh in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A0265 /* XFinder/Resources/Agents/xfinder-claude-hook.zsh */; };
+		7F1A035F /* XFinder/Resources/Agents/xfinder-claude-statusline.sh in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */; };
 		7F1A00E5 /* MouseGestures/GestureModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E4 /* MouseGestures/GestureModel.swift */; };
 		7F1A00E7 /* MouseGestures/GestureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E6 /* MouseGestures/GestureEngine.swift */; };
 		7F1A00E9 /* MouseGestures/GestureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E8 /* MouseGestures/GestureController.swift */; };
@@ -389,6 +395,10 @@
 		7F1A027B /* TranslateSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslateSelectionView.swift; sourceTree = "<group>"; };
 		7F1A0275 /* WhatsNewWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhatsNewWindow.swift; sourceTree = "<group>"; };
 		7F1A022B /* NotchClipboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchClipboardView.swift; sourceTree = "<group>"; };
+		7F1A035A /* NotchAIUsagePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchAIUsagePage.swift; sourceTree = "<group>"; };
+		7F1A0358 /* NotchTimerPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchTimerPage.swift; sourceTree = "<group>"; };
+		7F1A0356 /* NotchCalendarPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchCalendarPage.swift; sourceTree = "<group>"; };
+		7F1A0354 /* NotchAgentsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchAgentsPage.swift; sourceTree = "<group>"; };
 		7F1A0235 /* Clipboard/NotchClipboardRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/NotchClipboardRules.swift; sourceTree = "<group>"; };
 		7F1A0237 /* NotchClipCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchClipCardView.swift; sourceTree = "<group>"; };
 		7F1A031E /* SmartSelectViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelectViews.swift; sourceTree = "<group>"; };
@@ -410,6 +420,7 @@
 		7F1A027F /* Clipboard/LinkPreviewFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/LinkPreviewFetcher.swift; sourceTree = "<group>"; };
 		7F1A027D /* Clipboard/LinkPreviewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/LinkPreviewRules.swift; sourceTree = "<group>"; };
 		7F1A0263 /* Agents/AgentHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentHookInstaller.swift; sourceTree = "<group>"; };
+		7F1A035C /* Agents/ClaudeStatusLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/ClaudeStatusLine.swift; sourceTree = "<group>"; };
 		7F1A0267 /* Agents/AgentSessionMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentSessionMonitor.swift; sourceTree = "<group>"; };
 		7F1A034C /* Agents/AgentUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentUsage.swift; sourceTree = "<group>"; };
 		7F1A034E /* Agents/AgentUsageMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentUsageMonitor.swift; sourceTree = "<group>"; };
@@ -545,6 +556,7 @@
 		4C1A2B02 /* XFinder/Resources/L10n.strings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = XFinder/Resources/L10n.strings.json; sourceTree = SOURCE_ROOT; };
 		4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = XFinder/Resources/L10n.allowlist.json; sourceTree = SOURCE_ROOT; };
 		7F1A0265 /* XFinder/Resources/Agents/xfinder-claude-hook.zsh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = XFinder/Resources/Agents/xfinder-claude-hook.zsh; sourceTree = SOURCE_ROOT; };
+		7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = XFinder/Resources/Agents/xfinder-claude-statusline.sh; sourceTree = SOURCE_ROOT; };
 		7F1A00E4 /* MouseGestures/GestureModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureModel.swift; sourceTree = "<group>"; };
 		7F1A00E6 /* MouseGestures/GestureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureEngine.swift; sourceTree = "<group>"; };
 		7F1A00E8 /* MouseGestures/GestureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureController.swift; sourceTree = "<group>"; };
@@ -719,6 +731,7 @@
 				7F1A027F /* Clipboard/LinkPreviewFetcher.swift */,
 				7F1A027D /* Clipboard/LinkPreviewRules.swift */,
 				7F1A0263 /* Agents/AgentHookInstaller.swift */,
+				7F1A035C /* Agents/ClaudeStatusLine.swift */,
 				7F1A0267 /* Agents/AgentSessionMonitor.swift */,
 				7F1A034C /* Agents/AgentUsage.swift */,
 				7F1A034E /* Agents/AgentUsageMonitor.swift */,
@@ -828,6 +841,7 @@
 				4C1A2B02 /* XFinder/Resources/L10n.strings.json */,
 				4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */,
 				7F1A0265 /* XFinder/Resources/Agents/xfinder-claude-hook.zsh */,
+				7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */,
 				7F1A00E4 /* MouseGestures/GestureModel.swift */,
 				7F1A00E6 /* MouseGestures/GestureEngine.swift */,
 				7F1A00E8 /* MouseGestures/GestureController.swift */,
@@ -940,6 +954,10 @@
 				7F1A027B /* TranslateSelectionView.swift */,
 				7F1A0275 /* WhatsNewWindow.swift */,
 				7F1A022B /* NotchClipboardView.swift */,
+				7F1A035A /* NotchAIUsagePage.swift */,
+				7F1A0358 /* NotchTimerPage.swift */,
+				7F1A0356 /* NotchCalendarPage.swift */,
+				7F1A0354 /* NotchAgentsPage.swift */,
 				7F1A0237 /* NotchClipCardView.swift */,
 				7F1A031E /* SmartSelectViews.swift */,
 				7F1A0340 /* Capture/QuickAccessCardView.swift */,
@@ -1079,6 +1097,7 @@
 				4C1A2B03 /* XFinder/Resources/L10n.strings.json in Resources */,
 				4C1A2B05 /* XFinder/Resources/L10n.allowlist.json in Resources */,
 				7F1A0264 /* XFinder/Resources/Agents/xfinder-claude-hook.zsh in Resources */,
+				7F1A035F /* XFinder/Resources/Agents/xfinder-claude-statusline.sh in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1166,6 +1185,10 @@
 				7F1A027A /* TranslateSelectionView.swift in Sources */,
 				7F1A0274 /* WhatsNewWindow.swift in Sources */,
 				7F1A022C /* NotchClipboardView.swift in Sources */,
+				7F1A035B /* NotchAIUsagePage.swift in Sources */,
+				7F1A0359 /* NotchTimerPage.swift in Sources */,
+				7F1A0357 /* NotchCalendarPage.swift in Sources */,
+				7F1A0355 /* NotchAgentsPage.swift in Sources */,
 				7F1A0234 /* Clipboard/NotchClipboardRules.swift in Sources */,
 				7F1A0236 /* NotchClipCardView.swift in Sources */,
 				7F1A031F /* SmartSelectViews.swift in Sources */,
@@ -1187,6 +1210,7 @@
 				7F1A027E /* Clipboard/LinkPreviewFetcher.swift in Sources */,
 				7F1A027C /* Clipboard/LinkPreviewRules.swift in Sources */,
 				7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */,
+				7F1A035D /* Agents/ClaudeStatusLine.swift in Sources */,
 				7F1A0266 /* Agents/AgentSessionMonitor.swift in Sources */,
 				7F1A034D /* Agents/AgentUsage.swift in Sources */,
 				7F1A034F /* Agents/AgentUsageMonitor.swift in Sources */,

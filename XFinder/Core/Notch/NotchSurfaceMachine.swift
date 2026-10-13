@@ -9,7 +9,8 @@ import Foundation
 /// the files the user just dropped.
 enum NotchSurfaceMachine {
 
-    enum Page: String, Equatable, Codable { case files, clipboard, nowPlaying, agents, calendar }   // N3 agents · N4 calendar
+    /// N3 agents · N4 calendar · P2 timer + aiUsage (toolbar tools, like the calendar).
+    enum Page: String, Equatable, Codable, CaseIterable { case files, clipboard, nowPlaying, agents, calendar, timer, aiUsage }
 
     enum State: Equatable {
         /// Nothing drawn — except, when files are held on a notched screen, a count badge under the notch.

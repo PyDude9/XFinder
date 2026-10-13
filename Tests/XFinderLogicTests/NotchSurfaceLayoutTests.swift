@@ -73,6 +73,37 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         // Three and a half cards show in the wide body — the half card is what says "this row scrolls".
         let visible = (m.wideWidth - 2 * 14 + m.clipCardGap) / (m.clipCardWidth + m.clipCardGap)
         XCTAssertGreaterThan(visible, 3.2); XCTAssertLessThan(visible, 3.8)
+        // P2 pages: Agents (wide), and the three tools (one height).
+        XCTAssertEqual(m.pageTopInset + m.agentsHeaderHeight + m.agentsHeaderGap + 2 * m.agentRowHeight + m.agentRowGap
+                       + m.pageBottomInset, m.expandedDrop(for: .agents), accuracy: 0.001, "agents: header + two rows")
+        XCTAssertEqual(m.pageTopInset + m.usageHeaderHeight + m.usageHeaderGap + m.usageColumnsHeight + m.pageBottomInset,
+                       m.expandedDrop(for: .aiUsage), accuracy: 0.001, "AI usage: header + columns")
+        XCTAssertEqual(m.pageTopInset + m.calendarHeaderHeight + m.calendarHeaderGap + m.calendarStripHeight
+                       + m.calendarStripGap + m.calendarListHeight + m.pageBottomInset,
+                       m.expandedDrop(for: .calendar), accuracy: 0.001, "calendar: header + strip + list")
+        XCTAssertEqual(m.pageTopInset + m.timerTitleHeight + m.timerTitleGap + m.timerTimeHeight + m.timerTimeGap
+                       + m.timerRulerHeight + m.timerRulerGap + m.timerControlsHeight + m.pageBottomInset,
+                       m.expandedDrop(for: .timer), accuracy: 0.001, "timer: title + time + ruler + controls")
+        XCTAssertEqual(m.expandedDrop(for: .timer), m.expandedDrop(for: .calendar), "every tool has the same height")
+        XCTAssertEqual(m.expandedDrop(for: .aiUsage), m.expandedDrop(for: .calendar))
+        XCTAssertTrue(L.Metrics.isWide(.aiUsage)); XCTAssertFalse(L.Metrics.isWide(.timer)); XCTAssertFalse(L.Metrics.isWide(.calendar))
+    }
+
+    /// P2 review: three tools + a separate ✕ needed 93 pt in a narrow page's 86.5-pt right wing. Every page, every tool and
+    /// every dot page at once must fit both wings (the ✕ is the toolbar's last slot; the clipboard's left wing also holds
+    /// the 24-pt search circle).
+    func testTheBandsCapsulesFitTheirWings() {
+        let m = L.Metrics.standard
+        let tools = NotchPages.toolbar(NotchPages.defaultOrder).count
+        let dots = NotchPages.dots(NotchPages.defaultOrder).count
+        XCTAssertEqual(tools, 3); XCTAssertEqual(dots, 4)
+        for page in NotchSurfaceMachine.Page.allCases {
+            let wing = L.bandWingWidth(bodyWidth: m.expandedWidth(for: page), notchWidth: notch.width)
+            XCTAssertLessThanOrEqual(L.toolbarCapsuleWidth(slots: tools + 1), wing, "\(page): tools + close fit the right wing")
+            let left = L.dotsCapsuleWidth(dots: dots) + (page == .clipboard ? 8 + 24 : 0)
+            XCTAssertLessThanOrEqual(left, wing, "\(page): the dots (and the search circle) fit the left wing")
+        }
+        XCTAssertEqual(L.dotsCapsuleWidth(dots: 3), 54, accuracy: 0.001, "OneNotch's measured three-dot capsule")
     }
 
     func testCollapsedIsNotchHighWithSymmetricWings() {
@@ -217,7 +248,7 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         let plain = L.notch(screen: external, auxLeft: nil, auxRight: nil)
         let externalVisible = CGRect(x: external.minX, y: external.minY + 70, width: external.width, height: external.height - 102)
         let states: [S] = [.collapsed, .peek, .activity, .expanded(.files), .expanded(.clipboard), .expanded(.nowPlaying),
-                           .expanded(.agents), .expanded(.calendar)]
+                           .expanded(.agents), .expanded(.calendar), .expanded(.timer), .expanded(.aiUsage)]
         for (scr, vis, n) in [(screen, visible, notch), (external, externalVisible, plain)] {
             let panel = L.panelFrame(notch: n, screen: scr)
             XCTAssertEqual(panel.maxY, scr.maxY, accuracy: 0.001)
@@ -241,7 +272,7 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         let m = L.Metrics.standard
         let size = L.panelSize(notch: notch)
         XCTAssertEqual(size.width, m.wideWidth + 2 * m.topFillet)
-        XCTAssertEqual(size.height, notch.height + m.calendarDrop)
+        XCTAssertEqual(size.height, notch.height + m.toolDrop)
         XCTAssertEqual(size, CGSize(width: 650, height: 188), "650 × 188 — down from 776 × 254 before P1")
     }
 }

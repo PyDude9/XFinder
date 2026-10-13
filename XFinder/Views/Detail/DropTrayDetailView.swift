@@ -39,7 +39,7 @@ struct DropTrayDetailView: View {
     @AppStorage("notch.pillOnPlainScreens") private var pillOnPlainScreens = true
     @AppStorage("notch.hoverSpeed") private var hoverSpeed = "medium"
     /// D1 #44 — page order + visibility; one reader: `NotchSurfaceController.pageOrderRaw`.
-    @AppStorage("notch.pages") private var pagesRaw = "files,clipboard,nowPlaying,agents,calendar"
+    @AppStorage("notch.pages") private var pagesRaw = "files,clipboard,nowPlaying,agents,calendar,timer,aiUsage"
     // N3
     @AppStorage("agents.enabled") private var agentsEnabled = false
     // N4
@@ -51,6 +51,9 @@ struct DropTrayDetailView: View {
     @AppStorage("notch.calendar.alertSound") private var calendarAlertSound = true
     @State private var hookStatus: AgentSessionMonitor.HookStatus = .notInstalled
     @State private var hookNotice: String?
+    // P2 — Claude Code statusLine (5h/7d usage %), a settings-only opt-in (see CONTRACT.md "Agent A").
+    @State private var statusLineState: AgentSessionMonitor.StatusLineState = .notInstalled
+    @State private var statusLineNotice: String?
     /// D1 #47 — accent of the notch surfaces; one reader: `NotchSurfaceController.accentName`.
     @AppStorage("notch.accent") private var accent = "system"
 
@@ -352,25 +355,9 @@ struct DropTrayDetailView: View {
         }
     }
 
-    private func pageTitle(_ p: NotchSurfaceMachine.Page) -> String {
-        switch p {
-        case .files: return L10n.t("Khay")
-        case .clipboard: return "Clipboard"
-        case .nowPlaying: return L10n.t("Đang phát")
-        case .agents: return L10n.t("Agent AI")
-        case .calendar: return L10n.t("Lịch")
-        }
-    }
-
-    private func pageIcon(_ p: NotchSurfaceMachine.Page) -> String {
-        switch p {
-        case .files: return "tray.and.arrow.down.fill"
-        case .clipboard: return "doc.on.clipboard.fill"
-        case .nowPlaying: return "music.note"
-        case .agents: return "terminal"
-        case .calendar: return "calendar"
-        }
-    }
+    /// One title and one symbol per page, shared with the hub (`NotchPages`).
+    private func pageTitle(_ p: NotchSurfaceMachine.Page) -> String { L10n.t(NotchPages.titleKey(p)) }
+    private func pageIcon(_ p: NotchSurfaceMachine.Page) -> String { NotchPages.symbol(p) }
 
     /// The user comes here to choose which short notices the notch may show.
     private var activitiesSection: some View {
@@ -464,10 +451,28 @@ struct DropTrayDetailView: View {
                     Text(hookNotice).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 }
                 InlineNote(text: L10n.t("Cài hook = thêm các mục \"Managed by XFinder\" vào ~/.claude/settings.json (có bản sao lưu đặt cạnh) và chép một script zsh vào Application Support. Hook của app khác giữ nguyên. Mỗi sự kiện của Claude Code chạy script đó vài mili-giây. Khi Claude Code xin quyền, script chờ bạn bấm Cho phép hoặc Từ chối trên notch; XFinder không chạy thì Claude Code hỏi ở terminal như thường. Chỉ Claude Code trong terminal — app Claude để bàn không chạy hook."))
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    // a setting name + product name, identical in both languages — not a key
+                    Text("statusLine Claude Code: ").font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    Text(statusLineStatusText).font(XFinderTokens.Font.caption)
+                    Spacer()
+                    if statusLineState == .installed {
+                        Button(L10n.t("Gỡ statusLine")) { changeStatusLine(install: false) }.controlSize(.small)
+                    } else {
+                        Button(L10n.t("Cài statusLine")) { changeStatusLine(install: true) }.controlSize(.small)
+                    }
+                }
+                if let statusLineNotice {
+                    Text(statusLineNotice).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                }
+                InlineNote(text: L10n.t("Claude Code chỉ đưa % hạn mức 5 giờ / 7 ngày cho dòng trạng thái (statusLine) của chính nó. statusLine của XFinder chỉ lưu lại đúng con số đó rồi chạy tiếp dòng trạng thái bạn đang có — những gì bạn thấy ở terminal không đổi. Cài sẽ ghi bản sao lưu ~/.claude/settings.json có ngày giờ trước khi sửa; Gỡ statusLine khôi phục đúng lệnh cũ. Chỉ có số khi: đang ở phiên Claude Code trong terminal (app Claude để bàn không chạy statusLine), tài khoản Pro/Max đăng nhập bằng claude.ai, và sau câu trả lời đầu tiên của phiên đó."))
             }
             .padding(.horizontal, XFinderTokens.Space.page)
         }
-        .onAppear { hookStatus = AgentSessionMonitor.shared.hookStatus() }
+        .onAppear {
+            hookStatus = AgentSessionMonitor.shared.hookStatus()
+            statusLineState = AgentSessionMonitor.shared.statusLineState()
+        }
     }
 
     private var hookStatusText: String {
@@ -488,6 +493,38 @@ struct DropTrayDetailView: View {
         }
         hookStatus = AgentSessionMonitor.shared.hookStatus()
         NotchSurfaceController.shared.applySettings()
+    }
+
+    private var statusLineStatusText: String {
+        switch statusLineState {
+        case .installed: return L10n.t("Đã cài")
+        case .notInstalled: return L10n.t("Chưa cài")
+        case .replaced: return L10n.t("Cài đặt đang trỏ sang lệnh khác")
+        case .settingsUnreadable: return L10n.t("Không đọc được ~/.claude/settings.json")
+        }
+    }
+
+    private func changeStatusLine(install: Bool) {
+        do {
+            if install {
+                try AgentSessionMonitor.shared.installStatusLine()
+                statusLineNotice = L10n.t("Đã cài statusLine. Phiên Claude Code mới sẽ ghi % hạn mức vào bộ nhớ đệm của XFinder.")
+            } else {
+                try AgentSessionMonitor.shared.removeStatusLine()
+                statusLineNotice = L10n.t("Đã gỡ statusLine.")
+            }
+        } catch AgentSessionMonitor.StatusLineError.pointsAtAnotherCommand {
+            statusLineNotice = L10n.t("Cài đặt statusLine hiện đang trỏ sang một lệnh khác (có thể là của một công cụ khác bọc quanh statusLine của XFinder). Gỡ ở đây sẽ làm đứt chuỗi lệnh đó — hãy gỡ statusLine ở công cụ kia trước, rồi quay lại đây.")
+        } catch AgentSessionMonitor.StatusLineError.previousUnreadable {
+            statusLineNotice = L10n.t("Không đọc được bản lưu statusLine cũ, nên XFinder không gỡ — gỡ bây giờ sẽ làm mất cài đặt cũ của bạn. Các bản sao lưu settings.json có ngày giờ vẫn nằm trong ~/.claude.")
+        } catch AgentSessionMonitor.StatusLineError.settingsUnreadable {
+            statusLineNotice = L10n.t("Không đọc được ~/.claude/settings.json")
+        } catch AgentSessionMonitor.StatusLineError.bundleResourceMissing {
+            statusLineNotice = L10n.t("Bản cài XFinder thiếu script statusLine — hãy cài lại XFinder.")
+        } catch {
+            statusLineNotice = "\(L10n.t("Không đổi được statusLine: "))\(error)"
+        }
+        statusLineState = AgentSessionMonitor.shared.statusLineState()
     }
 
     /// The user comes here to decide whether the notch shows what is playing — and to read, in plain

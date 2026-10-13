@@ -96,6 +96,56 @@ enum AgentUsage {
     /// A window whose reset time has passed says nothing about now: the next Codex message will report the new figure.
     static func isCurrent(_ w: CodexWindow, now: Date) -> Bool { w.resetsAt > now }
 
+    // MARK: Codex — token usage (for a "Hôm nay" / 7-day total, the same job Claude's `Totals` does)
+
+    /// One `token_count` event's CUMULATIVE totals for its session (`payload.info.total_token_usage`), at a point in time.
+    struct CodexTokenPoint: Equatable {
+        let time: Date
+        /// Fresh input, matching Claude's `Totals.input` sense: "prompt + cache writes, cache READS not counted".
+        /// Measured 2026-10-13 across 137 `token_count` events in the 8 newest session files on this Mac:
+        /// `cached_input_tokens <= input_tokens` held in every one (it is a SUBSET of `input_tokens`, not an addition),
+        /// so the fresh share is `input_tokens - cached_input_tokens`. `cache_write_input_tokens` was 0 in all 274
+        /// events sampled — never observed non-zero here — but the field exists in the schema, and nothing in the
+        /// 137-event sample proves it is already folded into `input_tokens` the way a cache WRITE normally would be
+        /// billed as fresh input elsewhere; so it is added on top, the same shape as Claude's `input + cache_creation`.
+        /// If it is ever observed non-zero and double-counted, that is a future measurement, not a guess made now.
+        let input: Int
+        let output: Int
+    }
+
+    /// Cheap pre-check (avoid parsing JSON for every line) + the real parse. `time` comes from the EVENT's own
+    /// top-level `timestamp`, not the file's mtime — a session file is written to over its whole lifetime.
+    static func parseCodexTokens(_ line: String) -> CodexTokenPoint? {
+        guard line.contains("\"token_count\""), let data = line.data(using: .utf8),
+              let d = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let ts = d["timestamp"] as? String, let time = parseISO(ts),
+              let payload = d["payload"] as? [String: Any], payload["type"] as? String == "token_count",
+              let info = payload["info"] as? [String: Any],
+              let total = info["total_token_usage"] as? [String: Any] else { return nil }
+        func n(_ k: String) -> Int { (total[k] as? NSNumber)?.intValue ?? 0 }
+        let fresh = max(0, n("input_tokens") - n("cached_input_tokens")) + n("cache_write_input_tokens")
+        return CodexTokenPoint(time: time, input: fresh, output: n("output_tokens"))
+    }
+
+    /// Per session, the cumulative figure is a running total — so the amount used SINCE `since` is the last point
+    /// at/after `since` MINUS the last point strictly before it (0 if the session has no such earlier point, i.e. it
+    /// started inside the window). Summed across sessions. Because each point already holds the session's full
+    /// cumulative total, re-reading the same event twice (the measured duplicate-event case) changes nothing: the
+    /// "last point at/after since" is still the same point, so a repeat cannot inflate the difference.
+    static func codexWindowTotals(_ sessions: [[CodexTokenPoint]], since: Date) -> Totals {
+        var t = Totals()
+        for points in sessions {
+            let sorted = points.sorted { $0.time < $1.time }
+            guard let lastAtOrAfter = sorted.last(where: { $0.time >= since }) else { continue }
+            let baseline = sorted.last(where: { $0.time < since })
+            let messages = sorted.filter { $0.time >= since }.count
+            t.messages += messages
+            t.input += max(0, lastAtOrAfter.input - (baseline?.input ?? 0))
+            t.output += max(0, lastAtOrAfter.output - (baseline?.output ?? 0))
+        }
+        return t
+    }
+
     // MARK: Formatting (glyph-free numbers; the view adds the words)
 
     /// 1 536 991 → "1.5M", 3 447 → "3.4K", 812 → "812". Decimal separator per caller.

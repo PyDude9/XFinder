@@ -114,17 +114,68 @@ enum LiveActivity {
 
     // MARK: Countdown timer (B4b)
 
+    /// P2: running OR paused. Running = `endsAt` set; paused = `pausedRemaining` set and the clock frozen (a paused
+    /// timer is not finished, whatever the wall clock says). `duration` is the whole planned length, so `progress`
+    /// stays honest across pauses and extensions.
     struct Countdown: Equatable {
-        let duration: TimeInterval
-        let endsAt: Date
+        private(set) var duration: TimeInterval
+        private(set) var endsAt: Date?
+        private(set) var pausedRemaining: TimeInterval?
 
         init(minutes: Int, now: Date) {
             duration = TimeInterval(max(minutes, 1) * 60)
             endsAt = now.addingTimeInterval(duration)
+            pausedRemaining = nil
         }
 
-        func remaining(at now: Date) -> TimeInterval { max(0, endsAt.timeIntervalSince(now)) }
-        func isFinished(at now: Date) -> Bool { remaining(at: now) <= 0 }
+        var isPaused: Bool { endsAt == nil }
+
+        func remaining(at now: Date) -> TimeInterval {
+            if let endsAt { return max(0, endsAt.timeIntervalSince(now)) }
+            return max(0, pausedRemaining ?? 0)
+        }
+
+        func isFinished(at now: Date) -> Bool { !isPaused && remaining(at: now) <= 0 }
+
+        /// 0 at the start, 1 at the end — the elapsed share of the whole planned length.
+        func progress(at now: Date) -> Double {
+            guard duration > 0 else { return 1 }
+            return min(1, max(0, 1 - remaining(at: now) / duration))
+        }
+
+        /// Freeze the clock. Pausing a paused timer changes nothing.
+        func paused(at now: Date) -> Countdown {
+            guard !isPaused else { return self }
+            var c = self
+            c.pausedRemaining = remaining(at: now)
+            c.endsAt = nil
+            return c
+        }
+
+        /// Restart the clock from where it stopped. Resuming a running timer changes nothing.
+        func resumed(at now: Date) -> Countdown {
+            guard isPaused else { return self }
+            var c = self
+            c.endsAt = now.addingTimeInterval(pausedRemaining ?? 0)
+            c.pausedRemaining = nil
+            return c
+        }
+
+        /// +/- whole minutes, running or paused. What is LEFT never drops below one minute (a "−5" on a timer with
+        /// two minutes left must not end it instantly) nor exceeds `timerMaxMinutes`; `duration` moves by what was
+        /// actually added, so the progress bar does not jump. `duration` is therefore always elapsed + left, and may pass
+        /// `timerMaxMinutes` when a long timer is extended near its end — the maximum caps what is LEFT, not the history
+        /// (P2 review; `testExtendingKeepsAtLeastAMinuteAndAtMostTheMaximum` pins it).
+        func extended(byMinutes minutes: Int, now: Date) -> Countdown {
+            let left = remaining(at: now)
+            let target = min(max(left + TimeInterval(minutes * 60), 60), TimeInterval(LiveActivity.timerMaxMinutes * 60))
+            let delta = target - left
+            guard delta != 0 else { return self }
+            var c = self
+            c.duration = max(60, duration + delta)
+            if let endsAt { c.endsAt = endsAt.addingTimeInterval(delta) } else { c.pausedRemaining = target }
+            return c
+        }
 
         /// "4:05", "59:59", "1:02:03" — whole seconds rounded UP, so the label never reads 0:00 early.
         func label(at now: Date) -> String {
@@ -135,6 +186,26 @@ enum LiveActivity {
     }
 
     static let timerPresets = [5, 10, 15, 25, 45, 60]
+
+    /// P2 Hẹn giờ page: the idle minutes stepper (and the running "−5 / +5") moves in 5-minute steps within 5…120;
+    /// 25 is the default, as in OneNotch's timer view.
+    static let timerStepMinutes = 5
+    static let timerMinMinutes = 5
+    static let timerMaxMinutes = 120
+    static let timerDefaultMinutes = 25
+
+    /// One step of the idle stepper: snaps to the 5-minute grid first, then clamps (a stored 23 steps to 25 / 20).
+    static func steppedMinutes(_ minutes: Int, by direction: Int) -> Int {
+        let step = timerStepMinutes
+        let snapped = direction > 0 ? (minutes / step + 1) * step : direction < 0 ? ((minutes + step - 1) / step - 1) * step : minutes
+        return min(max(snapped, timerMinMinutes), timerMaxMinutes)
+    }
+
+    /// A stored draft outside the range (or garbage) reads as something the page can draw.
+    static func validTimerMinutes(_ minutes: Int?) -> Int {
+        guard let m = minutes else { return timerDefaultMinutes }
+        return min(max(m, timerMinMinutes), timerMaxMinutes)
+    }
 
     static func timerFinishedItem(_ c: Countdown) -> Item {
         Item(kind: .timer, symbol: "timer", titleKey: "Hết giờ", detail: String(format: "%d:00", Int(c.duration / 60)),

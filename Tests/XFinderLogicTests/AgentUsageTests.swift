@@ -68,4 +68,82 @@ final class AgentUsageTests: XCTestCase {
         XCTAssertEqual(U.compact(812, decimalComma: false), "812")
         XCTAssertEqual(U.compact(651_799_843, decimalComma: false), "651.8M")
     }
+
+    // MARK: Codex token totals — shaped exactly like `payload.info.total_token_usage` (measured 2026-10-13)
+
+    func codexTokenCount(ts: String, input: Int, cached: Int, cacheWrite: Int = 0, output: Int, reasoning: Int = 0) -> String {
+        let total = input + output
+        return """
+        {"timestamp":"\(ts)","ordinal":1,"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":\(input),"cached_input_tokens":\(cached),"cache_write_input_tokens":\(cacheWrite),"output_tokens":\(output),"reasoning_output_tokens":\(reasoning),"total_tokens":\(total)},"last_token_usage":{"input_tokens":\(input),"cached_input_tokens":\(cached),"cache_write_input_tokens":\(cacheWrite),"output_tokens":\(output),"reasoning_output_tokens":\(reasoning),"total_tokens":\(total)},"model_context_window":380000},"rate_limits":{"limit_id":"codex","limit_name":null,"primary":null,"secondary":null,"credits":null,"individual_limit":null,"spend_control_reached":null,"plan_type":null,"rate_limit_reached_type":null}}}
+        """
+    }
+
+    func testParseCodexTokensReadsTheMeasuredShape() throws {
+        // Measured 2026-10-13: cached_input_tokens is a SUBSET of input_tokens, not additional — fresh input is the
+        // difference, matching Claude's "prompt + cache writes, cache reads not counted" sense.
+        let line = codexTokenCount(ts: "2026-09-23T09:33:09.422Z", input: 19035, cached: 3968, output: 132)
+        let p = try XCTUnwrap(U.parseCodexTokens(line))
+        XCTAssertEqual(p.input, 19035 - 3968)
+        XCTAssertEqual(p.output, 132)
+        let expectedTime = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-09-23T09:33:09Z"))
+        XCTAssertEqual(p.time.timeIntervalSince1970, expectedTime.timeIntervalSince1970, accuracy: 1)
+    }
+
+    func testParseCodexTokensIgnoresNonTokenCountLines() {
+        XCTAssertNil(U.parseCodexTokens(#"{"timestamp":"2026-09-23T09:33:09Z","payload":{"type":"task_started"}}"#))
+        XCTAssertNil(U.parseCodexTokens("not json at all"))
+        XCTAssertNil(U.parseCodexTokens(#"{"payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1}}}}"#), "no timestamp")
+    }
+
+    func testCodexWindowTotalsIsImmuneToRepeatedEvents() throws {
+        // Exact duplicate consecutive events were measured on this Mac (2 of 137). The cumulative-difference
+        // approach reads the same "last point at/after since" both times, so a repeat changes nothing.
+        let session = [
+            codexTokenCount(ts: "2026-10-13T08:00:00Z", input: 1000, cached: 0, output: 100),
+            codexTokenCount(ts: "2026-10-13T09:00:00Z", input: 2000, cached: 500, output: 300),
+            codexTokenCount(ts: "2026-10-13T09:00:00Z", input: 2000, cached: 500, output: 300), // exact repeat
+        ].compactMap(U.parseCodexTokens)
+        XCTAssertEqual(session.count, 3)
+        let since = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-13T08:30:00Z"))
+        let t = U.codexWindowTotals([session], since: since)
+        // baseline = the point before `since` (input 1000), last-at-or-after = the later point (input 1500 fresh)
+        XCTAssertEqual(t.input, (2000 - 500) - 1000)
+        XCTAssertEqual(t.output, 300 - 100)
+        XCTAssertEqual(t.messages, 2, "both points at/after `since`, repeat included — messages counts points, not de-duplicated")
+    }
+
+    func testCodexWindowTotalsSubtractsBaselineWhenSessionStartedBeforeTheWindow() throws {
+        let session = [
+            codexTokenCount(ts: "2026-10-13T06:00:00Z", input: 500, cached: 0, output: 50), // before the window
+            codexTokenCount(ts: "2026-10-13T08:00:00Z", input: 900, cached: 100, output: 120),
+        ].compactMap(U.parseCodexTokens)
+        let since = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-13T07:00:00Z"))
+        let t = U.codexWindowTotals([session], since: since)
+        XCTAssertEqual(t.input, (900 - 100) - 500, "only the usage SINCE the window start, not the whole session")
+        XCTAssertEqual(t.output, 120 - 50)
+        XCTAssertEqual(t.messages, 1)
+    }
+
+    func testCodexWindowTotalsIsZeroForASessionEntirelyBeforeTheWindow() throws {
+        let session = [
+            codexTokenCount(ts: "2026-10-13T01:00:00Z", input: 500, cached: 0, output: 50),
+            codexTokenCount(ts: "2026-10-13T02:00:00Z", input: 900, cached: 100, output: 120),
+        ].compactMap(U.parseCodexTokens)
+        let since = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-10-13T08:00:00Z"))
+        let t = U.codexWindowTotals([session], since: since)
+        XCTAssertEqual(t.input, 0)
+        XCTAssertEqual(t.output, 0)
+        XCTAssertEqual(t.messages, 0, "no points at/after `since`, so this session contributes nothing")
+    }
+
+    func testCodexWindowTotalsSumsAcrossSessions() throws {
+        let since = Date(timeIntervalSince1970: 1_000_000)
+        let sessionA = [AgentUsage.CodexTokenPoint(time: since.addingTimeInterval(-100), input: 10, output: 5),
+                        AgentUsage.CodexTokenPoint(time: since.addingTimeInterval(100), input: 60, output: 25)]
+        let sessionB = [AgentUsage.CodexTokenPoint(time: since.addingTimeInterval(50), input: 200, output: 40)]
+        let t = U.codexWindowTotals([sessionA, sessionB], since: since)
+        XCTAssertEqual(t.input, (60 - 10) + 200, "session B has no point before `since`, so its baseline is 0")
+        XCTAssertEqual(t.output, (25 - 5) + 40)
+        XCTAssertEqual(t.messages, 2, "one point at/after `since` per session")
+    }
 }

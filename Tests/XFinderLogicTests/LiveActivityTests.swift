@@ -124,5 +124,58 @@ final class LiveActivityTests: XCTestCase {
         XCTAssertEqual(A.Countdown(minutes: 90, now: t0).label(at: t0), "1:30:00")
         XCTAssertEqual(A.Countdown(minutes: 0, now: t0).duration, 60, "a zero-minute timer is one minute, not instant")
     }
+
+    /// P2: a paused timer freezes — the wall clock can run past its old end and it is neither finished nor shorter.
+    func testAPausedCountdownFreezesAndResumesWhereItStopped() {
+        let t0 = Date(timeIntervalSince1970: 3_000_000)
+        let c = A.Countdown(minutes: 10, now: t0)
+        let p = c.paused(at: t0.addingTimeInterval(120))
+        XCTAssertTrue(p.isPaused)
+        XCTAssertEqual(p.remaining(at: t0.addingTimeInterval(5000)), 480, accuracy: 0.001, "frozen at 8:00")
+        XCTAssertFalse(p.isFinished(at: t0.addingTimeInterval(5000)), "a paused timer never finishes by itself")
+        XCTAssertEqual(p.paused(at: t0.addingTimeInterval(9000)), p, "pausing twice changes nothing")
+        let r = p.resumed(at: t0.addingTimeInterval(5000))
+        XCTAssertFalse(r.isPaused)
+        XCTAssertEqual(r.remaining(at: t0.addingTimeInterval(5000)), 480, accuracy: 0.001)
+        XCTAssertTrue(r.isFinished(at: t0.addingTimeInterval(5480)))
+        XCTAssertEqual(r.resumed(at: t0.addingTimeInterval(5100)), r, "resuming a running timer changes nothing")
+        XCTAssertEqual(r.progress(at: t0.addingTimeInterval(5240)), 0.6, accuracy: 0.001, "6 of 10 minutes elapsed")
+    }
+
+    /// P2: "+5 / −5" while running or paused; what is left stays within 1 minute … the maximum.
+    func testExtendingKeepsAtLeastAMinuteAndAtMostTheMaximum() {
+        let t0 = Date(timeIntervalSince1970: 3_000_000)
+        let c = A.Countdown(minutes: 10, now: t0)
+        XCTAssertEqual(c.extended(byMinutes: 5, now: t0).remaining(at: t0), 900, accuracy: 0.001)
+        XCTAssertEqual(c.extended(byMinutes: 5, now: t0).duration, 900, accuracy: 0.001)
+        let two = t0.addingTimeInterval(480)                      // 2 minutes left
+        XCTAssertEqual(c.extended(byMinutes: -5, now: two).remaining(at: two), 60, accuracy: 0.001, "−5 with 2 left ⇒ 1, never 0")
+        XCTAssertFalse(c.extended(byMinutes: -5, now: two).isFinished(at: two))
+        let paused = c.paused(at: two).extended(byMinutes: 5, now: two)
+        XCTAssertTrue(paused.isPaused, "extending a paused timer keeps it paused")
+        XCTAssertEqual(paused.remaining(at: two.addingTimeInterval(999)), 420, accuracy: 0.001)
+        let huge = A.Countdown(minutes: 118, now: t0).extended(byMinutes: 30, now: t0)
+        XCTAssertEqual(huge.remaining(at: t0), TimeInterval(A.timerMaxMinutes * 60), accuracy: 0.001, "capped at the maximum")
+        XCTAssertEqual(c.extended(byMinutes: 0, now: t0), c)
+        // duration = elapsed + left after any extension, so the progress bar keeps the elapsed share it had.
+        let long = A.Countdown(minutes: 120, now: t0)
+        let nearEnd = t0.addingTimeInterval(7140)                  // 1 minute left
+        let ext = long.extended(byMinutes: 5, now: nearEnd)
+        XCTAssertEqual(ext.remaining(at: nearEnd), 360, accuracy: 0.001)
+        XCTAssertEqual(ext.duration, 7140 + 360, accuracy: 0.001, "elapsed 119 min + 6 left")
+        XCTAssertEqual(ext.progress(at: nearEnd), 7140 / 7500, accuracy: 0.0001)
+    }
+
+    func testTheIdleStepperSnapsToFiveMinutesWithinRange() {
+        XCTAssertEqual(A.steppedMinutes(25, by: 1), 30)
+        XCTAssertEqual(A.steppedMinutes(25, by: -1), 20)
+        XCTAssertEqual(A.steppedMinutes(23, by: 1), 25, "an off-grid value snaps up to the grid")
+        XCTAssertEqual(A.steppedMinutes(23, by: -1), 20, "… and down to the grid")
+        XCTAssertEqual(A.steppedMinutes(5, by: -1), 5, "never below the minimum")
+        XCTAssertEqual(A.steppedMinutes(120, by: 1), 120, "never above the maximum")
+        XCTAssertEqual(A.validTimerMinutes(nil), A.timerDefaultMinutes)
+        XCTAssertEqual(A.validTimerMinutes(0), A.timerMinMinutes)
+        XCTAssertEqual(A.validTimerMinutes(900), A.timerMaxMinutes)
+    }
 }
 

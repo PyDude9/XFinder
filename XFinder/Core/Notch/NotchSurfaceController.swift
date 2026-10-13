@@ -115,7 +115,7 @@ final class NotchSurfaceController {
     private var badgeShown: Bool { machine.itemCount > 0 || countdown != nil || NowPlayingMonitor.shared.hasTrack || model.agentActive }
 
     /// D1 #44 — the ONE reader of `notch.pages` (order + visibility, a comma list).
-    private var pageOrderRaw: String { UserDefaults.standard.string(forKey: "notch.pages") ?? "files,clipboard,nowPlaying,agents,calendar" }
+    private var pageOrderRaw: String { UserDefaults.standard.string(forKey: "notch.pages") ?? "files,clipboard,nowPlaying,agents,calendar,timer,aiUsage" }
     /// D1 #47 — the ONE reader of `notch.accent`.
     private var accentName: String { UserDefaults.standard.string(forKey: "notch.accent") ?? "system" }
     /// For the ⌘⇧V router: a hidden clipboard tab means the hotkey falls back to the floating shelf.
@@ -132,6 +132,7 @@ final class NotchSurfaceController {
             panel?.sharingType = hideFromCapture ? .none : .readOnly   // B7, live
             model.pillOnPlainScreens = pillOnPlainScreens
             model.pages = NotchPages.parse(pageOrderRaw)
+            model.timerDraftMinutes = timerDraftMinutes          // P2: the Hẹn giờ page's idle minutes
             model.accent = NotchAccent.rgb(named: accentName).map { Color(red: $0.red, green: $0.green, blue: $0.blue) }
             if case .expanded(let page) = machine.state, !model.pages.contains(page) {
                 dispatch(.switchPage(NotchPages.resolve(page, shown: model.pages)))   // the open page was just hidden
@@ -185,7 +186,8 @@ final class NotchSurfaceController {
         if let m = swipeMonitor { NSEvent.removeMonitor(m); swipeMonitor = nil }
         activityWork?.cancel(); activityWork = nil
         activityQueue.clear()
-        countdownTicker?.invalidate(); countdownTicker = nil; countdown = nil; model.timerText = nil
+        countdownTicker?.invalidate(); countdownTicker = nil; countdown = nil
+        model.timerText = nil; model.timer = nil
         NowPlayingMonitor.shared.stop()
         nowPlayingTicker?.invalidate(); nowPlayingTicker = nil
         model.nowPlaying = nil; model.nowPlayingArtwork = nil; model.nowPlayingPosition = nil
@@ -342,7 +344,8 @@ final class NotchSurfaceController {
         state = machine.state
         if case .expanded(let p) = machine.state { lastHubPage = p }   // N2: for "Trang mở lần cuối"
         CalendarGlanceMonitor.shared.setPageOpen(machine.state == .expanded(.calendar))   // N4: the minute ticker only while shown
-        AgentUsageMonitor.shared.setPageOpen(machine.state == .expanded(.agents))         // §3b #37: usage scan only while shown
+        // §3b #37 / P2: the usage scan runs only while the Agents page or the AI usage tool is on screen.
+        AgentUsageMonitor.shared.setPageOpen(machine.state == .expanded(.agents) || machine.state == .expanded(.aiUsage))
         render()
         syncClipboardKeyboard()
         syncHubSwipe()
@@ -418,6 +421,14 @@ final class NotchSurfaceController {
 
     func answerAgent(_ p: AgentSession.PendingPermission, of session: AgentSession, allow: Bool) {
         AgentSessionMonitor.shared.answer(p, of: session, allow: allow)
+    }
+
+    /// P2: the AI usage tool's "set up %" link — the statusLine install lives in the Agent AI section of Notch & Khay thả
+    /// (installing edits ~/.claude/settings.json, so it is a deliberate button there, never a switch on the notch).
+    func openAgentSettings() {
+        dismiss()
+        AppState.shared.navigate(to: .dropTray)
+        AppState.shared.bringMainWindowFront()
     }
 
     func openAgentTerminal(_ session: AgentSession) {
@@ -868,19 +879,52 @@ final class NotchSurfaceController {
 
     // MARK: - Countdown timer (B4b)
 
-    private var countdown: LiveActivity.Countdown?
+    private var countdown: LiveActivity.Countdown? {
+        didSet { model.timer = countdown }      // P2: the Hẹn giờ page reads the countdown itself (pause, progress)
+    }
     private var countdownTicker: Timer?
 
     var timerRunning: Bool { countdown != nil }
 
-    /// A 1 s ticker exists ONLY while a countdown runs (it drives the badge's seconds); none otherwise.
+    /// P2: the idle stepper's minutes (`notch.timer.minutes`, ONE reader here; the page writes through `setTimerDraft`).
+    static let timerDraftKey = "notch.timer.minutes"
+    var timerDraftMinutes: Int {
+        LiveActivity.validTimerMinutes(UserDefaults.standard.object(forKey: Self.timerDraftKey) as? Int ?? LiveActivity.timerDefaultMinutes)
+    }
+
+    func setTimerDraft(minutes: Int) {
+        let m = LiveActivity.validTimerMinutes(minutes)
+        UserDefaults.standard.set(m, forKey: Self.timerDraftKey)
+        model.timerDraftMinutes = m
+    }
+
+    /// A 1 s ticker exists ONLY while a countdown RUNS (it drives the badge's seconds); none while paused or idle.
     func startTimer(minutes: Int) {
         guard enabled, panel != nil else { return }
         countdown = LiveActivity.Countdown(minutes: minutes, now: Date())
-        countdownTicker?.invalidate()
-        let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.tickCountdown() } }
-        RunLoop.main.add(t, forMode: .common)
-        countdownTicker = t
+        armCountdownTicker()
+        tickCountdown()
+    }
+
+    /// P2: freeze / restart the clock. A paused countdown keeps its wing (the time left, with a pause glyph) and no ticker.
+    func pauseTimer() {
+        guard let c = countdown, !c.isPaused else { return }
+        countdown = c.paused(at: Date())
+        countdownTicker?.invalidate(); countdownTicker = nil
+        tickCountdown()
+    }
+
+    func resumeTimer() {
+        guard let c = countdown, c.isPaused else { return }
+        countdown = c.resumed(at: Date())
+        armCountdownTicker()
+        tickCountdown()
+    }
+
+    /// P2: "−5 / +5" on a running or paused countdown (what is left stays within 1 minute … the maximum).
+    func extendTimer(byMinutes minutes: Int) {
+        guard let c = countdown else { return }
+        countdown = c.extended(byMinutes: minutes, now: Date())
         tickCountdown()
     }
 
@@ -889,6 +933,13 @@ final class NotchSurfaceController {
         countdown = nil
         model.timerText = nil
         render()
+    }
+
+    private func armCountdownTicker() {
+        countdownTicker?.invalidate()
+        let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.tickCountdown() } }
+        RunLoop.main.add(t, forMode: .common)
+        countdownTicker = t
     }
 
     private func tickCountdown() {
@@ -902,6 +953,7 @@ final class NotchSurfaceController {
         }
         let wasHidden = model.timerText == nil
         model.timerText = c.label(at: now)
+        model.timerNow = now                  // the page's progress ring follows the same tick, never its own timer
         if wasHidden { render() }        // the badge appears; afterwards only its text changes
     }
 
