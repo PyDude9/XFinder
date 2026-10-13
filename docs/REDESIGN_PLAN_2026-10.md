@@ -420,7 +420,7 @@ chuột ⇒ không huy hiệu; app bị loại trừ ⇒ không huy hiệu; neo 
 vừa mở trả `-25204` cho đăng ký observer (timeout 0,3 s) và watcher vẫn nhớ pid ⇒ tính năng câm tới lần đổi app sau; sửa bằng luật
 thử lại thuần (0,5/1,5/3 s, chỉ cho -25204), đo lại: lần 0 = −25204, 532 ms sau lần 1 = 0. **Chưa đo:** Safari (text marker),
 ghi vào Lịch thật, panel Dịch (macOS 15 + tay người), app Chromium/Electron với vùng chọn thật (probe thụ động đã thấy thông báo tới).
-**E6 ✅ (chưa đo live)** — đo trước khi viết: feed ECB có 29 đồng tiền và **không có VND**, trong khi vùng máy là `en_VN`; nguồn giờ theo tiền tệ địa phương: VND → XML công khai của Vietcombank (giá bán, 20 đồng tiền), còn lại → ECB. Đọc số tiền theo số chữ số lẻ ISO (`1.500 €` = 1 500, `KWD 1.500` = 1,5); `¥`/`kr` bị từ chối; `$` hiểu là USD và panel nói ra. Một request ≤ 12 giờ/lần, không timer, không gửi chữ đã chọn. 851 test, mutation 30/30 RED. E2e (`scratchpad/e6h/e2e.sh`, 14 kiểm tra) chưa chạy được: người dùng đang dùng máy.
+**E6 ✅ đo live 16/16** (`$20 ≈ 522,200 VND`, `1,500.00 EUR ≈ 44,489,205 VND`, một request, 20 tỷ giá; lượt đầu 14/14 lộ ra lỗi panel giữ giá trị cũ — sửa ở E6b) — đo trước khi viết: feed ECB có 29 đồng tiền và **không có VND**, trong khi vùng máy là `en_VN`; nguồn giờ theo tiền tệ địa phương: VND → XML công khai của Vietcombank (giá bán, 20 đồng tiền), còn lại → ECB. Đọc số tiền theo số chữ số lẻ ISO (`1.500 €` = 1 500, `KWD 1.500` = 1,5); `¥`/`kr` bị từ chối; `$` hiểu là USD và panel nói ra. Một request ≤ 12 giờ/lần, không timer, không gửi chữ đã chọn. 851 test, mutation 30/30 RED. E2e (`scratchpad/e6h/e2e.sh`, 14 kiểm tra) — chạy khi người dùng rời máy.
 
 **Sau đợt E (giữ thứ tự, mỗi mục probe trước):** đo **B7 trên màn hình ngoài 1920×1080 vừa cắm** (notch ảo, hover, kéo cửa
 sổ) · F: Quit-on-close, Uninstaller (bắt buộc xem trước + chỉ vào Thùng rác), Cleaning Mode, studio chụp & chú thích · G: quy
@@ -429,6 +429,30 @@ dirty memory về từng module (`vmmap -verbose`, `heap`), mục tiêu < 30 MB 
 **Chỉ tay người làm được (không probe nào thay):** Touch ID mở/huỷ bảng khoá · mọi click trên Thư viện Clipboard · AirDrop từ hub ·
 kéo cửa sổ vào hàng snap ở notch · rút sạc / mất Wi-Fi / Caps Lock / nối AirPods cho live activity · ⌘⇧V và ⌘V Paste Stack bằng
 bàn phím thật · Now Playing với Music/Spotify/YouTube thật · nghe TTS · vuốt hai ngón đổi trang notch.
+
+### 3g. Đợt F — kế hoạch sau khi đo (2026-10-13)
+
+**Đã đo, đổi cách hiểu một mục.** Plan cũ ghi "Cleaning Mode — preview bắt buộc + chỉ Thùng rác". Tôi tưởng là chế độ khoá bàn
+phím để lau. Đo MFinder (app tham chiếu): đó là **Junk Cleanup** — chọn một thư mục, quét *rác metadata đã biết*, đưa vào Thùng
+rác. Chuỗi của chính nó: *"only matches known Finder, AppleDouble, archive, and Windows metadata. Generic temporary files are
+never selected. Finder may recreate .DS_Store later."* Danh sách tên nó biết: `.DS_Store`, `Thumbs.db`, `.localized`, AppleDouble
+`._*`, và các thư mục cấp ổ (`.Spotlight-V100`, `.fseventsd`, `.Trashes`, `.TemporaryItems`).
+
+| # | Việc người dùng (Part 0) | Làm | Đo / gate trước khi gọi là xong |
+|:--|:--|:--|:--|
+| **F1** | *"Sắp nén / gửi / chép thư mục sang USB hay máy Windows — dọn rác hệ thống bên trong, xem trước, vào Thùng rác."* | `Core/Cleanup/JunkRules.swift` (thuần): `.DS_Store`, `Thumbs.db`, `ehthumbs.db`, `desktop.ini`, thư mục `__MACOSX`, và `._x` **chỉ khi 4 byte đầu là magic AppleDouble `00 05 16 07`** (một file tên `._x` trên APFS có thể là dữ liệu thật). **Không bao giờ** đụng `.Spotlight-V100`/`.fseventsd`/`.Trashes` (đồ của hệ thống trên ổ đang gắn), không đi theo symlink, không đi vào package (`.app`, `.photoslibrary`), bỏ qua file iCloud chưa tải. Quét nền có giới hạn + huỷ được; xem trước theo nhóm (đếm + dung lượng, bỏ chọn từng nhóm); `FileManager.trashItem` từng mục; báo số đã vào Thùng rác + số lỗi; ghi Lịch sử thao tác. Trang ở **FINDER & TÌM KIẾM** (người dùng tới từ một thư mục) + nút "thư mục đang chọn trong Finder" | test thuần trên cây thư mục thật trong temp (có `._x` giả không magic, symlink ra ngoài, package); e2e trên thư mục harness: đúng N mục vào Thùng rác, file thật còn nguyên |
+| **F2** | *"Gỡ app X sạch: app + file nó để lại trong Thư viện — thấy trước từng file, tất cả vào Thùng rác."* | Luật thuần khớp theo **bundle id chính xác** (mặc định chọn) và tên app (mặc định KHÔNG chọn, độ tin thấp); loại trừ app hệ thống, app đang chạy (yêu cầu thoát trước), group container còn app khác dùng | **probe trước:** `trashItem` một `.app` từ process không phải Finder (App Management, macOS 13+) và container sandbox của app khác (App Data, macOS 14+) — đo bằng app harness sandbox tự tạo, không đụng app thật |
+| **F3** | *"Đóng cửa sổ cuối của Preview/TextEdit thì app thoát luôn, không nằm chết trong Dock."* | Opt-in **theo danh sách app** người dùng chọn; `AXObserver` (`kAXUIElementDestroyedNotification`) chỉ cho app trong danh sách; đếm lại `kAXWindows` sau 1 s (cửa sổ thu nhỏ vẫn tính); `terminate()` (vẫn hỏi lưu) | probe AX trên TextEdit: số cửa sổ sau ⌘W, cửa sổ thu nhỏ, hộp mở file lúc khởi động |
+| **F4** | Chụp & chú thích | Phạm vi lớn — **đi nhánh U của skill UI** (brief + 2–3 wireframe, chủ dự án chọn) trước khi dựng | cổng chờ: chủ dự án chọn wireframe |
+
+Thứ tự: F1 → F2 → F3 → F4. Mỗi mục commit khi gate xanh; phép đo live ghi bù nếu người dùng đang dùng máy.
+
+**Tiến độ F:** **F1 ✅** — phát hiện trong lúc làm: trên macOS 27 **mọi API liệt kê thư mục của `FileManager` giấu FILE THƯỜNG
+tên bắt đầu bằng `._`** (`contentsOfDirectory(atPath:)`, `contentsOfDirectory(at:)`, `enumerator(at:)`, `enumerator(atPath:)` — có
+header AppleDouble hay không, kể cả file rỗng; symlink và thư mục tên `._` vẫn được liệt kê), chỉ `readdir` thấy; `stat`/`fileExists`/`trashItem` vẫn chạy trên chúng. Bộ quét vì thế dùng `fts`
+(`FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV`). 861 test, mutation 9/9 RED; đo live bằng chính `JunkCleanup.swift` trên Thùng rác thật
+9/9 (5 mục vào `~/.Trash` rồi được chuyển ra lại); trang đo qua AX trên app đã cài, EN 9/9 chuỗi và VI 5/5. **Chưa đo:** bấm nút
+chuyển vào Thùng rác qua giao diện (cần chọn thư mục bằng NSOpenPanel / Finder / thả — tay người).
 
 ## 4. Lộ trình (UI/UX trước, đúng yêu cầu)
 

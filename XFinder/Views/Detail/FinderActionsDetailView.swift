@@ -277,7 +277,7 @@ struct FinderActionsDetailView: View {
         busy = true
         status = nil
         Task {
-            let result = await Self.finderSelection()
+            let result = await FinderSelection.read()
             busy = false
             switch result {
             case .success(let urls):
@@ -287,44 +287,6 @@ struct FinderActionsDetailView: View {
                 status = message
             }
         }
-    }
-
-    private enum SelectionResult {
-        case success([URL])
-        case failure(String)
-    }
-
-    private static func finderSelection() async -> SelectionResult {
-        await Task.detached {
-            let script = """
-            tell application "Finder"
-                set sel to selection as alias list
-                set out to ""
-                repeat with anItem in sel
-                    set out to out & POSIX path of anItem & linefeed
-                end repeat
-                return out
-            end tell
-            """
-            guard let apple = NSAppleScript(source: script) else {
-                return .failure(L10n.t("Không tạo được AppleScript."))
-            }
-            var err: NSDictionary?
-            let output = apple.executeAndReturnError(&err)
-            if let err {
-                let code = (err[NSAppleScript.errorNumber] as? Int) ?? 0
-                if code == -1743 {
-                    return .failure(L10n.t("Cần quyền Tự động hóa cho Finder — Cài đặt hệ thống → Quyền riêng tư & Bảo mật → Tự động hóa → XFinder → bật Finder."))
-                }
-                let msg = (err[NSAppleScript.errorMessage] as? String) ?? "\(L10n.t("Lỗi")) \(code)"
-                return .failure("\(L10n.t("Không đọc được lựa chọn")): \(msg)")
-            }
-            let paths = (output.stringValue ?? "")
-                .components(separatedBy: .newlines)
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty }
-            return .success(paths.map { URL(fileURLWithPath: $0) })
-        }.value
     }
 
     // MARK: Actions

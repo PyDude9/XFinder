@@ -8866,6 +8866,146 @@
     " đồng tiền.": {
       "en": " currencies.",
       "scope": "fragment"
+    },
+    "Dọn rác thư mục": {
+      "en": "Folder Cleanup",
+      "scope": "sentence"
+    },
+    "Gỡ .DS_Store, ._tên, __MACOSX, Thumbs.db… khỏi một thư mục trước khi nén, chép sang USB hay gửi cho máy Windows. Xem trước, chỉ vào Thùng rác.": {
+      "en": "Remove .DS_Store, ._name, __MACOSX, Thumbs.db… from a folder before you zip it, copy it to a USB stick or send it to a Windows PC. Preview first, Trash only.",
+      "scope": "sentence"
+    },
+    "Chỉ chọn siêu dữ liệu đã biết của Finder, AppleDouble, file nén và Windows — không bao giờ chọn \"file tạm\" chung chung. Không đi theo bí danh hay liên kết, không vào bên trong gói ứng dụng, không sang ổ khác, bỏ qua file iCloud chưa tải. Finder có thể tạo lại .DS_Store khi bạn mở thư mục.": {
+      "en": "Only known Finder, AppleDouble, archive and Windows metadata is selected — never \"temporary files\" in general. Aliases and links are not followed, app packages are not entered, other volumes are not crossed, iCloud files that are not downloaded are skipped. Finder may recreate .DS_Store when you open the folder.",
+      "scope": "sentence"
+    },
+    "Thư mục cần dọn": {
+      "en": "Folder to clean",
+      "scope": "sentence"
+    },
+    "Chưa chọn thư mục": {
+      "en": "No folder chosen",
+      "scope": "sentence"
+    },
+    "Dùng thư mục đang chọn trong Finder": {
+      "en": "Use the folder selected in Finder",
+      "scope": "sentence"
+    },
+    "Quét lại": {
+      "en": "Scan again",
+      "scope": "sentence"
+    },
+    "Hoặc thả một thư mục vào đây": {
+      "en": "Or drop a folder here",
+      "scope": "sentence"
+    },
+    "Sẽ chuyển vào Thùng rác": {
+      "en": "Will be moved to the Trash",
+      "scope": "sentence"
+    },
+    "Bỏ chọn nhóm nào bạn muốn giữ lại.": {
+      "en": "Untick any group you want to keep.",
+      "scope": "sentence"
+    },
+    "Đang quét…": {
+      "en": "Scanning…",
+      "scope": "sentence"
+    },
+    "Chọn một thư mục để xem có gì cần dọn.": {
+      "en": "Choose a folder to see what there is to clean.",
+      "scope": "sentence"
+    },
+    "Đã huỷ quét — danh sách dưới đây chưa đủ.": {
+      "en": "Scan cancelled — the list below is incomplete.",
+      "scope": "sentence"
+    },
+    "Thư mục quá lớn: chỉ xem ": {
+      "en": "Folder too large: only the first ",
+      "scope": "fragment"
+    },
+    " mục đầu. Hãy chọn một thư mục nhỏ hơn.": {
+      "en": " items were checked. Choose a smaller folder.",
+      "scope": "fragment"
+    },
+    "Thư mục này đã sạch — không có rác metadata nào.": {
+      "en": "This folder is already clean — no metadata junk.",
+      "scope": "sentence"
+    },
+    "Xem đường dẫn": {
+      "en": "Show paths",
+      "scope": "sentence"
+    },
+    "Đã xem ": {
+      "en": "Checked ",
+      "scope": "fragment"
+    },
+    " gói ứng dụng không mở vào": {
+      "en": " app packages not entered",
+      "scope": "fragment"
+    },
+    " mục iCloud chưa tải bị bỏ qua": {
+      "en": " iCloud items not downloaded, skipped",
+      "scope": "fragment"
+    },
+    "Hãy chọn một thư mục trong Finder rồi bấm lại.": {
+      "en": "Select a folder in Finder, then click again.",
+      "scope": "sentence"
+    },
+    "Đó không phải thư mục.": {
+      "en": "That is not a folder.",
+      "scope": "sentence"
+    },
+    " mục vào Thùng rác — mở Thùng rác để khôi phục nếu cần.": {
+      "en": " items to the Trash — open the Trash to restore them if needed.",
+      "scope": "fragment"
+    },
+    " mục đã đổi sau khi quét nên được giữ nguyên.": {
+      "en": " items changed after the scan and were left alone.",
+      "scope": "fragment"
+    },
+    " mục không chuyển được: ": {
+      "en": " items could not be moved: ",
+      "scope": "fragment"
+    },
+    "Thiết lập hiển thị của Finder (.DS_Store)": {
+      "en": "Finder view settings (.DS_Store)",
+      "scope": "sentence"
+    },
+    "Siêu dữ liệu AppleDouble (._tên)": {
+      "en": "AppleDouble metadata (._name)",
+      "scope": "sentence"
+    },
+    "Thư mục __MACOSX trong file nén": {
+      "en": "__MACOSX folders from archives",
+      "scope": "sentence"
+    },
+    "Ảnh thu nhỏ của Windows (Thumbs.db)": {
+      "en": "Windows thumbnails (Thumbs.db)",
+      "scope": "sentence"
+    },
+    "Thiết lập thư mục của Windows (desktop.ini)": {
+      "en": "Windows folder settings (desktop.ini)",
+      "scope": "sentence"
+    },
+    "Finder ghi vị trí biểu tượng và kiểu xem. Vô hại khi xoá; Finder có thể tạo lại khi bạn mở thư mục.": {
+      "en": "Finder stores icon positions and the view style here. Harmless to remove; Finder may recreate it when you open the folder.",
+      "scope": "sentence"
+    },
+    "Nhãn, xattr của macOS khi chép sang ổ không phải APFS (USB, ổ mạng). Chỉ chọn file có đầu AppleDouble thật.": {
+      "en": "macOS tags and extended attributes, written when copying to a non-APFS drive (USB, network share). Only files with a real AppleDouble header are selected.",
+      "scope": "sentence"
+    },
+    "Do công cụ nén để lại khi giải nén trên máy khác. Chỉ chọn khi bên trong toàn là siêu dữ liệu.": {
+      "en": "Left by zip tools when an archive made on a Mac is extracted elsewhere. Selected only when everything inside is metadata.",
+      "scope": "sentence"
+    },
+    "Windows tự tạo để hiện ảnh thu nhỏ. Windows tạo lại khi cần.": {
+      "en": "Created by Windows to show thumbnails. Windows recreates it when needed.",
+      "scope": "sentence"
+    },
+    "Windows ghi biểu tượng và tên hiển thị của thư mục. Chỉ có tác dụng trên Windows.": {
+      "en": "Windows stores the folder's icon and display name here. It only has an effect on Windows.",
+      "scope": "sentence"
     }
   }
 }

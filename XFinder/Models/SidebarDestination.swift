@@ -24,6 +24,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case aiSearch
     // CÔNG CỤ
     case batchRename
+    case junkCleanup
     case actionHistory
     case dropTray
     case compress
@@ -76,6 +77,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .finderSearch: return "Tìm kiếm"
         case .aiSearch: return "Tìm kiếm AI"
         case .batchRename: return "Đổi tên hàng loạt"
+        case .junkCleanup: return "Dọn rác thư mục"
         case .actionHistory: return "Lịch sử thao tác"
         case .dropTray: return "Notch & Khay thả"
         case .compress: return "Nén & Giải nén"
@@ -120,6 +122,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         // rendered with no icon at all. Verified with NSImage(systemSymbolName:).
         case .aiSearch: return "wand.and.stars"
         case .batchRename: return "textformat.abc.dottedunderline"
+        case .junkCleanup: return "bubbles.and.sparkles"
         case .actionHistory: return "clock.arrow.circlepath"
         case .dropTray: return "tray.and.arrow.down.fill"
         case .compress: return "archivebox.fill"
@@ -153,7 +156,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             ("CHUNG", [.dashboard, .features, .antiSleep, .system, .network, .storage, .pin, .alerts]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .mouseGestures, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
-                                   .batchRename, .actionHistory]),
+                                   .batchRename, .junkCleanup, .actionHistory]),
             ("CÔNG CỤ", [.voiceTyping, .smartSelect, .clipboard, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare, .ports]),
             ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat]),

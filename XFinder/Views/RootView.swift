@@ -99,6 +99,8 @@ struct DetailHostView: View {
                 AiSearchDetailView()
             case .batchRename:
                 BatchRenameDetailView()
+            case .junkCleanup:
+                JunkCleanupDetailView()
             case .actionHistory:
                 ActionHistoryDetailView()
             case .dropTray:
