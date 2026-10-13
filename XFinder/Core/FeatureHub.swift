@@ -93,6 +93,7 @@ final class FeatureHub {
         case .commandTab:      CommandTabController.shared.applySettings()
         case .snapZones:       SnapZoneController.shared.applySettings()
         case .quitProtection:  QuitProtectionController.shared.applySettings()
+        case .quitOnClose:     QuitOnCloseController.shared.applySettings()            // F3
         case .clipboardShelf:  ClipboardShelfController.shared.applySettings()
         case .quickSearch:     QuickSearchPanelController.shared.applySettings()
         case .edgeNotes:       EdgeNotesController.shared.applySettings()

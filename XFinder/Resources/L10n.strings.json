@@ -9114,6 +9114,58 @@
     " mục không chuyển được.": {
       "en": " items could not be moved.",
       "scope": "fragment"
+    },
+    "Thoát ứng dụng": {
+      "en": "Quitting Apps",
+      "scope": "sentence"
+    },
+    "Không thoát nhầm vì ⌘Q, và tự thoát một app khi bạn đã đóng hết cửa sổ của nó.": {
+      "en": "Never quit by a stray ⌘Q, and quit an app on its own once you have closed all its windows.",
+      "scope": "sentence"
+    },
+    "Bật giữ ⌘Q": {
+      "en": "Turn on hold ⌘Q",
+      "scope": "sentence"
+    },
+    "Một vòng tiến trình hiện khi bạn giữ; nhả sớm hoặc bấm Esc là huỷ.": {
+      "en": "A progress ring appears while you hold; letting go early or pressing Esc cancels.",
+      "scope": "sentence"
+    },
+    "Thoát khi đóng cửa sổ cuối": {
+      "en": "Quit when the last window closes",
+      "scope": "sentence"
+    },
+    "Đóng hết cửa sổ của một app trong danh sách thì app thoát, không nằm lại trên Dock.": {
+      "en": "Close every window of an app in the list and it quits instead of staying in the Dock.",
+      "scope": "sentence"
+    },
+    "Thoát app khi đóng cửa sổ cuối": {
+      "en": "Quit an app when its last window closes",
+      "scope": "sentence"
+    },
+    "Chỉ với những app bạn chọn dưới đây. App vẫn hỏi lưu tài liệu như khi bạn chọn Thoát.": {
+      "en": "Only for the apps you choose below. The app still asks to save documents, as when you choose Quit.",
+      "scope": "sentence"
+    },
+    "Cần quyền Trợ năng để biết cửa sổ của app khác đã đóng.": {
+      "en": "Accessibility permission is needed to know when another app's window closed.",
+      "scope": "sentence"
+    },
+    "Chưa chọn app nào — chưa có app nào tự thoát.": {
+      "en": "No apps chosen — no app quits on its own yet.",
+      "scope": "sentence"
+    },
+    "Mọi cửa sổ đều tính, kể cả bảng phụ và hộp thoại; app đang ẩn vẫn còn cửa sổ nên không bị thoát. XFinder đợi 1 giây sau khi cửa sổ đóng rồi mới đếm lại, để ⌘W rồi ⌘N không làm app thoát giữa chừng. Finder không bao giờ bị thoát.": {
+      "en": "Every window counts, palettes and dialogs included; a hidden app still has its windows, so it does not quit. XFinder waits 1 second after a window closes before counting again, so ⌘W followed by ⌘N does not quit the app in between. Finder is never quit.",
+      "scope": "sentence"
+    },
+    "Theo dõi cửa sổ app đã chọn": {
+      "en": "Watches the chosen apps' windows",
+      "scope": "sentence"
+    },
+    "Chỉ với những app bạn chọn; Finder không bao giờ.": {
+      "en": "Only the apps you choose; never Finder.",
+      "scope": "sentence"
     }
   }
 }

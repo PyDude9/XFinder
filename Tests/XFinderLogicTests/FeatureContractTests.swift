@@ -30,6 +30,7 @@ final class FeatureContractTests: XCTestCase {
         .agents: .pure(["Core/Agents/AgentEvents.swift", "Core/Agents/AgentHookInstaller.swift"]),
         .calendar: .pure(["Core/Calendar/GlanceRules.swift"]),
         .translateSelection: .pure(["Core/Translate/TranslateSelectionRules.swift"]),
+        .quitOnClose: .pure(["Core/QuitOnClose/QuitOnCloseRules.swift"]),
         .smartSelect: .pure(["Core/SmartSelect/SmartSelectionRules.swift", "Core/SmartSelect/UnitConversion.swift",
                              "Core/SmartSelect/TimeZoneConversion.swift", "Core/SmartSelect/CurrencyConversion.swift"]),
         .linkPreviews: .pure(["Core/Clipboard/LinkPreviewRules.swift"]),

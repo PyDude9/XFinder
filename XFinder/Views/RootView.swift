@@ -103,6 +103,8 @@ struct DetailHostView: View {
                 JunkCleanupDetailView()
             case .uninstaller:
                 UninstallDetailView()
+            case .appQuit:
+                AppQuitDetailView()
             case .actionHistory:
                 ActionHistoryDetailView()
             case .dropTray:

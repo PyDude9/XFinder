@@ -26,6 +26,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case batchRename
     case junkCleanup
     case uninstaller
+    case appQuit
     case actionHistory
     case dropTray
     case compress
@@ -80,6 +81,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .batchRename: return "Đổi tên hàng loạt"
         case .junkCleanup: return "Dọn rác thư mục"
         case .uninstaller: return "Gỡ ứng dụng"
+        case .appQuit: return "Thoát ứng dụng"
         case .actionHistory: return "Lịch sử thao tác"
         case .dropTray: return "Notch & Khay thả"
         case .compress: return "Nén & Giải nén"
@@ -126,6 +128,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .batchRename: return "textformat.abc.dottedunderline"
         case .junkCleanup: return "bubbles.and.sparkles"
         case .uninstaller: return "xmark.bin"
+        case .appQuit: return "power"
         case .actionHistory: return "clock.arrow.circlepath"
         case .dropTray: return "tray.and.arrow.down.fill"
         case .compress: return "archivebox.fill"
@@ -157,7 +160,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     static var groups: [(header: String, items: [SidebarDestination])] {
         [
             ("CHUNG", [.dashboard, .features, .antiSleep, .system, .network, .storage, .pin, .alerts]),
-            ("CỬA SỔ", [.windowPreview, .snapZones, .mouseGestures, .menuIcons]),
+            ("CỬA SỔ", [.windowPreview, .snapZones, .appQuit, .mouseGestures, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .junkCleanup, .actionHistory]),
             ("CÔNG CỤ", [.voiceTyping, .smartSelect, .clipboard, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),

@@ -76,6 +76,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ClipboardShelfController.shared.applySettings()
         FinderKeyboardController.shared.applySettings()
         QuitProtectionController.shared.applySettings()
+        QuitOnCloseController.shared.applySettings()           // F3: AX observers only for listed apps
         AlertMonitor.shared.applySettings()
         NotchSurfaceController.shared.applySettings()
         TranslateSelectionController.shared.applySettings()   // N5a: ⇧⌘G, AX-gated at press time
@@ -116,6 +117,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 SnapZoneController.shared.applySettings()
                 FinderKeyboardController.shared.applySettings()
                 QuitProtectionController.shared.applySettings()
+                QuitOnCloseController.shared.applySettings()
                 ClipboardShelfController.shared.applySettings()
                 QuickSearchPanelController.shared.applySettings()
                 VoiceManager.shared.applySettings()

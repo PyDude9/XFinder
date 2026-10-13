@@ -63,6 +63,8 @@ enum IdleCost: String, Equatable {
     case nothingAtRest, listensToKeyboard, listensToMouse, timerWhileActive
     /// A child process stays alive while the feature is on (B6: the Now Playing helper in /usr/bin/perl).
     case helperProcess
+    /// F3: an AX observer on the windows of the apps the user listed — nothing runs between window events.
+    case watchesWindows
 
     var badgeKey: String {
         switch self {
@@ -71,6 +73,7 @@ enum IdleCost: String, Equatable {
         case .listensToMouse:    return "Lắng nghe chuột"
         case .timerWhileActive:  return "Có bộ hẹn giờ"
         case .helperProcess:     return "Một tiến trình phụ"
+        case .watchesWindows:    return "Theo dõi cửa sổ app đã chọn"
         }
     }
     /// Whether it keeps something running that the "quiet" bundle should switch off.
@@ -90,7 +93,7 @@ enum FeatureGroup: String, CaseIterable {
 }
 
 enum FeatureID: String, CaseIterable {
-    case dockPreview, commandTab, snapZones, quitProtection
+    case dockPreview, commandTab, snapZones, quitProtection, quitOnClose
     case clipboardShelf, cleanURLs, suggestions, linkPreviews
     case quickSearch, edgeNotes, dropTray, nowPlaying, folderSync, agents, calendar
     case voice
@@ -142,6 +145,11 @@ enum FeatureCatalog {
                    subtitleKey: "Nhấn nhanh ⌘Q không thoát nhầm; phải giữ khoảng 1 giây.",
                    symbol: "xmark.square", group: .windows, enabledKey: "quitProtection.enabled",
                    defaultOn: false, permissions: [.accessibility], idle: .listensToKeyboard),
+        // F3. Only the apps the user lists; off by default.
+        FeatureDef(id: .quitOnClose, titleKey: "Thoát app khi đóng cửa sổ cuối",
+                   subtitleKey: "Chỉ với những app bạn chọn; Finder không bao giờ.",
+                   symbol: "power", group: .windows, enabledKey: "quitOnClose.enabled",
+                   defaultOn: false, permissions: [.accessibility], idle: .watchesWindows),
 
         FeatureDef(id: .clipboardShelf, titleKey: "Khay Clipboard ⌘⇧V",
                    subtitleKey: "Mở lịch sử clipboard ở mọi ứng dụng bằng phím tắt.",

@@ -459,6 +459,11 @@ lỗi 513**, cả `NSWorkspace.recycle`. Cùng lệnh đó chạy từ terminal 
 câu hỏi quyền phải đo từ một app bundle. Trang: Containers không có ô chọn mà có "Hiện trong Finder"; Group Containers / Application
 Scripts vẫn cho thử (chưa đo được) và từng dòng báo kết quả thật. E2E trên app đã cài: preview đủ 4 mục + container được bảo vệ, bấm
 nút → đúng 4 mục vào `~/.Trash`, container còn nguyên; mọi thứ được chuyển ra lại. 871 test, mutation 9/9 RED.
+**F3 ✅ (chờ đo live)** — trang **Thoát ứng dụng** (CỬA SỔ) gộp "giữ ⌘Q" (trước chỉ có ở hub) và "thoát khi đóng cửa sổ cuối" theo
+danh sách app. Đo bằng app harness hai cửa sổ: đóng cửa sổ → `AXUIElementDestroyed` sau ~0,05 s; đóng cửa sổ cuối → `kAXWindows`
+rỗng mà app vẫn chạy; **app bị ẩn vẫn liệt kê cửa sổ nhưng subrole đổi `AXStandardWindow` → `AXDialog`** ⇒ luật đếm MỌI cửa sổ,
+không lọc subrole. Thu nhỏ không tạo được khi Stage Manager bật (cả nút AX lẫn `miniaturize` — CGWindowList vẫn `onscreen=true`)
+⇒ chưa đo. 876 test, mutation 7/7 RED. E2E `scratchpad/f3e/e2e.sh` (7 kiểm tra) đang chờ người dùng rời máy.
 
 ## 4. Lộ trình (UI/UX trước, đúng yêu cầu)
 

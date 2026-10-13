@@ -64,8 +64,14 @@ final class FeatureKeyDefaultsTests: XCTestCase {
                views: ["XFinder/Views/Detail/AlertsDetailView.swift"],
                reader: "XFinder/Core/AlertMonitor.swift"),
         Switch(key: "quitProtection.enabled",
-               views: [],   // bound only through FeatureHub now (the old page was merged away)
+               views: ["XFinder/Views/Detail/AppQuitDetailView.swift"],   // F3: the Thoát ứng dụng page, beside the hub
                reader: "XFinder/Core/QuitProtectionController.swift"),
+        Switch(key: "quitOnClose.enabled",
+               views: ["XFinder/Views/Detail/AppQuitDetailView.swift"],
+               reader: "XFinder/Core/QuitOnClose/QuitOnCloseController.swift"),
+        Switch(key: "quitOnClose.apps",
+               views: ["XFinder/Views/Detail/AppQuitDetailView.swift"],
+               reader: "XFinder/Core/QuitOnClose/QuitOnCloseController.swift"),
         Switch(key: "snapzones.notchRow",
                views: ["XFinder/Views/Detail/WindowDetailViews.swift"],
                reader: "XFinder/Core/SnapZoneController.swift"),

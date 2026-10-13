@@ -87,6 +87,26 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Không đọc được thông tin của app này.": ("Could not read this app's information.", S),
     " mục bị macOS chặn — dùng Hiện trong Finder.": (" items were blocked by macOS — use Show in Finder.", F),
     " mục không chuyển được.": (" items could not be moved.", F),
+    # F3 — Thoát ứng dụng
+    "Thoát ứng dụng": ("Quitting Apps", S),
+    "Không thoát nhầm vì ⌘Q, và tự thoát một app khi bạn đã đóng hết cửa sổ của nó.":
+        ("Never quit by a stray ⌘Q, and quit an app on its own once you have closed all its windows.", S),
+    "Bật giữ ⌘Q": ("Turn on hold ⌘Q", S),
+    "Một vòng tiến trình hiện khi bạn giữ; nhả sớm hoặc bấm Esc là huỷ.":
+        ("A progress ring appears while you hold; letting go early or pressing Esc cancels.", S),
+    "Thoát khi đóng cửa sổ cuối": ("Quit when the last window closes", S),
+    "Đóng hết cửa sổ của một app trong danh sách thì app thoát, không nằm lại trên Dock.":
+        ("Close every window of an app in the list and it quits instead of staying in the Dock.", S),
+    "Thoát app khi đóng cửa sổ cuối": ("Quit an app when its last window closes", S),
+    "Chỉ với những app bạn chọn dưới đây. App vẫn hỏi lưu tài liệu như khi bạn chọn Thoát.":
+        ("Only for the apps you choose below. The app still asks to save documents, as when you choose Quit.", S),
+    "Cần quyền Trợ năng để biết cửa sổ của app khác đã đóng.":
+        ("Accessibility permission is needed to know when another app's window closed.", S),
+    "Chưa chọn app nào — chưa có app nào tự thoát.": ("No apps chosen — no app quits on its own yet.", S),
+    "Mọi cửa sổ đều tính, kể cả bảng phụ và hộp thoại; app đang ẩn vẫn còn cửa sổ nên không bị thoát. XFinder đợi 1 giây sau khi cửa sổ đóng rồi mới đếm lại, để ⌘W rồi ⌘N không làm app thoát giữa chừng. Finder không bao giờ bị thoát.":
+        ("Every window counts, palettes and dialogs included; a hidden app still has its windows, so it does not quit. XFinder waits 1 second after a window closes before counting again, so ⌘W followed by ⌘N does not quit the app in between. Finder is never quit.", S),
+    "Theo dõi cửa sổ app đã chọn": ("Watches the chosen apps' windows", S),
+    "Chỉ với những app bạn chọn; Finder không bao giờ.": ("Only the apps you choose; never Finder.", S),
 }
 
 def main() -> None:
