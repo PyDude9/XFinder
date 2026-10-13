@@ -61,6 +61,8 @@
 	</dict>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>XFinder cần quyền này để đổi giao diện Sáng/Tối của toàn hệ thống.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>XFinder vẽ sóng nhạc trên notch từ âm thanh của app đang phát. Âm thanh không được ghi lại và không rời khỏi máy.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>XFinder cần Bluetooth để đọc pin AirPods/Watch</string>
 	<key>NSBonjourServiceTypes</key>

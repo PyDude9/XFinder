@@ -11,12 +11,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notch.XXXXXX)
-FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchHoverOpen.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift XFinder/Core/Calendar/GlanceRules.swift"
+FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchHoverOpen.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift XFinder/Core/Calendar/GlanceRules.swift XFinder/Core/Notch/AudioWaveform.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='NotchSurface|NotchDrag|NotchTask|NotchHoverOpen|LiveActivity|NowPlaying|NotchNowPlaying|NotchBehaviour|FeatureKeyDefaults|MeetingAlertRules'
+FILTER='NotchSurface|NotchDrag|NotchTask|NotchHoverOpen|LiveActivity|NowPlaying|NotchNowPlaying|NotchBehaviour|FeatureKeyDefaults|MeetingAlertRules|AudioWaveform'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -123,6 +123,14 @@ run "M36 an alert scheduled in the past" XFinder/Core/Calendar/GlanceRules.swift
   "'            let plan = Plan(key: k, fireAt: max(fire, now))'" "'            let plan = Plan(key: k, fireAt: fire)'"
 run "M37 an alerted event alerts again" XFinder/Core/Calendar/GlanceRules.swift \
   "'                guard !alerted.contains(k), e.start > now.addingTimeInterval(-lateGrace) else { continue }'" "'                guard e.start > now.addingTimeInterval(-lateGrace) else { continue }'"
+run "M38 linear level (ordinary music draws a flat line)" XFinder/Core/Notch/AudioWaveform.swift \
+  "'        let db = 20 * log10(rms)\n        return min(1, max(0, (db - floorDB) / -floorDB))'" "'        return min(1, max(0, rms))'"
+run "M39 bars fall as fast as they rise" XFinder/Core/Notch/AudioWaveform.swift \
+  "'            let k = l > smoothed ? Self.attack : Self.release'" "'            let k = Self.attack'"
+run "M40 one silent buffer reads as a denied permission" XFinder/Core/Notch/AudioWaveform.swift \
+  "'            return now.timeIntervalSince(first) >= Self.grace'" "'            return true'"
+run "M41 no buffers at all reads as denied" XFinder/Core/Notch/AudioWaveform.swift \
+  "'            guard let first = firstBuffer, !sawSignal else { return false }'" "'            guard !sawSignal else { return false }; let first = firstBuffer ?? .distantPast'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 

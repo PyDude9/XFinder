@@ -9554,6 +9554,18 @@
     " · đã qua giờ reset — số mới có sau lần dùng Codex kế tiếp": {
       "en": " · past its reset — a new figure comes with the next Codex use",
       "scope": "fragment"
+    },
+    "Sóng nhạc thời gian thực": {
+      "en": "Live waveform",
+      "scope": "sentence"
+    },
+    "Cột sóng theo đúng âm thanh của app đang phát (không lẫn tiếng thông báo). Lần đầu macOS hỏi quyền Ghi âm thanh hệ thống. Chỉ chạy khi sóng đang hiện và nhạc đang phát; không ghi lại gì. Cần macOS 14.2.": {
+      "en": "Bars that follow the playing app's own audio (notification sounds never move them). macOS asks for the System Audio Recording permission the first time. Runs only while the waveform is on screen and music is playing; nothing is recorded. Needs macOS 14.2.",
+      "scope": "sentence"
+    },
+    "Sóng nhạc chỉ nhận được im lặng — có thể chưa cấp quyền Ghi âm thanh hệ thống.": {
+      "en": "The waveform only receives silence — the System Audio Recording permission may not be granted.",
+      "scope": "sentence"
     }
   }
 }

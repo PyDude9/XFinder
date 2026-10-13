@@ -346,6 +346,13 @@ final class NotchSurfaceController {
         syncClipboardKeyboard()
         syncHubSwipe()
         syncNowPlayingTicker()
+        syncWaveform()
+    }
+
+    /// §3b #21 — the tap runs only while a waveform is on screen (the Now Playing page, or the peek showing the track).
+    func syncWaveform() {
+        let shown = machine.state == .expanded(.nowPlaying) || (machine.state == .peek && machine.itemCount == 0)
+        AudioTapMonitor.shared.update(waveformVisible: shown)
     }
 
     // MARK: - D1 #43: two-finger swipe over the tab band changes page
@@ -431,6 +438,7 @@ final class NotchSurfaceController {
         dispatch(.itemsChanged(count: machine.itemCount))
         render()
         syncNowPlayingTicker()
+        syncWaveform()                              // §3b #21: a new pid, or play/pause
     }
 
     /// A 1 s ticker exists ONLY while the Now Playing page is open and the track is moving — it drives

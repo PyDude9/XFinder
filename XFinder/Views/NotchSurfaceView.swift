@@ -308,6 +308,7 @@ struct NotchSurfaceView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture { NotchSurfaceController.shared.reveal(page: .nowPlaying) }
+            if AudioTapMonitor.shared.isRunning { WaveformBars(levels: AudioTapMonitor.shared.meter.levels).frame(width: 46, height: 18) }
             nowPlayingControls(size: 11)
         }
         .padding(.horizontal, XFinderTokens.Space.inline)
@@ -505,6 +506,15 @@ struct NotchSurfaceView: View {
                     Text(np.headline).font(XFinderTokens.Font.row).lineLimit(2)
                     if !np.subline.isEmpty {
                         Text(np.subline).font(XFinderTokens.Font.caption).opacity(0.65).lineLimit(1).truncationMode(.tail)
+                    }
+                    // §3b #21 — live bars from the player's own audio; a hint when the tap gets only digital silence.
+                    if AudioTapMonitor.shared.isRunning {
+                        if AudioTapMonitor.shared.looksDenied {
+                            Text(L10n.t("Sóng nhạc chỉ nhận được im lặng — có thể chưa cấp quyền Ghi âm thanh hệ thống."))
+                                .font(XFinderTokens.Font.caption).opacity(0.65).lineLimit(2)
+                        } else {
+                            WaveformBars(levels: AudioTapMonitor.shared.meter.levels).frame(height: 18)
+                        }
                     }
                     if let d = np.duration, d > 0 {
                         let pos = model.nowPlayingPosition ?? NowPlaying.position(of: np, at: Date()) ?? 0
@@ -1035,5 +1045,23 @@ struct DropTrayDetailGrid: View {
                     .background(XFinderTokens.Fill.surface.opacity(0.9))
             }
         }
+    }
+}
+
+/// §3b #21 — the live waveform: one Canvas, `AudioWaveform.bars` rounded bars, newest on the right.
+struct WaveformBars: View {
+    let levels: [Float]
+    var body: some View {
+        Canvas { ctx, size in
+            let n = max(1, levels.count)
+            let gap: CGFloat = 2
+            let w = max(1, (size.width - gap * CGFloat(n - 1)) / CGFloat(n))
+            for (i, l) in levels.enumerated() {
+                let h = max(2, CGFloat(l) * size.height)
+                let r = CGRect(x: CGFloat(i) * (w + gap), y: (size.height - h) / 2, width: w, height: h)
+                ctx.fill(Path(roundedRect: r, cornerRadius: w / 2), with: .color(.white.opacity(0.85)))
+            }
+        }
+        .accessibilityHidden(true)
     }
 }

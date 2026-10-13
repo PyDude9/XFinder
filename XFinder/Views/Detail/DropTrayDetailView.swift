@@ -32,6 +32,7 @@ struct DropTrayDetailView: View {
     // B6 Now Playing. Reader: NowPlayingMonitor (default must match — FeatureKeyDefaultsTests). Off by
     // default: it runs a helper process and rides a private framework, so the user opts in.
     @AppStorage("notch.nowPlaying") private var nowPlaying = false
+    @AppStorage("notch.nowPlaying.waveform") private var waveform = false   // §3b #21
     @State private var nowPlayingMonitor = NowPlayingMonitor.shared
     // B7 notch behaviour. Readers: NotchSurfaceController (defaults must match — FeatureKeyDefaultsTests).
     @AppStorage("notch.hideFromCapture") private var hideFromCapture = true
@@ -501,6 +502,11 @@ struct DropTrayDetailView: View {
                           subtitle: L10n.t("Tên bài, nghệ sĩ, ảnh bìa và nút điều khiển cho app đang phát — kể cả trình duyệt. Mặc định tắt."),
                           isOn: $nowPlaying)
                     .onChange(of: nowPlaying) { NotchSurfaceController.shared.applySettings() }
+                ToggleRow(title: L10n.t("Sóng nhạc thời gian thực"),
+                          subtitle: L10n.t("Cột sóng theo đúng âm thanh của app đang phát (không lẫn tiếng thông báo). Lần đầu macOS hỏi quyền Ghi âm thanh hệ thống. Chỉ chạy khi sóng đang hiện và nhạc đang phát; không ghi lại gì. Cần macOS 14.2."),
+                          isOn: $waveform)
+                    .onChange(of: waveform) { NotchSurfaceController.shared.syncWaveform() }
+                    .disabled(!nowPlaying || !AudioTapMonitor.isSupported)
                 HStack(spacing: XFinderTokens.Space.tight) {
                     Text(L10n.t("Trạng thái: ")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     Text(L10n.t(nowPlayingMonitor.availability.messageKey)).font(XFinderTokens.Font.caption)
