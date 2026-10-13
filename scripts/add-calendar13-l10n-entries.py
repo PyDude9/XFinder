@@ -22,6 +22,11 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Báo trước": ("Alert", S),
     " phút trước sự kiện": (" min before", F),
     "Âm báo khi nhắc": ("Sound with the alert", S),
+    # What's New 1.3 (updated bodies)
+    "Hôm nay có gì, việc kế tiếp, lịch âm theo giờ Việt Nam, nút Tham gia cho link họp; nhắc họp ngay dưới notch.":
+        ("What is on today, what is next, the Vietnamese lunar date, a Join button for meeting links; meeting alerts right under the notch.", S),
+    "Bôi đen chữ ở app khác: đổi đơn vị, tiền tệ, múi giờ, tính, thêm vào Lịch, dịch, tra từ điển.":
+        ("Select text in another app: convert units, currencies and time zones, calculate, add to Calendar, translate, look it up in the dictionary.", S),
 }
 
 def main() -> None:

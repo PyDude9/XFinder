@@ -30,7 +30,7 @@ Bạn đã duyệt brief F4 với 5 câu trả lời mặc định, sau đó nó
 | Mã | Câu hỏi | Mặc định |
 |:--|:--|:--|
 | Q-GIT | ~30 commit đang nằm local, chưa push. Push lên `PyDude9/XFinder` khi nào? | Chờ bạn nói "push" |
-| Q-RELEASE | Bản **1.3.0** đã build + ký + kiểm: `dist/XFinder-1.3.0-arm64.zip` (6,3 MB, sha256 `57a8905f…43d04f`). Đăng lên GitHub? Cần: push, tag `v1.3.0`, tạo Release, tải zip + .sha256 lên — đều là việc ra bên ngoài | Chờ bạn nói "đăng 1.3.0". Lưu ý: chưa ai test tay F4 (T-F4-*) |
+| Q-RELEASE | Bản **1.3.0** đã build + ký + kiểm: `dist/XFinder-1.3.0-arm64.zip` (6,3 MB, sha256 `177fd951…507c72` (build lại sau #33 + #35)). Đăng lên GitHub? Cần: push, tag `v1.3.0`, tạo Release, tải zip + .sha256 lên — đều là việc ra bên ngoài | Chờ bạn nói "đăng 1.3.0". Lưu ý: chưa ai test tay F4 (T-F4-*) |
 | Q-GESTURE | Nút giữ cử chỉ chuột đang là Nút 3 (bấm con lăn). Đổi sang nút hông? (trang Chuột & cử chỉ có nút "Ghi lại nút giữ") | Để nguyên |
 
 ~~Q-CLIP-PAUSE~~ / ~~Q-NOTCH-SW~~ — đã tự giải quyết: `clipboard.paused` giờ là `0`, `dropTray.notchDropEnabled` /

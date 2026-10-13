@@ -10,7 +10,7 @@ Tất cả thay đổi đáng chú ý của XFinder được ghi ở đây, mớ
 - **Đang phát**: bài đang phát từ mọi player (qua trợ giúp Apple ký), ⏮ ⏯ ⏭, tua, xáo trộn, lặp lại.
 - **Clipboard trên notch** (⌘⇧V mặc định mở ở đây): hàng thẻ ngang, lọc `@loại`/`@app`, Paste Stack, biến đổi văn bản, đi tới nguồn, khoá Touch ID.
 - **Phiên Claude Code**: trạng thái từng phiên và Cho phép / Từ chối yêu cầu quyền ngay trên notch (hook công khai, cài bằng nút).
-- **Lịch**: hôm nay, việc kế tiếp, âm lịch theo giờ Việt Nam, nút Tham gia cho link họp.
+- **Lịch**: hôm nay, việc kế tiếp, âm lịch theo giờ Việt Nam, nút Tham gia cho link họp; **nhắc họp** dưới notch trước 1/5/10/15 phút với Tham gia / Hoãn 5 phút.
 - Chia cửa sổ ở notch (hàng 7 bố cục, phần ba, Tập trung); một cửa sổ cố định cho mọi trạng thái (không còn giật), bấm xuyên qua phần trong suốt; chọn trang, thứ tự, màu nhấn, độ nhạy rê chuột; notch ảo trên màn không notch; ẩn khỏi ảnh chụp/quay.
 
 ### Clipboard
@@ -20,7 +20,7 @@ Tất cả thay đổi đáng chú ý của XFinder được ghi ở đây, mớ
 
 ### Công cụ mới
 - **Chụp & chú thích** (kiểu OneNotch): chụp vùng / cửa sổ / toàn màn hình, thẻ xem trước nổi (tự đóng, dừng khi trỏ vào, kéo thả, vuốt để đóng), trình chú thích (mũi tên, khung, chữ, số thứ tự, làm mờ, tô sáng, cắt), ghim ảnh lên màn hình. Phím tắt chưa gán sẵn; có nút dùng bộ phím giống OneNotch.
-- **Chọn văn bản thông minh**: bôi đen chữ ở app khác → đổi đơn vị, tiền tệ (opt-in, Vietcombank cho VND), múi giờ, tính, thêm vào Lịch, dịch (⇧⌘G).
+- **Chọn văn bản thông minh**: bôi đen chữ ở app khác → đổi đơn vị, tiền tệ (opt-in, Vietcombank cho VND), múi giờ, tính, thêm vào Lịch, dịch (⇧⌘G), **định nghĩa** từ từ điển của macOS (Anh, Việt; không mạng).
 - **Dọn rác thư mục** (chỉ rác metadata đã biết), **Gỡ ứng dụng** (app + phần sót lại), **Thoát ứng dụng** (giữ ⌘Q; tự thoát app trong danh sách khi đóng cửa sổ cuối).
 - ⌘-Tab: Q đóng cửa sổ, H ẩn app, Space phóng ảnh, `` ` `` chuyển app ↔ cửa sổ. Chép chữ từ màn hình, nhiệt độ SoC, cảnh báo hệ thống, số liệu trên thanh menu.
 - Giao diện: mọi trang dùng chung một hệ token; cửa sổ **Có gì mới** mỗi phiên bản.
