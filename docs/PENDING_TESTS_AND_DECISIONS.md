@@ -30,9 +30,10 @@ Bạn đã duyệt brief F4 với 5 câu trả lời mặc định, sau đó nó
 | Mã | Câu hỏi | Mặc định |
 |:--|:--|:--|
 | Q-GIT | ~30 commit đang nằm local, chưa push. Push lên `PyDude9/XFinder` khi nào? | Chờ bạn nói "push" |
-| Q-CLIP-PAUSE | Máy này đang có `clipboard.paused = 1` (Clipboard ngừng ghi). Do bạn bật hay còn sót từ lần test D1? | Để nguyên — tôi không tự đổi cài đặt của bạn |
-| Q-NOTCH-SW | `dropTray.notchDropEnabled = 0` và `dropTray.hoverEnabled = 0` trên máy này (kéo tệp vào notch / rê chuột mở notch đang tắt). Bật lại không? | Để nguyên |
 | Q-GESTURE | Nút giữ cử chỉ chuột đang là Nút 3 (bấm con lăn). Đổi sang nút hông? (trang Chuột & cử chỉ có nút "Ghi lại nút giữ") | Để nguyên |
+
+~~Q-CLIP-PAUSE~~ / ~~Q-NOTCH-SW~~ — đã tự giải quyết: `clipboard.paused` giờ là `0`, `dropTray.notchDropEnabled` /
+`dropTray.hoverEnabled` giờ đều là `1` (đo lại 2026-10-13). Xoá khỏi danh sách.
 
 ---
 
@@ -95,6 +96,14 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-F2 | Gỡ ứng dụng ▸ kéo một app thử vào | Liệt kê app + phần sót lại; bỏ chọn được; mọi thứ vào Thùng rác |
 
 ### F4 (khi có bản build)
+
+**Đang xây** (2026-10-13): 4 agent song song viết theo một CONTRACT chung (chụp màn hình + chú thích, kiểu OneNotch).
+Chưa có bản build để test tay. Khi gộp xong, điền các dòng dưới theo đúng 6 lựa chọn Q-F4-1…6 ở trên.
+
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
-| T-F4 | (điền khi F4 được cài) | |
+| T-F4-1 | ⇧⌘4-kiểu: chọn vùng, nhấn phím tắt đã gán | Ảnh vùng chọn lưu vào `Captures/`, thẻ xem trước nổi hiện ở trái-dưới |
+| T-F4-2 | Mở trình chú thích từ thẻ xem trước | Thanh công cụ ngang (wireframe A); vẽ mũi tên, làm mờ vùng, đóng khung số thứ tự |
+| T-F4-3 | Làm mờ một vùng rồi Lưu | Vùng đó thành khối (pixel liền kề giống nhau), phần còn lại nguyên |
+| T-F4-4 | Mở lịch sử chụp, xoá một ảnh | Ảnh biến mất khỏi `Captures/` và khỏi danh sách |
+| T-F4 | (điền thêm khi F4 được cài) | |
