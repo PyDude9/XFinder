@@ -463,13 +463,13 @@ nút → đúng 4 mục vào `~/.Trash`, container còn nguyên; mọi thứ đ�
 danh sách app. Đo bằng app harness hai cửa sổ: đóng cửa sổ → `AXUIElementDestroyed` sau ~0,05 s; đóng cửa sổ cuối → `kAXWindows`
 rỗng mà app vẫn chạy; **app bị ẩn vẫn liệt kê cửa sổ nhưng subrole đổi `AXStandardWindow` → `AXDialog`** ⇒ luật đếm MỌI cửa sổ,
 không lọc subrole. Thu nhỏ không tạo được khi Stage Manager bật (cả nút AX lẫn `miniaturize` — CGWindowList vẫn `onscreen=true`)
-⇒ chưa đo. 876 test, mutation 7/7 RED. E2E `scratchpad/f3e/e2e.sh` (7 kiểm tra) đang chờ người dùng rời máy.
+⇒ chưa đo. 876 test, mutation 7/7 RED. **Đo live 7/7 (13:02)** trên app đã cài, có xác nhận từ phía harness (nó ghi mọi lệnh nhận được): đóng 1/2 cửa sổ ⇒ `recount windows=1 quit=false`; đóng cửa sổ cuối rồi mở cửa sổ mới trong 0,3 s ⇒ không có recount nào (cửa sổ mới huỷ lượt đếm đang chờ); đóng cửa sổ cuối ⇒ `windows=0 quit=true`, app thoát; app không trong danh sách ⇒ vẫn chạy, không bị theo dõi. Ba lượt thất bại trước đó đều do **zsh**: `"$T:close0"` thành `…lose0` (modifier `:c`), `"$T:quit"` thành `…uit` (`:q`), chỉ `"$T:new"` sống sót — F3 chưa hề được thử ở ba lượt đó.
 
 **G (đo, 2026-10-13 12:25)** — bản đã cài (F2), khởi chạy nền, đợi ổn định 90 s: **physical footprint 26,7 MB** như người dùng cấu hình
 (đỉnh 30,5), **25,1 MB khi tắt hết 21 tính năng** (đỉnh 26,6) — cả hai dưới mục tiêu 30 MB; con số "48,4 MB" ở §1 đã cũ. Malloc dirty
 15,8 MB, trong đó **phân mảnh 44 %** (7,4 / 17 MB vùng); top lớp: `non-object` 3,6 MB, Swift metadata 1,1 MB, dictionary storage
 0,5 MB, method cache 0,4 MB, CFString 0,37 MB, CoreSVG 0,1 MB. **CPU idle CHƯA đo được**: người dùng thao tác suốt cả hai cửa sổ 60 s
-(HIDIdle cuối cửa sổ = 0 s), nên 0,17 / 0,61 s không phải số idle. Còn: đo lại idle khi người dùng rời máy; xem phần phân mảnh.
+(HIDIdle cuối cửa sổ = 0 s), nên 0,17 / 0,61 s không phải số idle. **CPU idle đo hợp lệ (12:57–12:58): 0,00 s / 60 s** (`0:00.44` → `0:00.44`), HIDIdle cuối cửa sổ 313 s, cấu hình của người dùng, bản build F3. Còn: xem phần phân mảnh malloc.
 
 ## 4. Lộ trình (UI/UX trước, đúng yêu cầu)
 
