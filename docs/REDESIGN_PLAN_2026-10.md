@@ -465,6 +465,12 @@ rỗng mà app vẫn chạy; **app bị ẩn vẫn liệt kê cửa sổ nhưng 
 không lọc subrole. Thu nhỏ không tạo được khi Stage Manager bật (cả nút AX lẫn `miniaturize` — CGWindowList vẫn `onscreen=true`)
 ⇒ chưa đo. 876 test, mutation 7/7 RED. E2E `scratchpad/f3e/e2e.sh` (7 kiểm tra) đang chờ người dùng rời máy.
 
+**G (đo, 2026-10-13 12:25)** — bản đã cài (F2), khởi chạy nền, đợi ổn định 90 s: **physical footprint 26,7 MB** như người dùng cấu hình
+(đỉnh 30,5), **25,1 MB khi tắt hết 21 tính năng** (đỉnh 26,6) — cả hai dưới mục tiêu 30 MB; con số "48,4 MB" ở §1 đã cũ. Malloc dirty
+15,8 MB, trong đó **phân mảnh 44 %** (7,4 / 17 MB vùng); top lớp: `non-object` 3,6 MB, Swift metadata 1,1 MB, dictionary storage
+0,5 MB, method cache 0,4 MB, CFString 0,37 MB, CoreSVG 0,1 MB. **CPU idle CHƯA đo được**: người dùng thao tác suốt cả hai cửa sổ 60 s
+(HIDIdle cuối cửa sổ = 0 s), nên 0,17 / 0,61 s không phải số idle. Còn: đo lại idle khi người dùng rời máy; xem phần phân mảnh.
+
 ## 4. Lộ trình (UI/UX trước, đúng yêu cầu)
 
 Mỗi hạng mục = một commit, có test + gate + probe. Thứ tự trong phase là thứ tự làm.
