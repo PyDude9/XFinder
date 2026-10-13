@@ -66,6 +66,11 @@ run "A7 tar stores the staging symlinks" XFinder/Core/Archive/ArchiveEngine.swif
 
 run "A8 escaping links inside an archive are accepted" XFinder/Core/Archive/ArchiveRunner.swift \
   "'        guard escaping.isEmpty else { try? fm.removeItem(at: dir); return .failure(.unsafeLinks(escaping.sorted())) }\n'" "''"
+
+# A9: a link walk that cannot see "._" names (as every FileManager listing is for regular ._ files — F1). bsdtar
+# creates "._x" symlinks from a foreign tar, so the guard must still see them.
+run "A9 the link check is blind to links named ._…" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            while let rel = walker.nextObject() as? String {\n'" "'            while let rel = walker.nextObject() as? String {\n                if (rel as NSString).lastPathComponent.hasPrefix(\"._\") { continue }\n'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)

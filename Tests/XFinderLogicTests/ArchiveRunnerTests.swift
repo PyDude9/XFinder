@@ -162,5 +162,25 @@ final class ArchiveRunnerTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: url("dest/Project/config/settings.json"), encoding: .utf8), "ORIGINAL")
         XCTAssertEqual(try String(contentsOf: secret, encoding: .utf8), "SECRET")
     }
+
+    /// Suspected bypass, measured NOT to be one — kept as a regression guard. FileManager's listings hide regular files
+    /// named "._…" (F1, macOS 27), and `tar -xf` (bsdtar) DOES create a "._settings.json" symlink from an archive made
+    /// elsewhere (`ditto -x -k` does not). If the guard could not see that link, a merge would place it and XFinder's
+    /// own `zip -r` (which follows links) would later pack the outside file. It can: FileManager still lists LINKS
+    /// named "._…". This pins both facts. `--no-mac-metadata` makes macOS tar store the "._" entry literally, like GNU tar.
+    func testAnEscapingLinkNamedLikeAppleDoubleIsRefusedToo() async throws {
+        let secret = url("secret.txt"); try "SECRET".write(to: secret, atomically: true, encoding: .utf8)
+        let src = url("evil/Project/config")
+        try fm.createDirectory(at: src, withIntermediateDirectories: true)
+        try "real".write(to: src.appendingPathComponent("other.txt"), atomically: true, encoding: .utf8)
+        try fm.createSymbolicLink(atPath: src.appendingPathComponent("._settings.json").path, withDestinationPath: secret.path)
+        let made = sh("/usr/bin/tar", ["--no-mac-metadata", "-czf", url("out/evil.tar.gz").path, "-C", url("evil").path, "Project"])
+        XCTAssertEqual(made.0, 0, made.1)
+        XCTAssertTrue(sh("/usr/bin/tar", ["-tf", url("out/evil.tar.gz").path]).1.contains("Project/config/._settings.json"),
+                      "the fixture must actually carry the ._ link, or this test proves nothing")
+        let r = await ArchiveRunner.extractToStaging(archive: url("out/evil.tar.gz"), near: url("dest"))
+        XCTAssertEqual(r, .failure(.unsafeLinks(["Project/config/._settings.json"])))
+        XCTAssertFalse(fm.fileExists(atPath: url("dest/Project").path), "nothing placed")
+    }
 }
 
