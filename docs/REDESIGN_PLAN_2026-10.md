@@ -193,7 +193,7 @@ mất mạng · hẹn giờ · chia cửa sổ ở notch · xử lý file ở no
 `.xfinderclip` kèm media (D, đã có) · #13 tô màu code on-device (D, đã có) · #11 iCloud bằng
 `NSUbiquitousKeyValueStore` **cần entitlement + kiểm thật trước khi gọi là có** (nay `isAvailable` báo chưa cấu hình) · #20 nút
 player tuỳ biến (**probe mã `MRMediaRemoteSendCommand` shuffle/repeat trước**) · #26 Lịch & lời nhắc trên notch (F, EventKit) ·
-#35 từ điển (E, **Dictionary Services `DCSCopyTextDefinition` là API công khai, on-device** — không phải mạng) · #39 hiện trên nhiều
+#35 từ điển ✅ 2026-10-13 (dòng "Định nghĩa" trên huy hiệu Chọn văn bản thông minh; `DCSCopyTextDefinition` đo 1–73 ms, có cả từ điển Việt, nil cho từ không có) · #39 hiện trên nhiều
 màn hình cùng lúc (nay một màn một lúc; notch ảo trên màn không notch đã có từ D0c).
 
 **Tham vọng (target/quyền/API riêng) → F, mỗi cái phải có probe trước**: #21 sóng nhạc thời gian thực (`CATapDescription`

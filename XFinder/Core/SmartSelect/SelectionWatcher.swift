@@ -210,7 +210,7 @@ final class SelectionWatcher {
         let rates = CurrencyRateStore.shared
         if rates.isEnabled, CurrencyConversion.parse(currentText) != nil { rates.refreshIfNeeded() }
         let actions = SmartSelectionRules.actions(for: currentText, now: Date(), localZone: .current,
-                                                  currency: rates.context())
+                                                  currency: rates.context(), define: DictionaryLookup.definition)
         guard !actions.isEmpty else { watch.shown = false; return }
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
         let anchor = SmartSelectionRules.anchor(axBounds: currentBounds, mouseUp: mouseUp, primaryScreenHeight: primaryHeight)
@@ -219,7 +219,7 @@ final class SelectionWatcher {
         let kinds = actions.map { a -> String in
             switch a {
             case .unit: "unit"; case .currency: "currency"; case .time: "time"; case .arithmetic: "arithmetic"
-            case .calendar: "calendar"; case .translate: "translate"
+            case .calendar: "calendar"; case .define: "define"; case .translate: "translate"
             }
         }.joined(separator: ",")
         log.notice("badge shown kinds=\(kinds, privacy: .public) length=\(self.currentText.count) anchor=\(self.currentBounds == nil ? "mouse" : "ax", privacy: .public) app=\(front?.bundleIdentifier ?? "?", privacy: .public) frame=\(Int(frame.minX)),\(Int(frame.minY))")

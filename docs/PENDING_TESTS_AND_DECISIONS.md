@@ -87,6 +87,7 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
 | T-E | Bôi đen trong Safari, Chrome, VS Code: một số tiền, một ngày, `5 km`, `9am EST` | Huy hiệu hiện; quy đổi đúng; "Thêm vào Lịch" tạo sự kiện thật |
+| T-DICT | Bật Chọn văn bản thông minh; bôi đen một từ tiếng Anh ("ephemeral") rồi một từ tiếng Việt ("ngoại lệ") ở Safari | Bảng có dòng **Định nghĩa** với nghĩa ngắn (không có phiên âm); nút "Từ điển" mở đúng mục trong app Từ điển. Bôi đen "5 km" hay một câu dài: **không** có dòng Định nghĩa |
 | T-N5a | Bật ⇧⌘G, bôi đen chữ ở app khác, nhấn ⇧⌘G | Bảng dịch mở (macOS 15+) |
 | T-VOICE | Nhập bằng giọng nói: nói vào micro | Chữ được gõ ra đúng chỗ con trỏ |
 

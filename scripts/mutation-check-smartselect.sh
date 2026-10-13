@@ -99,6 +99,12 @@ run "C9  a week-old rate is still shown" $C \
   "'        return age >= -86_400 && age <= usableFor'" "'        return age >= -86_400'"
 run "C10 no back-off after a failure" $C \
   "'        if let f = lastFailure, now.timeIntervalSince(f) < retryAfterFailure, now >= f { return false }'" "'        _ = lastFailure'"
+run "W1  a word the dictionary does not know still gets a row" $R \
+  "'        if isDictionaryTerm(t), let raw = define(t), let summary = definitionSummary(raw) {'" "'        if isDictionaryTerm(t), let summary = definitionSummary(define(t) ?? t) {'"
+run "W2  the pronunciation is kept in the summary" $R \
+  "'        if bars.count >= 2 {'" "'        if bars.count >= 99 {'"
+run "W3  numbers count as dictionary terms" $R \
+  "'              t.rangeOfCharacter(from: .decimalDigits) == nil, t.rangeOfCharacter(from: .newlines) == nil,'" "'              t.rangeOfCharacter(from: .newlines) == nil,'"
 echo "RESULT: $red/$total mutations RED"
 restore
 after=$(fails); echo "after restore failures: $after"

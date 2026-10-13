@@ -25,6 +25,7 @@
 		7F1A033F /* Capture/CaptureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A033E /* Capture/CaptureController.swift */; };
 		7F1A0337 /* QuitOnClose/QuitOnCloseController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */; };
 		7F1A031B /* SmartSelect/SelectionWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031A /* SmartSelect/SelectionWatcher.swift */; };
+		7F1A034B /* SmartSelect/DictionaryLookup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A034A /* SmartSelect/DictionaryLookup.swift */; };
 		7F1A031D /* SmartSelect/SmartSelectionBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031C /* SmartSelect/SmartSelectionBadge.swift */; };
 		7F1A001E /* XFinderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000B /* XFinderApp.swift */; };
 		7F1A001F /* MenubarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000C /* MenubarController.swift */; };
@@ -336,6 +337,7 @@
 		7F1A033E /* Capture/CaptureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/CaptureController.swift; sourceTree = "<group>"; };
 		7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitOnClose/QuitOnCloseController.swift; sourceTree = "<group>"; };
 		7F1A031A /* SmartSelect/SelectionWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SelectionWatcher.swift; sourceTree = "<group>"; };
+		7F1A034A /* SmartSelect/DictionaryLookup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/DictionaryLookup.swift; sourceTree = "<group>"; };
 		7F1A031C /* SmartSelect/SmartSelectionBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SmartSelectionBadge.swift; sourceTree = "<group>"; };
 		205EC419305AD1CE0094A78B /* XFinderSync.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = XFinderSync.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F1A0009 /* XFinder/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = XFinder/Info.plist; sourceTree = SOURCE_ROOT; };
@@ -803,6 +805,7 @@
 				7F1A033E /* Capture/CaptureController.swift */,
 				7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */,
 				7F1A031A /* SmartSelect/SelectionWatcher.swift */,
+				7F1A034A /* SmartSelect/DictionaryLookup.swift */,
 				7F1A031C /* SmartSelect/SmartSelectionBadge.swift */,
 				E38D74CB /* QuickSearch/Quicklinks.swift */,
 				7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */,
@@ -1309,6 +1312,7 @@
 				7F1A033F /* Capture/CaptureController.swift in Sources */,
 				7F1A0337 /* QuitOnClose/QuitOnCloseController.swift in Sources */,
 				7F1A031B /* SmartSelect/SelectionWatcher.swift in Sources */,
+				7F1A034B /* SmartSelect/DictionaryLookup.swift in Sources */,
 				7F1A031D /* SmartSelect/SmartSelectionBadge.swift in Sources */,
 				2535B74A /* QuickSearch/Quicklinks.swift in Sources */,
 				7F1A00D3 /* QuickSearch/QuickSearchEngine.swift in Sources */,

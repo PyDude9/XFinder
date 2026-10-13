@@ -90,6 +90,10 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Chưa tải bảng tỷ giá — sẽ tải khi bạn bôi đen một số tiền.": ("No rate table yet — it is downloaded when you select an amount of money.", S),
     "Lần tải gần nhất thất bại; XFinder thử lại sau ít phút.": ("The last download failed; XFinder will try again in a few minutes.", S),
     "Bảng tỷ giá đang dùng: ": ("Rate table in use: ", F),
+    # §3b #35 — dictionary row
+    "Định nghĩa": ("Definition", S),
+    "Từ điển": ("Dictionary", S),
+    "Mở mục này trong ứng dụng Từ điển": ("Open this entry in the Dictionary app", S),
     " đồng tiền.": (" currencies.", F),
 }
 

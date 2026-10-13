@@ -65,13 +65,16 @@ enum SmartSelectionRules {
         case arithmetic(value: Double)
         /// `title` is the selection with the date words removed ("" ⇒ the panel uses a default title).
         case calendar(title: String, date: Date, hasTime: Bool)
+        /// §3b #35 — the system dictionary's entry for a 1–3-word term (Dictionary Services: public, on-device, no network).
+        case define(term: String, summary: String)
         case translate
     }
 
     /// What XFinder can do with a selection, most specific first. Empty ⇒ no badge.
     static func actions(for text: String, now: Date, localZone: TimeZone,
                         currency: CurrencyConversion.Context? = nil,
-                        detectDate: (String) -> DateMatch? = SmartSelectionRules.detectDate) -> [Action] {
+                        detectDate: (String) -> DateMatch? = SmartSelectionRules.detectDate,
+                        define: (String) -> String? = { _ in nil }) -> [Action] {
         let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty, t.count <= maxLength else { return [] }
         var out: [Action] = []
@@ -84,8 +87,44 @@ enum SmartSelectionRules {
             out.append(.calendar(title: eventTitle(selection: t, matched: d.matched), date: d.date,
                                  hasTime: hasTimeOfDay(d.matched)))
         }
+        if isDictionaryTerm(t), let raw = define(t), let summary = definitionSummary(raw) {
+            out.append(.define(term: t, summary: summary))
+        }
         if t.rangeOfCharacter(from: .letters) != nil { out.append(.translate) }
         return out
+    }
+
+    // MARK: Dictionary (§3b #35)
+
+    static let defineMaxWords = 3
+    static let defineMaxLength = 40
+
+    /// A term worth looking up: 1–3 words, letters present, no digits, no line break, nothing link- or mail-like.
+    /// A sentence is translated, not defined; "5 km" and "9am" are conversions, not words.
+    static func isDictionaryTerm(_ t: String) -> Bool {
+        guard !t.isEmpty, t.count <= defineMaxLength, t.rangeOfCharacter(from: .letters) != nil,
+              t.rangeOfCharacter(from: .decimalDigits) == nil, t.rangeOfCharacter(from: .newlines) == nil,
+              !t.contains("@"), !t.contains("/"), !t.contains("://") else { return false }
+        return t.split(whereSeparator: { $0 == " " }).count <= defineMaxWords
+    }
+
+    /// Dictionary Services returns one run of text — `word | pronunciation | part of speech 1 sense: example. 2 …`
+    /// (measured on macOS 27 for English and Vietnamese entries). Keep it readable in two lines: whitespace collapsed,
+    /// the pronunciation between the first two bars dropped, capped at `maxLength` on a word boundary with "…".
+    static func definitionSummary(_ raw: String, maxLength: Int = 200) -> String? {
+        var s = raw.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }.joined(separator: " ")
+        let bars = s.indices.filter { s[$0] == "|" }
+        if bars.count >= 2 {
+            let head = s[..<bars[0]].trimmingCharacters(in: .whitespaces)
+            let tail = s[s.index(after: bars[1])...].trimmingCharacters(in: .whitespaces)
+            s = tail.isEmpty ? head : "\(head) · \(tail)"
+        }
+        s = s.trimmingCharacters(in: .whitespaces)
+        guard !s.isEmpty else { return nil }
+        guard s.count > maxLength else { return s }
+        let cut = s.prefix(maxLength)
+        let end = cut.lastIndex(of: " ") ?? cut.endIndex
+        return String(cut[..<end]).trimmingCharacters(in: CharacterSet(charactersIn: " ,;:")) + "…"
     }
 
     /// Arithmetic only when the selection is clearly a calculation: digits and operators only, at least one strong

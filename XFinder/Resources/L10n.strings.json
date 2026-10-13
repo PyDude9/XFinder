@@ -9466,6 +9466,18 @@
     "Giữ ⌘Q để thoát, và tự thoát app trong danh sách khi bạn đóng cửa sổ cuối.": {
       "en": "Hold ⌘Q to quit, and quit listed apps when you close their last window.",
       "scope": "sentence"
+    },
+    "Định nghĩa": {
+      "en": "Definition",
+      "scope": "sentence"
+    },
+    "Từ điển": {
+      "en": "Dictionary",
+      "scope": "sentence"
+    },
+    "Mở mục này trong ứng dụng Từ điển": {
+      "en": "Open this entry in the Dictionary app",
+      "scope": "sentence"
     }
   }
 }

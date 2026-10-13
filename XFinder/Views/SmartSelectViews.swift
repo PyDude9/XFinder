@@ -101,6 +101,18 @@ struct SmartSelectPanelView: View {
                     }.controlSize(.small)
                 }
             }
+        case .define(let term, let summary):
+            HStack(alignment: .top, spacing: XFinderTokens.Space.tight) {
+                Image(systemName: "character.book.closed").frame(width: 18)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.t("Định nghĩa")).font(XFinderTokens.Font.caption).foregroundColor(.secondary).lineLimit(1)
+                    // The dictionary's own words (English or Vietnamese entry) — content, not UI, so no L10n.t.
+                    Text(summary).font(XFinderTokens.Font.caption).lineLimit(3).textSelection(.enabled).id(summary)
+                }
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                Button(L10n.t("Từ điển")) { DictionaryLookup.open(term) }.controlSize(.small)
+                    .help(L10n.t("Mở mục này trong ứng dụng Từ điển"))
+            }
         case .translate:
             HStack(spacing: XFinderTokens.Space.tight) {
                 Image(systemName: "character.bubble").frame(width: 18)

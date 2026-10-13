@@ -96,6 +96,41 @@ final class SmartSelectionRulesTests: XCTestCase {
         XCTAssertEqual(R.formatResult(-0.0000001, decimalComma: false), "0", "never -0")
     }
 
+    // MARK: §3b #35 — dictionary
+
+    func testOnlyShortWordLikeSelectionsAreLookedUp() {
+        for yes in ["serendipity", "máy tính", "New York", "ngoại lệ", "Thuỷ"] { XCTAssertTrue(R.isDictionaryTerm(yes), yes) }
+        for no in ["", "5 km", "9am", "one two three four", "a@b.com", "https://x.com", "and/or", "line\nbreak",
+                   String(repeating: "a", count: 41)] {
+            XCTAssertFalse(R.isDictionaryTerm(no), no)
+        }
+    }
+
+    /// Strings as Dictionary Services returned them on macOS 27 (probe, 2026-10-13).
+    func testSummaryDropsThePronunciationAndCapsTheLength() throws {
+        let en = "serendipity ser·en·dip·i·ty | ˌserənˈdipədē | noun the occurrence and development of events by chance in a happy or beneficial way: a fortunate stroke of serendipity."
+        XCTAssertEqual(R.definitionSummary(en, maxLength: 400),
+                       "serendipity ser·en·dip·i·ty · noun the occurrence and development of events by chance in a happy or beneficial way: a fortunate stroke of serendipity.")
+        let vi = "máy tính | maj˧˥ tijŋ˧˥ | danh từ hay danh ngữ 1 máy thực hiện tự động các phép tính"
+        XCTAssertEqual(R.definitionSummary(vi), "máy tính · danh từ hay danh ngữ 1 máy thực hiện tự động các phép tính")
+        let long = try XCTUnwrap(R.definitionSummary(en, maxLength: 60))
+        XCTAssertLessThanOrEqual(long.count, 61)
+        XCTAssertTrue(long.hasSuffix("…"))
+        XCTAssertFalse(long.contains("ˌserənˈdipədē"), "the pronunciation never survives")
+        XCTAssertNil(R.definitionSummary("   \n "))
+        XCTAssertEqual(R.definitionSummary("plain words  with\nnewlines"), "plain words with newlines")
+    }
+
+    func testDefineRowOnlyWhenTheDictionaryHasAnEntry() {
+        let dict: (String) -> String? = { $0 == "ephemeral" ? "ephemeral | əˈfem(ə)rəl | adjective lasting for a very short time" : nil }
+        let hit = R.actions(for: "ephemeral", now: october, localZone: hcm, detectDate: noDate, define: dict)
+        XCTAssertEqual(hit, [.define(term: "ephemeral", summary: "ephemeral · adjective lasting for a very short time"), .translate])
+        XCTAssertEqual(R.actions(for: "asdfqwer", now: october, localZone: hcm, detectDate: noDate, define: dict), [.translate],
+                       "no entry ⇒ no row (never a made-up definition)")
+        XCTAssertFalse(R.actions(for: "5 km", now: october, localZone: hcm, detectDate: noDate, define: { _ in "x | y | z" })
+            .contains { if case .define = $0 { return true } else { return false } }, "a conversion is not a word to define")
+    }
+
     /// The notices reach the screen through `L10n.t(variable)`; resolve each one in the shipped store.
     func testEveryNoticeKeyIsTranslated() throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()

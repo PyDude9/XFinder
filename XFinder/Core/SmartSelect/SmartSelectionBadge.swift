@@ -79,6 +79,7 @@ final class SmartSelectionBadge {
             switch a {
             case .time(let t): return sum + (t.regionNote == nil ? 58 : 74)
             case .calendar, .currency: return sum + 64
+            case .define: return sum + 74
             default: return sum + 50
             }
         }
@@ -90,7 +91,7 @@ final class SmartSelectionBadge {
     func refreshCurrency() {
         guard !model.text.isEmpty, (badge?.isVisible ?? false) || isPanelOpen else { return }
         let fresh = SmartSelectionRules.actions(for: model.text, now: Date(), localZone: .current,
-                                                currency: CurrencyRateStore.shared.context())
+                                                currency: CurrencyRateStore.shared.context(), define: DictionaryLookup.definition)
         if fresh != model.actions { model.actions = fresh }
     }
 
