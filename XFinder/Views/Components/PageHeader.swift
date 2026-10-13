@@ -1,8 +1,11 @@
 import SwiftUI
 
-/// System-Settings-style page header: a large symbol, the page title, and a
-/// one-line description. Every detail page opens with this so the pages read
-/// as one app rather than a stack of differently-shaped screens.
+/// OneNotch-style page header (P3, measured on its settings screenshots): a fixed-height title bar with a
+/// trailing control, a full-width hairline under it, then the subtitle below the hairline.
+///
+/// `icon` is no longer drawn — the sidebar's coloured tile (`SidebarRow`) now carries the page's glyph, so
+/// showing it a second time here was the same icon twice for one page. The parameter stays so all 37 call
+/// sites keep compiling unchanged; P4 is expected to drop it once every page has been swept.
 struct PageHeader: View {
     let icon: String
     let title: String
@@ -11,29 +14,34 @@ struct PageHeader: View {
     var trailing: AnyView? = nil
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: icon)
-                .font(XFinderTokens.Font.pageIcon)
-                .foregroundColor(.primary)
-                .frame(width: 30, height: 30)
-
-            VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: XFinderTokens.Space.inline) {
                 Text(title)
-                    .font(XFinderTokens.Font.pageTitle)
-                if let subtitle {
-                    Text(subtitle)
-                        .font(XFinderTokens.Font.pageSubtitle)
-                        .foregroundColor(.secondary)
-                }
+                    .font(XFinderTokens.Settings.headerTitle)
+                    .foregroundColor(XFinderTokens.Settings.headerTitleColor)
+                    .lineLimit(1)
+                    .accessibilityAddTraits(.isHeader)
+
+                Spacer(minLength: XFinderTokens.Space.inline)
+
+                if let trailing { trailing }
             }
+            .padding(.horizontal, XFinderTokens.Space.page)
+            .frame(height: XFinderTokens.Settings.headerHeight)
 
-            Spacer(minLength: 12)
+            Rectangle()
+                .fill(XFinderTokens.Settings.hairline)
+                .frame(height: 1)
 
-            if let trailing { trailing }
+            if let subtitle {
+                Text(subtitle)
+                    .font(XFinderTokens.Font.pageSubtitle)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, XFinderTokens.Space.page)
+                    .padding(.top, 10)
+            }
         }
-        .padding(.horizontal, XFinderTokens.Space.page)
-        .padding(.top, 18)
-        .padding(.bottom, 4)
     }
 }
 

@@ -178,8 +178,11 @@ enum FeatureCatalog {
                    subtitleKey: "Dải ghi chú ẩn ở mép màn hình, rê chuột để mở.",
                    symbol: "note.text", group: .tools, enabledKey: "notes.edgeEnabled",
                    defaultOn: false, permissions: [], idle: .listensToMouse),
-        FeatureDef(id: .dropTray, titleKey: "Khay thả file",
-                   subtitleKey: "Giữ tệp tạm ở notch: kéo vào để giữ, kéo ra để dùng.",
+        // P3: `dropTray.notchEnabled` switches the WHOLE notch surface off (NotchSurfaceController.enabled), not just
+        // the tray — the old title "Khay thả file" told the user they were turning off one tool while Clipboard, Now
+        // Playing, Agents and Calendar at the notch went with it.
+        FeatureDef(id: .dropTray, titleKey: "Notch",
+                   subtitleKey: "Khay, Clipboard, Đang phát, Agent AI và Lịch ở notch. Tắt là tắt cả notch.",
                    symbol: "tray.and.arrow.down", group: .tools, enabledKey: "dropTray.notchEnabled",
                    defaultOn: true, permissions: [], idle: .listensToMouse),
         // B6. Its own row so "Tắt tất cả" and the Yên tĩnh bundle really end the helper process —

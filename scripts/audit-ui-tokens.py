@@ -3,6 +3,9 @@
 
 Fails when a file in XFinder/Views/Detail/ (the pages) still:
   * uses `SettingsCard(` / `TileCard(` as a section box (tiles belong to grids in Components/),
+  * hand-rolls a grouped card with `XFinderTokens.Settings.cardFill` instead of `SettingsSection` (P3: the
+    OneNotch-style grouped card is ONE component in Components/SettingsShell.swift — a page that paints its own
+    box drifts from it the first time the token changes),
   * sets a font size with a literal (`.font(.system(size: 13` …) instead of `XFinderTokens.Font.*`,
   * draws a RoundedRectangle with a literal radius instead of `XFinderTokens.Radius.*`,
   * opens `body` with a bare `Text(` title instead of `PageHeader(`,
@@ -24,6 +27,8 @@ for f in PAGES:
         if line.strip().startswith("//"): continue
         if "SettingsCard(" in line or "TileCard(" in line:
             problems.append(f"{rel}:{i}: boxed card used as a page section")
+        if "Settings.cardFill" in line:
+            problems.append(f"{rel}:{i}: hand-rolled grouped card — use SettingsSection")
         if FONT.search(line):
             problems.append(f"{rel}:{i}: literal font size — use XFinderTokens.Font")
         if RADIUS.search(line):

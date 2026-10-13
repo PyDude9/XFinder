@@ -144,7 +144,7 @@ struct StorageDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .onAppear { disk.start() }
         .onDisappear { disk.stop() }
         .onChange(of: disk.volumes) { _, new in

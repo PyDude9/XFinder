@@ -151,7 +151,7 @@ struct MenuIconsDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
     }
 
     private func bullet(_ text: String) -> some View {

@@ -139,7 +139,7 @@ struct FinderSearchDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .sheet(isPresented: $showQuicklinkSheet) {
             QuicklinkEditorSheet(isPresented: $showQuicklinkSheet, link: editingQuicklink)
         }
@@ -209,7 +209,7 @@ struct FinderSearchDetailView: View {
         }
     }
 
-    /// Phím tắt toàn cục — công tắc bật/tắt Quick Search + ô ghi hotkey.
+    /// Phím tắt toàn cục — công tắc bật/tắt Quick Search; đổi tổ hợp phím ở trang Phím tắt.
     private var paletteSection: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(
@@ -227,36 +227,8 @@ struct FinderSearchDetailView: View {
                     }
 
                 if quickSearchEnabled {
-                    // Ô phím tắt: hiển thị tổ hợp hiện tại + nút ghi tổ hợp mới.
-                    HStack(spacing: 10) {
-                        Text(L10n.t("Phím tắt"))
-                            .font(XFinderTokens.Font.rowValue)
-                        Text(palette.hotkeyLabel)
-                            .font(XFinderTokens.Font.mono).fontWeight(.semibold)
-                            .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background(XFinderTokens.Fill.surface, in: RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge))
-                            .overlay(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).stroke(XFinderTokens.Fill.hairline))
-                        Button {
-                            if palette.isRecording {
-                                palette.cancelRecording()
-                            } else {
-                                palette.beginRecording()
-                            }
-                        } label: {
-                            Text(palette.isRecording ? L10n.t("Hủy ghi") : L10n.t("Đổi phím…"))
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-
-                    if palette.isRecording {
-                        Text(L10n.t("Đang ghi — nhấn tổ hợp phím mới (phải có ⌘/⌥/⌃, ví dụ ⌘Space). Esc để hủy."))
-                            .font(XFinderTokens.Font.caption).foregroundColor(.orange)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } else {
-                        Text(L10n.t("Chọn phím theo thói quen — ví dụ ⌘Space hoặc ⌥Space. Nếu chọn ⌘Space, hãy tắt ⌘Space của Spotlight trong Cài đặt → Bàn phím → Phím tắt để tránh mở cả hai cùng lúc."))
-                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                    SettingsLinkRow(title: L10n.t("Đổi phím tắt trong Phím tắt"), destination: .shortcuts) {
+                        ShortcutChip(label: palette.hotkeyLabel)
                     }
                 }
             }
@@ -462,7 +434,7 @@ struct AiSearchDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
     }
 
     private func run() {

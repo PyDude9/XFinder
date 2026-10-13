@@ -99,7 +99,7 @@ struct VoiceDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .onAppear { reloadLocalState() }
         .onDisappear {
             if isTestingMic { stopMicTest() }

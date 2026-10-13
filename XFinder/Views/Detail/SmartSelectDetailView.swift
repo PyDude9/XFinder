@@ -153,6 +153,11 @@ struct SmartSelectDetailView: View {
                           subtitle: L10n.t("Đọc chữ đang bôi đen qua Trợ năng rồi mở hộp dịch của Apple (macOS 15+). Không gửi gì đi; gói ngôn ngữ tải một lần theo cặp. App nào không cho Trợ năng đọc vùng chọn thì panel nói rõ."),
                           isOn: $translateEnabled)
                     .onChange(of: translateEnabled) { TranslateSelectionController.shared.applySettings() }
+                if translateEnabled {
+                    InlineNote(kind: .warning,
+                               text: L10n.t("Khi bật, ⇧⌘G sẽ thay thế \"Find Next\" (tìm tiếp) trong mọi ứng dụng khác trên máy."))
+                }
+                SettingsLinkRow(title: L10n.t("Xem trong Phím tắt"), destination: .shortcuts)
             }
             .padding(.horizontal, XFinderTokens.Space.page)
         }

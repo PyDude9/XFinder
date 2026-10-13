@@ -92,7 +92,7 @@ final class NotchPagesTests: XCTestCase {
     /// never touched the list sees one order in Settings and another on the notch (Part 0 §5).
     func testTheSettingsDefaultIsTheReadersDefault() throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("XFinder/Views/Detail/DropTrayDetailView.swift")
+            .appendingPathComponent("XFinder/Views/Detail/NotchInterfaceDetailView.swift")
         let src = try String(contentsOf: url, encoding: .utf8)
         let line = src.split(separator: "\n").first { $0.contains("@AppStorage(\"notch.pages\")") }
         let literal = try XCTUnwrap(line?.split(separator: "\"").dropFirst(3).first, "the binding was not found — the anchor rotted")

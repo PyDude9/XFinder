@@ -13,8 +13,8 @@ struct RootView: View {
                 .environment(clipboardManager)
                 // Fixed, not a range: with min/ideal/max the column re-negotiates
                 // its width per page and the window visibly jumps when a long
-                // row like "Đổi tên hàng loạt" is selected.
-                .frame(width: 240)
+                // row like "Đổi tên hàng loạt" is selected. P3: OneNotch's measured 220.
+                .frame(width: XFinderTokens.Settings.sidebarWidth)
 
             // No notes column here: notes live in the screen-edge panel, and a
             // permanent sidebar repeated it on every settings page.
@@ -46,6 +46,8 @@ struct RootView: View {
                     // whose content has a large ideal width (the batch-rename
                     // preview rows) pushes the whole window wider when selected.
                     .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+                    // P3: the page behind the grouped cards (white in light mode, as measured).
+                    .background(XFinderTokens.Settings.contentBackground)
             }
         }
         .navigationViewStyle(.columns)
@@ -109,6 +111,18 @@ struct DetailHostView: View {
                 ActionHistoryDetailView()
             case .dropTray:
                 DropTrayDetailView()
+            case .notchInterface:
+                NotchInterfaceDetailView()
+            case .media:
+                MediaDetailView()
+            case .aiAgents:
+                AIAgentsDetailView()
+            case .calendar:
+                CalendarSettingsDetailView()
+            case .liveActivities:
+                LiveActivitiesDetailView()
+            case .shortcuts:
+                ShortcutsDetailView()
             case .quickLookPage:
                 QuickLookDetailView()
             case .mediaCompat:
@@ -142,10 +156,6 @@ struct DetailHostView: View {
                 PortsDetailView()
             case .alerts:
                 AlertsDetailView()
-            case .settingsClipboard:
-                SettingsDetailView(destination: selection)
-            case .clipboard:
-                ClipboardLibraryView()
             case .compress:
                 CompressDetailView()
             case .pdfTools:

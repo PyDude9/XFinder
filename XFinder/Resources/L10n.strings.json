@@ -9758,6 +9758,278 @@
     "Bản cài XFinder thiếu script statusLine — hãy cài lại XFinder.": {
       "en": "This copy of XFinder is missing the statusLine script — reinstall XFinder.",
       "scope": "sentence"
+    },
+    "NOTCH": {
+      "en": "NOTCH",
+      "scope": "sentence"
+    },
+    "Giao diện notch": {
+      "en": "Notch Interface",
+      "scope": "sentence"
+    },
+    "Lịch & lời nhắc": {
+      "en": "Calendar & Reminders",
+      "scope": "sentence"
+    },
+    "Hoạt động trực tiếp": {
+      "en": "Live Activities",
+      "scope": "sentence"
+    },
+    "Notch": {
+      "en": "Notch",
+      "scope": "sentence"
+    },
+    "Khay, Clipboard, Đang phát, Agent AI và Lịch ở notch. Tắt là tắt cả notch.": {
+      "en": "Tray, Clipboard, Now Playing, AI agents and Calendar at the notch. Off turns the whole notch off.",
+      "scope": "sentence"
+    },
+    "Chỉ xem nhanh, theo hoạt động, hay một trang cố định — một picker trong Giao diện notch.": {
+      "en": "Peek only, by activity, or a fixed page — one picker in Notch Interface.",
+      "scope": "sentence"
+    },
+    "Bật tắt notch, chỉnh cách rê chuột mở nó, hình dạng trên từng loại màn hình và các trang nó hiện.": {
+      "en": "Turn the notch on or off, tune what a hover does, how it looks on each kind of screen, and which pages it shows.",
+      "scope": "sentence"
+    },
+    "Rê chuột vào notch": {
+      "en": "Hover on the notch",
+      "scope": "sentence"
+    },
+    "Nút chính của mọi hiệu ứng rê chuột trên notch. Tắt thì kéo file vào notch hoặc lắc khi đang kéo file vẫn mở được khay — chỉ riêng việc dừng con trỏ ở notch là không còn phản ứng.": {
+      "en": "The master switch for every notch hover effect. Off, a file drag into the notch or a shake while dragging still opens the tray — only resting the pointer on the notch stops reacting.",
+      "scope": "sentence"
+    },
+    "Hình dạng": {
+      "en": "Shape",
+      "scope": "sentence"
+    },
+    "Mở khay": {
+      "en": "Open the tray",
+      "scope": "sentence"
+    },
+    "Notch đang tắt": {
+      "en": "The notch is off",
+      "scope": "sentence"
+    },
+    "Khay sẽ không hiện ở notch cho tới khi bạn bật lại ở Giao diện notch.": {
+      "en": "The tray will not appear at the notch until you turn it back on in Notch Interface.",
+      "scope": "sentence"
+    },
+    "Phiên Claude Code": {
+      "en": "Claude Code sessions",
+      "scope": "sentence"
+    },
+    "Hạn mức Claude": {
+      "en": "Claude usage limit",
+      "scope": "sentence"
+    },
+    "Trên notch": {
+      "en": "On the notch",
+      "scope": "sentence"
+    },
+    "Báo trước cuộc họp": {
+      "en": "Meeting alerts",
+      "scope": "sentence"
+    },
+    "Quyền truy cập": {
+      "en": "Access",
+      "scope": "sentence"
+    },
+    "Đổi phím tắt trong Phím tắt": {
+      "en": "Change shortcut in Shortcuts",
+      "scope": "sentence"
+    },
+    "Xem trong Phím tắt": {
+      "en": "View in Shortcuts",
+      "scope": "sentence"
+    },
+    "Màu mặc định cho lần sau": {
+      "en": "Default color for next time",
+      "scope": "sentence"
+    },
+    "Độ dày nét cho lần sau": {
+      "en": "Stroke width for next time",
+      "scope": "sentence"
+    },
+    "Khi bật, ⇧⌘G sẽ thay thế \"Find Next\" (tìm tiếp) trong mọi ứng dụng khác trên máy.": {
+      "en": "When on, ⇧⌘G replaces \"Find Next\" in every other app on this Mac.",
+      "scope": "sentence"
+    },
+    "Chỉ hoạt động khi XFinder đang ở phía trước.": {
+      "en": "Only works while XFinder is in front.",
+      "scope": "sentence"
+    },
+    "Xem mọi phím tắt XFinder đang dùng, đổi những phím đổi được, và phát hiện trùng lặp.": {
+      "en": "See every shortcut XFinder uses, change the ones that can change, and spot clashes.",
+      "scope": "sentence"
+    },
+    "Chụp màn hình đang tắt.": {
+      "en": "Screen capture is off.",
+      "scope": "sentence"
+    },
+    "Không có phím tắt mặc định — ⇧⌘3, ⇧⌘4, ⇧⌘5 vẫn là của macOS. Muốn dùng ⇧⌘3 và ⇧⌘4, hãy tắt hai phím đó của macOS trong Cài đặt hệ thống ▸ Bàn phím ▸ Phím tắt ▸ Ảnh màn hình.": {
+      "en": "No default shortcuts — ⇧⌘3, ⇧⌘4, ⇧⌘5 still belong to macOS. To use ⇧⌘3 and ⇧⌘4, turn those off in System Settings ▸ Keyboard ▸ Keyboard Shortcuts ▸ Screenshots.",
+      "scope": "sentence"
+    },
+    "Mở trang Chụp & chú thích": {
+      "en": "Open the Capture & Annotate page",
+      "scope": "sentence"
+    },
+    "Sau khi chụp, lưu file, định dạng, lịch sử": {
+      "en": "What happens after a capture, where files are saved, format, history",
+      "scope": "sentence"
+    },
+    "Bảng lệnh đang tắt.": {
+      "en": "The command palette is off.",
+      "scope": "sentence"
+    },
+    "Bảng lệnh toàn cục + ô tìm nhanh trong trang Tìm kiếm": {
+      "en": "Global command palette + the quick-search box on the Search page",
+      "scope": "sentence"
+    },
+    "Phím tắt cố định": {
+      "en": "Fixed shortcuts",
+      "scope": "sentence"
+    },
+    "Một phím tắt khác của XFinder": {
+      "en": "Another XFinder shortcut",
+      "scope": "sentence"
+    },
+    "Trùng với quy ước ": {
+      "en": "Collides with the convention ",
+      "scope": "fragment"
+    },
+    " — có thể làm hỏng phím đó ở app khác.": {
+      "en": " — may break that shortcut in other apps.",
+      "scope": "fragment"
+    },
+    " — đổi phím khác để tránh xung đột.": {
+      "en": " — pick a different key to avoid the clash.",
+      "scope": "fragment"
+    },
+    "Mọi lúc, trên toàn hệ thống": {
+      "en": "Anytime, system-wide",
+      "scope": "sentence"
+    },
+    "Chỉ khi XFinder ở phía trước": {
+      "en": "Only while XFinder is in front",
+      "scope": "sentence"
+    },
+    "Chỉ trong Finder": {
+      "en": "Only in Finder",
+      "scope": "sentence"
+    },
+    "Cử chỉ chuột": {
+      "en": "Mouse gestures",
+      "scope": "sentence"
+    },
+    "Giữ một nút chuột rồi kéo — không phải phím bàn phím": {
+      "en": "Hold a mouse button and drag — not a keyboard chord",
+      "scope": "sentence"
+    },
+    "Phím kích hoạt giọng nói": {
+      "en": "Voice activation key",
+      "scope": "sentence"
+    },
+    "Một phím modifier giữ hoặc bấm để nói — không phải một tổ hợp phím": {
+      "en": "A modifier key held or tapped to talk — not a key combination",
+      "scope": "sentence"
+    },
+    "Mở Clipboard ở notch hoặc khay nổi (theo Cài đặt Clipboard)": {
+      "en": "Open Clipboard at the notch or the floating shelf (per Clipboard Settings)",
+      "scope": "sentence"
+    },
+    "Mở khay Clipboard nổi": {
+      "en": "Open the floating Clipboard shelf",
+      "scope": "sentence"
+    },
+    "Xếp hàng Paste Stack từ 10 mục gần nhất rồi mở khay nổi": {
+      "en": "Queue the Paste Stack from the 10 most recent items, then open the floating shelf",
+      "scope": "sentence"
+    },
+    "Dịch vùng chọn đang có trên màn hình": {
+      "en": "Translate the current on-screen selection",
+      "scope": "sentence"
+    },
+    "Bắt dính nửa trái": {
+      "en": "Snap to the left half",
+      "scope": "sentence"
+    },
+    "Bắt dính nửa phải": {
+      "en": "Snap to the right half",
+      "scope": "sentence"
+    },
+    "Bắt dính toàn màn hình": {
+      "en": "Snap to fill the screen",
+      "scope": "sentence"
+    },
+    "Bắt dính nửa dưới": {
+      "en": "Snap to the bottom half",
+      "scope": "sentence"
+    },
+    "Bắt dính giữa màn hình": {
+      "en": "Snap to the centre",
+      "scope": "sentence"
+    },
+    "Bắt dính một phần ba trái": {
+      "en": "Snap to the left third",
+      "scope": "sentence"
+    },
+    "Bắt dính một phần ba giữa": {
+      "en": "Snap to the centre third",
+      "scope": "sentence"
+    },
+    "Bắt dính một phần ba phải": {
+      "en": "Snap to the right third",
+      "scope": "sentence"
+    },
+    "Giữ ⌘Q khoảng 1 giây để thoát": {
+      "en": "Hold ⌘Q for about 1 second to quit",
+      "scope": "sentence"
+    },
+    "Chuyển đổi ứng dụng kèm xem trước cửa sổ": {
+      "en": "Switch apps with a window preview",
+      "scope": "sentence"
+    },
+    "Cắt rồi dán trong Finder (⌘X sau đó ⌘V)": {
+      "en": "Cut then paste in Finder (⌘X then ⌘V)",
+      "scope": "sentence"
+    },
+    "Delete chuyển vào Thùng rác trong Finder": {
+      "en": "Delete moves to the Trash in Finder",
+      "scope": "sentence"
+    },
+    "Return mở mục đang chọn trong Finder": {
+      "en": "Return opens the selected item in Finder",
+      "scope": "sentence"
+    },
+    "Mở trang Ghi chú": {
+      "en": "Open the Notes page",
+      "scope": "sentence"
+    },
+    "Ghim hoặc bỏ ghim ghi chú đầu danh sách (chưa lưu trữ)": {
+      "en": "Pin or unpin the first note in the list (not archived)",
+      "scope": "sentence"
+    },
+    "Spotlight của macOS": {
+      "en": "macOS Spotlight",
+      "scope": "sentence"
+    },
+    "Find Next (quy ước Sửa ▸ Tìm ▸ Tìm tiếp của macOS/Cocoa)": {
+      "en": "Find Next (the macOS Edit ▸ Find ▸ Find Next convention)",
+      "scope": "sentence"
+    },
+    "Mục này không hiện ở notch cho tới khi bạn bật lại notch ở Giao diện notch.": {
+      "en": "This does not appear at the notch until you turn the notch back on in Notch Interface.",
+      "scope": "sentence"
+    },
+    "Đọc nhật ký do hook của XFinder ghi: tên sự kiện, công cụ, thư mục, câu lệnh bạn gõ và tóm tắt việc công cụ làm (lệnh, đường dẫn tệp) để hiện trên notch. Không đọc câu trả lời của Claude, không gọi mạng. Mặc định tắt.": {
+      "en": "Reads the log XFinder's hook writes: event name, tool, folder, the prompt you type and a summary of what the tool does (command, file path), to show at the notch. Never reads Claude's replies, never uses the network. Off by default.",
+      "scope": "sentence"
+    },
+    "Chưa cài hook — mở trang Agent AI để cài.": {
+      "en": "Hook not installed — open the AI agents page to install it.",
+      "scope": "sentence"
     }
   }
 }

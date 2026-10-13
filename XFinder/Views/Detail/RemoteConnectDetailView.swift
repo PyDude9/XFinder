@@ -74,7 +74,7 @@ struct RemoteConnectDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .sheet(isPresented: $showAdd) {
             DestinationSheet(destination: nil, isPresented: $showAdd)
         }

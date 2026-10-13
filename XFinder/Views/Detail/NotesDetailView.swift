@@ -8,7 +8,6 @@ struct NotesDetailView: View {
     @State private var store = NoteStore.shared
     /// Master switch in the page header — same key the edge panel reads.
     @AppStorage("notes.edgeEnabled") private var edgeEnabled = false
-    @AppStorage("notes.font") private var noteFont = "system"
     @State private var searchText = ""
     @State private var showArchived = false
     @State private var selectedColorName: String? = nil
@@ -76,7 +75,7 @@ struct NotesDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .onChange(of: store.pendingNewNote) { _, newValue in
             if newValue { store.pendingNewNote = false; showCreateSheet = true }
         }
@@ -100,10 +99,6 @@ struct NotesDetailView: View {
                     .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
             }
             Spacer()
-            Picker("", selection: $noteFont) {
-                ForEach(NoteStore.NoteFont.allCases) { f in Text(f.titleVI).tag(f.rawValue) }
-            }
-            .pickerStyle(.menu).frame(width: 110)
             Button(L10n.t("Ghi chú mới")) { showCreateSheet = true }
                 .buttonStyle(.bordered).controlSize(.small)
         }
@@ -297,14 +292,11 @@ private struct ShortcutsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             SectionHeader(icon: "keyboard", title: L10n.t("Phím tắt"),
-                          subtitle: L10n.t("Mở ghi chú từ bất kỳ ứng dụng nào."))
+                          subtitle: L10n.t("Chỉ hoạt động khi XFinder đang ở phía trước."))
 
             shortcutRow(L10n.t("Ghi chú mới"), keys: "⌥⌘N")
-            shortcutRow(L10n.t("Tất cả ghi chú"), keys: "⌥⌘A")
-            shortcutRow(L10n.t("Ghi chú đã lưu trữ"), keys: "⌥⌘L")
-            Text(L10n.t("Trong ghi chú: ⌘T ô đánh dấu · ⌘F tìm · ⌘P ghim · Esc đóng"))
-                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                .padding(.horizontal, XFinderTokens.Space.page)
+            shortcutRow(L10n.t("Mở trang Ghi chú"), keys: "⌥⌘L")
+            shortcutRow(L10n.t("Ghim hoặc bỏ ghim ghi chú đầu danh sách (chưa lưu trữ)"), keys: "⌥⌘P")
         }
     }
 

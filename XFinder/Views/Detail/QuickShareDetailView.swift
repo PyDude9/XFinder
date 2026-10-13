@@ -78,7 +78,7 @@ struct QuickShareDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
     }
 
     private func note(_ t: String) -> some View {

@@ -94,7 +94,7 @@ struct NotchAgentsPage: View {
                     .multilineTextAlignment(.center)
             } else {
                 VStack(spacing: XFinderTokens.Space.tight) {
-                    Text(L10n.t("Chưa cài hook — mở Notch & Khay thả để cài."))
+                    Text(L10n.t("Chưa cài hook — mở trang Agent AI để cài."))
                         .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65))
                         .multilineTextAlignment(.center)
                     Button(L10n.t("Mở cài đặt")) { NotchSurfaceController.shared.openAgentSettings() }

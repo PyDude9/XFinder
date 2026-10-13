@@ -72,7 +72,7 @@ SIDEBAR = ["Chuột & cử chỉ", "Tổng quan", "Hệ thống", "Mạng"]
 # six were missing from the store until a rendered-page read found them showing Vietnamese
 # on an English page. `check-sidebar-groups-l10n.py` is the static gate; this is the runtime
 # half, resolved against the store **inside the installed bundle**.
-SIDEBAR_GROUPS = ["CHUNG", "CỬA SỔ", "FINDER & TÌM KIẾM", "CÔNG CỤ", "KẾT NỐI", "TIỆN ÍCH"]
+SIDEBAR_GROUPS = ["CHUNG", "NOTCH", "CỬA SỔ", "FINDER & TÌM KIẾM", "CÔNG CỤ", "KẾT NỐI", "TIỆN ÍCH"]   # P3 added NOTCH
 
 # The Finder-utilities page's extension row. Each of these is a full sentence the
 # page prints for one measured plug-in state, so a missing translation is a
@@ -209,9 +209,13 @@ def main() -> int:
 
     print()
     print("=== sidebar groups ===")
+    # P3: "NOTCH" is the hardware's name in both languages — identical BY DESIGN, so the bundled allowlist decides,
+    # exactly as check-l10n-coverage.py does for the tree.
+    allow_path = STORE_IN_BUNDLE.with_name("L10n.allowlist.json")
+    same_by_design = set(json.loads(allow_path.read_text(encoding="utf-8")).get("sameByDesign", [])) if allow_path.exists() else set()
     for vi in SIDEBAR_GROUPS:
         en = t(vi)
-        ok = en != vi and not VIETNAMESE.search(en)
+        ok = (en != vi or vi in same_by_design) and not VIETNAMESE.search(en)
         print(f"  {'OK  ' if ok else 'LEAK'} {vi!r} -> {en!r}")
         if not ok:
             failures.append(vi)

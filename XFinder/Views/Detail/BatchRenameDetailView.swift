@@ -174,7 +174,7 @@ struct BatchRenameDetailView: View {
             // the window. This page is why the rule exists.
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
     }
 
     private func pickFiles() {

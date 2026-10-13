@@ -39,7 +39,7 @@ struct PortsDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .task { await manager.refresh() }
         .alert(item: $pending) { p in
             Alert(title: Text(p.force ? L10n.t("Buộc dừng tiến trình?") : L10n.t("Dừng tiến trình?")),

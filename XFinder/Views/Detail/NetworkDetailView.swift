@@ -35,7 +35,7 @@ struct NetworkDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         // Only sample metrics while a page that shows them is on screen.
         .onAppear { SystemMonitorManager.shared.retain() }
         .onDisappear { SystemMonitorManager.shared.release() }

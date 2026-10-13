@@ -100,7 +100,7 @@ struct FolderSyncDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .onAppear { controller.applySettings() }
         .sheet(item: $editing) { pair in
             PairSettingsSheet(pair: pair, editing: $editing)

@@ -1,4 +1,4 @@
-import SwiftUI
+import Foundation
 
 enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     // CHUNG — built now, real data
@@ -10,6 +10,19 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case storage
     case pin
     case alerts
+    /// P3 (2026-10-13): one page for every keyboard shortcut — owns the recorders (capture, ⌘K), lists the fixed ones.
+    case shortcuts
+    // NOTCH — P3 split of the old "Notch & Khay thả" page by what the user comes to do
+    /// The notch itself: master switch, hover, shape, which pages it shows, accent.
+    case notchInterface
+    /// Now Playing at the notch (OneNotch's "Media").
+    case media
+    /// Claude Code sessions, the hook, the statusLine that feeds the AI usage tool.
+    case aiAgents
+    /// The Calendar notch page and meeting alerts.
+    case calendar
+    /// Short notices under the notch: power, network, Caps Lock, Bluetooth, alerts, volume.
+    case liveActivities
     // Ghi chú (clipboard content lives in the ⌘⇧V shelf and the Notch — decision 2026-10-10; no page)
     case notes
     // CỬA SỔ — real except menuIcons (private API)
@@ -85,7 +98,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .uninstaller: return "Gỡ ứng dụng"
         case .appQuit: return "Thoát ứng dụng"
         case .actionHistory: return "Lịch sử thao tác"
-        case .dropTray: return "Notch & Khay thả"
+        case .dropTray: return "Khay thả"
         case .compress: return "Nén & Giải nén"
         case .pdfTools: return "Công cụ PDF"
         case .folderLock: return "Khóa thư mục"
@@ -102,6 +115,12 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .clipboard: return "Thư viện Clipboard"
         case .settingsClipboard: return "Cài đặt Clipboard"
         case .about: return "Giới thiệu"
+        case .shortcuts: return "Phím tắt"
+        case .notchInterface: return "Giao diện notch"
+        case .media: return "Đang phát"
+        case .aiAgents: return "Agent AI"
+        case .calendar: return "Lịch & lời nhắc"
+        case .liveActivities: return "Hoạt động trực tiếp"
         }
     }
 
@@ -145,11 +164,37 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .quickShare: return "square.and.arrow.up"
         case .ports: return "point.3.connected.trianglepath.dotted"
         case .voiceTyping: return "mic.fill"
-        case .smartSelect: return "wand.and.stars"
+        case .smartSelect: return "character.cursor.ibeam"   // was wand.and.stars — the same symbol as aiSearch
         case .capture: return "camera.viewfinder"
         case .clipboard: return "doc.on.clipboard"
         case .settingsClipboard: return "gearshape"
         case .about: return "info.circle"
+        case .shortcuts: return "command"
+        case .notchInterface: return "rectangle.topthird.inset.filled"
+        case .media: return "music.note"
+        case .aiAgents: return "sparkles"
+        case .calendar: return "calendar"
+        case .liveActivities: return "dot.radiowaves.left.and.right"
+        }
+    }
+
+    /// P3: the coloured tile behind each sidebar icon (OneNotch's convention: one flat colour per page). A name, not a
+    /// `Color`, so this file stays Foundation-only and the test package can check every page has one.
+    var tile: SidebarTile {
+        switch self {
+        case .dashboard, .storage, .menuIcons, .finderKeyboard, .actionHistory, .folderLock, .finderUtils, .about: return .gray
+        case .features, .snapZones: return .indigo
+        case .shortcuts, .finderSearch, .quickShare, .quickLookPage: return .cyan
+        case .antiSleep, .aiSearch, .smartSelect, .aiAgents: return .purple
+        case .system, .notchInterface, .windowPreview, .finderActions, .remoteConnect: return .blue
+        case .network, .settingsClipboard, .ports: return .teal
+        case .pin, .junkCleanup, .clipboard: return .green
+        case .alerts, .calendar, .appQuit, .pdfTools, .uninstaller: return .red
+        case .dropTray, .sync: return .mint
+        case .media, .voiceTyping, .mediaCompat: return .pink
+        case .liveActivities, .batchRename, .notes: return .orange
+        case .mouseGestures, .compress: return .brown
+        case .capture: return .yellow
         }
     }
 
@@ -163,13 +208,20 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     static var groups: [(header: String, items: [SidebarDestination])] {
         [
-            ("CHUNG", [.dashboard, .features, .antiSleep, .system, .network, .storage, .pin, .alerts]),
+            ("CHUNG", [.dashboard, .features, .shortcuts, .antiSleep, .system, .network, .storage, .pin, .alerts]),
+            // P3: everything the notch shows, by what the user comes to do — the old "Notch & Khay thả" page split six ways.
+            ("NOTCH", [.notchInterface, .dropTray, .media, .aiAgents, .calendar, .liveActivities]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .appQuit, .mouseGestures, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
                                    .batchRename, .junkCleanup, .actionHistory]),
-            ("CÔNG CỤ", [.voiceTyping, .smartSelect, .capture, .clipboard, .settingsClipboard, .notes, .dropTray, .compress, .pdfTools, .folderLock]),
+            ("CÔNG CỤ", [.voiceTyping, .smartSelect, .capture, .clipboard, .settingsClipboard, .notes, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare, .ports]),
             ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat, .uninstaller]),
         ]
     }
+}
+
+/// P3: the sidebar tile colours. Mapped to `NSColor.system*` in the view, so they follow light/dark mode.
+enum SidebarTile: String, CaseIterable {
+    case gray, blue, indigo, purple, pink, red, orange, yellow, green, mint, teal, cyan, brown
 }

@@ -18,6 +18,8 @@
     "CPU",
     "RAM",
     "GPU",
-    "Caps Lock"
+    "Caps Lock",
+    "Notch",
+    "NOTCH"
   ]
 }

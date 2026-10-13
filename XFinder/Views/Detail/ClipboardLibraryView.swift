@@ -83,7 +83,7 @@ struct ClipboardLibraryView: View {
                 .accessibilityHidden(true)
         }
         .pageWidthSafe()
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .onAppear {
             store.unlockReason = L10n.t("Mở khoá clip trong bảng đã khoá")
             store.reload()

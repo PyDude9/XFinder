@@ -106,16 +106,24 @@ final class QuickSearchPanelController {
     /// Đọc phím đã lưu (NSEvent keycode + NSEvent.ModifierFlags raw) — mặc định
     /// ⌘K. UserDefaults thread-safe nên đọc được từ nonisolated.
     nonisolated private static func storedHotkey() -> (keyCode: UInt32, carbonModifiers: UInt32) {
-        let d = UserDefaults.standard
-        let code = d.object(forKey: "quickSearch.hotkeyCode") as? Int ?? 40 // K
-        let nsRaw = d.object(forKey: "quickSearch.hotkeyModifiers") as? Int
-            ?? Int(NSEvent.ModifierFlags.command.rawValue)
+        let (code, nsRaw) = storedChordRaw()
         var carbon: UInt32 = 0
         if nsRaw & Int(NSEvent.ModifierFlags.command.rawValue) != 0 { carbon |= UInt32(cmdKey) }
         if nsRaw & Int(NSEvent.ModifierFlags.option.rawValue) != 0 { carbon |= UInt32(optionKey) }
         if nsRaw & Int(NSEvent.ModifierFlags.control.rawValue) != 0 { carbon |= UInt32(controlKey) }
         if nsRaw & Int(NSEvent.ModifierFlags.shift.rawValue) != 0 { carbon |= UInt32(shiftKey) }
         return (UInt32(code), carbon)
+    }
+
+    /// P3: the stored chord as written — key code + `NSEvent.ModifierFlags` raw — the ONE read of these two keys,
+    /// shared by the Carbon registration above and the Phím tắt page's cross-feature clash check (which used to leave
+    /// ⌘K out entirely because it could not decode this layout).
+    nonisolated static func storedChordRaw() -> (keyCode: Int, nsModifiers: Int) {
+        let d = UserDefaults.standard
+        let code = d.object(forKey: "quickSearch.hotkeyCode") as? Int ?? 40 // K
+        let nsRaw = d.object(forKey: "quickSearch.hotkeyModifiers") as? Int
+            ?? Int(NSEvent.ModifierFlags.command.rawValue)
+        return (code, nsRaw)
     }
 
     // MARK: - Ghi phím tắt mới (recorder)

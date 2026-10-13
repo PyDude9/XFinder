@@ -1,5 +1,59 @@
 import SwiftUI
 
+/// P3 (2026-10-13): `SidebarTile` (a name, Foundation-only, in `SidebarDestination.swift`) resolved to a real
+/// `Color` here — the only file that needs AppKit's `NSColor.system*` constants, so the model stays testable.
+private extension SidebarTile {
+    var color: Color {
+        switch self {
+        case .gray: return Color(nsColor: .systemGray)
+        case .blue: return Color(nsColor: .systemBlue)
+        case .indigo: return Color(nsColor: .systemIndigo)
+        case .purple: return Color(nsColor: .systemPurple)
+        case .pink: return Color(nsColor: .systemPink)
+        case .red: return Color(nsColor: .systemRed)
+        case .orange: return Color(nsColor: .systemOrange)
+        case .yellow: return Color(nsColor: .systemYellow)
+        case .green: return Color(nsColor: .systemGreen)
+        case .mint: return Color(nsColor: .systemMint)
+        case .teal: return Color(nsColor: .systemTeal)
+        case .cyan: return Color(nsColor: .systemCyan)
+        case .brown: return Color(nsColor: .systemBrown)
+        }
+    }
+}
+
+/// One sidebar row: a coloured icon tile (OneNotch's convention) + title. Used for every destination, including
+/// the footer "Giới thiệu" row — one row view for the whole list, not two parallel implementations.
+private struct SidebarRow: View {
+    let title: String
+    let icon: String
+    let tile: SidebarTile
+
+    var body: some View {
+        Label {
+            Text(title)
+                .font(XFinderTokens.Settings.sidebarRow)
+                // Without these, a long row ("Đổi tên hàng loạt") grows the
+                // sidebar's ideal width and the whole window jumps when that
+                // page is selected.
+                .lineLimit(1)
+                .fixedSize(horizontal: false, vertical: true)
+        } icon: {
+            RoundedRectangle(cornerRadius: XFinderTokens.Settings.tileRadius, style: .continuous)
+                .fill(tile.color)
+                .frame(width: XFinderTokens.Settings.tileSize, height: XFinderTokens.Settings.tileSize)
+                .overlay {
+                    Image(systemName: icon)
+                        .font(XFinderTokens.Settings.tileGlyph)
+                        .foregroundColor(.white)
+                }
+                // The tile is decorative — VoiceOver should read only the title,
+                // exactly like the plain SF Symbol it replaces.
+                .accessibilityHidden(true)
+        }
+    }
+}
+
 struct SidebarView: View {
     @Binding var selection: SidebarDestination
     @Environment(ClipboardManager.self) var clipboardManager
@@ -50,14 +104,9 @@ struct SidebarView: View {
     private var list: some View {
         List(selection: selectionBinding) {
             ForEach(groups, id: \.header) { group in
-                Section(header: Text(L10n.t(group.header)).font(.caption2).foregroundColor(.secondary)) {
+                Section(header: Text(L10n.t(group.header)).font(XFinderTokens.Settings.sidebarHeader).foregroundColor(.secondary)) {
                     ForEach(group.items, id: \.self) { dest in
-                        Label(dest.titleVI, systemImage: dest.icon)
-                            // Without these, a long row ("Đổi tên hàng loạt")
-                            // grows the sidebar's ideal width and the whole
-                            // window jumps when that page is selected.
-                            .lineLimit(1)
-                            .fixedSize(horizontal: false, vertical: true)
+                        SidebarRow(title: dest.titleVI, icon: dest.icon, tile: dest.tile)
                             .tag(dest)
                     }
                 }
@@ -69,7 +118,7 @@ struct SidebarView: View {
 
             if showsAbout {
                 Section {
-                    Label(SidebarDestination.about.titleVI, systemImage: SidebarDestination.about.icon)
+                    SidebarRow(title: SidebarDestination.about.titleVI, icon: SidebarDestination.about.icon, tile: SidebarDestination.about.tile)
                         .tag(SidebarDestination.about)
                 }
             }
@@ -81,5 +130,8 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        // OneNotch's sidebar rows read taller than the system default list row —
+        // this is the public SwiftUI knob for that, not a hand-rolled row height.
+        .environment(\.sidebarRowSize, .large)
     }
 }

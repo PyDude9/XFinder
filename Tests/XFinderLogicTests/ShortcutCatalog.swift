@@ -1,0 +1,1 @@
+../../XFinder/Core/Shortcuts/ShortcutCatalog.swift

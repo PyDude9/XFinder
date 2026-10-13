@@ -66,22 +66,7 @@ struct CaptureDetailView: View {
                 ForEach(CaptureMode.allCases, id: \.self) { mode in
                     captureModeRow(mode)
                 }
-                Button(L10n.t("Dùng bộ phím giống OneNotch")) { controller.applyOneNotchPreset() }
-                    .buttonStyle(.bordered)
-                HStack(alignment: .top, spacing: XFinderTokens.Space.tight) {
-                    Text(L10n.t("⇧⌘ + số: 4 vùng · 3 toàn màn hình · 9 cửa sổ · 2 chép chữ · 1 lấy màu. Muốn dùng ⇧⌘3 và ⇧⌘4, hãy tắt hai phím đó của macOS trong Cài đặt hệ thống ▸ Bàn phím ▸ Phím tắt ▸ Ảnh màn hình."))
-                        .font(XFinderTokens.Font.caption)
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                }
-                Button(L10n.t("Mở Phím tắt bàn phím")) {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                SettingsLinkRow(title: L10n.t("Đổi phím tắt trong Phím tắt"), destination: .shortcuts)
             }
             .padding(.horizontal, XFinderTokens.Space.page)
         }
@@ -90,7 +75,6 @@ struct CaptureDetailView: View {
     @ViewBuilder
     private func captureModeRow(_ mode: CaptureMode) -> some View {
         let shortcut = controller.shortcut(for: mode)
-        let recording = controller.recordingMode == mode
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: XFinderTokens.Space.inline) {
                 Image(systemName: mode.symbol)
@@ -101,28 +85,17 @@ struct CaptureDetailView: View {
                     Text(L10n.t(mode.descriptionKey)).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 }
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                if recording {
-                    Text(L10n.t("Nhấn tổ hợp phím… (Esc để huỷ)"))
-                        .font(XFinderTokens.Font.caption)
-                        .foregroundColor(.accentColor)
-                    Button(L10n.t("Hủy")) { controller.cancelRecording() }
-                        .controlSize(.small)
+                if let shortcut {
+                    ShortcutChip(label: shortcut.label)
                 } else {
-                    Text(shortcut?.label ?? L10n.t("Chưa gán"))
-                        .font(XFinderTokens.Font.mono)
-                        .foregroundColor(shortcut == nil ? .secondary : .primary)
-                        .padding(.horizontal, XFinderTokens.Space.tight)
-                        .padding(.vertical, 2)
-                        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).fill(XFinderTokens.Fill.inset))
-                    Button(L10n.t("Gán phím")) { controller.beginRecording(mode) }
-                        .controlSize(.small)
-                    if shortcut != nil {
-                        Button(L10n.t("Xoá")) { controller.clearShortcut(mode) }
-                            .controlSize(.small)
-                    }
-                    Button(L10n.t("Chụp")) { controller.capture(mode) }
-                        .controlSize(.small)
+                    Text(L10n.t("Chưa gán"))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
                 }
+                // P3 review: the split dropped this — without it, the three modes the flyout lacks (annotate, text,
+                // colour) could only be reached by assigning a shortcut first.
+                Button(L10n.t("Chụp")) { controller.capture(mode) }
+                    .controlSize(.small)
             }
             if let conflict = controller.lastConflict, conflict.mode == mode {
                 conflictCaption(conflict.conflict, mode: mode)
@@ -258,14 +231,14 @@ struct CaptureDetailView: View {
             SectionHeader(icon: "pencil.and.outline", title: L10n.t("Chú thích"))
             VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 HStack(spacing: XFinderTokens.Space.inline) {
-                    Text(L10n.t("Màu mặc định")).font(XFinderTokens.Font.row)
+                    Text(L10n.t("Màu mặc định cho lần sau")).font(XFinderTokens.Font.row)
                     Spacer()
                     ForEach(MarkColor.allCases, id: \.self) { color in
                         colorSwatch(color)
                     }
                 }
                 HStack {
-                    Text(L10n.t("Độ dày nét")).font(XFinderTokens.Font.row)
+                    Text(L10n.t("Độ dày nét cho lần sau")).font(XFinderTokens.Font.row)
                     Spacer()
                     Picker("", selection: $annotateWidthRaw) {
                         ForEach(StrokeWidth.allCases, id: \.self) { w in

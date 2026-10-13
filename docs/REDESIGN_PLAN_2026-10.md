@@ -482,7 +482,7 @@ minh giữ trang riêng · màn có ảnh OneNotch dựng thẳng theo ảnh, wi
 |:--|:--|:--|
 | P1 | Vỏ notch: cánh khi thu gọn (cao bằng notch), dải 32 pt (chấm trang + tìm / toolbar), hai thân 382 / 612, loe mép trên, mở nảy nhẹ / đóng nhanh / đổi trang mờ chéo; restyle Clipboard + Đang phát | ✅ dựng + gate (CLAUDE.md "P1"); chưa kiểm trực tiếp — T-P1a…d |
 | P2 | Trang Agents + view hạn mức AI trên toolbar (Claude % qua statusLine, opt-in, nối chuỗi) + Lịch + Hẹn giờ tập trung | ✅ dựng + gate (CLAUDE.md "P2"); chưa kiểm trực tiếp — T-P2-* |
-| P3 | Vỏ cài đặt (sidebar 220 pt có ô màu, thẻ nhóm #F7F7F7 r10, header 52) + trang Giao diện / Media / AI / Lịch / Live Activities / Phím tắt; tách "Notch & Khay thả"; bỏ trùng (`notes.font` hai picker; gom phím tắt; đổi nhãn mặc định chụp "mặc định cho lần sau"; xoá tài liệu ⌥Space cũ) | chưa |
+| P3 | Vỏ cài đặt (sidebar 220 pt có ô màu, thẻ nhóm #F7F7F7 r10, header 52) + trang Giao diện / Media / AI / Lịch / Live Activities / Phím tắt; tách "Notch & Khay thả"; bỏ trùng (`notes.font` hai picker; gom phím tắt; đổi nhãn mặc định chụp "mặc định cho lần sau"; xoá tài liệu ⌥Space cũ) | ✅ dựng + gate (CLAUDE.md "P3"); quyết định mặc định Q-P3-1…9; chưa kiểm trực tiếp — T-P3-* |
 | P4 | Restyle các trang cài đặt còn lại qua component chung | chưa |
 | P5 | Kết nối Codex / OpenCode / Cursor (probe trước) + thông báo + phiên gần đây | chưa |
 | P6 | Nói chuyện với phiên (probe kitty `send-text`, Terminal.app `do script`, socket nhắn tin của Claude) | chưa |

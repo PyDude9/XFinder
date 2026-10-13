@@ -55,6 +55,14 @@
 		7F1A01C0 /* Services/AudioOutputList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01BF /* Services/AudioOutputList.swift */; };
 		7F1A004D /* Components/TileCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0044 /* Components/TileCard.swift */; };
 		7F1A01FC /* Components/FlatRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01FB /* Components/FlatRows.swift */; };
+		7F1A0361 /* Components/SettingsShell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0360 /* Components/SettingsShell.swift */; };
+		7F1A0363 /* Detail/NotchInterfaceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0362 /* Detail/NotchInterfaceDetailView.swift */; };
+		7F1A0365 /* Detail/MediaDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0364 /* Detail/MediaDetailView.swift */; };
+		7F1A0367 /* Detail/AIAgentsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0366 /* Detail/AIAgentsDetailView.swift */; };
+		7F1A0369 /* Detail/CalendarSettingsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0368 /* Detail/CalendarSettingsDetailView.swift */; };
+		7F1A036B /* Detail/LiveActivitiesDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A036A /* Detail/LiveActivitiesDetailView.swift */; };
+		7F1A036D /* Detail/ShortcutsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A036C /* Detail/ShortcutsDetailView.swift */; };
+		7F1A036F /* Shortcuts/ShortcutCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A036E /* Shortcuts/ShortcutCatalog.swift */; };
 		7F1A01FA /* Components/XFinderTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01F9 /* Components/XFinderTokens.swift */; };
 		7F1A004E /* Components/MetricBigNumber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0045 /* Components/MetricBigNumber.swift */; };
 		7F1A004F /* Components/StatBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0046 /* Components/StatBarView.swift */; };
@@ -380,6 +388,14 @@
 		7F1A01BF /* Services/AudioOutputList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/AudioOutputList.swift; sourceTree = "<group>"; };
 		7F1A0044 /* Components/TileCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/TileCard.swift; sourceTree = "<group>"; };
 		7F1A01FB /* Components/FlatRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/FlatRows.swift; sourceTree = "<group>"; };
+		7F1A0360 /* Components/SettingsShell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/SettingsShell.swift; sourceTree = "<group>"; };
+		7F1A0362 /* Detail/NotchInterfaceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/NotchInterfaceDetailView.swift; sourceTree = "<group>"; };
+		7F1A0364 /* Detail/MediaDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/MediaDetailView.swift; sourceTree = "<group>"; };
+		7F1A0366 /* Detail/AIAgentsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/AIAgentsDetailView.swift; sourceTree = "<group>"; };
+		7F1A0368 /* Detail/CalendarSettingsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/CalendarSettingsDetailView.swift; sourceTree = "<group>"; };
+		7F1A036A /* Detail/LiveActivitiesDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/LiveActivitiesDetailView.swift; sourceTree = "<group>"; };
+		7F1A036C /* Detail/ShortcutsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/ShortcutsDetailView.swift; sourceTree = "<group>"; };
+		7F1A036E /* Shortcuts/ShortcutCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shortcuts/ShortcutCatalog.swift; sourceTree = "<group>"; };
 		7F1A01F9 /* Components/XFinderTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/XFinderTokens.swift; sourceTree = "<group>"; };
 		7F1A0045 /* Components/MetricBigNumber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/MetricBigNumber.swift; sourceTree = "<group>"; };
 		7F1A0046 /* Components/StatBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/StatBarView.swift; sourceTree = "<group>"; };
@@ -732,6 +748,7 @@
 				7F1A027D /* Clipboard/LinkPreviewRules.swift */,
 				7F1A0263 /* Agents/AgentHookInstaller.swift */,
 				7F1A035C /* Agents/ClaudeStatusLine.swift */,
+				7F1A036E /* Shortcuts/ShortcutCatalog.swift */,
 				7F1A0267 /* Agents/AgentSessionMonitor.swift */,
 				7F1A034C /* Agents/AgentUsage.swift */,
 				7F1A034E /* Agents/AgentUsageMonitor.swift */,
@@ -926,6 +943,7 @@
 				7F1A0039 /* Detail/PlaceholderDetailView.swift */,
 				7F1A0044 /* Components/TileCard.swift */,
 				7F1A01FB /* Components/FlatRows.swift */,
+				7F1A0360 /* Components/SettingsShell.swift */,
 				7F1A01F9 /* Components/XFinderTokens.swift */,
 				7F1A00A0 /* Components/PageHeader.swift */,
 				7F1A00CE /* Components/PageWidth.swift */,
@@ -986,6 +1004,12 @@
 				7F1A006D /* Detail/ActionHistoryDetailView.swift */,
 				7F1A006E /* Detail/SearchDetailViews.swift */,
 				7F1A006F /* Detail/DropTrayDetailView.swift */,
+				7F1A0362 /* Detail/NotchInterfaceDetailView.swift */,
+				7F1A0364 /* Detail/MediaDetailView.swift */,
+				7F1A0366 /* Detail/AIAgentsDetailView.swift */,
+				7F1A0368 /* Detail/CalendarSettingsDetailView.swift */,
+				7F1A036A /* Detail/LiveActivitiesDetailView.swift */,
+				7F1A036C /* Detail/ShortcutsDetailView.swift */,
 				7F1A0070 /* Detail/WindowDetailViews.swift */,
 				7F1A0071 /* Detail/QuickLookDetailView.swift */,
 				7F1A0075 /* ClipboardCardView.swift */,
@@ -1168,6 +1192,14 @@
 				7F1A0131 /* Services/PermissionManager.swift in Sources */,
 				7F1A004D /* Components/TileCard.swift in Sources */,
 				7F1A01FC /* Components/FlatRows.swift in Sources */,
+				7F1A0361 /* Components/SettingsShell.swift in Sources */,
+				7F1A0363 /* Detail/NotchInterfaceDetailView.swift in Sources */,
+				7F1A0365 /* Detail/MediaDetailView.swift in Sources */,
+				7F1A0367 /* Detail/AIAgentsDetailView.swift in Sources */,
+				7F1A0369 /* Detail/CalendarSettingsDetailView.swift in Sources */,
+				7F1A036B /* Detail/LiveActivitiesDetailView.swift in Sources */,
+				7F1A036D /* Detail/ShortcutsDetailView.swift in Sources */,
+				7F1A036F /* Shortcuts/ShortcutCatalog.swift in Sources */,
 				7F1A01FA /* Components/XFinderTokens.swift in Sources */,
 				7F1A00A1 /* Components/PageHeader.swift in Sources */,
 				7F1A00CF /* Components/PageWidth.swift in Sources */,

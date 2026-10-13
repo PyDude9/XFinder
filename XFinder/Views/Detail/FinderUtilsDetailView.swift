@@ -40,7 +40,7 @@ struct FinderUtilsDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .onAppear {
             readBack()
             Task { extensionStatus = await FinderExtensionStatus.probe() }

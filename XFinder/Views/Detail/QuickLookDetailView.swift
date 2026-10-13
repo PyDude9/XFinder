@@ -93,7 +93,7 @@ struct QuickLookDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .onAppear(perform: refresh)
         .sheet(isPresented: $showPreviewer) {
             QuickLookPreviewerSheet(isPresented: $showPreviewer)

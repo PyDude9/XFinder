@@ -205,9 +205,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupGlobalHotkeys() {
-        // ⌘⇧V is handled system-wide by ClipboardShelfController's event tap
-        // (it opens the floating shelf, not the in-app page). Only ⌘⇧C
-        // remains local until it too gets a global binding.
+        // ⌘⇧V is handled system-wide by ClipboardShelfController's event tap (it opens the notch's Clipboard
+        // page, or the floating shelf — `clipboard.hotkeySurface`). Only ⌘⇧C remains local, so it fires only
+        // while XFinder is frontmost (the Phím tắt page says so).
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             guard event.modifierFlags.intersection([.command, .shift]) == [.command, .shift] else { return event }
             switch event.charactersIgnoringModifiers {

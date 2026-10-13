@@ -11,7 +11,7 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-notch.XXXXXX)
-FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchHoverOpen.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift XFinder/Core/Calendar/GlanceRules.swift XFinder/Core/Notch/AudioWaveform.swift XFinder/Core/Notch/NotchPages.swift"
+FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchHoverOpen.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift XFinder/Views/Detail/NotchInterfaceDetailView.swift XFinder/Core/Calendar/GlanceRules.swift XFinder/Core/Notch/AudioWaveform.swift XFinder/Core/Notch/NotchPages.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
@@ -163,7 +163,7 @@ run "M42 the player's own pid only (browsers deliver no buffers)" XFinder/Core/N
   "'            if let r = p.responsiblePID { return r == player }\n            return p.parentPID == player'" "'            return false'"
 run "M43 the parent pid outranks responsibility (Safari's WebKit.GPU is lost)" XFinder/Core/Notch/AudioWaveform.swift \
   "'            if let r = p.responsiblePID { return r == player }'" "'            if p.parentPID == player { return true }'"
-run "M8 view default disagrees with its reader" XFinder/Views/Detail/DropTrayDetailView.swift \
+run "M8 view default disagrees with its reader" XFinder/Views/Detail/NotchInterfaceDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 
 restore

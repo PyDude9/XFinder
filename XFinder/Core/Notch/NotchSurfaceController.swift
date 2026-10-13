@@ -423,11 +423,11 @@ final class NotchSurfaceController {
         AgentSessionMonitor.shared.answer(p, of: session, allow: allow)
     }
 
-    /// P2: the AI usage tool's "set up %" link — the statusLine install lives in the Agent AI section of Notch & Khay thả
+    /// P2: the AI usage tool's "set up %" link — the statusLine install lives on the Agent AI settings page (P3)
     /// (installing edits ~/.claude/settings.json, so it is a deliberate button there, never a switch on the notch).
     func openAgentSettings() {
         dismiss()
-        AppState.shared.navigate(to: .dropTray)
+        AppState.shared.navigate(to: .aiAgents)
         AppState.shared.bringMainWindowFront()
     }
 

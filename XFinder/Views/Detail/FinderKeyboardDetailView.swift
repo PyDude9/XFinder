@@ -69,7 +69,7 @@ struct FinderKeyboardDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .onAppear {
             trusted = WindowManager.isTrusted
             controller.applySettings()

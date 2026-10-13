@@ -174,7 +174,7 @@ struct WindowPreviewDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .onAppear {
             trusted = WindowManager.isTrusted
             canRecord = WindowManager.canRecordScreen
@@ -245,7 +245,7 @@ struct SnapZonesDetailView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .onAppear {
             trusted = WindowManager.isTrusted
             controller.applySettings()
@@ -377,6 +377,13 @@ struct SnapZonesDetailView: View {
                         shortcutItem(label: L10n.t("Nửa phải"), keys: ["⌃", "⌥", "→"])
                         shortcutItem(label: L10n.t("Nửa dưới"), keys: ["⌃", "⌥", "↓"])
                         Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    VStack(spacing: XFinderTokens.Space.inline) {
+                        shortcutItem(label: L10n.t("Một phần ba bên trái"), keys: ["⌃", "⌥", "D"])
+                        shortcutItem(label: L10n.t("Một phần ba ở giữa"), keys: ["⌃", "⌥", "F"])
+                        shortcutItem(label: L10n.t("Một phần ba bên phải"), keys: ["⌃", "⌥", "G"])
                     }
                     .frame(maxWidth: .infinity)
                 }

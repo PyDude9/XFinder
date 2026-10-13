@@ -25,6 +25,22 @@ Bạn đã duyệt brief F4 với 5 câu trả lời mặc định, sau đó nó
 | Q-F4-5 | Ảnh chụp lưu ở đâu? | (a) luôn giữ một bản trong thư mục của XFinder (để có Lịch sử như OneNotch `Captures/`) + Lưu thì ghi thêm ra Desktop · (b) chỉ ghi file khi bấm Lưu | **(a)** — giống OneNotch; bản giữ lại nằm trong `~/Library/Application Support/XFinder/Captures/`, có nút xoá lịch sử |
 | Q-F4-6 | Bố cục trình chú thích | wireframe A (thanh công cụ trên cùng) · B (cột công cụ + bảng thuộc tính) · C (chú thích tại chỗ) | **A** — OneNotch dùng cửa sổ chú thích riêng, thanh công cụ ngang |
 
+### P3 · Vỏ cài đặt theo OneNotch (đã dựng 2026-10-13)
+
+Brief v3 nói "sidebar 220 pt có ô màu, thẻ nhóm #F7F7F7 r10, header 52 + 6 trang mới". Những chỗ brief không nói, tôi chọn:
+
+| Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
+|:--|:--|:--|:--|
+| Q-P3-1 | 6 trang mới nằm ở đâu trong sidebar? | (a) nhóm mới **NOTCH** ngay dưới CHUNG (Giao diện notch · Khay thả · Đang phát · Agent AI · Lịch & lời nhắc · Hoạt động trực tiếp), Phím tắt vào CHUNG, các nhóm khác giữ nguyên · (b) xếp lại cả sidebar theo nhóm của OneNotch (Tính năng / Trải nghiệm) | **(a)** — ở XFinder notch là MỘT bề mặt trong nhiều tính năng; gom theo việc "cài notch" khớp Part 0 §3, và không xáo trộn 34 hàng bạn đã quen |
+| Q-P3-2 | Màu của vỏ (thẻ #F7F7F7, viền #E5E5E5, tiêu đề #4D4D4D) | (a) suy từ màu hệ thống: ra đúng số đo ở chế độ sáng, tự đổi ở chế độ tối · (b) chép đúng mã hex của OneNotch + tự chọn một bảng tối riêng | **(a)** — `XFinderTokens` vốn là "chỉ màu hệ thống"; (b) phải tự duy trì hai bảng màu |
+| Q-P3-3 | Hàng đang chọn ở sidebar | (a) vùng chọn gốc của macOS (bo góc, màu nhấn) · (b) viên thuốc tự vẽ như OneNotch | **(a)** — tự vẽ phải bỏ `List(selection:)`, mất phím ↑↓ và VoiceOver của sidebar |
+| Q-P3-4 | Header 52 pt | (a) `PageHeader` vẽ kiểu mới cho cả 37 trang (thanh 52 pt, tiêu đề 20 pt, đường kẻ), cuộn cùng trang · (b) thanh cố định ở trên, nội dung cuộn dưới | **(a)** — đổi một component là mọi trang đổi theo; (b) phải sửa cả 37 trang (để P4) |
+| Q-P3-5 | Các trang cũ có chuyển sang thẻ nhóm luôn không? | (a) chỉ 6 trang mới + trang bị tách dùng thẻ; trang cũ giữ hàng phẳng tới P4 · (b) chuyển hết ngay | **(a)** — đúng tách P3/P4 của brief |
+| Q-P3-6 | Công tắc tổng của notch (`dropTray.notchEnabled`) | (a) chuyển sang **Giao diện notch** + đổi nhãn ở hub thành "Notch" (nó tắt CẢ notch, không chỉ khay) · (b) giữ ở Khay thả | **(a)** — nhãn cũ "Khay thả file" hứa tắt một công cụ trong khi thực ra tắt cả Clipboard/Đang phát/Agent/Lịch ở notch |
+| Q-P3-7 | Bộ ghi phím tắt (6 phím Chụp + ⌘K) | (a) chuyển hẳn sang trang **Phím tắt**; trang Chụp / Tìm kiếm chỉ hiện phím + link · (b) giữ ở trang tính năng, Phím tắt chỉ liệt kê | **(a)** — một khoá một control (Part 0 §4); và chỉ ở một chỗ mới so được trùng phím giữa các tính năng |
+| Q-P3-8 | ⇧⌘G (Dịch vùng chọn) đè phím "Find Next" của mọi app khi bật | (a) ghi rõ cảnh báo, phím vẫn cố định · (b) cho đổi phím (thêm bộ ghi + khoá mới) | **(a)** cho P3; (b) là thêm cơ chế mới — nói tôi nếu muốn |
+| Q-P3-9 | Trang Ghi chú ghi ⌥⌘A và "⌘T/⌘F/⌘P/Esc trong ghi chú" nhưng không phím nào được nối | (a) gỡ các dòng sai, ghi đúng ⌥⌘N/L/P chỉ chạy khi XFinder ở phía trước · (b) nối thêm các phím đó | **(a)** — sửa lời hứa sai trước; nối phím là tính năng mới |
+
 ### Khác
 
 ~~Q-P2-SL~~ — đã trả lời 2026-10-13: tài khoản Pro/Max. Vậy % đến ở phiên `claude` trong terminal sau câu trả lời đầu (xem T-P2-SL).
@@ -71,11 +87,25 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-P1b | Mở hub (⌘⇧V hoặc bấm cánh), bấm từng chấm trên dải trên cùng, vuốt hai ngón trên dải | Chấm sáng là trang hiện tại; rê lên chấm hiện tên trang; đổi trang thì nội dung mờ chéo, khung co giãn giữa hai cỡ; mở có nảy nhẹ, đóng nhanh không nảy |
 | T-P1c | Trang Clipboard: gõ ngay sau ⌘⇧V; bấm vòng tròn kính lúp; bắt đầu Paste Stack (⌘⇧C) | Gõ được ngay (ô tìm tự mở); viên trạng thái cuối hàng chip hiện "Paste Stack · n" + Dán tiếp; thẻ có màu theo app nguồn |
 | T-P1d | Trang Đang phát: kéo thanh tiến trình; bấm icon app ở góc ảnh bìa; khi không phát gì | Thả tay thì nhảy tới đúng chỗ; mở đúng player; không phát gì thì khung giữ nguyên, nút mờ |
-| T-P2-SL | Notch & Khay thả ▸ Agent AI ▸ **Cài statusLine**; mở `claude` trong terminal, gửi một câu, đợi trả lời; mở notch ▸ Hạn mức AI | Hai vòng 5 giờ / 7 ngày có % và "lúc HH:mm"; dòng trạng thái của Claude Code trông y như trước (vẫn chạy lệnh của Notch Crew → OneNotch). **Gỡ statusLine** trả lại đúng cài đặt cũ |
+| T-P2-SL | Trang **Agent AI** (nhóm NOTCH) ▸ **Cài statusLine**; mở `claude` trong terminal, gửi một câu, đợi trả lời; mở notch ▸ Hạn mức AI | Hai vòng 5 giờ / 7 ngày có % và "lúc HH:mm"; dòng trạng thái của Claude Code trông y như trước (vẫn chạy lệnh của Notch Crew → OneNotch). **Gỡ statusLine** trả lại đúng cài đặt cũ |
 | T-P2-TIMER | Mở hub ▸ icon Hẹn giờ trên toolbar: − / + rồi ▶; đang chạy bấm ⏸, −5, +5, ✕ | Số phút nhảy bậc 5 (5…120); chạy thì cánh phải notch hiện ⏱ mm:ss; tạm dừng thì số đứng yên và cánh hiện biểu tượng pause; hết giờ kêu "Glass" + "Hết giờ" |
 | T-P2-AI | Hub ▸ icon Hạn mức AI: tab Hạn mức / Token | Chưa cài statusLine: không có vòng %, có nút "Bật trong Cài đặt"; tab Token: "Hôm nay" khác "7 ngày" và cả hai là token RA; Codex hiện % hoặc "đã qua giờ reset" |
 | T-P2-AGENTS | Mở một phiên `claude` trong terminal; mở hub ▸ chấm Agent AI | Dòng "n phiên"; hàng phiên có chấm trạng thái + tuổi; khi Claude xin quyền: thẻ có đồng hồ giây chạy + Cho phép / Từ chối hoạt động |
 | T-P2-CAL | Hub ▸ icon Lịch | Thứ in đậm, ngày/tháng + năm + âm lịch bên phải; dải 9 ngày với hôm nay trong ô tối; danh sách hôm nay cuộn được |
+
+### P3 · Vỏ cài đặt (dựng 2026-10-13, chưa ai bấm thử)
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-P3-SIDEBAR | Mở cửa sổ XFinder, cuộn sidebar, dùng ↑↓, gõ vào ô "Tìm trang" | Sidebar rộng 220 pt, mỗi hàng có ô màu + icon trắng; nhóm **NOTCH** ngay dưới CHUNG; ↑↓ vẫn chuyển trang; tìm theo tên Việt/Anh vẫn ra; bấm hàng dài không làm cửa sổ nhảy rộng |
+| T-P3-HEADER | Mở 4–5 trang cũ (Hệ thống, Mạng, Chụp & chú thích, Cài đặt Clipboard, Tổng quan) | Đầu trang là thanh 52 pt: tiêu đề 20 pt bên trái, công tắc (nếu có) bên phải, đường kẻ mảnh bên dưới, câu mô tả dưới đường kẻ; không trang nào bị chữ đè hay cụt |
+| T-P3-NOTCH | Trang **Giao diện notch**: tắt công tắc ở đầu trang, rồi bật lại | Tắt: notch biến mất hẳn (không badge, không hub), ⌘⇧V rơi về khay nổi; trang Khay thả hiện dòng "Notch đang tắt" có link về đây. Bật lại: notch quay lại |
+| T-P3-HOVER | Giao diện notch ▸ tắt "Rê chuột vào notch"; rê vào notch; rồi kéo một tệp vào notch | Rê không mở gì; kéo tệp vẫn mở khay; picker "mở gì" và độ nhạy bị mờ khi tắt |
+| T-P3-PAGES | Giao diện notch ▸ ẩn một trang, đổi thứ tự, bấm **Khôi phục mặc định** | Hub đổi theo ngay; Khôi phục đưa về đủ 7 trang đúng thứ tự gốc |
+| T-P3-SPLIT | Mở lần lượt Đang phát · Agent AI · Lịch & lời nhắc · Hoạt động trực tiếp; bật/tắt vài công tắc | Mỗi công tắc làm đúng việc như ở trang "Notch & Khay thả" cũ; Lịch: nút "Cấp quyền" mới hỏi quyền, công tắc không bao giờ bật hộp thoại |
+| T-P3-SHORTCUTS | Trang **Phím tắt**: gán một phím Chụp (ví dụ ⌃⌥D); đổi ⌘K sang một tổ hợp đã dùng | ⌃⌥D báo trùng với "Bắt dính một phần ba trái" khi phím bắt dính đang bật; ⌘K trùng cũng báo; bấm Huỷ ghi / rời trang giữa chừng thì phím cũ vẫn chạy |
+| T-P3-LINKS | Trang Chụp & chú thích và Tìm kiếm: bấm "Đổi phím tắt trong Phím tắt"; trang Chọn văn bản: đọc dòng ⇧⌘G | Link mở trang Phím tắt; không còn nút ghi phím ở hai trang kia; dòng ⇧⌘G nói rõ nó thay Find Next khi bật |
+| T-P3-DARK | Bật chế độ tối của macOS, mở Giao diện notch và Phím tắt | Thẻ nhóm vẫn thấy được (sáng hơn nền một chút), chữ đọc rõ, đường kẻ không biến mất |
 
 ### Clipboard
 | Mã | Làm gì | Mong đợi |

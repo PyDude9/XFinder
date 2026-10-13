@@ -39,7 +39,7 @@ struct FeaturesHubView: View {
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
         .onAppear { hub.retain() }
         .onDisappear { hub.release() }
     }

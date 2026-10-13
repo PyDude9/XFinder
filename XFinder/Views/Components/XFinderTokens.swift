@@ -97,6 +97,51 @@ enum XFinderTokens {
         static let pageFade = Animation.easeInOut(duration: 0.18)
     }
 
+    /// P3 (2026-10-13) — the settings window shell, measured on OneNotch's settings screenshots (870×712 pt @2x,
+    /// `scratchpad/uiux2/spec/report-settings.md`). Geometry is copied; colours are NOT copied as hex — each one is the
+    /// system colour (or `primary` at an opacity) that renders the measured light-mode value on a white page, so dark
+    /// mode keeps working from the OS like every other token here.
+    enum Settings {
+        /// Fixed, never a range (the "sidebar width jumped" bug). OneNotch measures 220 exactly.
+        static let sidebarWidth: CGFloat = 220
+        /// Coloured icon tile behind every sidebar row: 22×22, corner 6, white glyph.
+        static let tileSize: CGFloat = 22
+        static let tileRadius: CGFloat = 6
+        static let tileGlyph = SwiftUI.Font.system(size: 12, weight: .semibold)
+        static let sidebarRow = SwiftUI.Font.system(size: 13)
+        /// Sidebar group label — measured ≈ 11 pt, #808080 = secondaryLabel on white.
+        static let sidebarHeader = SwiftUI.Font.system(size: 11, weight: .medium)
+        /// Page header bar: 52 tall, title ≈ 20 pt at the page inset, a hairline under it.
+        static let headerHeight: CGFloat = 52
+        static let headerTitle = SwiftUI.Font.system(size: 20, weight: .semibold)
+        /// #4D4D4D on white = black at 70 %.
+        static let headerTitleColor = Color.primary.opacity(0.70)
+        /// #E5E5E5 on white = black at 10 %.
+        static let hairline = Color.primary.opacity(0.10)
+        /// Section title above a card — ≈ 13 pt semibold.
+        static let sectionTitle = SwiftUI.Font.system(size: 13, weight: .semibold)
+        /// The grouped card: #F7F7F7 on white = black at 3 %; dark mode uses white at 6 % (macOS's own grouped
+        /// boxes read about that light on a dark window). Flat: no stroke, no shadow.
+        static let cardFill = Color(nsColor: NSColor(name: "XFinderSettingsCard") { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor.white.withAlphaComponent(0.06)
+                : NSColor.black.withAlphaComponent(0.03)
+        })
+        static let cardRadius: CGFloat = 10
+        /// Inside a card: rows start 10 pt in, dividers start where the text starts.
+        static let cardInset: CGFloat = 10
+        /// One-line row height; a row with a subtitle grows instead of squeezing (our subtitles are longer than
+        /// OneNotch's, and a clipped explanation is worse than a taller row).
+        static let rowMinHeight: CGFloat = 31
+        static let rowVerticalPadding: CGFloat = 6
+        /// Gap between two sections (title + card).
+        static let sectionGap: CGFloat = 20
+        /// The page behind the cards: white in light mode, the text background in dark — the measured #FFFFFF.
+        static let contentBackground = Color(nsColor: .textBackgroundColor)
+        /// A keyboard shortcut drawn as a keycap ("⌘⇧V").
+        static let keycap = SwiftUI.Font.system(size: 12, weight: .medium, design: .rounded)
+    }
+
     enum Motion {
         /// Notch / edge panel expand-collapse. `response 0.32, damping 0.82` reads as elastic, not snappy.
         static let surface = Animation.spring(response: 0.32, dampingFraction: 0.82)

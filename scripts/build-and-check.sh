@@ -14,7 +14,11 @@ cd "$ROOT"
 xcodebuild -project XFinder.xcodeproj -scheme XFinder -configuration Debug \
   -derivedDataPath "$OUT/dd" \
   CONFIGURATION_BUILD_DIR="$OUT/out" \
-  build > "$OUT/build.log" 2>&1 || { tail -40 "$OUT/build.log"; exit 1; }
+  build > "$OUT/build.log" 2>&1 || {
+    # P3: the tail alone ends with "The following build commands failed" — the `error:` lines sit far above it and a
+    # failed build printed no cause at all. Print them first.
+    echo "--- compiler errors ---"; grep -E "error:" "$OUT/build.log" | sort -u | head -40
+    tail -20 "$OUT/build.log"; exit 1; }
 
 echo "--- build result ---"
 grep -c "error:" "$OUT/build.log" || true
@@ -51,9 +55,13 @@ VoiceSettingsKeys.swift VoiceRefiner.swift VoiceTextDiff.swift VoiceKeychain.swi
 VoiceScreenContext.swift VoiceHUD.swift VoiceDiffPanel.swift VoiceAudioCue.swift
 AppleOnDeviceRefiner.swift HTTPRefiner.swift OllamaRefiner.swift
 MenuBarEngine.swift MenuBarEngineFactory.swift LegacyLengthEngine.swift
-NativeVisibilityEngine.swift NativeVisibilityBridge.swift AccessibilityMenuBarInventory.swift"
+NativeVisibilityEngine.swift NativeVisibilityBridge.swift AccessibilityMenuBarInventory.swift
+SettingsShell.swift NotchInterfaceDetailView.swift MediaDetailView.swift AIAgentsDetailView.swift
+CalendarSettingsDetailView.swift LiveActivitiesDetailView.swift ShortcutsDetailView.swift ShortcutCatalog.swift
+DropTrayDetailView.swift SidebarDestination.swift"
+MISSING=0
 for f in $GESTURE_FILES; do
-  if grep -q "$f" "$LIST"; then echo "  OK   $f"; else echo "  MISS $f"; fi
+  if grep -q "/$f" "$LIST"; then echo "  OK   $f"; else echo "  MISS $f"; MISSING=$((MISSING + 1)); fi
 done
 
 # A resource is not compiled, so it never appears in the SwiftFileList: check the
@@ -64,7 +72,7 @@ for r in L10n.strings.json L10n.allowlist.json xfinder-claude-hook.zsh xfinder-c
   if [ -f "$OUT/out/XFinder.app/Contents/Resources/$r" ]; then
     echo "  OK   $r ($(wc -c < "$OUT/out/XFinder.app/Contents/Resources/$r") bytes)"
   else
-    echo "  MISS $r"
+    echo "  MISS $r"; MISSING=$((MISSING + 1))
   fi
 done
 
@@ -72,10 +80,13 @@ done
 # SwiftFileList cannot show it either — check the bundle.
 echo "--- now-playing helper ---"
 H="$OUT/out/XFinder.app/Contents/Helpers/XFinderNowPlaying.dylib"
-if [ -f "$H" ]; then echo "  OK   XFinderNowPlaying.dylib ($(lipo -archs "$H"))"; else echo "  MISS XFinderNowPlaying.dylib"; fi
+if [ -f "$H" ]; then echo "  OK   XFinderNowPlaying.dylib ($(lipo -archs "$H"))"; else echo "  MISS XFinderNowPlaying.dylib"; MISSING=$((MISSING + 1)); fi
 
 echo "--- archs ---"
 lipo -archs "$OUT/out/XFinder.app/Contents/MacOS/XFinder"
+
+# P3: a MISS used to be printed and the script still exited 0 — a gate that only prints reads as a pass.
+if [ "$MISSING" -ne 0 ]; then echo "FAIL: $MISSING file(s) missing from the compile list or the bundle"; exit 1; fi
 
 # This script BUILDS and CHECKS. It does not sign or install, on purpose (2026-10-10):
 # it used to `pkill -9 XFinder`, replace /Applications/XFinder.app and re-sign it with

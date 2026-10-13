@@ -84,7 +84,7 @@ struct ActionHistoryDetailView: View {
                 }
             }
         }
-        .background(XFinderTokens.Fill.window)
+        .background(XFinderTokens.Settings.contentBackground)
     }
 
     private func icon(for kind: String) -> String {
