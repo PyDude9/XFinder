@@ -29,6 +29,8 @@ Bạn đã duyệt brief F4 với 5 câu trả lời mặc định, sau đó nó
 
 | Mã | Câu hỏi | Mặc định |
 |:--|:--|:--|
+| Q-WAVE | §3b #21 — sóng nhạc thời gian thực trên notch (như OneNotch). Cơ chế: process tap của CoreAudio (macOS 14.2+), cần quyền **ghi âm thanh hệ thống**. Muốn biết nó chạy được không phải probe — và probe sẽ làm macOS **bật hộp xin quyền** trên màn hình của bạn. Cho phép probe không? | Chưa làm, chờ bạn nói "probe sóng nhạc" |
+| Q-MULTIDISPLAY | §3b #39 — notch hiện trên mọi màn hình cùng lúc (nay: màn đang có con trỏ). Máy này một màn nên không đo được gì. Khi cắm màn ngoài, báo tôi để làm + đo | Chưa làm |
 | Q-GESTURE | Nút giữ cử chỉ chuột đang là Nút 3 (bấm con lăn). Đổi sang nút hông? (trang Chuột & cử chỉ có nút "Ghi lại nút giữ") | Để nguyên |
 
 ~~Q-GIT~~ / ~~Q-RELEASE~~ — đã xong 2026-10-13: push `main` tới `48546c5`, tag `v1.3.0`, [Release 1.3.0](https://github.com/PyDude9/XFinder/releases/tag/v1.3.0) với zip + .sha256 (tải lại từ GitHub: checksum OK, `codesign --verify --deep --strict` OK).
