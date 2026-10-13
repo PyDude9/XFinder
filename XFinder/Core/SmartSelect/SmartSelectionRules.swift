@@ -130,6 +130,33 @@ enum SmartSelectionRules {
         return String(s.prefix(120))
     }
 
+    /// A calculation result for the panel and the clipboard: up to 6 decimals, trailing zeros trimmed, thousands
+    /// grouped, decimal mark by UI language, never "-0".
+    static func formatResult(_ v: Double, decimalComma: Bool) -> String {
+        guard v.isFinite else { return "–" }
+        let f = NumberFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.numberStyle = .decimal
+        f.usesGroupingSeparator = true
+        f.groupingSeparator = decimalComma ? "." : ","
+        f.decimalSeparator = decimalComma ? "," : "."
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = 6
+        let rounded = (v * 1_000_000).rounded() / 1_000_000
+        return f.string(from: NSNumber(value: rounded == 0 ? 0 : rounded)) ?? "–"
+    }
+
+    /// Every notice the panel can show. They reach the screen through `L10n.t(notice.key)` — a variable, which no
+    /// literal sweep can see — so they live here and `SmartSelectionRulesTests` resolves each one in the store.
+    enum NoticeKey {
+        static let copied = "Đã sao chép."
+        static let calendarDenied = "XFinder chưa được phép ghi vào Lịch."
+        static let noDefaultCalendar = "Không tìm thấy lịch mặc định để ghi."
+        static let calendarAdded = "Đã thêm vào Lịch."
+        static let calendarFailed = "Không thêm được vào Lịch."
+        static let all = [copied, calendarDenied, noDefaultCalendar, calendarAdded, calendarFailed]
+    }
+
     // MARK: When to show the badge
 
     struct MouseUp: Equatable {

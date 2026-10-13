@@ -75,6 +75,9 @@ final class L10n {
         LocalizedStringKey(t(vi))
     }
 
+    /// For number formatting (decimal comma in Vietnamese). Same source as `t(_:)`.
+    nonisolated static var isEnglish: Bool { LanguageIsEnglish }
+
     nonisolated private static var LanguageIsEnglish: Bool {
         UserDefaults.standard.string(forKey: "AppLanguage") == AppLanguage.english.rawValue
     }

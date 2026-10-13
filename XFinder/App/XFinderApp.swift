@@ -79,6 +79,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         AlertMonitor.shared.applySettings()
         NotchSurfaceController.shared.applySettings()
         TranslateSelectionController.shared.applySettings()   // N5a: ⇧⌘G, AX-gated at press time
+        SelectionWatcher.shared.applySettings()               // E4: AX observer only when on and trusted
         LinkPreviewFetcher.shared.applySettings()             // D4b: backfills only when the opt-in is on
         LiveActivityMonitor.shared.applySettings()   // B4: after the surface exists
         QuickSearchPanelController.shared.applySettings()
@@ -119,6 +120,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 QuickSearchPanelController.shared.applySettings()
                 VoiceManager.shared.applySettings()
                 TranslateSelectionController.shared.applySettings()
+                SelectionWatcher.shared.applySettings()
                 GestureController.shared.start()
             }
         }

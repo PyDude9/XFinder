@@ -128,6 +128,8 @@ struct DetailHostView: View {
                     .environment(systemMonitorManager)
             case .voiceTyping:
                 VoiceDetailView()
+            case .smartSelect:
+                SmartSelectDetailView()
             case .ports:
                 PortsDetailView()
             case .alerts:

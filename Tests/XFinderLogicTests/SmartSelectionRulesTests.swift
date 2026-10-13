@@ -87,6 +87,28 @@ final class SmartSelectionRulesTests: XCTestCase {
         XCTAssertEqual(R.eventTitle(selection: "Friday", matched: "Friday"), "")
     }
 
+    func testCalculationResultFormatting() {
+        XCTAssertEqual(R.formatResult(84, decimalComma: false), "84")
+        XCTAssertEqual(R.formatResult(3.5, decimalComma: true), "3,5")
+        XCTAssertEqual(R.formatResult(1_234_567.25, decimalComma: false), "1,234,567.25")
+        XCTAssertEqual(R.formatResult(1_234_567.25, decimalComma: true), "1.234.567,25")
+        XCTAssertEqual(R.formatResult(1.0 / 3.0, decimalComma: false), "0.333333")
+        XCTAssertEqual(R.formatResult(-0.0000001, decimalComma: false), "0", "never -0")
+    }
+
+    /// The notices reach the screen through `L10n.t(variable)`; resolve each one in the shipped store.
+    func testEveryNoticeKeyIsTranslated() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("XFinder/Resources/L10n.strings.json")
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        let entries = (root["entries"] as? [String: Any]) ?? root
+        XCTAssertEqual(R.NoticeKey.all.count, 5, "a collapsed list would pass as a clean one")
+        for k in R.NoticeKey.all {
+            let en = (entries[k] as? [String: Any])?["en"] as? String
+            XCTAssertFalse((en ?? "").isEmpty, "notice not translated: \(k)")
+        }
+    }
+
     // MARK: The show/hide machine
 
     /// The measured drag: one change per step, the mouse-up 50 ms after the last one, then quiet.

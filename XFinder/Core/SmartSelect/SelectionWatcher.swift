@@ -1,0 +1,211 @@
+import AppKit
+import ApplicationServices
+import os
+
+/// Smart Selection E4 — watches the frontmost app's text selection through Accessibility and asks
+/// `SmartSelectionRules` when to show the badge and what it offers. ONE reader of `smartSelect.enabled`.
+///
+/// Cost when on: one `AXObserver` on the frontmost app (re-targeted on app activation), a global+local left-mouse-up
+/// monitor pair, and a one-shot 300 ms work item while a selection is changing. Nothing polls; nothing runs when the
+/// user is not selecting. Off ⇒ no observer, no monitor, no panel.
+///
+/// Never writes an attribute of another app (no `AXManualAccessibility`): the probe measured notifications arriving
+/// from Chrome and Electron without it. Selected text is held in memory for the current selection only, never logged.
+@MainActor
+final class SelectionWatcher {
+    static let shared = SelectionWatcher()
+    private init() {}
+
+    var isEnabled: Bool { UserDefaults.standard.object(forKey: "smartSelect.enabled") as? Bool ?? false }
+    /// Literal defaults on purpose: `FeatureKeyDefaultsTests` matches them against the page's `@AppStorage` defaults.
+    var minLength: Int { UserDefaults.standard.object(forKey: "smartSelect.minLength") as? Int ?? 2 }
+    var excluded: Set<String> { SmartSelectionRules.parseExcluded(UserDefaults.standard.string(forKey: "smartSelect.excludedApps") ?? "") }
+
+    private var observer: AXObserver?
+    private var observedPID: pid_t = 0
+    private var activationToken: NSObjectProtocol?
+    private var mouseUpGlobal: Any?
+    private var mouseUpLocal: Any?
+    private var settleWork: DispatchWorkItem?
+    private var lifetimeWork: DispatchWorkItem?
+    private var watch = SmartSelectionRules.Watch()
+    /// The current selection, kept only until the next change. Never persisted.
+    private var currentText = ""
+    private var currentBounds: CGRect?
+    private(set) var isRunning = false
+    /// Diagnostics: lengths, kinds and bundle ids only — never the selected text.
+    private let log = Logger(subsystem: "com.xfinder.app", category: "SmartSelect")
+
+    /// Called at launch, from the page's switch, and on `didBecomeActive` (a granted Accessibility re-arms it).
+    func applySettings() {
+        if isEnabled && WindowManager.isTrusted { start() } else { stop() }
+    }
+
+    private func start() {
+        guard !isRunning else { return }
+        isRunning = true
+        if let front = NSWorkspace.shared.frontmostApplication { attach(to: front) }
+        activationToken = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { note in
+            let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            let pid = app?.processIdentifier ?? 0
+            MainActor.assumeIsolated {   // queue: .main
+                SelectionWatcher.shared.dismiss()
+                if let app, pid != 0 { SelectionWatcher.shared.attach(to: app) }
+            }
+        }
+        // Global + local pair (Part 3c rule). The local one only matters for completeness: XFinder's own windows are
+        // excluded by the gate, but a click in them must still reach `.mouseUp` so a stale point is replaced.
+        mouseUpGlobal = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { _ in
+            let p = NSEvent.mouseLocation
+            runOnMainActor { SelectionWatcher.shared.feed(.mouseUp(p, at: ProcessInfo.processInfo.systemUptime)) }
+        }
+        mouseUpLocal = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { event in
+            let p = NSEvent.mouseLocation
+            MainActor.assumeIsolated { SelectionWatcher.shared.feed(.mouseUp(p, at: ProcessInfo.processInfo.systemUptime)) }
+            return event
+        }
+    }
+
+    func stop() {
+        guard isRunning else { SmartSelectionBadge.shared.hideAll(); return }
+        isRunning = false
+        detach()
+        if let t = activationToken { NSWorkspace.shared.notificationCenter.removeObserver(t) }
+        activationToken = nil
+        if let m = mouseUpGlobal { NSEvent.removeMonitor(m) }
+        if let m = mouseUpLocal { NSEvent.removeMonitor(m) }
+        mouseUpGlobal = nil; mouseUpLocal = nil
+        settleWork?.cancel(); settleWork = nil
+        lifetimeWork?.cancel(); lifetimeWork = nil
+        watch = SmartSelectionRules.Watch()
+        currentText = ""; currentBounds = nil
+        SmartSelectionBadge.shared.hideAll()
+    }
+
+    // MARK: AX observer on the frontmost app
+
+    private func attach(to app: NSRunningApplication) {
+        let pid = app.processIdentifier
+        guard pid != observedPID else { return }
+        detach()
+        guard app.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
+        var obs: AXObserver?
+        // Read on the callback's thread and hand only Sendable values (String, CGRect?) to the main actor — an
+        // AXUIElement is a CF object, not Sendable. The source is on the main run loop, so this is main in practice;
+        // `runOnMainActor` does not trust that.
+        let callback: AXObserverCallback = { _, element, notification, _ in
+            let name = notification as String
+            let isSelection = name == (kAXSelectedTextChangedNotification as String)
+            let read = isSelection ? SelectionWatcher.readSelection(element) : (text: "", bounds: nil)
+            let text = read.text, bounds = read.bounds
+            runOnMainActor { SelectionWatcher.shared.axNotification(name, text: text, bounds: bounds) }
+        }
+        guard AXObserverCreate(pid, callback, &obs) == .success, let o = obs else { return }
+        let appElement = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(appElement, 0.3)
+        let sel = AXObserverAddNotification(o, appElement, kAXSelectedTextChangedNotification as CFString, nil)
+        let foc = AXObserverAddNotification(o, appElement, kAXFocusedUIElementChangedNotification as CFString, nil)
+        log.info("observing \(app.bundleIdentifier ?? "?", privacy: .public) selection=\(sel.rawValue) focus=\(foc.rawValue)")
+        CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(o), .defaultMode)
+        observer = o
+        observedPID = pid
+    }
+
+    private func detach() {
+        if let o = observer { CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(o), .defaultMode) }
+        observer = nil
+        observedPID = 0
+    }
+
+    private func axNotification(_ name: String, text: String, bounds: CGRect?) {
+        guard isRunning else { return }
+        if name == (kAXFocusedUIElementChangedNotification as String) { dismiss(); return }
+        guard name == (kAXSelectedTextChangedNotification as String) else { return }
+        currentText = text
+        currentBounds = bounds
+        feed(.selectionChanged(length: text.trimmingCharacters(in: .whitespacesAndNewlines).count,
+                               at: ProcessInfo.processInfo.systemUptime))
+    }
+
+    /// The selected text and, when the app reports a real one, its screen rect (AX space). Falls back to WebKit's
+    /// text-marker attributes when `AXSelectedText` is empty (Safari reported changes with an empty value in the probe).
+    nonisolated static func readSelection(_ element: AXUIElement) -> (text: String, bounds: CGRect?) {
+        var value: CFTypeRef?
+        var text = ""
+        if AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &value) == .success, let s = value as? String {
+            text = s
+        }
+        if text.isEmpty {
+            var range: CFTypeRef?, out: CFTypeRef?
+            if AXUIElementCopyAttributeValue(element, "AXSelectedTextMarkerRange" as CFString, &range) == .success, let r = range,
+               AXUIElementCopyParameterizedAttributeValue(element, "AXStringForTextMarkerRange" as CFString, r, &out) == .success,
+               let s = out as? String {
+                text = s
+            }
+        }
+        var bounds: CGRect?
+        var rangeValue: CFTypeRef?
+        if AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &rangeValue) == .success,
+           let rv = rangeValue, CFGetTypeID(rv) == AXValueGetTypeID() {
+            var b: CFTypeRef?
+            if AXUIElementCopyParameterizedAttributeValue(element, kAXBoundsForRangeParameterizedAttribute as CFString, rv, &b) == .success,
+               let bv = b, CFGetTypeID(bv) == AXValueGetTypeID() {
+                var rect = CGRect.zero
+                if AXValueGetValue(bv as! AXValue, .cgRect, &rect) { bounds = rect }
+            }
+        }
+        return (String(text.prefix(SmartSelectionRules.maxLength + 1)), bounds)
+    }
+
+    // MARK: The machine
+
+    func feed(_ event: SmartSelectionRules.Event) {
+        guard isRunning else { return }
+        for fx in SmartSelectionRules.reduce(&watch, event, minLength: minLength) {
+            switch fx {
+            case .hide:
+                lifetimeWork?.cancel()
+                SmartSelectionBadge.shared.hideBadge()
+            case .armSettle(let at):
+                settleWork?.cancel()
+                let work = DispatchWorkItem { MainActor.assumeIsolated {
+                    SelectionWatcher.shared.feed(.settle(at: ProcessInfo.processInfo.systemUptime)) } }
+                settleWork = work
+                let delay = max(0, at - ProcessInfo.processInfo.systemUptime)
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay + 0.005, execute: work)
+            case .show(let point):
+                showBadge(mouseUp: point)
+            }
+        }
+    }
+
+    func dismiss() {
+        feed(.dismiss)
+    }
+
+    private func showBadge(mouseUp: CGPoint) {
+        let front = NSWorkspace.shared.frontmostApplication
+        guard SmartSelectionRules.shouldConsider(text: currentText, minLength: minLength,
+                                                 frontBundleID: front?.bundleIdentifier, frontAppName: front?.localizedName,
+                                                 ownBundleID: Bundle.main.bundleIdentifier ?? "com.xfinder.app",
+                                                 excluded: excluded) else { watch.shown = false; return }
+        let actions = SmartSelectionRules.actions(for: currentText, now: Date(), localZone: .current)
+        guard !actions.isEmpty else { watch.shown = false; return }
+        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
+        let anchor = SmartSelectionRules.anchor(axBounds: currentBounds, mouseUp: mouseUp, primaryScreenHeight: primaryHeight)
+        let screen = NSScreen.screens.first { $0.frame.contains(anchor) } ?? NSScreen.main
+        let frame = SmartSelectionRules.badgeFrame(anchor: anchor, visible: screen?.visibleFrame ?? .zero)
+        let kinds = actions.map { a -> String in
+            switch a { case .unit: "unit"; case .time: "time"; case .arithmetic: "arithmetic"; case .calendar: "calendar"; case .translate: "translate" }
+        }.joined(separator: ",")
+        log.notice("badge shown kinds=\(kinds, privacy: .public) length=\(self.currentText.count) anchor=\(self.currentBounds == nil ? "mouse" : "ax", privacy: .public) app=\(front?.bundleIdentifier ?? "?", privacy: .public) frame=\(Int(frame.minX)),\(Int(frame.minY))")
+        SmartSelectionBadge.shared.showBadge(frame: frame, text: currentText, actions: actions,
+                                             sourceApp: front?.localizedName, sourceBundleID: front?.bundleIdentifier)
+        lifetimeWork?.cancel()
+        let work = DispatchWorkItem { MainActor.assumeIsolated {
+            if !SmartSelectionBadge.shared.isPanelOpen { SelectionWatcher.shared.dismiss() } } }
+        lifetimeWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + SmartSelectionRules.badgeLifetime, execute: work)
+    }
+}

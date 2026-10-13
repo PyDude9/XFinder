@@ -8630,6 +8630,178 @@
     "Với mỗi link bạn copy, XFinder gửi một yêu cầu tới chính trang đó để lấy tiêu đề và ảnh (LinkPresentation của Apple). Đây là lần duy nhất clipboard chạm mạng; mặc định tắt. Không bao giờ tải link tới localhost hay mạng nội bộ.": {
       "en": "For every link you copy, XFinder sends one request to that page for its title and image (Apple's LinkPresentation). It is the only time the clipboard touches the network; off by default. Links to localhost or a private network are never fetched.",
       "scope": "sentence"
+    },
+    "Chọn văn bản thông minh": {
+      "en": "Smart Selection",
+      "scope": "sentence"
+    },
+    "Bôi đen chữ ở app khác: nút nhỏ đổi đơn vị, đổi múi giờ, tính, thêm vào Lịch, dịch.": {
+      "en": "Select text in another app: a small button converts units and time zones, calculates, adds to Calendar, translates.",
+      "scope": "sentence"
+    },
+    "Bôi đen chữ ở app khác: một nút nhỏ hiện cạnh đó để đổi đơn vị, đổi múi giờ, tính, thêm vào Lịch hoặc dịch.": {
+      "en": "Select text in another app: a small button appears beside it to convert units or time zones, calculate, add to Calendar or translate.",
+      "scope": "sentence"
+    },
+    "Nút trên vùng chọn": {
+      "en": "Button on the selection",
+      "scope": "sentence"
+    },
+    "Chỉ hiện khi bạn bôi đen bằng chuột và vùng chọn đã đứng yên.": {
+      "en": "Appears only when you select with the mouse and the selection has stopped changing.",
+      "scope": "sentence"
+    },
+    "Hiện nút khi bôi đen chữ": {
+      "en": "Show a button when text is selected",
+      "scope": "sentence"
+    },
+    "Đọc vùng chọn của app đang dùng qua Trợ năng. Không ghi lại, không gửi đi; chữ chỉ được giữ tới lần bôi đen kế tiếp.": {
+      "en": "Reads the frontmost app's selection through Accessibility. Nothing is recorded or sent; the text is kept only until the next selection.",
+      "scope": "sentence"
+    },
+    "Cần quyền Trợ năng để đọc vùng chọn của app khác.": {
+      "en": "Accessibility permission is needed to read other apps' selections.",
+      "scope": "sentence"
+    },
+    "Cấp quyền Trợ năng": {
+      "en": "Grant Accessibility",
+      "scope": "sentence"
+    },
+    "Độ dài tối thiểu (ký tự)": {
+      "en": "Minimum length (characters)",
+      "scope": "sentence"
+    },
+    "Bỏ qua vùng chọn ngắn hơn để nút không hiện khi bấm nhầm.": {
+      "en": "Shorter selections are ignored so a stray click does not show the button.",
+      "scope": "sentence"
+    },
+    "Vùng chọn bằng bàn phím không hiện nút vì không biết nó nằm đâu trên màn hình — dùng ⇧⌘G. Một số app không cho Trợ năng đọc vùng chọn; khi đó nút không hiện.": {
+      "en": "A keyboard selection does not show the button because its place on screen is unknown — use ⇧⌘G. Some apps do not let Accessibility read their selection; there the button does not appear.",
+      "scope": "sentence"
+    },
+    "Không hiện trong các app này": {
+      "en": "Never in these apps",
+      "scope": "sentence"
+    },
+    "Trình chỉnh ảnh, bảng vẽ, game — nơi kéo chuột không phải là bôi đen chữ. Trình quản lý mật khẩu luôn bị bỏ qua.": {
+      "en": "Image editors, canvases, games — where dragging is not selecting text. Password managers are always skipped.",
+      "scope": "sentence"
+    },
+    "Chưa loại trừ app nào.": {
+      "en": "No apps excluded.",
+      "scope": "sentence"
+    },
+    "Bỏ": {
+      "en": "Remove",
+      "scope": "sentence"
+    },
+    "Thêm app đang chạy": {
+      "en": "Add a running app",
+      "scope": "sentence"
+    },
+    "Nút làm được gì": {
+      "en": "What the button does",
+      "scope": "sentence"
+    },
+    "Chỉ hiện những việc hợp với chữ đã chọn, việc cụ thể nhất lên đầu.": {
+      "en": "Only what fits the selected text, the most specific first.",
+      "scope": "sentence"
+    },
+    "Đổi đơn vị": {
+      "en": "Convert units",
+      "scope": "sentence"
+    },
+    "Đổi múi giờ": {
+      "en": "Convert time zones",
+      "scope": "sentence"
+    },
+    "Tính": {
+      "en": "Calculate",
+      "scope": "sentence"
+    },
+    "Thêm vào Lịch": {
+      "en": "Add to Calendar",
+      "scope": "sentence"
+    },
+    "Họp nhóm thứ Sáu 9 giờ": {
+      "en": "Team meeting Friday 9am",
+      "scope": "sentence"
+    },
+    "macOS 15 trở lên, ngay trên máy": {
+      "en": "macOS 15 or later, on device",
+      "scope": "sentence"
+    },
+    "Múi giờ viết tắt có nhiều nghĩa (CST, IST, BST…) bị bỏ qua thay vì đoán. EST, PST… dùng đúng định nghĩa; nếu vùng đó đang dùng giờ mùa hè, panel ghi chú. Thêm vào Lịch chỉ ghi khi bạn bấm nút, và hỏi quyền Lịch lần đầu.": {
+      "en": "Ambiguous time-zone abbreviations (CST, IST, BST…) are skipped instead of guessed. EST, PST… use their definition; when that region is on daylight time, the panel says so. Add to Calendar writes only when you press the button, and asks for Calendar access the first time.",
+      "scope": "sentence"
+    },
+    "Việc XFinder làm được với vùng chọn này": {
+      "en": "What XFinder can do with this selection",
+      "scope": "sentence"
+    },
+    "Vùng chọn": {
+      "en": "Selection",
+      "scope": "sentence"
+    },
+    "Sự kiện mới": {
+      "en": "New event",
+      "scope": "sentence"
+    },
+    "Dịch bằng bản dịch của Apple, ngay trên máy": {
+      "en": "Translate with Apple's on-device translation",
+      "scope": "sentence"
+    },
+    "Dịch…": {
+      "en": "Translate…",
+      "scope": "sentence"
+    },
+    "Cần macOS 15": {
+      "en": "Needs macOS 15",
+      "scope": "sentence"
+    },
+    " · giờ máy ": {
+      "en": " · your time ",
+      "scope": "fragment"
+    },
+    "Lưu ý: ": {
+      "en": "Note: ",
+      "scope": "fragment"
+    },
+    " hiện dùng ": {
+      "en": " is on ",
+      "scope": "fragment"
+    },
+    " lúc này.": {
+      "en": " right now.",
+      "scope": "fragment"
+    },
+    " hôm sau": {
+      "en": " next day",
+      "scope": "fragment"
+    },
+    " hôm trước": {
+      "en": " previous day",
+      "scope": "fragment"
+    },
+    " (cả ngày)": {
+      "en": " (all day)",
+      "scope": "fragment"
+    },
+    "XFinder chưa được phép ghi vào Lịch.": {
+      "en": "XFinder is not allowed to write to Calendar.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy lịch mặc định để ghi.": {
+      "en": "No default calendar to write to.",
+      "scope": "sentence"
+    },
+    "Đã thêm vào Lịch.": {
+      "en": "Added to Calendar.",
+      "scope": "sentence"
+    },
+    "Không thêm được vào Lịch.": {
+      "en": "Could not add to Calendar.",
+      "scope": "sentence"
     }
   }
 }

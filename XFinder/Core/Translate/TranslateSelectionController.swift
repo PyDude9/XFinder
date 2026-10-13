@@ -68,8 +68,13 @@ final class TranslateSelectionController {
 
     /// Read the selection NOW (before any panel takes focus), decide, show.
     func translateSelection() {
-        let verdict = TranslateSelectionRules.verdict(for: VoiceScreenContext.selectedText())
-        model.sourceApp = NSWorkspace.shared.frontmostApplication?.localizedName
+        translate(text: VoiceScreenContext.selectedText(), sourceApp: NSWorkspace.shared.frontmostApplication?.localizedName)
+    }
+
+    /// Smart Selection's panel hands over the text it already read (the badge works whether or not ⇧⌘G is on).
+    func translate(text: String?, sourceApp: String?) {
+        let verdict = TranslateSelectionRules.verdict(for: text)
+        model.sourceApp = sourceApp
         model.translated = nil
         switch verdict {
         case .translate(let text):

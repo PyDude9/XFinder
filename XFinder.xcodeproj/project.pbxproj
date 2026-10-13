@@ -14,6 +14,8 @@
 		7F1A0315 /* SmartSelect/SmartSelectionRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0314 /* SmartSelect/SmartSelectionRules.swift */; };
 		7F1A0317 /* SmartSelect/UnitConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0316 /* SmartSelect/UnitConversion.swift */; };
 		7F1A0319 /* SmartSelect/TimeZoneConversion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0318 /* SmartSelect/TimeZoneConversion.swift */; };
+		7F1A031B /* SmartSelect/SelectionWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031A /* SmartSelect/SelectionWatcher.swift */; };
+		7F1A031D /* SmartSelect/SmartSelectionBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031C /* SmartSelect/SmartSelectionBadge.swift */; };
 		7F1A001E /* XFinderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000B /* XFinderApp.swift */; };
 		7F1A001F /* MenubarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000C /* MenubarController.swift */; };
 		7F1A0020 /* ClipboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A000D /* ClipboardManager.swift */; };
@@ -59,6 +61,7 @@
 		7F1A022C /* NotchClipboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A022B /* NotchClipboardView.swift */; };
 		7F1A0234 /* Clipboard/NotchClipboardRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0235 /* Clipboard/NotchClipboardRules.swift */; };
 		7F1A0236 /* NotchClipCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0237 /* NotchClipCardView.swift */; };
+		7F1A031F /* SmartSelectViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A031E /* SmartSelectViews.swift */; };
 		7F1A0238 /* NotchTextEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0239 /* NotchTextEditorView.swift */; };
 		7F1A023A /* Notch/NotchPages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A023B /* Notch/NotchPages.swift */; };
 		7F1A023C /* MCP/MCPProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A023D /* MCP/MCPProtocol.swift */; };
@@ -182,6 +185,7 @@
 		7F1A016D /* Voice/TypingSink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016C /* Voice/TypingSink.swift */; };
 		7F1A0171 /* Voice/VoiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0170 /* Voice/VoiceManager.swift */; };
 		7F1A0173 /* Detail/VoiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0172 /* Detail/VoiceDetailView.swift */; };
+		7F1A0321 /* Detail/SmartSelectDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0320 /* Detail/SmartSelectDetailView.swift */; };
 		7F1A0195 /* Voice/DictationMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0196 /* Voice/DictationMode.swift */; };
 		7F1A0197 /* Voice/RefinePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0198 /* Voice/RefinePrompt.swift */; };
 		7F1A0199 /* Voice/RefinerTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A019A /* Voice/RefinerTypes.swift */; };
@@ -301,6 +305,8 @@
 		7F1A0314 /* SmartSelect/SmartSelectionRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SmartSelectionRules.swift; sourceTree = "<group>"; };
 		7F1A0316 /* SmartSelect/UnitConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/UnitConversion.swift; sourceTree = "<group>"; };
 		7F1A0318 /* SmartSelect/TimeZoneConversion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/TimeZoneConversion.swift; sourceTree = "<group>"; };
+		7F1A031A /* SmartSelect/SelectionWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SelectionWatcher.swift; sourceTree = "<group>"; };
+		7F1A031C /* SmartSelect/SmartSelectionBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelect/SmartSelectionBadge.swift; sourceTree = "<group>"; };
 		205EC419305AD1CE0094A78B /* XFinderSync.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = XFinderSync.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7F1A0009 /* XFinder/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = XFinder/Info.plist; sourceTree = SOURCE_ROOT; };
 		7F1A000A /* XFinder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = XFinder.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -349,6 +355,7 @@
 		7F1A022B /* NotchClipboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchClipboardView.swift; sourceTree = "<group>"; };
 		7F1A0235 /* Clipboard/NotchClipboardRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/NotchClipboardRules.swift; sourceTree = "<group>"; };
 		7F1A0237 /* NotchClipCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchClipCardView.swift; sourceTree = "<group>"; };
+		7F1A031E /* SmartSelectViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartSelectViews.swift; sourceTree = "<group>"; };
 		7F1A0239 /* NotchTextEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchTextEditorView.swift; sourceTree = "<group>"; };
 		7F1A023B /* Notch/NotchPages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchPages.swift; sourceTree = "<group>"; };
 		7F1A023D /* MCP/MCPProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCP/MCPProtocol.swift; sourceTree = "<group>"; };
@@ -530,6 +537,7 @@
 		7F1A016C /* Voice/TypingSink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/TypingSink.swift; sourceTree = "<group>"; };
 		7F1A0170 /* Voice/VoiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceManager.swift; sourceTree = "<group>"; };
 		7F1A0172 /* Detail/VoiceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/VoiceDetailView.swift; sourceTree = "<group>"; };
+		7F1A0320 /* Detail/SmartSelectDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SmartSelectDetailView.swift; sourceTree = "<group>"; };
 		7F1A0196 /* Voice/DictationMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/DictationMode.swift; sourceTree = "<group>"; };
 		7F1A0198 /* Voice/RefinePrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/RefinePrompt.swift; sourceTree = "<group>"; };
 		7F1A019A /* Voice/RefinerTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/RefinerTypes.swift; sourceTree = "<group>"; };
@@ -742,6 +750,8 @@
 				7F1A0314 /* SmartSelect/SmartSelectionRules.swift */,
 				7F1A0316 /* SmartSelect/UnitConversion.swift */,
 				7F1A0318 /* SmartSelect/TimeZoneConversion.swift */,
+				7F1A031A /* SmartSelect/SelectionWatcher.swift */,
+				7F1A031C /* SmartSelect/SmartSelectionBadge.swift */,
 				E38D74CB /* QuickSearch/Quicklinks.swift */,
 				7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */,
 				7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */,
@@ -864,6 +874,7 @@
 				7F1A0275 /* WhatsNewWindow.swift */,
 				7F1A022B /* NotchClipboardView.swift */,
 				7F1A0237 /* NotchClipCardView.swift */,
+				7F1A031E /* SmartSelectViews.swift */,
 				7F1A0239 /* NotchTextEditorView.swift */,
 				7F1A021F /* SnapRowView.swift */,
 				7F1A01F1 /* Detail/AlertsDetailView.swift */,
@@ -875,6 +886,7 @@
 				7F1A024F /* Detail/ClipboardLibraryView.swift */,
 				7F1A0062 /* Detail/CompressDetailView.swift */,
 				7F1A0172 /* Detail/VoiceDetailView.swift */,
+				7F1A0320 /* Detail/SmartSelectDetailView.swift */,
 				7F1A0063 /* Detail/PdfToolsDetailView.swift */,
 				7F1A006B /* Detail/NotesDetailView.swift */,
 				7F1A006C /* Detail/BatchRenameDetailView.swift */,
@@ -1081,6 +1093,7 @@
 				7F1A022C /* NotchClipboardView.swift in Sources */,
 				7F1A0234 /* Clipboard/NotchClipboardRules.swift in Sources */,
 				7F1A0236 /* NotchClipCardView.swift in Sources */,
+				7F1A031F /* SmartSelectViews.swift in Sources */,
 				7F1A0238 /* NotchTextEditorView.swift in Sources */,
 				7F1A023A /* Notch/NotchPages.swift in Sources */,
 				7F1A023C /* MCP/MCPProtocol.swift in Sources */,
@@ -1215,6 +1228,8 @@
 				7F1A0315 /* SmartSelect/SmartSelectionRules.swift in Sources */,
 				7F1A0317 /* SmartSelect/UnitConversion.swift in Sources */,
 				7F1A0319 /* SmartSelect/TimeZoneConversion.swift in Sources */,
+				7F1A031B /* SmartSelect/SelectionWatcher.swift in Sources */,
+				7F1A031D /* SmartSelect/SmartSelectionBadge.swift in Sources */,
 				2535B74A /* QuickSearch/Quicklinks.swift in Sources */,
 				7F1A00D3 /* QuickSearch/QuickSearchEngine.swift in Sources */,
 				7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */,
@@ -1266,6 +1281,7 @@
 				7F1A016D /* Voice/TypingSink.swift in Sources */,
 				7F1A0171 /* Voice/VoiceManager.swift in Sources */,
 				7F1A0173 /* Detail/VoiceDetailView.swift in Sources */,
+				7F1A0321 /* Detail/SmartSelectDetailView.swift in Sources */,
 				7F1A0195 /* Voice/DictationMode.swift in Sources */,
 				7F1A0197 /* Voice/RefinePrompt.swift in Sources */,
 				7F1A0199 /* Voice/RefinerTypes.swift in Sources */,

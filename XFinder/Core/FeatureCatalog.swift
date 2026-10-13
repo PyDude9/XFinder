@@ -95,6 +95,7 @@ enum FeatureID: String, CaseIterable {
     case quickSearch, edgeNotes, dropTray, nowPlaying, folderSync, agents, calendar
     case voice
     case translateSelection
+    case smartSelect
     case alerts
     case menuBarReadouts
 }
@@ -208,6 +209,11 @@ enum FeatureCatalog {
                    subtitleKey: "Bôi đen chữ ở app bất kỳ, bấm ⇧⌘G: bản dịch của Apple ngay trên máy, không mạng.",
                    symbol: "character.bubble", group: .tools, enabledKey: "translate.hotkeyEnabled",
                    defaultOn: false, permissions: [.accessibility], idle: .listensToKeyboard),
+        // E4/E5. One AXObserver on the frontmost app + a left-mouse-up monitor pair; nothing polls.
+        FeatureDef(id: .smartSelect, titleKey: "Chọn văn bản thông minh",
+                   subtitleKey: "Bôi đen chữ ở app khác: nút nhỏ đổi đơn vị, đổi múi giờ, tính, thêm vào Lịch, dịch.",
+                   symbol: "wand.and.stars", group: .tools, enabledKey: "smartSelect.enabled",
+                   defaultOn: false, permissions: [.accessibility], idle: .listensToMouse),
         FeatureDef(id: .voice, titleKey: "Nhập bằng giọng nói",
                    subtitleKey: "Giữ phím, nói, thả ra là chữ vào ô đang gõ.",
                    symbol: "mic.fill", group: .voice, enabledKey: "voice.enabled",

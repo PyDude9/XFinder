@@ -20,8 +20,6 @@ struct VoiceDetailView: View {
 
     // Activation
     @AppStorage(VoiceSettingsKey.enabled) private var voiceEnabled = true
-    // N5a — one key, one reader (TranslateSelectionController)
-    @AppStorage("translate.hotkeyEnabled") private var translateEnabled = false
     @AppStorage(VoiceSettingsKey.language) private var voiceLanguage = "vi-VN"
     @AppStorage(VoiceSettingsKey.triggerKey) private var triggerKeyRaw = VoiceTriggerKey.rightOption.rawValue
     @AppStorage(VoiceSettingsKey.activationMode) private var activationModeRaw = VoiceActivationMode.hold.rawValue
@@ -96,8 +94,6 @@ struct VoiceDetailView: View {
                 hudSection
                 Divider().padding(.horizontal, XFinderTokens.Space.page)
                 contextSection
-                Divider().padding(.horizontal, XFinderTokens.Space.page)
-                translateSection
                 permissionsSection
             }
             .padding(.bottom, XFinderTokens.Space.section)
@@ -596,22 +592,6 @@ struct VoiceDetailView: View {
     }
 
     // MARK: - 6. Permissions & live test
-
-    /// N5a — the user comes here to turn on ⇧⌘G: select text anywhere, get Apple's on-device translation.
-    private var translateSection: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            SectionHeader(icon: "character.bubble",
-                          title: L10n.t("Dịch vùng chọn (⇧⌘G)"),
-                          subtitle: L10n.t("Bôi đen chữ ở app bất kỳ, bấm ⇧⌘G: bản dịch của Apple ngay trên máy, không mạng."))
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                ToggleRow(title: L10n.t("Bật phím ⇧⌘G dịch vùng chọn"),
-                          subtitle: L10n.t("Đọc chữ đang bôi đen qua Trợ năng rồi mở hộp dịch của Apple (macOS 15+). Không gửi gì đi; gói ngôn ngữ tải một lần theo cặp. App nào không cho Trợ năng đọc vùng chọn thì panel nói rõ."),
-                          isOn: $translateEnabled)
-                    .onChange(of: translateEnabled) { TranslateSelectionController.shared.applySettings() }
-            }
-            .padding(.horizontal, XFinderTokens.Space.page)
-        }
-    }
 
     private var permissionsSection: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
