@@ -155,6 +155,50 @@ final class AgentCodexTests: XCTestCase {
         XCTAssertTrue(events.allSatisfy { $0.agentPID == nil }, "no ancestor named codex ⇒ no pid, never the shell's")
     }
 
+    // MARK: Ids that could escape the decisions folder (P5 review)
+
+    func testIdsThatCouldEscapeTheDecisionsFolderAreRefused() {
+        let evil = line("codex", #"{"hook_event_name":"PermissionRequest","session_id":"../../Library/LaunchAgents/x","tool_name":"Bash"}"#)
+        XCTAssertNil(AgentEvents.parse(line: evil), "an id with a path in it is not a session")
+        XCTAssertNil(AgentDecision.fileName(sessionID: "../x", requestID: "r1"))
+        XCTAssertNil(AgentDecision.fileName(sessionID: "s1", requestID: "a/b"))
+        XCTAssertNil(AgentDecision.fileName(sessionID: String(repeating: "a", count: 129), requestID: "r1"))
+        XCTAssertEqual(AgentDecision.fileName(sessionID: "019a-5b0c_x", requestID: "ee48-71b5"), "019a-5b0c_x-ee48-71b5.json")
+    }
+
+    /// Starts the shipped hook as if XFinder were running (`XFINDER_ASSUME_RUNNING`), returns whether it exited by
+    /// itself within `seconds` (a hook that waits for a decision is killed and reports false).
+    private func hookExitsOnItsOwn(sid: String, within seconds: TimeInterval) throws -> Bool {
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("xf-hook-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        p.arguments = [scriptURL.path, "codex"]
+        var env = ProcessInfo.processInfo.environment
+        env["XFINDER_AGENT_DIR"] = tmp.path
+        env["XFINDER_ASSUME_RUNNING"] = "1"
+        p.environment = env
+        let input = Pipe()
+        p.standardInput = input
+        p.standardOutput = FileHandle.nullDevice
+        try p.run()
+        input.fileHandleForWriting.write(Data(#"{"hook_event_name":"PermissionRequest","session_id":"\#(sid)","tool_name":"Bash"}"#.utf8))
+        try input.fileHandleForWriting.close()
+        let deadline = Date().addingTimeInterval(seconds)
+        while p.isRunning && Date() < deadline { Thread.sleep(forTimeInterval: 0.05) }
+        let exited = !p.isRunning
+        if !exited { p.terminate(); p.waitUntilExit() }
+        return exited
+    }
+
+    func testTheHookNeverWaitsOnAnUnsafeSessionIdButDoesOnASafeOne() throws {
+        guard FileManager.default.isExecutableFile(atPath: "/usr/bin/jq") else { throw XCTSkip("no /usr/bin/jq on this Mac") }
+        XCTAssertFalse(try hookExitsOnItsOwn(sid: "safe-id-1", within: 1),
+                       "positive control: a safe id waits for the notch's decision (else this test proves nothing)")
+        XCTAssertTrue(try hookExitsOnItsOwn(sid: "../escape", within: 3),
+                      "an id with a path in it must not be waited on — its decision file would live outside the folder")
+    }
+
     func testTheShippedHookIgnoresAnAgentItDoesNotKnow() throws {
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("xf-hook-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: tmp) }

@@ -75,7 +75,8 @@ enum AgentEvents {
               let payload = obj["payload"] as? [String: Any] else { return nil }
         let rawName = payload["hook_event_name"] as? String ?? ""
         let sessionID = payload["session_id"] as? String ?? ""
-        guard !sessionID.isEmpty else { return nil }
+        // P5 review: the id becomes part of a decision FILE NAME — `../` would point outside the decisions folder.
+        guard isSafeSessionID(sessionID) else { return nil }
         let env = obj["env"] as? [String: Any] ?? [:]
         let received = (obj["received_at"] as? String).flatMap(Self.iso.date(from:)) ?? Date(timeIntervalSince1970: 0)
         var e = Event(receivedAt: received, name: Event.Name(rawValue: rawName) ?? .other, rawName: rawName, sessionID: sessionID,
@@ -96,6 +97,12 @@ enum AgentEvents {
                               tmuxPane: nonEmpty(env["tmux_pane"]), weztermPane: nonEmpty(env["wezterm_pane"]),
                               termSession: nonEmpty(env["term_session"]), entrypoint: nonEmpty(env["entrypoint"]))
         return e
+    }
+
+    /// A session id that may become part of a file name: letters, digits, `-`, `_`; 1…128 characters. Claude Code and
+    /// Codex hand out UUIDs; anything else is not a session this app will write a decision for.
+    static func isSafeSessionID(_ s: String) -> Bool {
+        !s.isEmpty && s.utf8.count <= 128 && s.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-" || $0 == "_") }
     }
 
     static func parse(jsonl: String) -> [Event] {

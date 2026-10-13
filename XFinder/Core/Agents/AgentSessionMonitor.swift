@@ -21,6 +21,10 @@ final class AgentSessionMonitor {
     // MARK: - Settings (the one reader)
 
     var isEnabled: Bool { UserDefaults.standard.object(forKey: "agents.enabled") as? Bool ?? false }
+    // P5c — notices at the notch (each the ONE reader of its key).
+    var notifyPermission: Bool { UserDefaults.standard.object(forKey: "agents.notify.permission") as? Bool ?? true }
+    var notifyFinished: Bool { UserDefaults.standard.object(forKey: "agents.notify.finished") as? Bool ?? true }
+    var notifySound: Bool { UserDefaults.standard.object(forKey: "agents.notify.sound") as? Bool ?? false }
 
     // MARK: - Paths
 
@@ -89,6 +93,7 @@ final class AgentSessionMonitor {
         livenessTimer?.invalidate(); livenessTimer = nil
         reloadWork?.cancel(); reloadWork = nil
         answered = []; lastEventAt = [:]
+        notifyBaseline = nil
         if !sessions.isEmpty { sessions = []; onChange?() }
     }
 
@@ -123,10 +128,113 @@ final class AgentSessionMonitor {
         let hooked = running ? AgentSessionRules.sessions(from: all, now: now, answered: answered, isAlive: Self.isAlive) : []
         let new = (hooked + OpenCodeMonitor.shared.sessions).sorted(by: AgentSessionRules.displayOrder)
         if new != sessions {
+            notify(old: notifyBaseline, new: new)
             sessions = new
             onChange?()
         }
+        notifyBaseline = running ? sessions : nil
         syncLivenessTimer()
+    }
+
+    // MARK: - Notices (P5c)
+
+    /// The sessions the last notice decision was made against; nil until the first rebuild after starting, so a
+    /// launch (or turning the feature on) announces nothing.
+    private var notifyBaseline: [AgentSession]?
+
+    private func notify(old: [AgentSession]?, new: [AgentSession]) {
+        // OpenCode's rows arrive with its first refresh, after the hook baseline: rows from that FIRST snapshot are a
+        // baseline too (counting snapshots, not rebuilds — an empty first snapshot triggers no rebuild).
+        let openCodeLive = OpenCodeMonitor.shared.snapshotGeneration > 1
+        let events = AgentNotify.events(old: old, new: new,
+                                        settings: .init(permission: notifyPermission, finished: notifyFinished))
+            .filter { e in
+                switch e {
+                case .needsApproval(let s, _), .finished(let s): return s.agent != .opencode || openCodeLive
+                }
+            }
+        guard !events.isEmpty else { return }
+        for e in events { NotchSurfaceController.shared.presentAgentNotice(AgentNotify.item(for: e)) }
+        if notifySound { NSSound(named: NSSound.Name(events.contains { if case .needsApproval = $0 { return true }; return false } ? "Glass" : "Pop"))?.play() }
+    }
+
+    // MARK: - Recent sessions (P5c)
+
+    /// Terminal sessions that are no longer live, newest first. Scanned when the notch Agents page opens and when the
+    /// settings page asks — never on a timer.
+    private(set) var recent: [AgentRecent.Entry] = []
+    private var recentScanning = false
+    private var recentWaiters: [@MainActor () -> Void] = []
+    private var agentsPageOpen = false
+
+    func setAgentsPageOpen(_ open: Bool) {
+        defer { agentsPageOpen = open }
+        if open && !agentsPageOpen { refreshRecent() }
+    }
+
+    func refreshRecent(completion: (@MainActor () -> Void)? = nil) {
+        if let completion { recentWaiters.append(completion) }
+        guard !recentScanning else { return }
+        recentScanning = true
+        let openCode = OpenCodeMonitor.shared.recentEntries
+        Task.detached(priority: .utility) {
+            let scanned = Self.scanRecent(now: Date())
+            await MainActor.run {
+                let me = AgentSessionMonitor.shared
+                me.recentScanning = false
+                let live = Set(me.sessions.map(\.listID))
+                let merged = AgentRecent.merged(scanned + openCode, live: live, limit: 8)
+                if merged != me.recent { me.recent = merged; me.onChange?() }
+                let waiters = me.recentWaiters
+                me.recentWaiters = []
+                for w in waiters { w() }
+            }
+        }
+    }
+
+    /// Off the main thread: the newest files of each agent, only their heads (measured limits in `AgentRecent`).
+    nonisolated static func scanRecent(now: Date) -> [AgentRecent.Entry] {
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser
+        let maxAge: TimeInterval = 14 * 86_400
+        var out: [AgentRecent.Entry] = []
+
+        var claudeFiles: [(URL, Date)] = []
+        let projects = home.appendingPathComponent(".claude/projects")
+        for dir in (try? fm.contentsOfDirectory(at: projects, includingPropertiesForKeys: nil)) ?? [] {
+            for f in (try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.contentModificationDateKey])) ?? []
+            where f.pathExtension == "jsonl" {
+                guard let m = try? f.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate,
+                      now.timeIntervalSince(m) < maxAge else { continue }
+                claudeFiles.append((f, m))
+            }
+        }
+        for (f, m) in claudeFiles.sorted(by: { $0.1 > $1.1 }).prefix(40) {
+            guard let h = try? FileHandle(forReadingFrom: f) else { continue }
+            let head = (try? h.read(upToCount: AgentRecent.claudeHeadBytes)) ?? Data()
+            try? h.close()
+            if let e = AgentRecent.claudeEntry(head: head, fileStem: f.deletingPathExtension().lastPathComponent, modified: m) {
+                out.append(e)
+            }
+        }
+
+        var codexFiles: [(URL, Date)] = []
+        if let e = fm.enumerator(at: home.appendingPathComponent(".codex/sessions"), includingPropertiesForKeys: [.contentModificationDateKey]) {
+            for case let f as URL in e where f.pathExtension == "jsonl" {
+                let m = (try? f.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast
+                if now.timeIntervalSince(m) < maxAge { codexFiles.append((f, m)) }
+            }
+        }
+        for (f, m) in codexFiles.sorted(by: { $0.1 > $1.1 }).prefix(40) {
+            guard let h = try? FileHandle(forReadingFrom: f) else { continue }
+            let head = (try? h.read(upToCount: 1_048_576)) ?? Data()      // session_meta carries the base instructions
+            try? h.close()
+            guard let nl = head.firstIndex(of: UInt8(ascii: "\n")) else { continue }
+            if let e = AgentRecent.codexEntry(firstLine: String(decoding: head[..<nl], as: UTF8.self), modified: m) {
+                out.append(e)
+            }
+        }
+        return out
     }
 
     /// A 20 s re-evaluation while any listed session is not ended: an agent that quit without a SessionEnd
@@ -155,8 +263,9 @@ final class AgentSessionMonitor {
     @discardableResult
     func answer(_ p: AgentSession.PendingPermission, of session: AgentSession, allow: Bool) -> Bool {
         if session.agent == .opencode { return OpenCodeMonitor.shared.answer(p, of: session, allow: allow) }
-        guard session.agent.usesHookScript else { return false }
-        let url = decisionsDir(for: session.agent).appendingPathComponent(AgentDecision.fileName(sessionID: session.id, requestID: p.requestID))
+        guard session.agent.usesHookScript,
+              let name = AgentDecision.fileName(sessionID: session.id, requestID: p.requestID) else { return false }
+        let url = decisionsDir(for: session.agent).appendingPathComponent(name)
         let payload = AgentDecision.payload(allow: allow)
         do {
             try payload.write(to: url, atomically: true, encoding: .utf8)

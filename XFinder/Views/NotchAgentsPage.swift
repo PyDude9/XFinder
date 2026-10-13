@@ -87,11 +87,14 @@ struct NotchAgentsPage: View {
 
     private var emptyState: some View {
         VStack(spacing: XFinderTokens.Space.tight) {
-            Image(systemName: "terminal").font(XFinderTokens.Font.pageIcon).opacity(0.5)
-            if model.agentHookInstalled {
+            if model.recentAgents.isEmpty {        // the recent list needs the height (Agents body: 150 pt)
+                Image(systemName: "terminal").font(XFinderTokens.Font.pageIcon).opacity(0.5)
+            }
+            if model.agentHookInstalled || !model.recentAgents.isEmpty {
                 Text(L10n.t("Chưa có phiên agent nào."))
                     .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65))
                     .multilineTextAlignment(.center)
+                if !model.recentAgents.isEmpty { recentList }
             } else {
                 VStack(spacing: XFinderTokens.Space.tight) {
                     Text(L10n.t("Chưa cài hook — mở trang Agent AI để cài."))
@@ -104,6 +107,30 @@ struct NotchAgentsPage: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// P5c — up to three terminal sessions that are no longer live; one button copies the command that reopens one.
+    private var recentList: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(L10n.t("Gần đây")).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+            ForEach(model.recentAgents.prefix(3)) { e in
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    Text(e.displayName).font(XFinderTokens.Font.caption).foregroundColor(.white)
+                        .lineLimit(1).truncationMode(.middle)
+                        .frame(minWidth: 0, alignment: .leading).layoutPriority(-1)   // a long folder name gives way first
+                    Text(e.agent.displayName).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.45))
+                        .lineLimit(1).fixedSize()
+                    Text(NotchClipCardView.ageLabel(e.updated, now: Date()))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.45)).monospacedDigit()
+                    Spacer(minLength: 4)
+                    Button(L10n.t("Sao chép lệnh")) { NotchSurfaceController.shared.copyResumeCommand(e) }
+                        .buttonStyle(NotchPillButtonStyle(primary: false))
+                        .help(e.resumeCommand)
+                }
+            }
+        }
+        .padding(.horizontal, XFinderTokens.Space.inline)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -134,7 +161,8 @@ private struct AgentRow: View {
         HStack(spacing: XFinderTokens.Space.tight) {
             Circle().fill(tint).frame(width: 8, height: 8)
             Text(session.displayName)
-                .font(XFinderTokens.Font.row).foregroundColor(.white).lineLimit(1)
+                .font(XFinderTokens.Font.row).foregroundColor(.white).lineLimit(1).truncationMode(.tail)
+                .frame(minWidth: 0, alignment: .leading).layoutPriority(-1)       // OpenCode titles can be long
             // P5: which agent — a product name, identical in both languages.
             Text(session.agent.displayName)
                 .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.45))

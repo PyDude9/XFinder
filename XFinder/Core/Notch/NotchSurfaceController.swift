@@ -346,6 +346,7 @@ final class NotchSurfaceController {
         CalendarGlanceMonitor.shared.setPageOpen(machine.state == .expanded(.calendar))   // N4: the minute ticker only while shown
         // §3b #37 / P2: the usage scan runs only while the Agents page or the AI usage tool is on screen.
         AgentUsageMonitor.shared.setPageOpen(machine.state == .expanded(.agents) || machine.state == .expanded(.aiUsage))
+        AgentSessionMonitor.shared.setAgentsPageOpen(machine.state == .expanded(.agents))
         render()
         syncClipboardKeyboard()
         syncHubSwipe()
@@ -412,6 +413,7 @@ final class NotchSurfaceController {
     /// The monitor rebuilt its sessions: mirror them and redraw (the tab badge counts those waiting for you).
     private func agentsChanged() {
         model.agents = AgentSessionMonitor.shared.sessions
+        model.recentAgents = AgentSessionMonitor.shared.recent
         render()
     }
 
@@ -433,6 +435,19 @@ final class NotchSurfaceController {
 
     func openAgentTerminal(_ session: AgentSession) {
         AgentSessionMonitor.shared.openTerminal(of: session)
+    }
+
+    /// P5c — an agent notice, unless the person is already looking at the Agents page (the row is right there).
+    func presentAgentNotice(_ item: LiveActivity.Item) {
+        guard machine.state != .expanded(.agents) else { return }
+        present(item)
+    }
+
+    /// P5c — "Phiên gần đây" on the notch's empty Agents page: copy the command that reopens a session.
+    func copyResumeCommand(_ entry: AgentRecent.Entry) {
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(entry.resumeCommand, forType: .string)
     }
 
     private var nowPlayingTicker: Timer?
@@ -864,6 +879,7 @@ final class NotchSurfaceController {
         case .join(let url): NSWorkspace.shared.open(url)
         case .snooze(let key): CalendarGlanceMonitor.shared.snooze(key: key)
         case .openCalendar: reveal(page: .calendar)
+        case .openAgents: reveal(page: .agents)
         }
     }
 

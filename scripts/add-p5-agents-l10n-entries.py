@@ -43,6 +43,25 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Đang theo dõi.": ("Following.", S),
     "Không tìm thấy lệnh opencode (~/.opencode/bin, Homebrew, ~/.local/bin, ~/.bun/bin).":
         ("The opencode command was not found (~/.opencode/bin, Homebrew, ~/.local/bin, ~/.bun/bin).", S),
+    # P5c — notices, recent sessions, Cursor
+    "Cần bạn duyệt": ("Needs your approval", S),
+    "Tới lượt bạn": ("Your turn", S),
+    "Đo trên máy này (14/10/2026): cursor-agent 2025.09.17 chưa đăng nhập, không có ứng dụng Cursor. Theo tài liệu hook của Cursor, hook chỉ được hỏi TRƯỚC khi Cursor hiện câu hỏi duyệt — không có sự kiện nào báo lúc Cursor đang chờ bạn — và bản CLI chỉ nối một phần các sự kiện. Vì vậy notch không thể hiện thẻ duyệt cho Cursor một cách trung thực.":
+        ("Measured on this Mac (2026-10-14): cursor-agent 2025.09.17, not logged in, no Cursor app. According to Cursor's hook documentation, a hook is asked BEFORE Cursor shows its approval prompt — no event says Cursor is waiting for you — and the CLI wires only some of the events. So the notch cannot honestly show an approval card for Cursor.", S),
+    "Chưa hỗ trợ.": ("Not supported yet.", S),
+    "Thông báo hiện ở notch (cùng chỗ với pin, mạng, cuộc họp), mỗi lần một cái, cái mới thay cái cũ. Không hiện khi bạn đang mở trang Agents trên notch. Mở XFinder không phát lại các phiên đang chờ.":
+        ("Notices appear at the notch (where battery, network and meeting notices do), one at a time, the newest replacing the last. None while the Agents page is open on the notch. Opening XFinder does not replay sessions that were already waiting.", S),
+    "Khi một phiên cần bạn duyệt quyền": ("When a session needs your approval", S),
+    "Khi một phiên xong lượt và tới lượt bạn": ("When a session finishes its turn and it is yours", S),
+    "Kèm âm thanh": ("With a sound", S),
+    "Phiên gần đây": ("Recent sessions", S),
+    "Phiên Claude Code và Codex chạy trong terminal (phiên của app desktop không được liệt kê) và phiên OpenCode, trong 14 ngày qua, đã không còn chạy. Từ tệp phiên (Claude Code, Codex) hoặc lệnh opencode (OpenCode), XFinder chỉ lấy mã phiên, thư mục, thời điểm và tiêu đề của OpenCode. \"Sao chép lệnh\" chép lệnh mở lại phiên đó trong đúng thư mục để bạn dán vào terminal.":
+        ("Claude Code and Codex sessions that ran in a terminal (desktop-app sessions are not listed) and OpenCode sessions, from the last 14 days, that are no longer running. From the session file (Claude Code, Codex) or the opencode command (OpenCode), XFinder takes only the session id, the folder, the time and OpenCode's title. \"Copy command\" copies the command that reopens that session in its folder, for you to paste into a terminal.", S),
+    "Chưa có phiên nào.": ("No sessions yet.", S),
+    "Mở thư mục": ("Open folder", S),
+    "Đã chép": ("Copied", S),
+    "Sao chép lệnh": ("Copy command", S),
+    "Gần đây": ("Recent", S),
     # P5a — notch Agents page
     "Chưa có phiên agent nào.": ("No agent sessions yet.", S),
 }

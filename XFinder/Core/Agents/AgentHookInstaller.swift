@@ -129,7 +129,11 @@ enum AgentHookInstaller {
 /// documented PermissionRequest hook output (`hookSpecificOutput.decision.behavior`) — and Codex documents the
 /// same shape (P5), so one payload serves both.
 enum AgentDecision {
-    static func fileName(sessionID: String, requestID: String) -> String { "\(sessionID)-\(requestID).json" }
+    /// nil unless both ids are safe file-name parts (P5 review: a forged `session_id` of `../…` escaped the folder).
+    static func fileName(sessionID: String, requestID: String) -> String? {
+        guard AgentEvents.isSafeSessionID(sessionID), AgentEvents.isSafeSessionID(requestID) else { return nil }
+        return "\(sessionID)-\(requestID).json"
+    }
 
     static func payload(allow: Bool) -> String {
         let decision: [String: Any] = ["behavior": allow ? "allow" : "deny"]

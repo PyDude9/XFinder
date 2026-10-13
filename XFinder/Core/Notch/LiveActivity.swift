@@ -6,7 +6,7 @@ import Foundation
 /// flagsChanged, IOBluetooth connect notifications); nothing polls.
 enum LiveActivity {
 
-    enum Kind: String, CaseIterable { case power, network, capsLock, bluetooth, alert, volume, timer, meeting }
+    enum Kind: String, CaseIterable { case power, network, capsLock, bluetooth, alert, volume, timer, meeting, agent }
 
     enum Tint: Equatable { case neutral, good, warning, bad }
 
@@ -30,6 +30,8 @@ enum LiveActivity {
         case join(URL)
         case snooze(key: String)
         case openCalendar
+        /// P5c — an agent notice: open the hub on the Agents page.
+        case openAgents
     }
 
     // MARK: Power

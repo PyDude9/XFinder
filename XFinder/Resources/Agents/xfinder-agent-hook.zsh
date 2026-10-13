@@ -41,6 +41,17 @@ else
   sid="$(printf '%s' "$payload" | sed -n 's/.*"session_id" *: *"\([0-9A-Za-z-]*\)".*/\1/p' | head -1)"
 fi
 
+# The session id becomes part of a decision FILE NAME: only letters, digits, - and _ (P5 review — a forged
+# "../…" id escaped the decisions folder). An unsafe id gets no wait: the agent asks in its own terminal.
+case "$sid" in
+  ''|*[!A-Za-z0-9_-]*) safe_sid="" ;;
+  *) safe_sid="$sid" ;;
+esac
+[ ${#safe_sid} -gt 128 ] && safe_sid=""
+
+# XFINDER_ASSUME_RUNNING lets the test suite exercise the waiting path without the app (no agent sets it).
+xfinder_running() { [ -n "${XFINDER_ASSUME_RUNNING:-}" ] || /usr/bin/pgrep -x XFinder >/dev/null 2>&1; }
+
 # Find the agent process: $PPID, then its parents, until a process whose executable is named like the agent.
 agent_pid=""; tty_name=""
 pid=$PPID
@@ -78,9 +89,9 @@ request_id="$(/usr/bin/uuidgen 2>/dev/null | tr 'A-Z' 'a-z')"
 printf '{"received_at":"%s","request_id":"%s","agent":"%s","env":%s,"payload":%s}\n' "$now" "$request_id" "$agent" "$env_json" "$payload" \
   >> "$dir/events/events-$day.jsonl" 2>/dev/null
 
-if [ "$event" = "PermissionRequest" ] && [ -n "$sid" ] && [ -n "$request_id" ]; then
-  /usr/bin/pgrep -x XFinder >/dev/null 2>&1 || exit 0
-  decision_file="$dir/decisions/$sid-$request_id.json"
+if [ "$event" = "PermissionRequest" ] && [ -n "$safe_sid" ] && [ -n "$request_id" ]; then
+  xfinder_running || exit 0
+  decision_file="$dir/decisions/$safe_sid-$request_id.json"
   find "$dir/decisions" -type f -mmin +60 -delete 2>/dev/null
   zmodload zsh/zselect 2>/dev/null
   typeset -F SECONDS
@@ -94,7 +105,7 @@ if [ "$event" = "PermissionRequest" ] && [ -n "$sid" ] && [ -n "$request_id" ]; 
       exit 0
     fi
     if (( SECONDS >= next_check )); then
-      /usr/bin/pgrep -x XFinder >/dev/null 2>&1 || exit 0
+      xfinder_running || exit 0
       next_check=$(( SECONDS + 5 ))
     fi
     if zmodload -e zsh/zselect; then zselect -t 25; else sleep 0.25; fi

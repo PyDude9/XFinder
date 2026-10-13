@@ -60,7 +60,7 @@ SettingsShell.swift NotchInterfaceDetailView.swift MediaDetailView.swift AIAgent
 CalendarSettingsDetailView.swift LiveActivitiesDetailView.swift ShortcutsDetailView.swift ShortcutCatalog.swift
 DropTrayDetailView.swift SidebarDestination.swift
 AgentKind.swift AgentEvents.swift AgentHookInstaller.swift AgentSessionMonitor.swift NotchAgentsPage.swift
-OpenCodeRules.swift OpenCodeMonitor.swift"
+OpenCodeRules.swift OpenCodeMonitor.swift AgentNotify.swift AgentRecent.swift"
 MISSING=0
 for f in $GESTURE_FILES; do
   if grep -q "/$f" "$LIST"; then echo "  OK   $f"; else echo "  MISS $f"; MISSING=$((MISSING + 1)); fi

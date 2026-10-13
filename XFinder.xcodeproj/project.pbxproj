@@ -104,6 +104,8 @@
 		7F1A027C /* Clipboard/LinkPreviewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A027D /* Clipboard/LinkPreviewRules.swift */; };
 		7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0263 /* Agents/AgentHookInstaller.swift */; };
 		7F1A0302 /* Agents/AgentKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0303 /* Agents/AgentKind.swift */; };
+		7F1A030A /* Agents/AgentRecent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A030B /* Agents/AgentRecent.swift */; };
+		7F1A0308 /* Agents/AgentNotify.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0309 /* Agents/AgentNotify.swift */; };
 		7F1A0306 /* Agents/OpenCodeMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0307 /* Agents/OpenCodeMonitor.swift */; };
 		7F1A0304 /* Agents/OpenCodeRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0305 /* Agents/OpenCodeRules.swift */; };
 		7F1A035D /* Agents/ClaudeStatusLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A035C /* Agents/ClaudeStatusLine.swift */; };
@@ -440,6 +442,8 @@
 		7F1A027D /* Clipboard/LinkPreviewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/LinkPreviewRules.swift; sourceTree = "<group>"; };
 		7F1A0263 /* Agents/AgentHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentHookInstaller.swift; sourceTree = "<group>"; };
 		7F1A0303 /* Agents/AgentKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentKind.swift; sourceTree = "<group>"; };
+		7F1A030B /* Agents/AgentRecent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentRecent.swift; sourceTree = "<group>"; };
+		7F1A0309 /* Agents/AgentNotify.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentNotify.swift; sourceTree = "<group>"; };
 		7F1A0307 /* Agents/OpenCodeMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/OpenCodeMonitor.swift; sourceTree = "<group>"; };
 		7F1A0305 /* Agents/OpenCodeRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/OpenCodeRules.swift; sourceTree = "<group>"; };
 		7F1A035C /* Agents/ClaudeStatusLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/ClaudeStatusLine.swift; sourceTree = "<group>"; };
@@ -754,6 +758,8 @@
 				7F1A027D /* Clipboard/LinkPreviewRules.swift */,
 				7F1A0263 /* Agents/AgentHookInstaller.swift */,
 				7F1A0303 /* Agents/AgentKind.swift */,
+				7F1A030B /* Agents/AgentRecent.swift */,
+				7F1A0309 /* Agents/AgentNotify.swift */,
 				7F1A0307 /* Agents/OpenCodeMonitor.swift */,
 				7F1A0305 /* Agents/OpenCodeRules.swift */,
 				7F1A035C /* Agents/ClaudeStatusLine.swift */,
@@ -1252,6 +1258,8 @@
 				7F1A027C /* Clipboard/LinkPreviewRules.swift in Sources */,
 				7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */,
 				7F1A0302 /* Agents/AgentKind.swift in Sources */,
+				7F1A030A /* Agents/AgentRecent.swift in Sources */,
+				7F1A0308 /* Agents/AgentNotify.swift in Sources */,
 				7F1A0306 /* Agents/OpenCodeMonitor.swift in Sources */,
 				7F1A0304 /* Agents/OpenCodeRules.swift in Sources */,
 				7F1A035D /* Agents/ClaudeStatusLine.swift in Sources */,

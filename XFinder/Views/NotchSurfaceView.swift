@@ -48,6 +48,8 @@ final class NotchSurfaceModel {
     var calendarHidesAllDay = false
     /// N3: Claude Code sessions (mirrored from `AgentSessionMonitor`), whether the feature is on, and whether the hook is installed.
     var agents: [AgentSession] = []
+    /// P5c — terminal sessions that are no longer live, newest first (filled while the Agents page is open).
+    var recentAgents: [AgentRecent.Entry] = []
     var agentsEnabled = false
     var agentHookInstalled = false
     var agentsNeedingYou: Int { agents.filter(\.needsYou).count }
@@ -665,6 +667,7 @@ struct NotchSurfaceView: View {
         case .join: Text(L10n.t("Tham gia"))
         case .snooze: Text(L10n.t("Hoãn 5 phút"))
         case .openCalendar: Text(L10n.t("Mở Lịch"))
+        case .openAgents: Text(L10n.t("Xem"))
         }
     }
 

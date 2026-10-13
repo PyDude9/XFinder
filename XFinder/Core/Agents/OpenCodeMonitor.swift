@@ -81,6 +81,7 @@ final class OpenCodeMonitor {
         trailingWork?.cancel(); trailingWork = nil
         safetyTimer?.invalidate(); safetyTimer = nil
         answered = []; firstSeen = [:]; lastSnapshot = nil
+        snapshotGeneration = 0
         state = .off
         publish([])
     }
@@ -173,6 +174,7 @@ final class OpenCodeMonitor {
         } else {
             state = .ready
             lastSnapshot = snap
+            snapshotGeneration += 1
             let now = Date()
             for p in snap.pending where firstSeen[p.id] == nil { firstSeen[p.id] = now }
             let live = Set(snap.pending.map(\.id))
@@ -189,6 +191,18 @@ final class OpenCodeMonitor {
                                           clientOpen: snap.clientOpen, now: Date(), answered: answered, firstSeen: firstSeen)
         publish(rows)
         syncSafetyTimer()
+    }
+
+    /// How many refreshes have answered since the monitor started (rows from the first are a notice baseline).
+    private(set) var snapshotGeneration = 0
+
+    /// P5c — OpenCode's top-level sessions from the last refresh, for "Phiên gần đây" (empty while off).
+    var recentEntries: [AgentRecent.Entry] {
+        guard running, let snap = lastSnapshot else { return [] }
+        let cutoff = Date().addingTimeInterval(-14 * 86_400)          // the same 14 days as the other agents
+        return snap.info.filter { $0.parentID == nil && $0.updated > cutoff }.map {
+            AgentRecent.Entry(agent: .opencode, sessionID: $0.id, cwd: $0.directory, updated: $0.updated, title: $0.title)
+        }
     }
 
     private func publish(_ rows: [AgentSession]) {

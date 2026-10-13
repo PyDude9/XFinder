@@ -6,12 +6,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-agents.XXXXXX)
-FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift"
+FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='AgentSession|AgentCodex|OpenCodeRules|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
+FILTER='AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -63,7 +63,7 @@ run "A8 the decision JSON drifts from the documented shape" XFinder/Core/Agents/
   "'        let decision: [String: Any] = [\"behavior\": allow ? \"allow\" : \"deny\"]'" \
   "'        let decision: [String: Any] = [\"permissionDecision\": allow ? \"allow\" : \"deny\"]'"
 run "A9 a line without a session id still becomes an event" XFinder/Core/Agents/AgentEvents.swift \
-  "'        guard !sessionID.isEmpty else { return nil }\n'" "''"
+  "'        guard isSafeSessionID(sessionID) else { return nil }\n'" "''"
 run "A10 PermissionRequest timeout shrinks to the default (the hook would be killed while waiting)" XFinder/Core/Agents/AgentHookInstaller.swift \
   "'        (\"PermissionRequest\", 3600), (\"PermissionDenied\", 10),'" "'        (\"PermissionRequest\", 10), (\"PermissionDenied\", 10),'"
 
@@ -136,6 +136,32 @@ run "A36 session times read as seconds (dates in 58 000 AD)" $O \
   "'        if let n = ms as? NSNumber { return Date(timeIntervalSince1970: n.doubleValue / 1000) }'" "'        if let n = ms as? NSNumber { return Date(timeIntervalSince1970: n.doubleValue) }'"
 run "A37 an answered OpenCode request keeps its card" $O \
   "'            let waiting = pending.filter { \$0.sessionID == s.id && !answered.contains(\$0.id) }'" "'            let waiting = pending.filter { \$0.sessionID == s.id }'"
+
+# P5c — notices and recent sessions.
+N=XFinder/Core/Agents/AgentNotify.swift
+RC=XFinder/Core/Agents/AgentRecent.swift
+run "A38 launching XFinder announces sessions that were already waiting" $N \
+  "'        guard let old else { return [] }'" "'        let old = old ?? []'"
+run "A39 the same request is announced on every rebuild" $N \
+  "'                if case .waitingForPermission(let q)? = before?.status, q.requestID == p.requestID { continue }'" "'                _ = before'"
+run "A40 answering a request reads as a finished turn" $N \
+  "'                guard settings.finished, let before, case .running = before.status else { continue }'" "'                guard settings.finished, before != nil else { continue }'"
+run "A41 desktop-app Claude sessions listed as terminal sessions" $RC \
+  "'        guard let entry = field(\"entrypoint\", in: text), entry == \"cli\",'" "'        guard let entry = field(\"entrypoint\", in: text), !entry.isEmpty,'"
+run "A42 Codex desktop sessions listed" $RC \
+  "'        guard terminal, let sid'" "'        guard terminal || true, let sid'"
+run "A43 live sessions listed again under recent" $RC \
+  "'            .filter { !live.contains(\$0.id) && seen.insert(\$0.id).inserted }'" "'            .filter { seen.insert(\$0.id).inserted }'"
+run "A44 a value cut by the head limit is guessed" $RC \
+  "'        guard i < text.endIndex else { return nil }                       // unterminated ⇒ cut mid-value'" "'        _ = 0'"
+run "A45 a session id that is not shell-safe reaches the copied command" $RC \
+  "'        !s.isEmpty && s.count <= 80 && s.allSatisfy { \$0.isASCII && (\$0.isLetter || \$0.isNumber || \$0 == \"-\" || \$0 == \"_\") }'" "'        !s.isEmpty'"
+
+# P5 review — a forged session id must never become a path outside the decisions folder.
+run "A46 the parser accepts a session id with a path in it" $E \
+  "'        guard isSafeSessionID(sessionID) else { return nil }'" "'        guard !sessionID.isEmpty else { return nil }'"
+run "A47 the hook waits on (and later cats/rm's) a decision file named by an unsafe id" $Z \
+  "'  \x27\x27|*[!A-Za-z0-9_-]*) safe_sid=\"\" ;;'" "'  \x27\x27) safe_sid=\"\" ;;'"
 
 # The restore check and the post-restore suite run come AFTER every mutation (they used to sit before A11, so the
 # later mutations ran unchecked — found while adding A20/A21).

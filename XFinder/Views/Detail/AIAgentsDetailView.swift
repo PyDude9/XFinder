@@ -19,6 +19,12 @@ struct AIAgentsDetailView: View {
     @AppStorage("agents.opencode") private var openCodeEnabled = false
     @State private var openCodeState: OpenCodeMonitor.State = .off
     @State private var openCodeBinary: String?
+    // P5c — notices + recent sessions
+    @AppStorage("agents.notify.permission") private var notifyPermission = true
+    @AppStorage("agents.notify.finished") private var notifyFinished = true
+    @AppStorage("agents.notify.sound") private var notifySound = false
+    @State private var recent: [AgentRecent.Entry] = []
+    @State private var copiedID: String?
     // P2 — Claude Code statusLine (5h/7d usage %), a settings-only opt-in.
     @State private var statusLineState: AgentSessionMonitor.StatusLineState = .notInstalled
     @State private var statusLineNotice: String?
@@ -45,6 +51,9 @@ struct AIAgentsDetailView: View {
                 sessionsSection
                 codexSection
                 openCodeSection
+                cursorSection
+                notifySection
+                recentSection
                 usageSection
             }
             .padding(.bottom, XFinderTokens.Space.section)
@@ -54,6 +63,7 @@ struct AIAgentsDetailView: View {
         .onAppear {
             refreshHookStates()
             statusLineState = AgentSessionMonitor.shared.statusLineState()
+            loadRecent()
         }
     }
 
@@ -65,6 +75,87 @@ struct AIAgentsDetailView: View {
         otherPermissionHooks = Dictionary(uniqueKeysWithValues: AgentSessionMonitor.hookAgents.map { ($0, m.otherPermissionHookCount(for: $0)) })
         openCodeState = OpenCodeMonitor.shared.state
         openCodeBinary = OpenCodeMonitor.shared.binaryPath ?? OpenCodeMonitor.findBinary()
+    }
+
+    // MARK: - P5c
+
+    private var cursorSection: some View {
+        SettingsSection(
+            title: "Cursor",                          // a product name, identical in both languages
+            footer: L10n.t("Đo trên máy này (14/10/2026): cursor-agent 2025.09.17 chưa đăng nhập, không có ứng dụng Cursor. Theo tài liệu hook của Cursor, hook chỉ được hỏi TRƯỚC khi Cursor hiện câu hỏi duyệt — không có sự kiện nào báo lúc Cursor đang chờ bạn — và bản CLI chỉ nối một phần các sự kiện. Vì vậy notch không thể hiện thẻ duyệt cho Cursor một cách trung thực.")
+        ) {
+            Text(L10n.t("Chưa hỗ trợ."))
+                .font(XFinderTokens.Font.row).foregroundColor(.secondary)
+                .settingsRow()
+        }
+    }
+
+    private var notifySection: some View {
+        SettingsSection(
+            title: L10n.t("Thông báo"),
+            footer: L10n.t("Thông báo hiện ở notch (cùng chỗ với pin, mạng, cuộc họp), mỗi lần một cái, cái mới thay cái cũ. Không hiện khi bạn đang mở trang Agents trên notch. Mở XFinder không phát lại các phiên đang chờ.")
+        ) {
+            ToggleRow(title: L10n.t("Khi một phiên cần bạn duyệt quyền"), isOn: $notifyPermission)
+                .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Khi một phiên xong lượt và tới lượt bạn"), isOn: $notifyFinished)
+                .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Kèm âm thanh"), isOn: $notifySound)
+                .settingsRow()
+        }
+        .disabled(!agentsEnabled)
+    }
+
+    private var recentSection: some View {
+        SettingsSection(
+            title: L10n.t("Phiên gần đây"),
+            footer: L10n.t("Phiên Claude Code và Codex chạy trong terminal (phiên của app desktop không được liệt kê) và phiên OpenCode, trong 14 ngày qua, đã không còn chạy. Từ tệp phiên (Claude Code, Codex) hoặc lệnh opencode (OpenCode), XFinder chỉ lấy mã phiên, thư mục, thời điểm và tiêu đề của OpenCode. \"Sao chép lệnh\" chép lệnh mở lại phiên đó trong đúng thư mục để bạn dán vào terminal.")
+        ) {
+            if recent.isEmpty {
+                Text(L10n.t("Chưa có phiên nào."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    .settingsRow()
+            } else {
+                ForEach(Array(recent.enumerated()), id: \.element.id) { index, entry in
+                    if index > 0 { SettingsDivider() }
+                    recentRow(entry).settingsRow()
+                }
+            }
+        }
+    }
+
+    private func recentRow(_ e: AgentRecent.Entry) -> some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(e.displayName).font(XFinderTokens.Font.row).lineLimit(1).truncationMode(.middle)
+                Text("\(e.agent.displayName) · \(e.updated.formatted(.relative(presentation: .named).locale(Locale(identifier: L10n.isEnglish ? "en_US" : "vi_VN"))))")
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary).lineLimit(1)
+            }
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            if let cwd = e.cwd {
+                Button {
+                    NSWorkspace.shared.open(URL(fileURLWithPath: cwd, isDirectory: true))
+                } label: { Image(systemName: "folder") }
+                .buttonStyle(.borderless)
+                .help(L10n.t("Mở thư mục"))
+                .accessibilityLabel(L10n.t("Mở thư mục"))
+            }
+            Button(copiedID == e.id ? L10n.t("Đã chép") : L10n.t("Sao chép lệnh")) {
+                let pb = NSPasteboard.general
+                pb.clearContents()
+                pb.setString(e.resumeCommand, forType: .string)
+                copiedID = e.id
+            }
+            .controlSize(.small)
+            .help(e.resumeCommand)
+        }
+    }
+
+    private func loadRecent() {
+        let m = AgentSessionMonitor.shared
+        recent = m.recent
+        m.refreshRecent { recent = AgentSessionMonitor.shared.recent }
     }
 
     private var openCodeSection: some View {
