@@ -48,11 +48,15 @@ enum NotchThumbnailCache {
 enum NotchTextCache {
     private static let cache: NSCache<NSString, NSString> = { let c = NSCache<NSString, NSString>(); c.countLimit = 200; return c }()
 
+    /// A miss (unreadable payload AND no snippet) is cached too, or a card whose payload file is gone would retry
+    /// the read on every render (review 2026-10-13).
+    private static let miss: NSString = "\u{0}xfinder-miss"
+
     static func fullText(snippet: String?, payloadPath: String?) -> String? {
         guard let p = payloadPath, !p.isEmpty else { return snippet }
-        if let hit = cache.object(forKey: p as NSString) { return hit as String }
+        if let hit = cache.object(forKey: p as NSString) { return hit === miss ? snippet : hit as String }
         let full = ClipboardText.fullText(snippet: snippet, payloadPath: p) ?? snippet
-        if let full { cache.setObject(full as NSString, forKey: p as NSString) }
+        cache.setObject((full as NSString?) ?? miss, forKey: p as NSString)
         return full
     }
 }

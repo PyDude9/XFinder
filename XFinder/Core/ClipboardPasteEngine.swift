@@ -225,6 +225,8 @@ enum ClipboardAppIcon {
 enum ClipboardAppColor {
     // In-memory cache by bundleID
     private static var colorCache: [String: Color] = [:]
+    /// Bundle ids whose icon yields no accent (greyscale, too dark, missing app).
+    private static var noAccent: Set<String> = []
 
 
     // Curated high-fidelity brand colors for popular macOS applications
@@ -268,6 +270,10 @@ enum ClipboardAppColor {
         if let cached = colorCache[id] {
             return cached
         }
+        // The fallback depends on the CONTENT TYPE, so it is never stored under the bundle id alone (review
+        // 2026-10-13: a Zed code clip cached green, then every Zed text clip inherited green). Only the fact
+        // "this app's icon has no usable accent" is remembered, so the icon is not re-drawn on every render.
+        if noAccent.contains(id) { return fallbackColor(for: contentType) }
         if let curated = curatedBrandColors[id] {
             colorCache[id] = curated
             return curated
@@ -279,9 +285,8 @@ enum ClipboardAppColor {
             colorCache[id] = color
             return color
         }
-        let fallback = fallbackColor(for: contentType)
-        colorCache[id] = fallback
-        return fallback
+        noAccent.insert(id)
+        return fallbackColor(for: contentType)
     }
 
     static func fallbackColor(for type: ContentType) -> Color {

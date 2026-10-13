@@ -393,10 +393,9 @@ public struct AppHeroCardView: View {
         )
     }
 
-    private func iconForBundle(_ bundleID: String) -> NSImage? {
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return nil }
-        return NSWorkspace.shared.icon(forFile: url.path)
-    }
+    /// Through the shared per-process cache (`ClipboardAppIcon`): this card asked LaunchServices and rendered the
+    /// icon up to three times per card on EVERY render — each selection move re-renders every card.
+    private func iconForBundle(_ bundleID: String) -> NSImage? { ClipboardAppIcon.icon(forBundleID: bundleID) }
 }
 
 // MARK: - Browser Tab Carousel View
@@ -818,12 +817,20 @@ public struct WindowPreviewCard: View {
         .buttonStyle(.plain)
     }
 
-    private func iconForBundle(_ bundleID: String) -> NSImage? {
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return nil }
-        return NSWorkspace.shared.icon(forFile: url.path)
+    /// Through the shared per-process cache (`ClipboardAppIcon`): this card asked LaunchServices and rendered the
+    /// icon up to three times per card on EVERY render — each selection move re-renders every card.
+    private func iconForBundle(_ bundleID: String) -> NSImage? { ClipboardAppIcon.icon(forBundleID: bundleID) }
+
+    /// The bundle's display name, resolved once per bundle id (`SwitcherAppNames`) instead of a LaunchServices
+    /// lookup + Info.plist read on every render of every card.
+    private func appNameForBundle(_ bundleID: String) -> String {
+        if let hit = SwitcherAppNames.names[bundleID] { return hit }
+        let name = Self.resolveAppName(bundleID)
+        SwitcherAppNames.names[bundleID] = name
+        return name
     }
 
-    private func appNameForBundle(_ bundleID: String) -> String {
+    private static func resolveAppName(_ bundleID: String) -> String {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID),
               let bundle = Bundle(url: url) else {
             return bundleID.components(separatedBy: ".").last ?? bundleID
@@ -834,3 +841,8 @@ public struct WindowPreviewCard: View {
     }
 }
 
+/// Display names for the ⌘-Tab cards, one LaunchServices lookup per bundle id per process.
+@MainActor
+private enum SwitcherAppNames {
+    static var names: [String: String] = [:]
+}
