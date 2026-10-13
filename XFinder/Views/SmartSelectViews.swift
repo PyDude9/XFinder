@@ -173,7 +173,11 @@ struct SmartSelectPanelView: View {
             Image(systemName: icon).frame(width: 18)
             VStack(alignment: .leading, spacing: 1) {
                 Text(caption).font(XFinderTokens.Font.caption).foregroundColor(.secondary).lineLimit(1)
-                Text(value).font(XFinderTokens.Font.row).bold().lineLimit(1).textSelection(.enabled)
+                // `.id(value)`: the panel is built once and reused, so two selections in a row that give the same
+                // KIND of row update this view in place — and a `.textSelection(.enabled)` Text kept the OLD string
+                // (measured in the E6 e2e: after "$20" then "1.500 €" the AX tree still held "522,200 VND" beside
+                // "44,489,205 VND"). A new identity per value rebuilds it.
+                Text(value).font(XFinderTokens.Font.row).bold().lineLimit(1).textSelection(.enabled).id(value)
             }
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             Button(L10n.t("Sao chép")) { SmartSelectionBadge.shared.copy(copy) }.controlSize(.small)
