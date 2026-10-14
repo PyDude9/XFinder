@@ -167,4 +167,43 @@ enum SnapLayout {
         }
         return .edge(edgeTarget(at: point, screen: screen, margin: edgeMargin))
     }
+
+    // MARK: - Is this press a WINDOW drag? (2026-10-14)
+
+    /// The owner reported drag-to-edge dead while the keyboard snaps still worked. Measured cause: the press was
+    /// qualified by walking at most 4 Accessibility parents from the element under the pointer to an AXWindow/AXToolbar,
+    /// and on this Mac the window is 5–7 parents up in 6 of 8 real apps — so no drag ever qualified. Widening the walk is
+    /// wrong too: every element of a window has the window as an ancestor, so a deep walk would also qualify a text
+    /// selection (the old "snap fired on every drag" bug). The honest signal is the one WindowServer reports: the
+    /// window under the pointer at press MOVED. `windowOrigin` comes from CGWindowList (top-left space), `pointer` from
+    /// NSEvent (bottom-left) — each is compared only with itself.
+    struct DragQualifier: Equatable, Sendable {
+        enum Verdict: Equatable, Sendable { case pending, windowMove, notWindowMove }
+        private(set) var verdict: Verdict
+        let pressPoint: CGPoint
+        let windowOrigin: CGPoint?
+        /// The window moved at least this far ⇒ it is being dragged.
+        static let moveThreshold: CGFloat = 1
+        /// The pointer travelled this far and the window stayed put ⇒ a text selection, a file drag, a drawing.
+        static let travelLimit: CGFloat = 40
+
+        init(pressPoint: CGPoint, windowOrigin: CGPoint?) {
+            self.pressPoint = pressPoint
+            self.windowOrigin = windowOrigin
+            verdict = windowOrigin == nil ? .notWindowMove : .pending
+        }
+
+        /// One drag event. `windowOriginNow` nil = the window could not be read this time (it stays pending until the
+        /// pointer has travelled `travelLimit`). Once decided, the verdict never changes for this press.
+        @discardableResult
+        mutating func observe(pointer: CGPoint, windowOriginNow: CGPoint?) -> Verdict {
+            guard verdict == .pending, let start = windowOrigin else { return verdict }
+            if let now = windowOriginNow, hypot(now.x - start.x, now.y - start.y) >= Self.moveThreshold {
+                verdict = .windowMove
+            } else if hypot(pointer.x - pressPoint.x, pointer.y - pressPoint.y) >= Self.travelLimit {
+                verdict = .notWindowMove
+            }
+            return verdict
+        }
+    }
 }

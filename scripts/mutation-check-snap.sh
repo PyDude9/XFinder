@@ -58,6 +58,14 @@ run "S4 bottom/top swapped in top-left space" XFinder/Core/Snap/SnapLayout.swift
   "'            case .bottomLeft:     return CGRect(x: x, y: y + h / 2, width: w / 2, height: h / 2)'" \
   "'            case .bottomLeft:     return CGRect(x: x, y: y, width: w / 2, height: h / 2)'"
 
+run "S5 a press with no window under it is still a candidate" XFinder/Core/Snap/SnapLayout.swift \
+  "'            verdict = windowOrigin == nil ? .notWindowMove : .pending'" "'            verdict = .pending'"
+run "S6 a text selection (pointer travels, window still) becomes a window drag" XFinder/Core/Snap/SnapLayout.swift \
+  "'                verdict = .notWindowMove\n'" "'                verdict = .windowMove\n'"
+run "S7 the verdict can change after it was decided" XFinder/Core/Snap/SnapLayout.swift \
+  "'            guard verdict == .pending, let start = windowOrigin else { return verdict }'" \
+  "'            guard let start = windowOrigin else { return verdict }'"
+
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)

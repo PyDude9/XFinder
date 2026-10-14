@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import ApplicationServices
+import os
 
 /// Vùng bắt dính — snapping the *focused* window, two ways:
 ///
@@ -26,6 +27,10 @@ final class SnapZoneController {
     /// Whether the in-flight drag started on a window's title bar. Evaluated
     /// once per drag so a mid-drag AX query cannot flip the verdict.
     private var dragIsWindowMove = false
+    /// The press being qualified (did the window under the pointer move?) and that window's number.
+    private var qualifier: SnapLayout.DragQualifier?
+    private var pressedWindow: CGWindowID?
+    private let snapLog = Logger(subsystem: "com.xfinder.app", category: "SnapDrag")
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
 
@@ -117,8 +122,15 @@ final class SnapZoneController {
             // time and remember that verdict for the rest of the drag.
             if !wasDragging {
                 wasDragging = true
-                dragIsWindowMove = beganOnWindowTitleBar(at: mouse)
+                let hit = windowUnderPointer(at: mouse)
+                pressedWindow = hit?.id
+                qualifier = SnapLayout.DragQualifier(pressPoint: mouse, windowOrigin: hit?.origin)
             }
+            if qualifier?.verdict == .pending, let id = pressedWindow {
+                let verdict = qualifier?.observe(pointer: mouse, windowOriginNow: windowOrigin(id))
+                if verdict != .pending { snapLog.debug("drag verdict \(String(describing: verdict), privacy: .public)") }
+            }
+            dragIsWindowMove = qualifier?.verdict == .windowMove
             guard dragIsWindowMove else { return }
 
             let screen = WindowManager.screenUnderPointer()
@@ -161,6 +173,8 @@ final class SnapZoneController {
             wasDragging = false
             let wasWindowMove = dragIsWindowMove
             dragIsWindowMove = false
+            qualifier = nil
+            pressedWindow = nil
             hideRow()
             guard wasWindowMove else { return }
             if let zone = activeZone {
@@ -179,53 +193,37 @@ final class SnapZoneController {
         }
     }
 
-    /// True when the pointer is over a window's title bar (or the window's own
-    /// background chrome), which is what macOS itself treats as "move window".
-    /// Uses the system-wide AX element under the cursor — the only public way
-    /// to know what was clicked in another app.
-    private func beganOnWindowTitleBar(at point: CGPoint) -> Bool {
-        guard WindowManager.isTrusted else { return false }
-        // Nhấn trong dải menu bar (wifi / ngày giờ…) hay Dock KHÔNG phải kéo cửa
-        // sổ. Nút status-item nằm trong window nhỏ của menu bar nên walk-up dễ
-        // nhận nhầm thành title bar → chặn ngay vùng ngoài visibleFrame.
+    /// The normal (layer-0) window under the pointer at press, from WindowServer: its number and its top-left origin.
+    /// nil for a press on the menu bar / Dock strip, on XFinder's own window, or on nothing. No Accessibility walk —
+    /// see `SnapLayout.DragQualifier` for why the old one never qualified a drag on macOS 27.
+    private func windowUnderPointer(at point: CGPoint) -> (id: CGWindowID, origin: CGPoint)? {
+        // Nhấn trong dải menu bar (wifi / ngày giờ…) hay Dock KHÔNG phải kéo cửa sổ.
         let screen = WindowManager.screenUnderPointer()
-        if point.y >= screen.visibleFrame.maxY - 1 || point.y <= screen.visibleFrame.minY + 1 {
-            return false
-        }
-        // AXUIElementCopyElementAtPosition dùng gốc top-left của MÀN CHÍNH (y
-        // tăng xuống), còn NSEvent.mouseLocation là bottom-left của màn chính.
-        // Flip luôn phải dùng biên trên của màn CHÍNH — dùng screen-under-
-        // pointer sẽ lệch với màn phụ (bug "chỉ chạy trên màn 2").
+        if point.y >= screen.visibleFrame.maxY - 1 || point.y <= screen.visibleFrame.minY + 1 { return nil }
+        // CGWindowList is top-left of the MAIN screen; NSEvent is bottom-left of the main screen.
         let top = NSScreen.screens.first?.frame.maxY ?? 0
-        let cgPoint = CGPoint(x: point.x, y: top - point.y)
-
-        var element: AXUIElement?
-        guard AXUIElementCopyElementAtPosition(AXUIElementCreateSystemWide(),
-                                               Float(cgPoint.x), Float(cgPoint.y),
-                                               &element) == .success,
-              let element else { return false }
-
-        // The hit element is often a sub-view (traffic-light button, toolbar
-        // child, text) — walk a short parent chain to find its ancestor
-        // window/toolbar, which proves the press began on a title bar.
-        var cur: AXUIElement = element
-        for _ in 0..<4 {
-            if isWindowOrToolbar(cur) { return true }
-            var parentRef: CFTypeRef?
-            guard AXUIElementCopyAttributeValue(cur, kAXParentAttribute as CFString,
-                                                &parentRef) == .success,
-                  let parent = parentRef else { break }
-            cur = parent as! AXUIElement
+        let cg = CGPoint(x: point.x, y: top - point.y)
+        guard let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+            as? [[String: Any]] else { return nil }
+        let me = ProcessInfo.processInfo.processIdentifier
+        for w in list {                                   // front to back: the first normal window hit is the pressed one
+            guard (w[kCGWindowLayer as String] as? Int) == 0,
+                  (w[kCGWindowAlpha as String] as? Double ?? 1) > 0,
+                  let b = w[kCGWindowBounds as String] as? [String: Any],
+                  let rect = CGRect(dictionaryRepresentation: b as CFDictionary), rect.contains(cg),
+                  let num = w[kCGWindowNumber as String] as? Int else { continue }
+            if (w[kCGWindowOwnerPID as String] as? Int32) == me { return nil }   // our own window: nothing to snap
+            return (CGWindowID(num), rect.origin)
         }
-        return false
+        return nil
     }
 
-    private func isWindowOrToolbar(_ el: AXUIElement) -> Bool {
-        var roleRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(el, kAXRoleAttribute as CFString,
-                                            &roleRef) == .success,
-              let role = roleRef as? String else { return false }
-        return role == (kAXWindowRole as String) || role == "AXToolbar"
+    /// That window's current top-left origin, or nil if it can no longer be read.
+    private func windowOrigin(_ id: CGWindowID) -> CGPoint? {
+        guard let list = CGWindowListCopyWindowInfo([.optionIncludingWindow], id) as? [[String: Any]],
+              let b = list.first?[kCGWindowBounds as String] as? [String: Any],
+              let rect = CGRect(dictionaryRepresentation: b as CFDictionary) else { return nil }
+        return rect.origin
     }
 
     // MARK: Notch layout row (B3)

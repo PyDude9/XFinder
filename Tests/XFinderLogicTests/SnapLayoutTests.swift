@@ -109,4 +109,29 @@ final class SnapLayoutTests: XCTestCase {
         let store = try L10nFixture.load()
         for t in L.Target.allCases { XCTAssertNotNil(store.entries[t.titleKey], t.titleKey) }
     }
+
+    // MARK: Window-drag qualification (2026-10-14)
+
+    func testOnlyAWindowThatMovesQualifiesAsAWindowDrag() {
+        typealias Q = SnapLayout.DragQualifier
+        let press = CGPoint(x: 500, y: 800)
+        // The window under the pointer moved: a title-bar drag, however deep its Accessibility tree is.
+        var q = Q(pressPoint: press, windowOrigin: CGPoint(x: 100, y: 50))
+        XCTAssertEqual(q.observe(pointer: CGPoint(x: 501, y: 800), windowOriginNow: CGPoint(x: 100, y: 50)), .pending)
+        XCTAssertEqual(q.observe(pointer: CGPoint(x: 505, y: 798), windowOriginNow: CGPoint(x: 104, y: 52)), .windowMove)
+        XCTAssertEqual(q.observe(pointer: CGPoint(x: 900, y: 798), windowOriginNow: CGPoint(x: 104, y: 52)), .windowMove,
+                       "decided once for the whole press")
+        // The pointer travelled and the window stayed put: a text selection / a file drag — never a snap.
+        var sel = Q(pressPoint: press, windowOrigin: CGPoint(x: 100, y: 50))
+        XCTAssertEqual(sel.observe(pointer: CGPoint(x: 530, y: 800), windowOriginNow: CGPoint(x: 100, y: 50)), .pending)
+        XCTAssertEqual(sel.observe(pointer: CGPoint(x: 545, y: 800), windowOriginNow: CGPoint(x: 100, y: 50)), .notWindowMove)
+        XCTAssertEqual(sel.observe(pointer: CGPoint(x: 560, y: 800), windowOriginNow: CGPoint(x: 300, y: 50)), .notWindowMove,
+                       "a later move does not turn a rejected press into a window drag")
+        // No normal window under the pointer (menu bar, Dock, XFinder's own window): rejected at once.
+        XCTAssertEqual(Q(pressPoint: press, windowOrigin: nil).verdict, .notWindowMove)
+        // A window that cannot be read this time keeps the press pending until the travel limit.
+        var blind = Q(pressPoint: press, windowOrigin: CGPoint(x: 0, y: 0))
+        XCTAssertEqual(blind.observe(pointer: CGPoint(x: 520, y: 800), windowOriginNow: nil), .pending)
+        XCTAssertEqual(blind.observe(pointer: CGPoint(x: 540, y: 800), windowOriginNow: nil), .notWindowMove)
+    }
 }
