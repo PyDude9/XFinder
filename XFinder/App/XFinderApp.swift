@@ -52,6 +52,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Local diagnostics first, so an unclean previous exit is noted before anything else runs.
         DiagnosticsCenter.shared.start()
+        // Anonymous analytics: decided a few seconds after launch (windows settled, onboarding up if it shows), then on
+        // every activation. Nothing is sent or announced while no receiver is configured in Info.plist.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { AnalyticsCenter.shared.evaluate() }
 
         // Same pattern for gestures: `GestureController.shared` runs the legacy
         // profile migration in `init`, and its `init` only happens when something
@@ -128,6 +131,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 TranslateSelectionController.shared.applySettings()
                 SelectionWatcher.shared.applySettings()
                 GestureController.shared.start()
+                AnalyticsCenter.shared.evaluate()
             }
         }
     }

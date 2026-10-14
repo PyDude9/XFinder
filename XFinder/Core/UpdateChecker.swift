@@ -4,10 +4,10 @@ import AppKit
 /// Compares this build against the latest GitHub Release.
 ///
 /// Deliberately minimal: one unauthenticated GET to the public Releases API,
-/// only when the user presses the button. No background polling, no telemetry,
-/// nothing sent about the user — the request carries no identifying data, which
-/// keeps the app's "100% local, zero telemetry" promise intact (checking for a
-/// newer version is a user-initiated fetch, not tracking).
+/// only when the user presses the button. No background polling and nothing sent
+/// about the user — the request carries no identifying data (checking for a newer
+/// version is a user-initiated fetch, not tracking). The app's one automatic send
+/// is the anonymous daily report, `AnalyticsCenter`, which the person can refuse.
 @MainActor
 @Observable
 final class UpdateChecker {

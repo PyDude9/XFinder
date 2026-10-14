@@ -24,6 +24,8 @@
 		7F1A0401 /* Diagnostics/DiagnosticsRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0400 /* Diagnostics/DiagnosticsRules.swift */; };
 		7F1A0403 /* Diagnostics/DiagnosticsLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0402 /* Diagnostics/DiagnosticsLog.swift */; };
 		7F1A0405 /* Diagnostics/DiagnosticsCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0404 /* Diagnostics/DiagnosticsCenter.swift */; };
+		7F1A0407 /* Diagnostics/AnalyticsRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0406 /* Diagnostics/AnalyticsRules.swift */; };
+		7F1A0409 /* Diagnostics/AnalyticsCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0408 /* Diagnostics/AnalyticsCenter.swift */; };
 		7F1A033D /* Capture/Annotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A033C /* Capture/Annotation.swift */; };
 		7F1A033F /* Capture/CaptureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A033E /* Capture/CaptureController.swift */; };
 		7F1A0337 /* QuitOnClose/QuitOnCloseController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */; };
@@ -374,6 +376,8 @@
 		7F1A0400 /* Diagnostics/DiagnosticsRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics/DiagnosticsRules.swift; sourceTree = "<group>"; };
 		7F1A0402 /* Diagnostics/DiagnosticsLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics/DiagnosticsLog.swift; sourceTree = "<group>"; };
 		7F1A0404 /* Diagnostics/DiagnosticsCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics/DiagnosticsCenter.swift; sourceTree = "<group>"; };
+		7F1A0406 /* Diagnostics/AnalyticsRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics/AnalyticsRules.swift; sourceTree = "<group>"; };
+		7F1A0408 /* Diagnostics/AnalyticsCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics/AnalyticsCenter.swift; sourceTree = "<group>"; };
 		7F1A033C /* Capture/Annotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/Annotation.swift; sourceTree = "<group>"; };
 		7F1A033E /* Capture/CaptureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/CaptureController.swift; sourceTree = "<group>"; };
 		7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitOnClose/QuitOnCloseController.swift; sourceTree = "<group>"; };
@@ -900,6 +904,8 @@
 				7F1A0400 /* Diagnostics/DiagnosticsRules.swift */,
 				7F1A0402 /* Diagnostics/DiagnosticsLog.swift */,
 				7F1A0404 /* Diagnostics/DiagnosticsCenter.swift */,
+				7F1A0406 /* Diagnostics/AnalyticsRules.swift */,
+				7F1A0408 /* Diagnostics/AnalyticsCenter.swift */,
 				7F1A033C /* Capture/Annotation.swift */,
 				7F1A033E /* Capture/CaptureController.swift */,
 				7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */,
@@ -1460,6 +1466,8 @@
 				7F1A0401 /* Diagnostics/DiagnosticsRules.swift in Sources */,
 				7F1A0403 /* Diagnostics/DiagnosticsLog.swift in Sources */,
 				7F1A0405 /* Diagnostics/DiagnosticsCenter.swift in Sources */,
+				7F1A0407 /* Diagnostics/AnalyticsRules.swift in Sources */,
+				7F1A0409 /* Diagnostics/AnalyticsCenter.swift in Sources */,
 				7F1A033D /* Capture/Annotation.swift in Sources */,
 				7F1A033F /* Capture/CaptureController.swift in Sources */,
 				7F1A0337 /* QuitOnClose/QuitOnCloseController.swift in Sources */,

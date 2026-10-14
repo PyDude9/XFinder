@@ -253,6 +253,10 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "diagnostics.localLog",
                views: ["XFinder/Views/SettingsWindow.swift"],
                reader: "XFinder/Core/Diagnostics/DiagnosticsLog.swift"),
+        // Opt-out analytics: the REFUSE switch, default off (sending on until refused — the owner's choice).
+        Switch(key: "analytics.optOut",
+               views: ["XFinder/Views/SettingsWindow.swift"],
+               reader: "XFinder/Core/Diagnostics/AnalyticsCenter.swift"),
         // D1 group 2: page order/visibility and the notch accent (both Strings).
         Switch(key: "notch.pages",
                views: ["XFinder/Views/Detail/NotchInterfaceDetailView.swift"],

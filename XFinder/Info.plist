@@ -114,5 +114,9 @@
 	<string>XFinder cần nhận dạng giọng nói để chuyển giọng nói thành văn bản.</string>
 	<key>UIMainThreadOnly</key>
 	<true/>
+	<key>XFAnalyticsTelemetryDeckAppID</key>
+	<string></string>
+	<key>XFAnalyticsTelemetryDeckNamespace</key>
+	<string></string>
 </dict>
 </plist>

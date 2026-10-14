@@ -1,0 +1,1 @@
+../../XFinder/Core/Diagnostics/AnalyticsRules.swift

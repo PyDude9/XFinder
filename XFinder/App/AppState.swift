@@ -105,6 +105,8 @@ final class AppState {
     var hubShowsPermissions = false
     /// Set before navigating to `.about` to open its bug-report preview (the menu's Trợ giúp ▸ Báo lỗi…); cleared there.
     var aboutShowsReport = false
+    /// Set before navigating to `.about` to open the analytics preview (the one-time notice's "Xem dữ liệu…").
+    var aboutShowsAnalytics = false
     var caffeineActive = false
 
     private init() {

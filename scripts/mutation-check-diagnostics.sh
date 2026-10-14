@@ -11,12 +11,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-diag.XXXXXX)
-FILES="XFinder/Core/Diagnostics/DiagnosticsRules.swift"
+FILES="XFinder/Core/Diagnostics/DiagnosticsRules.swift XFinder/Core/Diagnostics/AnalyticsRules.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='DiagnosticsRules'
+FILTER='DiagnosticsRules|AnalyticsRules'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -68,6 +68,27 @@ run "G8 the issue link carries the permissions and feature list" XFinder/Core/Di
   "'                                 permissions: system.permissions, featuresOn: system.featuresOn)).joined(separator: \"\\\\n\"))'"
 run "G9 the event ring is not trimmed" XFinder/Core/Diagnostics/DiagnosticsRules.swift \
   "'        events.count > maxEvents ? Array(events.suffix(maxEvents)) : events'" "'        events'"
+
+run "N1 a path becomes a token again" XFinder/Core/Diagnostics/AnalyticsRules.swift \
+  "'                || \". _-,:+()\".unicodeScalars.contains(c)'" "'                || \". _-,:+()/\".unicodeScalars.contains(c)'"
+run "N2 events from before the last report are counted again" XFinder/Core/Diagnostics/AnalyticsRules.swift \
+  "'        let fresh = i.events.filter { e in i.since.map { e.time > \$0 } ?? true }'" "'        let fresh = i.events'"
+run "N3 a refusal is ignored" XFinder/Core/Diagnostics/AnalyticsRules.swift \
+  "'        if s.optedOut { return .wait(.optedOut) }'" "'        if false { return .wait(.optedOut) }'"
+run "N4 the first send skips the grace day" XFinder/Core/Diagnostics/AnalyticsRules.swift \
+  "'        if sinceNotice >= 0, sinceNotice < noticeGrace { return .wait(.grace) }'" "''"
+run "N5 a newer schema does not show the notice again" XFinder/Core/Diagnostics/AnalyticsRules.swift \
+  "'        guard let shown = s.noticeShownAt, (s.noticeSchema ?? 0) >= schemaVersion else {'" \
+  "'        guard let shown = s.noticeShownAt else {'"
+run "N6 a crash frame keeps its source location" XFinder/Core/Diagnostics/AnalyticsRules.swift \
+  "'        if let paren = s.range(of: \"  (\") { s = String(s[..<paren.lowerBound]) }      // \"  (File.swift:42)\"'" "''"
+run "N7 the App ID is sent as the client user (a stable id)" XFinder/Core/Diagnostics/AnalyticsRules.swift \
+  "'            [\"appID\": receiver.appID, \"clientUser\": clientUser,'" "'            [\"appID\": receiver.appID, \"clientUser\": receiver.appID,'"
+run "N8 a failed send retries on every activation" XFinder/Core/Diagnostics/AnalyticsRules.swift \
+  "'            if sinceAttempt >= 0, sinceAttempt < retryInterval { return .wait(.notDue) }'" "''"
+run "N9 the namespace accepts a slash" XFinder/Core/Diagnostics/AnalyticsRules.swift \
+  "'              ns.unicodeScalars.allSatisfy({ (\$0 >= \"a\" && \$0 <= \"z\") || (\$0 >= \"0\" && \$0 <= \"9\") || \$0 == \"-\" })'" \
+  "'              ns.unicodeScalars.allSatisfy({ _ in true })'"
 
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
