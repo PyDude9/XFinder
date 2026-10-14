@@ -32,6 +32,8 @@ enum LiveActivity {
         case openCalendar
         /// P5c — an agent notice: open the hub on the Agents page.
         case openAgents
+        /// P12.4 — open the handoff preview for that session, pre-set to `target`. It never sends by itself.
+        case handOff(listID: String, target: AgentKind)
     }
 
     // MARK: Power
@@ -228,11 +230,30 @@ enum LiveActivity {
         @discardableResult
         mutating func push(_ item: Item) -> Bool {
             if current == nil { current = item; return true }
-            if current?.kind == item.kind { current = item; return true }
-            if let i = pending.firstIndex(where: { $0.kind == item.kind }) { pending[i] = item; return false }
+            if let c = current, c.kind == item.kind {
+                if Self.outranks(c, item) { enqueue(item); return false }
+                current = item; return true
+            }
+            if let i = pending.firstIndex(where: { $0.kind == item.kind }) {
+                if Self.outranks(pending[i], item) { enqueue(item) } else { pending[i] = item }
+                return false
+            }
+            enqueue(item)
+            return false
+        }
+
+        private mutating func enqueue(_ item: Item) {
             pending.append(item)
             if pending.count > Self.maxPending { pending.removeFirst(pending.count - Self.maxPending) }
-            return false
+        }
+
+        /// P12 review: an agent notice that asks for action (a limit stop, an approval) is not replaced by a lesser agent
+        /// notice (a finished turn) — the lesser one waits its turn. Other kinds keep "the newest state wins" (a network
+        /// flapping in a second still shows only the final state).
+        static func outranks(_ a: Item, _ b: Item) -> Bool {
+            guard a.kind == .agent, b.kind == .agent else { return false }
+            func rank(_ t: Tint) -> Int { switch t { case .bad: return 2; case .warning: return 1; case .good, .neutral: return 0 } }
+            return rank(a.tint) > rank(b.tint)
         }
 
         /// The shown item's time is up: advance. Returns the new current (nil ⇒ nothing left).

@@ -10842,6 +10842,26 @@
     "Không tìm thấy lệnh codex.": {
       "en": "The codex command was not found.",
       "scope": "sentence"
+    },
+    "Chạm giới hạn": {
+      "en": "Hit a limit",
+      "scope": "sentence"
+    },
+    "Phiên dừng vì chạm giới hạn": {
+      "en": "Session stopped at a usage limit",
+      "scope": "sentence"
+    },
+    "Chuyển sang ": {
+      "en": "Hand off to ",
+      "scope": "fragment"
+    },
+    "Khi một phiên dừng vì chạm giới hạn sử dụng": {
+      "en": "When a session stops at a usage limit",
+      "scope": "sentence"
+    },
+    "Báo cả khi bạn đang nhìn phiên đó. Nếu máy có agent khác, thông báo kèm nút mở sẵn bảng chuyển việc sang agent đó — ưu tiên agent biết chắc còn hạn mức. Bạn vẫn tự đọc và bấm Gửi.": {
+      "en": "Shown even while you are looking at that session. If another agent is installed, the notice has a button that opens the handoff to it — one known to have room first. You still read it and press Send.",
+      "scope": "sentence"
     }
   }
 }

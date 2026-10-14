@@ -13,11 +13,15 @@ enum AgentNotify {
     struct Settings: Equatable, Sendable {
         var permission: Bool
         var finished: Bool
+        /// P12.4 — a turn stopped at a usage limit.
+        var limit: Bool = true
     }
 
     enum Event: Equatable {
         case needsApproval(AgentSession, AgentSession.PendingPermission)
         case finished(AgentSession)
+        /// P12.4 — the turn stopped at a usage limit (once per stop).
+        case limitStopped(AgentSession)
     }
 
     /// The person is already looking at this session: the app it runs in (kitty, Terminal, the Claude desktop app —
@@ -30,7 +34,7 @@ enum AgentNotify {
     }
 
     static func session(of e: Event) -> AgentSession {
-        switch e { case .needsApproval(let s, _), .finished(let s): return s }
+        switch e { case .needsApproval(let s, _), .finished(let s), .limitStopped(let s): return s }
     }
 
     static func events(old: [AgentSession]?, new: [AgentSession], settings: Settings) -> [Event] {
@@ -39,6 +43,11 @@ enum AgentNotify {
         var out: [Event] = []
         for s in new {
             let before = prior[s.listID]
+            // P12.4: a turn that stopped at a limit is announced once, as that — never also as "finished".
+            if let stop = s.limitStop, s.isLimitStopped {
+                if settings.limit, before?.limitStop?.since != stop.since { out.append(.limitStopped(s)) }
+                continue
+            }
             switch s.status {
             case .waitingForPermission(let p):
                 guard settings.permission else { continue }
@@ -54,8 +63,9 @@ enum AgentNotify {
         return out
     }
 
-    /// The notice. Detail = agent · session name [· tool]; the store keys are wrapped by the view.
-    static func item(for event: Event) -> LiveActivity.Item {
+    /// The notice. Detail = agent · session name [· tool]; the store keys are wrapped by the view. A limit stop carries
+    /// one button that opens the handoff preview on `suggestedTarget` (nil ⇒ it opens the Agents page instead).
+    static func item(for event: Event, suggestedTarget: AgentKind? = nil) -> LiveActivity.Item {
         switch event {
         case .needsApproval(let s, let p):
             var detail = "\(s.agent.displayName) · \(s.displayName) · \(p.toolName)"
@@ -66,6 +76,11 @@ enum AgentNotify {
             return LiveActivity.Item(kind: .agent, symbol: "checkmark.circle.fill", titleKey: "Tới lượt bạn",
                                      detail: "\(s.agent.displayName) · \(s.displayName)", tint: .good, duration: 4,
                                      buttons: [.openAgents])
+        case .limitStopped(let s):
+            let buttons: [LiveActivity.Button] = suggestedTarget.map { [.handOff(listID: s.listID, target: $0)] } ?? [.openAgents]
+            return LiveActivity.Item(kind: .agent, symbol: "exclamationmark.octagon.fill", titleKey: "Phiên dừng vì chạm giới hạn",
+                                     detail: "\(s.agent.displayName) · \(s.displayName)", tint: .bad, duration: 12,
+                                     buttons: buttons)
         }
     }
 }

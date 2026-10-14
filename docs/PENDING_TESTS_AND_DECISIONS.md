@@ -59,6 +59,19 @@ Brief v3 nói "sidebar 220 pt có ô màu, thẻ nhóm #F7F7F7 r10, header 52 + 
 
 ---
 
+
+### P12 · Làm tiếp việc dở khi một agent hết hạn mức (đề xuất: `docs/P12_PROPOSAL_2026-10-14.md`)
+
+| Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
+|:--|:--|:--|:--|
+| Q-P12-1 | Phạm vi | (a) P12.1–5 · (b) thêm P12.6–7 (worktree + crew Boss/thợ/người kiểm khác model) | **Bạn chọn (a), đã làm.** (b) chờ bạn sau khi dùng thử |
+| Q-P12-7 | Thông báo "dừng vì chạm giới hạn" khi bạn đang nhìn phiên đó | (a) vẫn báo (bỏ qua "Im lặng khi terminal ở phía trước") · (b) im lặng như các thông báo khác | **(a)** — terminal / app Claude hiện lỗi, nhưng không có lối ra; thông báo mang nút chuyển phiên |
+| Q-P12-2 | `rateLimitExceeded` của Codex | (a) chỉ ghi vào hội thoại · (b) báo như `usageLimitExceeded` | **(a)** — schema tách hai mã; 429 có thể chỉ tạm thời |
+| Q-P12-3 | Lệnh đang chờ duyệt trong bản ghi chuyển giao | (a) nguyên văn, cắt 300 ký tự · (b) chỉ tên công cụ | **(a)** — bạn đọc bản xem trước rồi mới Gửi |
+| Q-P12-4 | Công tắc thông báo | (a) khoá riêng `agents.notify.quotaBlocked`, mặc định bật · (b) dùng chung `agents.notify.finished` | **(a)** |
+| Q-P12-5 | Cảnh báo "sắp hết" (90 %) | (a) chưa làm · (b) làm luôn | **(a)** — % Claude trên máy này đang không rõ (statusLine XFinder chưa cài) |
+| Q-P12-6 | Bộ `agent-mail-kit` tải về | (a) để nguyên · (b) tôi sửa thành bản dùng được ngoài XFinder | **(a)** — chưa có lệnh; danh sách lỗi + cách sửa ở mục 3 của đề xuất |
+
 ## Phần 2 — Cần test tay (T)
 
 Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
@@ -184,6 +197,10 @@ kiểm (mọi kiểm tra đều dùng một `claude` giả).
 | T-P9-OPENCODE | Như trên, đích OpenCode | Phiên OpenCode mới (tiêu đề "Handoff from …") trong đúng thư mục, nhận tin |
 | T-P10-EDGE | Rê chuột dừng trên ô agent ở cánh trái notch | Trang Agents mở thẳng, dù "Rê chuột vào notch mở" chọn gì |
 | T-P10-SORT | Đổi "Sắp xếp phiên" và tắt "Giữ phiên đã kết thúc" | Thứ tự đổi ngay; phiên đã kết thúc biến khỏi notch |
+| T-P12-HOOK | Agent AI ▸ hook Claude Code: trạng thái báo thiếu `StopFailure` → bấm **Cài / Cập nhật hook** | Trạng thái về "Đã cài"; `~/.claude/settings.json` có thêm `StopFailure` (bản sao lưu có ngày nằm cạnh) |
+| T-P12-LIMIT | Khi một phiên Claude Code thật chạm giới hạn ("API Error: Rate limit reached") | Hàng phiên đổi thành **"Chạm giới hạn"** (không còn "đang chạy" hay "Tới lượt bạn"); notch hiện **một** thông báo đỏ "Phiên dừng vì chạm giới hạn" với nút **"Chuyển sang Codex…"** (hoặc agent khác đang cài) — kể cả khi app Claude đang ở phía trước |
+| T-P12-HANDOFF | Bấm nút đó | Mở bảng chuyển phiên đã chọn sẵn agent; bản ghi có dòng "Phiên đó dừng giữa chừng vì chạm giới hạn sử dụng", "Phiên đó vẫn mở…", và mục "Log đầy đủ" là một đường dẫn. **Chưa gửi gì** cho tới khi bạn bấm Gửi |
+| T-P12-RESUME | Nếu Claude Code tự chạy tiếp khi hạn mức hồi lại | Hàng phiên quay về "đang chạy", nhãn "Chạm giới hạn" biến mất |
 | T-P11-START | Notch ▸ Agents ▸ "+" ▸ chọn Codex ▸ thư mục ▸ "liệt kê tệp ở đây" ▸ Bắt đầu | Hàng Codex mới (ô logo Codex, khung đứt), chạy rồi "Tới lượt bạn"; hội thoại có câu trả lời. Tốn một lượt gói Codex |
 | T-P11-APPROVE | Nhờ phiên Codex chạy một lệnh cần duyệt (ghi ngoài thư mục, mạng) | Thẻ Cho phép / Từ chối hiện ở hàng; bấm là Codex nhận (không cần cài hook Codex) |
 | T-P11-HANDOFF | Chuyển một phiên Claude sang Codex | Mở phiên Codex không cửa sổ trong đúng thư mục, trả lời 3 dòng rồi chờ |

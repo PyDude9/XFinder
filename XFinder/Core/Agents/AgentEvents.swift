@@ -41,6 +41,8 @@ enum AgentEvents {
         /// A one-line summary of `tool_input` (command / file path / pattern) for the permission card.
         var toolInputSummary: String?
         var notificationType: String?
+        /// P12.3 — `StopFailure`'s `error` (rate_limit, overloaded, authentication_failed…).
+        var errorType: String?
         var message: String?
         var prompt: String?
         /// The `claude` process that ran the hook (the hook's parent) — what liveness is measured on.
@@ -94,6 +96,7 @@ enum AgentEvents {
         e.toolName = payload["tool_name"] as? String
         e.toolInputSummary = (payload["tool_input"] as? [String: Any]).flatMap(summary(ofToolInput:))
         e.notificationType = payload["notification_type"] as? String
+        if e.name == .stopFailure { e.errorType = payload["error"] as? String }
         e.message = payload["message"] as? String
         e.prompt = payload["prompt"] as? String
         e.dropped = (payload["xfinder_dropped"] as? Bool) ?? false
@@ -187,6 +190,18 @@ struct AgentSession: Equatable, Identifiable {
     var dialogOnScreen: Bool = false
     /// P6 — the agent asked a multiple-choice question (`AskUserQuestion` started, not finished): typing would pick an option.
     var questionPending: Bool = false
+    /// P12 — the last turn stopped at a usage limit (Claude Code `StopFailure` `rate_limit`, Codex `usageLimitExceeded`) and
+    /// nothing has happened since. Cleared by the next prompt or tool, or when Claude Code resumes on its own.
+    var limitStop: LimitStop? = nil
+    struct LimitStop: Equatable {
+        /// The agent's own code (`rate_limit`, `usageLimitExceeded`).
+        var reason: String
+        var since: Date
+    }
+    /// The stop only means something while the session waits for the person: a permission request, a running tool or an
+    /// end outranks it (P12 review — a stale stop hid a live permission request and silenced its notice). Every reader of
+    /// `limitStop` (row, notice, handoff note) goes through this.
+    var isLimitStopped: Bool { limitStop != nil && status == .waitingForInput }
     /// P7a — XFinder hosts this session's process right now (a windowless session): a reply goes to its stdin. Set only
     /// by the merge with `WindowlessSessionManager`'s live records, never by a hook line.
     var hostedByXFinder: Bool = false
@@ -283,6 +298,7 @@ enum AgentSessionRules {
     /// The row's status word, by activity — "Tới lượt bạn" for a finished turn, "Đang chờ bạn" only when the person
     /// must answer something (the wing already told them apart; the row and the header said "waiting" for both).
     static func rowStatusKey(_ s: AgentSession) -> String {
+        if s.isLimitStopped { return "Chạm giới hạn" }
         switch activity(of: s) {
         case .yourTurn: return "Tới lượt bạn"
         case .waiting:
@@ -318,15 +334,22 @@ enum AgentSessionRules {
             if let t = e.transcriptPath { s.transcriptPath = t }
             if let p = e.agentPID { s.agentPID = p }
             if e.terminal != AgentEvents.Terminal() { s.terminal = e.terminal }
+            // P12: the work went on — a prompt, a tool, a finished turn — so the limit no longer stops it.
+            switch e.name {
+            case .sessionStart, .userPromptSubmit, .preToolUse, .postToolUse, .postToolUseFailure, .stop, .interrupt,
+                 .permissionRequest, .permissionDenied:
+                s.limitStop = nil
+            default: break
+            }
             // P6: anything the person or the agent does next means the dialog / question on screen is gone.
             switch e.name {
             case .userPromptSubmit, .preToolUse, .postToolUse, .postToolUseFailure, .stop, .interrupt, .sessionEnd,
-                 .permissionDenied, .sessionStart:
+                 .permissionDenied, .sessionStart, .stopFailure:
                 s.dialogOnScreen = false
             default: break
             }
             switch e.name {
-            case .userPromptSubmit, .postToolUse, .postToolUseFailure, .stop, .interrupt, .sessionEnd, .sessionStart:
+            case .userPromptSubmit, .postToolUse, .postToolUseFailure, .stop, .interrupt, .sessionEnd, .sessionStart, .stopFailure:
                 s.questionPending = false
             case .preToolUse:
                 s.questionPending = e.toolName == AgentSessionRules.questionTool
@@ -360,13 +383,27 @@ enum AgentSessionRules {
                     // Claude Code's own prompt is on screen; only a PermissionRequest hook can answer it from here.
                     if case .waitingForPermission = s.status {} else { s.status = .waitingForInput }
                     s.dialogOnScreen = true
+                // P12: Claude Code's own wait for a usage-limit reset (docs, v2.1.234+). "fired" = it continued the task;
+                // "stale" = the reset happened while the Mac slept and it waits for Enter; "disabled" = it gave up waiting.
+                case "quota_auto_resume_fired"?:
+                    s.limitStop = nil
+                    s.status = .running(tool: nil)
+                case "quota_auto_resume_stale"?:
+                    s.limitStop = nil
                 default: break
                 }
             case .stop, .interrupt:
                 s.status = .waitingForInput
+            case .stopFailure:
+                // It runs INSTEAD of Stop when a turn ends on an API error (docs) — ignoring it left the row "running"
+                // until the 15-minute staleness rule. The turn is over either way; only `rate_limit` is a limit stop.
+                s.status = .waitingForInput
+                if AgentQuotaRules.isLimitStop(claudeError: e.errorType) {
+                    s.limitStop = AgentSession.LimitStop(reason: e.errorType ?? "", since: e.receivedAt)
+                }
             case .sessionEnd:
                 s.status = .ended
-            case .subagentStart, .subagentStop, .preCompact, .postCompact, .messageDisplay, .stopFailure, .other:
+            case .subagentStart, .subagentStop, .preCompact, .postCompact, .messageDisplay, .other:
                 break
             }
             byID[key] = s

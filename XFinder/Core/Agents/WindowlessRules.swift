@@ -165,6 +165,11 @@ enum WindowlessRules {
         var turns = 0
         var pid: Int32?
         var lastError: String?
+        /// P12.2 (Codex) — the failed turn's `codexErrorInfo`; cleared when the next turn is sent or starts.
+        var lastErrorCode: String?
+        /// When that failure arrived — the stop's identity (P12 review: `updatedAt` moves on with any later event, and a
+        /// stop whose time keeps changing is announced again on every rebuild).
+        var lastErrorAt: Date?
         var nextEntryID = 0
         /// P11 — which agent the process is: Claude Code (stream-json) or Codex (`codex app-server` JSON-RPC).
         var agent: AgentKind = .claude
@@ -200,6 +205,7 @@ enum WindowlessRules {
             guard !isEnded else { return }
             append(.person, text, at: at)
             phase = .working(tool: nil)
+            lastErrorCode = nil; lastErrorAt = nil
             turns += 1
             updatedAt = at
         }
@@ -233,6 +239,7 @@ enum WindowlessRules {
                 if let model { self.model = model }
             case .turnStarted(let turnID):
                 activeTurnID = turnID
+                lastErrorCode = nil; lastErrorAt = nil
                 phase = .working(tool: nil)
             case .tool(let name):
                 phase = .working(tool: name)
@@ -241,15 +248,21 @@ enum WindowlessRules {
                 if case .working = phase { phase = .working(tool: nil) }
             case .approval(let raw, let kind, let summary, let legacy):
                 pendingApproval = PendingApproval(rawID: raw, kind: kind, summary: summary, legacy: legacy, since: at)
-            case .turnCompleted(let status, let error):
+            case .turnCompleted(let status, let error, let code):
                 if let error, !error.isEmpty { append(.note, error, at: at); lastError = error }
                 else if status == "failed" { lastError = status }
+                lastErrorCode = status == "failed" ? code : nil
+                lastErrorAt = lastErrorCode == nil ? nil : at
                 activeTurnID = nil
                 pendingApproval = nil
                 phase = .waiting            // `sent` already counted the turn
             case .requestFailed(_, let message):
                 append(.note, message, at: at)
                 lastError = message
+                // P12 review: a `turn/start` the server refused never gets a `turn/completed` — without this the row said
+                // "working" forever and `deliver` refused every later message. A refused request while a turn RUNS
+                // (an interrupt, say) leaves the turn alone.
+                if case .working = phase, activeTurnID == nil, turns > 0 { phase = .waiting }
             case .error(let message):
                 lastError = message
             case .initializeOK, .otherRequest, .ignored:
@@ -288,6 +301,10 @@ enum WindowlessRules {
                              updatedAt: r.updatedAt, status: status, lastTool: { if case .working(let t) = r.phase { return t }; return nil }(),
                              lastPrompt: r.lastPersonText, agentPID: r.pid, terminal: terminal, eventCount: r.turns)
         s.hostedByXFinder = true
+        // P12.2: a Codex turn that failed with usageLimitExceeded is a limit stop until the next turn.
+        if case .waiting = r.phase, AgentQuotaRules.isLimitStop(codexCode: r.lastErrorCode) {
+            s.limitStop = AgentSession.LimitStop(reason: r.lastErrorCode ?? "", since: r.lastErrorAt ?? r.updatedAt)
+        }
         return s
     }
 
@@ -302,6 +319,7 @@ enum WindowlessRules {
                 out[i].terminal.windowless = true
                 if r.isEnded { out[i].status = .ended }
                 if out[i].cwd == nil { out[i].cwd = r.cwd }
+                if out[i].limitStop == nil { out[i].limitStop = row.limitStop }
             } else {
                 out.append(row)
             }

@@ -722,6 +722,7 @@ struct NotchSurfaceView: View {
         case .snooze: Text(L10n.t("Hoãn 5 phút"))
         case .openCalendar: Text(L10n.t("Mở Lịch"))
         case .openAgents: Text(L10n.t("Xem"))
+        case .handOff(_, let target): Text("\(L10n.t("Chuyển sang "))\(target.displayName)…")
         }
     }
 

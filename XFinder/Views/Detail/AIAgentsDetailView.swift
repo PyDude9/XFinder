@@ -23,6 +23,7 @@ struct AIAgentsDetailView: View {
     @AppStorage("agents.notify.permission") private var notifyPermission = true
     @AppStorage("agents.notify.finished") private var notifyFinished = true
     @AppStorage("agents.notify.sound") private var notifySound = false
+    @AppStorage("agents.notify.quotaBlocked") private var notifyLimit = true
     @AppStorage("agents.notify.quietWhenFront") private var notifyQuietWhenFront = true
     @AppStorage("agents.sortMode") private var sortMode = "priority"
     @AppStorage("agents.keepFinished") private var keepFinished = true
@@ -122,6 +123,11 @@ struct AIAgentsDetailView: View {
                 .settingsRow()
             SettingsDivider()
             ToggleRow(title: L10n.t("Khi một phiên xong lượt và tới lượt bạn"), isOn: $notifyFinished)
+                .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Khi một phiên dừng vì chạm giới hạn sử dụng"),
+                      subtitle: L10n.t("Báo cả khi bạn đang nhìn phiên đó. Nếu máy có agent khác, thông báo kèm nút mở sẵn bảng chuyển việc sang agent đó — ưu tiên agent biết chắc còn hạn mức. Bạn vẫn tự đọc và bấm Gửi."),
+                      isOn: $notifyLimit)
                 .settingsRow()
             SettingsDivider()
             ToggleRow(title: L10n.t("Kèm âm thanh"), isOn: $notifySound)

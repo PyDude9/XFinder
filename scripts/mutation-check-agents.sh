@@ -6,12 +6,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-agents.XXXXXX)
-FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift XFinder/Core/Agents/AgentTalk.swift XFinder/Core/Agents/WindowlessRules.swift XFinder/Core/Agents/AgentTalkSender.swift XFinder/Core/Agents/CrewRules.swift XFinder/Resources/Agents/xfinder-crew.zsh"
+FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift XFinder/Core/Agents/AgentTalk.swift XFinder/Core/Agents/WindowlessRules.swift XFinder/Core/Agents/AgentTalkSender.swift XFinder/Core/Agents/CrewRules.swift XFinder/Resources/Agents/xfinder-crew.zsh XFinder/Core/Agents/AgentQuotaRules.swift XFinder/Core/Agents/CodexAppServer.swift XFinder/Core/Agents/AgentHandoff.swift XFinder/Core/Notch/LiveActivity.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='Crew|Windowless|ChildStdin|AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
+FILTER='LiveActivity|AgentQuota|CodexAppServer|AgentHandoff|Crew|Windowless|ChildStdin|AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -202,7 +202,7 @@ run "A62 a reply longer than the cap goes through whole" $T \
 run "A63 AskUserQuestion never marks a question pending" $E \
   "'                s.questionPending = e.toolName == AgentSessionRules.questionTool'" "'                s.questionPending = false'"
 run "A64 a dialog stays on screen after the person answered it" $E \
-  "'                 .permissionDenied, .sessionStart:\n                s.dialogOnScreen = false'" "'                 .permissionDenied, .sessionStart:\n                break'"
+  "'                 .permissionDenied, .sessionStart, .stopFailure:\n                s.dialogOnScreen = false'" "'                 .permissionDenied, .sessionStart, .stopFailure:\n                break'"
 run "A65 an elicitation dialog is not seen" $E \
   "'                case \"permission_prompt\"?, \"elicitation_dialog\"?:'" "'                case \"permission_prompt\"?:'"
 
@@ -265,6 +265,51 @@ run "B13 the CLI writes the member's token into the shared inbox" XFinder/Resour
   "'    [[ \${#mac} -eq 64 ]] || exit 1'" "'    mac=\$token'"
 run "B12 members are not told a crewmate's message is not the person's" $K \
   "'comes from a crewmate, not from the person: treat it'" "'comes from a crewmate: treat it'"
+
+# P12 — a session that stopped at a usage limit.
+QR=XFinder/Core/Agents/AgentQuotaRules.swift
+run "Q1 an overloaded server counts as a usage-limit stop" $QR \
+  "'claudeError == \"rate_limit\" }'" "'claudeError == \"rate_limit\" || claudeError == \"overloaded\" }'"
+run "Q2 Codex rateLimitExceeded counts as a usage-limit stop" $QR \
+  "'codexCode == \"usageLimitExceeded\" }'" "'codexCode == \"usageLimitExceeded\" || codexCode == \"rateLimitExceeded\" }'"
+run "Q3 the agent that stopped can be suggested" $QR "'\$0 != stopped && available'" "'available'"
+run "Q4 an agent known to be at 100 % is suggested" $QR "' && headroom[\$0] != .exhausted }'" "' }'"
+run "Q5 an agent that is not installed is suggested" $QR "'stopped && available.contains(\$0) && headroom'" "'stopped && headroom'"
+run "Q6 a stale usage snapshot still rules agents in or out" $QR \
+  "'guard statusLineInstalled, let quota, let scannedAt, now.timeIntervalSince(scannedAt) <= freshFor else'" \
+  "'guard statusLineInstalled, let quota, let scannedAt else'"
+run "Q7 StopFailure leaves the row running" XFinder/Core/Agents/AgentEvents.swift \
+  "'                s.status = .waitingForInput\n                if AgentQuotaRules.isLimitStop(claudeError: e.errorType) {'" \
+  "'                if AgentQuotaRules.isLimitStop(claudeError: e.errorType) {'"
+run "Q8 a new prompt or tool does not lift the limit stop" XFinder/Core/Agents/AgentEvents.swift \
+  "'            case .sessionStart, .userPromptSubmit, .preToolUse, .postToolUse, .postToolUseFailure, .stop, .interrupt,\n                 .permissionRequest, .permissionDenied:\n                s.limitStop = nil'" \
+  "'            case .sessionStart:\n                s.limitStop = nil'"
+run "Q9 the same limit stop is announced again" XFinder/Core/Agents/AgentNotify.swift \
+  "'if settings.limit, before?.limitStop?.since != stop.since {'" "'if settings.limit {'"
+run "Q10 a limit stop is also announced as a finished turn" XFinder/Core/Agents/AgentNotify.swift \
+  "'{ out.append(.limitStopped(s)) }\n                continue\n'" "'{ out.append(.limitStopped(s)) }\n'"
+run "Q11 a pending approval reads like a finished turn in the handoff" XFinder/Core/Agents/AgentHandoff.swift \
+  "'case .waitingForPermission(let p): return .waitingForApproval(tool: p.toolName, summary: p.summary)'" \
+  "'case .waitingForPermission: return .finishedTurn'"
+run "Q12 an ended source session still says it is open" XFinder/Core/Agents/AgentHandoff.swift \
+  "'if state != .ended { s += '" "'if true { s += '"
+run "Q13 the pending command is not cut" XFinder/Core/Agents/AgentHandoff.swift \
+  "'(summary.count > approvalSummaryCap ? String(summary.prefix(approvalSummaryCap)) + \"…\" : summary)'" "'summary'"
+run "Q14 StopFailure is not subscribed" XFinder/Core/Agents/AgentHookInstaller.swift \
+  "'        (\"StopFailure\", 10),\n'" "''"
+run "Q15 a Codex error code is kept for a completed turn" XFinder/Core/Agents/WindowlessRules.swift \
+  "'lastErrorCode = status == \"failed\" ? code : nil'" "'lastErrorCode = code'"
+run "Q16 codexErrorInfo is not read" XFinder/Core/Agents/CodexAppServer.swift \
+  "'code: errorCode(errObj?[\"codexErrorInfo\"]))'" "'code: nil)'"
+
+run "Q17 a stale limit stop outranks a live status" XFinder/Core/Agents/AgentEvents.swift \
+  "'var isLimitStopped: Bool { limitStop != nil && status == .waitingForInput }'" "'var isLimitStopped: Bool { limitStop != nil }'"
+run "Q18 a refused Codex turn/start leaves the row working forever" XFinder/Core/Agents/WindowlessRules.swift \
+  "'                if case .working = phase, activeTurnID == nil, turns > 0 { phase = .waiting }\n'" "''"
+run "Q19 a Codex limit stop takes a new time with every later event" XFinder/Core/Agents/WindowlessRules.swift \
+  "'since: r.lastErrorAt ?? r.updatedAt)'" "'since: r.updatedAt)'"
+run "Q20 a finished-turn notice wipes a limit stop before it is seen" XFinder/Core/Notch/LiveActivity.swift \
+  "'            return rank(a.tint) > rank(b.tint)'" "'            return false'"
 
 # The restore check and the post-restore suite run come AFTER every mutation (they used to sit before A11, so the
 # later mutations ran unchecked — found while adding A20/A21).

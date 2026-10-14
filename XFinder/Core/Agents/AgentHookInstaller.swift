@@ -22,6 +22,9 @@ enum AgentHookInstaller {
         ("PreToolUse", 10), ("PostToolUse", 10), ("PostToolUseFailure", 10), ("Notification", 10),
         ("Stop", 10), ("SubagentStop", 10), ("PreCompact", 10), ("PostCompact", 10),
         ("PermissionRequest", 3600), ("PermissionDenied", 10),
+        // P12.3 — runs INSTEAD of Stop when a turn ends on an API error (`error: rate_limit` = a usage limit). Appended
+        // LAST: a list position must never change for an existing entry.
+        ("StopFailure", 10),
     ]
     /// P5 — Codex's documented events (learn.chatgpt.com/docs/hooks, 2026-10-14). `SessionEnd` and `Interrupt` default
     /// to 1 s and accept at most 3 s; appending one JSON line takes milliseconds. Codex has no `Notification`

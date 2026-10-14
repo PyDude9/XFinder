@@ -32,7 +32,8 @@ final class AgentHandoffRunner {
         let transcript = session.transcriptPath
         let sessionID = session.id
         let openCodeBinary = source == .opencode ? OpenCodeMonitor.findBinary() : nil
-        let wasWorking: Bool = { if case .running = session.status { return true }; return false }()
+        let state = AgentHandoff.sourceState(of: session)
+        let transcriptPath = session.transcriptPath
         let english = L10n.isEnglish
         return await Task.detached(priority: .userInitiated) {
             var turns: [AgentHandoff.Turn] = []
@@ -59,7 +60,7 @@ final class AgentHandoffRunner {
                 git = AgentHandoff.GitState(branch: parsed.branch, changed: parsed.changed, commits: commits)
             }
             let text = AgentHandoff.compose(source: source, folder: folder, turns: turns, files: files, git: git,
-                                            wasWorking: wasWorking, english: english)
+                                            state: state, transcriptPath: transcriptPath, english: english)
             return Draft(source: source, target: target, folder: folder, text: text, turnCount: turns.count)
         }.value
     }

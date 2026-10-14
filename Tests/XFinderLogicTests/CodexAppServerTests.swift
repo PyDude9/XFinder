@@ -39,7 +39,7 @@ final class CodexAppServerTests: XCTestCase {
         XCTAssertEqual(C.parse(line: #"{"method":"item/completed","params":{"item":{"type":"agentMessage","text":"Xong"}}}"#), .agentMessage("Xong"))
         XCTAssertEqual(C.parse(line: #"{"method":"item/completed","params":{"item":{"type":"reasoning","text":"x"}}}"#), .ignored, "reasoning is not shown")
         XCTAssertEqual(C.parse(line: #"{"method":"turn/completed","params":{"turn":{"status":"failed","error":{"message":"quota"}}}}"#),
-                       .turnCompleted(status: "failed", error: "quota"))
+                       .turnCompleted(status: "failed", error: "quota", code: nil))
         XCTAssertEqual(C.parse(line: #"{"id":5,"method":"item/commandExecution/requestApproval","params":{"command":"rm -rf build"}}"#),
                        .approval(rawID: "5", kind: .command, summary: "rm -rf build", legacy: false))
         XCTAssertEqual(C.parse(line: #"{"id":"r1","method":"execCommandApproval","params":{"command":["git","push"]}}"#),
@@ -64,7 +64,7 @@ final class CodexAppServerTests: XCTestCase {
         XCTAssertEqual(p.toolName, "Bash")
         XCTAssertEqual(p.summary, "rm -rf build")
         r.applyCodex(.agentMessage("Đã xoá"), at: t)
-        r.applyCodex(.turnCompleted(status: "completed", error: nil), at: t)
+        r.applyCodex(.turnCompleted(status: "completed", error: nil, code: nil), at: t)
         XCTAssertNil(r.pendingApproval)
         XCTAssertNil(r.activeTurnID)
         XCTAssertEqual(r.phase, .waiting)

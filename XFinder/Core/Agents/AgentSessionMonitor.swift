@@ -25,6 +25,8 @@ final class AgentSessionMonitor {
     var notifyPermission: Bool { UserDefaults.standard.object(forKey: "agents.notify.permission") as? Bool ?? true }
     var notifyFinished: Bool { UserDefaults.standard.object(forKey: "agents.notify.finished") as? Bool ?? true }
     var notifySound: Bool { UserDefaults.standard.object(forKey: "agents.notify.sound") as? Bool ?? false }
+    /// P12.4 — a turn stopped at a usage limit (its own switch: it means something else than "finished").
+    var notifyLimit: Bool { UserDefaults.standard.object(forKey: "agents.notify.quotaBlocked") as? Bool ?? true }
     /// P8: no notice and no sound for a session whose terminal / app is frontmost (OneNotch does the same).
     /// P10 — the ONE readers of the list's order and of whether ended sessions stay listed.
     var sortModeRaw: String { UserDefaults.standard.string(forKey: "agents.sortMode") ?? "priority" }
@@ -182,18 +184,58 @@ final class AgentSessionMonitor {
         // baseline too (counting snapshots, not rebuilds — an empty first snapshot triggers no rebuild).
         let openCodeLive = OpenCodeMonitor.shared.snapshotGeneration > 1
         let events = AgentNotify.events(old: old, new: new,
-                                        settings: .init(permission: notifyPermission, finished: notifyFinished))
-            .filter { e in
-                switch e {
-                case .needsApproval(let s, _), .finished(let s): return s.agent != .opencode || openCodeLive
-                }
-            }
-        // P8: the person is already looking at that session's terminal or app — nothing pops, nothing sounds.
+                                        settings: .init(permission: notifyPermission, finished: notifyFinished, limit: notifyLimit))
+            .filter { AgentNotify.session(of: $0).agent != .opencode || openCodeLive }
+        // P8: the person is already looking at that session's terminal or app — nothing pops, nothing sounds. A limit
+        // stop is the exception (Q-P12-7): the terminal shows the error, not the way out — the notice carries the
+        // handoff button.
         let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        let heard = notifyQuietWhenFront ? events.filter { !AgentNotify.isWatched(AgentNotify.session(of: $0), frontmostBundleID: front) } : events
+        let heard = notifyQuietWhenFront
+            ? events.filter { e in
+                if case .limitStopped = e { return true }
+                return !AgentNotify.isWatched(AgentNotify.session(of: e), frontmostBundleID: front)
+            }
+            : events
         guard !heard.isEmpty else { return }
-        for e in heard { NotchSurfaceController.shared.presentAgentNotice(AgentNotify.item(for: e)) }
-        if notifySound { NSSound(named: NSSound.Name(heard.contains { if case .needsApproval = $0 { return true }; return false } ? "Glass" : "Pop"))?.play() }
+        for e in heard {
+            if case .limitStopped(let s) = e {
+                NotchSurfaceController.shared.presentAgentNotice(AgentNotify.item(for: e, suggestedTarget: handoffSuggestion(for: s)))
+            } else {
+                NotchSurfaceController.shared.presentAgentNotice(AgentNotify.item(for: e))
+            }
+        }
+        let urgent = heard.contains { e in
+            switch e { case .needsApproval, .limitStopped: return true; case .finished: return false }
+        }
+        if notifySound { NSSound(named: NSSound.Name(urgent ? "Glass" : "Pop"))?.play() }
+    }
+
+    /// P12.4 — the agent the limit notice's button pre-selects: the stopped one excluded, one known to be at 100 % excluded,
+    /// one not installed excluded (`AgentQuotaRules.suggestTarget`). Room comes from the usage snapshot only while it is
+    /// fresh; otherwise every agent is "unknown" and the first installed other one is offered.
+    private func handoffSuggestion(for s: AgentSession) -> AgentKind? {
+        let snap = AgentUsageMonitor.shared.snapshot
+        let now = Date()
+        var room: [AgentKind: AgentQuotaRules.Headroom] = [
+            .claude: AgentQuotaRules.claude(statusLineInstalled: snap.statusLineInstalled, quota: snap.claudeQuota,
+                                            scannedAt: snap.scannedAt, now: now),
+            .codex: AgentQuotaRules.codex(snap.codex, scannedAt: snap.scannedAt, now: now),
+            .opencode: .unknown,
+        ]
+        room[s.agent] = .exhausted
+        return AgentQuotaRules.suggestTarget(stopped: s.agent, headroom: room, available: installedAgents())
+    }
+
+    /// Agents whose command is on this Mac (the handoff would fail at Send otherwise).
+    private func installedAgents() -> Set<AgentKind> {
+        let fm = FileManager.default
+        let home = fm.homeDirectoryForCurrentUser.path
+        let path = ProcessInfo.processInfo.environment["PATH"]
+        var out: Set<AgentKind> = []
+        if WindowlessRules.claudeCandidates(path: path, home: home).contains(where: { fm.isExecutableFile(atPath: $0) }) { out.insert(.claude) }
+        if CodexAppServer.candidates(path: path, home: home).contains(where: { fm.isExecutableFile(atPath: $0) }) { out.insert(.codex) }
+        if OpenCodeMonitor.findBinary() != nil { out.insert(.opencode) }
+        return out
     }
 
     // MARK: - Recent sessions (P5c)

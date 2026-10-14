@@ -73,7 +73,9 @@ enum CodexAppServer {
         case turnStarted(turnID: String)
         case tool(String)                       // a command started (shown as the session's current tool)
         case agentMessage(String)
-        case turnCompleted(status: String, error: String?)
+        /// `code` = the turn error's `codexErrorInfo` (P12.2): a plain value such as `usageLimitExceeded`, or the key of
+        /// a structured one (`httpConnectionFailed`…). Only populated on a failed turn.
+        case turnCompleted(status: String, error: String?, code: String?)
         case approval(rawID: String, kind: ApprovalKind, summary: String?, legacy: Bool)
         case otherRequest(rawID: String)        // a server request XFinder answers with an error
         case error(String)
@@ -132,14 +134,23 @@ enum CodexAppServer {
             return .agentMessage(text)
         case "turn/completed":
             let turn = params["turn"] as? [String: Any] ?? [:]
-            let err = (turn["error"] as? [String: Any])?["message"] as? String
-            return .turnCompleted(status: turn["status"] as? String ?? "completed", error: err)
+            let errObj = turn["error"] as? [String: Any]
+            return .turnCompleted(status: turn["status"] as? String ?? "completed", error: errObj?["message"] as? String,
+                                  code: errorCode(errObj?["codexErrorInfo"]))
         case "error":
             let msg = (params["error"] as? [String: Any])?["message"] as? String ?? params["message"] as? String ?? "error"
             return .error(msg)
         default:
             return .ignored
         }
+    }
+
+    /// `codexErrorInfo` is either a plain string (`usageLimitExceeded`, `rateLimitExceeded`, …) or a one-key object
+    /// (`{"httpConnectionFailed": {...}}`) — measured from the 0.155.0 schema. The key names the error either way.
+    static func errorCode(_ v: Any?) -> String? {
+        if let s = v as? String, !s.isEmpty { return s }
+        if let d = v as? [String: Any] { return d.keys.sorted().first }
+        return nil
     }
 
     /// The `id` re-serialised as JSON (so a numeric id stays a number and a string id stays a string in the reply).

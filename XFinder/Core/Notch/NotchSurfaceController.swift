@@ -1180,6 +1180,10 @@ final class NotchSurfaceController {
         case .snooze(let key): CalendarGlanceMonitor.shared.snooze(key: key)
         case .openCalendar: reveal(page: .calendar)
         case .openAgents: reveal(page: .agents)
+        case .handOff(let listID, let target):
+            // Opens the same preview as the row's "Chuyển sang…" menu — the person still reads it and presses Send.
+            if let s = AgentSessionMonitor.shared.sessions.first(where: { $0.listID == listID }) { beginHandoff(s, to: target) }
+            else { reveal(page: .agents) }
         }
     }
 

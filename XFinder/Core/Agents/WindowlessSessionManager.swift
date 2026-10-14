@@ -443,6 +443,11 @@ final class WindowlessSessionManager {
             case .turnCompleted:
                 turnEnded = true
                 record.applyCodex(e, at: now)
+            case .requestFailed:
+                // A refused turn/start ends the turn too (the record moves to .waiting): tell the crew relay.
+                let wasWorking: Bool = { if case .working = record.phase { return true }; return false }()
+                record.applyCodex(e, at: now)
+                if wasWorking, case .waiting = record.phase { turnEnded = true }
             default:
                 record.applyCodex(e, at: now)
             }
