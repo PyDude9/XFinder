@@ -157,7 +157,13 @@ final class AgentSessionMonitor {
             all.append(contentsOf: tail.events)
             if let last = tail.events.last?.receivedAt { lastEventAt[agent] = last }
         }
-        let hooked = running ? AgentSessionRules.sessions(from: all, now: now, answered: answered, isAlive: Self.isAlive) : []
+        let hooked = (running ? AgentSessionRules.sessions(from: all, now: now, answered: answered, isAlive: Self.isAlive) : [])
+            .map { s in
+                // A refused turn (usage limit) leaves no hook event on the desktop app — read the transcript's tail.
+                guard AgentSessionRules.shouldReadTranscript(s, now: now, home: NSHomeDirectory()),
+                      let path = s.transcriptPath else { return s }
+                return AgentSessionRules.applyingTranscriptLimit(s, transcriptLimit(at: path))
+            }
         // P7a: XFinder's own windowless sessions — merged over the hook rows for the same id (the hook alone knows a
         // pending permission request), added as rows of their own when no hook line exists (hook not installed).
         let hosted = running ? WindowlessRules.merged(hookSessions: hooked, records: WindowlessSessionManager.shared.orderedRecords) : []
@@ -171,6 +177,33 @@ final class AgentSessionMonitor {
         notifyBaseline = running ? sessions : nil
         AgentTalkSender.shared.sessionsChanged(sessions)        // P6: held replies go out when their session is free
         syncLivenessTimer()
+    }
+
+    // MARK: - Usage limit from the transcript
+
+    /// path → the file's size and modification date when last read, and what its tail said. A transcript that has not
+    /// changed is not read again; one that grew is re-read (only its last 64 KB).
+    private var transcriptCache: [String: (size: UInt64, modified: Date, limit: AgentSessionRules.TranscriptLimit?)] = [:]
+
+    private func transcriptLimit(at path: String) -> AgentSessionRules.TranscriptLimit? {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+              let size = (attrs[.size] as? NSNumber)?.uint64Value,
+              let modified = attrs[.modificationDate] as? Date else { return nil }
+        if let cached = transcriptCache[path], cached.size == size, cached.modified == modified { return cached.limit }
+        var limit: AgentSessionRules.TranscriptLimit?
+        if let handle = FileHandle(forReadingAtPath: path) {
+            defer { try? handle.close() }
+            let window: UInt64 = 64 * 1024
+            try? handle.seek(toOffset: size > window ? size - window : 0)
+            // A window can start inside a multi-byte character; lossy decoding only spoils that first, torn line,
+            // which does not parse as JSON and is skipped.
+            if let data = try? handle.readToEnd() {
+                limit = AgentSessionRules.transcriptLimit(tail: String(decoding: data, as: UTF8.self))
+            }
+        }
+        transcriptCache[path] = (size, modified, limit)
+        if transcriptCache.count > 64 { transcriptCache.removeAll() }      // a bound, not an LRU: rebuilt on demand
+        return limit
     }
 
     // MARK: - Notices (P5c)

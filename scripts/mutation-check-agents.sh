@@ -11,7 +11,7 @@ for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='LiveActivity|AgentQuota|CodexAppServer|AgentHandoff|Crew|Windowless|ChildStdin|AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
+FILTER='AgentTranscriptLimit|LiveActivity|AgentQuota|CodexAppServer|AgentHandoff|Crew|Windowless|ChildStdin|AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -310,6 +310,21 @@ run "Q19 a Codex limit stop takes a new time with every later event" XFinder/Cor
   "'since: r.lastErrorAt ?? r.updatedAt)'" "'since: r.updatedAt)'"
 run "Q20 a finished-turn notice wipes a limit stop before it is seen" XFinder/Core/Notch/LiveActivity.swift \
   "'            return rank(a.tint) > rank(b.tint)'" "'            return false'"
+
+run "Q21 a subagent's refusal (sidechain) stops the main session" XFinder/Core/Agents/AgentEvents.swift \
+  "'                  (d[\"isSidechain\"] as? Bool) != true else { continue }'" "'                  true else { continue }'"
+run "Q22 a real answer (or another error) after the refusal does not lift it" XFinder/Core/Agents/AgentEvents.swift \
+  "'            guard refused else { found = nil; continue }'" "'            guard refused else { continue }'"
+run "Q23 a refusal older than the last hook event still stops the row" XFinder/Core/Agents/AgentEvents.swift \
+  "'              limit.since >= s.updatedAt.addingTimeInterval(-2) else { return s }'" "'              true else { return s }'"
+run "Q24 a hook line can point the transcript read at any file" XFinder/Core/Agents/AgentEvents.swift \
+  "'        return resolved.hasPrefix(root) && resolved.hasSuffix(\".jsonl\")'" "'        return true'"
+run "Q26 a symlink inside projects points the read at another file" XFinder/Core/Agents/AgentEvents.swift \
+  "'        let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().standardizedFileURL.path'" \
+  "'        let resolved = URL(fileURLWithPath: path).standardizedFileURL.path'"
+run "Q25 a prompt quoting the limit text marks the session stopped (the sniffing fix)" XFinder/Core/Agents/AgentEvents.swift \
+  "'                s.lastPrompt = e.prompt\n                s.status = .running(tool: nil)'" \
+  "'                s.lastPrompt = e.prompt\n                if e.prompt?.contains(\"hit your session limit\") == true { s.status = .waitingForInput; s.limitStop = AgentSession.LimitStop(reason: \"rate_limit\", since: e.receivedAt) } else { s.status = .running(tool: nil) }'"
 
 # The restore check and the post-restore suite run come AFTER every mutation (they used to sit before A11, so the
 # later mutations ran unchecked — found while adding A20/A21).

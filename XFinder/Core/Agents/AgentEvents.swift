@@ -251,6 +251,7 @@ enum AgentSessionRules {
     }
 
     static func activity(of s: AgentSession) -> Activity {
+        if s.isLimitStopped { return .yourTurn }
         switch s.status {
         // AskUserQuestion arrives as a running tool, but it is the person who must act.
         case .running(let tool): return s.questionPending ? .waiting : (tool == nil ? .thinking : .working)
@@ -472,5 +473,78 @@ enum AgentSessionRules {
         case .waitingForPermission: return "Chờ bạn duyệt"
         case .ended: return "Đã kết thúc"
         }
+    }
+}
+
+// MARK: - A usage limit read from the transcript
+
+extension AgentSessionRules {
+    /// A usage-limit refusal found in a Claude Code transcript.
+    struct TranscriptLimit: Equatable, Sendable {
+        var since: Date
+        /// `quotaLimits.resetsAt` (epoch seconds) when the line carries it.
+        var resetsAt: Date?
+    }
+
+    /// Claude Code writes a usage-limit refusal into its own transcript — an `assistant` line with `isApiErrorMessage`,
+    /// `error: "rate_limit"` and `quotaLimits {status: "rejected", resetsAt, rateLimitType}` — but the desktop app runs no
+    /// `StopFailure` hook for it. Measured 2026-10-14: the turn died at 13:41:29Z with exactly that line, and the hook log
+    /// holds no event after the 13:41:28Z prompt (and no `StopFailure` all day). So the hook alone leaves the row
+    /// "running" until the 15-minute staleness rule; this reads the transcript's tail instead.
+    ///
+    /// The LAST main-thread assistant line decides: a rejected `rate_limit` refusal means stopped at the limit; anything
+    /// else after it — a real answer, or a different API error (review: a later `overloaded` must not keep an old
+    /// refusal on screen) — means the session's state is no longer that refusal. Sidechain lines (a subagent's own
+    /// turns) never decide it. A torn first line of the tail does not parse and is skipped.
+    static func transcriptLimit(tail: String) -> TranscriptLimit? {
+        var found: TranscriptLimit?
+        for line in tail.split(separator: "\n", omittingEmptySubsequences: true) {
+            guard line.contains("assistant"),
+                  let d = (try? JSONSerialization.jsonObject(with: Data(line.utf8))) as? [String: Any],
+                  d["type"] as? String == "assistant",
+                  (d["isSidechain"] as? Bool) != true else { continue }
+            let quota = d["quotaLimits"] as? [String: Any]
+            let refused = d["isApiErrorMessage"] as? Bool == true && d["error"] as? String == "rate_limit"
+                && (quota?["status"] as? String ?? "rejected") == "rejected"
+            guard refused else { found = nil; continue }
+            found = TranscriptLimit(since: transcriptDate(d["timestamp"] as? String) ?? .distantPast,
+                                    resetsAt: (quota?["resetsAt"] as? Double).map { Date(timeIntervalSince1970: $0) })
+        }
+        return found
+    }
+
+    /// `2026-10-14T13:41:29.145Z`, with or without the fraction.
+    static func transcriptDate(_ s: String?) -> Date? {
+        guard let s else { return nil }
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = f.date(from: s) { return d }
+        f.formatOptions = [.withInternetDateTime]
+        return f.date(from: s)
+    }
+
+    /// A running Claude Code session whose transcript ends in a refusal that came after (or with) its last hook event is
+    /// stopped at the limit. A hook event after the refusal means the work went on, so the row is left alone.
+    static func applyingTranscriptLimit(_ s: AgentSession, _ limit: TranscriptLimit?) -> AgentSession {
+        guard let limit, s.agent == .claude, case .running = s.status,
+              limit.since >= s.updatedAt.addingTimeInterval(-2) else { return s }
+        var out = s
+        out.status = .waitingForInput
+        out.limitStop = AgentSession.LimitStop(reason: "rate_limit", since: limit.since)
+        return out
+    }
+
+    /// Whether the monitor should look at a session's transcript now: a Claude Code session still "running" with no hook
+    /// event for `quietFor` seconds (an active turn sends events; a refused one goes silent), and a transcript path that
+    /// is a `.jsonl` inside `~/.claude/projects` — a hook line cannot steer the read to any other file. Both sides are
+    /// resolved through symlinks first: a link inside `projects` cannot point the read elsewhere, and a `~/.claude` that
+    /// is itself a link (dotfiles setups) still matches.
+    static func shouldReadTranscript(_ s: AgentSession, now: Date, home: String, quietFor: TimeInterval = 3) -> Bool {
+        guard s.agent == .claude, case .running = s.status, let path = s.transcriptPath,
+              now.timeIntervalSince(s.updatedAt) >= quietFor else { return false }
+        let root = URL(fileURLWithPath: home).appendingPathComponent(".claude/projects")
+            .resolvingSymlinksInPath().standardizedFileURL.path + "/"
+        let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().standardizedFileURL.path
+        return resolved.hasPrefix(root) && resolved.hasSuffix(".jsonl")
     }
 }
