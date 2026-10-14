@@ -453,6 +453,8 @@ final class ClipboardShelfController {
 private struct ClipboardShelfView: View {
     @State private var controller = ClipboardShelfController.shared
     @State private var manager = ClipboardManager.shared
+    /// The card index at the leading edge of the deck while it scrolls — each change taps the trackpad.
+    @State private var leadingCard: Int?
     @AppStorage("clipboard.touchIDLock") private var touchIDLock = false
     @State private var isUnlocked = false
     @FocusState private var isSearchFocused: Bool
@@ -941,8 +943,13 @@ private struct ClipboardShelfView: View {
                             }
                         }
                     }
+                    .scrollTargetLayout()
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
+                }
+                .scrollPosition(id: $leadingCard)
+                .onChange(of: leadingCard) { old, new in
+                    ClipboardSounds.tickIfCardChanged(from: old, to: new, in: Array(controller.items.indices))
                 }
                 .onChange(of: controller.selectedIndex) { _, idx in
                     withAnimation(.easeOut(duration: 0.18)) { proxy.scrollTo(idx, anchor: .center) }

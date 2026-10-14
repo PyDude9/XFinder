@@ -58,6 +58,11 @@ run "S4 bottom/top swapped in top-left space" XFinder/Core/Snap/SnapLayout.swift
   "'            case .bottomLeft:     return CGRect(x: x, y: y + h / 2, width: w / 2, height: h / 2)'" \
   "'            case .bottomLeft:     return CGRect(x: x, y: y, width: w / 2, height: h / 2)'"
 
+run "S8 the four-corner tile reads the quadrant upside down" XFinder/Core/Snap/SnapLayout.swift \
+  "'            let top = point.y >= tile.midY'" "'            let top = point.y < tile.midY'"
+run "S9 the four-corner tile is gone from the row" XFinder/Core/Snap/SnapLayout.swift \
+  "'    static let rowItems: [RowItem] = [.single(.leftHalf), .single(.rightHalf), .quarters,'" \
+  "'    static let rowItems: [RowItem] = [.single(.leftHalf), .single(.rightHalf),'"
 run "S5 a press with no window under it is still a candidate" XFinder/Core/Snap/SnapLayout.swift \
   "'            verdict = windowOrigin == nil ? .notWindowMove : .pending'" "'            verdict = .pending'"
 run "S6 a text selection (pointer travels, window still) becomes a window drag" XFinder/Core/Snap/SnapLayout.swift \

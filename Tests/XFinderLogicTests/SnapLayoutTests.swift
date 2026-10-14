@@ -65,7 +65,7 @@ final class SnapLayoutTests: XCTestCase {
     func testDraggingToTheNotchShowsTheRowInsteadOfMaximize() {
         let atNotch = CGPoint(x: notch.midX, y: screen.maxY - 2)
         XCTAssertEqual(L.decide(point: atNotch, screen: screen, notch: notch, edgeMargin: 8, rowEnabled: true, rowVisible: false),
-                       .row(tile: nil))
+                       .row(tile: nil, target: nil))
         XCTAssertEqual(L.decide(point: atNotch, screen: screen, notch: notch, edgeMargin: 8, rowEnabled: false, rowVisible: false),
                        .edge(.maximize), "row switched off ⇒ the old behaviour")
         let farTop = CGPoint(x: 100, y: screen.maxY - 2)
@@ -74,17 +74,49 @@ final class SnapLayoutTests: XCTestCase {
     }
 
     func testMovingDownOntoATileSelectsItAndLeavingDropsTheRow() {
-        let row = L.rowFrame(count: L.rowTargets.count, notch: notch, screen: screen)
-        let tiles = L.tileFrames(row: row, count: L.rowTargets.count)
-        let third = CGPoint(x: tiles[3].midX, y: tiles[3].midY)          // centerThird
+        let row = L.rowFrame(count: L.rowItems.count, notch: notch, screen: screen)
+        let tiles = L.tileFrames(row: row, count: L.rowItems.count)
+        let third = CGPoint(x: tiles[4].midX, y: tiles[4].midY)          // centerThird
         XCTAssertEqual(L.decide(point: third, screen: screen, notch: notch, edgeMargin: 8, rowEnabled: true, rowVisible: true),
-                       .row(tile: 3))
-        XCTAssertEqual(L.rowTargets[3], .centerThird)
+                       .row(tile: 4, target: .centerThird))
+        XCTAssertEqual(L.rowItems[4], .single(.centerThird))
         XCTAssertEqual(L.decide(point: third, screen: screen, notch: notch, edgeMargin: 8, rowEnabled: true, rowVisible: false),
                        .edge(nil), "the row region below the zone only counts once the row is showing")
         let below = CGPoint(x: notch.midX, y: row.minY - 60)
         XCTAssertEqual(L.decide(point: below, screen: screen, notch: notch, edgeMargin: 8, rowEnabled: true, rowVisible: true),
                        .edge(nil))
+    }
+
+    /// The four-corner tile: the pointer's quadrant inside the tile picks the corner, upper half = top (AppKit y grows up).
+    func testTheFourCornerTilePicksTheQuadrantUnderThePointer() throws {
+        let row = L.rowFrame(count: L.rowItems.count, notch: notch, screen: screen)
+        let tiles = L.tileFrames(row: row, count: L.rowItems.count)
+        let i = try XCTUnwrap(L.rowItems.firstIndex(of: .quarters), "the row has a four-corner tile")
+        let t = tiles[i]
+        let cases: [(CGPoint, SnapLayout.Target)] = [
+            (CGPoint(x: t.minX + 4, y: t.maxY - 4), .topLeft),
+            (CGPoint(x: t.maxX - 4, y: t.maxY - 4), .topRight),
+            (CGPoint(x: t.minX + 4, y: t.minY + 4), .bottomLeft),
+            (CGPoint(x: t.maxX - 4, y: t.minY + 4), .bottomRight),
+        ]
+        for (p, want) in cases {
+            XCTAssertEqual(L.decide(point: p, screen: screen, notch: notch, edgeMargin: 8, rowEnabled: true, rowVisible: true),
+                           .row(tile: i, target: want), "\(want)")
+        }
+        XCTAssertEqual(SnapLayout.RowItem.quarters.targets, [.topLeft, .topRight, .bottomLeft, .bottomRight])
+        // every single tile still gives exactly its own layout wherever the pointer is on it
+        for (j, item) in L.rowItems.enumerated() {
+            guard case .single(let target) = item else { continue }
+            XCTAssertEqual(L.rowTarget(item: item, tile: tiles[j], point: CGPoint(x: tiles[j].minX + 2, y: tiles[j].minY + 2)), target)
+        }
+        // the row is still on screen with the extra tile
+        XCTAssertGreaterThanOrEqual(row.minX, screen.minX)
+        XCTAssertLessThanOrEqual(row.maxX, screen.maxX)
+        // every tile's name reaches the screen through L10n.t(variable) — no literal sweep can see it
+        let store = try L10nFixture.load()
+        for item in L.rowItems {
+            XCTAssertFalse(store.entries[item.titleKey]?.en.isEmpty ?? true, "\(item.titleKey) is not translated")
+        }
     }
 
     func testTileHitTestCoversGapsAndEveryTile() {

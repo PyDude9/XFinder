@@ -99,8 +99,49 @@ enum SnapLayout {
 
     // MARK: Notch layout row (AppKit space)
 
-    /// The layouts the row offers, left to right.
-    static let rowTargets: [Target] = [.leftHalf, .rightHalf, .leftThird, .centerThird, .rightThird, .focus, .maximize]
+    /// One tile of the notch row: a single layout, or the four corners — inside that tile the pointer's quadrant picks
+    /// the corner (owner, 2026-10-14: "thêm cái chia làm 4 góc nữa"; OneNotch's row has the same Quarters tile).
+    enum RowItem: Equatable {
+        case single(Target)
+        case quarters
+
+        /// Every layout the tile can produce, in reading order.
+        var targets: [Target] {
+            switch self {
+            case .single(let t): return [t]
+            case .quarters: return [.topLeft, .topRight, .bottomLeft, .bottomRight]
+            }
+        }
+        var titleKey: String {
+            switch self {
+            case .single(let t): return t.titleKey
+            case .quarters: return "Bốn góc"
+            }
+        }
+    }
+
+    /// The tiles the row offers, left to right.
+    static let rowItems: [RowItem] = [.single(.leftHalf), .single(.rightHalf), .quarters,
+                                      .single(.leftThird), .single(.centerThird), .single(.rightThird),
+                                      .single(.focus), .single(.maximize)]
+
+    /// The layout a tile gives for a pointer position. For the four-corner tile the quadrant of the tile under the
+    /// pointer decides; AppKit space, so the UPPER half (larger y) is "top". A point in a gap counts for the nearer
+    /// half, like `tileIndex` counts it for the nearer tile.
+    static func rowTarget(item: RowItem, tile: CGRect, point: CGPoint) -> Target {
+        switch item {
+        case .single(let t): return t
+        case .quarters:
+            let left = point.x < tile.midX
+            let top = point.y >= tile.midY
+            switch (top, left) {
+            case (true, true): return .topLeft
+            case (true, false): return .topRight
+            case (false, true): return .bottomLeft
+            case (false, false): return .bottomRight
+            }
+        }
+    }
 
     struct RowMetrics: Equatable {
         var tileSize = CGSize(width: 64, height: 44)
@@ -148,8 +189,9 @@ enum SnapLayout {
     }
 
     enum Decision: Equatable {
-        /// Show the row; `tile` is the highlighted one (nil while the pointer is in the zone but not yet on a tile).
-        case row(tile: Int?)
+        /// Show the row; `tile` is the highlighted one and `target` the layout it gives at this pointer position (both nil
+        /// while the pointer is in the zone but not yet on a tile).
+        case row(tile: Int?, target: Target?)
         case edge(Target?)
     }
 
@@ -160,9 +202,13 @@ enum SnapLayout {
                        rowEnabled: Bool, rowVisible: Bool, metrics m: RowMetrics = .standard) -> Decision {
         if rowEnabled {
             let zone = rowActivationZone(notch: notch, screen: screen, metrics: m)
-            let row = rowFrame(count: rowTargets.count, notch: notch, screen: screen, metrics: m)
+            let row = rowFrame(count: rowItems.count, notch: notch, screen: screen, metrics: m)
             if zone.contains(point) || (rowVisible && row.insetBy(dx: -8, dy: -8).contains(point)) {
-                return .row(tile: tileIndex(at: point, row: row, count: rowTargets.count, metrics: m))
+                guard let tile = tileIndex(at: point, row: row, count: rowItems.count, metrics: m) else {
+                    return .row(tile: nil, target: nil)
+                }
+                let frame = tileFrames(row: row, count: rowItems.count, metrics: m)[tile]
+                return .row(tile: tile, target: rowTarget(item: rowItems[tile], tile: frame, point: point))
             }
         }
         return .edge(edgeTarget(at: point, screen: screen, margin: edgeMargin))

@@ -24,6 +24,10 @@ ENTRIES = {
     "Thiếu Trợ năng": ("Missing Accessibility", S),
     "Thiếu Ghi màn hình": ("Missing Screen Recording", S),
     "Xem tab Quyền": ("Open Permissions", S),
+    # The four-corner tile of the notch layout row, and the card-scroll haptic (2026-10-14).
+    "Bốn góc": ("Four corners", S),
+    "Rung nhẹ khi lướt qua các thẻ": ("Tap lightly while scrolling through cards", S),
+    "Mỗi thẻ lướt qua ở notch hoặc khay nổi là một nhịp rung. Chỉ trackpad Force Touch, và chỉ cảm nhận được khi ngón tay đang trên trackpad.": ("Each card that scrolls past at the notch or in the floating shelf is one tap. Force Touch trackpads only, and you feel it only with a finger on the trackpad.", S),
     "Xem trước file": ("File preview", S),
     "Hỗ trợ đa phương tiện": ("Media support", S),
     "Xem trước Markdown và file nén mà không cần mở; kiểm tra file media có phát được trên máy này không.": ("Preview Markdown and archives without opening them; check whether a media file plays on this Mac.", S),

@@ -10934,6 +10934,18 @@
     "Xem tab Quyền": {
       "en": "Open Permissions",
       "scope": "sentence"
+    },
+    "Bốn góc": {
+      "en": "Four corners",
+      "scope": "sentence"
+    },
+    "Rung nhẹ khi lướt qua các thẻ": {
+      "en": "Tap lightly while scrolling through cards",
+      "scope": "sentence"
+    },
+    "Mỗi thẻ lướt qua ở notch hoặc khay nổi là một nhịp rung. Chỉ trackpad Force Touch, và chỉ cảm nhận được khi ngón tay đang trên trackpad.": {
+      "en": "Each card that scrolls past at the notch or in the floating shelf is one tap. Force Touch trackpads only, and you feel it only with a finger on the trackpad.",
+      "scope": "sentence"
     }
   }
 }

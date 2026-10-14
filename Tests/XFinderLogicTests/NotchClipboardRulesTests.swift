@@ -151,4 +151,16 @@ final class NotchClipboardRulesTests: XCTestCase {
         XCTAssertNil(R.meta(type: .link, dimensions: nil, path: nil, text: "https://x.y"))
         XCTAssertNil(R.meta(type: .color, dimensions: nil, path: nil, text: "#1F4E79"))
     }
+
+    /// A card passing under the finger taps; the deck appearing, the same card, or a list replaced by a filter does not.
+    func testTheDeckTapsOnlyWhenOneVisibleCardGivesWayToAnother() {
+        let ids = [1, 2, 3, 4]
+        XCTAssertTrue(R.cardChanged(from: 1, to: 2, in: ids))
+        XCTAssertTrue(R.cardChanged(from: 3, to: 1, in: ids), "scrolling back taps too")
+        XCTAssertFalse(R.cardChanged(from: nil, to: 1, in: ids), "the deck appearing is not a swipe")
+        XCTAssertFalse(R.cardChanged(from: 2, to: nil, in: ids))
+        XCTAssertFalse(R.cardChanged(from: 2, to: 2, in: ids))
+        XCTAssertFalse(R.cardChanged(from: 9, to: 1, in: ids), "a filter replaced the list: the old card is gone")
+        XCTAssertFalse(R.cardChanged(from: 1, to: 9, in: ids))
+    }
 }

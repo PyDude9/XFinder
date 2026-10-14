@@ -138,9 +138,9 @@ final class SnapZoneController {
                                                  auxRight: screen.auxiliaryTopRightArea)
             let decision = SnapLayout.decide(point: mouse, screen: screen.frame, notch: notch, edgeMargin: edgeMargin,
                                              rowEnabled: notchRowEnabled, rowVisible: rowPanel?.isVisible ?? false)
-            if case .row(let tile) = decision {
-                showRow(highlight: tile, notch: notch, on: screen)
-                let target = tile.map { SnapLayout.rowTargets[$0] }
+            if case .row(let tile, let target) = decision {
+                showRow(highlight: tile, target: target, notch: notch, on: screen)
+                // Inside the four-corner tile, moving to another quadrant changes the target — and taps again.
                 if target != activeZone {
                     activeZone = target
                     if let target, showPreview { showOverlay(zone: target, on: screen) } else { hideOverlay() }
@@ -237,20 +237,22 @@ final class SnapZoneController {
     private var rowPanel: SurfacePanel?
     private let rowModel = SnapRowModel()
 
-    private func showRow(highlight: Int?, notch: CGRect, on screen: NSScreen) {
-        let frame = SnapLayout.rowFrame(count: SnapLayout.rowTargets.count, notch: notch, screen: screen.frame)
+    private func showRow(highlight: Int?, target: SnapLayout.Target?, notch: CGRect, on screen: NSScreen) {
+        let frame = SnapLayout.rowFrame(count: SnapLayout.rowItems.count, notch: notch, screen: screen.frame)
         if rowPanel == nil {
             let p = SurfacePanel(kind: .passive, size: frame.size)       // mouse-transparent: the drag continues underneath
             p.host(SnapRowView(model: rowModel))
             rowPanel = p
         }
         rowModel.highlighted = highlight
+        rowModel.target = target
         rowPanel?.setFrame(frame, display: true)
         if rowPanel?.isVisible != true { rowPanel?.orderFrontRegardless() }
     }
 
     private func hideRow() {
         rowModel.highlighted = nil
+        rowModel.target = nil
         rowPanel?.orderOut(nil)
     }
 

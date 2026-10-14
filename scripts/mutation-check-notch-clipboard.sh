@@ -104,6 +104,8 @@ run "D8 the hotkey-surface reader defaults to the shelf (view says notch)" XFind
   "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"notch\"'" "'UserDefaults.standard.string(forKey: \"clipboard.hotkeySurface\") ?? \"shelf\"'"
 run "D32 a private host is eligible for a link preview" XFinder/Core/Clipboard/LinkPreviewRules.swift \
   "'            if a == 10 || a == 127 || a == 0 || (a == 169 && b == 254) || (a == 172 && (16...31).contains(b)) || (a == 192 && b == 168) { return false }\n'" "''"
+run "D33 the deck taps when it first appears or when a filter replaces the list" $R \
+  "'        return ids.contains(old) && ids.contains(new)'" "'        return true'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails); echo "suite after restore: $after failure(s)"

@@ -182,4 +182,14 @@ enum NotchClipboardRules {
             return nil
         }
     }
+
+    // MARK: Card-scroll haptic (2026-10-14)
+
+    /// Whether the deck's leading card changing from `old` to `new` is a card passing under the user's finger: both
+    /// known, different, and both in the list on screen. Not when the deck first appears (old nil) and not when a filter
+    /// or a new clip replaced the list (the old card is gone) — those are not a swipe.
+    static func cardChanged<ID: Equatable>(from old: ID?, to new: ID?, in ids: [ID]) -> Bool {
+        guard let old, let new, old != new else { return false }
+        return ids.contains(old) && ids.contains(new)
+    }
 }

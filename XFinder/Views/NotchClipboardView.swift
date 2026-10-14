@@ -178,6 +178,8 @@ struct NotchClipboardView: View {
     var model: NotchClipboardModel
     @State private var manager = ClipboardManager.shared
     @State private var now = Date()
+    /// The card at the leading edge of the deck while it scrolls — each change taps the trackpad (ClipboardSounds.cardTick).
+    @State private var leadingCard: UUID?
     @Environment(\.notchAccent) private var accent
 
     private typealias N = XFinderTokens.Notch
@@ -346,6 +348,11 @@ struct NotchClipboardView: View {
                         card(record, selected: model.isSelected(record, in: list)).id(record.id)
                     }
                 }
+                .scrollTargetLayout()
+            }
+            .scrollPosition(id: $leadingCard)
+            .onChange(of: leadingCard) { old, new in
+                ClipboardSounds.tickIfCardChanged(from: old, to: new, in: list.map(\.id))
             }
             .frame(height: Self.cardHeight)
             .onChange(of: model.selectedID) { _, id in

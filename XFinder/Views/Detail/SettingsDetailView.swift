@@ -48,6 +48,8 @@ private struct ClipboardSettingsBody: View {
     @AppStorage("clipboard.sounds") private var sounds = true
     /// D1 #16 — which system sound plays on copy; one reader: `ClipboardSounds.copySoundName`.
     @AppStorage("clipboard.copySound") private var copySound = "Pop"
+    /// One reader: `ClipboardSounds.cardHapticOn`.
+    @AppStorage("clipboard.cardHaptic") private var cardHaptic = true
     /// D1 #14 — pause recording; one reader: `ClipboardManager.isPaused`.
     @AppStorage("clipboard.paused") private var paused = false
     /// D1 #6 — ⌘⌥C opens the old floating shelf; OFF by default (user). One reader: `ClipboardShelfController.shelfHotkeyEnabled`.
@@ -463,6 +465,11 @@ private struct ClipboardSettingsBody: View {
                 }
                 .disabled(!sounds)
                 .settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("Rung nhẹ khi lướt qua các thẻ"),
+                          subtitle: L10n.t("Mỗi thẻ lướt qua ở notch hoặc khay nổi là một nhịp rung. Chỉ trackpad Force Touch, và chỉ cảm nhận được khi ngón tay đang trên trackpad."),
+                          isOn: $cardHaptic)
+                    .settingsRow()
             }
 
             SettingsSection(title: L10n.t("Bảng ghim (Categories)"),

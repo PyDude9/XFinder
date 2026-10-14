@@ -245,6 +245,10 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "clipboard.copySound",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
                reader: "XFinder/Core/ClipboardPasteEngine.swift"),
+        // A tap per card while a deck scrolls (2026-10-14).
+        Switch(key: "clipboard.cardHaptic",
+               views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
+               reader: "XFinder/Core/ClipboardPasteEngine.swift"),
         // D1 group 2: page order/visibility and the notch accent (both Strings).
         Switch(key: "notch.pages",
                views: ["XFinder/Views/Detail/NotchInterfaceDetailView.swift"],

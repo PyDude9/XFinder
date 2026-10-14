@@ -178,6 +178,26 @@ enum ClipboardSounds {
         UserDefaults.standard.string(forKey: "clipboard.copySound") ?? "Pop"
     }
 
+    /// The ONE reader of `clipboard.cardHaptic`: a light tap each time a different card becomes the first one of a deck
+    /// while it scrolls (owner, 2026-10-14: "phản hồi rung khi lướt switch giữa các thẻ clipboard như OneNotch"). Only a
+    /// Force Touch trackpad can play it, and it is felt only under a finger — a mouse wheel or the arrow keys move the
+    /// deck without anything to feel.
+    private static var cardHapticOn: Bool {
+        UserDefaults.standard.object(forKey: "clipboard.cardHaptic") as? Bool ?? true
+    }
+
+    static func cardTick() {
+        guard cardHapticOn else { return }
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+    }
+
+    /// A tap only when the deck moved from one of its cards to another — not when it first appears (old nil), nor when
+    /// a filter replaced the list (the old card is no longer in it).
+    static func tickIfCardChanged<ID: Equatable>(from old: ID?, to new: ID?, in ids: [ID]) {
+        guard NotchClipboardRules.cardChanged(from: old, to: new, in: ids) else { return }
+        cardTick()
+    }
+
     static func playCopy() {
         guard soundsOn else { return }
         NSSound(named: NSSound.Name(copySoundName))?.play()

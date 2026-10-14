@@ -264,6 +264,8 @@ giữa họ là thêm một lượt** — chưa có lượt model nào được 
 | T-P13-10 | Sidebar ▸ **Tìm kiếm** ▸ tab "Tìm kiếm AI"; rồi **Quick Look** ▸ tab "Hỗ trợ đa phương tiện" | Mỗi hàng có 2 tab; "Tìm kiếm AI" và "Tương thích media" không còn là hàng riêng; gõ "AI" hay "media" vào ô tìm sidebar vẫn ra hàng chứa nó |
 | T-P13-11 | Tổng quan ▸ dòng "Trợ năng và Ghi màn hình" ▸ "Xem tab Quyền" | Mở Tính năng & Quyền **đúng tab Quyền** |
 | T-P13-12 | Sidebar có "Ẩn biểu tượng thanh menu"; Tổng quan có "Biểu tượng XFinder trên thanh menu" | Hai tên khác nhau (trước đây cùng là "Biểu tượng thanh menu") |
+| T-P13-13 | Kéo thanh tiêu đề một cửa sổ lên notch ▸ rê xuống ô **4 góc** (ô thứ 3) ▸ rê qua từng góc phần tư của ô rồi thả | Góc phần tư dưới con trỏ sáng màu nhấn, khung xem trước đổi theo; mỗi lần đổi góc trackpad rung một nhịp (nếu "Phản hồi rung" bật); thả là cửa sổ vào đúng góc đó |
+| T-P13-14 | Mở Clipboard ở notch (hoặc khay nổi), lướt hai ngón ngang qua các thẻ | Mỗi thẻ lướt qua rung một nhịp nhẹ; tắt "Rung nhẹ khi lướt qua các thẻ" ở Cài đặt Clipboard thì hết rung. Lướt bằng chuột/phím: không có gì để cảm nhận (đúng) |
 
 ### Clipboard
 | Mã | Làm gì | Mong đợi |
