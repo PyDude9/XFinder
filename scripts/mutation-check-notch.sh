@@ -14,7 +14,10 @@ BK=$(mktemp -d /tmp/xf-mut-notch.XXXXXX)
 FILES="XFinder/Core/Notch/LiveActivity.swift XFinder/Core/Notch/NotchTask.swift XFinder/Core/Notch/NotchHoverOpen.swift XFinder/Core/Notch/NotchSurfaceMachine.swift XFinder/Core/Notch/NotchSurfaceLayout.swift XFinder/Core/Notch/NotchDragSession.swift XFinder/Core/Notch/NowPlaying.swift XFinder/Views/Detail/DropTrayDetailView.swift XFinder/Views/Detail/NotchInterfaceDetailView.swift XFinder/Core/Calendar/GlanceRules.swift XFinder/Core/Notch/AudioWaveform.swift XFinder/Core/Notch/NotchPages.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
-trap 'restore' EXIT INT TERM
+trap 'restore' EXIT
+# A signal must END the run: with INT/TERM in the restore trap, sh restored the files and carried on — a killed harness
+# kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
+trap 'exit 143' INT TERM
 
 FILTER='NotchSurface|NotchDrag|NotchTask|NotchHoverOpen|LiveActivity|NowPlaying|NotchNowPlaying|NotchBehaviour|FeatureKeyDefaults|MeetingAlertRules|AudioWaveform|NotchPages'
 fails() {

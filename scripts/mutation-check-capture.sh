@@ -8,7 +8,10 @@ BK=$(mktemp -d /tmp/xf-mut-capture.XXXXXX)
 FILES="XFinder/Core/Capture/CaptureRules.swift XFinder/Core/Capture/Annotation.swift XFinder/Core/Onboarding.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
-trap 'restore' EXIT INT TERM
+trap 'restore' EXIT
+# A signal must END the run: with INT/TERM in the restore trap, sh restored the files and carried on — a killed harness
+# kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
+trap 'exit 143' INT TERM
 FILTER='CaptureRulesTests|AnnotationTests|CaptureVocabularyL10nTests|OnboardingTests'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
