@@ -77,7 +77,8 @@ final class NotchSurfaceModel {
     var windowlessStarting = false
     /// P7b — the crew whose board is open on the Agents page; nil = the list.
     var crewBoard: String?
-    var agentsNeedingYou: Int { agents.filter(\.needsYou).count }
+    /// Sessions that need an ANSWER (a permission, a question, a dialog) — a finished turn is "your turn", not this.
+    var agentsNeedingYou: Int { agents.filter { AgentSessionRules.activity(of: $0) == .waiting }.count }
     /// P1: a Claude Code session is alive (running or waiting) — the left wing of the collapsed notch shows it.
     var agentActive: Bool { agentsEnabled && agents.contains { $0.status != .ended } }
     /// P8 — one summary of every live session for the collapsed wings (most urgent activity, agents most-urgent first).

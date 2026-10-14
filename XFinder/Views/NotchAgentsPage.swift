@@ -230,7 +230,7 @@ private struct AgentRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: XFinderTokens.Radius.control, style: .continuous)
-                .fill(session.needsYou ? Color.white.opacity(0.06) : Color.clear)
+                .fill(AgentSessionRules.activity(of: session) == .waiting ? Color.white.opacity(0.06) : Color.clear)
         )
     }
 
@@ -439,7 +439,7 @@ private struct AgentRow: View {
         if case .running(let tool) = session.status, let tool {
             return L10n.t(AgentSessionRules.statusKey(session.status)) + tool
         }
-        return L10n.t(AgentSessionRules.statusKey(session.status))
+        return L10n.t(AgentSessionRules.rowStatusKey(session))
     }
 
     /// The terminal (or app) the session runs in — kitty, Terminal, the Claude desktop app — as its own icon. Not for
@@ -459,11 +459,12 @@ private struct AgentRow: View {
         }
     }
 
+    /// Same colours as the wing: orange = must answer, green = your turn (was yellow, unlike the wing's check).
     private var tint: Color {
-        switch session.status {
-        case .running: return accent
-        case .waitingForInput: return .yellow
-        case .waitingForPermission: return .orange
+        switch AgentSessionRules.activity(of: session) {
+        case .thinking, .working: return accent
+        case .yourTurn: return .green
+        case .waiting: return .orange
         case .ended: return .white.opacity(0.3)
         }
     }
@@ -825,7 +826,11 @@ private struct AgentReplyComposeBar: View {
                 .lineLimit(1).truncationMode(.tail)
                 .help(L10n.t("XFinder không gõ vào hộp thoại: tin được chép và terminal được đưa lên trước."))
         case .sendNow:
-            if case .copyAndActivate = route {
+            if case .copyAndActivate = route, AgentTalk.runsInApp(session) {
+                Text(L10n.t("App Claude chưa nhận tin tự động — XFinder chép tin và mở app, bạn dán vào ô chat."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+                    .lineLimit(1).truncationMode(.tail)
+            } else if case .copyAndActivate = route {
                 Text(L10n.t("Terminal này chưa gõ được tự động — XFinder chép tin và mở terminal."))
                     .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
                     .lineLimit(1).truncationMode(.tail)

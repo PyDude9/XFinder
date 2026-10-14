@@ -280,6 +280,18 @@ enum AgentSessionRules {
     }
     static let wingLabelKeys = [" đang chờ bạn", " đang chạy", " đã xong — tới lượt bạn", " đã dừng"]
 
+    /// The row's status word, by activity — "Tới lượt bạn" for a finished turn, "Đang chờ bạn" only when the person
+    /// must answer something (the wing already told them apart; the row and the header said "waiting" for both).
+    static func rowStatusKey(_ s: AgentSession) -> String {
+        switch activity(of: s) {
+        case .yourTurn: return "Tới lượt bạn"
+        case .waiting:
+            if case .waitingForPermission = s.status { return statusKey(s.status) }
+            return "Đang chờ bạn"
+        default: return statusKey(s.status)
+        }
+    }
+
     /// The tool name of Claude Code's multiple-choice question.
     static let questionTool = "AskUserQuestion"
     /// A session with no event for this long and no known live process is treated as ended.

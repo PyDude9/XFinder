@@ -10786,6 +10786,14 @@
     "Gửi": {
       "en": "Send",
       "scope": "sentence"
+    },
+    "Chép và mở app": {
+      "en": "Copy and open app",
+      "scope": "sentence"
+    },
+    "App Claude chưa nhận tin tự động — XFinder chép tin và mở app, bạn dán vào ô chat.": {
+      "en": "The Claude app can't take messages automatically yet — XFinder copies the message and opens the app; paste it into the chat box.",
+      "scope": "sentence"
     }
   }
 }

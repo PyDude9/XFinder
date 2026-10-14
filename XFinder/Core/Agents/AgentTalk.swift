@@ -264,10 +264,20 @@ enum AgentTalk {
     /// then the button must say so (a "Gửi vào kitty" button that copies would promise what it does not do).
     static func sendLabelKey(for session: AgentSession) -> String {
         let route = self.route(for: session)
+        var key = routeLabelKey(route)
         if case .copyInstead = decision(for: session, route: route) {
-            return routeLabelKey(.copyAndActivate(bundleID: session.terminal.bundleID))
+            key = routeLabelKey(.copyAndActivate(bundleID: session.terminal.bundleID))
         }
-        return routeLabelKey(route)
+        // The Claude desktop app is not a terminal: the button must name what it brings forward (owner's screenshot,
+        // 2026-10-14: "Copy and open terminal" on a desktop session).
+        if key == "Chép và mở terminal", runsInApp(session) { return "Chép và mở app" }
+        return key
+    }
+
+    /// The session lives in an app's own chat, not in a terminal: the Claude desktop app's Code tab (its hook records
+    /// entrypoint `claude-desktop` and bundle `com.anthropic.claudefordesktop` — measured on this Mac).
+    static func runsInApp(_ s: AgentSession) -> Bool {
+        s.terminal.entrypoint == "claude-desktop" || s.terminal.bundleID == "com.anthropic.claudefordesktop"
     }
 
     /// Every key this file can hand to `L10n.t` through a variable — the test resolves them all against the store.
@@ -277,7 +287,8 @@ enum AgentTalk {
         "Trên terminal đang có một hộp thoại — trả lời nó ở terminal trước.",
         "Agent đang hỏi bạn một câu có lựa chọn — trả lời ở terminal.",
     ]
-    static let labelKeys: [String] = ["Gửi vào kitty", "Gửi vào tmux", "Gửi qua OpenCode", "Chép tin nhắn", "Chép và mở terminal", "Gửi tin"]
+    static let labelKeys: [String] = ["Gửi vào kitty", "Gửi vào tmux", "Gửi qua OpenCode", "Chép tin nhắn", "Chép và mở terminal", "Gửi tin",
+                                      "Chép và mở app"]
     /// Every outcome line `AgentTalkSender` can show (it lives in an AppKit file the test package cannot compile, so the
     /// list is here and a test reads the sender's source to prove nothing it says is missing from it).
     static let statusKeys: [String] = [

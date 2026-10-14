@@ -265,6 +265,26 @@ final class AgentSessionTests: XCTestCase {
     }
 }
 
+
+extension AgentSessionTests {
+    /// Owner's screenshot 2026-10-14: a finished turn showed "Waiting for you" and was counted as waiting in the header
+    /// while the wing showed a green "your turn" check; and a Claude desktop session offered "Copy and open terminal".
+    func testAFinishedTurnIsYourTurnAndADesktopSessionIsAnApp() {
+        let done = session("a", .claude, .waitingForInput, at: 0)
+        XCTAssertEqual(AgentSessionRules.rowStatusKey(done), "Tới lượt bạn")
+        XCTAssertEqual(AgentSessionRules.rowStatusKey(session("b", .claude, .running(tool: "AskUserQuestion"), at: 0, question: true)), "Đang chờ bạn")
+        var desktop = session("c", .claude, .waitingForInput, at: 0)
+        desktop.terminal.entrypoint = "claude-desktop"
+        desktop.terminal.bundleID = "com.anthropic.claudefordesktop"
+        XCTAssertTrue(AgentTalk.runsInApp(desktop))
+        XCTAssertEqual(AgentTalk.sendLabelKey(for: desktop), "Chép và mở app", "an app is not called a terminal")
+        var kitty = session("d", .claude, .waitingForInput, at: 0)
+        kitty.terminal.bundleID = "com.apple.Terminal"
+        XCTAssertFalse(AgentTalk.runsInApp(kitty))
+        XCTAssertEqual(AgentTalk.sendLabelKey(for: kitty), "Chép và mở terminal")
+    }
+}
+
 private typealias Activity = AgentSessionRules.Activity
 private extension AgentSessionRules.Activity {
     static let allCasesForTest: [AgentSessionRules.Activity] = [.ended, .yourTurn, .thinking, .working, .waiting]
