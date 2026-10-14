@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// P7b — a pending permission's summary, rewritten for a crew's own `xfinder-crew send` command: "→ to: text"
 /// reads as what the member is about to tell a crewmate, instead of the raw shell line. nil keeps the caller's
@@ -1087,48 +1088,94 @@ struct AgentBrandTile: View {
 }
 
 /// A 3×3 dot grid. Running: one lit dot circles the ring with a short fading trail (OneNotch's right wing while an
-/// agent works — owner's screenshot 2026-10-14). Waiting for the person: the whole ring breathes in orange. Driven by
-/// a ~8 Hz periodic timeline that exists only while the grid is on screen — never a 60 fps animation in the notch.
-struct AgentActivityGrid: View {
+/// agent works — owner's screenshot 2026-10-14). Waiting for the person: the whole ring breathes in orange.
+///
+/// Drawn by Core Animation, not SwiftUI: the first version used `TimelineView(.periodic)` at ~8 Hz and every tick
+/// re-laid out the WHOLE notch hosting view (`NSWindow layoutIfNeeded` → `_layoutViewTree`) — measured 6.3 s of CPU
+/// per 30 s (21 %). Here nine layers carry repeating `CAKeyframeAnimation`s that the render server runs on its own,
+/// so the app does no work per frame.
+struct AgentActivityGrid: NSViewRepresentable {
     var tint: Color
     var waiting: Bool
     var cell: CGFloat = 3.6
     var gap: CGFloat = 1.4
 
-    /// The ring around the centre, clockwise from the top-left.
-    private static let ring = [0, 1, 2, 5, 8, 7, 6, 3]
+    func makeNSView(context: Context) -> GridView { GridView() }
 
-    var body: some View {
-        TimelineView(.periodic(from: .now, by: waiting ? 0.5 : 0.12)) { ctx in
-            let tick = Int(ctx.date.timeIntervalSinceReferenceDate / (waiting ? 0.5 : 0.12))
-            VStack(spacing: gap) {
-                ForEach(0..<3, id: \.self) { r in
-                    HStack(spacing: gap) {
-                        ForEach(0..<3, id: \.self) { c in
-                            RoundedRectangle(cornerRadius: cell * 0.3, style: .continuous)
-                                .fill(color(index: r * 3 + c, tick: tick))
-                                .frame(width: cell, height: cell)
-                        }
-                    }
-                }
-            }
-        }
-        .accessibilityHidden(true)
+    func updateNSView(_ v: GridView, context: Context) {
+        v.configure(tint: NSColor(tint), waiting: waiting, cell: cell, gap: gap)
     }
 
-    private func color(index: Int, tick: Int) -> Color {
-        if waiting {
-            guard index != 4 else { return Color.orange.opacity(0.15) }
-            return Color.orange.opacity(tick % 2 == 0 ? 1.0 : 0.4)
+    final class GridView: NSView {
+        private var cells: [CALayer] = []
+        private var signature = ""
+        /// The ring around the centre, clockwise from the top-left (index = row * 3 + column, row 0 at the TOP).
+        private static let ring = [0, 1, 2, 5, 8, 7, 6, 3]
+        private static let step: CFTimeInterval = 0.12
+
+        override init(frame: NSRect) {
+            super.init(frame: frame)
+            wantsLayer = true
+            for _ in 0..<9 { let l = CALayer(); layer?.addSublayer(l); cells.append(l) }
         }
-        guard let pos = Self.ring.firstIndex(of: index) else { return tint.opacity(0.12) }
-        let head = tick % Self.ring.count
-        let behind = (head - pos + Self.ring.count) % Self.ring.count
-        switch behind {
-        case 0: return tint
-        case 1: return tint.opacity(0.55)
-        case 2: return tint.opacity(0.25)
-        default: return tint.opacity(0.12)
+        required init?(coder: NSCoder) { nil }
+        override var isFlipped: Bool { true }
+        override var intrinsicContentSize: NSSize { .init(width: NSView.noIntrinsicMetric, height: NSView.noIntrinsicMetric) }
+
+        private var tint: NSColor = .white
+        private var waiting = false
+        private var cell: CGFloat = 3.6
+        private var gap: CGFloat = 1.4
+        private var laidOutFor: CGSize = .zero
+
+        func configure(tint: NSColor, waiting: Bool, cell: CGFloat, gap: CGFloat) {
+            let sig = "\(tint)|\(waiting)|\(cell)|\(gap)"
+            guard sig != signature else { return }      // same look ⇒ leave the running animations alone
+            signature = sig
+            self.tint = tint; self.waiting = waiting; self.cell = cell; self.gap = gap
+            rebuild()
+        }
+
+        override func layout() {
+            super.layout()
+            guard bounds.size != laidOutFor, !signature.isEmpty else { return }
+            rebuild()       // new size: re-centre the cells (animations restart, once)
+        }
+
+        private func rebuild() {
+            laidOutFor = bounds.size
+            let side = cell * 3 + gap * 2
+            let ox = (bounds.width - side) / 2, oy = (bounds.height - side) / 2
+            CATransaction.begin(); CATransaction.setDisableActions(true)
+            for (i, l) in cells.enumerated() {
+                let r = CGFloat(i / 3), c = CGFloat(i % 3)
+                l.frame = CGRect(x: ox + c * (cell + gap), y: oy + r * (cell + gap), width: cell, height: cell)
+                l.cornerRadius = cell * 0.3
+                l.removeAllAnimations()
+                l.backgroundColor = (waiting ? NSColor.systemOrange : tint).cgColor
+                if i == 4 { l.opacity = waiting ? 0.15 : 0.12; continue }
+                if waiting {
+                    l.opacity = 1
+                    let a = CABasicAnimation(keyPath: "opacity")
+                    a.fromValue = 1.0; a.toValue = 0.4; a.duration = 0.5
+                    a.autoreverses = true; a.repeatCount = .infinity
+                    l.add(a, forKey: "breathe")
+                } else if let pos = Self.ring.firstIndex(of: i) {
+                    let n = Self.ring.count
+                    l.opacity = 0.12
+                    let a = CAKeyframeAnimation(keyPath: "opacity")
+                    // 8 discrete steps per loop; this cell is lit at its own step, then fades over the next two.
+                    a.values = (0..<n).map { step -> Float in
+                        switch (step - pos + n) % n { case 0: return 1; case 1: return 0.55; case 2: return 0.25; default: return 0.12 }
+                    }
+                    a.keyTimes = (0..<n).map { NSNumber(value: Double($0) / Double(n)) }
+                    a.calculationMode = .discrete
+                    a.duration = Self.step * Double(n)
+                    a.repeatCount = .infinity
+                    l.add(a, forKey: "chase")
+                }
+            }
+            CATransaction.commit()
         }
     }
 }
