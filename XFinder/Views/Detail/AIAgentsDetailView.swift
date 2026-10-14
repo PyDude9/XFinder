@@ -459,7 +459,7 @@ struct AIAgentsDetailView: View {
     private var crewSection: some View {
         SettingsSection(
             title: L10n.t("Nhóm agent (crew)"),
-            footer: L10n.t("Crew là vài phiên Claude Code không cửa sổ có vai trò, nhắn nhau qua XFinder bằng lệnh xfinder-crew. Các thành viên luôn chạy ở chế độ hỏi quyền: bạn duyệt từng tin giữa họ và từng lệnh cần duyệt. Người duyệt không có công cụ sửa tệp, nhưng lệnh shell của họ vẫn hỏi bạn. Mọi thành viên làm chung một thư mục — chưa có nhánh git riêng cho từng người. Thành viên dừng khi crew dừng hoặc khi thoát XFinder. Người gửi được nhận ra bằng token riêng của từng thành viên; chương trình nào chạy dưới tài khoản của bạn cũng đọc được token đó.")
+            footer: L10n.t("Crew là vài phiên Claude Code không cửa sổ có vai trò, nhắn nhau qua XFinder bằng lệnh xfinder-crew. Các thành viên luôn chạy ở chế độ hỏi quyền: bạn duyệt từng tin giữa họ và từng lệnh cần duyệt. Người duyệt không có công cụ sửa tệp. Claude Code vẫn tự chạy một nhóm lệnh chỉ đọc mà không hỏi (như cat, grep, git diff); lệnh nhắn thành viên khác và lệnh có thể thay đổi máy thì vẫn hỏi bạn. Quy tắc cho phép sẵn trong cài đặt Claude Code của bạn hoặc của thư mục đó vẫn có hiệu lực: lệnh nào đã được cho phép ở đó sẽ không hỏi lại. Mọi thành viên làm chung một thư mục — chưa có nhánh git riêng cho từng người. Thành viên dừng khi crew dừng hoặc khi thoát XFinder. Người gửi được nhận ra bằng token riêng của từng thành viên; chương trình nào chạy dưới tài khoản của bạn cũng đọc được token đó.")
         ) {
             crewTemplateRow.settingsRow()
             SettingsDivider()
@@ -607,6 +607,7 @@ struct AIAgentsDetailView: View {
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
+                        .help(CrewManager.shared.costUSD(crew) == nil ? "" : L10n.t("Ước tính của Claude Code, không phải hoá đơn"))
                 }
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 if !crew.stopped {
@@ -617,7 +618,10 @@ struct AIAgentsDetailView: View {
                     Button(L10n.t("Dừng")) { CrewManager.shared.stop(crew.id) }
                         .controlSize(.small)
                 } else {
-                    Button(L10n.t("Xoá")) { CrewManager.shared.forget(crew.id) }
+                    Button(L10n.t("Xoá")) {
+                        NotchSurfaceController.shared.closeCrewIfShowing(crew.id)
+                        CrewManager.shared.forget(crew.id)
+                    }
                         .controlSize(.small)
                 }
             }
@@ -649,6 +653,8 @@ struct AIAgentsDetailView: View {
             return "\(entry.from ?? "") \(L10n.t(CrewRules.boardKindKey(.message))) \(entry.to ?? ""): \(entry.text)"
         case .reply:
             return "\(entry.from ?? "") \(L10n.t(CrewRules.boardKindKey(.reply))) \(entry.to ?? ""): \(entry.text)"
+        case .failed:
+            return L10n.t(CrewRules.boardKindKey(.failed)) + (entry.to.map { " (\($0))" } ?? "")
         default:
             return L10n.t(CrewRules.boardKindKey(entry.kind))
         }

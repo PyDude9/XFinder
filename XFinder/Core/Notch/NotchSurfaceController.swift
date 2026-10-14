@@ -205,6 +205,7 @@ final class NotchSurfaceController {
         model.agentReplyText = ""
         model.newWindowlessOpen = false
         model.newWindowlessText = ""
+        model.crewBoard = nil      // P7b review: like the other transient Agents-page states
         syncAgentReplyKeyboard()
         panel?.hide()
         panel = nil
@@ -432,6 +433,8 @@ final class NotchSurfaceController {
         // with no compose bar (and no ✕) on screen.
         // P7a: a conversation whose session left the list closes too — otherwise it reopens by itself when the row returns.
         if let id = model.windowlessConversation, !model.agents.contains(where: { $0.listID == id }) { model.windowlessConversation = nil }
+        // P7b review: a board whose crew is gone (forgotten from Settings, say) closes instead of lingering as state.
+        if let id = model.crewBoard, !CrewManager.shared.crews.contains(where: { $0.id == id }) { model.crewBoard = nil }
         if let id = model.agentReplyTarget, !model.agents.contains(where: { $0.listID == id }) { endAgentReply(); return }
         render()
     }
@@ -628,12 +631,19 @@ final class NotchSurfaceController {
     func openCrew(_ crewID: String) {
         model.windowlessConversation = nil
         model.crewBoard = crewID
+        // P7b review: a reply being composed for another session would otherwise stay pinned under the board.
+        if model.agentReplyTarget != nil { endAgentReply(); return }
         render()
     }
 
     func closeCrew() {
         model.crewBoard = nil
         render()
+    }
+
+    /// The crew is being forgotten elsewhere (Settings): close its board if the notch shows it.
+    func closeCrewIfShowing(_ crewID: String) {
+        if model.crewBoard == crewID { closeCrew() }
     }
 
     func presentAgentNotice(_ item: LiveActivity.Item) {

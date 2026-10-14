@@ -174,6 +174,31 @@ kiểm (mọi kiểm tra đều dùng một `claude` giả).
 | Q-P7a-CODEX | Phiên không cửa sổ cho Codex cần giao thức `codex app-server` (JSON-RPC, ~160 lệnh, đã sinh schema tại chỗ). Dựng ở lượt sau? | Chưa dựng — trang giải thích |
 | Q-P7a-QUIT | Thoát XFinder ⇒ phiên không cửa sổ dừng theo. Claude Code có "background session" (`claude --bg`) sống qua khi XFinder thoát, nhưng không có cách công khai nào gửi tin vào nó mà không mở terminal | Dừng theo XFinder |
 
+### P7b · Nhóm agent (crew) (dựng 2026-10-14)
+
+Agent AI ▸ **Nhóm agent (crew)**: chọn mẫu (Builder → người duyệt · Builder + hai người duyệt), thư mục, mục tiêu ▸ Bắt
+đầu crew. Mỗi thành viên là một phiên không cửa sổ (P7a); họ nhắn nhau bằng `xfinder-crew send <vai> "<tin>"` và XFinder
+chuyển tin + mang câu trả lời về. **Bắt đầu một crew là chạy 2–3 phiên Claude Code; người dẫn dùng một lượt ngay, mỗi tin
+giữa họ là thêm một lượt** — chưa có lượt model nào được chạy để kiểm (mọi kiểm tra dùng `claude` giả: e2e 15/15).
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-P7b-START | Bắt đầu crew "Builder → người duyệt" với một mục tiêu nhỏ | Notch ▸ Agents có một hàng crew; Builder chạy; người duyệt chờ, không tốn lượt nào |
+| T-P7b-APPROVE | Khi builder muốn nhắn người duyệt | Thẻ duyệt hiện "→ reviewer: …" (không phải dòng lệnh thô); Cho phép ⇒ tin hiện trên bảng crew, người duyệt bắt đầu làm |
+| T-P7b-REPLY | Người duyệt làm xong lượt đó | Câu trả lời tự quay về builder (bảng: "reviewer trả lời builder: …"); không có trả lời lặp qua lại |
+| T-P7b-READONLY | Nhờ người duyệt sửa một tệp | Nó không có công cụ sửa tệp. Ghi lại: lệnh chỉ đọc (cat, grep, git diff) chạy không hỏi — đúng theo quy tắc của Claude Code |
+| T-P7b-PAUSE | Tạm dừng crew rồi để builder nhắn | CLI báo "crew is paused"; không giao tin nào cho tới khi Chạy tiếp |
+| T-P7b-CAP | Để crew chạy đủ 20 chặng tin | Crew tự tạm dừng, notch báo "Crew tạm dừng — chờ bạn"; Chạy tiếp cho thêm 20 |
+| T-P7b-STOP | Dừng crew; thử thoát XFinder khi crew đang chạy | Mọi tiến trình `claude` của crew biến mất; thư mục crew trong Application Support bị xoá |
+| T-P7b-COST | Xem dòng "≈ $" trên notch và trang cài đặt | Có tooltip "Ước tính của Claude Code, không phải hoá đơn" ở cả hai |
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-P7b-APPROVE | Mỗi tin giữa các thành viên phải được bạn duyệt (chậm nhưng an toàn). Có muốn một chế độ không cần duyệt? Quy tắc prefix không nhìn thấy nội dung tin, nên chế độ đó sẽ cho mọi tin đi qua | Luôn duyệt, không có công tắc |
+| Q-P7b-CAP | Tự tạm dừng sau 20 chặng tin (mỗi tin hoặc câu trả lời được giao là một chặng) | 20 |
+| Q-P7b-BRANCH | Mọi thành viên làm chung một thư mục. Nhánh git / worktree riêng cho từng builder (như Notch Crew) chưa dựng | Chung thư mục |
+| Q-P7b-ALLOW | Quy tắc cho phép sẵn trong `~/.claude/settings.json` hoặc của thư mục vẫn có hiệu lực với thành viên crew (trang cài đặt nói rõ). Muốn XFinder chạy thành viên với nguồn cài đặt hạn chế? Cách đó cũng bỏ luôn hook của XFinder ⇒ không duyệt được qua notch | Giữ cài đặt của bạn |
+
 ### Clipboard
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|

@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 /// P7b (2026-10-14) — "Crew": a few windowless Claude Code sessions (P7a) with roles that hand work to each other through
 /// XFinder. Pure (symlinked into the test package): templates, launch flags, the agent-facing text, inbox requests and the
@@ -8,11 +9,12 @@ import Foundation
 /// * Notch Crew's `crew send` returns within 10 s (`curl --max-time 10`) and the reply comes back later as a new message —
 ///   Claude Code's Bash tool times out at 2 min, so a send that waited for a teammate's whole turn would be killed. Ours is a
 ///   file write that returns at once: `xfinder-crew send <role> <message>` drops a request in the crew's inbox.
-/// * `claude --help` (2.1.296) lists `--permission-mode` choices acceptEdits, auto, bypassPermissions, manual, dontAsk, plan —
-///   there is no `default` any more; `manual` asks. Crew members always run `manual`, whatever the person's own default
-///   mode is, so a crewmate's message can never turn into an unasked tool call (design review).
-/// * Every crew message is itself a Bash call (`xfinder-crew send …`), so it asks too — the person approves each one. There
-///   is deliberately no "without approval" switch: a prefix allow-rule cannot see the message text (design review).
+/// * `claude --help` (2.1.296) lists `--permission-mode` choices acceptEdits, auto, bypassPermissions, manual, dontAsk, plan;
+///   the docs call `manual` an alias of the config value `default`. Crew members always run `manual`, whatever the person's
+///   own default mode is (design review). Manual mode still runs Claude Code's fixed read-only Bash set (cat, grep, git
+///   diff…) without asking (review: code.claude.com/docs/en/permissions) — the settings copy says so.
+/// * Every crew message is itself a Bash call (`xfinder-crew send …`), not in that read-only set, so it asks — the person
+///   approves each one. There is deliberately no "without approval" switch: a prefix allow-rule cannot see the message text.
 /// * The role framing goes in `--append-system-prompt` (an argument — so ASCII only, `Process` decomposes non-ASCII
 ///   arguments); the person's goal goes on stdin as the lead's first message.
 /// * The sender's role comes from its own token, never from the request's `from` field — one token per member (review).
@@ -93,12 +95,23 @@ enum CrewRules {
 
     static let maxMessage = 8_000
 
-    /// A request file → a validated request. The sender is the role its token belongs to (`tokens`: token → role); the
-    /// file's own `from` is ignored. `to` must name another member, or "all" (everyone else).
-    static func parseRequest(_ data: Data, tokens: [String: String], roles: [String]) -> Request? {
+    /// The signature a request carries: SHA-256 over file name, target, text and the sender's token (token LAST, so no
+    /// length-extension of a secret prefix). The token itself never touches the shared inbox (review: a file holding it
+    /// could be read by every other member before XFinder deleted it, and then used to pose as that member).
+    static func signature(name: String, to: String, text: String, token: String) -> String {
+        let digest = SHA256.hash(data: Data("\(name)\n\(to)\n\(text)\n\(token)".utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// A request file → a validated request. The file names its sender (`from`) and proves it with `mac`, the signature
+    /// made with that member's own token (`tokens`: token → role); a wrong or missing signature refuses the request.
+    /// `to` must name another member, or "all" (everyone else).
+    static func parseRequest(_ data: Data, name: String, tokens: [String: String], roles: [String]) -> Request? {
         guard let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-              let token = obj["token"] as? String, let from = tokens[token],
+              let from = obj["from"] as? String, let mac = obj["mac"] as? String,
+              let token = tokens.first(where: { $0.value == from })?.key,
               let to = obj["to"] as? String, let raw = obj["text"] as? String,
+              signature(name: name, to: to, text: raw, token: token) == mac.lowercased(),
               var text = WindowlessRules.cleanMessage(raw) else { return nil }
         if text.count > maxMessage { text = String(text.prefix(maxMessage)) }
         let targets: [String]
@@ -215,7 +228,9 @@ enum CrewRules {
             inFlight[role] = nil
             for d in queue where d.to == role { log(.failed, from: nil, to: role, "", at: at) }
             queue.removeAll { $0.to == role }
-            for (target, asker) in pendingReply where asker == role || target == role {
+            // Collect first: removing keys while iterating the same dictionary is not a documented-safe pattern.
+            let broken = pendingReply.filter { $0.value == role || $0.key == role }.sorted { $0.key < $1.key }
+            for (target, asker) in broken {
                 pendingReply[target] = nil
                 log(.failed, from: target, to: asker, "", at: at)
             }

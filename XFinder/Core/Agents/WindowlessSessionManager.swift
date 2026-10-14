@@ -335,9 +335,10 @@ final class WindowlessSessionManager {
         let now = Date()
         for e in events { record.apply(e, at: now) }
         records[sessionID] = record
-        onChange?()
-        // After the record says "waiting", so a relay that writes at once finds the session free.
+        // After the record says "waiting" (so a relay that writes at once finds the session free) and BEFORE onChange:
+        // onChange flushes P6's queued replies, which would re-busy the session while the relay still thought it free.
         for e in events { if case .result(_, let text, _) = e { crewObserver?(.turnEnded(sessionID: sessionID, result: text)) } }
+        onChange?()
     }
 
     private func noteStderr(_ text: String, sessionID: String, gen: Int) {

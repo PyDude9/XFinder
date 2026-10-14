@@ -5,13 +5,15 @@
 # `send` writes one request into the crew's inbox and returns at once; XFinder delivers it to the crewmate and brings the
 # crewmate's answer back later as a message that starts with [crew]. Nothing here waits for an answer (a shell call that
 # waited for a whole turn would hit the agent's tool timeout).
-# The sender is the role its own token (XFINDER_CREW_TOKEN) belongs to; XFinder ignores anything else about who sent it.
+# The request names its sender (XFINDER_CREW_ROLE) and signs it with the member's own token (XFINDER_CREW_TOKEN): a
+# SHA-256 over file name, target, text and token. The token itself is never written to the shared inbox.
 emulate -L zsh
 setopt no_unset 2>/dev/null
 
 dir=${XFINDER_CREW_DIR:-}
 token=${XFINDER_CREW_TOKEN:-}
-if [[ -z $dir || -z $token || ! -d $dir/inbox || ! -r $dir/roster.txt ]]; then
+me=${XFINDER_CREW_ROLE:-}
+if [[ -z $dir || -z $token || -z $me || ! -d $dir/inbox || ! -r $dir/roster.txt ]]; then
   print -u2 "xfinder-crew: this session is not part of an XFinder crew."
   exit 1
 fi
@@ -44,10 +46,16 @@ case ${1:-} in
       print -u2 "xfinder-crew: the message is empty."
       exit 1
     fi
+    if (( ${#clean} > 8000 )); then
+      print -u2 "xfinder-crew: the message is longer than 8000 characters (${#clean}). Shorten it or point to a file."
+      exit 1
+    fi
     esc() { print -rn -- "$1" | /usr/bin/sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | /usr/bin/awk 'BEGIN{ORS=""} NR>1{print "\\n"} {print}'; }
     name="$(/bin/date +%s)-$$-$RANDOM.json"
     tmp="$dir/inbox/.$name.tmp"
-    print -rn -- "{\"token\":\"$(esc $token)\",\"to\":\"$(esc $to)\",\"text\":\"$(esc $clean)\"}" > $tmp || exit 1
+    mac=$(print -rn -- "$name"$'\n'"$to"$'\n'"$clean"$'\n'"$token" | /usr/bin/shasum -a 256 | /usr/bin/cut -d' ' -f1)
+    [[ ${#mac} -eq 64 ]] || exit 1
+    print -rn -- "{\"from\":\"$(esc $me)\",\"to\":\"$(esc $to)\",\"text\":\"$(esc $clean)\",\"mac\":\"$mac\"}" > $tmp || exit 1
     /bin/mv -f $tmp "$dir/inbox/$name" || exit 1
     if [[ -e $dir/paused ]]; then
       print "Sent to $to. The crew is paused; it will be delivered when the person resumes it."

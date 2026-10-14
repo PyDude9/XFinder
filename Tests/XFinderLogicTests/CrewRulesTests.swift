@@ -55,25 +55,65 @@ final class CrewRulesTests: XCTestCase {
 
     // MARK: Requests
 
-    func testARequestTakesItsSenderFromItsTokenNeverFromTheFile() throws {
+    func testARequestIsSignedByItsSendersTokenAndATokenIsNeverInTheFile() throws {
         let tokens = ["tok-b": "builder", "tok-r": "reviewer"]
         let roles = ["builder", "reviewer"]
-        func data(_ d: [String: Any]) -> Data { try! JSONSerialization.data(withJSONObject: d) }
-        let r = try XCTUnwrap(CrewRules.parseRequest(data(["token": "tok-b", "from": "reviewer", "to": "reviewer", "text": " look\u{1B}[2J "]),
-                                                     tokens: tokens, roles: roles))
-        XCTAssertEqual(r.from, "builder", "the forged 'from' is ignored")
+        func req(_ from: String, _ to: String, _ text: String, token: String, name: String = "1-1-1.json") -> Data {
+            let mac = CrewRules.signature(name: name, to: to, text: text, token: token)
+            return try! JSONSerialization.data(withJSONObject: ["from": from, "to": to, "text": text, "mac": mac])
+        }
+        func parse(_ d: Data, name: String = "1-1-1.json") -> CrewRules.Request? {
+            CrewRules.parseRequest(d, name: name, tokens: tokens, roles: roles)
+        }
+        let r = try XCTUnwrap(parse(req("builder", "reviewer", " look\u{1B}[2J ", token: "tok-b")))
+        XCTAssertEqual(r.from, "builder")
         XCTAssertEqual(r.to, ["reviewer"])
         XCTAssertEqual(r.text, "look[2J")
-        XCTAssertNil(CrewRules.parseRequest(data(["token": "nope", "to": "reviewer", "text": "x"]), tokens: tokens, roles: roles))
-        XCTAssertNil(CrewRules.parseRequest(data(["token": "tok-b", "to": "builder", "text": "x"]), tokens: tokens, roles: roles), "not to oneself")
-        XCTAssertNil(CrewRules.parseRequest(data(["token": "tok-b", "to": "stranger", "text": "x"]), tokens: tokens, roles: roles))
-        XCTAssertNil(CrewRules.parseRequest(data(["token": "tok-b", "to": "reviewer", "text": "   "]), tokens: tokens, roles: roles))
-        XCTAssertNil(CrewRules.parseRequest(Data("not json".utf8), tokens: tokens, roles: roles))
-        let all = try XCTUnwrap(CrewRules.parseRequest(data(["token": "tok-r", "to": "all", "text": "hi"]), tokens: tokens, roles: roles))
+        XCTAssertNil(parse(req("builder", "reviewer", "x", token: "tok-r")), "reviewer signing as builder is refused")
+        XCTAssertNil(parse(req("builder", "reviewer", "x", token: "nope")), "an unknown token signs nothing")
+        XCTAssertNil(parse(req("builder", "reviewer", "x", token: "tok-b"), name: "2-2-2.json"), "the signature binds the file name")
+        var tampered = try XCTUnwrap(try JSONSerialization.jsonObject(with: req("builder", "reviewer", "x", token: "tok-b")) as? [String: Any])
+        tampered["text"] = "rm -rf ~"
+        XCTAssertNil(parse(try JSONSerialization.data(withJSONObject: tampered)), "the signature binds the text")
+        XCTAssertNil(parse(try JSONSerialization.data(withJSONObject: ["token": "tok-b", "to": "reviewer", "text": "x"])),
+                     "the old token-in-file form is refused")
+        XCTAssertNil(parse(req("builder", "builder", "x", token: "tok-b")), "not to oneself")
+        XCTAssertNil(parse(req("builder", "stranger", "x", token: "tok-b")))
+        XCTAssertNil(parse(req("builder", "reviewer", "   ", token: "tok-b")))
+        XCTAssertNil(parse(Data("not json".utf8)))
+        let all = try XCTUnwrap(parse(req("reviewer", "all", "hi", token: "tok-r")))
         XCTAssertEqual(all.to, ["builder"])
-        let long = try XCTUnwrap(CrewRules.parseRequest(data(["token": "tok-b", "to": "reviewer", "text": String(repeating: "x", count: 9_000)]),
-                                                        tokens: tokens, roles: roles))
+        let long = try XCTUnwrap(parse(req("builder", "reviewer", String(repeating: "x", count: 9_000), token: "tok-b")))
         XCTAssertEqual(long.text.count, CrewRules.maxMessage)
+    }
+
+    /// The shipped CLI and the Swift check must agree on the signature byte for byte (Vietnamese, a newline, quotes).
+    func testTheShippedCLISignsWhatTheAppVerifiesAndKeepsTheTokenOutOfTheFile() throws {
+        let script = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("XFinder/Resources/Agents/xfinder-crew.zsh")
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("crew-cli-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir.appendingPathComponent("inbox"), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try Data("builder — builds\nreviewer — reviews\n".utf8).write(to: dir.appendingPathComponent("roster.txt"))
+        let text = "Xem giúp \"parse\" \\ nhé\ndòng hai"
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        p.arguments = [script.path, "send", "reviewer", text]
+        p.environment = ["XFINDER_CREW_DIR": dir.path, "XFINDER_CREW_TOKEN": "tok-secret-b", "XFINDER_CREW_ROLE": "builder",
+                         "LANG": "en_US.UTF-8", "PATH": "/usr/bin:/bin"]
+        p.standardOutput = FileHandle.nullDevice
+        try p.run(); p.waitUntilExit()
+        XCTAssertEqual(p.terminationStatus, 0)
+        let files = try FileManager.default.contentsOfDirectory(atPath: dir.appendingPathComponent("inbox").path)
+            .filter { $0.hasSuffix(".json") && !$0.hasPrefix(".") }
+        let name = try XCTUnwrap(files.first)
+        let data = try Data(contentsOf: dir.appendingPathComponent("inbox").appendingPathComponent(name))
+        XCTAssertNil(String(data: data, encoding: .utf8)?.range(of: "tok-secret-b"), "the token never reaches the inbox")
+        let r = try XCTUnwrap(CrewRules.parseRequest(data, name: name, tokens: ["tok-secret-b": "builder", "tok-r": "reviewer"],
+                                                     roles: ["builder", "reviewer"]))
+        XCTAssertEqual(r.from, "builder")
+        XCTAssertEqual(r.text, text.precomposedStringWithCanonicalMapping)
+        XCTAssertNil(CrewRules.parseRequest(data, name: name, tokens: ["tok-other": "builder"], roles: ["builder", "reviewer"]))
     }
 
     func testThePermissionCardReadsACrewSend() {

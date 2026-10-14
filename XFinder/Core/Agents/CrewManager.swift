@@ -109,7 +109,7 @@ final class CrewManager {
             let env = ["XFINDER_CREW_DIR": dir.path, "XFINDER_CREW_TOKEN": token, "XFINDER_CREW_ROLE": role.name]
             do {
                 let sid = try await WindowlessSessionManager.shared.startClaude(
-                    folder: folder, firstMessage: role.name == lead ? goalText : nil,
+                    folder: folder, firstMessage: nil,
                     extraArguments: CrewRules.launchArguments(for: role, in: template),
                     extraEnvironment: env, pathPrepend: Self.binDir.path)
                 members[role.name] = sid
@@ -124,6 +124,14 @@ final class CrewManager {
                         relay: CrewRules.Relay(roles: template.roles.map(\.name), busy: [lead]), members: members)
         crews.insert(crew, at: 0)
         watchInbox(crewID)
+        // P7b review: the goal goes to the lead only once the crew is registered and its inbox watched — a lead turn
+        // that ended before that would have reached no relay and left the lead marked busy forever.
+        guard let leadSID = members[lead],
+              WindowlessSessionManager.shared.deliver(goalText, to: leadSID) == .sent else {
+            stop(crewID)
+            forget(crewID)
+            throw StartError.setupFailed
+        }
         log.info("crew started template=\(template.rawValue) members=\(members.count)")
         return crewID
     }
@@ -166,7 +174,8 @@ final class CrewManager {
             let data = (try? Data(contentsOf: f)) ?? Data()
             try? fm.removeItem(at: f)
             guard data.count <= 64 * 1024,
-                  let req = CrewRules.parseRequest(data, tokens: roleTokens, roles: crews[i].relay.roles) else {
+                  let req = CrewRules.parseRequest(data, name: f.lastPathComponent, tokens: roleTokens,
+                                                    roles: crews[i].relay.roles) else {
                 log.info("crew inbox: a request was refused")
                 continue
             }
