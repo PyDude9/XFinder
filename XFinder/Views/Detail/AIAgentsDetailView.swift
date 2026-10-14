@@ -23,6 +23,7 @@ struct AIAgentsDetailView: View {
     @AppStorage("agents.notify.permission") private var notifyPermission = true
     @AppStorage("agents.notify.finished") private var notifyFinished = true
     @AppStorage("agents.notify.sound") private var notifySound = false
+    @AppStorage("agents.notify.quietWhenFront") private var notifyQuietWhenFront = true
     @State private var recent: [AgentRecent.Entry] = []
     @State private var copiedID: String?
     // P2 — Claude Code statusLine (5h/7d usage %), a settings-only opt-in.
@@ -120,6 +121,11 @@ struct AIAgentsDetailView: View {
                 .settingsRow()
             SettingsDivider()
             ToggleRow(title: L10n.t("Kèm âm thanh"), isOn: $notifySound)
+                .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Im lặng khi terminal của phiên đang ở phía trước"),
+                      subtitle: L10n.t("Bạn đang nhìn phiên đó (kitty, Terminal, app Claude…) thì notch không báo và không kêu. Phiên không ghi được app (OpenCode, phiên không cửa sổ) vẫn được báo."),
+                      isOn: $notifyQuietWhenFront)
                 .settingsRow()
         }
         .disabled(!agentsEnabled)

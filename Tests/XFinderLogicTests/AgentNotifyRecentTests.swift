@@ -103,4 +103,18 @@ final class AgentNotifyRecentTests: XCTestCase {
         XCTAssertEqual(AgentRecent.merged(all, live: [], limit: 2).count, 2)
         XCTAssertEqual(m[1].resumeCommand, "cd '/w/new' && claude --resume 'new'")
     }
+
+    /// P8: OneNotch stays quiet for a session whose terminal / app is frontmost; a session with no recorded app is
+    /// never treated as watched.
+    func testASessionIsWatchedOnlyWhenItsOwnAppIsFrontmost() {
+        var kitty = session("k", .waitingForInput)
+        kitty.terminal.bundleID = "net.kovidgoyal.kitty"
+        XCTAssertTrue(AgentNotify.isWatched(kitty, frontmostBundleID: "net.kovidgoyal.kitty"))
+        XCTAssertTrue(AgentNotify.isWatched(kitty, frontmostBundleID: "NET.kovidgoyal.KITTY"), "bundle ids compare case-insensitively")
+        XCTAssertFalse(AgentNotify.isWatched(kitty, frontmostBundleID: "com.apple.Safari"))
+        XCTAssertFalse(AgentNotify.isWatched(kitty, frontmostBundleID: nil))
+        let opencode = session("o", .waitingForInput, agent: .opencode)
+        XCTAssertFalse(AgentNotify.isWatched(opencode, frontmostBundleID: "net.kovidgoyal.kitty"),
+                       "no recorded app ⇒ never silenced")
+    }
 }

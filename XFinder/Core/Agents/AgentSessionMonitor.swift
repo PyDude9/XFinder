@@ -25,6 +25,8 @@ final class AgentSessionMonitor {
     var notifyPermission: Bool { UserDefaults.standard.object(forKey: "agents.notify.permission") as? Bool ?? true }
     var notifyFinished: Bool { UserDefaults.standard.object(forKey: "agents.notify.finished") as? Bool ?? true }
     var notifySound: Bool { UserDefaults.standard.object(forKey: "agents.notify.sound") as? Bool ?? false }
+    /// P8: no notice and no sound for a session whose terminal / app is frontmost (OneNotch does the same).
+    var notifyQuietWhenFront: Bool { UserDefaults.standard.object(forKey: "agents.notify.quietWhenFront") as? Bool ?? true }
 
     // MARK: - Paths
 
@@ -179,9 +181,12 @@ final class AgentSessionMonitor {
                 case .needsApproval(let s, _), .finished(let s): return s.agent != .opencode || openCodeLive
                 }
             }
-        guard !events.isEmpty else { return }
-        for e in events { NotchSurfaceController.shared.presentAgentNotice(AgentNotify.item(for: e)) }
-        if notifySound { NSSound(named: NSSound.Name(events.contains { if case .needsApproval = $0 { return true }; return false } ? "Glass" : "Pop"))?.play() }
+        // P8: the person is already looking at that session's terminal or app — nothing pops, nothing sounds.
+        let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        let heard = notifyQuietWhenFront ? events.filter { !AgentNotify.isWatched(AgentNotify.session(of: $0), frontmostBundleID: front) } : events
+        guard !heard.isEmpty else { return }
+        for e in heard { NotchSurfaceController.shared.presentAgentNotice(AgentNotify.item(for: e)) }
+        if notifySound { NSSound(named: NSSound.Name(heard.contains { if case .needsApproval = $0 { return true }; return false } ? "Glass" : "Pop"))?.play() }
     }
 
     // MARK: - Recent sessions (P5c)

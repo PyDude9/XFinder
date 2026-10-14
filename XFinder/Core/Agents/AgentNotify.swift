@@ -20,6 +20,19 @@ enum AgentNotify {
         case finished(AgentSession)
     }
 
+    /// The person is already looking at this session: the app it runs in (kitty, Terminal, the Claude desktop app —
+    /// the bundle id the hook recorded) is frontmost. OneNotch stays quiet then ("Skip the popup when you're already
+    /// looking at the session", "Stay quiet while the terminal is in front" — measured 2026-10-14). A session with no
+    /// recorded app (OpenCode via its API, a windowless one) is never "watched": its notice still comes.
+    static func isWatched(_ s: AgentSession, frontmostBundleID: String?) -> Bool {
+        guard let mine = s.terminal.bundleID, !mine.isEmpty, let front = frontmostBundleID, !front.isEmpty else { return false }
+        return mine.caseInsensitiveCompare(front) == .orderedSame
+    }
+
+    static func session(of e: Event) -> AgentSession {
+        switch e { case .needsApproval(let s, _), .finished(let s): return s }
+    }
+
     static func events(old: [AgentSession]?, new: [AgentSession], settings: Settings) -> [Event] {
         guard let old else { return [] }
         let prior = Dictionary(old.map { ($0.listID, $0) }, uniquingKeysWith: { a, _ in a })

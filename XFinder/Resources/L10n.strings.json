@@ -10710,6 +10710,14 @@
     " đã dừng": {
       "en": " stopped",
       "scope": "fragment"
+    },
+    "Im lặng khi terminal của phiên đang ở phía trước": {
+      "en": "Stay quiet while the session's terminal is in front",
+      "scope": "sentence"
+    },
+    "Bạn đang nhìn phiên đó (kitty, Terminal, app Claude…) thì notch không báo và không kêu. Phiên không ghi được app (OpenCode, phiên không cửa sổ) vẫn được báo.": {
+      "en": "While you are looking at that session (kitty, Terminal, the Claude app…) the notch shows no notice and plays no sound. Sessions with no recorded app (OpenCode, windowless sessions) are still announced.",
+      "scope": "sentence"
     }
   }
 }
