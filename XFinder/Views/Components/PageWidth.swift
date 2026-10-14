@@ -17,15 +17,17 @@ import SwiftUI
 /// makes the view claim a share of the offered width instead of demanding its
 /// own.
 ///
+/// It used to end with `.fixedSize(horizontal: false, vertical: true)`, which forced a page to its IDEAL height. On a
+/// page whose root is not the scroll content (Thư viện Clipboard, the tabbed rows) that ideal is the whole content
+/// (~1 100 pt) in a ~630 pt window, and the split view centred it: header and tab picker above the window, sidebar search
+/// at y −28 / −75 instead of 196 (measured 2026-10-14). Removed; width is the only thing this modifier clamps.
+///
 /// Apply `.pageWidthSafe()` to the root container of every detail page.
 struct PageWidthSafe: ViewModifier {
     func body(content: Content) -> some View {
         content
             // Order matters: clamp the ideal first, then let it fill.
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-            // A page that still contains an over-wide control can scroll it
-            // horizontally rather than resizing the whole window.
-            .fixedSize(horizontal: false, vertical: true)
     }
 }
 

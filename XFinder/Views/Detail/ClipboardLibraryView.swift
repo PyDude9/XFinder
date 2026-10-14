@@ -54,7 +54,7 @@ struct ClipboardLibraryView: View {
                         footer
                     }
                     .padding(.horizontal, XFinderTokens.Space.inline)
-                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, idealHeight: 0, maxHeight: .infinity, alignment: .leading)
 
                     if store.inspectorOpen, let selected = store.selected {
                         LibraryInspector(store: store, rawRecord: selected, width: inspectorWidth)
@@ -64,7 +64,7 @@ struct ClipboardLibraryView: View {
                     }
                 }
             }
-            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, idealHeight: 0, maxHeight: .infinity)
 
             if let notice = store.notice, noticeVisible {
                 Text(L10n.t(notice))
@@ -80,6 +80,7 @@ struct ClipboardLibraryView: View {
                 .opacity(0).frame(width: 0, height: 0)
                 .accessibilityHidden(true)
         }
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, idealHeight: 0, maxHeight: .infinity, alignment: .topLeading)
         .pageWidthSafe()
         .background(XFinderTokens.Settings.contentBackground)
         .onAppear {

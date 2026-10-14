@@ -61,13 +61,19 @@ final class MainWindowController: NSObject, NSWindowDelegate {
             }
 
         let hosting = NSHostingController(rootView: rootView)
+        // The default (`standardBounds`, measured = 7) makes the window follow SwiftUI's IDEAL size too: a page whose
+        // scroll content reports a tall ideal height grew/shifted the whole split view (the 2026-10-14 "page jumps up"
+        // bug). No sizing from SwiftUI at all; the window's minimum is set below, equal to RootView's own minimum.
+        hosting.sizingOptions = []
         let win = NSWindow(contentViewController: hosting)
         win.title = "XFinder"
         win.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
         win.titlebarAppearsTransparent = true
         win.titleVisibility = .hidden
         win.setContentSize(NSSize(width: 900, height: 600))
-        win.minSize = NSSize(width: 760, height: 500)
+        // Without `.minSize` in sizingOptions nothing else stops the window going below RootView's 900×600 minimum
+        // (the 760×500 frame minimum that used to be here was always overridden by SwiftUI's).
+        win.contentMinSize = NSSize(width: 900, height: 600)
         win.center()
         win.isReleasedWhenClosed = false
         win.delegate = self

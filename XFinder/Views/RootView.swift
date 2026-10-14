@@ -42,16 +42,17 @@ struct RootView: View {
                 DetailHostView(selection: appState.selection)
                     .environment(clipboardManager)
                     .environment(systemMonitorManager)
-                    // `minWidth: 0` is the load-bearing part: without it a page
-                    // whose content has a large ideal width (the batch-rename
-                    // preview rows) pushes the whole window wider when selected.
-                    .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity)
+                    // `minWidth: 0` and `minHeight: 0, idealHeight: 0` are load-bearing:
+                    // without them a page whose content has a large ideal width or height
+                    // pushes the window wider or shifts the split view panes vertically.
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, idealHeight: 0, maxHeight: .infinity, alignment: .topLeading)
                     // P3: the page behind the grouped cards (white in light mode, as measured).
                     .background(XFinderTokens.Settings.contentBackground)
             }
+            .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, idealHeight: 0, maxHeight: .infinity, alignment: .topLeading)
         }
         .navigationViewStyle(.columns)
-        .frame(minWidth: 900, minHeight: 600)
+        .frame(minWidth: 900, maxWidth: .infinity, minHeight: 600, maxHeight: .infinity)
         .environment(appState)
         // Đổi ngôn ngữ → đổi id → SwiftUI dựng lại toàn bộ cây (sidebar +
         // detail) để mọi chuỗi `L10n.t(...)` được đánh giá lại.

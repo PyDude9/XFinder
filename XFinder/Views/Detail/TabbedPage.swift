@@ -36,8 +36,8 @@ struct TabbedPage<Content: View>: View {
 
             content(shown)
                 .environment(\.pageHeaderHidden, true)
-                .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, idealHeight: 0, maxHeight: .infinity, alignment: .top)
         }
-        .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, idealHeight: 0, maxHeight: .infinity, alignment: .topLeading)
     }
 }
