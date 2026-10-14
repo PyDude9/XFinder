@@ -6,12 +6,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-agents.XXXXXX)
-FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift"
+FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift XFinder/Core/Agents/AgentTalk.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
+FILTER='AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -162,6 +162,55 @@ run "A46 the parser accepts a session id with a path in it" $E \
   "'        guard isSafeSessionID(sessionID) else { return nil }'" "'        guard !sessionID.isEmpty else { return nil }'"
 run "A47 the hook waits on (and later cats/rm's) a decision file named by an unsafe id" $Z \
   "'  \x27\x27|*[!A-Za-z0-9_-]*) safe_sid=\"\" ;;'" "'  \x27\x27) safe_sid=\"\" ;;'"
+
+# P6 — "Nhắn phiên": what may be typed into a terminal, when, and into which window.
+T=XFinder/Core/Agents/AgentTalk.swift
+run "A48 an ESC sequence reaches the terminal live" $T \
+  "'            if v < 0x20 || v == 0x7F || (0x80...0x9F).contains(v) { continue }'" \
+  "'            if (v < 0x20 && v != 0x1B) || v == 0x7F || (0x80...0x9F).contains(v) { continue }'"
+run "A49 a newline in the reply presses Enter early" $T \
+  "'            let isBreak = v == 0x0A'" "'            if v == 0x0A { out.unicodeScalars.append(scalar); continue }\n            let isBreak = v == 0x0A'"
+run "A50 a reply is typed over a permission request" $T \
+  "'        case .waitingForPermission:\n'" "'        case .waitingForPermission:\n            return .sendNow\n'"
+run "A51 a reply is typed into a dialog on screen" $T \
+  "'            if route.typesIntoTerminal, session.dialogOnScreen {'" "'            if route.typesIntoTerminal, session.dialogOnScreen, Bool(\"false\") == true {'"
+run "A52 a reply picks an option of a pending question" $T \
+  "'            if route.typesIntoTerminal, session.questionPending {'" "'            if route.typesIntoTerminal, session.questionPending, Bool(\"false\") == true {'"
+run "A53 a working session gets typed into at once" $T \
+  "'            return .queue\n        case .waitingForInput:'" "'            return .sendNow\n        case .waitingForInput:'"
+run "A54 a held message for an ended session waits forever" $T \
+  "'            return session.status == .ended ? false : nil'" "'            return nil'"
+run "A55 a reused tmux pane id is typed into" $T \
+  "'        return output.trimmingCharacters(in: .whitespacesAndNewlines) == recorded'" "'        return true'"
+run "A56 a kitty window that now runs something else is typed into" $T \
+  "'                    return fg.contains(Int(agentPID))'" "'                    return true'"
+run "A57 a kitty tcp listener is accepted (typing over the network)" $T \
+  "'        guard let l = listenOn, l.hasPrefix(\"unix:\") else { return nil }'" \
+  "'        guard let l = listenOn else { return nil }\n        if l.hasPrefix(\"tcp:\") { return l }'"
+run "A58 tmux gets the text as an argument (Process decomposes it to NFD)" $T \
+  "'\"load-buffer\", \"-b\", buffer, \"-\"]'" "'\"set-buffer\", \"-b\", buffer]'"
+run "A59 kitty gets the text in the escape-interpreting argument form" $T \
+  "'    static func kittyTypeArguments(socket: String, windowID: Int) -> [String] {\n        [\"@\", \"--to\", socket, \"send-text\", \"--match\", \"id:\\\\(windowID)\", \"--stdin\"]'" \
+  "'    static func kittyTypeArguments(socket: String, windowID: Int) -> [String] {\n        [\"@\", \"--to\", socket, \"send-text\", \"--match\", \"id:\\\\(windowID)\"]'"
+run "A60 OpenCode loses delivery: queue (the prompt steers a running turn)" $T \
+  "'        let body = queue ? #\"{\"delivery\":\"queue\",\"text\":\"# + asciiJSONString(text) + \"}\"'" \
+  "'        let body = queue ? #\"{\"text\":\"# + asciiJSONString(text) + \"}\"'"
+run "A61 non-ASCII text reaches the OpenCode argument raw" $T \
+  "'            default: out += String(format: \"\\\\\\\\u%04x\", unit)'" "'            default: out.unicodeScalars.append(Unicode.Scalar(unit) ?? \"?\")'"
+run "A62 a reply longer than the cap goes through whole" $T \
+  "'        if out.count > maxLength { out = String(out.prefix(maxLength)) }\n'" "''"
+run "A63 AskUserQuestion never marks a question pending" $E \
+  "'                s.questionPending = e.toolName == AgentSessionRules.questionTool'" "'                s.questionPending = false'"
+run "A64 a dialog stays on screen after the person answered it" $E \
+  "'                 .permissionDenied, .sessionStart:\n                s.dialogOnScreen = false'" "'                 .permissionDenied, .sessionStart:\n                break'"
+run "A65 an elicitation dialog is not seen" $E \
+  "'                case \"permission_prompt\"?, \"elicitation_dialog\"?:'" "'                case \"permission_prompt\"?:'"
+
+# P6 review
+run "A66 a newline in an env value splits the event (both halves dropped)" $Z \
+  "'LC_ALL=C tr -d \x27\\\\001-\\\\037\\\\177\x27 | '" "''"
+run "A67 the send button says send while the text will be copied" $T \
+  "'        if case .copyInstead = decision(for: session, route: route) {'" "'        if false, case .copyInstead = decision(for: session, route: route) {'"
 
 # The restore check and the post-restore suite run come AFTER every mutation (they used to sit before A11, so the
 # later mutations ran unchecked — found while adding A20/A21).

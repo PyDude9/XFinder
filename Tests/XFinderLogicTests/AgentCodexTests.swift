@@ -122,12 +122,13 @@ final class AgentCodexTests: XCTestCase {
             .appendingPathComponent("XFinder/Resources/Agents/xfinder-agent-hook.zsh")
     }
 
-    private func runHook(_ args: [String], stdin: String, dir: URL) throws {
+    private func runHook(_ args: [String], stdin: String, dir: URL, extraEnv: [String: String] = [:]) throws {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/bin/zsh")
         p.arguments = [scriptURL.path] + args
         var env = ProcessInfo.processInfo.environment
         env["XFINDER_AGENT_DIR"] = dir.path
+        for (k, v) in extraEnv { env[k] = v }
         p.environment = env
         let input = Pipe()
         p.standardInput = input
@@ -153,6 +154,22 @@ final class AgentCodexTests: XCTestCase {
         XCTAssertFalse(text.contains("THE ANSWER"), "Codex's Stop carries the model's answer; XFinder promises not to keep it")
         XCTAssertFalse(text.contains("OUTPUT"), "tool_response is dropped")
         XCTAssertTrue(events.allSatisfy { $0.agentPID == nil }, "no ancestor named codex ⇒ no pid, never the shell's")
+    }
+
+    /// P6 review: a control character in an env value (a newline in $TMUX) split the event across two lines and both
+    /// halves were dropped. The hook now strips control characters from every env value.
+    func testAControlCharacterInAnEnvValueDoesNotSplitTheEvent() throws {
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("xf-hook-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        try runHook([], stdin: #"{"hook_event_name":"Stop","session_id":"s9"}"#, dir: tmp,
+                    extraEnv: ["TMUX": "/tmp/tmux-502/default,1,0\nEVIL", "KITTY_LISTEN_ON": "unix:/tmp/k\u{1B}]0;x\u{07}"])
+        let files = try FileManager.default.contentsOfDirectory(at: tmp.appendingPathComponent("events"), includingPropertiesForKeys: nil)
+        let text = try files.map { try String(contentsOf: $0, encoding: .utf8) }.joined()
+        XCTAssertEqual(text.split(separator: "\n").count, 1, "one event, one line")
+        let events = AgentEvents.parse(jsonl: text)
+        XCTAssertEqual(events.count, 1)
+        XCTAssertEqual(events.first?.terminal.tmuxEnv, "/tmp/tmux-502/default,1,0EVIL")
+        XCTAssertEqual(events.first?.terminal.kittyListenOn, "unix:/tmp/k]0;x")
     }
 
     // MARK: Ids that could escape the decisions folder (P5 review)

@@ -49,6 +49,10 @@ enum NotchSurfaceMachine {
         var nowPlayingActive = false
         /// §3b #33: the notice on screen has buttons — a hover must not replace it.
         var activityHoldsHover = false
+        /// P6: the person is typing a reply to an agent session on the Agents page. Like a running task, the hub does not
+        /// collapse on its own while this holds — a pointer drifting off the notch must not throw the half-typed text away.
+        /// Esc, ✕ and sending end it. A fact (re-read on every event), not an event, so the exhaustive walk is unchanged.
+        var composing = false
         var dragIntoNotchOpens = true
         var shakeOpens = true
         /// Pointer must rest in the notch zone this long before hover counts (accidental passes are shorter).
@@ -164,7 +168,7 @@ enum NotchSurfaceMachine {
                 break                               // whatever is open stays open
             case .pointerAway(let since):
                 guard state.isOpen, state != .activity, now.timeIntervalSince(since) >= s.leaveGrace else { return }
-                if taskRunning { return }
+                if taskRunning || s.composing { return }
                 // The shaken-open tray holding files never auto-closes: the user dropped them to
                 // act on them next, and a tray that vanished mid-task was a reported bug. At the
                 // notch the files are not lost either — the collapsed badge keeps showing them.

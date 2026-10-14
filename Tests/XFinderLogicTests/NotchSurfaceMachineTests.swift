@@ -214,6 +214,19 @@ final class NotchSurfaceMachineTests: XCTestCase {
         XCTAssertEqual(d.state, .collapsed, "the close button always closes")
     }
 
+    /// P6: while the person types a reply on the Agents page, leaving the notch must not throw the text away.
+    func testComposingAReplyKeepsTheHubOpenButCloseStillCloses() {
+        var c = s; c.composing = true
+        var m = M.Machine(); m.handle(.activateOn(.agents), settings: c, now: t0)
+        m.handle(.pointerAway(since: at(1)), settings: c, now: at(60))
+        XCTAssertEqual(m.state, .expanded(.agents), "a half-typed reply must not vanish when the pointer wanders")
+        m.handle(.pointerAway(since: at(61)), settings: s, now: at(63))
+        XCTAssertEqual(m.state, .collapsed, "done composing ⇒ the ordinary leave rule again")
+        var d = M.Machine(); d.handle(.activateOn(.agents), settings: c, now: t0)
+        d.handle(.dismiss, settings: c, now: at(1))
+        XCTAssertEqual(d.state, .collapsed, "the close button always closes")
+    }
+
     func testAnActivityShowsOnlyWhileIdleAndYieldsToTheUser() {
         var m = M.Machine(); m.handle(.activityShown, settings: s, now: t0)
         XCTAssertEqual(m.state, .activity)

@@ -10162,6 +10162,194 @@
     "Phiên Claude Code và Codex chạy trong terminal (phiên của app desktop không được liệt kê) và phiên OpenCode, trong 14 ngày qua, đã không còn chạy. Từ tệp phiên (Claude Code, Codex) hoặc lệnh opencode (OpenCode), XFinder chỉ lấy mã phiên, thư mục, thời điểm và tiêu đề của OpenCode. \"Sao chép lệnh\" chép lệnh mở lại phiên đó trong đúng thư mục để bạn dán vào terminal.": {
       "en": "Claude Code and Codex sessions that ran in a terminal (desktop-app sessions are not listed) and OpenCode sessions, from the last 14 days, that are no longer running. From the session file (Claude Code, Codex) or the opencode command (OpenCode), XFinder takes only the session id, the folder, the time and OpenCode's title. \"Copy command\" copies the command that reopens that session in its folder, for you to paste into a terminal.",
       "scope": "sentence"
+    },
+    "Phiên đã kết thúc.": {
+      "en": "The session has ended.",
+      "scope": "sentence"
+    },
+    "Phiên đang chờ bạn duyệt quyền — dùng Cho phép / Từ chối.": {
+      "en": "The session is waiting for your approval — use Allow / Deny.",
+      "scope": "sentence"
+    },
+    "Trên terminal đang có một hộp thoại — trả lời nó ở terminal trước.": {
+      "en": "A dialog is open in the terminal — answer it there first.",
+      "scope": "sentence"
+    },
+    "Agent đang hỏi bạn một câu có lựa chọn — trả lời ở terminal.": {
+      "en": "The agent is asking you a multiple-choice question — answer it in the terminal.",
+      "scope": "sentence"
+    },
+    "Gửi vào kitty": {
+      "en": "Send to kitty",
+      "scope": "sentence"
+    },
+    "Gửi vào tmux": {
+      "en": "Send to tmux",
+      "scope": "sentence"
+    },
+    "Gửi qua OpenCode": {
+      "en": "Send via OpenCode",
+      "scope": "sentence"
+    },
+    "Chép tin nhắn": {
+      "en": "Copy message",
+      "scope": "sentence"
+    },
+    "Chép và mở terminal": {
+      "en": "Copy and open terminal",
+      "scope": "sentence"
+    },
+    "Cửa sổ kitty của phiên không còn chạy agent — không gõ vào đâu cả.": {
+      "en": "The session's kitty window no longer runs the agent — nothing was typed.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy lệnh kitty.": {
+      "en": "The kitty command was not found.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy lệnh opencode.": {
+      "en": "The opencode command was not found.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy lệnh tmux.": {
+      "en": "The tmux command was not found.",
+      "scope": "sentence"
+    },
+    "OpenCode không nhận tin.": {
+      "en": "OpenCode did not accept the message.",
+      "scope": "sentence"
+    },
+    "OpenCode đã xếp tin vào hàng đợi của phiên.": {
+      "en": "OpenCode queued the message for the session.",
+      "scope": "sentence"
+    },
+    "Phiên đã kết thúc — tin đang chờ chưa được gửi.": {
+      "en": "The session ended — the waiting message was not sent.",
+      "scope": "sentence"
+    },
+    "Sẽ gửi khi phiên rảnh.": {
+      "en": "Will send when the session is free.",
+      "scope": "sentence"
+    },
+    "kitty không cho điều khiển từ xa (cần allow_remote_control và listen_on trong kitty.conf).": {
+      "en": "kitty refused remote control (it needs allow_remote_control and listen_on in kitty.conf).",
+      "scope": "sentence"
+    },
+    "kitty không nhận chữ.": {
+      "en": "kitty did not accept the text.",
+      "scope": "sentence"
+    },
+    "kitty không nhận phím Enter.": {
+      "en": "kitty did not accept the Enter key.",
+      "scope": "sentence"
+    },
+    "tmux không nhận chữ.": {
+      "en": "tmux did not accept the text.",
+      "scope": "sentence"
+    },
+    "tmux không nhận phím Enter.": {
+      "en": "tmux did not accept the Enter key.",
+      "scope": "sentence"
+    },
+    "Ô tmux của phiên không còn — không gõ vào đâu cả.": {
+      "en": "The session's tmux pane is gone — nothing was typed.",
+      "scope": "sentence"
+    },
+    "Đang gửi…": {
+      "en": "Sending…",
+      "scope": "sentence"
+    },
+    "Đã chép — dán (⌘V) vào terminal rồi bấm Enter.": {
+      "en": "Copied — paste it (⌘V) into the terminal and press Enter.",
+      "scope": "sentence"
+    },
+    "Đã chép — mở terminal của phiên, dán (⌘V) rồi bấm Enter.": {
+      "en": "Copied — open the session's terminal, paste (⌘V) and press Enter.",
+      "scope": "sentence"
+    },
+    "Đã gửi qua OpenCode.": {
+      "en": "Sent via OpenCode.",
+      "scope": "sentence"
+    },
+    "Đã gửi vào kitty.": {
+      "en": "Sent to kitty.",
+      "scope": "sentence"
+    },
+    "Đã gửi vào tmux.": {
+      "en": "Sent to tmux.",
+      "scope": "sentence"
+    },
+    "Đã huỷ tin đang chờ.": {
+      "en": "Cancelled the waiting message.",
+      "scope": "sentence"
+    },
+    "Đã thay tin đang chờ — sẽ gửi khi phiên rảnh.": {
+      "en": "Replaced the waiting message — it will send when the session is free.",
+      "scope": "sentence"
+    },
+    "Nhắn phiên này": {
+      "en": "Reply to this session",
+      "scope": "sentence"
+    },
+    "Tin đang chờ — gửi khi phiên rảnh": {
+      "en": "Message waiting — sends when the session is free",
+      "scope": "sentence"
+    },
+    "Nhắn cho phiên…": {
+      "en": "Message the session…",
+      "scope": "sentence"
+    },
+    "Phiên đang chạy — tin sẽ được gửi khi phiên rảnh.": {
+      "en": "The session is working — the message will send when it is free.",
+      "scope": "sentence"
+    },
+    "Terminal này chưa gõ được tự động — XFinder chép tin và mở terminal.": {
+      "en": "XFinder can't type into this terminal yet — it copies the message and opens the terminal.",
+      "scope": "sentence"
+    },
+    "Nhắn phiên": {
+      "en": "Reply to sessions",
+      "scope": "sentence"
+    },
+    "Mỗi tin chỉ một dòng; ký tự điều khiển bị bỏ trước khi gõ. Khi phiên đang hỏi quyền hay hỏi một câu có lựa chọn, XFinder không gõ gì (phím gõ vào sẽ trả lời hộp thoại). Phiên đang chạy thì tin được giữ lại và gửi khi phiên rảnh. Socket nhắn tin của Claude Code không được dùng: tin qua đó hiện là tin của một phiên khác, không phải của bạn.": {
+      "en": "Each message is a single line; control characters are removed before typing. While a session is asking for a permission or a multiple-choice question, XFinder types nothing — a keystroke would answer the dialog. A message for a working session is held and sent once it is free. Claude Code's messaging socket is not used: a message sent through it shows up as coming from another session, not from you.",
+      "scope": "sentence"
+    },
+    "Gõ thẳng vào đúng cửa sổ của phiên. Cần allow_remote_control yes và listen_on unix:… trong kitty.conf; XFinder kiểm tra cửa sổ vẫn chạy agent trước khi gõ.": {
+      "en": "Types straight into the session's own window. Needs allow_remote_control yes and listen_on unix:… in kitty.conf; XFinder checks the window still runs the agent before typing.",
+      "scope": "sentence"
+    },
+    "Gõ thẳng vào đúng ô của phiên; XFinder kiểm tra ô vẫn là của phiên (cùng tty) trước khi gõ.": {
+      "en": "Types straight into the session's own pane; XFinder checks the pane still belongs to the session (same tty) before typing.",
+      "scope": "sentence"
+    },
+    "Gửi qua chính lệnh opencode của bạn; khi phiên đang chạy, OpenCode xếp tin vào hàng đợi của phiên.": {
+      "en": "Sent through your own opencode command; while the session is working, OpenCode queues the message for it.",
+      "scope": "sentence"
+    },
+    "Terminal khác": {
+      "en": "Other terminals",
+      "scope": "sentence"
+    },
+    "Đã chép — trả lời hộp thoại ở terminal trước, rồi dán (⌘V) và bấm Enter.": {
+      "en": "Copied — answer the dialog in the terminal first, then paste (⌘V) and press Enter.",
+      "scope": "sentence"
+    },
+    "Cửa sổ kitty thôi chạy agent trước khi bấm Enter — chữ có thể còn ở dòng nhập, chưa gửi.": {
+      "en": "The kitty window stopped running the agent before Enter — the text may still be in the input line, unsent.",
+      "scope": "sentence"
+    },
+    "Ô tmux đã đổi trước khi bấm Enter — chữ có thể còn ở dòng nhập, chưa gửi.": {
+      "en": "The tmux pane changed before Enter — the text may still be in the input line, unsent.",
+      "scope": "sentence"
+    },
+    "XFinder không gõ vào hộp thoại: tin được chép và terminal được đưa lên trước.": {
+      "en": "XFinder never types into a dialog: the message is copied and the terminal brought forward.",
+      "scope": "sentence"
+    },
+    "Terminal.app, iTerm2, Ghostty và WezTerm chưa được đo để gõ tự động, nên XFinder chép tin vào clipboard và đưa terminal lên trước để bạn dán. Phiên Claude Code hay Codex chạy trong kitty hoặc tmux thì vẫn được gõ thẳng.": {
+      "en": "Terminal.app, iTerm2, Ghostty and WezTerm have not been measured for typing, so XFinder copies the message to the clipboard and brings the terminal forward for you to paste. A Claude Code or Codex session running inside kitty or tmux is still typed into directly.",
+      "scope": "sentence"
     }
   }
 }

@@ -60,6 +60,10 @@ enum AgentEvents {
         var weztermPane: String?
         var termSession: String?
         var entrypoint: String?
+        /// P6 — where a reply can be typed: kitty's window id and listen socket, tmux's whole `$TMUX` value.
+        var kittyWindowID: String?
+        var kittyListenOn: String?
+        var tmuxEnv: String?
     }
 
     // MARK: - Parsing
@@ -95,7 +99,9 @@ enum AgentEvents {
         e.terminal = Terminal(bundleID: nonEmpty(env["bundle_id"]), termProgram: nonEmpty(env["term_program"]),
                               tty: nonEmpty(env["tty"]), itermSession: nonEmpty(env["iterm_session"]),
                               tmuxPane: nonEmpty(env["tmux_pane"]), weztermPane: nonEmpty(env["wezterm_pane"]),
-                              termSession: nonEmpty(env["term_session"]), entrypoint: nonEmpty(env["entrypoint"]))
+                              termSession: nonEmpty(env["term_session"]), entrypoint: nonEmpty(env["entrypoint"]),
+                              kittyWindowID: nonEmpty(env["kitty_window"]), kittyListenOn: nonEmpty(env["kitty_listen_on"]),
+                              tmuxEnv: nonEmpty(env["tmux"]))
         return e
     }
 
@@ -174,6 +180,11 @@ struct AgentSession: Equatable, Identifiable {
     var eventCount: Int
     /// A conversation title when the agent has one (OpenCode does; Claude Code and Codex hooks carry none).
     var title: String? = nil
+    /// P6 — a dialog is on the terminal (Claude Code's `permission_prompt` / `elicitation_dialog` notification) and nothing
+    /// has happened since: typing a reply would answer it.
+    var dialogOnScreen: Bool = false
+    /// P6 — the agent asked a multiple-choice question (`AskUserQuestion` started, not finished): typing would pick an option.
+    var questionPending: Bool = false
     /// `true` once something asked for the person: the badge and the live activity count these.
     var needsYou: Bool {
         switch status { case .waitingForInput, .waitingForPermission: return true; default: return false }
@@ -190,6 +201,8 @@ struct AgentSession: Equatable, Identifiable {
 /// The rules: a stream of events → sessions in display order. Pure, so the state machine is tested
 /// without a file or a process.
 enum AgentSessionRules {
+    /// The tool name of Claude Code's multiple-choice question.
+    static let questionTool = "AskUserQuestion"
     /// A session with no event for this long and no known live process is treated as ended.
     static let staleAfter: TimeInterval = 15 * 60
     /// Ended sessions older than this are not listed at all.
@@ -214,6 +227,20 @@ enum AgentSessionRules {
             if let t = e.transcriptPath { s.transcriptPath = t }
             if let p = e.agentPID { s.agentPID = p }
             if e.terminal != AgentEvents.Terminal() { s.terminal = e.terminal }
+            // P6: anything the person or the agent does next means the dialog / question on screen is gone.
+            switch e.name {
+            case .userPromptSubmit, .preToolUse, .postToolUse, .postToolUseFailure, .stop, .interrupt, .sessionEnd,
+                 .permissionDenied, .sessionStart:
+                s.dialogOnScreen = false
+            default: break
+            }
+            switch e.name {
+            case .userPromptSubmit, .postToolUse, .postToolUseFailure, .stop, .interrupt, .sessionEnd, .sessionStart:
+                s.questionPending = false
+            case .preToolUse:
+                s.questionPending = e.toolName == AgentSessionRules.questionTool
+            default: break
+            }
             switch e.name {
             case .sessionStart:
                 s.status = .running(tool: nil)
@@ -238,9 +265,10 @@ enum AgentSessionRules {
             case .notification:
                 switch e.notificationType {
                 case "idle_prompt"?: s.status = .waitingForInput
-                case "permission_prompt"?:
+                case "permission_prompt"?, "elicitation_dialog"?:
                     // Claude Code's own prompt is on screen; only a PermissionRequest hook can answer it from here.
                     if case .waitingForPermission = s.status {} else { s.status = .waitingForInput }
+                    s.dialogOnScreen = true
                 default: break
                 }
             case .stop, .interrupt:

@@ -9,17 +9,35 @@ import SwiftUI
 ///
 /// Job sentence: "I am at the notch because a coding-agent session (Claude Code, Codex) needs me right now — show me which one, let
 /// me answer it without leaving, and tell me when it is just working so I don't have to watch it."
+///
+/// P6 adds "Nhắn phiên": a small "Nhắn" button on a live row opens a compose bar pinned at the bottom of this
+/// page (the page's own frame is fixed — `wideDrop` — so the bar takes a fixed slice and the rows' ScrollView
+/// shrinks around it; the page never grows). The compose bar, the queued/status line-2 state and the send
+/// button all read `AgentTalk`/`AgentTalkSender` through the shared model fields only — nothing here decides
+/// routing or delivery itself.
 struct NotchAgentsPage: View {
     var model: NotchSurfaceModel
     @Environment(\.notchAccent) private var accent
 
     private static let m = NotchSurfaceLayout.Metrics.standard
+    /// Fixed height of the compose bar + its caption line, taken out of the rows' ScrollView so the page
+    /// never grows (spec §3: "shrink the rows' ScrollView, do not grow the page").
+    private static let composeBarHeight: CGFloat = 54
+
+    private var composingSession: AgentSession? {
+        guard let id = model.agentReplyTarget else { return nil }
+        return model.agents.first { $0.listID == id }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Spacer(minLength: Self.m.agentsHeaderGap)
             rows
+            if let session = composingSession {
+                AgentReplyComposeBar(session: session, model: model)
+                    .frame(height: Self.composeBarHeight)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
@@ -77,7 +95,7 @@ struct NotchAgentsPage: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: Self.m.agentRowGap) {
                     ForEach(visible, id: \.listID) { s in
-                        AgentRow(session: s, accent: accent)
+                        AgentRow(session: s, accent: accent, model: model)
                     }
                 }
             }
@@ -140,6 +158,7 @@ struct NotchAgentsPage: View {
 private struct AgentRow: View {
     let session: AgentSession
     let accent: Color
+    var model: NotchSurfaceModel
 
     private static let m = NotchSurfaceLayout.Metrics.standard
 
@@ -172,6 +191,17 @@ private struct AgentRow: View {
                 .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
                 .lineLimit(1).monospacedDigit()
             Spacer(minLength: 2)
+            if session.status != .ended {
+                Button {
+                    NotchSurfaceController.shared.beginAgentReply(session)
+                } label: {
+                    Image(systemName: "text.bubble")
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.white.opacity(0.6))
+                .help(L10n.t("Nhắn phiên này"))
+                .accessibilityLabel(L10n.t("Nhắn phiên này"))
+            }
             if session.terminal.bundleID != nil, session.status != .ended {
                 Button {
                     NotchSurfaceController.shared.openAgentTerminal(session)
@@ -194,13 +224,49 @@ private struct AgentRow: View {
             .background(Capsule().fill(Color.white.opacity(0.08)))
     }
 
+    /// P6: the permission line always wins (spec §2). Below it, a queued reply beats a send status, which beats
+    /// the row's ordinary secondary text — each is "newer info" than the one after it.
     @ViewBuilder private var line2: some View {
         if case .waitingForPermission(let p) = session.status {
             permissionLine(p)
+        } else if model.agentReplyQueued.contains(session.listID) {
+            queuedLine
+        } else if let status = model.agentReplyStatus[session.listID] {
+            replyStatusLine(status)
         } else {
             Text(secondaryText)
                 .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
                 .lineLimit(1).truncationMode(.tail)
+        }
+    }
+
+    private var queuedLine: some View {
+        HStack(spacing: XFinderTokens.Space.tight) {
+            Image(systemName: "clock").font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+            Text(L10n.t("Tin đang chờ — gửi khi phiên rảnh"))
+                .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+                .lineLimit(1).truncationMode(.tail)
+            Spacer(minLength: 2)
+            Button(L10n.t("Hủy")) {
+                NotchSurfaceController.shared.cancelQueuedReply(session)
+            }
+            .buttonStyle(.plain)
+            .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.7))
+        }
+    }
+
+    private func replyStatusLine(_ status: AgentTalkSender.Status) -> some View {
+        HStack(spacing: 4) {
+            Text(L10n.t(status.key))
+                .font(XFinderTokens.Font.caption)
+                .foregroundColor(status.isError ? .orange : .white.opacity(0.5))
+                .lineLimit(1).truncationMode(.tail)
+            if let detail = status.detail {
+                Text(" · \(detail)")                                       // a glyph and the CLI's own words
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(status.isError ? .orange : .white.opacity(0.5))
+                    .lineLimit(1).truncationMode(.tail)
+            }
         }
     }
 
@@ -260,6 +326,81 @@ private struct AgentRow: View {
         case .waitingForInput: return .yellow
         case .waitingForPermission: return .orange
         case .ended: return .white.opacity(0.3)
+        }
+    }
+}
+
+/// P6 — the reply compose bar, pinned at the bottom of the Agents page while `model.agentReplyTarget` names a
+/// still-listed session (spec §3). A leading label names the target, a plain `TextField` takes the text, the
+/// send button's title follows the measured route (`AgentTalk.routeLabelKey`), and one caption line below
+/// explains what pressing it will actually do — queued, blocked, or copy-and-activate — so the person is never
+/// surprised by where their words land.
+private struct AgentReplyComposeBar: View {
+    let session: AgentSession
+    var model: NotchSurfaceModel
+    @FocusState private var fieldFocused: Bool
+
+    private var route: AgentTalk.Route { AgentTalk.route(for: session) }
+    private var decision: AgentTalk.Decision { AgentTalk.decision(for: session, route: route) }
+    private var canSend: Bool { AgentTalk.clean(model.agentReplyText) != nil }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Divider().overlay(Color.white.opacity(0.10))
+            HStack(spacing: XFinderTokens.Space.tight) {
+                Text(session.displayName)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.6))
+                    .lineLimit(1).truncationMode(.middle)
+                    .frame(minWidth: 0, maxWidth: 96, alignment: .leading)
+                TextField("", text: Bindable(model).agentReplyText, prompt: Text(L10n.t("Nhắn cho phiên…")).foregroundColor(.white.opacity(0.4)))
+                    .textFieldStyle(.plain)
+                    .font(XFinderTokens.Font.rowValue)
+                    .foregroundColor(.white)
+                    .focused($fieldFocused)
+                    .onSubmit { NotchSurfaceController.shared.sendAgentReply() }
+                    .frame(minWidth: 0, maxWidth: .infinity)
+                Button(L10n.t(AgentTalk.sendLabelKey(for: session))) {
+                    NotchSurfaceController.shared.sendAgentReply()
+                }
+                .buttonStyle(NotchPillButtonStyle(primary: true))
+                .disabled(!canSend)
+                Button {
+                    NotchSurfaceController.shared.endAgentReply()
+                } label: {
+                    Image(systemName: "xmark")
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.white.opacity(0.6))
+                .help(L10n.t("Hủy"))
+                .accessibilityLabel(L10n.t("Hủy"))
+            }
+            captionLine
+        }
+        .onChange(of: model.agentReplyFocus) { fieldFocused = true }
+        .onAppear { fieldFocused = true }
+    }
+
+    @ViewBuilder private var captionLine: some View {
+        switch decision {
+        case .queue:
+            Text(L10n.t("Phiên đang chạy — tin sẽ được gửi khi phiên rảnh."))
+                .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+                .lineLimit(1).truncationMode(.tail)
+        case .blocked(let key):
+            Text(L10n.t(key))
+                .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                .lineLimit(1).truncationMode(.tail)
+        case .copyInstead(let key):
+            Text(L10n.t(key))
+                .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                .lineLimit(1).truncationMode(.tail)
+                .help(L10n.t("XFinder không gõ vào hộp thoại: tin được chép và terminal được đưa lên trước."))
+        case .sendNow:
+            if case .copyAndActivate = route {
+                Text(L10n.t("Terminal này chưa gõ được tự động — XFinder chép tin và mở terminal."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+                    .lineLimit(1).truncationMode(.tail)
+            }
         }
     }
 }

@@ -130,6 +130,27 @@ Trang: NOTCH ▸ **Agent AI**. Bật "Hiện phiên agent ở notch" trước.
 | T-P5-RECENT | Agent AI ▸ Phiên gần đây; trên notch, trang Agents khi không có phiên nào đang chạy | Chỉ phiên terminal (không có phiên của app Claude/Codex để bàn); "Sao chép lệnh" dán vào terminal mở lại đúng phiên trong đúng thư mục; tên thư mục dài bị cắt giữa, nút vẫn thấy |
 | T-P5-UI | Đọc trang Agent AI ở cả hai ngôn ngữ (chưa đo qua AX: màn hình khoá suốt lượt cài 2026-10-14) | Mục: Phiên agent trên notch · Claude Code · Codex · OpenCode · Cursor (giải thích) · Thông báo · Phiên gần đây · Hạn mức Claude; không lẫn tiếng Việt ở bản English |
 
+### P6 · Nhắn phiên từ notch (dựng 2026-10-14)
+
+Trên notch, trang Agents: nút **Nhắn** (bong bóng chữ) cạnh mỗi phiên. Không cần cài lại hook: lần mở XFinder đầu
+tiên sau bản này tự chép script hook mới (nó ghi thêm `KITTY_WINDOW_ID` / `KITTY_LISTEN_ON` / `$TMUX`). Phiên đã chạy
+từ trước đó chỉ có kitty/tmux sau sự kiện hook kế tiếp của nó (một câu trả lời là đủ).
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-P6-KITTY | `kitty.conf`: `allow_remote_control yes` + `listen_on unix:/tmp/kitty`; mở lại kitty, chạy `claude`, chờ nó trả lời xong; trên notch bấm Nhắn, gõ một câu có dấu tiếng Việt, ↩ | Câu hiện trong ô nhập của Claude **đúng dấu** và được gửi (Enter riêng 0,1 s sau). Chuyển sang một tab kitty khác trước khi gửi: vẫn vào đúng cửa sổ của phiên |
+| T-P6-TMUX | Trong tmux (bất kỳ terminal nào), chạy `claude`, làm như trên | Như trên. Đóng ô đó, mở ô mới cùng số `%N`, gửi lại ⇒ **không gõ gì**, dòng báo "Ô tmux của phiên không còn" |
+| T-P6-OPENCODE | Phiên `opencode` đang trả lời (đang chạy); gửi một tin từ notch | Dòng "OpenCode đã xếp tin vào hàng đợi của phiên"; tin chạy sau khi lượt hiện tại xong (không cắt ngang) |
+| T-P6-QUEUE | Phiên Claude trong kitty/tmux đang chạy một lệnh dài; gửi một tin, rồi gửi tin thứ hai trước khi nó xong | Tin đầu bị thay ("Đã thay tin đang chờ…"); khi phiên rảnh chỉ tin thứ hai được gõ. Bấm Huỷ trên dòng "Tin đang chờ" ⇒ không gì được gõ |
+| T-P6-BLOCK | (a) Claude đang hỏi quyền (thẻ Cho phép/Từ chối) · (b) Claude đang hỏi một câu có lựa chọn, hoặc có hộp thoại trên terminal | (a) Nhắn không gõ gì, báo dùng Cho phép / Từ chối. (b) Nút đổi thành **Chép và mở terminal**: tin vào clipboard, terminal lên trước, **không phím nào được gõ**; trả lời hộp thoại rồi dán. Thử thêm: bấm Esc thoát hộp thoại ở terminal rồi nhắn — vẫn ra "Chép" (XFinder không biết hộp thoại đã đóng; đó là cố ý, vì Enter vào hộp thoại quyền là "Yes") |
+| T-P6-COPY | Phiên trong Terminal.app / iTerm2 / Ghostty | Nút ghi "Chép và mở terminal"; tin vào clipboard, terminal lên trước; dán ⌘V là đúng câu |
+| T-P6-KEEP | Đang gõ dở trong ô Nhắn, đưa con trỏ ra khỏi notch | Notch **không** thu lại (chữ đang gõ còn nguyên); Esc hoặc ✕ đóng ô |
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-P6-TERMINAL | Gõ tự động vào Terminal.app bằng AppleScript `do script` — cần bạn bấm cho phép Automation một lần để đo (chưa đo; chưa ship) | Chép + mở terminal |
+| Q-P6-CODEX | `codex queue --thread … --message …` có thể gửi tin vào phiên Codex mà không gõ phím — chưa đo trên phiên thật (đo sẽ chạy một lượt model) | Chép + mở terminal |
+
 ### Clipboard
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|

@@ -74,10 +74,15 @@ fi
 [ "$tty_name" = "??" ] && tty_name=""
 [ -n "$tty_name" ] && tty_name="/dev/$tty_name"
 
-esc() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
-env_json="$(printf '{"ppid":%d,"tty":"%s","term_program":"%s","bundle_id":"%s","entrypoint":"%s","iterm_session":"%s","tmux_pane":"%s","wezterm_pane":"%s","term_session":"%s"}' \
+# Every env value loses its control characters (P6 review): a newline in, say, $TMUX would split the event across two
+# lines and both halves would be dropped. Then backslash and quote are escaped for the JSON string.
+esc() { printf '%s' "$1" | LC_ALL=C tr -d '\001-\037\177' | sed 's/\\/\\\\/g; s/"/\\"/g'; }
+# P6: where a reply can be typed — kitty's window id + listen socket, tmux's server socket ($TMUX). None is a secret
+# (KITTY_PUBLIC_KEY is deliberately not recorded).
+env_json="$(printf '{"ppid":%d,"tty":"%s","term_program":"%s","bundle_id":"%s","entrypoint":"%s","iterm_session":"%s","tmux_pane":"%s","wezterm_pane":"%s","term_session":"%s","kitty_window":"%s","kitty_listen_on":"%s","tmux":"%s"}' \
   "${agent_pid:-0}" "$(esc "$tty_name")" "$(esc "${TERM_PROGRAM:-}")" "$(esc "${__CFBundleIdentifier:-}")" "$(esc "${CLAUDE_CODE_ENTRYPOINT:-}")" \
-  "$(esc "${ITERM_SESSION_ID:-}")" "$(esc "${TMUX_PANE:-}")" "$(esc "${WEZTERM_PANE:-}")" "$(esc "${TERM_SESSION_ID:-}")")"
+  "$(esc "${ITERM_SESSION_ID:-}")" "$(esc "${TMUX_PANE:-}")" "$(esc "${WEZTERM_PANE:-}")" "$(esc "${TERM_SESSION_ID:-}")" \
+  "$(esc "${KITTY_WINDOW_ID:-}")" "$(esc "${KITTY_LISTEN_ON:-}")" "$(esc "${TMUX:-}")")"
 
 if [ ${#payload} -gt 262144 ]; then
   payload="$(printf '{"hook_event_name":"%s","session_id":"%s","xfinder_dropped":true}' "$(esc "$event")" "$(esc "$sid")")"

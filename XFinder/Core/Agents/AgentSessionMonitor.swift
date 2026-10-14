@@ -65,9 +65,30 @@ final class AgentSessionMonitor {
     /// Under the notch master switch: a notch that is off has no page to show sessions on. OpenCode (P5b) rides
     /// the same switches plus its own.
     func applySettings(underMaster master: Bool = true) {
+        if !refreshedScripts { refreshedScripts = true; refreshInstalledScripts() }
         if master && isEnabled { start() } else { stop() }
         OpenCodeMonitor.shared.onChange = { [weak self] in self?.rebuild() }
         OpenCodeMonitor.shared.applySettings(underMaster: master && isEnabled)
+    }
+
+    private var refreshedScripts = false
+
+    /// An installed copy of our own scripts follows the app. The hook gained fields after people had installed it (P5c: the
+    /// session-id check; P6: where a reply can be typed) and nothing re-copied it, so the agent kept running the old file
+    /// until someone pressed "Cài hook" again. Only a copy that EXISTS is replaced — installing stays a button — and only
+    /// our own file in Application Support: the agents' settings files are not touched. The write is atomic, so a hook
+    /// that is running right now keeps reading the file it opened.
+    private func refreshInstalledScripts() {
+        let fm = FileManager.default
+        let hookSource = Bundle.main.url(forResource: "xfinder-agent-hook", withExtension: "zsh")
+        var pairs: [(dest: URL, source: URL?)] = Self.hookAgents.map { (hookURL(for: $0), hookSource) }
+        pairs.append((statusLineScriptURL, Bundle.main.url(forResource: "xfinder-claude-statusline", withExtension: "sh")))
+        for (dest, source) in pairs {
+            guard let source, fm.fileExists(atPath: dest.path),
+                  let fresh = try? Data(contentsOf: source), let old = try? Data(contentsOf: dest), fresh != old else { continue }
+            try? fresh.write(to: dest, options: .atomic)
+            try? fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: dest.path)
+        }
     }
 
     private func start() {
@@ -133,6 +154,7 @@ final class AgentSessionMonitor {
             onChange?()
         }
         notifyBaseline = running ? sessions : nil
+        AgentTalkSender.shared.sessionsChanged(sessions)        // P6: held replies go out when their session is free
         syncLivenessTimer()
     }
 

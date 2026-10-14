@@ -52,6 +52,14 @@ final class NotchSurfaceModel {
     var recentAgents: [AgentRecent.Entry] = []
     var agentsEnabled = false
     var agentHookInstalled = false
+    /// P6 — the session (its `listID`) whose reply is being typed on the Agents page; nil = not composing.
+    var agentReplyTarget: String?
+    var agentReplyText = ""
+    /// Bumped to move the keyboard into the reply field (the panel became key first).
+    var agentReplyFocus = 0
+    /// Last outcome per session and the messages XFinder holds until a session is free (mirrored from `AgentTalkSender`).
+    var agentReplyStatus: [String: AgentTalkSender.Status] = [:]
+    var agentReplyQueued: Set<String> = []
     var agentsNeedingYou: Int { agents.filter(\.needsYou).count }
     /// P1: a Claude Code session is alive (running or waiting) — the left wing of the collapsed notch shows it.
     var agentActive: Bool { agentsEnabled && agents.contains { $0.status != .ended } }

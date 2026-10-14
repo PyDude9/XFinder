@@ -69,7 +69,7 @@ run "M9 pasteboard read on every drag event (throttle removed)" XFinder/Core/Not
 run "M10 a step after Cancel still counts" XFinder/Core/Notch/NotchTask.swift \
   "'    mutating func stepSucceeded(output: URL?) {\n        guard isRunning else { return }\n'" "'    mutating func stepSucceeded(output: URL?) {\n'"
 run "M11 the hub collapses mid-job" XFinder/Core/Notch/NotchSurfaceMachine.swift \
-  "'                if taskRunning { return }\n'" "''"
+  "'                if taskRunning || s.composing { return }'" "'                if s.composing { return }'"
 run "M12 same-kind notices stack instead of replacing" XFinder/Core/Notch/LiveActivity.swift \
   "'            if current?.kind == item.kind { current = item; return true }\n'" "''"
 run "M13 a notice interrupts the open hub" XFinder/Core/Notch/NotchSurfaceMachine.swift \
@@ -136,6 +136,8 @@ run "M55 the band's wing loses its inset twice (the toolbar no longer fits a nar
   "'        max(0, (bodyWidth - notchWidth) / 2 - m.bandInset)'" "'        max(0, (bodyWidth - notchWidth) / 2 - 2 * m.bandInset)'"
 run "M56 wider page dots (the dots capsule overflows the left wing)" XFinder/Core/Notch/NotchSurfaceLayout.swift \
   "'        var dotPitch: CGFloat = 15'" "'        var dotPitch: CGFloat = 22'"
+run "M57 composing a reply does not hold the hub open (the half-typed text vanishes)" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                if taskRunning || s.composing { return }'" "'                if taskRunning { return }'"
 run "M31 OCR offered with no image held" XFinder/Core/Notch/NotchTask.swift \
   "'            out.append(.removeBackground)\n            out.append(.ocr)\n        }\n        out.append(.airDrop)'" \
   "'            out.append(.removeBackground)\n        }\n        out.append(.ocr)\n        out.append(.airDrop)'"

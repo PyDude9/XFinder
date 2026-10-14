@@ -48,6 +48,7 @@ struct AIAgentsDetailView: View {
                 }
 
                 notchSection
+                replySection
                 sessionsSection
                 codexSection
                 openCodeSection
@@ -209,6 +210,45 @@ struct AIAgentsDetailView: View {
                     refreshHookStates()
                 }
                 .settingsRow()
+        }
+    }
+
+    // MARK: - P6 — Nhắn phiên
+
+    private var replySection: some View {
+        SettingsSection(
+            title: L10n.t("Nhắn phiên"),
+            footer: L10n.t("Mỗi tin chỉ một dòng; ký tự điều khiển bị bỏ trước khi gõ. Khi phiên đang hỏi quyền hay hỏi một câu có lựa chọn, XFinder không gõ gì (phím gõ vào sẽ trả lời hộp thoại). Phiên đang chạy thì tin được giữ lại và gửi khi phiên rảnh. Socket nhắn tin của Claude Code không được dùng: tin qua đó hiện là tin của một phiên khác, không phải của bạn.")
+        ) {
+            replyRow(title: "kitty",
+                     subtitle: L10n.t("Gõ thẳng vào đúng cửa sổ của phiên. Cần allow_remote_control yes và listen_on unix:… trong kitty.conf; XFinder kiểm tra cửa sổ vẫn chạy agent trước khi gõ."))
+                .settingsRow()
+            SettingsDivider()
+            replyRow(title: "tmux",
+                     subtitle: L10n.t("Gõ thẳng vào đúng ô của phiên; XFinder kiểm tra ô vẫn là của phiên (cùng tty) trước khi gõ."))
+                .settingsRow()
+            SettingsDivider()
+            replyRow(title: "OpenCode",
+                     subtitle: L10n.t("Gửi qua chính lệnh opencode của bạn; khi phiên đang chạy, OpenCode xếp tin vào hàng đợi của phiên."))
+                .settingsRow()
+            SettingsDivider()
+            replyRow(title: L10n.t("Terminal khác"),
+                     subtitle: L10n.t("Terminal.app, iTerm2, Ghostty và WezTerm chưa được đo để gõ tự động, nên XFinder chép tin vào clipboard và đưa terminal lên trước để bạn dán. Phiên Claude Code hay Codex chạy trong kitty hoặc tmux thì vẫn được gõ thẳng."))
+                .settingsRow()
+        }
+    }
+
+    private func replyRow(title: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(XFinderTokens.Font.row)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            Text(subtitle)
+                .font(XFinderTokens.Font.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

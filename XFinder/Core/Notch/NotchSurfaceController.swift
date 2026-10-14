@@ -107,6 +107,7 @@ final class NotchSurfaceController {
                                      agentNeedsYou: model.agentsNeedingYou > 0, lastPage: lastHubPage, shownPages: model.pages,
                                      nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
                                      activityHoldsHover: !(model.activity?.buttons.isEmpty ?? true),
+                                     composing: model.agentReplyTarget != nil,
                                      dragIntoNotchOpens: notchDropEnabled, shakeOpens: shakeEnabled,
                                      hoverDwell: NotchSurfaceMachine.Settings.hoverDwell(forSpeed: hoverSpeed))
     }
@@ -157,6 +158,7 @@ final class NotchSurfaceController {
         if panel == nil { prepare() }
         NowPlayingMonitor.shared.onChange = { [weak self] in self?.nowPlayingChanged() }
         AgentSessionMonitor.shared.onChange = { [weak self] in self?.agentsChanged() }
+        AgentTalkSender.shared.onChange = { [weak self] in self?.agentRepliesChanged() }
         CalendarGlanceMonitor.shared.onChange = { [weak self] in self?.calendarChanged() }
         if monitors.isEmpty {
             let mask: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .leftMouseDown, .leftMouseUp]
@@ -195,6 +197,11 @@ final class NotchSurfaceController {
         samples.removeAll()
         machine.handle(.disabled, settings: settings, now: Date())
         state = machine.state
+        // P6 review: stop() bypasses dispatch(), so a reply being composed when the notch is switched off must be
+        // ended here, or its Esc monitor stays installed and the stale draft comes back with the notch.
+        model.agentReplyTarget = nil
+        model.agentReplyText = ""
+        syncAgentReplyKeyboard()
         panel?.hide()
         panel = nil
         detailPanel?.orderOut(nil)
@@ -347,8 +354,10 @@ final class NotchSurfaceController {
         // §3b #37 / P2: the usage scan runs only while the Agents page or the AI usage tool is on screen.
         AgentUsageMonitor.shared.setPageOpen(machine.state == .expanded(.agents) || machine.state == .expanded(.aiUsage))
         AgentSessionMonitor.shared.setAgentsPageOpen(machine.state == .expanded(.agents))
+        if machine.state != .expanded(.agents), model.agentReplyTarget != nil { endAgentReply() }   // P6: leaving the page ends composing
         render()
         syncClipboardKeyboard()
+        syncAgentReplyKeyboard()
         syncHubSwipe()
         syncNowPlayingTicker()
         syncWaveform()
@@ -414,6 +423,9 @@ final class NotchSurfaceController {
     private func agentsChanged() {
         model.agents = AgentSessionMonitor.shared.sessions
         model.recentAgents = AgentSessionMonitor.shared.recent
+        // P6: the session being replied to left the list — end composing, or `Settings.composing` would hold the hub open
+        // with no compose bar (and no ✕) on screen.
+        if let id = model.agentReplyTarget, !model.agents.contains(where: { $0.listID == id }) { endAgentReply(); return }
         render()
     }
 
@@ -435,6 +447,59 @@ final class NotchSurfaceController {
 
     func openAgentTerminal(_ session: AgentSession) {
         AgentSessionMonitor.shared.openTerminal(of: session)
+    }
+
+    // MARK: - Replies to agent sessions (P6)
+
+    private var agentReplyKeyMonitor: Any?
+
+    /// "Nhắn" on a row: the reply field opens under the list and takes the keyboard. The panel becomes key WITHOUT
+    /// `NSApp.activate` (the clipboard page's rule); the hub stays open while composing (`Settings.composing`).
+    func beginAgentReply(_ session: AgentSession) {
+        model.agentReplyTarget = session.listID
+        model.agentReplyText = ""
+        render()
+        syncAgentReplyKeyboard()
+        model.agentReplyFocus += 1
+    }
+
+    func endAgentReply() {
+        model.agentReplyTarget = nil
+        model.agentReplyText = ""
+        syncAgentReplyKeyboard()
+        render()
+    }
+
+    /// Return in the field / the send button.
+    func sendAgentReply() {
+        guard let id = model.agentReplyTarget, let s = model.agents.first(where: { $0.listID == id }) else { endAgentReply(); return }
+        guard AgentTalk.clean(model.agentReplyText) != nil else { return }     // Return on an empty field keeps it open
+        AgentTalkSender.shared.send(model.agentReplyText, to: s)
+        endAgentReply()
+    }
+
+    func cancelQueuedReply(_ session: AgentSession) { AgentTalkSender.shared.cancelQueued(for: session) }
+
+    private func agentRepliesChanged() {
+        model.agentReplyStatus = AgentTalkSender.shared.status
+        model.agentReplyQueued = Set(AgentTalkSender.shared.outbox.keys)
+        render()
+    }
+
+    /// Esc ends composing. A LOCAL monitor is enough: it only matters while our panel is key.
+    private func syncAgentReplyKeyboard() {
+        if model.agentReplyTarget != nil, machine.state == .expanded(.agents) {
+            panel?.makeKeyAndOrderFront(nil)
+            guard agentReplyKeyMonitor == nil else { return }
+            agentReplyKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
+                guard let self, self.panel?.isKeyWindow == true, self.model.agentReplyTarget != nil else { return e }
+                if e.keyCode == 53 { self.endAgentReply(); return nil }   // Esc
+                return e
+            }
+        } else if let m = agentReplyKeyMonitor {
+            NSEvent.removeMonitor(m)
+            agentReplyKeyMonitor = nil
+        }
     }
 
     /// P5c — an agent notice, unless the person is already looking at the Agents page (the row is right there).
