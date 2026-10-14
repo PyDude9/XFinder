@@ -10350,6 +10350,158 @@
     "Terminal.app, iTerm2, Ghostty và WezTerm chưa được đo để gõ tự động, nên XFinder chép tin vào clipboard và đưa terminal lên trước để bạn dán. Phiên Claude Code hay Codex chạy trong kitty hoặc tmux thì vẫn được gõ thẳng.": {
       "en": "Terminal.app, iTerm2, Ghostty and WezTerm have not been measured for typing, so XFinder copies the message to the clipboard and brings the terminal forward for you to paste. A Claude Code or Codex session running inside kitty or tmux is still typed into directly.",
       "scope": "sentence"
+    },
+    "Đang chờ tin đầu tiên": {
+      "en": "Waiting for the first message",
+      "scope": "sentence"
+    },
+    "Đang làm": {
+      "en": "Working",
+      "scope": "sentence"
+    },
+    "Đã dừng": {
+      "en": "Stopped",
+      "scope": "sentence"
+    },
+    "Không tìm thấy lệnh claude.": {
+      "en": "The claude command was not found.",
+      "scope": "sentence"
+    },
+    "Thư mục không còn.": {
+      "en": "The folder is gone.",
+      "scope": "sentence"
+    },
+    "Không chạy được claude.": {
+      "en": "Could not start claude.",
+      "scope": "sentence"
+    },
+    "Phiên không cửa sổ đã dừng — tin chưa được gửi.": {
+      "en": "The windowless session has stopped — the message was not sent.",
+      "scope": "sentence"
+    },
+    "Gửi tin": {
+      "en": "Send",
+      "scope": "sentence"
+    },
+    "Đã gửi tin.": {
+      "en": "Sent.",
+      "scope": "sentence"
+    },
+    "Phiên mới không cửa sổ": {
+      "en": "New windowless session",
+      "scope": "sentence"
+    },
+    "Mở lại không cửa sổ": {
+      "en": "Reopen windowless",
+      "scope": "sentence"
+    },
+    "Phiên không cửa sổ — XFinder đang chạy nó": {
+      "en": "Windowless session — XFinder is running it",
+      "scope": "sentence"
+    },
+    "Xem hội thoại": {
+      "en": "View conversation",
+      "scope": "sentence"
+    },
+    "Việc đầu tiên cho Claude Code (không bắt buộc)…": {
+      "en": "First task for Claude Code (optional)…",
+      "scope": "sentence"
+    },
+    "Chưa có thư mục nào — chọn thư mục ở trang Agent AI.": {
+      "en": "No folders yet — choose one on the Agent AI page.",
+      "scope": "sentence"
+    },
+    "Chọn thư mục": {
+      "en": "Choose folder",
+      "scope": "sentence"
+    },
+    "Mỗi tin là một lượt dùng gói Claude của bạn.": {
+      "en": "Every message is a turn on your Claude plan.",
+      "scope": "sentence"
+    },
+    "Quay lại danh sách": {
+      "en": "Back to the list",
+      "scope": "sentence"
+    },
+    "Ngắt lượt": {
+      "en": "Interrupt the turn",
+      "scope": "sentence"
+    },
+    "Dừng phiên": {
+      "en": "Stop the session",
+      "scope": "sentence"
+    },
+    "Xoá khỏi danh sách": {
+      "en": "Remove from the list",
+      "scope": "sentence"
+    },
+    "Chưa có tin nào — gửi việc đầu tiên.": {
+      "en": "No messages yet — send the first task.",
+      "scope": "sentence"
+    },
+    "Nhắn": {
+      "en": "Message",
+      "scope": "sentence"
+    },
+    "Phiên đã dừng — hội thoại vẫn lưu trong Claude Code.": {
+      "en": "The session has stopped — the conversation is still saved in Claude Code.",
+      "scope": "sentence"
+    },
+    "Sao chép lệnh mở lại": {
+      "en": "Copy the reopen command",
+      "scope": "sentence"
+    },
+    "Phiên không cửa sổ": {
+      "en": "Windowless sessions",
+      "scope": "sentence"
+    },
+    "XFinder chạy claude -p ở chế độ luồng trong thư mục bạn chọn, không mở terminal. Mỗi tin bạn gửi là một lượt dùng gói Claude của bạn. Phiên dừng khi bạn dừng nó hoặc thoát XFinder; hội thoại vẫn nằm trong Claude Code và mở lại được ở Phiên gần đây, hoặc bằng claude --resume trong terminal. XFinder chỉ giữ ~40 tin gần nhất trong bộ nhớ để hiện ở notch.": {
+      "en": "XFinder runs claude -p in streaming mode in the folder you choose, with no terminal window. Every message you send is a turn on your Claude plan. The session stops when you stop it or quit XFinder; the conversation stays in Claude Code and can be reopened from Recent sessions, or with claude --resume in a terminal. XFinder keeps only the last ~40 messages in memory to show at the notch.",
+      "scope": "sentence"
+    },
+    "Bắt đầu một phiên mới trong thư mục đã chọn.": {
+      "en": "Start a new session in the chosen folder.",
+      "scope": "sentence"
+    },
+    "Bắt đầu phiên": {
+      "en": "Start session",
+      "scope": "sentence"
+    },
+    "Chưa cài hook Claude Code của XFinder: lệnh cần duyệt quyền trong phiên không cửa sổ không hỏi được qua notch (cài ở mục Claude Code bên dưới).": {
+      "en": "XFinder's Claude Code hook is not installed: a command that needs your approval in a windowless session cannot be asked at the notch (install it in the Claude Code section below).",
+      "scope": "sentence"
+    },
+    "Đã bắt đầu — xem ở trang Agents trên notch.": {
+      "en": "Started — see the Agents page on the notch.",
+      "scope": "sentence"
+    },
+    "Codex và OpenCode": {
+      "en": "Codex and OpenCode",
+      "scope": "sentence"
+    },
+    "Chưa có phiên không cửa sổ cho hai agent này: Codex cần giao thức app-server của nó, XFinder chưa dựng; phiên OpenCode đã chạy trên server của chính bạn — tạo bằng lệnh opencode.": {
+      "en": "No windowless sessions for these two agents yet: Codex needs its app-server protocol, which XFinder has not built; OpenCode sessions already run on your own server — create one with the opencode command.",
+      "scope": "sentence"
+    },
+    "Mở không cửa sổ": {
+      "en": "Open windowless",
+      "scope": "sentence"
+    },
+    " tin": {
+      "en": " messages",
+      "scope": "fragment"
+    },
+    "Phiên này đang mở ở nơi khác — đóng nó trước rồi mở lại.": {
+      "en": "This session is open somewhere else — close it first, then reopen it.",
+      "scope": "sentence"
+    },
+    "Phiên không cửa sổ — đã dừng": {
+      "en": "Windowless session — stopped",
+      "scope": "sentence"
+    },
+    "Cài hook = thêm các mục \"Managed by XFinder\" vào ~/.claude/settings.json (có bản sao lưu đặt cạnh) và chép một script zsh vào Application Support. Hook của app khác giữ nguyên. Mỗi sự kiện của Claude Code chạy script đó vài mili-giây. Khi Claude Code xin quyền, script chờ bạn bấm Cho phép hoặc Từ chối trên notch; XFinder không chạy thì Claude Code hỏi ở terminal như thường. Claude Code trong terminal và phiên không cửa sổ do XFinder chạy dùng hook này — app Claude để bàn không chạy hook.": {
+      "en": "Installing the hook adds \"Managed by XFinder\" entries to ~/.claude/settings.json (with a backup beside it) and copies a zsh script into Application Support. Other apps' hooks stay as they are. Each Claude Code event runs the script for a few milliseconds. When Claude Code asks for permission, the script waits for you to press Allow or Deny at the notch; with XFinder not running, Claude Code asks in the terminal as usual. Claude Code in a terminal and the windowless sessions XFinder runs use this hook — the Claude desktop app runs no hooks.",
+      "scope": "sentence"
     }
   }
 }

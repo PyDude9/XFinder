@@ -145,6 +145,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// D4: a Quick Look temp copy of an unlocked clip must not survive the process.
     func applicationWillTerminate(_ notification: Notification) {
         ClipboardLibraryStore.shared.relockAll()
+        WindowlessSessionManager.shared.stopAll()      // P7a: interrupt the turn, close stdin; the conversation stays on disk
     }
 
 

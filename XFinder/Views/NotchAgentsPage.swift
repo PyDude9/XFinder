@@ -29,11 +29,23 @@ struct NotchAgentsPage: View {
         return model.agents.first { $0.listID == id }
     }
 
+    /// P7a — the windowless session named by `model.windowlessConversation`, when it is still in the list.
+    private var windowlessSession: AgentSession? {
+        guard let id = model.windowlessConversation else { return nil }
+        return model.agents.first { $0.listID == id }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Spacer(minLength: Self.m.agentsHeaderGap)
-            rows
+            if model.newWindowlessOpen {
+                NewWindowlessComposer(model: model)
+            } else if let session = windowlessSession {
+                WindowlessConversationView(session: session, model: model)
+            } else {
+                rows
+            }
             if let session = composingSession {
                 AgentReplyComposeBar(session: session, model: model)
                     .frame(height: Self.composeBarHeight)
@@ -42,7 +54,7 @@ struct NotchAgentsPage: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
-    // MARK: - Header: session count (+ "needing you") left, a compact usage readout right
+    // MARK: - Header: session count (+ "needing you") left, a compact usage readout right, "+" new windowless session
 
     private var header: some View {
         HStack(alignment: .center, spacing: XFinderTokens.Space.tight) {
@@ -61,6 +73,14 @@ struct NotchAgentsPage: View {
                     .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.6))
                     .lineLimit(1).truncationMode(.tail).monospacedDigit()
             }
+            // P7a: a new windowless session, hosted by XFinder itself (no terminal).
+            Button { NotchSurfaceController.shared.beginNewWindowless() } label: {
+                Image(systemName: "plus")
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.white.opacity(0.6))
+            .help(L10n.t("Phiên mới không cửa sổ"))
+            .accessibilityLabel(L10n.t("Phiên mới không cửa sổ"))
         }
         .frame(height: Self.m.agentsHeaderHeight)
     }
@@ -141,6 +161,17 @@ struct NotchAgentsPage: View {
                     Text(NotchClipCardView.ageLabel(e.updated, now: Date()))
                         .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.45)).monospacedDigit()
                     Spacer(minLength: 4)
+                    // P7a: reopen a Claude Code conversation windowless, in its own folder — icon-only so the
+                    // row (already tight with a long folder name) does not overflow.
+                    if e.agent == .claude, e.cwd != nil {
+                        Button { NotchSurfaceController.shared.resumeWindowless(e) } label: {
+                            Image(systemName: "play.rectangle")
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundColor(.white.opacity(0.6))
+                        .help(L10n.t("Mở lại không cửa sổ"))
+                        .accessibilityLabel(L10n.t("Mở lại không cửa sổ"))
+                    }
                     Button(L10n.t("Sao chép lệnh")) { NotchSurfaceController.shared.copyResumeCommand(e) }
                         .buttonStyle(NotchPillButtonStyle(primary: false))
                         .help(e.resumeCommand)
@@ -186,11 +217,38 @@ private struct AgentRow: View {
             Text(session.agent.displayName)
                 .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.45))
                 .lineLimit(1).fixedSize()
+            // P7a: a session XFinder itself is running, with no terminal — a small glyph says so. Once the process has
+            // ended the wording must not say XFinder is still running it (review).
+            if session.terminal.windowless {
+                if session.hostedByXFinder {
+                    Image(systemName: "rectangle.dashed")
+                        .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.45))
+                        .help(L10n.t("Phiên không cửa sổ — XFinder đang chạy nó"))
+                        .accessibilityLabel(L10n.t("Phiên không cửa sổ — XFinder đang chạy nó"))
+                } else {
+                    Image(systemName: "rectangle.dashed")
+                        .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.3))
+                        .help(L10n.t("Phiên không cửa sổ — đã dừng"))
+                        .accessibilityLabel(L10n.t("Phiên không cửa sổ — đã dừng"))
+                }
+            }
             statusCapsule
             Text(NotchClipCardView.ageLabel(session.updatedAt, now: Date()))
                 .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
                 .lineLimit(1).monospacedDigit()
             Spacer(minLength: 2)
+            // P7a: a hosted session's own conversation — this is where a reply actually goes.
+            if WindowlessSessionManager.shared.records[session.id] != nil {
+                Button {
+                    NotchSurfaceController.shared.openConversation(session)
+                } label: {
+                    Image(systemName: "bubble.left.and.bubble.right")
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.white.opacity(0.6))
+                .help(L10n.t("Xem hội thoại"))
+                .accessibilityLabel(L10n.t("Xem hội thoại"))
+            }
             if session.status != .ended {
                 Button {
                     NotchSurfaceController.shared.beginAgentReply(session)
@@ -309,8 +367,14 @@ private struct AgentRow: View {
         return "\(secs / 60)m\(secs % 60)s"
     }
 
+    /// P7a: for a hosted session the record's last agent line is more useful than the last-tool name — first
+    /// line only, so a multi-line answer does not push the row taller.
     private var secondaryText: String {
-        session.lastTool ?? statusText
+        if let record = WindowlessSessionManager.shared.records[session.id],
+           let text = record.lastAgentText?.split(separator: "\n", maxSplits: 1).first {
+            return String(text)
+        }
+        return session.lastTool ?? statusText
     }
 
     private var statusText: String {
@@ -400,6 +464,249 @@ private struct AgentReplyComposeBar: View {
                 Text(L10n.t("Terminal này chưa gõ được tự động — XFinder chép tin và mở terminal."))
                     .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
                     .lineLimit(1).truncationMode(.tail)
+            }
+        }
+    }
+}
+
+/// P7a — "+" on the Agents page: pick a folder, optionally type the first message, Start. Replaces the row list
+/// while open (the page's frame is fixed; this view fits the same budget the rows use).
+private struct NewWindowlessComposer: View {
+    var model: NotchSurfaceModel
+    @FocusState private var fieldFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            folderRow
+            TextField("", text: Bindable(model).newWindowlessText,
+                      prompt: Text(L10n.t("Việc đầu tiên cho Claude Code (không bắt buộc)…")).foregroundColor(.white.opacity(0.4)))
+                .textFieldStyle(.plain)
+                .font(XFinderTokens.Font.rowValue)
+                .foregroundColor(.white)
+                .focused($fieldFocused)
+                .onSubmit { NotchSurfaceController.shared.startNewWindowless() }
+                .padding(.horizontal, 8).padding(.vertical, 5)
+                .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(Color.white.opacity(0.08)))
+            HStack(spacing: XFinderTokens.Space.tight) {
+                Button(L10n.t("Bắt đầu")) { NotchSurfaceController.shared.startNewWindowless() }
+                    .buttonStyle(NotchPillButtonStyle(primary: true))
+                    .disabled(model.newWindowlessFolder == nil || model.windowlessStarting)
+                Button(L10n.t("Hủy")) { NotchSurfaceController.shared.cancelNewWindowless() }
+                    .buttonStyle(NotchPillButtonStyle(primary: false))
+                Spacer(minLength: 2)
+            }
+            if let notice = model.windowlessNotice {
+                HStack(spacing: 4) {
+                    Text(L10n.t(notice))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                        .lineLimit(1).truncationMode(.tail)
+                    if let detail = model.windowlessNoticeDetail, !detail.isEmpty {
+                        // The tool's own words — not translated.
+                        Text(" · \(detail)")
+                            .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                            .lineLimit(1).truncationMode(.tail)
+                    }
+                }
+            } else {
+                Text(L10n.t("Mỗi tin là một lượt dùng gói Claude của bạn."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+                    .lineLimit(1).truncationMode(.tail)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onChange(of: model.newWindowlessFocus) { fieldFocused = true }
+        .onAppear { fieldFocused = true }
+    }
+
+    @ViewBuilder private var folderRow: some View {
+        HStack(spacing: XFinderTokens.Space.tight) {
+            Text(L10n.t("Thư mục"))
+                .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.6))
+            if model.newWindowlessFolders.isEmpty {
+                Text(L10n.t("Chưa có thư mục nào — chọn thư mục ở trang Agent AI."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+                    .lineLimit(1).truncationMode(.middle)
+                    .frame(minWidth: 0, alignment: .leading).layoutPriority(-1)
+                Button(L10n.t("Mở cài đặt")) { NotchSurfaceController.shared.openAgentSettings() }
+                    .buttonStyle(NotchPillButtonStyle(primary: false))
+            } else {
+                Menu {
+                    ForEach(model.newWindowlessFolders, id: \.self) { path in
+                        Button {
+                            model.newWindowlessFolder = path
+                        } label: {
+                            Text((path as NSString).lastPathComponent)
+                        }
+                        .help(path)
+                    }
+                } label: {
+                    Text(model.newWindowlessFolder.map { ($0 as NSString).lastPathComponent } ?? L10n.t("Chọn thư mục"))
+                        .font(XFinderTokens.Font.row).foregroundColor(.white)
+                        .lineLimit(1).truncationMode(.middle)
+                        .frame(minWidth: 0, maxWidth: 160, alignment: .leading)
+                }
+                .menuStyle(.borderlessButton).fixedSize()
+                .help(model.newWindowlessFolder ?? "")
+            }
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+/// P7a — the open conversation of a hosted session: header (back, name, phase, actions), the transcript,
+/// and either a "Nhắn" button or, once the process has ended, a way to reopen it in a terminal.
+private struct WindowlessConversationView: View {
+    let session: AgentSession
+    var model: NotchSurfaceModel
+
+    private var record: WindowlessRules.Record? { WindowlessSessionManager.shared.records[session.id] }
+    private var isComposingThisSession: Bool { model.agentReplyTarget == session.listID }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            conversationHeader
+            transcript
+            if !isComposingThisSession { footer }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var conversationHeader: some View {
+        HStack(spacing: XFinderTokens.Space.tight) {
+            Button { NotchSurfaceController.shared.closeConversation() } label: {
+                Image(systemName: "chevron.left")
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.white.opacity(0.7))
+            .help(L10n.t("Quay lại danh sách"))
+            .accessibilityLabel(L10n.t("Quay lại danh sách"))
+            Text(session.displayName)
+                .font(XFinderTokens.Font.row).foregroundColor(.white)
+                .lineLimit(1).truncationMode(.middle)
+                .frame(minWidth: 0, alignment: .leading).layoutPriority(-1)
+            if case .waitingForPermission = session.status {
+                Text(L10n.t("Chờ bạn duyệt"))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                    .lineLimit(1)
+                    .padding(.horizontal, 6).padding(.vertical, 1)
+                    .background(Capsule().fill(Color.white.opacity(0.10)))
+                    .fixedSize()
+            } else if let record {
+                Text(L10n.t(WindowlessRules.phaseKey(record.phase)))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.6))
+                    .lineLimit(1)
+                    .padding(.horizontal, 6).padding(.vertical, 1)
+                    .background(Capsule().fill(Color.white.opacity(0.10)))
+                    .fixedSize()
+            }
+            Spacer(minLength: 2)
+            if case .working = record?.phase {
+                Button { NotchSurfaceController.shared.interruptWindowless(session) } label: {
+                    Image(systemName: "stop.circle")
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.white.opacity(0.6))
+                .help(L10n.t("Ngắt lượt"))
+                .accessibilityLabel(L10n.t("Ngắt lượt"))
+            }
+            if session.status != .ended {
+                Button { NotchSurfaceController.shared.stopWindowless(session) } label: {
+                    Image(systemName: "xmark.octagon")
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.white.opacity(0.6))
+                .help(L10n.t("Dừng phiên"))
+                .accessibilityLabel(L10n.t("Dừng phiên"))
+            } else {
+                Button { NotchSurfaceController.shared.forgetWindowless(session) } label: {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.white.opacity(0.6))
+                .help(L10n.t("Xoá khỏi danh sách"))
+                .accessibilityLabel(L10n.t("Xoá khỏi danh sách"))
+            }
+        }
+    }
+
+    @ViewBuilder private var transcript: some View {
+        let entries = record?.transcript ?? []
+        if entries.isEmpty {
+            Text(L10n.t("Chưa có tin nào — gửi việc đầu tiên."))
+                .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        } else {
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(entries) { entry in
+                            transcriptRow(entry).id(entry.id)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .onChange(of: entries) { if let last = entries.last { proxy.scrollTo(last.id, anchor: .bottom) } }
+                .onAppear { if let last = entries.last { proxy.scrollTo(last.id, anchor: .bottom) } }
+            }
+        }
+    }
+
+    @ViewBuilder private func transcriptRow(_ entry: WindowlessRules.Entry) -> some View {
+        switch entry.role {
+        case .person:
+            HStack {
+                Spacer(minLength: 24)
+                Text(entry.text)
+                    .font(XFinderTokens.Font.caption).foregroundColor(.white)
+                    .textSelection(.enabled)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(Color.white.opacity(0.14)))
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        case .agent:
+            Text(entry.text)
+                .font(XFinderTokens.Font.caption).foregroundColor(.white)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        case .note:
+            Text(entry.text)
+                .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder private var footer: some View {
+        if case .waitingForPermission(let p) = session.status {
+            // Review: a pending permission must be answerable right here — the row's card is not on screen.
+            HStack(spacing: XFinderTokens.Space.tight) {
+                Text(p.toolName).font(XFinderTokens.Font.caption).bold().foregroundColor(.white).lineLimit(1)
+                if let sum = p.summary {
+                    Text(sum).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.7))
+                        .lineLimit(1).truncationMode(.middle)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Spacer(minLength: 0)
+                }
+                Button(L10n.t("Từ chối")) { NotchSurfaceController.shared.answerAgent(p, of: session, allow: false) }
+                    .buttonStyle(NotchPillButtonStyle(primary: false))
+                Button(L10n.t("Cho phép")) { NotchSurfaceController.shared.answerAgent(p, of: session, allow: true) }
+                    .buttonStyle(NotchPillButtonStyle(primary: true))
+            }
+        } else if session.status != .ended {
+            Button(L10n.t("Nhắn")) { NotchSurfaceController.shared.beginAgentReply(session) }
+                .buttonStyle(NotchPillButtonStyle(primary: true))
+        } else {
+            HStack(spacing: XFinderTokens.Space.tight) {
+                Text(L10n.t("Phiên đã dừng — hội thoại vẫn lưu trong Claude Code."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+                    .lineLimit(1).truncationMode(.tail)
+                Button(L10n.t("Sao chép lệnh mở lại")) {
+                    let entry = AgentRecent.Entry(agent: .claude, sessionID: session.id, cwd: session.cwd,
+                                                  updated: session.updatedAt, title: nil)
+                    NotchSurfaceController.shared.copyResumeCommand(entry)
+                }
+                .buttonStyle(NotchPillButtonStyle(primary: false))
             }
         }
     }

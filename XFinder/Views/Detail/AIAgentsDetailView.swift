@@ -28,6 +28,13 @@ struct AIAgentsDetailView: View {
     // P2 — Claude Code statusLine (5h/7d usage %), a settings-only opt-in.
     @State private var statusLineState: AgentSessionMonitor.StatusLineState = .notInstalled
     @State private var statusLineNotice: String?
+    // P7a — windowless Claude Code sessions hosted by XFinder itself.
+    @State private var windowlessFolder: URL?
+    @State private var windowlessMessage = ""
+    @State private var windowlessStarting = false
+    @State private var windowlessClaudeOK: Bool?
+    @State private var windowlessNotice: String?
+    @State private var windowlessNoticeIsError = false
 
     var body: some View {
         ScrollView {
@@ -49,6 +56,7 @@ struct AIAgentsDetailView: View {
 
                 notchSection
                 replySection
+                windowlessSection
                 sessionsSection
                 codexSection
                 openCodeSection
@@ -65,6 +73,7 @@ struct AIAgentsDetailView: View {
             refreshHookStates()
             statusLineState = AgentSessionMonitor.shared.statusLineState()
             loadRecent()
+            Task { windowlessClaudeOK = await WindowlessSessionManager.shared.claudeAvailable() }
         }
     }
 
@@ -142,6 +151,10 @@ struct AIAgentsDetailView: View {
                 .help(L10n.t("Mở thư mục"))
                 .accessibilityLabel(L10n.t("Mở thư mục"))
             }
+            if e.agent == .claude, let cwd = e.cwd {
+                Button(L10n.t("Mở không cửa sổ")) { resumeWindowless(e, cwd: cwd) }
+                    .controlSize(.small)
+            }
             Button(copiedID == e.id ? L10n.t("Đã chép") : L10n.t("Sao chép lệnh")) {
                 let pb = NSPasteboard.general
                 pb.clearContents()
@@ -150,6 +163,28 @@ struct AIAgentsDetailView: View {
             }
             .controlSize(.small)
             .help(e.resumeCommand)
+        }
+    }
+
+    private func resumeWindowless(_ e: AgentRecent.Entry, cwd: String) {
+        Task {
+            do {
+                try await WindowlessSessionManager.shared.resumeClaude(
+                    sessionID: e.sessionID, folder: URL(fileURLWithPath: cwd, isDirectory: true),
+                    liveSessions: AgentSessionMonitor.shared.sessions)
+                windowlessNoticeIsError = false
+                windowlessNotice = L10n.t("Đã bắt đầu — xem ở trang Agents trên notch.")
+            } catch let error as WindowlessSessionManager.StartError {
+                windowlessNoticeIsError = true
+                if let detail = error.detail {
+                    windowlessNotice = "\(L10n.t(error.key)) · \(detail)"
+                } else {
+                    windowlessNotice = L10n.t(error.key)
+                }
+            } catch {
+                windowlessNoticeIsError = true
+                windowlessNotice = L10n.t("Không chạy được claude.")
+            }
         }
     }
 
@@ -252,6 +287,165 @@ struct AIAgentsDetailView: View {
         }
     }
 
+    // MARK: - P7a — Phiên không cửa sổ
+
+    private var windowlessSection: some View {
+        SettingsSection(
+            title: L10n.t("Phiên không cửa sổ"),
+            footer: L10n.t("XFinder chạy claude -p ở chế độ luồng trong thư mục bạn chọn, không mở terminal. Mỗi tin bạn gửi là một lượt dùng gói Claude của bạn. Phiên dừng khi bạn dừng nó hoặc thoát XFinder; hội thoại vẫn nằm trong Claude Code và mở lại được ở Phiên gần đây, hoặc bằng claude --resume trong terminal. XFinder chỉ giữ ~40 tin gần nhất trong bộ nhớ để hiện ở notch.")
+        ) {
+            windowlessFolderRow.settingsRow()
+            SettingsDivider()
+            windowlessMessageRow.settingsRow()
+            SettingsDivider()
+            windowlessStartRow.settingsRow()
+            if windowlessClaudeOK == false {
+                SettingsDivider()
+                Text(L10n.t("Không tìm thấy lệnh claude."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                    .settingsRow()
+            }
+            if hookStatus != .installed {
+                SettingsDivider()
+                Text(L10n.t("Chưa cài hook Claude Code của XFinder: lệnh cần duyệt quyền trong phiên không cửa sổ không hỏi được qua notch (cài ở mục Claude Code bên dưới)."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .settingsRow()
+            }
+            if let windowlessNotice {
+                SettingsDivider()
+                Text(windowlessNotice)
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(windowlessNoticeIsError ? .orange : .secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .settingsRow()
+            }
+            if !WindowlessSessionManager.shared.orderedRecords.isEmpty {
+                SettingsDivider()
+                windowlessList.settingsRow()
+            }
+            SettingsDivider()
+            windowlessOtherAgentsRow.settingsRow()
+        }
+    }
+
+    private var windowlessFolderRow: some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            Text(windowlessFolder?.path ?? L10n.t("Chưa chọn thư mục"))
+                .font(XFinderTokens.Font.row)
+                .foregroundColor(windowlessFolder == nil ? .secondary : .primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            Button(L10n.t("Chọn thư mục…")) { pickWindowlessFolder() }
+                .controlSize(.small)
+        }
+    }
+
+    private var windowlessMessageRow: some View {
+        TextField(L10n.t("Việc đầu tiên cho Claude Code (không bắt buộc)…"), text: $windowlessMessage)
+            .textFieldStyle(.plain)
+            .font(XFinderTokens.Font.row)
+    }
+
+    private var windowlessStartRow: some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            Text(L10n.t("Bắt đầu một phiên mới trong thư mục đã chọn."))
+                .font(XFinderTokens.Font.caption)
+                .foregroundColor(.secondary)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            Button(L10n.t("Bắt đầu phiên")) { startWindowless() }
+                .controlSize(.small)
+                .disabled(windowlessStarting || windowlessFolder == nil || windowlessClaudeOK == false)
+        }
+    }
+
+    private var windowlessOtherAgentsRow: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(L10n.t("Codex và OpenCode"))
+                .font(XFinderTokens.Font.row)
+            Text(L10n.t("Chưa có phiên không cửa sổ cho hai agent này: Codex cần giao thức app-server của nó, XFinder chưa dựng; phiên OpenCode đã chạy trên server của chính bạn — tạo bằng lệnh opencode."))
+                .font(XFinderTokens.Font.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder private var windowlessList: some View {
+        let records = WindowlessSessionManager.shared.orderedRecords
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(records.enumerated()), id: \.element.sessionID) { index, record in
+                if index > 0 { SettingsDivider() }
+                windowlessRow(record).settingsRow()
+            }
+        }
+    }
+
+    private func windowlessRow(_ r: WindowlessRules.Record) -> some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(URL(fileURLWithPath: r.cwd).lastPathComponent)
+                    .font(XFinderTokens.Font.row)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Text("\(L10n.t(WindowlessRules.phaseKey(r.phase))) · \(r.turns)\(L10n.t(" tin"))")
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+            }
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            if !r.isEnded {
+                Button(L10n.t("Dừng")) { WindowlessSessionManager.shared.stop(r.sessionID) }
+                    .controlSize(.small)
+            }
+            Button(L10n.t("Sao chép lệnh mở lại")) {
+                let cmd = AgentKind.claude.resumeCommand(sessionID: r.sessionID, cwd: r.cwd)
+                let pb = NSPasteboard.general
+                pb.clearContents()
+                pb.setString(cmd, forType: .string)
+            }
+            .controlSize(.small)
+            if r.isEnded {
+                Button(L10n.t("Xoá")) { WindowlessSessionManager.shared.forget(r.sessionID) }
+                    .controlSize(.small)
+            }
+        }
+    }
+
+    private func pickWindowlessFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        if panel.runModal() == .OK { windowlessFolder = panel.url }
+    }
+
+    private func startWindowless() {
+        guard let folder = windowlessFolder else { return }
+        windowlessStarting = true
+        windowlessNotice = nil
+        let message = windowlessMessage
+        Task {
+            do {
+                _ = try await WindowlessSessionManager.shared.startClaude(
+                    folder: folder, firstMessage: message.isEmpty ? nil : message)
+                windowlessMessage = ""
+                windowlessNoticeIsError = false
+                windowlessNotice = L10n.t("Đã bắt đầu — xem ở trang Agents trên notch.")
+            } catch let error as WindowlessSessionManager.StartError {
+                windowlessNoticeIsError = true
+                if let detail = error.detail {
+                    windowlessNotice = "\(L10n.t(error.key)) · \(detail)"
+                } else {
+                    windowlessNotice = L10n.t(error.key)
+                }
+            } catch {
+                windowlessNoticeIsError = true
+                windowlessNotice = "\(L10n.t("Không chạy được claude."))"
+            }
+            windowlessStarting = false
+        }
+    }
+
     /// "Sự kiện gần nhất" is the only proof a hook really runs — Codex skips a new hook until it is trusted.
     @ViewBuilder private func lastEventLine(_ agent: AgentKind) -> some View {
         if agentsEnabled {
@@ -278,7 +472,7 @@ struct AIAgentsDetailView: View {
     private var sessionsSection: some View {
         SettingsSection(
             title: "Claude Code",                     // a product name, identical in both languages
-            footer: L10n.t("Cài hook = thêm các mục \"Managed by XFinder\" vào ~/.claude/settings.json (có bản sao lưu đặt cạnh) và chép một script zsh vào Application Support. Hook của app khác giữ nguyên. Mỗi sự kiện của Claude Code chạy script đó vài mili-giây. Khi Claude Code xin quyền, script chờ bạn bấm Cho phép hoặc Từ chối trên notch; XFinder không chạy thì Claude Code hỏi ở terminal như thường. Chỉ Claude Code trong terminal — app Claude để bàn không chạy hook.")
+            footer: L10n.t("Cài hook = thêm các mục \"Managed by XFinder\" vào ~/.claude/settings.json (có bản sao lưu đặt cạnh) và chép một script zsh vào Application Support. Hook của app khác giữ nguyên. Mỗi sự kiện của Claude Code chạy script đó vài mili-giây. Khi Claude Code xin quyền, script chờ bạn bấm Cho phép hoặc Từ chối trên notch; XFinder không chạy thì Claude Code hỏi ở terminal như thường. Claude Code trong terminal và phiên không cửa sổ do XFinder chạy dùng hook này — app Claude để bàn không chạy hook.")
         ) {
             VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                 HStack(spacing: XFinderTokens.Space.tight) {

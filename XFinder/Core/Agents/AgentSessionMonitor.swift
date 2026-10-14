@@ -68,6 +68,7 @@ final class AgentSessionMonitor {
         if !refreshedScripts { refreshedScripts = true; refreshInstalledScripts() }
         if master && isEnabled { start() } else { stop() }
         OpenCodeMonitor.shared.onChange = { [weak self] in self?.rebuild() }
+        WindowlessSessionManager.shared.onChange = { [weak self] in self?.rebuild() }
         OpenCodeMonitor.shared.applySettings(underMaster: master && isEnabled)
     }
 
@@ -147,7 +148,10 @@ final class AgentSessionMonitor {
             if let last = tail.events.last?.receivedAt { lastEventAt[agent] = last }
         }
         let hooked = running ? AgentSessionRules.sessions(from: all, now: now, answered: answered, isAlive: Self.isAlive) : []
-        let new = (hooked + OpenCodeMonitor.shared.sessions).sorted(by: AgentSessionRules.displayOrder)
+        // P7a: XFinder's own windowless sessions — merged over the hook rows for the same id (the hook alone knows a
+        // pending permission request), added as rows of their own when no hook line exists (hook not installed).
+        let hosted = running ? WindowlessRules.merged(hookSessions: hooked, records: WindowlessSessionManager.shared.orderedRecords) : []
+        let new = (hosted + OpenCodeMonitor.shared.sessions).sorted(by: AgentSessionRules.displayOrder)
         if new != sessions {
             notify(old: notifyBaseline, new: new)
             sessions = new
@@ -204,8 +208,11 @@ final class AgentSessionMonitor {
             await MainActor.run {
                 let me = AgentSessionMonitor.shared
                 me.recentScanning = false
-                let live = Set(me.sessions.map(\.listID))
-                let merged = AgentRecent.merged(scanned + openCode, live: live, limit: 8)
+                let wm = WindowlessSessionManager.shared
+                let live = Set(me.sessions.map(\.listID) + wm.liveRecords.map { "\(AgentKind.claude.rawValue):\($0.sessionID)" })
+                // P7a: windowless sessions XFinder hosted (their transcripts say sdk-cli, which the scan skips).
+                let hosted = wm.historyEntries(maxAge: 14 * 86_400)
+                let merged = AgentRecent.merged(scanned + openCode + hosted, live: live, limit: 8)
                 if merged != me.recent { me.recent = merged; me.onChange?() }
                 let waiters = me.recentWaiters
                 me.recentWaiters = []

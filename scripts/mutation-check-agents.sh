@@ -6,12 +6,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-agents.XXXXXX)
-FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift XFinder/Core/Agents/AgentTalk.swift"
+FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift XFinder/Core/Agents/AgentTalk.swift XFinder/Core/Agents/WindowlessRules.swift XFinder/Core/Agents/AgentTalkSender.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
+FILTER='Windowless|ChildStdin|AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -211,6 +211,31 @@ run "A66 a newline in an env value splits the event (both halves dropped)" $Z \
   "'LC_ALL=C tr -d \x27\\\\001-\\\\037\\\\177\x27 | '" "''"
 run "A67 the send button says send while the text will be copied" $T \
   "'        if case .copyInstead = decision(for: session, route: route) {'" "'        if false, case .copyInstead = decision(for: session, route: route) {'"
+
+# P7a — windowless sessions + the SIGPIPE guard
+W=XFinder/Core/Agents/WindowlessRules.swift
+run "A68 a non-UUID session id reaches the claude arguments" $W \
+  "'        guard UUID(uuidString: sessionID) != nil else { return nil }'" "'        guard !sessionID.isEmpty else { return nil }'"
+run "A69 the child inherits CLAUDECODE (it would think it runs inside another Claude Code)" $W \
+  "'        for k in [\"CLAUDECODE\", '" "'        for k in ['"
+run "A70 the child does not carry the windowless marker" $W \
+  "'        env[markerVariable] = \"1\"'" "'        _ = markerVariable'"
+run "A71 a sub-agent's chatter is shown as the session's answer" $W \
+  "'            if let parent = obj[\"parent_tool_use_id\"], !(parent is NSNull) { return .ignored }\n'" "''"
+run "A72 an ended session still takes a turn" $W \
+  "'            guard !isEnded else { return }\n            append(.person, text, at: at)'" "'            append(.person, text, at: at)'"
+run "A73 a hook row stays hosted after its process ended (a reply into a dead pipe)" $W \
+  "'                out[i].hostedByXFinder = !r.isEnded'" "'                out[i].hostedByXFinder = true'"
+run "A74 the in-memory transcript grows without a cap" $W \
+  "'            if transcript.count > WindowlessRules.transcriptCap { transcript.removeFirst(transcript.count - WindowlessRules.transcriptCap) }\n'" "''"
+run "A75 a windowless reply is written mid-turn" $T \
+  "'            if case .windowless = route { return .queue }'" "'            if case .windowless = route { return .sendNow }'"
+run "A76 a hosted session is not routed to its stdin" $T \
+  "'        if session.hostedByXFinder { return .windowless(sessionID: session.id) }\n'" "''"
+run "A77 env parsing turns startup noise into a variable" $W \
+  "'            guard !name.isEmpty, name.allSatisfy({ \$0.isASCII && (\$0.isLetter || \$0.isNumber || \$0 == \"_\") }) else { continue }'" "'            guard !name.isEmpty else { continue }'"
+run "A78 the P6 sender writes to a child stdin without F_SETNOSIGPIPE (a dead CLI kills XFinder)" XFinder/Core/Agents/AgentTalkSender.swift \
+  "'        _ = fcntl(inPipe.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)'" "'        _ = 0'"
 
 # The restore check and the post-restore suite run come AFTER every mutation (they used to sit before A11, so the
 # later mutations ran unchecked — found while adding A20/A21).

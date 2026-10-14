@@ -105,6 +105,8 @@
 		7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0263 /* Agents/AgentHookInstaller.swift */; };
 		7F1A0302 /* Agents/AgentKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0303 /* Agents/AgentKind.swift */; };
 		7F1A030E /* Agents/AgentTalkSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A030F /* Agents/AgentTalkSender.swift */; };
+		7F1A0372 /* Agents/WindowlessSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0373 /* Agents/WindowlessSessionManager.swift */; };
+		7F1A0370 /* Agents/WindowlessRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0371 /* Agents/WindowlessRules.swift */; };
 		7F1A030C /* Agents/AgentTalk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A030D /* Agents/AgentTalk.swift */; };
 		7F1A030A /* Agents/AgentRecent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A030B /* Agents/AgentRecent.swift */; };
 		7F1A0308 /* Agents/AgentNotify.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0309 /* Agents/AgentNotify.swift */; };
@@ -445,6 +447,8 @@
 		7F1A0263 /* Agents/AgentHookInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentHookInstaller.swift; sourceTree = "<group>"; };
 		7F1A0303 /* Agents/AgentKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentKind.swift; sourceTree = "<group>"; };
 		7F1A030F /* Agents/AgentTalkSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentTalkSender.swift; sourceTree = "<group>"; };
+		7F1A0373 /* Agents/WindowlessSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/WindowlessSessionManager.swift; sourceTree = "<group>"; };
+		7F1A0371 /* Agents/WindowlessRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/WindowlessRules.swift; sourceTree = "<group>"; };
 		7F1A030D /* Agents/AgentTalk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentTalk.swift; sourceTree = "<group>"; };
 		7F1A030B /* Agents/AgentRecent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentRecent.swift; sourceTree = "<group>"; };
 		7F1A0309 /* Agents/AgentNotify.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentNotify.swift; sourceTree = "<group>"; };
@@ -763,6 +767,8 @@
 				7F1A0263 /* Agents/AgentHookInstaller.swift */,
 				7F1A0303 /* Agents/AgentKind.swift */,
 				7F1A030F /* Agents/AgentTalkSender.swift */,
+				7F1A0373 /* Agents/WindowlessSessionManager.swift */,
+				7F1A0371 /* Agents/WindowlessRules.swift */,
 				7F1A030D /* Agents/AgentTalk.swift */,
 				7F1A030B /* Agents/AgentRecent.swift */,
 				7F1A0309 /* Agents/AgentNotify.swift */,
@@ -1265,6 +1271,8 @@
 				7F1A0262 /* Agents/AgentHookInstaller.swift in Sources */,
 				7F1A0302 /* Agents/AgentKind.swift in Sources */,
 				7F1A030E /* Agents/AgentTalkSender.swift in Sources */,
+				7F1A0372 /* Agents/WindowlessSessionManager.swift in Sources */,
+				7F1A0370 /* Agents/WindowlessRules.swift in Sources */,
 				7F1A030C /* Agents/AgentTalk.swift in Sources */,
 				7F1A030A /* Agents/AgentRecent.swift in Sources */,
 				7F1A0308 /* Agents/AgentNotify.swift in Sources */,

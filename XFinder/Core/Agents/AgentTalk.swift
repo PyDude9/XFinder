@@ -39,12 +39,14 @@ enum AgentTalk {
         case opencode(sessionID: String)
         /// No measured way to type into this terminal: copy the text, bring the app forward (nil ⇒ nothing to bring forward).
         case copyAndActivate(bundleID: String?)
+        /// P7a — XFinder hosts the session's process: the text goes to its stdin as a stream-json user turn.
+        case windowless(sessionID: String)
 
         /// Typing into a terminal is blocked while a dialog or question is on screen; an API message is not typing.
         var typesIntoTerminal: Bool {
             switch self {
             case .kitty, .tmux: return true
-            case .opencode, .copyAndActivate: return false
+            case .opencode, .copyAndActivate, .windowless: return false
             }
         }
     }
@@ -52,6 +54,10 @@ enum AgentTalk {
     /// The best measured route for a session. kitty and tmux need what the hook recorded; tmux wins over kitty because a
     /// tmux pane inside a kitty window is addressed by tmux (kitty's window holds the whole tmux client).
     static func route(for session: AgentSession) -> Route {
+        if session.hostedByXFinder { return .windowless(sessionID: session.id) }
+        // A windowless session XFinder no longer hosts (it restarted, the pipe is gone): nothing to type into, and its
+        // recorded bundle id would be XFinder's own — copy only.
+        if session.terminal.windowless { return .copyAndActivate(bundleID: nil) }
         if session.agent == .opencode, OpenCodeRules.isSessionID(session.id) { return .opencode(sessionID: session.id) }
         let t = session.terminal
         if let pane = t.tmuxPane, isTmuxPane(pane), let sock = tmuxSocket(fromTMUX: t.tmuxEnv) {
@@ -108,6 +114,7 @@ enum AgentTalk {
             return .blocked(reasonKey: "Phiên đang chờ bạn duyệt quyền — dùng Cho phép / Từ chối.")
         case .running:
             if case .opencode = route { return .sendNow }        // OpenCode queues it itself (delivery: queue)
+            if case .windowless = route { return .queue }        // XFinder holds it until the turn's result line
             if case .copyAndActivate = route { return .sendNow } // the person pastes it themselves
             return .queue
         case .waitingForInput:
@@ -249,6 +256,7 @@ enum AgentTalk {
         case .tmux: return "Gửi vào tmux"
         case .opencode: return "Gửi qua OpenCode"
         case .copyAndActivate(let bid): return bid == nil ? "Chép tin nhắn" : "Chép và mở terminal"
+        case .windowless: return "Gửi tin"
         }
     }
 
@@ -269,7 +277,7 @@ enum AgentTalk {
         "Trên terminal đang có một hộp thoại — trả lời nó ở terminal trước.",
         "Agent đang hỏi bạn một câu có lựa chọn — trả lời ở terminal.",
     ]
-    static let labelKeys: [String] = ["Gửi vào kitty", "Gửi vào tmux", "Gửi qua OpenCode", "Chép tin nhắn", "Chép và mở terminal"]
+    static let labelKeys: [String] = ["Gửi vào kitty", "Gửi vào tmux", "Gửi qua OpenCode", "Chép tin nhắn", "Chép và mở terminal", "Gửi tin"]
     /// Every outcome line `AgentTalkSender` can show (it lives in an AppKit file the test package cannot compile, so the
     /// list is here and a test reads the sender's source to prove nothing it says is missing from it).
     static let statusKeys: [String] = [
@@ -298,5 +306,7 @@ enum AgentTalk {
         "Đã chép — trả lời hộp thoại ở terminal trước, rồi dán (⌘V) và bấm Enter.",
         "Cửa sổ kitty thôi chạy agent trước khi bấm Enter — chữ có thể còn ở dòng nhập, chưa gửi.",
         "Ô tmux đã đổi trước khi bấm Enter — chữ có thể còn ở dòng nhập, chưa gửi.",
+        "Đã gửi tin.",
+        "Phiên không cửa sổ đã dừng — tin chưa được gửi.",
     ]
 }

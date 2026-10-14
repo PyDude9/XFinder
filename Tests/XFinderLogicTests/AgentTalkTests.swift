@@ -209,7 +209,8 @@ final class AgentTalkTests: XCTestCase {
             XCTAssertFalse((entries[key]?["en"] as? String ?? "").isEmpty, "\(key) reaches the screen through a variable")
         }
         for route in [AgentTalk.Route.kitty(socket: "unix:/s", windowID: 1), .tmux(socket: "/s", pane: "%1"),
-                      .opencode(sessionID: "ses_A"), .copyAndActivate(bundleID: nil), .copyAndActivate(bundleID: "x")] {
+                      .opencode(sessionID: "ses_A"), .copyAndActivate(bundleID: nil), .copyAndActivate(bundleID: "x"),
+                      .windowless(sessionID: "11111111-2222-4333-8444-555555555555")] {
             XCTAssertTrue(AgentTalk.labelKeys.contains(AgentTalk.routeLabelKey(route)))
         }
     }

@@ -60,6 +60,19 @@ final class NotchSurfaceModel {
     /// Last outcome per session and the messages XFinder holds until a session is free (mirrored from `AgentTalkSender`).
     var agentReplyStatus: [String: AgentTalkSender.Status] = [:]
     var agentReplyQueued: Set<String> = []
+    /// P7a — the windowless session (its `listID`) whose conversation is open on the Agents page; nil = the list.
+    var windowlessConversation: String?
+    /// P7a — the "new windowless session" composer: open?, the folder picked, the first message, the folders offered.
+    var newWindowlessOpen = false
+    var newWindowlessFolder: String?
+    var newWindowlessText = ""
+    var newWindowlessFolders: [String] = []
+    /// Bumped to move the keyboard into the composer's field.
+    var newWindowlessFocus = 0
+    /// The last start failure (a store key) and its detail, shown in the composer.
+    var windowlessNotice: String?
+    var windowlessNoticeDetail: String?
+    var windowlessStarting = false
     var agentsNeedingYou: Int { agents.filter(\.needsYou).count }
     /// P1: a Claude Code session is alive (running or waiting) — the left wing of the collapsed notch shows it.
     var agentActive: Bool { agentsEnabled && agents.contains { $0.status != .ended } }

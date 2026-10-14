@@ -151,6 +151,29 @@ từ trước đó chỉ có kitty/tmux sau sự kiện hook kế tiếp của n
 | Q-P6-TERMINAL | Gõ tự động vào Terminal.app bằng AppleScript `do script` — cần bạn bấm cho phép Automation một lần để đo (chưa đo; chưa ship) | Chép + mở terminal |
 | Q-P6-CODEX | `codex queue --thread … --message …` có thể gửi tin vào phiên Codex mà không gõ phím — chưa đo trên phiên thật (đo sẽ chạy một lượt model) | Chép + mở terminal |
 
+### P7a · Phiên không cửa sổ (dựng 2026-10-14)
+
+Notch ▸ trang Agents ▸ nút **+**, hoặc Agent AI ▸ **Phiên không cửa sổ**. XFinder chạy `claude -p` (chế độ luồng) trong
+thư mục bạn chọn, không mở terminal. **Mỗi tin là một lượt dùng gói Claude của bạn** — chưa có lượt model nào được chạy để
+kiểm (mọi kiểm tra đều dùng một `claude` giả).
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-P7a-START | Agent AI ▸ Phiên không cửa sổ ▸ Chọn thư mục ▸ gõ "liệt kê các tệp ở đây" ▸ Bắt đầu phiên | Hàng mới trên trang Agents (biểu tượng khung đứt), trạng thái "Đang làm" rồi "Tới lượt bạn"; notch báo "Tới lượt bạn"; Xem hội thoại hiện câu trả lời |
+| T-P7a-REPLY | Trong hội thoại đó bấm Nhắn, gửi một câu tiếp; thử gửi trong lúc nó còn đang làm | Câu đi vào phiên (không cần terminal); gửi lúc đang làm ⇒ "Tin đang chờ — gửi khi phiên rảnh", tự gửi khi lượt xong |
+| T-P7a-PERM | Nhờ phiên chạy một lệnh shell cần duyệt (đã cài hook Claude Code của XFinder) | Thẻ Cho phép/Từ chối hiện ở hàng VÀ trong màn hội thoại; bấm Cho phép thì lệnh chạy |
+| T-P7a-NOHOOK | Như trên nhưng CHƯA cài hook | Trang cài đặt báo lệnh cần duyệt không hỏi được qua notch. Ghi lại Claude Code làm gì với lệnh đó (chưa đo) |
+| T-P7a-STOP | Trong hội thoại: Ngắt lượt khi đang làm; rồi Dừng phiên | Ngắt ⇒ lượt dừng, phiên vẫn còn; Dừng ⇒ "Đã dừng", tiến trình `claude` biến mất (`pgrep -fl "claude -p"`) |
+| T-P7a-QUIT | Có một phiên không cửa sổ đang chạy ⇒ thoát XFinder | Tiến trình `claude` của phiên đó kết thúc; mở lại XFinder ⇒ phiên nằm ở Phiên gần đây |
+| T-P7a-REOPEN | Phiên gần đây ▸ "Mở lại không cửa sổ" trên phiên vừa dừng | Phiên chạy lại với hội thoại cũ. Nếu cùng phiên đó đang mở trong terminal ⇒ báo "đang mở ở nơi khác", không mở lần hai |
+| T-P7a-PATH | Trong phiên không cửa sổ, nhờ nó chạy một lệnh Homebrew (vd. `which tmux`) | Lệnh tìm thấy công cụ như trong terminal của bạn (XFinder dùng môi trường đăng nhập của shell) |
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-P7a-MODEL | XFinder không tự chạy lượt model nào để kiểm phiên không cửa sổ với `claude` thật. Bạn có muốn tôi chạy một lượt ngắn (tốn một lượt của gói) để đo đường đi thật? | Không chạy — chờ bạn |
+| Q-P7a-CODEX | Phiên không cửa sổ cho Codex cần giao thức `codex app-server` (JSON-RPC, ~160 lệnh, đã sinh schema tại chỗ). Dựng ở lượt sau? | Chưa dựng — trang giải thích |
+| Q-P7a-QUIT | Thoát XFinder ⇒ phiên không cửa sổ dừng theo. Claude Code có "background session" (`claude --bg`) sống qua khi XFinder thoát, nhưng không có cách công khai nào gửi tin vào nó mà không mở terminal | Dừng theo XFinder |
+
 ### Clipboard
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|

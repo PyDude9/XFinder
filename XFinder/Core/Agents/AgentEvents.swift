@@ -64,6 +64,8 @@ enum AgentEvents {
         var kittyWindowID: String?
         var kittyListenOn: String?
         var tmuxEnv: String?
+        /// P7a — the agent runs as XFinder's own child with no terminal (the hook saw `XFINDER_WINDOWLESS=1`).
+        var windowless: Bool = false
     }
 
     // MARK: - Parsing
@@ -101,7 +103,7 @@ enum AgentEvents {
                               tmuxPane: nonEmpty(env["tmux_pane"]), weztermPane: nonEmpty(env["wezterm_pane"]),
                               termSession: nonEmpty(env["term_session"]), entrypoint: nonEmpty(env["entrypoint"]),
                               kittyWindowID: nonEmpty(env["kitty_window"]), kittyListenOn: nonEmpty(env["kitty_listen_on"]),
-                              tmuxEnv: nonEmpty(env["tmux"]))
+                              tmuxEnv: nonEmpty(env["tmux"]), windowless: env["windowless"] as? String == "1")
         return e
     }
 
@@ -185,6 +187,9 @@ struct AgentSession: Equatable, Identifiable {
     var dialogOnScreen: Bool = false
     /// P6 — the agent asked a multiple-choice question (`AskUserQuestion` started, not finished): typing would pick an option.
     var questionPending: Bool = false
+    /// P7a — XFinder hosts this session's process right now (a windowless session): a reply goes to its stdin. Set only
+    /// by the merge with `WindowlessSessionManager`'s live records, never by a hook line.
+    var hostedByXFinder: Bool = false
     /// `true` once something asked for the person: the badge and the live activity count these.
     var needsYou: Bool {
         switch status { case .waitingForInput, .waitingForPermission: return true; default: return false }

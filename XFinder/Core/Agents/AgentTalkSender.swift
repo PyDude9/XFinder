@@ -95,6 +95,12 @@ final class AgentTalkSender {
         case .copyAndActivate(let bid):
             copyAndActivate(text, bundleID: bid, session: session, afterDialog: false)
             return
+        case .windowless(let id):
+            // XFinder owns the process: the write is a pipe write, no command to run.
+            let ok = WindowlessSessionManager.shared.send(text, to: id)
+            setStatus(session, ok ? Status(key: "Đã gửi tin.")
+                                  : Status(key: "Phiên không cửa sổ đã dừng — tin chưa được gửi.", isError: true))
+            return
         case .kitty, .tmux, .opencode:
             break
         }
@@ -192,7 +198,7 @@ final class AgentTalkSender {
             let r = OpenCodeMonitor.run(bin, args)
             guard r.status == 0 else { return Status(key: "OpenCode không nhận tin.", detail: errorLine(r), isError: true) }
             return Status(key: queueOnServer ? "OpenCode đã xếp tin vào hàng đợi của phiên." : "Đã gửi qua OpenCode.")
-        case .copyAndActivate:
+        case .copyAndActivate, .windowless:
             return Status(key: "Đang gửi…")      // handled on the main actor before reaching here
         }
     }
@@ -227,7 +233,10 @@ final class AgentTalkSender {
         do { try p.run() } catch { return .init(status: -1, out: Data(), err: Data("\(error)".utf8)) }
         let killer = DispatchWorkItem { if p.isRunning { p.terminate() } }
         DispatchQueue.global().asyncAfter(deadline: .now() + 8, execute: killer)
-        inPipe.fileHandleForWriting.write(input)
+        // F_SETNOSIGPIPE: a CLI that exits before reading its stdin must not take XFinder down with SIGPIPE (measured: the
+        // unguarded write kills the writer with exit 141; guarded, it throws).
+        _ = fcntl(inPipe.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
+        try? inPipe.fileHandleForWriting.write(contentsOf: input)
         try? inPipe.fileHandleForWriting.close()
         let errData = err.fileHandleForReading.readDataToEndOfFile()
         let outData = out.fileHandleForReading.readDataToEndOfFile()

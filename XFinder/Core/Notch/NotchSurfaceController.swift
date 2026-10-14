@@ -107,7 +107,7 @@ final class NotchSurfaceController {
                                      agentNeedsYou: model.agentsNeedingYou > 0, lastPage: lastHubPage, shownPages: model.pages,
                                      nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
                                      activityHoldsHover: !(model.activity?.buttons.isEmpty ?? true),
-                                     composing: model.agentReplyTarget != nil,
+                                     composing: model.agentReplyTarget != nil || model.newWindowlessOpen,
                                      dragIntoNotchOpens: notchDropEnabled, shakeOpens: shakeEnabled,
                                      hoverDwell: NotchSurfaceMachine.Settings.hoverDwell(forSpeed: hoverSpeed))
     }
@@ -201,6 +201,8 @@ final class NotchSurfaceController {
         // ended here, or its Esc monitor stays installed and the stale draft comes back with the notch.
         model.agentReplyTarget = nil
         model.agentReplyText = ""
+        model.newWindowlessOpen = false
+        model.newWindowlessText = ""
         syncAgentReplyKeyboard()
         panel?.hide()
         panel = nil
@@ -355,6 +357,7 @@ final class NotchSurfaceController {
         AgentUsageMonitor.shared.setPageOpen(machine.state == .expanded(.agents) || machine.state == .expanded(.aiUsage))
         AgentSessionMonitor.shared.setAgentsPageOpen(machine.state == .expanded(.agents))
         if machine.state != .expanded(.agents), model.agentReplyTarget != nil { endAgentReply() }   // P6: leaving the page ends composing
+        if machine.state != .expanded(.agents), model.newWindowlessOpen { cancelNewWindowless() }   // P7a: same for the composer
         render()
         syncClipboardKeyboard()
         syncAgentReplyKeyboard()
@@ -425,6 +428,8 @@ final class NotchSurfaceController {
         model.recentAgents = AgentSessionMonitor.shared.recent
         // P6: the session being replied to left the list — end composing, or `Settings.composing` would hold the hub open
         // with no compose bar (and no ✕) on screen.
+        // P7a: a conversation whose session left the list closes too — otherwise it reopens by itself when the row returns.
+        if let id = model.windowlessConversation, !model.agents.contains(where: { $0.listID == id }) { model.windowlessConversation = nil }
         if let id = model.agentReplyTarget, !model.agents.contains(where: { $0.listID == id }) { endAgentReply(); return }
         render()
     }
@@ -486,20 +491,126 @@ final class NotchSurfaceController {
         render()
     }
 
-    /// Esc ends composing. A LOCAL monitor is enough: it only matters while our panel is key.
+    /// Esc ends composing (a reply, or the P7a "new windowless session" composer). A LOCAL monitor is enough: it only
+    /// matters while our panel is key.
     private func syncAgentReplyKeyboard() {
-        if model.agentReplyTarget != nil, machine.state == .expanded(.agents) {
+        if model.agentReplyTarget != nil || model.newWindowlessOpen, machine.state == .expanded(.agents) {
             panel?.makeKeyAndOrderFront(nil)
             guard agentReplyKeyMonitor == nil else { return }
             agentReplyKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
-                guard let self, self.panel?.isKeyWindow == true, self.model.agentReplyTarget != nil else { return e }
-                if e.keyCode == 53 { self.endAgentReply(); return nil }   // Esc
+                guard let self, self.panel?.isKeyWindow == true,
+                      self.model.agentReplyTarget != nil || self.model.newWindowlessOpen else { return e }
+                if e.keyCode == 53 {                                                   // Esc
+                    if self.model.agentReplyTarget != nil { self.endAgentReply() } else { self.cancelNewWindowless() }
+                    return nil
+                }
                 return e
             }
         } else if let m = agentReplyKeyMonitor {
             NSEvent.removeMonitor(m)
             agentReplyKeyMonitor = nil
         }
+    }
+
+    // MARK: - Windowless sessions (P7a)
+
+    /// The conversation of a hosted session (its rows come from `WindowlessSessionManager`, read by the view).
+    func openConversation(_ session: AgentSession) {
+        model.windowlessConversation = session.listID
+        render()
+    }
+
+    func closeConversation() {
+        if let id = model.windowlessConversation, model.agentReplyTarget == id { endAgentReply() }
+        model.windowlessConversation = nil
+        render()
+    }
+
+    /// "+" on the Agents page: a folder from the ones offered, an optional first message, Start.
+    func beginNewWindowless() {
+        if model.agentReplyTarget != nil { endAgentReply() }
+        let live = model.agents.compactMap(\.cwd)
+        let recent = model.recentAgents.compactMap(\.cwd)
+        model.newWindowlessFolders = WindowlessSessionManager.shared.folderChoices(extra: live + recent)
+        model.newWindowlessFolder = model.newWindowlessFolders.first
+        model.newWindowlessText = ""
+        model.windowlessNotice = nil
+        model.windowlessNoticeDetail = nil
+        model.newWindowlessOpen = true
+        render()
+        syncAgentReplyKeyboard()
+        model.newWindowlessFocus += 1
+    }
+
+    /// The launch started from the composer or a recent row; Hủy/Esc cancels it before the process starts (review).
+    private var windowlessTask: Task<Void, Never>?
+
+    func cancelNewWindowless() {
+        windowlessTask?.cancel()
+        windowlessTask = nil
+        model.newWindowlessOpen = false
+        model.newWindowlessText = ""
+        model.windowlessStarting = false
+        syncAgentReplyKeyboard()
+        render()
+    }
+
+    /// Start: a Claude Code session in the folder picked, the message as its first turn (none ⇒ it waits for one).
+    func startNewWindowless() {
+        guard !model.windowlessStarting, let path = model.newWindowlessFolder else { return }
+        let text = model.newWindowlessText
+        model.windowlessStarting = true
+        model.windowlessNotice = nil
+        render()
+        windowlessTask = Task { @MainActor in
+            do {
+                let id = try await WindowlessSessionManager.shared.startClaude(folder: URL(fileURLWithPath: path), firstMessage: text)
+                windowlessTask = nil
+                model.windowlessStarting = false
+                cancelNewWindowless()
+                model.windowlessConversation = "\(AgentKind.claude.rawValue):\(id)"
+                render()
+            } catch let e as WindowlessSessionManager.StartError {
+                windowlessTask = nil
+                model.windowlessStarting = false
+                model.windowlessNotice = e.key
+                model.windowlessNoticeDetail = e.detail
+                render()
+            } catch is CancellationError {
+                windowlessTask = nil                       // backed out: nothing to report
+            } catch {
+                windowlessTask = nil
+                model.windowlessStarting = false
+                model.windowlessNotice = WindowlessSessionManager.StartError.launchFailed("").key
+                model.windowlessNoticeDetail = error.localizedDescription
+                render()
+            }
+        }
+    }
+
+    /// "Phiên gần đây": reopen a Claude Code conversation windowless, in its folder.
+    func resumeWindowless(_ entry: AgentRecent.Entry) {
+        guard entry.agent == .claude, let cwd = entry.cwd else { return }
+        windowlessTask?.cancel()
+        windowlessTask = Task { @MainActor in
+            do {
+                try await WindowlessSessionManager.shared.resumeClaude(sessionID: entry.sessionID, folder: URL(fileURLWithPath: cwd),
+                                                                       liveSessions: AgentSessionMonitor.shared.sessions)
+                model.windowlessConversation = "\(AgentKind.claude.rawValue):\(entry.sessionID.lowercased())"
+                render()
+            } catch let e as WindowlessSessionManager.StartError {
+                model.windowlessNotice = e.key
+                model.windowlessNoticeDetail = e.detail
+                render()
+            } catch {}
+        }
+    }
+
+    func interruptWindowless(_ session: AgentSession) { WindowlessSessionManager.shared.interrupt(session.id) }
+    func stopWindowless(_ session: AgentSession) { WindowlessSessionManager.shared.stop(session.id) }
+    func forgetWindowless(_ session: AgentSession) {
+        if model.windowlessConversation == session.listID { closeConversation() }
+        WindowlessSessionManager.shared.forget(session.id)
     }
 
     /// P5c — an agent notice, unless the person is already looking at the Agents page (the row is right there).

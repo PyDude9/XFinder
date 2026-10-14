@@ -175,7 +175,10 @@ final class FolderLockController {
             if stdin != nil { p.standardInput = input }
             guard (try? p.run()) != nil else { return (false, L10n.t("không chạy được hdiutil")) }
             if let stdin {
-                input.fileHandleForWriting.write(Data(stdin.utf8))
+                // A child that exits before reading (bad arguments) would raise SIGPIPE and kill XFinder (measured: exit
+                // 141). With F_SETNOSIGPIPE the write fails instead, and the exit status says what happened.
+                _ = fcntl(input.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
+                try? input.fileHandleForWriting.write(contentsOf: Data(stdin.utf8))
                 try? input.fileHandleForWriting.close()
             }
             let data = out.fileHandleForReading.readDataToEndOfFile()
