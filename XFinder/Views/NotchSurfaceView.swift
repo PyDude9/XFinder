@@ -52,6 +52,8 @@ final class NotchSurfaceModel {
     var recentAgents: [AgentRecent.Entry] = []
     var agentsEnabled = false
     var agentHookInstalled = false
+    var openCodeOn = false
+    var openCodeMissing = false
     /// P6 — the session (its `listID`) whose reply is being typed on the Agents page; nil = not composing.
     var agentReplyTarget: String?
     var agentReplyText = ""

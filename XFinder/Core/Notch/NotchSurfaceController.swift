@@ -429,6 +429,7 @@ final class NotchSurfaceController {
     private func agentsChanged() {
         model.agents = AgentSessionMonitor.shared.sessions
         model.recentAgents = AgentSessionMonitor.shared.recent
+        refreshAgentHookStatus()      // OpenCode found / missing is learnt when its monitor starts
         // P6: the session being replied to left the list — end composing, or `Settings.composing` would hold the hub open
         // with no compose bar (and no ✕) on screen.
         // P7a: a conversation whose session left the list closes too — otherwise it reopens by itself when the row returns.
@@ -441,6 +442,9 @@ final class NotchSurfaceController {
 
     func refreshAgentHookStatus() {
         model.agentHookInstalled = AgentSessionMonitor.shared.anyHookInstalled
+        model.agentsEnabled = AgentSessionMonitor.shared.isEnabled
+        model.openCodeOn = OpenCodeMonitor.shared.isEnabled
+        model.openCodeMissing = OpenCodeMonitor.shared.state == .binaryMissing
     }
 
     func answerAgent(_ p: AgentSession.PendingPermission, of session: AgentSession, allow: Bool) {

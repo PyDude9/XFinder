@@ -194,4 +194,19 @@ final class AgentSessionTests: XCTestCase {
                        "the documented shape: behavior only — exit code 2 is ignored for PermissionRequest, so this JSON is the only control")
         XCTAssertEqual(AgentDecision.fileName(sessionID: "s", requestID: "r"), "s-r.json")
     }
+
+    /// Owner report 2026-10-14: OpenCode running in kitty, nothing on the notch — both switches were off and the page
+    /// only talked about a hook OpenCode does not use. An empty page must name the real reason.
+    func testAnEmptyAgentsPageNamesWhyItIsEmpty() throws {
+        typealias R = AgentSessionRules
+        XCTAssertEqual(R.emptyReasonKey(enabled: false, hookInstalled: true, openCodeOn: true, openCodeMissing: false),
+                       R.emptyReasonKeys[0], "the master switch off is said first, whatever else is set")
+        XCTAssertEqual(R.emptyReasonKey(enabled: true, hookInstalled: false, openCodeOn: true, openCodeMissing: true), R.emptyReasonKeys[1])
+        XCTAssertEqual(R.emptyReasonKey(enabled: true, hookInstalled: false, openCodeOn: false, openCodeMissing: false), R.emptyReasonKeys[2])
+        XCTAssertNil(R.emptyReasonKey(enabled: true, hookInstalled: false, openCodeOn: true, openCodeMissing: false),
+                     "OpenCode needs no hook: with it on, an empty page is just an empty page")
+        XCTAssertNil(R.emptyReasonKey(enabled: true, hookInstalled: true, openCodeOn: false, openCodeMissing: false))
+        let store = try L10nFixture.load()
+        for k in R.emptyReasonKeys { XCTAssertFalse((store.entries[k]?.en ?? "").isEmpty, k) }
+    }
 }

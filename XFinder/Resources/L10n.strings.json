@@ -10674,6 +10674,26 @@
     "Vạch sóng lấy từ chính âm thanh của trình phát (bật trong trang Đang phát; macOS hỏi quyền thu âm hệ thống).": {
       "en": "Bars drawn from the player's own audio (turn it on in Now Playing; macOS asks for system audio recording).",
       "scope": "sentence"
+    },
+    "Agent AI đang tắt — bật ở trang Agent AI.": {
+      "en": "AI agents are off — turn them on in AI agents settings.",
+      "scope": "sentence"
+    },
+    "Đã bật OpenCode nhưng không tìm thấy lệnh opencode.": {
+      "en": "OpenCode is on, but the opencode command was not found.",
+      "scope": "sentence"
+    },
+    "Chưa nối agent nào — cài hook cho Claude Code / Codex hoặc bật OpenCode ở trang Agent AI.": {
+      "en": "No agent connected yet — install the hook for Claude Code / Codex or turn on OpenCode in AI agents settings.",
+      "scope": "sentence"
+    },
+    "Phiên: ": {
+      "en": "Sessions: ",
+      "scope": "fragment"
+    },
+    "Chờ bạn: ": {
+      "en": "Waiting for you: ",
+      "scope": "fragment"
     }
   }
 }

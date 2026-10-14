@@ -78,8 +78,8 @@ struct NotchAgentsPage: View {
                 .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.7))
                 .lineLimit(1)
             if model.agentsNeedingYou > 0 {
-                // " · " and " chờ bạn" are both new fragments (joined to the runtime count) — listed in the final message.
-                Text(" · \(model.agentsNeedingYou)\(L10n.t(" chờ bạn"))")          // the separator is a glyph, not a word
+                // number last, so one string reads right for any count ("1 need you" was the old English).
+                Text(" · \(L10n.t("Chờ bạn: "))\(model.agentsNeedingYou)")          // the separator is a glyph, not a word
                     .font(XFinderTokens.Font.caption).foregroundColor(.orange)
                     .lineLimit(1)
             }
@@ -102,7 +102,7 @@ struct NotchAgentsPage: View {
     }
 
     private var sessionCountText: String {
-        "\(model.agents.count)\(L10n.t(" phiên"))"
+        "\(L10n.t("Phiên: "))\(model.agents.count)"      // number last: one string reads right for 1 and for 5
     }
 
     /// `AgentUsageMonitor.shared.snapshot` is read once per render — no timer of its own, matching the
@@ -152,20 +152,21 @@ struct NotchAgentsPage: View {
             if model.recentAgents.isEmpty {        // the recent list needs the height (Agents body: 150 pt)
                 Image(systemName: "terminal").font(XFinderTokens.Font.pageIcon).opacity(0.5)
             }
-            if model.agentHookInstalled || !model.recentAgents.isEmpty {
-                Text(L10n.t("Chưa có phiên agent nào."))
-                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65))
-                    .multilineTextAlignment(.center)
-                if !model.recentAgents.isEmpty { recentList }
-            } else {
+            if let reason = AgentSessionRules.emptyReasonKey(enabled: model.agentsEnabled, hookInstalled: model.agentHookInstalled,
+                                                              openCodeOn: model.openCodeOn, openCodeMissing: model.openCodeMissing) {
                 VStack(spacing: XFinderTokens.Space.tight) {
-                    Text(L10n.t("Chưa cài hook — mở trang Agent AI để cài."))
+                    Text(L10n.t(reason))
                         .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65))
                         .multilineTextAlignment(.center)
                     Button(L10n.t("Mở cài đặt")) { NotchSurfaceController.shared.openAgentSettings() }
                         .buttonStyle(NotchPillButtonStyle(primary: false))
                         .accessibilityLabel(L10n.t("Mở cài đặt"))
                 }
+            } else {
+                Text(L10n.t("Chưa có phiên agent nào."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.65))
+                    .multilineTextAlignment(.center)
+                if !model.recentAgents.isEmpty { recentList }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -206,6 +206,23 @@ struct AgentSession: Equatable, Identifiable {
 /// The rules: a stream of events → sessions in display order. Pure, so the state machine is tested
 /// without a file or a process.
 enum AgentSessionRules {
+    /// What an EMPTY Agents page says, so it never stays silent about why (owner, 2026-10-14: OpenCode was running in
+    /// kitty, the notch showed nothing, and the only line on the page talked about a hook OpenCode does not use — the
+    /// real reason was that both switches were off). nil ⇒ everything is connected and there simply is no session.
+    static func emptyReasonKey(enabled: Bool, hookInstalled: Bool, openCodeOn: Bool, openCodeMissing: Bool) -> String? {
+        if !enabled { return "Agent AI đang tắt — bật ở trang Agent AI." }
+        if openCodeOn && openCodeMissing { return "Đã bật OpenCode nhưng không tìm thấy lệnh opencode." }
+        if !hookInstalled && !openCodeOn {
+            return "Chưa nối agent nào — cài hook cho Claude Code / Codex hoặc bật OpenCode ở trang Agent AI."
+        }
+        return nil
+    }
+    static let emptyReasonKeys = [
+        "Agent AI đang tắt — bật ở trang Agent AI.",
+        "Đã bật OpenCode nhưng không tìm thấy lệnh opencode.",
+        "Chưa nối agent nào — cài hook cho Claude Code / Codex hoặc bật OpenCode ở trang Agent AI.",
+    ]
+
     /// The tool name of Claude Code's multiple-choice question.
     static let questionTool = "AskUserQuestion"
     /// A session with no event for this long and no known live process is treated as ended.
