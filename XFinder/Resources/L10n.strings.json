@@ -10894,6 +10894,46 @@
     "CPU, bộ nhớ, nhiệt độ… hiện cạnh biểu tượng XFinder; chọn số liệu ở trang Tổng quan.": {
       "en": "CPU, memory, temperature… beside the XFinder icon; pick the figures on the Overview page.",
       "scope": "sentence"
+    },
+    "Xem trước file": {
+      "en": "File preview",
+      "scope": "sentence"
+    },
+    "Hỗ trợ đa phương tiện": {
+      "en": "Media support",
+      "scope": "sentence"
+    },
+    "Xem trước Markdown và file nén mà không cần mở; kiểm tra file media có phát được trên máy này không.": {
+      "en": "Preview Markdown and archives without opening them; check whether a media file plays on this Mac.",
+      "scope": "sentence"
+    },
+    "Tìm ứng dụng, liên kết và tập tin: lọc theo tên, loại, thời gian, hoặc gõ một câu tự nhiên — 100% trên máy.": {
+      "en": "Find apps, links and files: filter by name, kind and date, or type one plain sentence — 100% on this Mac.",
+      "scope": "sentence"
+    },
+    "Ẩn biểu tượng thanh menu": {
+      "en": "Hide Menu Bar Icons",
+      "scope": "sentence"
+    },
+    "Biểu tượng XFinder trên thanh menu": {
+      "en": "XFinder's menu bar icon",
+      "scope": "sentence"
+    },
+    "Trợ năng và Ghi màn hình": {
+      "en": "Accessibility and Screen Recording",
+      "scope": "sentence"
+    },
+    "Thiếu Trợ năng": {
+      "en": "Missing Accessibility",
+      "scope": "sentence"
+    },
+    "Thiếu Ghi màn hình": {
+      "en": "Missing Screen Recording",
+      "scope": "sentence"
+    },
+    "Xem tab Quyền": {
+      "en": "Open Permissions",
+      "scope": "sentence"
     }
   }
 }

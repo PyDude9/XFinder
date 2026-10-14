@@ -72,17 +72,46 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
-    /// 2026-10-14 (owner: "gộp các mục liên quan đến xem hệ thống lại cho gọn gàng") — Hệ thống, Mạng, Ổ đĩa and Pin
-    /// answer one question, "how is this Mac doing", so they are ONE sidebar row ("Theo dõi hệ thống", `.system`) with
-    /// four tabs. The four cases stay: deep links (`xfinder://settings?page=network`), the flyout, What's New and
-    /// `-startPage` keep working — `AppState.navigate` selects the row and opens the tab.
-    static let monitorTabs: [SidebarDestination] = [.system, .network, .storage, .pin]
-    /// The sidebar row a destination lives under (itself, except the three monitor tabs).
-    var monitorRow: SidebarDestination { Self.monitorTabs.contains(self) ? .system : self }
-    /// The tab's label inside "Theo dõi hệ thống".
-    var tabTitleKey: String { self == .system ? "Hệ thống" : titleKey }
-    /// Extra words the sidebar search matches for this row: the monitor row answers to its tabs' names too.
-    var searchAlsoKeys: [String] { self == .system ? Self.monitorTabs.map(\.tabTitleKey) : [] }
+    /// Pages shown as TABS of one sidebar row — the first member of each group is the row. The owner asked to group the
+    /// system pages ("gộp các mục liên quan đến xem hệ thống lại cho gọn gàng", 2026-10-14) and then every page that
+    /// repeats another one's job ("gộp cái nào duplicates"). Every member keeps its own case, so deep links
+    /// (`xfinder://settings?page=network`), What's New, the menu and `-startPage` keep working: `AppState.navigate`
+    /// selects the row and opens the tab. A row's tabs are a segmented picker, so a group has at most four members
+    /// (`SidebarDestinationTests`).
+    static let tabGroups: [[SidebarDestination]] = [
+        [.system, .network, .storage, .pin],
+        // "Can I open this file": an in-app previewer and a playback check (MFinder shows the same two as tabs).
+        [.quickLookPage, .mediaCompat],
+        // "Find a file on my Mac": the same engine and result list; only the input differs (fields vs one sentence).
+        [.finderSearch, .aiSearch],
+    ]
+    /// The group a destination belongs to, if any.
+    var tabGroup: [SidebarDestination]? { Self.tabGroups.first { $0.contains(self) } }
+    /// The sidebar row a destination lives under: itself, unless it is a tab of another row.
+    var hostRow: SidebarDestination { tabGroup?.first ?? self }
+    /// The tab's label inside its row. A host's own tab can need a shorter name than the row's title.
+    var tabTitleKey: String {
+        switch self {
+        case .system: return "Hệ thống"
+        case .quickLookPage: return "Xem trước file"
+        case .mediaCompat: return "Hỗ trợ đa phương tiện"
+        default: return titleKey
+        }
+    }
+    /// The subtitle under a tabbed row's header (each tab's own header is hidden there).
+    var tabbedSubtitleKey: String? {
+        switch self {
+        case .system: return "Máy Mac đang chạy thế nào: bộ xử lý, bộ nhớ, mạng, ổ đĩa và pin."
+        case .quickLookPage: return "Xem trước Markdown và file nén mà không cần mở; kiểm tra file media có phát được trên máy này không."
+        case .finderSearch: return "Tìm ứng dụng, liên kết và tập tin: lọc theo tên, loại, thời gian, hoặc gõ một câu tự nhiên — 100% trên máy."
+        default: return nil
+        }
+    }
+    /// Extra words the sidebar search matches for a row: a tabbed row answers to its tabs' names too.
+    var searchAlsoKeys: [String] {
+        guard let group = tabGroup, group.first == self else { return [] }
+        return group.map(\.tabTitleKey)
+    }
 
     /// The Vietnamese literal — the L10n store key. Search matches it AND its English translation,
     /// so the box finds a page in either language whatever the UI language is.
@@ -100,7 +129,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .windowPreview: return "Xem trước cửa sổ"
         case .mouseGestures: return "Chuột & cử chỉ"
         case .snapZones: return "Vùng bắt dính"
-        case .menuIcons: return "Biểu tượng thanh menu"
+        case .menuIcons: return "Ẩn biểu tượng thanh menu"
         case .finderKeyboard: return "Bàn phím Finder"
         case .finderActions: return "Thao tác Finder"
         case .finderSearch: return "Tìm kiếm"
@@ -224,11 +253,11 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             // P3: everything the notch shows, by what the user comes to do — the old "Notch & Khay thả" page split six ways.
             ("NOTCH", [.notchInterface, .dropTray, .media, .aiAgents, .calendar, .liveActivities]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .appQuit, .mouseGestures, .menuIcons]),
-            ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch, .aiSearch,
+            ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch,
                                    .batchRename, .junkCleanup, .actionHistory]),
             ("CÔNG CỤ", [.voiceTyping, .smartSelect, .capture, .clipboard, .settingsClipboard, .notes, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare, .ports]),
-            ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .mediaCompat, .uninstaller]),
+            ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .uninstaller]),
         ]
     }
 }

@@ -10,7 +10,7 @@ final class SidebarDestinationTests: XCTestCase {
 
     func testEveryPageExceptAboutIsInExactlyOneGroup() {
         let counts = Dictionary(grouping: grouped, by: { $0 }).mapValues(\.count)
-        for dest in SidebarDestination.allCases where dest != .about && dest.monitorRow == dest {
+        for dest in SidebarDestination.allCases where dest != .about && dest.hostRow == dest {
             XCTAssertEqual(counts[dest], 1, "\(dest.rawValue) must appear in exactly one sidebar group")
         }
         XCTAssertNil(counts[.about], "About is the footer row, never a group member")
@@ -59,24 +59,37 @@ final class SidebarDestinationTests: XCTestCase {
         XCTAssertTrue(general.items.contains(.shortcuts), "Phím tắt is app-wide, so it lives in CHUNG")
     }
 
-    /// Hệ thống, Mạng, Ổ đĩa, Pin are one row ("Theo dõi hệ thống") with four tabs; the three tab cases are in no group,
-    /// map to the row, and stay reachable (deep links, search).
-    func testTheMonitorPagesAreOneRowWithFourTabs() throws {
-        XCTAssertEqual(SidebarDestination.monitorTabs, [.system, .network, .storage, .pin])
-        for tab in SidebarDestination.monitorTabs {
-            XCTAssertEqual(tab.monitorRow, .system)
-            XCTAssertEqual(grouped.filter { $0 == tab }.count, tab == .system ? 1 : 0, "\(tab.rawValue) is a tab, not a row")
+    /// A tabbed row: its first member is the sidebar row, the other members are in no group, map to the row and stay
+    /// reachable (deep links, search). A row's tabs are a segmented picker ⇒ 2…4 members, each page in one group at most.
+    func testTabGroupsAreOneRowEachWithTwoToFourTabs() throws {
+        XCTAssertFalse(SidebarDestination.tabGroups.isEmpty, "the check would pass on nothing")
+        var seen = Set<SidebarDestination>()
+        let store = try L10nFixture.load()
+        for group in SidebarDestination.tabGroups {
+            XCTAssertTrue((2...4).contains(group.count), "\(group.map(\.rawValue)): a segmented picker takes 2–4 tabs")
+            let row = group[0]
+            for tab in group {
+                XCTAssertTrue(seen.insert(tab).inserted, "\(tab.rawValue) is in two tab groups")
+                XCTAssertEqual(tab.hostRow, row)
+                XCTAssertEqual(grouped.filter { $0 == tab }.count, tab == row ? 1 : 0, "\(tab.rawValue) is a tab, not a row")
+                guard let e = store.entries[tab.tabTitleKey] else { XCTFail("\(tab.tabTitleKey) is not in the store"); continue }
+                XCTAssertFalse(e.en.isEmpty)
+            }
+            XCTAssertEqual(Set(row.searchAlsoKeys), Set(group.map(\.tabTitleKey)), "searching a tab's name still finds its row")
+            if let sub = row.tabbedSubtitleKey {
+                XCTAssertNotNil(store.entries[sub], "\(sub) is not in the store")
+            }
         }
-        XCTAssertEqual(SidebarDestination.antiSleep.monitorRow, .antiSleep, "every other page is its own row")
+        XCTAssertEqual(SidebarDestination.antiSleep.hostRow, .antiSleep, "a page outside every group is its own row")
+        XCTAssertEqual(SidebarDestination.antiSleep.searchAlsoKeys, [])
+    }
+
+    /// Hệ thống, Mạng, Ổ đĩa, Pin are one row ("Theo dõi hệ thống") — the first tab group.
+    func testTheMonitorPagesAreOneRowWithFourTabs() {
+        XCTAssertEqual(SidebarDestination.system.tabGroup, [.system, .network, .storage, .pin])
+        XCTAssertEqual(SidebarDestination.pin.hostRow, .system)
         XCTAssertEqual(SidebarDestination.system.titleKey, "Theo dõi hệ thống")
         XCTAssertEqual(SidebarDestination.system.tabTitleKey, "Hệ thống")
-        XCTAssertEqual(Set(SidebarDestination.system.searchAlsoKeys), ["Hệ thống", "Mạng", "Ổ đĩa", "Pin"],
-                       "searching a tab's name still finds the page")
-        let store = try L10nFixture.load()
-        for key in SidebarDestination.monitorTabs.map(\.tabTitleKey) + [SidebarDestination.system.titleKey] {
-            guard let e = store.entries[key] else { XCTFail("\(key) is not in the store"); continue }
-            XCTAssertFalse(e.en.isEmpty)
-        }
     }
 
     func testEveryTileNameIsAColourTheViewMaps() {

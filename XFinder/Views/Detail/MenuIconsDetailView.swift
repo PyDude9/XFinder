@@ -12,7 +12,7 @@ struct MenuIconsDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                PageHeader(title: L10n.t("Biểu tượng thanh menu"),
+                PageHeader(title: L10n.t("Ẩn biểu tượng thanh menu"),
                     subtitle: L10n.t("Ẩn bớt biểu tượng trên thanh menu để gọn gàng hơn.")
                 )
 

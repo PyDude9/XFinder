@@ -15,6 +15,19 @@ ENTRIES = {
     "Khởi động lại XFinder": ("Restart XFinder", S),
     "Hiện số liệu cạnh biểu tượng": ("Show figures beside the icon", S),
     "CPU, bộ nhớ, nhiệt độ… hiện cạnh biểu tượng XFinder; chọn số liệu ở trang Tổng quan.": ("CPU, memory, temperature… beside the XFinder icon; pick the figures on the Overview page.", S),
+    # Merged pages (owner: "gộp cái nào duplicates") — tab labels and the rows' shared subtitles.
+    # The sidebar page that hides OTHER apps' icons and the Tổng quan row that picks XFinder's own glyph shared one
+    # title ("Biểu tượng thanh menu" / "Menu Bar Icons") while doing different jobs.
+    "Ẩn biểu tượng thanh menu": ("Hide Menu Bar Icons", S),
+    "Biểu tượng XFinder trên thanh menu": ("XFinder's menu bar icon", S),
+    "Trợ năng và Ghi màn hình": ("Accessibility and Screen Recording", S),
+    "Thiếu Trợ năng": ("Missing Accessibility", S),
+    "Thiếu Ghi màn hình": ("Missing Screen Recording", S),
+    "Xem tab Quyền": ("Open Permissions", S),
+    "Xem trước file": ("File preview", S),
+    "Hỗ trợ đa phương tiện": ("Media support", S),
+    "Xem trước Markdown và file nén mà không cần mở; kiểm tra file media có phát được trên máy này không.": ("Preview Markdown and archives without opening them; check whether a media file plays on this Mac.", S),
+    "Tìm ứng dụng, liên kết và tập tin: lọc theo tên, loại, thời gian, hoặc gõ một câu tự nhiên — 100% trên máy.": ("Find apps, links and files: filter by name, kind and date, or type one plain sentence — 100% on this Mac.", S),
 }
 def main() -> int:
     data = json.loads(STORE.read_text(encoding="utf-8")); e = data["entries"]

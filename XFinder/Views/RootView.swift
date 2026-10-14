@@ -65,8 +65,18 @@ struct DetailHostView: View {
     @Environment(SystemMonitorManager.self) var systemMonitorManager
 
     var body: some View {
+        // A row with tabs (SidebarDestination.tabGroups) shows its pages inside one header + picker.
+        if selection.tabGroup != nil {
+            TabbedPage(row: selection) { tab in page(for: tab) }
+        } else {
+            page(for: selection)
+        }
+    }
+
+    @ViewBuilder
+    private func page(for destination: SidebarDestination) -> some View {
         Group {
-            switch selection {
+            switch destination {
             case .settingsClipboard:
                 SettingsDetailView(destination: .settingsClipboard)
             case .clipboard:
@@ -135,8 +145,16 @@ struct DetailHostView: View {
                     .environment(clipboardManager)
             case .antiSleep:
                 AntiSleepDetailView()
-            case .system, .network, .storage, .pin:
-                SystemMonitorPage()
+            case .system:
+                SystemDetailView()
+                    .environment(systemMonitorManager)
+            case .network:
+                NetworkDetailView()
+                    .environment(systemMonitorManager)
+            case .storage:
+                StorageDetailView()
+            case .pin:
+                PinDetailView()
                     .environment(systemMonitorManager)
             case .voiceTyping:
                 VoiceDetailView()
@@ -156,7 +174,7 @@ struct DetailHostView: View {
                 AboutView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             default:
-                PlaceholderDetailView(destination: selection)
+                PlaceholderDetailView(destination: destination)
             }
         }
     }

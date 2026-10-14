@@ -30,7 +30,6 @@ struct FinderUtilsDetailView: View {
 
                 finderPrefs
 
-                explainer
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
@@ -156,30 +155,6 @@ struct FinderUtilsDetailView: View {
                 .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .settingsRow()
-        }
-    }
-
-    // MARK: - Giải thích
-
-    private var explainer: some View {
-        SettingsSection(title: L10n.t("XFinder thêm gì vào Finder")) {
-            bullet(L10n.t("Thao tác Finder: chạy lệnh của XFinder trên đúng các mục bạn đang chọn trong Finder."))
-                .settingsRow()
-            SettingsDivider()
-            bullet(L10n.t("Bàn phím Finder: viết lại phím tắt Cắt/Dán/Xóa/Mở trước khi Finder nhận được."))
-                .settingsRow()
-            SettingsDivider()
-            bullet(L10n.t("Đổi tên hàng loạt và Lịch sử thao tác: nhận trực tiếp mục đang chọn, và hoàn tác được."))
-                .settingsRow()
-        }
-    }
-
-    private func bullet(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: XFinderTokens.Space.inline) {
-            Text("•").font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
-            Text(text).font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
         }
     }
 

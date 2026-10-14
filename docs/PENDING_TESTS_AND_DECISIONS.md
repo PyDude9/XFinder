@@ -72,6 +72,14 @@ Brief v3 nói "sidebar 220 pt có ô màu, thẻ nhóm #F7F7F7 r10, header 52 + 
 | Q-P12-5 | Cảnh báo "sắp hết" (90 %) | (a) chưa làm · (b) làm luôn | **(a)** — % Claude trên máy này đang không rõ (statusLine XFinder chưa cài) |
 | Q-P12-6 | Bộ `agent-mail-kit` tải về | (a) để nguyên · (b) tôi sửa thành bản dùng được ngoài XFinder | **(a)** — chưa có lệnh; danh sách lỗi + cách sửa ở mục 3 của đề xuất |
 
+### Q-OC · Đối chiếu OneNotch (2026-10-14) — chọn mã muốn làm
+
+Bảng đầy đủ: `docs/ONENOTCH_COMPARE_2026-10-14.md` (OC-1 … OC-77, mỗi dòng có trạng thái, công, đề xuất). Phần gộp
+trùng lặp đã làm (Tìm kiếm, Quick Look, dòng quyền ở Tổng quan, đổi tên trang ẩn biểu tượng, bỏ đoạn lặp ở Tiện ích Finder).
+**Mặc định đang áp:** chưa dựng mục OC nào. Trả lời theo mã ("làm OC-4, OC-18, OC-65") hoặc theo nhóm ("làm hết các mục
+nhỏ"). Riêng **OC-52**: OneNotch mở khay nổi bằng ⇧⌘C, nhưng ⌘⇧C ở XFinder đang là Paste Stack — muốn đổi thì phải chọn
+phím mới cho một trong hai.
+
 ## Phần 2 — Cần test tay (T)
 
 Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
@@ -253,6 +261,9 @@ giữa họ là thêm một lượt** — chưa có lượt model nào được 
 | T-P13-7 | Bật ⇧⌘G (Chọn văn bản), bôi đen chữ trong Safari, rồi Menu ▸ Dịch vùng chọn | Bảng dịch hiện với đúng chữ đã bôi đen (gọi từ menu chưa đo) |
 | T-P13-8 | Tổng quan ▸ **Số liệu trên thanh menu** ▸ bật, chọn CPU + RAM, đổi "Cập nhật mỗi" | Số hiện cạnh biểu tượng, đổi theo chu kỳ; tắt là mất số |
 | T-P13-9 | Menu ▸ Tạm dừng ghi clipboard, copy một đoạn, rồi bỏ tạm dừng | Đoạn copy lúc tạm dừng không vào lịch sử; Cài đặt Clipboard hiện đúng trạng thái |
+| T-P13-10 | Sidebar ▸ **Tìm kiếm** ▸ tab "Tìm kiếm AI"; rồi **Quick Look** ▸ tab "Hỗ trợ đa phương tiện" | Mỗi hàng có 2 tab; "Tìm kiếm AI" và "Tương thích media" không còn là hàng riêng; gõ "AI" hay "media" vào ô tìm sidebar vẫn ra hàng chứa nó |
+| T-P13-11 | Tổng quan ▸ dòng "Trợ năng và Ghi màn hình" ▸ "Xem tab Quyền" | Mở Tính năng & Quyền **đúng tab Quyền** |
+| T-P13-12 | Sidebar có "Ẩn biểu tượng thanh menu"; Tổng quan có "Biểu tượng XFinder trên thanh menu" | Hai tên khác nhau (trước đây cùng là "Biểu tượng thanh menu") |
 
 ### Clipboard
 | Mã | Làm gì | Mong đợi |

@@ -14,6 +14,7 @@ struct FeaturesHubView: View {
 
     @State private var hub = FeatureHub.shared
     @State private var tab: Tab = .features
+    @State private var appState = AppState.shared
 
     var body: some View {
         ScrollView {
@@ -37,6 +38,10 @@ struct FeaturesHubView: View {
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
+        }
+        // Tổng quan's permission row opens this page on Quyền (it used to repeat two of its rows).
+        .onAppear {
+            if appState.hubShowsPermissions { tab = .permissions; appState.hubShowsPermissions = false }
         }
         .background(XFinderTokens.Settings.contentBackground)
         .onAppear { hub.retain() }

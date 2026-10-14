@@ -78,9 +78,9 @@ run "C9 the catalog drifts from QuitHold's key" XFinder/Core/Shortcuts/ShortcutC
   "'chord: Chord(keyCode: 12, modifiers: [.command]), // Q'" "'chord: Chord(keyCode: 13, modifiers: [.command]), // Q'"
 run "C6 Find Next shown as a macOS-reserved chord, not a convention" XFinder/Core/Shortcuts/ShortcutCatalog.swift \
   "'isConventionOnly: true))'" "'isConventionOnly: false))'"
-run "C10 a monitor tab is its own sidebar row again (the merge undone)" XFinder/Models/SidebarDestination.swift \
-  "'    var monitorRow: SidebarDestination { Self.monitorTabs.contains(self) ? .system : self }'" \
-  "'    var monitorRow: SidebarDestination { self }'"
+run "C10 a tab is its own sidebar row again (the merge undone)" XFinder/Models/SidebarDestination.swift \
+  "'    var hostRow: SidebarDestination { tabGroup?.first ?? self }'" \
+  "'    var hostRow: SidebarDestination { self }'"
 
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done

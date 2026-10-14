@@ -129,7 +129,7 @@ struct DashboardDetailView: View {
 
             SettingsDivider()
 
-            PickerRow(title: L10n.t("Biểu tượng thanh menu"),
+            PickerRow(title: L10n.t("Biểu tượng XFinder trên thanh menu"),
                       selection: Binding(get: { menubarIcon }, set: { setMenubarIcon($0) }),
                       width: 80) {
                 ForEach(MenubarController.iconChoices, id: \.id) { c in
@@ -194,21 +194,20 @@ struct DashboardDetailView: View {
 
     private var checklist: some View {
         SettingsSection {
+            // The two permissions every window feature needs. This used to be two rows that repeated, more thinly, the
+            // Quyền tab of Tính năng & Quyền (which also says which features use each permission and warns about
+            // unneeded ones); the row now says what is missing and opens that tab.
             StatusChecklistRow(
-                state: trusted ? .ok : .warning,
-                title: L10n.t("Trợ năng (cửa sổ, Dock, độ sáng)"),
-                status: trusted ? L10n.t("Đã cấp") : L10n.t("Chưa cấp"),
-                actionTitle: trusted ? nil : L10n.t("Mở…"),
-                action: trusted ? nil : { WindowManager.openAccessibilityPane() })
-                .settingsRow()
-            SettingsDivider()
-
-            StatusChecklistRow(
-                state: canRecord ? .ok : .warning,
-                title: L10n.t("Ghi màn hình (ảnh thu nhỏ cửa sổ)"),
-                status: canRecord ? L10n.t("Đã cấp") : L10n.t("Chưa cấp"),
-                actionTitle: canRecord ? nil : L10n.t("Mở…"),
-                action: canRecord ? nil : { WindowManager.openScreenRecordingPane() })
+                state: (trusted && canRecord) ? .ok : .warning,
+                title: L10n.t("Trợ năng và Ghi màn hình"),
+                status: (trusted && canRecord) ? L10n.t("Đã cấp")
+                    : !trusted && !canRecord ? L10n.t("Chưa cấp")
+                    : !trusted ? L10n.t("Thiếu Trợ năng") : L10n.t("Thiếu Ghi màn hình"),
+                actionTitle: L10n.t("Xem tab Quyền"),
+                action: {
+                    appState.hubShowsPermissions = true
+                    appState.navigate(to: .features)
+                })
                 .settingsRow()
             SettingsDivider()
 

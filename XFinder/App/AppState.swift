@@ -99,8 +99,10 @@ final class AppState {
     static let shared = AppState()
 
     var selection: SidebarDestination = .dashboard
-    /// The open tab of "Theo dõi hệ thống" (one of `SidebarDestination.monitorTabs`).
-    var monitorTab: SidebarDestination = .system
+    /// The open tab of each tabbed row (row → tab; see `SidebarDestination.tabGroups`). Absent ⇒ the row's own tab.
+    var openTab: [SidebarDestination: SidebarDestination] = [:]
+    /// Set before navigating to `.features` to open it on the Quyền tab; the hub clears it on appear.
+    var hubShowsPermissions = false
     var caffeineActive = false
 
     private init() {
@@ -117,10 +119,13 @@ final class AppState {
         bringMainWindowFront()
     }
 
-    /// A monitor tab (Mạng, Ổ đĩa, Pin) selects the "Theo dõi hệ thống" row and opens that tab.
+    /// The tab a tabbed row shows.
+    func tab(of row: SidebarDestination) -> SidebarDestination { openTab[row] ?? row }
+
+    /// A tab (e.g. Mạng) selects its row ("Theo dõi hệ thống") and opens that tab.
     private func select(_ destination: SidebarDestination) {
-        if SidebarDestination.monitorTabs.contains(destination) { monitorTab = destination }
-        selection = destination.monitorRow
+        if destination.tabGroup != nil { openTab[destination.hostRow] = destination }
+        selection = destination.hostRow
     }
 
     /// The app's real settings/browser window — NOT one of our floating panels.
