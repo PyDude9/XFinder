@@ -10718,6 +10718,74 @@
     "Bạn đang nhìn phiên đó (kitty, Terminal, app Claude…) thì notch không báo và không kêu. Phiên không ghi được app (OpenCode, phiên không cửa sổ) vẫn được báo.": {
       "en": "While you are looking at that session (kitty, Terminal, the Claude app…) the notch shows no notice and plays no sound. Sessions with no recorded app (OpenCode, windowless sessions) are still announced.",
       "scope": "sentence"
+    },
+    "Chuyển phiên sang agent khác": {
+      "en": "Hand the session over to another agent",
+      "scope": "sentence"
+    },
+    "Phiên mới của ": {
+      "en": "New session of ",
+      "scope": "fragment"
+    },
+    "Chuyển phiên": {
+      "en": "Hand off",
+      "scope": "sentence"
+    },
+    "Đang đọc phiên gốc…": {
+      "en": "Reading the original session…",
+      "scope": "sentence"
+    },
+    "Codex chưa có phiên không cửa sổ: XFinder chép lệnh mở Codex kèm tin này, bạn dán vào terminal.": {
+      "en": "Codex has no windowless session yet: XFinder copies a command that opens Codex with this message, for you to paste in a terminal.",
+      "scope": "sentence"
+    },
+    "Gửi sẽ dùng một lượt của ": {
+      "en": "Sending uses one turn of ",
+      "scope": "fragment"
+    },
+    ". Chỉ có lời bạn gõ và câu trả lời của agent — không có output của công cụ.": {
+      "en": ". Only what you typed and the agent's answers — no tool output.",
+      "scope": "fragment"
+    },
+    "Lượt đọc được: ": {
+      "en": "Turns read: ",
+      "scope": "fragment"
+    },
+    "Chép lệnh": {
+      "en": "Copy command",
+      "scope": "sentence"
+    },
+    "Đã chuyển phiên": {
+      "en": "Session handed off",
+      "scope": "sentence"
+    },
+    "Đã chép lệnh mở Codex": {
+      "en": "Copied the command that opens Codex",
+      "scope": "sentence"
+    },
+    "Dán vào terminal để bắt đầu.": {
+      "en": "Paste it in a terminal to start.",
+      "scope": "sentence"
+    },
+    "Tin chuyển giao đang trống.": {
+      "en": "The handoff message is empty.",
+      "scope": "sentence"
+    },
+    "Phiên gốc không ghi thư mục.": {
+      "en": "The original session recorded no folder.",
+      "scope": "sentence"
+    },
+    "OpenCode không tạo được phiên mới.": {
+      "en": "OpenCode could not create a new session.",
+      "scope": "sentence"
+    },
+    "OpenCode không nhận tin chuyển giao.": {
+      "en": "OpenCode did not take the handoff message.",
+      "scope": "sentence"
+    },
+    "Gửi": {
+      "en": "Send",
+      "scope": "sentence"
     }
   }
 }

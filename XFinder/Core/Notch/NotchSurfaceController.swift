@@ -910,6 +910,83 @@ final class NotchSurfaceController {
     private var editorPanel: SurfacePanel?
     private let editorModel = NotchTextEditorModel()
 
+    // MARK: - P9 — hand a session over to another agent
+
+    private var handoffPanel: SurfacePanel?
+    private let handoffModel = AgentHandoffModel()
+    private var handoffSession: AgentSession?
+    private var handoffDraft: AgentHandoffRunner.Draft?
+    private var handoffTask: Task<Void, Never>?
+
+    /// Read the session, show the message for the person to read / edit; nothing is sent until "Gửi".
+    func beginHandoff(_ session: AgentSession, to target: AgentKind) {
+        handoffSession = session
+        handoffModel.source = session.agent
+        handoffModel.sourceName = session.displayName
+        handoffModel.noticeKey = nil
+        handoffModel.sending = false
+        handoffModel.onClose = { [weak self] in self?.endHandoff() }
+        handoffModel.onSend = { [weak self] in self?.sendHandoff() }
+        handoffModel.onRetarget = { [weak self] kind in
+            self?.handoffModel.target = kind
+            self?.handoffDraft?.target = kind
+        }
+        handoffModel.target = target
+        handoffModel.loading = true
+        handoffModel.text = ""
+        if handoffPanel == nil {
+            let p = SurfacePanel(kind: .interactive, size: CGSize(width: 600, height: 440))
+            p.host(AgentHandoffView(model: handoffModel))
+            handoffPanel = p
+        }
+        dismiss()
+        handoffPanel?.show(anchor: .spotlight)
+        handoffTask?.cancel()
+        handoffTask = Task { [weak self] in
+            let draft = await AgentHandoffRunner.shared.prepare(session, target: target)
+            guard let self, !Task.isCancelled, self.handoffSession?.listID == session.listID else { return }
+            var d = draft
+            d.target = self.handoffModel.target       // the person may have picked another target while it read
+            self.handoffDraft = d
+            self.handoffModel.text = d.text
+            self.handoffModel.turnCount = d.turnCount
+            self.handoffModel.loading = false
+        }
+    }
+
+    private func sendHandoff() {
+        guard var d = handoffDraft, !handoffModel.sending else { return }
+        d.text = handoffModel.text            // what the person edited is what goes
+        d.target = handoffModel.target
+        handoffModel.sending = true
+        handoffModel.noticeKey = nil
+        handoffTask = Task { [weak self] in
+            let outcome = await AgentHandoffRunner.shared.send(d)
+            guard let self else { return }
+            self.handoffModel.sending = false
+            switch outcome {
+            case .started:
+                self.endHandoff()
+                self.present(LiveActivity.Item(kind: .agent, symbol: "arrow.triangle.branch", titleKey: "Đã chuyển phiên",
+                                               detail: "\(d.source.displayName) → \(d.target.displayName)", tint: .good,
+                                               duration: 4, buttons: [.openAgents]))
+            case .copiedCommand:
+                self.endHandoff()
+                self.present(LiveActivity.Item(kind: .agent, symbol: "doc.on.clipboard", titleKey: "Đã chép lệnh mở Codex",
+                                               detail: L10n.t("Dán vào terminal để bắt đầu."), tint: .good, duration: 5, buttons: []))
+            case .failed(let key):
+                self.handoffModel.noticeKey = key
+            }
+        }
+    }
+
+    func endHandoff() {
+        handoffTask?.cancel(); handoffTask = nil
+        handoffSession = nil
+        handoffDraft = nil
+        handoffPanel?.hide()
+    }
+
     /// D1 #9 — open the clip's full text in the editor panel (built once, Spotlight position); "Sao chép"
     /// copies the edited text, which the monitor records as a new clip. The hub closes first.
     func editText(_ record: ClipboardRecord) {

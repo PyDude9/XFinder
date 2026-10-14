@@ -293,6 +293,25 @@ private struct AgentRow: View {
                 .help(L10n.t("Nhắn phiên này"))
                 .accessibilityLabel(L10n.t("Nhắn phiên này"))
             }
+            // P9 — hand the session over to another agent (Notch Crew's "Hand off"); an ended session can be handed on too.
+            Menu {
+                ForEach(AgentKind.allCases, id: \.self) { target in
+                    Button(target == session.agent
+                           ? "\(L10n.t("Phiên mới của "))\(target.displayName)"
+                           : target.displayName) {
+                        NotchSurfaceController.shared.beginHandoff(session, to: target)
+                    }
+                }
+            } label: {
+                Image(systemName: "arrow.triangle.branch")
+                    .accessibilityLabel(L10n.t("Chuyển phiên sang agent khác"))   // a Menu's own label is the symbol's ("Divide")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .foregroundColor(.white.opacity(0.6))
+            .help(L10n.t("Chuyển phiên sang agent khác"))
+            .accessibilityLabel(L10n.t("Chuyển phiên sang agent khác"))
             if session.terminal.bundleID != nil, session.status != .ended {
                 Button {
                     NotchSurfaceController.shared.openAgentTerminal(session)
