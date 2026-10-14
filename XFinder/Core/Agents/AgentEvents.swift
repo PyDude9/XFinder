@@ -402,6 +402,31 @@ enum AgentSessionRules {
         return a.updatedAt > b.updatedAt
     }
 
+    /// P10 — OneNotch's "Sort sessions by" (measured: priority "Needs attention first", recency, newestFirst, manual).
+    /// Manual (drag to order) is not offered: it needs a stored order per session id that outlives the session.
+    enum SortMode: String, CaseIterable, Sendable {
+        case priority, recency, newest
+        var labelKey: String {
+            switch self {
+            case .priority: return "Cần chú ý trước"
+            case .recency: return "Hoạt động gần nhất"
+            case .newest: return "Mở mới nhất"
+            }
+        }
+        static func parse(_ raw: String?) -> SortMode { raw.flatMap(SortMode.init(rawValue:)) ?? .priority }
+    }
+
+    /// The list in the chosen order; `keepFinished == false` leaves ended sessions out (OneNotch: "Keep finished sessions
+    /// visible in the AI session list").
+    static func ordered(_ sessions: [AgentSession], mode: SortMode, keepFinished: Bool) -> [AgentSession] {
+        let shown = keepFinished ? sessions : sessions.filter { $0.status != .ended }
+        switch mode {
+        case .priority: return shown.sorted(by: displayOrder)
+        case .recency: return shown.sorted { $0.updatedAt > $1.updatedAt }
+        case .newest: return shown.sorted { $0.startedAt > $1.startedAt }
+        }
+    }
+
     /// The store key for a status line (the view wraps it in `L10n.t`).
     static func statusKey(_ s: AgentSession.Status) -> String {
         switch s {

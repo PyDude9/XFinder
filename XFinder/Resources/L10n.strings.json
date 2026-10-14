@@ -10794,6 +10794,42 @@
     "App Claude chưa nhận tin tự động — XFinder chép tin, mở app để bạn dán.": {
       "en": "The Claude app can't take messages yet — XFinder copies it and opens the app.",
       "scope": "sentence"
+    },
+    "Cần chú ý trước": {
+      "en": "Needs attention first",
+      "scope": "sentence"
+    },
+    "Hoạt động gần nhất": {
+      "en": "Most recent activity",
+      "scope": "sentence"
+    },
+    "Mở mới nhất": {
+      "en": "Newest first",
+      "scope": "sentence"
+    },
+    "Danh sách phiên trên notch": {
+      "en": "Sessions on the notch",
+      "scope": "sentence"
+    },
+    "Sắp xếp phiên": {
+      "en": "Sort sessions by",
+      "scope": "sentence"
+    },
+    "Giữ phiên đã kết thúc trong danh sách": {
+      "en": "Keep ended sessions in the list",
+      "scope": "sentence"
+    },
+    "Tắt thì phiên vừa kết thúc biến khỏi notch ngay; bật thì nó ở lại tối đa một giờ.": {
+      "en": "Off: a session disappears from the notch as soon as it ends. On: it stays for up to an hour.",
+      "scope": "sentence"
+    },
+    "Rê chuột vào biểu tượng agent để mở trang Agents": {
+      "en": "Point at the agent icon to open the Agents page",
+      "scope": "sentence"
+    },
+    "Dừng con trỏ trên ô agent ở cánh trái notch là mở danh sách phiên, dù “Rê chuột vào notch mở” đang chọn gì.": {
+      "en": "Resting the pointer on the agent tile in the notch's left wing opens the session list, whatever “Resting on the notch opens” is set to.",
+      "scope": "sentence"
     }
   }
 }

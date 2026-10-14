@@ -285,6 +285,23 @@ extension AgentSessionTests {
     }
 }
 
+extension AgentSessionTests {
+    /// P10 — OneNotch's "Sort sessions by" and "Keep finished sessions visible".
+    func testTheListFollowsTheChosenOrderAndCanHideEndedSessions() {
+        var a = session("a", .claude, .running(tool: nil), at: 100); a.startedAt = Date(timeIntervalSince1970: 10)
+        var b = session("b", .codex, .waitingForInput, at: 50); b.startedAt = Date(timeIntervalSince1970: 30)
+        var c = session("c", .opencode, .ended, at: 200); c.startedAt = Date(timeIntervalSince1970: 20)
+        let all = [a, b, c]
+        typealias R = AgentSessionRules
+        XCTAssertEqual(R.ordered(all, mode: .priority, keepFinished: true).map(\.id), ["b", "a", "c"], "your turn before running before ended")
+        XCTAssertEqual(R.ordered(all, mode: .recency, keepFinished: true).map(\.id), ["c", "a", "b"])
+        XCTAssertEqual(R.ordered(all, mode: .newest, keepFinished: true).map(\.id), ["b", "c", "a"])
+        XCTAssertEqual(R.ordered(all, mode: .recency, keepFinished: false).map(\.id), ["a", "b"], "ended sessions left out")
+        XCTAssertEqual(R.SortMode.parse("bogus"), .priority, "an unknown stored value falls back to the default")
+        XCTAssertEqual(R.SortMode.parse(nil), .priority)
+    }
+}
+
 private typealias Activity = AgentSessionRules.Activity
 private extension AgentSessionRules.Activity {
     static let allCasesForTest: [AgentSessionRules.Activity] = [.ended, .yourTurn, .thinking, .working, .waiting]

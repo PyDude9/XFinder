@@ -24,6 +24,9 @@ struct AIAgentsDetailView: View {
     @AppStorage("agents.notify.finished") private var notifyFinished = true
     @AppStorage("agents.notify.sound") private var notifySound = false
     @AppStorage("agents.notify.quietWhenFront") private var notifyQuietWhenFront = true
+    @AppStorage("agents.sortMode") private var sortMode = "priority"
+    @AppStorage("agents.keepFinished") private var keepFinished = true
+    @AppStorage("notch.agentEdgeHover") private var agentEdgeHover = true
     @State private var recent: [AgentRecent.Entry] = []
     @State private var copiedID: String?
     // P2 — Claude Code statusLine (5h/7d usage %), a settings-only opt-in.
@@ -71,6 +74,7 @@ struct AIAgentsDetailView: View {
                 openCodeSection
                 cursorSection
                 notifySection
+                listSection
                 recentSection
                 usageSection
             }
@@ -126,6 +130,36 @@ struct AIAgentsDetailView: View {
             ToggleRow(title: L10n.t("Im lặng khi terminal của phiên đang ở phía trước"),
                       subtitle: L10n.t("Bạn đang nhìn phiên đó (kitty, Terminal, app Claude…) thì notch không báo và không kêu. Phiên không ghi được app (OpenCode, phiên không cửa sổ) vẫn được báo."),
                       isOn: $notifyQuietWhenFront)
+                .settingsRow()
+        }
+        .disabled(!agentsEnabled)
+    }
+
+    /// P10 — how the notch lists sessions (OneNotch: "Sort sessions by", "Keep finished sessions visible", the "AI edge").
+    private var listSection: some View {
+        SettingsSection(title: L10n.t("Danh sách phiên trên notch")) {
+            HStack {
+                Text(L10n.t("Sắp xếp phiên")).font(XFinderTokens.Font.row)
+                Spacer()
+                Picker("", selection: $sortMode) {
+                    ForEach(AgentSessionRules.SortMode.allCases, id: \.rawValue) { m in
+                        Text(L10n.t(m.labelKey)).tag(m.rawValue)
+                    }
+                }
+                .pickerStyle(.menu).labelsHidden().frame(width: 190)
+            }
+            .settingsRow()
+            .onChange(of: sortMode) { AgentSessionMonitor.shared.listSettingsChanged() }
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Giữ phiên đã kết thúc trong danh sách"),
+                      subtitle: L10n.t("Tắt thì phiên vừa kết thúc biến khỏi notch ngay; bật thì nó ở lại tối đa một giờ."),
+                      isOn: $keepFinished)
+                .settingsRow()
+                .onChange(of: keepFinished) { AgentSessionMonitor.shared.listSettingsChanged() }
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Rê chuột vào biểu tượng agent để mở trang Agents"),
+                      subtitle: L10n.t("Dừng con trỏ trên ô agent ở cánh trái notch là mở danh sách phiên, dù “Rê chuột vào notch mở” đang chọn gì."),
+                      isOn: $agentEdgeHover)
                 .settingsRow()
         }
         .disabled(!agentsEnabled)

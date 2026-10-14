@@ -26,6 +26,9 @@ final class AgentSessionMonitor {
     var notifyFinished: Bool { UserDefaults.standard.object(forKey: "agents.notify.finished") as? Bool ?? true }
     var notifySound: Bool { UserDefaults.standard.object(forKey: "agents.notify.sound") as? Bool ?? false }
     /// P8: no notice and no sound for a session whose terminal / app is frontmost (OneNotch does the same).
+    /// P10 — the ONE readers of the list's order and of whether ended sessions stay listed.
+    var sortModeRaw: String { UserDefaults.standard.string(forKey: "agents.sortMode") ?? "priority" }
+    var keepFinished: Bool { UserDefaults.standard.object(forKey: "agents.keepFinished") as? Bool ?? true }
     var notifyQuietWhenFront: Bool { UserDefaults.standard.object(forKey: "agents.notify.quietWhenFront") as? Bool ?? true }
 
     // MARK: - Paths
@@ -75,6 +78,9 @@ final class AgentSessionMonitor {
     }
 
     private var refreshedScripts = false
+
+    /// P10 — the list's order or the keep-finished switch changed on the settings page.
+    func listSettingsChanged() { rebuild() }
 
     /// An installed copy of our own scripts follows the app. The hook gained fields after people had installed it (P5c: the
     /// session-id check; P6: where a reply can be typed) and nothing re-copied it, so the agent kept running the old file
@@ -153,7 +159,8 @@ final class AgentSessionMonitor {
         // P7a: XFinder's own windowless sessions — merged over the hook rows for the same id (the hook alone knows a
         // pending permission request), added as rows of their own when no hook line exists (hook not installed).
         let hosted = running ? WindowlessRules.merged(hookSessions: hooked, records: WindowlessSessionManager.shared.orderedRecords) : []
-        let new = (hosted + OpenCodeMonitor.shared.sessions).sorted(by: AgentSessionRules.displayOrder)
+        let new = AgentSessionRules.ordered(hosted + OpenCodeMonitor.shared.sessions, mode: AgentSessionRules.SortMode.parse(sortModeRaw),
+                                           keepFinished: keepFinished)
         if new != sessions {
             notify(old: notifyBaseline, new: new)
             sessions = new

@@ -17,6 +17,8 @@ enum NotchSurfaceLayout {
         var wingMin: CGFloat = 38.5
         var wingInset: CGFloat = 14
         var wingSpacing: CGFloat = 6
+        /// Gap between a wing's outer edge and its first item (the view pads each wing by this).
+        var wingEdgePadding: CGFloat = 9
         func wingItemWidth(_ item: WingItem) -> CGFloat {
             switch item {
             case .agent: return 20
@@ -175,6 +177,17 @@ enum NotchSurfaceLayout {
         if nowPlayingActive { right.append(.music) }
         if timerActive { right.append(.timer) }
         return (left, right)
+    }
+
+    /// P10 — OneNotch's "AI edge" (measured 2026-10-14: "Point at the AI edge of the notch to see what's running right
+    /// now", "Open the latest running agent when hovering the AI edge"): the agent item in the collapsed LEFT wing, with
+    /// 4 pt of slack each side. nil when the agent is not the left wing's first item or the screen has no notch (the
+    /// pill packs both sides together; no edge to point at).
+    static func agentEdgeRect(notch: CGRect, left: [WingItem], right: [WingItem], metrics m: Metrics = .standard) -> CGRect? {
+        guard notch.height > 0, let first = left.first, first == .agent || first == .agentCounted else { return nil }
+        let wing = wingWidth(left: left, right: right, metrics: m)
+        let x = notch.minX - wing + m.wingEdgePadding
+        return CGRect(x: x - 4, y: notch.minY, width: m.wingItemWidth(first) + 8, height: notch.height)
     }
 
     /// Width the items of one side need, edge to edge.

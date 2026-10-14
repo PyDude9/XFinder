@@ -305,4 +305,17 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(b.width, a.width, "a count may need a little room")
         XCTAssertEqual(b.width, c.width, "the wing does not keep growing with the count — 2 and 6 sessions are the same width")
     }
+
+    /// P10 — the "AI edge": the agent item of the left wing, on a notched screen only.
+    func testTheAgentEdgeIsTheAgentItemOfTheLeftWing() throws {
+        let notch = CGRect(x: 771.5, y: 1085, width: 185, height: 32)
+        let w = L.wingItems(itemCount: 2, timerActive: false, nowPlayingActive: false, agentActive: true, agentCount: 3)
+        let edge = try XCTUnwrap(L.agentEdgeRect(notch: notch, left: w.left, right: w.right))
+        XCTAssertLessThan(edge.maxX, notch.minX, "entirely in the left wing, never under the camera")
+        XCTAssertEqual(edge.height, notch.height)
+        let files = L.wingItems(itemCount: 2, timerActive: false, nowPlayingActive: false, agentActive: false)
+        XCTAssertNil(L.agentEdgeRect(notch: notch, left: files.left, right: files.right), "no agent ⇒ no edge")
+        XCTAssertNil(L.agentEdgeRect(notch: CGRect(x: 800, y: 1117, width: 120, height: 0), left: w.left, right: w.right),
+                     "a screen without a notch has no edge")
+    }
 }

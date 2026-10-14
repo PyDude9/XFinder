@@ -109,12 +109,18 @@ final class NotchSurfaceController {
                                      nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
                                      activityHoldsHover: !(model.activity?.buttons.isEmpty ?? true),
                                      composing: model.agentReplyTarget != nil || model.newWindowlessOpen,
+                                     agentEdgeHover: agentEdgeHover, pointerOnAgentEdge: pointerOnAgentEdge,
                                      dragIntoNotchOpens: notchDropEnabled, shakeOpens: shakeEnabled,
                                      hoverDwell: NotchSurfaceMachine.Settings.hoverDwell(forSpeed: hoverSpeed))
     }
 
     /// Something is on the collapsed surface (badge or pill): files, a countdown, a track.
     private var badgeShown: Bool { machine.itemCount > 0 || countdown != nil || NowPlayingMonitor.shared.hasTrack || model.agentActive }
+
+    /// P10 — the ONE reader of `notch.agentEdgeHover` (OneNotch's "AI edge": point at the agent wing to open the agents).
+    private var agentEdgeHover: Bool { UserDefaults.standard.object(forKey: "notch.agentEdgeHover") as? Bool ?? true }
+    /// P10 — set on every pointer tick, read by the machine through `settings`.
+    private var pointerOnAgentEdge = false
 
     /// D1 #44 — the ONE reader of `notch.pages` (order + visibility, a comma list).
     private var pageOrderRaw: String { UserDefaults.standard.string(forKey: "notch.pages") ?? "files,clipboard,nowPlaying,agents,calendar,timer,aiUsage" }
@@ -282,6 +288,10 @@ final class NotchSurfaceController {
                                                 timerActive: countdown != nil, agentActive: model.agentActive, agentBusy: model.agentBusy, agentCount: model.agentCount,
                                                 visible: screen.visibleFrame,
                                                 pillShown: pillOnPlainScreens && badgeShown && machine.state == .collapsed)
+        let wings = NotchSurfaceLayout.wingItems(itemCount: machine.itemCount, timerActive: countdown != nil,
+                                                 nowPlayingActive: NowPlayingMonitor.shared.hasTrack, agentActive: model.agentActive,
+                                                 agentBusy: model.agentBusy, agentCount: model.agentCount)
+        pointerOnAgentEdge = NotchSurfaceLayout.agentEdgeRect(notch: notch, left: wings.left, right: wings.right)?.contains(point) ?? false
         if zone.contains(point) {
             leftAt = nil; graceWork?.cancel(); graceWork = nil
             if zoneEnteredAt == nil {

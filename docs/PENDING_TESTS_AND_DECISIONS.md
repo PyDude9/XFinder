@@ -174,6 +174,17 @@ kiểm (mọi kiểm tra đều dùng một `claude` giả).
 | Q-P7a-CODEX | Phiên không cửa sổ cho Codex cần giao thức `codex app-server` (JSON-RPC, ~160 lệnh, đã sinh schema tại chỗ). Dựng ở lượt sau? | Chưa dựng — trang giải thích |
 | Q-P7a-QUIT | Thoát XFinder ⇒ phiên không cửa sổ dừng theo. Claude Code có "background session" (`claude --bg`) sống qua khi XFinder thoát, nhưng không có cách công khai nào gửi tin vào nó mà không mở terminal | Dừng theo XFinder |
 
+### P8–P10 · Agent trên notch, chuyển phiên, danh sách (dựng 2026-10-14)
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-P8-WING | Chạy 1 rồi 3 phiên agent | Cánh trái: một ô logo (agent khẩn nhất) + số phiên bên cạnh khi ≥ 2; cánh phải: lưới chấm chạy khi có phiên đang làm, cam khi có phiên chờ bạn |
+| T-P8-QUIET | Một phiên trong kitty xong lượt khi kitty đang ở trước / ở sau | Ở trước: không thông báo, không âm thanh; ở sau: có |
+| T-P9-HANDOFF | Notch ▸ Agents ▸ icon nhánh trên một phiên ▸ Claude Code ▸ đọc tin ▸ Gửi | Phiên Claude không cửa sổ mới trả lời 3 dòng mục tiêu / hiện trạng / bước tiếp theo rồi chờ |
+| T-P9-OPENCODE | Như trên, đích OpenCode | Phiên OpenCode mới (tiêu đề "Handoff from …") trong đúng thư mục, nhận tin |
+| T-P10-EDGE | Rê chuột dừng trên ô agent ở cánh trái notch | Trang Agents mở thẳng, dù "Rê chuột vào notch mở" chọn gì |
+| T-P10-SORT | Đổi "Sắp xếp phiên" và tắt "Giữ phiên đã kết thúc" | Thứ tự đổi ngay; phiên đã kết thúc biến khỏi notch |
+
 ### 1.4.0 (đóng gói 2026-10-14, chưa đăng)
 
 `dist/XFinder-1.4.0-arm64.zip` (7,1 MB, sha256 `02d314cc…a64a08`), ký XFinder Dev, giải nén ra vẫn `--verify --deep --strict`.

@@ -249,9 +249,9 @@ struct NotchSurfaceView: View {
         } else {
             let wing = NotchSurfaceLayout.wingWidth(left: items.left, right: items.right)
             HStack(spacing: 0) {
-                wingSide(items.left).padding(.leading, 9).frame(width: wing, alignment: .leading)
+                wingSide(items.left).padding(.leading, Self.m.wingEdgePadding).frame(width: wing, alignment: .leading)
                 Color.clear.frame(width: model.notchSize.width)
-                wingSide(items.right).padding(.trailing, 9).frame(width: wing, alignment: .trailing)
+                wingSide(items.right).padding(.trailing, Self.m.wingEdgePadding).frame(width: wing, alignment: .trailing)
             }
             .padding(.horizontal, Self.m.collapsedFillet)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

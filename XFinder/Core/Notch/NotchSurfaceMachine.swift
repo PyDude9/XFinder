@@ -53,6 +53,10 @@ enum NotchSurfaceMachine {
         /// collapse on its own while this holds — a pointer drifting off the notch must not throw the half-typed text away.
         /// Esc, ✕ and sending end it. A fact (re-read on every event), not an event, so the exhaustive walk is unchanged.
         var composing = false
+        /// P10 — `notch.agentEdgeHover`: pointing at the agent wing opens the Agents page.
+        var agentEdgeHover = false
+        /// P10 — a fact, like `nowPlayingActive`: the pointer is over the agent item of the collapsed left wing.
+        var pointerOnAgentEdge = false
         var dragIntoNotchOpens = true
         var shakeOpens = true
         /// Pointer must rest in the notch zone this long before hover counts (accidental passes are shorter).
@@ -154,6 +158,11 @@ enum NotchSurfaceMachine {
             case .hoverInZone(let since):
                 guard s.hoverToPeek, state.isIdle, now.timeIntervalSince(since) >= s.hoverDwell else { return }
                 if state == .activity && s.activityHoldsHover { return }   // the pointer came to press a button
+                // P10: pointing at the agent's own wing opens the agents, whatever "hover opens" says elsewhere.
+                if s.agentEdgeHover, s.pointerOnAgentEdge, s.shownPages.contains(.agents) {
+                    open(at: .notch, page: .agents)
+                    return
+                }
                 let activity = NotchHoverOpen.Activity(itemCount: itemCount, trackPlaying: s.nowPlayingActive,
                                                        agentNeedsYou: s.agentNeedsYou, lastPage: s.lastPage)
                 if let page = s.hoverOpens.page(for: activity, shown: s.shownPages) {

@@ -38,6 +38,26 @@ final class NotchSurfaceMachineTests: XCTestCase {
         XCTAssertEqual(m.anchor, .notch)
     }
 
+    /// P10 — OneNotch's "AI edge": resting on the agent tile opens the Agents page whatever `hoverOpens` says, after the
+    /// same dwell, only when the switch is on, the Agents page is shown, and hover itself is allowed.
+    func testPointingAtTheAgentEdgeOpensTheAgents() {
+        var edge = M.Settings(); edge.agentEdgeHover = true; edge.pointerOnAgentEdge = true
+        var m = holding(2)
+        m.handle(.hoverInZone(since: at(0)), settings: edge, now: at(0.1))
+        XCTAssertEqual(m.state, .collapsed, "the dwell still applies")
+        m.handle(.hoverInZone(since: at(0)), settings: edge, now: at(0.3))
+        XCTAssertEqual(m.state, .expanded(.agents), "not the peek of the held files")
+        var off = edge; off.agentEdgeHover = false
+        var n = holding(2); n.handle(.hoverInZone(since: at(0)), settings: off, now: at(0.3))
+        XCTAssertEqual(n.state, .peek, "switch off ⇒ the ordinary hover")
+        var hidden = edge; hidden.shownPages = [.files, .clipboard]
+        var h = holding(2); h.handle(.hoverInZone(since: at(0)), settings: hidden, now: at(0.3))
+        XCTAssertEqual(h.state, .peek, "a hidden Agents page is never opened by a hover")
+        var noHover = edge; noHover.hoverToPeek = false
+        var q = holding(2); q.handle(.hoverInZone(since: at(0)), settings: noHover, now: at(0.3))
+        XCTAssertEqual(q.state, .collapsed, "the master hover switch still wins")
+    }
+
     /// CLAUDE.md Part 3c: hover-to-open only reveals files already held, never an empty tray.
     func testHoverNeverRevealsAnEmptyTray() {
         var m = holding(0)

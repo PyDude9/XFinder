@@ -6,6 +6,15 @@ from pathlib import Path
 STORE = Path(__file__).resolve().parent.parent / "XFinder/Resources/L10n.strings.json"
 S, F = "sentence", "fragment"
 ENTRIES = {
+    "Cần chú ý trước": ("Needs attention first", S),
+    "Hoạt động gần nhất": ("Most recent activity", S),
+    "Mở mới nhất": ("Newest first", S),
+    "Danh sách phiên trên notch": ("Sessions on the notch", S),
+    "Sắp xếp phiên": ("Sort sessions by", S),
+    "Giữ phiên đã kết thúc trong danh sách": ("Keep ended sessions in the list", S),
+    "Tắt thì phiên vừa kết thúc biến khỏi notch ngay; bật thì nó ở lại tối đa một giờ.": ("Off: a session disappears from the notch as soon as it ends. On: it stays for up to an hour.", S),
+    "Rê chuột vào biểu tượng agent để mở trang Agents": ("Point at the agent icon to open the Agents page", S),
+    "Dừng con trỏ trên ô agent ở cánh trái notch là mở danh sách phiên, dù “Rê chuột vào notch mở” đang chọn gì.": ("Resting the pointer on the agent tile in the notch's left wing opens the session list, whatever “Resting on the notch opens” is set to.", S),
     "Chép và mở app": ("Copy and open app", S),
     "App Claude chưa nhận tin tự động — XFinder chép tin, mở app để bạn dán.": ("The Claude app can't take messages yet — XFinder copies it and opens the app.", S),
     "Đang chờ bạn": ("Waiting for you", S),
