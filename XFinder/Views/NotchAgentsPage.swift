@@ -1209,24 +1209,23 @@ struct AgentActivityGrid: NSViewRepresentable {
 struct AgentWingGlyph: View {
     let summary: AgentSessionRules.WingSummary
 
+    /// One tile — the agent of the most urgent session — with its activity mark on the corner, and the number of live
+    /// sessions BESIDE it when there is more than one. The first version stacked two tiles; the owner found it ugly and
+    /// unreadable past two or three, and a count reads the same for 2 or 6 sessions (Notch Crew says how many wait).
     var body: some View {
-        ZStack(alignment: .leading) {
-            ForEach(Array(summary.agents.enumerated().reversed()), id: \.offset) { i, kind in
-                AgentBrandTile(kind: kind, size: 14)
-                    .offset(x: CGFloat(i) * 6)
-                    .opacity(i == 0 ? 1 : 0.8)
+        HStack(spacing: 3) {
+            if let lead = summary.agents.first {
+                AgentBrandTile(kind: lead, size: 14)
+                    .overlay(alignment: .topTrailing) { mark.offset(x: 3, y: -3) }
+            }
+            if summary.live > 1 {
+                Text("\(summary.live)")
+                    .font(.system(size: 11, weight: .semibold)).monospacedDigit()
+                    .foregroundColor(.white.opacity(0.85))
+                    .lineLimit(1).fixedSize()
             }
         }
-        .frame(width: 20, height: 22, alignment: .leading)
-        .overlay(alignment: .topTrailing) { mark.offset(x: 2, y: 2) }
-        .overlay(alignment: .bottomTrailing) {
-            if summary.live > summary.agents.count {
-                Text("\(summary.live)").font(.system(size: 8, weight: .bold)).monospacedDigit()
-                    .foregroundColor(.white).padding(.horizontal, 2)
-                    .background(Capsule().fill(Color.black.opacity(0.8)))
-                    .offset(x: 3, y: -1)
-            }
-        }
+        .frame(height: 22)
     }
 
     @ViewBuilder private var mark: some View {

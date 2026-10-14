@@ -85,6 +85,8 @@ final class NotchSurfaceModel {
     var agentSummary: AgentSessionRules.WingSummary? { agentsEnabled ? AgentSessionRules.wingSummary(agents) : nil }
     /// An agent is thinking, working or waiting: the activity grid runs on the right wing.
     var agentBusy: Bool { agentSummary?.activity.isBusy ?? false }
+    /// Live sessions, for the number beside the lead tile (one tile per wing, never stacked).
+    var agentCount: Int { agentSummary?.live ?? 0 }
     /// D0c: true for the first frame of a surface opening at the notch — the shape is drawn at the notch's
     /// own size and the controller flips this on the next run-loop turn, so the hub springs out of the notch.
     var appearFromNotch = false
@@ -124,7 +126,7 @@ struct NotchSurfaceView: View {
                                        itemCount: model.itemCount, notch: notch,
                                        timerActive: model.timerText != nil,
                                        nowPlayingActive: nowPlayingActive,
-                                       agentActive: model.agentActive, agentBusy: model.agentBusy,
+                                       agentActive: model.agentActive, agentBusy: model.agentBusy, agentCount: model.agentCount,
                                        pillOnPlainScreens: model.pillOnPlainScreens) ?? .zero
     }
 
@@ -191,6 +193,9 @@ struct NotchSurfaceView: View {
                 content
                     .frame(width: stateSize.width, height: stateSize.height, alignment: .top)
                     .opacity(model.appearFromNotch ? 0 : 1)                                     // fades in as the shape grows
+                    // P8: and comes into focus — Notch Crew's hover opens blurred-to-sharp (owner's screenshot,
+                    // 2026-10-14), not as a hard cut. Only while opening; a plain state change never blurs.
+                    .blur(radius: model.appearFromNotch ? 8 : 0)
             }
             .frame(width: size.width, height: size.height, alignment: .top)
             .clipShape(shape)
@@ -228,7 +233,7 @@ struct NotchSurfaceView: View {
 
     private var wingItems: (left: [NotchSurfaceLayout.WingItem], right: [NotchSurfaceLayout.WingItem]) {
         NotchSurfaceLayout.wingItems(itemCount: model.itemCount, timerActive: model.timerText != nil,
-                                     nowPlayingActive: nowPlayingActive, agentActive: model.agentActive, agentBusy: model.agentBusy)
+                                     nowPlayingActive: nowPlayingActive, agentActive: model.agentActive, agentBusy: model.agentBusy, agentCount: model.agentCount)
     }
 
     /// Each side's items sit at the OUTER edge of their wing (OneNotch measured ~9 pt in), so nothing crowds the
@@ -263,7 +268,7 @@ struct NotchSurfaceView: View {
     @ViewBuilder private func wingItem(_ item: NotchSurfaceLayout.WingItem) -> some View {
         let w = Self.m.wingItemWidth(item)
         switch item {
-        case .agent:
+        case .agent, .agentCounted:
             // P8 — the agents' own tiles with the summary mark (was one generic `terminal.fill` for every agent,
             // read by the owner as "the kitty icon", and spoken as "Claude Code" even for OpenCode).
             if let summary = model.agentSummary {

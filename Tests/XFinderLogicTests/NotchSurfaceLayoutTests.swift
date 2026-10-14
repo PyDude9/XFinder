@@ -290,4 +290,19 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         XCTAssertGreaterThan(b.width, a.width, "the grid takes room on the right wing")
         XCTAssertEqual(b.height, notch.height, "the wings never hang below the notch")
     }
+
+    /// Owner 2026-10-14: stacked agent tiles were ugly; one tile, and the session count BESIDE it only when there is one
+    /// to show — the wing widens for the number, never for a single session.
+    func testOneSessionKeepsTheNarrowWingAndSeveralAddOnlyTheirCount() {
+        let one = L.wingItems(itemCount: 0, timerActive: false, nowPlayingActive: false, agentActive: true, agentCount: 1)
+        XCTAssertEqual(one.left, [.agent])
+        let six = L.wingItems(itemCount: 0, timerActive: false, nowPlayingActive: false, agentActive: true, agentCount: 6)
+        XCTAssertEqual(six.left, [.agentCounted])
+        let notch = CGRect(x: 0, y: 0, width: 185, height: 32)
+        let a = L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch, agentActive: true, agentCount: 1)!
+        let b = L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch, agentActive: true, agentCount: 6)!
+        let c = L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch, agentActive: true, agentCount: 2)!
+        XCTAssertGreaterThanOrEqual(b.width, a.width, "a count may need a little room")
+        XCTAssertEqual(b.width, c.width, "the wing does not keep growing with the count — 2 and 6 sessions are the same width")
+    }
 }

@@ -279,7 +279,7 @@ final class NotchSurfaceController {
 
         let zone = NotchSurfaceLayout.hoverZone(notch: notch, screen: screen.frame, itemCount: machine.itemCount,
                                                 nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
-                                                timerActive: countdown != nil, agentActive: model.agentActive, agentBusy: model.agentBusy,
+                                                timerActive: countdown != nil, agentActive: model.agentActive, agentBusy: model.agentBusy, agentCount: model.agentCount,
                                                 visible: screen.visibleFrame,
                                                 pillShown: pillOnPlainScreens && badgeShown && machine.state == .collapsed)
         if zone.contains(point) {
@@ -1079,7 +1079,7 @@ final class NotchSurfaceController {
                                                     screen: screen.frame, visible: screen.visibleFrame,
                                                     pointer: shakePoint, timerActive: countdown != nil,
                                                     nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
-                                                    agentActive: model.agentActive, agentBusy: model.agentBusy,
+                                                    agentActive: model.agentActive, agentBusy: model.agentBusy, agentCount: model.agentCount,
                                                     pillOnPlainScreens: pillOnPlainScreens) else {
             model.state = .collapsed
             model.itemCount = machine.itemCount

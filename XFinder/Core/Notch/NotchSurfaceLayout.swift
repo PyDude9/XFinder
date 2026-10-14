@@ -9,7 +9,7 @@ enum NotchSurfaceLayout {
     /// P1 (2026-10-13, measured on the owner's OneNotch screenshots: the collapsed shape is 262 × 32 — exactly
     /// the notch's height, nothing hangs below it — with one icon in each WING beside the camera). What can sit
     /// in a wing: the left one carries agents and held files, the right one the track and a countdown.
-    enum WingItem: Equatable { case agent, files, music, timer, agentActivity }
+    enum WingItem: Equatable { case agent, files, music, timer, agentActivity, agentCounted }
 
     struct Metrics: Equatable {
         /// Collapsed wings: the narrowest wing (262 = 185 + 2 × 38.5, measured), the gap between its content and
@@ -23,6 +23,7 @@ enum NotchSurfaceLayout {
             case .files: return 34      // tray glyph + a two-digit count
             case .music: return 24      // the waveform bars, or an 18-pt artwork thumb (one item ⇒ the measured 38.5 wing)
             case .timer: return 50      // timer glyph + "12:34"
+            case .agentCounted: return 32    // the lead agent's tile + the number of live sessions beside it (owner: no stacked tiles)
             case .agentActivity: return 18   // the 3×3 activity grid (OneNotch shows one on the right wing while an agent runs)
             }
         }
@@ -166,9 +167,9 @@ enum NotchSurfaceLayout {
     /// agent's own tile on the left (OneNotch, owner's screenshot 2026-10-14: the agent on the left, a dot grid
     /// running on the right).
     static func wingItems(itemCount: Int, timerActive: Bool, nowPlayingActive: Bool,
-                          agentActive: Bool, agentBusy: Bool = false) -> (left: [WingItem], right: [WingItem]) {
+                          agentActive: Bool, agentBusy: Bool = false, agentCount: Int = 1) -> (left: [WingItem], right: [WingItem]) {
         var left: [WingItem] = [], right: [WingItem] = []
-        if agentActive { left.append(.agent) }
+        if agentActive { left.append(agentCount > 1 ? .agentCounted : .agent) }   // widen only when there is a number to show
         if agentActive && agentBusy { right.append(.agentActivity) }
         if itemCount > 0 { left.append(.files) }
         if nowPlayingActive { right.append(.music) }
@@ -192,12 +193,13 @@ enum NotchSurfaceLayout {
     /// each side and exactly as tall as it (P1), or (`pillOnPlainScreens`) a pill on a screen without a notch.
     static func size(for state: NotchSurfaceMachine.State, anchor: NotchSurfaceMachine.Anchor,
                      itemCount: Int, notch: CGRect, timerActive: Bool = false, nowPlayingActive: Bool = false,
-                     agentActive: Bool = false, agentBusy: Bool = false, pillOnPlainScreens: Bool = true,
+                     agentActive: Bool = false, agentBusy: Bool = false, agentCount: Int = 1, pillOnPlainScreens: Bool = true,
                      metrics m: Metrics = .standard) -> CGSize? {
         switch state {
         case .collapsed:
             let (left, right) = wingItems(itemCount: itemCount, timerActive: timerActive,
-                                          nowPlayingActive: nowPlayingActive, agentActive: agentActive, agentBusy: agentBusy)
+                                          nowPlayingActive: nowPlayingActive, agentActive: agentActive, agentBusy: agentBusy,
+                                          agentCount: agentCount)
             guard !(left.isEmpty && right.isEmpty) else { return nil }
             if notch.height > 0 {
                 let wing = wingWidth(left: left, right: right, metrics: m)
@@ -230,11 +232,11 @@ enum NotchSurfaceLayout {
     static func frame(for state: NotchSurfaceMachine.State, anchor: NotchSurfaceMachine.Anchor,
                       itemCount: Int, notch: CGRect, screen: CGRect, visible: CGRect,
                       pointer: CGPoint, timerActive: Bool = false, nowPlayingActive: Bool = false,
-                      agentActive: Bool = false, agentBusy: Bool = false, pillOnPlainScreens: Bool = true,
+                      agentActive: Bool = false, agentBusy: Bool = false, agentCount: Int = 1, pillOnPlainScreens: Bool = true,
                       metrics m: Metrics = .standard) -> CGRect? {
         guard let size = size(for: state, anchor: anchor, itemCount: itemCount, notch: notch,
                               timerActive: timerActive, nowPlayingActive: nowPlayingActive, agentActive: agentActive,
-                              agentBusy: agentBusy,
+                              agentBusy: agentBusy, agentCount: agentCount,
                               pillOnPlainScreens: pillOnPlainScreens, metrics: m) else { return nil }
         if case .expanded = state, anchor == .pointer {
             let centre = CGPoint(x: pointer.x, y: pointer.y - m.pointerGap - size.height / 2)
@@ -289,10 +291,11 @@ enum NotchSurfaceLayout {
     /// and grabbing a title bar must never count as hovering the tray. Notch-less screen: the pill while it is
     /// shown, else an 8-pt strip at the top centre.
     static func hoverZone(notch: CGRect, screen: CGRect, itemCount: Int, nowPlayingActive: Bool = false,
-                          timerActive: Bool = false, agentActive: Bool = false, agentBusy: Bool = false,
+                          timerActive: Bool = false, agentActive: Bool = false, agentBusy: Bool = false, agentCount: Int = 1,
                           visible: CGRect? = nil, pillShown: Bool = false, metrics m: Metrics = .standard) -> CGRect {
         let collapsed = size(for: .collapsed, anchor: .notch, itemCount: itemCount, notch: notch, timerActive: timerActive,
-                             nowPlayingActive: nowPlayingActive, agentActive: agentActive, agentBusy: agentBusy, metrics: m)
+                             nowPlayingActive: nowPlayingActive, agentActive: agentActive, agentBusy: agentBusy,
+                             agentCount: agentCount, metrics: m)
         guard notch.height > 0 else {
             if pillShown, let visible { return pillRect(notch: notch, visible: visible, width: collapsed?.width, metrics: m) }
             return CGRect(x: notch.minX, y: screen.maxY - 8, width: notch.width, height: 8)
