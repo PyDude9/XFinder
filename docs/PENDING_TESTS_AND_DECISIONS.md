@@ -80,18 +80,23 @@ trùng lặp đã làm (Tìm kiếm, Quick Look, dòng quyền ở Tổng quan, 
 nhỏ"). Riêng **OC-52**: OneNotch mở khay nổi bằng ⇧⌘C, nhưng ⌘⇧C ở XFinder đang là Paste Stack — muốn đổi thì phải chọn
 phím mới cho một trong hai.
 
-### Q-DIAG · Gửi dữ liệu lỗi/sử dụng tự động (2026-10-14)
+### Q-DIAG · Chẩn đoán và phân tích ẩn danh (2026-10-14)
 
-Đã dựng phần **cục bộ**: nhật ký lỗi kỹ thuật trên máy, crash/treo từ MetricKit và crash report của macOS (lọc theo danh sách
-cho phép), nút **Báo lỗi…** cho đọc trọn nội dung rồi mới Sao chép / Lưu tệp / Mở GitHub Issues. **XFinder không tự gửi gì.**
+Bạn đã chốt: **phân tích ẩn danh bật sẵn, một công tắc "Từ chối gửi phân tích ẩn danh" (mặc định tắt)**, giải thích rõ đây là
+thống kê trải nghiệm để nâng cấp app. Đã dựng (`AnalyticsRules`, `AnalyticsCenter`, khối ở Giới thiệu ▸ Hỗ trợ & báo lỗi):
+không mã định danh (mỗi lần gửi một bản rời), không nội dung, tối đa 1 bản/ngày, thông báo một lần + chờ 24 giờ trước lần gửi
+đầu, xem trước đúng JSON. Nhật ký lỗi cục bộ vẫn bật sẵn (Q-DIAG-3 giữ mặc định).
 
-Chưa dựng, cần bạn quyết vì mỗi cái đòi thứ chỉ bạn có:
+Luật (tra 2026-10-14, chưa có án lệ vì luật mới ~2 tuần): luật 91/2025 điều 2 — dữ liệu đã khử nhận dạng không còn là dữ liệu cá
+nhân; Nghị định 356/2025 không xếp thống kê kỹ thuật vào dữ liệu nhạy cảm. EU: GDPR không áp cho dữ liệu ẩn danh (Recital 26),
+nhưng ePrivacy 5(3) vẫn áp cho việc đọc thông tin thiết bị; thiết kế này bám các điều kiện miễn đồng ý của CNIL (mục đích hẹp,
+thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ). Thêm mã định danh hay nội dung vào bản thống kê là phá điều kiện đó —
+`AnalyticsRulesTests` chặn cả hai.
 
-| Mã | Câu hỏi | Mặc định |
+| Mã | Còn cần bạn làm | Mặc định |
 |:--|:--|:--|
-| Q-DIAG-1 | Tự gửi crash lên một dịch vụ (Sentry tự host / Sentry EU / TelemetryDeck)? Cần tài khoản của bạn ở dịch vụ đó, một DSN/khoá, hỏi đồng ý rõ từng mục đích lúc mở app (luật VN 91/2025 + Nghị định 356/2025 coi dữ liệu theo dõi hành vi là dữ liệu nhạy cảm; EU ePrivacy 5(3) bắt buộc opt-in), cập nhật README/chính sách; máy chủ ngoài VN còn phải lập hồ sơ đánh giá tác động chuyển dữ liệu ra nước ngoài nộp A05 trước | Không làm |
-| Q-DIAG-2 | Thống kê sử dụng (tính năng nào được bật/dùng)? Cùng các điều kiện trên, nặng hơn vì là theo dõi hành vi | Không làm |
-| Q-DIAG-3 | Nhật ký cục bộ đang **bật sẵn** (chỉ mã lỗi + phiên bản, không rời máy). Muốn mặc định tắt? | Để bật |
+| Q-DIAG-4 | Tạo app trên TelemetryDeck (tài khoản của bạn), rồi điền **App ID** và **namespace** vào `XFinder/Info.plist` (`XFAnalyticsTelemetryDeckAppID`, `XFAnalyticsTelemetryDeckNamespace`) — hoặc gửi tôi hai giá trị đó. Cả hai là giá trị công khai, không phải bí mật. Chưa điền thì app không gửi gì và trang ghi rõ như vậy | Chưa điền |
+| Q-DIAG-5 | TelemetryDeck ghi trong FAQ rằng sự kiện lưu trữ lạnh có thể giữ 7–10 năm. Có muốn ghi câu này lên trang Giới thiệu không? | Chưa ghi |
 
 ## Phần 2 — Cần test tay (T)
 
@@ -291,6 +296,13 @@ giữa họ là thêm một lượt** — chưa có lượt model nào được 
 | T-DIAG-5 | Thoát XFinder bình thường rồi mở lại; sau đó Buộc thoát (⌥⌘⎋) rồi mở lại; mở báo cáo | Lần thoát thường: không có `app/uncleanExit`; sau Buộc thoát: có một dòng `app/uncleanExit` |
 | T-DIAG-6 | Tắt "Ghi lỗi kỹ thuật…", bấm **Xoá nhật ký**, mở lại báo cáo | Phần sự kiện trống; tệp `~/Library/Application Support/XFinder/Diagnostics/events.jsonl` đã biến mất |
 | T-DIAG-7 | Đợi MetricKit (giao gói chẩn đoán tối đa ~1 lần/ngày, chỉ khi có crash/treo) | Nếu có: dòng `metrickit/received` và mục `· metrickit` trong báo cáo. **Chưa đo được MetricKit có giao cho bản không qua App Store hay không** |
+| T-ANALYTICS-1 | Giới thiệu ▸ Phân tích ẩn danh ▸ bấm **Xem dữ liệu sẽ gửi** | Mở khung xem trước JSON; định dạng đẹp, không chứa tên người dùng, đường dẫn `/Users/`, UUID, e-mail, hay nội dung clipboard |
+| T-ANALYTICS-2 | Bật công tắc **Từ chối gửi phân tích ẩn danh** | Dòng trạng thái đổi thành "Đã từ chối — XFinder không gửi gì."; lần kích hoạt kế tiếp không gửi |
+| T-ANALYTICS-3 | Khi Info.plist chưa điền AppID và Namespace (mặc định hôm nay) | Dòng trạng thái ghi "Bản này chưa có máy chủ nhận nên chưa gửi gì." và không có yêu cầu mạng nào được tạo |
+| T-ANALYTICS-4 | Hộp thoại thông báo lần đầu (khi có máy chủ): chọn "Từ chối gửi" hoặc "Xem dữ liệu…" | "Từ chối" bật công tắc từ chối; "Xem dữ liệu…" chuyển tới trang Giới thiệu mở sẵn khung xem trước |
+| T-LIMIT-1 | Lần tới phiên Claude (app desktop) chạm giới hạn: nhìn notch / trang Agent | Trong ~20 giây hàng của phiên đổi sang "chạm giới hạn" (không còn "đang chạy"), có thông báo kèm nút chuyển phiên. Dán một đoạn văn có câu "hit your session limit" vào chat thì **không** được làm phiên báo dừng |
+| T-LAYOUT-1 | Mở Thư viện Clipboard, rồi Theo dõi hệ thống (cả 4 tab); kéo nhỏ cửa sổ hết cỡ | Header, thanh tab và ô "Tìm cài đặt…" luôn ở mép trên; cửa sổ không nhỏ hơn 900×600 |
+| T-SLEEP-1 | Tính năng & Quyền ▸ dòng Chống ngủ: chọn "15 phút" rồi bật | Dòng hiện "Còn 14:59…" đếm lùi màu cam; ô thời lượng mờ khi đang bật; tự tắt sau 15 phút. Tổng quan ▸ Chống ngủ ▸ "Mở…" dẫn tới trang này |
 
 ### Clipboard
 | Mã | Làm gì | Mong đợi |

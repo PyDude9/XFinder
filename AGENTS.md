@@ -1,3 +1,7 @@
+> **Agents other than Claude Code: read [`docs/AGENT_QUICKSTART.md`](docs/AGENT_QUICKSTART.md) first** — the current
+> rules in one short page. This file is a snapshot of the project notes from 2026-10-13 and is older; the current notes are
+> in `CLAUDE.md` (local, git-ignored). Log what you did in `docs/AGENT_WORKLOG.md`.
+
 # XFinder — macOS System Utility & Clipboard Manager
 
 **Version**: 2.0 (pivot)

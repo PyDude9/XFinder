@@ -6,7 +6,13 @@ Tất cả thay đổi đáng chú ý của XFinder được ghi ở đây, mớ
 
 ### Hỗ trợ & báo lỗi
 - **Báo lỗi…** (menu ▸ Trợ giúp, hoặc trang Giới thiệu) dựng một báo cáo chẩn đoán: phiên bản, macOS, model máy, quyền đã cấp, tính năng đang bật, crash/treo gần đây của chính XFinder (crash report của macOS + MetricKit, chỉ các trường trong danh sách cho phép) và nhật ký mã lỗi kỹ thuật. Bạn đọc trọn văn bản rồi tự Sao chép / Lưu tệp / Mở GitHub Issues.
-- **XFinder không tự gửi gì đi**: không telemetry, không thống kê sử dụng, không máy chủ. Báo cáo không có tên tệp, nội dung clipboard, tên cửa sổ, tài khoản; thư mục nhà thay bằng `~`. Nhật ký lỗi (chỉ mã, tối đa 300 dòng) lưu ở `~/Library/Application Support/XFinder/Diagnostics/`, tắt và xoá được.
+- Báo cáo lỗi **không bao giờ tự gửi**: không có tên tệp, nội dung clipboard, tên cửa sổ, tài khoản; thư mục nhà thay bằng `~`. Nhật ký lỗi (chỉ mã, tối đa 300 dòng) lưu ở `~/Library/Application Support/XFinder/Diagnostics/`, tắt và xoá được.
+- **Phân tích ẩn danh** (bật sẵn, một công tắc **Từ chối gửi phân tích ẩn danh** ở Giới thiệu): tối đa một bản thống kê trải nghiệm mỗi ngày tới TelemetryDeck — phiên bản, loại máy, ngôn ngữ, tính năng đang bật, quyền đã cấp, số lần gặp từng mã lỗi, tóm tắt crash. Không mã định danh, không nội dung; thông báo một lần và chờ 24 giờ trước lần gửi đầu; xem trước đúng JSON sẽ gửi. Chưa điền nơi nhận trong Info.plist thì không gửi gì.
+
+### Sửa lỗi
+- Thư viện Clipboard và Theo dõi hệ thống không còn bị đẩy lên khỏi mép cửa sổ (che header, tab và ô tìm kiếm); cửa sổ giữ mức tối thiểu 900×600.
+- Trang Chống ngủ riêng được gộp vào dòng Chống ngủ ở **Tính năng & Quyền** — vẫn chọn được thời lượng (vô hạn / 15 phút / 1 giờ / 2 giờ) và thấy thời gian còn lại.
+- Phiên Claude Code chạm giới hạn sử dụng trong app Claude desktop giờ hiện đúng là đã dừng (đọc dòng `rate_limit` trong transcript — app desktop không phát hook `StopFailure`), thay vì "đang chạy" suốt 15 phút.
 
 ## [1.4.0] — 2026-10
 

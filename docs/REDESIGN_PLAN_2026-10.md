@@ -374,8 +374,8 @@ Badge-trên-vùng-chọn (AXObserver theo app) chưa làm. Chưa đo live.
 chỉ host công cộng, không localhost/mạng nội bộ; mặc định tắt. Chưa đo live qua app.
 
 **Không làm (bằng chứng, không phải sở thích):** lock screen (SkyLight/LoginUIKit private) · lời bài hát/visualizer (mạng
-bên thứ ba, mic) · iCloud (CloudKit cần tài khoản trả phí) · Sentry/TelemetryDeck tự gửi + Sparkle tự tải (0 telemetry; phần
-chẩn đoán CỤC BỘ đã làm ở §3g, gửi tự động là Q-DIAG) · Pro/license ·
+bên thứ ba, mic) · iCloud (CloudKit cần tài khoản trả phí) · Sparkle tự tải (phân tích ẩn danh opt-out đã làm ở §3g) ·
+Pro/license ·
 camera "Mirror" (câu job: không ai tới notch để soi gương) · thay HUD độ sáng (không có đường ghi public).
 
 ### 3g. Chẩn đoán & báo lỗi (2026-10-14)
@@ -393,7 +393,9 @@ Luật (tra 2026-10-14): Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15 (h
 hành vi/sử dụng là dữ liệu **nhạy cảm**, cần đồng ý riêng từng mục đích, rút lại được; chuyển ra máy chủ nước ngoài cần hồ sơ đánh
 giá tác động nộp A05 trước; dữ liệu đã khử định danh nằm ngoài phạm vi. EU ePrivacy 5(3) bắt buộc opt-in cho mọi lần đọc/gửi từ
 thiết bị (lợi ích hợp pháp không thay được); địa chỉ IP là dữ liệu cá nhân. Apple **không** chuyển crash cho dev của app phát hành
-ngoài App Store. ⇒ Gửi tự động / thống kê sử dụng = **Q-DIAG**, chỉ làm khi chủ dự án có tài khoản dịch vụ + màn hỏi đồng ý.
+ngoài App Store. Chủ dự án chốt (cùng ngày): **phân tích ẩn danh bật sẵn, từ chối bằng một công tắc** — đã dựng
+(`AnalyticsRules`/`AnalyticsCenter`, TelemetryDeck, không mã định danh, thông báo một lần + 24 giờ chờ, xem trước JSON).
+Còn thiếu App ID + namespace TelemetryDeck của chủ dự án (Q-DIAG-4); chưa điền thì không gửi gì.
 
 Gate: `DiagnosticsRulesTests` (11, gồm một báo cáo crash cài sẵn mọi trường định danh — fail nếu bất kỳ trường nào lọt vào văn bản)
 · `mutation-check-diagnostics.sh` G1–G9 · `FeatureKeyDefaultsTests` hàng `diagnostics.localLog`. Chưa đo: MetricKit có giao cho bản

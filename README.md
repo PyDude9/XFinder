@@ -1,6 +1,8 @@
 # XFinder
 
-Tiện ích hệ thống + quản lý clipboard cho macOS. Gọn nhẹ, chạy native, **100% cục bộ — không thu thập dữ liệu, không gửi gì lên mạng**.
+Tiện ích hệ thống + quản lý clipboard cho macOS. Gọn nhẹ, chạy native. **Clipboard, ghi chú và tệp của bạn nằm trên máy**;
+ngoài những tính năng bạn tự bật (như xem trước liên kết), thứ duy nhất tự gửi đi là một bản thống kê ẩn danh mỗi ngày, xem
+trước và từ chối được (mục *Liên hệ*).
 
 **Nền tảng**: macOS 14.0+ · Apple Silicon (arm64) · Swift 6 · SwiftUI + AppKit
 **Tác giả**: thang0todev@gmail.com
@@ -243,6 +245,13 @@ Báo lỗi hoặc góp ý qua [GitHub Issues](https://github.com/PyDude9/XFinder
 
 **Báo lỗi kèm chẩn đoán:** menu XFinder ▸ Trợ giúp ▸ **Báo lỗi…** (hoặc trang Giới thiệu) dựng một báo cáo gồm phiên bản,
 macOS, model máy, quyền đã cấp, tính năng đang bật, crash/treo gần đây của chính XFinder và nhật ký mã lỗi kỹ thuật. Bạn đọc
-trọn văn bản trước, rồi tự chọn Sao chép / Lưu tệp / Mở GitHub Issues. **XFinder không tự gửi gì đi** — không telemetry,
-không thống kê sử dụng, không máy chủ. Báo cáo không chứa tên tệp, nội dung clipboard, tên cửa sổ hay tài khoản; thư mục nhà
-được thay bằng `~`. Nhật ký nằm ở `~/Library/Application Support/XFinder/Diagnostics/`, tắt và xoá được ở trang Giới thiệu.
+trọn văn bản trước, rồi tự chọn Sao chép / Lưu tệp / Mở GitHub Issues — báo cáo này không bao giờ tự gửi. Nó không chứa tên
+tệp, nội dung clipboard, tên cửa sổ hay tài khoản; thư mục nhà được thay bằng `~`. Nhật ký nằm ở
+`~/Library/Application Support/XFinder/Diagnostics/`, tắt và xoá được ở trang Giới thiệu.
+
+**Phân tích ẩn danh (bật sẵn, từ chối bằng một công tắc):** để sửa lỗi và nâng cấp app, XFinder gửi tối đa mỗi ngày một
+bản thống kê ẩn danh về trải nghiệm tới TelemetryDeck (theo chính sách của họ: dữ liệu lưu tại EU, không lưu địa chỉ IP): phiên bản app và macOS,
+loại máy, ngôn ngữ, tính năng đang bật, quyền đã cấp, số lần gặp từng mã lỗi và tóm tắt crash của chính XFinder. Không có mã
+định danh — mỗi lần gửi là một bản rời — và không bao giờ có tên tệp, clipboard, ghi chú, tên cửa sổ hay tài khoản. Lần gửi
+đầu chỉ diễn ra sau một thông báo và 24 giờ chờ; xem đúng dữ liệu sẽ gửi và từ chối ở **Giới thiệu ▸ Hỗ trợ & báo lỗi ▸
+Phân tích ẩn danh**. Bản dựng nào chưa điền nơi nhận (App ID / namespace TelemetryDeck trong Info.plist) thì không gửi gì.
