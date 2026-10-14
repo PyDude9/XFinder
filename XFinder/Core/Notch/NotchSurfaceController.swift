@@ -78,9 +78,10 @@ final class NotchSurfaceController {
     /// The hub page that was open last, for `NotchHoverOpen.lastPage`.
     private var lastHubPage: NotchSurfaceMachine.Page?
     /// B7: keep the surface out of screenshots, recordings and screen sharing (`NSWindow.sharingType = .none`;
-    /// measured as `kCGWindowSharingState = 0`). On by default — an overlay in a recording is noise.
+    /// measured as `kCGWindowSharingState = 0`). OFF by default since 2026-10-14: the owner could not screenshot
+    /// the notch; hiding it is an opt-in for people who share their screen.
     private var hideFromCapture: Bool {
-        UserDefaults.standard.object(forKey: "notch.hideFromCapture") as? Bool ?? true
+        UserDefaults.standard.object(forKey: "notch.hideFromCapture") as? Bool ?? false
     }
     /// B7: on a screen without a notch, draw the collapsed state as a pill under the menu bar.
     private var pillOnPlainScreens: Bool {
@@ -278,7 +279,7 @@ final class NotchSurfaceController {
 
         let zone = NotchSurfaceLayout.hoverZone(notch: notch, screen: screen.frame, itemCount: machine.itemCount,
                                                 nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
-                                                timerActive: countdown != nil, agentActive: model.agentActive,
+                                                timerActive: countdown != nil, agentActive: model.agentActive, agentBusy: model.agentBusy,
                                                 visible: screen.visibleFrame,
                                                 pillShown: pillOnPlainScreens && badgeShown && machine.state == .collapsed)
         if zone.contains(point) {
@@ -957,7 +958,7 @@ final class NotchSurfaceController {
     /// the frame is owned by `NotchSurfaceLayout`, and the drawn shape animates inside it.
     private func prepare() {
         let p = SurfacePanel(kind: .notch, size: CGSize(width: 440, height: 222))
-        p.sharingType = hideFromCapture ? .none : .readOnly          // B7: invisible to capture by default
+        p.sharingType = hideFromCapture ? .none : .readOnly          // B7; off by default since 2026-10-14 (owner could not screenshot it)
         // The surface is black in every state; system controls on it (menus, text-field placeholders,
         // selection colours) must think they are in Dark mode. Measured on the Light-appearance panel:
         // the search placeholder rendered (13,13,13) on (25,25,25) — 1.1:1 (review row 1).
@@ -1001,7 +1002,7 @@ final class NotchSurfaceController {
                                                     screen: screen.frame, visible: screen.visibleFrame,
                                                     pointer: shakePoint, timerActive: countdown != nil,
                                                     nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
-                                                    agentActive: model.agentActive,
+                                                    agentActive: model.agentActive, agentBusy: model.agentBusy,
                                                     pillOnPlainScreens: pillOnPlainScreens) else {
             model.state = .collapsed
             model.itemCount = machine.itemCount

@@ -275,4 +275,19 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         XCTAssertEqual(size.height, notch.height + m.toolDrop)
         XCTAssertEqual(size, CGSize(width: 650, height: 188), "650 × 188 — down from 776 × 254 before P1")
     }
+
+    /// P8: the activity grid sits first on the RIGHT wing only while an agent is busy, and widens the notch evenly.
+    func testTheActivityGridJoinsTheRightWingOnlyWhileAnAgentIsBusy() {
+        let idle = L.wingItems(itemCount: 0, timerActive: false, nowPlayingActive: true, agentActive: true, agentBusy: false)
+        XCTAssertEqual(idle.left, [.agent]); XCTAssertEqual(idle.right, [.music])
+        let busy = L.wingItems(itemCount: 0, timerActive: false, nowPlayingActive: true, agentActive: true, agentBusy: true)
+        XCTAssertEqual(busy.right, [.agentActivity, .music])
+        XCTAssertEqual(L.wingItems(itemCount: 0, timerActive: false, nowPlayingActive: false, agentActive: false, agentBusy: true).right, [],
+                       "no agent ⇒ no grid, whatever the busy flag says")
+        let notch = CGRect(x: 0, y: 0, width: 185, height: 32)
+        let a = L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch, nowPlayingActive: true, agentActive: true, agentBusy: false)!
+        let b = L.size(for: .collapsed, anchor: .notch, itemCount: 0, notch: notch, nowPlayingActive: true, agentActive: true, agentBusy: true)!
+        XCTAssertGreaterThan(b.width, a.width, "the grid takes room on the right wing")
+        XCTAssertEqual(b.height, notch.height, "the wings never hang below the notch")
+    }
 }

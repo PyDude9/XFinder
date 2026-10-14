@@ -223,6 +223,63 @@ enum AgentSessionRules {
         "Chưa nối agent nào — cài hook cho Claude Code / Codex hoặc bật OpenCode ở trang Agent AI.",
     ]
 
+    // MARK: - Presentation (OneNotch / Notch Crew, measured 2026-10-14)
+
+    /// What a session is doing, in the words the notch shows. OneNotch's pet has the phases idle · thinking · working ·
+    /// waiting · done · error; XFinder's events give thinking (running, no tool), working (running a tool), waiting
+    /// (a permission or a question), your turn (stopped after an answer) and ended.
+    enum Activity: Int, Comparable, Sendable {
+        case ended = 0, yourTurn, thinking, working, waiting
+        static func < (a: Activity, b: Activity) -> Bool { a.rawValue < b.rawValue }
+        /// The activity grid runs for these — something is happening, or someone must act.
+        var isBusy: Bool { self == .thinking || self == .working || self == .waiting }
+    }
+
+    static func activity(of s: AgentSession) -> Activity {
+        switch s.status {
+        // AskUserQuestion arrives as a running tool, but it is the person who must act.
+        case .running(let tool): return s.questionPending ? .waiting : (tool == nil ? .thinking : .working)
+        case .waitingForPermission: return .waiting
+        // A question or a dialog on screen needs an answer; a plain finished turn is only "your turn".
+        case .waitingForInput: return (s.questionPending || s.dialogOnScreen) ? .waiting : .yourTurn
+        case .ended: return .ended
+        }
+    }
+
+    /// The collapsed wing for every live session at once: ONE indicator showing the most urgent activity (OneNotch folds
+    /// many sessions into one pet; Notch Crew names who is "waiting on you"), the agents involved most-urgent first, at
+    /// most two drawn, and the counts behind them.
+    struct WingSummary: Equatable, Sendable {
+        var agents: [AgentKind]
+        var activity: Activity
+        var live: Int
+        var waiting: Int
+    }
+
+    static func wingSummary(_ sessions: [AgentSession]) -> WingSummary? {
+        let live = sessions.filter { activity(of: $0) != .ended }
+        guard !live.isEmpty else { return nil }
+        let ranked = live.sorted { a, b in
+            let x = activity(of: a), y = activity(of: b)
+            return x != y ? x > y : a.updatedAt > b.updatedAt
+        }
+        var agents: [AgentKind] = []
+        for s in ranked where !agents.contains(s.agent) { agents.append(s.agent) }
+        return WingSummary(agents: Array(agents.prefix(2)), activity: activity(of: ranked[0]),
+                           live: live.count, waiting: live.filter { activity(of: $0) == .waiting }.count)
+    }
+
+    /// The wing's spoken label ends with one of these (after the agents' names).
+    static func wingLabelKey(_ a: Activity) -> String {
+        switch a {
+        case .waiting: return " đang chờ bạn"
+        case .working, .thinking: return " đang chạy"
+        case .yourTurn: return " đã xong — tới lượt bạn"
+        case .ended: return " đã dừng"
+        }
+    }
+    static let wingLabelKeys = [" đang chờ bạn", " đang chạy", " đã xong — tới lượt bạn", " đã dừng"]
+
     /// The tool name of Claude Code's multiple-choice question.
     static let questionTool = "AskUserQuestion"
     /// A session with no event for this long and no known live process is treated as ended.

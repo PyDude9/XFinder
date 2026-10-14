@@ -16,7 +16,7 @@ struct NotchInterfaceDetailView: View {
 
     // B7 notch behaviour. Readers: NotchSurfaceController (defaults must match — FeatureKeyDefaultsTests).
     @AppStorage("notch.pillOnPlainScreens") private var pillOnPlainScreens = true
-    @AppStorage("notch.hideFromCapture") private var hideFromCapture = true
+    @AppStorage("notch.hideFromCapture") private var hideFromCapture = false
 
     /// D1 #44 — page order + visibility; one reader: `NotchSurfaceController.pageOrderRaw`.
     @AppStorage("notch.pages") private var pagesRaw = "files,clipboard,nowPlaying,agents,calendar,timer,aiUsage"

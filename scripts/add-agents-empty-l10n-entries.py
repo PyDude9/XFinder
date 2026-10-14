@@ -5,6 +5,10 @@ import json, sys
 from pathlib import Path
 STORE = Path(__file__).resolve().parent.parent / "XFinder/Resources/L10n.strings.json"
 ENTRIES = {
+    " đang chờ bạn": (" waiting for you", "fragment"),
+    " đang chạy": (" running", "fragment"),
+    " đã xong — tới lượt bạn": (" done — your turn", "fragment"),
+    " đã dừng": (" stopped", "fragment"),
     "Chờ bạn: ": ("Waiting for you: ", "fragment"),
     "Phiên: ": ("Sessions: ", "fragment"),
     "Agent AI đang tắt — bật ở trang Agent AI.": ("AI agents are off — turn them on in AI agents settings.", "sentence"),

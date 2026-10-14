@@ -80,6 +80,10 @@ final class NotchSurfaceModel {
     var agentsNeedingYou: Int { agents.filter(\.needsYou).count }
     /// P1: a Claude Code session is alive (running or waiting) — the left wing of the collapsed notch shows it.
     var agentActive: Bool { agentsEnabled && agents.contains { $0.status != .ended } }
+    /// P8 — one summary of every live session for the collapsed wings (most urgent activity, agents most-urgent first).
+    var agentSummary: AgentSessionRules.WingSummary? { agentsEnabled ? AgentSessionRules.wingSummary(agents) : nil }
+    /// An agent is thinking, working or waiting: the activity grid runs on the right wing.
+    var agentBusy: Bool { agentSummary?.activity.isBusy ?? false }
     /// D0c: true for the first frame of a surface opening at the notch — the shape is drawn at the notch's
     /// own size and the controller flips this on the next run-loop turn, so the hub springs out of the notch.
     var appearFromNotch = false
@@ -119,7 +123,7 @@ struct NotchSurfaceView: View {
                                        itemCount: model.itemCount, notch: notch,
                                        timerActive: model.timerText != nil,
                                        nowPlayingActive: nowPlayingActive,
-                                       agentActive: model.agentActive,
+                                       agentActive: model.agentActive, agentBusy: model.agentBusy,
                                        pillOnPlainScreens: model.pillOnPlainScreens) ?? .zero
     }
 
@@ -223,7 +227,7 @@ struct NotchSurfaceView: View {
 
     private var wingItems: (left: [NotchSurfaceLayout.WingItem], right: [NotchSurfaceLayout.WingItem]) {
         NotchSurfaceLayout.wingItems(itemCount: model.itemCount, timerActive: model.timerText != nil,
-                                     nowPlayingActive: nowPlayingActive, agentActive: model.agentActive)
+                                     nowPlayingActive: nowPlayingActive, agentActive: model.agentActive, agentBusy: model.agentBusy)
     }
 
     /// Each side's items sit at the OUTER edge of their wing (OneNotch measured ~9 pt in), so nothing crowds the
@@ -259,16 +263,33 @@ struct NotchSurfaceView: View {
         let w = Self.m.wingItemWidth(item)
         switch item {
         case .agent:
-            // Each literal is its own `L10n.t` argument so the literal sweep sees both (a ternary INSIDE t() hides them).
-            let label = model.agentsNeedingYou > 0 ? L10n.t("Claude Code đang chờ bạn") : L10n.t("Claude Code đang chạy")
-            Image(systemName: "terminal.fill").font(.system(size: 12, weight: .semibold))
-                .foregroundColor(model.agentsNeedingYou > 0 ? .orange : .white.opacity(0.85))
-                .frame(width: w, height: 22)
-                .contentShape(Rectangle())
-                .onTapGesture { NotchSurfaceController.shared.reveal(page: .agents) }
-                .help(label)
-                .accessibilityLabel(label)
-                .accessibilityAddTraits(.isButton)
+            // P8 — the agents' own tiles with the summary mark (was one generic `terminal.fill` for every agent,
+            // read by the owner as "the kitty icon", and spoken as "Claude Code" even for OpenCode).
+            if let summary = model.agentSummary {
+                let label = AgentWingGlyph.label(summary)
+                AgentWingGlyph(summary: summary)
+                    .frame(width: w, height: 22)
+                    .contentShape(Rectangle())
+                    .onTapGesture { NotchSurfaceController.shared.reveal(page: .agents) }
+                    .help(label)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(label)
+                    .accessibilityAddTraits(.isButton)
+            }
+        case .agentActivity:
+            if let summary = model.agentSummary {
+                let lead = summary.agents.first?.brand.tile ?? (1, 1, 1)
+                // A light tile (Codex, OpenCode) reads as white on the black notch; Claude's orange stays orange.
+                let tint = summary.agents.first?.brand.glyphIsDark == true ? Color.white : Color(red: lead.0, green: lead.1, blue: lead.2)
+                AgentActivityGrid(tint: tint, waiting: summary.activity == .waiting)
+                    .frame(width: w, height: 22)
+                    .contentShape(Rectangle())
+                    .onTapGesture { NotchSurfaceController.shared.reveal(page: .agents) }
+                    .help(AgentWingGlyph.label(summary))
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(AgentWingGlyph.label(summary))
+                    .accessibilityAddTraits(.isButton)
+            }
         case .files:
             HStack(spacing: 3) {
                 Image(systemName: "tray.fill").font(.system(size: 11))

@@ -1,4 +1,5 @@
 import XCTest
+import AppKit
 import Foundation
 
 /// N3 — the pure half of AI agent sessions on the notch: the hook's line format, the session rules and the
@@ -209,4 +210,62 @@ final class AgentSessionTests: XCTestCase {
         let store = try L10nFixture.load()
         for k in R.emptyReasonKeys { XCTAssertFalse((store.entries[k]?.en ?? "").isEmpty, k) }
     }
+
+    // MARK: P8 — presentation (OneNotch / Notch Crew)
+
+    private func session(_ id: String, _ agent: AgentKind, _ status: AgentSession.Status, at t: TimeInterval,
+                         question: Bool = false) -> AgentSession {
+        let at = Date(timeIntervalSince1970: t)
+        var s = AgentSession(id: id, agent: agent, cwd: "/tmp/\(id)", transcriptPath: nil, startedAt: at, updatedAt: at, status: status,
+                             lastTool: nil, lastPrompt: nil, agentPID: nil, terminal: AgentEvents.Terminal(), eventCount: 1)
+        s.questionPending = question
+        return s
+    }
+
+    func testActivityTellsAFinishedTurnFromSomethingThatMustBeAnswered() {
+        typealias R = AgentSessionRules
+        XCTAssertEqual(R.activity(of: session("a", .claude, .running(tool: nil), at: 0)), .thinking)
+        XCTAssertEqual(R.activity(of: session("a", .claude, .running(tool: "Bash"), at: 0)), .working)
+        XCTAssertEqual(R.activity(of: session("a", .claude, .running(tool: "AskUserQuestion"), at: 0, question: true)), .waiting,
+                       "a question arrives as a running tool, but the person must act")
+        XCTAssertEqual(R.activity(of: session("a", .claude, .waitingForInput, at: 0)), .yourTurn,
+                       "a finished turn is not an orange alert")
+        let p = AgentSession.PendingPermission(requestID: "r", toolName: "Bash", summary: nil, since: Date())
+        XCTAssertEqual(R.activity(of: session("a", .claude, .waitingForPermission(p), at: 0)), .waiting)
+        XCTAssertEqual(R.activity(of: session("a", .claude, .ended, at: 0)), .ended)
+    }
+
+    func testTheWingShowsTheMostUrgentAgentFirstAndCountsEveryLiveSession() throws {
+        typealias R = AgentSessionRules
+        XCTAssertNil(R.wingSummary([session("x", .claude, .ended, at: 9)]), "nothing live ⇒ no wing")
+        let p = AgentSession.PendingPermission(requestID: "r", toolName: "Bash", summary: nil, since: Date())
+        let all = [session("a", .claude, .running(tool: "Bash"), at: 30),
+                   session("b", .opencode, .waitingForPermission(p), at: 10),
+                   session("c", .claude, .waitingForInput, at: 50),
+                   session("d", .codex, .ended, at: 60)]
+        let w = try XCTUnwrap(R.wingSummary(all))
+        XCTAssertEqual(w.activity, .waiting, "the most urgent activity wins")
+        XCTAssertEqual(w.agents, [.opencode, .claude], "most urgent agent first, each agent once, ended ones left out")
+        XCTAssertEqual(w.live, 3)
+        XCTAssertEqual(w.waiting, 1)
+        let three = [session("a", .claude, .running(tool: nil), at: 1), session("b", .codex, .running(tool: nil), at: 2),
+                     session("c", .opencode, .running(tool: nil), at: 3)]
+        XCTAssertEqual(try XCTUnwrap(R.wingSummary(three)).agents.count, 2, "at most two tiles are drawn")
+        XCTAssertEqual(try XCTUnwrap(R.wingSummary(three)).agents.first, .opencode, "ties go to the most recent")
+        let store = try L10nFixture.load()
+        for k in R.wingLabelKeys { XCTAssertFalse((store.entries[k]?.en ?? "").isEmpty, k) }
+        XCTAssertEqual(Set(Activity.allCasesForTest.map(R.wingLabelKey)), Set(R.wingLabelKeys))
+    }
+
+    func testEveryAgentHasAGlyphThatExistsAndItsOwnTile() {
+        for kind in AgentKind.allCases {
+            XCTAssertNotNil(NSImage(systemSymbolName: kind.brand.glyph, accessibilityDescription: nil), kind.brand.glyph)
+        }
+        XCTAssertEqual(Set(AgentKind.allCases.map(\.brand.glyph)).count, AgentKind.allCases.count, "no two agents share a glyph")
+    }
+}
+
+private typealias Activity = AgentSessionRules.Activity
+private extension AgentSessionRules.Activity {
+    static let allCasesForTest: [AgentSessionRules.Activity] = [.ended, .yourTurn, .thinking, .working, .waiting]
 }

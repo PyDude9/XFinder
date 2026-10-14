@@ -178,6 +178,7 @@ struct NotchAgentsPage: View {
             Text(L10n.t("Gần đây")).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
             ForEach(model.recentAgents.prefix(3)) { e in
                 HStack(spacing: XFinderTokens.Space.tight) {
+                    AgentBrandTile(kind: e.agent, size: 12)          // P8: Notch Crew's recent list leads with the agent tile
                     Text(e.displayName).font(XFinderTokens.Font.caption).foregroundColor(.white)
                         .lineLimit(1).truncationMode(.middle)
                         .frame(minWidth: 0, alignment: .leading).layoutPriority(-1)   // a long folder name gives way first
@@ -234,14 +235,20 @@ private struct AgentRow: View {
 
     private var line1: some View {
         HStack(spacing: XFinderTokens.Space.tight) {
-            Circle().fill(tint).frame(width: 8, height: 8)
+            // P8 (Notch Crew's row, owner's screenshot 2026-10-14): a status mark, then where it runs (the terminal's
+            // own icon) › which agent (its tile), then the name. The activity grid replaces the dot while it works.
+            statusMark
+            if let icon = terminalIcon {
+                Image(nsImage: icon).resizable().frame(width: 14, height: 14)
+                    .help(session.terminal.termProgram ?? "")
+                    .accessibilityHidden(true)
+                Image(systemName: "chevron.right").font(.system(size: 7, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.35)).accessibilityHidden(true)
+            }
+            AgentBrandTile(kind: session.agent, size: 14)
             Text(session.displayName)
                 .font(XFinderTokens.Font.row).foregroundColor(.white).lineLimit(1).truncationMode(.tail)
                 .frame(minWidth: 0, alignment: .leading).layoutPriority(-1)       // OpenCode titles can be long
-            // P5: which agent — a product name, identical in both languages.
-            Text(session.agent.displayName)
-                .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.45))
-                .lineLimit(1).fixedSize()
             // P7a: a session XFinder itself is running, with no terminal — a small glyph says so. Once the process has
             // ended the wording must not say XFinder is still running it (review).
             if session.terminal.windowless {
@@ -413,6 +420,23 @@ private struct AgentRow: View {
             return L10n.t(AgentSessionRules.statusKey(session.status)) + tool
         }
         return L10n.t(AgentSessionRules.statusKey(session.status))
+    }
+
+    /// The terminal (or app) the session runs in — kitty, Terminal, the Claude desktop app — as its own icon. Not for
+    /// a windowless session (XFinder runs it) and not when no bundle id was recorded (OpenCode via its API).
+    private var terminalIcon: NSImage? {
+        guard !session.terminal.windowless else { return nil }
+        return ClipboardAppIcon.icon(forBundleID: session.terminal.bundleID)
+    }
+
+    @ViewBuilder private var statusMark: some View {
+        let a = AgentSessionRules.activity(of: session)
+        if a == .thinking || a == .working || a == .waiting {
+            AgentActivityGrid(tint: accent, waiting: a == .waiting, cell: 2.4, gap: 1)
+                .frame(width: 10, height: 10)
+        } else {
+            Circle().fill(tint).frame(width: 8, height: 8)
+        }
     }
 
     private var tint: Color {
@@ -1036,5 +1060,115 @@ private struct WindowlessConversationView: View {
                 .buttonStyle(NotchPillButtonStyle(primary: false))
             }
         }
+    }
+}
+
+// MARK: - P8 — agent glyphs (OneNotch / Notch Crew, measured 2026-10-14)
+
+/// The agent's own tile: a coloured rounded square with its glyph (`AgentKind.brand`). Notch Crew draws one per row
+/// ("kitty › [OpenCode tile] name"); OneNotch keys each provider to a symbol and a tint. XFinder's tiles are SF Symbols.
+struct AgentBrandTile: View {
+    let kind: AgentKind
+    var size: CGFloat = 14
+
+    var body: some View {
+        let b = kind.brand
+        RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+            .fill(Color(red: b.tile.0, green: b.tile.1, blue: b.tile.2))
+            .overlay(
+                Image(systemName: b.glyph)
+                    .font(.system(size: size * 0.62, weight: .bold))
+                    .foregroundColor(b.glyphIsDark ? Color.black.opacity(0.85) : .white)
+            )
+            .frame(width: size, height: size)
+            .help(kind.displayName)
+            .accessibilityLabel(kind.displayName)
+    }
+}
+
+/// A 3×3 dot grid. Running: one lit dot circles the ring with a short fading trail (OneNotch's right wing while an
+/// agent works — owner's screenshot 2026-10-14). Waiting for the person: the whole ring breathes in orange. Driven by
+/// a ~8 Hz periodic timeline that exists only while the grid is on screen — never a 60 fps animation in the notch.
+struct AgentActivityGrid: View {
+    var tint: Color
+    var waiting: Bool
+    var cell: CGFloat = 3.6
+    var gap: CGFloat = 1.4
+
+    /// The ring around the centre, clockwise from the top-left.
+    private static let ring = [0, 1, 2, 5, 8, 7, 6, 3]
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: waiting ? 0.5 : 0.12)) { ctx in
+            let tick = Int(ctx.date.timeIntervalSinceReferenceDate / (waiting ? 0.5 : 0.12))
+            VStack(spacing: gap) {
+                ForEach(0..<3, id: \.self) { r in
+                    HStack(spacing: gap) {
+                        ForEach(0..<3, id: \.self) { c in
+                            RoundedRectangle(cornerRadius: cell * 0.3, style: .continuous)
+                                .fill(color(index: r * 3 + c, tick: tick))
+                                .frame(width: cell, height: cell)
+                        }
+                    }
+                }
+            }
+        }
+        .accessibilityHidden(true)
+    }
+
+    private func color(index: Int, tick: Int) -> Color {
+        if waiting {
+            guard index != 4 else { return Color.orange.opacity(0.15) }
+            return Color.orange.opacity(tick % 2 == 0 ? 1.0 : 0.4)
+        }
+        guard let pos = Self.ring.firstIndex(of: index) else { return tint.opacity(0.12) }
+        let head = tick % Self.ring.count
+        let behind = (head - pos + Self.ring.count) % Self.ring.count
+        switch behind {
+        case 0: return tint
+        case 1: return tint.opacity(0.55)
+        case 2: return tint.opacity(0.25)
+        default: return tint.opacity(0.12)
+        }
+    }
+}
+
+/// The left wing's agent glyph: up to two agent tiles (most urgent in front), a small mark for the summary activity
+/// (orange dot = waiting on you, green check = finished, your turn) and a count when more sessions are live than tiles.
+struct AgentWingGlyph: View {
+    let summary: AgentSessionRules.WingSummary
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            ForEach(Array(summary.agents.enumerated().reversed()), id: \.offset) { i, kind in
+                AgentBrandTile(kind: kind, size: 14)
+                    .offset(x: CGFloat(i) * 6)
+                    .opacity(i == 0 ? 1 : 0.8)
+            }
+        }
+        .frame(width: 20, height: 22, alignment: .leading)
+        .overlay(alignment: .topTrailing) { mark.offset(x: 2, y: 2) }
+        .overlay(alignment: .bottomTrailing) {
+            if summary.live > summary.agents.count {
+                Text("\(summary.live)").font(.system(size: 8, weight: .bold)).monospacedDigit()
+                    .foregroundColor(.white).padding(.horizontal, 2)
+                    .background(Capsule().fill(Color.black.opacity(0.8)))
+                    .offset(x: 3, y: -1)
+            }
+        }
+    }
+
+    @ViewBuilder private var mark: some View {
+        switch summary.activity {
+        case .waiting: Circle().fill(Color.orange).frame(width: 6, height: 6)
+        case .yourTurn:
+            Image(systemName: "checkmark.circle.fill").font(.system(size: 7, weight: .bold)).foregroundColor(.green)
+        default: EmptyView()
+        }
+    }
+
+    /// "Claude Code, OpenCode đang chờ bạn" — Notch Crew names who is waiting; the count follows when more are live.
+    static func label(_ s: AgentSessionRules.WingSummary) -> String {
+        s.agents.map(\.displayName).joined(separator: ", ") + L10n.t(AgentSessionRules.wingLabelKey(s.activity))
     }
 }

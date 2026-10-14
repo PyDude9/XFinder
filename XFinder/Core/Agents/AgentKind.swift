@@ -19,6 +19,27 @@ enum AgentKind: String, CaseIterable, Codable, Sendable {
         }
     }
 
+    /// How the agent is recognised at a glance — a coloured tile with a glyph, the way OneNotch and Notch Crew show it
+    /// (measured 2026-10-14: OneNotch keys each provider to its own symbol + tint, Claude (0.85, 0.47, 0.26); Notch Crew
+    /// shows an orange tile for Claude and a white tile with a square-in-square for OpenCode). XFinder draws its own tile
+    /// from SF Symbols — no logo artwork is copied from either app.
+    struct Brand: Equatable, Sendable {
+        var glyph: String           // SF Symbol name (checked to exist by a test)
+        var tile: (Double, Double, Double)
+        var glyphIsDark: Bool        // dark glyph on a light tile
+        static func == (a: Brand, b: Brand) -> Bool {
+            a.glyph == b.glyph && a.tile == b.tile && a.glyphIsDark == b.glyphIsDark
+        }
+    }
+
+    var brand: Brand {
+        switch self {
+        case .claude: return Brand(glyph: "asterisk", tile: (0.85, 0.47, 0.26), glyphIsDark: false)
+        case .codex: return Brand(glyph: "hexagon", tile: (0.93, 0.93, 0.94), glyphIsDark: true)
+        case .opencode: return Brand(glyph: "square.inset.filled", tile: (0.93, 0.93, 0.94), glyphIsDark: true)
+        }
+    }
+
     /// Agents that run XFinder's hook script (the others are read some other way).
     var usesHookScript: Bool { self != .opencode }
 

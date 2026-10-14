@@ -10694,6 +10694,22 @@
     "Chờ bạn: ": {
       "en": "Waiting for you: ",
       "scope": "fragment"
+    },
+    " đang chờ bạn": {
+      "en": " waiting for you",
+      "scope": "fragment"
+    },
+    " đang chạy": {
+      "en": " running",
+      "scope": "fragment"
+    },
+    " đã xong — tới lượt bạn": {
+      "en": " done — your turn",
+      "scope": "fragment"
+    },
+    " đã dừng": {
+      "en": " stopped",
+      "scope": "fragment"
     }
   }
 }
