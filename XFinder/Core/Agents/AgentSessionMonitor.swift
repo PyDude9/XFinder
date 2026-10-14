@@ -330,9 +330,21 @@ final class AgentSessionMonitor {
     /// terminal's own scripting and is not attempted — the row says "mở app", not "mở tab".
     @discardableResult
     func openTerminal(of session: AgentSession) -> Bool {
-        guard let bid = session.terminal.bundleID,
-              let app = NSRunningApplication.runningApplications(withBundleIdentifier: bid).first else { return false }
-        return app.activate(options: [.activateAllWindows])
+        guard let bid = session.terminal.bundleID else { return false }
+        return Self.bringForward(bundleID: bid)
+    }
+
+    /// Bring an app to the front from the notch. NOT `NSRunningApplication.activate(options:)`: since macOS 14
+    /// activation is cooperative and the system ignores that call from an app that is not itself active — and the
+    /// notch is a non-activating panel, so XFinder never is. The "open" buttons did nothing for exactly that reason.
+    /// Opening the app through LaunchServices activates an already-running instance from the background.
+    @discardableResult
+    static func bringForward(bundleID: String) -> Bool {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return false }
+        let config = NSWorkspace.OpenConfiguration()
+        config.activates = true
+        NSWorkspace.shared.openApplication(at: url, configuration: config) { _, _ in }
+        return true
     }
 
     // MARK: - Hook install (on request only)

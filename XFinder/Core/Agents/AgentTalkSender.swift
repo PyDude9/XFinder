@@ -132,8 +132,8 @@ final class AgentTalkSender {
         pb.clearContents()
         pb.setString(text, forType: .string)
         var opened = false
-        if let bundleID, let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
-            opened = app.activate(options: [.activateAllWindows])
+        if let bundleID {
+            opened = AgentSessionMonitor.bringForward(bundleID: bundleID)
         }
         if afterDialog {
             setStatus(session, Status(key: "Đã chép — trả lời hộp thoại ở terminal trước, rồi dán (⌘V) và bấm Enter."))

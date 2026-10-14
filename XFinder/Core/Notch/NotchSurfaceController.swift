@@ -1037,11 +1037,7 @@ final class NotchSurfaceController {
 
     /// "Đi tới nguồn": bring the source app forward (always possible from a bundle id).
     func openSourceApp(bundleID: String) {
-        if let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
-            app.activate(options: [.activateAllWindows])
-        } else if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
-            NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
-        }
+        AgentSessionMonitor.bringForward(bundleID: bundleID)   // activate(options:) is ignored from the notch (macOS 14+)
     }
 
     /// Build the panel ONCE — a hosting controller created on the way to the screen cost 0.15–0.65 s

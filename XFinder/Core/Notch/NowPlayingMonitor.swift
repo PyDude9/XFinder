@@ -262,6 +262,14 @@ final class NowPlayingMonitor {
     }
 
     func openPlayer() {
-        playerApp?.activate(options: [.activateAllWindows])
+        // activate(options:) is ignored when called from the notch (not the active app, macOS 14+): open via LaunchServices.
+        guard let app = playerApp else { return }
+        if let bid = app.bundleIdentifier {
+            AgentSessionMonitor.bringForward(bundleID: bid)
+        } else if let url = app.bundleURL {
+            let config = NSWorkspace.OpenConfiguration()
+            config.activates = true
+            NSWorkspace.shared.openApplication(at: url, configuration: config) { _, _ in }
+        }
     }
 }
