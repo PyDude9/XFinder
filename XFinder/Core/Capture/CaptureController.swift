@@ -257,6 +257,7 @@ final class CaptureController {
             process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
             process.arguments = args
             guard (try? process.run()) != nil else {
+                DiagnosticsLog.record("capture", "toolNotRun")
                 await MainActor.run { [weak self] in self?.lastError = L10n.t("Không chạy được công cụ chụp màn hình.") }
                 return
             }

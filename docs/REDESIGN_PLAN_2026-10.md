@@ -374,8 +374,30 @@ Badge-trên-vùng-chọn (AXObserver theo app) chưa làm. Chưa đo live.
 chỉ host công cộng, không localhost/mạng nội bộ; mặc định tắt. Chưa đo live qua app.
 
 **Không làm (bằng chứng, không phải sở thích):** lock screen (SkyLight/LoginUIKit private) · lời bài hát/visualizer (mạng
-bên thứ ba, mic) · iCloud (CloudKit cần tài khoản trả phí) · Sentry/TelemetryDeck/Sparkle tự tải (0 telemetry) · Pro/license ·
+bên thứ ba, mic) · iCloud (CloudKit cần tài khoản trả phí) · Sentry/TelemetryDeck tự gửi + Sparkle tự tải (0 telemetry; phần
+chẩn đoán CỤC BỘ đã làm ở §3g, gửi tự động là Q-DIAG) · Pro/license ·
 camera "Mirror" (câu job: không ai tới notch để soi gương) · thay HUD độ sáng (không có đường ghi public).
+
+### 3g. Chẩn đoán & báo lỗi (2026-10-14)
+
+**Câu job:** *"Có gì hỏng — đưa dev đủ thứ để sửa, và không có gì về tôi."* Kế hoạch cũ chỉ ghi "0 telemetry" (không có kênh
+crash/phản hồi nào). Đã dựng **phần cục bộ**, đúng luật hiện hành mà không cần máy chủ hay đồng ý riêng:
+
+| Phần | Ở đâu | Chứa gì |
+|:--|:--|:--|
+| Nhật ký lỗi kỹ thuật | `Core/Diagnostics/DiagnosticsLog` → `~/Library/Application Support/XFinder/Diagnostics/events.jsonl` (300 dòng mới nhất, 0600) | chỉ **mã** (`eventTap/timeout.*`, `nowPlaying/helperGaveUp`, `capture/toolNotRun`, `snap/axError` + số lỗi AX, `archive/<kiểu lỗi>`, `app/launch|quit|uncleanExit`) — không tên tệp, không id app, không nội dung |
+| Crash/treo | MetricKit (`MXDiagnosticPayload`, macOS 12+) + crash report của macOS cho XFinder (`.ips`, 3 cái mới nhất trong 30 ngày) | **danh sách cho phép**: phiên bản, macOS, model, CPU, kiểu exception/signal/termination, 12 frame của luồng lỗi (tên image + symbol, file chỉ lấy tên + dòng). Không bao giờ: `crashReporterKey`, `sleepWakeUUID`, `bootSessionUUID`, `userID`, `pid`, đường dẫn process/image, `asi`, `instructionByteStream`, `vmSummary`, `trialInfo`… |
+| Báo cáo | Giới thiệu ▸ Hỗ trợ & báo lỗi; menu ▸ Trợ giúp | xem trước trọn văn bản; Sao chép / Lưu tệp / Mở GitHub Issues (chép báo cáo + link chỉ mang số phiên bản) |
+
+Luật (tra 2026-10-14): Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15 (hiệu lực 01/01/2026) + Nghị định 356/2025 — dữ liệu theo dõi
+hành vi/sử dụng là dữ liệu **nhạy cảm**, cần đồng ý riêng từng mục đích, rút lại được; chuyển ra máy chủ nước ngoài cần hồ sơ đánh
+giá tác động nộp A05 trước; dữ liệu đã khử định danh nằm ngoài phạm vi. EU ePrivacy 5(3) bắt buộc opt-in cho mọi lần đọc/gửi từ
+thiết bị (lợi ích hợp pháp không thay được); địa chỉ IP là dữ liệu cá nhân. Apple **không** chuyển crash cho dev của app phát hành
+ngoài App Store. ⇒ Gửi tự động / thống kê sử dụng = **Q-DIAG**, chỉ làm khi chủ dự án có tài khoản dịch vụ + màn hỏi đồng ý.
+
+Gate: `DiagnosticsRulesTests` (11, gồm một báo cáo crash cài sẵn mọi trường định danh — fail nếu bất kỳ trường nào lọt vào văn bản)
+· `mutation-check-diagnostics.sh` G1–G9 · `FeatureKeyDefaultsTests` hàng `diagnostics.localLog`. Chưa đo: MetricKit có giao cho bản
+ký XFinder Dev không (T-DIAG-7).
 
 ### 3f. Đợt E — Chọn văn bản thông minh (kế hoạch sau đối chiếu, 2026-10-13)
 

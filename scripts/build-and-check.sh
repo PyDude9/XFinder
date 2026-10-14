@@ -58,7 +58,7 @@ MenuBarEngine.swift MenuBarEngineFactory.swift LegacyLengthEngine.swift
 NativeVisibilityEngine.swift NativeVisibilityBridge.swift AccessibilityMenuBarInventory.swift
 SettingsShell.swift NotchInterfaceDetailView.swift MediaDetailView.swift AIAgentsDetailView.swift
 CalendarSettingsDetailView.swift LiveActivitiesDetailView.swift ShortcutsDetailView.swift ShortcutCatalog.swift
-TabbedPage.swift MenubarController.swift
+TabbedPage.swift MenubarController.swift DiagnosticsRules.swift DiagnosticsLog.swift DiagnosticsCenter.swift
 DropTrayDetailView.swift SidebarDestination.swift
 AgentKind.swift AgentEvents.swift AgentHookInstaller.swift AgentSessionMonitor.swift NotchAgentsPage.swift
 OpenCodeRules.swift OpenCodeMonitor.swift AgentNotify.swift AgentRecent.swift AgentTalk.swift AgentTalkSender.swift WindowlessRules.swift WindowlessSessionManager.swift CrewRules.swift CrewManager.swift"

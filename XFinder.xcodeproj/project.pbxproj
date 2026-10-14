@@ -21,6 +21,9 @@
 		7F1A0331 /* Uninstall/AppUninstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0330 /* Uninstall/AppUninstaller.swift */; };
 		7F1A0335 /* QuitOnClose/QuitOnCloseRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0334 /* QuitOnClose/QuitOnCloseRules.swift */; };
 		7F1A033B /* Capture/CaptureRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A033A /* Capture/CaptureRules.swift */; };
+		7F1A0401 /* Diagnostics/DiagnosticsRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0400 /* Diagnostics/DiagnosticsRules.swift */; };
+		7F1A0403 /* Diagnostics/DiagnosticsLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0402 /* Diagnostics/DiagnosticsLog.swift */; };
+		7F1A0405 /* Diagnostics/DiagnosticsCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0404 /* Diagnostics/DiagnosticsCenter.swift */; };
 		7F1A033D /* Capture/Annotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A033C /* Capture/Annotation.swift */; };
 		7F1A033F /* Capture/CaptureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A033E /* Capture/CaptureController.swift */; };
 		7F1A0337 /* QuitOnClose/QuitOnCloseController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */; };
@@ -368,6 +371,9 @@
 		7F1A0330 /* Uninstall/AppUninstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Uninstall/AppUninstaller.swift; sourceTree = "<group>"; };
 		7F1A0334 /* QuitOnClose/QuitOnCloseRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitOnClose/QuitOnCloseRules.swift; sourceTree = "<group>"; };
 		7F1A033A /* Capture/CaptureRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/CaptureRules.swift; sourceTree = "<group>"; };
+		7F1A0400 /* Diagnostics/DiagnosticsRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics/DiagnosticsRules.swift; sourceTree = "<group>"; };
+		7F1A0402 /* Diagnostics/DiagnosticsLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics/DiagnosticsLog.swift; sourceTree = "<group>"; };
+		7F1A0404 /* Diagnostics/DiagnosticsCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Diagnostics/DiagnosticsCenter.swift; sourceTree = "<group>"; };
 		7F1A033C /* Capture/Annotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/Annotation.swift; sourceTree = "<group>"; };
 		7F1A033E /* Capture/CaptureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Capture/CaptureController.swift; sourceTree = "<group>"; };
 		7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuitOnClose/QuitOnCloseController.swift; sourceTree = "<group>"; };
@@ -891,6 +897,9 @@
 				7F1A0330 /* Uninstall/AppUninstaller.swift */,
 				7F1A0334 /* QuitOnClose/QuitOnCloseRules.swift */,
 				7F1A033A /* Capture/CaptureRules.swift */,
+				7F1A0400 /* Diagnostics/DiagnosticsRules.swift */,
+				7F1A0402 /* Diagnostics/DiagnosticsLog.swift */,
+				7F1A0404 /* Diagnostics/DiagnosticsCenter.swift */,
 				7F1A033C /* Capture/Annotation.swift */,
 				7F1A033E /* Capture/CaptureController.swift */,
 				7F1A0336 /* QuitOnClose/QuitOnCloseController.swift */,
@@ -1448,6 +1457,9 @@
 				7F1A0331 /* Uninstall/AppUninstaller.swift in Sources */,
 				7F1A0335 /* QuitOnClose/QuitOnCloseRules.swift in Sources */,
 				7F1A033B /* Capture/CaptureRules.swift in Sources */,
+				7F1A0401 /* Diagnostics/DiagnosticsRules.swift in Sources */,
+				7F1A0403 /* Diagnostics/DiagnosticsLog.swift in Sources */,
+				7F1A0405 /* Diagnostics/DiagnosticsCenter.swift in Sources */,
 				7F1A033D /* Capture/Annotation.swift in Sources */,
 				7F1A033F /* Capture/CaptureController.swift in Sources */,
 				7F1A0337 /* QuitOnClose/QuitOnCloseController.swift in Sources */,

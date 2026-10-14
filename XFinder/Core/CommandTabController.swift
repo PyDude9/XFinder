@@ -98,6 +98,7 @@ final class CommandTabController {
     private nonisolated func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         // A tap disabled by timeout must be re-armed or ⌘-Tab breaks entirely.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if type == .tapDisabledByTimeout { DiagnosticsLog.record("eventTap", "timeout.commandTab") }
             Task { @MainActor in
                 if let tap = self.eventTap, CFMachPortIsValid(tap) {
                     CGEvent.tapEnable(tap: tap, enable: true)

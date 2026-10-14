@@ -101,7 +101,11 @@ final class NowPlayingMonitor {
         p.terminationHandler = { [weak self] _ in
             DispatchQueue.main.async { MainActor.assumeIsolated { self?.helperEnded(gen) } }
         }
-        do { try p.run() } catch { log.error("perl run failed: \(error.localizedDescription)"); fail(.gaveUp); return }
+        do { try p.run() } catch {
+            log.error("perl run failed: \(error.localizedDescription)")
+            DiagnosticsLog.record("nowPlaying", "helperNotRun")
+            fail(.gaveUp); return
+        }
         log.info("helper launched pid=\(p.processIdentifier) gen=\(gen)")
         process = p
         stdinPipe = input
@@ -166,6 +170,7 @@ final class NowPlayingMonitor {
             restartWork = work
             DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
         case .giveUp:
+            DiagnosticsLog.record("nowPlaying", "helperGaveUp")
             fail(.gaveUp)
         }
     }

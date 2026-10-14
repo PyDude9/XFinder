@@ -368,7 +368,7 @@ enum WindowManager {
             var winsRef: CFArray?
             guard AXUIElementCopyAttributeValues(appRef, kAXWindowsAttribute as CFString, 0, 1, &winsRef) == .success,
                   let arr = winsRef as? [AXUIElement], let first = arr.first
-            else { return false }
+            else { DiagnosticsLog.record("snap", "noWindow"); return false }
             return setAXWindow(first, rect: rect)
         }
         return setAXWindow(win as! AXUIElement, rect: rect)
@@ -381,6 +381,10 @@ enum WindowManager {
               let sizeVal = AXValueCreate(.cgSize, &size) else { return false }
         let r1 = AXUIElementSetAttributeValue(win, kAXPositionAttribute as CFString, posVal)
         let r2 = AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, sizeVal)
+        if r1 != .success || r2 != .success {
+            // The AX error numbers only (e.g. -25204 cannot complete, -25205 not supported) — never the window.
+            DiagnosticsLog.record("snap", "axError", detail: "position \(r1.rawValue) size \(r2.rawValue)")
+        }
         return r1 == .success && r2 == .success
     }
 

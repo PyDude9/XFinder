@@ -143,6 +143,7 @@ final class MenubarController: NSObject, NSMenuDelegate {
             AppState.shared.navigate(to: .about)   // the result is shown on that page
             UpdateChecker.shared.check()
         })
+        menu.addItem(helpItem())
         menu.addItem(.separator())
 
         // App
@@ -184,6 +185,24 @@ final class MenubarController: NSObject, NSMenuDelegate {
             if capture.isEnabled, let chord = capture.shortcut(for: mode) { item.setShortcut(chord) }
             sub.addItem(item)
         }
+        parent.submenu = sub
+        return parent
+    }
+
+    /// Bug reports leave the Mac only by the person's own hand: "Báo lỗi…" opens the preview on the Giới thiệu page,
+    /// where the report can be read before it is copied, saved, or pasted into a GitHub issue.
+    private func helpItem() -> NSMenuItem {
+        let parent = NSMenuItem(title: L10n.t("Trợ giúp"), action: nil, keyEquivalent: "")
+        let sub = NSMenu()
+        sub.autoenablesItems = false
+        sub.addItem(ActionItem(L10n.t("Báo lỗi…")) {
+            AppState.shared.aboutShowsReport = true
+            AppState.shared.navigate(to: .about)
+        })
+        sub.addItem(ActionItem(L10n.t("Sao chép thông tin hệ thống")) { DiagnosticsCenter.shared.copySystemInfo() })
+        sub.addItem(ActionItem(L10n.t("Mã nguồn trên GitHub")) {
+            if let url = URL(string: "https://github.com/\(DiagnosticsCenter.issuesRepo)") { NSWorkspace.shared.open(url) }
+        })
         parent.submenu = sub
         return parent
     }

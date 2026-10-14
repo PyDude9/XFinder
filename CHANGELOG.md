@@ -2,6 +2,12 @@
 
 Tất cả thay đổi đáng chú ý của XFinder được ghi ở đây, mới nhất ở trên.
 
+## [Chưa phát hành]
+
+### Hỗ trợ & báo lỗi
+- **Báo lỗi…** (menu ▸ Trợ giúp, hoặc trang Giới thiệu) dựng một báo cáo chẩn đoán: phiên bản, macOS, model máy, quyền đã cấp, tính năng đang bật, crash/treo gần đây của chính XFinder (crash report của macOS + MetricKit, chỉ các trường trong danh sách cho phép) và nhật ký mã lỗi kỹ thuật. Bạn đọc trọn văn bản rồi tự Sao chép / Lưu tệp / Mở GitHub Issues.
+- **XFinder không tự gửi gì đi**: không telemetry, không thống kê sử dụng, không máy chủ. Báo cáo không có tên tệp, nội dung clipboard, tên cửa sổ, tài khoản; thư mục nhà thay bằng `~`. Nhật ký lỗi (chỉ mã, tối đa 300 dòng) lưu ở `~/Library/Application Support/XFinder/Diagnostics/`, tắt và xoá được.
+
 ## [1.4.0] — 2026-10
 
 ### Notch theo phong cách OneNotch

@@ -123,6 +123,7 @@ final class QuitProtectionController {
         // The OS disabled the tap (timeout / user input). Events were dropped, so nothing the
         // machine believes can be trusted: forget the hold, then re-arm — or Q stays broken.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if type == .tapDisabledByTimeout { DiagnosticsLog.record("eventTap", "timeout.quitProtection") }
             endHold()
             machine.reset()
             if let tap = eventTap { CGEvent.tapEnable(tap: tap, enable: true) }

@@ -10946,6 +10946,70 @@
     "Mỗi thẻ lướt qua ở notch hoặc khay nổi là một nhịp rung. Chỉ trackpad Force Touch, và chỉ cảm nhận được khi ngón tay đang trên trackpad.": {
       "en": "Each card that scrolls past at the notch or in the floating shelf is one tap. Force Touch trackpads only, and you feel it only with a finger on the trackpad.",
       "scope": "sentence"
+    },
+    "Trợ giúp": {
+      "en": "Help",
+      "scope": "sentence"
+    },
+    "Báo lỗi…": {
+      "en": "Report a bug…",
+      "scope": "sentence"
+    },
+    "Sao chép thông tin hệ thống": {
+      "en": "Copy system info",
+      "scope": "sentence"
+    },
+    "Hỗ trợ & báo lỗi": {
+      "en": "Support & bug reports",
+      "scope": "sentence"
+    },
+    "XFinder không tự gửi gì đi. Báo cáo lỗi chỉ rời máy khi bạn tự sao chép, lưu hoặc dán nó — sau khi đã đọc toàn bộ.": {
+      "en": "XFinder sends nothing by itself. A bug report leaves this Mac only when you copy, save or paste it — after reading all of it.",
+      "scope": "sentence"
+    },
+    "Đã sao chép thông tin hệ thống.": {
+      "en": "System info copied.",
+      "scope": "sentence"
+    },
+    "Ghi lỗi kỹ thuật của XFinder trên máy này": {
+      "en": "Keep a technical error log on this Mac",
+      "scope": "sentence"
+    },
+    "Chỉ mã lỗi, phiên bản và crash của chính XFinder — không tên tệp, không nội dung clipboard, không tên cửa sổ hay tài khoản. Lưu trên máy, không bao giờ tự gửi.": {
+      "en": "Only error codes, versions and XFinder's own crashes — no file names, no clipboard content, no window titles or accounts. Stored on this Mac, never sent by itself.",
+      "scope": "sentence"
+    },
+    "Xoá nhật ký": {
+      "en": "Clear log",
+      "scope": "sentence"
+    },
+    "Đã xoá nhật ký chẩn đoán.": {
+      "en": "Diagnostic log cleared.",
+      "scope": "sentence"
+    },
+    "Đây là toàn bộ nội dung sẽ được chia sẻ. Đọc trước, bớt dòng nào tuỳ bạn sau khi dán.": {
+      "en": "This is everything that would be shared. Read it first; remove any line you like after pasting.",
+      "scope": "sentence"
+    },
+    "Đã sao chép báo cáo.": {
+      "en": "Report copied.",
+      "scope": "sentence"
+    },
+    "Lưu tệp…": {
+      "en": "Save as file…",
+      "scope": "sentence"
+    },
+    "Đã lưu báo cáo.": {
+      "en": "Report saved.",
+      "scope": "sentence"
+    },
+    "Mở GitHub Issues": {
+      "en": "Open GitHub Issues",
+      "scope": "sentence"
+    },
+    "Đã sao chép báo cáo — dán vào ô mô tả trên GitHub.": {
+      "en": "Report copied — paste it into the description on GitHub.",
+      "scope": "sentence"
     }
   }
 }

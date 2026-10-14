@@ -423,6 +423,7 @@ struct CompressDetailView: View {
                 detail: url.path,
                 reversible: false)
         case .failure(let f):
+            DiagnosticsLog.record("archive", "compress." + f.diagnosticCode)
             appendLog("\(L10n.t("Thất bại khi nén "))\(sources.count)\(L10n.t(" mục"))")
             appendLog(failureLine(f))
         }
@@ -450,7 +451,7 @@ struct CompressDetailView: View {
             // Extract into a private staging folder first: ditto and tar overwrite silently.
             let staged = await ArchiveRunner.extractToStaging(archive: src, near: dest)
             guard case .success(let batch) = staged else {
-                if case .failure(let f) = staged { appendLog("\(L10n.t("Lỗi: không giải được "))\(src.lastPathComponent)"); appendLog(failureLine(f)) }
+                if case .failure(let f) = staged { DiagnosticsLog.record("archive", "extract." + f.diagnosticCode); appendLog("\(L10n.t("Lỗi: không giải được "))\(src.lastPathComponent)"); appendLog(failureLine(f)) }
                 continue
             }
             let clashes = ArchiveRunner.conflicts(batch, in: dest)

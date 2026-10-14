@@ -80,6 +80,19 @@ trùng lặp đã làm (Tìm kiếm, Quick Look, dòng quyền ở Tổng quan, 
 nhỏ"). Riêng **OC-52**: OneNotch mở khay nổi bằng ⇧⌘C, nhưng ⌘⇧C ở XFinder đang là Paste Stack — muốn đổi thì phải chọn
 phím mới cho một trong hai.
 
+### Q-DIAG · Gửi dữ liệu lỗi/sử dụng tự động (2026-10-14)
+
+Đã dựng phần **cục bộ**: nhật ký lỗi kỹ thuật trên máy, crash/treo từ MetricKit và crash report của macOS (lọc theo danh sách
+cho phép), nút **Báo lỗi…** cho đọc trọn nội dung rồi mới Sao chép / Lưu tệp / Mở GitHub Issues. **XFinder không tự gửi gì.**
+
+Chưa dựng, cần bạn quyết vì mỗi cái đòi thứ chỉ bạn có:
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-DIAG-1 | Tự gửi crash lên một dịch vụ (Sentry tự host / Sentry EU / TelemetryDeck)? Cần tài khoản của bạn ở dịch vụ đó, một DSN/khoá, hỏi đồng ý rõ từng mục đích lúc mở app (luật VN 91/2025 + Nghị định 356/2025 coi dữ liệu theo dõi hành vi là dữ liệu nhạy cảm; EU ePrivacy 5(3) bắt buộc opt-in), cập nhật README/chính sách; máy chủ ngoài VN còn phải lập hồ sơ đánh giá tác động chuyển dữ liệu ra nước ngoài nộp A05 trước | Không làm |
+| Q-DIAG-2 | Thống kê sử dụng (tính năng nào được bật/dùng)? Cùng các điều kiện trên, nặng hơn vì là theo dõi hành vi | Không làm |
+| Q-DIAG-3 | Nhật ký cục bộ đang **bật sẵn** (chỉ mã lỗi + phiên bản, không rời máy). Muốn mặc định tắt? | Để bật |
+
 ## Phần 2 — Cần test tay (T)
 
 Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
@@ -266,6 +279,18 @@ giữa họ là thêm một lượt** — chưa có lượt model nào được 
 | T-P13-12 | Sidebar có "Ẩn biểu tượng thanh menu"; Tổng quan có "Biểu tượng XFinder trên thanh menu" | Hai tên khác nhau (trước đây cùng là "Biểu tượng thanh menu") |
 | T-P13-13 | Kéo thanh tiêu đề một cửa sổ lên notch ▸ rê xuống ô **4 góc** (ô thứ 3) ▸ rê qua từng góc phần tư của ô rồi thả | Góc phần tư dưới con trỏ sáng màu nhấn, khung xem trước đổi theo; mỗi lần đổi góc trackpad rung một nhịp (nếu "Phản hồi rung" bật); thả là cửa sổ vào đúng góc đó |
 | T-P13-14 | Mở Clipboard ở notch (hoặc khay nổi), lướt hai ngón ngang qua các thẻ | Mỗi thẻ lướt qua rung một nhịp nhẹ; tắt "Rung nhẹ khi lướt qua các thẻ" ở Cài đặt Clipboard thì hết rung. Lướt bằng chuột/phím: không có gì để cảm nhận (đúng) |
+
+### Chẩn đoán & báo lỗi (dựng 2026-10-14)
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-DIAG-1 | Menu thanh trạng thái ▸ Trợ giúp ▸ **Báo lỗi…** | Mở trang Giới thiệu, khung báo cáo hiện sẵn: phiên bản, macOS, máy, quyền, tính năng bật, crash gần đây, sự kiện gần đây |
+| T-DIAG-2 | Đọc báo cáo | Không có tên người dùng, đường dẫn thư mục nhà (`~` thay thế), tên tệp, nội dung clipboard, tên cửa sổ |
+| T-DIAG-3 | Bấm **Mở GitHub Issues** | Trình duyệt mở trang tạo issue chỉ có mẫu + phiên bản; báo cáo đã nằm trong clipboard để dán |
+| T-DIAG-4 | Bấm **Lưu tệp…** | Hộp lưu mở, tên `XFinder-diagnostics-<phiên bản>.txt`; tệp lưu đúng nội dung đang hiện |
+| T-DIAG-5 | Thoát XFinder bình thường rồi mở lại; sau đó Buộc thoát (⌥⌘⎋) rồi mở lại; mở báo cáo | Lần thoát thường: không có `app/uncleanExit`; sau Buộc thoát: có một dòng `app/uncleanExit` |
+| T-DIAG-6 | Tắt "Ghi lỗi kỹ thuật…", bấm **Xoá nhật ký**, mở lại báo cáo | Phần sự kiện trống; tệp `~/Library/Application Support/XFinder/Diagnostics/events.jsonl` đã biến mất |
+| T-DIAG-7 | Đợi MetricKit (giao gói chẩn đoán tối đa ~1 lần/ngày, chỉ khi có crash/treo) | Nếu có: dòng `metrickit/received` và mục `· metrickit` trong báo cáo. **Chưa đo được MetricKit có giao cho bản không qua App Store hay không** |
 
 ### Clipboard
 | Mã | Làm gì | Mong đợi |

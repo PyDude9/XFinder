@@ -249,6 +249,10 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "clipboard.cardHaptic",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
                reader: "XFinder/Core/ClipboardPasteEngine.swift"),
+        // Local diagnostics log (codes only, never leaves the Mac): bound on Giới thiệu.
+        Switch(key: "diagnostics.localLog",
+               views: ["XFinder/Views/SettingsWindow.swift"],
+               reader: "XFinder/Core/Diagnostics/DiagnosticsLog.swift"),
         // D1 group 2: page order/visibility and the notch accent (both Strings).
         Switch(key: "notch.pages",
                views: ["XFinder/Views/Detail/NotchInterfaceDetailView.swift"],

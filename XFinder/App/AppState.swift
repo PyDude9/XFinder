@@ -103,6 +103,8 @@ final class AppState {
     var openTab: [SidebarDestination: SidebarDestination] = [:]
     /// Set before navigating to `.features` to open it on the Quyền tab; the hub clears it on appear.
     var hubShowsPermissions = false
+    /// Set before navigating to `.about` to open its bug-report preview (the menu's Trợ giúp ▸ Báo lỗi…); cleared there.
+    var aboutShowsReport = false
     var caffeineActive = false
 
     private init() {

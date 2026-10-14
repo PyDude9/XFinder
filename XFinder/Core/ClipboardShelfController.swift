@@ -156,6 +156,7 @@ final class ClipboardShelfController {
 
     private nonisolated func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if type == .tapDisabledByTimeout { DiagnosticsLog.record("eventTap", "timeout.clipboardShelf") }
             Task { @MainActor in
                 if let tap = self.eventTap, CFMachPortIsValid(tap) {
                     CGEvent.tapEnable(tap: tap, enable: true)

@@ -1317,7 +1317,9 @@ final class NotchSurfaceController {
             guard case .write(let out) = ArchiveEngine.destination(base: base, policy: .keepBoth, exists: exists) else { return }
             switch await ArchiveRunner.compress(sources: inputs, format: .zip, output: out) {
             case .success(let url): model.task?.stepSucceeded(output: url)
-            case .failure(let f): model.task?.stepFailed(key: f.messageKey, detail: f.detail ?? "")
+            case .failure(let f):
+                DiagnosticsLog.record("archive", "notchZip." + f.diagnosticCode)
+                model.task?.stepFailed(key: f.messageKey, detail: f.detail ?? "")
             }
         case .mergePDFs:
             let folder = inputs[0].deletingLastPathComponent()

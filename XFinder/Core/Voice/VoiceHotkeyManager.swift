@@ -104,6 +104,7 @@ public final class VoiceHotkeyManager: ObservableObject {
         // The system disables a tap that takes too long. Re-arm it and pass the event on —
         // this is the "event-tap recovery" the brief asks to preserve.
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if type == .tapDisabledByTimeout { DiagnosticsLog.record("eventTap", "timeout.voiceHotkey") }
             Task { @MainActor in
                 if let tap = self.eventTap, CFMachPortIsValid(tap) {
                     CGEvent.tapEnable(tap: tap, enable: true)

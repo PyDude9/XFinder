@@ -240,3 +240,9 @@ Xem thêm [BUILDING.md](BUILDING.md).
 ## Liên hệ
 
 Báo lỗi hoặc góp ý qua [GitHub Issues](https://github.com/PyDude9/XFinder/issues), hoặc email **thang0todev@gmail.com**.
+
+**Báo lỗi kèm chẩn đoán:** menu XFinder ▸ Trợ giúp ▸ **Báo lỗi…** (hoặc trang Giới thiệu) dựng một báo cáo gồm phiên bản,
+macOS, model máy, quyền đã cấp, tính năng đang bật, crash/treo gần đây của chính XFinder và nhật ký mã lỗi kỹ thuật. Bạn đọc
+trọn văn bản trước, rồi tự chọn Sao chép / Lưu tệp / Mở GitHub Issues. **XFinder không tự gửi gì đi** — không telemetry,
+không thống kê sử dụng, không máy chủ. Báo cáo không chứa tên tệp, nội dung clipboard, tên cửa sổ hay tài khoản; thư mục nhà
+được thay bằng `~`. Nhật ký nằm ở `~/Library/Application Support/XFinder/Diagnostics/`, tắt và xoá được ở trang Giới thiệu.

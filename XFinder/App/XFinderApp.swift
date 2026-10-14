@@ -50,6 +50,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // and ⌘⇧V opened an empty shelf.
         _ = ClipboardManager.shared
 
+        // Local diagnostics first, so an unclean previous exit is noted before anything else runs.
+        DiagnosticsCenter.shared.start()
+
         // Same pattern for gestures: `GestureController.shared` runs the legacy
         // profile migration in `init`, and its `init` only happens when something
         // references it. Relying on the view to do that meant a preferences file
@@ -144,6 +147,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// D4: a Quick Look temp copy of an unlocked clip must not survive the process.
     func applicationWillTerminate(_ notification: Notification) {
+        DiagnosticsCenter.shared.markQuit()
         ClipboardLibraryStore.shared.relockAll()
         CrewManager.shared.stopAllForQuit()            // P7b: crew folders go (members stop with the line below)
         WindowlessSessionManager.shared.stopAll()      // P7a: interrupt the turn, close stdin; the conversation stays on disk
