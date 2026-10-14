@@ -67,6 +67,7 @@ struct SidebarView: View {
     private var groups: [(header: String, items: [SidebarDestination])] {
         SidebarSearch.filter(SidebarDestination.groups, query: query) { header, dest in
             [dest.titleKey, L10n.english(dest.titleKey), header, L10n.english(header), dest.rawValue]
+                + dest.searchAlsoKeys.flatMap { [$0, L10n.english($0)] }
         }
     }
 

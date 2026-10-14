@@ -99,6 +99,8 @@ final class AppState {
     static let shared = AppState()
 
     var selection: SidebarDestination = .dashboard
+    /// The open tab of "Theo dõi hệ thống" (one of `SidebarDestination.monitorTabs`).
+    var monitorTab: SidebarDestination = .system
     var caffeineActive = false
 
     private init() {
@@ -106,13 +108,19 @@ final class AppState {
         // so a specific screen can be inspected without clicking through.
         if let raw = UserDefaults.standard.string(forKey: "startPage"),
            let dest = SidebarDestination(rawValue: raw) {
-            selection = dest
+            select(dest)
         }
     }
 
     func navigate(to destination: SidebarDestination) {
-        selection = destination
+        select(destination)
         bringMainWindowFront()
+    }
+
+    /// A monitor tab (Mạng, Ổ đĩa, Pin) selects the "Theo dõi hệ thống" row and opens that tab.
+    private func select(_ destination: SidebarDestination) {
+        if SidebarDestination.monitorTabs.contains(destination) { monitorTab = destination }
+        selection = destination.monitorRow
     }
 
     /// The app's real settings/browser window — NOT one of our floating panels.

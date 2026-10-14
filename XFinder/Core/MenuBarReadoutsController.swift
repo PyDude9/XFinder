@@ -5,9 +5,9 @@ import AppKit
 /// status-item icon. Formatting and width rules are `MenuBarReadouts` (pure, tested).
 ///
 /// Cost model, honest: off ⇒ no timer, no title. On ⇒ one full metrics sample every N seconds
-/// (user-chosen, default 15). While a metrics page or the popover is open the monitor already
-/// ticks at 1–5 s, so the readouts follow that faster cadence instead of sampling twice — the
-/// popover copy says so.
+/// (user-chosen, default 15). While a metrics page is open the monitor already ticks at 1–5 s,
+/// so the readouts follow that faster cadence instead of sampling twice — the footer of the
+/// readouts section on Tổng quan says so. (The menu-bar menu itself samples nothing since P13.)
 @MainActor
 @Observable
 final class MenuBarReadoutsController {

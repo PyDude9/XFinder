@@ -71,6 +71,7 @@
 		7F1A0059 /* Detail/DashboardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0052 /* Detail/DashboardDetailView.swift */; };
 		7F1A005A /* Detail/SystemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0053 /* Detail/SystemDetailView.swift */; };
 		7F1A005B /* Detail/PinDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0054 /* Detail/PinDetailView.swift */; };
+		7F1A0384 /* Detail/SystemMonitorPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0385 /* Detail/SystemMonitorPage.swift */; };
 		7F1A005C /* Detail/NetworkDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0055 /* Detail/NetworkDetailView.swift */; };
 		7F1A005D /* Detail/StorageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0056 /* Detail/StorageDetailView.swift */; };
 		7F1A005E /* Detail/SystemControlsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0057 /* Detail/SystemControlsPanel.swift */; };
@@ -312,7 +313,6 @@
 		7F1A01D6 /* PortScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01D5 /* PortScanner.swift */; };
 		7F1A01D4 /* Detail/PortsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01D3 /* Detail/PortsDetailView.swift */; };
 		7F1A01D2 /* PortManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01D1 /* PortManager.swift */; };
-		7F1A01D0 /* FlyoutLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01CF /* FlyoutLayout.swift */; };
 		7F1A01CC /* FeatureHub.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01CB /* FeatureHub.swift */; };
 		7F1A01CA /* FeatureCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01C9 /* FeatureCatalog.swift */; };
 		7F1A01C8 /* PortList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01C7 /* PortList.swift */; };
@@ -421,6 +421,7 @@
 		7F1A0052 /* Detail/DashboardDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/DashboardDetailView.swift; sourceTree = "<group>"; };
 		7F1A0053 /* Detail/SystemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SystemDetailView.swift; sourceTree = "<group>"; };
 		7F1A0054 /* Detail/PinDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/PinDetailView.swift; sourceTree = "<group>"; };
+		7F1A0385 /* Detail/SystemMonitorPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SystemMonitorPage.swift; sourceTree = "<group>"; };
 		7F1A0055 /* Detail/NetworkDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/NetworkDetailView.swift; sourceTree = "<group>"; };
 		7F1A0056 /* Detail/StorageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/StorageDetailView.swift; sourceTree = "<group>"; };
 		7F1A0057 /* Detail/SystemControlsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SystemControlsPanel.swift; sourceTree = "<group>"; };
@@ -556,7 +557,6 @@
 		7F1A01D5 /* PortScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortScanner.swift; sourceTree = "<group>"; };
 		7F1A01D3 /* Detail/PortsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/PortsDetailView.swift; sourceTree = "<group>"; };
 		7F1A01D1 /* PortManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortManager.swift; sourceTree = "<group>"; };
-		7F1A01CF /* FlyoutLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlyoutLayout.swift; sourceTree = "<group>"; };
 		7F1A01CB /* FeatureHub.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureHub.swift; sourceTree = "<group>"; };
 		7F1A01C9 /* FeatureCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureCatalog.swift; sourceTree = "<group>"; };
 		7F1A01C7 /* PortList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortList.swift; sourceTree = "<group>"; };
@@ -850,7 +850,6 @@
 				7F1A01D7 /* SidebarSearch.swift */,
 				7F1A01D5 /* PortScanner.swift */,
 				7F1A01D1 /* PortManager.swift */,
-				7F1A01CF /* FlyoutLayout.swift */,
 				7F1A01CB /* FeatureHub.swift */,
 				7F1A01C9 /* FeatureCatalog.swift */,
 				7F1A01C7 /* PortList.swift */,
@@ -1015,6 +1014,7 @@
 				7F1A0052 /* Detail/DashboardDetailView.swift */,
 				7F1A0053 /* Detail/SystemDetailView.swift */,
 				7F1A0054 /* Detail/PinDetailView.swift */,
+				7F1A0385 /* Detail/SystemMonitorPage.swift */,
 				7F1A0055 /* Detail/NetworkDetailView.swift */,
 				7F1A0056 /* Detail/StorageDetailView.swift */,
 				7F1A0057 /* Detail/SystemControlsPanel.swift */,
@@ -1262,6 +1262,7 @@
 				7F1A0059 /* Detail/DashboardDetailView.swift in Sources */,
 				7F1A005A /* Detail/SystemDetailView.swift in Sources */,
 				7F1A005B /* Detail/PinDetailView.swift in Sources */,
+				7F1A0384 /* Detail/SystemMonitorPage.swift in Sources */,
 				7F1A005C /* Detail/NetworkDetailView.swift in Sources */,
 				7F1A005D /* Detail/StorageDetailView.swift in Sources */,
 				7F1A005E /* Detail/SystemControlsPanel.swift in Sources */,
@@ -1397,7 +1398,6 @@
 				7F1A01D6 /* PortScanner.swift in Sources */,
 				7F1A01D4 /* Detail/PortsDetailView.swift in Sources */,
 				7F1A01D2 /* PortManager.swift in Sources */,
-				7F1A01D0 /* FlyoutLayout.swift in Sources */,
 				7F1A01CC /* FeatureHub.swift in Sources */,
 				7F1A01CA /* FeatureCatalog.swift in Sources */,
 				7F1A01C8 /* PortList.swift in Sources */,

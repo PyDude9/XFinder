@@ -5,13 +5,28 @@ import SwiftUI
 ///
 /// No icon: the sidebar's coloured tile carries the page's glyph (P3), and P4 removed the dead parameter from all
 /// 45 call sites.
+/// A page shown as a TAB inside another page (the four "Theo dõi hệ thống" tabs) hides its own header: the host page
+/// draws one header for all of them.
+private struct PageHeaderHiddenKey: EnvironmentKey { static let defaultValue = false }
+extension EnvironmentValues {
+    var pageHeaderHidden: Bool {
+        get { self[PageHeaderHiddenKey.self] }
+        set { self[PageHeaderHiddenKey.self] = newValue }
+    }
+}
+
 struct PageHeader: View {
     let title: String
     var subtitle: String? = nil
     /// Optional trailing control (a master on/off switch, a picker).
     var trailing: AnyView? = nil
+    @Environment(\.pageHeaderHidden) private var hidden
 
     var body: some View {
+        if !hidden { header }
+    }
+
+    private var header: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center, spacing: XFinderTokens.Space.inline) {
                 Text(title)

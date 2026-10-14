@@ -27,7 +27,8 @@ final class CaptureController {
 
     // MARK: - Reader state (one reader per key)
 
-    private var isEnabled: Bool {
+    /// The menu-bar menu asks here too: it draws a mode's chord only while the hotkeys are registered.
+    var isEnabled: Bool {
         UserDefaults.standard.object(forKey: "capture.enabled") as? Bool ?? true
     }
     private var after: CaptureAfter {

@@ -10862,6 +10862,38 @@
     "Báo cả khi bạn đang nhìn phiên đó. Nếu máy có agent khác, thông báo kèm nút mở sẵn bảng chuyển việc sang agent đó — ưu tiên agent biết chắc còn hạn mức. Bạn vẫn tự đọc và bấm Gửi.": {
       "en": "Shown even while you are looking at that session. If another agent is installed, the notice has a button that opens the handoff to it — one known to have room first. You still read it and press Send.",
       "scope": "sentence"
+    },
+    "Theo dõi hệ thống": {
+      "en": "System Monitor",
+      "scope": "sentence"
+    },
+    "Máy Mac đang chạy thế nào: bộ xử lý, bộ nhớ, mạng, ổ đĩa và pin.": {
+      "en": "How this Mac is doing: processor, memory, network, storage and battery.",
+      "scope": "sentence"
+    },
+    "Mở Clipboard trên notch": {
+      "en": "Open Clipboard on the notch",
+      "scope": "sentence"
+    },
+    "Cài đặt…": {
+      "en": "Settings…",
+      "scope": "sentence"
+    },
+    "Kiểm tra cập nhật…": {
+      "en": "Check for Updates…",
+      "scope": "sentence"
+    },
+    "Khởi động lại XFinder": {
+      "en": "Restart XFinder",
+      "scope": "sentence"
+    },
+    "Hiện số liệu cạnh biểu tượng": {
+      "en": "Show figures beside the icon",
+      "scope": "sentence"
+    },
+    "CPU, bộ nhớ, nhiệt độ… hiện cạnh biểu tượng XFinder; chọn số liệu ở trang Tổng quan.": {
+      "en": "CPU, memory, temperature… beside the XFinder icon; pick the figures on the Overview page.",
+      "scope": "sentence"
     }
   }
 }

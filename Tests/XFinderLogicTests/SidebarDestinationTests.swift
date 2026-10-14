@@ -10,7 +10,7 @@ final class SidebarDestinationTests: XCTestCase {
 
     func testEveryPageExceptAboutIsInExactlyOneGroup() {
         let counts = Dictionary(grouping: grouped, by: { $0 }).mapValues(\.count)
-        for dest in SidebarDestination.allCases where dest != .about {
+        for dest in SidebarDestination.allCases where dest != .about && dest.monitorRow == dest {
             XCTAssertEqual(counts[dest], 1, "\(dest.rawValue) must appear in exactly one sidebar group")
         }
         XCTAssertNil(counts[.about], "About is the footer row, never a group member")
@@ -57,6 +57,26 @@ final class SidebarDestinationTests: XCTestCase {
                        "the tray page no longer holds the notch settings — its title must not promise them")
         let general = try XCTUnwrap(SidebarDestination.groups.first { $0.header == "CHUNG" })
         XCTAssertTrue(general.items.contains(.shortcuts), "Phím tắt is app-wide, so it lives in CHUNG")
+    }
+
+    /// Hệ thống, Mạng, Ổ đĩa, Pin are one row ("Theo dõi hệ thống") with four tabs; the three tab cases are in no group,
+    /// map to the row, and stay reachable (deep links, search).
+    func testTheMonitorPagesAreOneRowWithFourTabs() throws {
+        XCTAssertEqual(SidebarDestination.monitorTabs, [.system, .network, .storage, .pin])
+        for tab in SidebarDestination.monitorTabs {
+            XCTAssertEqual(tab.monitorRow, .system)
+            XCTAssertEqual(grouped.filter { $0 == tab }.count, tab == .system ? 1 : 0, "\(tab.rawValue) is a tab, not a row")
+        }
+        XCTAssertEqual(SidebarDestination.antiSleep.monitorRow, .antiSleep, "every other page is its own row")
+        XCTAssertEqual(SidebarDestination.system.titleKey, "Theo dõi hệ thống")
+        XCTAssertEqual(SidebarDestination.system.tabTitleKey, "Hệ thống")
+        XCTAssertEqual(Set(SidebarDestination.system.searchAlsoKeys), ["Hệ thống", "Mạng", "Ổ đĩa", "Pin"],
+                       "searching a tab's name still finds the page")
+        let store = try L10nFixture.load()
+        for key in SidebarDestination.monitorTabs.map(\.tabTitleKey) + [SidebarDestination.system.titleKey] {
+            guard let e = store.entries[key] else { XCTFail("\(key) is not in the store"); continue }
+            XCTAssertFalse(e.en.isEmpty)
+        }
     }
 
     func testEveryTileNameIsAColourTheViewMaps() {

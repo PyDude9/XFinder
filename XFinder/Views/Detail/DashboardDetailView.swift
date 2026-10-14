@@ -17,6 +17,8 @@ struct DashboardDetailView: View {
     @AppStorage("windowPreview.hoverEnabled") private var hoverEnabled = true
     @State private var l10n = L10n.shared
     @AppStorage("menubar.icon") private var menubarIcon = "magnifier"
+    @State private var hub = FeatureHub.shared
+    @State private var readouts = MenuBarReadoutsController.shared
 
     @State private var trusted = WindowManager.isTrusted
     @State private var canRecord = WindowManager.canRecordScreen
@@ -34,6 +36,7 @@ struct DashboardDetailView: View {
 
                 quickGrantBannerIfNeeded
                 preferences
+                menuBarReadouts
                 checklist
                 gettingStarted
                 Button("\(L10n.t("Có gì mới trong "))\(WhatsNewWindowController.shared.currentVersion)") {
@@ -148,6 +151,42 @@ struct DashboardDetailView: View {
                       isOn: $showDockIcon)
                 .onChange(of: showDockIcon) { DockController.apply($0) }
                 .settingsRow()
+        }
+    }
+
+    /// Live figures beside the menu-bar icon — moved here from the menu-bar popover (P13), next to the icon picker. The
+    /// switch is the catalogue feature (`menubar.readoutsEnabled`, through `FeatureHub` like every feature switch); the
+    /// figures and the cadence are the readouts controller's own keys.
+    private var menuBarReadouts: some View {
+        let def = FeatureCatalog.def(.menuBarReadouts)
+        let on = hub.isOn(def)
+        return SettingsSection(
+            title: L10n.t("Số liệu trên thanh menu"),
+            footer: L10n.t("Mỗi lần cập nhật là một lần đọc số liệu (nhanh hơn khi một trang số liệu đang mở); tắt thì không có bộ hẹn giờ nào.")
+        ) {
+            ToggleRow(title: L10n.t("Hiện số liệu cạnh biểu tượng"),
+                      isOn: Binding(get: { on }, set: { hub.set(.menuBarReadouts, on: $0) }))
+                .settingsRow()
+            if on {
+                SettingsDivider()
+                PickerRow(title: L10n.t("Cập nhật mỗi"),
+                          selection: Binding(get: { readouts.interval }, set: { readouts.interval = $0 }),
+                          width: 80) {
+                    ForEach(MenuBarReadouts.intervalChoices, id: \.self) { s in Text("\(s) s").tag(s) }
+                }
+                .settingsRow()
+                ForEach(MenuBarReadouts.Kind.allCases, id: \.self) { kind in
+                    SettingsDivider()
+                    ToggleRow(title: L10n.t(kind.titleKey), isOn: Binding(
+                        get: { readouts.selection.contains(kind) },
+                        set: { want in
+                            var sel = readouts.selection
+                            if want { if !sel.contains(kind) { sel.append(kind) } } else { sel.removeAll { $0 == kind } }
+                            readouts.selection = sel
+                        }))
+                    .settingsRow()
+                }
+            }
         }
     }
 

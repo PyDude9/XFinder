@@ -135,16 +135,8 @@ struct DetailHostView: View {
                     .environment(clipboardManager)
             case .antiSleep:
                 AntiSleepDetailView()
-            case .system:
-                SystemDetailView()
-                    .environment(systemMonitorManager)
-            case .network:
-                NetworkDetailView()
-                    .environment(systemMonitorManager)
-            case .storage:
-                StorageDetailView()
-            case .pin:
-                PinDetailView()
+            case .system, .network, .storage, .pin:
+                SystemMonitorPage()
                     .environment(systemMonitorManager)
             case .voiceTyping:
                 VoiceDetailView()

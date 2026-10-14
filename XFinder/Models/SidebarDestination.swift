@@ -72,6 +72,18 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
+    /// 2026-10-14 (owner: "gộp các mục liên quan đến xem hệ thống lại cho gọn gàng") — Hệ thống, Mạng, Ổ đĩa and Pin
+    /// answer one question, "how is this Mac doing", so they are ONE sidebar row ("Theo dõi hệ thống", `.system`) with
+    /// four tabs. The four cases stay: deep links (`xfinder://settings?page=network`), the flyout, What's New and
+    /// `-startPage` keep working — `AppState.navigate` selects the row and opens the tab.
+    static let monitorTabs: [SidebarDestination] = [.system, .network, .storage, .pin]
+    /// The sidebar row a destination lives under (itself, except the three monitor tabs).
+    var monitorRow: SidebarDestination { Self.monitorTabs.contains(self) ? .system : self }
+    /// The tab's label inside "Theo dõi hệ thống".
+    var tabTitleKey: String { self == .system ? "Hệ thống" : titleKey }
+    /// Extra words the sidebar search matches for this row: the monitor row answers to its tabs' names too.
+    var searchAlsoKeys: [String] { self == .system ? Self.monitorTabs.map(\.tabTitleKey) : [] }
+
     /// The Vietnamese literal — the L10n store key. Search matches it AND its English translation,
     /// so the box finds a page in either language whatever the UI language is.
     var titleKey: String {
@@ -79,7 +91,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .dashboard: return "Tổng quan"
         case .features: return "Tính năng & Quyền"
         case .antiSleep: return "Chống ngủ"
-        case .system: return "Hệ thống"
+        case .system: return "Theo dõi hệ thống"
         case .network: return "Mạng"
         case .storage: return "Ổ đĩa"
         case .pin: return "Pin"
@@ -208,7 +220,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     static var groups: [(header: String, items: [SidebarDestination])] {
         [
-            ("CHUNG", [.dashboard, .features, .shortcuts, .antiSleep, .system, .network, .storage, .pin, .alerts]),
+            ("CHUNG", [.dashboard, .features, .shortcuts, .antiSleep, .system, .alerts]),
             // P3: everything the notch shows, by what the user comes to do — the old "Notch & Khay thả" page split six ways.
             ("NOTCH", [.notchInterface, .dropTray, .media, .aiAgents, .calendar, .liveActivities]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .appQuit, .mouseGestures, .menuIcons]),

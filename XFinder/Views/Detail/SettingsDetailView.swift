@@ -514,9 +514,9 @@ private struct ClipboardSettingsBody: View {
 
 // `MenubarSettingsBody` and the `settingsMenubar` destination ("Bảng menubar")
 // were removed: their three controls duplicated Điều khiển nhanh, and a second
-// page bound to the same keys is the duplicate-control trap. The menubar
-// flyout keys are still read at point of use by MenubarController /
-// SystemMonitorManager.
+// page bound to the same keys is the duplicate-control trap. Of those keys only
+// `menubar.updateInterval` is still read (SystemMonitorManager); the menu-bar
+// popover that read the other two became a plain menu in P13.
 
 // MARK: - AppKit side effects
 

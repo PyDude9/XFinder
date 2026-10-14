@@ -212,7 +212,7 @@ enum FeatureCatalog {
                    defaultOn: false, permissions: [], idle: .timerWhileActive),
 
         FeatureDef(id: .menuBarReadouts, titleKey: "Số liệu trên thanh menu",
-                   subtitleKey: "CPU, bộ nhớ, nhiệt độ… hiện cạnh biểu tượng XFinder; chọn số liệu trong popover (biểu tượng con mắt).",
+                   subtitleKey: "CPU, bộ nhớ, nhiệt độ… hiện cạnh biểu tượng XFinder; chọn số liệu ở trang Tổng quan.",
                    symbol: "gauge.with.dots.needle.33percent", group: .tools, enabledKey: "menubar.readoutsEnabled",
                    defaultOn: false, permissions: [], idle: .timerWhileActive),
 
