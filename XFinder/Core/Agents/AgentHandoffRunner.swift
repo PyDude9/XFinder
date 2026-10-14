@@ -97,10 +97,18 @@ final class AgentHandoffRunner {
             log.info("handoff \(draft.source.rawValue, privacy: .public) -> opencode \(ok ? "sent" : "failed", privacy: .public)")
             return ok ? .started : .failed("OpenCode không nhận tin chuyển giao.")
         case .codex:
-            let pb = NSPasteboard.general
-            pb.clearContents()
-            pb.setString(AgentHandoff.codexCommand(folder: draft.folder, message: message), forType: .string)
-            return .copiedCommand
+            // P11: a windowless Codex session (codex app-server) — was a command on the clipboard before.
+            guard let folder = draft.folder, !folder.isEmpty else { return .failed("Phiên gốc không ghi thư mục.") }
+            do {
+                _ = try await WindowlessSessionManager.shared.startCodex(folder: URL(fileURLWithPath: folder, isDirectory: true),
+                                                                       firstMessage: message)
+                log.info("handoff \(draft.source.rawValue, privacy: .public) -> codex started")
+                return .started
+            } catch let e as WindowlessSessionManager.StartError {
+                return .failed(e.key)
+            } catch {
+                return .failed("Không tìm thấy lệnh codex.")
+            }
         }
     }
 

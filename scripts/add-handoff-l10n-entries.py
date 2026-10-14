@@ -6,6 +6,9 @@ from pathlib import Path
 STORE = Path(__file__).resolve().parent.parent / "XFinder/Resources/L10n.strings.json"
 S, F = "sentence", "fragment"
 ENTRIES = {
+    "Việc đầu tiên cho Codex (không bắt buộc)…": ("A first task for Codex (optional)…", S),
+    "Mỗi tin là một lượt dùng gói Codex của bạn.": ("Every message is a turn of your Codex plan.", S),
+    "Không tìm thấy lệnh codex.": ("The codex command was not found.", S),
     "Cần chú ý trước": ("Needs attention first", S),
     "Hoạt động gần nhất": ("Most recent activity", S),
     "Mở mới nhất": ("Newest first", S),

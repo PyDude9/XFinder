@@ -75,9 +75,6 @@ struct AgentHandoffView: View {
             VStack(alignment: .leading, spacing: 2) {
                 if let key = model.noticeKey {
                     Text(L10n.t(key)).font(XFinderTokens.Font.caption).foregroundColor(.orange)
-                } else if model.target == .codex {
-                    Text(L10n.t("Codex chưa có phiên không cửa sổ: XFinder chép lệnh mở Codex kèm tin này, bạn dán vào terminal."))
-                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 } else {
                     Text("\(L10n.t("Gửi sẽ dùng một lượt của "))\(model.target.displayName)\(L10n.t(". Chỉ có lời bạn gõ và câu trả lời của agent — không có output của công cụ."))")
                         .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
@@ -90,7 +87,7 @@ struct AgentHandoffView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             Button(L10n.t("Hủy")) { model.onClose() }
                 .keyboardShortcut(.cancelAction)
-            Button(model.target == .codex ? L10n.t("Chép lệnh") : L10n.t("Gửi")) { model.onSend() }
+            Button(L10n.t("Gửi")) { model.onSend() }
                 .keyboardShortcut(.defaultAction)
                 .disabled(model.loading || model.sending || model.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }

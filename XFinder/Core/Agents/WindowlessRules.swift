@@ -166,6 +166,22 @@ enum WindowlessRules {
         var pid: Int32?
         var lastError: String?
         var nextEntryID = 0
+        /// P11 — which agent the process is: Claude Code (stream-json) or Codex (`codex app-server` JSON-RPC).
+        var agent: AgentKind = .claude
+        /// P11 (Codex) — the app-server's thread id once `thread/start` answered; nil while the handshake runs.
+        var threadID: String?
+        /// P11 (Codex) — the turn in progress, for `turn/interrupt`.
+        var activeTurnID: String?
+        /// P11 (Codex) — an approval the app-server is waiting on (it arrives on the same pipe, no hook involved).
+        var pendingApproval: PendingApproval?
+
+        struct PendingApproval: Equatable, Sendable {
+            var rawID: String
+            var kind: CodexAppServer.ApprovalKind
+            var summary: String?
+            var legacy: Bool
+            var since: Date
+        }
 
         var isEnded: Bool { if case .ended = phase { return true }; return false }
         var lastAgentText: String? { transcript.last(where: { $0.role == .agent })?.text }
@@ -208,6 +224,40 @@ enum WindowlessRules {
             updatedAt = at
         }
 
+        /// P11 — a Codex app-server event (the handshake events are handled by the manager, which must write replies).
+        mutating func applyCodex(_ event: CodexAppServer.Event, at: Date) {
+            guard !isEnded else { return }
+            switch event {
+            case .threadStarted(let tid, let model):
+                threadID = tid
+                if let model { self.model = model }
+            case .turnStarted(let turnID):
+                activeTurnID = turnID
+                phase = .working(tool: nil)
+            case .tool(let name):
+                phase = .working(tool: name)
+            case .agentMessage(let t):
+                append(.agent, t, at: at)
+                if case .working = phase { phase = .working(tool: nil) }
+            case .approval(let raw, let kind, let summary, let legacy):
+                pendingApproval = PendingApproval(rawID: raw, kind: kind, summary: summary, legacy: legacy, since: at)
+            case .turnCompleted(let status, let error):
+                if let error, !error.isEmpty { append(.note, error, at: at); lastError = error }
+                else if status == "failed" { lastError = status }
+                activeTurnID = nil
+                pendingApproval = nil
+                phase = .waiting            // `sent` already counted the turn
+            case .requestFailed(_, let message):
+                append(.note, message, at: at)
+                lastError = message
+            case .error(let message):
+                lastError = message
+            case .initializeOK, .otherRequest, .ignored:
+                return
+            }
+            updatedAt = at
+        }
+
         /// The process ended (any reason). The conversation stays on disk; Claude Code can resume it.
         mutating func exited(code: Int32?, at: Date) {
             guard !isEnded else { return }
@@ -221,7 +271,7 @@ enum WindowlessRules {
     /// A record as a notch row. Hook events for the same session id (when XFinder's hook is installed) are merged
     /// over it by the monitor; this is the row when there are none.
     static func session(for r: Record) -> AgentSession {
-        let status: AgentSession.Status
+        var status: AgentSession.Status
         switch r.phase {
         case .idle, .waiting: status = .waitingForInput
         case .working(let tool): status = .running(tool: tool)
@@ -229,7 +279,12 @@ enum WindowlessRules {
         }
         var terminal = AgentEvents.Terminal()
         terminal.windowless = true
-        var s = AgentSession(id: r.sessionID, agent: .claude, cwd: r.cwd, transcriptPath: nil, startedAt: r.startedAt,
+        // P11: a Codex approval waits on the pipe — the row shows the same Allow / Deny card as a hook permission.
+        if let p = r.pendingApproval, !r.isEnded {
+            status = .waitingForPermission(AgentSession.PendingPermission(
+                requestID: p.rawID, toolName: p.kind == .command ? "Bash" : "Edit", summary: p.summary, since: p.since))
+        }
+        var s = AgentSession(id: r.sessionID, agent: r.agent, cwd: r.cwd, transcriptPath: nil, startedAt: r.startedAt,
                              updatedAt: r.updatedAt, status: status, lastTool: { if case .working(let t) = r.phase { return t }; return nil }(),
                              lastPrompt: r.lastPersonText, agentPID: r.pid, terminal: terminal, eventCount: r.turns)
         s.hostedByXFinder = true

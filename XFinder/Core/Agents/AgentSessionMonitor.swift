@@ -304,6 +304,12 @@ final class AgentSessionMonitor {
     @discardableResult
     func answer(_ p: AgentSession.PendingPermission, of session: AgentSession, allow: Bool) -> Bool {
         if session.agent == .opencode { return OpenCodeMonitor.shared.answer(p, of: session, allow: allow) }
+        // P11: a windowless Codex session's approval waits on XFinder's own pipe to `codex app-server`.
+        if session.agent == .codex, session.hostedByXFinder,
+           WindowlessSessionManager.shared.records[session.id]?.pendingApproval?.rawID == p.requestID {
+            WindowlessSessionManager.shared.answerApproval(sessionID: session.id, requestID: p.requestID, allow: allow)
+            return true
+        }
         guard session.agent.usesHookScript,
               let name = AgentDecision.fileName(sessionID: session.id, requestID: p.requestID) else { return false }
         let url = decisionsDir(for: session.agent).appendingPathComponent(name)

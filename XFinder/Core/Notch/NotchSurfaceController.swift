@@ -584,11 +584,15 @@ final class NotchSurfaceController {
         render()
         windowlessTask = Task { @MainActor in
             do {
-                let id = try await WindowlessSessionManager.shared.startClaude(folder: URL(fileURLWithPath: path), firstMessage: text)
+                let agent = model.newWindowlessAgent
+                let folder = URL(fileURLWithPath: path)
+                let id = agent == .codex
+                    ? try await WindowlessSessionManager.shared.startCodex(folder: folder, firstMessage: text)
+                    : try await WindowlessSessionManager.shared.startClaude(folder: folder, firstMessage: text)
                 windowlessTask = nil
                 model.windowlessStarting = false
                 cancelNewWindowless()
-                model.windowlessConversation = "\(AgentKind.claude.rawValue):\(id)"
+                model.windowlessConversation = "\(agent.rawValue):\(id)"
                 render()
             } catch let e as WindowlessSessionManager.StartError {
                 windowlessTask = nil

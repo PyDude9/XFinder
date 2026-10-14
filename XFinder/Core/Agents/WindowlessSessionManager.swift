@@ -15,11 +15,12 @@ final class WindowlessSessionManager {
     @ObservationIgnored private let log = Logger(subsystem: "com.xfinder.app", category: "Windowless")
 
     enum StartError: Error, Equatable {
-        case noClaude, badFolder, badSessionID, alreadyRunning, openElsewhere, launchFailed(String)
+        case noClaude, noCodex, badFolder, badSessionID, alreadyRunning, openElsewhere, launchFailed(String)
         /// A store key for the page.
         var key: String {
             switch self {
             case .noClaude: return "Không tìm thấy lệnh claude."
+            case .noCodex: return "Không tìm thấy lệnh codex."
             case .badFolder: return "Thư mục không còn."
             case .openElsewhere: return "Phiên này đang mở ở nơi khác — đóng nó trước rồi mở lại."
             case .badSessionID, .alreadyRunning, .launchFailed: return "Không chạy được claude."
@@ -51,6 +52,11 @@ final class WindowlessSessionManager {
         var generation: Int
         var buffer = Data()
         var lastStderr: String?
+        /// P11 — Codex: the next JSON-RPC id XFinder uses (1 and 2 are the handshake), and a first message held until the
+        /// thread exists.
+        var agent: AgentKind = .claude
+        var nextRequestID = 3
+        var pendingFirst: String?
     }
     @ObservationIgnored private var children: [String: Child] = [:]
     @ObservationIgnored private var generation = 0
@@ -122,6 +128,8 @@ final class WindowlessSessionManager {
 
     /// Test seam for the e2e harness (a stand-in `claude` that answers without a model). Never set by the app.
     @ObservationIgnored var claudePathOverride: String?
+    /// Test seam for the e2e harness (a stand-in `codex app-server`). Never set by the app.
+    @ObservationIgnored var codexPathOverride: String?
 
     private func claudePath(env: [String: String]) -> String? {
         if let o = claudePathOverride { return o }
@@ -148,6 +156,26 @@ final class WindowlessSessionManager {
         try await launch(sessionID: id, folder: folder, resume: false, extraArguments: extraArguments,
                          extraEnvironment: extraEnvironment, pathPrepend: pathPrepend)
         if let text = firstMessage.flatMap(WindowlessRules.cleanMessage) { _ = deliver(text, to: id) }
+        return id
+    }
+
+    /// P11 — a new windowless Codex session: `codex app-server` as XFinder's child. The handshake (initialize →
+    /// initialized → thread/start) runs as its replies arrive; `firstMessage` waits for the thread and then becomes the
+    /// first `turn/start`. Returns XFinder's own id for the record (the thread id arrives later).
+    @discardableResult
+    func startCodex(folder: URL, firstMessage: String?) async throws -> String {
+        let id = UUID().uuidString.lowercased()
+        var isDir: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isDir), isDir.boolValue else { throw StartError.badFolder }
+        let login = await resolveEnvironment()
+        try Task.checkCancellation()
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let env = WindowlessRules.childEnvironment(login: login, fallback: ProcessInfo.processInfo.environment, home: home)
+        guard let codex = codexPathOverride ?? CodexAppServer.candidates(path: env["PATH"], home: home)
+            .first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else { throw StartError.noCodex }
+        try spawn(sessionID: id, executable: codex, arguments: ["app-server"], folder: folder, env: env, agent: .codex)
+        children[id]?.pendingFirst = firstMessage.flatMap(WindowlessRules.cleanMessage)
+        write(CodexAppServer.initialize(version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"), to: id)
         return id
     }
 
@@ -199,10 +227,17 @@ final class WindowlessSessionManager {
         guard children[sessionID] == nil else { throw StartError.alreadyRunning }   // the await above can interleave
         for (k, v) in extraEnvironment { env[k] = v }
         if let pathPrepend { env["PATH"] = pathPrepend + ":" + (env["PATH"] ?? "/usr/bin:/bin") }
+        try spawn(sessionID: sessionID, executable: claude, arguments: args, folder: folder, env: env, agent: .claude)
+        log.info("windowless claude started resume=\(resume)")
+    }
 
+    /// Start the child with pipes wired to this manager, and make its record. Shared by Claude Code and Codex.
+    private func spawn(sessionID: String, executable: String, arguments: [String], folder: URL, env: [String: String],
+                       agent: AgentKind) throws {
+        guard children[sessionID] == nil else { throw StartError.alreadyRunning }
         let p = Process()
-        p.executableURL = URL(fileURLWithPath: claude)
-        p.arguments = args
+        p.executableURL = URL(fileURLWithPath: executable)
+        p.arguments = arguments
         p.currentDirectoryURL = folder
         p.environment = env
         let input = Pipe(), output = Pipe(), errors = Pipe()
@@ -238,9 +273,11 @@ final class WindowlessSessionManager {
             errors.fileHandleForReading.readabilityHandler = nil
             throw StartError.launchFailed(error.localizedDescription)
         }
-        children[sessionID] = Child(process: p, stdin: input.fileHandleForWriting, stdout: output, stderr: errors, generation: gen)
+        children[sessionID] = Child(process: p, stdin: input.fileHandleForWriting, stdout: output, stderr: errors, generation: gen,
+                                    agent: agent)
         let now = Date()
         var record = records[sessionID] ?? WindowlessRules.Record(sessionID: sessionID, cwd: folder.path, startedAt: now, updatedAt: now)
+        record.agent = agent
         record.phase = .idle
         record.pid = p.processIdentifier
         record.cwd = folder.path
@@ -248,7 +285,24 @@ final class WindowlessSessionManager {
         record.updatedAt = now
         records[sessionID] = record
         rememberFolder(folder.path)
-        log.info("windowless claude started pid=\(p.processIdentifier) resume=\(resume)")
+        log.info("windowless \(agent.rawValue, privacy: .public) started pid=\(p.processIdentifier)")
+        onChange?()
+    }
+
+    /// One line to a child's stdin (guarded against SIGPIPE at spawn). false if the child is gone.
+    @discardableResult
+    private func write(_ line: String, to sessionID: String) -> Bool {
+        guard let child = children[sessionID], child.process.isRunning, !line.isEmpty else { return false }
+        do { try child.stdin.write(contentsOf: Data(line.utf8)); return true }
+        catch { log.error("stdin write failed: \(error.localizedDescription)"); return false }
+    }
+
+    /// P11 — answer a Codex approval the person decided on the notch.
+    func answerApproval(sessionID: String, requestID: String, allow: Bool) {
+        let sid = sessionID.lowercased()
+        guard let p = records[sid]?.pendingApproval, p.rawID == requestID else { return }
+        write(CodexAppServer.approvalReply(rawID: p.rawID, allow: allow, legacy: p.legacy), to: sid)
+        records[sid]?.pendingApproval = nil
         onChange?()
     }
 
@@ -265,12 +319,21 @@ final class WindowlessSessionManager {
         case .idle, .waiting: break
         case .working, .ended: return .busy
         }
-        guard let clean = WindowlessRules.cleanMessage(text), let line = WindowlessRules.userTurnLine(clean) else { return .busy }
-        do {
-            try child.stdin.write(contentsOf: line)
-        } catch {
-            log.error("stdin write failed: \(error.localizedDescription)")
-            return .gone
+        guard let clean = WindowlessRules.cleanMessage(text) else { return .busy }
+        if child.agent == .codex {
+            // The thread must exist and no approval may be pending (a new turn would race the open request).
+            guard let thread = record.threadID, record.pendingApproval == nil else { return .busy }
+            let id = child.nextRequestID
+            children[sid]?.nextRequestID += 1
+            guard write(CodexAppServer.turnStart(id: id, threadID: thread, text: clean), to: sid) else { return .gone }
+        } else {
+            guard let line = WindowlessRules.userTurnLine(clean) else { return .busy }
+            do {
+                try child.stdin.write(contentsOf: line)
+            } catch {
+                log.error("stdin write failed: \(error.localizedDescription)")
+                return .gone
+            }
         }
         records[sid]?.sent(clean, at: Date())
         onChange?()
@@ -279,7 +342,16 @@ final class WindowlessSessionManager {
 
     /// End the current turn cleanly (SIGINT — Claude Code records the turn as interrupted instead of losing it).
     func interrupt(_ sessionID: String) {
-        guard let child = children[sessionID.lowercased()], child.process.isRunning else { return }
+        let sid = sessionID.lowercased()
+        guard let child = children[sid], child.process.isRunning else { return }
+        if child.agent == .codex {
+            // Codex: interrupt the turn over the protocol; a SIGINT would end the whole app-server.
+            guard let thread = records[sid]?.threadID, let turn = records[sid]?.activeTurnID else { return }
+            let id = child.nextRequestID
+            children[sid]?.nextRequestID += 1
+            write(CodexAppServer.turnInterrupt(id: id, threadID: thread, turnID: turn), to: sid)
+            return
+        }
         child.process.interrupt()
     }
 
@@ -316,6 +388,8 @@ final class WindowlessSessionManager {
     // MARK: - Stream
 
     private func consume(_ data: Data, sessionID: String, gen: Int) {
+        guard let c = children[sessionID], c.generation == gen else { return }
+        if c.agent == .codex { consumeCodex(data, sessionID: sessionID); return }
         guard var child = children[sessionID], child.generation == gen else { return }
         child.buffer.append(data)
         if child.buffer.count > Self.maxLineBytes, !child.buffer.contains(0x0A) {
@@ -338,6 +412,48 @@ final class WindowlessSessionManager {
         // After the record says "waiting" (so a relay that writes at once finds the session free) and BEFORE onChange:
         // onChange flushes P6's queued replies, which would re-busy the session while the relay still thought it free.
         for e in events { if case .result(_, let text, _) = e { crewObserver?(.turnEnded(sessionID: sessionID, result: text)) } }
+        onChange?()
+    }
+
+    /// P11 — Codex app-server lines. Handshake replies trigger the next request; other server requests get an error reply
+    /// so the server never waits on XFinder; everything else updates the record.
+    private func consumeCodex(_ data: Data, sessionID: String) {
+        guard var child = children[sessionID] else { return }
+        child.buffer.append(data)
+        if child.buffer.count > Self.maxLineBytes, !child.buffer.contains(0x0A) { child.buffer.removeAll(keepingCapacity: false) }
+        var events: [CodexAppServer.Event] = []
+        while let nl = child.buffer.firstIndex(of: 0x0A) {
+            let lineData = child.buffer[child.buffer.startIndex..<nl]
+            child.buffer.removeSubrange(child.buffer.startIndex...nl)
+            guard let line = String(data: lineData, encoding: .utf8) else { continue }
+            let e = CodexAppServer.parse(line: line)
+            if e != .ignored { events.append(e) }
+        }
+        children[sessionID] = child
+        guard !events.isEmpty, var record = records[sessionID] else { return }
+        let now = Date()
+        var turnEnded = false
+        for e in events {
+            switch e {
+            case .initializeOK:
+                write(CodexAppServer.initialized, to: sessionID)
+                write(CodexAppServer.threadStart(cwd: record.cwd), to: sessionID)
+            case .otherRequest(let raw):
+                write(CodexAppServer.unsupportedReply(rawID: raw), to: sessionID)
+            case .turnCompleted:
+                turnEnded = true
+                record.applyCodex(e, at: now)
+            default:
+                record.applyCodex(e, at: now)
+            }
+        }
+        records[sessionID] = record
+        // The thread exists now: the held first message becomes the first turn.
+        if record.threadID != nil, let first = children[sessionID]?.pendingFirst {
+            children[sessionID]?.pendingFirst = nil
+            _ = deliver(first, to: sessionID)
+        }
+        if turnEnded { crewObserver?(.turnEnded(sessionID: sessionID, result: record.lastAgentText)) }
         onChange?()
     }
 
@@ -410,7 +526,7 @@ final class WindowlessSessionManager {
     }
 
     private func rememberEnded(_ r: WindowlessRules.Record) {
-        guard r.turns > 0 else { return }            // nothing was said: nothing to reopen
+        guard r.turns > 0, r.agent == .claude else { return }   // nothing was said / Codex has no windowless reopen yet
         var raw = (UserDefaults.standard.array(forKey: Self.historyKey) as? [[String: Any]] ?? [])
             .filter { ($0["id"] as? String) != r.sessionID }
         raw.insert(["id": r.sessionID, "cwd": r.cwd, "updated": r.updatedAt.timeIntervalSince1970], at: 0)

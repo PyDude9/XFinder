@@ -10830,6 +10830,18 @@
     "Dừng con trỏ trên ô agent ở cánh trái notch là mở danh sách phiên, dù “Rê chuột vào notch mở” đang chọn gì.": {
       "en": "Resting the pointer on the agent tile in the notch's left wing opens the session list, whatever “Resting on the notch opens” is set to.",
       "scope": "sentence"
+    },
+    "Việc đầu tiên cho Codex (không bắt buộc)…": {
+      "en": "A first task for Codex (optional)…",
+      "scope": "sentence"
+    },
+    "Mỗi tin là một lượt dùng gói Codex của bạn.": {
+      "en": "Every message is a turn of your Codex plan.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy lệnh codex.": {
+      "en": "The codex command was not found.",
+      "scope": "sentence"
     }
   }
 }

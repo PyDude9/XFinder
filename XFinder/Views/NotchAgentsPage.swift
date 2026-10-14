@@ -847,9 +847,28 @@ private struct NewWindowlessComposer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            HStack(spacing: XFinderTokens.Space.tight) {
+                // P11 — which agent runs windowless: Claude Code (claude -p) or Codex (codex app-server).
+                ForEach([AgentKind.claude, .codex], id: \.self) { kind in
+                    Button { model.newWindowlessAgent = kind } label: {
+                        HStack(spacing: 4) {
+                            AgentBrandTile(kind: kind, size: 12)
+                            Text(kind.displayName).font(XFinderTokens.Font.caption)
+                        }
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Capsule().fill(Color.white.opacity(model.newWindowlessAgent == kind ? 0.18 : 0.05)))
+                        .foregroundColor(.white.opacity(model.newWindowlessAgent == kind ? 1 : 0.55))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(kind.displayName)
+                }
+                Spacer(minLength: 0)
+            }
             folderRow
             TextField("", text: Bindable(model).newWindowlessText,
-                      prompt: Text(L10n.t("Việc đầu tiên cho Claude Code (không bắt buộc)…")).foregroundColor(.white.opacity(0.4)))
+                      prompt: Text(model.newWindowlessAgent == .codex
+                                   ? L10n.t("Việc đầu tiên cho Codex (không bắt buộc)…")
+                                   : L10n.t("Việc đầu tiên cho Claude Code (không bắt buộc)…")).foregroundColor(.white.opacity(0.4)))
                 .textFieldStyle(.plain)
                 .font(XFinderTokens.Font.rowValue)
                 .foregroundColor(.white)
@@ -878,7 +897,8 @@ private struct NewWindowlessComposer: View {
                     }
                 }
             } else {
-                Text(L10n.t("Mỗi tin là một lượt dùng gói Claude của bạn."))
+                Text(model.newWindowlessAgent == .codex ? L10n.t("Mỗi tin là một lượt dùng gói Codex của bạn.")
+                                                        : L10n.t("Mỗi tin là một lượt dùng gói Claude của bạn."))
                     .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
                     .lineLimit(1).truncationMode(.tail)
             }

@@ -67,6 +67,8 @@ final class NotchSurfaceModel {
     /// P7a — the "new windowless session" composer: open?, the folder picked, the first message, the folders offered.
     var newWindowlessOpen = false
     var newWindowlessFolder: String?
+    /// P11 — which agent the "+" composer starts (Claude Code or Codex).
+    var newWindowlessAgent: AgentKind = .claude
     var newWindowlessText = ""
     var newWindowlessFolders: [String] = []
     /// Bumped to move the keyboard into the composer's field.

@@ -184,6 +184,9 @@ kiểm (mọi kiểm tra đều dùng một `claude` giả).
 | T-P9-OPENCODE | Như trên, đích OpenCode | Phiên OpenCode mới (tiêu đề "Handoff from …") trong đúng thư mục, nhận tin |
 | T-P10-EDGE | Rê chuột dừng trên ô agent ở cánh trái notch | Trang Agents mở thẳng, dù "Rê chuột vào notch mở" chọn gì |
 | T-P10-SORT | Đổi "Sắp xếp phiên" và tắt "Giữ phiên đã kết thúc" | Thứ tự đổi ngay; phiên đã kết thúc biến khỏi notch |
+| T-P11-START | Notch ▸ Agents ▸ "+" ▸ chọn Codex ▸ thư mục ▸ "liệt kê tệp ở đây" ▸ Bắt đầu | Hàng Codex mới (ô logo Codex, khung đứt), chạy rồi "Tới lượt bạn"; hội thoại có câu trả lời. Tốn một lượt gói Codex |
+| T-P11-APPROVE | Nhờ phiên Codex chạy một lệnh cần duyệt (ghi ngoài thư mục, mạng) | Thẻ Cho phép / Từ chối hiện ở hàng; bấm là Codex nhận (không cần cài hook Codex) |
+| T-P11-HANDOFF | Chuyển một phiên Claude sang Codex | Mở phiên Codex không cửa sổ trong đúng thư mục, trả lời 3 dòng rồi chờ |
 
 ### 1.4.0 (đóng gói 2026-10-14, chưa đăng)
 
