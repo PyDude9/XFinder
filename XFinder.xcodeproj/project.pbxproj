@@ -140,7 +140,6 @@
 		7F1A024E /* Detail/ClipboardLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A024F /* Detail/ClipboardLibraryView.swift */; };
 		7F1A0220 /* SnapRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A021F /* SnapRowView.swift */; };
 		7F1A01CE /* Detail/FeaturesHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01CD /* Detail/FeaturesHubView.swift */; };
-		7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0058 /* Detail/AntiSleepDetailView.swift */; };
 		7F1A0061 /* Detail/SettingsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0060 /* Detail/SettingsDetailView.swift */; };
 		7F1A0064 /* Detail/CompressDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0062 /* Detail/CompressDetailView.swift */; };
 		7F1A0065 /* Detail/PdfToolsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0063 /* Detail/PdfToolsDetailView.swift */; };
@@ -495,7 +494,6 @@
 		7F1A024F /* Detail/ClipboardLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/ClipboardLibraryView.swift; sourceTree = "<group>"; };
 		7F1A021F /* SnapRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapRowView.swift; sourceTree = "<group>"; };
 		7F1A01CD /* Detail/FeaturesHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FeaturesHubView.swift; sourceTree = "<group>"; };
-		7F1A0058 /* Detail/AntiSleepDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/AntiSleepDetailView.swift; sourceTree = "<group>"; };
 		7F1A0060 /* Detail/SettingsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SettingsDetailView.swift; sourceTree = "<group>"; };
 		7F1A0062 /* Detail/CompressDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/CompressDetailView.swift; sourceTree = "<group>"; };
 		7F1A0063 /* Detail/PdfToolsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/PdfToolsDetailView.swift; sourceTree = "<group>"; };
@@ -1054,7 +1052,6 @@
 				7F1A01DB /* OnboardingView.swift */,
 				7F1A01D3 /* Detail/PortsDetailView.swift */,
 				7F1A01CD /* Detail/FeaturesHubView.swift */,
-				7F1A0058 /* Detail/AntiSleepDetailView.swift */,
 				7F1A0060 /* Detail/SettingsDetailView.swift */,
 				7F1A024F /* Detail/ClipboardLibraryView.swift */,
 				7F1A0062 /* Detail/CompressDetailView.swift */,
@@ -1341,7 +1338,6 @@
 				7F1A024E /* Detail/ClipboardLibraryView.swift in Sources */,
 				7F1A0220 /* SnapRowView.swift in Sources */,
 				7F1A01CE /* Detail/FeaturesHubView.swift in Sources */,
-				7F1A005F /* Detail/AntiSleepDetailView.swift in Sources */,
 				7F1A0061 /* Detail/SettingsDetailView.swift in Sources */,
 				7F1A0064 /* Detail/CompressDetailView.swift in Sources */,
 				7F1A0065 /* Detail/PdfToolsDetailView.swift in Sources */,

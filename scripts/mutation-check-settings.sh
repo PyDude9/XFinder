@@ -51,7 +51,7 @@ run() {   # run <name> <file> <old> <new>
 }
 
 run "S1 a page is dropped from every group (unreachable)" XFinder/Models/SidebarDestination.swift \
-  "'(\"CHUNG\", [.dashboard, .features, .shortcuts, .antiSleep,'" "'(\"CHUNG\", [.dashboard, .features, .antiSleep,'"
+  "'(\"CHUNG\", [.dashboard, .features, .shortcuts, .system,'" "'(\"CHUNG\", [.dashboard, .features, .system,'"
 run "S2 two pages share an icon again (smartSelect = aiSearch)" XFinder/Models/SidebarDestination.swift \
   "'        case .smartSelect: return \"character.cursor.ibeam\"'" "'        case .smartSelect: return \"wand.and.stars\"'"
 run "S3 a notch page leaves the NOTCH group" XFinder/Models/SidebarDestination.swift \
@@ -79,7 +79,7 @@ run "C9 the catalog drifts from QuitHold's key" XFinder/Core/Shortcuts/ShortcutC
 run "C6 Find Next shown as a macOS-reserved chord, not a convention" XFinder/Core/Shortcuts/ShortcutCatalog.swift \
   "'isConventionOnly: true))'" "'isConventionOnly: false))'"
 run "C10 a tab is its own sidebar row again (the merge undone)" XFinder/Models/SidebarDestination.swift \
-  "'    var hostRow: SidebarDestination { tabGroup?.first ?? self }'" \
+  "'    var hostRow: SidebarDestination { self == .antiSleep ? .features : (tabGroup?.first ?? self) }'" \
   "'    var hostRow: SidebarDestination { self }'"
 
 restore

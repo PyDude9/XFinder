@@ -30,6 +30,9 @@ struct SystemControlsPanel: View {
     @State private var brightnessSlider: Double = 0.5
     @State private var brightnessDragging = false
     @State private var caffeine = CaffeineController.shared
+    /// The duration the next "on" uses (nil = until turned off). Chosen before switching on, like the old Chống ngủ page
+    /// that was folded into this row: a running hold keeps the duration it started with.
+    @State private var antiSleepMinutes: Int? = nil
 
     /// Dock auto-hide is a real, readable/writable public preference, so it is
     /// a genuine two-way toggle rather than a fire-and-forget button.
@@ -228,13 +231,7 @@ struct SystemControlsPanel: View {
 
                 Divider()
 
-                ToggleRow(title: L10n.t("Chống ngủ"),
-                          subtitle: caffeine.isActive ? L10n.t("Đang bật") : L10n.t("Đang tắt"),
-                          isOn: Binding(get: { caffeine.isActive },
-                                        set: { on in
-                                            if on { caffeine.activate(duration: .indefinite) }
-                                            else { caffeine.deactivate() }
-                                        }))
+                antiSleepRow
 
                 ToggleRow(title: L10n.t("Tự động ẩn Dock"), isOn: $dockAutohide)
                     .onChange(of: dockAutohide) { _, on in DockPrefs.setAutohide(on) }
@@ -272,6 +269,52 @@ struct SystemControlsPanel: View {
                 appearanceError = "\(L10n.t("Không đổi được giao diện: "))\(msg)"
             }
         }
+    }
+
+
+    /// Chống ngủ with its duration and time left — the whole of the former Chống ngủ page, which was folded into this
+    /// row (the page repeated the switch and only added the duration presets and the countdown).
+    /// The row's state line, also the switch's VoiceOver value: time left, "∞" for an open-ended hold, or off.
+    private var antiSleepStateText: String {
+        if let r = caffeine.remainingSeconds { return String(format: L10n.t("Còn %02d:%02d"), r / 60, r % 60) }
+        return caffeine.isActive ? L10n.t("∞ Vô hạn") : L10n.t("Đang tắt")
+    }
+
+    private var antiSleepRow: some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L10n.t("Chống ngủ"))
+                    .font(XFinderTokens.Font.row)
+                    .foregroundColor(.primary)
+                Text(antiSleepStateText)
+                    .foregroundColor(caffeine.isActive ? .orange : .secondary)
+                    .font(XFinderTokens.Font.caption)
+                .monospacedDigit()
+            }
+            Spacer()
+            Picker(L10n.t("Thời lượng"), selection: $antiSleepMinutes) {
+                Text(L10n.t("Vô hạn")).tag(Int?.none)
+                Text(L10n.t("15 phút")).tag(Int?.some(15))
+                Text(L10n.t("1 giờ")).tag(Int?.some(60))
+                Text(L10n.t("2 giờ")).tag(Int?.some(120))
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: 110)
+            .disabled(caffeine.isActive)
+            .help(L10n.t("Thời lượng"))
+            Toggle(isOn: Binding(get: { caffeine.isActive },
+                                 set: { on in
+                                     if !on { caffeine.deactivate() }
+                                     else if let m = antiSleepMinutes { caffeine.activate(duration: .minutes(m)) }
+                                     else { caffeine.activate(duration: .indefinite) }
+                                 })) { EmptyView() }
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .accessibilityLabel(L10n.t("Chống ngủ"))
+                .accessibilityValue(antiSleepStateText)
+        }
+        .padding(.vertical, 2)
     }
 
 }

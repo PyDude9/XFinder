@@ -296,7 +296,7 @@ struct DashboardDetailView: View {
                 title: L10n.t("Chống ngủ"),
                 status: CaffeineController.shared.isActive ? L10n.t("Đang bật") : L10n.t("Đang tắt"),
                 actionTitle: L10n.t("Mở…"),
-                action: { appState.navigate(to: .antiSleep) })
+                action: { appState.navigate(to: .features) })
                 .settingsRow()
         }
     }

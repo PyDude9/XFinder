@@ -145,7 +145,7 @@ struct DetailHostView: View {
                     .environment(systemMonitorManager)
                     .environment(clipboardManager)
             case .antiSleep:
-                AntiSleepDetailView()
+                FeaturesHubView()
             case .system:
                 SystemDetailView()
                     .environment(systemMonitorManager)

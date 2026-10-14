@@ -87,8 +87,8 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     ]
     /// The group a destination belongs to, if any.
     var tabGroup: [SidebarDestination]? { Self.tabGroups.first { $0.contains(self) } }
-    /// The sidebar row a destination lives under: itself, unless it is a tab of another row.
-    var hostRow: SidebarDestination { tabGroup?.first ?? self }
+    /// The sidebar row a destination lives under: itself, unless it is a tab of another row or merged into a hub.
+    var hostRow: SidebarDestination { self == .antiSleep ? .features : (tabGroup?.first ?? self) }
     /// The tab's label inside its row. A host's own tab can need a shorter name than the row's title.
     var tabTitleKey: String {
         switch self {
@@ -107,8 +107,10 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         default: return nil
         }
     }
-    /// Extra words the sidebar search matches for a row: a tabbed row answers to its tabs' names too.
+    /// Extra words the sidebar search matches for a row: a tabbed row answers to its tabs' names too,
+    /// and Features matches Chống ngủ since antiSleep was merged there.
     var searchAlsoKeys: [String] {
+        if self == .features { return ["Chống ngủ"] }
         guard let group = tabGroup, group.first == self else { return [] }
         return group.map(\.tabTitleKey)
     }
@@ -249,7 +251,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     static var groups: [(header: String, items: [SidebarDestination])] {
         [
-            ("CHUNG", [.dashboard, .features, .shortcuts, .antiSleep, .system, .alerts]),
+            ("CHUNG", [.dashboard, .features, .shortcuts, .system, .alerts]),
             // P3: everything the notch shows, by what the user comes to do — the old "Notch & Khay thả" page split six ways.
             ("NOTCH", [.notchInterface, .dropTray, .media, .aiAgents, .calendar, .liveActivities]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .appQuit, .mouseGestures, .menuIcons]),
