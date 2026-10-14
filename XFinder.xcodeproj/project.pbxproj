@@ -106,6 +106,8 @@
 		7F1A0302 /* Agents/AgentKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0303 /* Agents/AgentKind.swift */; };
 		7F1A030E /* Agents/AgentTalkSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A030F /* Agents/AgentTalkSender.swift */; };
 		7F1A0372 /* Agents/WindowlessSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0373 /* Agents/WindowlessSessionManager.swift */; };
+		7F1A0376 /* Agents/CrewManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0377 /* Agents/CrewManager.swift */; };
+		7F1A0374 /* Agents/CrewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0375 /* Agents/CrewRules.swift */; };
 		7F1A0370 /* Agents/WindowlessRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0371 /* Agents/WindowlessRules.swift */; };
 		7F1A030C /* Agents/AgentTalk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A030D /* Agents/AgentTalk.swift */; };
 		7F1A030A /* Agents/AgentRecent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A030B /* Agents/AgentRecent.swift */; };
@@ -186,6 +188,7 @@
 		4C1A2B03 /* XFinder/Resources/L10n.strings.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C1A2B02 /* XFinder/Resources/L10n.strings.json */; };
 		4C1A2B05 /* XFinder/Resources/L10n.allowlist.json in Resources */ = {isa = PBXBuildFile; fileRef = 4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */; };
 		7F1A0264 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A0265 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh */; };
+		7F1A0378 /* XFinder/Resources/Agents/xfinder-crew.zsh in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A0379 /* XFinder/Resources/Agents/xfinder-crew.zsh */; };
 		7F1A035F /* XFinder/Resources/Agents/xfinder-claude-statusline.sh in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */; };
 		7F1A00E5 /* MouseGestures/GestureModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E4 /* MouseGestures/GestureModel.swift */; };
 		7F1A00E7 /* MouseGestures/GestureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E6 /* MouseGestures/GestureEngine.swift */; };
@@ -448,6 +451,8 @@
 		7F1A0303 /* Agents/AgentKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentKind.swift; sourceTree = "<group>"; };
 		7F1A030F /* Agents/AgentTalkSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentTalkSender.swift; sourceTree = "<group>"; };
 		7F1A0373 /* Agents/WindowlessSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/WindowlessSessionManager.swift; sourceTree = "<group>"; };
+		7F1A0377 /* Agents/CrewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/CrewManager.swift; sourceTree = "<group>"; };
+		7F1A0375 /* Agents/CrewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/CrewRules.swift; sourceTree = "<group>"; };
 		7F1A0371 /* Agents/WindowlessRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/WindowlessRules.swift; sourceTree = "<group>"; };
 		7F1A030D /* Agents/AgentTalk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentTalk.swift; sourceTree = "<group>"; };
 		7F1A030B /* Agents/AgentRecent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentRecent.swift; sourceTree = "<group>"; };
@@ -590,6 +595,7 @@
 		4C1A2B02 /* XFinder/Resources/L10n.strings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = XFinder/Resources/L10n.strings.json; sourceTree = SOURCE_ROOT; };
 		4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = XFinder/Resources/L10n.allowlist.json; sourceTree = SOURCE_ROOT; };
 		7F1A0265 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = XFinder/Resources/Agents/xfinder-agent-hook.zsh; sourceTree = SOURCE_ROOT; };
+		7F1A0379 /* XFinder/Resources/Agents/xfinder-crew.zsh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = XFinder/Resources/Agents/xfinder-crew.zsh; sourceTree = SOURCE_ROOT; };
 		7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = XFinder/Resources/Agents/xfinder-claude-statusline.sh; sourceTree = SOURCE_ROOT; };
 		7F1A00E4 /* MouseGestures/GestureModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureModel.swift; sourceTree = "<group>"; };
 		7F1A00E6 /* MouseGestures/GestureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureEngine.swift; sourceTree = "<group>"; };
@@ -768,6 +774,8 @@
 				7F1A0303 /* Agents/AgentKind.swift */,
 				7F1A030F /* Agents/AgentTalkSender.swift */,
 				7F1A0373 /* Agents/WindowlessSessionManager.swift */,
+				7F1A0377 /* Agents/CrewManager.swift */,
+				7F1A0375 /* Agents/CrewRules.swift */,
 				7F1A0371 /* Agents/WindowlessRules.swift */,
 				7F1A030D /* Agents/AgentTalk.swift */,
 				7F1A030B /* Agents/AgentRecent.swift */,
@@ -885,6 +893,7 @@
 				4C1A2B02 /* XFinder/Resources/L10n.strings.json */,
 				4C1A2B04 /* XFinder/Resources/L10n.allowlist.json */,
 				7F1A0265 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh */,
+				7F1A0379 /* XFinder/Resources/Agents/xfinder-crew.zsh */,
 				7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */,
 				7F1A00E4 /* MouseGestures/GestureModel.swift */,
 				7F1A00E6 /* MouseGestures/GestureEngine.swift */,
@@ -1148,6 +1157,7 @@
 				4C1A2B03 /* XFinder/Resources/L10n.strings.json in Resources */,
 				4C1A2B05 /* XFinder/Resources/L10n.allowlist.json in Resources */,
 				7F1A0264 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh in Resources */,
+				7F1A0378 /* XFinder/Resources/Agents/xfinder-crew.zsh in Resources */,
 				7F1A035F /* XFinder/Resources/Agents/xfinder-claude-statusline.sh in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1272,6 +1282,8 @@
 				7F1A0302 /* Agents/AgentKind.swift in Sources */,
 				7F1A030E /* Agents/AgentTalkSender.swift in Sources */,
 				7F1A0372 /* Agents/WindowlessSessionManager.swift in Sources */,
+				7F1A0376 /* Agents/CrewManager.swift in Sources */,
+				7F1A0374 /* Agents/CrewRules.swift in Sources */,
 				7F1A0370 /* Agents/WindowlessRules.swift in Sources */,
 				7F1A030C /* Agents/AgentTalk.swift in Sources */,
 				7F1A030A /* Agents/AgentRecent.swift in Sources */,

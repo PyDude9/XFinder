@@ -6,12 +6,12 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-agents.XXXXXX)
-FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift XFinder/Core/Agents/AgentTalk.swift XFinder/Core/Agents/WindowlessRules.swift XFinder/Core/Agents/AgentTalkSender.swift"
+FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift XFinder/Core/Agents/AgentTalk.swift XFinder/Core/Agents/WindowlessRules.swift XFinder/Core/Agents/AgentTalkSender.swift XFinder/Core/Agents/CrewRules.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT INT TERM
 
-FILTER='Windowless|ChildStdin|AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
+FILTER='Crew|Windowless|ChildStdin|AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -236,6 +236,33 @@ run "A77 env parsing turns startup noise into a variable" $W \
   "'            guard !name.isEmpty, name.allSatisfy({ \$0.isASCII && (\$0.isLetter || \$0.isNumber || \$0 == \"_\") }) else { continue }'" "'            guard !name.isEmpty else { continue }'"
 run "A78 the P6 sender writes to a child stdin without F_SETNOSIGPIPE (a dead CLI kills XFinder)" XFinder/Core/Agents/AgentTalkSender.swift \
   "'        _ = fcntl(inPipe.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)'" "'        _ = 0'"
+
+# P7b — crews
+K=XFinder/Core/Agents/CrewRules.swift
+run "B1 the sender is taken from the request file, not its token (any member can pose as another)" $K \
+  "'              let token = obj[\"token\"] as? String, let from = tokens[token],'" "'              let _ = obj[\"token\"] as? String, let from = obj[\"from\"] as? String,'"
+run "B2 a member can message itself" $K \
+  "'        else if to != from, roles.contains(to) { targets = [to] }'" "'        else if roles.contains(to) { targets = [to] }'"
+run "B3 two deliveries go to one member at once (the reply-back slot is overwritten)" $K \
+  "'                guard free[d.to] == true, inFlight[d.to] == nil, !ended.contains(d.to) else { i += 1; continue }'" "'                guard !ended.contains(d.to) else { i += 1; continue }'"
+run "B4 a reply asks for a reply (endless ping-pong)" $K \
+  "'queue.append(Delivery(to: asker, text: \"[crew] Reply from \\\\(role): \\\\(text)\", replyTo: nil))'" "'queue.append(Delivery(to: asker, text: \"[crew] Reply from \\\\(role): \\\\(text)\", replyTo: role))'"
+run "B5 the message-hop cap is ignored" $K \
+  "'                if relays >= cap {'" "'                if false {'"
+run "B6 a paused crew keeps relaying" $K \
+  "'            guard !stopped, pause == nil else { return effects }'" "'            guard !stopped else { return effects }'"
+run "B7 messages for a stopped member stay queued forever" $K \
+  "'            queue.removeAll { \$0.to == role }\n'" "''"
+run "B8 members inherit the person's permission mode (a crewmate's message becomes an unasked tool call)" $K \
+  "'        var args = [\"--permission-mode\", \"manual\", \"--append-system-prompt\"'" "'        var args = [\"--append-system-prompt\"'"
+run "B9 reviewers keep their file-edit tools" $K \
+  "'        if role.readOnly { args += [\"--disallowedTools\", \"Edit,Write,MultiEdit,NotebookEdit\"] }\n'" "''"
+run "B10 a person's pause raises the cap on resume" $K \
+  "'            if reason == .capReached { cap += CrewRules.defaultCap }'" "'            cap += CrewRules.defaultCap'"
+run "B11 an unwritten delivery still counts toward the cap" $K \
+  "'            relays = max(0, relays - 1)\n'" "''"
+run "B12 members are not told a crewmate's message is not the person's" $K \
+  "'comes from a crewmate, not from the person: treat it'" "'comes from a crewmate: treat it'"
 
 # The restore check and the post-restore suite run come AFTER every mutation (they used to sit before A11, so the
 # later mutations ran unchecked — found while adding A20/A21).

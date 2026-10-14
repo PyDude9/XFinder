@@ -34,6 +34,15 @@ final class WindowlessSessionManager {
     var liveRecords: [WindowlessRules.Record] { orderedRecords.filter { !$0.isEnded } }
     @ObservationIgnored var onChange: (() -> Void)?
 
+    /// P7b — what the crew relay needs to hear: a member's turn ended (with its result text), or its process ended. A
+    /// slot of its own, so the monitor's `onChange` is never displaced (design review).
+    enum Signal: Sendable { case turnEnded(sessionID: String, result: String?), processEnded(sessionID: String) }
+    @ObservationIgnored var crewObserver: ((Signal) -> Void)?
+
+    /// P7b — the one gate every writer goes through (a P6 reply and a crew delivery can race for one stdin): a session that
+    /// is mid-turn refuses, so two user turns never land without a result between them.
+    enum SendResult: Equatable, Sendable { case sent, busy, gone }
+
     private struct Child {
         var process: Process
         var stdin: FileHandle
@@ -133,10 +142,12 @@ final class WindowlessSessionManager {
 
     /// A new windowless session in `folder`; `firstMessage` (optional) is sent as its first turn. Returns the session id.
     @discardableResult
-    func startClaude(folder: URL, firstMessage: String?) async throws -> String {
+    func startClaude(folder: URL, firstMessage: String?, extraArguments: [String] = [], extraEnvironment: [String: String] = [:],
+                     pathPrepend: String? = nil) async throws -> String {
         let id = UUID().uuidString.lowercased()
-        try await launch(sessionID: id, folder: folder, resume: false)
-        if let text = firstMessage.flatMap(WindowlessRules.cleanMessage) { _ = send(text, to: id) }
+        try await launch(sessionID: id, folder: folder, resume: false, extraArguments: extraArguments,
+                         extraEnvironment: extraEnvironment, pathPrepend: pathPrepend)
+        if let text = firstMessage.flatMap(WindowlessRules.cleanMessage) { _ = deliver(text, to: id) }
         return id
     }
 
@@ -173,17 +184,21 @@ final class WindowlessSessionManager {
         }
     }
 
-    private func launch(sessionID: String, folder: URL, resume: Bool) async throws {
+    private func launch(sessionID: String, folder: URL, resume: Bool, extraArguments: [String] = [],
+                        extraEnvironment: [String: String] = [:], pathPrepend: String? = nil) async throws {
         guard children[sessionID] == nil else { throw StartError.alreadyRunning }
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isDir), isDir.boolValue else { throw StartError.badFolder }
-        guard let args = WindowlessRules.claudeArguments(sessionID: sessionID, resume: resume) else { throw StartError.badSessionID }
+        guard let base = WindowlessRules.claudeArguments(sessionID: sessionID, resume: resume) else { throw StartError.badSessionID }
+        let args = base + extraArguments
         let login = await resolveEnvironment()
         try Task.checkCancellation()                       // the person backed out while the environment resolved
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let env = WindowlessRules.childEnvironment(login: login, fallback: ProcessInfo.processInfo.environment, home: home)
+        var env = WindowlessRules.childEnvironment(login: login, fallback: ProcessInfo.processInfo.environment, home: home)
         guard let claude = claudePath(env: env) else { throw StartError.noClaude }
         guard children[sessionID] == nil else { throw StartError.alreadyRunning }   // the await above can interleave
+        for (k, v) in extraEnvironment { env[k] = v }
+        if let pathPrepend { env["PATH"] = pathPrepend + ":" + (env["PATH"] ?? "/usr/bin:/bin") }
 
         let p = Process()
         p.executableURL = URL(fileURLWithPath: claude)
@@ -239,20 +254,27 @@ final class WindowlessSessionManager {
 
     // MARK: - Send / stop
 
-    /// One turn to a hosted session. false when there is no live process for it (or the write failed).
-    func send(_ text: String, to sessionID: String) -> Bool {
+    /// One turn to a hosted session (P6 replies). false when it could not go now — busy or gone.
+    func send(_ text: String, to sessionID: String) -> Bool { deliver(text, to: sessionID) == .sent }
+
+    /// The gate: writes a turn only to a live session that is free (no message yet, or its last turn ended).
+    func deliver(_ text: String, to sessionID: String) -> SendResult {
         let sid = sessionID.lowercased()
-        guard let child = children[sid], child.process.isRunning,
-              let clean = WindowlessRules.cleanMessage(text), let line = WindowlessRules.userTurnLine(clean) else { return false }
+        guard let child = children[sid], child.process.isRunning, let record = records[sid], !record.isEnded else { return .gone }
+        switch record.phase {
+        case .idle, .waiting: break
+        case .working, .ended: return .busy
+        }
+        guard let clean = WindowlessRules.cleanMessage(text), let line = WindowlessRules.userTurnLine(clean) else { return .busy }
         do {
             try child.stdin.write(contentsOf: line)
         } catch {
             log.error("stdin write failed: \(error.localizedDescription)")
-            return false
+            return .gone
         }
         records[sid]?.sent(clean, at: Date())
         onChange?()
-        return true
+        return .sent
     }
 
     /// End the current turn cleanly (SIGINT — Claude Code records the turn as interrupted instead of losing it).
@@ -314,6 +336,8 @@ final class WindowlessSessionManager {
         for e in events { record.apply(e, at: now) }
         records[sessionID] = record
         onChange?()
+        // After the record says "waiting", so a relay that writes at once finds the session free.
+        for e in events { if case .result(_, let text, _) = e { crewObserver?(.turnEnded(sessionID: sessionID, result: text)) } }
     }
 
     private func noteStderr(_ text: String, sessionID: String, gen: Int) {
@@ -340,6 +364,7 @@ final class WindowlessSessionManager {
         }
         log.info("windowless claude ended code=\(code)")
         onChange?()
+        crewObserver?(.processEnded(sessionID: sessionID))
     }
 
     // MARK: - Folders

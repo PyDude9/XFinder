@@ -35,6 +35,13 @@ struct AIAgentsDetailView: View {
     @State private var windowlessClaudeOK: Bool?
     @State private var windowlessNotice: String?
     @State private var windowlessNoticeIsError = false
+    // P7b — Crew
+    @State private var crewTemplate: CrewRules.Template = .pipeline
+    @State private var crewFolder: URL?
+    @State private var crewGoal = ""
+    @State private var crewStarting = false
+    @State private var crewNotice: String?
+    @State private var crewNoticeIsError = false
 
     var body: some View {
         ScrollView {
@@ -57,6 +64,7 @@ struct AIAgentsDetailView: View {
                 notchSection
                 replySection
                 windowlessSection
+                crewSection
                 sessionsSection
                 codexSection
                 openCodeSection
@@ -443,6 +451,206 @@ struct AIAgentsDetailView: View {
                 windowlessNotice = "\(L10n.t("Không chạy được claude."))"
             }
             windowlessStarting = false
+        }
+    }
+
+    // MARK: - P7b — Nhóm agent (crew)
+
+    private var crewSection: some View {
+        SettingsSection(
+            title: L10n.t("Nhóm agent (crew)"),
+            footer: L10n.t("Crew là vài phiên Claude Code không cửa sổ có vai trò, nhắn nhau qua XFinder bằng lệnh xfinder-crew. Các thành viên luôn chạy ở chế độ hỏi quyền: bạn duyệt từng tin giữa họ và từng lệnh cần duyệt. Người duyệt không có công cụ sửa tệp, nhưng lệnh shell của họ vẫn hỏi bạn. Mọi thành viên làm chung một thư mục — chưa có nhánh git riêng cho từng người. Thành viên dừng khi crew dừng hoặc khi thoát XFinder. Người gửi được nhận ra bằng token riêng của từng thành viên; chương trình nào chạy dưới tài khoản của bạn cũng đọc được token đó.")
+        ) {
+            crewTemplateRow.settingsRow()
+            SettingsDivider()
+            crewFolderRow.settingsRow()
+            SettingsDivider()
+            crewGoalRow.settingsRow()
+            SettingsDivider()
+            crewCostCaption.settingsRow()
+            SettingsDivider()
+            crewStartRow.settingsRow()
+            if let crewNotice {
+                SettingsDivider()
+                Text(crewNotice)
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(crewNoticeIsError ? .orange : .secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .settingsRow()
+            }
+            if hookStatus != .installed {
+                SettingsDivider()
+                Text(L10n.t("Chưa cài hook Claude Code của XFinder: tin giữa các thành viên và lệnh cần duyệt không hỏi được qua notch (cài ở mục Claude Code bên dưới)."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .settingsRow()
+            }
+            if !CrewManager.shared.crews.isEmpty {
+                SettingsDivider()
+                crewList.settingsRow()
+            }
+        }
+    }
+
+    private var crewTemplateRow: some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            VStack(alignment: .leading, spacing: 2) {
+                Picker(L10n.t("Mẫu crew"), selection: $crewTemplate) {
+                    ForEach(CrewRules.Template.allCases, id: \.self) { t in
+                        Text(L10n.t(t.titleKey)).tag(t)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                Text(crewTemplate.roles.map(\.name).joined(separator: " · "))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var crewFolderRow: some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            Text(crewFolder?.path ?? L10n.t("Chưa chọn thư mục"))
+                .font(XFinderTokens.Font.row)
+                .foregroundColor(crewFolder == nil ? .secondary : .primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            Button(L10n.t("Chọn thư mục…")) { pickCrewFolder() }
+                .controlSize(.small)
+        }
+    }
+
+    private var crewGoalRow: some View {
+        TextField(L10n.t("Mục tiêu cho cả crew…"), text: $crewGoal)
+            .textFieldStyle(.plain)
+            .font(XFinderTokens.Font.row)
+    }
+
+    private var crewCostCaption: some View {
+        Text("\(L10n.t("Sẽ chạy "))\(crewTemplate.roles.count)\(L10n.t(" phiên Claude Code. Người dẫn đầu dùng một lượt ngay với mục tiêu; mỗi tin giữa các thành viên cũng là một lượt. XFinder tạm dừng crew sau "))\(CrewRules.defaultCap)\(L10n.t(" chặng tin để hỏi bạn."))")
+            .font(XFinderTokens.Font.caption)
+            .foregroundColor(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var crewStartRow: some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            Text(L10n.t("Bắt đầu crew trong thư mục đã chọn."))
+                .font(XFinderTokens.Font.caption)
+                .foregroundColor(.secondary)
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            Button(L10n.t("Bắt đầu crew")) { startCrew() }
+                .controlSize(.small)
+                .disabled(crewStarting || crewFolder == nil || crewGoal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+    }
+
+    private func pickCrewFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        if panel.runModal() == .OK { crewFolder = panel.url }
+    }
+
+    private func startCrew() {
+        guard let folder = crewFolder else { return }
+        crewStarting = true
+        crewNotice = nil
+        let template = crewTemplate
+        let goal = crewGoal
+        Task {
+            do {
+                _ = try await CrewManager.shared.start(template: template, folder: folder, goal: goal)
+                crewGoal = ""
+                crewNoticeIsError = false
+                crewNotice = L10n.t("Đã bắt đầu crew — xem ở trang Agents trên notch.")
+            } catch let error as CrewManager.StartError {
+                crewNoticeIsError = true
+                if case .member(let e) = error, let detail = e.detail {
+                    crewNotice = "\(L10n.t(error.key)) · \(detail)"
+                } else {
+                    crewNotice = L10n.t(error.key)
+                }
+            } catch {
+                crewNoticeIsError = true
+                crewNotice = L10n.t("Không tạo được crew.")
+            }
+            crewStarting = false
+        }
+    }
+
+    @ViewBuilder private var crewList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(CrewManager.shared.crews.enumerated()), id: \.element.id) { index, crew in
+                if index > 0 { SettingsDivider() }
+                crewRow(crew).settingsRow()
+            }
+        }
+    }
+
+    private func crewRow(_ crew: CrewManager.Crew) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: XFinderTokens.Space.inline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(L10n.t(crew.template.titleKey)) — \(URL(fileURLWithPath: crew.folder).lastPathComponent)")
+                        .font(XFinderTokens.Font.row)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Text(crewStatusLine(crew))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                if !crew.stopped {
+                    Button(crew.relay.pause == nil ? L10n.t("Tạm dừng") : L10n.t("Chạy tiếp")) {
+                        crew.relay.pause == nil ? CrewManager.shared.pause(crew.id) : CrewManager.shared.resume(crew.id)
+                    }
+                    .controlSize(.small)
+                    Button(L10n.t("Dừng")) { CrewManager.shared.stop(crew.id) }
+                        .controlSize(.small)
+                } else {
+                    Button(L10n.t("Xoá")) { CrewManager.shared.forget(crew.id) }
+                        .controlSize(.small)
+                }
+            }
+            ForEach(crew.relay.board.suffix(5)) { entry in
+                Text(crewBoardLine(entry))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+        }
+    }
+
+    private func crewStatusLine(_ crew: CrewManager.Crew) -> String {
+        let status: String
+        if crew.stopped { status = L10n.t("Đã dừng") }
+        else if crew.relay.pause != nil { status = L10n.t("Tạm dừng") }
+        else { status = L10n.t("Đang chạy") }
+        var line = "\(status) · \(crew.relay.relays)/\(crew.relay.cap)\(L10n.t(" chặng tin"))"
+        if let cost = CrewManager.shared.costUSD(crew) {
+            line += " · ≈ $\(String(format: "%.2f", cost))"
+        }
+        return line
+    }
+
+    private func crewBoardLine(_ entry: CrewRules.BoardEntry) -> String {
+        switch entry.kind {
+        case .message:
+            return "\(entry.from ?? "") \(L10n.t(CrewRules.boardKindKey(.message))) \(entry.to ?? ""): \(entry.text)"
+        case .reply:
+            return "\(entry.from ?? "") \(L10n.t(CrewRules.boardKindKey(.reply))) \(entry.to ?? ""): \(entry.text)"
+        default:
+            return L10n.t(CrewRules.boardKindKey(entry.kind))
         }
     }
 

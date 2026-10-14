@@ -73,6 +73,8 @@ final class NotchSurfaceModel {
     var windowlessNotice: String?
     var windowlessNoticeDetail: String?
     var windowlessStarting = false
+    /// P7b — the crew whose board is open on the Agents page; nil = the list.
+    var crewBoard: String?
     var agentsNeedingYou: Int { agents.filter(\.needsYou).count }
     /// P1: a Claude Code session is alive (running or waiting) — the left wing of the collapsed notch shows it.
     var agentActive: Bool { agentsEnabled && agents.contains { $0.status != .ended } }

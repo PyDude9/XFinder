@@ -10502,6 +10502,122 @@
     "Cài hook = thêm các mục \"Managed by XFinder\" vào ~/.claude/settings.json (có bản sao lưu đặt cạnh) và chép một script zsh vào Application Support. Hook của app khác giữ nguyên. Mỗi sự kiện của Claude Code chạy script đó vài mili-giây. Khi Claude Code xin quyền, script chờ bạn bấm Cho phép hoặc Từ chối trên notch; XFinder không chạy thì Claude Code hỏi ở terminal như thường. Claude Code trong terminal và phiên không cửa sổ do XFinder chạy dùng hook này — app Claude để bàn không chạy hook.": {
       "en": "Installing the hook adds \"Managed by XFinder\" entries to ~/.claude/settings.json (with a backup beside it) and copies a zsh script into Application Support. Other apps' hooks stay as they are. Each Claude Code event runs the script for a few milliseconds. When Claude Code asks for permission, the script waits for you to press Allow or Deny at the notch; with XFinder not running, Claude Code asks in the terminal as usual. Claude Code in a terminal and the windowless sessions XFinder runs use this hook — the Claude desktop app runs no hooks.",
       "scope": "sentence"
+    },
+    "Builder → người duyệt": {
+      "en": "Builder → reviewer",
+      "scope": "sentence"
+    },
+    "Builder + hai người duyệt": {
+      "en": "Builder + two reviewers",
+      "scope": "sentence"
+    },
+    "nhắn": {
+      "en": "to",
+      "scope": "fragment"
+    },
+    "trả lời": {
+      "en": "replied to",
+      "scope": "fragment"
+    },
+    "Không gửi được — thành viên đã dừng.": {
+      "en": "Not delivered — the member has stopped.",
+      "scope": "sentence"
+    },
+    "Crew tạm dừng.": {
+      "en": "Crew paused.",
+      "scope": "sentence"
+    },
+    "Crew chạy tiếp.": {
+      "en": "Crew resumed.",
+      "scope": "sentence"
+    },
+    "Đã tới giới hạn chặng tin — crew tạm dừng, chờ bạn.": {
+      "en": "The message-hop limit was reached — the crew is paused and waiting for you.",
+      "scope": "sentence"
+    },
+    "Crew đã dừng.": {
+      "en": "Crew stopped.",
+      "scope": "sentence"
+    },
+    "Không tạo được crew.": {
+      "en": "Could not create the crew.",
+      "scope": "sentence"
+    },
+    "Crew tạm dừng — chờ bạn": {
+      "en": "Crew paused — waiting for you",
+      "scope": "sentence"
+    },
+    " chặng tin": {
+      "en": " message hops",
+      "scope": "fragment"
+    },
+    " chặng tin để hỏi bạn.": {
+      "en": " message hops to ask you.",
+      "scope": "fragment"
+    },
+    " phiên Claude Code. Người dẫn đầu dùng một lượt ngay với mục tiêu; mỗi tin giữa các thành viên cũng là một lượt. XFinder tạm dừng crew sau ": {
+      "en": " Claude Code sessions. The lead uses a turn right away on the goal; every message between members is a turn too. XFinder pauses the crew after ",
+      "scope": "fragment"
+    },
+    "Sẽ chạy ": {
+      "en": "This runs ",
+      "scope": "fragment"
+    },
+    "Bắt đầu crew trong thư mục đã chọn.": {
+      "en": "Start a crew in the chosen folder.",
+      "scope": "sentence"
+    },
+    "Bắt đầu crew": {
+      "en": "Start crew",
+      "scope": "sentence"
+    },
+    "Chưa cài hook Claude Code của XFinder: tin giữa các thành viên và lệnh cần duyệt không hỏi được qua notch (cài ở mục Claude Code bên dưới).": {
+      "en": "XFinder's Claude Code hook is not installed: crew messages and commands that need approval cannot be asked at the notch (install it in the Claude Code section below).",
+      "scope": "sentence"
+    },
+    "Chạy tiếp": {
+      "en": "Resume",
+      "scope": "sentence"
+    },
+    "Crew là vài phiên Claude Code không cửa sổ có vai trò, nhắn nhau qua XFinder bằng lệnh xfinder-crew. Các thành viên luôn chạy ở chế độ hỏi quyền: bạn duyệt từng tin giữa họ và từng lệnh cần duyệt. Người duyệt không có công cụ sửa tệp, nhưng lệnh shell của họ vẫn hỏi bạn. Mọi thành viên làm chung một thư mục — chưa có nhánh git riêng cho từng người. Thành viên dừng khi crew dừng hoặc khi thoát XFinder. Người gửi được nhận ra bằng token riêng của từng thành viên; chương trình nào chạy dưới tài khoản của bạn cũng đọc được token đó.": {
+      "en": "A crew is a few windowless Claude Code sessions with roles that message each other through XFinder with the xfinder-crew command. Members always run in ask-first mode: you approve every message between them and every command that needs approval. Reviewers have no file-editing tools, but their shell commands still ask you. All members work in one folder — there are no per-member git branches yet. Members stop when the crew stops or when XFinder quits. A sender is recognised by each member's own token; any program running under your account can read that token.",
+      "scope": "sentence"
+    },
+    "Mẫu crew": {
+      "en": "Crew template",
+      "scope": "sentence"
+    },
+    "Mục tiêu cho cả crew…": {
+      "en": "A goal for the whole crew…",
+      "scope": "sentence"
+    },
+    "Nhóm agent (crew)": {
+      "en": "Agent crew",
+      "scope": "sentence"
+    },
+    "Đã bắt đầu crew — xem ở trang Agents trên notch.": {
+      "en": "Crew started — see the Agents page on the notch.",
+      "scope": "sentence"
+    },
+    "Cho crew chạy tiếp": {
+      "en": "Resume the crew",
+      "scope": "sentence"
+    },
+    "Chưa có tin nào giữa các thành viên.": {
+      "en": "No messages between the members yet.",
+      "scope": "sentence"
+    },
+    "Dừng crew": {
+      "en": "Stop the crew",
+      "scope": "sentence"
+    },
+    "Tạm dừng crew": {
+      "en": "Pause the crew",
+      "scope": "sentence"
+    },
+    "Ước tính của Claude Code, không phải hoá đơn": {
+      "en": "Claude Code's own estimate, not a bill",
+      "scope": "sentence"
     }
   }
 }

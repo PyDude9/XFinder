@@ -96,10 +96,15 @@ final class AgentTalkSender {
             copyAndActivate(text, bundleID: bid, session: session, afterDialog: false)
             return
         case .windowless(let id):
-            // XFinder owns the process: the write is a pipe write, no command to run.
-            let ok = WindowlessSessionManager.shared.send(text, to: id)
-            setStatus(session, ok ? Status(key: "Đã gửi tin.")
-                                  : Status(key: "Phiên không cửa sổ đã dừng — tin chưa được gửi.", isError: true))
+            // XFinder owns the process: the write is a pipe write, no command to run. A crew delivery may have taken the
+            // turn a moment ago (one gate, P7b): then the reply waits here for the next free moment instead of being lost.
+            switch WindowlessSessionManager.shared.deliver(text, to: id) {
+            case .sent: setStatus(session, Status(key: "Đã gửi tin."))
+            case .busy:
+                outbox[session.listID] = text
+                setStatus(session, Status(key: "Sẽ gửi khi phiên rảnh."))
+            case .gone: setStatus(session, Status(key: "Phiên không cửa sổ đã dừng — tin chưa được gửi.", isError: true))
+            }
             return
         case .kitty, .tmux, .opencode:
             break

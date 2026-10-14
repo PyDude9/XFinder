@@ -158,6 +158,8 @@ final class NotchSurfaceController {
         if panel == nil { prepare() }
         NowPlayingMonitor.shared.onChange = { [weak self] in self?.nowPlayingChanged() }
         AgentSessionMonitor.shared.onChange = { [weak self] in self?.agentsChanged() }
+        CrewManager.shared.onCapReached = { [weak self] id in self?.presentCrewNotice(crewID: id) }
+        CrewManager.shared.startIfNeeded()          // P7b: the relay listens to windowless sessions; stale crew folders go
         AgentTalkSender.shared.onChange = { [weak self] in self?.agentRepliesChanged() }
         CalendarGlanceMonitor.shared.onChange = { [weak self] in self?.calendarChanged() }
         if monitors.isEmpty {
@@ -614,6 +616,26 @@ final class NotchSurfaceController {
     }
 
     /// P5c — an agent notice, unless the person is already looking at the Agents page (the row is right there).
+    /// P7b — the crew reached its message-hop cap and paused: say so even while the person is elsewhere.
+    func presentCrewNotice(crewID: String) {
+        guard let crew = CrewManager.shared.crews.first(where: { $0.id == crewID }) else { return }
+        let detail = "\(crew.relay.relays)\(L10n.t(" chặng tin")) · \((crew.folder as NSString).lastPathComponent)"
+        present(LiveActivity.Item(kind: .agent, symbol: "pause.circle.fill", titleKey: "Crew tạm dừng — chờ bạn",
+                                  detail: detail, tint: .warning, duration: 8, buttons: [.openAgents]))
+    }
+
+    /// P7b — the crew board on the Agents page (nil = the list).
+    func openCrew(_ crewID: String) {
+        model.windowlessConversation = nil
+        model.crewBoard = crewID
+        render()
+    }
+
+    func closeCrew() {
+        model.crewBoard = nil
+        render()
+    }
+
     func presentAgentNotice(_ item: LiveActivity.Item) {
         guard machine.state != .expanded(.agents) else { return }
         present(item)

@@ -1,5 +1,13 @@
 import SwiftUI
 
+/// P7b — a pending permission's summary, rewritten for a crew's own `xfinder-crew send` command: "→ to: text"
+/// reads as what the member is about to tell a crewmate, instead of the raw shell line. nil keeps the caller's
+/// own fallback (the raw summary / tool name).
+private func crewSendSummary(_ p: AgentSession.PendingPermission) -> String? {
+    guard p.toolName == "Bash", let sum = p.summary, let (to, text) = CrewRules.describeSend(command: sum) else { return nil }
+    return "→ \(to): \(text)"
+}
+
 /// P2 — Agents page restyle, in OneNotch's grammar (dark rows, compact usage readout at the top-right of the
 /// header) with Notch Crew's agent behaviour (an inline amber-tinted permission card with Allow/Deny, a live
 /// elapsed badge while a request waits). Ports the working behaviour of `agentsPage` / `agentUsageStrip` /
@@ -35,12 +43,20 @@ struct NotchAgentsPage: View {
         return model.agents.first { $0.listID == id }
     }
 
+    /// P7b — the crew named by `model.crewBoard`, when it still exists.
+    private var openCrew: CrewManager.Crew? {
+        guard let id = model.crewBoard else { return nil }
+        return CrewManager.shared.crews.first { $0.id == id }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Spacer(minLength: Self.m.agentsHeaderGap)
             if model.newWindowlessOpen {
                 NewWindowlessComposer(model: model)
+            } else if let crew = openCrew {
+                CrewBoardView(crew: crew, model: model)
             } else if let session = windowlessSession {
                 WindowlessConversationView(session: session, model: model)
             } else {
@@ -107,13 +123,21 @@ struct NotchAgentsPage: View {
 
     // MARK: - Rows
 
+    /// P7b — crews above the plain rows (contract §1): a session belonging to a crew gets ONE `CrewRow` for the
+    /// whole crew instead of its own `AgentRow`.
+    private var crews: [CrewManager.Crew] { CrewManager.shared.crews }
+
     @ViewBuilder private var rows: some View {
-        if model.agents.isEmpty {
+        let ungrouped = model.agents.filter { CrewManager.shared.membership(of: $0.id) == nil }
+        if crews.isEmpty && ungrouped.isEmpty {
             emptyState
         } else {
-            let visible = Array(model.agents.prefix(6))
+            let visible = Array(ungrouped.prefix(max(0, 6 - crews.count)))
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: Self.m.agentRowGap) {
+                    ForEach(crews) { crew in
+                        CrewRow(crew: crew, agents: model.agents)
+                    }
                     ForEach(visible, id: \.listID) { s in
                         AgentRow(session: s, accent: accent, model: model)
                     }
@@ -330,13 +354,19 @@ private struct AgentRow: View {
 
     private func permissionLine(_ p: AgentSession.PendingPermission) -> some View {
         HStack(spacing: XFinderTokens.Space.tight) {
-            Text(p.toolName).font(XFinderTokens.Font.caption).bold().foregroundColor(.white).lineLimit(1)
-            if let sum = p.summary {
-                Text(sum).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.7))
+            if let crewSend = crewSendSummary(p) {
+                Text(crewSend).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.85))
                     .lineLimit(1).truncationMode(.middle)
                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             } else {
-                Spacer(minLength: 0)
+                Text(p.toolName).font(XFinderTokens.Font.caption).bold().foregroundColor(.white).lineLimit(1)
+                if let sum = p.summary {
+                    Text(sum).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.7))
+                        .lineLimit(1).truncationMode(.middle)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Spacer(minLength: 0)
+                }
             }
             elapsedBadge(since: p.since)
             Button(L10n.t("Từ chối")) {
@@ -390,6 +420,296 @@ private struct AgentRow: View {
         case .waitingForInput: return .yellow
         case .waitingForPermission: return .orange
         case .ended: return .white.opacity(0.3)
+        }
+    }
+}
+
+/// P7b — one row per crew, shown above the plain `AgentRow`s (contract §1). Tapping the row opens the crew's
+/// board; the row never shows its members as separate `AgentRow`s.
+private struct CrewRow: View {
+    let crew: CrewManager.Crew
+    let agents: [AgentSession]
+
+    private static let m = NotchSurfaceLayout.Metrics.standard
+
+    private var waitingForYou: Bool {
+        crew.members.values.contains { sid in
+            agents.first { $0.id.lowercased() == sid.lowercased() }.map { if case .waitingForPermission = $0.status { true } else { false } } ?? false
+        }
+    }
+
+    var body: some View {
+        Button {
+            NotchSurfaceController.shared.openCrew(crew.id)
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                line1
+                line2
+            }
+            .padding(.horizontal, 8)
+            .frame(height: Self.m.agentRowHeight)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: XFinderTokens.Radius.control, style: .continuous)
+                    .fill(Color.white.opacity(0.06))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var line1: some View {
+        HStack(spacing: XFinderTokens.Space.tight) {
+            Image(systemName: "person.3")
+                .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.7))
+            Text(L10n.t(crew.template.titleKey))
+                .font(XFinderTokens.Font.row).foregroundColor(.white).lineLimit(1).truncationMode(.tail)
+                .frame(minWidth: 0, alignment: .leading).layoutPriority(-1)
+            Text((crew.folder as NSString).lastPathComponent)
+                .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.45))
+                .lineLimit(1).truncationMode(.middle)
+                .frame(minWidth: 0, maxWidth: 90, alignment: .leading)
+            Spacer(minLength: 2)
+            statusCapsule
+            Text("\(crew.relay.relays)/\(crew.relay.cap)")
+                .font(XFinderTokens.Font.mono).monospacedDigit()
+                .foregroundColor(.white.opacity(0.5))
+        }
+    }
+
+    @ViewBuilder private var line2: some View {
+        if crew.relay.pause == .capReached {
+            Text(L10n.t(CrewRules.boardKindKey(.capped)))
+                .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                .lineLimit(1).truncationMode(.tail)
+        } else {
+            Text(crew.template.roles.map(\.name).joined(separator: " · "))
+                .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+                .lineLimit(1).truncationMode(.tail)
+        }
+    }
+
+    private var statusCapsule: some View {
+        let (text, color): (String, Color) = {
+            if crew.stopped { return (L10n.t("Đã dừng"), .white) }
+            if waitingForYou { return (L10n.t("Chờ bạn duyệt"), .orange) }
+            if crew.relay.pause != nil { return (L10n.t("Tạm dừng"), .orange) }
+            return (L10n.t("Đang chạy"), .white)
+        }()
+        return Text(text)
+            .font(XFinderTokens.Font.caption).foregroundColor(color.opacity(color == .white ? 0.75 : 1))
+            .lineLimit(1)
+            .padding(.horizontal, 6).padding(.vertical, 1)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
+    }
+}
+
+/// P7b — a crew's board: header (back, title, status, relays, cost, controls), member chips with a live status
+/// dot (tap to open that member's own conversation), the one pending permission among the members if any, and
+/// the relay's message board.
+private struct CrewBoardView: View {
+    let crew: CrewManager.Crew
+    var model: NotchSurfaceModel
+
+    private static let m = NotchSurfaceLayout.Metrics.standard
+
+    private func session(for role: String) -> AgentSession? {
+        guard let sid = crew.members[role] else { return nil }
+        return model.agents.first { $0.id.lowercased() == sid.lowercased() }
+    }
+
+    /// At most one member can be waiting for permission at a time in practice (the relay frees a role as soon
+    /// as its turn ends), but the board shows whichever comes first if more than one ever is.
+    private var waitingMember: (role: String, session: AgentSession, p: AgentSession.PendingPermission)? {
+        for role in crew.template.roles.map(\.name) {
+            if let s = session(for: role), case .waitingForPermission(let p) = s.status { return (role, s, p) }
+        }
+        return nil
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            header
+            membersStrip
+            if let w = waitingMember { permissionLine(w.role, w.p, w.session) }
+            board
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var header: some View {
+        HStack(spacing: XFinderTokens.Space.tight) {
+            Button { NotchSurfaceController.shared.closeCrew() } label: {
+                Image(systemName: "chevron.left")
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.white.opacity(0.7))
+            .help(L10n.t("Quay lại danh sách"))
+            .accessibilityLabel(L10n.t("Quay lại danh sách"))
+            Text(L10n.t(crew.template.titleKey))
+                .font(XFinderTokens.Font.row).foregroundColor(.white)
+                .lineLimit(1).truncationMode(.tail)
+                .frame(minWidth: 0, alignment: .leading).layoutPriority(-1)
+            statusCapsule
+            Text("\(crew.relay.relays)/\(crew.relay.cap)")
+                .font(XFinderTokens.Font.mono).monospacedDigit()
+                .foregroundColor(.white.opacity(0.5))
+            if let cost = CrewManager.shared.costUSD(crew) {
+                Text("≈ $" + String(format: "%.2f", cost))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+                    .lineLimit(1).fixedSize()
+                    .help(L10n.t("Ước tính của Claude Code, không phải hoá đơn"))
+            }
+            Spacer(minLength: 2)
+            controls
+        }
+    }
+
+    private var statusCapsule: some View {
+        let waiting = waitingMember != nil
+        let (text, isAccent): (String, Bool) = {
+            if crew.stopped { return (L10n.t("Đã dừng"), false) }
+            if waiting { return (L10n.t("Chờ bạn duyệt"), true) }
+            if crew.relay.pause != nil { return (L10n.t("Tạm dừng"), true) }
+            return (L10n.t("Đang chạy"), false)
+        }()
+        return Text(text)
+            .font(XFinderTokens.Font.caption).foregroundColor(isAccent ? .orange : .white.opacity(0.75))
+            .lineLimit(1)
+            .padding(.horizontal, 6).padding(.vertical, 1)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
+            .fixedSize()
+    }
+
+    @ViewBuilder private var controls: some View {
+        if !crew.stopped {
+            if crew.relay.pause == nil {
+                Button { CrewManager.shared.pause(crew.id) } label: { Image(systemName: "pause.circle") }
+                    .buttonStyle(.plain).foregroundColor(.white.opacity(0.6))
+                    .help(L10n.t("Tạm dừng crew")).accessibilityLabel(L10n.t("Tạm dừng crew"))
+            } else {
+                Button { CrewManager.shared.resume(crew.id) } label: { Image(systemName: "play.circle") }
+                    .buttonStyle(.plain).foregroundColor(.white.opacity(0.6))
+                    .help(L10n.t("Cho crew chạy tiếp")).accessibilityLabel(L10n.t("Cho crew chạy tiếp"))
+            }
+            Button { CrewManager.shared.stop(crew.id) } label: { Image(systemName: "xmark.octagon") }
+                .buttonStyle(.plain).foregroundColor(.white.opacity(0.6))
+                .help(L10n.t("Dừng crew")).accessibilityLabel(L10n.t("Dừng crew"))
+        } else {
+            Button {
+                NotchSurfaceController.shared.closeCrew()
+                CrewManager.shared.forget(crew.id)
+            } label: { Image(systemName: "trash") }
+                .buttonStyle(.plain).foregroundColor(.white.opacity(0.6))
+                .help(L10n.t("Xoá khỏi danh sách")).accessibilityLabel(L10n.t("Xoá khỏi danh sách"))
+        }
+    }
+
+    private var membersStrip: some View {
+        HStack(spacing: XFinderTokens.Space.tight) {
+            ForEach(crew.template.roles, id: \.name) { role in
+                memberChip(role.name)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func memberChip(_ role: String) -> some View {
+        let s = session(for: role)
+        let dot: Color = {
+            guard let s else { return .white.opacity(0.3) }
+            switch s.status {
+            case .running: return .accentColor
+            case .waitingForInput: return .yellow
+            case .waitingForPermission: return .orange
+            case .ended: return .white.opacity(0.3)
+            }
+        }()
+        return Button {
+            guard let s else { return }
+            NotchSurfaceController.shared.closeCrew()
+            NotchSurfaceController.shared.openConversation(s)
+        } label: {
+            HStack(spacing: 4) {
+                Circle().fill(dot).frame(width: 6, height: 6)
+                Text(role).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.8)).lineLimit(1)
+            }
+            .padding(.horizontal, 6).padding(.vertical, 3)
+            .background(Capsule().fill(Color.white.opacity(0.08)))
+        }
+        .buttonStyle(.plain)
+        .disabled(s == nil)
+    }
+
+    private func permissionLine(_ role: String, _ p: AgentSession.PendingPermission, _ s: AgentSession) -> some View {
+        HStack(spacing: XFinderTokens.Space.tight) {
+            Text(role).font(XFinderTokens.Font.caption).bold().foregroundColor(.white).lineLimit(1)
+            if let crewSend = crewSendSummary(p) {
+                Text(crewSend).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.7))
+                    .lineLimit(1).truncationMode(.middle)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            } else if let sum = p.summary {
+                Text(sum).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.7))
+                    .lineLimit(1).truncationMode(.middle)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            } else {
+                Text(p.toolName).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.7))
+                    .lineLimit(1)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+            Button(L10n.t("Từ chối")) {
+                NotchSurfaceController.shared.answerAgent(p, of: s, allow: false)
+            }
+            .buttonStyle(NotchPillButtonStyle(primary: false))
+            Button(L10n.t("Cho phép")) {
+                NotchSurfaceController.shared.answerAgent(p, of: s, allow: true)
+            }
+            .buttonStyle(NotchPillButtonStyle(primary: true))
+        }
+    }
+
+    @ViewBuilder private var board: some View {
+        if crew.relay.board.isEmpty {
+            Text(L10n.t("Chưa có tin nào giữa các thành viên."))
+                .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        } else {
+            ScrollViewReader { proxy in
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(crew.relay.board) { entry in
+                            boardRow(entry).id(entry.id)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .onChange(of: crew.relay.board) { if let last = crew.relay.board.last { proxy.scrollTo(last.id, anchor: .bottom) } }
+                .onAppear { if let last = crew.relay.board.last { proxy.scrollTo(last.id, anchor: .bottom) } }
+            }
+        }
+    }
+
+    @ViewBuilder private func boardRow(_ entry: CrewRules.BoardEntry) -> some View {
+        switch entry.kind {
+        case .message:
+            Text("\(entry.from ?? "") \(L10n.t(CrewRules.boardKindKey(.message))) \(entry.to ?? ""): \(entry.text)")
+                .font(XFinderTokens.Font.caption).foregroundColor(.white)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        case .reply:
+            Text("\(entry.from ?? "") \(L10n.t(CrewRules.boardKindKey(.reply))) \(entry.to ?? ""): \(entry.text)")
+                .font(XFinderTokens.Font.caption).foregroundColor(.white)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        case .failed:
+            Text(L10n.t(CrewRules.boardKindKey(.failed)) + (entry.to.map { " (\($0))" } ?? ""))
+                .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        case .paused, .resumed, .capped, .stopped:
+            Text(L10n.t(CrewRules.boardKindKey(entry.kind)))
+                .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
@@ -680,13 +1000,19 @@ private struct WindowlessConversationView: View {
         if case .waitingForPermission(let p) = session.status {
             // Review: a pending permission must be answerable right here — the row's card is not on screen.
             HStack(spacing: XFinderTokens.Space.tight) {
-                Text(p.toolName).font(XFinderTokens.Font.caption).bold().foregroundColor(.white).lineLimit(1)
-                if let sum = p.summary {
-                    Text(sum).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.7))
+                if let crewSend = crewSendSummary(p) {
+                    Text(crewSend).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.85))
                         .lineLimit(1).truncationMode(.middle)
                         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 } else {
-                    Spacer(minLength: 0)
+                    Text(p.toolName).font(XFinderTokens.Font.caption).bold().foregroundColor(.white).lineLimit(1)
+                    if let sum = p.summary {
+                        Text(sum).font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.7))
+                            .lineLimit(1).truncationMode(.middle)
+                            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        Spacer(minLength: 0)
+                    }
                 }
                 Button(L10n.t("Từ chối")) { NotchSurfaceController.shared.answerAgent(p, of: session, allow: false) }
                     .buttonStyle(NotchPillButtonStyle(primary: false))
