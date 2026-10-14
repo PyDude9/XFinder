@@ -630,6 +630,7 @@ What's New chuyển sang "1.3" (các ghi chú đợt N từng gắn "1.2" dù zi
 bản thông minh, Dọn rác/Gỡ app, Thoát ứng dụng), CHANGELOG 1.3.0 viết từ log 76 commit, `make-release.sh` giờ ký trợ giúp Now Playing
 bằng XFinder Dev + bắt buộc có nó và hook Claude Code + `--verify --deep`. `dist/XFinder-1.3.0-arm64.zip` 6,3 MB, giải nén ra vẫn
 hợp lệ chữ ký, checksum OK. **Chưa đăng** (Q-RELEASE). **G3 ✅ 2026-10-14 (đo, không sửa):** bản P7b vừa cài, cấu hình của người dùng — lúc 2 phút 53 giây sau khi mở: footprint 30,5 MB, phân mảnh malloc 19 % (zone mặc định 14 %); lúc 12 phút (người dùng rảnh 177 s): **28,9 MB, 11 %** (2,0 / 16,2 MB). Con số 44 % của G đo ngay sau khi script G bật/tắt 21 khoá tính năng (một đợt dựng rồi huỷ hàng loạt), không phải trạng thái thường; nó không lặp lại và không tăng khi để yên ⇒ không có gì để sửa. Mục tiêu < 30 MB đạt.
+**1.4.0 ✅ đóng gói 2026-10-14** — Info.plist 1.4.0 (build 5), 7 ghi chú "Có gì mới" cho P1–P7 + #21/#37 (14 chuỗi, add-only), CHANGELOG 1.4.0, `make-release.sh` bắt buộc có `xfinder-crew.zsh`; `dist/XFinder-1.4.0-arm64.zip` 7,1 MB, sha256 `02d314cc…a64a08`, giải nén ra vẫn hợp lệ chữ ký. **Chưa đăng** (Q-RELEASE-14).
 
 ---
 

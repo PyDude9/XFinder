@@ -10618,6 +10618,62 @@
     "Ước tính của Claude Code, không phải hoá đơn": {
       "en": "Claude Code's own estimate, not a bill",
       "scope": "sentence"
+    },
+    "Notch mới theo phong cách OneNotch": {
+      "en": "A new notch in OneNotch's style",
+      "scope": "sentence"
+    },
+    "Cánh hai bên notch khi thu gọn, một dải chấm trang và công cụ, hai cỡ thân cho từng trang; Clipboard và Đang phát vẽ lại.": {
+      "en": "Wings beside the notch when collapsed, one band of page dots and tools, two body sizes per page; Clipboard and Now Playing redrawn.",
+      "scope": "sentence"
+    },
+    "Hẹn giờ và Hạn mức AI trên notch": {
+      "en": "Timer and AI usage on the notch",
+      "scope": "sentence"
+    },
+    "Hẹn giờ tập trung tạm dừng được; hạn mức Codex đọc từ log của Codex, % của Claude Code qua statusLine (bật ở trang Agent AI).": {
+      "en": "A focus timer you can pause; Codex limits read from Codex's own log, Claude Code's % through its statusLine (opt in on the AI agents page).",
+      "scope": "sentence"
+    },
+    "Cài đặt gọn lại": {
+      "en": "Settings, tidied",
+      "scope": "sentence"
+    },
+    "Thanh bên có ô màu, mỗi trang là các thẻ nhóm; mọi phím tắt của XFinder ở một trang, có báo trùng phím.": {
+      "en": "A sidebar with coloured tiles, every page in grouped cards; all of XFinder's shortcuts on one page, with clash warnings.",
+      "scope": "sentence"
+    },
+    "Codex và OpenCode trên notch": {
+      "en": "Codex and OpenCode on the notch",
+      "scope": "sentence"
+    },
+    "Phiên Codex qua cùng hook với Claude Code, phiên OpenCode qua lệnh opencode của bạn; thông báo khi agent hỏi quyền hoặc xong lượt.": {
+      "en": "Codex sessions through the same hook as Claude Code, OpenCode sessions through your own opencode command; a notice when an agent asks for permission or finishes a turn.",
+      "scope": "sentence"
+    },
+    "Nhắn phiên từ notch": {
+      "en": "Reply to a session from the notch",
+      "scope": "sentence"
+    },
+    "Gõ trả lời một phiên agent ngay trên notch: vào kitty, tmux hay OpenCode; terminal khác thì chép tin và mở terminal.": {
+      "en": "Answer an agent session right at the notch: typed into kitty, tmux or OpenCode; other terminals get the text copied and brought forward.",
+      "scope": "sentence"
+    },
+    "Phiên không cửa sổ và nhóm agent": {
+      "en": "Windowless sessions and agent crews",
+      "scope": "sentence"
+    },
+    "XFinder chạy Claude Code không cần terminal; một nhóm builder + người duyệt nhắn nhau qua XFinder, bạn duyệt từng tin.": {
+      "en": "XFinder runs Claude Code without a terminal; a builder + reviewer crew messages each other through XFinder, and you approve every message.",
+      "scope": "sentence"
+    },
+    "Sóng âm thật trên trang Đang phát": {
+      "en": "A real waveform on the Now Playing page",
+      "scope": "sentence"
+    },
+    "Vạch sóng lấy từ chính âm thanh của trình phát (bật trong trang Đang phát; macOS hỏi quyền thu âm hệ thống).": {
+      "en": "Bars drawn from the player's own audio (turn it on in Now Playing; macOS asks for system audio recording).",
+      "scope": "sentence"
     }
   }
 }

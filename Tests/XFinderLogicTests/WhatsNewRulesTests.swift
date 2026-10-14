@@ -13,13 +13,17 @@ final class WhatsNewRulesTests: XCTestCase {
         XCTAssertFalse(R.shouldShow(lastSeen: nil, current: "9.9.0", isExistingUser: true), "no notes for that version ⇒ no sheet")
         XCTAssertEqual(R.notes(for: "1.3.4").count, R.notes13.count, "a patch release carries its minor's notes")
         XCTAssertEqual(R.minor(" 1.3.0 "), "1.3")
+        XCTAssertEqual(R.notes(for: "1.4.0"), R.notes14, "1.4 has its own notes")
+        XCTAssertTrue(R.shouldShow(lastSeen: "1.3.0", current: "1.4.0", isExistingUser: true))
     }
 
     func testEveryNoteKeyIsInTheStoreAndDestinationsAreRealPages() throws {
         let store = try L10nFixture.load()
+        let all = R.notes13 + R.notes14
         XCTAssertGreaterThanOrEqual(R.notes13.count, 5)
-        for n in R.notes13 { for k in [n.titleKey, n.bodyKey] { XCTAssertNotNil(store.entries[k], k) } }
-        XCTAssertEqual(Set(R.notes13.map(\.id)).count, R.notes13.count)
+        XCTAssertGreaterThanOrEqual(R.notes14.count, 5)
+        for n in all { for k in [n.titleKey, n.bodyKey] { XCTAssertNotNil(store.entries[k], k) } }
+        XCTAssertEqual(Set(all.map(\.id)).count, all.count, "note ids are unique across versions")
         // raw destinations must be real SidebarDestination cases — parsed from the model source, which the package
         // cannot compile (it imports SwiftUI)
         let src = try String(contentsOf: L10nFixture.repoRoot().appendingPathComponent("XFinder/Models/SidebarDestination.swift"), encoding: .utf8)
@@ -29,6 +33,6 @@ final class WhatsNewRulesTests: XCTestCase {
             return s.dropFirst(5).split(separator: " ").first.map(String.init)?.trimmingCharacters(in: CharacterSet(charactersIn: ",:"))
         })
         XCTAssertGreaterThan(cases.count, 20, "the case parse found too few destinations")
-        for raw in R.notes13.compactMap(\.destinationRaw) { XCTAssertTrue(cases.contains(raw), "\(raw) is not a SidebarDestination case") }
+        for raw in all.compactMap(\.destinationRaw) { XCTAssertTrue(cases.contains(raw), "\(raw) is not a SidebarDestination case") }
     }
 }

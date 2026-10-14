@@ -2,6 +2,30 @@
 
 Tất cả thay đổi đáng chú ý của XFinder được ghi ở đây, mới nhất ở trên.
 
+## [1.4.0] — 2026-10
+
+### Notch theo phong cách OneNotch
+- **Vỏ notch mới**: khi thu gọn chỉ cao bằng notch, mỗi bên một "cánh" (phiên agent, tệp đang giữ, bài đang phát, giờ đếm ngược); khi mở là một dải 32 pt với chấm trang + ô tìm bên trái, công cụ bên phải; hai cỡ thân (hẹp / rộng) theo trang; mở nảy nhẹ, đóng nhanh, đổi trang mờ chéo.
+- Clipboard và Đang phát vẽ lại theo cùng ngôn ngữ đó; **sóng âm thật** trên Đang phát lấy từ chính âm thanh của trình phát (opt-in; macOS hỏi quyền thu âm hệ thống; trình duyệt cũng được vì XFinder nghe cả tiến trình phụ phát tiếng của nó).
+- Hai công cụ trên toolbar: **Hẹn giờ** tập trung (tạm dừng, cộng phút) và **Hạn mức AI** (hạn mức Codex đọc từ log của Codex; % 5 giờ / 7 ngày của Claude Code qua statusLine — cài bằng nút, có sao lưu, gỡ được; không chạm tới đăng nhập Claude).
+
+### Agent AI
+- **Codex** trên notch qua cùng hook với Claude Code (Codex bắt bạn tin cậy hook mới bằng `/hooks`); **OpenCode** qua chính lệnh `opencode` của bạn; Cursor: trang giải thích vì sao chưa nối được.
+- Thông báo ở notch khi agent hỏi quyền hoặc xong lượt; **Phiên gần đây**.
+- **Nhắn phiên từ notch**: gõ trả lời vào kitty (`send-text`), tmux (`paste-buffer`) hay OpenCode (`session.prompt`); terminal khác thì chép tin và đưa terminal lên. Không bao giờ gõ khi phiên đang hỏi quyền, có hộp thoại hay câu hỏi lựa chọn; phiên đang chạy thì tin chờ tới lượt.
+- **Phiên không cửa sổ**: XFinder chạy Claude Code (`claude -p`, chế độ luồng) trong thư mục bạn chọn, không cần terminal; hội thoại trên notch, ngắt / dừng, mở lại từ Phiên gần đây.
+- **Nhóm agent (crew)**: builder + người duyệt (hoặc hai người duyệt) nhắn nhau qua lệnh `xfinder-crew`; XFinder chuyển tin và mang câu trả lời về, bạn duyệt từng tin, tự tạm dừng sau 20 chặng; tin được ký bằng token riêng của từng thành viên.
+
+### Cài đặt
+- Vỏ cài đặt mới: thanh bên 220 pt có ô màu, thẻ nhóm, header 52 pt; mọi trang dùng chung một kiểu thẻ.
+- "Notch & Khay thả" tách thành Giao diện notch · Khay thả · Đang phát · Agent AI · Lịch & lời nhắc · Hoạt động trực tiếp.
+- Một trang **Phím tắt** cho mọi phím của XFinder, có báo trùng phím; bỏ các control trùng khoá.
+
+### Sửa lỗi đáng kể
+- Một lệnh ghi vào stdin của tiến trình con đã thoát làm **XFinder chết** (SIGPIPE) — dính cả gửi tin vào terminal và Khoá thư mục; nay mọi stdin của tiến trình con được chặn SIGPIPE, có gate đọc mã nguồn.
+- Id phiên trong payload hook có thể thoát khỏi thư mục quyết định (`../`) — nay bị từ chối ở cả hook lẫn app.
+- Đọc môi trường đăng nhập của shell không còn treo 20 giây khi một tệp khởi động chạy việc nền.
+
 ## [1.3.0] — 2026-10
 
 ### Notch (mới hoàn toàn)

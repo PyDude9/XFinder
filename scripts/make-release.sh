@@ -58,7 +58,7 @@ APPVER=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$STAGE/C
 [ ! -e "$STAGE/Contents/MacOS/XFinder.debug.dylib" ] || { echo "FATAL: a debug dylib is in the release"; exit 1; }
 APPEX_ID=$(codesign -dv --verbose=2 "$APPEX/Contents/MacOS/XFinderSync" 2>&1 | sed -n 's/^Identifier=//p')
 [ "$APPEX_ID" = "com.xfinder.app.XFinderSync" ] || { echo "FATAL: appex identifier '$APPEX_ID'"; exit 1; }
-for r in L10n.strings.json L10n.allowlist.json xfinder-agent-hook.zsh xfinder-claude-statusline.sh; do
+for r in L10n.strings.json L10n.allowlist.json xfinder-agent-hook.zsh xfinder-claude-statusline.sh xfinder-crew.zsh; do
   find "$STAGE/Contents/Resources" -name "$r" | grep -q . || { echo "FATAL: $r missing from the bundle"; exit 1; }
 done
 

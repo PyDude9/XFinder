@@ -174,6 +174,16 @@ kiểm (mọi kiểm tra đều dùng một `claude` giả).
 | Q-P7a-CODEX | Phiên không cửa sổ cho Codex cần giao thức `codex app-server` (JSON-RPC, ~160 lệnh, đã sinh schema tại chỗ). Dựng ở lượt sau? | Chưa dựng — trang giải thích |
 | Q-P7a-QUIT | Thoát XFinder ⇒ phiên không cửa sổ dừng theo. Claude Code có "background session" (`claude --bg`) sống qua khi XFinder thoát, nhưng không có cách công khai nào gửi tin vào nó mà không mở terminal | Dừng theo XFinder |
 
+### 1.4.0 (đóng gói 2026-10-14, chưa đăng)
+
+`dist/XFinder-1.4.0-arm64.zip` (7,1 MB, sha256 `02d314cc…a64a08`), ký XFinder Dev, giải nén ra vẫn `--verify --deep --strict`.
+Bản 1.4.0 đã cài vào /Applications.
+
+| Mã | Làm gì / câu hỏi | Mong đợi / mặc định |
+|:--|:--|:--|
+| T-1.4-WHATSNEW | Mở XFinder 1.4.0 lần đầu (đã từng dùng 1.3) | Cửa sổ "Có gì mới" hiện 7 mục của 1.4, mỗi mục mở đúng trang; lần mở sau không hiện nữa |
+| Q-RELEASE-14 | Đăng 1.4.0 lên GitHub (tag `v1.4.0` + Release kèm zip và `.sha256`)? | Chưa đăng — chờ bạn |
+
 ### P7b · Nhóm agent (crew) (dựng 2026-10-14)
 
 Agent AI ▸ **Nhóm agent (crew)**: chọn mẫu (Builder → người duyệt · Builder + hai người duyệt), thư mục, mục tiêu ▸ Bắt

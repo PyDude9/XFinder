@@ -28,6 +28,7 @@ enum WhatsNewRules {
     static func notes(for version: String) -> [Note] {
         switch minor(version) {
         case "1.3": return notes13
+        case "1.4": return notes14
         default: return []
         }
     }
@@ -62,5 +63,24 @@ enum WhatsNewRules {
              bodyKey: "Kéo thanh tiến trình để tua; xáo trộn và lặp lại trong menu của trang Đang phát.", destinationRaw: "media"),
         Note(id: "library", symbol: "books.vertical", titleKey: "Thư viện Clipboard và bảng khoá",
              bodyKey: "Mọi clip từng copy, lọc theo loại / app / bảng / thời gian; bảng khoá mã hoá bằng Secure Enclave, mở từng thẻ bằng Touch ID.", destinationRaw: "clipboard"),
+    ]
+
+    /// 1.4 = everything after the 1.3.0 zip: brief v3 P1–P7 (OneNotch-style notch and settings, agents beyond Claude Code,
+    /// replying from the notch, windowless sessions, crews) and §3b #21 / #37.
+    static let notes14: [Note] = [
+        Note(id: "notch14", symbol: "rectangle.topthird.inset.filled", titleKey: "Notch mới theo phong cách OneNotch",
+             bodyKey: "Cánh hai bên notch khi thu gọn, một dải chấm trang và công cụ, hai cỡ thân cho từng trang; Clipboard và Đang phát vẽ lại.", destinationRaw: "notchInterface"),
+        Note(id: "tools14", symbol: "timer", titleKey: "Hẹn giờ và Hạn mức AI trên notch",
+             bodyKey: "Hẹn giờ tập trung tạm dừng được; hạn mức Codex đọc từ log của Codex, % của Claude Code qua statusLine (bật ở trang Agent AI).", destinationRaw: "aiAgents"),
+        Note(id: "settings14", symbol: "slider.horizontal.3", titleKey: "Cài đặt gọn lại",
+             bodyKey: "Thanh bên có ô màu, mỗi trang là các thẻ nhóm; mọi phím tắt của XFinder ở một trang, có báo trùng phím.", destinationRaw: "shortcuts"),
+        Note(id: "agents14", symbol: "terminal", titleKey: "Codex và OpenCode trên notch",
+             bodyKey: "Phiên Codex qua cùng hook với Claude Code, phiên OpenCode qua lệnh opencode của bạn; thông báo khi agent hỏi quyền hoặc xong lượt.", destinationRaw: "aiAgents"),
+        Note(id: "reply14", symbol: "text.bubble", titleKey: "Nhắn phiên từ notch",
+             bodyKey: "Gõ trả lời một phiên agent ngay trên notch: vào kitty, tmux hay OpenCode; terminal khác thì chép tin và mở terminal.", destinationRaw: "aiAgents"),
+        Note(id: "crew14", symbol: "person.3", titleKey: "Phiên không cửa sổ và nhóm agent",
+             bodyKey: "XFinder chạy Claude Code không cần terminal; một nhóm builder + người duyệt nhắn nhau qua XFinder, bạn duyệt từng tin.", destinationRaw: "aiAgents"),
+        Note(id: "waveform14", symbol: "waveform", titleKey: "Sóng âm thật trên trang Đang phát",
+             bodyKey: "Vạch sóng lấy từ chính âm thanh của trình phát (bật trong trang Đang phát; macOS hỏi quyền thu âm hệ thống).", destinationRaw: "media"),
     ]
 }
