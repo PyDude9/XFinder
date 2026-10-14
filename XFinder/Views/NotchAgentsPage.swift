@@ -827,7 +827,7 @@ private struct AgentReplyComposeBar: View {
                 .help(L10n.t("XFinder không gõ vào hộp thoại: tin được chép và terminal được đưa lên trước."))
         case .sendNow:
             if case .copyAndActivate = route, AgentTalk.runsInApp(session) {
-                Text(L10n.t("App Claude chưa nhận tin tự động — XFinder chép tin và mở app, bạn dán vào ô chat."))
+                Text(L10n.t("App Claude chưa nhận tin tự động — XFinder chép tin, mở app để bạn dán."))
                     .font(XFinderTokens.Font.caption).foregroundColor(.white.opacity(0.5))
                     .lineLimit(1).truncationMode(.tail)
             } else if case .copyAndActivate = route {

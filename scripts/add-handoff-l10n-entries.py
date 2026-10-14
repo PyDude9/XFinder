@@ -7,7 +7,7 @@ STORE = Path(__file__).resolve().parent.parent / "XFinder/Resources/L10n.strings
 S, F = "sentence", "fragment"
 ENTRIES = {
     "Chép và mở app": ("Copy and open app", S),
-    "App Claude chưa nhận tin tự động — XFinder chép tin và mở app, bạn dán vào ô chat.": ("The Claude app can't take messages automatically yet — XFinder copies the message and opens the app; paste it into the chat box.", S),
+    "App Claude chưa nhận tin tự động — XFinder chép tin, mở app để bạn dán.": ("The Claude app can't take messages yet — XFinder copies it and opens the app.", S),
     "Đang chờ bạn": ("Waiting for you", S),
     "Gửi": ("Send", S),
     "Chuyển phiên sang agent khác": ("Hand the session over to another agent", S),
