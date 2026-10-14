@@ -240,6 +240,20 @@ giữa họ là thêm một lượt** — chưa có lượt model nào được 
 | Q-P7b-BRANCH | Mọi thành viên làm chung một thư mục. Nhánh git / worktree riêng cho từng builder (như Notch Crew) chưa dựng | Chung thư mục |
 | Q-P7b-ALLOW | Quy tắc cho phép sẵn trong `~/.claude/settings.json` hoặc của thư mục vẫn có hiệu lực với thành viên crew (trang cài đặt nói rõ). Muốn XFinder chạy thành viên với nguồn cài đặt hạn chế? Cách đó cũng bỏ luôn hook của XFinder ⇒ không duyệt được qua notch | Giữ cài đặt của bạn |
 
+### P13 · Snap kéo cửa sổ, Theo dõi hệ thống, menu thanh trạng thái (dựng 2026-10-14)
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-P13-1 | Kéo **thanh tiêu đề** một cửa sổ (Safari, Finder, Xcode, Claude…) chạm mép trái / phải / trên | Khung xem trước hiện; thả ra là bắt dính. Trước bản này chỉ phím tắt chạy |
+| T-P13-2 | Kéo chọn chữ, hoặc kéo một file, sát mép màn hình | **Không** có khung bắt dính (cửa sổ không dịch chuyển ⇒ bị loại sau 40 pt) |
+| T-P13-3 | Sidebar ▸ **Theo dõi hệ thống** ▸ bấm Hệ thống / Mạng / Ổ đĩa / Pin | Một hàng sidebar, 4 tab; số liệu chạy ở tab đang mở |
+| T-P13-4 | Bấm biểu tượng XFinder trên thanh menu | Menu chữ native kiểu OneNotch (không còn popover nhiều tab); dòng phiên bản mờ; ⌘, và ⌘Q bên phải |
+| T-P13-5 | Menu ▸ Chụp màn hình ▸ Chụp toàn màn hình | Menu **không** lọt vào ảnh |
+| T-P13-6 | Menu ▸ Khởi động lại XFinder | App tắt rồi tự mở lại (đã đo bằng app thử: mở lại sau 0.84 s) |
+| T-P13-7 | Bật ⇧⌘G (Chọn văn bản), bôi đen chữ trong Safari, rồi Menu ▸ Dịch vùng chọn | Bảng dịch hiện với đúng chữ đã bôi đen (gọi từ menu chưa đo) |
+| T-P13-8 | Tổng quan ▸ **Số liệu trên thanh menu** ▸ bật, chọn CPU + RAM, đổi "Cập nhật mỗi" | Số hiện cạnh biểu tượng, đổi theo chu kỳ; tắt là mất số |
+| T-P13-9 | Menu ▸ Tạm dừng ghi clipboard, copy một đoạn, rồi bỏ tạm dừng | Đoạn copy lúc tạm dừng không vào lịch sử; Cài đặt Clipboard hiện đúng trạng thái |
+
 ### Clipboard
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|

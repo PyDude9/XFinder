@@ -212,6 +212,12 @@ final class SnapZoneController {
                   let b = w[kCGWindowBounds as String] as? [String: Any],
                   let rect = CGRect(dictionaryRepresentation: b as CFDictionary), rect.contains(cg),
                   let num = w[kCGWindowNumber as String] as? Int else { continue }
+            // Stage Manager keeps layer-0 "Gesture Blocking Overlay" windows (owner WindowManager) exactly over the strip
+            // thumbnails and in FRONT of them; qualifying against one would watch a window that never moves (P13 review).
+            // Skipped by owner, as the switcher does — not by sharing state 0, which real windows that opt out of capture
+            // (password managers, banking apps) also report.
+            let owner = w[kCGWindowOwnerName as String] as? String
+            if owner == "WindowManager" || owner == "Window Server" { continue }
             if (w[kCGWindowOwnerPID as String] as? Int32) == me { return nil }   // our own window: nothing to snap
             return (CGWindowID(num), rect.origin)
         }

@@ -130,51 +130,6 @@ public struct AirBatteryDeviceRow: View {
     }
 }
 
-/// Unified vertical list of devices matching AirBattery: Host Mac first, then connected peripherals
-public struct AirBatteryListView: View {
-    @ObservedObject private var store = BatteryStore.shared
-    public var showDisconnectedToggle: Bool = false
-    @State private var showDisconnected: Bool = false
-
-    public init(showDisconnectedToggle: Bool = false) {
-        self.showDisconnectedToggle = showDisconnectedToggle
-    }
-
-    public var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if showDisconnectedToggle {
-                HStack {
-                    Toggle(L10n.t("Hiện thiết bị đã ngắt kết nối"), isOn: $showDisconnected)
-                        .font(.system(size: 12))
-                    Spacer()
-                }
-                .padding(.bottom, 2)
-            }
-
-            // Line 1: Mac host battery (if available)
-            if let mac = store.macBattery {
-                AirBatteryDeviceRow(device: mac)
-            }
-
-            // Line 2..N: Peripherals
-            let externalConnected = store.connectedDevices.filter { $0.kind != .mac }
-            let displayDevices = showDisconnected ? store.allDevices.filter { $0.kind != .mac } : externalConnected
-
-            if displayDevices.isEmpty && store.macBattery == nil {
-                Text(L10n.t("Không có thiết bị kết nối"))
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
-            } else {
-                ForEach(displayDevices) { dev in
-                    AirBatteryDeviceRow(device: dev)
-                }
-            }
-        }
-    }
-}
-
 public struct LargeBatteryCardView: View {
     public let device: ConnectedDeviceBattery
 
