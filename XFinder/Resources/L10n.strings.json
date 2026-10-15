@@ -11158,6 +11158,14 @@
     "Thêm khay ⌘⇧V, xem trước Dock, vùng bắt dính, và độ sáng/âm lượng chỉ hiện trên notch.": {
       "en": "Adds the ⌘⇧V shelf, the Dock preview, snap zones, and brightness/volume shown only on the notch.",
       "scope": "sentence"
+    },
+    "Thêm ứng dụng khác bằng Bundle ID": {
+      "en": "Add another app by bundle ID",
+      "scope": "sentence"
+    },
+    "Chưa cài — đang xem preset dựng sẵn": {
+      "en": "Not installed — viewing its built-in preset",
+      "scope": "sentence"
     }
   }
 }

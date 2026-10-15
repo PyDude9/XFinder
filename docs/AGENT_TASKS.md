@@ -184,7 +184,7 @@ trong worklog, đừng viết là đã xong.
 
 ---
 
-### T14 · Dựng trang Chuột & cử chỉ theo phương án B — ĐANG LÀM: T14a đã gộp (`3ed7f13` + sửa sau review), kế tiếp **T14b** trên nhánh `agent/<công-cụ>-T14` (đặc tả: `docs/specs/T14-mouse-gestures-B.md`)
+### T14 · Dựng trang Chuột & cử chỉ theo phương án B — CHỜ REVIEW (nhánh `agent/zed-T14`): T14b xong (dải chip Khối 3); T14a đã gộp (`3ed7f13` + sửa sau review); kế tiếp **T14c** trên cùng nhánh (đặc tả: `docs/specs/T14-mouse-gestures-B.md`)
 
 - **Làm theo `docs/specs/T14-mouse-gestures-B.md`, từng bước T14a, T14b… một phiên một bước.** Phần dưới là tóm tắt cũ;
   chỗ nào khác đặc tả thì đặc tả thắng.
