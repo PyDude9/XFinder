@@ -26,10 +26,13 @@ private let DEBUG_SHOW_ENGINE_LOG = false
 /// right now?"**. Preset-first: every supported app already has working mappings, so
 /// the diagram is the page and recording is a secondary action.
 ///
-/// Layout: `PageHeader` → readiness → the diagram and its detail panel → the
-/// per-device switches → advanced. Flat System-Settings look, matching Hệ thống /
-/// Mạng / Vùng bắt dính. No card-per-group: a card per row would break the mapping
-/// into boxes the eye cannot compare.
+/// Layout — the nine blocks of variant B (`docs/specs/T14-mouse-gestures-B.md`):
+/// 1 header · 2 status line · 3 app chooser · 4 gesture map · 5 side buttons ·
+/// 6 hold & scroll · 7 tilt · 8 diagnostics · 9 footer. T14a builds the skeleton; later
+/// steps replace blocks 3-9 in place. The old `mappingSection` is kept on disk but no
+/// longer called from `body` (deleted in T14e). Flat System-Settings look, matching
+/// Hệ thống / Mạng / Vùng bắt dính. No card-per-group: a card per row would break the
+/// mapping into boxes the eye cannot compare.
 ///
 /// Banned on macOS 14 here: `.monospaced()`, `Gauge`, `Grid{`, `scrollContentBackground`,
 /// `symbolEffect`, `NavigationSplitView`. `.pickerStyle(.segmented)` is avoided — long
@@ -160,26 +163,124 @@ struct MouseGesturesDetailView: View {
                                 get: { config.enabled },
                                 set: { v in controller.update { $0.enabled = v } }))
                                 .labelsHidden()
+                                .toggleStyle(.switch)
+                                .controlSize(.small)
                         }
                     ))
 
-                if !trusted { permissionBanner }
+                // ── Khối 2 — dòng trạng thái (F2/F3/S2 + S3-S6 + S27) ──────────────────────
+                VStack(alignment: .leading, spacing: 10) {
+                    if !trusted { permissionBanner }
+                    readinessRow
+                }
 
-                readinessRow
+                // ── Khối 3 — chọn ứng dụng (F4/F5/F24, dải chip ở T14b) ────────────────────
+                VStack(alignment: .leading, spacing: 10) {
+                    profileSidebar.padding(.horizontal, 20)
+                    frontmostHint
+                    customBundleRow
+                }
 
-                Divider().padding(.horizontal, 20)
+                // ── Khối 4 — sơ đồ cử chỉ (F6-F12/F15/F25/S7/S28/S54-S68) ─────────────────
+                VStack(alignment: .leading, spacing: 12) {
+                    SectionHeader(icon: "computermouse",
+                                  title: L10n.t("Sơ đồ cử chỉ"),
+                                  subtitle: L10n.t("Số trên thân chuột là nút bạn giữ — bấm vào đó để đổi. Các nút của chuột hiện ngay trên hình: nút nào mờ là nút máy chưa đọc được."))
 
-                mappingSection
+                    HStack(alignment: .top, spacing: 18) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            MouseDiagramView(
+                                selection: $pickedDirection,
+                                selectedButton: $pickedButton,
+                                row: { resolved($0) },
+                                actionName: { resolvedName($0) },
+                                tint: { sourceTint(profile, $0) },
+                                buttonRole: { buttonRole($0) },
+                                buttons: drawnButtons,
+                                style: diagramStyle,
+                                declaredEventButtons: roleContext.declaredEventButtons,
+                                trigger: config.trigger,
+                                unsupported: { DeviceCapabilityModel.armSupport(for: $0, device: activeDevice) },
+                                recordingDirection: recordingDirection,
+                                onRecordTrigger: { triggerRecording() },
+                                isRecordingTrigger: recordingTrigger)
+                                .frame(minWidth: 0, maxWidth: .infinity)
+                            if tiltArmsLive {
+                                TiltArmsRow(
+                                    selection: $pickedDirection,
+                                    row: { resolved($0) },
+                                    actionName: { resolvedName($0) },
+                                    tint: { sourceTint(profile, $0) },
+                                    unsupported: { DeviceCapabilityModel.armSupport(for: $0, device: activeDevice) },
+                                    recordingDirection: recordingDirection)
+                            }
+                        }
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            if let direction = pickedDirection {
+                                GestureDetailPanel(
+                                    direction: direction,
+                                    row: resolved(direction),
+                                    actionName: resolvedName(direction),
+                                    trigger: config.trigger,
+                                    isRecording: controller.recording && recordingDirection == direction,
+                                    appName: profileDisplayName(),
+                                    hasAppPreset: GestureProfiles.hasPreset(bundle: profile),
+                                    systemBindings: controller.systemBindings,
+                                    onPick: { choice in
+                                        controller.setAction(choice.action, bundle: profile, direction: direction)
+                                    },
+                                    onRecord: {
+                                        recordingDirection = direction
+                                        recordingTrigger = false
+                                        controller.recordShortcut(bundle: profile, direction: direction)
+                                    },
+                                    onReset: { controller.resetDirection(bundle: profile, direction: direction) })
+                            } else {
+                                emptySelectionHint
+                            }
+                        }
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                    }
+                    .padding(.horizontal, 20)
+
+                    HStack(spacing: 8) {
+                        Button(L10n.t("Khôi phục toàn bộ ứng dụng này về mặc định")) { controller.resetProfile(profile) }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .disabled(config.overrides[profile] == nil)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 20)
+                }
+
+                // ── Khối 5 — nút hông (F8/F29/S34-S40, danh sách hàng ở T14d) ─────────────
+                VStack(alignment: .leading, spacing: 10) {
+                    buttonListSection
+                    legend
+                }
+
+                // ── Khối 6 — nút giữ & cuộn (F7/F22/F23/S47-S51) ──────────────────────────
+                switchesSection
+
+                // ── Khối 7 — nghiêng con lăn (F20/S41-S42) ────────────────────────────────
+                tiltRow
+
+                // ── Khối 8 — chẩn đoán chuột (F19/S13-S33) ───────────────────────────────
+                VStack(alignment: .leading, spacing: 10) {
+                    deviceRow
+                    hidDumpRow
+                    observedButtonRow
+                }
+
+                // ── Khối 9 — footer (F26/S53) ────────────────────────────────────────────
+                footerNote
 
                 if DEBUG_SHOW_ENGINE_LOG {
                     Divider().padding(.horizontal, 20)
 
                     activitySection
                 }
-
-                switchesSection
-
-                footerNote
             }
             .padding(.vertical, 20)
             .pageWidthSafe()
@@ -243,18 +344,20 @@ struct MouseGesturesDetailView: View {
 
     // MARK: - Readiness (measured, never inferred from status text)
 
-    /// The page's **single** status line — one pill, not a checklist.
-    ///
-    /// Green = the event tap is open and gestures run; grey = the feature is off; orange =
-    /// the tap could not open (usually Accessibility). The two facts that can silently stop a
+    /// The page's **single** status line — one pill, not a checklist. Five states:
+    /// recording (accent, S27), off (grey), ready (green), a named tap error, and the
+    /// generic no-Accessibility error (orange). The two facts that can silently stop a
     /// gesture — the hold button and the frontmost app — are stated where they belong (the
     /// diagram's hold badge and the app picker), not repeated here as a wall of warnings.
     private var readinessRow: some View {
+        let recording = controller.recording
         let on = config.enabled
         let healthy = controller.tapActive
-        let tint: Color = !on ? .secondary : (healthy ? .green : .orange)
-        let icon = !on ? "pause.circle.fill" : (healthy ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+        let tint: Color = recording ? .accentColor : (!on ? .secondary : (healthy ? .green : .orange))
+        let icon = recording ? "record.circle"
+            : (!on ? "pause.circle.fill" : (healthy ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"))
         let text: String = {
+            if recording { return L10n.t("Đang ghi — bấm nút trên chuột (Esc để hủy).") }
             if !on { return L10n.t("Cử chỉ đang tắt. Bật công tắc ở góc trên để dùng; sơ đồ bên dưới đã có sẵn phím tắt.") }
             if healthy { return L10n.t("Sẵn sàng — các ứng dụng bên dưới đã có phím tắt sẵn, không cần cấu hình thêm.") }
             if !controller.tapFailure.isEmpty { return L10n.t(controller.tapFailure) }

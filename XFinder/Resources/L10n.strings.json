@@ -11142,6 +11142,10 @@
     "Cần quyền Trợ năng để XFinder nhận được phím độ sáng và âm lượng.": {
       "en": "Accessibility is required for XFinder to receive the brightness and volume keys.",
       "scope": "sentence"
+    },
+    "Đang ghi — bấm nút trên chuột (Esc để hủy).": {
+      "en": "Recording — press a button on the mouse (Esc to cancel).",
+      "scope": "sentence"
     }
   }
 }
