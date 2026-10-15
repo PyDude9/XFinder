@@ -141,6 +141,8 @@ struct ClipboardLibraryView: View {
                 if !store.query.text.isEmpty {
                     Button { store.query.text = "" } label: { Image(systemName: "xmark.circle.fill") }
                         .buttonStyle(.plain)
+                        .help(L10n.t("Xoá tìm kiếm"))
+                        .accessibilityLabel(L10n.t("Xoá tìm kiếm"))
                         .foregroundColor(.secondary)
                 }
             }

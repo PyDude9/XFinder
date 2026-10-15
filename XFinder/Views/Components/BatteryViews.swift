@@ -256,6 +256,7 @@ public struct ConnectedDevicesSectionView: View {
                     }
                     .buttonStyle(.plain)
                     .help(L10n.t("Làm mới pin"))
+                    .accessibilityLabel(L10n.t("Làm mới pin"))
 
                     HStack(spacing: 2) {
                         Button {
@@ -270,6 +271,7 @@ public struct ConnectedDevicesSectionView: View {
                         }
                         .buttonStyle(.plain)
                         .help(L10n.t("Chế độ danh sách"))
+                        .accessibilityLabel(L10n.t("Chế độ danh sách"))
 
                         Button {
                             layoutMode = "grid"
@@ -283,6 +285,7 @@ public struct ConnectedDevicesSectionView: View {
                         }
                         .buttonStyle(.plain)
                         .help(L10n.t("Chế độ lưới"))
+                        .accessibilityLabel(L10n.t("Chế độ lưới"))
                     }
                 }
 

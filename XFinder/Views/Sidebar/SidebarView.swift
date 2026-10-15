@@ -95,6 +95,8 @@ struct SidebarView: View {
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundColor(.secondary) }
                     .buttonStyle(.plain)
+                    .help(L10n.t("Xoá tìm kiếm"))
+                    .accessibilityLabel(L10n.t("Xoá tìm kiếm"))
             }
         }
         .padding(.horizontal, 8).padding(.vertical, 5)

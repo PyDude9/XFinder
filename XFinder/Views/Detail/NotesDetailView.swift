@@ -130,6 +130,8 @@ struct NotesDetailView: View {
                     Button { searchText = "" } label: {
                         Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
                     }.buttonStyle(.plain)
+                    .help(L10n.t("Xoá tìm kiếm"))
+                    .accessibilityLabel(L10n.t("Xoá tìm kiếm"))
                 }
             }
             .padding(.horizontal, XFinderTokens.Space.tight + 2).padding(.vertical, 5)

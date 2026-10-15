@@ -209,12 +209,12 @@ private struct NoteEditorCard: View {
                 Image(systemName: note.isPinned ? "pin.fill" : "pin")
                     .font(.system(size: 12))
             }
-            .buttonStyle(.plain).help(note.isPinned ? L10n.t("Bỏ ghim") : "Ghim")
+            .buttonStyle(.plain).help(note.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim")).accessibilityLabel(note.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim"))
 
             Button { insertChecklistItem() } label: {
                 Image(systemName: "checklist").font(.system(size: 12))
             }
-            .buttonStyle(.plain).help(L10n.t("Thêm ô đánh dấu (⌘T)"))
+            .buttonStyle(.plain).help(L10n.t("Thêm ô đánh dấu (⌘T)")).accessibilityLabel(L10n.t("Thêm ô đánh dấu (⌘T)"))
         }
         .foregroundColor(.black.opacity(0.7))
         .padding(.horizontal, 16).padding(.vertical, 12)
@@ -267,6 +267,7 @@ private struct NoteEditorCard: View {
             }
             .buttonStyle(.plain)
             .help(L10n.t("Xóa ghi chú"))
+            .accessibilityLabel(L10n.t("Xóa ghi chú"))
 
             Button(L10n.t("Đóng")) { controller.closeEditor() }
                 .buttonStyle(.plain)

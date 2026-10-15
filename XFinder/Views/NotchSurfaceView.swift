@@ -357,13 +357,13 @@ struct NotchSurfaceView: View {
         HStack(spacing: XFinderTokens.Space.tight + 2) {
             Button { NotchSurfaceController.shared.nowPlayingCommand(.previousTrack) } label: {
                 Image(systemName: "backward.fill").font(.system(size: size))
-            }.buttonStyle(.plain).help(L10n.t("Bài trước"))
+            }.buttonStyle(.plain).help(L10n.t("Bài trước")).accessibilityLabel(L10n.t("Bài trước"))
             Button { NotchSurfaceController.shared.nowPlayingCommand(.togglePlayPause) } label: {
                 Image(systemName: model.nowPlaying?.playing == true ? "pause.fill" : "play.fill").font(.system(size: size + 2))
-            }.buttonStyle(.plain).help(L10n.t("Phát hoặc tạm dừng"))
+            }.buttonStyle(.plain).help(L10n.t("Phát hoặc tạm dừng")).accessibilityLabel(L10n.t("Phát hoặc tạm dừng"))
             Button { NotchSurfaceController.shared.nowPlayingCommand(.nextTrack) } label: {
                 Image(systemName: "forward.fill").font(.system(size: size))
-            }.buttonStyle(.plain).help(L10n.t("Bài tiếp"))
+            }.buttonStyle(.plain).help(L10n.t("Bài tiếp")).accessibilityLabel(L10n.t("Bài tiếp"))
         }
     }
 
@@ -616,27 +616,27 @@ struct NotchSurfaceView: View {
                 ForEach(NowPlaying.ShuffleMode.allCases, id: \.rawValue) { m in
                     Button(L10n.t(m.labelKey)) { NotchSurfaceController.shared.nowPlayingShuffle(m) }
                 }
-            } label: { Image(systemName: "shuffle").font(.system(size: 12)) }
+            } label: { Image(systemName: "shuffle").font(.system(size: 12)).accessibilityLabel(L10n.t("Xáo trộn")) }
             .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L10n.t("Xáo trộn"))
             Spacer(minLength: 0)
             Button { NotchSurfaceController.shared.nowPlayingCommand(.previousTrack) } label: {
                 Image(systemName: "backward.fill").font(.system(size: 15))
-            }.buttonStyle(.plain).help(L10n.t("Bài trước"))
+            }.buttonStyle(.plain).help(L10n.t("Bài trước")).accessibilityLabel(L10n.t("Bài trước"))
             Spacer(minLength: 0)
             Button { NotchSurfaceController.shared.nowPlayingCommand(.togglePlayPause) } label: {
                 Image(systemName: model.nowPlaying?.playing == true ? "pause.fill" : "play.fill").font(.system(size: 22))
                     .frame(width: 28)
-            }.buttonStyle(.plain).help(L10n.t("Phát hoặc tạm dừng"))
+            }.buttonStyle(.plain).help(L10n.t("Phát hoặc tạm dừng")).accessibilityLabel(L10n.t("Phát hoặc tạm dừng"))
             Spacer(minLength: 0)
             Button { NotchSurfaceController.shared.nowPlayingCommand(.nextTrack) } label: {
                 Image(systemName: "forward.fill").font(.system(size: 15))
-            }.buttonStyle(.plain).help(L10n.t("Bài tiếp"))
+            }.buttonStyle(.plain).help(L10n.t("Bài tiếp")).accessibilityLabel(L10n.t("Bài tiếp"))
             Spacer(minLength: 0)
             Menu {
                 ForEach(NowPlaying.RepeatMode.allCases, id: \.rawValue) { m in
                     Button(L10n.t(m.labelKey)) { NotchSurfaceController.shared.nowPlayingRepeat(m) }
                 }
-            } label: { Image(systemName: "repeat").font(.system(size: 12)) }
+            } label: { Image(systemName: "repeat").font(.system(size: 12)).accessibilityLabel(L10n.t("Lặp lại")) }
             .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L10n.t("Lặp lại"))
         }
         .frame(height: 28)

@@ -113,6 +113,7 @@ struct ClipboardCardView: View {
                 }
                 .buttonStyle(.plain)
                 .help(record.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim"))
+                .accessibilityLabel(record.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim"))
 
                 Button {
                     ClipboardPasteEngine.writeToPasteboard(record: record)
@@ -126,6 +127,7 @@ struct ClipboardCardView: View {
                 }
                 .buttonStyle(.plain)
                 .help(L10n.t("Sao chép lại vào clipboard"))
+                .accessibilityLabel(L10n.t("Sao chép lại vào clipboard"))
             }
 
             // Source App Icon badge

@@ -330,6 +330,7 @@ struct NotchClipboardView: View {
                 .foregroundColor(N.toolbarIcon)
                 .frame(width: 22, height: 22)
                 .background(Circle().fill(N.capsule))
+                .accessibilityLabel("\(L10n.t("Sắp xếp")) · \(model.sort.titleVI)")
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
