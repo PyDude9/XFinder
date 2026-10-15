@@ -115,8 +115,8 @@
 	<key>UIMainThreadOnly</key>
 	<true/>
 	<key>XFAnalyticsTelemetryDeckAppID</key>
-	<string></string>
+	<string>EDD21AF7-EFBA-4AF9-A3C0-E3B424F36B62</string>
 	<key>XFAnalyticsTelemetryDeckNamespace</key>
-	<string></string>
+	<string>com.xfinder</string>
 </dict>
 </plist>

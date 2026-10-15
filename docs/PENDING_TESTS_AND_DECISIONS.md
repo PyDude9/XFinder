@@ -95,7 +95,7 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 
 | Mã | Còn cần bạn làm | Mặc định |
 |:--|:--|:--|
-| Q-DIAG-4 | Tạo app trên TelemetryDeck (tài khoản của bạn), rồi điền **App ID** và **namespace** vào `XFinder/Info.plist` (`XFAnalyticsTelemetryDeckAppID`, `XFAnalyticsTelemetryDeckNamespace`) — hoặc gửi tôi hai giá trị đó. Cả hai là giá trị công khai, không phải bí mật. Chưa điền thì app không gửi gì và trang ghi rõ như vậy | Chưa điền |
+| ~~Q-DIAG-4~~ | **Xong 2026-10-15:** bạn đưa App ID `EDD21AF7-…F36B62` + namespace `com.xfinder`, đã điền vào Info.plist (giá trị công khai, nằm trong mọi bản build). Lưu ý đo được: endpoint của TelemetryDeck trả **HTTP 200 "OK" cho cả một namespace bịa**, nên 200 không chứng minh namespace đúng — chỉ dashboard xác nhận được (T-ANALYTICS-5) | — |
 | Q-DIAG-5 | TelemetryDeck ghi trong FAQ rằng sự kiện lưu trữ lạnh có thể giữ 7–10 năm. Có muốn ghi câu này lên trang Giới thiệu không? | Chưa ghi |
 
 ## Phần 2 — Cần test tay (T)
@@ -300,6 +300,8 @@ giữa họ là thêm một lượt** — chưa có lượt model nào được 
 | T-ANALYTICS-2 | Bật công tắc **Từ chối gửi phân tích ẩn danh** | Dòng trạng thái đổi thành "Đã từ chối — XFinder không gửi gì."; lần kích hoạt kế tiếp không gửi |
 | T-ANALYTICS-3 | Khi Info.plist chưa điền AppID và Namespace (mặc định hôm nay) | Dòng trạng thái ghi "Bản này chưa có máy chủ nhận nên chưa gửi gì." và không có yêu cầu mạng nào được tạo |
 | T-ANALYTICS-4 | Hộp thoại thông báo lần đầu (khi có máy chủ): chọn "Từ chối gửi" hoặc "Xem dữ liệu…" | "Từ chối" bật công tắc từ chối; "Xem dữ liệu…" chuyển tới trang Giới thiệu mở sẵn khung xem trước |
+| T-ANALYTICS-5 | TelemetryDeck dashboard ▸ app XFinder ▸ bật **Test Mode** ▸ tìm tín hiệu `Setup.verify` (Claude gửi một cái lúc 00:2x ngày 15/10) | Thấy tín hiệu ⇒ App ID + namespace đúng. Không thấy ⇒ namespace sai: lấy đúng namespace trong dashboard rồi sửa `XFAnalyticsTelemetryDeckNamespace`. Bản trên máy bạn là bản **Debug** nên mọi báo cáo của nó vào Test Mode; bản Release (make-release.sh) mới vào số liệu thật |
+| T-ANALYTICS-6 | Hộp "XFinder gửi thống kê ẩn danh" đang hiện sau khi cài (15/10) — bấm một nút | "Đã hiểu": 24 giờ sau mới có bản đầu. "Từ chối gửi": công tắc Từ chối bật, không bao giờ gửi. Trang Giới thiệu ghi đúng trạng thái |
 | T-LIMIT-1 | Lần tới phiên Claude (app desktop) chạm giới hạn: nhìn notch / trang Agent | Trong ~20 giây hàng của phiên đổi sang "chạm giới hạn" (không còn "đang chạy"), có thông báo kèm nút chuyển phiên. Dán một đoạn văn có câu "hit your session limit" vào chat thì **không** được làm phiên báo dừng |
 | T-LAYOUT-1 | Mở Thư viện Clipboard, rồi Theo dõi hệ thống (cả 4 tab); kéo nhỏ cửa sổ hết cỡ | Header, thanh tab và ô "Tìm cài đặt…" luôn ở mép trên; cửa sổ không nhỏ hơn 900×600 |
 | T-SLEEP-1 | Tính năng & Quyền ▸ dòng Chống ngủ: chọn "15 phút" rồi bật | Dòng hiện "Còn 14:59…" đếm lùi màu cam; ô thời lượng mờ khi đang bật; tự tắt sau 15 phút. Tổng quan ▸ Chống ngủ ▸ "Mở…" dẫn tới trang này |

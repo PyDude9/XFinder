@@ -212,13 +212,15 @@ enum AnalyticsRules {
     }
 
     /// A receiver from the two Info.plist strings, or nil when either is missing or malformed. The namespace becomes a
-    /// URL path component, so only `[a-z0-9-]` is accepted — never `/`, `..` or a space.
+    /// URL path component, so only `[a-z0-9.-]` is accepted (the owner's namespace is `com.xfinder`) — never `/`, a
+    /// space, a leading dot, or `..` (which would climb out of `/v2/namespace/`).
     static func receiver(appID: String?, namespace: String?) -> Receiver? {
         guard let id = appID?.trimmingCharacters(in: .whitespaces), !id.isEmpty, id.count <= 64,
               id.unicodeScalars.allSatisfy({ ($0 >= "A" && $0 <= "Z") || ($0 >= "a" && $0 <= "z")
                                                 || ($0 >= "0" && $0 <= "9") || $0 == "-" }),
               let ns = namespace?.trimmingCharacters(in: .whitespaces), !ns.isEmpty, ns.count <= 64,
-              ns.unicodeScalars.allSatisfy({ ($0 >= "a" && $0 <= "z") || ($0 >= "0" && $0 <= "9") || $0 == "-" })
+              ns.unicodeScalars.allSatisfy({ ($0 >= "a" && $0 <= "z") || ($0 >= "0" && $0 <= "9") || $0 == "-" || $0 == "." }),
+              !ns.hasPrefix("."), !ns.contains("..")
         else { return nil }
         return Receiver(appID: id, namespace: ns)
     }

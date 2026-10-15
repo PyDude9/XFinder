@@ -90,8 +90,10 @@ run "N7 the App ID is sent as the client user (a stable id)" XFinder/Core/Diagno
 run "N8 a failed send retries on every activation" XFinder/Core/Diagnostics/AnalyticsRules.swift \
   "'            if sinceAttempt >= 0, sinceAttempt < retryInterval { return .wait(.notDue) }'" "''"
 run "N9 the namespace accepts a slash" XFinder/Core/Diagnostics/AnalyticsRules.swift \
-  "'              ns.unicodeScalars.allSatisfy({ (\$0 >= \"a\" && \$0 <= \"z\") || (\$0 >= \"0\" && \$0 <= \"9\") || \$0 == \"-\" })'" \
-  "'              ns.unicodeScalars.allSatisfy({ _ in true })'"
+  "'              ns.unicodeScalars.allSatisfy({ (\$0 >= \"a\" && \$0 <= \"z\") || (\$0 >= \"0\" && \$0 <= \"9\") || \$0 == \"-\" || \$0 == \".\" }),'" \
+  "'              ns.unicodeScalars.allSatisfy({ _ in true }),'"
+run "N10 a namespace of dots climbs out of /v2/namespace/" XFinder/Core/Diagnostics/AnalyticsRules.swift \
+  "'              !ns.hasPrefix(\".\"), !ns.contains(\"..\")'" "'              true'"
 
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done

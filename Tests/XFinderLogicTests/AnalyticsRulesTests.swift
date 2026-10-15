@@ -155,6 +155,11 @@ final class AnalyticsRulesTests: XCTestCase {
         XCTAssertNil(AnalyticsRules.receiver(appID: "AAAA", namespace: nil))
         XCTAssertNil(AnalyticsRules.receiver(appID: "AAAA", namespace: "../evil"), "the namespace is a path component")
         XCTAssertNil(AnalyticsRules.receiver(appID: "AAAA", namespace: "Has Space"))
+        XCTAssertNotNil(AnalyticsRules.receiver(appID: "EDD21AF7-EFBA-4AF9-A3C0-E3B424F36B62", namespace: "com.xfinder"),
+                        "the owner's real namespace has a dot")
+        for bad in [".", "..", "a..b", ".hidden"] {
+            XCTAssertNil(AnalyticsRules.receiver(appID: "AAAA", namespace: bad), "\(bad) could climb out of /v2/namespace/")
+        }
         XCTAssertNil(AnalyticsRules.receiver(appID: "a/b", namespace: "xfinder"))
         let r = AnalyticsRules.receiver(appID: "AAAA", namespace: "my-org")!
         XCTAssertEqual(AnalyticsRules.endpoint(r)?.absoluteString, "https://nom.telemetrydeck.com/v2/namespace/my-org/")
