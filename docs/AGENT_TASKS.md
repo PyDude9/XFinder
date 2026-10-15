@@ -147,7 +147,7 @@ bằng `git log --oneline -5` và `sh scripts/gate-all.sh`.
 
 - Lượt DeepSeek 15/10 (T01–T06, T08–T13, T15, T16, T18, T19 + tính năng HUD) đã được Claude review, sửa và tách thành
   commit theo chủ đề trên `main`. Xem bảng "Đã xong" ở đầu mục 6.
-- **Kế tiếp: T14b** (T14a đã gộp) — dựng trang Chuột & cử chỉ theo phương án **B** (bạn đã chọn), trên MỘT nhánh
+- **Kế tiếp: T14c** (T14a, T14b đã gộp; nhánh `agent/<công-cụ>-T14` đã được Claude đưa về `main` sau mỗi lần gộp) — dựng trang Chuột & cử chỉ theo phương án **B** (bạn đã chọn), trên MỘT nhánh
   `agent/<công-cụ>-T14` cho mọi bước còn lại, mỗi bước một commit. Đặc tả từng bước:
   `docs/specs/T14-mouse-gestures-B.md`. Cho tới khi T14 xong, chỉ agent làm T14 được sửa
   `XFinder/Views/Detail/MouseGesturesDetailView.swift` và 6 file
@@ -180,6 +180,7 @@ trong worklog, đừng viết là đã xong.
 | T19 mở wireframe | — | bạn chọn **B** |
 | (ngoài bảng) HUD độ sáng/âm lượng chỉ trên notch | `bf8798f` | Claude sửa 6 lỗi (mục 3c); chưa kiểm live: T-HUD-1…5 |
 | T07 | HOÃN | gộp vào T14 |
+| T14b dải chip app (DeepSeek) | `51c0162` (gộp `09c9f3c`) + `ff86f5e` | Claude sửa: icon tra NSWorkspace mỗi lần vẽ → cache `ClipboardAppIcon`, danh sách app đã cài tính 4 lần/lần vẽ → 1; chấm "app phía trước" không sáng ở Toàn cục (`GestureAppChooser`, test + M9–M10) |
 | T14a khung 9 khối (DeepSeek) | `3ed7f13` + commit sửa sau review | Claude sửa: câu trạng thái lúc ghi phím tắt bảo "bấm nút chuột" (`GesturePageStatus`, test + M6–M8), danh sách app tạm giới hạn 360 pt, nhãn VoiceOver công tắc đầu trang |
 
 ---

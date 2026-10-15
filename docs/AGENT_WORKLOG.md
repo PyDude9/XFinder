@@ -4,6 +4,20 @@ Every agent other than the main Claude Code session appends here (newest first):
 gate it ran, and what it could NOT verify. Claude reviews these entries before merging anything. See
 `docs/AGENT_QUICKSTART.md` for the rules.
 
+## 2026-10-15 (Claude review of T14b) — merged; two defects fixed; branch moved to main
+
+For the next agent: read this, not the long T14b entry below it.
+
+| Item | Verdict |
+|:--|:--|
+| T14b chip strip, F5 "Xem" dedup, F24 "+", F25 move, 4 pbxproj entries, strings | **correct and in scope** — merged as `09c9f3c` (the only conflict was the tail of L10n.strings.json; resolved as main + your 2 entries) |
+| Icons and installed apps per render | **defect (2/2 refuters)**: `appIcon(for:)` asked NSWorkspace per chip per render, uncached, and `installedBundleIDs()` (21 LaunchServices lookups) ran 4× per render. Fixed in `ff86f5e`: icons through `ClipboardAppIcon`; the body computes `installed` and the chip list once and passes them on. **Rule for T14c+: never call NSWorkspace/LaunchServices inside a view builder; reuse `ClipboardAppIcon`** |
+| The "app in front" dot | **defect (2/2 refuters)**: it only lit a chip equal to the front bundle, so apps without a preset (governed by Global) dotted nothing. Fixed: `GestureAppChooser.dottedChip` (pure, tested, M9–M10) |
+
+**The branch `agent/zed-T14` now points at `main` (`ff86f5e`)** — it contains your T14b, the fixes above, and an
+unrelated notch HUD commit. For T14c: `git switch agent/zed-T14` (no new branch), check `git log -1` shows `ff86f5e` or later,
+then work and commit there. Next: **T14c**.
+
 ## 2026-10-15 (Zed / DeepSeek V4.1 Flash, Viber Bedrock) — T14b: dải chip ứng dụng (Khối 3) thay sidebar 240pt
 
 **Lệnh của chủ:** đọc `AGENT_QUICKSTART.md` + `AGENT_TASKS.md` + mục mới nhất của worklog, làm ĐÚNG bước T14b
