@@ -15,8 +15,11 @@ Mở agent ngay trong thư mục repo (`cd ~/github/XFinder && opencode`, hoặc
 Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào docs/AGENT_WORKLOG.md, không tự xoay xở.
 ```
 
-- **Một việc một phiên.** Xong một việc thì mở phiên MỚI cho việc kế (OpenCode `/new`, Zed tạo thread mới, Antigravity tạo
-  cuộc trò chuyện mới). Phiên dài chứa đủ thứ không liên quan làm model kém đi và tốn token.
+- **Một việc một phiên** cho việc cỡ M/L. Xong thì mở phiên MỚI cho việc kế (OpenCode `/new`, Zed tạo thread mới,
+  Antigravity tạo cuộc trò chuyện mới). **Việc cỡ S được chạy nhiều việc trong một phiên** (bạn nói "chạy hết hàng đợi"),
+  miễn mỗi việc một dòng worklog có danh sách file của việc đó (mẫu ở mục 3, bước 7).
+- **Nếu bạn dặn không commit:** agent vẫn ghi đúng danh sách file của TỪNG việc vào worklog, để Claude tách được commit
+  theo việc. (Q-PROC-1: cho agent commit trên nhánh `agent/*` thì Claude review nhanh hơn nhiều.)
 - **Chọn công cụ theo việc:**
 
 | Việc | Dùng | Vì sao |
@@ -73,12 +76,17 @@ Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào
    build luôn ghi vào cùng `/tmp/xfinder-clean-build`, harness sửa tạm file nguồn.
 3. Trong tệp này, đổi trạng thái việc thành `ĐANG LÀM (<công cụ>, <giờ>)`.
 4. Làm **đúng** các bước của đặc tả. Không sửa thêm file nào khác, không "tiện tay" dọn dẹp. Việc cỡ L: từng bước một.
-5. Chạy **mọi** lệnh nghiệm thu của việc, cộng: `sh scripts/build-and-check.sh` và
-   `swift test --package-path /Users/wolong/github/XFinder/Tests`, cộng các cổng của cỡ M/L (mục 1) và vùng (mục 2).
+5. Chạy **mọi** lệnh nghiệm thu của việc, cộng `sh scripts/gate-all.sh` (build + toàn bộ test + 7 cổng chuỗi/UI, in
+   `GATE: green`), cộng các cổng của cỡ M/L (mục 1) và vùng (mục 2). Harness mutation chạy riêng, lần lượt, sau cùng.
 6. Commit trên nhánh, chỉ stage đúng file mình sửa: `git add <file1> <file2>`; message mở đầu bằng ID (`T03: …`), ghi kết
    quả từng lệnh nghiệm thu và điều gì chưa kiểm được.
-7. Đổi trạng thái thành `CHỜ REVIEW (nhánh agent/…)`; ghi một mục vào `docs/AGENT_WORKLOG.md` (đã làm gì, kết quả từng
-   lệnh, điều gì chưa kiểm được). Commit hai thay đổi này cùng nhánh.
+7. Đổi trạng thái thành `CHỜ REVIEW (nhánh agent/…)`; ghi vào `docs/AGENT_WORKLOG.md` **gọn**, mỗi việc một dòng:
+
+   | Việc | File đã sửa | Nghiệm thu riêng của việc | Chưa kiểm live |
+   |:--|:--|:--|:--|
+
+   rồi dán nguyên văn 9 dòng của `gate-all.sh` một lần cho cả lượt. Chỉ viết dài cho điều kiện dừng và chỗ đặc tả không
+   khớp code. Ghi đo ở đâu: "probe từ terminal" khác "đo trong app đã cài". Commit cùng nhánh.
 8. **Dừng.** Không push, không merge vào `main`. Việc kế: phiên mới.
 
 **Điều kiện dừng ngay** (ghi vào worklog rồi dừng):
@@ -102,6 +110,12 @@ không báo chuyện khẩu vị. Ghi kết quả vào docs/AGENT_WORKLOG.md dư
 
 ### 3c. Việc chưa có trong bảng
 
+**Bạn giao thẳng một tính năng giữa phiên** (như tính năng HUD độ sáng/âm lượng ngày 15/10): trước khi viết code, agent
+viết một đặc tả ngắn vào `docs/specs/<tên>.md` gồm mục tiêu, file sẽ đổi, và **danh sách tình huống hỏng** của
+`AGENT_QUICKSTART.md` luật 11 (thiếu quyền · máy/OS không làm được · giá trị ở đầu mút · ngữ cảnh đổi giữa chừng ·
+giá trị cũ trong cache · mỗi công tắc khi TẮT). Tính năng HUD bỏ qua bước này và mang 6 lỗi, lỗi nào cũng là một dòng
+thiếu trong danh sách đó. Việc lớn hơn thì theo các bước dưới:
+
 1. Agent A (chế độ chỉ đọc / plan): viết đặc tả vào `docs/specs/<ID>.md`: mục tiêu, file sẽ đổi, file mới (và 4 dòng
    pbxproj), các bước, lệnh nghiệm thu, cái gì nằm ngoài phạm vi, cái gì chưa kiểm live được.
 2. Một công cụ khác đọc đặc tả, ghi lỗ hổng vào cuối file đặc tả.
@@ -109,7 +123,8 @@ không báo chuyện khẩu vị. Ghi kết quả vào docs/AGENT_WORKLOG.md dư
 
 ## 4. Quy trình của Claude khi có quota lại
 
-1. Đọc `docs/AGENT_WORKLOG.md` (mục mới nhất), `git branch --list 'agent/*'`, `git worktree list`.
+1. Đọc `docs/AGENT_WORKLOG.md` (mục mới nhất), `git branch --list 'agent/*'`, `git worktree list`. Chạy
+   `sh scripts/gate-all.sh` trước tiên: đỏ thì chưa cần đọc diff.
 2. Với mỗi nhánh: `git log main..<nhánh>`, `git diff main...<nhánh>`. Kiểm đúng phạm vi (file nào, bao nhiêu dòng), vùng
    cấm, từng bước có đúng không, và **thay đổi ngoài đặc tả** (model rẻ hay sửa lan ra ngoài phạm vi).
 3. Tự chạy lại nghiệm thu, harness mutation liên quan, và đo live phần agent ghi "chưa kiểm live" nếu đo được.
@@ -121,17 +136,17 @@ không báo chuyện khẩu vị. Ghi kết quả vào docs/AGENT_WORKLOG.md dư
 
 ## 5. Trạng thái hiện tại (Claude cập nhật cuối mỗi phiên)
 
-Cập nhật 2026-10-15, cuối phiên (Claude hết quota).
+Cập nhật 2026-10-15 chiều. Số liệu đổi theo từng commit, nên đây chỉ ghi điều không tự suy ra được; trạng thái thật lấy
+bằng `git log --oneline -5` và `sh scripts/gate-all.sh`.
 
-- `main` = `63bc3c3` trên GitHub. Bản cài trên máy khớp bản build của commit đó. Không nhánh `agent/*` nào.
-- **Vừa xong:** 8 preset cử chỉ chuột sai bundle ID đã sửa (`f9b8d5d`); preset Dev & AI kéo lên = Mission Control (`63bc3c3`).
-- **Đang dở: thiết kế lại trang Chuột & cử chỉ.** Đã qua cổng 1 (brief). Wireframe 4 phương án (A danh sách, B sơ đồ + bảng
-  bên — khuyên dùng, C bảng theo app, D theo ảnh tham chiếu của bạn) gần xong; bản sao bền ở
-  `~/github/XFinder-design/mouse-gestures-2026-10-15/` (ngoài repo). **Cổng 2 = bạn chọn phương án** (việc T19 giúp bạn xem).
-  Cho tới khi T14 bắt đầu, không agent nào sửa `XFinder/Views/Detail/MouseGesturesDetailView.swift` và 6 file
+- Lượt DeepSeek 15/10 (T01–T06, T08–T13, T15, T16, T18, T19 + tính năng HUD) đã được Claude review, sửa và tách thành
+  commit theo chủ đề trên `main`. Xem bảng "Đã xong" ở đầu mục 6.
+- **Kế tiếp: T14** — dựng trang Chuột & cử chỉ theo phương án **B** (bạn đã chọn). Đặc tả từng bước:
+  `docs/specs/T14-mouse-gestures-B.md`. Cho tới khi T14 xong, chỉ agent làm T14 được sửa
+  `XFinder/Views/Detail/MouseGesturesDetailView.swift` và 6 file
   `XFinder/Views/Components/{MouseDiagramView,GestureButtonList,GestureDetailPanel,GestureArmView,GestureActionPicker,GestureActivityPanel}.swift`.
-- **Bạn còn nợ tay:** T-ANALYTICS-5, T-ANALYTICS-6, T-LAYOUT-1, T-SLEEP-1, T-LIMIT-1, T-MG-BID (`docs/PENDING_TESTS_AND_DECISIONS.md`).
-- **Câu hỏi đang chờ bạn:** Q-RELEASE-14, Q-OC, Q-DIAG-5, Q-MG-1…3. Agent khác không trả lời thay bạn.
+- **Bạn còn nợ tay:** T-HUD-1…5 (mới), T-ANALYTICS-5, T-ANALYTICS-6, T-LAYOUT-1, T-SLEEP-1, T-LIMIT-1, T-MG-BID.
+- **Câu hỏi đang chờ bạn:** Q-PROC-1 (cho agent commit trên nhánh riêng), Q-RELEASE-14, Q-OC, Q-DIAG-5, Q-MG-1…3.
 
 ## 6. Hàng đợi việc (mọi cỡ, mỗi việc có đặc tả)
 
@@ -143,277 +158,28 @@ trong worklog, đừng viết là đã xong.
 
 ---
 
-### T01 · README ghi sai số test — TODO
+### Đã xong (review 2026-10-15, đặc tả cũ xem `git log -p docs/AGENT_TASKS.md`)
 
-- **Cỡ:** S · 1 file (`README.md`), 1 dòng
-- **Vì sao:** README dòng ~213 ghi `| Test logic (399 test) | ✅ |`; thật là ~1196.
-- **Các bước:**
-  1. Đếm: `grep -c "func test" Tests/XFinderLogicTests/*.swift | awk -F: '{s+=$2} END {print s}'` (ngày viết: 1196).
-  2. Đổi đúng ô đó thành `| Test logic (~<số vừa đếm> test) | ✅ |`. Không sửa dòng nào khác của bảng.
-- **Nghiệm thu:** `grep -rn '(399 test)' README.md docs/*.md` ra rỗng · `git diff --stat` = 1 file, 1 dòng.
-
----
-
-### T02 · `onChange` kiểu cũ ở Tổng quan và Hệ thống — TODO
-
-- **Cỡ:** S · 2 file, 3 dòng
-- **Vì sao:** macOS 14 bỏ kiểu closure một tham số của `.onChange(of:)`; ba chỗ này còn dùng, mỗi lần build sinh cảnh báo.
-- **Các bước** (chỉ đổi chữ ký closure, thân giữ nguyên):
-  1. `XFinder/Views/Detail/DashboardDetailView.swift`: `.onChange(of: launchAtLogin) { LoginItemController.apply($0) }`
-     → `.onChange(of: launchAtLogin) { _, newValue in LoginItemController.apply(newValue) }`
-  2. Cùng file: `.onChange(of: showDockIcon) { DockController.apply($0) }`
-     → `.onChange(of: showDockIcon) { _, newValue in DockController.apply(newValue) }`
-  3. `XFinder/Views/Detail/SystemDetailView.swift`: `.onChange(of: updateInterval) { _ in`
-     → `.onChange(of: updateInterval) { _, _ in`
-- **Nghiệm thu:**
-  - Lệnh dưới, trước khi sửa ra 6 dòng, sau khi sửa còn đúng 3 dòng (DockPreviewController ×2, PreviewOverlayWindow ×1):
-    `grep -rn "onChange(of:" XFinder --include='*.swift' | grep -E '\{ *(_|\$0|[a-zA-Z_][a-zA-Z0-9_]*) +in\b|\$0'`
-  - `build-and-check` thành công; `git diff --stat` = 2 file, 3 dòng đổi.
+| Việc | Commit | Ghi chú review |
+|:--|:--|:--|
+| T01 README số test | (commit tài liệu) | |
+| T02, T03 `onChange` hai tham số | `c19dc73` | |
+| T04, T13 `allowedContentTypes` | `05693fa` | chưa kiểm live bộ lọc của bảng mở/lưu |
+| T05, T06, T08, T09, T10 nhãn VoiceOver + "Ghim" | `e0ee021` | chưa kiểm live VoiceOver |
+| T11, T12 test | `293cabc` | lớp test T12 tên `TimeZoneConversionEdgeCaseTests` (tên kia đã có) |
+| T15 Picker nút cuộn | `2c26eb0` | Claude sửa: menu rỗng khi chưa đo được chuột, giá trị đang lưu không có trong menu |
+| T16 tên phím chữ/số | `6c8ee2c` | |
+| T18 chạy lại harness cử chỉ | — | labels 5/5, ui 8/8 đỏ |
+| T19 mở wireframe | — | bạn chọn **B** |
+| (ngoài bảng) HUD độ sáng/âm lượng chỉ trên notch | `bf8798f` | Claude sửa 6 lỗi (mục 3c); chưa kiểm live: T-HUD-1…5 |
+| T07 | HOÃN | gộp vào T14 |
 
 ---
 
-### T03 · `onChange` kiểu cũ ở xem trước Dock và cửa sổ ⌘-Tab — TODO
+### T14 · Dựng trang Chuột & cử chỉ theo phương án B — TODO (đặc tả: `docs/specs/T14-mouse-gestures-B.md`)
 
-- **Cỡ:** S · 2 file, 3 dòng
-- **Các bước** (chỉ đổi chữ ký closure, thân giữ nguyên; không đụng phần event monitor của file):
-  1. `XFinder/Core/DockPreviewController.swift`: `.onChange(of: pid) { newPID in` → `.onChange(of: pid) { _, newPID in`
-  2. Cùng file: `.onChange(of: store.activeBrowserTabs) { _ in` → `.onChange(of: store.activeBrowserTabs) { _, _ in`
-  3. `XFinder/Core/WindowPreview/PreviewOverlayWindow.swift`: `.onChange(of: store.selectedIndex) { newIndex in`
-     → `.onChange(of: store.selectedIndex) { _, newIndex in`. **Không** đụng chỗ `.onChange(of: store.selectedIndex)` thứ
-     hai trong file (đã đúng kiểu).
-- **Nghiệm thu:** lệnh grep của T02 ra 0 dòng nếu T02 đã gộp, hoặc chỉ còn 3 dòng của T02 nếu chưa · `build-and-check` thành
-  công · `git diff --stat` = 2 file, 3 dòng đổi.
-
----
-
-### T04 · `allowedFileTypes` (đã bỏ) ở Nén và Công cụ PDF — TODO
-
-- **Cỡ:** S · 2 file, ~4 dòng
-- **Các bước:**
-  1. Thêm `import UniformTypeIdentifiers` dưới các dòng `import` sẵn có của `XFinder/Views/Detail/CompressDetailView.swift`
-     và `XFinder/Views/Detail/PdfToolsDetailView.swift`.
-  2. Compress: `panel.allowedFileTypes = ["zip", "gz", "bz2", "tar"]` → đúng nguyên văn:
-     `panel.allowedContentTypes = [.zip, .gzip, UTType(filenameExtension: "bz2"), UTType(filenameExtension: "tar")].compactMap { $0 }`
-     **Không** dùng `.item` hay `.data` thay cho bz2/tar: chúng mở hộp chọn cho gần như mọi tệp, là đổi hành vi.
-  3. PDF: `panel.allowedFileTypes = ["pdf"]` → `panel.allowedContentTypes = [.pdf]`.
-  4. **Không** đụng 4 chỗ trong `NotesDetailView.swift` (có hộp lưu với đuôi tính lúc chạy — việc khác).
-- **Nghiệm thu:** `grep -rn "allowedFileTypes" XFinder --include='*.swift'` chỉ còn 4 dòng của NotesDetailView · đọc diff:
-  dòng Compress đúng nguyên văn ở bước 2 · `build-and-check` thành công.
-
----
-
-### T05 · Ghi chú mép: chữ "Ghim" lọt tiếng Việt + 3 nút chưa có nhãn VoiceOver — TODO
-
-- **Cỡ:** S · 1 file (`XFinder/Views/EdgeNotesViews.swift`), ~4 dòng
-- **Vì sao:** `.help(note.isPinned ? L10n.t("Bỏ ghim") : "Ghim")` — nhánh sau không qua `L10n.t`, nên UI tiếng Anh hiện
-  "Ghim". Lint `audit-l10n-literals.py` **không thấy** được lỗi này (nó chỉ bắt chữ có dấu) — kiểm bằng đọc diff.
-- **Các bước:**
-  1. Đổi `.help(note.isPinned ? L10n.t("Bỏ ghim") : "Ghim")` thành
-     `.help(note.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim")).accessibilityLabel(note.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim"))`
-  2. Sau `.help(L10n.t("Thêm ô đánh dấu (⌘T)"))` nối thêm `.accessibilityLabel(L10n.t("Thêm ô đánh dấu (⌘T)"))`.
-  3. Sau `.help(L10n.t("Xóa ghi chú"))` thêm dòng `.accessibilityLabel(L10n.t("Xóa ghi chú"))`.
-- **Nghiệm thu:** `python3 scripts/check-l10n-coverage.py` TOTAL 0 (cả bốn khoá đã có sẵn trong store) · đọc diff: không còn
-  chuỗi trần nào trong `.help(...)` của file · `build-and-check` thành công.
-
----
-
-### T06 · Thẻ clipboard: nút ghim và sao chép lại chưa có nhãn VoiceOver — TODO
-
-- **Cỡ:** S · 1 file (`XFinder/Views/ClipboardCardView.swift`), 2 dòng
-- **Các bước:**
-  1. Sau `.help(record.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim"))` thêm dòng
-     `.accessibilityLabel(record.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim"))`.
-  2. Sau `.help(L10n.t("Sao chép lại vào clipboard"))` thêm dòng `.accessibilityLabel(L10n.t("Sao chép lại vào clipboard"))`.
-- **Nghiệm thu:** `grep -c accessibilityLabel XFinder/Views/ClipboardCardView.swift` = 2 (trước là 0) ·
-  `python3 scripts/audit-l10n-literals.py` không tăng · `build-and-check` thành công.
-
----
-
-### T07 · Cử chỉ chuột: menu "…" và nút về mặc định chưa có nhãn VoiceOver — HOÃN (gộp vào đợt thiết kế lại trang Chuột & cử chỉ, mục 5)
-
-- **Cỡ:** S · 1 file (`XFinder/Views/Components/GestureActionPicker.swift`), 2 dòng
-- **Lưu ý (đã đo ở P9):** nhãn đặt trên **`Menu`** bị VoiceOver bỏ qua — nó đọc tên biểu tượng. Với `Menu`, nhãn phải nằm
-  trên `Image` bên trong `label:`. Với `Button` thì đặt trên Button như thường.
-- **Các bước:**
-  1. Trong `label:` của Menu có `Image(systemName: "ellipsis.circle")`, nối vào Image đó (sau `.font(.system(size: 14))`):
-     `.accessibilityLabel(L10n.t("Đổi hành động cho hướng này"))`.
-  2. Sau `.help(L10n.t("Đưa hướng này về preset — không đụng các hướng khác"))` của nút `arrow.uturn.backward`, thêm dòng
-     `.accessibilityLabel(L10n.t("Đưa hướng này về preset — không đụng các hướng khác"))`.
-- **Nghiệm thu:** đọc diff: đúng 2 dòng thêm, dòng đầu nằm **trong** khối `label:` của Menu · `build-and-check` thành công ·
-  `audit-l10n-literals.py` không tăng.
-
----
-
-### T08 · Trang Pin: 3 nút biểu tượng chưa có nhãn VoiceOver — TODO
-
-- **Cỡ:** S · 1 file (`XFinder/Views/Components/BatteryViews.swift`), 3 dòng
-- **Các bước:** sau mỗi dòng dưới đây thêm một dòng `.accessibilityLabel(...)` cùng chuỗi:
-  `.help(L10n.t("Làm mới pin"))` · `.help(L10n.t("Chế độ danh sách"))` · `.help(L10n.t("Chế độ lưới"))`.
-- **Nghiệm thu:** `grep -c accessibilityLabel XFinder/Views/Components/BatteryViews.swift` = 3 (trước là 0) ·
-  `git diff --stat` = 1 file, 3 dòng thêm · `build-and-check` thành công.
-
----
-
-### T09 · Nút xoá ô tìm kiếm (sidebar, Ghi chú, Thư viện Clipboard) không có nhãn — TODO
-
-- **Cỡ:** S · 3 file, 6 dòng
-- **Các bước:** ở ba nút dưới đây, ngay sau `.buttonStyle(.plain)` của nút đó, thêm hai dòng
-  `.help(L10n.t("Xoá tìm kiếm"))` và `.accessibilityLabel(L10n.t("Xoá tìm kiếm"))` (khoá đã có trong store):
-  1. `XFinder/Views/Sidebar/SidebarView.swift`: `Button { query = "" } label: { Image(systemName: "xmark.circle.fill")…`
-  2. `XFinder/Views/Detail/NotesDetailView.swift`: `Button { searchText = "" } label: {`
-  3. `XFinder/Views/Detail/ClipboardLibraryView.swift`: `Button { store.query.text = "" } label: {`
-  **Không** đụng nút `xmark.circle.fill` thứ hai trong ClipboardLibraryView (`store.closeInspector()` — nút đóng, không phải
-  xoá tìm kiếm).
-- **Nghiệm thu:** `grep -n -A4 'xmark.circle.fill' <3 file>` — mỗi nút xoá tìm kiếm có đủ hai dòng · `build-and-check`
-  thành công · `audit-l10n-literals.py` không tăng.
-
----
-
-### T10 · Notch: nút Đang phát và menu sắp xếp không có nhãn VoiceOver — TODO
-
-- **Cỡ:** S · 2 file, ~9 dòng
-- **Lưu ý:** như T07 — `Button` thì nhãn trên Button; `Menu` thì nhãn trên `Image` trong `label:`.
-- **Các bước** trong `XFinder/Views/NotchSurfaceView.swift`:
-  1. Hàm `nowPlayingControls(size:)` và hàm `transportRow(enabled:)`: mỗi nút có `.help(L10n.t("Bài trước"))`,
-     `.help(L10n.t("Phát hoặc tạm dừng"))`, `.help(L10n.t("Bài tiếp"))` (3 nút × 2 hàm = 6 chỗ) — nối
-     `.accessibilityLabel(L10n.t("<cùng chuỗi>"))` ngay sau `.help(...)` đó.
-  2. `transportRow`: `label: { Image(systemName: "shuffle").font(.system(size: 12)) }` → nối
-     `.accessibilityLabel(L10n.t("Xáo trộn"))` vào Image; `label: { Image(systemName: "repeat").font(.system(size: 12)) }`
-     → nối `.accessibilityLabel(L10n.t("Lặp lại"))` vào Image. Giữ nguyên `.help(...)` trên Menu.
-  3. `XFinder/Views/NotchClipboardView.swift`, `sortMenu`: nối vào cuối chuỗi modifier của
-     `Image(systemName: "arrow.up.arrow.down")` (sau `.background(Circle().fill(N.capsule))`):
-     `.accessibilityLabel("\(L10n.t("Sắp xếp")) · \(model.sort.titleVI)")`. Giữ nguyên `.help` và `.accessibilityLabel` đang
-     có trên Menu (giống mẫu đã sửa ở `NotchAgentsPage.swift`, chỗ `arrow.triangle.branch`).
-- **Nghiệm thu:** đọc diff: chỉ thêm, không xoá dòng nào; hai nhãn Menu nằm trong khối `label:` · `build-and-check` thành
-  công · `check-l10n-coverage.py` và `audit-l10n-literals.py` không đổi.
-
----
-
-### T11 · Test cho nhánh "Other" của `usagePageName` — TODO
-
-- **Cỡ:** S · 1 file test (`Tests/XFinderLogicTests/DeviceCapabilityTests.swift`), ~10 dòng thêm, không đụng code app
-- **Vì sao:** `DeviceCapabilityProbe.usagePageName(_:)` có 4 kết quả; chưa test nào gọi tới "Other" và mốc `>=` của "Vendor".
-- **Các bước:** thêm một hàm `testUsagePageNameCoversEveryBranch()` vào class test sẵn có, gọi thẳng `usagePageName` (dùng
-  hằng có tên, không viết số trần):
-  `usagePageButton` → "Button" · `usagePageConsumer` → "Consumer" · `usagePageVendorDefined` và `usagePageVendorDefined + 1`
-  → "Vendor" · `usagePageGenericDesktop` và `usagePageVendorDefined - 1` → "Other".
-- **Nghiệm thu:** `swift test` tăng đúng 1 test, 0 lỗi · **chứng minh test đỏ được**: tạm đổi `>=` thành `>` trong
-  `DeviceCapabilityTypes.swift`, chạy lại thấy đỏ, sửa tay về `>=`, rồi
-  `git diff --quiet -- XFinder/Core/MouseGestures/DeviceCapabilityTypes.swift && echo SẠCH` phải in `SẠCH` (không dùng
-  `git checkout`/`git stash`) · `git diff --stat` cuối cùng = chỉ file test.
-
----
-
-### T12 · Test riêng cho `TimeZoneConversion` — TODO
-
-- **Cỡ:** S · 1 file test **mới** `Tests/XFinderLogicTests/TimeZoneConversionTests.swift` (gói test tự nhận file mới, không
-  cần pbxproj; `TimeZoneConversion.swift` đã được symlink), ~110 dòng
-- **Các bước:**
-  1. Đọc hết `XFinder/Core/SmartSelect/TimeZoneConversion.swift` trước (181 dòng): tên hàm, tên trường, tập `ambiguous`.
-  2. Viết test cho từng hàm, mỗi kỳ vọng suy từ code + phép đo, không đoán:
-     - `zone(for:)`: `EST` cố định −5h kèm vùng New York; `PT` đi theo vùng; mọi phần tử của tập `ambiguous` trả nil;
-       `UTC+7`, `GMT-5:30` đúng offset; `UTC+5:07` trả nil (chỉ phút 0/15/30/45 hợp lệ); chữ thường và dấu "−" được chuẩn hoá.
-     - `parseClock(_:)`: `3pm`, `3:30pm`, `9:30 a.m.`, `15:00`, `15h30`, `15h` đúng; `13pm`, `3:99pm`, `25:00`, `hello` → nil.
-     - `convert(_:now:to:)`: một ca offset cố định; ca có ghi chú vùng (EST khi New York đang giờ mùa hè) — **tính offset thật
-       bằng `TimeZone(identifier: "America/New_York")!.secondsFromGMT(for: ngày_chọn)` rồi mới viết kỳ vọng**, kèm một ngày giờ
-       mùa đông để thấy ghi chú biến mất; chuỗi dài quá giới hạn và vùng lạ → nil.
-     - `Result.isSameAsLocal`, `RegionNote.city`, `offsetLabel`, `clockLabel`.
-  3. Một test chạy xanh chưa chứng minh gì: chọn một kỳ vọng, cố ý đổi sai, thấy đỏ, đổi lại.
-- **Nghiệm thu:** `swift test` tăng đúng số test mới, 0 lỗi · `git status --short` chỉ thêm đúng file test mới, không file app
-  nào đổi · ghi trong worklog kỳ vọng nào đã được làm đỏ thử.
-
----
-
-### T13 · `allowedFileTypes` (đã bỏ) trong Ghi chú: nhập/xuất Markdown, văn bản, JSON — TODO
-
-- **Cỡ:** S · 1 file (`XFinder/Views/Detail/NotesDetailView.swift`), ~5 dòng
-- **Đã kiểm trên máy:** `UTType(filenameExtension:)` trả về `net.daringfireball.markdown` cho cả `md` và `markdown`,
-  `public.plain-text` cho `txt`, `public.json` cho `json`.
-- **Các bước:**
-  1. Thêm `import UniformTypeIdentifiers` dưới `import AppKit`.
-  2. `pickImport`: `panel.allowedFileTypes = types` → `panel.allowedContentTypes = types.compactMap { UTType(filenameExtension: $0) }`
-  3. `saveText`: `panel.allowedFileTypes = [(name as NSString).pathExtension]` →
-     `panel.allowedContentTypes = [UTType(filenameExtension: (name as NSString).pathExtension)].compactMap { $0 }`
-  4. `exportJSON` và `importJSON`: `panel.allowedFileTypes = ["json"]` → `panel.allowedContentTypes = [.json]`
-- **Nghiệm thu:** `grep -rn "allowedFileTypes" XFinder --include='*.swift'` ra rỗng (sau khi T04 đã gộp; nếu chưa thì chỉ còn 2
-  dòng của T04) · `build-and-check` thành công · ghi "chưa kiểm live: hộp mở/lưu tệp lọc đúng loại".
-
----
-
-### T18 · Chạy lại hai harness cử chỉ cho commit `63bc3c3` — TODO
-
-- **Cỡ:** S · không sửa file nào (chỉ chạy và ghi worklog)
-- **Vì sao:** commit `63bc3c3` sửa `GestureModel.swift` nhưng hai harness bị dừng giữa chừng để kịp commit trước khi hết quota.
-  Lần dừng đó để lại một mutant trong `GestureLabelStructure.swift` (đã khôi phục bằng `git checkout`).
-- **Các bước** (chạy lần lượt, KHÔNG chạy song song, không sửa file nào trong lúc chạy, không dừng giữa chừng):
-  1. `git status --short`: không được có file `M` nào ngoài file chưa track của chủ dự án.
-  2. `/bin/sh -c 'cd ~/github/XFinder && sh scripts/mutation-check-gesture-labels.sh' > /tmp/mut-labels.log 2>&1`
-  3. `/bin/sh -c 'cd ~/github/XFinder && sh scripts/mutation-check-gesture-ui.sh' > /tmp/mut-ui.log 2>&1`
-  4. `git status --short` lại: phải giống bước 1. Nếu có file `M` (mutant sót) → ghi tên file vào worklog, chạy
-     `git diff <file>` để chép phần khác, rồi DỪNG (không tự `git checkout`).
-- **Nghiệm thu:** labels in 5 dòng "RED as expected", ui in 8 dòng "RED as expected" và "post-restore suite: … 0 failure(s)";
-  ghi hai con số vào `docs/AGENT_WORKLOG.md`.
-
----
-
-### T16 · Tên phím chữ và số trong nhãn phím tắt (đang hiện "⌘Key 18") — TODO
-
-- **Cỡ:** S · 1 file nguồn + 1 file test mới
-- **Vì sao:** `GestureShortcut.label` (`XFinder/Core/MouseGestures/GestureModel.swift`, khoảng dòng 147) chỉ có tên cho vài mã
-  phím, nên "Vừa khung" hiện `⌘Key 18` thay vì `⌘1`, "Chụp màn hình" hiện `⇧⌘Key 20` thay vì `⇧⌘3`.
-- **Các bước:**
-  1. Trong `var label`, thêm vào bảng `names` các mã phím ANSI của macOS (giữ nguyên các mục đang có):
-     `1:"S", 2:"D", 4:"H", 5:"G", 7:"X", 8:"C", 11:"B", 12:"Q", 14:"E", 15:"R", 16:"Y", 31:"O", 32:"U", 34:"I", 37:"L",
-     38:"J", 39:"'", 40:"K", 41:";", 42:"\\", 43:",", 44:"/", 45:"N", 46:"M", 47:".", 18:"1", 19:"2", 20:"3", 21:"4",
-     23:"5", 22:"6", 26:"7", 28:"8", 25:"9", 51:"⌫", 53:"⎋"`
-     (mã 29 đã là "0", 24 "=", 27 "-", 30 "]", 33 "[" — không đổi).
-  2. Tạo `Tests/XFinderLogicTests/GestureShortcutLabelTests.swift` (gói test tự nhận file mới; `GestureModel.swift` đã có
-     symlink): kiểm `GestureShortcut(key: 18, flags: GestureShortcut.command).label == "⌘1"`,
-     `GestureShortcut(key: 20, flags: GestureShortcut.command | GestureShortcut.shift).label == "⇧⌘3"`, và với mọi mã từ 0
-     tới 53 có trong bảng mới thì `label` không chứa chữ "Key ".
-- **Nghiệm thu:** `swift test` tăng đúng số test mới, 0 lỗi · chứng minh test đỏ được: tạm xoá `18:"1"` khỏi bảng, thấy đỏ,
-  thêm lại, `git diff --stat` chỉ còn 2 file · `build-and-check` thành công · `sh scripts/mutation-check-gesture-labels.sh`
-  vẫn 5/5 RED (chạy riêng, không song song).
-
----
-
-### T15 · Nút "Ghi nút" cạnh "Nút cuộn" thật ra ghi NÚT GIỮ — TODO (chỉ khi chưa bắt đầu T14)
-
-- **Cỡ:** S · 1 file (`XFinder/Views/Detail/MouseGesturesDetailView.swift`, hàm `switchesSection`, khoảng dòng 859–866)
-- **Vì sao:** nút đó gọi `triggerRecording()`, mà engine chỉ ghi `configuration.trigger` (`GestureEngine.swift:527`); không có
-  đường nào đổi `scrollButton`. Control làm khác điều nhãn của nó hứa.
-- **Lưu ý:** nếu T14 đã bắt đầu thì BỎ việc này (T14 làm lại cả khối). File này đang bị khoá ở mục 5 — T15 là ngoại lệ
-  duy nhất được phép sửa nó, và chỉ đúng khối dưới đây.
-- **Các bước:** thay `Button(L10n.t("Ghi nút")) { triggerRecording() }.buttonStyle(.link)…` (khối "Nút cuộn") bằng một
-  `Picker` kiểu `.menu` (rộng tối đa 140) liệt kê các nút trong `drawnButtons` mà `buttonRole($0)` không phải nút giữ và
-  `roleContext.declaredEventButtons` có chứa; nhãn mỗi mục `L10n.t(ButtonKey.index(n))`; chọn thì
-  `controller.update { $0.scrollButton = n }` (n là chỉ số 0-based như `scrollButton` đang lưu — đọc `GestureModel.swift`
-  `validate()` để chắc). Bỏ `Text` hiển thị số nút đứng trước nút cũ (Picker đã hiện giá trị). Không thêm chuỗi mới.
-- **Nghiệm thu:** `build-and-check` thành công · `swift test` 0 lỗi · 6 cổng L10n `TOTAL 0` · đọc diff: không còn
-  `triggerRecording()` nào trong khối "Nút cuộn" · ghi "chưa kiểm live: chọn nút cuộn trên trang".
-
----
-
-### T19 · Mở wireframe Chuột & cử chỉ cho bạn chọn (cổng 2) — TODO
-
-- **Cỡ:** S · không sửa repo
-- **Các bước:**
-  1. `/bin/ls ~/github/XFinder-design/mouse-gestures-2026-10-15/` phải có `shell.html`, `variant-a.html` … `variant-d.html`,
-     `build.py`. Nếu thư mục scratchpad cũ
-     `/private/tmp/claude-502/-Users-wolong-github-XFinder/ec69d774-f3f3-4e1f-91f8-7b0e4b40a2f7/scratchpad/mg/wf/` còn và có
-     `variant-*.html` MỚI hơn bản sao, chép đè các `variant-*.html` mới sang thư mục bền.
-  2. `/bin/sh -c 'cd ~/github/XFinder-design/mouse-gestures-2026-10-15 && python3 build.py a b c d'` → `wireframe-a-b-c-d.html`.
-  3. Chạy server nền: `/bin/sh -c 'nohup python3 -m http.server 8766 -d ~/github/XFinder-design/mouse-gestures-2026-10-15 >/dev/null 2>&1 &'`
-     (cổng 8766 bận thì dừng tiến trình cũ đang giữ nó: `lsof -ti :8766`).
-  4. Đưa bạn các link: `http://127.0.0.1:8766/wireframe-a-b-c-d.html?v=a` (đổi `v=b`, `v=c`, `v=d`; thanh trên cùng đổi
-     trạng thái, cửa sổ 1181×611 / 1440×900, sáng/tối). Nếu thanh trên cùng không có nút D thì gõ `v=d` vào link.
-- **Nghiệm thu:** `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8766/wireframe-a-b-c-d.html` in `200`. Ghi vào
-  worklog phương án bạn chọn và mọi góp ý của bạn — đó là đầu vào của T14.
-
----
-
-### T14 · Dựng trang Chuột & cử chỉ theo phương án bạn chọn — CHỜ BẠN CHỌN PHƯƠNG ÁN (cổng 2)
-
+- **Làm theo `docs/specs/T14-mouse-gestures-B.md`, từng bước T14a, T14b… một phiên một bước.** Phần dưới là tóm tắt cũ;
+  chỗ nào khác đặc tả thì đặc tả thắng.
 - **Cỡ:** L · nhiều file trong `XFinder/Views/Detail/MouseGesturesDetailView.swift` và `XFinder/Views/Components/*Gesture*`,
   `MouseDiagramView.swift`; có thể thêm file view mới (4 dòng pbxproj mỗi file).
 - **Đầu vào (đọc hết trước khi sửa dòng nào):** `~/github/XFinder-design/mouse-gestures-2026-10-15/CONTRACT.md` (brief đã

@@ -3,7 +3,7 @@
 Một chỗ duy nhất cho mọi thứ còn phân vân. Mỗi mục có **mã** (ví dụ `Q-F4-2`, `T-B6`) để bạn nói lại cho nhanh
 ("Q-F4-2 chọn b", "T-B6 hỏng: …"). Khi một mục xong, xoá nó khỏi file này trong cùng commit.
 
-Cập nhật: 2026-10-13.
+Cập nhật: 2026-10-15.
 
 ---
 
@@ -110,6 +110,13 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 | Q-MG-3 | Tuỳ biến cuộn chuột (đổi hướng cuộn, làm mượt, tốc độ, chế độ gia tốc/đều)? Là một tính năng mới, cần tap cuộn riêng | Chưa làm |
 | ~~Q-MG-4~~ | **Bạn chốt 2026-10-15: preset Dev & AI kéo lên = Mission Control** (đọc từ phím tắt máy bạn đã gán, như bảng Mặc định toàn cục). Kéo xuống vẫn Chưa gán; trái/phải ⌘[ / ⌘] | Đã làm |
 
+### Q-PROC · Cách agent khác làm việc khi Claude hết quota (2026-10-15)
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-PROC-1 | Cho DeepSeek **commit trên nhánh riêng** `agent/<công-cụ>-<mã việc>` (mỗi việc một commit, **không push, không đụng `main`**)? Lần này bạn dặn không commit, nên 17 việc + một tính năng nằm lẫn trong 29 file chưa commit, Claude phải tự tách ra 7 commit — tốn token nhất của cả lượt review | **Chưa cho** cho tới khi bạn trả lời. Trong lúc chờ: agent ghi **danh sách file của từng việc** vào worklog để Claude tách được |
+| Q-PROC-2 | Cho chạy **nhiều việc cỡ S trong một phiên** (như lần này)? | **Cho**, với điều kiện mỗi việc một dòng worklog có danh sách file + kết quả `gate-all.sh`. Việc cỡ M/L vẫn một việc một phiên |
+
 ## Phần 2 — Cần test tay (T)
 
 Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
@@ -117,6 +124,11 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 ### Notch
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
+| T-HUD-1 | Hoạt động trực tiếp ▸ bật "Chỉ dùng notch cho độ sáng và âm lượng" (cần quyền Trợ năng), bấm phím âm lượng và độ sáng | Chỉ notch hiện mức (âm lượng, độ sáng); **hộp vuông của macOS không hiện**; mức thật sự đổi từng nấc 1/16 |
+| T-HUD-2 | Giữ ⌥⇧ rồi bấm phím âm lượng | macOS tự xử lý (bước nhỏ ¼ nấc, hộp vuông của macOS hiện) — XFinder cố ý không nhận |
+| T-HUD-3 | Đang ở mức 100 % (hoặc 0 %), bấm tiếp phím tăng (giảm) | Notch vẫn hiện thanh đầy (rỗng), phím không "chết" |
+| T-HUD-4 | Chuyển loa ra HDMI / thiết bị không chỉnh được âm lượng, bấm phím âm lượng | macOS hiện hộp "không khả dụng" của nó; XFinder không nuốt phím |
+| T-HUD-5 | Tắt "Chỉ dùng notch…" | Hộp vuông của macOS trở lại như cũ; công tắc "Độ sáng" mờ đi (độ sáng chỉ hiện trên notch khi XFinder nhận phím) |
 | T-B1 | Kéo một tệp từ Finder lên notch (cần bật Q-NOTCH-SW) | Hub mở, thả vào thì tệp nằm trong khay |
 | T-B1b | Kéo thanh tiêu đề một cửa sổ đi ngang qua notch | Notch **không** mở |
 | T-B1c | Kéo tệp rồi lắc chuột | Khay mở ngay dưới con trỏ |

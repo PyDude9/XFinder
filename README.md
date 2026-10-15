@@ -210,7 +210,7 @@ Bốn mức, tách rời — không gộp:
 | Mức | Trạng thái |
 |---|---|
 | Build (`arm64`, đủ file trong compile log) | ✅ |
-| Test logic (399 test) | ✅ |
+| Test logic (~1200 test, `swift test --package-path Tests`) | ✅ |
 | Event Tap mở được trên app đã cài (`active=1 trusted=1`) | ✅ |
 | **Chuột thật: giữ nút hông + kéo có mở Mission Control / đổi Space** | ⏳ **cần mắt người xác nhận** |
 
