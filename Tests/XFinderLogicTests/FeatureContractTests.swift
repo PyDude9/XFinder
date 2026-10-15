@@ -39,6 +39,7 @@ final class FeatureContractTests: XCTestCase {
         .cleanURLs: .pure(["Core/URLCleaner.swift"]),
         .alerts: .pure(["Core/AlertRules.swift"]),
         .menuBarReadouts: .pure(["Core/MenuBarReadouts.swift"]),
+        .systemHUD: .pure(["Core/Notch/LiveActivity.swift"]),   // LiveActivity.HUDSuppression decides every key
         .voice: .pure(["Core/Voice/VoiceRefiner.swift", "Core/Voice/VoiceTrigger.swift",
                        "Core/Voice/DictationMode.swift", "Core/Voice/VoiceSettingsKeys.swift"]),
         .dockPreview: .pure(["Core/WindowPreview/WindowPreviewStore.swift", "Core/WindowPreview/PreviewItem.swift"]),

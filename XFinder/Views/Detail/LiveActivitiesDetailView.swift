@@ -14,7 +14,7 @@ struct LiveActivitiesDetailView: View {
     @AppStorage("notch.activity.alerts") private var actAlerts = true
     @AppStorage("notch.activity.volume") private var actVolume = true
     @AppStorage("notch.activity.brightness") private var actBrightness = true
-    @AppStorage("notch.activity.hideSystemHUD") private var hideSystemHUD = false
+    @AppStorage("notch.activity.hideSystemHUD") private var hideSystemHUD = true
     /// Accessibility decides whether XFinder can take the brightness/volume keys over at all.
     @State private var trusted = WindowManager.isTrusted
 

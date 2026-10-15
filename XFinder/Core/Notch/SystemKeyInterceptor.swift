@@ -38,7 +38,7 @@ final class SystemKeyInterceptor {
     /// The single canonical reader for this key (`FeatureKeyDefaultsTests` wants exactly one). It must stay
     /// `nonisolated` so the tap thread can read it without hopping to the main actor.
     nonisolated static var hideSystemHUDEnabled: Bool {
-        UserDefaults.standard.object(forKey: "notch.activity.hideSystemHUD") as? Bool ?? false
+        UserDefaults.standard.object(forKey: "notch.activity.hideSystemHUD") as? Bool ?? true
     }
 
     /// Called at launch, on `didBecomeActive` (Accessibility granted later) and from the page's switch.

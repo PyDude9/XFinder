@@ -27,6 +27,9 @@ ENTRIES: dict[str, tuple[str, str]] = {
         ("With this off, macOS keeps drawing its own square as before. Keys pressed with ⌥, ⇧, ⌃ or ⌘, and outputs whose volume cannot be set, are still left to macOS.", S),
     "Cần quyền Trợ năng để XFinder nhận được phím độ sáng và âm lượng.":
         ("Accessibility is required for XFinder to receive the brightness and volume keys.", S),
+    # 2026-10-15: the takeover is on by default and part of the "Hằng ngày" onboarding preset
+    "Thêm khay ⌘⇧V, xem trước Dock, vùng bắt dính, và độ sáng/âm lượng chỉ hiện trên notch.":
+        ("Adds the ⌘⇧V shelf, the Dock preview, snap zones, and brightness/volume shown only on the notch.", S),
 }
 
 def main() -> int:

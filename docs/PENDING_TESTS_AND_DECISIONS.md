@@ -124,7 +124,7 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 ### Notch
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
-| T-HUD-1 | Hoạt động trực tiếp ▸ bật "Chỉ dùng notch cho độ sáng và âm lượng" (cần quyền Trợ năng), bấm phím âm lượng và độ sáng | Chỉ notch hiện mức (âm lượng, độ sáng); **hộp vuông của macOS không hiện**; mức thật sự đổi từng nấc 1/16 |
+| T-HUD-1 | Bấm phím âm lượng và độ sáng **thật** trên bàn phím (chế độ "Chỉ dùng notch cho độ sáng và âm lượng" giờ **mặc định bật**, cần quyền Trợ năng) | Chỉ notch hiện mức (âm lượng, độ sáng); **hộp vuông của macOS không hiện**; mức đổi từng nấc 1/16. Claude đã đo bằng phím giả lập gửi ở tầng HID trên app đã cài (2026-10-15): 0 cửa sổ hộp `MenuBarAgent`, notch đọc "Brightness 94%" — phím thật đi cùng đường đó nhưng chưa ai bấm |
 | T-HUD-2 | Giữ ⌥⇧ rồi bấm phím âm lượng | macOS tự xử lý (bước nhỏ ¼ nấc, hộp vuông của macOS hiện) — XFinder cố ý không nhận |
 | T-HUD-3 | Đang ở mức 100 % (hoặc 0 %), bấm tiếp phím tăng (giảm) | Notch vẫn hiện thanh đầy (rỗng), phím không "chết" |
 | T-HUD-4 | Chuyển loa ra HDMI / thiết bị không chỉnh được âm lượng, bấm phím âm lượng | macOS hiện hộp "không khả dụng" của nó; XFinder không nuốt phím |

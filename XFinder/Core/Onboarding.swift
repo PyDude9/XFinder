@@ -26,13 +26,13 @@ enum Onboarding {
     static var presets: [Preset] {
         // Minimal = nothing running AND nothing to grant (F4: capture is idle at rest but needs Screen Recording).
         let quiet = Set(FeatureCatalog.all.filter { !$0.idle.isBackgroundActive && $0.permissions.isEmpty }.map(\.id))
-        let everyday = quiet.union([.clipboardShelf, .dockPreview, .snapZones, .capture])
+        let everyday = quiet.union([.clipboardShelf, .dockPreview, .snapZones, .capture, .systemHUD])
         return [
             Preset(id: "minimal", titleKey: "Tối giản",
                    descriptionKey: "Chỉ những gì không chạy nền: gợi ý clipboard, làm sạch liên kết, bảng lệnh ⌘K.",
                    symbol: "leaf", features: quiet),
             Preset(id: "everyday", titleKey: "Hằng ngày",
-                   descriptionKey: "Thêm khay ⌘⇧V, xem trước Dock và vùng bắt dính.",
+                   descriptionKey: "Thêm khay ⌘⇧V, xem trước Dock, vùng bắt dính, và độ sáng/âm lượng chỉ hiện trên notch.",
                    symbol: "sun.max", features: everyday),
             Preset(id: "everything", titleKey: "Tất cả",
                    descriptionKey: "Bật mọi tính năng, kể cả giọng nói và giữ ⌘Q.",

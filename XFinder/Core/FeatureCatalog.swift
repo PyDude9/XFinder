@@ -102,6 +102,7 @@ enum FeatureID: String, CaseIterable {
     case capture
     case alerts
     case menuBarReadouts
+    case systemHUD
 }
 
 struct FeatureDef: Equatable {
@@ -210,6 +211,13 @@ enum FeatureCatalog {
                    subtitleKey: "Thông báo khi CPU, bộ nhớ, ổ đĩa, nhiệt độ hay pin có vấn đề kéo dài.",
                    symbol: "bell.badge", group: .tools, enabledKey: "alerts.enabled",
                    defaultOn: false, permissions: [], idle: .timerWhileActive),
+
+        // An event tap on the brightness/volume keys (NX system-defined, keytypes 0/1/2/3/7). On by default since
+        // 2026-10-15 at the owner's request: the notch is the only readout, macOS draws no square of its own.
+        FeatureDef(id: .systemHUD, titleKey: "Chỉ dùng notch cho độ sáng và âm lượng",
+                   subtitleKey: "XFinder tự nhận phím độ sáng và âm lượng rồi đặt giá trị, nên macOS không hiện hộp vuông riêng nữa.",
+                   symbol: "speaker.wave.2.fill", group: .tools, enabledKey: "notch.activity.hideSystemHUD",
+                   defaultOn: true, permissions: [.accessibility], idle: .listensToKeyboard),
 
         FeatureDef(id: .menuBarReadouts, titleKey: "Số liệu trên thanh menu",
                    subtitleKey: "CPU, bộ nhớ, nhiệt độ… hiện cạnh biểu tượng XFinder; chọn số liệu ở trang Tổng quan.",

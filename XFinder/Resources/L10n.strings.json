@@ -11154,6 +11154,10 @@
     "Bật/tắt cử chỉ": {
       "en": "Turn gestures on or off",
       "scope": "sentence"
+    },
+    "Thêm khay ⌘⇧V, xem trước Dock, vùng bắt dính, và độ sáng/âm lượng chỉ hiện trên notch.": {
+      "en": "Adds the ⌘⇧V shelf, the Dock preview, snap zones, and brightness/volume shown only on the notch.",
+      "scope": "sentence"
     }
   }
 }

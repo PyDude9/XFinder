@@ -108,6 +108,7 @@ final class FeatureHub {
         case .capture:         CaptureController.shared.applySettings()                 // F4
         case .alerts:          AlertMonitor.shared.applySettings()
         case .menuBarReadouts: MenuBarReadoutsController.shared.applySettings()
+        case .systemHUD:       SystemKeyInterceptor.shared.applySettings()   // the brightness/volume key takeover
         // Read at the point of use by the clipboard engine; nothing to re-arm.
         case .cleanURLs, .suggestions: break
         case .linkPreviews:    LinkPreviewFetcher.shared.applySettings()   // D4b: backfill / cancel
