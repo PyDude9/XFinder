@@ -167,7 +167,7 @@ struct PreviewOverlayContentView: View {
                             .padding(.vertical, 12)
                             .frame(minHeight: containerHeight)
                         }
-                        .onChange(of: store.selectedIndex) { newIndex in
+                        .onChange(of: store.selectedIndex) { _, newIndex in
                             withAnimation(LiquidGlassTokens.spring) {
                                 proxy.scrollTo(newIndex, anchor: .center)
                             }

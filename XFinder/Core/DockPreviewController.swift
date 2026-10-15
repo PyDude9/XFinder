@@ -491,12 +491,12 @@ struct DockPreviewView: View {
             }
             store.loadDockPreviews(for: pid)
         }
-        .onChange(of: pid) { newPID in
+        .onChange(of: pid) { _, newPID in
             withTransaction(Transaction(animation: nil)) {
                 store.loadDockPreviews(for: newPID)
             }
         }
-        .onChange(of: store.activeBrowserTabs) { _ in
+        .onChange(of: store.activeBrowserTabs) { _, _ in
             if isBrowser {
                 let visible = activeTabsForDockPreview(store.activeBrowserTabs)
                 let count = visible.isEmpty ? 1 : visible.count

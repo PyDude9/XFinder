@@ -96,7 +96,7 @@ struct SystemDetailView: View {
                         .labelsHidden()
                         .pickerStyle(.segmented)
                         .frame(width: 140)
-                        .onChange(of: updateInterval) { _ in
+                        .onChange(of: updateInterval) { _, _ in
                             SystemMonitorManager.shared.applyUpdateInterval()
                         }
                     }

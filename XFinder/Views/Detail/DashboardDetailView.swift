@@ -141,7 +141,7 @@ struct DashboardDetailView: View {
             SettingsDivider()
 
             ToggleRow(title: L10n.t("Khởi động XFinder khi đăng nhập"), isOn: $launchAtLogin)
-                .onChange(of: launchAtLogin) { LoginItemController.apply($0) }
+                .onChange(of: launchAtLogin) { _, newValue in LoginItemController.apply(newValue) }
                 .settingsRow()
 
             SettingsDivider()
@@ -149,7 +149,7 @@ struct DashboardDetailView: View {
             ToggleRow(title: L10n.t("Hiện biểu tượng trong Dock"),
                       subtitle: L10n.t("Tắt để dùng XFinder thuần menubar."),
                       isOn: $showDockIcon)
-                .onChange(of: showDockIcon) { DockController.apply($0) }
+                .onChange(of: showDockIcon) { _, newValue in DockController.apply(newValue) }
                 .settingsRow()
         }
     }
