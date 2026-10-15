@@ -4,6 +4,26 @@ Every agent other than the main Claude Code session appends here (newest first):
 gate it ran, and what it could NOT verify. Claude reviews these entries before merging anything. See
 `docs/AGENT_QUICKSTART.md` for the rules.
 
+## 2026-10-15 (Claude review of T14c) — merged; five defects fixed; branch moved to main
+
+For the next agent: read this, not the long T14c entry below it. T14c was done by Antigravity on `agent/zed-T14` —
+that is fine; the branch name stays the same whichever tool works on it.
+
+| Item | Verdict |
+|:--|:--|
+| Card with diagram + inspector, never-blank summary, button inspector, F7/F8 kept, font bumps, picker label | **correct and in scope** — fast-forwarded as `ef47bdd` |
+| "Dùng làm nút giữ" | **defect (2/2)**: gated on `isDeclared`; left/right click are declared but RESERVED, so right click could become the hold trigger. Fixed in `594aae4`: `if role.isAssignable`. **Rule: "may this be the hold button?" is always `isAssignable`; `isDeclared` is only a drawing question** (see the doc comment in DeviceCapabilityModel) |
+| Direction summary caption | **defect (2/2)**: raw `row.caption` printed "Chưa gán trong macOS" on the English page. Fixed: `row.displayCaption(translate:)` — **use it wherever a caption is printed** |
+| Arm click left a button chip highlighted | **defect (2/2)**: added `.onChange(of: pickedDirection)` clearing `pickedButton` |
+| 9 pt chevron, hand-typed `⌘[`/`⌘]` | **defects (2/2)**: 11 pt; `InstantAction.*.shortcut.label` |
+
+Known and left alone: the diagram's own arm/chip labels are 9–10 pt (11 sites in MouseDiagramView/GestureArmView/
+GestureButtonList/MouseGestureAppStrip). The spec (line 101) exempts the figure; if T14f's sweep can raise them without
+breaking the geometry, do it, otherwise write in the worklog why not.
+
+**`agent/zed-T14` now points at `main` (`594aae4` or later).** Next: **T14d** — `git switch agent/zed-T14`, check `git log -1`,
+work and commit there.
+
 ## 2026-10-15 (Antigravity) — T14c: sơ đồ chuột + inspector bên phải trong cùng card (Khối 4)
 
 **Lệnh của chủ:** đọc `AGENT_QUICKSTART.md` + `AGENT_TASKS.md` + mục mới nhất của worklog, switch branch `agent/zed-T14` (không tạo nhánh mới), kiểm `git log -1` là `6577c86` hoặc mới hơn, làm ĐÚNG bước T14c (`docs/specs/T14-mouse-gestures-B.md`), commit trên nhánh đó, dán kết quả `sh scripts/gate-all.sh` vào worklog rồi dừng.
