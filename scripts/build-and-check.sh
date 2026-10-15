@@ -4,8 +4,10 @@
 # were actually compiled. "BUILD SUCCEEDED" alone is not evidence: a source file
 # missing a PBXFileReference is silently excluded and the build still succeeds.
 set -e
-ROOT=/Users/wolong/github/XFinder
-OUT=/tmp/xfinder-clean-build
+# XF_ROOT / XF_OUT let a second checkout (a git worktree) build without touching the main checkout or its output
+# — two sessions sharing /tmp/xfinder-clean-build overwrite each other's build mid-flight.
+ROOT=${XF_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}   # the checkout this script lives in
+OUT=${XF_OUT:-/tmp/xfinder-clean-build}
 
 rm -rf "$OUT"
 mkdir -p "$OUT"

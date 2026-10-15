@@ -8,7 +8,8 @@
 set -e
 cd "$(dirname "$0")/.."
 
-SRC=/tmp/xfinder-clean-build/out/XFinder.app
+# XF_SRC: install a build made with XF_OUT (see build-and-check.sh) instead of the default output.
+SRC=${XF_SRC:-/tmp/xfinder-clean-build/out/XFinder.app}
 STAGE=/tmp/xf-final/XFinder.app
 
 rm -rf /tmp/xf-final && mkdir -p /tmp/xf-final
