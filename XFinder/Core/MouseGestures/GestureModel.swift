@@ -145,9 +145,17 @@ struct GestureShortcut: Codable, Equatable, Sendable {
             .filter { flags & $0.0 != 0 }.map(\.1).joined()
     }
     var label: String {
-        let names: [UInt16: String] = [0:"A", 3:"F", 9:"V", 13:"W", 17:"T", 24:"=", 27:"-",
-            29:"0", 30:"]", 33:"[", 35:"P", 6:"Z", 48:"⇥", 50:"`", 116:"Page Up", 121:"Page Down",
-            123:"←", 124:"→", 125:"↓", 126:"↑", 36:"↩", 49:"Space"]
+        // ANSI key codes for the keys a gesture shortcut can carry. A missing name falls back to
+        // "Key <code>" — which is what shipped for every letter and digit except the handful below,
+        // so "Vừa khung" read `⌘Key 18` instead of `⌘1` (T16).
+        let names: [UInt16: String] = [
+            0:"A", 1:"S", 2:"D", 3:"F", 4:"H", 5:"G", 6:"Z", 7:"X", 8:"C", 9:"V",
+            11:"B", 12:"Q", 13:"W", 14:"E", 15:"R", 16:"Y", 17:"T",
+            18:"1", 19:"2", 20:"3", 21:"4", 22:"6", 23:"5", 24:"=", 25:"9", 26:"7", 27:"-", 28:"8", 29:"0",
+            30:"]", 31:"O", 32:"U", 33:"[", 34:"I", 35:"P",
+            36:"↩", 37:"L", 38:"J", 39:"'", 40:"K", 41:";", 42:"\\", 43:",", 44:"/", 45:"N", 46:"M", 47:".",
+            48:"⇥", 49:"Space", 50:"`", 51:"⌫", 53:"⎋",
+            116:"Page Up", 121:"Page Down", 123:"←", 124:"→", 125:"↓", 126:"↑"]
         return modifierLabel + (names[key] ?? "Key \(key)")
     }
 }
