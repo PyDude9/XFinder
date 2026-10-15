@@ -823,6 +823,23 @@ struct MouseGesturesDetailView: View {
 
     // MARK: - Switches
 
+    /// The buttons the scroll-button menu offers: the drawn buttons the mouse declares, minus the hold
+    /// trigger (`validate()` refuses the two being one button). With no device measured yet nothing is
+    /// "declared", so the declaration filter is skipped rather than leaving an empty menu — and the stored
+    /// value is always listed, or a menu Picker whose selection has no tag renders blank.
+    private var scrollButtonChoices: [Int] {
+        let declared = roleContext.declaredEventButtons
+        var choices = drawnButtons.filter { button in
+            if let declared, !declared.contains(button) { return false }
+            switch buttonRole(button) {
+            case .holdTrigger, .holdTriggerWithAction: return false
+            default: return true
+            }
+        }
+        if !choices.contains(config.scrollButton) { choices.append(config.scrollButton) }
+        return choices.sorted()
+    }
+
     private var switchesSection: some View {
         SettingsSection(title: L10n.t("Nút giữ và cuộn"),
                         footer: L10n.t("Nút giữ bắt đầu mọi cử chỉ. Nút cuộn là tuỳ chọn riêng, mặc định tắt.")) {
@@ -859,10 +876,23 @@ struct MouseGesturesDetailView: View {
                 HStack(spacing: 8) {
                     Text(L10n.t("Nút cuộn"))
                         .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                    Text(L10n.t(ButtonKey.index(config.scrollButton)))
-                        .font(XFinderTokens.Font.caption.weight(.medium))
-                    Button(L10n.t("Ghi nút")) { triggerRecording() }
-                        .buttonStyle(.link).font(XFinderTokens.Font.caption)
+                    // A Picker, not the old "Ghi nút" button. That button called
+                    // `triggerRecording()`, and the engine only ever records the hold trigger
+                    // (`GestureEngine` writes `configuration.trigger`); there is no path that
+                    // sets `scrollButton`. The control did something other than what its label
+                    // promised, so it is replaced by the control the label described.
+                    Picker(selection: Binding(
+                        get: { config.scrollButton },
+                        set: { button in controller.update { $0.scrollButton = button } })) {
+                        ForEach(scrollButtonChoices, id: \.self) { button in
+                            Text(L10n.t(ButtonKey.index(button))).tag(button)
+                        }
+                    } label: {
+                        Text(L10n.t("Nút cuộn"))
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                    .frame(maxWidth: 140)
                     Spacer(minLength: 0)
                 }
             }
