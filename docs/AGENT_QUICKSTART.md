@@ -3,7 +3,7 @@
 Read this first. **If the owner sent you here to do a task, the task list, the "small task" rubric, the forbidden files
 and the exact procedure are in `docs/AGENT_TASKS.md` — follow that file.** This one is short on purpose; the full
 history lives in `CLAUDE.md` (local, git-ignored, ~460 KB — grep it by section title, never load it whole) and in
-`AGENTS.md` (a tracked snapshot from 2026-10-13, older than this file).
+`docs/PROJECT_NOTES_2026-10-13.md` (a tracked snapshot, older than this file; grep it, do not load it whole).
 
 ## What it is
 

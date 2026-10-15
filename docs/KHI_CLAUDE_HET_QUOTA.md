@@ -34,12 +34,13 @@ Nếu việc không gấp, cách rẻ nhất là chờ. Nếu cần làm tiếp 
 | Công cụ | Hợp khi | Đọc quy tắc dự án từ | Lưu ý |
 |:--|:--|:--|:--|
 | **OpenCode + API DeepSeek** (nên dùng nhất) | làm tiếp như Claude Code: agent trong terminal, sửa file, chạy lệnh | `AGENTS.md` (chỉ đọc CLAUDE.md khi không có AGENTS.md) | XFinder thấy phiên OpenCode trên notch và chuyển phiên sang được. Đăng nhập: `opencode auth login` → DeepSeek → dán key; trong OpenCode gõ `/models` để chọn model. Tốn tiền theo token của key DeepSeek; model miễn phí của OpenCode thì chậm như bạn thấy |
-| **Zed + DeepSeek** | xem/sửa trong editor, việc nhỏ | **file đầu tiên tìm thấy** trong: `.rules`, `.cursorrules`, …, `AGENTS.md`, `CLAUDE.md`, … — repo này ⇒ `AGENTS.md` | Tài liệu Zed hiện có DeepSeek V4 (ngữ cảnh 1 triệu token). AGENTS.md dài 148 KB, mỗi yêu cầu tốn ~40K token |
+| **Zed + DeepSeek** | xem/sửa trong editor, việc nhỏ | **file đầu tiên tìm thấy** trong: `.rules`, `.cursorrules`, …, `AGENTS.md`, `CLAUDE.md`, … — repo này ⇒ `AGENTS.md` | Tài liệu Zed hiện có DeepSeek V4 (ngữ cảnh 1 triệu token). AGENTS.md giờ chỉ còn ~1,5 KB (bản ghi dài chuyển sang `docs/PROJECT_NOTES_2026-10-13.md`) |
 | **Antigravity (Gemini)** | đọc nhiều file một lúc | `AGENTS.md` + `GEMINI.md` + `.agents/rules`, **không đọc CLAUDE.md** | Hạn mức miễn phí theo tuần, Google không công bố con số và đã siết nhiều lần |
 | **Cursor** | nếu cần | `AGENTS.md` | Chưa cài trên máy này; gói miễn phí ít lượt |
 
-`AGENTS.md` là bản chép quy tắc ngày 13/10, cũ hơn CLAUDE.md. Đầu file giờ có dòng chỉ tới
-`docs/AGENT_QUICKSTART.md`, bản quy tắc gọn và mới, viết cho mọi agent.
+`AGENTS.md` giờ là một trang ngắn (~1,5 KB) chỉ tới `docs/AGENT_QUICKSTART.md` (quy tắc gọn, mới) và `docs/AGENT_TASKS.md`
+(bảng việc). Bản ghi dài 148 KB ngày 13/10 chuyển sang `docs/PROJECT_NOTES_2026-10-13.md`: các công cụ nạp AGENTS.md vào
+mọi phiên, nên để nó dài là trả token cho cùng một đống chữ ở mọi yêu cầu.
 
 ### Bài học từ lượt Antigravity tối nay (14/10)
 
@@ -59,16 +60,17 @@ Claude đã sửa lại các chỗ sai này. Quy tắc ở mục 4 và trong `AG
 
 **Giao việc từ bảng `docs/AGENT_TASKS.md`**, đừng tự nghĩ việc cho agent. Bảng có:
 
-- cách nhận ra việc nhỏ (mục 1 — một câu: *phải mở app, cấp quyền hay nhìn màn hình mới biết đúng chưa thì không phải việc nhỏ*);
-- vùng agent không được sửa (mục 2);
-- quy trình 8 bước và các điều kiện phải dừng (mục 3);
-- hàng đợi việc nhỏ đã được kiểm trên code thật, mỗi việc có bước làm và lệnh nghiệm thu (mục 6).
+- cách chia việc: Claude viết đặc tả và review, agent khác làm; không giới hạn cỡ việc, cỡ việc quyết định quy trình (mục 1);
+- vùng cấm và vùng cần cổng thêm (mục 2);
+- quy trình 8 bước, điều kiện phải dừng, review chéo giữa hai công cụ, cách làm việc chưa có trong bảng (mục 3);
+- hàng đợi việc đã kiểm trên code thật, mỗi việc có bước làm và lệnh nghiệm thu (mục 6).
 
 1. Mở agent ngay trong thư mục repo (`cd ~/github/XFinder && opencode`, hoặc mở thư mục trong Zed / Antigravity).
 2. Dán câu ở **mục 0** của `docs/AGENT_TASKS.md`. Agent lấy việc TODO đầu tiên, làm trên nhánh riêng `agent/<công-cụ>-<mã>`,
    chạy nghiệm thu, ghi worklog, rồi dừng — không push, không gộp vào `main`.
-3. Muốn làm việc kế: dán lại câu đó (một lần một việc).
-4. **Việc ngoài bảng** (việc bạn nghĩ ra lúc đó): chỉ giao nếu nó qua đủ 6 câu ở mục 1, và vẫn dùng câu mở đầu dưới đây:
+3. Muốn làm việc kế: mở phiên MỚI rồi dán lại câu đó (một phiên một việc).
+4. **Việc ngoài bảng** (việc bạn nghĩ ra lúc đó): theo mục 3c của bảng (một agent viết đặc tả, một công cụ khác đọc lại,
+   bạn đồng ý rồi mới làm). Việc rất nhỏ thì dùng thẳng câu mở đầu dưới đây:
 
    ```
    Đọc docs/AGENT_QUICKSTART.md và mục 1–3 của docs/AGENT_TASKS.md trước khi làm gì. Làm trên nhánh mới
