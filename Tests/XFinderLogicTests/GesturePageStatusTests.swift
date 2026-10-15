@@ -51,3 +51,27 @@ final class GesturePageStatusTests: XCTestCase {
         }
     }
 }
+
+/// The "app in front" dot on the Mouse & Gestures app strip (T14b review).
+final class GestureAppChooserTests: XCTestCase {
+    private let ids = ["*", "com.apple.Safari", "com.microsoft.VSCode", "my.custom.app"]
+    private func dot(_ front: String, selected: String = "com.apple.Safari") -> String? {
+        GestureAppChooser.dottedChip(front: front, chipIDs: ids, selected: selected, fallback: "*")
+    }
+
+    /// The defect: an app without a chip of its own is governed by Global, and T14b dotted nothing.
+    func testAnAppWithoutItsOwnChipDotsGlobal() {
+        XCTAssertEqual(dot("com.tinyspeck.slackmacgap"), "*")
+    }
+
+    func testAnAppWithItsOwnChipDotsThatChip() {
+        XCTAssertEqual(dot("com.microsoft.VSCode"), "com.microsoft.VSCode")
+        XCTAssertEqual(dot("my.custom.app"), "my.custom.app", "a custom bundle id is a chip too")
+    }
+
+    func testNoDotWhenNothingIsInFrontOrTheChipIsAlreadySelected() {
+        XCTAssertNil(dot(""), "nothing in front: we cannot name an app")
+        XCTAssertNil(dot("com.apple.Safari"), "the selection frame already marks it")
+        XCTAssertNil(dot("com.tinyspeck.slackmacgap", selected: "*"), "Global selected and governing")
+    }
+}

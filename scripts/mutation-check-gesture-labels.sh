@@ -23,6 +23,8 @@
 #       button while a keyboard shortcut was being recorded)
 #   M7  "off" outranking a recording in progress
 #   M8  the shortcut-recording sentence sending the user to the mouse
+#   M9  the app strip dotting nothing for an app without its own chip (T14b review)
+#   M10 the dot drawn on the chip that is already selected
 #
 # ── RE-ANCHORED 2026-09-22 ──────────────────────────────────────────────────
 # M1, M2 and M5 had "anchor moved" (HARNESS ERROR) after the model stopped
@@ -153,6 +155,15 @@ mutate "M7 off outranks a recording" "$LABEL_SRC" \
 mutate "M8 shortcut sentence asks for the mouse" "$LABEL_SRC" \
   '        case .recordingShortcut: return "Đang ghi phím tắt — bấm tổ hợp phím trên bàn phím (Esc để hủy)."' \
   '        case .recordingShortcut: return "Đang ghi — bấm nút trên chuột (Esc để hủy)."'
+
+# M9–M10: the app strip's "app in front" dot (GestureAppChooser, T14b review).
+mutate "M9 an app without its own chip dots nothing" "$LABEL_SRC" \
+  '        let governing = chipIDs.contains(front) ? front : fallback' \
+  '        let governing = front'
+
+mutate "M10 the dot ignores the selection" "$LABEL_SRC" \
+  '        return governing == selected ? nil : governing' \
+  '        return governing'
 
 restore
 AFTER_HASH=$(shasum -a 256 "$REAL" | cut -d' ' -f1)

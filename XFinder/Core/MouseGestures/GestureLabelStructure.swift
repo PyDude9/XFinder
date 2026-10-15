@@ -208,3 +208,19 @@ enum GesturePageStatus: Equatable, Sendable {
 
     var isRecording: Bool { self == .recordingShortcut || self == .recordingButton }
 }
+
+/// Which app chip on the Mouse & Gestures page carries the "this is the app in front" dot (T14b review).
+///
+/// The dot marks the chip whose mapping APPLIES to the frontmost app — the app's own chip when it has
+/// one, otherwise Global, which is what the engine falls back to. T14b's first version only ever dotted
+/// a chip whose id equalled the frontmost bundle, so for every app without a preset (most apps) no chip
+/// was dotted and the page hid which mapping was in force — the wireframe dots Global in that case.
+/// No dot when nothing is in front (we cannot name an app) or when that chip is already the selected one
+/// (the selection frame says it).
+enum GestureAppChooser {
+    static func dottedChip(front: String, chipIDs: [String], selected: String, fallback: String) -> String? {
+        guard !front.isEmpty else { return nil }
+        let governing = chipIDs.contains(front) ? front : fallback
+        return governing == selected ? nil : governing
+    }
+}

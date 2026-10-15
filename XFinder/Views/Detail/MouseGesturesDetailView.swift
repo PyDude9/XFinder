@@ -187,14 +187,16 @@ struct MouseGesturesDetailView: View {
                     // card: the sub-line and the disclosure below carry their own 20-pt page
                     // padding (reused verbatim, per the spec), which a `SettingsSection` card would
                     // indent a second time.
+                    let installed = Set(installedBundleIDs())
+                    let chips = appChips(installed: installed)
                     MouseGestureAppStrip(
-                        chips: appChips,
+                        chips: chips,
                         selected: profile,
                         icon: { appIcon(for: $0) },
                         onSelect: { profile = $0 },
                         onAdd: { showAdvancedApps = true })
                         .padding(.horizontal, 20)
-                    frontmostHint
+                    frontmostHint(chips: chips)
                     customBundleRow
                     // F25 — spec T14b step 3: right under the strip / sub-line, same disable rule
                     // as the old block-4 copy (which this replaces).
@@ -432,7 +434,7 @@ struct MouseGesturesDetailView: View {
                     .frame(width: 240, alignment: .topLeading)
 
                 VStack(alignment: .leading, spacing: 10) {
-                    frontmostHint
+                    frontmostHint(chips: appChips(installed: Set(installedBundleIDs())))
                     deviceRow
                     hidDumpRow
                     observedButtonRow
@@ -639,8 +641,11 @@ struct MouseGesturesDetailView: View {
     /// of the built-in list, then Global last. A picker that opens on a list of
     /// applications the user does not have installed is how "preset-first" reads as
     /// "empty list" — the reader cannot find their own app in it.
-    private var orderedProfiles: [GestureProfile] {
-        let installed = Set(installedBundleIDs())
+    private var orderedProfiles: [GestureProfile] { orderedProfiles(installed: Set(installedBundleIDs())) }
+
+    /// `installedBundleIDs()` is one LaunchServices lookup per preset (21) — the body computes it ONCE per
+    /// render and passes it here, instead of the four passes T14b's first version made.
+    private func orderedProfiles(installed: Set<String>) -> [GestureProfile] {
         let mine = GestureProfiles.all.filter { $0.id != GestureProfiles.fallback && installed.contains($0.id) }
         let rest = GestureProfiles.all.filter { $0.id != GestureProfiles.fallback && !installed.contains($0.id) }
         let fallback = GestureProfiles.all.filter { $0.id == GestureProfiles.fallback }
@@ -655,7 +660,7 @@ struct MouseGesturesDetailView: View {
 
     /// Which preset is in force for the app in front, and the honest distinction between
     /// "this bundle has its own preset" and "unknown app → Global".
-    private var frontmostHint: some View {
+    private func frontmostHint(chips: [MouseGestureAppChip]) -> some View {
         let front = controller.lastExternalBundle
         let hasBuiltIn = GestureProfiles.hasPreset(bundle: front)
         let hasOverride = config.overrides[front]?.isEmpty == false
@@ -670,7 +675,7 @@ struct MouseGesturesDetailView: View {
                         .lineLimit(1).truncationMode(.middle)
                     // F5 — kept only when the front app has no chip of its own (T14b.2): if it is
                     // already a clickable chip, this button duplicated that chip (Lỗi #15).
-                    if !frontHasChip {
+                    if !frontHasChip(in: chips) {
                         Button(L10n.t("Xem")) { profile = front }.controlSize(.small)
                     }
                 }
@@ -835,9 +840,11 @@ struct MouseGesturesDetailView: View {
     /// The real icon for any bundle id. Block 3's strip needs one per chip, so this is
     /// id-parameterised — `appIcon` above reads the `profile` @State and cannot serve a strip.
     private func appIcon(for bundle: String) -> NSImage? {
+        // Through the per-process cache: the page re-renders on every app switch while it is open, and
+        // `urlForApplication` + `icon(forFile:)` per chip per render is the cost the clipboard Library
+        // paid in hundreds of MB (2026-10-13). One lookup per bundle id per process.
         guard bundle != GestureProfiles.fallback else { return nil }
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) else { return nil }
-        return NSWorkspace.shared.icon(forFile: url.path)
+        return ClipboardAppIcon.icon(forBundleID: bundle)
     }
 
     /// The list of the mouse's controls and what each one is doing (PATCH v9.1 R3).
@@ -1118,31 +1125,29 @@ struct MouseGesturesDetailView: View {
     /// ones first and the rest are drawn as dashed "ghost" chips — then any bundle the user typed
     /// in. The front app is deliberately given **no** chip of its own when it has no preset: its
     /// sub-line and "Xem" button carry that case (spec T14b step 2).
-    private var appChips: [MouseGestureAppChip] {
-        let installed = Set(installedBundleIDs())
+    private func appChips(installed: Set<String>) -> [MouseGestureAppChip] {
         // The dot's rule reads the RAW frontmost bundle: `frontmostBundle` substitutes Global for
         // "nothing in front", and dotting Global in that state would be a claim we cannot make.
         let front = controller.lastExternalBundle
-        func showsDot(_ id: String) -> Bool { !front.isEmpty && id == front && profile != front }
-        let global = MouseGestureAppChip(id: GestureProfiles.fallback,
-                                         title: L10n.t("Mặc định toàn cục"),
-                                         isGhost: false,
-                                         showsDot: showsDot(GestureProfiles.fallback))
-        let presets = orderedProfiles.filter { $0.id != GestureProfiles.fallback }.map { item in
-            MouseGestureAppChip(id: item.id, title: item.name,
-                                isGhost: !installed.contains(item.id), showsDot: showsDot(item.id))
+        let presetIDs = orderedProfiles(installed: installed).map(\.id).filter { $0 != GestureProfiles.fallback }
+        let ids = [GestureProfiles.fallback] + presetIDs + customProfiles
+        // The chip whose mapping applies to the app in front — its own, or Global (GestureAppChooser, tested).
+        let dotted = GestureAppChooser.dottedChip(front: front, chipIDs: ids, selected: profile,
+                                                  fallback: GestureProfiles.fallback)
+        let names = Dictionary(GestureProfiles.all.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
+        return ids.map { id in
+            MouseGestureAppChip(id: id,
+                                title: id == GestureProfiles.fallback ? L10n.t("Mặc định toàn cục") : (names[id] ?? id),
+                                isGhost: id != GestureProfiles.fallback && names[id] != nil && !installed.contains(id),
+                                showsDot: dotted == id)
         }
-        let custom = customProfiles.map { id in
-            MouseGestureAppChip(id: id, title: id, isGhost: false, showsDot: showsDot(id))
-        }
-        return [global] + presets + custom
     }
 
     /// Whether the app in front already has a clickable chip — the sub-line keeps F5's "Xem"
     /// button only when it does not (T14b step 2). Uses the actual chip list, not `orderedProfiles`
     /// alone, so a chip backed by a custom bundle id (not a built-in preset) also counts.
-    private var frontHasChip: Bool {
+    private func frontHasChip(in chips: [MouseGestureAppChip]) -> Bool {
         let front = controller.lastExternalBundle
-        return !front.isEmpty && appChips.contains { $0.id == front }
+        return !front.isEmpty && chips.contains { $0.id == front }
     }
 }
