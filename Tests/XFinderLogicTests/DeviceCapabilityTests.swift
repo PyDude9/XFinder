@@ -879,4 +879,20 @@ final class DeviceCapabilityTests: XCTestCase {
         XCTAssertEqual(sniperAssignedRole, .assigned(.instant(.back)))
         XCTAssertEqual(sniperAssignedRole.labelKey, "Đã gán: Lùi")
     }
+
+    // MARK: - usagePageName
+
+    /// `usagePageName` has four outcomes. Three were reachable from the other tests only by accident;
+    /// "Other" and the `>=` boundary of "Vendor" were never called. Named constants, no bare numbers.
+    func testUsagePageNameCoversEveryBranch() {
+        XCTAssertEqual(DeviceCapabilityProbe.usagePageName(DeviceCapabilityProbe.usagePageButton), "Button")
+        XCTAssertEqual(DeviceCapabilityProbe.usagePageName(DeviceCapabilityProbe.usagePageConsumer), "Consumer")
+
+        // The boundary is load-bearing: `>=` (not `>`) is what makes a vendor page named "Vendor".
+        XCTAssertEqual(DeviceCapabilityProbe.usagePageName(DeviceCapabilityProbe.usagePageVendorDefined), "Vendor")
+        XCTAssertEqual(DeviceCapabilityProbe.usagePageName(DeviceCapabilityProbe.usagePageVendorDefined + 1), "Vendor")
+
+        XCTAssertEqual(DeviceCapabilityProbe.usagePageName(DeviceCapabilityProbe.usagePageGenericDesktop), "Other")
+        XCTAssertEqual(DeviceCapabilityProbe.usagePageName(DeviceCapabilityProbe.usagePageVendorDefined - 1), "Other")
+    }
 }
