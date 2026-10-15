@@ -114,7 +114,7 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 
 | Mã | Câu hỏi | Mặc định |
 |:--|:--|:--|
-| Q-PROC-1 | Cho DeepSeek **commit trên nhánh riêng** `agent/<công-cụ>-<mã việc>` (mỗi việc một commit, **không push, không đụng `main`**)? Lần này bạn dặn không commit, nên 17 việc + một tính năng nằm lẫn trong 29 file chưa commit, Claude phải tự tách ra 7 commit — tốn token nhất của cả lượt review | **Chưa cho** cho tới khi bạn trả lời. Trong lúc chờ: agent ghi **danh sách file của từng việc** vào worklog để Claude tách được |
+| ~~Q-PROC-1~~ | Cho DeepSeek **commit trên nhánh riêng** `agent/<công-cụ>-<mã việc>`? | **Bạn chốt 2026-10-15: cho.** Mỗi việc / mỗi bước một commit trên nhánh `agent/…`; không commit lên `main`, không push, không merge. Việc nhiều bước dùng một nhánh. Quy trình ở `docs/AGENT_TASKS.md` §3 |
 | Q-PROC-2 | Cho chạy **nhiều việc cỡ S trong một phiên** (như lần này)? | **Cho**, với điều kiện mỗi việc một dòng worklog có danh sách file + kết quả `gate-all.sh`. Việc cỡ M/L vẫn một việc một phiên |
 
 ## Phần 2 — Cần test tay (T)

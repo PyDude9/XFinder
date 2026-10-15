@@ -67,14 +67,17 @@ Claude đã sửa lại các chỗ sai này. Quy tắc ở mục 4 và trong `AG
 
 1. Mở agent ngay trong thư mục repo (`cd ~/github/XFinder && opencode`, hoặc mở thư mục trong Zed / Antigravity).
 2. Dán câu ở **mục 0** của `docs/AGENT_TASKS.md`. Agent lấy việc TODO đầu tiên, làm trên nhánh riêng `agent/<công-cụ>-<mã>`,
-   chạy nghiệm thu, ghi worklog, rồi dừng — không push, không gộp vào `main`.
+   chạy nghiệm thu, **commit trên nhánh đó** (bạn đã cho, Q-PROC-1), ghi worklog, rồi dừng — không push, không gộp vào
+   `main`. **Đừng dặn agent "không commit"**: lần 15/10 làm vậy, 17 việc nằm lẫn trong một cây chưa commit và Claude phải
+   tốn nhiều token nhất để tách lại.
 3. Muốn làm việc kế: mở phiên MỚI rồi dán lại câu đó (một phiên một việc).
 4. **Việc ngoài bảng** (việc bạn nghĩ ra lúc đó): theo mục 3c của bảng (một agent viết đặc tả, một công cụ khác đọc lại,
    bạn đồng ý rồi mới làm). Việc rất nhỏ thì dùng thẳng câu mở đầu dưới đây:
 
    ```
    Đọc docs/AGENT_QUICKSTART.md và mục 1–3 của docs/AGENT_TASKS.md trước khi làm gì. Làm trên nhánh mới
-   agent/<công-cụ>-<việc>, không push, không commit lên main, chỉ stage đúng file mình sửa (không git add -u / -A).
+   agent/<công-cụ>-<việc>, commit trên nhánh đó; không push, không commit lên main, chỉ stage đúng file mình sửa
+   (không git add -u / -A).
    Việc: <mô tả>. Xong chạy sh scripts/build-and-check.sh và swift test --package-path /Users/wolong/github/XFinder/Tests,
    rồi ghi vào docs/AGENT_WORKLOG.md: đã làm gì, kết quả từng lệnh, và điều gì CHƯA kiểm được.
    ```

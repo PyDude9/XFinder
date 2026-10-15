@@ -75,7 +75,10 @@ mouse gestures, local diagnostics. Vietnamese is the source language of every UI
   `git add -A`/`git add -u` — the tree holds untracked files of the owner's that must not be committed
   (`assets_info.json`, `binary_strings.txt`, `strings/`, `.agents/`, `docs/*_2026-10.md` …).
 - One topic per commit; the message states what was measured and what was not.
-- **Do not push and do not commit on `main` unless the owner asks.** Do not commit someone else's uncommitted work.
+- **Commit on your `agent/<tool>-<ID>` branch, one commit per task or per step** (the owner allowed it, Q-PROC-1,
+  2026-10-15). A multi-step task (T14) uses ONE branch for all its steps. Check `git branch --show-current` before every
+  commit: never `main`. **Never push, never merge, never rebase or amend an existing commit.** Do not commit someone
+  else's uncommitted work.
 - Leave a short note of what you did and what you could not verify in `docs/AGENT_WORKLOG.md` (append, newest first).
 
 ## Where things are

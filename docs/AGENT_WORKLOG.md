@@ -4,6 +4,71 @@ Every agent other than the main Claude Code session appends here (newest first):
 gate it ran, and what it could NOT verify. Claude reviews these entries before merging anything. See
 `docs/AGENT_QUICKSTART.md` for the rules.
 
+## 2026-10-15 (Claude review of T14a) — merged; one real defect fixed; agents now commit on their branch
+
+For the next agent: read this, not the long T14a entry below it.
+
+| Item | Verdict |
+|:--|:--|
+| T14a skeleton (9 blocks, header switch, recording state, add-only script) | **correct and in scope** — committed as `3ed7f13`. Review (4 lenses, 2 refuters per finding): every builder reachable before is reachable exactly once, the 13 moved builders are byte-identical, the block order matches the spec |
+| Status line during recording | **defect, confirmed by both refuters on two lenses**: `controller.recording` is one Bool for BOTH recording modes, so recording a keyboard shortcut for a direction showed "bấm nút trên chuột". Fixed: `GesturePageStatus` (pure, in GestureLabelStructure.swift) picks the sentence; `GesturePageStatusTests` (4); labels harness M6–M8. The engine takes any key for a shortcut (no ⌘/⌥/⌃ needed), so the Phím tắt page's sentence could not be reused |
+| App list full width in block 3 | interim until T14b; capped at 360 pt so its shaded box does not span the page |
+| Header switch had no VoiceOver label | pre-existing; added `Bật/tắt cử chỉ` (wireframe B names it) |
+| Status `ĐANG LÀM … T14a xong` | fine for a multi-step task |
+
+**Process from now on (owner approved Q-PROC-1):** commit on your branch. T14 uses ONE branch for all remaining
+steps: `git switch -c agent/zed-T14 main` for T14b, then each later step continues on that same branch
+(`git switch agent/zed-T14`) with one commit per step. Never commit on `main`, never push, never merge. Next: **T14b**.
+
+## 2026-10-15 (Zed / DeepSeek V4.1 Flash, Viber Bedrock) — T14a: dựng khung trang Chuột & cử chỉ theo B (chưa commit)
+
+**Lệnh của chủ:** *“Đọc docs/AGENT_QUICKSTART.md, rồi docs/AGENT_TASKS.md. Làm ĐÚNG bước T14a trong
+`docs/specs/T14-mouse-gestures-B.md`, theo quy trình mục 3. Dán kết quả sh scripts/gate-all.sh vào
+`docs/AGENT_WORKLOG.md`. Gặp điều kiện dừng thì dừng.”* → **chỉ T14a**, không sang T14b. **Không commit**
+(chủ cấm); mọi thứ nằm nguyên trong working tree, nhánh vẫn `main`. Không có điều kiện dừng nào xảy ra.
+
+| Việc | File đã sửa | Nghiệm thu riêng của việc | Chưa kiểm live |
+|:--|:--|:--|:--|
+| **T14a** — khung 9 khối của phương án B | `XFinder/Views/Detail/MouseGesturesDetailView.swift` (toàn bộ `body` + `readinessRow` + 2 doc comment; `permissionBanner` giữ nguyên) · `XFinder/Resources/L10n.strings.json` (+1 khoá) · `scripts/add-mouse-redesign-l10n-entries.py` (mới) · `docs/AGENT_TASKS.md` (đổi trạng thái T14) | `build-and-check.sh` → BUILD SUCCEEDED, 0 lỗi, mọi file tên `OK`, tài nguyên đã bundle, `arm64` · `grep -c MouseGesturesDetailView.swift /tmp/xfinder-clean-build/build.log` → `4` (>0 ✓) · `swift test` → **1226 tests, 0 failures** · script L10n → `added 1, already present 0` | Hình dạng thật của trang (khung 9 khối, công tắc F1 kiểu `.switch`, dòng “đang ghi” màu accent) — app **chưa build-cài-chụp**. VoiceOver thứ tự Khối 1→9 + trạng thái đang ghi. Ba trạng thái permission / no-mouse / recording trên máy thật. |
+
+### Đã làm — đúng 5 điểm của §4 T14a
+1. **F1 (Lỗi #11):** `Toggle(...).labelsHidden()` ở trailing `PageHeader` nay thêm `.toggleStyle(.switch).controlSize(.small)`.
+2. `permissionBanner` (F2/F3/S2) **giữ y nguyên byte-for-byte**, gọi ngay dưới header khi `!trusted`.
+3. `readinessRow` thêm nhánh `controller.recording` lên **đầu** (tint `.accentColor`, icon `record.circle`, câu “Đang ghi — bấm nút trên chuột (Esc để hủy).”); 4 nhánh S3–S6 cũ giữ nguyên logic, vẫn nền `tint.opacity(0.12)` + `Capsule`.
+4. Khung 9 khối: `body` viết lại thành 9 `VStack`, mỗi khối có comment `// ── Khối N — …`, đúng thứ tự CONTRACT (1 header · 2 status · 3 app chooser · 4 gesture map · 5 side buttons · 6 hold & scroll · 7 tilt · 8 diagnostics · 9 footer). Khối 3–9 là **các section cũ đang chạy đặt vào đúng vị trí khối** của B (luật 2: không placeholder). `activitySection` (`DEBUG_SHOW_ENGINE_LOG` = `false`) vẫn ở cuối, vẫn bị gate. Giữ `.padding(.vertical,20)` + `.pageWidthSafe()`.
+5. Chuỗi mới vào store ngay trong bước (luật 1): “Đang ghi — bấm nút trên chuột (Esc để hủy).” → EN “Recording — press a button on the mouse (Esc to cancel).”, `scope: sentence`, khớp `variant-b.html` dòng 107. Chưa có trong store → tạo `scripts/add-mouse-redesign-l10n-entries.py` (mẫu `add-system-hud-l10n-entries.py`, chỉ-thêm) rồi chạy. Diff `L10n.strings.json` đúng **+4 dòng**, không format lại.
+
+### Trả lời 7 việc-cạnh (§5) — đọc code, không mở app
+1. **Thiếu Trợ năng** (`trusted == false`): Khối 2 hiện `permissionBanner` (S2) rồi `readinessRow` nhánh S6; panel bên phải (Khối 4) không đọc `trusted` nên vẫn dùng được. ✓
+2. **Không chuột / chưa khai báo nút** (`declaredEventButtons == nil`): `drawnButtons` rơi về slot nguyên mẫu; `buttonListSection` (Khối 5) hiện placeholder trung thực; Khối 3 không phụ thuộc chuột. ✓
+3. **Công tắc chính TẮT**: Khối 2 hiện S3; Khối 3–8 vẫn render (xem/sửa được), đúng câu S3 “sơ đồ bên dưới đã có sẵn phím tắt”. ✓
+4. **Giá trị biên**: `drawnButtons` rỗng → nhánh `GestureButtonList` cũ, không crash. `scrollButtonChoices` **luôn** thêm `config.scrollButton` (đã đọc hàm) nên không bao giờ rỗng thật. ✓
+5. **Ngữ cảnh đổi giữa chừng**: `onChange(of: profile)` vẫn chỉ xoá `recordingDirection`/`pickedDirection`/`pickedButton`, **không** hủy `controller.recording`/`recordingTrigger`/`recordingButton` — hành vi cũ, tôi không đụng modifier này. ✓
+6. **Cache cũ**: `hidDumpRow` vẫn lazy `.onChange(of: hidDumpExpanded){ if expanded && hidDump.isEmpty { loadHIDDump() } }` (chỉ dời vị trí vào Khối 8). ✓
+7. **Control hứa điều không làm được**: control Lỗi #1 (“Ghi nút” cạnh “Nút cuộn” mà thực ra ghi nút giữ) đã bị thay bằng `Picker` ở T15 đã commit (`2c26eb0`); T14a không đưa nó trở lại. ✓
+
+### Hai điều cần Claude biết
+- **`mappingSection` + `appPickerRow` để nguyên trên đĩa, chỉ ngừng gọi từ `body`** — đúng câu §T14a: *“KHÔNG xoá các hàm khác chưa dùng tới trong bước này (ví dụ `mappingSection` cũ) — chỉ ngừng gọi chúng từ `body`”*. Hệ quả: `HStack` sơ đồ+bảng tạm **trùng lặp** giữa `mappingSection` (chết) và Khối 4 (mới); sẽ hết ở T14c/T14e. Không xoá vội.
+- **Lệch §3 bước 2 và 7 (vì chủ cấm commit):** không tạo nhánh `agent/zed-T14a`, không commit, nên bước 7 không thể ghi `CHỜ REVIEW (nhánh agent/…)`. Thay vào đó trạng thái T14 trong `AGENT_TASKS.md` là `ĐANG LÀM (Zed, 2026-10-15) — T14a xong, T14b–T14f còn` (theo §3 bước 3). Các phiên trước cố ý không đổi trạng thái (“đó là việc của Claude”). Nếu Claude không muốn, đây là revert một dòng.
+
+### Kết quả `sh scripts/gate-all.sh` (nguyên văn, chạy sau khi sửa 2 file tài liệu)
+
+```
+build (arm64, compile list)        OK
+tests                              Executed 1226 tests, with 0 failures (0 unexpected) in 6.308 (6.367) seconds
+check-l10n-coverage                TOTAL 0 problems across 2786 entries (2786 checked, 20 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 2786 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 843 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 45 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             4
+GATE: green
+```
+
+(`modified tracked files 4` = `AGENT_TASKS.md`, `AGENT_WORKLOG.md`, `L10n.strings.json`, `MouseGesturesDetailView.swift` — khớp cây cuối. Dòng `843 unwrapped` là số thông tin, không phải lỗi: tổng của cổng là 0. `audit-ui-tokens` in “across 0 files” là bình thường ở đây.)
+
 ## 2026-10-15 (Claude review of the three entries below) — merged as topic commits, six HUD bugs fixed
 
 For the next agent: read this entry, not the long ones below it.

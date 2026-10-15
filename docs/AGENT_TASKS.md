@@ -18,8 +18,9 @@ Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào
 - **Một việc một phiên** cho việc cỡ M/L. Xong thì mở phiên MỚI cho việc kế (OpenCode `/new`, Zed tạo thread mới,
   Antigravity tạo cuộc trò chuyện mới). **Việc cỡ S được chạy nhiều việc trong một phiên** (bạn nói "chạy hết hàng đợi"),
   miễn mỗi việc một dòng worklog có danh sách file của việc đó (mẫu ở mục 3, bước 7).
-- **Nếu bạn dặn không commit:** agent vẫn ghi đúng danh sách file của TỪNG việc vào worklog, để Claude tách được commit
-  theo việc. (Q-PROC-1: cho agent commit trên nhánh `agent/*` thì Claude review nhanh hơn nhiều.)
+- **Agent được commit trên nhánh riêng của nó** (bạn chốt Q-PROC-1, 2026-10-15): nhánh `agent/<công-cụ>-<ID>`, mỗi việc
+  (hoặc mỗi bước của việc nhiều bước) **một commit**. Agent **không** commit lên `main`, **không** push, **không** merge,
+  **không** rebase hay sửa lại commit đã có. Claude review từng commit rồi mới gộp vào `main`.
 - **Chọn công cụ theo việc:**
 
 | Việc | Dùng | Vì sao |
@@ -69,7 +70,10 @@ Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào
 
 1. `git status`: chỉ được có các file chưa track sẵn của chủ dự án (`assets_info.json`, `strings/`, `.agents/`…). Có file
    đã sửa mà không phải của mình → **dừng**.
-2. Tạo nhánh từ `main`: `git switch main && git switch -c agent/<công-cụ>-<ID>`.
+2. Tạo nhánh từ `main`: `git switch main && git switch -c agent/<công-cụ>-<ID>`. **Việc nhiều bước (cỡ L, như T14):
+   MỘT nhánh cho cả việc** (`agent/<công-cụ>-T14`), mỗi bước một commit trên nhánh đó. Bước kế tiếp mở phiên mới nhưng
+   làm tiếp trên **cùng nhánh** (`git switch agent/<công-cụ>-T14`), vì bước sau dựa trên bước trước và Claude có thể chưa
+   kịp gộp. Nhánh đã có sẵn thì `git switch` sang, đừng tạo nhánh mới.
    **Chạy song song nhiều agent** thì mỗi agent một thư mục riêng (worktree):
    `git worktree add ../XFinder-<ID> -b agent/<công-cụ>-<ID> main` rồi mở agent trong `../XFinder-<ID>`.
    Sửa code song song được, nhưng **build (`build-and-check.sh`) và harness mutation chỉ một cái chạy một lúc** trên toàn máy:
@@ -78,8 +82,10 @@ Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào
 4. Làm **đúng** các bước của đặc tả. Không sửa thêm file nào khác, không "tiện tay" dọn dẹp. Việc cỡ L: từng bước một.
 5. Chạy **mọi** lệnh nghiệm thu của việc, cộng `sh scripts/gate-all.sh` (build + toàn bộ test + 7 cổng chuỗi/UI, in
    `GATE: green`), cộng các cổng của cỡ M/L (mục 1) và vùng (mục 2). Harness mutation chạy riêng, lần lượt, sau cùng.
-6. Commit trên nhánh, chỉ stage đúng file mình sửa: `git add <file1> <file2>`; message mở đầu bằng ID (`T03: …`), ghi kết
-   quả từng lệnh nghiệm thu và điều gì chưa kiểm được.
+6. Commit trên nhánh, chỉ stage đúng file mình sửa: `git add <file1> <file2>` (**không bao giờ** `git add -A` hay
+   `git add .` — thư mục có file chưa track của chủ dự án); kiểm `git diff --cached --stat` trước khi commit; message mở
+   đầu bằng ID (`T14b: …`), ghi kết quả từng lệnh nghiệm thu và điều gì chưa kiểm được. **Kiểm `git branch --show-current`
+   trước khi commit: phải là nhánh `agent/…`, không bao giờ là `main`.**
 7. Đổi trạng thái thành `CHỜ REVIEW (nhánh agent/…)`; ghi vào `docs/AGENT_WORKLOG.md` **gọn**, mỗi việc một dòng:
 
    | Việc | File đã sửa | Nghiệm thu riêng của việc | Chưa kiểm live |
@@ -87,7 +93,7 @@ Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào
 
    rồi dán nguyên văn 9 dòng của `gate-all.sh` một lần cho cả lượt. Chỉ viết dài cho điều kiện dừng và chỗ đặc tả không
    khớp code. Ghi đo ở đâu: "probe từ terminal" khác "đo trong app đã cài". Commit cùng nhánh.
-8. **Dừng.** Không push, không merge vào `main`. Việc kế: phiên mới.
+8. **Dừng.** Để repo đứng trên nhánh của mình (không `git switch main`, không push, không merge). Việc kế: phiên mới.
 
 **Điều kiện dừng ngay** (ghi vào worklog rồi dừng):
 
@@ -141,12 +147,13 @@ bằng `git log --oneline -5` và `sh scripts/gate-all.sh`.
 
 - Lượt DeepSeek 15/10 (T01–T06, T08–T13, T15, T16, T18, T19 + tính năng HUD) đã được Claude review, sửa và tách thành
   commit theo chủ đề trên `main`. Xem bảng "Đã xong" ở đầu mục 6.
-- **Kế tiếp: T14** — dựng trang Chuột & cử chỉ theo phương án **B** (bạn đã chọn). Đặc tả từng bước:
+- **Kế tiếp: T14b** (T14a đã gộp) — dựng trang Chuột & cử chỉ theo phương án **B** (bạn đã chọn), trên MỘT nhánh
+  `agent/<công-cụ>-T14` cho mọi bước còn lại, mỗi bước một commit. Đặc tả từng bước:
   `docs/specs/T14-mouse-gestures-B.md`. Cho tới khi T14 xong, chỉ agent làm T14 được sửa
   `XFinder/Views/Detail/MouseGesturesDetailView.swift` và 6 file
   `XFinder/Views/Components/{MouseDiagramView,GestureButtonList,GestureDetailPanel,GestureArmView,GestureActionPicker,GestureActivityPanel}.swift`.
 - **Bạn còn nợ tay:** T-HUD-1…5 (mới), T-ANALYTICS-5, T-ANALYTICS-6, T-LAYOUT-1, T-SLEEP-1, T-LIMIT-1, T-MG-BID.
-- **Câu hỏi đang chờ bạn:** Q-PROC-1 (cho agent commit trên nhánh riêng), Q-RELEASE-14, Q-OC, Q-DIAG-5, Q-MG-1…3.
+- **Câu hỏi đang chờ bạn:** Q-RELEASE-14, Q-OC, Q-DIAG-5, Q-MG-1…3. (Q-PROC-1: bạn đã cho agent commit trên nhánh riêng.)
 
 ## 6. Hàng đợi việc (mọi cỡ, mỗi việc có đặc tả)
 
@@ -173,10 +180,11 @@ trong worklog, đừng viết là đã xong.
 | T19 mở wireframe | — | bạn chọn **B** |
 | (ngoài bảng) HUD độ sáng/âm lượng chỉ trên notch | `bf8798f` | Claude sửa 6 lỗi (mục 3c); chưa kiểm live: T-HUD-1…5 |
 | T07 | HOÃN | gộp vào T14 |
+| T14a khung 9 khối (DeepSeek) | `3ed7f13` + commit sửa sau review | Claude sửa: câu trạng thái lúc ghi phím tắt bảo "bấm nút chuột" (`GesturePageStatus`, test + M6–M8), danh sách app tạm giới hạn 360 pt, nhãn VoiceOver công tắc đầu trang |
 
 ---
 
-### T14 · Dựng trang Chuột & cử chỉ theo phương án B — TODO (đặc tả: `docs/specs/T14-mouse-gestures-B.md`)
+### T14 · Dựng trang Chuột & cử chỉ theo phương án B — ĐANG LÀM: T14a đã gộp (`3ed7f13` + sửa sau review), kế tiếp **T14b** trên nhánh `agent/<công-cụ>-T14` (đặc tả: `docs/specs/T14-mouse-gestures-B.md`)
 
 - **Làm theo `docs/specs/T14-mouse-gestures-B.md`, từng bước T14a, T14b… một phiên một bước.** Phần dưới là tóm tắt cũ;
   chỗ nào khác đặc tả thì đặc tả thắng.
