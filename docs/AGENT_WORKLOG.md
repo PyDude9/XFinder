@@ -4,6 +4,58 @@ Every agent other than the main Claude Code session appends here (newest first):
 gate it ran, and what it could NOT verify. Claude reviews these entries before merging anything. See
 `docs/AGENT_QUICKSTART.md` for the rules.
 
+## 2026-10-15 (Antigravity) — T14c: sơ đồ chuột + inspector bên phải trong cùng card (Khối 4)
+
+**Lệnh của chủ:** đọc `AGENT_QUICKSTART.md` + `AGENT_TASKS.md` + mục mới nhất của worklog, switch branch `agent/zed-T14` (không tạo nhánh mới), kiểm `git log -1` là `6577c86` hoặc mới hơn, làm ĐÚNG bước T14c (`docs/specs/T14-mouse-gestures-B.md`), commit trên nhánh đó, dán kết quả `sh scripts/gate-all.sh` vào worklog rồi dừng.
+
+| Việc | File đã sửa | Nghiệm thu riêng của việc | Chưa kiểm live |
+|:--|:--|:--|:--|
+| **T14c** — Khối 4: 2 cột trong 1 card (sơ đồ chuột + inspector) | `XFinder/Views/Detail/MouseGesturesDetailView.swift` · `XFinder/Views/Components/GestureDetailPanel.swift` · `XFinder/Views/Components/GestureActionPicker.swift` · `XFinder/Resources/L10n.strings.json` (+4 khoá / +16 dòng) · `scripts/add-mouse-redesign-l10n-entries.py` · `docs/AGENT_TASKS.md` · `docs/AGENT_WORKLOG.md` | `gate-all.sh` in `GATE: green`; `plutil -lint project.pbxproj` sạch; `swift test` 1233 tests / 0 failures; `audit-ui-tokens` 0; không font size < 11pt (§3.1); `GestureActionPicker`, `GestureActionCatalog.choices()`, `GestureMap.row`, `resolved(_:)`, `resolvedName(_:)` vẫn được gọi nguyên vẹn (grep ✓) | Cảm giác click trực tiếp mũi tên trên sơ đồ chuột để chọn hướng và click chip nút để mở inspector nút trên app thật. Bấm nút "Dùng làm nút giữ" trong app thật có cập nhật trigger chuột tức thì không. Font 11pt so với tỉ lệ hiển thị tổng thể trên màn hình Retina/non-Retina. |
+
+### Đã làm — đúng 6 điểm của §T14c + 3 luật §4
+1. **Bố cục 2 cột trong 1 card (§T14c.1):** Khối 4 được bọc trong một `RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile)` card duy nhất. Cột trái (~310pt) chứa `MouseDiagramView` (284pt) + `TiltArmsRow` (khi `tiltArmsLive`). Cột phải (linh hoạt, minWidth ~280pt) chứa inspector panel, ngăn cách bởi `Divider()`.
+2. **Định tuyến inspector & hai lựa chọn song song (§T14c.2, §T14c.3):**
+   - Routing: `if let direction = pickedDirection { GestureDetailPanel(...) } else if let button = pickedButton { buttonInspector(button) } else { directionSummaryView }`.
+   - Mặc định panel không bao giờ trống (sửa Lỗi #7): khi chưa chọn gì, hiển thị `directionSummaryView` tóm tắt 4 hướng cơ bản (Lên / Xuống / Trái / Phải) với tên hành động (`resolvedName`) và chord keycaps (`resolved.shortcutDisplay`); mỗi hàng có thể click để chọn ngay hướng đó; giữ nguyên 2 câu giải thích của S28 ở chân bảng (`emptySelectionHint`).
+   - Thêm `.onChange(of: pickedButton)` để xoá `pickedDirection` khi người dùng bấm chip nút, đảm bảo ưu tiên hướng khi bấm mũi tên nhưng chuyển đổi mượt sang nút khi bấm chip nút.
+3. **Chi tiết hướng đã chọn (§T14c.4):** Tái dùng `GestureDetailPanel` nguyên vẹn logic bindings (`onPick`, `onRecord`, `onReset`). Nâng toàn bộ font size 10pt lên 11pt ở `GestureDetailPanel.swift` (lines 94, 142, 214, 217) và `GestureActionPicker.swift` (line 57) theo chuẩn §3.1 / §T14c.4.
+4. **Cải tiến `GestureActionPicker` (F9):** Thay nút menu `ellipsis.circle` bằng nhãn hành động hiện tại (`currentActionLabel`) với `menuStyle(.borderedButton)` và `.controlSize(.small)`, hiển thị rõ hành động đang gán.
+5. **Inspector theo nút (§T14c.5 / F8 / F15):** Dựng `buttonInspector(_ button: Int)`:
+   - Header: tên `Nút N`, phụ đề vị trí/chức năng, pill trạng thái vai trò (`rolePill`).
+   - Hàng click-action ("Bấm nhanh"): chỉ hiển thị read-only (ví dụ `Lùi (⌘[)`), menu gán click-action giữ ở Khối 5 theo §3.9.
+   - Nhánh nút giữ: nếu là nút giữ hiện tại (`role == .holdTrigger || role == .holdTriggerWithAction`), hiện `Đây là nút giữ hiện tại`. Nếu không: hiện `Nút giữ cử chỉ hiện tại là Nút <X>` kèm nút `Dùng làm nút giữ` (`controller.update { $0.trigger = .mouseButton(button) }`, vô hiệu khi `!role.isDeclared`).
+   - Chú thích: hiển thị `passthroughNoteKey` hoặc `role.explanationKey`.
+6. **Chuỗi mới và L10n:** Thêm 4 chuỗi mới vào `scripts/add-mouse-redesign-l10n-entries.py` (`Đây là nút giữ hiện tại`, `Nút giữ cử chỉ hiện tại là `, `Dùng làm nút giữ`, `Bấm nhanh`) và chạy script cập nhật `L10n.strings.json` (+16 dòng). Toàn bộ 6 cổng L10n đều báo `TOTAL 0`.
+
+### Quyết định đã chốt
+- **`buttonInspector` đặt inline trong `MouseGesturesDetailView.swift`:** dung lượng ~150 dòng kết hợp chặt chẽ với state và controller của detail view, tránh phân mảnh file không cần thiết và không phải thêm file vào `project.pbxproj`.
+- **Đồng bộ lựa chọn hướng và nút:** `MouseDiagramSelection` trong Core không tự động xoá `pickedButton` khi chọn hướng, nên việc định tuyến ưu tiên `pickedDirection` trước kết hợp `.onChange(of: pickedButton) { if $1 != nil { pickedDirection = nil } }` giúp chuyển đổi hai chế độ inspector chuẩn xác mà không cần sửa Core models.
+
+### Trả lời 7 việc-cạnh (§5) — đọc code, không mở app
+1. **Thiếu quyền Trợ năng** (`trusted == false`): Khối 2 hiện `permissionBanner` + status S2/S6; Khối 4 (sơ đồ + inspector) vẫn xem và sửa phím tắt/hành động bình thường vì inspector đọc và ghi qua `GestureController`/`config` (cử chỉ chỉ không nhận diện được khi di chuyển chuột thật). ✓
+2. **Không có chuột / chưa khai báo nút**: `drawnButtons` rỗng hoặc chỉ có các nút mặc định; `buttonInspector` xử lý an toàn cho mọi role (`.notDeclared`, `.unknown`, `.unassigned`), hiển thị đúng nhãn và vô hiệu nút "Dùng làm nút giữ" khi `!role.isDeclared`. Tóm tắt 4 hướng vẫn hoạt động độc lập không phụ thuộc chuột. ✓
+3. **Công tắc chính tắt** (`config.enabled == false`): status line hiện S3; Khối 4 vẫn xem, bấm chọn hướng/nút và sửa cấu hình bình thường (đúng S3). ✓
+4. **Một giá trị ở biên**: Nếu `drawnButtons` rỗng, không có chip nút nào để click vào `buttonInspector`, inspector mặc định hiển thị tóm tắt 4 hướng; nếu `pickedButton` mang giá trị nút bất kỳ, `buttonRole(button)` trả về `.unknown` hoặc `.notDeclared` an toàn, không crash. `scrollButtonChoices` luôn chứa `config.scrollButton` nên không bao giờ rỗng. ✓
+5. **Ngữ cảnh đổi giữa chừng**: Khi đang ghi (`controller.recording == true`), người dùng đổi app chip thì `onChange(of: profile)` xoá `pickedDirection`, `pickedButton`, `recordingDirection`, nhưng không hủy `controller.recording`/`recordingTrigger`/`recordingButton` — giữ nguyên hành vi gốc. ✓
+6. **Giá trị cache cũ**: Khối 4 không liên quan tới `hidDump` (sẽ được T14e xử lý với `.onChange(of: hidDumpExpanded)`). ✓
+7. **Control hứa điều không làm được**: Nút "Dùng làm nút giữ" trong `buttonInspector` gọi đúng `controller.update { $0.trigger = .mouseButton(button) }` và disable khi `!role.isDeclared`. Menu click action chỉ nằm ở Khối 5, Khối 4 chỉ hiện read-only "Bấm nhanh". Bấm hold-badge trên diagram ghi nút giữ ngay (F7), bấm chip nút chỉ mở inspector (F8). ✓
+
+### Kết quả `sh scripts/gate-all.sh` (nguyên văn)
+
+```
+build (arm64, compile list)        OK
+tests                              Executed 1233 tests, with 0 failures (0 unexpected) in 6.500 (6.574) seconds
+check-l10n-coverage                TOTAL 0 problems across 2795 entries (2795 checked, 20 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 2795 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 850 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 45 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             7
+GATE: green
+```
+
 ## 2026-10-15 (Claude review of T14b) — merged; two defects fixed; branch moved to main
 
 For the next agent: read this, not the long T14b entry below it.

@@ -91,7 +91,7 @@ struct GestureDetailPanel: View {
 
     private var sourcePill: some View {
         Text(sourceText)
-            .font(.system(size: 10, weight: .medium))
+            .font(.system(size: 11, weight: .medium))
             .foregroundColor(sourceColor)
             .padding(.horizontal, 7).padding(.vertical, 2)
             .background(Capsule().fill(sourceColor.opacity(0.14)))
@@ -139,7 +139,7 @@ struct GestureDetailPanel: View {
                     // whether they still mean this in a given app version is the app's
                     // business, and macOS lets the user rebind almost anything.
                     Text(L10n.t("XFinder gửi đúng phím này. Việc phím đó có làm đúng hành động hay không còn tuỳ phím tắt riêng của ứng dụng — macOS cho phép đổi gần như mọi phím tắt."))
-                        .font(.system(size: 10)).foregroundColor(.secondary)
+                        .font(.system(size: 11)).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -211,10 +211,10 @@ struct GestureDetailPanel: View {
     private var systemUnboundWarning: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(L10n.t("macOS trên máy này chưa gán phím tắt cho hành động này, nên cử chỉ sẽ không gửi gì. Mở Bàn phím → Phím tắt để gán, hoặc chọn một hành động khác."))
-                .font(.system(size: 10)).foregroundColor(.orange)
+                .font(.system(size: 11)).foregroundColor(.orange)
                 .fixedSize(horizontal: false, vertical: true)
             Button(L10n.t("Mở Phím tắt trong Cài đặt")) { WindowManager.openKeyboardShortcutsPane() }
-                .buttonStyle(.link).font(.system(size: 10))
+                .buttonStyle(.link).font(.system(size: 11))
         }
     }
 

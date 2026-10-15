@@ -54,7 +54,7 @@ struct GestureActionPicker: View {
                     .truncationMode(.tail)
                 if let detail = detailText {
                     Text(detail)
-                        .font(.system(size: 10))
+                        .font(.system(size: 11))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -72,12 +72,17 @@ struct GestureActionPicker: View {
             Menu {
                 actionMenu
             } label: {
-                Image(systemName: "ellipsis.circle")
-                    .font(.system(size: 14))
+                HStack(spacing: 4) {
+                    Text(currentActionLabel)
+                        .font(.system(size: 12))
+                        .lineLimit(1)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .frame(width: 24)
+            .menuStyle(.borderedButton)
+            .controlSize(.small)
             .disabled(isRecording)
             .help(L10n.t("Đổi hành động cho hướng này"))
 
@@ -94,6 +99,25 @@ struct GestureActionPicker: View {
         }
         .padding(.vertical, 6)
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var currentActionLabel: String {
+        if let currentKind {
+            if let sys = GestureSystemAction.allCases.first(where: { $0.defaultKind == currentKind }) {
+                return L10n.t(sys.captionKey)
+            }
+            if currentKind == .horizontalScroll {
+                return L10n.t("Cuộn ngang nguyên bản")
+            }
+            if current != nil {
+                return L10n.t(currentKind.labelKey)
+            }
+            return L10n.t("Chưa gán")
+        }
+        if current != nil {
+            return L10n.t("Phím bạn tự ghi")
+        }
+        return L10n.t("Chưa gán")
     }
 
     /// The second line: what the shortcut *means* here, and — when the shortcut is one

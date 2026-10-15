@@ -215,8 +215,8 @@ struct MouseGesturesDetailView: View {
                                   title: L10n.t("Sơ đồ cử chỉ"),
                                   subtitle: L10n.t("Số trên thân chuột là nút bạn giữ — bấm vào đó để đổi. Các nút của chuột hiện ngay trên hình: nút nào mờ là nút máy chưa đọc được."))
 
-                    HStack(alignment: .top, spacing: 18) {
-                        VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top, spacing: 0) {
+                        VStack(alignment: .center, spacing: 10) {
                             MouseDiagramView(
                                 selection: $pickedDirection,
                                 selectedButton: $pickedButton,
@@ -232,7 +232,7 @@ struct MouseGesturesDetailView: View {
                                 recordingDirection: recordingDirection,
                                 onRecordTrigger: { triggerRecording() },
                                 isRecordingTrigger: recordingTrigger)
-                                .frame(minWidth: 0, maxWidth: .infinity)
+                                .frame(width: 284)
                             if tiltArmsLive {
                                 TiltArmsRow(
                                     selection: $pickedDirection,
@@ -243,7 +243,11 @@ struct MouseGesturesDetailView: View {
                                     recordingDirection: recordingDirection)
                             }
                         }
-                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                        .frame(width: 310)
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 10)
+
+                        Divider()
 
                         VStack(alignment: .leading, spacing: 10) {
                             if let direction = pickedDirection {
@@ -265,12 +269,23 @@ struct MouseGesturesDetailView: View {
                                         controller.recordShortcut(bundle: profile, direction: direction)
                                     },
                                     onReset: { controller.resetDirection(bundle: profile, direction: direction) })
+                            } else if let button = pickedButton {
+                                buttonInspector(button)
                             } else {
-                                emptySelectionHint
+                                directionSummaryView
                             }
                         }
                         .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
+                        .padding(14)
                     }
+                    .background(
+                        RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous)
+                            .fill(XFinderTokens.Fill.surface)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous)
+                            .strokeBorder(XFinderTokens.Fill.hairline, lineWidth: 1)
+                    )
                     .padding(.horizontal, 20)
                 }
 
@@ -335,6 +350,11 @@ struct MouseGesturesDetailView: View {
             recordingDirection = nil
             pickedDirection = MouseDiagramSelection.afterProfileChange()
             pickedButton = nil
+        }
+        .onChange(of: pickedButton) { _, newBtn in
+            if newBtn != nil {
+                pickedDirection = nil
+            }
         }
     }
 
@@ -589,6 +609,285 @@ struct MouseGesturesDetailView: View {
         .background(
             RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous)
                 .fill(Color.secondary.opacity(0.05))
+        )
+    }
+
+    // MARK: - Block 4: Direction Summary & Button Inspector (T14c)
+
+    private func directionIcon(_ direction: GestureDirection) -> String {
+        switch direction {
+        case .up: return "arrow.up"
+        case .down: return "arrow.down"
+        case .left: return "arrow.left"
+        case .right: return "arrow.right"
+        case .tiltLeft: return "arrow.uturn.left"
+        case .tiltRight: return "arrow.uturn.right"
+        }
+    }
+
+    private func summaryActionName(_ direction: GestureDirection, row: ResolvedGestureRow) -> String {
+        if row.entry.isUnassigned {
+            return L10n.t("Chưa gán")
+        }
+        if let name = resolvedName(direction) {
+            return name
+        }
+        if let system = row.entry.systemAction {
+            return L10n.t(system.captionKey)
+        }
+        if row.entry.shortcut != nil {
+            return L10n.t("Phím bạn tự ghi")
+        }
+        return L10n.t("Chưa gán")
+    }
+
+    private func directionSummaryRow(_ direction: GestureDirection) -> some View {
+        let row = resolved(direction)
+        let action = summaryActionName(direction, row: row)
+        let chord = row.caption ?? ""
+        return Button {
+            pickedDirection = direction
+            pickedButton = nil
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: directionIcon(direction))
+                    .font(XFinderTokens.Font.caption.weight(.semibold))
+                    .foregroundColor(sourceTint(profile, direction))
+                    .frame(width: 20, height: 20)
+                    .background(
+                        RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous)
+                            .fill(XFinderTokens.Fill.inset)
+                    )
+
+                HStack(spacing: 6) {
+                    Text(L10n.t(direction.titleKey))
+                        .font(XFinderTokens.Font.row)
+                        .foregroundColor(.primary)
+                    Text("—")
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                    Text(action)
+                        .font(XFinderTokens.Font.row)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 4)
+
+                if !chord.isEmpty {
+                    Text(chord)
+                        .font(XFinderTokens.Font.mono.weight(.semibold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous)
+                                .fill(XFinderTokens.Fill.inset)
+                        )
+                }
+
+                if row.isUserOverride {
+                    Text(L10n.t("Bạn tự đặt"))
+                        .font(XFinderTokens.Font.caption.weight(.medium))
+                        .foregroundColor(.accentColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(Color.accentColor.opacity(0.14)))
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var directionSummaryView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(GestureDirection.holdDrag, id: \.self) { direction in
+                directionSummaryRow(direction)
+                if direction != GestureDirection.holdDrag.last {
+                    Divider()
+                }
+            }
+
+            Divider().padding(.vertical, 2)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L10n.t("Mỗi mũi tên là một động tác: giữ nút trên thân chuột rồi kéo theo hướng đó. Bấm vào mũi tên để xem và đổi phím nó gửi."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(L10n.t("Ba bước: giữ nút → kéo quá ngưỡng → thả. Kéo chưa đủ xa thì XFinder phát lại click bình thường, nên không mất thao tác nào."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 4)
+        }
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous)
+                .fill(Color.secondary.opacity(0.04))
+        )
+    }
+
+    private func buttonClickActionLabel(_ button: Int, role: MouseButtonRole) -> String {
+        switch role {
+        case .holdTriggerWithAction(let action):
+            return buttonActionDisplay(action)
+        case .assigned(let action):
+            return buttonActionDisplay(action)
+        case .holdTrigger:
+            return L10n.t("Nút giữ")
+        case .scrollButton:
+            return L10n.t("Nút cuộn")
+        case .reserved:
+            return L10n.t("Chỉ bấm")
+        case .unassigned:
+            return L10n.t("Chưa gán")
+        case .notDeclared:
+            return L10n.t("Chuột không khai báo")
+        case .unknown:
+            return L10n.t("Chưa đọc được")
+        }
+    }
+
+    private func buttonActionDisplay(_ action: ButtonAction) -> String {
+        switch action {
+        case .instant(.back):
+            return "\(L10n.t("Lùi")) (⌘[)"
+        case .instant(.forward):
+            return "\(L10n.t("Tiến")) (⌘])"
+        case .shortcut(let s):
+            return s.label
+        case .unassigned:
+            return L10n.t("Chưa gán")
+        }
+    }
+
+    private func rolePill(_ role: MouseButtonRole) -> some View {
+        Text(L10n.t(role.labelKey))
+            .font(XFinderTokens.Font.caption.weight(.medium))
+            .foregroundColor(roleColor(role))
+            .padding(.horizontal, 6).padding(.vertical, 2)
+            .background(Capsule().fill(roleColor(role).opacity(0.14)))
+            .fixedSize()
+    }
+
+    private func roleColor(_ role: MouseButtonRole) -> Color {
+        switch role {
+        case .holdTrigger, .holdTriggerWithAction: return .accentColor
+        case .assigned:     return .accentColor
+        case .scrollButton: return .accentColor
+        case .reserved:     return .primary
+        case .unassigned:   return .secondary
+        case .notDeclared:  return .orange
+        case .unknown:      return .secondary
+        }
+    }
+
+    private func buttonInspector(_ button: Int) -> some View {
+        let role = buttonRole(button)
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "computermouse.fill")
+                    .font(XFinderTokens.Font.sectionIcon)
+                    .foregroundColor(roleColor(role))
+                    .frame(width: 28, height: 28)
+                    .background(
+                        RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous)
+                            .fill(roleColor(role).opacity(0.14))
+                    )
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.t(ButtonKey.index(button)))
+                        .font(XFinderTokens.Font.row.weight(.semibold))
+                        .lineLimit(1)
+                    if let hint = ButtonLabelStructure.hintKey(forButtonNumber: button) {
+                        Text(L10n.t(hint))
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    } else if let pos = MouseControlSlot.slot(forEventButton: button)?.positionKey {
+                        Text(L10n.t(pos))
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    } else {
+                        Text(L10n.t(role.labelKey))
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 0)
+                rolePill(role)
+            }
+
+            Divider()
+
+            HStack(alignment: .firstTextBaseline) {
+                Text(L10n.t("Bấm nhanh"))
+                    .font(XFinderTokens.Font.caption.weight(.medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 80, alignment: .leading)
+                Text(buttonClickActionLabel(button, role: role))
+                    .font(XFinderTokens.Font.row)
+                    .foregroundColor(.primary)
+                Spacer()
+            }
+
+            Divider()
+
+            switch role {
+            case .holdTrigger, .holdTriggerWithAction:
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.accentColor)
+                    Text(L10n.t("Đây là nút giữ hiện tại"))
+                        .font(XFinderTokens.Font.row)
+                        .foregroundColor(.primary)
+                    Spacer()
+                }
+            default:
+                HStack(alignment: .center, spacing: 8) {
+                    HStack(spacing: 0) {
+                        Text(L10n.t("Nút giữ cử chỉ hiện tại là "))
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
+                        Text(L10n.t(compactButton: config.trigger.key))
+                            .font(XFinderTokens.Font.caption.weight(.semibold))
+                            .foregroundColor(.primary)
+                    }
+                    Spacer(minLength: 4)
+                    Button(L10n.t("Dùng làm nút giữ")) {
+                        controller.update { $0.trigger = .mouseButton(button) }
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(!role.isDeclared)
+                }
+            }
+
+            Divider()
+
+            if let note = DeviceCapabilityModel.passthroughNoteKey(forEventButton: button) {
+                Text(L10n.t(note))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(L10n.t(role.explanationKey))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous)
+                .fill(Color.secondary.opacity(0.04))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile, style: .continuous)
+                .strokeBorder(roleColor(role).opacity(0.35), lineWidth: 1)
         )
     }
 

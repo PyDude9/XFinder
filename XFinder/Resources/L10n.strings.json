@@ -11166,6 +11166,22 @@
     "Chưa cài — đang xem preset dựng sẵn": {
       "en": "Not installed — viewing its built-in preset",
       "scope": "sentence"
+    },
+    "Đây là nút giữ hiện tại": {
+      "en": "This is the current hold button",
+      "scope": "sentence"
+    },
+    "Nút giữ cử chỉ hiện tại là ": {
+      "en": "The current gesture hold button is ",
+      "scope": "fragment"
+    },
+    "Dùng làm nút giữ": {
+      "en": "Use as hold button",
+      "scope": "sentence"
+    },
+    "Bấm nhanh": {
+      "en": "Quick click",
+      "scope": "sentence"
     }
   }
 }

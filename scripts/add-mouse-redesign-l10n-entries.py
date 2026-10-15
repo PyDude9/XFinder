@@ -25,6 +25,11 @@ ENTRIES: dict[str, tuple[str, str]] = {
     # T14b — block 3's chip strip: the trailing "＋" chip and a preset the user has not installed
     "Thêm ứng dụng khác bằng Bundle ID": ("Add another app by bundle ID", S),
     "Chưa cài — đang xem preset dựng sẵn": ("Not installed — viewing its built-in preset", S),
+    # T14c — block 4: button inspector (F8/F15) and 4-direction summary
+    "Đây là nút giữ hiện tại": ("This is the current hold button", S),
+    "Nút giữ cử chỉ hiện tại là ": ("The current gesture hold button is ", F),
+    "Dùng làm nút giữ": ("Use as hold button", S),
+    "Bấm nhanh": ("Quick click", S),
 }
 
 def main() -> int:
