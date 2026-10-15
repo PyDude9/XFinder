@@ -4,6 +4,57 @@ Every agent other than the main Claude Code session appends here (newest first):
 gate it ran, and what it could NOT verify. Claude reviews these entries before merging anything. See
 `docs/AGENT_QUICKSTART.md` for the rules.
 
+## 2026-10-15 (Zed / DeepSeek V4.1 Flash, Viber Bedrock) — T14b: dải chip ứng dụng (Khối 3) thay sidebar 240pt
+
+**Lệnh của chủ:** đọc `AGENT_QUICKSTART.md` + `AGENT_TASKS.md` + mục mới nhất của worklog, làm ĐÚNG bước T14b
+(`docs/specs/T14-mouse-gestures-B.md`), tạo nhánh `agent/zed-T14`, commit đúng file của T14b, dán nguyên văn
+`sh scripts/gate-all.sh` rồi **dừng** (không push/merge/T14c). Không có điều kiện dừng nào xảy ra.
+
+| Việc | File đã sửa | Nghiệm thu riêng của việc | Chưa kiểm live |
+|:--|:--|:--|:--|
+| **T14b** — Khối 3 thành dải chip ngang (F4/F5/F24/F25) | `XFinder/Views/Components/MouseGestureAppStrip.swift` (**mới** + 4 dòng pbxproj) · `XFinder/Views/Detail/MouseGesturesDetailView.swift` · `XFinder.xcodeproj/project.pbxproj` · `XFinder/Resources/L10n.strings.json` (+2 khoá) · `scripts/add-mouse-redesign-l10n-entries.py` · `docs/AGENT_TASKS.md` (đổi trạng thái T14) · `docs/AGENT_WORKLOG.md` | `plutil -lint project.pbxproj` → `OK`; `grep -c MouseGestureAppStrip.swift /tmp/xfinder-clean-build/build.log` → `4` (>0 ✓); `orderedProfiles`/`installedBundleIDs`/`appIcon` vẫn được gọi (grep ✓); `.frame(width: 240` chỉ còn trong `mappingSection` chết; script L10n → `added 2, already present 3` | Dải chip có thật sự cuộn chip đang chọn vào khung khi mở trang (ScrollViewReader vs `.onAppear`) — cần mắt người. Cỡ icon 16pt / viền accent 1.5pt / chấm 7pt so với `variant-b.html`. Giá mỗi lần render: ~1 lookup `NSWorkspace` (`urlForApplication` + `icon(forFile:)`) cho MỖI chip trên main thread — chưa đo bằng Instruments. Trackpad cuộn ngang dải chip trên app thật. |
+
+### Đã làm — đúng 3 điểm của §T14b + 3 luật §4
+1. **F4:** `MouseGestureAppStrip` (file mới, `Views/Components/` — miễn audit token) là `ScrollView(.horizontal)` các chip: `Toàn cục` **ghim đầu** (luôn ở index 0, có dải phân cách 1×20 như wireframe) → preset theo `orderedProfiles` (đã cài trước, chưa cài vẽ `b-ghost-chip` = viền nét đứt + nền mờ) → chip của bundle người dùng tự nhập (`customProfiles`) → nút “＋”. Mỗi chip: icon thật 16pt (`NSWorkspace.icon(forFile:)`), tên ngắn (`Font.caption` 11pt ≥ 11 ✓), viền accent 1.5pt khi `id == selected`, chấm 7pt góc trên-phải khi `showsDot`. `ScrollViewReader` cuộn chip đang chọn vào giữa trong `.onAppear` + `.onChange(of: selected)` (bản SwiftUI của `scrollIntoView`). Chọn chip chỉ ghi `profile = id`; `onChange(of: profile)` sẵn có lo phần xoá chọn (đúng lối `customBundleRow`/`Xem` đang dùng).
+2. **F5 (Lỗi #15):** `frontmostHint` giữ nguyên câu S8-S12, chỉ bọc nút “Xem” trong `if !frontHasChip`. `frontHasChip` đọc **danh sách chip thật** (`appChips`), không chỉ `orderedProfiles`, nên app trước mặt là bundle tự nhập cũng tính (quyết định 6 — nêu rõ ở đây).
+3. **F25:** chuyển nút “Khôi phục toàn bộ ứng dụng này về mặc định” từ cuối Khối 4 sang **ngay dưới dải chip/dòng phụ** trong Khối 3, `.disabled(config.overrides[profile] == nil)` y như cũ (§T14b bước 3).
+4. **F24:** nút “＋” set `@State showAdvancedApps = true`; `customBundleRow` đổi thành `DisclosureGroup(isExpanded: $showAdvancedApps)` — **chỉ đổi vị trí kích hoạt**, logic ghi `profile = id.trimmed` giữ nguyên byte-for-byte.
+5. **Luật 1 (chuỗi mới vào store ngay trong bước):** +2 khoá vào `scripts/add-mouse-redesign-l10n-entries.py` rồi chạy: `"Thêm ứng dụng khác bằng Bundle ID"` (help + VoiceOver của nút “＋”), `"Chưa cài — đang xem preset dựng sẵn"` (help của chip ghost). Cả hai `scope: sentence`. Diff `L10n.strings.json` đúng **+8 dòng**, không format lại. Nút “Xem”/`Ứng dụng đang dùng`/`Mặc định toàn cục`/… đã có sẵn → tái dùng khoá cũ.
+6. **Luật 2 (không placeholder):** Khối 3–9 khác giữ nguyên khối cũ đang chạy; `profileSidebar`/`appPickerRow`/`mappingSection` **để nguyên trên đĩa, chỉ ngừng gọi từ `body`** (T14e mới xoá — theo §T14e bước 3). Trang vẫn dùng được trọn vẹn sau bước này.
+
+### Quyết định đã chốt (ghi để Claude biết chỗ lệch đặc tả)
+- **Khối 3 giữ PHẲNG, không dùng card** (quyết định 7 của handoff). Wireframe vẽ Khối 3 trong `xf-card` + tiêu đề “Ứng dụng”, nhưng §T14b chỉ đòi thay sidebar bằng dải chip; `frontmostHint` + `customBundleRow` mang sẵn `.padding(.horizontal, 20)` và đặc tả bảo tái dùng **“y hệt”**, nên bọc `SettingsSection` sẽ thụt lề đôi (cardInset 10 + page 20). Hệ quả: **cuối T14 không bước nào dựng card cho Khối 3** — nếu Claude muốn đúng wireframe, đây là một dòng việc mới.
+- **Không thêm chip riêng cho app đang chạy trước** khi nó không có preset (sidebar cũ có một hàng như vậy). §T14b bước 2 giả định đúng trường hợp đó ⇒ giữ nút “Xem”.
+- **Quy tắc chấm** theo nguyên văn đặc tả: `!front.isEmpty && chip.id == front && profile != front` với `front = controller.lastExternalBundle` (giá trị **thô**; `frontmostBundle` thay “không có gì ở trước” bằng `Toàn cục` nên không dùng được — sẽ chấm nhầm chip Toàn cục). Hệ quả: app trước mặt không có preset thì **không có chấm**; dòng phụ + nút “Xem” gánh thông tin đó.
+- **`.frame(width: 240…)` vẫn còn 1 dòng** ở dòng 432 — bên trong **`mappingSection` chết** (T14e xoá). Đọc diff: không thêm/sửa cột 240 nào; Khối 3 không còn cột app riêng.
+
+### Trả lời 7 việc-cạnh (§5) — đọc code, không mở app
+1. **Thiếu Trợ năng** (`trusted == false`): Khối 2 hiện `permissionBanner` + status; dải chip **không đọc `trusted`** (icon lấy từ `NSWorkspace`, không cần quyền) nên vẫn chọn app được. ✓
+2. **Không chuột / chưa khai báo nút**: `appChips` chỉ phụ thuộc `GestureProfiles.all` + đã cài + `overrides`, không đọc `declaredEventButtons` ⇒ dải chip render bình thường. Không có preset nào đã cài → mọi preset là ghost, vẫn bấm được. ✓
+3. **Công tắc chính TẮT**: Khối 2 hiện S3; dải chip + disclosure + F25 vẫn xem/sửa được (đúng S3). ✓
+4. **Giá trị biên**: `chips` **luôn** chứa chip Toàn cục ⇒ không bao giờ rỗng; nếu rỗng thì vẫn chỉ vẽ nút “＋”, không crash. `drawnButtons`/`scrollButtonChoices` không bị T14b đụng tới. ✓
+5. **Ngữ cảnh đổi giữa chừng**: bấm chip khi `controller.recording == true` → `profile` đổi → `onChange(of: profile)` chỉ xoá `recordingDirection`/`pickedDirection`/`pickedButton`, **không** hủy `controller.recording`/`recordingTrigger`/`recordingButton` — tôi không sửa modifier này (hành vi cũ nguyên vẹn). ✓
+6. **Cache cũ**: không đụng `hidDump`/`hidDumpExpanded` (Khối 8, T14e). Dải chip **không cache** icon: tra `NSWorkspace` mỗi lần render — chấp nhận được vì trùng lối `orderedProfiles`/`installedBundleIDs` sẵn có, nhưng **chưa đo** (xem cột “Chưa kiểm live”).
+7. **Control hứa điều không làm được**: “＋” mở đúng disclosure có ô Bundle ID + “Chọn” ghi thật; F25 gọi `controller.resetProfile(profile)` và disable đúng khi `overrides[profile] == nil`; help chip ghost “đang xem preset dựng sẵn” đúng vì bấm ghost chip chỉ đổi `profile` và resolver trả preset dựng sẵn cho bundle có preset. Không thêm control nào mới ngoài 2 thứ trên. ✓
+
+### Kết quả `sh scripts/gate-all.sh` (nguyên văn)
+
+```
+build (arm64, compile list)        OK
+tests                              Executed 1230 tests, with 0 failures (0 unexpected) in 6.582 (6.642) seconds
+check-l10n-coverage                TOTAL 0 problems across 2790 entries (2790 checked, 20 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 2790 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 848 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 45 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             6
+GATE: green
+```
+
+(`modified tracked files 6` lúc chạy gate = 4 file code (`MouseGesturesDetailView.swift`, `project.pbxproj`, `L10n.strings.json`, `scripts/add-mouse-redesign-l10n-entries.py`) + 2 file tài liệu (`docs/AGENT_TASKS.md`, `docs/AGENT_WORKLOG.md`) — file strip mới còn untracked nên không tính. `1230` test = `1226` của T14a + 4 `GesturePageStatusTests` mà review T14a thêm. `848 unwrapped` là số thông tin; tổng của cổng là 0.)
+
 ## 2026-10-15 (Claude review of T14a) — merged; one real defect fixed; agents now commit on their branch
 
 For the next agent: read this, not the long T14a entry below it.

@@ -211,6 +211,7 @@
 		7F1A010B /* MouseGestures/SpaceBinding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A010A /* MouseGestures/SpaceBinding.swift */; };
 		7F1A0107 /* Components/GestureActivityPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0106 /* Components/GestureActivityPanel.swift */; };
 		7F1A0111 /* Components/GestureButtonList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0110 /* Components/GestureButtonList.swift */; };
+		7F1A040B /* Components/MouseGestureAppStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A040A /* Components/MouseGestureAppStrip.swift */; };
 		7F1A00F1 /* MouseGestures/GestureUIDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00F0 /* MouseGestures/GestureUIDisplay.swift */; };
 		7F1A00F3 /* MouseGestures/DeviceCapability.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00F2 /* MouseGestures/DeviceCapability.swift */; };
 		7F1A00F7 /* MouseGestures/DeviceCapabilityTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00F6 /* MouseGestures/DeviceCapabilityTypes.swift */; };
@@ -628,6 +629,7 @@
 		7F1A010A /* MouseGestures/SpaceBinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/SpaceBinding.swift; sourceTree = "<group>"; };
 		7F1A0106 /* Components/GestureActivityPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/GestureActivityPanel.swift; sourceTree = "<group>"; };
 		7F1A0110 /* Components/GestureButtonList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/GestureButtonList.swift; sourceTree = "<group>"; };
+		7F1A040A /* Components/MouseGestureAppStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/MouseGestureAppStrip.swift; sourceTree = "<group>"; };
 		7F1A00F0 /* MouseGestures/GestureUIDisplay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureUIDisplay.swift; sourceTree = "<group>"; };
 		7F1A00F2 /* MouseGestures/DeviceCapability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/DeviceCapability.swift; sourceTree = "<group>"; };
 		7F1A00F6 /* MouseGestures/DeviceCapabilityTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/DeviceCapabilityTypes.swift; sourceTree = "<group>"; };
@@ -1023,6 +1025,7 @@
 				7F1A0104 /* Components/GestureActionPicker.swift */,
 				7F1A0106 /* Components/GestureActivityPanel.swift */,
 				7F1A0110 /* Components/GestureButtonList.swift */,
+				7F1A040A /* Components/MouseGestureAppStrip.swift */,
 				7F1A012C /* Components/BatteryViews.swift */,
 				7F1A014A /* Components/LiquidGlassView.swift */,
 				7F1A014C /* Components/WindowPreviewComponents.swift */,
@@ -1492,6 +1495,7 @@
 				7F1A010B /* MouseGestures/SpaceBinding.swift in Sources */,
 				7F1A0107 /* Components/GestureActivityPanel.swift in Sources */,
 				7F1A0111 /* Components/GestureButtonList.swift in Sources */,
+				7F1A040B /* Components/MouseGestureAppStrip.swift in Sources */,
 				7F1A00F1 /* MouseGestures/GestureUIDisplay.swift in Sources */,
 				7F1A00F3 /* MouseGestures/DeviceCapability.swift in Sources */,
 				7F1A00F7 /* MouseGestures/DeviceCapabilityTypes.swift in Sources */,

@@ -41,6 +41,9 @@ struct MouseGesturesDetailView: View {
     @State private var controller = GestureController.shared
     @State private var profile = GestureProfiles.fallback
     @State private var customBundle = ""
+    /// Set by the strip's "＋" chip (T14b): expands the "Nâng cao — ứng dụng khác" disclosure
+    /// that holds the bundle-ID field, which used to be a redundant sidebar row (Lỗi #15).
+    @State private var showAdvancedApps = false
     @State private var recordingDirection: GestureDirection?
     @State private var recordingTrigger = false
     /// The row whose per-row **Ghi** button armed the recording, or `nil` when the
@@ -177,18 +180,34 @@ struct MouseGesturesDetailView: View {
                     readinessRow
                 }
 
-                // ── Khối 3 — chọn ứng dụng (F4/F5/F24, dải chip ở T14b) ────────────────────
+                // ── Khối 3 — chọn ứng dụng (F4/F5/F24/F25, dải chip ở T14b) ────────────────
                 VStack(alignment: .leading, spacing: 10) {
-                    // Interim until T14b's chip strip: the list used to be a 240-pt column beside the
-                    // diagram; on its own row it would stretch its shaded box across the page.
-                    profileSidebar
-                        .frame(maxWidth: 360, alignment: .leading)
+                    // F4 — the chip strip replaced the 240-pt `profileSidebar` column (Lỗi #8).
+                    // Block 3 stays flat like blocks 5-9 rather than in the wireframe's "Ứng dụng"
+                    // card: the sub-line and the disclosure below carry their own 20-pt page
+                    // padding (reused verbatim, per the spec), which a `SettingsSection` card would
+                    // indent a second time.
+                    MouseGestureAppStrip(
+                        chips: appChips,
+                        selected: profile,
+                        icon: { appIcon(for: $0) },
+                        onSelect: { profile = $0 },
+                        onAdd: { showAdvancedApps = true })
                         .padding(.horizontal, 20)
                     frontmostHint
                     customBundleRow
+                    // F25 — spec T14b step 3: right under the strip / sub-line, same disable rule
+                    // as the old block-4 copy (which this replaces).
+                    HStack(spacing: 8) {
+                        Button(L10n.t("Khôi phục toàn bộ ứng dụng này về mặc định")) { controller.resetProfile(profile) }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .disabled(config.overrides[profile] == nil)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 20)
                 }
 
-                // ── Khối 4 — sơ đồ cử chỉ (F6-F12/F15/F25/S7/S28/S54-S68) ─────────────────
+                // ── Khối 4 — sơ đồ cử chỉ (F6-F12/F15/S7/S28/S54-S68) ──────────────────────
                 VStack(alignment: .leading, spacing: 12) {
                     SectionHeader(icon: "computermouse",
                                   title: L10n.t("Sơ đồ cử chỉ"),
@@ -249,14 +268,6 @@ struct MouseGesturesDetailView: View {
                             }
                         }
                         .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
-                    }
-                    .padding(.horizontal, 20)
-
-                    HStack(spacing: 8) {
-                        Button(L10n.t("Khôi phục toàn bộ ứng dụng này về mặc định")) { controller.resetProfile(profile) }
-                            .buttonStyle(.bordered).controlSize(.small)
-                            .disabled(config.overrides[profile] == nil)
-                        Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 20)
                 }
@@ -657,7 +668,11 @@ struct MouseGesturesDetailView: View {
                     Text(L10n.t("Ứng dụng đang dùng") + ": " + front)
                         .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         .lineLimit(1).truncationMode(.middle)
-                    Button(L10n.t("Xem")) { profile = front }.controlSize(.small)
+                    // F5 — kept only when the front app has no chip of its own (T14b.2): if it is
+                    // already a clickable chip, this button duplicated that chip (Lỗi #15).
+                    if !frontHasChip {
+                        Button(L10n.t("Xem")) { profile = front }.controlSize(.small)
+                    }
                 }
                 if hasBuiltIn {
                     if hasOverride {
@@ -815,9 +830,13 @@ struct MouseGesturesDetailView: View {
             + "\(count) " + L10n.t("nút.")
     }
 
-    private var appIcon: NSImage? {
-        guard profile != GestureProfiles.fallback else { return nil }
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: profile) else { return nil }
+    private var appIcon: NSImage? { appIcon(for: profile) }
+
+    /// The real icon for any bundle id. Block 3's strip needs one per chip, so this is
+    /// id-parameterised — `appIcon` above reads the `profile` @State and cannot serve a strip.
+    private func appIcon(for bundle: String) -> NSImage? {
+        guard bundle != GestureProfiles.fallback else { return nil }
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) else { return nil }
         return NSWorkspace.shared.icon(forFile: url.path)
     }
 
@@ -1014,7 +1033,7 @@ struct MouseGesturesDetailView: View {
     }
 
     private var customBundleRow: some View {
-        DisclosureGroup {
+        DisclosureGroup(isExpanded: $showAdvancedApps) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     TextField(L10n.t("Bundle ID ứng dụng khác"), text: $customBundle)
@@ -1090,5 +1109,40 @@ struct MouseGesturesDetailView: View {
     private var customProfiles: [String] {
         let known = Set(GestureProfiles.all.map(\.id))
         return Set(Array(config.overrides.keys) + [profile]).subtracting(known).sorted()
+    }
+
+    // MARK: - Block 3's chip strip (T14b)
+
+    /// The chips of block 3, in display order: Global pinned first (the anchor every app without
+    /// a preset falls back to), then the built-in presets — `orderedProfiles` puts the installed
+    /// ones first and the rest are drawn as dashed "ghost" chips — then any bundle the user typed
+    /// in. The front app is deliberately given **no** chip of its own when it has no preset: its
+    /// sub-line and "Xem" button carry that case (spec T14b step 2).
+    private var appChips: [MouseGestureAppChip] {
+        let installed = Set(installedBundleIDs())
+        // The dot's rule reads the RAW frontmost bundle: `frontmostBundle` substitutes Global for
+        // "nothing in front", and dotting Global in that state would be a claim we cannot make.
+        let front = controller.lastExternalBundle
+        func showsDot(_ id: String) -> Bool { !front.isEmpty && id == front && profile != front }
+        let global = MouseGestureAppChip(id: GestureProfiles.fallback,
+                                         title: L10n.t("Mặc định toàn cục"),
+                                         isGhost: false,
+                                         showsDot: showsDot(GestureProfiles.fallback))
+        let presets = orderedProfiles.filter { $0.id != GestureProfiles.fallback }.map { item in
+            MouseGestureAppChip(id: item.id, title: item.name,
+                                isGhost: !installed.contains(item.id), showsDot: showsDot(item.id))
+        }
+        let custom = customProfiles.map { id in
+            MouseGestureAppChip(id: id, title: id, isGhost: false, showsDot: showsDot(id))
+        }
+        return [global] + presets + custom
+    }
+
+    /// Whether the app in front already has a clickable chip — the sub-line keeps F5's "Xem"
+    /// button only when it does not (T14b step 2). Uses the actual chip list, not `orderedProfiles`
+    /// alone, so a chip backed by a custom bundle id (not a built-in preset) also counts.
+    private var frontHasChip: Bool {
+        let front = controller.lastExternalBundle
+        return !front.isEmpty && appChips.contains { $0.id == front }
     }
 }

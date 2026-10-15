@@ -22,6 +22,9 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Đang ghi phím tắt — bấm tổ hợp phím trên bàn phím (Esc để hủy).":
         ("Recording a shortcut — press the key combination on the keyboard (Esc to cancel).", S),
     "Bật/tắt cử chỉ": ("Turn gestures on or off", S),
+    # T14b — block 3's chip strip: the trailing "＋" chip and a preset the user has not installed
+    "Thêm ứng dụng khác bằng Bundle ID": ("Add another app by bundle ID", S),
+    "Chưa cài — đang xem preset dựng sẵn": ("Not installed — viewing its built-in preset", S),
 }
 
 def main() -> int:
