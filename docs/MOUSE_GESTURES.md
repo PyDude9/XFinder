@@ -556,12 +556,12 @@ hướng của Safari sẽ giữ đúng Chưa gán, không quay về ⌘T.
 | Nhóm | Bundle IDs |
 |---|---|
 | Browser | `com.microsoft.edgemac`, `com.apple.Safari`, `com.google.Chrome` |
-| Dev/AI | `com.visualstudio.code`, `com.cursor.ide`, `dev.zed.Zed`, `com.antigravity.ide`, `com.anthropic.claude` |
-| Design | `com.adobe.Photoshop`, `com.lemon.CapCutMac` |
-| Chat | `com.hnc.Discord`, `com.vng.zalo`, `org.telegram.ayugram` |
+| Dev/AI | `com.microsoft.VSCode`, `com.todesktop.230313mzl4w4u92`, `dev.zed.Zed`, `com.google.antigravity`, `com.anthropic.claudefordesktop` |
+| Design | `com.adobe.Photoshop`, `com.lemon.lvoverseas` |
+| Chat | `com.hnc.Discord`, `com.vng.zalo`, `one.ayugram.AyuGramDesktop` |
 | Office | `com.microsoft.Excel`, `com.microsoft.Word` |
 | Terminal | `net.kovidgoyal.kitty`, `com.apple.Terminal`, `com.googlecode.iterm2` |
-| Notes | `co.elastic.obsidian`, `com.notion.Notion-App` |
+| Notes | `md.obsidian`, `notion.id` |
 
 Đây là các ID cấu hình theo yêu cầu, không phải kết quả kiểm kê app đã cài.
 Nếu bản app của bạn dùng ID khác (beta, fork…), chọn **Dùng ứng dụng vừa hoạt động**

@@ -43,7 +43,7 @@ final class MouseGestureTests: XCTestCase {
     }
     func testKnownProfilesDoNotInheritUnassignedActions() {
         let config = GestureConfiguration()
-        for id in ["com.visualstudio.code","com.cursor.ide","dev.zed.Zed","com.antigravity.ide","com.anthropic.claude"] {
+        for id in ["com.microsoft.VSCode","com.todesktop.230313mzl4w4u92","dev.zed.Zed","com.google.antigravity","com.anthropic.claudefordesktop"] {
             XCTAssertEqual(config.action(bundle:id,direction:.up),.unassigned)
             XCTAssertEqual(config.action(bundle:id,direction:.down),.unassigned)
             // Left/right are the platform *history* convention, which every editor
@@ -58,7 +58,7 @@ final class MouseGestureTests: XCTestCase {
             XCTAssertEqual(config.action(bundle:"com.microsoft.Word",direction:d),.unassigned)
         }
         XCTAssertNotEqual(config.action(bundle:"com.microsoft.Excel",direction:.left),.unassigned)
-        XCTAssertEqual(config.action(bundle:"co.elastic.obsidian",direction:.down),.unassigned)
+        XCTAssertEqual(config.action(bundle:"md.obsidian",direction:.down),.unassigned)
     }
     func testFallbackAndExplicitDisable() {
         var config = GestureConfiguration()
@@ -395,7 +395,7 @@ final class MouseGestureTests: XCTestCase {
         XCTAssertEqual(config.source(bundle: "com.apple.Safari", direction: .up), .preset)
         XCTAssertEqual(config.source(bundle: "com.apple.Safari", direction: .tiltLeft), .preset)
         // Dev up is intentionally unassigned — not a missing preset.
-        XCTAssertEqual(config.source(bundle: "com.visualstudio.code", direction: .up), .unassigned)
+        XCTAssertEqual(config.source(bundle: "com.microsoft.VSCode", direction: .up), .unassigned)
         // Global's tilt arms are *unassigned* in the stored profile on purpose: the
         // engine's tilt branch passes the event through for `.unassigned`, which is
         // exactly "let the wheel's sideways motion be a sideways scroll". Storing
@@ -556,7 +556,7 @@ final class MouseGestureTests: XCTestCase {
         }
 
         // Dev & AI: history on the horizontal arms, up/down deliberately empty.
-        for id in ["com.visualstudio.code", "com.cursor.ide", "dev.zed.Zed", "com.antigravity.ide", "com.anthropic.claude"] {
+        for id in ["com.microsoft.VSCode", "com.todesktop.230313mzl4w4u92", "dev.zed.Zed", "com.google.antigravity", "com.anthropic.claudefordesktop"] {
             XCTAssertEqual(cfg.action(bundle: id, direction: .left), GestureProfiles.key(33, c), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .right), GestureProfiles.key(30, c), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .up), .unassigned, id)
@@ -564,7 +564,7 @@ final class MouseGestureTests: XCTestCase {
         }
 
         // Media / editing: bare [ ] with no modifiers.
-        for id in ["com.adobe.Photoshop", "com.lemon.CapCutMac"] {
+        for id in ["com.adobe.Photoshop", "com.lemon.lvoverseas"] {
             XCTAssertEqual(cfg.action(bundle: id, direction: .up), GestureProfiles.key(29, c), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .down), GestureProfiles.key(6, c), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .left), GestureProfiles.key(33, 0), id)
@@ -574,7 +574,7 @@ final class MouseGestureTests: XCTestCase {
         }
 
         // Messaging: ⌥↑ / ⌥↓ only.
-        for id in ["com.hnc.Discord", "com.vng.zalo", "org.telegram.ayugram"] {
+        for id in ["com.hnc.Discord", "com.vng.zalo", "one.ayugram.AyuGramDesktop"] {
             XCTAssertEqual(cfg.action(bundle: id, direction: .left), GestureProfiles.key(126, opt), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .right), GestureProfiles.key(125, opt), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .up), .unassigned, id)
@@ -594,7 +594,7 @@ final class MouseGestureTests: XCTestCase {
         XCTAssertEqual(cfg.action(bundle: "com.microsoft.Word", direction: .left), .unassigned)
         XCTAssertEqual(cfg.action(bundle: "com.microsoft.Word", direction: .right), .unassigned)
         // Notes: ⌘P plus ⌘⌥← / ⌘⌥→; down is ambiguous (block vs page) -> unassigned.
-        for id in ["co.elastic.obsidian", "com.notion.Notion-App"] {
+        for id in ["md.obsidian", "notion.id"] {
             XCTAssertEqual(cfg.action(bundle: id, direction: .up), GestureProfiles.key(35, c), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .left), GestureProfiles.key(123, c | opt), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .right), GestureProfiles.key(124, c | opt), id)
@@ -617,7 +617,7 @@ final class MouseGestureTests: XCTestCase {
     /// unless they genuinely have the same shortcuts, and no ambiguous slot may be
     /// filled with an invented key.
     func testFamiliesDoNotShareAccidentalMappings() {
-        let dev = GestureProfiles.all.first { $0.id == "com.visualstudio.code" }!.defaults
+        let dev = GestureProfiles.all.first { $0.id == "com.microsoft.VSCode" }!.defaults
         let browsers = GestureProfiles.all.first { $0.id == "com.apple.Safari" }!.defaults
         let excel = GestureProfiles.all.first { $0.id == "com.microsoft.Excel" }!.defaults
         let word = GestureProfiles.all.first { $0.id == "com.microsoft.Word" }!.defaults
@@ -1164,11 +1164,11 @@ final class MouseGestureTests: XCTestCase {
     /// page must never read as though the user has to build mappings by hand.
     func testEveryDailyDriverHasItsOwnPreset() {
         let dailyDrivers = [
-            "com.anthropic.claude", "com.antigravity.ide", "dev.zed.Zed",
+            "com.anthropic.claudefordesktop", "com.google.antigravity", "dev.zed.Zed",
             "net.kovidgoyal.kitty", "com.apple.Terminal",
             "com.apple.Safari", "com.google.Chrome", "com.microsoft.edgemac",
             "com.microsoft.Word", "com.microsoft.Excel",
-            "com.adobe.Photoshop", "com.lemon.CapCutMac",
+            "com.adobe.Photoshop", "com.lemon.lvoverseas",
         ]
         for id in dailyDrivers {
             XCTAssertTrue(GestureProfiles.hasPreset(bundle: id),

@@ -98,6 +98,18 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 | ~~Q-DIAG-4~~ | **Xong 2026-10-15:** bạn đưa App ID `EDD21AF7-…F36B62` + namespace `com.xfinder`, đã điền vào Info.plist (giá trị công khai, nằm trong mọi bản build). Lưu ý đo được: endpoint của TelemetryDeck trả **HTTP 200 "OK" cho cả một namespace bịa**, nên 200 không chứng minh namespace đúng — chỉ dashboard xác nhận được (T-ANALYTICS-5) | — |
 | Q-DIAG-5 | TelemetryDeck ghi trong FAQ rằng sự kiện lưu trữ lạnh có thể giữ 7–10 năm. Có muốn ghi câu này lên trang Giới thiệu không? | Chưa ghi |
 
+### Q-MG · Thiết kế lại trang Chuột & cử chỉ (2026-10-15)
+
+Ảnh tham chiếu bạn gửi (app khác) có ba thứ mà engine cử chỉ của XFinder **chưa có**. Wireframe không vẽ control cho chúng
+(luật Trung thực: control nào cũng phải làm được đúng điều nó ghi).
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-MG-1 | Cử chỉ theo phím bổ trợ (giữ Control/Option + kéo = một bộ hành động khác, như "Snap Window" / "Window Hub" trong ảnh)? Cần sửa engine | Chưa làm |
+| Q-MG-2 | Mỗi nút một vòng 4 hướng riêng (hiện XFinder chỉ có MỘT nút giữ × 4 hướng)? Cần sửa engine + cấu hình | Chưa làm |
+| Q-MG-3 | Tuỳ biến cuộn chuột (đổi hướng cuộn, làm mượt, tốc độ, chế độ gia tốc/đều)? Là một tính năng mới, cần tap cuộn riêng | Chưa làm |
+| Q-MG-4 | Sau khi sửa bundle ID (2026-10-15), Claude / VS Code / Cursor / Antigravity giờ dùng preset nhóm Dev & AI: kéo lên/xuống **Chưa gán** (không gửi gì), trái/phải ⌘[ / ⌘]. Trước đó các app này rơi về bảng Mặc định toàn cục (Mission Control, App Exposé, đổi Space). Muốn kéo lên/xuống trong các app đó vẫn là Mission Control / App Exposé? (đặt riêng cho từng app trên trang, hoặc đổi preset nhóm Dev & AI) | Giữ preset như thiết kế; bạn tự đặt từng app nếu muốn |
+
 ## Phần 2 — Cần test tay (T)
 
 Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
@@ -320,8 +332,10 @@ giữa họ là thêm một lượt** — chưa có lượt model nào được 
 | T-D4b | Bật Xem trước link, copy một link | Thẻ hiện tiêu đề + ảnh của trang |
 
 ### Cửa sổ, chuột, bàn phím
+
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
+| T-MG-BID | Mở Claude (hoặc VS Code, Cursor, Notion…), giữ nút cử chỉ rồi kéo sang trái/phải | Claude, VS Code, Cursor, Antigravity: trái/phải gửi ⌘[ / ⌘]; lên/xuống không gửi gì. Notion/Obsidian: trái/phải ⌘⌥← / ⌘⌥→. Trang Chuột & cử chỉ: các app này nằm trong nhóm đã cài ở đầu danh sách (đã đo bằng AX 2026-10-15) |
 | T-C1 | Bật ⌘-Tab của XFinder; khi đang mở: Q · H · Space · ` · , | Đóng cửa sổ · ẩn app · phóng to ảnh · chuyển app ↔ cửa sổ · tìm |
 | T-GEST | Giữ nút cử chỉ rồi kéo lên / sang phải (profile Global) | Mission Control mở / chuyển Space |
 | T-QUIT | Bật Giữ ⌘Q; nhấn nhanh ⌘Q rồi giữ ⌘Q ở một app | Nhấn nhanh không thoát; giữ ~1 s thì thoát |

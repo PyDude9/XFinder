@@ -465,9 +465,9 @@ extension GestureProfiles {
         // Left/Right send **editor navigation** — the platform's own history
         // convention — rather than one app's pane-splitting keys, because which
         // direction means "split" vs "focus left group" differs per app.
-        for (id, name) in [("com.visualstudio.code", "VS Code"), ("com.cursor.ide", "Cursor"),
-                           ("dev.zed.Zed", "Zed"), ("com.antigravity.ide", "Antigravity"),
-                           ("com.anthropic.claude", "Claude")] {
+        for (id, name) in [("com.microsoft.VSCode", "VS Code"), ("com.todesktop.230313mzl4w4u92", "Cursor"),
+                           ("dev.zed.Zed", "Zed"), ("com.google.antigravity", "Antigravity"),
+                           ("com.anthropic.claudefordesktop", "Claude")] {
             result.append(profile(id, name,
                                   up: .unassigned(.horizontalScroll),
                                   down: .unassigned(.horizontalScroll),
@@ -503,7 +503,7 @@ extension GestureProfiles {
         // is Undo in both. Left/Right send the bracket pair, which is a brush/tool
         // size convention in Photoshop — **not** a claim about timeline scrubbing,
         // which is why nothing in this profile is labelled with a media verb.
-        for (id, name) in [("com.adobe.Photoshop", "Photoshop"), ("com.lemon.CapCutMac", "CapCut")] {
+        for (id, name) in [("com.adobe.Photoshop", "Photoshop"), ("com.lemon.lvoverseas", "CapCut")] {
             result.append(profile(id, name,
                                   up: .appShortcut(.zoomToFit, GestureShortcut(key: GestureKeyCode.zero, flags: GestureShortcut.command)),
                                   down: .appShortcut(.undo, GestureShortcut(key: GestureKeyCode.z, flags: GestureShortcut.command)),
@@ -533,7 +533,7 @@ extension GestureProfiles {
 
         // ── Messaging
         for (id, name) in [("com.hnc.Discord", "Discord"), ("com.vng.zalo", "Zalo"),
-                           ("org.telegram.ayugram", "AyuGram")] {
+                           ("one.ayugram.AyuGramDesktop", "AyuGram")] {
             result.append(profile(id, name,
                                   up: .unassigned(.previousItem),
                                   down: .unassigned(.nextItem),
@@ -546,7 +546,7 @@ extension GestureProfiles {
         // Down stays Unassigned: "add a block" (Notion `/`) and "new note"
         // (`⌘N` in Obsidian, `⌘N` in Notion but for a *page*) are different actions
         // with different consequences, so one shared cell would be wrong in one app.
-        for (id, name) in [("co.elastic.obsidian", "Obsidian"), ("com.notion.Notion-App", "Notion")] {
+        for (id, name) in [("md.obsidian", "Obsidian"), ("notion.id", "Notion")] {
             result.append(profile(id, name,
                                   up: .appShortcut(.nextItem, GestureShortcut(key: GestureKeyCode.p, flags: GestureShortcut.command)),
                                   down: .unassigned(.previousItem),
@@ -557,6 +557,24 @@ extension GestureProfiles {
         _ = (back, forward, nextSpace, previousSpace, zoomIn, zoomOut, wordLeft, wordRight)
         return result
     }()
+
+    /// Bundle ids the presets used until 2026-10-15, mapped to the ids the apps really have.
+    ///
+    /// Measured on the owner's Mac (`mdfind "kMDItemCFBundleIdentifier == '…'"` plus each app's Info.plist): none of the
+    /// old ids belonged to any installed app, so eight presets never applied and those apps fell through to Global —
+    /// including Claude, the app the owner works in all day. `validate()` moves an override stored under an old id to
+    /// the new one, so rows a user customised under "VS Code" keep working. Photoshop and iTerm2 are not installed on
+    /// that Mac, so their ids are unmeasured. `scripts/check-gesture-bundle-ids.sh` re-runs the measurement.
+    static let renamedBundleIDs: [String: String] = [
+        "com.visualstudio.code": "com.microsoft.VSCode",
+        "com.cursor.ide": "com.todesktop.230313mzl4w4u92",
+        "com.antigravity.ide": "com.google.antigravity",
+        "com.anthropic.claude": "com.anthropic.claudefordesktop",
+        "com.lemon.CapCutMac": "com.lemon.lvoverseas",
+        "org.telegram.ayugram": "one.ayugram.AyuGramDesktop",
+        "co.elastic.obsidian": "md.obsidian",
+        "com.notion.Notion-App": "notion.id",
+    ]
 
     /// Which preset governs a bundle, or nil when the app has none of its own and
     /// therefore inherits Global. Published so the UI can say "this app has no
@@ -683,6 +701,12 @@ struct GestureConfiguration: Codable, Sendable {
         deadzone = deadzone.isFinite ? min(200, max(4, deadzone)) : 12
         if buttonActions.isEmpty {
             buttonActions = GestureConfigStore.defaultButtonActions
+        }
+        // Overrides saved under a bundle id the presets used to get wrong move to the real id. Where both exist, the
+        // rows already under the real id win and the old ones only fill the directions it does not set.
+        for (old, new) in GestureProfiles.renamedBundleIDs {
+            guard let moved = overrides.removeValue(forKey: old) else { continue }
+            overrides[new] = moved.merging(overrides[new] ?? [:]) { _, current in current }
         }
     }
 }
