@@ -356,6 +356,13 @@ struct MouseGesturesDetailView: View {
                 pickedDirection = nil
             }
         }
+        // The other half: an arm on the diagram (or a tilt chip) sets only `pickedDirection`, so without this a
+        // previously picked button chip stayed highlighted beside the arrow (T14c review).
+        .onChange(of: pickedDirection) { _, newDirection in
+            if newDirection != nil {
+                pickedButton = nil
+            }
+        }
     }
 
     // MARK: - Hardware probe (L4 / R4)
@@ -644,7 +651,8 @@ struct MouseGesturesDetailView: View {
     private func directionSummaryRow(_ direction: GestureDirection) -> some View {
         let row = resolved(direction)
         let action = summaryActionName(direction, row: row)
-        let chord = row.caption ?? ""
+        // A chord in glyphs, or — for a system action this Mac has no shortcut for — a translated sentence.
+        let chord = row.displayCaption(translate: { L10n.t($0) }) ?? ""
         return Button {
             pickedDirection = direction
             pickedButton = nil
@@ -670,6 +678,8 @@ struct MouseGesturesDetailView: View {
                         .font(XFinderTokens.Font.row)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(minWidth: 0, alignment: .leading)
                 }
 
                 Spacer(minLength: 4)
@@ -677,6 +687,7 @@ struct MouseGesturesDetailView: View {
                 if !chord.isEmpty {
                     Text(chord)
                         .font(XFinderTokens.Font.mono.weight(.semibold))
+                        .foregroundColor(row.isUnboundSystemAction ? .orange : .primary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(
@@ -752,9 +763,9 @@ struct MouseGesturesDetailView: View {
     private func buttonActionDisplay(_ action: ButtonAction) -> String {
         switch action {
         case .instant(.back):
-            return "\(L10n.t("Lùi")) (⌘[)"
+            return "\(L10n.t(InstantAction.back.labelKey)) (\(InstantAction.back.shortcut.label))"
         case .instant(.forward):
-            return "\(L10n.t("Tiến")) (⌘])"
+            return "\(L10n.t(InstantAction.forward.labelKey)) (\(InstantAction.forward.shortcut.label))"
         case .shortcut(let s):
             return s.label
         case .unassigned:
@@ -856,12 +867,17 @@ struct MouseGesturesDetailView: View {
                             .foregroundColor(.primary)
                     }
                     Spacer(minLength: 4)
-                    Button(L10n.t("Dùng làm nút giữ")) {
-                        controller.update { $0.trigger = .mouseButton(button) }
+                    // `isAssignable`, not `isDeclared`: left and right click are declared but RESERVED. T14c gated on
+                    // `isDeclared`, so the right-click chip offered to become the hold trigger (a valid button number,
+                    // so validate() kept it) and left click silently snapped back. GestureButtonList always used
+                    // `isAssignable`; an undeclared button the user really pressed stays assignable on purpose.
+                    if role.isAssignable {
+                        Button(L10n.t("Dùng làm nút giữ")) {
+                            controller.update { $0.trigger = .mouseButton(button) }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
                     }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .disabled(!role.isDeclared)
                 }
             }
 

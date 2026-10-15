@@ -77,7 +77,7 @@ struct GestureActionPicker: View {
                         .font(.system(size: 12))
                         .lineLimit(1)
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 9, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))   // spec floor: nothing under 11 pt
                         .foregroundColor(.secondary)
                 }
             }

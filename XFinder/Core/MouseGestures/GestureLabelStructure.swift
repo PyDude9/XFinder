@@ -224,3 +224,14 @@ enum GestureAppChooser {
         return governing == selected ? nil : governing
     }
 }
+
+extension ResolvedGestureRow {
+    /// The caption as it must be DISPLAYED (T14c review). `caption` is a chord in glyphs (`⌘[`) — shown
+    /// verbatim — EXCEPT for a macOS system action this Mac has no shortcut for, where it is the store
+    /// key "Chưa gán trong macOS". T14c's direction summary printed it with a bare `Text(row.caption)`, so
+    /// the English page showed Vietnamese. Every surface that prints a caption goes through this.
+    func displayCaption(translate: (String) -> String) -> String? {
+        guard let caption else { return nil }
+        return isUnboundSystemAction ? translate(caption) : caption
+    }
+}

@@ -75,3 +75,31 @@ final class GestureAppChooserTests: XCTestCase {
         XCTAssertNil(dot("com.tinyspeck.slackmacgap", selected: "*"), "Global selected and governing")
     }
 }
+
+/// How a resolved row's caption is DISPLAYED (T14c review): glyphs verbatim, the unbound-system-action
+/// sentence translated. The direction summary printed the raw key, so the English page showed Vietnamese.
+final class GestureCaptionDisplayTests: XCTestCase {
+    private let translate: (String) -> String = { "EN(\($0))" }
+
+    func testAnUnboundSystemActionCaptionIsTranslated() {
+        // Global "up" is Mission Control; with no bindings this Mac has no shortcut for it.
+        let row = GestureMap.row(overrides: [:], bundle: GestureProfiles.fallback, direction: .up, systemBindings: .empty)
+        XCTAssertTrue(row.isUnboundSystemAction, "precondition: the walk must hit the unbound case")
+        let shown = row.displayCaption(translate: translate)
+        XCTAssertEqual(shown, "EN(\(row.caption ?? ""))")
+        XCTAssertNotEqual(shown, row.caption, "a raw store key must never reach the screen")
+    }
+
+    func testABoundCaptionIsShownAsGlyphsUntouched() {
+        let bindings = GestureSystemBindings([.missionControl: GestureShortcut(key: 126, flags: GestureShortcut.control)])
+        let row = GestureMap.row(overrides: [:], bundle: GestureProfiles.fallback, direction: .up, systemBindings: bindings)
+        XCTAssertFalse(row.isUnboundSystemAction)
+        XCTAssertEqual(row.displayCaption(translate: translate), row.caption, "glyphs are not a translation key")
+        XCTAssertEqual(row.displayCaption(translate: translate), "⌃↑")
+    }
+
+    func testNoCaptionStaysNil() {
+        let row = GestureMap.row(overrides: [:], bundle: "com.example.unknown", direction: .down, systemBindings: .empty)
+        if row.caption == nil { XCTAssertNil(row.displayCaption(translate: translate)) }
+    }
+}

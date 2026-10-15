@@ -25,6 +25,7 @@
 #   M8  the shortcut-recording sentence sending the user to the mouse
 #   M9  the app strip dotting nothing for an app without its own chip (T14b review)
 #   M10 the dot drawn on the chip that is already selected
+#   M11 a row's unbound-system-action caption printed as the raw Vietnamese store key (T14c review)
 #
 # ── RE-ANCHORED 2026-09-22 ──────────────────────────────────────────────────
 # M1, M2 and M5 had "anchor moved" (HARNESS ERROR) after the model stopped
@@ -164,6 +165,11 @@ mutate "M9 an app without its own chip dots nothing" "$LABEL_SRC" \
 mutate "M10 the dot ignores the selection" "$LABEL_SRC" \
   '        return governing == selected ? nil : governing' \
   '        return governing'
+
+# M11: a row's caption shown raw again (T14c review — the English summary printed "Chưa gán trong macOS").
+mutate "M11 unbound system-action caption shown untranslated" "$LABEL_SRC" \
+  '        return isUnboundSystemAction ? translate(caption) : caption' \
+  '        return caption'
 
 restore
 AFTER_HASH=$(shasum -a 256 "$REAL" | cut -d' ' -f1)
