@@ -4,6 +4,19 @@ Every agent other than the main Claude Code session appends here (newest first):
 gate it ran, and what it could NOT verify. Claude reviews these entries before merging anything. See
 `docs/AGENT_QUICKSTART.md` for the rules.
 
+## 2026-10-15 (Claude) — the queue moved to Notion; this file is now the fallback path
+
+`docs/AGENT_NOTION.md` is the routine (roles, write zones, claim handshake, Runs, view URLs, schema, payloads, three
+prompts). Measured today on the Notion workspace: schema extended (Spec Path · Branch · Claimed By · Pre-reviewed ·
+Block Reason · Merged As), import-era States removed, five views created and the Queue view read back via `mode: view`
+(returns exactly T14d), T14a–T14c = Done, T14d = Ready (spec blob `53e3659`, baseline gate green on `main a2954e2`,
+Run `R-MAIN-a2954e2-gate`), T14e/T14f waiting. **SQL queries of the Notion MCP hit the plan's usage limit after 5
+calls** — agents must use views and `fetch`, never SQL. The routine went through an adversarial review (4 lenses × 2
+refuters: 13 confirmed, 4 split, 2 refuted) before being written down; every standing finding is addressed in the doc.
+
+**Write here only when you cannot reach Notion** (AGENT_NOTION §7); Claude copies such an entry into a Run on return
+after checking for a duplicate claim. Not verified live yet: a real Builder claiming through Notion (T-NOTION-1…4).
+
 ## 2026-10-15 (Claude) — T14d never landed; the spec was the reason; fixed
 
 The first T14d session ended without a commit, an edit or a worklog entry: its transcript shows it re-reading

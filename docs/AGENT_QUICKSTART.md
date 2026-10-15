@@ -1,7 +1,8 @@
 # XFinder — quickstart for any coding agent (Zed, OpenCode, Antigravity, Cursor, Codex…)
 
-Read this first. **If the owner sent you here to do a task, the task list, the "small task" rubric, the forbidden files
-and the exact procedure are in `docs/AGENT_TASKS.md` — follow that file.** This one is short on purpose; the full
+Read this first. **If the owner sent you here to do a task: the queue, the claim handshake and your Run live in Notion
+(`docs/AGENT_NOTION.md`); the rubric, the forbidden files and the exact procedure are in `docs/AGENT_TASKS.md` — follow
+both.** This one is short on purpose; the full
 history lives in `CLAUDE.md` (local, git-ignored, ~460 KB — grep it by section title, never load it whole) and in
 `docs/PROJECT_NOTES_2026-10-13.md` (a tracked snapshot, older than this file; grep it, do not load it whole).
 

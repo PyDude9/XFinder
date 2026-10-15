@@ -4,9 +4,11 @@ Native macOS 14+ utility (Swift 6, SwiftUI + AppKit, arm64 only). Claude Code is
 Zed, Antigravity, Cursor, Codex) work from a task board while Claude is out of quota.
 
 1. **Rules and commands:** `docs/AGENT_QUICKSTART.md` (short, current). Read it before doing anything.
-2. **What you may work on, and the exact procedure:** `docs/AGENT_TASKS.md`. Work only on a task listed there, one task
-   per session, on your own branch `agent/<tool>-<ID>`.
-3. **Log what you did and what you could not verify:** `docs/AGENT_WORKLOG.md` (newest first).
+2. **What you may work on:** the Notion view **Queue — Ready** (claim handshake, Runs, roles: `docs/AGENT_NOTION.md`).
+   **The exact procedure, rubric and forbidden files:** `docs/AGENT_TASKS.md`. One task per session, on your own
+   branch `agent/<tool>-<ID>`. The spec is always a file in `docs/specs/` — never a Notion page.
+3. **Log what you did and what you could not verify:** your Run in Notion (`docs/AGENT_NOTION.md` §4). Only when you
+   cannot reach Notion: `docs/AGENT_WORKLOG.md` (newest first).
 4. Long project history (2026-10-13 snapshot, ~150 KB): `docs/PROJECT_NOTES_2026-10-13.md`. Do not load it whole —
    grep it by section title when the quickstart sends you there.
 

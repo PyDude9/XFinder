@@ -58,7 +58,12 @@ Claude đã sửa lại các chỗ sai này. Quy tắc ở mục 4 và trong `AG
 
 ## 4. Quy trình khi Claude hết quota
 
-**Giao việc từ bảng `docs/AGENT_TASKS.md`**, đừng tự nghĩ việc cho agent. Bảng có:
+**Từ 2026-10-15: hàng đợi nằm ở Notion** — view *Queue — Ready* (`docs/AGENT_NOTION.md`: cách nhận việc, Run, ba prompt
+để dán). Agent đã đăng nhập Notion MCP thì dán prompt Builder ở `AGENT_NOTION.md` §10; agent chưa đăng nhập thì bạn tự
+ghi `Claimed By` + `Doing` trên trang task (điện thoại được) rồi dán bản dự phòng ở `AGENT_TASKS.md` §0. Việc `Blocked`
+hiện ở view *Blocked* — đó là cách duy nhất bạn biết một agent đã dừng; mở view đó trước khi giao việc kế.
+
+**Quy tắc vẫn ở `docs/AGENT_TASKS.md`**, đừng tự nghĩ việc cho agent. Bảng có:
 
 - cách chia việc: Claude viết đặc tả và review, agent khác làm; không giới hạn cỡ việc, cỡ việc quyết định quy trình (mục 1);
 - vùng cấm và vùng cần cổng thêm (mục 2);
@@ -83,5 +88,6 @@ Claude đã sửa lại các chỗ sai này. Quy tắc ở mục 4 và trong `AG
    ```
 5. **Chuyển hẳn một phiên dở dang** (việc lớn đang làm mà Claude bị dừng giữa chừng): notch ▸ Agent ▸ phiên Claude ▸
    **Chuyển sang…** ▸ OpenCode. Phiên mới nhận tin bàn giao; nhắc nó đọc `docs/AGENT_QUICKSTART.md` trước.
-6. **Khi Claude quay lại**, nói: "đọc docs/AGENT_WORKLOG.md và review các nhánh agent/*". Claude làm theo mục 4 của
-   `docs/AGENT_TASKS.md`: kiểm phạm vi, tự chạy lại nghiệm thu, gộp hoặc bỏ, ghi lý do.
+6. **Khi Claude quay lại**, dán prompt "Claude khi có quota" ở `docs/AGENT_NOTION.md` §10 (view Blocked trước, view
+   Review sau; worklog chỉ là đường dự phòng). Claude làm theo mục 4 của `docs/AGENT_TASKS.md`: kiểm phạm vi, tự chạy
+   lại nghiệm thu, gộp hoặc bỏ, ghi lý do, ghi `Merged As`, đặt việc kế `Ready`.

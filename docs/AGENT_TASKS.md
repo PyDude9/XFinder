@@ -5,14 +5,22 @@ cách nhiều người dùng nhiều model cùng làm (Aider tách model "archit
 "khám phá → kế hoạch → code" và tách người viết với người review). **Không giới hạn cỡ việc nữa**: cỡ việc quyết định
 quy trình phải theo (mục 1), không quyết định ai được làm.
 
+**Từ 2026-10-15 hàng đợi và trạng thái việc nằm ở Notion** — `docs/AGENT_NOTION.md`: view *Queue — Ready* quyết định
+việc kế, nhận việc bằng `Claimed By`, kết quả ghi vào một Run. Tệp này giữ **quy tắc** (mục 1–3) và **chỉ mục đặc tả**
+(mục 6); đặc tả luôn là file trong `docs/specs/`. Agent không nối được Notion thì đi đường dự phòng ở `AGENT_NOTION.md` §7
+(chủ dự án dán ID + Spec Path + Spec Revision, kết quả ghi vào `docs/AGENT_WORKLOG.md`).
+
 ## 0. Cách giao việc (cho bạn)
 
-Mở agent ngay trong thư mục repo (`cd ~/github/XFinder && opencode`, hoặc File ▸ Open Folder trong Zed / Antigravity), dán:
+Mở agent ngay trong thư mục repo (`cd ~/github/XFinder && opencode`, hoặc File ▸ Open Folder trong Zed / Antigravity).
+**Prompt chuẩn (Builder / Reviewer / Claude) ở `docs/AGENT_NOTION.md` §10.** Bản dự phòng khi agent đó **không có**
+Notion MCP — bạn mở view *Queue — Ready*, chép ID, Spec Path, Spec Revision vào chỗ trống:
 
 ```
-Đọc docs/AGENT_QUICKSTART.md, rồi docs/AGENT_TASKS.md. Làm ĐÚNG MỘT việc: việc đầu tiên trong mục 6 có trạng thái TODO
-(hoặc việc <ID> nếu tôi ghi ở đây: ___). Theo đúng quy trình mục 3 cho cỡ của việc đó, không làm thêm gì ngoài đặc tả.
-Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào docs/AGENT_WORKLOG.md, không tự xoay xở.
+Đọc docs/AGENT_QUICKSTART.md, rồi docs/AGENT_TASKS.md. Làm ĐÚNG MỘT việc: <ID>, đặc tả <Spec Path>, Spec Revision
+<blob> (kiểm bằng git hash-object <Spec Path> | cut -c1-7; khác thì dừng). Theo đúng quy trình mục 3 cho cỡ của việc đó,
+không làm thêm gì ngoài đặc tả. Không có Notion nên ghi tiến trình và kết quả vào docs/AGENT_WORKLOG.md theo mục 3 bước 7.
+Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào worklog, không tự xoay xở.
 ```
 
 - **Một việc một phiên** cho việc cỡ M/L. Xong thì mở phiên MỚI cho việc kế (OpenCode `/new`, Zed tạo thread mới,
@@ -55,6 +63,8 @@ Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào
 - thứ di chuyển hay xoá tệp của người dùng: `ArchiveRunner`, `JunkCleanup`, `Uninstall*`
 - `Core/Diagnostics/*` (phân tích ẩn danh, quyền riêng tư)
 - đổi nghĩa hay đổi mặc định của một khoá `UserDefaults`
+- **file đặc tả đang được một task `Ready`/`Doing` tham chiếu** (`docs/specs/*`, ô `Spec Path` trong Notion) — Builder
+  đọc, không sửa; đặc tả MỚI theo mục 3c là file mới
 - **file đang được Claude làm dở** (mục 5)
 
 **Được làm khi đặc tả nói rõ, kèm cổng thêm:**
@@ -78,7 +88,9 @@ Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào
    `git worktree add ../XFinder-<ID> -b agent/<công-cụ>-<ID> main` rồi mở agent trong `../XFinder-<ID>`.
    Sửa code song song được, nhưng **build (`build-and-check.sh`) và harness mutation chỉ một cái chạy một lúc** trên toàn máy:
    build luôn ghi vào cùng `/tmp/xfinder-clean-build`, harness sửa tạm file nguồn.
-3. Trong tệp này, đổi trạng thái việc thành `ĐANG LÀM (<công cụ>, <giờ>)`.
+3. Nhận việc trong Notion theo `docs/AGENT_NOTION.md` §4: `Claimed By`, `State = Doing`, `Branch`, một Run mới; chờ
+   ~10 s rồi đọc lại — không còn là mình thì bỏ. Không nối được Notion: mở mục worklog của việc với dòng
+   `ĐANG LÀM (<công cụ>, <giờ>)` (không sửa tệp này nữa).
 4. Làm **đúng** các bước của đặc tả. Không sửa thêm file nào khác, không "tiện tay" dọn dẹp. Việc cỡ L: từng bước một.
 5. Chạy **mọi** lệnh nghiệm thu của việc, cộng `sh scripts/gate-all.sh` (build + toàn bộ test + 7 cổng chuỗi/UI, in
    `GATE: green`), cộng các cổng của cỡ M/L (mục 1) và vùng (mục 2). Harness mutation chạy riêng, lần lượt, sau cùng.
@@ -86,7 +98,9 @@ Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào
    `git add .` — thư mục có file chưa track của chủ dự án); kiểm `git diff --cached --stat` trước khi commit; message mở
    đầu bằng ID (`T14b: …`), ghi kết quả từng lệnh nghiệm thu và điều gì chưa kiểm được. **Kiểm `git branch --show-current`
    trước khi commit: phải là nhánh `agent/…`, không bao giờ là `main`.**
-7. Đổi trạng thái thành `CHỜ REVIEW (nhánh agent/…)`; ghi vào `docs/AGENT_WORKLOG.md` **gọn**, mỗi việc một dòng:
+7. Trong Notion: `Reported Commits` = SHA, `State = Awaiting Claude`; Run của bạn ghi Outcome, "chưa kiểm", và dán
+   **nguyên văn** output của `gate-all.sh` (`docs/AGENT_NOTION.md` §4 bước 7). Không có Notion thì ghi vào
+   `docs/AGENT_WORKLOG.md` **gọn**, mỗi việc một dòng, cuối mục ghi `CHỜ REVIEW (nhánh agent/…)`:
 
    | Việc | File đã sửa | Nghiệm thu riêng của việc | Chưa kiểm live |
    |:--|:--|:--|:--|
@@ -132,16 +146,20 @@ thiếu trong danh sách đó. Việc lớn hơn thì theo các bước dưới:
 
 ## 4. Quy trình của Claude khi có quota lại
 
-1. Đọc `docs/AGENT_WORKLOG.md` (mục mới nhất), `git branch --list 'agent/*'`, `git worktree list`. Chạy
+1. Mở view **Review — Awaiting Claude** và **Blocked** trong Notion (`docs/AGENT_NOTION.md` §5), rồi
+   `docs/AGENT_WORKLOG.md` (mục mới nhất — đường dự phòng), `git branch --list 'agent/*'`, `git worktree list`. Chạy
    `sh scripts/gate-all.sh` trước tiên: đỏ thì chưa cần đọc diff.
 2. Với mỗi nhánh: `git log main..<nhánh>`, `git diff main...<nhánh>`. Kiểm đúng phạm vi (file nào, bao nhiêu dòng), vùng
    cấm, từng bước có đúng không, và **thay đổi ngoài đặc tả** (model rẻ hay sửa lan ra ngoài phạm vi).
 3. Tự chạy lại nghiệm thu, harness mutation liên quan, và đo live phần agent ghi "chưa kiểm live" nếu đo được.
 4. Đúng → merge vào `main` (giữ commit của agent, hoặc squash thành một commit theo chủ đề). Sai → sửa hoặc bỏ, và ghi
    lý do vào worklog.
-5. Đổi trạng thái trong mục 6 thành `XONG (<commit>)` hoặc `BỎ (<lý do>)`; push; xoá nhánh và worktree đã gộp
-   (`git worktree remove ../XFinder-<ID>`).
-6. Cuối phiên: cập nhật mục 5, viết đặc tả cho việc kế tiếp vào mục 6 (mọi cỡ).
+5. Trong Notion: `State = Done` (hoặc `Awaiting live` khi còn T-* chờ tay chủ dự án), `Reported Commits` = SHA trên
+   `main`, một Run `Kind = claude-review`; nếu kết quả tới qua worklog (đường dự phòng) thì chép nó thành Run; push;
+   đưa nhánh `agent/…` về `main`; xoá worktree đã gộp (`git worktree remove ../XFinder-<ID>`).
+6. Cuối phiên: cập nhật mục 5; đặc tả việc kế vào `docs/specs/`, trang task Notion trỏ tới nó (`Spec Path`,
+   `Spec Revision`), chạy `gate-all.sh` trên `main` mới và ghi Run `gate-baseline`, tích ba ô, đặt `Ready`
+   (`docs/AGENT_NOTION.md` §5).
 
 ## 5. Trạng thái hiện tại (Claude cập nhật cuối mỗi phiên)
 
@@ -150,6 +168,8 @@ bằng `git log --oneline -5` và `sh scripts/gate-all.sh`.
 
 - Lượt DeepSeek 15/10 (T01–T06, T08–T13, T15, T16, T18, T19 + tính năng HUD) đã được Claude review, sửa và tách thành
   commit theo chủ đề trên `main`. Xem bảng "Đã xong" ở đầu mục 6.
+- **Trạng thái sống của từng việc: Notion** (`docs/AGENT_NOTION.md`) — view *Queue — Ready* / *Doing* / *Review —
+  Awaiting Claude* / *Blocked*. Dòng dưới chỉ là ảnh chụp lúc Claude viết.
 - **Kế tiếp: T14d** (T14a–T14c đã gộp; nhánh `agent/<công-cụ>-T14` đã được Claude đưa về `main` sau mỗi lần gộp) — dựng trang Chuột & cử chỉ theo phương án **B** (bạn đã chọn), trên MỘT nhánh
   `agent/<công-cụ>-T14` cho mọi bước còn lại, mỗi bước một commit. Đặc tả từng bước:
   `docs/specs/T14-mouse-gestures-B.md`. Cho tới khi T14 xong, chỉ agent làm T14 được sửa
@@ -158,7 +178,7 @@ bằng `git log --oneline -5` và `sh scripts/gate-all.sh`.
 - **Bạn còn nợ tay:** T-HUD-1…5 (mới), T-ANALYTICS-5, T-ANALYTICS-6, T-LAYOUT-1, T-SLEEP-1, T-LIMIT-1, T-MG-BID.
 - **Câu hỏi đang chờ bạn:** Q-RELEASE-14, Q-OC, Q-DIAG-5, Q-MG-1…3. (Q-PROC-1: bạn đã cho agent commit trên nhánh riêng.)
 
-## 6. Hàng đợi việc (mọi cỡ, mỗi việc có đặc tả)
+## 6. Chỉ mục đặc tả (hàng đợi sống ở Notion — `docs/AGENT_NOTION.md`; mục này là ảnh chụp và chỉ mục)
 
 Mỗi việc dưới đây đã được Claude và một agent soát lỗi độc lập đọc lại trên code thật ngày 2026-10-15. Số dòng có thể lệch
 vài dòng khi code đổi: **tìm theo đoạn code được trích**, không theo số dòng. Đoạn trích không còn ⇒ điều kiện dừng.

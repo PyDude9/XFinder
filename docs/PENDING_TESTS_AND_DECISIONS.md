@@ -117,9 +117,26 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 | ~~Q-PROC-1~~ | Cho DeepSeek **commit trên nhánh riêng** `agent/<công-cụ>-<mã việc>`? | **Bạn chốt 2026-10-15: cho.** Mỗi việc / mỗi bước một commit trên nhánh `agent/…`; không commit lên `main`, không push, không merge. Việc nhiều bước dùng một nhánh. Quy trình ở `docs/AGENT_TASKS.md` §3 |
 | Q-PROC-2 | Cho chạy **nhiều việc cỡ S trong một phiên** (như lần này)? | **Cho**, với điều kiện mỗi việc một dòng worklog có danh sách file + kết quả `gate-all.sh`. Việc cỡ M/L vẫn một việc một phiên |
 
+### Q-NOTION · Routine nhiều agent qua Notion (2026-10-15, `docs/AGENT_NOTION.md`)
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-NOTION-1 | Notion giữ hàng đợi / trạng thái / Run; Git giữ đặc tả. Có bỏ hẳn `docs/AGENT_WORKLOG.md` không? | **Giữ làm đường dự phòng** cho agent chưa nối được Notion; Claude chép mục worklog thành Run khi về |
+| Q-NOTION-2 | Gói Notion hiện tại chạm hạn mức truy vấn SQL của MCP sau **5 lệnh một phiên** (đo 2026-10-15). Nâng gói, hay chỉ dùng view + `fetch`? | **Chỉ view + `fetch`** (chế độ view không có hạn mức riêng). Nâng gói chỉ khi view không đủ |
+| Q-NOTION-3 | Cho một tiến trình đọc view *Review — Awaiting Claude* theo lịch (Notion Agent, hoặc Claude Code lên lịch) để review không cần bạn mở phiên? | **Chưa làm**; mọi phiên do bạn mở. Routine hiện chỉ nối các vai qua State |
+| Q-NOTION-4 | Đăng nhập Notion MCP cho OpenCode / Antigravity / Zed / Codex — OAuth một lần mỗi công cụ, **bạn làm tay** (Claude không đụng cấu hình công cụ khác). Cấu hình mẫu ở `AGENT_NOTION.md` §9 | **Chờ bạn**; tới lúc đó Builder đi đường dự phòng §7 |
+
 ## Phần 2 — Cần test tay (T)
 
 Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
+
+### Routine Notion (2026-10-15, chưa agent nào đi qua)
+
+| Mã | Thao tác | Kỳ vọng |
+|:--|:--|:--|
+| T-NOTION-1 | Một Builder thật (OpenCode/DeepSeek hoặc Antigravity, đã OAuth Notion MCP) dán prompt Builder ở `AGENT_NOTION.md` §10 | Nó đọc view *Queue — Ready*, ghi `Claimed By` + `Doing` + tạo Run, đọc lại sau ~10 s, rẽ nhánh đúng SHA, làm T14d, dán gate stdout vào Run, đặt `Awaiting Claude`. Không chạm vùng Spec |
+| T-NOTION-2 | Hai Builder mở cùng lúc trên cùng view | Đúng một bên giữ `Claimed By`; bên kia không ghi gì và bỏ qua |
+| T-NOTION-3 | Reviewer (công cụ khác) dán prompt Reviewer | Chỉ ghi vùng Review + `Pre-reviewed`, không đổi State, không sửa file |
 
 ### Notch
 | Mã | Làm gì | Mong đợi |
