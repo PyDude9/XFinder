@@ -323,18 +323,24 @@ Bước T14e (xoá file ở bước đó, sau khi chắc không còn tham chiế
 bước bị dừng giữa chừng.
 
 **Làm gì:**
-1. **Khối 5 (Nút hông)**: với mỗi nút trong `drawnButtons` có `role.isAssignable` (tức nút
-   hông 4/5/6…, không phải nút trái/phải/giữa/cuộn): một hàng — tên nút (`Nút N` +
-   `positionKey` phụ), tag preset/role hiện tại, `Menu` đổi click action
-   (Back/Forward/Unassigned — y hệt `GestureButtonList.action`'s nhánh `.isAssignable`),
-   nút "Ghi" cho trường hợp chưa khai báo (`!role.isDeclared`, logic `onRecordTrigger(button)`
-   cũ), nút "Đặt làm nút giữ" (`onSetTrigger`, chỉ `.disabled` khi
-   `recordingButton != nil || !role.isDeclared` — y hệt cũ). F17 (Bấm nhanh = Tiến) hiện
-   trong hàng của nút đang là `holdTriggerWithAction`. Cuối khối: `hardwareExclusionNote`
-   (S39) y nguyên 3 dòng cố định.
-   - Nếu KHÔNG có nút nào để liệt kê (ví dụ trạng thái `khong-chuot`): hiện một hàng
-     "Chưa đọc được nút nào — Cắm chuột có nút hông để xem và gán ở đây." (khớp
-     `variant-b.html`'s nhánh `khong-chuot`).
+1. **Khối 5 (Nút hông)** — *(sửa 2026-10-15 sau khi một lượt agent kẹt ở đây: bản cũ bảo thêm "Đặt làm nút giữ" vào
+   từng hàng, mâu thuẫn với wireframe B / CONTRACT; câu dưới đây THẮNG mọi câu khác về nút giữ)*.
+   Với mỗi nút trong `drawnButtons` có `role.isAssignable` mà **không phải** nút giữ hiện tại: một hàng gồm
+   tên `Nút N` (`L10n.t(compactButton:)`) + vị trí (`positionKey`, nếu có) làm dòng phụ, tag vai trò, và `Menu` đổi
+   click action (Không làm gì / Lùi / Tiến — chép đúng nhánh `.isAssignable` của `GestureButtonList.action`, giữ
+   `controller` call y nguyên). **Không có nút "Đặt làm nút giữ" hay "Ghi" nào trong khối này.** Nút giữ đổi ở đúng
+   hai chỗ đã có: bảng bên phải (T14c, "Dùng làm nút giữ" cho nút đã khai báo) và "Ghi nút" ở Khối 6 (bấm thật một
+   nút bất kỳ — đường đi của quyết định 7 cho nút máy chưa khai báo); hình chuột (F7) gọi cùng `triggerRecording()`.
+   Nút chưa khai báo (`!role.isDeclared`): hàng mờ (màu `.secondary`, không opacity trên chữ) ghi "Chưa khai báo"
+   và một dòng phụ: "Bấm “Ghi nút” ở mục Nút giữ & cuộn rồi bấm nút này để XFinder đo." — không thêm nút riêng.
+   F17 (Bấm nhanh = Tiến) hiện trong hàng của nút đang là `holdTriggerWithAction` nếu nút đó không bị loại ở trên;
+   nếu nút giữ bị loại khỏi khối, F17 nằm ở Khối 6 cạnh "Nút giữ". Cuối khối: `hardwareExclusionNote` (S39) y nguyên.
+   - Nếu KHÔNG có hàng nào (ví dụ trạng thái `khong-chuot`): một hàng "Chưa đọc được nút nào — Cắm chuột có nút hông
+     để xem và gán ở đây." (khớp `variant-b.html` nhánh `khong-chuot`).
+   - **Chỉ cần đọc** (đừng đọc lại cả file 1 450 dòng): `buttonListSection`, `switchesSection`, `tiltRow`, `legend`,
+     `scrollButtonChoices`, `buttonRole`, `roleContext`, `drawnButtons` trong `MouseGesturesDetailView.swift`;
+     `GestureButtonList.swift` (hàm hàng và `action`); `hardwareExclusionNote` ở chỗ nó được khai báo. Đọc một lần rồi
+     viết — nếu thấy mâu thuẫn mới, ghi vào worklog và dừng, đừng đọc vòng.
 2. **Khối 6 (Nút giữ & cuộn)**: 3 hàng —
    - Hàng 1: "Nút giữ" + giá trị hiện tại (`L10n.t(compactButton: config.trigger.key)`) +
      nút "Ghi nút" (`triggerRecording()`, **chỗ record nút giữ còn lại sau khi hợp nhất** —

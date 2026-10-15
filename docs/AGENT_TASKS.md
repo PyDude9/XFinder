@@ -101,6 +101,9 @@ Gặp bất kỳ điều kiện dừng nào ở mục 3 thì dừng và ghi vào
   nguyên văn. Phiên mới với mô tả rõ hơn thường làm tốt hơn một phiên dài vá chồng vá.
 - Việc cần đụng vùng cấm, hoặc cần file ngoài danh sách của đặc tả.
 - Đặc tả không khớp code thật (dòng đã đổi, hàm không còn): code đã đổi từ khi Claude viết đặc tả.
+- **Đặc tả tự mâu thuẫn** (hai câu nói ngược nhau, hoặc đặc tả ngược với wireframe/CONTRACT): đừng tự gỡ bằng cách
+  đọc thêm tài liệu thiết kế. Chép hai câu đó vào worklog và dừng — Claude sửa đặc tả. (Lượt T14d đầu tiên đọc vòng
+  CONTRACT/inventory/wireframe tới hết phiên mà không viết dòng code nào.)
 - Lệnh nghiệm thu cho kết quả khác kỳ vọng.
 
 ### 3b. Review chéo (tuỳ chọn, trước khi Claude quay lại)

@@ -4,6 +4,18 @@ Every agent other than the main Claude Code session appends here (newest first):
 gate it ran, and what it could NOT verify. Claude reviews these entries before merging anything. See
 `docs/AGENT_QUICKSTART.md` for the rules.
 
+## 2026-10-15 (Claude) — T14d never landed; the spec was the reason; fixed
+
+The first T14d session ended without a commit, an edit or a worklog entry: its transcript shows it re-reading
+CONTRACT.md, inventory.md and variant-b.html to resolve a contradiction in the spec — T14d step 1 told it to add
+"Đặt làm nút giữ" to every side-button row, while wireframe B / CONTRACT say the hold button changes in the inspector
+(done in T14c). That was Claude's spec bug. Step 1 is rewritten: block 5 rows carry only the click-action menu (no hold
+button, no record button); the hold button changes in the inspector and in block 6's "Ghi nút". A new stop condition in
+AGENT_TASKS §3: a self-contradicting spec is copied into the worklog and the session stops.
+
+`agent/zed-T14` was fast-forwarded to `main` (it also carries Claude's notch HUD speed-up and the worktree-safe build
+scripts). Next: **T14d**, same branch.
+
 ## 2026-10-15 (Claude review of T14c) — merged; five defects fixed; branch moved to main
 
 For the next agent: read this, not the long T14c entry below it. T14c was done by Antigravity on `agent/zed-T14` —
