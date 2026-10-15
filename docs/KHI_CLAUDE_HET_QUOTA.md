@@ -57,17 +57,26 @@ Claude đã sửa lại các chỗ sai này. Quy tắc ở mục 4 và trong `AG
 
 ## 4. Quy trình khi Claude hết quota
 
-1. **Chuyển phiên:** notch ▸ Agent ▸ phiên Claude ▸ **Chuyển sang…**
-   - Chọn **OpenCode** để XFinder gửi luôn.
-   - Muốn dùng Zed hay Antigravity: mở bảng xem trước, bấm vào ô nội dung, ⌘A ⌘C, rồi dán vào khung chat của agent đó.
-2. **Câu mở đầu cho agent mới** (chép nguyên):
+**Giao việc từ bảng `docs/AGENT_TASKS.md`**, đừng tự nghĩ việc cho agent. Bảng có:
+
+- cách nhận ra việc nhỏ (mục 1 — một câu: *phải mở app, cấp quyền hay nhìn màn hình mới biết đúng chưa thì không phải việc nhỏ*);
+- vùng agent không được sửa (mục 2);
+- quy trình 8 bước và các điều kiện phải dừng (mục 3);
+- hàng đợi việc nhỏ đã được kiểm trên code thật, mỗi việc có bước làm và lệnh nghiệm thu (mục 6).
+
+1. Mở agent ngay trong thư mục repo (`cd ~/github/XFinder && opencode`, hoặc mở thư mục trong Zed / Antigravity).
+2. Dán câu ở **mục 0** của `docs/AGENT_TASKS.md`. Agent lấy việc TODO đầu tiên, làm trên nhánh riêng `agent/<công-cụ>-<mã>`,
+   chạy nghiệm thu, ghi worklog, rồi dừng — không push, không gộp vào `main`.
+3. Muốn làm việc kế: dán lại câu đó (một lần một việc).
+4. **Việc ngoài bảng** (việc bạn nghĩ ra lúc đó): chỉ giao nếu nó qua đủ 6 câu ở mục 1, và vẫn dùng câu mở đầu dưới đây:
 
    ```
-   Đọc docs/AGENT_QUICKSTART.md trước khi làm gì. Làm trên nhánh mới agent/<công-cụ>-<việc>, không push, không commit lên
-   main, không commit phần việc dở của người khác, chỉ stage đúng file mình sửa (không git add -u / -A). Việc: <mô tả>.
-   Xong chạy sh scripts/build-and-check.sh và swift test --package-path /Users/wolong/github/XFinder/Tests, rồi ghi vào
-   docs/AGENT_WORKLOG.md: đã làm gì, kết quả từng lệnh, và điều gì CHƯA kiểm được.
+   Đọc docs/AGENT_QUICKSTART.md và mục 1–3 của docs/AGENT_TASKS.md trước khi làm gì. Làm trên nhánh mới
+   agent/<công-cụ>-<việc>, không push, không commit lên main, chỉ stage đúng file mình sửa (không git add -u / -A).
+   Việc: <mô tả>. Xong chạy sh scripts/build-and-check.sh và swift test --package-path /Users/wolong/github/XFinder/Tests,
+   rồi ghi vào docs/AGENT_WORKLOG.md: đã làm gì, kết quả từng lệnh, và điều gì CHƯA kiểm được.
    ```
-3. **Giao việc nhỏ, mỗi lần một chủ đề.** Việc nhiều file, phát hành, hay việc phải đo trên máy (quyền, Accessibility, dữ
-   liệu thật) thì để dành cho Claude.
-4. **Khi Claude quay lại:** "đọc docs/AGENT_WORKLOG.md và review nhánh agent/…". Claude sẽ kiểm, sửa, rồi mới gộp vào main.
+5. **Chuyển hẳn một phiên dở dang** (việc lớn đang làm mà Claude bị dừng giữa chừng): notch ▸ Agent ▸ phiên Claude ▸
+   **Chuyển sang…** ▸ OpenCode. Phiên mới nhận tin bàn giao; nhắc nó đọc `docs/AGENT_QUICKSTART.md` trước.
+6. **Khi Claude quay lại**, nói: "đọc docs/AGENT_WORKLOG.md và review các nhánh agent/*". Claude làm theo mục 4 của
+   `docs/AGENT_TASKS.md`: kiểm phạm vi, tự chạy lại nghiệm thu, gộp hoặc bỏ, ghi lý do.
