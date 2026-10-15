@@ -95,6 +95,12 @@ enum XFinderTokens {
         static let open = Animation.spring(response: 0.36, dampingFraction: 0.76)
         static let close = Animation.spring(response: 0.22, dampingFraction: 1.0)
         static let pageFade = Animation.easeInOut(duration: 0.18)
+        /// A live notice (volume, brightness, Caps Lock…) is feedback for a key the user JUST pressed: it must be
+        /// readable at once, so it grows faster than the hub and does not overshoot. With `open` (0.36, overshoot) the
+        /// strip was still growing a third of a second after the first press — the "khựng" the owner reported.
+        static let activity = Animation.spring(response: 0.2, dampingFraction: 0.92)
+        /// The level bar follows each 1/16 step quickly enough to keep up with key repeat (~80 ms apart).
+        static let level = Animation.easeOut(duration: 0.12)
     }
 
     /// P3 (2026-10-13) — the settings window shell, measured on OneNotch's settings screenshots (870×712 pt @2x,

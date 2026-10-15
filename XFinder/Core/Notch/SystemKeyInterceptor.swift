@@ -166,18 +166,18 @@ final class SystemKeyInterceptor {
     }
 
     /// One 1/16 step, as the system's own keys do (probe-measured `0.0625`). Volume-up on a muted device
-    /// unmutes first, which is what macOS does. A changed level reaches the notch through CoreAudio
-    /// (`VolumeObserver` → `LiveActivityMonitor`); an unchanged one (already at 0 or 1) is reported here,
-    /// because CoreAudio then says nothing and the key would look dead.
+    /// unmutes first, which is what macOS does. The notch is told at once (not after CoreAudio's notification),
+    /// which also covers a press at 0 or 1 where CoreAudio says nothing and the key would look dead.
     private func stepVolume(up: Bool) {
         if up, SystemControls.isMuted() { SystemControls.setMuted(false); return }
         let before = SystemControls.getVolume()
         let step = 1.0 / 16.0
-        SystemControls.setVolume(before + (up ? step : -step))
-        let after = SystemControls.getVolume()
-        if abs(after - before) < 0.005 {
-            LiveActivityMonitor.shared.volumeKeyedWithoutChange(.init(level: after, muted: SystemControls.isMuted()))
-        }
+        let target = min(max(before + (up ? step : -step), 0), 1)
+        // The notch first, the write second: `AudioObjectSetPropertyData` is a round trip to coreaudiod (≈5 ms
+        // measured), and the key's feedback should not wait for it. The device is known to take the value
+        // (`canSetVolume` was checked before the key was swallowed); CoreAudio's notification confirms it after.
+        LiveActivityMonitor.shared.volumeKeyed(.init(level: target, muted: SystemControls.isMuted()))   // down while muted stays muted
+        SystemControls.setVolume(target)
     }
 
     /// Steps from the LIVE level, not the cached one: `ScreenBrightness.level` only refreshes while a page

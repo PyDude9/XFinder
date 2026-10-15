@@ -177,9 +177,11 @@ final class LiveActivityMonitor: NSObject {
         present(LiveActivity.brightnessItem(level: level))
     }
 
-    /// A volume key XFinder took that could not move the level (already at 0 or 1, or volume-up while at
-    /// the top). CoreAudio reports nothing then, so `volumeChanged` never runs; the press must still answer.
-    func volumeKeyedWithoutChange(_ state: LiveActivity.VolumeState) {
+    /// A volume key XFinder took. Presented at once with the level just set, instead of waiting for CoreAudio's
+    /// change notification (6–14 ms later, measured) — and it is the only answer when the level could not move
+    /// (already at 0 or 1), because CoreAudio reports nothing then. The notification that follows carries the
+    /// same item and simply replaces it.
+    func volumeKeyed(_ state: LiveActivity.VolumeState) {
         guard master, volumeOn, NotchSurfaceController.shared.canPresentActivities else { return }
         present(LiveActivity.volumeItem(state))
     }

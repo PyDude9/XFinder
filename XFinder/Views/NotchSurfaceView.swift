@@ -213,7 +213,7 @@ struct NotchSurfaceView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             // Opening overshoots a little; collapsing is quick and never bounces (P1, OneNotch measured).
-            .animation(collapsed ? N.close : N.open, value: model.state)
+            .animation(model.state == .activity ? N.activity : (collapsed ? N.close : N.open), value: model.state)
             .animation(N.open, value: model.appearFromNotch)
         }
         .environment(\.notchAccent, model.accent ?? .accentColor)
@@ -695,9 +695,17 @@ struct NotchSurfaceView: View {
             if let a = model.activity {
                 Image(systemName: a.symbol).font(XFinderTokens.Font.row).foregroundColor(tint(a.tint))
                 Text(L10n.t(a.titleKey)).font(XFinderTokens.Font.row).lineLimit(1)
-                if let d = a.detail { Text(d).font(XFinderTokens.Font.caption).opacity(0.7).lineLimit(1).truncationMode(.middle) }
                 if let level = a.level {
-                    ProgressView(value: level).progressViewStyle(.linear).tint(.white).frame(width: 90)
+                    // A level notice (volume, brightness): the percentage keeps ONE width whatever the digits, so the
+                    // centred row does not shift sideways on every key press, and the bar is drawn here rather than
+                    // by AppKit's progress indicator so it glides with each step instead of jumping on its own clock.
+                    if let d = a.detail {
+                        Text(d).font(XFinderTokens.Font.caption.monospacedDigit()).opacity(0.7).lineLimit(1)
+                            .frame(width: 34, alignment: .trailing)
+                    }
+                    NotchLevelBar(level: level)
+                } else if let d = a.detail {
+                    Text(d).font(XFinderTokens.Font.caption).opacity(0.7).lineLimit(1).truncationMode(.middle)
                 }
                 ForEach(Array(a.buttons.enumerated()), id: \.offset) { _, b in
                     Button { NotchSurfaceController.shared.pressActivityButton(b) } label: {
@@ -1152,5 +1160,23 @@ struct NowPlayingSeekBar: View {
     private static func time(at x: CGFloat, width: CGFloat, duration: Double) -> Double {
         guard width > 0 else { return 0 }
         return Double(max(0, min(1, x / width))) * duration
+    }
+}
+
+/// The volume / brightness bar on the notch (white on black, like the system square it replaces). Drawn as two
+/// capsules so a new level animates with `XFinderTokens.Notch.level` and nothing else; AppKit's progress indicator
+/// (the old `ProgressView`) moved on its own timing and read as a stutter under fast key repeat.
+private struct NotchLevelBar: View {
+    let level: Double
+    var body: some View {
+        let clamped = min(max(level, 0), 1)
+        ZStack(alignment: .leading) {
+            Capsule().fill(Color.white.opacity(0.22))
+            Capsule().fill(Color.white).frame(width: 90 * clamped)
+        }
+        .frame(width: 90, height: 5)
+        .animation(XFinderTokens.Notch.level, value: clamped)
+        .accessibilityElement()
+        .accessibilityValue(Text("\(Int((clamped * 100).rounded()))%"))
     }
 }
