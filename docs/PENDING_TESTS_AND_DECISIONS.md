@@ -348,6 +348,7 @@ giữa họ là thêm một lượt** — chưa có lượt model nào được 
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
 | T-T14a | Mở Chuột & cử chỉ (bản 2026-10-15 chiều). Bấm vào một mũi tên → "Ghi phím tắt…"; rồi bấm số nút giữ trên thân chuột để ghi nút giữ | Trang xếp thành các khối (trạng thái · chọn app · sơ đồ · nút hông · nút giữ & cuộn · nghiêng · chẩn đoán · chân trang); công tắc đầu trang là công tắc gạt. Khi ghi phím tắt, dòng trạng thái ghi **"Đang ghi phím tắt — bấm tổ hợp phím trên bàn phím (Esc để hủy)"**; khi ghi nút giữ, nó ghi **"…bấm nút trên chuột…"**; Esc huỷ cả hai. Danh sách app chưa phải dải chip (đó là T14b) |
+| T-T14b | Chuột & cử chỉ ▸ dải chip app ở đầu trang. Chuyển sang một app KHÔNG có preset (Slack, Ghi chú…) rồi quay lại trang | Chip "Mặc định toàn cục" có chấm (nó đang điều khiển app đó); với app có preset (Safari, VS Code…) chấm nằm ở chip của app đó; chip đang chọn không có chấm. App chưa cài vẽ nét đứt. Trang không khựng khi đổi app |
 | T-MG-BID | Mở Claude (hoặc VS Code, Cursor, Notion…), giữ nút cử chỉ rồi kéo lên / sang trái / sang phải | Claude, VS Code, Cursor, Antigravity, Zed: kéo lên mở Mission Control; trái/phải gửi ⌘[ / ⌘]; kéo xuống không gửi gì. Notion/Obsidian: trái/phải ⌘⌥← / ⌘⌥→. Trang Chuột & cử chỉ: các app này nằm trong nhóm đã cài ở đầu danh sách (đã đo bằng AX 2026-10-15) |
 | T-C1 | Bật ⌘-Tab của XFinder; khi đang mở: Q · H · Space · ` · , | Đóng cửa sổ · ẩn app · phóng to ảnh · chuyển app ↔ cửa sổ · tìm |
 | T-GEST | Giữ nút cử chỉ rồi kéo lên / sang phải (profile Global) | Mission Control mở / chuyển Space |
