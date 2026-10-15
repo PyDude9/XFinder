@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 /// Nén & Giải nén — real implementation backed by the system `ditto` (ZIP)
 /// and `tar` (TAR.GZ) tools via Foundation Process. No third-party deps.
@@ -312,7 +313,7 @@ struct CompressDetailView: View {
         panel.canChooseDirectories = mode == .compress
         panel.allowsMultipleSelection = true
         if mode == .extract {
-            panel.allowedFileTypes = ["zip", "gz", "bz2", "tar"]
+            panel.allowedContentTypes = [.zip, .gzip, UTType(filenameExtension: "bz2"), UTType(filenameExtension: "tar")].compactMap { $0 }
         }
         if panel.runModal() == .OK { sources = panel.urls }
     }

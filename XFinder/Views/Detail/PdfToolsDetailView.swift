@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import PDFKit
+import UniformTypeIdentifiers
 
 /// Công cụ PDF — real implementation on built-in PDFKit:
 /// merge multiple PDFs, extract a page range, rotate pages.
@@ -176,7 +177,7 @@ struct PdfToolsDetailView: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = tool == .merge
-        panel.allowedFileTypes = ["pdf"]
+        panel.allowedContentTypes = [.pdf]
         if panel.runModal() == .OK { sources = panel.urls }
     }
 

@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 /// Ghi chú — real note browser over NoteStore (shared with SideNotesPanel and
 /// the menubar flyout). Grid of note cards with search, color filter, pin /
@@ -343,7 +344,7 @@ private struct ImportExportSection: View {
     private func pickImport(_ types: [String], _ apply: @escaping (String) -> Void) {
         importError = nil
         let panel = NSOpenPanel()
-        panel.allowedFileTypes = types
+        panel.allowedContentTypes = types.compactMap { UTType(filenameExtension: $0) }
         panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
         apply(readText(url))
@@ -355,7 +356,7 @@ private struct ImportExportSection: View {
 
     private func saveText(_ name: String, _ text: String) {
         let panel = NSSavePanel()
-        panel.allowedFileTypes = [(name as NSString).pathExtension]
+        panel.allowedContentTypes = [UTType(filenameExtension: (name as NSString).pathExtension)].compactMap { $0 }
         panel.nameFieldStringValue = name
         guard panel.runModal() == .OK, let url = panel.url else { return }
         try? text.write(to: url, atomically: true, encoding: .utf8)
@@ -363,7 +364,7 @@ private struct ImportExportSection: View {
 
     private func exportJSON() {
         let panel = NSSavePanel()
-        panel.allowedFileTypes = ["json"]
+        panel.allowedContentTypes = [.json]
         panel.nameFieldStringValue = "xnotes.json"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         let encoder = JSONEncoder()
@@ -375,7 +376,7 @@ private struct ImportExportSection: View {
     private func importJSON() {
         importError = nil
         let panel = NSOpenPanel()
-        panel.allowedFileTypes = ["json"]
+        panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url,
               let data = try? Data(contentsOf: url) else { return }
