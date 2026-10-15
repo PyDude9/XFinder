@@ -101,10 +101,13 @@ task — tốn công, không mất dữ liệu. Quy ước:
 4. Chờ ~10 giây (`sleep 10` trong shell là đủ), `fetch` lại trang task. `Claimed By` **không còn là đúng chuỗi của mình**
    ⇒ người khác đã nhận: **không ghi gì thêm**, ghi vào Run của mình `Outcome = "lost claim to <chuỗi kia>"`, quay lại
    bước 1.
-5. Trong repo: `git log -1 --format=%h` trên `main` phải bằng SHA trong ô `Commit or Reference` của Run baseline
-   (tìm Run `Kind = gate-baseline` trỏ tới task; T14d: `a2954e2`); `git hash-object <Spec Path> | cut -c1-7` phải bằng
-   `Spec Revision`. Lệch ⇒ `Blocked` + `spec-drift` (hash) hoặc `acceptance-mismatch` (SHA main), ghi hai giá trị vào
-   Run, dừng. **Không `git pull`** trừ khi chủ dự án bảo — repo này không đẩy lên remote giữa phiên.
+5. Trong repo, với `<base>` = SHA trong ô `Commit or Reference` của Run baseline (Run `Kind = gate-baseline` trỏ tới
+   task; T14d: `a2954e2`): `git merge-base --is-ancestor <base> main` phải thoát 0 **và**
+   `git diff --stat <base> main -- XFinder Tests scripts` phải **rỗng** — tức `main` chỉ trôi vì commit docs của Claude
+   (bình thường; chính commit tạo ra tệp này đã làm vậy), còn nguồn/test/script y như lúc đo gate. Có khác ⇒ Claude phải
+   đo lại baseline: `Blocked` + `acceptance-mismatch`, dán output `git diff --stat` vào Run, dừng.
+   `git hash-object <Spec Path> | cut -c1-7` phải bằng `Spec Revision`; khác ⇒ `Blocked` + `spec-drift`. **Không
+   `git pull`** trừ khi chủ dự án bảo — repo này không đẩy lên remote giữa phiên.
 6. Làm theo `docs/AGENT_TASKS.md` §3 (nhánh, commit, gate). Kết quả `gate-all.sh` dán **nguyên văn** vào Run (mục
    "Gate stdout nguyên văn"), không tóm tắt; bảy việc-cạnh của đặc tả trả lời trong Run.
 7. Xong: `Reported Commits = <sha nhánh>`, `State = "Awaiting Claude"`; Run: `Outcome`, "Chưa kiểm". Dừng — không push,
