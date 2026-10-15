@@ -11146,6 +11146,14 @@
     "Đang ghi — bấm nút trên chuột (Esc để hủy).": {
       "en": "Recording — press a button on the mouse (Esc to cancel).",
       "scope": "sentence"
+    },
+    "Đang ghi phím tắt — bấm tổ hợp phím trên bàn phím (Esc để hủy).": {
+      "en": "Recording a shortcut — press the key combination on the keyboard (Esc to cancel).",
+      "scope": "sentence"
+    },
+    "Bật/tắt cử chỉ": {
+      "en": "Turn gestures on or off",
+      "scope": "sentence"
     }
   }
 }

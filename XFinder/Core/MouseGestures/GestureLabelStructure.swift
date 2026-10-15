@@ -171,3 +171,40 @@ struct ButtonParts: Equatable, Sendable {
     /// The store key for the motion half.
     var motionKey: String
 }
+
+/// The Mouse & Gestures page's ONE status line (T14a): which sentence, decided here so a test can
+/// hold it — the page is SwiftUI, which the test package cannot compile.
+///
+/// `GestureController.recording` is one Bool for BOTH recording modes (`recordTrigger` and
+/// `recordShortcut` share `ensureRecordingEngine()`), so the page passes which one it started. T14a's
+/// first version said "press a button on the mouse" while a KEYBOARD shortcut was being recorded.
+/// The engine takes any key for a shortcut (no modifier required) and Esc (key 53) cancels both modes,
+/// which is what the two recording sentences say.
+enum GesturePageStatus: Equatable, Sendable {
+    case recordingShortcut, recordingButton, off, ready, tapFailure(String), needsAccessibility
+
+    /// Recording outranks everything: it is what the user is doing right now.
+    static func of(recording: Bool, recordingShortcut: Bool, enabled: Bool,
+                   tapActive: Bool, tapFailure: String) -> GesturePageStatus {
+        if recording { return recordingShortcut ? .recordingShortcut : .recordingButton }
+        if !enabled { return .off }
+        if tapActive { return .ready }
+        if !tapFailure.isEmpty { return .tapFailure(tapFailure) }
+        return .needsAccessibility
+    }
+
+    /// The store key (Vietnamese literal) of the sentence. `tapFailure` carries the controller's own
+    /// key, which the page already resolved through `L10n.t` before T14a.
+    var textKey: String {
+        switch self {
+        case .recordingShortcut: return "Đang ghi phím tắt — bấm tổ hợp phím trên bàn phím (Esc để hủy)."
+        case .recordingButton: return "Đang ghi — bấm nút trên chuột (Esc để hủy)."
+        case .off: return "Cử chỉ đang tắt. Bật công tắc ở góc trên để dùng; sơ đồ bên dưới đã có sẵn phím tắt."
+        case .ready: return "Sẵn sàng — các ứng dụng bên dưới đã có phím tắt sẵn, không cần cấu hình thêm."
+        case .tapFailure(let key): return key
+        case .needsAccessibility: return "Chưa mở được Event Tap — cần quyền Trợ năng. Nhấn “Mở Cài đặt Trợ năng” ở trên."
+        }
+    }
+
+    var isRecording: Bool { self == .recordingShortcut || self == .recordingButton }
+}

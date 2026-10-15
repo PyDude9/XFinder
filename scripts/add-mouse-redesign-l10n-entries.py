@@ -17,6 +17,11 @@ ENTRIES: dict[str, tuple[str, str]] = {
     # T14a — the status line's recording state (Khối 2, variant-b.html line 107)
     "Đang ghi — bấm nút trên chuột (Esc để hủy).":
         ("Recording — press a button on the mouse (Esc to cancel).", S),
+    # T14a review — the same line while a keyboard shortcut is being recorded for a direction,
+    # and the header switch's VoiceOver label
+    "Đang ghi phím tắt — bấm tổ hợp phím trên bàn phím (Esc để hủy).":
+        ("Recording a shortcut — press the key combination on the keyboard (Esc to cancel).", S),
+    "Bật/tắt cử chỉ": ("Turn gestures on or off", S),
 }
 
 def main() -> int:

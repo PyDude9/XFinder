@@ -165,6 +165,9 @@ struct MouseGesturesDetailView: View {
                                 .labelsHidden()
                                 .toggleStyle(.switch)
                                 .controlSize(.small)
+                                // An empty-label switch reads as nothing to VoiceOver (wireframe B
+                                // names it "Bật/tắt cử chỉ").
+                                .accessibilityLabel(L10n.t("Bật/tắt cử chỉ"))
                         }
                     ))
 
@@ -176,7 +179,11 @@ struct MouseGesturesDetailView: View {
 
                 // ── Khối 3 — chọn ứng dụng (F4/F5/F24, dải chip ở T14b) ────────────────────
                 VStack(alignment: .leading, spacing: 10) {
-                    profileSidebar.padding(.horizontal, 20)
+                    // Interim until T14b's chip strip: the list used to be a 240-pt column beside the
+                    // diagram; on its own row it would stretch its shaded box across the page.
+                    profileSidebar
+                        .frame(maxWidth: 360, alignment: .leading)
+                        .padding(.horizontal, 20)
                     frontmostHint
                     customBundleRow
                 }
@@ -345,24 +352,27 @@ struct MouseGesturesDetailView: View {
     // MARK: - Readiness (measured, never inferred from status text)
 
     /// The page's **single** status line — one pill, not a checklist. Five states:
-    /// recording (accent, S27), off (grey), ready (green), a named tap error, and the
+    /// recording a mouse button or a keyboard shortcut (accent, S27), off (grey), ready (green), a named tap error, and the
     /// generic no-Accessibility error (orange). The two facts that can silently stop a
     /// gesture — the hold button and the frontmost app — are stated where they belong (the
     /// diagram's hold badge and the app picker), not repeated here as a wall of warnings.
     private var readinessRow: some View {
-        let recording = controller.recording
-        let on = config.enabled
-        let healthy = controller.tapActive
-        let tint: Color = recording ? .accentColor : (!on ? .secondary : (healthy ? .green : .orange))
-        let icon = recording ? "record.circle"
-            : (!on ? "pause.circle.fill" : (healthy ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"))
-        let text: String = {
-            if recording { return L10n.t("Đang ghi — bấm nút trên chuột (Esc để hủy).") }
-            if !on { return L10n.t("Cử chỉ đang tắt. Bật công tắc ở góc trên để dùng; sơ đồ bên dưới đã có sẵn phím tắt.") }
-            if healthy { return L10n.t("Sẵn sàng — các ứng dụng bên dưới đã có phím tắt sẵn, không cần cấu hình thêm.") }
-            if !controller.tapFailure.isEmpty { return L10n.t(controller.tapFailure) }
-            return L10n.t("Chưa mở được Event Tap — cần quyền Trợ năng. Nhấn “Mở Cài đặt Trợ năng” ở trên.")
-        }()
+        // Which sentence is decided by `GesturePageStatus` (pure, tested). A direction being recorded
+        // means a keyboard shortcut; otherwise the recording is a mouse button.
+        let status = GesturePageStatus.of(recording: controller.recording,
+                                          recordingShortcut: recordingDirection != nil,
+                                          enabled: config.enabled,
+                                          tapActive: controller.tapActive,
+                                          tapFailure: controller.tapFailure)
+        let tint: Color
+        let icon: String
+        switch status {
+        case .recordingShortcut, .recordingButton: tint = .accentColor; icon = "record.circle"
+        case .off: tint = .secondary; icon = "pause.circle.fill"
+        case .ready: tint = .green; icon = "checkmark.circle.fill"
+        case .tapFailure, .needsAccessibility: tint = .orange; icon = "exclamationmark.triangle.fill"
+        }
+        let text = L10n.t(status.textKey)
         return HStack(spacing: 8) {
             Image(systemName: icon).foregroundColor(tint).font(XFinderTokens.Font.rowValue)
             Text(text).font(XFinderTokens.Font.rowValue.weight(.medium)).foregroundColor(tint)

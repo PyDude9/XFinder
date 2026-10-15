@@ -19,6 +19,10 @@
 #       exists to produce.)
 #   M4  tilt arms revealed by default on hardware that cannot fire them
 #   M5  the button number losing its macOS→user offset (0 must read "Nút 1")
+#   M6  the status line ignoring which recording mode is on (T14a review: it asked for a mouse
+#       button while a keyboard shortcut was being recorded)
+#   M7  "off" outranking a recording in progress
+#   M8  the shortcut-recording sentence sending the user to the mouse
 #
 # ── RE-ANCHORED 2026-09-22 ──────────────────────────────────────────────────
 # M1, M2 and M5 had "anchor moved" (HARNESS ERROR) after the model stopped
@@ -42,6 +46,10 @@ REAL_HASH=$(shasum -a 256 "$REAL" | cut -d' ' -f1)
 LABEL_HASH=$(shasum -a 256 "$LABEL_SRC" | cut -d' ' -f1)
 
 restore() { cp "$SCRATCH/GestureModel.swift" "$REAL"; cp "$SCRATCH/GestureLabelStructure.swift" "$LABEL_SRC"; }
+# A harness stopped mid-run must not leave a mutant on disk (it did, 2026-10-15: labels M1 survived a pkill).
+# The siblings got this pair in 2026-10-14; this one had no trap at all.
+trap 'restore; rm -rf "$SCRATCH"' EXIT
+trap 'exit 143' INT TERM
 
 run_tests() {
   (cd "$ROOT/Tests" && swift test 2>&1 | grep -E "Executed [0-9]+ tests" | tail -1)
@@ -57,8 +65,10 @@ BASE=$(fails)
 echo "failing test cases: $BASE"
 [ "$BASE" -eq 0 ] || { echo "FAIL: baseline is not green"; exit 1; }
 
+RED=0; TOTAL=0
 mutate() {
   NAME=$1; shift
+  TOTAL=$((TOTAL + 1))
   TARGET=$1; shift
   restore
   python3 - "$TARGET" "$@" <<'EOF'
@@ -80,6 +90,7 @@ EOF
   N=$(fails)
   if [ "$N" -gt 0 ]; then
     echo "$NAME: RED as expected ($N failing test cases)"
+    RED=$((RED + 1))
   else
     echo "$NAME: *** STAYED GREEN — the test does not catch this ***"
   fi
@@ -128,6 +139,21 @@ mutate "M5 button name drops the number offset" "$LABEL_SRC" \
   '    static func displayNumber(forButtonNumber n: Int) -> Int { n + 1 }' \
   '    static func displayNumber(forButtonNumber n: Int) -> Int { n }'
 
+# M6–M8: the Mouse & Gestures status line (GesturePageStatus, T14a review).
+mutate "M6 status ignores the recording mode" "$LABEL_SRC" \
+  '        if recording { return recordingShortcut ? .recordingShortcut : .recordingButton }' \
+  '        if recording { return .recordingButton }'
+
+mutate "M7 off outranks a recording" "$LABEL_SRC" \
+  '        if recording { return recordingShortcut ? .recordingShortcut : .recordingButton }
+        if !enabled { return .off }' \
+  '        if !enabled { return .off }
+        if recording { return recordingShortcut ? .recordingShortcut : .recordingButton }'
+
+mutate "M8 shortcut sentence asks for the mouse" "$LABEL_SRC" \
+  '        case .recordingShortcut: return "Đang ghi phím tắt — bấm tổ hợp phím trên bàn phím (Esc để hủy)."' \
+  '        case .recordingShortcut: return "Đang ghi — bấm nút trên chuột (Esc để hủy)."'
+
 restore
 AFTER_HASH=$(shasum -a 256 "$REAL" | cut -d' ' -f1)
 LABEL_AFTER=$(shasum -a 256 "$LABEL_SRC" | cut -d' ' -f1)
@@ -137,5 +163,8 @@ if [ "$REAL_HASH" = "$AFTER_HASH" ] && [ "$LABEL_HASH" = "$LABEL_AFTER" ]; then
 else
   echo "source restored byte-identical: NO — restore it from git"
 fi
+AFTER=$(fails)
 echo "post-restore suite: $(run_tests)"
-rm -rf "$SCRATCH"
+echo "RESULT: $RED/$TOTAL mutations RED"
+# 2026-10-15: this script used to print its verdicts and exit 0 whatever they said.
+[ "$RED" = "$TOTAL" ] && [ "$REAL_HASH" = "$AFTER_HASH" ] && [ "$LABEL_HASH" = "$LABEL_AFTER" ] && [ "$AFTER" = "0" ] || exit 1
