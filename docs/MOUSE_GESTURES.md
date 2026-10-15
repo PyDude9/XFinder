@@ -428,7 +428,7 @@ trong Hệ thống → Bàn phím → Phím tắt và gửi **đúng phím đó*
 |---|---|---|---|---|---|
 | Global (app không khớp profile nào) | ⌨︎ Mission Control | ⌨︎ App Exposé | ⌨︎ Space trước | ⌨︎ Space kế tiếp | — không gửi phím (chuyển tiếp cuộn ngang) |
 | Edge, Safari, Chrome | ⬤ `⌘T` — Tab mới | ⬤ `⌘W` — Đóng tab | ⬤ `⌘[` — Lùi | ⬤ `⌘]` — Tiến | ⬤ `⌃⇥` — Tab kế tiếp |
-| VS Code, Cursor, Zed, Antigravity, Claude | — | — | ⬤ `⌘[` — Lùi | ⬤ `⌘]` — Tiến | — |
+| VS Code, Cursor, Zed, Antigravity, Claude | ⌨︎ Mission Control | — | ⬤ `⌘[` — Lùi | ⬤ `⌘]` — Tiến | — |
 | Kitty, Terminal, iTerm2 | — | — | ⬤ `⌥←` — Lùi một từ | ⬤ `⌥→` — Tới một từ | — |
 | Photoshop, CapCut | ▪ `⌘0` — Vừa khung | ▪ `⌘Z` — Hoàn tác | ▪ `[` — Thu nhỏ cọ | ▪ `]` — Phóng to cọ | — |
 | **Excel** | ▪ `⌘+` — Phóng to | ▪ `⌘-` — Thu nhỏ | ⬤ `⌃⇧⇥` — Trang tính trước | ⬤ `⌃⇥` — Trang tính kế tiếp | — |
@@ -487,7 +487,8 @@ vẫn là cuộn ngang bình thường. Không có phím nào được gửi và
 "chưa làm" — mỗi ô là một hành động **không có phím chung đáng tin** giữa các app trong
 nhóm đó.
 
-- **Dev/AI ↑/↓**: "toggle terminal" là ``⌃` `` trong VS Code, `⌃\`` trong Cursor, và
+- **Dev/AI ↓** (↑ là Mission Control từ 2026-10-15 theo yêu cầu của chủ dự án: một hành động hệ thống, đọc từ phím tắt
+  máy bạn đã gán, không phải phím riêng của app nào): "toggle terminal" là ``⌃` `` trong VS Code, `⌃\`` trong Cursor, và
   khác nữa trong Zed; "AI refactor" là `⌘I` trong Cursor và `⌘K` trong Claude. Gửi một
   trong hai như preset chung là **đoán** mà trông như đã kiểm chứng. Ghi phím riêng cho
   từng app nếu bạn muốn.
@@ -638,7 +639,7 @@ dùng **Chưa gán** — nó lưu một override thật và không bị nhầm v
    thật sự có tác dụng, và dòng *Ứng dụng đang dùng:* trên trang nói rõ điều đó thay vì
    giả vờ app có preset riêng.
 3. **App có preset nhưng hướng đó Chưa gán** → **không** rơi về Global. Đây là chủ ý:
-   Dev/AI ↑↓ không được phép biến thành điều hướng mục chỉ vì bảng Global có giá trị.
+   Dev/AI ↓ không được phép biến thành điều hướng mục chỉ vì bảng Global có giá trị.
 
 Bảng Global mặc định (áp cho app không có profile riêng):
 

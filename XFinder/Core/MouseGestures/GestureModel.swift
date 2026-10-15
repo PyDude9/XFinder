@@ -458,9 +458,11 @@ extension GestureProfiles {
 
         // ── Dev & AI
         //
-        // Up/Down are Unassigned on purpose and this is the row the honest rule is
-        // for: "toggle terminal" is ``⌃` `` in VS Code, `⌃`` in Cursor, and something
-        // else again in Zed; "AI refactor" is `⌘I` in Cursor and `⌘K` in Claude.
+        // Up is Mission Control (the owner's choice, 2026-10-15): a system intent resolved
+        // from this Mac's own binding, exactly like Global's Up, so it is not one app's key
+        // dressed up as a shared default. Down stays Unassigned and this is the row the
+        // honest rule is for: "toggle terminal" is ``⌃` `` in VS Code, `⌃`` in Cursor, and
+        // something else again in Zed; "AI refactor" is `⌘I` in Cursor and `⌘K` in Claude.
         // Shipping either as a shared default would be a guess that looks verified.
         // Left/Right send **editor navigation** — the platform's own history
         // convention — rather than one app's pane-splitting keys, because which
@@ -469,7 +471,7 @@ extension GestureProfiles {
                            ("dev.zed.Zed", "Zed"), ("com.google.antigravity", "Antigravity"),
                            ("com.anthropic.claudefordesktop", "Claude")] {
             result.append(profile(id, name,
-                                  up: .unassigned(.horizontalScroll),
+                                  up: .convention(.missionControl, GestureSystemAction.missionControl),
                                   down: .unassigned(.horizontalScroll),
                                   left: .convention(.previousPage, back),
                                   right: .convention(.nextPage, forward)))

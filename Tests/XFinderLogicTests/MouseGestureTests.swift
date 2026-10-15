@@ -44,7 +44,8 @@ final class MouseGestureTests: XCTestCase {
     func testKnownProfilesDoNotInheritUnassignedActions() {
         let config = GestureConfiguration()
         for id in ["com.microsoft.VSCode","com.todesktop.230313mzl4w4u92","dev.zed.Zed","com.google.antigravity","com.anthropic.claudefordesktop"] {
-            XCTAssertEqual(config.action(bundle:id,direction:.up),.unassigned)
+            // Up is Mission Control (the owner's choice) — a system intent, not one app's key.
+            XCTAssertEqual(config.action(bundle:id,direction:.up),.systemAction(.missionControl))
             XCTAssertEqual(config.action(bundle:id,direction:.down),.unassigned)
             // Left/right are the platform *history* convention, which every editor
             // honours, rather than one app's pane-splitting keys.
@@ -394,8 +395,9 @@ final class MouseGestureTests: XCTestCase {
         var config = GestureConfiguration()
         XCTAssertEqual(config.source(bundle: "com.apple.Safari", direction: .up), .preset)
         XCTAssertEqual(config.source(bundle: "com.apple.Safari", direction: .tiltLeft), .preset)
-        // Dev up is intentionally unassigned — not a missing preset.
-        XCTAssertEqual(config.source(bundle: "com.microsoft.VSCode", direction: .up), .unassigned)
+        // Dev down is intentionally unassigned — not a missing preset; up is Mission Control.
+        XCTAssertEqual(config.source(bundle: "com.microsoft.VSCode", direction: .down), .unassigned)
+        XCTAssertEqual(config.source(bundle: "com.microsoft.VSCode", direction: .up), .preset)
         // Global's tilt arms are *unassigned* in the stored profile on purpose: the
         // engine's tilt branch passes the event through for `.unassigned`, which is
         // exactly "let the wheel's sideways motion be a sideways scroll". Storing
@@ -555,11 +557,11 @@ final class MouseGestureTests: XCTestCase {
             XCTAssertEqual(cfg.action(bundle: id, direction: .tiltRight), GestureProfiles.key(48, ctrl), id)
         }
 
-        // Dev & AI: history on the horizontal arms, up/down deliberately empty.
+        // Dev & AI: history on the horizontal arms, Mission Control up, down deliberately empty.
         for id in ["com.microsoft.VSCode", "com.todesktop.230313mzl4w4u92", "dev.zed.Zed", "com.google.antigravity", "com.anthropic.claudefordesktop"] {
             XCTAssertEqual(cfg.action(bundle: id, direction: .left), GestureProfiles.key(33, c), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .right), GestureProfiles.key(30, c), id)
-            XCTAssertEqual(cfg.action(bundle: id, direction: .up), .unassigned, id)
+            XCTAssertEqual(cfg.action(bundle: id, direction: .up), .systemAction(.missionControl), id)
             XCTAssertEqual(cfg.action(bundle: id, direction: .down), .unassigned, id)
         }
 
@@ -631,7 +633,8 @@ final class MouseGestureTests: XCTestCase {
         for (dir, action) in dev where dir == .up || dir == .down {
             XCTAssertNotEqual(browsers[dir], action, "dev and browsers share \(dir.rawValue)")
         }
-        XCTAssertNil(dev[.up]); XCTAssertNil(dev[.down])
+        // Up is Mission Control (the owner's choice, a system intent); down is deliberately empty.
+        XCTAssertEqual(dev[.up], .systemAction(.missionControl)); XCTAssertNil(dev[.down])
         // A preset with a hold-trigger button must never send a bare bracket to a
         // text-first app: Photoshop's brush-size pair is the only place [] is right.
         XCTAssertEqual(browsers[.left], GestureProfiles.key(33, GestureShortcut.command))
