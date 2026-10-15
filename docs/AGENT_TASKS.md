@@ -121,18 +121,17 @@ không báo chuyện khẩu vị. Ghi kết quả vào docs/AGENT_WORKLOG.md dư
 
 ## 5. Trạng thái hiện tại (Claude cập nhật cuối mỗi phiên)
 
-Cập nhật 2026-10-15.
+Cập nhật 2026-10-15, cuối phiên (Claude hết quota).
 
-- `main` = commit mới nhất trên GitHub; không nhánh `agent/*` nào đang mở; không việc nào ĐANG LÀM.
-- Bản cài trên máy là bản Debug khớp `main` (đã kiểm hash).
-- **Bạn còn nợ tay** (danh sách đầy đủ ở `docs/PENDING_TESTS_AND_DECISIONS.md`): T-ANALYTICS-5 (thấy tín hiệu trên dashboard
-  TelemetryDeck), T-ANALYTICS-6 (bấm một nút trên hộp thông báo), T-LAYOUT-1, T-SLEEP-1, T-LIMIT-1.
-- **Claude đang làm dở: thiết kế lại trang Chuột & cử chỉ** (đang ở cổng duyệt brief). Không agent nào sửa
-  `XFinder/Views/Detail/MouseGesturesDetailView.swift`, `XFinder/Views/Components/MouseDiagramView.swift`,
-  `GestureButtonList.swift`, `GestureDetailPanel.swift`, `GestureArmView.swift`, `GestureActionPicker.swift`,
-  `GestureActivityPanel.swift` cho tới khi mục này đổi.
-- **Câu hỏi đang chờ bạn**: Q-RELEASE-14 (đăng 1.4.0), Q-OC (chọn mã OneNotch muốn làm), Q-DIAG-5, và các Q khác trong
-  file trên. Agent khác **không** trả lời thay bạn những câu này.
+- `main` = `63bc3c3` trên GitHub. Bản cài trên máy khớp bản build của commit đó. Không nhánh `agent/*` nào.
+- **Vừa xong:** 8 preset cử chỉ chuột sai bundle ID đã sửa (`f9b8d5d`); preset Dev & AI kéo lên = Mission Control (`63bc3c3`).
+- **Đang dở: thiết kế lại trang Chuột & cử chỉ.** Đã qua cổng 1 (brief). Wireframe 4 phương án (A danh sách, B sơ đồ + bảng
+  bên — khuyên dùng, C bảng theo app, D theo ảnh tham chiếu của bạn) gần xong; bản sao bền ở
+  `~/github/XFinder-design/mouse-gestures-2026-10-15/` (ngoài repo). **Cổng 2 = bạn chọn phương án** (việc T19 giúp bạn xem).
+  Cho tới khi T14 bắt đầu, không agent nào sửa `XFinder/Views/Detail/MouseGesturesDetailView.swift` và 6 file
+  `XFinder/Views/Components/{MouseDiagramView,GestureButtonList,GestureDetailPanel,GestureArmView,GestureActionPicker,GestureActivityPanel}.swift`.
+- **Bạn còn nợ tay:** T-ANALYTICS-5, T-ANALYTICS-6, T-LAYOUT-1, T-SLEEP-1, T-LIMIT-1, T-MG-BID (`docs/PENDING_TESTS_AND_DECISIONS.md`).
+- **Câu hỏi đang chờ bạn:** Q-RELEASE-14, Q-OC, Q-DIAG-5, Q-MG-1…3. Agent khác không trả lời thay bạn.
 
 ## 6. Hàng đợi việc (mọi cỡ, mỗi việc có đặc tả)
 
@@ -339,6 +338,99 @@ trong worklog, đừng viết là đã xong.
 - **Nghiệm thu:** `grep -rn "allowedFileTypes" XFinder --include='*.swift'` ra rỗng (sau khi T04 đã gộp; nếu chưa thì chỉ còn 2
   dòng của T04) · `build-and-check` thành công · ghi "chưa kiểm live: hộp mở/lưu tệp lọc đúng loại".
 
+---
+
+### T18 · Chạy lại hai harness cử chỉ cho commit `63bc3c3` — TODO
+
+- **Cỡ:** S · không sửa file nào (chỉ chạy và ghi worklog)
+- **Vì sao:** commit `63bc3c3` sửa `GestureModel.swift` nhưng hai harness bị dừng giữa chừng để kịp commit trước khi hết quota.
+  Lần dừng đó để lại một mutant trong `GestureLabelStructure.swift` (đã khôi phục bằng `git checkout`).
+- **Các bước** (chạy lần lượt, KHÔNG chạy song song, không sửa file nào trong lúc chạy, không dừng giữa chừng):
+  1. `git status --short`: không được có file `M` nào ngoài file chưa track của chủ dự án.
+  2. `/bin/sh -c 'cd ~/github/XFinder && sh scripts/mutation-check-gesture-labels.sh' > /tmp/mut-labels.log 2>&1`
+  3. `/bin/sh -c 'cd ~/github/XFinder && sh scripts/mutation-check-gesture-ui.sh' > /tmp/mut-ui.log 2>&1`
+  4. `git status --short` lại: phải giống bước 1. Nếu có file `M` (mutant sót) → ghi tên file vào worklog, chạy
+     `git diff <file>` để chép phần khác, rồi DỪNG (không tự `git checkout`).
+- **Nghiệm thu:** labels in 5 dòng "RED as expected", ui in 8 dòng "RED as expected" và "post-restore suite: … 0 failure(s)";
+  ghi hai con số vào `docs/AGENT_WORKLOG.md`.
+
+---
+
+### T16 · Tên phím chữ và số trong nhãn phím tắt (đang hiện "⌘Key 18") — TODO
+
+- **Cỡ:** S · 1 file nguồn + 1 file test mới
+- **Vì sao:** `GestureShortcut.label` (`XFinder/Core/MouseGestures/GestureModel.swift`, khoảng dòng 147) chỉ có tên cho vài mã
+  phím, nên "Vừa khung" hiện `⌘Key 18` thay vì `⌘1`, "Chụp màn hình" hiện `⇧⌘Key 20` thay vì `⇧⌘3`.
+- **Các bước:**
+  1. Trong `var label`, thêm vào bảng `names` các mã phím ANSI của macOS (giữ nguyên các mục đang có):
+     `1:"S", 2:"D", 4:"H", 5:"G", 7:"X", 8:"C", 11:"B", 12:"Q", 14:"E", 15:"R", 16:"Y", 31:"O", 32:"U", 34:"I", 37:"L",
+     38:"J", 39:"'", 40:"K", 41:";", 42:"\\", 43:",", 44:"/", 45:"N", 46:"M", 47:".", 18:"1", 19:"2", 20:"3", 21:"4",
+     23:"5", 22:"6", 26:"7", 28:"8", 25:"9", 51:"⌫", 53:"⎋"`
+     (mã 29 đã là "0", 24 "=", 27 "-", 30 "]", 33 "[" — không đổi).
+  2. Tạo `Tests/XFinderLogicTests/GestureShortcutLabelTests.swift` (gói test tự nhận file mới; `GestureModel.swift` đã có
+     symlink): kiểm `GestureShortcut(key: 18, flags: GestureShortcut.command).label == "⌘1"`,
+     `GestureShortcut(key: 20, flags: GestureShortcut.command | GestureShortcut.shift).label == "⇧⌘3"`, và với mọi mã từ 0
+     tới 53 có trong bảng mới thì `label` không chứa chữ "Key ".
+- **Nghiệm thu:** `swift test` tăng đúng số test mới, 0 lỗi · chứng minh test đỏ được: tạm xoá `18:"1"` khỏi bảng, thấy đỏ,
+  thêm lại, `git diff --stat` chỉ còn 2 file · `build-and-check` thành công · `sh scripts/mutation-check-gesture-labels.sh`
+  vẫn 5/5 RED (chạy riêng, không song song).
+
+---
+
+### T15 · Nút "Ghi nút" cạnh "Nút cuộn" thật ra ghi NÚT GIỮ — TODO (chỉ khi chưa bắt đầu T14)
+
+- **Cỡ:** S · 1 file (`XFinder/Views/Detail/MouseGesturesDetailView.swift`, hàm `switchesSection`, khoảng dòng 859–866)
+- **Vì sao:** nút đó gọi `triggerRecording()`, mà engine chỉ ghi `configuration.trigger` (`GestureEngine.swift:527`); không có
+  đường nào đổi `scrollButton`. Control làm khác điều nhãn của nó hứa.
+- **Lưu ý:** nếu T14 đã bắt đầu thì BỎ việc này (T14 làm lại cả khối). File này đang bị khoá ở mục 5 — T15 là ngoại lệ
+  duy nhất được phép sửa nó, và chỉ đúng khối dưới đây.
+- **Các bước:** thay `Button(L10n.t("Ghi nút")) { triggerRecording() }.buttonStyle(.link)…` (khối "Nút cuộn") bằng một
+  `Picker` kiểu `.menu` (rộng tối đa 140) liệt kê các nút trong `drawnButtons` mà `buttonRole($0)` không phải nút giữ và
+  `roleContext.declaredEventButtons` có chứa; nhãn mỗi mục `L10n.t(ButtonKey.index(n))`; chọn thì
+  `controller.update { $0.scrollButton = n }` (n là chỉ số 0-based như `scrollButton` đang lưu — đọc `GestureModel.swift`
+  `validate()` để chắc). Bỏ `Text` hiển thị số nút đứng trước nút cũ (Picker đã hiện giá trị). Không thêm chuỗi mới.
+- **Nghiệm thu:** `build-and-check` thành công · `swift test` 0 lỗi · 6 cổng L10n `TOTAL 0` · đọc diff: không còn
+  `triggerRecording()` nào trong khối "Nút cuộn" · ghi "chưa kiểm live: chọn nút cuộn trên trang".
+
+---
+
+### T19 · Mở wireframe Chuột & cử chỉ cho bạn chọn (cổng 2) — TODO
+
+- **Cỡ:** S · không sửa repo
+- **Các bước:**
+  1. `/bin/ls ~/github/XFinder-design/mouse-gestures-2026-10-15/` phải có `shell.html`, `variant-a.html` … `variant-d.html`,
+     `build.py`. Nếu thư mục scratchpad cũ
+     `/private/tmp/claude-502/-Users-wolong-github-XFinder/ec69d774-f3f3-4e1f-91f8-7b0e4b40a2f7/scratchpad/mg/wf/` còn và có
+     `variant-*.html` MỚI hơn bản sao, chép đè các `variant-*.html` mới sang thư mục bền.
+  2. `/bin/sh -c 'cd ~/github/XFinder-design/mouse-gestures-2026-10-15 && python3 build.py a b c d'` → `wireframe-a-b-c-d.html`.
+  3. Chạy server nền: `/bin/sh -c 'nohup python3 -m http.server 8766 -d ~/github/XFinder-design/mouse-gestures-2026-10-15 >/dev/null 2>&1 &'`
+     (cổng 8766 bận thì dừng tiến trình cũ đang giữ nó: `lsof -ti :8766`).
+  4. Đưa bạn các link: `http://127.0.0.1:8766/wireframe-a-b-c-d.html?v=a` (đổi `v=b`, `v=c`, `v=d`; thanh trên cùng đổi
+     trạng thái, cửa sổ 1181×611 / 1440×900, sáng/tối). Nếu thanh trên cùng không có nút D thì gõ `v=d` vào link.
+- **Nghiệm thu:** `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8766/wireframe-a-b-c-d.html` in `200`. Ghi vào
+  worklog phương án bạn chọn và mọi góp ý của bạn — đó là đầu vào của T14.
+
+---
+
+### T14 · Dựng trang Chuột & cử chỉ theo phương án bạn chọn — CHỜ BẠN CHỌN PHƯƠNG ÁN (cổng 2)
+
+- **Cỡ:** L · nhiều file trong `XFinder/Views/Detail/MouseGesturesDetailView.swift` và `XFinder/Views/Components/*Gesture*`,
+  `MouseDiagramView.swift`; có thể thêm file view mới (4 dòng pbxproj mỗi file).
+- **Đầu vào (đọc hết trước khi sửa dòng nào):** `~/github/XFinder-design/mouse-gestures-2026-10-15/CONTRACT.md` (brief đã
+  duyệt, 11 lỗi hiện trạng phải sửa, ngữ pháp card), `CONTRACT-D.md` nếu chọn D, `inventory.md` (F1–F29 chức năng, S1–S68
+  trạng thái — **không được rơi mục nào**), `variant-<x>.html` của phương án được chọn, góp ý của bạn trong worklog (T19).
+- **Bước (mỗi bước một commit, build + test xanh mới sang bước sau):**
+  1. Khung trang theo phương án: thay bố cục cũ, giữ nguyên mọi binding tới `GestureController` (đọc `inventory.md` cột
+     "writes/calls"); không đổi `GestureModel`/`GestureEngine`.
+  2. Sửa đúng 11 lỗi ở `CONTRACT.md` "What is wrong today" (gồm T15 nếu chưa làm: nút cuộn chọn bằng Picker).
+  3. Chuỗi mới: thêm bằng một script chỉ-thêm mới `scripts/add-mouse-redesign-l10n-entries.py` (mẫu:
+     `scripts/add-analytics-l10n-entries.py`), không sửa entry cũ. Một vốn từ: "Nút N".
+  4. Chẩn đoán HID gom vào một disclosure "Chẩn đoán chuột" ở cuối.
+- **Cổng:** `build-and-check` (tên file mới có trong build log) · `swift test` 0 lỗi · `sh scripts/mutation-check-gesture-labels.sh`,
+  `mutation-check-gesture-ui.sh`, `mutation-check-gesture-buttons.sh` (lần lượt) đều đỏ hết · 6 cổng L10n `TOTAL 0` ·
+  `python3 scripts/audit-ui-tokens.py` 0 · ghi "chưa kiểm live" cho mọi phần cần mở app.
+- Claude sẽ review, đo trên app (AX + ảnh chụp cửa sổ) và so với wireframe trước khi gộp.
+
 ## 7. Việc cần bạn duyệt trước (agent KHÔNG làm khi chưa duyệt)
 
 Đã kiểm là có thật và nhỏ, nhưng đổi thứ người dùng thấy, nên chờ bạn trả lời Q-OC. Bạn duyệt mã nào thì Claude chuyển nó
@@ -352,8 +444,9 @@ xuống mục 6 kèm các bước.
 
 ## 8. Việc chỉ Claude làm
 
-- Thiết kế lại trang Chuột & cử chỉ (đang làm, có hai cổng duyệt với bạn).
+- Review + đo live T14 trước khi gộp (so trang thật với wireframe đã chọn bằng AX và ảnh chụp cửa sổ).
 - Mọi mã OC bạn chọn ở mục 7: Claude viết đặc tả rồi đưa xuống mục 6.
+- Q-MG-1…3 (cử chỉ theo phím bổ trợ, vòng cho nhiều nút, tuỳ biến cuộn) nếu bạn muốn: sửa engine, Claude viết đặc tả trước.
 - Đăng 1.4.0 (Q-RELEASE-14): script phát hành, ký, GitHub.
 - Theo dõi T-LIMIT-1: nếu lần chạm giới hạn thật cho kết quả khác, đo lại transcript và sửa `AgentEvents.swift`.
 - Mọi việc trong vùng cấm (mục 2) và mọi phép đo trên máy (quyền, Accessibility, dữ liệu thật).
