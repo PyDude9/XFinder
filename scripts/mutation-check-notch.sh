@@ -74,7 +74,7 @@ run "M10 a step after Cancel still counts" XFinder/Core/Notch/NotchTask.swift \
 run "M11 the hub collapses mid-job" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if taskRunning || s.composing { return }'" "'                if s.composing { return }'"
 run "M12 same-kind notices stack instead of replacing" XFinder/Core/Notch/LiveActivity.swift \
-  "'            if current?.kind == item.kind { current = item; return true }\n'" "''"
+  "'                if Self.outranks(c, item) { enqueue(item); return false }\n                current = item; return true\n'" "'                enqueue(item); return false\n'"
 run "M13 a notice interrupts the open hub" XFinder/Core/Notch/NotchSurfaceMachine.swift \
   "'                if state.isIdle { state = .activity; anchor = .notch }'" "'                state = .activity; anchor = .notch'"
 run "M14 low battery repeats every percent" XFinder/Core/Notch/LiveActivity.swift \
@@ -168,6 +168,12 @@ run "M42 the player's own pid only (browsers deliver no buffers)" XFinder/Core/N
   "'            if let r = p.responsiblePID { return r == player }\n            return p.parentPID == player'" "'            return false'"
 run "M43 the parent pid outranks responsibility (Safari's WebKit.GPU is lost)" XFinder/Core/Notch/AudioWaveform.swift \
   "'            if let r = p.responsiblePID { return r == player }'" "'            if p.parentPID == player { return true }'"
+run "M57 a lone UP is swallowed (HUD pairing)" XFinder/Core/Notch/LiveActivity.swift \
+  "'                    guard swallowed.remove(keyType) != nil, let key = MediaKey(rawValue: keyType) else {'" "'                    guard let key = MediaKey(rawValue: keyType) else {'"
+run "M58 a key pressed with a modifier is taken over" XFinder/Core/Notch/LiveActivity.swift \
+  "'            guard !context.modifiersHeld else { return .passThrough }\n'" "''"
+run "M59 a volume key is taken on an output that cannot set volume" XFinder/Core/Notch/LiveActivity.swift \
+  "'            if key.isVolume { guard context.volumeOn, context.volumeWritable else { return .passThrough } }'" "'            if key.isVolume { guard context.volumeOn else { return .passThrough } }'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/NotchInterfaceDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 

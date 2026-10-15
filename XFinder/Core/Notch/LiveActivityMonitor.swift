@@ -16,13 +16,15 @@ final class LiveActivityMonitor: NSObject {
 
     // MARK: Settings
 
-    private var master: Bool { UserDefaults.standard.object(forKey: "notch.activities") as? Bool ?? true }
+    /// Read by `SystemKeyInterceptor` too, so these three are not private — one reader per key.
+    var master: Bool { UserDefaults.standard.object(forKey: "notch.activities") as? Bool ?? true }
     private var powerOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.power") as? Bool ?? true }
     private var networkOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.network") as? Bool ?? true }
     private var capsLockOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.capsLock") as? Bool ?? true }
     private var bluetoothOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.bluetooth") as? Bool ?? true }
     private var alertsOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.alerts") as? Bool ?? true }
-    private var volumeOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.volume") as? Bool ?? true }
+    var volumeOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.volume") as? Bool ?? true }
+    var brightnessOn: Bool { UserDefaults.standard.object(forKey: "notch.activity.brightness") as? Bool ?? true }
 
     /// AlertMonitor asks this before choosing between the notch and its own banner.
     var routesAlertsToNotch: Bool { master && alertsOn && NotchSurfaceController.shared.canPresentActivities }
@@ -164,6 +166,22 @@ final class LiveActivityMonitor: NSObject {
         let now = LiveActivity.VolumeState(level: level, muted: muted)
         present(LiveActivity.volumeItem(old: lastVolume, new: now))
         lastVolume = now
+    }
+
+    // MARK: Brightness / volume keys XFinder took (`SystemKeyInterceptor`)
+
+    /// Nothing observes brightness, so the key XFinder just applied reports the level it landed on. The
+    /// native square is swallowed for that key, so this is the ONLY readout — it answers even at 0 or 1.
+    func brightnessKeyed(level: Double) {
+        guard master, brightnessOn, NotchSurfaceController.shared.canPresentActivities else { return }
+        present(LiveActivity.brightnessItem(level: level))
+    }
+
+    /// A volume key XFinder took that could not move the level (already at 0 or 1, or volume-up while at
+    /// the top). CoreAudio reports nothing then, so `volumeChanged` never runs; the press must still answer.
+    func volumeKeyedWithoutChange(_ state: LiveActivity.VolumeState) {
+        guard master, volumeOn, NotchSurfaceController.shared.canPresentActivities else { return }
+        present(LiveActivity.volumeItem(state))
     }
 
     // MARK: Bluetooth — connect notification, then a per-device disconnect notification

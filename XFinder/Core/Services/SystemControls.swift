@@ -48,6 +48,31 @@ enum SystemControls {
         AudioObjectSetPropertyData(deviceID, &addr, 0, nil, size, &value)
     }
 
+    /// Whether the default output lets XFinder set its volume (master element, else channel 1) — the same
+    /// two places `setVolume` writes. HDMI and aggregate devices often expose neither, and then a volume key
+    /// XFinder took over would change nothing (`SystemKeyInterceptor` leaves such keys to macOS).
+    static func canSetVolume() -> Bool {
+        isSettable(kAudioDevicePropertyVolumeScalar, elements: [kAudioObjectPropertyElementMain, 1])
+    }
+
+    /// Whether the default output has a settable mute.
+    static func canSetMute() -> Bool {
+        isSettable(kAudioDevicePropertyMute, elements: [kAudioObjectPropertyElementMain])
+    }
+
+    private static func isSettable(_ selector: AudioObjectPropertySelector, elements: [UInt32]) -> Bool {
+        let deviceID = defaultOutputDevice()
+        guard deviceID != 0 else { return false }
+        for element in elements {
+            var addr = AudioObjectPropertyAddress(mSelector: selector,
+                                                  mScope: kAudioDevicePropertyScopeOutput, mElement: element)
+            guard AudioObjectHasProperty(deviceID, &addr) else { continue }
+            var settable: DarwinBoolean = false
+            if AudioObjectIsPropertySettable(deviceID, &addr, &settable) == noErr, settable.boolValue { return true }
+        }
+        return false
+    }
+
     static func getVolume() -> Double {
         let deviceID = defaultOutputDevice()
         guard deviceID != 0 else { return 0.5 }

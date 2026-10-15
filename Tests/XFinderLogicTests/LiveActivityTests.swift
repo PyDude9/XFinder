@@ -95,7 +95,8 @@ final class LiveActivityTests: XCTestCase {
         keys.insert(A.volumeItem(old: .init(level: 0.5, muted: false), new: .init(level: 0.6, muted: false))!.titleKey)
         keys.insert(A.volumeItem(old: .init(level: 0.5, muted: false), new: .init(level: 0.5, muted: true))!.titleKey)
         keys.insert(A.timerFinishedItem(A.Countdown(minutes: 5, now: Date())).titleKey)
-        XCTAssertEqual(keys.count, 15, "the vocabulary walk collapsed")
+        keys.insert(A.brightnessItem(level: 0.5).titleKey)
+        XCTAssertEqual(keys.count, 16, "the vocabulary walk collapsed")
         for k in keys { XCTAssertNotNil(store.entries[k], k) }
     }
 
@@ -177,5 +178,103 @@ final class LiveActivityTests: XCTestCase {
         XCTAssertEqual(A.validTimerMinutes(0), A.timerMinMinutes)
         XCTAssertEqual(A.validTimerMinutes(900), A.timerMaxMinutes)
     }
-}
 
+    // MARK: Brightness HUD + HUD suppression (owner's request, 2026-10-15)
+
+    /// The brightness bar answers every key XFinder takes — including at 0 and 1, where the level cannot move
+    /// (nothing observes brightness, so an unchanged press would otherwise look dead).
+    func testBrightnessHUDAnswersEveryPressEvenAtTheEnds() {
+        let mid = A.brightnessItem(level: 0.5625)
+        XCTAssertEqual(mid.kind, .brightness)
+        XCTAssertEqual(mid.titleKey, "Độ sáng")
+        XCTAssertEqual(mid.detail, "56%")
+        XCTAssertEqual(mid.level ?? -1, 0.5625, accuracy: 1e-9)
+        XCTAssertEqual(A.brightnessItem(level: 1.0).detail, "100%", "at the top it still answers")
+        XCTAssertEqual(A.brightnessItem(level: 0.0).detail, "0%", "at the bottom it still answers")
+        XCTAssertEqual(A.brightnessItem(level: 1.0).symbol, "sun.max.fill")
+        XCTAssertEqual(A.brightnessItem(level: 0.2).symbol, "sun.min.fill")
+        XCTAssertEqual(A.brightnessItem(level: 2.0).level, 1.0, "clamped to the top")
+    }
+
+    /// A volume key XFinder took at the top/bottom moves nothing, so CoreAudio reports nothing; the forced
+    /// item is what answers the press. The change-driven path keeps its "only a real change" rule.
+    func testVolumeItemForAStateAlwaysAnswers() {
+        XCTAssertEqual(A.volumeItem(A.VolumeState(level: 1.0, muted: false)).detail, "100%")
+        XCTAssertEqual(A.volumeItem(A.VolumeState(level: 0.0, muted: false)).titleKey, "Đã tắt tiếng")
+        XCTAssertNil(A.volumeItem(old: .init(level: 1.0, muted: false), new: .init(level: 1.0, muted: false)))
+    }
+
+    func testPhaseReadsBitsEightToFifteen() {
+        XCTAssertEqual(A.HUDSuppression.phase(data1: 0x0A00), .down)
+        XCTAssertEqual(A.HUDSuppression.phase(data1: 0x0B00), .up)
+        XCTAssertEqual(A.HUDSuppression.phase(data1: 0x0000), .other, "a stray state-0 event is not a key press")
+        XCTAssertEqual(A.HUDSuppression.phase(data1: 0x20A00), .down, "brightness-up down")
+    }
+
+    private func ctx(hide: Bool = true, present: Bool = true, master: Bool = true,
+                     volume: Bool = true, brightness: Bool = true, writable: Bool = true,
+                     volumeWritable: Bool = true, modifiers: Bool = false)
+        -> A.HUDSuppression.Context {
+        .init(hideSystemHUD: hide, canPresent: present, masterOn: master,
+              volumeOn: volume, brightnessOn: brightness, brightnessWritable: writable,
+              volumeWritable: volumeWritable, modifiersHeld: modifiers)
+    }
+
+    func testSwallowingNeedsTheSwitchAndASurfaceToDrawOn() {
+        let c = ctx()
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 0, phase: .down, context: c), .consume(.volumeUp))
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 1, phase: .down, context: c), .consume(.volumeDown))
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 7, phase: .down, context: c), .consume(.mute))
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 2, phase: .down, context: c), .consume(.brightnessUp))
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 3, phase: .down, context: c), .consume(.brightnessDown))
+    }
+
+    func testSwallowingIsRefusedWheneverXFinderCannotShowTheValue() {
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 0, phase: .down, context: ctx(hide: false)), .passThrough,
+                       "the switch is off: macOS keeps its own square")
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 0, phase: .down, context: ctx(present: false)), .passThrough,
+                       "no notch surface: swallowing would leave no feedback at all")
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 0, phase: .down, context: ctx(master: false)), .passThrough)
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 0, phase: .down, context: ctx(volume: false)), .passThrough)
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 2, phase: .down, context: ctx(brightness: false)), .passThrough)
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 2, phase: .down, context: ctx(writable: false)), .passThrough,
+                       "brightness not writable (no DisplayServices): let macOS draw its own")
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 0, phase: .down, context: ctx(volumeWritable: false)), .passThrough,
+                       "an output whose volume cannot be set: macOS shows its own 'not available' square")
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 7, phase: .down, context: ctx(volumeWritable: false)), .passThrough)
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 0, phase: .down, context: ctx(modifiers: true)), .passThrough,
+                       "⌥⇧ quarter steps and ⌥-opens-Settings stay macOS's")
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 2, phase: .down, context: ctx(modifiers: true)), .passThrough)
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 2, phase: .down, context: ctx(volumeWritable: false)), .consume(.brightnessUp),
+                       "the volume device never blocks the brightness key")
+        // A kind that is off never blocks the other kind.
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 2, phase: .down, context: ctx(volume: false)), .consume(.brightnessUp))
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 0, phase: .down, context: ctx(brightness: false)), .consume(.volumeUp))
+    }
+
+    func testUnrecognisedKeysAndPhasesAreNeverTouched() {
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 32, phase: .down, context: ctx()), .passThrough,
+                       "keytype 32 is not a real NX constant — never swallow it")
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 0, phase: .other, context: ctx()), .passThrough)
+        XCTAssertEqual(A.HUDSuppression.decide(keyType: 2, phase: .other, context: ctx()), .passThrough)
+    }
+
+    /// The UP follows its DOWN, whatever the context has become by then.
+    func testAnUpFollowsItsDownWhateverTheContextBecame() {
+        var pairing = A.HUDSuppression.Pairing()
+        // Swallowed DOWN, then the switch flips off before the UP: the UP is still swallowed.
+        XCTAssertEqual(pairing.resolve(keyType: 0, phase: .down) { .consume(.volumeUp) }, .consume(.volumeUp))
+        XCTAssertEqual(pairing.resolve(keyType: 0, phase: .up) { .passThrough }, .consume(.volumeUp))
+        // DOWN passed (⌥ held), ⌥ released before the UP: the UP passes too.
+        XCTAssertEqual(pairing.resolve(keyType: 2, phase: .down) { .passThrough }, .passThrough)
+        XCTAssertEqual(pairing.resolve(keyType: 2, phase: .up) { .consume(.brightnessUp) }, .passThrough)
+        // A lone UP (its DOWN arrived before the tap existed) is never swallowed.
+        XCTAssertEqual(pairing.resolve(keyType: 1, phase: .up) { .consume(.volumeDown) }, .passThrough)
+        // Auto-repeat DOWNs while held keep the pair; one UP closes it.
+        _ = pairing.resolve(keyType: 3, phase: .down) { .consume(.brightnessDown) }
+        _ = pairing.resolve(keyType: 3, phase: .down) { .consume(.brightnessDown) }
+        XCTAssertEqual(pairing.resolve(keyType: 3, phase: .up) { .passThrough }, .consume(.brightnessDown))
+        XCTAssertEqual(pairing.resolve(keyType: 3, phase: .up) { .passThrough }, .passThrough, "closed once")
+        XCTAssertTrue(pairing.swallowed.isEmpty)
+    }
+}

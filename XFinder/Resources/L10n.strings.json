@@ -11110,6 +11110,38 @@
     "Không bao giờ có: mã định danh máy hay người dùng, tên tệp, nội dung clipboard, ghi chú, tên cửa sổ, tài khoản. Mỗi lần gửi là một bản rời, không nối được với lần trước. Nơi nhận: TelemetryDeck — theo chính sách của họ, dữ liệu lưu tại EU và địa chỉ IP không được lưu (như mọi kết nối mạng, máy nhận vẫn thấy IP lúc nhận).": {
       "en": "Never included: any identifier for the Mac or the person, file names, clipboard content, notes, window titles, accounts. Each report stands alone and cannot be linked to the previous one. Receiver: TelemetryDeck — by its own policy, data is stored in the EU and IP addresses are not stored (like any network request, the receiver still sees the IP while receiving).",
       "scope": "sentence"
+    },
+    "Độ sáng": {
+      "en": "Brightness",
+      "scope": "sentence"
+    },
+    "Mức âm lượng thật từ CoreAudio, hiện trên notch.": {
+      "en": "The real volume level from CoreAudio, shown on the notch.",
+      "scope": "sentence"
+    },
+    "Mức độ sáng thật của màn hình trong, hiện trên notch khi bạn bấm phím độ sáng. Chỉ có khi bật “Chỉ dùng notch cho độ sáng và âm lượng” bên dưới.": {
+      "en": "The real brightness of the built-in display, shown on the notch when you press the brightness keys. Only while “Use the notch only for brightness and volume” below is on.",
+      "scope": "sentence"
+    },
+    "Hộp điều chỉnh của macOS": {
+      "en": "macOS's own brightness and volume square",
+      "scope": "sentence"
+    },
+    "Chỉ dùng notch cho độ sáng và âm lượng": {
+      "en": "Use the notch only for brightness and volume",
+      "scope": "sentence"
+    },
+    "XFinder tự nhận phím độ sáng và âm lượng rồi đặt giá trị, nên macOS không hiện hộp vuông riêng nữa.": {
+      "en": "XFinder takes the brightness and volume keys over and sets the values itself, so macOS no longer draws its own square.",
+      "scope": "sentence"
+    },
+    "Khi tắt, macOS vẫn hiện hộp vuông của nó như trước. Phím bấm kèm ⌥, ⇧, ⌃ hoặc ⌘, và loa không cho chỉnh âm lượng, vẫn để macOS xử lý.": {
+      "en": "With this off, macOS keeps drawing its own square as before. Keys pressed with ⌥, ⇧, ⌃ or ⌘, and outputs whose volume cannot be set, are still left to macOS.",
+      "scope": "sentence"
+    },
+    "Cần quyền Trợ năng để XFinder nhận được phím độ sáng và âm lượng.": {
+      "en": "Accessibility is required for XFinder to receive the brightness and volume keys.",
+      "scope": "sentence"
     }
   }
 }

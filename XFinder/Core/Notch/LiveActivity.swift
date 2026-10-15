@@ -6,7 +6,7 @@ import Foundation
 /// flagsChanged, IOBluetooth connect notifications); nothing polls.
 enum LiveActivity {
 
-    enum Kind: String, CaseIterable { case power, network, capsLock, bluetooth, alert, volume, timer, meeting, agent }
+    enum Kind: String, CaseIterable { case power, network, capsLock, bluetooth, alert, volume, brightness, timer, meeting, agent }
 
     enum Tint: Equatable { case neutral, good, warning, bad }
 
@@ -100,20 +100,137 @@ enum LiveActivity {
 
     struct VolumeState: Equatable { var level: Double; var muted: Bool }
 
-    /// Brightness has NO HUD on purpose: on Apple Silicon / macOS 27 the readable brightness value is
-    /// stuck (measured, CLAUDE.md), so a brightness bar would have to invent its number.
+    /// ── Corrected 2026-10-15 (the owner's HUD request) ─────────────────────────────────────────
+    /// This block used to say brightness "has NO HUD on purpose" because the readable value was stuck.
+    /// Re-measured on this Mac (macOS 27, 2026-10-15): the private `DisplayServicesGetBrightness` returns a
+    /// system-wide 0…1 value — a `DisplayServicesSetBrightness` from one process is read back by another —
+    /// and the setter really moves the panel. What is frozen is the *IOKit* `IODisplayParameters` read,
+    /// which is what made the number look stuck. The brightness HUD below exists only while XFinder takes
+    /// the keys itself (`HUDSuppression`), so there is exactly one readout, never two.
     static func volumeItem(old: VolumeState?, new: VolumeState) -> Item? {
         guard let old else { return nil }                                  // baseline
         let changed = old.muted != new.muted || abs(old.level - new.level) >= 0.005
         guard changed else { return nil }                                  // CoreAudio reports each change on 2 elements
-        let level = min(max(new.level, 0), 1)
-        if new.muted || level == 0 {
+        return volumeItem(new)
+    }
+
+    /// The volume bar for a state, unconditionally. Used directly when a key XFinder took could not move
+    /// the level (already at 0 or 1): CoreAudio reports nothing then, and the press must still answer.
+    static func volumeItem(_ state: VolumeState) -> Item {
+        let level = min(max(state.level, 0), 1)
+        if state.muted || level == 0 {
             return Item(kind: .volume, symbol: "speaker.slash.fill", titleKey: "Đã tắt tiếng", detail: nil,
                         tint: .neutral, duration: 1.5, level: 0)
         }
         let symbol = level < 0.34 ? "speaker.wave.1.fill" : level < 0.67 ? "speaker.wave.2.fill" : "speaker.wave.3.fill"
         return Item(kind: .volume, symbol: symbol, titleKey: "Âm lượng", detail: "\(Int((level * 100).rounded()))%",
                     tint: .neutral, duration: 1.5, level: level)
+    }
+
+    // MARK: Brightness HUD (owner's HUD request, 2026-10-15)
+
+    /// The brightness bar for a level, unconditionally. Nothing observes brightness, so the only caller is
+    /// the key XFinder just took — and a press must answer even at 0 or 1, where the level does not move
+    /// (the system square shows its full/empty bar there too).
+    static func brightnessItem(level raw: Double) -> Item {
+        let level = min(max(raw, 0), 1)
+        let symbol = level < 0.34 ? "sun.min.fill" : "sun.max.fill"
+        return Item(kind: .brightness, symbol: symbol, titleKey: "Độ sáng",
+                    detail: "\(Int((level * 100).rounded()))%", tint: .neutral, duration: 1.5, level: level)
+    }
+
+    // MARK: HUD suppression — may XFinder swallow a system media key?
+
+    /// A system-defined key XFinder may act on (`IOKit/hidsystem/ev_keymap.h` key types).
+    enum MediaKey: Int, Equatable {
+        case volumeUp = 0, volumeDown = 1, brightnessUp = 2, brightnessDown = 3, mute = 7
+
+        var isVolume: Bool { self == .volumeUp || self == .volumeDown || self == .mute }
+    }
+
+    /// The owner's request (2026-10-15): when XFinder reports brightness/volume on the notch, macOS must
+    /// not draw its own square as well — the notch is the only readout.
+    ///
+    /// Reported by the agent that built it (probe, 2026-10-15, macOS 27; not re-measured inside the app):
+    /// a `.cghidEventTap` tap on `systemDefined` receives these keys, returning `nil` suppresses the native
+    /// OSD for volume and brightness, and a bare programmatic change never draws it. The decision is pure so
+    /// it can be tested; `SystemKeyInterceptor` only does the I/O.
+    enum HUDSuppression {
+        /// `data1` puts the phase in bits 8…15: 0xA down, 0xB up (probe-measured).
+        enum Phase: Equatable { case down, up, other }
+
+        struct Context: Equatable {
+            /// `notch.activity.hideSystemHUD` — the user asked XFinder to be the only readout.
+            var hideSystemHUD: Bool
+            /// `NotchSurfaceController.canPresentActivities` — with no notch surface, swallowing the key
+            /// would leave no feedback at all.
+            var canPresent: Bool
+            var masterOn: Bool          // notch.activities
+            var volumeOn: Bool          // notch.activity.volume
+            var brightnessOn: Bool      // notch.activity.brightness
+            /// Whether XFinder can move the panel itself (`ScreenBrightness.canSetDirectly`). Without it,
+            /// swallowing a brightness key would leave the user with no change at all.
+            var brightnessWritable: Bool
+            /// Whether the current output device lets XFinder set what the key asks for (volume scalar, or
+            /// mute). HDMI and aggregate devices often do not; macOS then shows its own "not available" square,
+            /// and swallowing the key would show nothing.
+            var volumeWritable: Bool
+            /// ⌥, ⇧, ⌃ or ⌘ held with the key. macOS gives those combinations their own meaning (⌥⇧ = quarter
+            /// steps, ⌥ = open the Sound/Displays settings) that XFinder does not reproduce, so they pass.
+            var modifiersHeld: Bool
+        }
+
+        enum Decision: Equatable {
+            /// Let the key through: macOS draws its own HUD (the honest fallback).
+            case passThrough
+            /// Swallow the key; XFinder applies the change and the notch is the only readout.
+            case consume(MediaKey)
+        }
+
+        static func phase(data1: Int) -> Phase {
+            switch (data1 >> 8) & 0xFF {
+            case 0xA: return .down
+            case 0xB: return .up
+            default: return .other
+            }
+        }
+
+        /// Whether a key press may be taken over, judged on its DOWN. The UP is not decided here — it follows
+        /// its DOWN (`Pairing`), whatever the context has become by then. A phase we do not recognise is never
+        /// touched: `keytype 0 state 0` events exist in the wild and are not key presses.
+        static func decide(keyType: Int, phase: Phase, context: Context) -> Decision {
+            guard let key = MediaKey(rawValue: keyType) else { return .passThrough }
+            guard phase == .down || phase == .up else { return .passThrough }
+            guard context.hideSystemHUD, context.canPresent, context.masterOn else { return .passThrough }
+            guard !context.modifiersHeld else { return .passThrough }
+            if key.isVolume { guard context.volumeOn, context.volumeWritable else { return .passThrough } }
+            else { guard context.brightnessOn, context.brightnessWritable else { return .passThrough } }
+            return .consume(key)
+        }
+
+        /// Keeps a DOWN and its UP together. If the DOWN was swallowed, its UP must be too (a lone UP is a
+        /// key release macOS never saw pressed); if the DOWN went through, its UP must go through as well (or
+        /// macOS believes the key is still held). Deciding each half on its own breaks exactly when the
+        /// context changes mid-press — a modifier released, the switch flipped — which is why this exists.
+        struct Pairing: Equatable {
+            private(set) var swallowed: Set<Int> = []
+
+            mutating func resolve(keyType: Int, phase: Phase, decideDown: () -> Decision) -> Decision {
+                switch phase {
+                case .down:
+                    let decision = decideDown()
+                    if case .consume = decision { swallowed.insert(keyType) } else { swallowed.remove(keyType) }
+                    return decision
+                case .up:
+                    guard swallowed.remove(keyType) != nil, let key = MediaKey(rawValue: keyType) else {
+                        return .passThrough
+                    }
+                    return .consume(key)
+                case .other:
+                    return .passThrough
+                }
+            }
+        }
     }
 
     // MARK: Countdown timer (B4b)

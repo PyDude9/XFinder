@@ -86,6 +86,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         CaptureController.shared.applySettings()               // F4: Carbon hotkeys for the assigned capture shortcuts
         AlertMonitor.shared.applySettings()
         NotchSurfaceController.shared.applySettings()
+        SystemKeyInterceptor.shared.applySettings()   // owner's HUD request: after the surface exists
         TranslateSelectionController.shared.applySettings()   // N5a: ⇧⌘G, AX-gated at press time
         SelectionWatcher.shared.applySettings()               // E4: AX observer only when on and trusted
         LinkPreviewFetcher.shared.applySettings()             // D4b: backfills only when the opt-in is on
@@ -131,6 +132,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 TranslateSelectionController.shared.applySettings()
                 SelectionWatcher.shared.applySettings()
                 GestureController.shared.start()
+                SystemKeyInterceptor.shared.applySettings()   // Accessibility may have just been granted
                 AnalyticsCenter.shared.evaluate()
             }
         }

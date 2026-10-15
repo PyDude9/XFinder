@@ -13,6 +13,10 @@ struct LiveActivitiesDetailView: View {
     @AppStorage("notch.activity.bluetooth") private var actBluetooth = true
     @AppStorage("notch.activity.alerts") private var actAlerts = true
     @AppStorage("notch.activity.volume") private var actVolume = true
+    @AppStorage("notch.activity.brightness") private var actBrightness = true
+    @AppStorage("notch.activity.hideSystemHUD") private var hideSystemHUD = false
+    /// Accessibility decides whether XFinder can take the brightness/volume keys over at all.
+    @State private var trusted = WindowManager.isTrusted
 
     var body: some View {
         ScrollView {
@@ -33,11 +37,17 @@ struct LiveActivitiesDetailView: View {
                 }
 
                 activitiesSection
+                systemHUDSection
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
         .background(XFinderTokens.Settings.contentBackground)
+        .onAppear { trusted = WindowManager.isTrusted }
+        // Granting Accessibility happens in System Settings; coming back must refresh the note.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            trusted = WindowManager.isTrusted
+        }
     }
 
     private var activitiesSection: some View {
@@ -79,11 +89,47 @@ struct LiveActivitiesDetailView: View {
                 .settingsRow()
             SettingsDivider()
             ToggleRow(title: L10n.t("Âm lượng"),
-                      subtitle: L10n.t("Mức âm lượng thật từ CoreAudio, hiện song song HUD của macOS. Không có HUD độ sáng: trên máy này giá trị độ sáng đọc được bị kẹt nên sẽ phải bịa số."),
+                      subtitle: L10n.t("Mức âm lượng thật từ CoreAudio, hiện trên notch."),
                       isOn: $actVolume)
                 .onChange(of: actVolume) { LiveActivityMonitor.shared.applySettings() }
                 .disabled(!activities)
                 .settingsRow()
+            SettingsDivider()
+            // Nothing observes brightness: the notch shows it only for a key XFinder took itself, i.e.
+            // while "Chỉ dùng notch…" below is on. Without that the switch would promise a readout that
+            // never appears (Part 0 §6), so it is disabled and says why.
+            ToggleRow(title: L10n.t("Độ sáng"),
+                      subtitle: L10n.t("Mức độ sáng thật của màn hình trong, hiện trên notch khi bạn bấm phím độ sáng. Chỉ có khi bật “Chỉ dùng notch cho độ sáng và âm lượng” bên dưới."),
+                      isOn: $actBrightness)
+                .disabled(!activities || !hideSystemHUD)
+                .settingsRow()
+        }
+    }
+
+    /// The owner's HUD request (2026-10-15): while XFinder draws brightness/volume on the notch, macOS must
+    /// not draw its own square as well. Measured (probe, 2026-10-15): swallowing the key at `.cghidEventTap`
+    /// and applying the change ourselves hides the native OSD for volume *and* brightness.
+    private var systemHUDSection: some View {
+        SettingsSection(title: L10n.t("Hộp điều chỉnh của macOS"),
+                        footer: L10n.t("Khi tắt, macOS vẫn hiện hộp vuông của nó như trước. Phím bấm kèm ⌥, ⇧, ⌃ hoặc ⌘, và loa không cho chỉnh âm lượng, vẫn để macOS xử lý.")) {
+            ToggleRow(title: L10n.t("Chỉ dùng notch cho độ sáng và âm lượng"),
+                      subtitle: L10n.t("XFinder tự nhận phím độ sáng và âm lượng rồi đặt giá trị, nên macOS không hiện hộp vuông riêng nữa."),
+                      isOn: $hideSystemHUD)
+                .disabled(!activities)
+                .onChange(of: hideSystemHUD) { SystemKeyInterceptor.shared.applySettings() }
+                .settingsRow()
+            if !trusted {
+                SettingsDivider()
+                InlineNote(kind: .warning,
+                           text: L10n.t("Cần quyền Trợ năng để XFinder nhận được phím độ sáng và âm lượng."),
+                           buttonTitle: L10n.t("Cấp quyền Trợ năng"),
+                           action: {
+                               if !WindowManager.requestAccessibilityTrust() {
+                                   WindowManager.openAccessibilityPane()
+                               }
+                           })
+                    .settingsRow()
+            }
         }
     }
 }
