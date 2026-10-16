@@ -125,6 +125,9 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 | Q-NOTION-2 | Gói Notion hiện tại chạm hạn mức truy vấn SQL của MCP sau **5 lệnh một phiên** (đo 2026-10-15). Nâng gói, hay chỉ dùng view + `fetch`? | **Chỉ view + `fetch`** (chế độ view không có hạn mức riêng). Nâng gói chỉ khi view không đủ |
 | Q-NOTION-3 | Cho một tiến trình đọc view *Review — Awaiting Claude* theo lịch (Notion Agent, hoặc Claude Code lên lịch) để review không cần bạn mở phiên? | **Chưa làm**; mọi phiên do bạn mở. Routine hiện chỉ nối các vai qua State |
 | Q-NOTION-4 | Đăng nhập Notion MCP cho OpenCode / Antigravity / Zed / Codex — OAuth một lần mỗi công cụ, **bạn làm tay** (Claude không đụng cấu hình công cụ khác). Cấu hình mẫu ở `AGENT_NOTION.md` §9 | **Chờ bạn**; tới lúc đó Builder đi đường dự phòng §7 |
+| Q-NOTION-5 | Trang "Nguồn & lịch sử — 24 tài liệu" trên hub XFinder là **bản chép** `.md` từ repo lúc nhập: không agent nào đọc, đã lệch `main`, và mỗi dự án sau sẽ thêm 20–30 bản chép nữa. Xoá (Thùng rác, phục hồi 30 ngày) và thay bằng 24 link GitHub? | **Đề nghị xoá**; Claude chỉ xoá khi bạn gật |
+| Q-NOTION-6 | 6 linked-view **không tên** của trợ lý trước trên hub XFinder (filter không đọc được qua API; tool đòi `allow_deleting_content` để gỡ). Xoá chúng? Chúng chỉ là tham chiếu, không chứa dữ liệu | **Đề nghị xoá** — bạn xoá trong UI (⋯ → Xoá) hoặc gật để Claude xoá |
+| Q-NOTION-7 | Việc **mới** đặt `Task ID` có tiền tố dự án (`XF-T20`) để mọi danh sách phẳng tự nói nó của ai; 163 ID cũ giữ nguyên | **Áp dụng** từ việc kế tiếp sau T14 |
 
 ## Phần 2 — Cần test tay (T)
 

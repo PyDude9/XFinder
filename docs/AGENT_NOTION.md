@@ -4,10 +4,16 @@ Viết 2026-10-15, đã qua một vòng review đối kháng (4 lăng kính × 2
 2 bác bỏ — tất cả phát hiện đứng được đã sửa ở dưới). Áp dụng từ T14d. **(đo)** = đã đo trên máy này hoặc trên
 workspace Notion này, có ngày; **(chưa kiểm)** = chưa ai đo, đừng coi là đã có.
 
-Notion: trang **XFinder — Engineering Control Center** — https://app.notion.com/p/3fa97dfe4af381fca7f2d30a967805f0 —
-với 5 database: Projects · **Tasks** · **Runs** · Decisions · Playbooks. Trang này do một trợ lý khác dựng và nạp 163
-task (155 là test tay T-*), 42 quyết định, 4 Run lịch sử; Claude đã đối chiếu các dòng T14 với `main a2954e2` ngày
-2026-10-15, thêm cột, thêm view, gỡ ba State "(reported)".
+Notion, hai tầng (từ 2026-10-16):
+* **Engineering Control Center** — https://app.notion.com/p/3fb97dfe4af381e883f2f8cb71c15bdc — trang cấp workspace giữ
+  **một** bộ 5 database cho **mọi** dự án: Projects (registry: `Code`, `Repo Path`, `GitHub`, `Hub`) · **Tasks** · **Runs**
+  · Decisions · Playbooks. Dự án = một dòng Projects + một trang hub; không bao giờ tạo bộ database riêng.
+* **XFinder** (hub) — https://app.notion.com/p/3fa97dfe4af381fca7f2d30a967805f0 — chỉ gồm các linked view lọc
+  `Project = XFinder` (`XF · …`) + trang Quy trình. Trợ lý khác đã dựng bản đầu và nạp 163 task (155 là test tay T-*), 42
+  quyết định, 4 Run lịch sử; Claude đối chiếu các dòng T14 với `main a2954e2` (2026-10-15), thêm cột, thêm view, gỡ ba State
+  "(reported)", rồi (2026-10-16) chuyển 5 database lên trang gốc — **id, URL và mọi view giữ nguyên (đo: view Queue trả
+  T14d trước và sau khi chuyển)**.
+* `Task ID` của việc **mới** mang tiền tố dự án (`XF-T20`); 163 ID cũ giữ nguyên vì nhánh git và docs đang trỏ vào chúng.
 
 ## 1. Hai nguồn sự thật, chia theo bản chất dữ liệu — không chọn một
 
@@ -167,6 +173,18 @@ là** tín hiệu báo động: không có gì khác bắn thông báo (mục 8)
 | View **Review — Awaiting Claude** | `https://www.notion.so/7e911ae9ba9347c395c5d63bc2cc966f?v=3fa97dfe4af38129b35d000cdf1e41f1` |
 | View **Blocked** | `https://www.notion.so/7e911ae9ba9347c395c5d63bc2cc966f?v=3fa97dfe4af381c192eb000c1a4b9549` |
 | View **Hand tests (T-*)** | `https://www.notion.so/7e911ae9ba9347c395c5d63bc2cc966f?v=3fa97dfe4af381f19464000c870d28a9` |
+| Trang gốc **Engineering Control Center** | `https://app.notion.com/p/3fb97dfe4af381e883f2f8cb71c15bdc` |
+| Hub **XFinder** · `XF · Queue — Ready` (lọc theo dự án — **Builder dùng view này**) | `https://www.notion.so/7e911ae9ba9347c395c5d63bc2cc966f?v=3fb97dfe4af3818b8f5d000c04e18446` |
+| Hub · `XF · Doing + Awaiting Claude` | `https://www.notion.so/7e911ae9ba9347c395c5d63bc2cc966f?v=3fb97dfe4af381bdbdbb000c279d94d9` |
+| Hub · `XF · Blocked` | `https://www.notion.so/7e911ae9ba9347c395c5d63bc2cc966f?v=3fb97dfe4af3819b8b9c000ce1fa94d0` |
+| Hub · `XF · Waiting / Draft (spec queue)` | `https://www.notion.so/7e911ae9ba9347c395c5d63bc2cc966f?v=3fb97dfe4af38117927c000cd71e4f43` |
+| Hub · `XF · Runs (newest first)` | `https://www.notion.so/044ddc6bf7164fea9ff064221e826ee5?v=3fb97dfe4af38171bd54000c5bc116b8` |
+| Hub · `XF · Decisions waiting for the owner` | `https://www.notion.so/10b4e7a3762a48bd92d8e5100331a596?v=3fb97dfe4af38166be0c000c1d0821b7` |
+
+Năm view đầu (tab của database Tasks) là **toàn cục** — mọi dự án, có *Quick filter* `Project` để lọc tay trong UI; đó là
+view của Claude khi review chéo dự án. Các view `XF · …` trên hub **đã lọc sẵn theo dự án** và **(đo 2026-10-16)** truy vấn
+được bằng `mode: view` y như view toàn cục (trả đúng T14d). Builder của một dự án đọc view hub của dự án đó; dự án thứ hai có
+bộ `<Code> · …` riêng với URL riêng (tạo theo "Thêm một dự án mới" trên trang gốc).
 
 Đọc một view (tên tool có thể mang tiền tố server tuỳ công cụ, ví dụ `notion_query-data-sources`):
 ```json
@@ -261,8 +279,8 @@ Lưu ý repo: `.agents/` ở gốc repo là thư mục chưa track của chủ d
 **Builder (OpenCode/DeepSeek, Antigravity, Zed — đã đăng nhập Notion MCP):**
 ```
 Đọc docs/AGENT_QUICKSTART.md, rồi docs/AGENT_NOTION.md mục 2, 4 và 6 (địa chỉ view, schema, payload). Nhận ĐÚNG MỘT
-việc theo mục 4: đọc view Blocked và Doing trước (cùng nhánh thì không nhận), rồi view Queue — Ready (hoặc việc <ID>
-nếu tôi ghi ở đây: ___). Ghi Claimed By theo từ vựng mục 2, chờ 10 giây, đọc lại. Làm theo file đặc tả ở ô Spec Path,
+việc theo mục 4: đọc view Blocked và Doing trước (cùng nhánh thì không nhận), rồi view XF · Queue — Ready của hub
+XFinder (hoặc việc <ID> nếu tôi ghi ở đây: ___). Ghi Claimed By theo từ vựng mục 2, chờ 10 giây, đọc lại. Làm theo file đặc tả ở ô Spec Path,
 đúng bước ghi trong tên việc, theo docs/AGENT_TASKS.md §3. Ghi tiến trình chỉ vào vùng Execution của trang task và Run
 của bạn (update_properties từng cột, update_content theo dòng — không replace_content). Gặp điều kiện dừng: State =
 Blocked + Block Reason + một câu Next Action, rồi dừng.
@@ -296,3 +314,6 @@ tả + Run baseline cho việc kế, tích ba ô, đặt Ready; cập nhật CLA
 | Reviewer chỉ ghi vùng Review | ❌ chưa — T-NOTION-3 |
 | Nhiều lệnh view liên tiếp không chạm hạn mức | ❌ chưa — T-NOTION-4 |
 | Công cụ nào trên máy này đã OAuth Notion MCP | không biết — Q-NOTION-4 (Claude không đọc cấu hình công cụ khác) |
+| Chuyển 5 database lên trang gốc giữ nguyên id/URL/view; view Queue toàn cục trả T14d sau khi chuyển | ✅ (đo 2026-10-16) |
+| View lọc theo dự án tạo trên trang hub truy vấn được bằng `mode: view` | ✅ (đo 2026-10-16, `XF · Queue — Ready` trả T14d) |
+| 6 linked-view cũ của trợ lý trước trên hub: filter không đọc được qua API, xoá cần xác nhận của chủ dự án | ❌ còn đó — Q-NOTION-6 |
