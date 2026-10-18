@@ -165,6 +165,8 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 | Q-CREW-4 | Seat ngoài Claude/Codex (Gemini, Pi, Hermes, Cursor như Notch Crew) | **Chưa** — chỉ Claude + Codex windowless đã có |
 | Q-CREW-5 | v2b lệch spec ở 5 chỗ, mỗi chỗ có lý do (xem `docs/specs/XF-T23-crew-v2.md` §7): (1) dừng crew **không** `worktree remove --force` — worktree còn file chưa commit được **chuyển sang** `Agents/crew-kept/` thay vì xoá; (2) guard là `XFinder --crew-guard` đặt trong `--settings` của từng thành viên, không phải sửa hook toàn cục; (3) khi builder báo `done`, XFinder **tự** nhờ security và reviewer duyệt (spec để lead nhờ); (4) trần chặng tin của Lead Architect là **60** (v1 vẫn 20) vì một vòng 2 builder đã tốn 20; (5) trạng thái `merged` được ghi lúc lead **xin** merge, không phải lúc `git merge` thật xong. Đồng ý? | **Đồng ý** cả 5; (5) là giới hạn đã biết, không làm yếu rào |
 | Q-CREW-6 | Judge chạy `git merge --no-ff <nhánh>` trong worktree tích hợp (để chạy test) — lệnh đó cũng hiện thẻ trên notch (luôn hỏi). Với 2 builder là 2 thẻ mỗi vòng. Có muốn một ngoại lệ "merge vào nhánh `crew/*-integration` không hỏi"? | **Không** — giữ hỏi; đây là chỗ rẻ nhất để bạn thấy mã trước khi gộp |
+| Q-CREW-7 | v2c "From a Goal" (spec `docs/specs/XF-T23c-crew-from-goal.md`, Notion XF-T23c Draft): mặc định của template Lead Architect là **Lead đề xuất seat trước, bạn bấm Mở** (chỉ lead spawn; worktree/nhánh chỉ tạo lúc Mở) hay **Mở đủ 5 vai ngay** (= v2b)? | **Lead đề xuất trước** (khoá `crew.fromGoal` default true) |
+| Q-CREW-8 | "Không hỏi lại `npm test` trong crew này": nhớ trong RAM theo crew (mất khi crew dừng) hay persist theo repo (`updatedPermissions` `destination: localSettings` của repo thử — Claude Code có cơ chế này thật, đã đọc tài liệu 2026-10-18)? | **RAM theo crew** — hiện trên bảng, không ghi vào settings của repo |
 
 ## Phần 2 — Cần test tay (T)
 
@@ -194,7 +196,7 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 
 | Mã | Thao tác | Kỳ vọng |
 |:--|:--|:--|
-| T-SNAPMEM-1 | Vùng bắt dính ▸ bật "Nhớ bố cục theo bộ màn hình". Kéo Chrome vào mép phải (hoặc ⌃⌥→). Thoát Chrome, mở lại | Hàng luật "Chrome · Phải nửa màn hình · <tên màn>" xuất hiện ngay sau khi bắt dính; Chrome mở lại nằm đúng nửa phải trong ~0,5–2 s; hàng luật ghi "Đã áp" |
+| T-SNAPMEM-1 | Vùng bắt dính ▸ bật "Nhớ bố cục theo bộ màn hình". Kéo Chrome vào mép phải (hoặc ⌃⌥→). Thoát Chrome, mở lại | Hàng luật "Chrome · Phải nửa màn hình · <tên màn>" xuất hiện ngay sau khi bắt dính; Chrome mở lại nằm đúng nửa phải trong ~0,5–2 s; hàng luật ghi "Đã áp" **Đo 2026-10-18 16:53 (e2e, app thử): cửa sổ ĐÃ về leftHalf của engine — x=48 w=840 vì `snapzones.stageInset`=48 + Stage Manager bật; hai lần FAIL trước là harness đo quá sớm (0,3 s, trước replay 0,5 s) rồi đo thiếu inset. Phase b (không luật ⇒ không di chuyển) PASS. Còn lại cho tay người: màn hình ngoài, fullscreen, app thật.** |
 | T-SNAPMEM-2 | Với luật trên, rút màn ngoài rồi cắm lại (hoặc ngược lại) | Luật ghi với bộ "màn trong + HC-L200A" chỉ áp khi đủ hai màn; khi chỉ còn màn trong, Chrome **không** bị kéo đi; cắm lại ⇒ áp trong ~1–3 s |
 | T-SNAPMEM-3 | Đưa một app đã có luật vào toàn màn hình (nút xanh), thoát app, mở lại | Hàng luật đổi thành "Toàn màn hình (Space riêng)"; mở lại ⇒ app vào toàn màn hình trên đúng màn. App không cho đặt ⇒ hàng ghi "App không cho đặt toàn màn hình qua Trợ năng", không thử lại |
 | T-SNAPMEM-4 | Mở hộp thoại Lưu (⌘S) hoặc ⌘N trong app đã có luật, đang chạy | Cửa sổ chính **không** bị kéo lại chỗ cũ (chỉ lần mở app mới áp) |
