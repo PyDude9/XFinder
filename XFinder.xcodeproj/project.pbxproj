@@ -168,6 +168,8 @@
 		7F1A0091 /* DockPreviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0090 /* DockPreviewController.swift */; };
 		7F1A0093 /* NetworkTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0092 /* NetworkTools.swift */; };
 		7F1A0095 /* EdgeNotesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0094 /* EdgeNotesController.swift */; };
+		7F1A0419 /* NoteBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0418 /* NoteBackup.swift */; };
+		7F1A0417 /* EdgeNotesLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0416 /* EdgeNotesLayout.swift */; };
 		7F1A00A1 /* Components/PageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A0 /* Components/PageHeader.swift */; };
 		7F1A00A3 /* CommandTabController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A2 /* CommandTabController.swift */; };
 		7F1A00A5 /* SnapZoneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A4 /* SnapZoneController.swift */; };
@@ -592,6 +594,8 @@
 		7F1A0090 /* DockPreviewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockPreviewController.swift; sourceTree = "<group>"; };
 		7F1A0092 /* NetworkTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkTools.swift; sourceTree = "<group>"; };
 		7F1A0094 /* EdgeNotesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeNotesController.swift; sourceTree = "<group>"; };
+		7F1A0418 /* NoteBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteBackup.swift; sourceTree = "<group>"; };
+		7F1A0416 /* EdgeNotesLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EdgeNotesLayout.swift; sourceTree = "<group>"; };
 		7F1A00A0 /* Components/PageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/PageHeader.swift; sourceTree = "<group>"; };
 		7F1A00A2 /* CommandTabController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandTabController.swift; sourceTree = "<group>"; };
 		7F1A00A4 /* SnapZoneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapZoneController.swift; sourceTree = "<group>"; };
@@ -902,6 +906,8 @@
 				7F1A00AC /* ClipboardShelfController.swift */,
 				7F1A0092 /* NetworkTools.swift */,
 				7F1A0094 /* EdgeNotesController.swift */,
+				7F1A0418 /* NoteBackup.swift */,
+				7F1A0416 /* EdgeNotesLayout.swift */,
 				88AD9932 /* QuickSearch/QuickSearchResult.swift */,
 				95421592 /* QuickSearch/AppLauncher.swift */,
 				0F2B7B75 /* QuickSearch/FileSearch.swift */,
@@ -1468,6 +1474,8 @@
 				7F1A00B1 /* Detail/FinderKeyboardDetailView.swift in Sources */,
 				7F1A0093 /* NetworkTools.swift in Sources */,
 				7F1A0095 /* EdgeNotesController.swift in Sources */,
+				7F1A0419 /* NoteBackup.swift in Sources */,
+				7F1A0417 /* EdgeNotesLayout.swift in Sources */,
 				D066FCC9 /* QuickSearch/QuickSearchResult.swift in Sources */,
 				96F26CAC /* QuickSearch/AppLauncher.swift in Sources */,
 				FEDF1419 /* QuickSearch/FileSearch.swift in Sources */,

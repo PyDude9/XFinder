@@ -63,6 +63,13 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "notes.edgeEnabled",
                views: ["XFinder/Views/Detail/NotesDetailView.swift"],
                reader: "XFinder/Core/EdgeNotesController.swift"),
+        // XF-T24
+        Switch(key: "notes.globalHotkey",
+               views: ["XFinder/Views/Detail/NotesDetailView.swift"],
+               reader: "XFinder/Core/EdgeNotesController.swift"),
+        Switch(key: "notes.autoBackup",
+               views: ["XFinder/Views/Detail/NotesDetailView.swift"],
+               reader: "XFinder/Core/NoteStore.swift"),
         Switch(key: "clipboard.autoPasteAfterSelection",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift"],
                reader: "XFinder/Core/ClipboardShelfController.swift"),

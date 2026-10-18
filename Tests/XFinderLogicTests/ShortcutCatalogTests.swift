@@ -224,6 +224,7 @@ final class ShortcutCatalogTests: XCTestCase {
             "finderKeyboard.cutPaste": ("XFinder/Core/FinderKeyboardController.swift", "false"),
             "finderKeyboard.deleteToTrash": ("XFinder/Core/FinderKeyboardController.swift", "false"),
             "finderKeyboard.returnOpens": ("XFinder/Core/FinderKeyboardController.swift", "false"),
+            "notes.globalHotkey": ("XFinder/Core/EdgeNotesController.swift", "false"),     // XF-T24
         ]
         var checked = 0
         for entry in ShortcutCatalog.fixedEntries {

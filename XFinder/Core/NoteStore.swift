@@ -168,5 +168,42 @@ final class NoteStore {
         if let encoded = try? JSONEncoder().encode(notes) {
             UserDefaults.standard.set(encoded, forKey: key)
         }
+        backupIfNeeded()
+    }
+
+    // MARK: - XF-T24 automatic dated backup (rules: NoteBackup)
+
+    /// The ONE reader of `notes.autoBackup` (default on — local files only, one pair per day).
+    static var autoBackupEnabled: Bool { UserDefaults.standard.object(forKey: "notes.autoBackup") as? Bool ?? true }
+    static var backupFolder: URL {
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/XFinder/Notes Backups", isDirectory: true)
+    }
+    /// The newest backup day on disk, or nil; shown on the Notes page.
+    private(set) var lastBackupDay: String?
+    private(set) var lastBackupError: String?
+
+    /// Writes today's JSON + Markdown pair if it is not there yet (or always, when `force`), then prunes past `keepDays`.
+    /// A failure never blocks the save that triggered it — it is reported on the Notes page.
+    func backupIfNeeded(force: Bool = false) {
+        guard force || Self.autoBackupEnabled else { return }
+        let fm = FileManager.default
+        let dir = Self.backupFolder
+        let stem = NoteBackup.stem(for: Date())
+        let json = dir.appendingPathComponent(stem + ".json"), md = dir.appendingPathComponent(stem + ".md")
+        if !force, fm.fileExists(atPath: json.path) { lastBackupDay = String(stem.dropFirst(NoteBackup.prefix.count)); return }
+        do {
+            try fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted, .sortedKeys]
+            try enc.encode(notes).write(to: json, options: .atomic)
+            try exportMarkdown().write(to: md, atomically: true, encoding: .utf8)
+            let names = (try? fm.contentsOfDirectory(atPath: dir.path)) ?? []
+            for name in NoteBackup.filesToPrune(names) {
+                try? fm.trashItem(at: dir.appendingPathComponent(name), resultingItemURL: nil)
+            }
+            lastBackupDay = String(stem.dropFirst(NoteBackup.prefix.count))
+            lastBackupError = nil
+        } catch {
+            lastBackupError = error.localizedDescription
+        }
     }
 }

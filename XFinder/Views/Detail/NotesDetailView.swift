@@ -201,6 +201,8 @@ private struct EdgeNotesSettingsSection: View {
     @AppStorage("notes.edgeHotspot") private var edgeHotspot = 12.0
     @AppStorage("notes.fullscreen") private var showFullscreen = false
     @AppStorage("notes.hideOnLeave") private var hideOnLeave = true
+    /// XF-T24: the reader is EdgeNotesController.globalHotkeyEnabled (same default).
+    @AppStorage("notes.globalHotkey") private var globalHotkey = false
     @State private var store = NoteStore.shared
 
     var body: some View {
@@ -239,6 +241,16 @@ private struct EdgeNotesSettingsSection: View {
             ToggleRow(title: L10n.t("Ẩn khi con trỏ rời khỏi"), isOn: $hideOnLeave)
                 .onChange(of: hideOnLeave) { EdgeNotesController.shared.applySettings() }
                 .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Phím tắt ⌃⌥N mở ghi chú từ mọi app"),
+                      subtitle: L10n.t("Mở ghi chú đầu dải (ghim trước, rồi mới sửa gần nhất) để viết ngay; chưa có thì tạo ghi chú mới; bấm lại để đóng. Không cần quyền, nhưng ⌃⌥N sẽ không còn tới app khác."),
+                      isOn: $globalHotkey)
+                .onChange(of: globalHotkey) { EdgeNotesController.shared.applySettings() }
+                .settingsRow()
+            if globalHotkey && !EdgeNotesController.shared.globalHotkeyRegistered && EdgeNotesController.shared.isEnabled {
+                InlineNote(text: L10n.t("Không đăng ký được ⌃⌥N — có app khác đang giữ tổ hợp này."))
+                    .settingsRow()
+            }
             if store.notes.isEmpty {
                 SettingsDivider()
                 InlineNote(text: L10n.t("Chưa có ghi chú — dải mép đang ẩn. Tạo ghi chú đầu tiên để dùng."))
@@ -312,6 +324,8 @@ private struct ShortcutsSection: View {
 private struct ImportExportSection: View {
     @Binding var importError: String?
     @State private var store = NoteStore.shared
+    /// XF-T24: the reader is NoteStore.autoBackupEnabled (same default).
+    @AppStorage("notes.autoBackup") private var autoBackup = true
 
     var body: some View {
         SettingsSection(title: L10n.t("Nhập / Xuất ghi chú")) {
@@ -334,6 +348,29 @@ private struct ImportExportSection: View {
             SettingsDivider()
             InlineNote(text: L10n.t("Markdown/JSON tương thích các app ghi chú nhanh (Antinote, Simplenote…). Nhập sẽ thay thế toàn bộ danh sách hiện tại."))
                 .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Tự sao lưu mỗi ngày"),
+                      subtitle: L10n.t("Lần lưu đầu tiên mỗi ngày ghi một bản JSON (Nhập lại được) và một bản Markdown vào thư mục sao lưu trên máy này; giữ 14 ngày gần nhất, bản cũ hơn vào Thùng rác."),
+                      isOn: $autoBackup)
+                .settingsRow()
+            HStack(spacing: XFinderTokens.Space.inline) {
+                if let day = store.lastBackupDay {
+                    Text("\(L10n.t("Bản gần nhất: "))\(day)")
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                }
+                if let err = store.lastBackupError {
+                    Text("\(L10n.t("Không sao lưu được: "))\(err)")
+                        .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                        .lineLimit(1).truncationMode(.middle)
+                }
+                Spacer()
+                Button(L10n.t("Sao lưu ngay")) { store.backupIfNeeded(force: true) }
+                Button(L10n.t("Mở thư mục sao lưu")) {
+                    try? FileManager.default.createDirectory(at: NoteStore.backupFolder, withIntermediateDirectories: true)
+                    NSWorkspace.shared.open(NoteStore.backupFolder)
+                }
+            }
+            .settingsRow()
 
             if let err = importError {
                 SettingsDivider()

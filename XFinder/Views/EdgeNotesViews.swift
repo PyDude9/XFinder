@@ -51,11 +51,13 @@ struct EdgeNotesRootView: View {
                     .onTapGesture { controller.open(note.id) }
                     .overlay(alignment: onLeft ? .topLeading : .topTrailing) {
                         if controller.peekedNoteID == note.id {
-                            NotePreviewCard(note: note, onLeft: onLeft)
-                                // Offset past the pill so the card sits beside
-                                // the strip, never on top of it.
-                                .offset(x: onLeft ? controller.tabWidth + 6
-                                                  : -(controller.tabWidth + 6))
+                            NotePreviewCard(note: note, onLeft: onLeft, height: controller.cardHeight,
+                                            hiddenLines: controller.cardHiddenLines)
+                                // Offset past the pill so the card sits beside the strip, never on top of it; lifted
+                                // when its full height would leave the screen (XF-T24, EdgeNotesLayout.peek).
+                                .offset(x: onLeft ? controller.tabWidth + EdgeNotesLayout.cardGap
+                                                  : -(controller.tabWidth + EdgeNotesLayout.cardGap),
+                                        y: -controller.cardLift)
                                 .onTapGesture { controller.open(note.id) }
                                 .transition(.opacity.combined(with: .scale(scale: 0.96,
                                                                            anchor: onLeft ? .leading : .trailing)))
@@ -67,6 +69,8 @@ struct EdgeNotesRootView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: onLeft ? .leading : .trailing)
+        // XF-T24: the stack's top sits exactly where EdgeNotesLayout.stackRect puts it — the rect the hit test reads.
+        .padding(.top, controller.stackTopInset)
     }
 }
 
@@ -109,6 +113,9 @@ private struct NoteTab: View {
 private struct NotePreviewCard: View {
     let note: QuickNote
     let onLeft: Bool
+    /// Measured by the controller from the note's text (XF-T24) — the whole note when it fits under the cap.
+    let height: CGFloat
+    let hiddenLines: Int
 
     private var tint: Color { note.color.color }
 
@@ -120,14 +127,19 @@ private struct NotePreviewCard: View {
                 .lineLimit(1)
             Divider().opacity(0.35)
             Text(note.content.isEmpty ? L10n.t("Ghi chú trống") : note.content)
-                .font(.system(size: 10))
-                .foregroundColor(.black.opacity(0.75))
-                .lineLimit(6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Spacer(minLength: 0)
+                .font(.system(size: 11))
+                .foregroundColor(.black.opacity(0.78))
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            if hiddenLines > 0 {
+                Text("\(L10n.t("còn "))\(hiddenLines) \(L10n.t("dòng nữa — bấm để mở"))")   // vi: còn 12 dòng nữa… · en: 12 more lines…
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.black.opacity(0.55))
+                    .lineLimit(1)
+            }
         }
-        .padding(9)
-        .frame(width: 186, height: 118, alignment: .topLeading)
+        .padding(EdgeNotesLayout.cardPadding)
+        .frame(width: EdgeNotesLayout.cardWidth, height: height, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(tint.opacity(0.92))

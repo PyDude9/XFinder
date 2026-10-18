@@ -1,4 +1,5 @@
 import AppKit
+import Carbon
 import SwiftUI
 import Combine
 
@@ -30,10 +31,15 @@ final class EdgeNotesController {
     // Geometry — deliberately small (3/5 of the previous size). The docked
     // strip sits on top of the user's work all day, so it is a row of short
     // pills, not tall bars.
-    let tabWidth: CGFloat = 9
-    let tabHeight: CGFloat = 28
-    let tabGap: CGFloat = 4
-    private let peekWidth: CGFloat = 200
+    let tabWidth: CGFloat = EdgeNotesLayout.tabWidth
+    let tabHeight: CGFloat = EdgeNotesLayout.tabHeight
+    let tabGap: CGFloat = EdgeNotesLayout.tabGap
+    /// XF-T24: what the view needs to draw the peek where the hit test thinks it is (see EdgeNotesLayout).
+    private(set) var stackTopInset: CGFloat = EdgeNotesLayout.slack
+    private(set) var cardLift: CGFloat = 0
+    private(set) var cardHeight: CGFloat = EdgeNotesLayout.minCardHeight
+    /// Lines the cap cut off (0 = the whole note is shown).
+    private(set) var cardHiddenLines = 0
     private let editorWidth: CGFloat = 520
     private let editorHeight: CGFloat = 420
 
@@ -47,7 +53,7 @@ final class EdgeNotesController {
 
     // MARK: - Settings (read at point of use)
 
-    private var isEnabled: Bool {
+    var isEnabled: Bool {
         UserDefaults.standard.object(forKey: "notes.edgeEnabled") as? Bool ?? false
     }
     var side: String {
@@ -75,6 +81,7 @@ final class EdgeNotesController {
     }
 
     func applySettings() {
+        syncGlobalHotkey()
         guard isEnabled, !visibleNotes.isEmpty else {
             stop()
             return
@@ -160,24 +167,45 @@ final class EdgeNotesController {
     /// While peeking the panel must fit the pill column **and** the card
     /// floating beside it — the card no longer replaces the strip, so a width
     /// of just `peekWidth` would clip it.
-    private var neededWidth: CGFloat {
-        if openNoteID != nil { return editorWidth }
-        if peekedNoteID != nil { return tabWidth + 6 + peekWidth + 12 }
-        return tabWidth
+    /// The laid-out height of a note body in the card's font and width, and the font's line height.
+    private func measureBody(_ text: String) -> (height: CGFloat, line: CGFloat) {
+        let font = NSFont.systemFont(ofSize: 11)
+        let width = EdgeNotesLayout.cardWidth - 2 * EdgeNotesLayout.cardPadding
+        let line = NSLayoutManager().defaultLineHeight(for: font)
+        let body = text.isEmpty ? " " : text
+        let r = (body as NSString).boundingRect(with: CGSize(width: width, height: .greatestFiniteMagnitude),
+                                                options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: [.font: font])
+        return (ceil(r.height) + 2, line)
     }
 
     func layout(animated: Bool) {
         guard let panel, let screen = NSScreen.main else { return }
-        let count = max(visibleNotes.count, 1)
-        let stackHeight = CGFloat(count) * tabHeight + CGFloat(count - 1) * tabGap
-        // A little slack around the stack so shadows are not clipped; no more
-        // room for a "+" button — that has moved to the menubar.
-        let height = max(stackHeight + 24, openNoteID != nil ? editorHeight + 40 : 0)
-        let w = neededWidth
-        let y = screen.visibleFrame.midY - height / 2
-        let x = side == "Left" ? screen.frame.minX : screen.frame.maxX - w
-
-        let frame = NSRect(x: x, y: y, width: w, height: height)
+        let notes = visibleNotes
+        let count = max(notes.count, 1)
+        let onLeft = side == "Left"
+        let frame: NSRect
+        if openNoteID != nil {
+            let height = max(EdgeNotesLayout.stackHeight(count: count) + 24, editorHeight + 40)
+            let x = onLeft ? screen.frame.minX : screen.frame.maxX - editorWidth
+            frame = NSRect(x: x, y: screen.visibleFrame.midY - height / 2, width: editorWidth, height: height)
+        } else if let id = peekedNoteID, let index = notes.firstIndex(where: { $0.id == id }) {
+            // XF-T24: the card is as tall as the note (up to a cap); the stack keeps its fixed rect.
+            let m = measureBody(notes[index].content)
+            let fit = EdgeNotesLayout.cardHeight(bodyHeight: m.height, visible: screen.visibleFrame)
+            cardHeight = fit.height
+            let shownBody = fit.height - EdgeNotesLayout.cardChrome - (fit.truncated ? m.line : 0)
+            cardHiddenLines = fit.truncated ? max(1, Int(((m.height - shownBody) / m.line).rounded(.up))) : 0
+            let peek = EdgeNotesLayout.peek(index: index, count: notes.count, cardHeight: fit.height,
+                                            visible: screen.visibleFrame, screen: screen.frame, onLeft: onLeft)
+            stackTopInset = peek.stackTopInset
+            cardLift = peek.cardLift
+            frame = peek.panel
+        } else {
+            let docked = EdgeNotesLayout.docked(count: count, visible: screen.visibleFrame, screen: screen.frame, onLeft: onLeft)
+            stackTopInset = docked.stackTopInset
+            cardLift = 0
+            frame = docked.panel
+        }
         if animated {
             NSAnimationContext.runAnimationGroup { ctx in
                 // A gentle custom curve: slow start, soft landing. The stock
@@ -233,13 +261,11 @@ final class EdgeNotesController {
     /// Covers ONLY the tab stack — the "+" button sits below it and must stay
     /// clickable without triggering a peek.
     private func edgeHotZone() -> NSRect {
-        guard let screen = NSScreen.main, let panel else { return .zero }
-        let f = panel.frame
-        let count = max(visibleNotes.count, 1)
-        let stackHeight = CGFloat(count) * tabHeight + CGFloat(count - 1) * tabGap
-        let top = f.maxY - (f.height - stackHeight) / 2
+        guard let screen = NSScreen.main, panel != nil else { return .zero }
+        // XF-T24: the stack's FIXED rect — the same one the view draws at, whatever the panel's height is while peeking.
+        let stack = EdgeNotesLayout.stackRect(count: visibleNotes.count, visible: screen.visibleFrame, screen: screen.frame, onLeft: side == "Left")
         let x = side == "Left" ? screen.frame.minX : screen.frame.maxX - tabWidth - hotspot
-        return NSRect(x: x, y: top - stackHeight, width: tabWidth + hotspot, height: stackHeight)
+        return NSRect(x: x, y: stack.minY, width: tabWidth + hotspot, height: stack.height)
     }
 
     /// Which tab the pointer is over, top-to-bottom within the stack.
@@ -247,14 +273,71 @@ final class EdgeNotesController {
     /// and treating it as a tab made hovering "+" pop open the last note.
     private func noteID(at point: CGPoint, in panel: NSPanel) -> UUID? {
         let notes = visibleNotes
-        guard !notes.isEmpty else { return nil }
-        let stackHeight = CGFloat(notes.count) * tabHeight + CGFloat(notes.count - 1) * tabGap
-        let top = panel.frame.maxY - (panel.frame.height - stackHeight) / 2
-        let offset = top - point.y
-        guard offset >= 0, offset <= stackHeight else { return nil }
-        let index = Int(offset / (tabHeight + tabGap))
-        guard notes.indices.contains(index) else { return nil }
+        guard !notes.isEmpty, let screen = NSScreen.main else { return nil }
+        let stack = EdgeNotesLayout.stackRect(count: notes.count, visible: screen.visibleFrame, screen: screen.frame, onLeft: side == "Left")
+        guard let index = EdgeNotesLayout.index(at: point.y, stack: stack, count: notes.count) else { return nil }
         return notes[index].id
+    }
+
+    // MARK: - XF-T24 global hotkey ⌃⌥N (Carbon, no permission) — opt-in, it takes a chord from every app
+
+    /// The ONE reader of `notes.globalHotkey` (default off).
+    static var globalHotkeyEnabled: Bool { UserDefaults.standard.object(forKey: "notes.globalHotkey") as? Bool ?? false }
+    /// N, and ⌃⌥ — the chord ShortcutCatalog lists as `notes.summon`.
+    static let summonKeyCode: UInt32 = 45
+    /// 'XFnt' — this feature's own signature, so ⌘K's and ⇧⌘G's handlers ignore its events.
+    private static let hotkeySignature: OSType = 0x58466E74
+    private static let hotkeyID: UInt32 = 3
+    private var hotKeyRef: EventHotKeyRef?
+    private var carbonHandler: EventHandlerRef?
+    /// false when the switch is on but RegisterEventHotKey refused (another app holds ⌃⌥N) — the page says so.
+    private(set) var globalHotkeyRegistered = false
+
+    private func syncGlobalHotkey() {
+        if isEnabled && Self.globalHotkeyEnabled {
+            installCarbonHandlerIfNeeded()
+            guard hotKeyRef == nil else { return }
+            var ref: EventHotKeyRef?
+            let status = RegisterEventHotKey(Self.summonKeyCode, UInt32(controlKey | optionKey),
+                                             EventHotKeyID(signature: Self.hotkeySignature, id: Self.hotkeyID),
+                                             GetApplicationEventTarget(), 0, &ref)
+            hotKeyRef = status == noErr ? ref : nil
+            globalHotkeyRegistered = hotKeyRef != nil
+        } else {
+            if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
+            hotKeyRef = nil
+            globalHotkeyRegistered = false
+        }
+    }
+
+    private func installCarbonHandlerIfNeeded() {
+        guard carbonHandler == nil else { return }
+        var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+        let callback: EventHandlerUPP = { _, event, userData in
+            guard let event, let userData else { return OSStatus(eventNotHandledErr) }
+            var id = EventHotKeyID()
+            GetEventParameter(event, UInt32(kEventParamDirectObject), UInt32(typeEventHotKeyID), nil,
+                              MemoryLayout<EventHotKeyID>.size, nil, &id)
+            guard id.signature == EdgeNotesController.hotkeySignature, id.id == EdgeNotesController.hotkeyID
+            else { return OSStatus(eventNotHandledErr) }
+            let c = Unmanaged<EdgeNotesController>.fromOpaque(userData).takeUnretainedValue()
+            c.summonFired()
+            return noErr
+        }
+        InstallEventHandler(GetApplicationEventTarget(), callback, 1, &spec, Unmanaged.passUnretained(self).toOpaque(), &carbonHandler)
+    }
+
+    private nonisolated func summonFired() {
+        Task { @MainActor in self.summon() }
+    }
+
+    /// Open the edge editor on the first note of the strip (pinned first, then most recently edited); none ⇒ a new note.
+    func summon() {
+        guard isEnabled else { return }
+        if openNoteID != nil { closeEditor(); return }          // the same chord closes it again
+        guard let first = visibleNotes.first else { createNote(); return }
+        applySettings()
+        open(first.id)
     }
 
     func setPeek(_ id: UUID?) {
