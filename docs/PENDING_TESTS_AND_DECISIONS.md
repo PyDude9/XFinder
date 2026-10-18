@@ -144,6 +144,17 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 | Q-ORCA-1 | Bật "Agent status hooks" của Orca (nó ghi hook vào `~/.claude` và `~/.codex`, cạnh hook của XFinder/OneNotch/Notch Crew)? Trust hook của Codex tính theo vị trí trong mảng — hook chèn trước có thể làm hook XFinder mất trust | **Giữ nguyên settings.json** cho tới khi T-ORCA-4 đo xong |
 | Q-ORCA-2 | Cho Claude dùng `orca worktree create --prompt` để tạo việc cho Builder ngay khi set `Ready` trong Notion (thay vì bạn dán prompt)? | **Có, từ giai đoạn 1** sau khi T-ORCA-2 đo được rằng `--name` thành tên nhánh `agent/<tool>-<ID>` |
 
+### Q-PRUNE · Kiểm toán tính năng 2026-10-18 (`docs/APP_AUDIT_2026-10-18.md`, 45 agent, mỗi đề nghị qua 2 refuter)
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-PRUNE-1 | **Dải Dock Liquid Glass** (`DockLayerController`, 188 dòng): tự ẩn Dock thật rồi vẽ lại một Dock; không ai yêu cầu, chưa ai bật thử. Bỏ? | **Bỏ** (controller + công tắc + 1 khoá) khi bạn gật |
+| Q-PRUNE-2 | **Biểu tượng thanh menu** — hai engine ẩn icon app khác (1 223 dòng): lịch sử đo cả hai **không ẩn được icon app thứ ba** trên 27; bạn chốt "explainer" 2026-09-18 rồi một vòng sau cài lại; khoá `menubar.hiderEnabled` đang bật trên máy bạn | **Đo lại một lần** trên 27.0.1 (icon app khác có biến mất không). Không ⇒ về explainer, giữ ẩn icon của chính XFinder |
+| Q-PRUNE-3 | **Thao tác Finder ▸ "Cấu hình menu"** 13 công tắc: hứa cấu hình menu chuột phải, nhưng extension có 2 mục cố định không đọc khoá nào | **Bỏ khối** (hoặc đổi nhãn "Hiện nút trên trang này") |
+| Q-PRUNE-4 | **`PermissionManager`**: 5 thành viên không có caller; `requestAllIfNeeded()` xin 3 quyền lúc khởi động, trái lời hứa của hub | **Xoá thành viên chết + bỏ xin quyền lúc khởi động** ở commit dọn dẹp kế tiếp |
+| Q-PRUNE-5 | **Nhập bằng giọng nói** (4 122 dòng, T-VOICE chưa ai thử): `voice.enabled` mặc định bật và cài CGEvent tap keyDown toàn hệ thống lúc khởi động | **Đổi mặc định sang tắt** (như Chuột & cử chỉ); giữ/gọn tuỳ T-VOICE |
+| Q-PRUNE-6 | **Chia sẻ nhanh** (server HTTP LAN) và **Kết nối từ xa** không có hàng FeatureCatalog ⇒ "Tắt tất cả" không tắt được server | **Thêm 2 hàng catalog + reader + T-*** (việc XF-T21, Claude viết spec) |
+
 ## Phần 2 — Cần test tay (T)
 
 Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
@@ -155,6 +166,12 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-NOTION-1 | Một Builder thật (OpenCode/DeepSeek hoặc Antigravity, đã OAuth Notion MCP) dán prompt Builder ở `AGENT_NOTION.md` §10 | Nó đọc view *Queue — Ready*, ghi `Claimed By` + `Doing` + tạo Run, đọc lại sau ~10 s, rẽ nhánh đúng SHA, làm T14d, dán gate stdout vào Run, đặt `Awaiting Claude`. Không chạm vùng Spec |
 | T-NOTION-2 | Hai Builder mở cùng lúc trên cùng view | Đúng một bên giữ `Claimed By`; bên kia không ghi gì và bỏ qua |
 | T-NOTION-3 | Reviewer (công cụ khác) dán prompt Reviewer | Chỉ ghi vùng Review + `Pre-reviewed`, không đổi State, không sửa file |
+
+### Hiệu năng sau commit `3fe1b66` (2026-10-18)
+
+| Mã | Thao tác | Kỳ vọng |
+|:--|:--|:--|
+| T-PERF-1 | Khởi động XFinder, không mở trang Pin trong 60 s; `ps -o time= -p $(pgrep -x XFinder)` ở 0 s và 60 s; `log show --last 2m --predicate 'process == "XFinder" AND subsystem CONTAINS "bluetooth"'` | CPU ≈ 0,00–0,05 s/60 s; **không** dòng CoreBluetooth nào trước khi trang Pin mở (BatteryStore không còn khởi động lúc launch); mở trang Pin ⇒ thiết bị Bluetooth hiện sau vài giây (GATT scan bắt đầu lúc đó) |
 
 ### Nhớ bố cục cửa sổ (2026-10-18, chưa ai thử bằng tay)
 
