@@ -11266,6 +11266,14 @@
     "Xoá luật này": {
       "en": "Delete this rule",
       "scope": "sentence"
+    },
+    "Thao tác trên các mục đang chọn trong Finder — từ trang này hoặc từ hai mục XFinder trong menu chuột phải.": {
+      "en": "Act on the items selected in Finder — from this page or from XFinder's two items in the right-click menu.",
+      "scope": "sentence"
+    },
+    "macOS không có API công khai cho phép một ứng dụng thường thêm mục vào menu chuột phải của Finder. XFinder đi đường Apple hỗ trợ: một Finder Sync Extension với hai mục — Thêm vào Khay thả và Hiện trong Finder. Muốn thêm thao tác khác, dùng Quick Action (Shortcuts/Automator).": {
+      "en": "macOS has no public API that lets an ordinary app add items to Finder's right-click menu. XFinder takes the path Apple supports: a Finder Sync Extension with two items — Add to Drop Tray and Show in Finder. For other actions, use a Quick Action (Shortcuts/Automator).",
+      "scope": "sentence"
     }
   }
 }
