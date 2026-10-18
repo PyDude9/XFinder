@@ -247,8 +247,24 @@ final class SnapMemoryController {
         watches[pid] = Watch(observer: o, app: appEl, appliedThisLaunch: !isLaunch)
         attachRetries[pid] = nil
         log.notice("watching pid=\(pid) app=\(app.bundleIdentifier ?? "?", privacy: .public) attempt=\(attempt) launch=\(isLaunch)")
-        if isLaunch, !windows(of: appEl).isEmpty {
-            scheduleForAllRules(bundleID: app.bundleIdentifier, pid: pid, trigger: .windowAppeared)
+        if isLaunch { awaitFirstWindow(pid: pid, bundleID: app.bundleIdentifier, attempt: 0) }
+    }
+
+    /// `didLaunchApplication` arrives AFTER the app finished launching, so a simple app's first window usually exists
+    /// before our observer does and `kAXWindowCreatedNotification` never fires for it — while an app still bringing up
+    /// its AX server answers the windows query with nothing for a moment. Measured 2026-10-18 (e2e target): attach
+    /// logged, no window event, no replay. So poll briefly (0.5 s × 10) for the first window; the real notification,
+    /// if it comes first, wins and `appliedThisLaunch` keeps the two paths from both replaying.
+    private func awaitFirstWindow(pid: pid_t, bundleID: String?, attempt: Int) {
+        guard isEnabled, let w = watches[pid], !w.appliedThisLaunch else { return }
+        if !windows(of: w.app).isEmpty {
+            log.notice("first window seen pid=\(pid) poll=\(attempt)")
+            scheduleForAllRules(bundleID: bundleID, pid: pid, trigger: .windowAppeared)
+            return
+        }
+        guard attempt < 10 else { log.notice("no window within 5 s pid=\(pid)"); return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            MainActor.assumeIsolated { SnapMemoryController.shared.awaitFirstWindow(pid: pid, bundleID: bundleID, attempt: attempt + 1) }
         }
     }
 
@@ -286,6 +302,7 @@ final class SnapMemoryController {
         guard isEnabled, var w = watches[pid] else { return }
         switch notification {
         case kAXWindowCreatedNotification as String:
+            log.notice("windowCreated pid=\(pid) appliedThisLaunch=\(w.appliedThisLaunch)")
             for win in windows(of: w.app) {
                 AXObserverAddNotification(w.observer, win, kAXWindowMovedNotification as CFString, nil)
                 AXObserverAddNotification(w.observer, win, kAXWindowResizedNotification as CFString, nil)
@@ -384,6 +401,7 @@ final class SnapMemoryController {
             return
         }
         guard let w = watches[pid], let win = mainWindow(of: w.app) else {
+            log.notice("replay pid=\(pid) recheck=\(isRecheck) noWindow")
             store.noteOutcome(.noWindow, ruleID: rule.id, at: Date()); persist(); return
         }
         let (_, map) = currentArrangementAndKeys()
@@ -410,6 +428,7 @@ final class SnapMemoryController {
         }
         let ok = WindowManager.setWindow(win, rect: target)
         lastOwnWriteAt[pid] = ProcessInfo.processInfo.systemUptime
+        log.notice("replay pid=\(pid) recheck=\(isRecheck) ok=\(ok)")
         store.noteOutcome(ok ? .applied : .failed, ruleID: rule.id, at: Date())
         persist()
     }
