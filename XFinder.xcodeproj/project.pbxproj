@@ -114,6 +114,7 @@
 		7F1A0372 /* Agents/WindowlessSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0373 /* Agents/WindowlessSessionManager.swift */; };
 		7F1A0376 /* Agents/CrewManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0377 /* Agents/CrewManager.swift */; };
 		7F1A0374 /* Agents/CrewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0375 /* Agents/CrewRules.swift */; };
+		7F1A0411 /* Agents/CrewGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0410 /* Agents/CrewGate.swift */; };
 		7F1A037A /* Agents/AgentHandoff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A037B /* Agents/AgentHandoff.swift */; };
 		7F1A0380 /* Agents/CodexAppServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0381 /* Agents/CodexAppServer.swift */; };
 		7F1A0382 /* Agents/AgentQuotaRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0383 /* Agents/AgentQuotaRules.swift */; };
@@ -471,6 +472,7 @@
 		7F1A0373 /* Agents/WindowlessSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/WindowlessSessionManager.swift; sourceTree = "<group>"; };
 		7F1A0377 /* Agents/CrewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/CrewManager.swift; sourceTree = "<group>"; };
 		7F1A0375 /* Agents/CrewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/CrewRules.swift; sourceTree = "<group>"; };
+		7F1A0410 /* Agents/CrewGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/CrewGate.swift; sourceTree = "<group>"; };
 		7F1A037B /* Agents/AgentHandoff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentHandoff.swift; sourceTree = "<group>"; };
 		7F1A0381 /* Agents/CodexAppServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/CodexAppServer.swift; sourceTree = "<group>"; };
 		7F1A0383 /* Agents/AgentQuotaRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentQuotaRules.swift; sourceTree = "<group>"; };
@@ -800,6 +802,7 @@
 				7F1A0373 /* Agents/WindowlessSessionManager.swift */,
 				7F1A0377 /* Agents/CrewManager.swift */,
 				7F1A0375 /* Agents/CrewRules.swift */,
+				7F1A0410 /* Agents/CrewGate.swift */,
 				7F1A037B /* Agents/AgentHandoff.swift */,
 				7F1A0381 /* Agents/CodexAppServer.swift */,
 				7F1A0383 /* Agents/AgentQuotaRules.swift */,
@@ -1321,6 +1324,7 @@
 				7F1A0372 /* Agents/WindowlessSessionManager.swift in Sources */,
 				7F1A0376 /* Agents/CrewManager.swift in Sources */,
 				7F1A0374 /* Agents/CrewRules.swift in Sources */,
+				7F1A0411 /* Agents/CrewGate.swift in Sources */,
 				7F1A037A /* Agents/AgentHandoff.swift in Sources */,
 				7F1A0380 /* Agents/CodexAppServer.swift in Sources */,
 				7F1A0382 /* Agents/AgentQuotaRules.swift in Sources */,

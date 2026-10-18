@@ -6,7 +6,7 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-agents.XXXXXX)
-FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift XFinder/Core/Agents/AgentTalk.swift XFinder/Core/Agents/WindowlessRules.swift XFinder/Core/Agents/AgentTalkSender.swift XFinder/Core/Agents/CrewRules.swift XFinder/Resources/Agents/xfinder-crew.zsh XFinder/Core/Agents/AgentQuotaRules.swift XFinder/Core/Agents/CodexAppServer.swift XFinder/Core/Agents/AgentHandoff.swift XFinder/Core/Notch/LiveActivity.swift"
+FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift XFinder/Core/Agents/AgentTalk.swift XFinder/Core/Agents/WindowlessRules.swift XFinder/Core/Agents/AgentTalkSender.swift XFinder/Core/Agents/CrewRules.swift XFinder/Core/Agents/CrewGate.swift XFinder/Resources/Agents/xfinder-crew.zsh XFinder/Core/Agents/AgentQuotaRules.swift XFinder/Core/Agents/CodexAppServer.swift XFinder/Core/Agents/AgentHandoff.swift XFinder/Core/Notch/LiveActivity.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
@@ -14,7 +14,7 @@ trap 'restore' EXIT
 # kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
 trap 'exit 143' INT TERM
 
-FILTER='AgentTranscriptLimit|LiveActivity|AgentQuota|CodexAppServer|AgentHandoff|Crew|Windowless|ChildStdin|AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
+FILTER='CrewGate|AgentTranscriptLimit|LiveActivity|AgentQuota|CodexAppServer|AgentHandoff|Crew|Windowless|ChildStdin|AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -331,6 +331,18 @@ run "Q25 a prompt quoting the limit text marks the session stopped (the sniffing
 
 # The restore check and the post-restore suite run come AFTER every mutation (they used to sit before A11, so the
 # later mutations ran unchecked — found while adding A20/A21).
+# XF-T23 v2a (2026-10-18) — CrewV2 gate, envelope, classifier
+run "G1 the branch field leaves the MAC (a forgeable branch)" XFinder/Core/Agents/CrewGate.swift \
+  "'f(\"task\", e.task), f(\"criteria\", e.criteria), f(\"branch\", e.branch), f(\"verdict\", e.verdict?.rawValue),'" \
+  "'f(\"task\", e.task), f(\"criteria\", e.criteria), f(\"branch\", nil), f(\"verdict\", e.verdict?.rawValue),'"
+run "G2 one approval is enough to merge" XFinder/Core/Agents/CrewGate.swift \
+  "'                if sec == .approved, rev == .approved {'" "'                if sec == .approved || rev == .approved {'"
+run "G3 a new done keeps the old verdicts" XFinder/Core/Agents/CrewGate.swift \
+  "'                branches[b] = .awaitingVerdicts(security: nil, reviewer: nil)\n                return .nowAwaiting(b)'" \
+  "'                if case .awaitingVerdicts = state(of: b) { return .nowAwaiting(b) }\n                branches[b] = .awaitingVerdicts(security: nil, reviewer: nil)\n                return .nowAwaiting(b)'"
+run "G4 git -C . push is an ordinary command" XFinder/Core/Agents/CrewGate.swift \
+  "'                        if w[i] == \"-C\" || w[i] == \"-c\" { i += 2 } else { i += 1 }'" "'                        i += 1'"
+
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)
