@@ -9,6 +9,8 @@ struct XFinderApp: App {
     /// AppKit object exists; `MCPServer.run()` never returns.
     init() {
         if CommandLine.arguments.contains("--mcp") { MCPServer.run() }
+        // XF-T23 v2b: a crew member's PreToolUse hook (Core/Agents/CrewGuardMain.swift). Never returns.
+        if CommandLine.arguments.contains("--crew-guard") { CrewGuardMain.run() }
     }
 
     var body: some Scene {

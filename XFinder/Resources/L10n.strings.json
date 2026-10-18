@@ -11274,6 +11274,66 @@
     "macOS không có API công khai cho phép một ứng dụng thường thêm mục vào menu chuột phải của Finder. XFinder đi đường Apple hỗ trợ: một Finder Sync Extension với hai mục — Thêm vào Khay thả và Hiện trong Finder. Muốn thêm thao tác khác, dùng Quick Action (Shortcuts/Automator).": {
       "en": "macOS has no public API that lets an ordinary app add items to Finder's right-click menu. XFinder takes the path Apple supports: a Finder Sync Extension with two items — Add to Drop Tray and Show in Finder. For other actions, use a Quick Action (Shortcuts/Automator).",
       "scope": "sentence"
+    },
+    "báo xong": {
+      "en": "reported done to",
+      "scope": "fragment"
+    },
+    "duyệt": {
+      "en": "gave a verdict to",
+      "scope": "fragment"
+    },
+    "gộp nhánh": {
+      "en": "merge notice to",
+      "scope": "fragment"
+    },
+    "Tin bị từ chối — sai mẫu hoặc sai vai.": {
+      "en": "A message was refused: wrong format or wrong role.",
+      "scope": "sentence"
+    },
+    "Lead Architect — lead · frontend · backend · security · reviewer": {
+      "en": "Lead Architect: lead, frontend, backend, security, reviewer",
+      "scope": "sentence"
+    },
+    "Lead Architect: lead ở thư mục bạn chọn; mỗi builder (frontend, backend) làm trên nhánh và worktree git riêng (crew/<mục-tiêu>-<vai>); security và reviewer dùng một worktree tích hợp và không sửa tệp. Tin giữa các vai theo mẫu TASK / CRITERIA / BRANCH và có chữ ký. Lead chỉ được gộp một nhánh khi security VÀ reviewer đều Approved sau lần báo xong cuối; lệnh git merge vẫn hiện thẻ trên notch để bạn bấm. Lệnh đổi trạng thái (git commit/push/merge, cài gói, xoá, sudo…) luôn hỏi, kể cả khi bạn đã cho phép sẵn ở nơi khác, và sửa tệp ngoài worktree của chính mình bị chặn. Đây là lưới an toàn, không phải ranh giới bảo mật: chương trình khác chạy dưới tài khoản của bạn không bị ràng. Thư mục phải là kho git có ít nhất một commit; thay đổi chưa commit ở thư mục chính không có trong worktree của builder. Khi crew dừng, nhánh được giữ; worktree còn thay đổi chưa commit được chuyển sang thư mục riêng thay vì bị xoá. Thẻ duyệt lệnh trên notch cần hook Agent AI đã cài.": {
+      "en": "Lead Architect: the lead works in the folder you choose; each builder (frontend, backend) works on its own git branch and worktree (crew/<goal>-<role>); security and reviewer share an integration worktree and cannot edit files. Messages between roles follow a signed TASK / CRITERIA / BRANCH format. The lead may merge a branch only when security AND reviewer both approved it after the builder's last done report; the git merge command still shows a card on the notch for you to press. State-changing commands (git commit/push/merge, installing packages, deleting, sudo…) always ask, even where you allowed them elsewhere, and editing files outside a member's own worktree is blocked. This is a safety net, not a security boundary: other programs running as your user are not restricted. The folder must be a git repository with at least one commit; uncommitted changes in the main folder are not in the builders' worktrees. When the crew stops, the branches are kept; a worktree with uncommitted changes is moved aside instead of deleted. The approval cards on the notch need the Agent AI hook to be installed.",
+      "scope": "sentence"
+    },
+    "Mẫu này cần một thư mục là kho git.": {
+      "en": "This template needs a folder that is a git repository.",
+      "scope": "sentence"
+    },
+    "Kho git chưa có commit nào — tạo commit đầu tiên rồi bắt đầu lại.": {
+      "en": "The git repository has no commit yet. Make the first commit, then start again.",
+      "scope": "sentence"
+    },
+    "Không đặt được tên nhánh cho crew.": {
+      "en": "Could not choose branch names for the crew.",
+      "scope": "sentence"
+    },
+    "git không tạo được worktree cho crew.": {
+      "en": "git could not create the crew's worktrees.",
+      "scope": "sentence"
+    },
+    "Nhánh còn lại: ": {
+      "en": "Branches kept: ",
+      "scope": "fragment"
+    },
+    " · Worktree còn thay đổi chưa commit, đã chuyển sang: ": {
+      "en": " · Worktrees with uncommitted changes were moved to: ",
+      "scope": "fragment"
+    },
+    " · Không dọn được: ": {
+      "en": " · Could not clean up: ",
+      "scope": "fragment"
+    },
+    "Duyệt bảo mật": {
+      "en": "Security",
+      "scope": "sentence"
+    },
+    "Người duyệt": {
+      "en": "Reviewer",
+      "scope": "sentence"
     }
   }
 }

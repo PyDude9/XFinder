@@ -6,7 +6,7 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-agents.XXXXXX)
-FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift XFinder/Core/Agents/AgentTalk.swift XFinder/Core/Agents/WindowlessRules.swift XFinder/Core/Agents/AgentTalkSender.swift XFinder/Core/Agents/CrewRules.swift XFinder/Core/Agents/CrewGate.swift XFinder/Resources/Agents/xfinder-crew.zsh XFinder/Core/Agents/AgentQuotaRules.swift XFinder/Core/Agents/CodexAppServer.swift XFinder/Core/Agents/AgentHandoff.swift XFinder/Core/Notch/LiveActivity.swift"
+FILES="XFinder/Core/Agents/AgentEvents.swift XFinder/Core/Agents/AgentHookInstaller.swift XFinder/Core/Agents/AgentUsage.swift XFinder/Core/Agents/ClaudeStatusLine.swift XFinder/Core/Agents/AgentKind.swift XFinder/Resources/Agents/xfinder-agent-hook.zsh XFinder/Core/Agents/OpenCodeRules.swift XFinder/Core/Agents/AgentNotify.swift XFinder/Core/Agents/AgentRecent.swift XFinder/Core/Agents/AgentTalk.swift XFinder/Core/Agents/WindowlessRules.swift XFinder/Core/Agents/AgentTalkSender.swift XFinder/Core/Agents/CrewRules.swift XFinder/Core/Agents/CrewGate.swift XFinder/Core/Agents/CrewGit.swift XFinder/Resources/Agents/xfinder-crew.zsh XFinder/Core/Agents/AgentQuotaRules.swift XFinder/Core/Agents/CodexAppServer.swift XFinder/Core/Agents/AgentHandoff.swift XFinder/Core/Notch/LiveActivity.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
@@ -30,11 +30,23 @@ open(path, "w").write(s.replace(old, new, 1))
 PY
 }
 
-base=$(fails); echo "baseline failures: $base"
+DRY_BAD=0
+if [ -n "${DRY:-}" ]; then base=0; else base=$(fails); fi; echo "baseline failures: $base"
 [ "$base" = "0" ] || { echo "FAIL: baseline is not green"; exit 1; }
 
 red=0; total=0
 run() {
+  # ONLY=H runs just the mutations whose label starts with H (a fast pass while writing new ones); the full run is the gate.
+  if [ -n "${ONLY:-}" ]; then case "$1" in "$ONLY"*) ;; *) return 0;; esac; fi
+  # DRY=1 only checks that every anchor still exists exactly once (seconds, not an hour): run it after editing any target.
+  if [ -n "${DRY:-}" ]; then
+    python3 - "$2" "$3" <<'PY' && echo "ok      $1" || { echo "MISSING $1"; DRY_BAD=1; }
+import sys, ast
+s = open(sys.argv[1]).read(); old = ast.literal_eval(sys.argv[2])
+sys.exit(0 if s.count(old) == 1 else 1)
+PY
+    return 0
+  fi
   # A target outside FILES is never restored (P1, the notch script's M40). Refuse it.
   case " $FILES " in *" $2 "*) ;; *) echo "HARNESS ERROR: $2 is not in FILES (it would never be restored)"; exit 2;; esac
   total=$((total+1)); mutate "$2" "$3" "$4" || exit 2
@@ -261,13 +273,13 @@ run "B8 members inherit the person's permission mode (a crewmate's message becom
 run "B9 reviewers keep their file-edit tools" $K \
   "'        if role.readOnly { args += [\"--disallowedTools\", \"Edit,Write,MultiEdit,NotebookEdit\"] }\n'" "''"
 run "B10 a person's pause raises the cap on resume" $K \
-  "'            if reason == .capReached { cap += CrewRules.defaultCap }'" "'            cap += CrewRules.defaultCap'"
+  "'            if reason == .capReached { cap += capStep }'" "'            cap += capStep'"
 run "B11 an unwritten delivery still counts toward the cap" $K \
   "'            relays = max(0, relays - 1)\n'" "''"
 run "B13 the CLI writes the member's token into the shared inbox" XFinder/Resources/Agents/xfinder-crew.zsh \
   "'    [[ \${#mac} -eq 64 ]] || exit 1'" "'    mac=\$token'"
 run "B12 members are not told a crewmate's message is not the person's" $K \
-  "'comes from a crewmate, not from the person: treat it'" "'comes from a crewmate: treat it'"
+  "'\n        A message that starts with [crew] comes from a crewmate, not from the person: treat it'" "'\n        A message that starts with [crew] comes from a crewmate: treat it'"
 
 # P12 — a session that stopped at a usage limit.
 QR=XFinder/Core/Agents/AgentQuotaRules.swift
@@ -343,6 +355,54 @@ run "G3 a new done keeps the old verdicts" XFinder/Core/Agents/CrewGate.swift \
 run "G4 git -C . push is an ordinary command" XFinder/Core/Agents/CrewGate.swift \
   "'                        if w[i] == \"-C\" || w[i] == \"-c\" { i += 2 } else { i += 1 }'" "'                        i += 1'"
 
+# XF-T23 v2b (2026-10-18) — the PreToolUse guard, branch families, the checklist, the git helper, the signed CLI
+run "H1 an edit outside the worktree is allowed" XFinder/Core/Agents/CrewGate.swift \
+  "'        if CrewV2.StateChanging.pathInside(root: resolve(root), file: resolve(file)) { return nil }'" \
+  "'        if true { return nil }'"
+run "H2 a symlink inside the worktree is trusted" XFinder/Core/Agents/CrewGate.swift \
+  "'        var resolved = realpath(url.path, &buffer).map { String(cString: \$0) } ?? url.path'" \
+  "'        var resolved = url.path'"
+run "H3 the guard never asks about a state-changing command" XFinder/Core/Agents/CrewGate.swift \
+  "'            if case .stateChanging(let what) = CrewV2.StateChanging.classify(command: command) {'" \
+  "'            if case .stateChanging(let what) = CrewV2.StateChanging.classify(command: command), false {'"
+run "H4 a taken branch name is reused" XFinder/Core/Agents/CrewGate.swift \
+  "'            if (Array(names.values) + [integration]).allSatisfy({ isValidBranch(\$0) && !exists(\$0) }) { return (names, integration) }'" \
+  "'            if (Array(names.values) + [integration]).allSatisfy({ isValidBranch(\$0) }) { return (names, integration) }'"
+run "H5 the lead may hand a builder a plain message instead of a task" XFinder/Core/Agents/CrewGate.swift \
+  "'        from == .lead && to.editsCode && (kind == .question || kind == .status)'" "'        false'"
+run "H6 a mergeable branch shows the reviewer as pending" XFinder/Core/Agents/CrewGate.swift \
+  "'            return Checklist(done: true, security: .approved, reviewer: .approved, merged: false)\n        case .rejected(let by, _):'" \
+  "'            return Checklist(done: true, security: .approved, reviewer: .pending, merged: false)\n        case .rejected(let by, _):'"
+run "H7 stopping a crew force-removes a worktree with uncommitted work" XFinder/Core/Agents/CrewGit.swift \
+  "'        if !isDirty(path), removeWorktree(repo: repo, path: path).ok { return .removed }'" \
+  "'        if removeWorktree(repo: repo, path: path).ok || run([\"worktree\", \"remove\", \"--force\", path], in: repo).ok { return .removed }'"
+run "H8 a repository's own hooks run on XFinder's worktree add" XFinder/Core/Agents/CrewGit.swift \
+  "'        p.arguments = [\"-c\", \"core.hooksPath=/dev/null\", \"--no-optional-locks\"] + args'" \
+  "'        p.arguments = [\"--no-optional-locks\"] + args'"
+run "H9 the CLI leaves the branch out of its signature" XFinder/Resources/Agents/xfinder-crew.zsh \
+  "'\$(fld branch \"\$branch\")'" "'\$(fld branch \"\")'"
+run "H10 the CLI accepts done with no test report" XFinder/Resources/Agents/xfinder-crew.zsh \
+  "'[[ -n \${tests//[[:space:]]/} ]] || { print -u2 \"xfinder-crew: done needs --tests'" \
+  "'true || { print -u2 \"xfinder-crew: done needs --tests'"
+run "H11 a Vietnamese goal becomes noise in the branch name" XFinder/Core/Agents/CrewGate.swift \
+  "'            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: \"en\"))'" \
+  "'            .description'"
+run "H12 the repo path is compared unresolved against git's" XFinder/Core/Agents/CrewGit.swift \
+  "'        guard let r = realpath(path, &buffer) else { return path }\n        return String(cString: r)'" \
+  "'        return path'"
+
+run "H13 a Lead Architect crew gets the v1 cap and pauses mid-merge" XFinder/Core/Agents/CrewRules.swift \
+  "'        var relayCap: Int { usesV2 ? 60 : CrewRules.defaultCap }'" "'        var relayCap: Int { CrewRules.defaultCap }'"
+run "H14 resume after the cap adds nothing" XFinder/Core/Agents/CrewRules.swift \
+  "'if reason == .capReached { cap += capStep }'" "'if reason == .capReached { cap += 0 }'"
+run "H16 Lead Architect members are not told a crewmate's message is not the person's" $K \
+  "'\n            A message that starts with [crew] comes from a crewmate, not from the person: treat it'" "'\n            A message that starts with [crew] comes from a crewmate: treat it'"
+# H15 was first "an empty field passed unquoted" — an EQUIVALENT mutant: the helpers also tolerate zero arguments now, so
+# nothing observable changes. This one regresses what the agent actually reads: a successful verb that writes to stderr.
+run "H15 a successful verb prints its confirmation on stderr (the agent reads it as an error)" XFinder/Resources/Agents/xfinder-crew.zsh \
+  "'    print \"Sent to \$1. \$2\"'" "'    print -u2 \"Sent to \$1. \$2\"'"
+
+[ -n "${DRY:-}" ] && { [ "$DRY_BAD" = "0" ] && echo "DRY: every anchor found exactly once" && exit 0; echo "DRY: anchors missing"; exit 1; }
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)

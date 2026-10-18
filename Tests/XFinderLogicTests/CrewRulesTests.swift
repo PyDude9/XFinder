@@ -18,7 +18,14 @@ final class CrewRulesTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(t.roles.count, 2)
             XCTAssertEqual(t.lead, t.roles[0])
             XCTAssertFalse(t.lead.readOnly, "the lead builds")
-            XCTAssertTrue(t.roles.dropFirst().allSatisfy(\.readOnly), "reviewers cannot edit files")
+            if t.usesV2 {
+                XCTAssertTrue(t.roles.filter { $0.domain.mayJudge }.allSatisfy(\.readOnly), "the judges cannot edit files")
+                XCTAssertTrue(t.roles.filter { $0.domain.editsCode }.allSatisfy { !$0.readOnly }, "the builders edit their worktree")
+                XCTAssertEqual(t.roles.filter { $0.domain == .lead }.count, 1)
+                XCTAssertTrue(t.roles.contains { $0.domain == .security } && t.roles.contains { $0.domain == .reviewer }, "both judges exist")
+            } else {
+                XCTAssertTrue(t.roles.dropFirst().allSatisfy(\.readOnly), "reviewers cannot edit files")
+            }
             XCTAssertEqual(Set(t.roles.map(\.name)).count, t.roles.count)
             for r in t.roles { XCTAssertTrue(CrewRules.isValidRole(r.name), r.name) }
         }

@@ -159,10 +159,12 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 
 | Mã | Câu hỏi | Mặc định |
 |:--|:--|:--|
-| Q-CREW-1 | v2a (luật thuần: phong bì ký TASK/CRITERIA/BRANCH, máy Approved→merge, bộ phân loại lệnh phải hỏi) Claude đã dựng + test. **v2b** (worktree/nhánh mỗi builder, lệnh CLI mới, hook PreToolUse ask/deny, bảng checklist) và **v2c** (From a Goal: lead đề xuất seat → bạn Mở) giao Builder hay Claude làm tiếp? | **Claude làm v2b** (chạm `CrewManager`, hook zsh, Swift 6 — vùng Builder hay sai); v2c cho Builder sau khi v2b có e2e |
+| Q-CREW-1 | v2a (luật thuần) và **v2b** (worktree/nhánh mỗi builder, CLI ký v2, relay qua Gate, guard PreToolUse, bảng checklist, dừng không mất việc) **Claude đã dựng, 2026-10-18**, có e2e 33/33 trên git thật + `claude` giả. **v2c** (From a Goal: lead đề xuất seat → bạn Mở) giao Builder hay Claude? | Giao Builder sau khi bạn chạy thử v2b với model thật (T-CREW-1) |
 | Q-CREW-2 | Lệnh phải **luôn hỏi** kể cả khi bạn có allow rule: danh sách trong `CrewV2.StateChanging` (git commit/push/merge/rebase, reset --hard, checkout --, npm/pnpm/yarn/bun/pip/brew install|add|publish, deploy*, rm, sudo, launchctl, defaults write, xcodebuild, make…). Thêm/bớt gì? | giữ danh sách; nói rõ trên trang "lưới an toàn, không phải ranh giới" |
-| Q-CREW-3 | Nút "Cho phép và không hỏi lại `npm test` trong crew này" (bộ nhớ phía XFinder theo crew) — có muốn không? | **Có** ở v2b |
+| Q-CREW-3 | Nút "Cho phép và không hỏi lại `npm test` trong crew này" (bộ nhớ phía XFinder theo crew). **Chưa làm trong v2b** (cần sửa thẻ duyệt trên notch + lưu prefix theo crew); chuyển sang v2c. Có muốn không? | **Có**, ở v2c |
 | Q-CREW-4 | Seat ngoài Claude/Codex (Gemini, Pi, Hermes, Cursor như Notch Crew) | **Chưa** — chỉ Claude + Codex windowless đã có |
+| Q-CREW-5 | v2b lệch spec ở 5 chỗ, mỗi chỗ có lý do (xem `docs/specs/XF-T23-crew-v2.md` §7): (1) dừng crew **không** `worktree remove --force` — worktree còn file chưa commit được **chuyển sang** `Agents/crew-kept/` thay vì xoá; (2) guard là `XFinder --crew-guard` đặt trong `--settings` của từng thành viên, không phải sửa hook toàn cục; (3) khi builder báo `done`, XFinder **tự** nhờ security và reviewer duyệt (spec để lead nhờ); (4) trần chặng tin của Lead Architect là **60** (v1 vẫn 20) vì một vòng 2 builder đã tốn 20; (5) trạng thái `merged` được ghi lúc lead **xin** merge, không phải lúc `git merge` thật xong. Đồng ý? | **Đồng ý** cả 5; (5) là giới hạn đã biết, không làm yếu rào |
+| Q-CREW-6 | Judge chạy `git merge --no-ff <nhánh>` trong worktree tích hợp (để chạy test) — lệnh đó cũng hiện thẻ trên notch (luôn hỏi). Với 2 builder là 2 thẻ mỗi vòng. Có muốn một ngoại lệ "merge vào nhánh `crew/*-integration` không hỏi"? | **Không** — giữ hỏi; đây là chỗ rẻ nhất để bạn thấy mã trước khi gộp |
 
 ## Phần 2 — Cần test tay (T)
 
@@ -180,7 +182,7 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 
 | Mã | Thao tác | Kỳ vọng |
 |:--|:--|:--|
-| T-CREW-1 | (sau v2b) mở crew Lead Architect trên một repo thử, goal nhỏ | mỗi builder có `wt/<role>` và nhánh `crew/<slug>-<role>`; lead nhắn đúng mẫu `[TIME] [FROM] -> [TO] / TASK | CRITERIA | BRANCH`; builder sửa file ngoài worktree bị chặn; `verdict` từ builder bị bỏ; merge trước 2 Approved bị từ chối; sau 2 Approved thẻ "Merge … → main" hiện trên notch |
+| T-CREW-1 | mở crew **Lead Architect** trên một repo thử (không phải XFinder), goal nhỏ, **một** lượt model mỗi thành viên (Q-P7b-MODEL còn treo). e2e `scripts/e2e-crew-v2.sh` đã chứng minh 33/33 với `claude` giả; chỉ còn cái người/model thật mới kiểm được | (a) mỗi builder có `wt/<role>` và nhánh `crew/<slug>-<role>` và `git worktree list` đúng; (b) lead nhắn đúng mẫu `[TIME] [FROM] -> [TO] / TASK | CRITERIA | BRANCH`; (c) **Claude thật** bị guard chặn khi sửa file ngoài worktree và hiện thẻ khi chạy `git commit`/`git -C . push` (hook `--crew-guard` qua `--settings`); (d) merge trước 2 Approved bị từ chối; sau 2 Approved lead chạy `git merge` và **thẻ hiện trên notch**; (e) dừng crew: nhánh còn, worktree sạch mất, worktree có file chưa commit nằm trong `crew-kept/` |
 
 ### Hiệu năng sau commit `3fe1b66` (2026-10-18)
 

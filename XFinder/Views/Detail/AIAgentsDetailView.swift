@@ -505,7 +505,9 @@ struct AIAgentsDetailView: View {
     private var crewSection: some View {
         SettingsSection(
             title: L10n.t("Nhóm agent (crew)"),
-            footer: L10n.t("Crew là vài phiên Claude Code không cửa sổ có vai trò, nhắn nhau qua XFinder bằng lệnh xfinder-crew. Các thành viên luôn chạy ở chế độ hỏi quyền: bạn duyệt từng tin giữa họ và từng lệnh cần duyệt. Người duyệt không có công cụ sửa tệp. Claude Code vẫn tự chạy một nhóm lệnh chỉ đọc mà không hỏi (như cat, grep, git diff); lệnh nhắn thành viên khác và lệnh có thể thay đổi máy thì vẫn hỏi bạn. Quy tắc cho phép sẵn trong cài đặt Claude Code của bạn hoặc của thư mục đó vẫn có hiệu lực: lệnh nào đã được cho phép ở đó sẽ không hỏi lại. Mọi thành viên làm chung một thư mục — chưa có nhánh git riêng cho từng người. Thành viên dừng khi crew dừng hoặc khi thoát XFinder. Người gửi được nhận ra bằng token riêng của từng thành viên; chương trình nào chạy dưới tài khoản của bạn cũng đọc được token đó.")
+            footer: crewTemplate.usesV2
+                ? L10n.t("Lead Architect: lead ở thư mục bạn chọn; mỗi builder (frontend, backend) làm trên nhánh và worktree git riêng (crew/<mục-tiêu>-<vai>); security và reviewer dùng một worktree tích hợp và không sửa tệp. Tin giữa các vai theo mẫu TASK / CRITERIA / BRANCH và có chữ ký. Lead chỉ được gộp một nhánh khi security VÀ reviewer đều Approved sau lần báo xong cuối; lệnh git merge vẫn hiện thẻ trên notch để bạn bấm. Lệnh đổi trạng thái (git commit/push/merge, cài gói, xoá, sudo…) luôn hỏi, kể cả khi bạn đã cho phép sẵn ở nơi khác, và sửa tệp ngoài worktree của chính mình bị chặn. Đây là lưới an toàn, không phải ranh giới bảo mật: chương trình khác chạy dưới tài khoản của bạn không bị ràng. Thư mục phải là kho git có ít nhất một commit; thay đổi chưa commit ở thư mục chính không có trong worktree của builder. Khi crew dừng, nhánh được giữ; worktree còn thay đổi chưa commit được chuyển sang thư mục riêng thay vì bị xoá. Thẻ duyệt lệnh trên notch cần hook Agent AI đã cài.")
+                : L10n.t("Crew là vài phiên Claude Code không cửa sổ có vai trò, nhắn nhau qua XFinder bằng lệnh xfinder-crew. Các thành viên luôn chạy ở chế độ hỏi quyền: bạn duyệt từng tin giữa họ và từng lệnh cần duyệt. Người duyệt không có công cụ sửa tệp. Claude Code vẫn tự chạy một nhóm lệnh chỉ đọc mà không hỏi (như cat, grep, git diff); lệnh nhắn thành viên khác và lệnh có thể thay đổi máy thì vẫn hỏi bạn. Quy tắc cho phép sẵn trong cài đặt Claude Code của bạn hoặc của thư mục đó vẫn có hiệu lực: lệnh nào đã được cho phép ở đó sẽ không hỏi lại. Mọi thành viên làm chung một thư mục — chưa có nhánh git riêng cho từng người. Thành viên dừng khi crew dừng hoặc khi thoát XFinder. Người gửi được nhận ra bằng token riêng của từng thành viên; chương trình nào chạy dưới tài khoản của bạn cũng đọc được token đó.")
         ) {
             crewTemplateRow.settingsRow()
             SettingsDivider()
@@ -578,7 +580,7 @@ struct AIAgentsDetailView: View {
     }
 
     private var crewCostCaption: some View {
-        Text("\(L10n.t("Sẽ chạy "))\(crewTemplate.roles.count)\(L10n.t(" phiên Claude Code. Người dẫn đầu dùng một lượt ngay với mục tiêu; mỗi tin giữa các thành viên cũng là một lượt. XFinder tạm dừng crew sau "))\(CrewRules.defaultCap)\(L10n.t(" chặng tin để hỏi bạn."))")
+        Text("\(L10n.t("Sẽ chạy "))\(crewTemplate.roles.count)\(L10n.t(" phiên Claude Code. Người dẫn đầu dùng một lượt ngay với mục tiêu; mỗi tin giữa các thành viên cũng là một lượt. XFinder tạm dừng crew sau "))\(crewTemplate.relayCap)\(L10n.t(" chặng tin để hỏi bạn."))")
             .font(XFinderTokens.Font.caption)
             .foregroundColor(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -620,6 +622,8 @@ struct AIAgentsDetailView: View {
                 crewNoticeIsError = true
                 if case .member(let e) = error, let detail = e.detail {
                     crewNotice = "\(L10n.t(error.key)) · \(detail)"
+                } else if case .git(let why) = error, !why.isEmpty {
+                    crewNotice = "\(L10n.t(error.key)) · \(why)"
                 } else {
                     crewNotice = L10n.t(error.key)
                 }

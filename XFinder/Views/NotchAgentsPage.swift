@@ -576,6 +576,7 @@ private struct CrewBoardView: View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
             header
             membersStrip
+            checklistStrip
             if let w = waitingMember { permissionLine(w.role, w.p, w.session) }
             board
         }
@@ -657,6 +658,31 @@ private struct CrewBoardView: View {
             }
             Spacer(minLength: 0)
         }
+    }
+
+    /// XF-T23 — one line per builder branch: Done · Security · Reviewer · Merged (the Approved → merge gate, spec §3.5).
+    @ViewBuilder private var checklistStrip: some View {
+        if crew.isV2, !crew.checklists.isEmpty {
+            HStack(spacing: 10) {
+                ForEach(crew.checklists, id: \.role) { item in
+                    HStack(spacing: 5) {
+                        Text(item.role).font(XFinderTokens.Font.caption).bold().foregroundColor(.white.opacity(0.85)).lineLimit(1)
+                        checkMark(L10n.t("Xong"), item.list.done ? .approved : .pending)
+                        checkMark(L10n.t("Duyệt bảo mật"), item.list.security)
+                        checkMark(L10n.t("Người duyệt"), item.list.reviewer)
+                        checkMark(L10n.t("Đã gộp"), item.list.merged ? .approved : .pending)
+                    }
+                    .help(item.branch)
+                }
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private func checkMark(_ label: String, _ mark: CrewV2.Checklist.Mark) -> some View {
+        let glyph = mark == .approved ? "✓" : mark == .rejected ? "✗" : "○"
+        let color: Color = mark == .approved ? .green : mark == .rejected ? .orange : .white.opacity(0.45)
+        return Text("\(label) \(glyph)").font(XFinderTokens.Font.caption).foregroundColor(color).lineLimit(1)
     }
 
     private func memberChip(_ role: String) -> some View {
@@ -741,9 +767,14 @@ private struct CrewBoardView: View {
                 .font(XFinderTokens.Font.caption).foregroundColor(.white)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-        case .reply:
-            Text("\(entry.from ?? "") \(L10n.t(CrewRules.boardKindKey(.reply))) \(entry.to ?? ""): \(entry.text)")
-                .font(XFinderTokens.Font.caption).foregroundColor(.white)
+        case .reply, .done, .verdict, .merge:
+            Text("\(entry.from ?? "") \(L10n.t(CrewRules.boardKindKey(entry.kind))) \(entry.to ?? ""): \(entry.text)")
+                .font(XFinderTokens.Font.caption).foregroundColor(entry.kind == .reply ? .white : .green)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        case .refused:
+            Text(L10n.t(CrewRules.boardKindKey(.refused)) + (entry.to.map { " (\($0))" } ?? "") + (entry.text.isEmpty ? "" : ": \(entry.text)"))
+                .font(XFinderTokens.Font.caption).foregroundColor(.orange)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
         case .failed:
@@ -751,7 +782,13 @@ private struct CrewBoardView: View {
                 .font(XFinderTokens.Font.caption).foregroundColor(.orange)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-        case .paused, .resumed, .capped, .stopped:
+        case .stopped:
+            // The first line is the key; the line `annotate` adds after the cleanup (branches kept, work moved aside) is data.
+            Text(entry.text.isEmpty ? L10n.t(CrewRules.boardKindKey(.stopped)) : entry.text)
+                .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        case .paused, .resumed, .capped:
             Text(L10n.t(CrewRules.boardKindKey(entry.kind)))
                 .font(XFinderTokens.Font.caption).foregroundColor(.orange)
                 .textSelection(.enabled)

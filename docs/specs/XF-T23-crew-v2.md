@@ -165,3 +165,22 @@ Seat Gemini/Pi/Hermes/Cursor (chỉ Claude + Codex windowless đã có); feed h�
 2. **v2b**: `xfinder-crew.zsh` lệnh mới + relay kiểm; hook PreToolUse (ask/deny); worktree per builder trong
    `CrewManager.start/stop`; template Lead Architect; board checklist.
 3. **v2c**: From a Goal (propose → seat card → Mở); "không hỏi lại" theo crew; trang Agent AI nói rõ giới hạn.
+
+## 7. v2b — đã dựng (2026-10-18), và chỗ lệch spec
+
+Đo bằng `scripts/e2e-crew-v2.sh` (33 kiểm tra, git thật + `claude` giả cho từng vai, `CrewManager`/`CrewRules`/`CrewGate`/`CrewGit`
+và `xfinder-crew.zsh` thật) và `Tests/…/CrewV2bTests.swift` + `CrewGateTests.swift`. **Chưa chạy model thật** (T-CREW-1).
+
+| Mục §3 | Đã làm | Lệch spec |
+|:--|:--|:--|
+| 3.1 vai | template **Lead Architect**: lead · frontend · backend · security · reviewer (`CrewRules.Template.leadArchitect`, `Role.domain`) | `agent`/`model`/`effort` theo vai và seat card (From a Goal) **chưa** — v2c |
+| 3.2 git | `CrewGit` (hooks của repo tắt, `currentDirectoryURL` thay `-C`, stdout/stderr ra file); mỗi builder `wt/<role>` nhánh `crew/<slug>-<role>`, judge chung `wt/integration`, lead ở thư mục đã chọn; cả họ nhánh nhảy sang `-2` nếu một tên bị chiếm; crew bắt đầu trong thư mục con của repo thì member chạy ở thư mục con tương ứng trong worktree; `XFINDER_CREW_ROOT` / `XFINDER_CREW_BRANCH` trong env | **Dừng không `--force`**: worktree có file chưa commit được `worktree move` sang `Application Support/XFinder/Agents/crew-kept/<crew>-<role>`; sạch thì remove; nhánh luôn giữ. Spec ghi `remove --force`, sẽ xoá mất việc chưa commit |
+| 3.3 schema | CLI mới `send --task --criteria [--branch]`, `status`, `done`, `verdict`, `conflict`, `merge`; chữ ký phủ **mọi** trường; relay từ chối (và báo lại người gửi bằng `[crew] REFUSED: …`) khi thiếu TASK/CRITERIA, verdict từ builder, branch không phải của mình, rejection thiếu `file:line`; lead→builder chỉ nhận `--task` | `question` = `send` thường (có trả lời); thêm động từ `status` (không trả lời) |
+| 3.4 hook | `XFinder --crew-guard` (một cài đặt duy nhất, `CrewGuard.decide`, đo **15 ms/lần**) nằm trong `--settings` của từng thành viên: PreToolUse cho `Bash\|Edit\|Write\|MultiEdit\|NotebookEdit` ⇒ `ask` cho lệnh đổi trạng thái (kể cả `git -C . push`), `deny` cho sửa ngoài worktree (kể cả đường vòng symlink — `realpath` của tổ tiên tồn tại sâu nhất); cộng `permissions.ask` | Không sửa `xfinder-agent-hook.zsh` toàn cục: guard chạy cả khi bạn chưa cài hook Agent AI. Thẻ duyệt trên notch vẫn cần hook đó (đã nói trên trang). Nút "không hỏi lại" **chưa** (Q-CREW-3 → v2c) |
+| 3.5 rào | `Gate` nối vào relay: `done` ⇒ XFinder **tự** gửi JUDGE REQUEST cho security và reviewer; hai Approved sau `done` cuối ⇒ báo lead "mergeable"; `merge` chỉ từ lead, từ chối nếu chưa; bảng checklist Xong · Bảo mật · Người duyệt · Đã gộp theo từng nhánh | Judge được nhờ **tự động** (spec để lead nhờ) — mạnh hơn nguyên tắc "cả hai phải Approved", đổi lại mỗi `done` tốn 2 lượt model. `merged` được ghi lúc lead **xin** merge (Gate.requestMerge), không phải lúc `git merge` xong; nếu bạn từ chối thẻ, lead không xin lại được (bị từ chối vì đã `merged`) — an toàn, hơi vụng. Sửa ở v2c bằng `merge-base --is-ancestor` |
+| trần chặng tin | `Template.relayCap` = **60** (+30 mỗi lần Resume) cho Lead Architect; v1 vẫn 20 | e2e đo: một vòng task→done→judge→verdict→merge với 2 builder + 2 judge, **không** retry/câu hỏi, đã tốn 20 (21 sau khi thêm `status`) — trần 20 sẽ dừng crew giữa lúc merge |
+
+Hai lỗi thật tìm ra **nhờ e2e**, không phải nhờ test thuần: (1) CLI in `parameter not set` ra stderr khi một trường rỗng (`$(esc $x)` không
+ngoặc ⇒ 0 đối số dưới `setopt no_unset`) — đầu ra vẫn đúng nên unit test không thấy; nay mọi chỗ gọi đều có ngoặc và test khẳng định stderr rỗng;
+(2) `resolvingSymlinksInPath` của Foundation đổi `/private/var` về `/var` (ngược với `git rev-parse`), nên thư mục con tính sai khi thư mục crew nằm
+dưới symlink — thay bằng POSIX `realpath` (`CrewGit.realPath`).

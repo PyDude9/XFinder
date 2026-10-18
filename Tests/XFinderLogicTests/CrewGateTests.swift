@@ -16,7 +16,7 @@ final class CrewGateTests: XCTestCase {
 
     func testSlugAndBranchNamesAreGitSafe() {
         XCTAssertEqual(C.slug("Add share links to notes, with tests!"), "add-share-links-to-notes-with-te")
-        XCTAssertEqual(C.slug("  Thêm   link  "), "th-m-link")
+        XCTAssertEqual(C.slug("  Thêm   link  "), "them-link", "v2b: diacritics fold to ASCII (v2a pinned th-m-link, which read as noise in a branch name)")
         XCTAssertEqual(C.branchName(goalSlug: "notes", role: "frontend"), "crew/notes-frontend")
         XCTAssertTrue(C.isValidBranch("crew/notes-frontend"))
         XCTAssertFalse(C.isValidBranch("main")); XCTAssertFalse(C.isValidBranch("crew/-x")); XCTAssertFalse(C.isValidBranch("crew/Notes"))
