@@ -11,7 +11,7 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-snap.XXXXXX)
-FILES="XFinder/Core/Snap/SnapLayout.swift"
+FILES="XFinder/Core/Snap/SnapLayout.swift XFinder/Core/Snap/SnapMemory.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
@@ -19,7 +19,7 @@ trap 'restore' EXIT
 # kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
 trap 'exit 143' INT TERM
 
-FILTER='SnapLayout|FeatureContract'
+FILTER='SnapLayout|SnapMemory|FeatureContract'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -73,6 +73,20 @@ run "S6 a text selection (pointer travels, window still) becomes a window drag" 
 run "S7 the verdict can change after it was decided" XFinder/Core/Snap/SnapLayout.swift \
   "'            guard verdict == .pending, let start = windowOrigin else { return verdict }'" \
   "'            guard let start = windowOrigin else { return verdict }'"
+
+# SNAPMEM (2026-10-18)
+run "S10 the display set depends on enumeration order" XFinder/Core/Snap/SnapMemory.swift \
+  "'            self.displays = displays.sorted { a, b in\n'" "'            self.displays = displays; _ = { (a: DisplayKey, b: DisplayKey) -> Bool in\n'"
+run "S11 a hand frame 5 pt off a target is rounded to the target" XFinder/Core/Snap/SnapMemory.swift \
+  "'    static func classify(frame: CGRect, visible: CGRect, tolerance: CGFloat = 4) -> Layout {'" \
+  "'    static func classify(frame: CGRect, visible: CGRect, tolerance: CGFloat = 8) -> Layout {'"
+run "S12 our own AX write echo is recorded as a user move" XFinder/Core/Snap/SnapMemory.swift \
+  "'        if kind != .snapByXFinder, let own = lastOwnWriteAt, eventAt - own < ownWriteGrace { return false }\n'" "''"
+run "S13 a rule for another display set replays anyway" XFinder/Core/Snap/SnapMemory.swift \
+  "'        guard appRunning, rule.arrangement == arrangementNow, arrangementNow.contains(rule.display) else { return nil }'" \
+  "'        guard appRunning else { return nil }'"
+run "S14 a second window of the same launch replays again" XFinder/Core/Snap/SnapMemory.swift \
+  "'        if trigger == .windowAppeared && alreadyAppliedThisLaunch { return nil }\n'" "''"
 
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done

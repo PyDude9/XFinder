@@ -180,6 +180,8 @@ bằng `git log --oneline -5` và `sh scripts/gate-all.sh`.
 
 ## 6. Chỉ mục đặc tả (hàng đợi sống ở Notion — `docs/AGENT_NOTION.md`; mục này là ảnh chụp và chỉ mục)
 
+- `docs/specs/SNAPMEM-window-layout-memory.md` — Nhớ bố cục cửa sổ theo bộ màn hình (Claude dựng 2026-10-18; chờ test tay T-SNAPMEM-1…5).
+
 Mỗi việc dưới đây đã được Claude và một agent soát lỗi độc lập đọc lại trên code thật ngày 2026-10-15. Số dòng có thể lệch
 vài dòng khi code đổi: **tìm theo đoạn code được trích**, không theo số dòng. Đoạn trích không còn ⇒ điều kiện dừng.
 

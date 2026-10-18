@@ -3,7 +3,7 @@
 Một chỗ duy nhất cho mọi thứ còn phân vân. Mỗi mục có **mã** (ví dụ `Q-F4-2`, `T-B6`) để bạn nói lại cho nhanh
 ("Q-F4-2 chọn b", "T-B6 hỏng: …"). Khi một mục xong, xoá nó khỏi file này trong cùng commit.
 
-Cập nhật: 2026-10-15.
+Cập nhật: 2026-10-18.
 
 ---
 
@@ -129,6 +129,21 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 | Q-NOTION-6 | 6 linked-view **không tên** của trợ lý trước trên hub XFinder (filter không đọc được qua API; tool đòi `allow_deleting_content` để gỡ). Xoá chúng? Chúng chỉ là tham chiếu, không chứa dữ liệu | **Đề nghị xoá** — bạn xoá trong UI (⋯ → Xoá) hoặc gật để Claude xoá |
 | Q-NOTION-7 | Việc **mới** đặt `Task ID` có tiền tố dự án (`XF-T20`) để mọi danh sách phẳng tự nói nó của ai; 163 ID cũ giữ nguyên | **Áp dụng** từ việc kế tiếp sau T14 |
 
+### Q-SNAPMEM · Nhớ bố cục cửa sổ (2026-10-18, `docs/specs/SNAPMEM-window-layout-memory.md`)
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-SNAPMEM-1 | Nhớ theo **Space** thường (ví dụ "Space 2 trên màn trong"): macOS không có API công khai; SkyLight private (`SLSCopyManagedDisplaySpaces`, `SLSGetActiveSpace`) đo được trên macOS 27 (màn trong 2 Space, màn ngoài 1). Dùng private API để gắn luật theo thứ tự Space? | **Chưa** — v1 nhớ theo bộ màn hình + toàn màn hình (một Space riêng, qua `AXFullScreen` công khai). Private API chỉ khi bạn gật, và sẽ ghi rõ trên trang |
+| Q-SNAPMEM-2 | Mặc định **tắt** (tính năng đặt observer lên app khác và tự di chuyển cửa sổ lúc app mở). Có đưa vào preset "Hằng ngày" không? | **Không** — người dùng bật ở Vùng bắt dính ▸ Nhớ bố cục |
+| Q-SNAPMEM-3 | Khi app có nhiều cửa sổ (Chrome 3 cửa sổ) chỉ cửa sổ **chính** được áp. Muốn áp mọi cửa sổ, hay nhớ từng cửa sổ theo tiêu đề? | **Chỉ cửa sổ chính** — nhớ theo tiêu đề là đoán (tiêu đề đổi theo tab) |
+
+### Q-ORCA · Orca làm IDE multi-agent (2026-10-18, `docs/ORCA_PLAN_2026-10-18.md`)
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-ORCA-1 | Bật "Agent status hooks" của Orca (nó ghi hook vào `~/.claude` và `~/.codex`, cạnh hook của XFinder/OneNotch/Notch Crew)? Trust hook của Codex tính theo vị trí trong mảng — hook chèn trước có thể làm hook XFinder mất trust | **Giữ nguyên settings.json** cho tới khi T-ORCA-4 đo xong |
+| Q-ORCA-2 | Cho Claude dùng `orca worktree create --prompt` để tạo việc cho Builder ngay khi set `Ready` trong Notion (thay vì bạn dán prompt)? | **Có, từ giai đoạn 1** sau khi T-ORCA-2 đo được rằng `--name` thành tên nhánh `agent/<tool>-<ID>` |
+
 ## Phần 2 — Cần test tay (T)
 
 Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
@@ -140,6 +155,27 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-NOTION-1 | Một Builder thật (OpenCode/DeepSeek hoặc Antigravity, đã OAuth Notion MCP) dán prompt Builder ở `AGENT_NOTION.md` §10 | Nó đọc view *Queue — Ready*, ghi `Claimed By` + `Doing` + tạo Run, đọc lại sau ~10 s, rẽ nhánh đúng SHA, làm T14d, dán gate stdout vào Run, đặt `Awaiting Claude`. Không chạm vùng Spec |
 | T-NOTION-2 | Hai Builder mở cùng lúc trên cùng view | Đúng một bên giữ `Claimed By`; bên kia không ghi gì và bỏ qua |
 | T-NOTION-3 | Reviewer (công cụ khác) dán prompt Reviewer | Chỉ ghi vùng Review + `Pre-reviewed`, không đổi State, không sửa file |
+
+### Nhớ bố cục cửa sổ (2026-10-18, chưa ai thử bằng tay)
+
+| Mã | Thao tác | Kỳ vọng |
+|:--|:--|:--|
+| T-SNAPMEM-1 | Vùng bắt dính ▸ bật "Nhớ bố cục theo bộ màn hình". Kéo Chrome vào mép phải (hoặc ⌃⌥→). Thoát Chrome, mở lại | Hàng luật "Chrome · Phải nửa màn hình · <tên màn>" xuất hiện ngay sau khi bắt dính; Chrome mở lại nằm đúng nửa phải trong ~0,5–2 s; hàng luật ghi "Đã áp" |
+| T-SNAPMEM-2 | Với luật trên, rút màn ngoài rồi cắm lại (hoặc ngược lại) | Luật ghi với bộ "màn trong + HC-L200A" chỉ áp khi đủ hai màn; khi chỉ còn màn trong, Chrome **không** bị kéo đi; cắm lại ⇒ áp trong ~1–3 s |
+| T-SNAPMEM-3 | Đưa một app đã có luật vào toàn màn hình (nút xanh), thoát app, mở lại | Hàng luật đổi thành "Toàn màn hình (Space riêng)"; mở lại ⇒ app vào toàn màn hình trên đúng màn. App không cho đặt ⇒ hàng ghi "App không cho đặt toàn màn hình qua Trợ năng", không thử lại |
+| T-SNAPMEM-4 | Mở hộp thoại Lưu (⌘S) hoặc ⌘N trong app đã có luật, đang chạy | Cửa sổ chính **không** bị kéo lại chỗ cũ (chỉ lần mở app mới áp) |
+| T-SNAPMEM-5 | Bật "Nhớ cả vị trí tự kéo", kéo tay cửa sổ đã có luật sang chỗ khác, thả | Sau ~0,6 s hàng luật đổi thành "Vị trí tự kéo" (hoặc đúng ô nếu bạn thả vừa khít một ô); tắt công tắc này thì kéo tay không đổi luật |
+
+### Orca (2026-10-18, chưa cài)
+
+| Mã | Thao tác | Kỳ vọng |
+|:--|:--|:--|
+| T-ORCA-1 | `brew install --cask stablyai/orca/orca`, thêm repo, tạo một worktree; `.worktreeinclude` có `CLAUDE.md` | Worktree có `CLAUDE.md` (file bị gitignore, Orca copy) |
+| T-ORCA-2 | `orca worktree create --name agent/opencode-XF-T20 --agent opencode --prompt "<Builder §10>" --json` | nhánh trong worktree đúng tên; agent nhận prompt |
+| T-ORCA-3 | `XF_ROOT=<wt> XF_OUT=$TMPDIR/xf-<wt> sh scripts/gate-all.sh` trong worktree, song song với checkout chính | hai build không ghi đè nhau; `lsregister -dump` sạch sau khi xoá worktree |
+| T-ORCA-4 | Bật Agent status hooks rồi diff cấu trúc `~/.claude/settings.json` (không in nội dung) và `/hooks` trong Codex | hook XFinder/OneNotch/Notch Crew còn nguyên; Codex không mất trust hook XFinder |
+| T-ORCA-5 | Orca nhàn 60 s | `ps -o time=` và footprint — ghi số |
+| T-ORCA-6 | Một Builder thật làm T14d trong Orca theo AGENT_NOTION §4 | = T-NOTION-1 nhưng trong worktree của Orca |
 
 ### Notch
 | Mã | Làm gì | Mong đợi |

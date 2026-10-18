@@ -369,12 +369,13 @@ enum WindowManager {
             guard AXUIElementCopyAttributeValues(appRef, kAXWindowsAttribute as CFString, 0, 1, &winsRef) == .success,
                   let arr = winsRef as? [AXUIElement], let first = arr.first
             else { DiagnosticsLog.record("snap", "noWindow"); return false }
-            return setAXWindow(first, rect: rect)
+            return setWindow(first, rect: rect)
         }
-        return setAXWindow(win as! AXUIElement, rect: rect)
+        return setWindow(win as! AXUIElement, rect: rect)
     }
 
-    private static func setAXWindow(_ win: AXUIElement, rect: CGRect) -> Bool {
+    /// Internal since SNAPMEM: `SnapMemoryController` replays frames through the same setter.
+    static func setWindow(_ win: AXUIElement, rect: CGRect) -> Bool {
         var pos = CGPoint(x: rect.minX, y: rect.minY)
         var size = CGSize(width: rect.width, height: rect.height)
         guard let posVal = AXValueCreate(.cgPoint, &pos),
@@ -468,11 +469,15 @@ enum WindowManager {
         }
     }
 
-    @discardableResult
+    @discardableResult @MainActor
     static func snapFrontmost(to target: SnapTarget) -> Bool {
         guard isTrusted, let app = frontmostOtherApp() else { return false }
-        let rect = target.rect(in: axVisibleFrame(for: screenUnderPointer()))
-        return setFrontWindow(pid: app.processIdentifier, rect: rect)
+        let screen = screenUnderPointer()
+        let rect = target.rect(in: axVisibleFrame(for: screen))
+        let ok = setFrontWindow(pid: app.processIdentifier, rect: rect)
+        // SNAPMEM rule 1: a snap the user asked for is the only way an app enters layout memory.
+        if ok { SnapMemoryController.shared.didSnap(app: app, target: target, screen: screen) }
+        return ok
     }
 }
 

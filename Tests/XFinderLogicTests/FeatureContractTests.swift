@@ -46,6 +46,7 @@ final class FeatureContractTests: XCTestCase {
         .commandTab: .pure(["Core/WindowPreview/WindowPreviewStore.swift"]),
 
         .snapZones: .pure(["Core/Snap/SnapLayout.swift"]),
+        .snapMemory: .pure(["Core/Snap/SnapMemory.swift"]),
         .clipboardShelf: .exempt("Classification and the privacy filter are tested through duplicated copies (ClipboardClassifierTests). Fix: extract them from ClipboardManager into a symlinked file."),
         .suggestions: .exempt("ClipboardIntelligenceEngine's ranking lives inside ClipboardPasteEngine.swift with AppKit imports. Fix: extract the scoring into a pure file."),
         .quickSearch: .exempt("Calculator / quicklink matching live in Core/QuickSearch beside AppKit code and are untested. Fix: symlink the calculator and fuzzy matcher."),

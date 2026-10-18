@@ -224,8 +224,12 @@ struct SnapZonesDetailView: View {
     @AppStorage("snapzones.reserveStage") private var reserveStage = true
     // B3: dragging a window to the notch shows a layout row. Reader: SnapZoneController (default must match).
     @AppStorage("snapzones.notchRow") private var notchRow = true
+    // SNAPMEM: defaults must be false — matches SnapMemoryController's readers (FeatureKeyDefaultsTests).
+    @AppStorage("snapzones.remember") private var rememberLayouts = false
+    @AppStorage("snapzones.rememberFrames") private var rememberFrames = false
     @State private var controller = SnapZoneController.shared
     @State private var trusted = WindowManager.isTrusted
+    @State private var memory = SnapMemoryController.shared
 
     var body: some View {
         ScrollView {
@@ -240,6 +244,7 @@ struct SnapZonesDetailView: View {
                 section1General
                 section2DragBehavior
                 section3Shortcuts
+                section5Memory
                 section4VisualGuideAndSnapNow
             }
             .padding(.bottom, XFinderTokens.Space.section)
@@ -383,6 +388,169 @@ struct SnapZonesDetailView: View {
             }
         }
         .animation(.default, value: hotkeysEnabled)
+    }
+
+    // MARK: - Section SNAPMEM: Nhớ bố cục
+
+    private var section5Memory: some View {
+        SettingsSection(
+            title: L10n.t("Nhớ bố cục"),
+            footer: L10n.t("Nhớ theo từng bộ màn hình đang cắm và theo từng app. Toàn màn hình được nhớ qua Trợ năng; macOS không có API công khai cho biết cửa sổ ở Space thường nào, nên XFinder không phân biệt các Space thường. Hai màn hình cùng model có thể bị coi là một.")
+        ) {
+            ToggleRow(title: L10n.t("Nhớ bố cục theo bộ màn hình"),
+                      subtitle: L10n.t("Một app vào danh sách này ngay lần đầu bạn bắt dính nó bằng XFinder. Lần sau app đó mở, hoặc khi bộ màn hình thay đổi, XFinder tự đặt lại đúng chỗ."),
+                      isOn: $rememberLayouts)
+                .onChange(of: rememberLayouts) { memory.applySettings() }
+                .settingsRow()
+            SettingsDivider()
+
+            ToggleRow(title: L10n.t("Nhớ cả vị trí tự kéo"),
+                      subtitle: L10n.t("Tắt thì chỉ nhớ các ô bắt dính của XFinder và toàn màn hình. Bật thì nhớ cả khung bạn tự kéo bằng tay."),
+                      isOn: $rememberFrames)
+                .disabled(!rememberLayouts)
+                .onChange(of: rememberFrames) { memory.applySettings() }
+                .settingsRow()
+            SettingsDivider()
+
+            HStack(spacing: XFinderTokens.Space.inline) {
+                Text(L10n.t("Bộ màn hình hiện tại: "))
+                    .font(XFinderTokens.Font.row)
+                Text(memory.currentArrangement.names.joined(separator: " + "))
+                    .font(XFinderTokens.Font.rowValue)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+            .settingsRow()
+
+            memoryRulesList
+        }
+    }
+
+    /// Rules of the current set of displays first, then every other set grouped under a muted caption.
+    @ViewBuilder
+    private var memoryRulesList: some View {
+        let groups = groupedMemoryRules()
+
+        if groups.isEmpty {
+            SettingsDivider()
+            Text(L10n.t("Chưa có luật nào — bắt dính một cửa sổ bằng XFinder để bắt đầu."))
+                .font(XFinderTokens.Font.caption)
+                .foregroundColor(.secondary)
+                .settingsRow()
+        } else {
+            ForEach(Array(groups.enumerated()), id: \.offset) { groupIndex, group in
+                SettingsDivider()
+                if groupIndex > 0 {
+                    Text(group.names.joined(separator: " + "))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                        .settingsRow()
+                    SettingsDivider()
+                }
+                ForEach(Array(group.rules.enumerated()), id: \.element.id) { ruleIndex, rule in
+                    if ruleIndex > 0 { SettingsDivider() }
+                    memoryRuleRow(rule)
+                }
+            }
+        }
+
+        SettingsDivider()
+        HStack {
+            Button(L10n.t("Áp lại ngay")) { memory.reapplyNow() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(!rememberLayouts || memory.store.rules(for: memory.currentArrangement).isEmpty)
+            Spacer()
+            Button(L10n.t("Xoá tất cả"), role: .destructive) { memory.forgetAll() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(memory.store.rules.isEmpty)
+        }
+        .settingsRow()
+    }
+
+    private struct MemoryRuleGroup {
+        var names: [String]
+        var rules: [SnapMemory.Rule]
+    }
+
+    /// Current arrangement's rules first (no caption — they are "the" rules), then the rest grouped by arrangement.
+    private func groupedMemoryRules() -> [MemoryRuleGroup] {
+        let all = memory.store.rules
+        guard !all.isEmpty else { return [] }
+        let currentID = memory.currentArrangement.id
+        var order: [String] = []
+        var byArrangement: [String: (names: [String], rules: [SnapMemory.Rule])] = [:]
+        for rule in all {
+            let key = rule.arrangement.id
+            if byArrangement[key] == nil {
+                order.append(key)
+                byArrangement[key] = (rule.arrangement.names, [])
+            }
+            byArrangement[key]?.rules.append(rule)
+        }
+        order.sort { a, b in
+            if a == currentID { return true }
+            if b == currentID { return false }
+            return a < b
+        }
+        return order.compactMap { key in
+            guard let entry = byArrangement[key] else { return nil }
+            return MemoryRuleGroup(names: entry.names, rules: entry.rules)
+        }
+    }
+
+    private func memoryRuleRow(_ rule: SnapMemory.Rule) -> some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            if let icon = ClipboardAppIcon.icon(forBundleID: rule.bundleID) {
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: 16, height: 16)
+            } else {
+                Image(systemName: "app.dashed")
+                    .foregroundColor(.secondary)
+                    .frame(width: 16, height: 16)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(rule.appName)
+                    .font(XFinderTokens.Font.row)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    Text(L10n.t(rule.layout.titleKey))
+                    Text("·")
+                    Text(rule.display.name)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    if let outcome = rule.lastOutcome {
+                        Text("·")
+                        Text(L10n.t(outcome.titleKey))
+                        if let at = rule.lastAppliedAt {
+                            Text(at, style: .relative)
+                        }
+                    }
+                }
+                .font(XFinderTokens.Font.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+            }
+            Spacer(minLength: XFinderTokens.Space.inline)
+            Button {
+                memory.forget(id: rule.id)
+            } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.secondary)
+            .accessibilityLabel(L10n.t("Xoá luật này"))
+        }
+        .settingsRow()
     }
 
     // MARK: - Section 4: Visual Guide & Snap Now

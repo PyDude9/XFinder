@@ -11182,6 +11182,90 @@
     "Bấm nhanh": {
       "en": "Quick click",
       "scope": "sentence"
+    },
+    "Toàn màn hình (Space riêng)": {
+      "en": "Full screen (its own Space)",
+      "scope": "sentence"
+    },
+    "Vị trí tự kéo": {
+      "en": "Hand-placed frame",
+      "scope": "sentence"
+    },
+    "Đã áp": {
+      "en": "Applied",
+      "scope": "sentence"
+    },
+    "Thiếu quyền Trợ năng": {
+      "en": "Accessibility permission missing",
+      "scope": "sentence"
+    },
+    "Không thấy cửa sổ": {
+      "en": "No window found",
+      "scope": "sentence"
+    },
+    "App không cho đặt toàn màn hình qua Trợ năng": {
+      "en": "The app does not allow full screen through Accessibility",
+      "scope": "sentence"
+    },
+    "Không đặt được": {
+      "en": "Could not set",
+      "scope": "sentence"
+    },
+    "App chưa chạy": {
+      "en": "App not running",
+      "scope": "sentence"
+    },
+    "Nhớ bố cục cửa sổ": {
+      "en": "Remember window layouts",
+      "scope": "sentence"
+    },
+    "Đưa app về đúng chỗ đã bắt dính khi nó mở lại hoặc khi đổi bộ màn hình.": {
+      "en": "Puts an app back where you snapped it when it opens again or when the set of displays changes.",
+      "scope": "sentence"
+    },
+    "Nhớ bố cục": {
+      "en": "Remember layouts",
+      "scope": "sentence"
+    },
+    "Nhớ theo từng bộ màn hình đang cắm và theo từng app. Toàn màn hình được nhớ qua Trợ năng; macOS không có API công khai cho biết cửa sổ ở Space thường nào, nên XFinder không phân biệt các Space thường. Hai màn hình cùng model có thể bị coi là một.": {
+      "en": "Remembered per set of connected displays and per app. Full screen is remembered through Accessibility; macOS has no public API for which regular Space a window is on, so XFinder does not distinguish regular Spaces. Two monitors of the same model may be treated as one.",
+      "scope": "sentence"
+    },
+    "Nhớ bố cục theo bộ màn hình": {
+      "en": "Remember layouts per set of displays",
+      "scope": "sentence"
+    },
+    "Một app vào danh sách này ngay lần đầu bạn bắt dính nó bằng XFinder. Lần sau app đó mở, hoặc khi bộ màn hình thay đổi, XFinder tự đặt lại đúng chỗ.": {
+      "en": "An app enters this list the first time you snap it with XFinder. The next time it opens, or when the set of displays changes, XFinder puts it back in the same place.",
+      "scope": "sentence"
+    },
+    "Nhớ cả vị trí tự kéo": {
+      "en": "Also remember hand-dragged positions",
+      "scope": "sentence"
+    },
+    "Tắt thì chỉ nhớ các ô bắt dính của XFinder và toàn màn hình. Bật thì nhớ cả khung bạn tự kéo bằng tay.": {
+      "en": "Off: only XFinder's own snap zones and full screen are remembered. On: a frame you drag by hand is remembered too.",
+      "scope": "sentence"
+    },
+    "Bộ màn hình hiện tại: ": {
+      "en": "Current set of displays: ",
+      "scope": "fragment"
+    },
+    "Chưa có luật nào — bắt dính một cửa sổ bằng XFinder để bắt đầu.": {
+      "en": "No rules yet — snap a window with XFinder to get started.",
+      "scope": "sentence"
+    },
+    "Áp lại ngay": {
+      "en": "Reapply now",
+      "scope": "sentence"
+    },
+    "Xoá tất cả": {
+      "en": "Delete all",
+      "scope": "sentence"
+    },
+    "Xoá luật này": {
+      "en": "Delete this rule",
+      "scope": "sentence"
     }
   }
 }

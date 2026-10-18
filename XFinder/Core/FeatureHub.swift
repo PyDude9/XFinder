@@ -92,6 +92,7 @@ final class FeatureHub {
         case .dockPreview:     DockPreviewController.shared.applySettings()
         case .commandTab:      CommandTabController.shared.applySettings()
         case .snapZones:       SnapZoneController.shared.applySettings()
+        case .snapMemory:      SnapMemoryController.shared.applySettings()      // SNAPMEM
         case .quitProtection:  QuitProtectionController.shared.applySettings()
         case .quitOnClose:     QuitOnCloseController.shared.applySettings()            // F3
         case .clipboardShelf:  ClipboardShelfController.shared.applySettings()

@@ -94,6 +94,7 @@ enum FeatureGroup: String, CaseIterable {
 
 enum FeatureID: String, CaseIterable {
     case dockPreview, commandTab, snapZones, quitProtection, quitOnClose
+    case snapMemory   // SNAPMEM: window-layout memory, AX observers only for remembered apps
     case clipboardShelf, cleanURLs, suggestions, linkPreviews
     case quickSearch, edgeNotes, dropTray, nowPlaying, folderSync, agents, calendar
     case voice
@@ -143,6 +144,11 @@ enum FeatureCatalog {
                    subtitleKey: "Kéo cửa sổ tới mép màn hình để chia khung.",
                    symbol: "rectangle.split.3x1", group: .windows, enabledKey: "snapzones.enabled",
                    defaultOn: true, permissions: [.accessibility], idle: .listensToMouse),
+        // SNAPMEM (2026-10-18). Off by default: it watches the remembered apps and moves their windows at launch.
+        FeatureDef(id: .snapMemory, titleKey: "Nhớ bố cục cửa sổ",
+                   subtitleKey: "Đưa app về đúng chỗ đã bắt dính khi nó mở lại hoặc khi đổi bộ màn hình.",
+                   symbol: "rectangle.3.group", group: .windows, enabledKey: "snapzones.remember",
+                   defaultOn: false, permissions: [.accessibility], idle: .watchesWindows),
         FeatureDef(id: .quitProtection, titleKey: "Giữ ⌘Q để thoát ứng dụng",
                    subtitleKey: "Nhấn nhanh ⌘Q không thoát nhầm; phải giữ khoảng 1 giây.",
                    symbol: "xmark.square", group: .windows, enabledKey: "quitProtection.enabled",

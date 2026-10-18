@@ -77,6 +77,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         DockPreviewController.shared.applySettings()
         CommandTabController.shared.applySettings()
         SnapZoneController.shared.applySettings()
+        SnapMemoryController.shared.applySettings()            // SNAPMEM: observers only for remembered apps
         MenuBarHiderController.shared.autoHideTimer?.invalidate()
         MenuBarHiderController.shared.applySettings()
         ClipboardShelfController.shared.applySettings()
@@ -123,6 +124,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 DockPreviewController.shared.applySettings()
                 CommandTabController.shared.applySettings()
                 SnapZoneController.shared.applySettings()
+                SnapMemoryController.shared.applySettings()
                 FinderKeyboardController.shared.applySettings()
                 QuitProtectionController.shared.applySettings()
                 QuitOnCloseController.shared.applySettings()
