@@ -155,6 +155,15 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 | Q-PRUNE-5 | `voice.enabled` **mặc định tắt** (reader + catalog). Máy bạn chưa từng ghi khoá ⇒ Nhập giọng nói đang **tắt** sau cập nhật; bật lại ở trang Nhập bằng giọng nói nếu dùng | T-VOICE vẫn treo |
 | Q-PRUNE-6 | Spec **XF-T21** (hàng catalog + reader cho Chia sẻ nhanh / Kết nối từ xa) cho Builder | gật Ready |
 
+### Q-CREW · Crew v2 — Lead Architect (2026-10-18, `docs/specs/XF-T23-crew-v2.md`, bằng chứng `docs/NOTCHCREW_EVIDENCE_2026-10-18.md`)
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-CREW-1 | v2a (luật thuần: phong bì ký TASK/CRITERIA/BRANCH, máy Approved→merge, bộ phân loại lệnh phải hỏi) Claude đã dựng + test. **v2b** (worktree/nhánh mỗi builder, lệnh CLI mới, hook PreToolUse ask/deny, bảng checklist) và **v2c** (From a Goal: lead đề xuất seat → bạn Mở) giao Builder hay Claude làm tiếp? | **Claude làm v2b** (chạm `CrewManager`, hook zsh, Swift 6 — vùng Builder hay sai); v2c cho Builder sau khi v2b có e2e |
+| Q-CREW-2 | Lệnh phải **luôn hỏi** kể cả khi bạn có allow rule: danh sách trong `CrewV2.StateChanging` (git commit/push/merge/rebase, reset --hard, checkout --, npm/pnpm/yarn/bun/pip/brew install|add|publish, deploy*, rm, sudo, launchctl, defaults write, xcodebuild, make…). Thêm/bớt gì? | giữ danh sách; nói rõ trên trang "lưới an toàn, không phải ranh giới" |
+| Q-CREW-3 | Nút "Cho phép và không hỏi lại `npm test` trong crew này" (bộ nhớ phía XFinder theo crew) — có muốn không? | **Có** ở v2b |
+| Q-CREW-4 | Seat ngoài Claude/Codex (Gemini, Pi, Hermes, Cursor như Notch Crew) | **Chưa** — chỉ Claude + Codex windowless đã có |
+
 ## Phần 2 — Cần test tay (T)
 
 Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
@@ -166,6 +175,12 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-NOTION-1 | Một Builder thật (OpenCode/DeepSeek hoặc Antigravity, đã OAuth Notion MCP) dán prompt Builder ở `AGENT_NOTION.md` §10 | Nó đọc view *Queue — Ready*, ghi `Claimed By` + `Doing` + tạo Run, đọc lại sau ~10 s, rẽ nhánh đúng SHA, làm T14d, dán gate stdout vào Run, đặt `Awaiting Claude`. Không chạm vùng Spec |
 | T-NOTION-2 | Hai Builder mở cùng lúc trên cùng view | Đúng một bên giữ `Claimed By`; bên kia không ghi gì và bỏ qua |
 | T-NOTION-3 | Reviewer (công cụ khác) dán prompt Reviewer | Chỉ ghi vùng Review + `Pre-reviewed`, không đổi State, không sửa file |
+
+### Crew v2 (2026-10-18)
+
+| Mã | Thao tác | Kỳ vọng |
+|:--|:--|:--|
+| T-CREW-1 | (sau v2b) mở crew Lead Architect trên một repo thử, goal nhỏ | mỗi builder có `wt/<role>` và nhánh `crew/<slug>-<role>`; lead nhắn đúng mẫu `[TIME] [FROM] -> [TO] / TASK | CRITERIA | BRANCH`; builder sửa file ngoài worktree bị chặn; `verdict` từ builder bị bỏ; merge trước 2 Approved bị từ chối; sau 2 Approved thẻ "Merge … → main" hiện trên notch |
 
 ### Hiệu năng sau commit `3fe1b66` (2026-10-18)
 
