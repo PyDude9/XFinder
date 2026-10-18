@@ -1,119 +1,54 @@
 import Foundation
 import AppKit
-import CoreBluetooth
-import ScreenCaptureKit
 
-/// PermissionManager: Single service for managing and auto-requesting permissions.
-/// Automatically prompts on startup without requiring manual drag-and-drop.
+/// PermissionManager: the Accessibility banner's state for `RootView` — nothing more.
+///
+/// 2026-10-18 audit (Q-PRUNE-4): the class also carried Screen Recording and Bluetooth status, a `CBCentralManager`
+/// delegate and request/open helpers with ZERO callers; `FeatureHub.granted()` is where every permission is read
+/// for the hub and the catalog. Dead members removed; this is now a small ObservableObject the banner observes.
+/// It never prompts — `updateStatuses()` only reads `AXIsProcessTrusted()`.
 @MainActor
-public final class PermissionManager: NSObject, ObservableObject, CBCentralManagerDelegate {
+public final class PermissionManager: ObservableObject {
     public static let shared = PermissionManager()
 
     @Published public private(set) var isAccessibilityGranted: Bool = false
-    @Published public private(set) var isScreenRecordingGranted: Bool = false
-    @Published public private(set) var isBluetoothGranted: Bool = false
     @Published public var showAccessibilityBanner: Bool = false
 
-    private var centralManager: CBCentralManager?
-
-    override private init() {
-        super.init()
+    private init() {
         updateStatuses()
         setupNotificationObservers()
     }
 
     private func setupNotificationObservers() {
-        // Re-check when user switches back to XFinder from System Settings
+        // Re-check when the user switches back to XFinder from System Settings.
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil,
             queue: .main
-        ) { [weak self] notif in
-            guard let self = self else { return }
+        ) { notif in
             let app = notif.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-            if app?.bundleIdentifier == Bundle.main.bundleIdentifier {
-                self.updateStatuses()
-            }
+            guard app?.bundleIdentifier == Bundle.main.bundleIdentifier else { return }
+            MainActor.assumeIsolated { PermissionManager.shared.updateStatuses() }
         }
 
         NotificationCenter.default.addObserver(
             forName: NSApplication.didBecomeActiveNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            self?.updateStatuses()
+        ) { _ in
+            MainActor.assumeIsolated { PermissionManager.shared.updateStatuses() }
         }
     }
 
-    /// Refresh status of all permissions without showing system prompts.
+    /// Refresh the Accessibility state without showing any system prompt.
     public func updateStatuses() {
         isAccessibilityGranted = AXIsProcessTrusted()
-        if #available(macOS 10.15, *) {
-            isScreenRecordingGranted = CGPreflightScreenCaptureAccess()
-        } else {
-            isScreenRecordingGranted = true
-        }
-
-        if let cm = centralManager {
-            if #available(macOS 13.1, *) {
-                isBluetoothGranted = (cm.state == .poweredOn || cm.authorization == .allowedAlways)
-            } else {
-                isBluetoothGranted = (cm.state == .poweredOn)
-            }
-        }
-
         showAccessibilityBanner = !isAccessibilityGranted
-    }
-
-    /// Request Accessibility permission via AXIsProcessTrustedWithOptions prompt.
-    public func requestAccessibility() {
-        let key = "AXTrustedCheckOptionPrompt" as CFString
-        let trusted = AXIsProcessTrustedWithOptions([key: true] as CFDictionary)
-        isAccessibilityGranted = trusted
-        showAccessibilityBanner = !trusted
     }
 
     /// Opens System Settings > Privacy & Security > Accessibility.
     public func openAccessibilitySettings() {
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
         NSWorkspace.shared.open(url)
-    }
-
-    /// Request Screen Recording permission via CGRequestScreenCaptureAccess.
-    public func requestScreenRecording() {
-        if #available(macOS 10.15, *) {
-            if !CGPreflightScreenCaptureAccess() {
-                _ = CGRequestScreenCaptureAccess()
-            }
-        }
-    }
-
-    /// Opens System Settings > Privacy & Security > Screen Recording.
-    public func openScreenRecordingSettings() {
-        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!
-        NSWorkspace.shared.open(url)
-    }
-
-    /// Request Bluetooth permission by initializing CBCentralManager to trigger NSBluetoothAlwaysUsageDescription dialog.
-    public func requestBluetooth() {
-        if centralManager == nil {
-            centralManager = CBCentralManager(delegate: self, queue: nil, options: [
-                CBCentralManagerOptionShowPowerAlertKey: false
-            ])
-        }
-    }
-
-    // MARK: - CBCentralManagerDelegate
-
-    nonisolated public func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        let state = central.state
-        let auth = central.authorization
-        Task { @MainActor in
-            if #available(macOS 13.1, *) {
-                self.isBluetoothGranted = (state == .poweredOn || auth == .allowedAlways)
-            } else {
-                self.isBluetoothGranted = (state == .poweredOn)
-            }
-        }
     }
 }
