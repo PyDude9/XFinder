@@ -54,13 +54,6 @@ public final class BatteryStore: ObservableObject {
 
     // MARK: - Lifecycle
 
-    public func start() {
-        gattScanner.startScan()
-        Task {
-            await refresh()
-        }
-    }
-
     public func updateGATTDevice(deviceID: String, name: String, percent: Int) {
         NSLog("BatteryStore GATT level: %d for %@", percent, name)
         let lowerName = name.lowercased()

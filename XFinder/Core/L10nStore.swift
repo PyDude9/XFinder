@@ -35,15 +35,22 @@ enum L10nStore {
     /// Tổng số entry đã nạp, để lint và test khẳng định kho không rỗng.
     static var count: Int { sentences.count + fragments.count }
 
-    private static func entries(scope: String) -> [String: String] {
+    /// Decoded ONCE; `sentences` and `fragments` are two slices of it. The old code decoded the 410 KB file twice
+    /// (once per scope) on first access — audit 2026-10-18, P-3.
+    private static let root: Root? = {
         guard let url = Bundle.main.url(forResource: "L10n.strings", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let root = try? JSONDecoder().decode(Root.self, from: data) else {
             // Không có kho thì app vẫn chạy, chỉ là tiếng Việt. Ghi log để lần
             // sau không phải đoán vì sao giao diện không đổi ngôn ngữ.
             NSLog("[XFinder] L10n.strings.json missing or unreadable — UI stays Vietnamese")
-            return [:]
+            return nil
         }
+        return root
+    }()
+
+    private static func entries(scope: String) -> [String: String] {
+        guard let root else { return [:] }
         var out: [String: String] = [:]
         out.reserveCapacity(root.entries.count)
         for (vi, entry) in root.entries where entry.scope == scope {

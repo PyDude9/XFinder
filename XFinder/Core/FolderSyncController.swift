@@ -52,7 +52,9 @@ final class FolderSyncController {
         stopWatching()
         guard autoEnabled else { return }
         for pair in pairs where pair.onChange { startWatching(pair) }
-        startDailyTimer()
+        // The 60 s check only exists when some pair is on a daily schedule (audit 2026-10-18, P-4); on-change pairs are
+        // served by their DispatchSource watchers alone.
+        if pairs.contains(where: { $0.daily }) { startDailyTimer() }
     }
 
     private func stopWatching() {

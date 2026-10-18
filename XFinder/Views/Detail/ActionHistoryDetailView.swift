@@ -6,13 +6,14 @@ struct ActionHistoryDetailView: View {
     @State private var store = ActionHistoryStore.shared
     @State private var undoMessage: String? = nil
 
-    private var dateFmt: DateFormatter {
+    /// One formatter for the page, not one per row per render (audit 2026-10-18, P-5). Configured once, never mutated.
+    private static let dateFmt: DateFormatter = {
         let f = DateFormatter()
         f.dateStyle = .short
         f.timeStyle = .short
         f.locale = Locale(identifier: "vi_VN")
         return f
-    }
+    }()
 
     var body: some View {
         ScrollView {
@@ -60,7 +61,7 @@ struct ActionHistoryDetailView: View {
                                         Text(d).font(XFinderTokens.Font.mono)
                                             .foregroundColor(.secondary).lineLimit(4)
                                     }
-                                    Text(dateFmt.string(from: item.timestamp))
+                                    Text(Self.dateFmt.string(from: item.timestamp))
                                         .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                                 }
                                 Spacer(minLength: XFinderTokens.Space.inline)

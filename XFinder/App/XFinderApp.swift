@@ -97,10 +97,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // No permission prompts at launch: first-run setup (`OnboardingView`) asks for exactly the
         // permissions the chosen features need, and the Permissions tab asks on demand.
         PermissionManager.shared.updateStatuses()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            BatteryStore.shared.start()
-        }
+        // BatteryStore is demand-driven like SystemMonitorManager: the Pin page's `retain()` starts the CoreBluetooth
+        // GATT scan and the pollers (`startPolling`). The former unconditional `start()` here lit up CoreBluetooth for
+        // every user one second after launch — audit 2026-10-18, P-1.
 
         let setupShowing = Onboarding.shouldShow(completedVersion: UserDefaults.standard.object(forKey: Onboarding.completedKey) as? Int)
         // N7: What's New once per version for existing users; a fresh install is on setup and records this version as seen.

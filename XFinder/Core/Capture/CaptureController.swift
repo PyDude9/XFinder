@@ -89,8 +89,8 @@ final class CaptureController {
     // MARK: - Settings application
 
     func applySettings() {
-        loadHistoryIfNeeded()
         guard isEnabled else { unregisterAllHotkeys(); return }
+        loadHistoryIfNeeded()   // after the guard: a disabled feature scans nothing at launch (audit 2026-10-18, P-2)
         installCarbonHandlerIfNeeded()
         for mode in CaptureMode.allCases {
             registerHotkey(for: mode)
@@ -326,14 +326,25 @@ final class CaptureController {
         history.removeAll { pruneSet.contains($0.id) }
     }
 
+    /// The directory listing + one ImageIO header read per PNG used to run synchronously on the main thread at launch;
+    /// it now runs off-main and lands on the actor when done (audit 2026-10-18, P-2). The singleton is addressed by name
+    /// inside the detached task so no non-Sendable `self` crosses the boundary.
     private func loadHistoryIfNeeded() {
         guard !historyLoaded else { return }
         historyLoaded = true
+        let folder = capturesFolder
+        Task.detached(priority: .utility) {
+            let items = CaptureController.scanHistory(folder: folder)
+            await MainActor.run { CaptureController.shared.history = items }
+        }
+    }
+
+    nonisolated private static func scanHistory(folder: URL) -> [CaptureItem] {
         let fm = FileManager.default
-        guard let names = try? fm.contentsOfDirectory(atPath: capturesFolder.path) else { return }
+        guard let names = try? fm.contentsOfDirectory(atPath: folder.path) else { return [] }
         var items: [CaptureItem] = []
         for name in names where name.lowercased().hasSuffix(".png") {
-            let url = capturesFolder.appendingPathComponent(name)
+            let url = folder.appendingPathComponent(name)
             guard let attrs = try? fm.attributesOfItem(atPath: url.path) else { continue }
             let date = (attrs[.creationDate] as? Date) ?? Date()
             var w = 0, h = 0
@@ -344,7 +355,7 @@ final class CaptureController {
             }
             items.append(CaptureItem(url: url, date: date, pixelWidth: w, pixelHeight: h))
         }
-        history = items.sorted { $0.date > $1.date }
+        return items.sorted { $0.date > $1.date }
     }
 
     // MARK: - Window/display targeting
