@@ -30,29 +30,8 @@ struct QuickLookDetailView: View {
                                  registered: devRegistered)
                 }
 
-                SettingsSection(
-                    title: "Video — QuickLookVideo",
-                    footer: L10n.t("Xem trước & thumbnail video (AV1, VP9, DivX, WMV…, macOS 26+)")
-                ) {
-                    VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                        Text(L10n.t("QuickLookVideo v3 cài Media Extensions vào AVFoundation để Quick Look hiện thumbnail và phát được mọi định dạng video — chính là tính năng video còn thiếu của XFinder."))
-                            .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        HStack {
-                            Button(L10n.t("Tải QuickLookVideo (DMG)")) {
-                                NSWorkspace.shared.open(URL(string: "https://github.com/Marginal/QuickLookVideo/releases/download/rel-311/QLVideo_311.dmg")!)
-                            }
-                            .buttonStyle(.bordered).controlSize(.small)
-                            Button(L10n.t("Trang phát hành")) {
-                                NSWorkspace.shared.open(URL(string: "https://github.com/Marginal/QuickLookVideo/releases/tag/rel-311")!)
-                            }
-                            .buttonStyle(.bordered).controlSize(.small)
-                        }
-                        Text(L10n.t("Tải xong mở DMG và làm theo hướng dẫn bên trong; mở lại Finder nếu thumbnail video chưa mới."))
-                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                    }
-                    .settingsRow()
-                }
+                // The third-party QuickLookVideo recommendation (a DMG download button) was removed 2026-10-18 (audit):
+                // recommending someone else's installer is outside "what XFinder does", and its version pin would rot.
 
                 SettingsSection(title: L10n.t("Định dạng xem trước")) {
                     VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
