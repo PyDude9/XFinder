@@ -144,16 +144,16 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 | Q-ORCA-1 | Bật "Agent status hooks" của Orca (nó ghi hook vào `~/.claude` và `~/.codex`, cạnh hook của XFinder/OneNotch/Notch Crew)? Trust hook của Codex tính theo vị trí trong mảng — hook chèn trước có thể làm hook XFinder mất trust | **Giữ nguyên settings.json** cho tới khi T-ORCA-4 đo xong |
 | Q-ORCA-2 | Cho Claude dùng `orca worktree create --prompt` để tạo việc cho Builder ngay khi set `Ready` trong Notion (thay vì bạn dán prompt)? | **Có, từ giai đoạn 1** sau khi T-ORCA-2 đo được rằng `--name` thành tên nhánh `agent/<tool>-<ID>` |
 
-### Q-PRUNE · Kiểm toán tính năng 2026-10-18 (`docs/APP_AUDIT_2026-10-18.md`, 45 agent, mỗi đề nghị qua 2 refuter)
+### Q-PRUNE · Kiểm toán tính năng 2026-10-18 (`docs/APP_AUDIT_2026-10-18.md`) — chủ dự án "pump it all" ⇒ mặc định ĐÃ ÁP
 
-| Mã | Câu hỏi | Mặc định |
+| Mã | Đã làm (2026-10-18 chiều) | Còn gì cho bạn |
 |:--|:--|:--|
-| Q-PRUNE-1 | **Dải Dock Liquid Glass** (`DockLayerController`, 188 dòng): tự ẩn Dock thật rồi vẽ lại một Dock; không ai yêu cầu, chưa ai bật thử. Bỏ? | **Bỏ** (controller + công tắc + 1 khoá) khi bạn gật |
-| Q-PRUNE-2 | **Biểu tượng thanh menu** — hai engine ẩn icon app khác (1 223 dòng): lịch sử đo cả hai **không ẩn được icon app thứ ba** trên 27; bạn chốt "explainer" 2026-09-18 rồi một vòng sau cài lại; khoá `menubar.hiderEnabled` đang bật trên máy bạn | **Đo lại một lần** trên 27.0.1 (icon app khác có biến mất không). Không ⇒ về explainer, giữ ẩn icon của chính XFinder |
-| Q-PRUNE-3 | **Thao tác Finder ▸ "Cấu hình menu"** 13 công tắc: hứa cấu hình menu chuột phải, nhưng extension có 2 mục cố định không đọc khoá nào | **Bỏ khối** (hoặc đổi nhãn "Hiện nút trên trang này") |
-| Q-PRUNE-4 | **`PermissionManager`**: 5 thành viên không có caller; `requestAllIfNeeded()` xin 3 quyền lúc khởi động, trái lời hứa của hub | **Xoá thành viên chết + bỏ xin quyền lúc khởi động** ở commit dọn dẹp kế tiếp |
-| Q-PRUNE-5 | **Nhập bằng giọng nói** (4 122 dòng, T-VOICE chưa ai thử): `voice.enabled` mặc định bật và cài CGEvent tap keyDown toàn hệ thống lúc khởi động | **Đổi mặc định sang tắt** (như Chuột & cử chỉ); giữ/gọn tuỳ T-VOICE |
-| Q-PRUNE-6 | **Chia sẻ nhanh** (server HTTP LAN) và **Kết nối từ xa** không có hàng FeatureCatalog ⇒ "Tắt tất cả" không tắt được server | **Thêm 2 hàng catalog + reader + T-*** (việc XF-T21, Claude viết spec) |
+| Q-PRUNE-1 | **Bỏ** Dải Dock Liquid Glass (`DockLayerController` + công tắc). Khoá cũ `windowPreview.customDockEnabled` không đọc nữa | — |
+| Q-PRUNE-2 | **Đo**: 12/12 icon thanh menu đều on-screen, kể cả 3 icon bên trái mũi tên XFinder; engine 12 h không bao giờ tới `activate`. Viết spec **XF-T22** (về explainer + "Ẩn icon XFinder", migration giữ trạng thái bạn đang bật) cho Builder | gật XF-T22 Ready, hoặc nói nếu bạn thấy nó ẩn được icon app khác ở đâu đó |
+| Q-PRUNE-3 | **Bỏ** khối "Cấu hình menu" 13 công tắc + picker Terminal/Bố cục (không gì đọc); subtitle + ghi chú nói đúng: extension có 2 mục | — |
+| Q-PRUNE-4 | **Gọn** `PermissionManager` còn Trợ năng + banner; bỏ CoreBluetooth/ScreenCaptureKit, 5 thành viên chết | — |
+| Q-PRUNE-5 | `voice.enabled` **mặc định tắt** (reader + catalog). Máy bạn chưa từng ghi khoá ⇒ Nhập giọng nói đang **tắt** sau cập nhật; bật lại ở trang Nhập bằng giọng nói nếu dùng | T-VOICE vẫn treo |
+| Q-PRUNE-6 | Spec **XF-T21** (hàng catalog + reader cho Chia sẻ nhanh / Kết nối từ xa) cho Builder | gật Ready |
 
 ## Phần 2 — Cần test tay (T)
 
