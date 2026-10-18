@@ -60,6 +60,11 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "clipboard.globalHotkey",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift", "XFinder/Views/Detail/ShortcutsDetailView.swift"],
                reader: "XFinder/Core/ClipboardShelfController.swift"),
+        // XF-T21
+        Switch(key: "quickShare.enabled", views: ["XFinder/Views/Detail/QuickShareDetailView.swift"],
+               reader: "XFinder/Core/QuickShareController.swift"),
+        Switch(key: "remoteConnect.enabled", views: ["XFinder/Views/Detail/RemoteConnectDetailView.swift"],
+               reader: "XFinder/Core/RemoteConnectController.swift"),
         Switch(key: "notes.edgeEnabled",
                views: ["XFinder/Views/Detail/NotesDetailView.swift"],
                reader: "XFinder/Core/EdgeNotesController.swift"),

@@ -39,6 +39,16 @@ final class QuickShareController {
 
     private init() {}
 
+    /// XF-T21: the ONE reader of the catalog switch. Off ⇒ no server may start, and a running one stops (`applySettings`).
+    var isEnabled: Bool {
+        UserDefaults.standard.object(forKey: "quickShare.enabled") as? Bool ?? true
+    }
+
+    /// Called by FeatureHub (the page switch, "Tắt tất cả", bundles): switching off revokes every link and stops the server.
+    func applySettings() {
+        if !isEnabled, listener != nil || !shares.isEmpty { revokeAll() }
+    }
+
     private var expiryHours: Double {
         UserDefaults.standard.object(forKey: "quickShare.expiryHours") as? Double ?? 24
     }
@@ -69,6 +79,7 @@ final class QuickShareController {
     // MARK: Sharing
 
     func share(files: [URL]) -> [Share] {
+        guard isEnabled else { return [] }
         startIfNeeded()
         var made: [Share] = []
         for url in files {
@@ -82,8 +93,7 @@ final class QuickShareController {
     }
 
     func link(for share: Share) -> String? {
-        guard let address = localAddress, port != 0 else { return nil }
-        return "http://\(address):\(port)/\(share.token)"
+        QuickShareRules.link(address: localAddress, port: port, token: share.token)
     }
 
     func revoke(_ share: Share) {
@@ -158,14 +168,11 @@ final class QuickShareController {
                 connection.cancel()
                 return
             }
-            // "GET /<token> HTTP/1.1"
-            let token = request
-                .split(separator: "\r\n").first
-                .flatMap { $0.split(separator: " ").dropFirst().first }
-                .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: "/")) } ?? ""
+            let token = QuickShareRules.token(fromRequest: request)
 
             Task { @MainActor in
-                guard let share = self.shares.first(where: { $0.token == token && !$0.isExpired }),
+                guard self.isEnabled, !token.isEmpty,
+                      let share = self.shares.first(where: { $0.token == token && !$0.isExpired }),
                       let payload = try? Data(contentsOf: share.url) else {
                     Self.send(connection, header: "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n", body: nil)
                     return
@@ -173,7 +180,7 @@ final class QuickShareController {
                 let header = """
                 HTTP/1.1 200 OK\r
                 Content-Type: application/octet-stream\r
-                Content-Disposition: attachment; filename="\(share.name)"\r
+                Content-Disposition: \(QuickShareRules.contentDisposition(filename: share.name))\r
                 Content-Length: \(payload.count)\r
                 Connection: close\r
                 \r\n

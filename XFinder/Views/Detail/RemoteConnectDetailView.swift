@@ -6,12 +6,22 @@ struct RemoteConnectDetailView: View {
     @State private var controller = RemoteConnectController.shared
     @State private var editing: RemoteConnectController.Destination?
     @State private var showAdd = false
+    // XF-T21: the catalog switch (same key + default as RemoteConnectController.isEnabled).
+    @AppStorage("remoteConnect.enabled") private var enabled = true
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
                 PageHeader(title: L10n.t("Kết nối từ xa"),
                            subtitle: L10n.t("Tải file và thư mục đã chọn lên đích từ xa."))
+
+                SettingsSection {
+                    ToggleRow(title: L10n.t("Cho phép Kết nối từ xa"),
+                              subtitle: L10n.t("Tắt là XFinder không chạy ssh hay scp nữa: Kiểm tra và Tải lên đều bị chặn. Danh sách kết nối vẫn giữ."),
+                              isOn: $enabled)
+                        .onChange(of: enabled) { FeatureHub.apply(.remoteConnect) }
+                        .settingsRow()
+                }
 
                 HStack {
                     Text("\(controller.destinations.count)\(L10n.t(" kết nối"))")
@@ -103,8 +113,10 @@ struct RemoteConnectDetailView: View {
             Spacer(minLength: XFinderTokens.Space.inline)
             Button(L10n.t("Tải lên…")) { pickAndUpload(dest) }
                 .buttonStyle(.bordered).controlSize(.small)
+                .disabled(!enabled)
             Menu {
                 Button(L10n.t("Kiểm tra kết nối")) { Task { await controller.test(dest) } }
+                    .disabled(!enabled)
                 Button(L10n.t("Sửa…")) { editing = dest }
                 Divider()
                 Button(role: .destructive) { controller.remove(dest) } label: { Text(L10n.t("Xóa")) }

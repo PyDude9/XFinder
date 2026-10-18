@@ -52,3 +52,18 @@ bật chia sẻ một file → bấm *Tắt tất cả* → server dừng (curl 
 ## 5. Ngoài phạm vi
 
 Không đổi giao thức chia sẻ, không thêm xác thực, không đụng `Core/Notch`.
+
+## 6. Worklog (Claude, 2026-10-18 — làm luôn thay Builder, Q-PRUNE-6 "pump it all")
+
+- Nhóm mới `FeatureGroup.connect` ("Kết nối"); hai hàng catalog đúng §2.1. Reader: `QuickShareController.isEnabled`,
+  `RemoteConnectController.isEnabled`. `QuickShareController.applySettings()` tắt ⇒ `revokeAll()` (dừng `NWListener` +
+  `sweepTimer`); `share(files:)` từ chối khi tắt; `receive` trả 404 khi tắt (phòng kết nối đang chờ). RemoteConnect: `test`
+  / `upload` từ chối trước khi chạy process, nói rõ "đang tắt".
+- Luật thuần `Core/ConnectRules.swift` (symlink): `QuickShareRules.token/link/contentDisposition`,
+  `RemoteConnectRules.testArguments/uploadArguments/explanationKey`. **Lỗi tìm được khi tách**: tên file đi thẳng vào
+  `Content-Disposition` ⇒ tên chứa `"`/CR/LF chèn được header; giờ fallback ASCII + `filename*=UTF-8''`. Thêm `--` trước
+  đích ssh và trước danh sách file scp (host/tên file bắt đầu bằng `-` không thành option). Token chỉ nhận GET + hex.
+- Contract: `.quickShare`/`.remoteConnect` = `.pure([ConnectRules])`; tiện trả luôn exemption `.edgeNotes` (XF-T24 đã tách
+  hình học) ⇒ trần exemption 5 → **4**.
+- Mutation `scripts/mutation-check-connect.sh` (C1–C9). "Tắt mà server vẫn chạy" nằm trong controller (cần app chạy) ⇒
+  không mutate được trong package; nghiệm thu bằng T-T21-1.

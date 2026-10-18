@@ -113,6 +113,9 @@ final class FeatureHub {
         // Read at the point of use by the clipboard engine; nothing to re-arm.
         case .cleanURLs, .suggestions: break
         case .linkPreviews:    LinkPreviewFetcher.shared.applySettings()   // D4b: backfill / cancel
+        case .quickShare:      QuickShareController.shared.applySettings()   // XF-T21: off revokes links, stops the server
+        // XF-T21: read at the point of use (test / upload); nothing runs between presses.
+        case .remoteConnect:   break
         }
     }
 

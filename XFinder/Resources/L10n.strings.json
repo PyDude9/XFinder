@@ -11386,6 +11386,42 @@
     "Mở ghi chú mép từ mọi app": {
       "en": "Open edge notes from any app",
       "scope": "sentence"
+    },
+    "Kết nối": {
+      "en": "Connect",
+      "scope": "sentence"
+    },
+    "Liên kết tải file cho thiết bị cùng mạng Wi-Fi. Tắt là thu hồi mọi liên kết và dừng máy chủ ngay.": {
+      "en": "Download links for devices on the same Wi-Fi. Turning it off revokes every link and stops the server at once.",
+      "scope": "sentence"
+    },
+    "Tải file lên máy chủ SSH bằng scp khi bạn bấm Tải lên. Tắt là không gửi gì ra mạng.": {
+      "en": "Uploads files to an SSH server with scp when you press Upload. Off means nothing is sent over the network.",
+      "scope": "sentence"
+    },
+    "Cho phép Chia sẻ nhanh": {
+      "en": "Allow Quick Share",
+      "scope": "sentence"
+    },
+    "Tắt là thu hồi mọi liên kết và dừng máy chủ ngay; không file nào được phục vụ nữa.": {
+      "en": "Turning it off revokes every link and stops the server at once; no file is served any more.",
+      "scope": "sentence"
+    },
+    "Chia sẻ nhanh đang tắt — bật ở trên để tạo liên kết.": {
+      "en": "Quick Share is off — turn it on above to create links.",
+      "scope": "sentence"
+    },
+    "Cho phép Kết nối từ xa": {
+      "en": "Allow Remote Connect",
+      "scope": "sentence"
+    },
+    "Tắt là XFinder không chạy ssh hay scp nữa: Kiểm tra và Tải lên đều bị chặn. Danh sách kết nối vẫn giữ.": {
+      "en": "Off means XFinder no longer runs ssh or scp: Test and Upload are both blocked. Your connections are kept.",
+      "scope": "sentence"
+    },
+    "Kết nối từ xa đang tắt — bật lại ở đầu trang.": {
+      "en": "Remote Connect is off — turn it back on at the top of the page.",
+      "scope": "sentence"
     }
   }
 }

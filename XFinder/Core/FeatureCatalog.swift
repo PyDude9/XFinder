@@ -82,12 +82,14 @@ enum IdleCost: String, Equatable {
 
 enum FeatureGroup: String, CaseIterable {
     case windows, clipboard, tools, voice
+    case connect   // XF-T21: the KẾT NỐI features that open the network
     var titleKey: String {
         switch self {
         case .windows:   return "Cửa sổ và Dock"
         case .clipboard: return "Clipboard"
         case .tools:     return "Công cụ"
         case .voice:     return "Giọng nói"
+        case .connect:   return "Kết nối"
         }
     }
 }
@@ -104,6 +106,7 @@ enum FeatureID: String, CaseIterable {
     case alerts
     case menuBarReadouts
     case systemHUD
+    case quickShare, remoteConnect   // XF-T21
 }
 
 struct FeatureDef: Equatable {
@@ -252,6 +255,18 @@ enum FeatureCatalog {
                    // every user, and the mic→text path has never been verified by hand (T-VOICE).
                    defaultOn: false, permissions: [.accessibility, .microphone, .speechRecognition],
                    idle: .listensToKeyboard),
+
+        // XF-T21. Permission switches: on, nothing runs until the person shares a file / presses Upload. QuickShare then
+        // keeps an NWListener on the LAN and a 60 s expiry sweep until the last link goes — so it is NOT "nothing at rest",
+        // and switching it off (page, "Tắt tất cả", Yên tĩnh) revokes every link and stops the server.
+        FeatureDef(id: .quickShare, titleKey: "Chia sẻ nhanh",
+                   subtitleKey: "Liên kết tải file cho thiết bị cùng mạng Wi-Fi. Tắt là thu hồi mọi liên kết và dừng máy chủ ngay.",
+                   symbol: "link", group: .connect, enabledKey: "quickShare.enabled",
+                   defaultOn: true, permissions: [], idle: .timerWhileActive),
+        FeatureDef(id: .remoteConnect, titleKey: "Kết nối từ xa",
+                   subtitleKey: "Tải file lên máy chủ SSH bằng scp khi bạn bấm Tải lên. Tắt là không gửi gì ra mạng.",
+                   symbol: "network", group: .connect, enabledKey: "remoteConnect.enabled",
+                   defaultOn: true, permissions: [], idle: .nothingAtRest),
     ]
 
     static func def(_ id: FeatureID) -> FeatureDef { all.first { $0.id == id }! }

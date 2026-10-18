@@ -153,7 +153,7 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 | Q-PRUNE-3 | **Bỏ** khối "Cấu hình menu" 13 công tắc + picker Terminal/Bố cục (không gì đọc); subtitle + ghi chú nói đúng: extension có 2 mục | — |
 | Q-PRUNE-4 | **Gọn** `PermissionManager` còn Trợ năng + banner; bỏ CoreBluetooth/ScreenCaptureKit, 5 thành viên chết | — |
 | Q-PRUNE-5 | `voice.enabled` **mặc định tắt** (reader + catalog). Máy bạn chưa từng ghi khoá ⇒ Nhập giọng nói đang **tắt** sau cập nhật; bật lại ở trang Nhập bằng giọng nói nếu dùng | T-VOICE vẫn treo |
-| Q-PRUNE-6 | Spec **XF-T21** (hàng catalog + reader cho Chia sẻ nhanh / Kết nối từ xa) cho Builder | gật Ready |
+| Q-PRUNE-6 | Spec **XF-T21** (hàng catalog + reader cho Chia sẻ nhanh / Kết nối từ xa) cho Builder | **đã áp 2026-10-18** — Claude làm luôn (T-T21-1/2) |
 
 ### Q-CREW · Crew v2 — Lead Architect (2026-10-18, `docs/specs/XF-T23-crew-v2.md`, bằng chứng `docs/NOTCHCREW_EVIDENCE_2026-10-18.md`)
 
@@ -200,6 +200,8 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-T24-1 | Ghi chú mép: rê chuột lên viên của một ghi chú 9 dòng (như ảnh 7 things before every trade) | thẻ hiện **đủ 9 dòng**, rộng hơn (248 pt), chữ 11 pt; ghi chú rất dài: cắt "…" + dòng "còn N dòng nữa — bấm để mở"; với 1–2 ghi chú thẻ **không** bị cắt đáy; rê dọc dải vẫn chuyển từ ghi chú này sang ghi chú kế mà không nhảy |
 | T-T24-2 | Ghi chú ▸ Ghi chú ở mép màn hình ▸ bật "Phím tắt ⌃⌥N…"; vào Safari, bấm ⌃⌥N; bấm lại | editor mép mở trên ghi chú đầu dải, gõ được ngay; bấm lại thì đóng; không có ghi chú ⇒ tạo mới |
 | T-T24-3 | Sửa một ghi chú bất kỳ; Ghi chú ▸ Nhập / Xuất ▸ "Mở thư mục sao lưu" | có `notes-<hôm nay>.json` + `.md`; "Nhập… ▸ JSON" từ file đó khôi phục đủ danh sách; "Bản gần nhất: <ngày>" hiện trên trang |
+| T-T21-1 | Chia sẻ nhanh ▸ chia sẻ một file, chép link, mở trên điện thoại cùng Wi-Fi (hoặc `curl -O <link>`); rồi Tính năng & Quyền ▸ **Tắt tất cả** (hoặc tắt "Cho phép Chia sẻ nhanh" đầu trang) | tải được trước khi tắt; sau khi tắt: danh sách liên kết rỗng, nhãn đầu trang "Đang tắt", link cũ **không** tải được (kết nối bị từ chối), nút "Chọn file…" xám. File tên tiếng Việt tải về **giữ đúng tên** (trước đây header thô) |
+| T-T21-2 | Kết nối từ xa ▸ tắt "Cho phép Kết nối từ xa" | "Tải lên…" và "Kiểm tra kết nối" xám; danh sách kết nối vẫn còn; bật lại ⇒ dùng như cũ |
 | T-SNAPMEM-2 | Với luật trên, rút màn ngoài rồi cắm lại (hoặc ngược lại) | Luật ghi với bộ "màn trong + HC-L200A" chỉ áp khi đủ hai màn; khi chỉ còn màn trong, Chrome **không** bị kéo đi; cắm lại ⇒ áp trong ~1–3 s |
 | T-SNAPMEM-3 | Đưa một app đã có luật vào toàn màn hình (nút xanh), thoát app, mở lại | Hàng luật đổi thành "Toàn màn hình (Space riêng)"; mở lại ⇒ app vào toàn màn hình trên đúng màn. App không cho đặt ⇒ hàng ghi "App không cho đặt toàn màn hình qua Trợ năng", không thử lại |
 | T-SNAPMEM-4 | Mở hộp thoại Lưu (⌘S) hoặc ⌘N trong app đã có luật, đang chạy | Cửa sổ chính **không** bị kéo lại chỗ cũ (chỉ lần mở app mới áp) |

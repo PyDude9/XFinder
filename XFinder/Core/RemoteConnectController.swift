@@ -43,6 +43,11 @@ final class RemoteConnectController {
 
     private init() { load() }
 
+    /// XF-T21: the ONE reader of the catalog switch. Off ⇒ nothing is sent: test and upload refuse before any process runs.
+    var isEnabled: Bool {
+        UserDefaults.standard.object(forKey: "remoteConnect.enabled") as? Bool ?? true
+    }
+
     // MARK: CRUD
 
     func add(_ destination: Destination) {
@@ -66,11 +71,10 @@ final class RemoteConnectController {
     /// `ssh -o BatchMode=yes` fails fast instead of hanging on a password
     /// prompt that has no terminal to answer it.
     func test(_ destination: Destination) async {
+        guard isEnabled else { state = .failed(L10n.t("Kết nối từ xa đang tắt — bật lại ở đầu trang.")); return }
         state = .running(L10n.t("Đang kiểm tra kết nối…"))
-        var args = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
-                    "-p", "\(destination.port)"]
-        if !destination.keyPath.isEmpty { args += ["-i", destination.keyPath] }
-        args += ["\(destination.user)@\(destination.host)", "echo ok"]
+        let args = RemoteConnectRules.testArguments(host: destination.host, port: destination.port,
+                                                    user: destination.user, keyPath: destination.keyPath)
 
         let result = await Self.run("/usr/bin/ssh", args)
         state = result.ok
@@ -80,13 +84,12 @@ final class RemoteConnectController {
 
     func upload(files: [URL], to destination: Destination) async {
         guard !files.isEmpty else { return }
+        guard isEnabled else { state = .failed(L10n.t("Kết nối từ xa đang tắt — bật lại ở đầu trang.")); return }
         state = .running("\(L10n.t("Đang tải lên "))\(files.count)\(L10n.t(" mục…"))")
 
-        var args = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
-                    "-P", "\(destination.port)", "-r"]
-        if !destination.keyPath.isEmpty { args += ["-i", destination.keyPath] }
-        args += files.map(\.path)
-        args += ["\(destination.user)@\(destination.host):\(destination.remotePath)"]
+        let args = RemoteConnectRules.uploadArguments(files: files.map(\.path), host: destination.host, port: destination.port,
+                                                      user: destination.user, remotePath: destination.remotePath,
+                                                      keyPath: destination.keyPath)
 
         let result = await Self.run("/usr/bin/scp", args)
         if result.ok {
@@ -99,22 +102,17 @@ final class RemoteConnectController {
         }
     }
 
-    /// Turn ssh/scp stderr into something a user can act on.
+    /// Turn ssh/scp stderr into something a user can act on. The match is `RemoteConnectRules.explanationKey` (tested);
+    /// every key it can return is translated here through a literal so the L10n audits see each one.
     private nonisolated static func explain(_ output: String) -> String {
-        let lower = output.lowercased()
-        if lower.contains("permission denied") {
+        let k = RemoteConnectRules.explanationKey(output), keys = RemoteConnectRules.explanationKeys
+        if k == keys[0] {
             return L10n.t("Bị từ chối — khóa SSH chưa được chấp nhận trên máy chủ. Thêm khóa công khai vào ~/.ssh/authorized_keys ở máy đích.")
         }
-        if lower.contains("could not resolve hostname") {
-            return L10n.t("Không tìm thấy máy chủ — kiểm tra lại tên host.")
-        }
-        if lower.contains("connection refused") {
-            return L10n.t("Máy chủ từ chối kết nối — kiểm tra cổng và dịch vụ SSH.")
-        }
-        if lower.contains("timed out") || lower.contains("operation timed out") {
-            return L10n.t("Hết thời gian chờ — máy chủ không phản hồi.")
-        }
-        if lower.contains("host key verification failed") {
+        if k == keys[1] { return L10n.t("Không tìm thấy máy chủ — kiểm tra lại tên host.") }
+        if k == keys[2] { return L10n.t("Máy chủ từ chối kết nối — kiểm tra cổng và dịch vụ SSH.") }
+        if k == keys[3] { return L10n.t("Hết thời gian chờ — máy chủ không phản hồi.") }
+        if k == keys[4] {
             return L10n.t("Xác minh host key thất bại. Chạy `ssh <user>@<host>` trong Terminal một lần để tin tưởng máy chủ.")
         }
         let tail = output.split(separator: "\n").last.map(String.init) ?? L10n.t("không rõ")

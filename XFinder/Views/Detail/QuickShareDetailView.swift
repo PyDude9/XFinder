@@ -5,6 +5,8 @@ import AppKit
 struct QuickShareDetailView: View {
     @State private var controller = QuickShareController.shared
     @AppStorage("quickShare.expiryHours") private var expiryHours = 24.0
+    // XF-T21: the catalog switch (same key + default as QuickShareController.isEnabled).
+    @AppStorage("quickShare.enabled") private var enabled = true
     @State private var copied: UUID?
 
     var body: some View {
@@ -18,11 +20,20 @@ struct QuickShareDetailView: View {
                             .foregroundColor(controller.isRunning ? .green : .secondary)
                     ))
 
+                SettingsSection {
+                    ToggleRow(title: L10n.t("Cho phép Chia sẻ nhanh"),
+                              subtitle: L10n.t("Tắt là thu hồi mọi liên kết và dừng máy chủ ngay; không file nào được phục vụ nữa."),
+                              isOn: $enabled)
+                        .onChange(of: enabled) { FeatureHub.apply(.quickShare) }
+                        .settingsRow()
+                }
+
                 HStack {
                     Button { pickAndShare() } label: {
                         Label(L10n.t("Chọn file để chia sẻ…"), systemImage: "plus")
                     }
                     .buttonStyle(.borderedProminent).controlSize(.small)
+                    .disabled(!enabled)
 
                     if !controller.shares.isEmpty {
                         Button(L10n.t("Thu hồi tất cả")) { controller.revokeAll() }
@@ -49,7 +60,8 @@ struct QuickShareDetailView: View {
                             .font(XFinderTokens.Font.pageIcon).foregroundColor(.secondary)
                         Text(L10n.t("Chưa chia sẻ file nào"))
                             .font(XFinderTokens.Font.sectionTitle)
-                        Text(L10n.t("Chọn file để tạo liên kết cho thiết bị trong cùng mạng Wi-Fi."))
+                        Text(enabled ? L10n.t("Chọn file để tạo liên kết cho thiết bị trong cùng mạng Wi-Fi.")
+                                     : L10n.t("Chia sẻ nhanh đang tắt — bật ở trên để tạo liên kết."))
                             .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity).padding(.vertical, XFinderTokens.Space.section)
