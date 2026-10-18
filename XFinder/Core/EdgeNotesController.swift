@@ -168,15 +168,22 @@ final class EdgeNotesController {
     /// floating beside it — the card no longer replaces the strip, so a width
     /// of just `peekWidth` would clip it.
     /// The laid-out height of a note body in the card's font and width, and the font's line height.
+    /// Measured by SwiftUI itself (an NSHostingView of the card's own `NotePreviewText`), not `NSString.boundingRect`: that
+    /// gives 13 pt a line where SwiftUI draws 14, which cut the last line of a nine-line note. ~4 ms, once per note text.
     private func measureBody(_ text: String) -> (height: CGFloat, line: CGFloat) {
-        let font = NSFont.systemFont(ofSize: 11)
-        let width = EdgeNotesLayout.cardWidth - 2 * EdgeNotesLayout.cardPadding
-        let line = NSLayoutManager().defaultLineHeight(for: font)
         let body = text.isEmpty ? " " : text
-        let r = (body as NSString).boundingRect(with: CGSize(width: width, height: .greatestFiniteMagnitude),
-                                                options: [.usesLineFragmentOrigin, .usesFontLeading], attributes: [.font: font])
-        return (ceil(r.height) + 2, line)
+        if let m = measured, m.text == body { return (m.height, m.line) }
+        let width = EdgeNotesLayout.cardWidth - 2 * EdgeNotesLayout.cardPadding
+        func fit(_ s: String) -> CGFloat {
+            NSHostingView(rootView: NotePreviewText.body(s).frame(width: width, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)).fittingSize.height
+        }
+        let line = fit("X")
+        let height = ceil(fit(body))
+        measured = (body, height, line)
+        return (height, line)
     }
+    @ObservationIgnored private var measured: (text: String, height: CGFloat, line: CGFloat)?
 
     func layout(animated: Bool) {
         guard let panel, let screen = NSScreen.main else { return }

@@ -110,6 +110,13 @@ private struct NoteTab: View {
 }
 
 /// The note body shown while peeking, floated beside the strip as an overlay.
+/// The peek card's body text, shared by the card and by `EdgeNotesController.measureBody` so the height is measured by the
+/// engine that draws it. Measured 2026-10-18: SwiftUI lays system 11 pt out at 14 pt a line, `NSString.boundingRect` at 13 —
+/// a nine-line note came out 7 pt short and its last line was cut (the owner's screenshot, T-T24-1).
+enum NotePreviewText {
+    static func body(_ s: String) -> Text { Text(s).font(.system(size: 11)) }
+}
+
 private struct NotePreviewCard: View {
     let note: QuickNote
     let onLeft: Bool
@@ -126,8 +133,7 @@ private struct NotePreviewCard: View {
                 .foregroundColor(.black.opacity(0.85))
                 .lineLimit(1)
             Divider().opacity(0.35)
-            Text(note.content.isEmpty ? L10n.t("Ghi chú trống") : note.content)
-                .font(.system(size: 11))
+            NotePreviewText.body(note.content.isEmpty ? L10n.t("Ghi chú trống") : note.content)
                 .foregroundColor(.black.opacity(0.78))
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
