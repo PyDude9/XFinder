@@ -171,7 +171,7 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 
 | Mã | Thao tác | Kỳ vọng |
 |:--|:--|:--|
-| T-PERF-1 | Khởi động XFinder, không mở trang Pin trong 60 s; `ps -o time= -p $(pgrep -x XFinder)` ở 0 s và 60 s; `log show --last 2m --predicate 'process == "XFinder" AND subsystem CONTAINS "bluetooth"'` | CPU ≈ 0,00–0,05 s/60 s; **không** dòng CoreBluetooth nào trước khi trang Pin mở (BatteryStore không còn khởi động lúc launch); mở trang Pin ⇒ thiết bị Bluetooth hiện sau vài giây (GATT scan bắt đầu lúc đó) |
+| T-PERF-1 | Khởi động XFinder, không mở trang Pin trong 60 s; `ps -o time= -p $(pgrep -x XFinder)` ở 0 s và 60 s; `log show --last 2m --predicate 'process == "XFinder" AND subsystem == "com.apple.bluetooth"'` | CPU ≈ 0,00–0,05 s/60 s; **không** dòng `CBCentralManager`/`scanForPeripherals` nào trước khi trang Pin mở (Claude đo 2026-10-18 11:04 trên bản cài: 0 dòng; 24 dòng IOBluetooth/CoreBluetooth còn lại là đăng ký thông báo kết nối của **Hoạt động trực tiếp ▸ Bluetooth** — có hàng catalog, tắt được ở trang đó); mở trang Pin ⇒ thiết bị Bluetooth hiện sau vài giây (GATT scan bắt đầu lúc đó) |
 
 ### Nhớ bố cục cửa sổ (2026-10-18, chưa ai thử bằng tay)
 
