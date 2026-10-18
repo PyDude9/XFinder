@@ -11,7 +11,6 @@ struct WindowPreviewDetailView: View {
     @AppStorage("windowPreview.showHiddenWindows") private var showHiddenWindows = false
     @AppStorage("windowPreview.switcherHotkey") private var switcherHotkey = "commandTab"
     @AppStorage("windowPreview.animationEnabled") private var animationEnabled = true
-    @AppStorage("windowPreview.customDockEnabled") private var customDockEnabled = false
     // Phase C. Reader: WindowPreviewStore.currentScreenOnly (default must match — FeatureKeyDefaultsTests).
     @AppStorage("windowPreview.currentScreenOnly") private var currentScreenOnly = false
     @State private var dockAutohide = DockPrefs.autohide()
@@ -87,14 +86,6 @@ struct WindowPreviewDetailView: View {
                         .settingsRow()
                     SettingsDivider()
                     InlineNote(text: L10n.t("XFinder chỉ chụp ảnh thu nhỏ khi bảng xem trước đang hiển thị."))
-                        .settingsRow()
-                    SettingsDivider()
-
-                    ToggleRow(title: L10n.t("Hiện dải ứng dụng Dock thay thế ở cạnh dưới màn hình"),
-                              isOn: $customDockEnabled)
-                        .onChange(of: customDockEnabled) {
-                            DockLayerController.shared.applySettings()
-                        }
                         .settingsRow()
                     SettingsDivider()
 

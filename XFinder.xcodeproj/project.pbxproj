@@ -235,7 +235,6 @@
 		7F1A014B /* Components/LiquidGlassView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A014A /* Components/LiquidGlassView.swift */; };
 		7F1A014D /* Components/WindowPreviewComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A014C /* Components/WindowPreviewComponents.swift */; };
 		7F1A014F /* Components/LiquidGlassTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A014E /* Components/LiquidGlassTokens.swift */; };
-		7F1A0151 /* WindowPreview/DockLayerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0150 /* WindowPreview/DockLayerController.swift */; };
 		7F1A0153 /* WindowPreview/TabPreviewCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0152 /* WindowPreview/TabPreviewCache.swift */; };
 		7F1A0155 /* WindowPreview/XFinderBrowserHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0154 /* WindowPreview/XFinderBrowserHelper.swift */; };
 		7F1A0161 /* Voice/VoiceProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0160 /* Voice/VoiceProtocols.swift */; };
@@ -655,7 +654,6 @@
 		7F1A014A /* Components/LiquidGlassView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/LiquidGlassView.swift; sourceTree = "<group>"; };
 		7F1A014C /* Components/WindowPreviewComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/WindowPreviewComponents.swift; sourceTree = "<group>"; };
 		7F1A014E /* Components/LiquidGlassTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/LiquidGlassTokens.swift; sourceTree = "<group>"; };
-		7F1A0150 /* WindowPreview/DockLayerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPreview/DockLayerController.swift; sourceTree = "<group>"; };
 		7F1A0152 /* WindowPreview/TabPreviewCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPreview/TabPreviewCache.swift; sourceTree = "<group>"; };
 		7F1A0154 /* WindowPreview/XFinderBrowserHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowPreview/XFinderBrowserHelper.swift; sourceTree = "<group>"; };
 		7F1A0160 /* Voice/VoiceProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceProtocols.swift; sourceTree = "<group>"; };
@@ -955,7 +953,6 @@
 				7F1A0144 /* WindowPreview/SpecialProviders.swift */,
 				7F1A0146 /* WindowPreview/WindowPreviewStore.swift */,
 				7F1A0148 /* WindowPreview/PreviewOverlayWindow.swift */,
-				7F1A0150 /* WindowPreview/DockLayerController.swift */,
 				7F1A0152 /* WindowPreview/TabPreviewCache.swift */,
 				7F1A0154 /* WindowPreview/XFinderBrowserHelper.swift */,
 				7F1A0160 /* Voice/VoiceProtocols.swift */,
@@ -1527,7 +1524,6 @@
 				7F1A014B /* Components/LiquidGlassView.swift in Sources */,
 				7F1A014D /* Components/WindowPreviewComponents.swift in Sources */,
 				7F1A014F /* Components/LiquidGlassTokens.swift in Sources */,
-				7F1A0151 /* WindowPreview/DockLayerController.swift in Sources */,
 				7F1A0153 /* WindowPreview/TabPreviewCache.swift in Sources */,
 				7F1A0155 /* WindowPreview/XFinderBrowserHelper.swift in Sources */,
 				7F1A0161 /* Voice/VoiceProtocols.swift in Sources */,

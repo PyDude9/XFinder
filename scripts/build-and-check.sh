@@ -49,7 +49,7 @@ MagicBatteryReader.swift BluetoothBatteryReader.swift BatteryStore.swift
 BatteryViews.swift PermissionManager.swift
 PreviewItem.swift ScreenCaptureProvider.swift SpecialProviders.swift
 WindowPreviewStore.swift PreviewOverlayWindow.swift LiquidGlassView.swift
-WindowPreviewComponents.swift LiquidGlassTokens.swift DockLayerController.swift
+WindowPreviewComponents.swift LiquidGlassTokens.swift
 VoiceProtocols.swift AudioCapture.swift VoiceHotkeyManager.swift
 AppleSpeechProvider.swift TypingSink.swift VoiceManager.swift VoiceDetailView.swift
 DictationMode.swift VoiceTrigger.swift RefinePrompt.swift RefinerTypes.swift
