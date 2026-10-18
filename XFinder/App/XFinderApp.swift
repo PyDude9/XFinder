@@ -158,8 +158,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         DiagnosticsCenter.shared.markQuit()
         ClipboardLibraryStore.shared.relockAll()
-        CrewManager.shared.stopAllForQuit()            // P7b: crew folders go (members stop with the line below)
+        // Review 2026-10-18: the members are told to stop FIRST, and the crew cleanup waits (briefly) for their processes to
+        // exit before it moves or removes the worktrees they were working in — the old order retired a worktree under a live member.
         WindowlessSessionManager.shared.stopAll()      // P7a: interrupt the turn, close stdin; the conversation stays on disk
+        CrewManager.shared.stopAllForQuit()            // P7b: crew folders go, after the members' processes are gone (≤ 1.5 s)
     }
 
 

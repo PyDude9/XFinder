@@ -767,7 +767,7 @@ private struct CrewBoardView: View {
                 .font(XFinderTokens.Font.caption).foregroundColor(.white)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-        case .reply, .done, .verdict, .merge:
+        case .reply, .done, .verdict, .merge, .conflict:
             Text("\(entry.from ?? "") \(L10n.t(CrewRules.boardKindKey(entry.kind))) \(entry.to ?? ""): \(entry.text)")
                 .font(XFinderTokens.Font.caption).foregroundColor(entry.kind == .reply ? .white : .green)
                 .textSelection(.enabled)

@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -I
 # Stand-in for a Lead Architect crew member: claude -p stream-json. Each role runs the crew CLI the way the agent's Bash
 # tool would, driven by what the relay delivers to it. Everything it does is logged to fake.log as one JSON object per line.
-import sys, json, os, subprocess
+import sys, json, os, subprocess, re, shlex
 args = sys.argv[1:]
 role = os.environ.get("XFINDER_CREW_ROLE", "?")
 branch = os.environ.get("XFINDER_CREW_BRANCH")
@@ -56,6 +56,19 @@ for line in sys.stdin:
             reply = "merging " + br
     elif role in ("frontend", "backend"):
         if "TASK:" in text and "[FROM: lead]" in text:
+            guard_cmd = (((parsed or {}).get("hooks", {}).get("PreToolUse") or [{}])[0].get("hooks") or [{}])[0].get("command")
+            if guard_cmd and os.path.exists(shlex.split(guard_cmd)[0]):
+                cwd = os.path.realpath(os.getcwd())
+                def probe(tool, inp):
+                    r = subprocess.run(["sh", "-c", guard_cmd], input=json.dumps({"tool_name": tool, "tool_input": inp, "cwd": cwd}), capture_output=True, text=True)
+                    try: return (json.loads(r.stdout)["hookSpecificOutput"]["permissionDecision"] if r.stdout.strip() else "none")
+                    except Exception: return "bad:" + r.stdout[:80]
+                L(guard_probe=True, outside_write=probe("Write", {"file_path": os.path.join(cwd, "..", "..", "outside.txt")}),
+                  inside_write=probe("Write", {"file_path": os.path.join(cwd, "inside.txt")}),
+                  push=probe("Bash", {"command": "git -C . push origin main"}),
+                  shell_write_outside=probe("Bash", {"command": "echo x > ../../outside2.txt"}),
+                  nested_push=probe("Bash", {"command": "bash -c 'git push'"}),
+                  plain_ls=probe("Bash", {"command": "ls -la"}))
             with open(role + ".txt", "w") as f: f.write("work of " + role + "\n")
             git("add", role + ".txt"); git("commit", "-q", "-m", "work of " + role)
             if role == "backend":
@@ -64,15 +77,18 @@ for line in sys.stdin:
             if role == "frontend":
                 # a builder trying to approve someone else's branch
                 b = branches_from_who()
-                crew("verdict", "approved", "--branch", b.get("backend", "crew/none-backend"), "--note", "looks fine")
+                # --round so the CLI lets it through: the RELAY's rule (judges only) is what this probes, not the CLI's syntax check
+                crew("verdict", "approved", "--branch", b.get("backend", "crew/none-backend"), "--round", "1", "--note", "looks fine")
             reply = "done " + role
     elif role in ("security", "reviewer"):
         if "JUDGE REQUEST for branch" in text:
-            br = text.split("JUDGE REQUEST for branch ")[1].split(" ")[0]
+            br = text.split("JUDGE REQUEST for branch ")[1].split(",")[0].split(" ")[0]
+            m = re.search(r"review round (\d+)", text)
+            rnd = m.group(1) if m else "1"
             if role == "security" and br.endswith("-backend"):
-                crew("verdict", "rejected", "--branch", br, "--note", "src/api.py:12 builds a shell command from input")
+                crew("verdict", "rejected", "--branch", br, "--round", rnd, "--note", "src/api.py:12 builds a shell command from input")
             else:
-                crew("verdict", "approved", "--branch", br, "--note", "ok")
+                crew("verdict", "approved", "--branch", br, "--round", rnd, "--note", "ok")
             reply = "judged " + br
     out({"type": "assistant", "parent_tool_use_id": None, "message": {"content": [{"type": "text", "text": reply}]}})
     out({"type": "result", "subtype": "success", "is_error": False, "result": reply, "total_cost_usd": 0.01})

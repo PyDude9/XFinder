@@ -8,8 +8,37 @@ final class CrewGateTests: XCTestCase {
     let t0 = Date(timeIntervalSince1970: 1_800_000_000)
 
     func env(_ from: String, _ to: String, _ kind: C.Kind, text: String = "", task: String? = nil, criteria: String? = nil,
-             branch: String? = nil, verdict: C.Verdict? = nil, tests: String? = nil) -> C.Envelope {
-        C.Envelope(from: from, to: to, kind: kind, text: text, task: task, criteria: criteria, branch: branch, verdict: verdict, tests: tests, at: t0)
+             branch: String? = nil, verdict: C.Verdict? = nil, tests: String? = nil, round: Int? = nil) -> C.Envelope {
+        // A verdict without a round is refused by `validate`; tests that reach the Gate pass the current round, like a judge
+        // answering the JUDGE REQUEST it was handed.
+        C.Envelope(from: from, to: to, kind: kind, text: text, task: task, criteria: criteria, branch: branch, verdict: verdict, tests: tests,
+                   round: round ?? (kind == .verdict ? 1 : nil), at: t0)
+    }
+
+    /// v2b review: a judge's approval of round N, arriving after the builder's round N+1 `done`, must NOT count for N+1.
+    func testAVerdictForAnEarlierRoundIsStaleAndNeverApprovesTheNewerCode() {
+        var g = C.Gate()
+        let b = "crew/x-frontend"
+        XCTAssertEqual(g.apply(env("frontend", "lead", .done, branch: b), senderDomain: .frontend), .nowAwaiting(b, round: 1))
+        XCTAssertEqual(g.apply(env("frontend", "lead", .done, branch: b), senderDomain: .frontend), .nowAwaiting(b, round: 2), "a second done opens round 2")
+        // Both judges answer the FIRST request (round 1) after the code moved.
+        XCTAssertEqual(g.apply(env("security", "lead", .verdict, branch: b, verdict: .approved, round: 1), senderDomain: .security),
+                       .staleRound(b, judged: 1, current: 2))
+        XCTAssertEqual(g.apply(env("reviewer", "lead", .verdict, branch: b, verdict: .approved, round: 1), senderDomain: .reviewer),
+                       .staleRound(b, judged: 1, current: 2))
+        XCTAssertFalse(g.isMergeable(b), "two stale approvals must not make the new code mergeable")
+        // Answers to round 2 do.
+        XCTAssertNil(g.apply(env("security", "lead", .verdict, branch: b, verdict: .approved, round: 2), senderDomain: .security))
+        XCTAssertEqual(g.apply(env("reviewer", "lead", .verdict, branch: b, verdict: .approved, round: 2), senderDomain: .reviewer), .nowMergeable(b))
+        XCTAssertEqual(g.round(of: b), 2)
+        XCTAssertEqual(g.round(of: "crew/never-done"), 0)
+        // The round is part of what the CLI signs: changing it changes the signature.
+        let v2 = env("security", "lead", .verdict, branch: b, verdict: .approved, round: 2)
+        var v1 = v2; v1.round = 1
+        XCTAssertNotEqual(C.signature(v2, name: "n.json", token: "t"), C.signature(v1, name: "n.json", token: "t"))
+        var noRound = v2; noRound.round = nil          // the helper fills a round in for verdicts; this one really has none
+        XCTAssertEqual(C.validate(noRound, senderDomain: .security, roles: roles), .missingRound)
+        XCTAssertTrue(C.render(v2).contains("VERDICT: approved | BRANCH: \(b) | ROUND: 2"), C.render(v2))
     }
 
     // MARK: Names
@@ -69,7 +98,8 @@ final class CrewGateTests: XCTestCase {
         // 1_800_000_000 s = 2027-01-15 08:00:00 UTC → 15:00 at +07:00 (the first draft of this line said 15:20 — wrong arithmetic).
         XCTAssertEqual(s, "[2027-01-15T15:00:00+07:00] [FROM: lead] -> [TO: frontend]\nTASK: Share button, copy link | CRITERIA: npm test green | BRANCH: crew/notes-frontend | NOTE: ask before touching schema")
         let v = env("reviewer", "lead", .verdict, text: "all three branches pass npm test", branch: "crew/notes-backend", verdict: .approved)
-        XCTAssertTrue(C.render(v, timeZone: .init(secondsFromGMT: 0)!).hasSuffix("VERDICT: approved | BRANCH: crew/notes-backend | NOTE: all three branches pass npm test"))
+        XCTAssertTrue(C.render(v, timeZone: .init(secondsFromGMT: 0)!).hasSuffix("VERDICT: approved | BRANCH: crew/notes-backend | ROUND: 1 | NOTE: all three branches pass npm test"),
+                      "the round is its own part after BRANCH (review 2026-10-18)")
         let d = env("backend", "lead", .done, branch: "crew/notes-backend", tests: "npm test: 9 passed")
         XCTAssertTrue(C.render(d, timeZone: .init(secondsFromGMT: 0)!).contains("DONE: npm test: 9 passed | BRANCH: crew/notes-backend"))
     }
@@ -80,7 +110,7 @@ final class CrewGateTests: XCTestCase {
         var g = C.Gate()
         let b = "crew/notes-backend"
         XCTAssertEqual(g.apply(env("security", "lead", .verdict, branch: b, verdict: .approved), senderDomain: .security), .ignored(b), "a verdict before `done` means nothing")
-        XCTAssertEqual(g.apply(env("backend", "lead", .done, branch: b, tests: "ok"), senderDomain: .backend), .nowAwaiting(b))
+        XCTAssertEqual(g.apply(env("backend", "lead", .done, branch: b, tests: "ok"), senderDomain: .backend), .nowAwaiting(b, round: 1))
         XCTAssertNil(g.apply(env("security", "lead", .verdict, branch: b, verdict: .approved), senderDomain: .security))
         XCTAssertFalse(g.isMergeable(b), "one approval is not two")
         XCTAssertFalse(g.requestMerge(b, senderDomain: .lead))
@@ -98,11 +128,11 @@ final class CrewGateTests: XCTestCase {
         _ = g.apply(env("frontend", "lead", .done, branch: b), senderDomain: .frontend)
         _ = g.apply(env("security", "lead", .verdict, branch: b, verdict: .approved), senderDomain: .security)
         _ = g.apply(env("frontend", "lead", .done, branch: b), senderDomain: .frontend)   // code moved
-        _ = g.apply(env("reviewer", "lead", .verdict, branch: b, verdict: .approved), senderDomain: .reviewer)
+        _ = g.apply(env("reviewer", "lead", .verdict, branch: b, verdict: .approved, round: 2), senderDomain: .reviewer)
         XCTAssertFalse(g.isMergeable(b), "security's approval was for the OLD code")
-        XCTAssertEqual(g.apply(env("security", "lead", .verdict, text: "x.ts:1", branch: b, verdict: .rejected), senderDomain: .security), .nowRejected(b, by: "security"))
+        XCTAssertEqual(g.apply(env("security", "lead", .verdict, text: "x.ts:1", branch: b, verdict: .rejected, round: 2), senderDomain: .security), .nowRejected(b, by: "security"))
         XCTAssertEqual(g.state(of: b), .rejected(by: "security", note: "x.ts:1"))
-        XCTAssertNil(g.apply(env("reviewer", "lead", .verdict, branch: b, verdict: .approved), senderDomain: .reviewer).flatMap { $0 == .ignored(b) ? nil : $0 }, "verdicts on a rejected branch are ignored")
+        XCTAssertNil(g.apply(env("reviewer", "lead", .verdict, branch: b, verdict: .approved, round: 2), senderDomain: .reviewer).flatMap { $0 == .ignored(b) ? nil : $0 }, "verdicts on a rejected branch are ignored")
         g.builderResumed(b)
         XCTAssertEqual(g.state(of: b), .building)
     }
@@ -122,13 +152,13 @@ final class CrewGateTests: XCTestCase {
                     _ = g.apply(env("backend", "lead", .done, branch: b), senderDomain: .backend)
                     doneSeen = true; sec = false; rev = false; rejected = false
                 case .appSec:
-                    _ = g.apply(env("security", "lead", .verdict, branch: b, verdict: .approved), senderDomain: .security)
+                    _ = g.apply(env("security", "lead", .verdict, branch: b, verdict: .approved, round: g.round(of: b)), senderDomain: .security)
                     if doneSeen, !rejected { sec = true }
                 case .appRev:
-                    _ = g.apply(env("reviewer", "lead", .verdict, branch: b, verdict: .approved), senderDomain: .reviewer)
+                    _ = g.apply(env("reviewer", "lead", .verdict, branch: b, verdict: .approved, round: g.round(of: b)), senderDomain: .reviewer)
                     if doneSeen, !rejected { rev = true }
                 case .rejSec, .rejRev:
-                    _ = g.apply(env(ev == .rejSec ? "security" : "reviewer", "lead", .verdict, text: "f.ts:1", branch: b, verdict: .rejected), senderDomain: ev == .rejSec ? .security : .reviewer)
+                    _ = g.apply(env(ev == .rejSec ? "security" : "reviewer", "lead", .verdict, text: "f.ts:1", branch: b, verdict: .rejected, round: g.round(of: b)), senderDomain: ev == .rejSec ? .security : .reviewer)
                     if doneSeen, !(sec && rev) { rejected = true }
                 case .status:
                     _ = g.apply(env("backend", "lead", .status, text: "working", branch: b), senderDomain: .backend)

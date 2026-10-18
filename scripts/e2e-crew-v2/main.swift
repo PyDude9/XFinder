@@ -35,7 +35,10 @@ Task { @MainActor in
     w.claudePathOverride = E + "/fake-claude.py"
     let c = CrewManager.shared
     c.scriptSourceOverride = URL(fileURLWithPath: SCRIPT)
-    c.guardBinaryOverride = "/opt/xf test/XFinder"
+    // XF_GUARD_BIN: the built app binary — then every builder also runs the REAL guard (fake-claude's guard_probe); without it a
+    // fake path with a space still proves the quoting.
+    let guardBin = ProcessInfo.processInfo.environment["XF_GUARD_BIN"] ?? "/opt/xf test/XFinder"
+    c.guardBinaryOverride = guardBin
     let crewID = try await c.start(template: .leadArchitect, folder: URL(fileURLWithPath: repo), goal: "GOAL_PLAN share links")
     guard let crew0 = c.crews.first(where: { $0.id == crewID }) else { check(false, "crew exists"); exit(1) }
     let fe = crew0.branches["frontend"] ?? "?", be = crew0.branches["backend"] ?? "?", integ = crew0.integrationBranch ?? "?"
@@ -56,8 +59,19 @@ Task { @MainActor in
     check([lead, f, sec, rev].allSatisfy { ($0?["mode"] as? String) == "manual" }, "every member runs --permission-mode manual")
     check((sec?["disallowed"] as? String) == "Edit,Write,MultiEdit,NotebookEdit" && (rev?["disallowed"] as? String) != nil && f?["disallowed"] is NSNull || f?["disallowed"] == nil,
           "only the judges are started without edit tools")
-    check((f?["guard"] as? String) == "'/opt/xf test/XFinder' --crew-guard" && (f?["matcher"] as? String) == "Bash|Edit|Write|MultiEdit|NotebookEdit" && ((f?["ask_rules"] as? Int) ?? 0) > 20,
-          "each member's --settings carries the guard hook (path with a space quoted) and the always-ask rules")
+    check((f?["guard"] as? String) == CrewGuard.guardCommand(binary: guardBin) && (f?["matcher"] as? String) == "Bash|Edit|Write|MultiEdit|NotebookEdit" && ((f?["ask_rules"] as? Int) ?? 0) > 20,
+          "each member's --settings carries the guard hook (quoted path) and the always-ask rules")
+    if FileManager.default.isExecutableFile(atPath: guardBin) {
+        _ = await until(20) { fakeLog().contains { ($0["guard_probe"] as? Bool) == true } }
+        let gp = fakeLog().first { ($0["guard_probe"] as? Bool) == true }
+        check((gp?["outside_write"] as? String) == "deny" && (gp?["inside_write"] as? String) == "none",
+              "REAL guard through the member's settings: a Write outside the worktree is denied, inside says nothing (\(gp?["outside_write"] ?? "?")/\(gp?["inside_write"] ?? "?"))")
+        check((gp?["push"] as? String) == "ask" && (gp?["nested_push"] as? String) == "ask" && (gp?["plain_ls"] as? String) == "none",
+              "REAL guard: git -C . push and bash -c 'git push' ask, ls says nothing")
+        check((gp?["shell_write_outside"] as? String) == "deny", "REAL guard: a shell redirection outside the worktree is denied")
+    } else {
+        print("SKIP  real-guard probes (set XF_GUARD_BIN to the built XFinder binary)")
+    }
     check([lead, f, sec, rev].allSatisfy { ($0?["system_ascii"] as? Bool) == true } && (f?["system_has_branch"] as? Bool) == true, "the system prompt is ASCII and a builder's names its branch")
 
     // ---- the flow
@@ -72,6 +86,8 @@ Task { @MainActor in
     check(leadGot.contains { $0.contains("REFUSED: branch \(be) is not mergeable yet") }, "a merge before any done / approval is refused")
     check(feGot.contains { $0.contains("REFUSED: only security and reviewer may give a verdict") }, "a builder's verdict is refused")
     check(leadGot.contains { $0.contains("[FROM: frontend] -> [TO: lead]") && $0.contains("DONE: ran 3 tests: all passed") && $0.contains("BRANCH: \(fe)") }, "the lead is handed a done report")
+    check(got("security").contains { $0.contains("JUDGE REQUEST for branch \(fe), review round 1") }, "a judge request names its review round")
+    check(leadGot.contains { $0.contains("VERDICT: approved | BRANCH: \(fe) | ROUND: 1") }, "a verdict names the round it judged")
     let judged = { (r: String) in got(r).filter { $0.contains("JUDGE REQUEST for branch") } }
     check(judged("security").count == 2 && judged("reviewer").count == 2, "each judge is asked once per finished branch (\(judged("security").count)/\(judged("reviewer").count))")
     check(leadGot.contains { $0.contains("OK: branch \(fe) may be merged") }, "the lead's merge request is allowed after both approvals")

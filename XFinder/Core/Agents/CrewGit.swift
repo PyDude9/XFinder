@@ -122,6 +122,53 @@ enum CrewGit {
         run(["branch", "-D", name], in: repo)
     }
 
+    /// What stopping (or sweeping) a crew folder did to its worktrees. `kept`: moved aside with uncommitted work; `failed`: could
+    /// not be retired — the folder is then KEPT, because deleting it would delete the work inside `wt/` (review 2026-10-18: a
+    /// repo that had moved made `removeFolder` skip every check and delete a worktree with an uncommitted file).
+    struct FolderOutcome: Equatable, Sendable {
+        var kept: [String] = []
+        var failed: [String] = []
+        var removedFolder = false
+    }
+
+    /// The whole retire-and-remove step for one crew folder, shared by Stop, quit and the stale sweep. `repo` is what the crew
+    /// recorded at start (nil when it recorded nothing — a v1 crew). Worktrees are only ever removed through `retire`; when the
+    /// repository is not where it was, or a retire fails, nothing under `wt/` is deleted and the folder stays.
+    static func retireCrewFolder(_ dir: URL, crewID: String, repo: String?, keptRoot: String) -> FolderOutcome {
+        var out = FolderOutcome()
+        let fm = FileManager.default
+        let wt = dir.appendingPathComponent("wt")
+        let entries = ((try? fm.contentsOfDirectory(at: wt, includingPropertiesForKeys: nil)) ?? []).filter { !$0.lastPathComponent.hasPrefix(".") }
+        if !entries.isEmpty {
+            guard let repo, fm.fileExists(atPath: repo) else {
+                out.failed = entries.map { "\($0.lastPathComponent): repository not found at \(repo ?? "?")" }
+                return out
+            }
+            for url in entries {
+                switch retire(worktree: url.path, repo: repo, keptRoot: keptRoot, keptName: "\(crewID.prefix(8))-\(url.lastPathComponent)") {
+                case .removed: break
+                case .keptAside(let p): out.kept.append(p)
+                case .failed(let why): out.failed.append("\(url.lastPathComponent): \(why)")
+                }
+            }
+            pruneWorktrees(repo: repo)
+        } else if let repo, fm.fileExists(atPath: repo) {
+            pruneWorktrees(repo: repo)
+        }
+        if out.failed.isEmpty {
+            try? fm.removeItem(at: dir)
+            out.removedFolder = !fm.fileExists(atPath: dir.path)
+        }
+        return out
+    }
+
+    /// The branch `HEAD` of a checkout is on; nil when detached.
+    static func currentBranch(in repo: String) -> String? {
+        let r = run(["symbolic-ref", "--short", "-q", "HEAD"], in: repo)
+        let t = r.out.trimmingCharacters(in: .whitespacesAndNewlines)
+        return r.ok && !t.isEmpty ? t : nil
+    }
+
     enum Retired: Equatable, Sendable {
         case removed
         /// There was uncommitted work: the worktree now lives at this path and the branch is untouched.

@@ -9,15 +9,22 @@
 #   xfinder-crew send <role|all> --task "<what>" --criteria "<acceptance>" [--branch crew/…] [note…]
 #   xfinder-crew status <role|all> <message…>                                (no answer expected)
 #   xfinder-crew done --branch crew/… --tests "<what you ran>" [note…]       (a builder: this part is finished)
-#   xfinder-crew verdict approved|rejected --branch crew/… --note "<file:line and why>"   (security, reviewer)
+#   xfinder-crew verdict approved|rejected --branch crew/… --round <N> --note "<file:line and why>"   (security, reviewer)
 #   xfinder-crew conflict --branch crew/… --note "<file>"
 #   xfinder-crew merge --branch crew/…                                       (the lead; XFinder refuses before both approvals)
+#
+# Options are read ONLY from the words that directly follow the verb (and its positional role / verdict word); the first word
+# that is not a known option starts the free text, and a later "--branch x" inside that text stays text. Review 2026-10-18:
+# zsh's zparseopts -E scanned the whole line and silently rewrote a signed field from words in the note.
 #
 # The sender is XFINDER_CREW_ROLE; the request is signed with the member's own token (XFINDER_CREW_TOKEN) and the token is
 # never written to the shared inbox. v1: SHA-256 over file name, target, text, token. v2: SHA-256 over EVERY field, each as
 # `tag:<utf-8 byte count>:<value>` joined by newlines, then the token — the same canonical form CrewV2.canonical builds.
 emulate -L zsh
 setopt no_unset 2>/dev/null
+# ${#s} counts BYTES under an unset or C locale and characters under a UTF-8 one (measured: "việc🚀" is 10 vs 5). The 8000
+# limit is a character limit on the Swift side, so pin the locale here; the control-character strip below sets C for itself.
+export LC_ALL=en_US.UTF-8
 
 dir=${XFINDER_CREW_DIR:-}
 token=${XFINDER_CREW_TOKEN:-}
@@ -36,7 +43,7 @@ usage() {
     print -u2 "       xfinder-crew send <role|all> --task \"<what>\" --criteria \"<acceptance>\" [--branch crew/...] [note]"
     print -u2 "       xfinder-crew status <role|all> <message>"
     print -u2 "       xfinder-crew done --branch crew/... --tests \"<what you ran>\" [note]"
-    print -u2 "       xfinder-crew verdict approved|rejected --branch crew/... --note \"<file:line and why>\""
+    print -u2 "       xfinder-crew verdict approved|rejected --branch crew/... --round <N> --note \"<file:line and why>\""
     print -u2 "       xfinder-crew conflict --branch crew/... --note \"<file>\""
     print -u2 "       xfinder-crew merge --branch crew/..."
   fi
@@ -77,25 +84,46 @@ paused_note() {
   fi
 }
 
-# v2: write one signed envelope. Arguments: to kind text task criteria branch verdict tests.
+# Leading options only. Sets opt_<name> for task criteria branch tests note round; `rest` holds the free text verbatim.
+typeset -A opt
+typeset -a rest
+parse_opts() {
+  opt=()
+  local known=(task criteria branch tests note round) a name val
+  while (( $# )); do
+    a=$1
+    if [[ $a == --* ]]; then
+      name=${a#--}
+      if [[ $name == *=* ]]; then
+        val=${name#*=}; name=${name%%=*}
+        if (( ${known[(Ie)$name]} )); then opt[$name]=$val; shift; continue; fi
+      elif (( ${known[(Ie)$name]} )); then
+        if (( $# < 2 )); then print -u2 "xfinder-crew: --$name needs a value."; exit 1; fi
+        opt[$name]=$2; shift 2; continue
+      fi
+    fi
+    break
+  done
+  rest=("$@")
+}
+o() { print -rn -- "${opt[$1]-}"; }
+
+# v2: write one signed envelope. Arguments: to kind text task criteria branch verdict tests round.
 emit_v2() {
-  local to=$1 kind=$2 text=$3 task=$4 criteria=$5 branch=$6 verdict=$7 tests=$8
+  local to=$1 kind=$2 text=$3 task=$4 criteria=$5 branch=$6 verdict=$7 tests=$8 round=${9-}
   local name at tmp canon mac
   name="$(/bin/date +%s)-$$-$RANDOM.json"
   at="$(/bin/date -u +%Y-%m-%dT%H:%M:%SZ)"
   tmp="${dir}/inbox/.${name}.tmp"
-  canon="$(fld name "$name")"$'\n'"$(fld from "$me")"$'\n'"$(fld to "$to")"$'\n'"$(fld kind "$kind")"$'\n'"$(fld text "$text")"$'\n'"$(fld task "$task")"$'\n'"$(fld criteria "$criteria")"$'\n'"$(fld branch "$branch")"$'\n'"$(fld verdict "$verdict")"$'\n'"$(fld tests "$tests")"$'\n'"$(fld at "$at")"
+  canon="$(fld name "$name")"$'\n'"$(fld from "$me")"$'\n'"$(fld to "$to")"$'\n'"$(fld kind "$kind")"$'\n'"$(fld text "$text")"$'\n'"$(fld task "$task")"$'\n'"$(fld criteria "$criteria")"$'\n'"$(fld branch "$branch")"$'\n'"$(fld verdict "$verdict")"$'\n'"$(fld tests "$tests")"$'\n'"$(fld round "$round")"$'\n'"$(fld at "$at")"
   mac=$(print -rn -- "${canon}"$'\n'"${token}" | /usr/bin/shasum -a 256 | /usr/bin/cut -d' ' -f1)
   [[ ${#mac} -eq 64 ]] || exit 1
-  print -rn -- "{\"v\":2,\"from\":\"$(esc "$me")\",\"to\":\"$(esc "$to")\",\"kind\":\"$(esc "$kind")\",\"text\":\"$(esc "$text")\",\"task\":\"$(esc "$task")\",\"criteria\":\"$(esc "$criteria")\",\"branch\":\"$(esc "$branch")\",\"verdict\":\"$(esc "$verdict")\",\"tests\":\"$(esc "$tests")\",\"at\":\"${at}\",\"mac\":\"${mac}\"}" > $tmp || exit 1
+  print -rn -- "{\"v\":2,\"from\":\"$(esc "$me")\",\"to\":\"$(esc "$to")\",\"kind\":\"$(esc "$kind")\",\"text\":\"$(esc "$text")\",\"task\":\"$(esc "$task")\",\"criteria\":\"$(esc "$criteria")\",\"branch\":\"$(esc "$branch")\",\"verdict\":\"$(esc "$verdict")\",\"tests\":\"$(esc "$tests")\",\"round\":\"$(esc "$round")\",\"at\":\"${at}\",\"mac\":\"${mac}\"}" > $tmp || exit 1
   /bin/mv -f $tmp "$dir/inbox/$name" || exit 1
 }
 
 verb=${1:-}
 (( $# >= 1 )) && shift
-typeset -A opts
-zparseopts -D -E -A opts -- -task: -criteria: -branch: -tests: -note: 2>/dev/null
-opt() { local v=${opts[$1]-}; print -rn -- "${v#=}"; }     # `--task=x` arrives as `=x`
 
 case $verb in
   who)
@@ -106,9 +134,10 @@ case $verb in
     (( $# >= 1 )) || usage
     to=$1; shift
     check_role "$to"
-    note=$(clean "$*")
+    parse_opts "$@"
+    note=$(clean "${rest[*]-}")
     if (( v2 )); then
-      task=$(clean "$(opt --task)"); criteria=$(clean "$(opt --criteria)"); branch=$(clean "$(opt --branch)")
+      task=$(clean "$(o task)"); criteria=$(clean "$(o criteria)"); branch=$(clean "$(o branch)")
       too_long "$note"; too_long "$task"; too_long "$criteria"
       if [[ -n ${task//[[:space:]]/} ]]; then
         if [[ -z ${criteria//[[:space:]]/} ]]; then
@@ -116,16 +145,17 @@ case $verb in
           exit 1
         fi
         [[ -z $branch || $branch == crew/* ]] || { print -u2 "xfinder-crew: --branch must start with crew/."; exit 1; }
-        emit_v2 "$to" task "$note" "$task" "$criteria" "$branch" "" ""
+        emit_v2 "$to" task "$note" "$task" "$criteria" "$branch" "" "" ""
         paused_note "$to" "XFinder hands it over in the TASK / CRITERIA / BRANCH format; the answer arrives later as a message starting with [crew]."
         exit 0
       fi
       if [[ -z ${note//[[:space:]]/} ]]; then print -u2 "xfinder-crew: the message is empty."; exit 1; fi
-      emit_v2 "$to" question "$note" "" "" "" "" ""
+      emit_v2 "$to" question "$note" "" "" "" "" "" ""
       paused_note "$to" "The reply will arrive later as a message starting with [crew]."
       exit 0
     fi
-    # v1 (every other crew): free text, unchanged.
+    # v1 (every other crew): free text, unchanged. Options are not a thing here: the whole tail is the message.
+    note=$(clean "$*")
     if [[ -z ${note//[[:space:]]/} ]]; then
       print -u2 "xfinder-crew: the message is empty."
       exit 1
@@ -148,47 +178,57 @@ case $verb in
       print -u2 "xfinder-crew: this crew has no \"$verb\" verb — use: xfinder-crew send <role> <message>."
       exit 1
     fi
-    branch=$(clean "$(opt --branch)")
-    if [[ $verb != status && $branch != crew/* ]]; then
-      print -u2 "xfinder-crew: $verb needs --branch crew/<...> (the branch it is about)."
-      exit 1
-    fi
     case $verb in
       status)
         (( $# >= 2 )) || usage
         to=$1; shift
         check_role "$to"
-        text=$(clean "$*"); too_long "$text"
+        parse_opts "$@"
+        text=$(clean "${rest[*]-}"); too_long "$text"
         [[ -n ${text//[[:space:]]/} ]] || { print -u2 "xfinder-crew: the message is empty."; exit 1; }
-        emit_v2 "$to" status "$text" "" "" "" "" ""
+        emit_v2 "$to" status "$text" "" "" "" "" "" ""
         paused_note "$to" "No answer is expected."
         ;;
       done)
-        tests=$(clean "$(opt --tests)"); text=$(clean "$*"); too_long "$tests"; too_long "$text"
+        parse_opts "$@"
+        branch=$(clean "$(o branch)")
+        [[ $branch == crew/* ]] || { print -u2 "xfinder-crew: done needs --branch crew/<...> (the branch it is about)."; exit 1; }
+        tests=$(clean "$(o tests)"); text=$(clean "${rest[*]-}"); too_long "$tests"; too_long "$text"
         [[ -n ${tests//[[:space:]]/} ]] || { print -u2 "xfinder-crew: done needs --tests \"<what you ran and the result>\"."; exit 1; }
-        emit_v2 "$lead" done "$text" "" "" "$branch" "" "$tests"
+        emit_v2 "$lead" done "$text" "" "" "$branch" "" "$tests" ""
         paused_note "$lead" "XFinder now asks security and reviewer to judge the branch; their verdicts go to the lead."
         ;;
       verdict)
         (( $# >= 1 )) || usage
         v=$1; shift
         [[ $v == approved || $v == rejected ]] || { print -u2 "xfinder-crew: the verdict is approved or rejected."; exit 1; }
-        note=$(clean "$(opt --note)"); too_long "$note"
+        parse_opts "$@"
+        branch=$(clean "$(o branch)")
+        [[ $branch == crew/* ]] || { print -u2 "xfinder-crew: verdict needs --branch crew/<...> (the branch it judges)."; exit 1; }
+        round=$(clean "$(o round)")
+        [[ $round == <1-> ]] || { print -u2 "xfinder-crew: verdict needs --round <N>, the review round number in the JUDGE REQUEST you are answering."; exit 1; }
+        note=$(clean "$(o note)"); too_long "$note"
         if [[ $v == rejected && -z ${note//[[:space:]]/} ]]; then
           print -u2 "xfinder-crew: a rejection needs --note with file:line and why."
           exit 1
         fi
-        emit_v2 "$lead" verdict "$note" "" "" "$branch" "$v" ""
+        emit_v2 "$lead" verdict "$note" "" "" "$branch" "$v" "" "$round"
         paused_note "$lead" "The lead and, on a rejection, the builder are told."
         ;;
       conflict)
-        note=$(clean "$(opt --note)"); too_long "$note"
+        parse_opts "$@"
+        branch=$(clean "$(o branch)")
+        [[ $branch == crew/* ]] || { print -u2 "xfinder-crew: conflict needs --branch crew/<...> (the branch it is about)."; exit 1; }
+        note=$(clean "$(o note)"); too_long "$note"
         [[ -n ${note//[[:space:]]/} ]] || { print -u2 "xfinder-crew: conflict needs --note (the file or area)."; exit 1; }
-        emit_v2 "$lead" conflict "$note" "" "" "$branch" "" ""
+        emit_v2 "$lead" conflict "$note" "" "" "$branch" "" "" ""
         paused_note "$lead" "The lead decides."
         ;;
       merge)
-        emit_v2 all merge "" "" "" "$branch" "" ""
+        parse_opts "$@"
+        branch=$(clean "$(o branch)")
+        [[ $branch == crew/* ]] || { print -u2 "xfinder-crew: merge needs --branch crew/<...>."; exit 1; }
+        emit_v2 all merge "" "" "" "$branch" "" "" ""
         paused_note all "XFinder answers in a [crew] message whether the merge is allowed; the git merge itself still asks the person."
         ;;
     esac

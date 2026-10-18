@@ -38,6 +38,8 @@ final class CrewManager {
         var integrationBranch: String?
         /// "integration" or a builder role → worktree path
         var worktrees: [String: String] = [:]
+        /// Review 2026-10-18: a validly signed envelope copied back into the inbox verified again — remember what was consumed.
+        var replay = CrewV2.ReplayGuard()
         var stopped: Bool { relay.stopped }
         var isV2: Bool { template.usesV2 }
 
@@ -98,34 +100,31 @@ final class CrewManager {
         Self.removeStaleFolders()
     }
 
+    /// Folders a crashed run left behind. A folder whose `owner.pid` names a process that is still alive belongs to ANOTHER
+    /// running XFinder (a Debug build beside the installed one — review 2026-10-18) and is left alone.
     nonisolated static func removeStaleFolders() {
         let fm = FileManager.default
         for url in (try? fm.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []
         where url.lastPathComponent != "bin" && UUID(uuidString: url.lastPathComponent) != nil {
+            if let pid = ownerPID(of: url), pid != getpid(), kill(pid, 0) == 0 { continue }
             _ = removeFolder(url, crewID: url.lastPathComponent)
         }
     }
 
-    /// Retire any worktrees under `dir/wt` (branches stay, uncommitted work is moved aside), then remove the folder — unless a
-    /// worktree could not be moved: deleting the folder would delete that work, so it stays and the caller is told.
+    nonisolated static func ownerPID(of dir: URL) -> pid_t? {
+        guard let s = try? String(contentsOf: dir.appendingPathComponent("owner.pid"), encoding: .utf8) else { return nil }
+        return pid_t(s.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    /// Retire the worktrees under `dir/wt` (branches stay, uncommitted work is moved aside), then remove the folder — unless
+    /// the repository is not where the crew recorded it or a worktree could not be moved: deleting the folder would delete
+    /// that work, so it stays and the caller is told. The step itself lives in `CrewGit.retireCrewFolder` (tested with a moved
+    /// repository and a dirty worktree); this reads what the crew recorded.
     nonisolated static func removeFolder(_ dir: URL, crewID: String) -> (kept: [String], failed: [String]) {
         let repo = (try? String(contentsOf: dir.appendingPathComponent("repo.txt"), encoding: .utf8))?
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        var kept: [String] = [], failed: [String] = []
-        let wt = dir.appendingPathComponent("wt")
-        let entries = (try? FileManager.default.contentsOfDirectory(at: wt, includingPropertiesForKeys: nil)) ?? []
-        if let repo, FileManager.default.fileExists(atPath: repo) {
-            for url in entries {
-                switch CrewGit.retire(worktree: url.path, repo: repo, keptRoot: keptRoot.path, keptName: "\(crewID.prefix(8))-\(url.lastPathComponent)") {
-                case .removed: break
-                case .keptAside(let p): kept.append(p)
-                case .failed(let why): failed.append("\(url.lastPathComponent): \(why)")
-                }
-            }
-            CrewGit.pruneWorktrees(repo: repo)
-        }
-        if failed.isEmpty { try? FileManager.default.removeItem(at: dir) }
-        return (kept, failed)
+        let out = CrewGit.retireCrewFolder(dir, crewID: crewID, repo: repo, keptRoot: keptRoot.path)
+        return (out.kept, out.failed)
     }
 
     // MARK: - Start
@@ -157,7 +156,8 @@ final class CrewManager {
         var createdBranches: [String] = []
         func rollback() {
             for (_, path) in worktrees { _ = CrewGit.removeWorktree(repo: repo, path: path) }
-            for b in createdBranches where CrewGit.run(["rev-parse", b], in: repo).out.trimmingCharacters(in: .whitespacesAndNewlines) == base {
+            for b in createdBranches where CrewGit.branchExists(b, in: repo)
+                && CrewGit.run(["rev-parse", "--verify", "--quiet", "refs/heads/\(b)"], in: repo).out.trimmingCharacters(in: .whitespacesAndNewlines) == base {
                 _ = CrewGit.deleteBranch(b, repo: repo)      // fresh and uncommitted: nothing to keep
             }
             CrewGit.pruneWorktrees(repo: repo)
@@ -167,10 +167,12 @@ final class CrewManager {
         wanted.append(("integration", names.integration))
         for (key, branch) in wanted {
             let path = dir.appendingPathComponent("wt").appendingPathComponent(key).path
+            // Measured (review 2026-10-18): `git worktree add -b` creates the branch ref BEFORE it can fail on the path, so the
+            // name goes on the rollback list first — rollback deletes it only if it exists and still points at `base`.
+            createdBranches.append(branch)
             let r = CrewGit.addWorktree(repo: repo, path: path, branch: branch, base: base)
             guard r.ok else { rollback(); throw StartError.git(r.err.trimmingCharacters(in: .whitespacesAndNewlines)) }
             worktrees[key] = path
-            createdBranches.append(branch)
         }
         var cwd: [String: URL] = [:], editRoot: [String: String] = [:]
         func inWorktree(_ path: String) -> URL {
@@ -206,6 +208,7 @@ final class CrewManager {
             try fm.createDirectory(at: dir.appendingPathComponent("inbox", isDirectory: true), withIntermediateDirectories: true,
                                    attributes: [.posixPermissions: 0o700])
             try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: dir.path)
+            try Data("\(getpid())\n".utf8).write(to: dir.appendingPathComponent("owner.pid"), options: .atomic)
             try installScript()
         } catch is StartError {
             try? fm.removeItem(at: dir); throw StartError.noScript
@@ -227,9 +230,14 @@ final class CrewManager {
         }
         func undoStart(_ startedMembers: [String]) {
             for sid in startedMembers { WindowlessSessionManager.shared.stop(sid) }
+            let pids = startedMembers.compactMap { WindowlessSessionManager.shared.records[$0]?.pid }
             if let plan {
                 let repo = plan.repo, base = plan.base, branches = Array(plan.branches.values) + [plan.integration], paths = Array(plan.worktrees.values)
                 Task.detached {
+                    // Review 2026-10-18: let the members that did start exit before their worktrees go (≤ 1.5 s, like quit).
+                    var live = pids
+                    let deadline = Date().addingTimeInterval(1.5)
+                    while !live.isEmpty, Date() < deadline { live.removeAll { kill($0, 0) != 0 }; if !live.isEmpty { try? await Task.sleep(nanoseconds: 50_000_000) } }
                     for p in paths { _ = CrewGit.removeWorktree(repo: repo, path: p) }
                     for b in branches where CrewGit.run(["rev-parse", b], in: repo).out.trimmingCharacters(in: .whitespacesAndNewlines) == base {
                         _ = CrewGit.deleteBranch(b, repo: repo)
@@ -362,6 +370,10 @@ final class CrewManager {
                     log.info("crew inbox: a request was refused (signature or shape)")
                     continue
                 }
+                if let mac = ((try? JSONSerialization.jsonObject(with: data)) as? [String: Any])?["mac"] as? String, !crews[i].replay.admit(mac) {
+                    log.info("crew inbox: a replayed envelope was dropped")
+                    continue
+                }
                 effects += receiveV2(env, crewIndex: i)
                 continue
             }
@@ -417,8 +429,8 @@ final class CrewManager {
         }
         var env = e
         if e.kind == .task, targets.count == 1, env.branch == nil { env.branch = crews[i].branches[targets[0]] }
-        // A builder that writes again after a rejection is working on it again.
-        if sd.editsCode, let own = crews[i].branches[e.from] { crews[i].gate.builderResumed(own) }
+        // Review 2026-10-18: a rejection stays on the board until the builder's NEXT `done` (Gate.apply resets it then);
+        // a status line or question from the builder no longer wipes the rejected mark and its file:line.
         let rendered = CrewV2.render(env)
         let text = Self.boardText(env)
         var effects: [CrewRules.Effect] = []
@@ -434,18 +446,24 @@ final class CrewManager {
         case .status:
             send(e.from, targets, text, rendered: rendered, kind: .message, reply: false)
         case .conflict:
-            send(e.from, [lead], text, rendered: rendered, kind: .message, reply: false)
+            send(e.from, [lead], text, rendered: rendered, kind: .conflict, reply: false)
         case .done:
             let event = crews[i].gate.apply(env, senderDomain: sd)
+            if case .ignored(let b)? = event {
+                effects += crews[i].relay.notify(e.from, text: "IGNORED: branch \(b) is already merged; a done for it changes nothing. Start a new branch for new work.",
+                                                 kind: .refused, at: now)
+                break
+            }
             send(e.from, [lead], text, rendered: rendered, kind: .done, reply: false)
-            if case .nowAwaiting(let b)? = event {
+            if case .nowAwaiting(let b, let round)? = event {
                 let judges = crews[i].template.roles.filter { $0.domain.mayJudge }.map(\.name)
-                let request = "JUDGE REQUEST for branch \(b) (builder: \(e.from)). Tests the builder ran: \(e.tests ?? "none stated"). "
+                let request = "JUDGE REQUEST for branch \(b), review round \(round) (builder: \(e.from)). Tests the builder ran: \(e.tests ?? "none stated"). "
                     + "Branches live in the shared repository, so git diff / log / show on that branch work from your worktree. "
                     + "Security: audit the diff for vulnerabilities by reading it. Reviewer: merge the branch into your integration worktree "
                     + "(git merge --no-ff \(b)), run the whole test suite, and read the diff for correctness. "
-                    + "Answer only with: xfinder-crew verdict approved|rejected --branch \(b) --note \"file:line and why\"."
-                if !judges.isEmpty { send(e.from, judges, "judge \(b)", rendered: request, kind: .message, reply: false) }
+                    + "Answer only with: xfinder-crew verdict approved|rejected --branch \(b) --round \(round) --note \"file:line and why\". "
+                    + "If a newer JUDGE REQUEST for this branch arrives before you answer, judge that one instead: the code moved."
+                if !judges.isEmpty { send(e.from, judges, "judge \(b) round \(round)", rendered: request, kind: .message, reply: false) }
             }
         case .verdict:
             let event = crews[i].gate.apply(env, senderDomain: sd)
@@ -460,6 +478,9 @@ final class CrewManager {
                                                  kind: .merge, at: now)
             case .ignored(let b)?:
                 effects += crews[i].relay.notify(e.from, text: "IGNORED: branch \(b) has no finished work waiting for a verdict (the builder must report done first, and a newer done voids earlier verdicts).",
+                                                 kind: .refused, at: now)
+            case .staleRound(let b, let judged, let current)?:
+                effects += crews[i].relay.notify(e.from, text: "STALE: your verdict names round \(judged.map(String.init) ?? "none") but branch \(b) is on round \(current) — the builder reported done again after you looked. Review the current code and answer with --round \(current).",
                                                  kind: .refused, at: now)
             default: break
             }
@@ -577,10 +598,25 @@ final class CrewManager {
         crews.removeAll { $0.id == crewID }
     }
 
-    /// XFinder is quitting: members stop through `WindowlessSessionManager.stopAll`; the folders (and v2 worktrees) go here.
+    /// XFinder is quitting: `WindowlessSessionManager.stopAll` has just signalled every member; wait up to 1.5 s for their
+    /// processes to exit (a worktree must not be moved under a live member), then retire the folders. A member that is still
+    /// alive after that keeps its folder — the next launch's stale sweep retires it once the process is gone.
     func stopAllForQuit() {
-        for c in crews where !c.stopped {
+        let live = crews.filter { !$0.stopped }
+        guard !live.isEmpty else { return }
+        var pids: [pid_t] = live.flatMap { c in c.members.values.compactMap { WindowlessSessionManager.shared.records[$0]?.pid } }
+        let deadline = Date().addingTimeInterval(1.5)
+        while !pids.isEmpty, Date() < deadline {
+            pids.removeAll { kill($0, 0) != 0 }
+            if !pids.isEmpty { Thread.sleep(forTimeInterval: 0.05) }
+        }
+        for c in live {
             watchers.removeValue(forKey: c.id)?.cancel()
+            let stillAlive = c.members.values.contains { sid in
+                guard let pid = WindowlessSessionManager.shared.records[sid]?.pid else { return false }
+                return kill(pid, 0) == 0
+            }
+            if stillAlive { log.info("crew \(c.id, privacy: .public): a member is still running at quit; folder left for the next launch") ; continue }
             _ = Self.removeFolder(Self.folder(for: c.id), crewID: c.id)
         }
     }

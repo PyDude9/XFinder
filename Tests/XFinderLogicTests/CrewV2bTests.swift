@@ -9,7 +9,7 @@ final class CrewV2bTests: XCTestCase {
 
     func testEveryRefusalHasAnAsciiMessageForTheAgent() {
         let all: [C.Refusal] = [.unknownSender, .unknownTarget, .selfTarget, .missingTask, .missingCriteria, .missingBranch, .badBranch,
-                                .verdictNotAllowed, .verdictWithoutBranch, .rejectedWithoutFileLine, .tooLong, .notYourBranch, .unknownBranch]
+                                .verdictNotAllowed, .verdictWithoutBranch, .rejectedWithoutFileLine, .tooLong, .notYourBranch, .unknownBranch, .missingRound]
         XCTAssertEqual(Set(all.map(C.refusalMessage)).count, all.count, "each refusal says something different")
         for r in all {
             let m = C.refusalMessage(r)
@@ -96,6 +96,130 @@ final class CrewV2bTests: XCTestCase {
                        "NotebookEdit names its file notebook_path")
         XCTAssertNil(CrewGuard.decide(toolName: "Edit", toolInput: ["file_path": "/etc/hosts"], cwd: root, root: nil), "no root, no fence")
         XCTAssertNil(CrewGuard.decide(toolName: "Read", toolInput: ["file_path": "/etc/hosts"], cwd: root, root: root), "reads are not fenced")
+    }
+
+    // MARK: Review 2026-10-18 — what the first review reproduced
+
+    func testNestedShellsAndRunnersAreClassifiedThroughTheirArgument() {
+        typealias S = C.StateChanging
+        for cmd in ["bash -c 'git push origin main'", "sh -c \"git push origin main\"", "zsh -lc 'cd x && git commit -m y'",
+                    "echo origin main | xargs git push", "xargs -n 1 rm", "find /tmp -name '*.tmp' -exec rm {} \\;",
+                    "find . -name x -exec git push {} +", "npm run deploy", "npm run release:prod", "yarn deploy", "pnpm run db:migrate",
+                    "ln ../outside/secret.conf alias.conf", "ln -s /etc/hosts here"] {
+            if case .stateChanging = S.classify(command: cmd) {} else { XCTFail("\(cmd) read as ordinary") }
+        }
+        for cmd in ["npm run test", "npm run build", "yarn lint", "bash -c 'ls -la'", "find . -name '*.swift' -print", "xargs echo"] {
+            XCTAssertEqual(S.classify(command: cmd), .ordinary, cmd)
+        }
+        XCTAssertEqual(S.classify(command: "bash -c 'bash -c \"bash -c \\\"bash -c \\\\\\\"git push\\\\\\\"\\\"\"'"), .ordinary, "recursion stops at depth 4 instead of looping")
+    }
+
+    func testBashWritesOutsideTheWorktreeAreDeniedAndInsideAllowed() {
+        func d(_ cmd: String) -> CrewGuard.Decision? { CrewGuard.decide(toolName: "Bash", toolInput: ["command": cmd], cwd: root, root: root) }
+        for cmd in ["echo pwned > /etc/hosts", "echo x >> ../backend/App.swift", "cat a.txt > /Users/me/notes.txt", "printf x 2>/tmp/err.log",
+                    "ls | tee ../shared.log", "cp Sources/A.swift ../backend/A.swift", "mv build/out.bin /usr/local/bin/out", "sed -i '' 's/a/b/' ../backend/x.swift",
+                    "perl -i -pe 's/a/b/' /etc/motd", "touch ../other/flag", "rsync -a dist/ /Users/me/site/", "install -m 755 tool /usr/local/bin/tool"] {
+            XCTAssertEqual(d(cmd)?.permission, "deny", cmd)
+        }
+        for cmd in ["echo x > notes.txt", "cat a > ./out/b.txt", "ls | tee log.txt", "cp a.swift b.swift", "sed -i '' 's/a/b/' x.swift", "echo x > /dev/null",
+                    "git diff > review.patch", "npm test 2>&1 | tee test.log", "touch .keep"] {
+            XCTAssertNil(d(cmd), "\(cmd) writes inside the worktree")
+        }
+        XCTAssertEqual(d("echo x > ../o.txt && git push")?.permission, "deny", "a write outside beats an ask: deny wins")
+        XCTAssertNil(CrewGuard.decide(toolName: "Bash", toolInput: ["command": "echo x > /etc/hosts"], cwd: root, root: nil), "no root, no fence (the lead)")
+        XCTAssertEqual(Set(C.StateChanging.writeTargets("echo a > x.txt; tee y.txt z.txt; cp a b; sed -i '' -e 's/a/b/' f.swift g.swift")),
+                       ["x.txt", "y.txt", "z.txt", "b", "f.swift", "g.swift"])
+    }
+
+    func testAReplayedEnvelopeIsAdmittedOnceAndTheGuardIsBounded() {
+        var g = C.ReplayGuard(cap: 3)
+        XCTAssertTrue(g.admit("AbC")); XCTAssertFalse(g.admit("abc"), "case-insensitive: the CLI writes lower-case hex")
+        XCTAssertTrue(g.admit("2")); XCTAssertTrue(g.admit("3")); XCTAssertTrue(g.admit("4"))
+        XCTAssertTrue(g.admit("abc"), "the oldest entry fell out at the cap — bounded memory, not a perfect oracle")
+        XCTAssertFalse(g.admit("4"))
+    }
+
+    func testTheSettingsFileKeepsHooksOnAndAsksBeforeHardLinks() throws {
+        let o = try XCTUnwrap(JSONSerialization.jsonObject(with: C.settingsJSON(guardCommand: "'/x' --crew-guard")) as? [String: Any])
+        XCTAssertEqual(o["disableAllHooks"] as? Bool, false, "a repository's own settings must not switch the guard off")
+        XCTAssertTrue(((o["permissions"] as? [String: Any])?["ask"] as? [String])?.contains("Bash(ln *)") == true)
+    }
+
+    func testTheCLIReadsOptionsOnlyAtTheFrontSoFreeTextCannotRewriteASignedField() throws {
+        // Review: zparseopts -E consumed "--branch crew/x-backend" out of a NOTE and signed the rewritten branch.
+        let (status, files, err) = try runCLI(["conflict", "--branch", "crew/x-frontend", "--note", "overlap near", "also", "--branch", "crew/x-backend", "touches", "the", "same", "file"],
+                                              as: "frontend", token: "tok-fe")
+        XCTAssertEqual(status, 0, err); XCTAssertEqual(err, "")
+        let (name, data) = try XCTUnwrap(files.first)
+        let e = try XCTUnwrap(C.parseEnvelope(data, name: name, tokens: tokens))
+        XCTAssertEqual(e.branch, "crew/x-frontend", "the branch is the one given up front")
+        XCTAssertEqual(e.text, "overlap near", "the note is the --note value; free text after it is not silently merged into a field")
+        // A trailing note that contains a flag word keeps every word.
+        let (s2, f2, _) = try runCLI(["done", "--branch", "crew/x-frontend", "--tests", "npm test passed", "the", "--criteria", "was", "met", "fully"], as: "frontend", token: "tok-fe")
+        XCTAssertEqual(s2, 0)
+        let (n2, d2) = try XCTUnwrap(f2.first)
+        XCTAssertEqual(try XCTUnwrap(C.parseEnvelope(d2, name: n2, tokens: tokens)).text, "the --criteria was met fully")
+        // A verdict names its round, and the round is signed.
+        let (s3, f3, e3) = try runCLI(["verdict", "approved", "--branch", "crew/x-frontend", "--round", "2", "--note", "ok"], as: "security", token: "tok-sec")
+        XCTAssertEqual(s3, 0, e3)
+        let (n3, d3) = try XCTUnwrap(f3.first)
+        let v = try XCTUnwrap(C.parseEnvelope(d3, name: n3, tokens: tokens))
+        XCTAssertEqual(v.round, 2)
+        XCTAssertNil(C.parseEnvelope(Data(String(data: d3, encoding: .utf8)!.replacingOccurrences(of: "\"round\":\"2\"", with: "\"round\":\"3\"").utf8), name: n3, tokens: tokens),
+                     "a tampered round breaks the signature")
+        let (s4, f4, _) = try runCLI(["verdict", "approved", "--branch", "crew/x-frontend", "--note", "ok"], as: "security", token: "tok-sec")
+        XCTAssertNotEqual(s4, 0, "a verdict without --round is refused before anything is written"); XCTAssertTrue(f4.isEmpty)
+    }
+
+    func testTheCLICountsCharactersNotBytesWhateverTheLocale() throws {
+        // Review: under LANG unset / LC_ALL=C zsh's ${#s} counts bytes — a 3 000-emoji task read as 12 000 "characters" and was refused.
+        let task = String(repeating: "🔥", count: 3_000)
+        for locale in [nil, "C", "en_US.UTF-8"] {
+            let (status, files, err) = try runCLI(["send", "frontend", "--task", task, "--criteria", "ok"], as: "lead", token: "tok-lead", locale: locale)
+            XCTAssertEqual(status, 0, "locale \(locale ?? "unset"): \(err)")
+            let (name, data) = try XCTUnwrap(files.first)
+            XCTAssertEqual(try XCTUnwrap(C.parseEnvelope(data, name: name, tokens: tokens)).task, task)
+        }
+        let (status, files, _) = try runCLI(["send", "frontend", "--task", String(repeating: "a", count: 8_001), "--criteria", "ok"], as: "lead", token: "tok-lead", locale: "C")
+        XCTAssertNotEqual(status, 0, "8 001 characters is still too long"); XCTAssertTrue(files.isEmpty)
+    }
+
+    func testRetiringACrewFolderNeverDeletesWorkItCannotRetire() throws {
+        let repo = try makeRepo()
+        let crew = FileManager.default.temporaryDirectory.appendingPathComponent("crew-folder-\(UUID().uuidString)")
+        let kept = repo + "-kept"
+        defer { try? FileManager.default.removeItem(atPath: repo); try? FileManager.default.removeItem(at: crew); try? FileManager.default.removeItem(atPath: kept) }
+        try FileManager.default.createDirectory(at: crew.appendingPathComponent("wt"), withIntermediateDirectories: true)
+        let wt = crew.appendingPathComponent("wt/frontend").path
+        XCTAssertTrue(CrewGit.addWorktree(repo: repo, path: wt, branch: "crew/f-frontend", base: try XCTUnwrap(CrewGit.headSHA(in: repo))).ok)
+        try Data("unsaved\n".utf8).write(to: URL(fileURLWithPath: wt + "/draft.txt"))
+        // The repository moved: nothing may be deleted, the folder stays, the outcome says why.
+        let moved = repo + "-moved"
+        try FileManager.default.moveItem(atPath: repo, toPath: moved)
+        defer { try? FileManager.default.removeItem(atPath: moved) }
+        let gone = CrewGit.retireCrewFolder(crew, crewID: "abcdef12-x", repo: repo, keptRoot: kept)
+        XCTAssertFalse(gone.removedFolder); XCTAssertEqual(gone.failed.count, 1)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: wt + "/draft.txt"), "the uncommitted file survived a missing repository")
+        // The repository is back: the dirty worktree is moved aside and the folder goes.
+        try FileManager.default.moveItem(atPath: moved, toPath: repo)
+        let back = CrewGit.retireCrewFolder(crew, crewID: "abcdef12-x", repo: repo, keptRoot: kept)
+        XCTAssertTrue(back.removedFolder); XCTAssertEqual(back.kept.count, 1)
+        XCTAssertEqual(try String(contentsOfFile: try XCTUnwrap(back.kept.first) + "/draft.txt", encoding: .utf8), "unsaved\n")
+        XCTAssertTrue(CrewGit.branchExists("crew/f-frontend", in: repo))
+        XCTAssertEqual(CrewGit.currentBranch(in: repo), "main")
+    }
+
+    func testAFailedWorktreeAddStillLeavesABranchRefThatRollbackMustClean() throws {
+        // Measured by the review: `git worktree add -b` creates the ref before it fails on the path.
+        let repo = try makeRepo()
+        defer { try? FileManager.default.removeItem(atPath: repo) }
+        let blocked = repo + "-blocked"
+        try Data("file".utf8).write(to: URL(fileURLWithPath: blocked))
+        defer { try? FileManager.default.removeItem(atPath: blocked) }
+        let r = CrewGit.addWorktree(repo: repo, path: blocked, branch: "crew/z-frontend", base: try XCTUnwrap(CrewGit.headSHA(in: repo)))
+        XCTAssertFalse(r.ok)
+        XCTAssertTrue(CrewGit.branchExists("crew/z-frontend", in: repo), "the fact the manager's rollback has to handle")
+        XCTAssertTrue(CrewGit.deleteBranch("crew/z-frontend", repo: repo).ok)
     }
 
     func testASymlinkInsideTheWorktreeCannotCarryAnEditOutside() throws {
@@ -240,7 +364,7 @@ final class CrewV2bTests: XCTestCase {
     }
 
     /// Runs the shipped script as `role` in a v2 crew folder; returns (exit status, inbox files as (name, data), stderr).
-    private func runCLI(_ args: [String], as role: String, token: String, v2: Bool = true) throws -> (Int32, [(String, Data)], String) {
+    private func runCLI(_ args: [String], as role: String, token: String, v2: Bool = true, locale: String? = "en_US.UTF-8") throws -> (Int32, [(String, Data)], String) {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("crew-v2-cli-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir.appendingPathComponent("inbox"), withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: dir) }
@@ -249,7 +373,9 @@ final class CrewV2bTests: XCTestCase {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/bin/zsh")
         p.arguments = [script] + args
-        p.environment = ["XFINDER_CREW_DIR": dir.path, "XFINDER_CREW_TOKEN": token, "XFINDER_CREW_ROLE": role, "LANG": "en_US.UTF-8", "PATH": "/usr/bin:/bin"]
+        var env = ["XFINDER_CREW_DIR": dir.path, "XFINDER_CREW_TOKEN": token, "XFINDER_CREW_ROLE": role, "PATH": "/usr/bin:/bin"]
+        if let locale { env["LANG"] = locale }
+        p.environment = env
         let err = Pipe()
         p.standardOutput = FileHandle.nullDevice
         p.standardError = err
@@ -294,7 +420,7 @@ final class CrewV2bTests: XCTestCase {
         }
         let done = try envelope(["done", "--branch", "crew/x-frontend", "--tests", "npm test: 12 passed"], as: "frontend", token: "tok-fe")
         XCTAssertEqual(done.kind, .done); XCTAssertEqual(done.to, "lead"); XCTAssertEqual(done.tests, "npm test: 12 passed")
-        let verdict = try envelope(["verdict", "rejected", "--branch", "crew/x-frontend", "--note", "api.js:42 builds SQL from input"], as: "security", token: "tok-sec")
+        let verdict = try envelope(["verdict", "rejected", "--branch", "crew/x-frontend", "--round", "1", "--note", "api.js:42 builds SQL from input"], as: "security", token: "tok-sec")
         XCTAssertEqual(verdict.kind, .verdict); XCTAssertEqual(verdict.verdict, .rejected); XCTAssertEqual(verdict.to, "lead")
         XCTAssertNil(C.validate(verdict, senderDomain: .security, roles: ["lead", "frontend", "security", "reviewer"]))
         let merge = try envelope(["merge", "--branch", "crew/x-frontend"], as: "lead", token: "tok-lead")
@@ -321,8 +447,9 @@ final class CrewV2bTests: XCTestCase {
         try fails(["done", "--tests", "ok"], as: "frontend", token: "tok-fe", "done without a branch")
         try fails(["done", "--branch", "crew/x-frontend"], as: "frontend", token: "tok-fe", "done without tests")
         try fails(["done", "--branch", "main", "--tests", "ok"], as: "frontend", token: "tok-fe", "a branch outside crew/")
-        try fails(["verdict", "maybe", "--branch", "crew/x-frontend"], as: "security", token: "tok-sec", "a verdict that is neither word")
-        try fails(["verdict", "rejected", "--branch", "crew/x-frontend"], as: "security", token: "tok-sec", "a rejection with no note")
+        try fails(["verdict", "maybe", "--branch", "crew/x-frontend", "--round", "1"], as: "security", token: "tok-sec", "a verdict that is neither word")
+        try fails(["verdict", "rejected", "--branch", "crew/x-frontend", "--round", "1"], as: "security", token: "tok-sec", "a rejection with no note")
+        try fails(["verdict", "approved", "--branch", "crew/x-frontend", "--round", "zero"], as: "security", token: "tok-sec", "a round that is not a number")
         try fails(["merge"], "merge without a branch")
         try fails(["merge", "--branch", "crew/x-frontend"], v2: false, "v2 verbs in a v1 crew")
     }

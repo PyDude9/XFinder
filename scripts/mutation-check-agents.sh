@@ -350,8 +350,8 @@ run "G1 the branch field leaves the MAC (a forgeable branch)" XFinder/Core/Agent
 run "G2 one approval is enough to merge" XFinder/Core/Agents/CrewGate.swift \
   "'                if sec == .approved, rev == .approved {'" "'                if sec == .approved || rev == .approved {'"
 run "G3 a new done keeps the old verdicts" XFinder/Core/Agents/CrewGate.swift \
-  "'                branches[b] = .awaitingVerdicts(security: nil, reviewer: nil)\n                return .nowAwaiting(b)'" \
-  "'                if case .awaitingVerdicts = state(of: b) { return .nowAwaiting(b) }\n                branches[b] = .awaitingVerdicts(security: nil, reviewer: nil)\n                return .nowAwaiting(b)'"
+  "'                rounds[b, default: 0] += 1\n                branches[b] = .awaitingVerdicts(security: nil, reviewer: nil)'" \
+  "'                rounds[b, default: 0] += 1\n                if case .awaitingVerdicts = state(of: b) { return .nowAwaiting(b, round: rounds[b] ?? 1) }\n                branches[b] = .awaitingVerdicts(security: nil, reviewer: nil)'"
 run "G4 git -C . push is an ordinary command" XFinder/Core/Agents/CrewGate.swift \
   "'                        if w[i] == \"-C\" || w[i] == \"-c\" { i += 2 } else { i += 1 }'" "'                        i += 1'"
 
@@ -401,6 +401,28 @@ run "H16 Lead Architect members are not told a crewmate's message is not the per
 # nothing observable changes. This one regresses what the agent actually reads: a successful verb that writes to stderr.
 run "H15 a successful verb prints its confirmation on stderr (the agent reads it as an error)" XFinder/Resources/Agents/xfinder-crew.zsh \
   "'    print \"Sent to \$1. \$2\"'" "'    print -u2 \"Sent to \$1. \$2\"'"
+
+# Review of v2b (2026-10-18, 14 confirmed): each fix gets the mutation that re-opens it
+run "H17 a verdict for an earlier round counts for the current one" XFinder/Core/Agents/CrewGate.swift \
+  "'                guard e.round == round(of: b) else { return .staleRound(b, judged: e.round, current: round(of: b)) }'" \
+  "'                guard true else { return .staleRound(b, judged: e.round, current: round(of: b)) }'"
+run "H18 a replayed envelope is admitted again" XFinder/Core/Agents/CrewGate.swift \
+  "'            if seen.contains(key) { return false }'" "'            if false, seen.contains(key) { return false }'"
+run "H19 bash -c hides a state-changing command" XFinder/Core/Agents/CrewGate.swift \
+  "'        static let shells: Set<String> = [\"bash\", \"sh\", \"zsh\", \"dash\", \"ksh\"]'" "'        static let shells: Set<String> = []'"
+run "H20 a shell redirection outside the worktree is not fenced" XFinder/Core/Agents/CrewGate.swift \
+  "'                for target in CrewV2.StateChanging.writeTargets(command) {'" "'                for target in [String]() {'"
+run "H21 a hard link no longer asks" XFinder/Core/Agents/CrewGate.swift \
+  "'                                             \"ln\"]'" "'                                             ]'"
+run "H22 a crew folder whose repository moved is deleted with its work" XFinder/Core/Agents/CrewGit.swift \
+  "'                out.failed = entries.map { \"\\\\(\$0.lastPathComponent): repository not found at \\\\(repo ?? \"?\")\" }\n                return out'" \
+  "'                return out'"
+run "H23 the CLI scans the whole line for options (free text rewrites a signed field)" XFinder/Resources/Agents/xfinder-crew.zsh \
+  "'    break\n  done\n  rest=(\"\$@\")'" "'    shift; continue\n  done\n  rest=(\"\$@\")'"
+run "H24 the CLI counts bytes, not characters" XFinder/Resources/Agents/xfinder-crew.zsh \
+  "'export LC_ALL=en_US.UTF-8'" "'export LC_ALL=C'"
+run "H25 the settings file lets the repository switch hooks off" XFinder/Core/Agents/CrewGate.swift \
+  "'\"disableAllHooks\": false]'" "'\"disableAllHooks\": true]'"
 
 [ -n "${DRY:-}" ] && { [ "$DRY_BAD" = "0" ] && echo "DRY: every anchor found exactly once" && exit 0; echo "DRY: anchors missing"; exit 1; }
 restore

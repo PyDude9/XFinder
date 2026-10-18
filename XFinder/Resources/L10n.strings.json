@@ -11334,6 +11334,14 @@
     "Người duyệt": {
       "en": "Reviewer",
       "scope": "sentence"
+    },
+    "báo xung đột": {
+      "en": "reported a conflict to",
+      "scope": "fragment"
+    },
+    "Lead Architect: lead ở thư mục bạn chọn; mỗi builder (frontend, backend) làm trên nhánh và worktree git riêng (crew/<mục-tiêu>-<vai>); security và reviewer dùng một worktree tích hợp, không có công cụ sửa tệp, và mọi lệnh shell của họ vẫn hỏi bạn. Tin giữa các vai theo mẫu TASK / CRITERIA / BRANCH và có chữ ký. Lead chỉ được gộp một nhánh khi security VÀ reviewer đều Approved sau lần báo xong cuối; lệnh git merge vẫn hiện thẻ trên notch để bạn bấm. Lệnh đổi trạng thái (git commit/push/merge, cài gói, xoá, sudo, ln…) luôn hỏi, kể cả khi bạn đã cho phép sẵn ở nơi khác — cả khi gói trong bash -c, xargs hay find -exec. Sửa tệp ngoài worktree của chính mình bằng công cụ Edit/Write bị chặn; các cách ghi qua shell thường gặp (>, >>, tee, cp/mv, sed -i) ra ngoài worktree cũng bị chặn, dạng khác thì vẫn hỏi bạn như mọi lệnh shell. Đây là lưới an toàn, không phải ranh giới bảo mật: chương trình khác chạy dưới tài khoản của bạn không bị ràng. Thư mục phải là kho git có ít nhất một commit; thay đổi chưa commit ở thư mục chính không có trong worktree của builder. Khi crew dừng, nhánh được giữ; worktree còn thay đổi chưa commit được chuyển sang thư mục riêng thay vì bị xoá. Thẻ duyệt lệnh trên notch cần hook Agent AI đã cài.": {
+      "en": "Lead Architect: the lead works in the folder you choose; each builder (frontend, backend) works on its own git branch and worktree (crew/<goal>-<role>); security and reviewer share an integration worktree, have no file-editing tools, and every shell command they run still asks you. Messages between roles follow a signed TASK / CRITERIA / BRANCH format. The lead may merge a branch only when security AND reviewer both approved it after the builder's last done report; the git merge command still shows a card on the notch for you to press. State-changing commands (git commit/push/merge, installing packages, deleting, sudo, ln…) always ask, even where you allowed them elsewhere, and also when wrapped in bash -c, xargs or find -exec. Editing files outside a member's own worktree with the Edit/Write tools is blocked; the common ways of writing through the shell (>, >>, tee, cp/mv, sed -i) to a path outside the worktree are blocked too, and any other form still asks you like every shell command. This is a safety net, not a security boundary: other programs running as your user are not restricted. The folder must be a git repository with at least one commit; uncommitted changes in the main folder are not in the builders' worktrees. When the crew stops, the branches are kept; a worktree with uncommitted changes is moved aside instead of deleted. The approval cards on the notch need the Agent AI hook to be installed.",
+      "scope": "sentence"
     }
   }
 }

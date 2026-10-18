@@ -24,4 +24,5 @@ swiftc -O -o "$W/e2e" scripts/e2e-crew-v2/main.swift scripts/e2e-crew-v2/L10nStu
   $A/AgentRecent.swift $A/AgentUsage.swift $A/ClaudeStatusLine.swift $A/AgentQuotaRules.swift $A/CodexAppServer.swift 2>&1 \
   | grep -E "error:" && { echo "compile failed" >&2; exit 1; } || true
 rm -rf "$W/repo" "$W/fake.log"
+# XF_GUARD_BIN=<built XFinder binary> makes every builder run the real PreToolUse guard from its --settings (3 more checks).
 "$W/e2e" "$W" "$ROOT/XFinder/Resources/Agents/xfinder-crew.zsh"

@@ -58,8 +58,8 @@ enum CrewRules {
                 return [Role(name: "lead", purpose: "You are the lead architect. Split the goal into independent parts by domain (frontend, backend), give each builder its part with xfinder-crew send <role> --task ... --criteria ... --branch <that builder's branch>, and answer their questions. When a builder reports done, XFinder itself asks security and reviewer to judge that branch; wait for their verdicts. Merge a branch only after xfinder-crew merge --branch <branch> says it is allowed (both judges approved after the last done); run the git merge yourself in this folder and the person confirms it. Never edit the builders' files yourself.", readOnly: false, domain: .lead),
                         Role(name: "frontend", purpose: "You build the UI/UX part in your own worktree and branch. Keep to the files of your part. Run the unit tests you can; when the part meets its CRITERIA, report with xfinder-crew done --branch <your branch> --tests \"<what you ran>\".", readOnly: false, domain: .frontend),
                         Role(name: "backend", purpose: "You build the API/data part in your own worktree and branch. Keep to the files of your part. Run the unit tests you can; when the part meets its CRITERIA, report with xfinder-crew done --branch <your branch> --tests \"<what you ran>\".", readOnly: false, domain: .backend),
-                        Role(name: "security", purpose: "You audit a branch for security only, by reading it: injection (shell, SQL, path), missing authentication or access checks, secrets in code or logs, unsafe deserialization, unchecked input at a trust boundary, weak tokens (entropy, expiry), cookie flags (SameSite, Secure, HttpOnly). Reply with xfinder-crew verdict approved|rejected --branch <branch> --note \"file:line and how it would be exploited\". You cannot edit files.", readOnly: true, domain: .security),
-                        Role(name: "reviewer", purpose: "You run the integration tests for a branch in the integration worktree (merge the branch there with --no-ff, run the whole suite and the e2e suite) and read the diff for correctness. Reply with xfinder-crew verdict approved|rejected --branch <branch> --note \"file:line and what fails\". You cannot edit files.", readOnly: true, domain: .reviewer)]
+                        Role(name: "security", purpose: "You audit a branch for security only, by reading it: injection (shell, SQL, path), missing authentication or access checks, secrets in code or logs, unsafe deserialization, unchecked input at a trust boundary, weak tokens (entropy, expiry), cookie flags (SameSite, Secure, HttpOnly). Reply with xfinder-crew verdict approved|rejected --branch <branch> --round <N from the JUDGE REQUEST> --note \"file:line and how it would be exploited\". You have no file-editing tools, and every shell command you run still asks the person.", readOnly: true, domain: .security),
+                        Role(name: "reviewer", purpose: "You run the integration tests for a branch in the integration worktree (merge the branch there with --no-ff, run the whole suite and the e2e suite) and read the diff for correctness. Reply with xfinder-crew verdict approved|rejected --branch <branch> --round <N from the JUDGE REQUEST> --note \"file:line and what fails\". You have no file-editing tools, and every shell command you run still asks the person.", readOnly: true, domain: .reviewer)]
             }
         }
         /// The first role leads: it gets the person's goal as its first message.
@@ -90,7 +90,8 @@ enum CrewRules {
             Every message to a crewmate goes through the shell command xfinder-crew and returns at once; replies arrive later \
             as messages that start with [crew]. Verbs: xfinder-crew send <role|all> --task "<what>" --criteria "<acceptance>" \
             [--branch <crew/...>] [note]; xfinder-crew done --branch <crew/...> --tests "<what you ran>"; \
-            xfinder-crew verdict approved|rejected --branch <crew/...> --note "<file:line and why>" (security and reviewer only); \
+            xfinder-crew verdict approved|rejected --branch <crew/...> --round <N> --note "<file:line and why>" (security and reviewer only; N is the \
+            round number in the JUDGE REQUEST you answer); \
             xfinder-crew conflict --branch <crew/...> --note "<file>"; xfinder-crew merge --branch <crew/...> (lead only, \
             allowed only after both judges approved); xfinder-crew who. A task without --task and --criteria is refused. \
             Each message reads [TIMESTAMP] [FROM: role] -> [TO: role] then TASK | CRITERIA | BRANCH. \
@@ -188,7 +189,7 @@ enum CrewRules {
     }
 
     struct BoardEntry: Equatable, Sendable, Identifiable {
-        enum Kind: String, Sendable { case message, reply, failed, paused, resumed, capped, stopped, done, verdict, merge, refused }
+        enum Kind: String, Sendable { case message, reply, failed, paused, resumed, capped, stopped, done, verdict, merge, refused, conflict }
         var id: Int
         var kind: Kind
         var from: String?
@@ -376,11 +377,12 @@ enum CrewRules {
         case .verdict: return "duyệt"
         case .merge: return "gộp nhánh"
         case .refused: return "Tin bị từ chối — sai mẫu hoặc sai vai."
+        case .conflict: return "báo xung đột"
         }
     }
 
     static let boardKeys = ["nhắn", "trả lời", "Không gửi được — thành viên đã dừng.", "Crew tạm dừng.", "Crew chạy tiếp.",
                             "Đã tới giới hạn chặng tin — crew tạm dừng, chờ bạn.", "Crew đã dừng.",
-                            "báo xong", "duyệt", "gộp nhánh", "Tin bị từ chối — sai mẫu hoặc sai vai."]
+                            "báo xong", "duyệt", "gộp nhánh", "Tin bị từ chối — sai mẫu hoặc sai vai.", "báo xung đột"]
     static let templateKeys = Template.allCases.map(\.titleKey)
 }

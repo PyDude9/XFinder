@@ -60,6 +60,10 @@ enum CrewV2 {
         var branch: String?
         var verdict: Verdict?
         var tests: String?             // `done`: what the builder ran, in its words
+        /// `verdict`: the review round it judged (the Gate numbers each `done` of a branch; the JUDGE REQUEST names the number).
+        /// Review 2026-10-18: without it a judge's approval of round 1, arriving after the builder's round-2 `done`, counted
+        /// for round 2 — unreviewed code could reach mergeable.
+        var round: Int?
         var at: Date
     }
 
@@ -76,7 +80,7 @@ enum CrewV2 {
         func f(_ tag: String, _ v: String?) -> String { let s = v ?? ""; return "\(tag):\(s.utf8.count):\(s)" }
         return [f("name", name), f("from", e.from), f("to", e.to), f("kind", e.kind.rawValue), f("text", e.text),
                 f("task", e.task), f("criteria", e.criteria), f("branch", e.branch), f("verdict", e.verdict?.rawValue),
-                f("tests", e.tests), f("at", isoString(e.at))].joined(separator: "\n")
+                f("tests", e.tests), f("round", e.round.map(String.init)), f("at", isoString(e.at))].joined(separator: "\n")
     }
 
     /// SHA-256(canonical ⏎ token) — token LAST (no length extension of a secret prefix), never written to the shared inbox.
@@ -86,7 +90,7 @@ enum CrewV2 {
 
     enum Refusal: Equatable, Sendable {
         case unknownSender, unknownTarget, selfTarget, missingTask, missingCriteria, missingBranch, badBranch,
-             verdictNotAllowed, verdictWithoutBranch, rejectedWithoutFileLine, tooLong,
+             verdictNotAllowed, verdictWithoutBranch, rejectedWithoutFileLine, tooLong, missingRound,
              /// v2b, decided by the manager (it owns the branch list): a `done` for someone else's branch, or a branch no builder owns.
              notYourBranch, unknownBranch
     }
@@ -113,6 +117,7 @@ enum CrewV2 {
             guard e.branch != nil else { return .verdictWithoutBranch }
             if e.verdict == .rejected, !mentionsFileLine(e.text) { return .rejectedWithoutFileLine }
             if e.verdict == nil { return .verdictNotAllowed }
+            if e.round == nil { return .missingRound }
         case .status, .question:
             break
         }
@@ -148,6 +153,7 @@ enum CrewV2 {
             parts.append("MERGE REQUEST")
         }
         if let b = e.branch { parts.append("BRANCH: \(b)") }
+        if e.kind == .verdict, let r = e.round { parts.append("ROUND: \(r)") }
         if e.kind != .status, e.kind != .question, e.kind != .conflict, !e.text.isEmpty, e.kind != .done || e.tests != nil {
             parts.append("NOTE: \(e.text)")
         }
@@ -169,7 +175,8 @@ enum CrewV2 {
         func field(_ k: String) -> String? { guard let v = o[k] as? String, !v.isEmpty else { return nil }; return v }
         let e = Envelope(from: from, to: to, kind: kind, text: (o["text"] as? String) ?? "",
                          task: field("task"), criteria: field("criteria"), branch: field("branch"),
-                         verdict: field("verdict").flatMap(Verdict.init(rawValue:)), tests: field("tests"), at: at)
+                         verdict: field("verdict").flatMap(Verdict.init(rawValue:)), tests: field("tests"),
+                         round: field("round").flatMap { Int($0) }, at: at)
         guard signature(e, name: name, token: token) == mac.lowercased() else { return nil }
         var clean = e
         clean.text = WindowlessRules.cleanMessage(e.text) ?? ""
@@ -185,12 +192,14 @@ enum CrewV2 {
         "Bash(npm install *)", "Bash(npm i *)", "Bash(npm ci *)", "Bash(npm publish *)", "Bash(pnpm install *)", "Bash(pnpm add *)",
         "Bash(yarn add *)", "Bash(yarn install *)", "Bash(bun install *)", "Bash(bun add *)", "Bash(pip install *)",
         "Bash(pip3 install *)", "Bash(brew install *)", "Bash(sudo *)", "Bash(rm *)", "Bash(launchctl *)", "Bash(defaults write *)",
-        "Bash(xcodebuild *)", "Bash(./scripts/deploy.sh *)", "Bash(deploy.sh *)",
+        "Bash(xcodebuild *)", "Bash(./scripts/deploy.sh *)", "Bash(deploy.sh *)", "Bash(ln *)",
     ]
 
     /// The `--settings` file every crew member gets (spec §3.4).
     static func settingsJSON(guardCommand: String? = nil) -> Data {
-        var object: [String: Any] = ["permissions": ["ask": askRules]]
+        // Review 2026-10-18: a repository's own .claude/settings.json may set disableAllHooks; the documented precedence puts
+        // this --settings file above project settings for a key it carries, so say it explicitly.
+        var object: [String: Any] = ["permissions": ["ask": askRules], "disableAllHooks": false]
         if let guardCommand {
             // v2b: the guard (`XFinder --crew-guard`) runs before every Bash and file-edit tool call of a member, in-crew
             // only (the file is passed with --settings), whether or not the person installed XFinder's global hook.
@@ -212,13 +221,18 @@ enum CrewV2 {
     }
 
     enum GateEvent: Equatable, Sendable {
-        case nowAwaiting(String), nowMergeable(String), nowRejected(String, by: String), nowMerged(String), ignored(String)
+        case nowAwaiting(String, round: Int), nowMergeable(String), nowRejected(String, by: String), nowMerged(String), ignored(String),
+             /// A verdict that names an earlier round than the branch is on: the code moved after the judge looked.
+             staleRound(String, judged: Int?, current: Int)
     }
 
     struct Gate: Equatable, Sendable {
         private(set) var branches: [String: BranchState] = [:]
+        /// How many `done` reports each branch has had: the review round judges must name.
+        private(set) var rounds: [String: Int] = [:]
 
         func state(of branch: String) -> BranchState { branches[branch] ?? .building }
+        func round(of branch: String) -> Int { rounds[branch] ?? 0 }
         func isMergeable(_ branch: String) -> Bool { state(of: branch) == .mergeable }
 
         /// Feed an ACCEPTED envelope (after `validate`). Only `done` and `verdict` move a branch.
@@ -228,12 +242,15 @@ enum CrewV2 {
             case .done:
                 guard senderDomain.editsCode else { return .ignored(b) }
                 if case .merged = state(of: b) { return .ignored(b) }
-                // A new `done` means the code moved: every earlier verdict is void (spec §3.5).
+                // A new `done` means the code moved: every earlier verdict is void (spec §3.5), and the round number moves on so
+                // a verdict written for the old code can be told apart from one written for the new.
+                rounds[b, default: 0] += 1
                 branches[b] = .awaitingVerdicts(security: nil, reviewer: nil)
-                return .nowAwaiting(b)
+                return .nowAwaiting(b, round: rounds[b] ?? 1)
             case .verdict:
                 guard let v = e.verdict, senderDomain.mayJudge else { return .ignored(b) }
                 guard case .awaitingVerdicts(var sec, var rev) = state(of: b) else { return .ignored(b) }  // before `done`, or already decided
+                guard e.round == round(of: b) else { return .staleRound(b, judged: e.round, current: round(of: b)) }
                 if v == .rejected {
                     branches[b] = .rejected(by: e.from, note: e.text)
                     return .nowRejected(b, by: e.from)
@@ -264,6 +281,27 @@ enum CrewV2 {
         }
     }
 
+    // MARK: - Replay (review 2026-10-18)
+
+    /// A validly signed envelope copied back into the inbox verified again: the MAC proves who wrote it, not that it is new.
+    /// Remember what was consumed (per crew, in memory) and refuse a repeat. Bounded so a long crew cannot grow it forever.
+    struct ReplayGuard: Equatable, Sendable {
+        private(set) var seen: Set<String> = []
+        private var order: [String] = []
+        let cap: Int
+
+        init(cap: Int = 4_000) { self.cap = cap }
+
+        /// true the first time a signature is seen, false for any repeat.
+        mutating func admit(_ mac: String) -> Bool {
+            let key = mac.lowercased()
+            if seen.contains(key) { return false }
+            seen.insert(key); order.append(key)
+            if order.count > cap { seen.remove(order.removeFirst()) }
+            return true
+        }
+    }
+
     // MARK: - Commands that must always ask (spec §3.4)
 
     enum StateChanging {
@@ -291,7 +329,14 @@ enum CrewV2 {
         ]
         /// Whole commands that change the machine or the repo however they are spelled.
         static let alwaysAsk: Set<String> = ["sudo", "launchctl", "chmod", "chown", "rm", "mv", "defaults", "killall", "pkill",
-                                             "kill", "xcodebuild", "make", "deploy", "systemctl", "diskutil", "tccutil"]
+                                             "kill", "xcodebuild", "make", "deploy", "systemctl", "diskutil", "tccutil",
+                                             // review 2026-10-18: a hard link aliases a file OUTSIDE the worktree under a name inside it;
+                                             // the edit fence cannot see an inode alias, so the link itself asks.
+                                             "ln"]
+        /// `npm run <script>` can do anything; only names that read as a release step must ask (a `run build` writes inside the repo).
+        static let releaseLikeScript = try! NSRegularExpression(pattern: "deploy|release|publish|push|migrate|prod|ship", options: [.caseInsensitive])
+        /// Shells whose `-c` argument is itself a command line, and tools that run the command that follows them.
+        static let shells: Set<String> = ["bash", "sh", "zsh", "dash", "ksh"]
 
         /// Split a shell line into simple commands: `&&`, `||`, `;`, `|`, newlines and `$(`…`)` / backticks all start a new
         /// one. Quoting is honoured well enough for the commands Claude writes; this is not a shell parser.
@@ -330,7 +375,10 @@ enum CrewV2 {
         }
 
         /// The verdict for one shell line: the FIRST simple command that changes state, or `.ordinary`.
-        static func classify(command: String) -> Class {
+        /// Nested command lines (`bash -c '…'`, `xargs …`, `find … -exec …`) are classified recursively — the review's probe
+        /// showed `bash -c 'git push origin main'` reading as ordinary.
+        static func classify(command: String, depth: Int = 0) -> Class {
+            guard depth < 4 else { return .ordinary }
             for simple in simpleCommands(command) {
                 var w = words(simple)
                 // `env NODE_ENV=test npm i`: wrappers and VAR=value assignments alternate — strip both until a command is left.
@@ -338,6 +386,21 @@ enum CrewV2 {
                         || (f.contains("=") && !f.hasPrefix("-") && f.first?.isLetter == true) { w.removeFirst() }
                 guard let head = w.first else { continue }
                 if alwaysAsk.contains(head) || head.hasSuffix("deploy.sh") || head.contains("deploy") { return .stateChanging(head) }
+                if shells.contains(head), let c = w.firstIndex(where: { $0.hasPrefix("-") && $0.contains("c") }), c + 1 < w.count {
+                    if case .stateChanging(let what) = classify(command: w[(c + 1)...].joined(separator: " "), depth: depth + 1) { return .stateChanging(what) }
+                    continue
+                }
+                if head == "xargs" {
+                    var i = 1
+                    while i < w.count, w[i].hasPrefix("-") { i += (["-n", "-P", "-I", "-L", "-s", "-d"].contains(w[i]) ? 2 : 1) }
+                    if i < w.count, case .stateChanging(let what) = classify(command: w[i...].joined(separator: " "), depth: depth + 1) { return .stateChanging(what) }
+                    continue
+                }
+                if head == "find", let x = w.firstIndex(where: { ["-exec", "-execdir", "-ok", "-okdir"].contains($0) }), x + 1 < w.count {
+                    let tail = w[(x + 1)...].prefix { $0 != ";" && $0 != "+" && $0 != "\\;" }
+                    if case .stateChanging(let what) = classify(command: tail.joined(separator: " "), depth: depth + 1) { return .stateChanging(what) }
+                    continue
+                }
                 if head == "git" {
                     // skip `-C <dir>`, `-c k=v`, `--git-dir=…`, `--work-tree=…`, `--no-pager`
                     var i = 1
@@ -352,8 +415,57 @@ enum CrewV2 {
                     continue
                 }
                 if let subs = packageManagers[head], w.count > 1, subs.contains(w[1]) { return .stateChanging("\(head) \(w[1])") }
+                if ["npm", "pnpm", "yarn", "bun"].contains(head), w.count > 1 {
+                    let script = (w[1] == "run" || w[1] == "run-script") ? (w.count > 2 ? w[2] : "") : (head == "yarn" ? w[1] : "")
+                    if !script.isEmpty, releaseLikeScript.firstMatch(in: script, range: NSRange(script.startIndex..., in: script)) != nil {
+                        return .stateChanging("\(head) run \(script)")
+                    }
+                }
             }
             return .ordinary
+        }
+
+        /// Where one shell line WRITES through the shell itself: redirection targets and the file arguments of the writers an
+        /// LLM reaches for (`tee`, `cp`/`mv`/`install`/`rsync` destination, `sed -i`/`perl -i` files, `ln` target). The edit fence
+        /// only saw the Edit/Write tools; the review showed `echo x > ../other/file` passing as ordinary. Heuristic: it reads
+        /// the words Claude Code produces, not every shell grammar — the page says so.
+        static func writeTargets(_ command: String) -> [String] {
+            var out: [String] = []
+            for simple in simpleCommands(command) {
+                let w = words(simple)
+                var i = 0
+                while i < w.count {
+                    let t = w[i]
+                    if let r = t.range(of: #"^(\d?>>?|&>>?)"#, options: .regularExpression) {
+                        let rest = String(t[r.upperBound...])
+                        if !rest.isEmpty { out.append(rest) } else if i + 1 < w.count { out.append(w[i + 1]); i += 1 }
+                    }
+                    i += 1
+                }
+                var body = w
+                while let f = body.first, ["env", "nohup", "time", "command", "exec"].contains(f) || (f.contains("=") && !f.hasPrefix("-") && f.first?.isLetter == true) { body.removeFirst() }
+                guard let head = body.first else { continue }
+                let args = body.dropFirst().filter { !$0.hasPrefix("-") && !$0.hasPrefix(">") && !$0.hasPrefix("&") }
+                switch head {
+                case "tee": out += args
+                case "cp", "mv", "install", "rsync", "ln": if args.count >= 2, let last = args.last { out.append(last) }
+                case "sed", "gsed", "perl":
+                    if body.contains(where: { $0.hasPrefix("-i") }) {
+                        var files: [String] = [], skipNext = false, scriptSeen = body.contains("-e") || body.contains("-f") || body.contains("--expression")
+                        for t in body.dropFirst() {
+                            if skipNext { skipNext = false; continue }
+                            if ["-e", "-f", "--expression", "--file"].contains(t) { skipNext = true; continue }
+                            if t.hasPrefix("-") { continue }
+                            if !scriptSeen { scriptSeen = true; continue }      // the first free argument is the script (or perl's -e-less program)
+                            files.append(t)
+                        }
+                        out += files
+                    }
+                case "truncate", "touch", "mkdir": out += args
+                default: break
+                }
+            }
+            return out.filter { !$0.hasPrefix("/dev/") && $0 != "-" }
         }
 
         /// Edit/Write fence: is `file` inside `root`? Both are resolved lexically (`..` collapsed); a symlink escape needs
@@ -396,6 +508,7 @@ extension CrewV2 {
         case .tooLong: return "REFUSED: a field is longer than 8000 characters; shorten it or point to a file."
         case .notYourBranch: return "REFUSED: that is not your branch."
         case .unknownBranch: return "REFUSED: no builder owns that branch (run xfinder-crew who)."
+        case .missingRound: return "REFUSED: a verdict names the review round it judged: --round N, the number in the JUDGE REQUEST."
         }
     }
 
@@ -462,6 +575,14 @@ enum CrewGuard {
                        resolve: (String) -> String = { $0 }) -> Decision? {
         if toolName == "Bash" {
             guard let command = toolInput["command"] as? String else { return nil }
+            if let root, !root.isEmpty {
+                for target in CrewV2.StateChanging.writeTargets(command) {
+                    let file = target.hasPrefix("/") ? target : ((cwd ?? root) as NSString).appendingPathComponent(target)
+                    if !CrewV2.StateChanging.pathInside(root: resolve(root), file: resolve(file)) {
+                        return Decision(permission: "deny", reason: "XFinder crew: this shell command would write \((target as NSString).lastPathComponent) outside the session's own worktree (\(root)).")
+                    }
+                }
+            }
             if case .stateChanging(let what) = CrewV2.StateChanging.classify(command: command) {
                 return Decision(permission: "ask", reason: "XFinder crew: \(what) changes state, so the person confirms it on the notch.")
             }

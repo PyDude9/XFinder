@@ -11,6 +11,7 @@ ENTRIES = {
     "báo xong": ("reported done to", F),
     "duyệt": ("gave a verdict to", F),
     "gộp nhánh": ("merge notice to", F),
+    "báo xung đột": ("reported a conflict to", F),
     "Tin bị từ chối — sai mẫu hoặc sai vai.": ("A message was refused: wrong format or wrong role.", S),
     "Lead Architect — lead · frontend · backend · security · reviewer": ("Lead Architect: lead, frontend, backend, security, reviewer", S),
 }
@@ -21,11 +22,13 @@ _m = _re.search(r'L10n\.t\("(Lead Architect: lead ở[^"]*)"\)', _view)
 if _m:
     ENTRIES[_m.group(1)] = (
         "Lead Architect: the lead works in the folder you choose; each builder (frontend, backend) works on its own git branch and "
-        "worktree (crew/<goal>-<role>); security and reviewer share an integration worktree and cannot edit files. Messages between "
+        "worktree (crew/<goal>-<role>); security and reviewer share an integration worktree, have no file-editing tools, and every shell command they run still asks you. Messages between "
         "roles follow a signed TASK / CRITERIA / BRANCH format. The lead may merge a branch only when security AND reviewer both "
         "approved it after the builder's last done report; the git merge command still shows a card on the notch for you to press. "
-        "State-changing commands (git commit/push/merge, installing packages, deleting, sudo…) always ask, even where you allowed them "
-        "elsewhere, and editing files outside a member's own worktree is blocked. This is a safety net, not a security boundary: other "
+        "State-changing commands (git commit/push/merge, installing packages, deleting, sudo, ln…) always ask, even where you allowed them "
+        "elsewhere, and also when wrapped in bash -c, xargs or find -exec. Editing files outside a member's own worktree with the Edit/Write tools is blocked; "
+        "the common ways of writing through the shell (>, >>, tee, cp/mv, sed -i) to a path outside the worktree are blocked too, and any other form still asks you like every shell command. "
+        "This is a safety net, not a security boundary: other "
         "programs running as your user are not restricted. The folder must be a git repository with at least one commit; uncommitted "
         "changes in the main folder are not in the builders' worktrees. When the crew stops, the branches are kept; a worktree with "
         "uncommitted changes is moved aside instead of deleted. The approval cards on the notch need the Agent AI hook to be installed.", S)

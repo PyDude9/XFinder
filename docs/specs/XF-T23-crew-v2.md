@@ -184,3 +184,30 @@ Hai lỗi thật tìm ra **nhờ e2e**, không phải nhờ test thuần: (1) CL
 ngoặc ⇒ 0 đối số dưới `setopt no_unset`) — đầu ra vẫn đúng nên unit test không thấy; nay mọi chỗ gọi đều có ngoặc và test khẳng định stderr rỗng;
 (2) `resolvingSymlinksInPath` của Foundation đổi `/private/var` về `/var` (ngược với `git rev-parse`), nên thư mục con tính sai khi thư mục crew nằm
 dưới symlink — thay bằng POSIX `realpath` (`CrewGit.realPath`).
+
+## 8. Review v2b (2026-10-18, 5 lens × 2 refuter, 45 agent, chỉ-đọc, probe trong scratchpad): 20 phát hiện — 14 xác nhận, 5 chia, 1 bác
+
+Mỗi dòng xác nhận/chia đã sửa trong cùng commit, trừ khi ghi *giữ*. Mức là mức refuter đồng ý, không phải mức lens nêu.
+
+| Phát hiện (lens) | Mức | Sửa |
+|:--|:--|:--|
+| Verdict cho `done` cũ được tính cho `done` mới; envelope ký hợp lệ thả lại inbox được nhận lần hai (relay-gate + trust-guard) | **cao** | `Gate.rounds`: mỗi `done` tăng vòng; verdict phải mang `--round N` (N trong JUDGE REQUEST; vào MAC, vào wire format `ROUND: N`); vòng cũ ⇒ `staleRound` + báo judge duyệt lại; `CrewV2.ReplayGuard` (4 000 MAC gần nhất, theo crew) chặn thả lại |
+| `removeFolder` xoá worktree có file chưa commit khi `repo.txt` trỏ chỗ không còn (git) | **cao** | `CrewGit.retireCrewFolder` (test với repo đã dời): không có repo / retire fail ⇒ **giữ nguyên thư mục**, báo lý do |
+| Bash ghi file ngoài worktree không bị chặn dù trang nói "bị chặn"; judge "không sửa tệp" vẫn ghi được qua Bash (ux-honesty) | **cao / vừa** | `StateChanging.writeTargets` (redirect `>`/`>>`/`2>`/`&>`, `tee`, `cp/mv/install/rsync/ln` đích, `sed -i`/`perl -i`, `touch/mkdir/truncate`) ⇒ `deny` khi đích ngoài worktree; copy trang viết lại đúng phạm vi (Edit/Write chặn; shell: dạng thường gặp chặn, dạng khác hỏi); câu "You cannot edit files" của judge thành "no file-editing tools, every shell command still asks" |
+| Hard link alias file ngoài vào trong worktree (trust-guard) | vừa | `ln` vào `alwaysAsk` + `Bash(ln *)` trong `permissions.ask` |
+| `git worktree add -b` để lại ref khi fail sau khi tạo (git) | vừa | tên nhánh vào danh sách rollback **trước** lệnh add; rollback xoá nếu tồn tại và còn trỏ `base` (test ghim sự thật đo) |
+| `removeStaleFolders` dọn crew của XFinder khác đang chạy (git) | vừa | `owner.pid` ghi lúc start; sweep bỏ qua pid còn sống khác mình |
+| `stopAllForQuit` dọn worktree trước khi member dừng (git) | thấp | thứ tự đổi: `stopAll()` trước, chờ pid thoát ≤ 1,5 s, member còn sống ⇒ **giữ** thư mục cho sweep lần sau; `undoStart` cũng chờ |
+| `zparseopts -E` quét cả dòng: `--branch x` trong note ghi đè trường đã ký; từ trùng tên cờ bị nuốt (cli ×2) | vừa / thấp | parser riêng chỉ đọc cờ ở **đầu**; từ đầu tiên không phải cờ mở free text; test ghim cả hai ca |
+| `${#s}` đếm byte khi LANG unset / LC_ALL=C (cli) | vừa (chia) | `export LC_ALL=en_US.UTF-8` trong script (tr -d vẫn C cục bộ); test chạy 3 locale |
+| `bash -c`, `xargs`, `find -exec`, `npm run deploy` qua mặt classify (trust-guard) | thấp | phân loại đệ quy (sâu ≤ 4) cho shell `-c`, `xargs`, `find -exec/-ok`; `npm|pnpm|yarn|bun run <deploy\|release\|publish\|push\|migrate\|prod\|ship>` hỏi; `npm run build/test` thì không — trang nói "dạng khác vẫn hỏi như mọi lệnh shell" |
+| `builderResumed` xoá rejection khi builder chỉ gửi status (relay, chia) | vừa | bỏ gọi trên tin thường; rejection đứng tới `done` kế |
+| `done` cho nhánh đã merged chuyển lead như thường (relay) | thấp | IGNORED báo lại builder |
+| `conflict` ghi bảng là `.message` (relay) | thấp | `BoardEntry.Kind.conflict` + khoá "báo xung đột" |
+| e2e chưa đo guard thật (ux-honesty, chia) | vừa | fake claude chạy **binary thật** qua `--settings` khi `XF_GUARD_BIN` đặt: Write ngoài ⇒ deny, `git -C . push` và `bash -c 'git push'` ⇒ ask, redirect ngoài ⇒ deny |
+| `undoStart` gỡ worktree khi member chưa thoát (git, chia) | thấp | chờ pid như trên |
+| stderr git tiếng Anh nối vào banner (ux-honesty, chia) | thấp | **giữ**: lời của tool sau dấu `·`, cùng tiền lệ `replyStatusLine` |
+| `.claude/settings.json` của repo tắt hook dù có `--settings` (trust-guard) | **bác** (docs: `--settings` đứng trên project) | vẫn ghi `disableAllHooks: false` vào file — rẻ, đúng cả khi tài liệu đổi |
+
+Hai mutant tương đương đã bị bắt trước khi vào harness: H15 bản đầu (quote ↔ `${1-}`), và "bỏ -E" (parser mới không còn zparseopts).
+Mutation mới H17–H25; harness 145 dòng. Chỉ còn **chưa đo**: T-CREW-1 (model thật).
