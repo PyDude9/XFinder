@@ -248,7 +248,9 @@ enum FeatureCatalog {
         FeatureDef(id: .voice, titleKey: "Nhập bằng giọng nói",
                    subtitleKey: "Giữ phím, nói, thả ra là chữ vào ô đang gõ.",
                    symbol: "mic.fill", group: .voice, enabledKey: "voice.enabled",
-                   defaultOn: true, permissions: [.accessibility, .microphone, .speechRecognition],
+                   // Off by default since 2026-10-18 (Q-PRUNE-5): on = a system-wide keyDown/flagsChanged tap for
+                   // every user, and the mic→text path has never been verified by hand (T-VOICE).
+                   defaultOn: false, permissions: [.accessibility, .microphone, .speechRecognition],
                    idle: .listensToKeyboard),
     ]
 

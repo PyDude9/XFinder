@@ -149,7 +149,7 @@ public struct VoiceSettingsSnapshot: Equatable, Sendable {
     /// The defaults, as one value. The settings page's `@AppStorage` initial values must
     /// match these exactly; `VoiceSettingsTests` asserts it.
     public static let defaults = VoiceSettingsSnapshot(
-        enabled: true,
+        enabled: false,   // off by default since 2026-10-18 (Q-PRUNE-5)
         language: "vi-VN",
         triggerKey: .rightOption,
         activationMode: .hold,

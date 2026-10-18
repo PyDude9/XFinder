@@ -19,7 +19,8 @@ struct VoiceDetailView: View {
     @State private var voiceManager = VoiceManager.shared
 
     // Activation
-    @AppStorage(VoiceSettingsKey.enabled) private var voiceEnabled = true
+    // Default off since 2026-10-18 (Q-PRUNE-5) — must equal VoiceManager's reader and VoiceSettingsSnapshot.defaults.
+    @AppStorage(VoiceSettingsKey.enabled) private var voiceEnabled = false
     @AppStorage(VoiceSettingsKey.language) private var voiceLanguage = "vi-VN"
     @AppStorage(VoiceSettingsKey.triggerKey) private var triggerKeyRaw = VoiceTriggerKey.rightOption.rawValue
     @AppStorage(VoiceSettingsKey.activationMode) private var activationModeRaw = VoiceActivationMode.hold.rawValue

@@ -56,7 +56,7 @@ public final class VoiceManager {
     }
 
     public var isEnabled: Bool {
-        get { UserDefaults.standard.object(forKey: VoiceSettingsKey.enabled) as? Bool ?? true }
+        get { UserDefaults.standard.object(forKey: VoiceSettingsKey.enabled) as? Bool ?? false }
         set {
             UserDefaults.standard.set(newValue, forKey: VoiceSettingsKey.enabled)
             applySettings()
