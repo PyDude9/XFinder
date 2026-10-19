@@ -40,8 +40,11 @@ struct RemoteConnectDetailView: View {
                             .font(XFinderTokens.Font.pageIcon).foregroundColor(.secondary)
                         Text(L10n.t("Chưa có kết nối từ xa"))
                             .font(XFinderTokens.Font.pageSubtitle.weight(.semibold))
-                        Text(L10n.t("Thêm máy chủ để tải lên từ XFinder."))
+                        // The Upload button lives on each connection's row, so with no connection there is none to see.
+                        Text(enabled ? L10n.t("Thêm máy chủ để tải lên từ XFinder. Mỗi kết nối có nút Tải lên… ngay trên hàng của nó.")
+                                     : L10n.t("Kết nối từ xa đang tắt — bật ở trên để kiểm tra hay tải lên."))
                             .font(XFinderTokens.Font.row).foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 30)
@@ -142,6 +145,8 @@ struct RemoteConnectDetailView: View {
 
 private struct DestinationSheet: View {
     @State var draft: RemoteConnectController.Destination
+    // Read-only here (the switch is on the page): a test from the sheet is blocked too while the feature is off.
+    @AppStorage("remoteConnect.enabled") private var enabled = true
     private let isNew: Bool
     var isPresented: Binding<Bool>?
     var editing: Binding<RemoteConnectController.Destination?>?
@@ -195,7 +200,7 @@ private struct DestinationSheet: View {
 
             HStack {
                 Button(L10n.t("Kiểm tra")) { Task { await controller.test(draft) } }
-                    .buttonStyle(.bordered).disabled(!valid)
+                    .buttonStyle(.bordered).disabled(!valid || !enabled)
                 Spacer()
                 Button(L10n.t("Hủy")) { close() }.buttonStyle(.bordered)
                 Button(L10n.t("Lưu")) {
