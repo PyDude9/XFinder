@@ -15,6 +15,8 @@ struct QuickLookDetailView: View {
     @State private var mainRegistered = false
     @State private var devRegistered = false
     @State private var showPreviewer = false
+    @State private var cacheRefreshing = false
+    @State private var cacheStatus: String?
 
     var body: some View {
         ScrollView {
@@ -59,6 +61,25 @@ struct QuickLookDetailView: View {
                     Button(L10n.t("Mở trình xem trước…")) { showPreviewer = true }
                         .buttonStyle(.bordered).controlSize(.small)
                         .settingsRow()
+                }
+
+                // `qlmanage -r cache` empties the thumbnail cache, `qlmanage -r` reloads the generators — the public
+                // tool, run only on the click. For the "Finder still shows the old thumbnail" complaint.
+                SettingsSection(
+                    title: L10n.t("Bảo trì"),
+                    footer: L10n.t("Khi Finder vẫn hiện ảnh thu nhỏ cũ hoặc Quick Look không nhận tiện ích mới: xoá bộ nhớ đệm ảnh thu nhỏ và nạp lại các tiện ích (qlmanage của macOS).")
+                ) {
+                    HStack(spacing: XFinderTokens.Space.inline) {
+                        Button(L10n.t("Làm mới bộ nhớ đệm Quick Look")) { refreshCache() }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .disabled(cacheRefreshing)
+                        if cacheRefreshing { ProgressView().controlSize(.small) }
+                        if let cacheStatus {
+                            Text(cacheStatus).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        }
+                        Spacer()
+                    }
+                    .settingsRow()
                 }
             }
             .padding(.bottom, XFinderTokens.Space.section)
@@ -120,6 +141,30 @@ struct QuickLookDetailView: View {
 
     private func openExtensionsPane() {
         WindowManager.openFinderExtensionsPane()
+    }
+
+    private func refreshCache() {
+        cacheRefreshing = true
+        cacheStatus = nil
+        Task.detached {
+            let ok = Self.qlmanage(["-r", "cache"]) && Self.qlmanage(["-r"])
+            await MainActor.run {
+                cacheRefreshing = false
+                cacheStatus = ok ? L10n.t("Đã xoá bộ nhớ đệm ảnh thu nhỏ và nạp lại các tiện ích Quick Look.")
+                                 : L10n.t("qlmanage báo lỗi — đóng cửa sổ Quick Look đang mở rồi thử lại.")
+            }
+        }
+    }
+
+    private nonisolated static func qlmanage(_ args: [String]) -> Bool {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/qlmanage")
+        p.arguments = args
+        p.standardOutput = FileHandle.nullDevice
+        p.standardError = FileHandle.nullDevice
+        guard (try? p.run()) != nil else { return false }
+        p.waitUntilExit()
+        return p.terminationStatus == 0
     }
 }
 
