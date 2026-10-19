@@ -129,8 +129,14 @@ struct NotchSurfaceView: View {
                                        timerActive: model.timerText != nil,
                                        nowPlayingActive: nowPlayingActive,
                                        agentActive: model.agentActive, agentBusy: model.agentBusy, agentCount: model.agentCount,
-                                       pillOnPlainScreens: model.pillOnPlainScreens) ?? .zero
+                                       pillOnPlainScreens: model.pillOnPlainScreens, compactActivity: compactHUD) ?? .zero
     }
+
+    /// Volume / brightness feedback wears the collapsed wings' shape (glyph left, level right), not the notice strip.
+    private var compactHUD: Bool { model.state == .activity && model.activity?.kind.isKeyFeedback == true }
+
+    /// Collapsed wings, or the HUD drawn in their shape.
+    private var wingShaped: Bool { collapsed || compactHUD }
 
     /// The drawn (animated) size: the notch itself on the first frame of an opening (D0c), else the state's.
     private var size: CGSize {
@@ -155,6 +161,7 @@ struct NotchSurfaceView: View {
         switch model.state {
         case .collapsed: return plainScreen ? (0, 0) : (Self.m.collapsedFillet, Self.m.collapsedFilletDepth)
         case .expanded: return (Self.m.topFillet, Self.m.topFilletDepth)
+        case .activity where compactHUD: return plainScreen ? (0, 0) : (Self.m.collapsedFillet, Self.m.collapsedFilletDepth)
         case .peek, .activity: return (0, 0)
         }
     }
@@ -162,6 +169,7 @@ struct NotchSurfaceView: View {
     private var bottomRadius: CGFloat {
         switch model.state {
         case .collapsed: return plainScreen ? Self.m.pillHeight / 2 : Self.m.collapsedBottomRadius
+        case .activity where compactHUD: return plainScreen ? Self.m.pillHeight / 2 : Self.m.collapsedBottomRadius
         case .peek, .activity: return 14
         case .expanded: return Self.m.expandedBottomRadius
         }
@@ -189,7 +197,7 @@ struct NotchSurfaceView: View {
                 shape.fill(Color.black)
                 // No hairline on the collapsed wings: they sit in the menu bar beside the camera and must read as
                 // part of the hardware notch, which has no outline.
-                bodyShape.strokeBorder(isTargeted ? accent : Color.white.opacity(collapsed ? 0 : 0.10),
+                bodyShape.strokeBorder(isTargeted ? accent : Color.white.opacity(wingShaped ? 0 : 0.10),
                                        lineWidth: isTargeted ? 2 : 1)
                     .padding(.horizontal, flare.width)
                 content
@@ -226,6 +234,7 @@ struct NotchSurfaceView: View {
             // The machine peeks only with files or a track.
             Group { if model.itemCount > 0 { peek } else { nowPlayingStrip } }
                 .padding(.top, model.notchSize.height)
+        case .activity where compactHUD: hudWings
         case .activity: activityStrip.padding(.top, model.notchSize.height)
         case .expanded(let page): hub(page)
         }
@@ -687,6 +696,34 @@ struct NotchSurfaceView: View {
         .foregroundColor(.white)
         .frame(maxWidth: .infinity)
         .frame(height: NotchSurfaceLayout.Metrics.standard.peekDrop)
+    }
+
+    /// Volume / brightness: the glyph on the left wing, the level on the right — the same slots the collapsed wings
+    /// use (`wingEdgePadding` from the outer edge, the camera between), so the HUD reads as the notch, not a panel.
+    @ViewBuilder private var hudWings: some View {
+        if let a = model.activity {
+            let glyph = Image(systemName: a.symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 18, height: 22)
+            let bar = NotchLevelBar(level: a.level ?? 0, width: Self.m.hudBarWidth, height: 4)
+            Group {
+                if plainScreen {
+                    HStack(spacing: Self.m.wingSpacing * 2) { glyph; bar }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    HStack(spacing: 0) {
+                        glyph.padding(.leading, Self.m.wingEdgePadding).frame(width: Self.m.hudWing, alignment: .leading)
+                        Color.clear.frame(width: model.notchSize.width)
+                        bar.padding(.trailing, Self.m.wingEdgePadding).frame(width: Self.m.hudWing, alignment: .trailing)
+                    }
+                    .padding(.horizontal, Self.m.collapsedFillet)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
+            .foregroundColor(.white)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("\(L10n.t(a.titleKey)) \(a.detail ?? "")"))
+        }
     }
 
     /// A live activity: icon, headline, detail — one line under the notch, white on black.
@@ -1168,13 +1205,15 @@ struct NowPlayingSeekBar: View {
 /// (the old `ProgressView`) moved on its own timing and read as a stutter under fast key repeat.
 private struct NotchLevelBar: View {
     let level: Double
+    var width: CGFloat = 90
+    var height: CGFloat = 5
     var body: some View {
         let clamped = min(max(level, 0), 1)
         ZStack(alignment: .leading) {
             Capsule().fill(Color.white.opacity(0.22))
-            Capsule().fill(Color.white).frame(width: 90 * clamped)
+            Capsule().fill(Color.white).frame(width: width * clamped)
         }
-        .frame(width: 90, height: 5)
+        .frame(width: width, height: height)
         .animation(XFinderTokens.Notch.level, value: clamped)
         .accessibilityElement()
         .accessibilityValue(Text("\(Int((clamped * 100).rounded()))%"))

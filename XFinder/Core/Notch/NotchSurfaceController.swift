@@ -1090,7 +1090,8 @@ final class NotchSurfaceController {
                                                     pointer: shakePoint, timerActive: countdown != nil,
                                                     nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
                                                     agentActive: model.agentActive, agentBusy: model.agentBusy, agentCount: model.agentCount,
-                                                    pillOnPlainScreens: pillOnPlainScreens) else {
+                                                    pillOnPlainScreens: pillOnPlainScreens,
+                                                    compactActivity: model.activity?.kind.isKeyFeedback == true) else {
             model.state = .collapsed
             model.itemCount = machine.itemCount
             panel.hide()

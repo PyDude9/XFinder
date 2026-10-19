@@ -180,6 +180,10 @@ run "M61 key feedback does not replace a peek" XFinder/Core/Notch/NotchSurfaceMa
   "'                if state.isIdle || state == .peek { state = .activity; anchor = .notch }'" "'                if state.isIdle { state = .activity; anchor = .notch }'"
 run "M62 the notice interrupted by feedback is lost" XFinder/Core/Notch/LiveActivity.swift \
   "'                if !c.kind.isKeyFeedback { pending.insert(c, at: 0) }'" "'                _ = c'"
+run "M63 the key HUD drops below the notch like a notice" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'            if notch.height > 0 { return CGSize(width: notch.width + 2 * m.hudWing + 2 * m.collapsedFillet, height: notch.height) }'" "'            if notch.height > 0 { return CGSize(width: notch.width + 2 * m.hudWing + 2 * m.collapsedFillet, height: notch.height + m.activityDrop) }'"
+run "M64 the frame ignores the compact HUD" XFinder/Core/Notch/NotchSurfaceLayout.swift \
+  "'                              pillOnPlainScreens: pillOnPlainScreens, compactActivity: compactActivity, metrics: m) else { return nil }'" "'                              pillOnPlainScreens: pillOnPlainScreens, metrics: m) else { return nil }'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/NotchInterfaceDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 

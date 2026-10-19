@@ -127,6 +127,11 @@ enum NotchSurfaceLayout {
         /// Live activity strip (B4): extra width each side of the notch, and its depth below it.
         var activityWing: CGFloat = 130
         var activityDrop: CGFloat = 36
+        /// Volume / brightness feedback (`compactActivity`): the collapsed wings' own shape — notch-high, glyph on the
+        /// left wing, level bar on the right — instead of a strip below the notch (owner, 2026-10-19: the strip read as
+        /// a separate HUD pasted on). Each wing: 9 edge padding + a 44-pt bar + room to the camera.
+        var hudWing: CGFloat = 64
+        var hudBarWidth: CGFloat = 44
         /// Stand-in notch width on a screen without one (external display / iMac).
         var virtualNotchWidth: CGFloat = 185
         /// A screen without a notch: the collapsed state is a pill at the top edge (the virtual notch, D0c). OneNotch's
@@ -207,8 +212,12 @@ enum NotchSurfaceLayout {
     static func size(for state: NotchSurfaceMachine.State, anchor: NotchSurfaceMachine.Anchor,
                      itemCount: Int, notch: CGRect, timerActive: Bool = false, nowPlayingActive: Bool = false,
                      agentActive: Bool = false, agentBusy: Bool = false, agentCount: Int = 1, pillOnPlainScreens: Bool = true,
-                     metrics m: Metrics = .standard) -> CGSize? {
+                     compactActivity: Bool = false, metrics m: Metrics = .standard) -> CGSize? {
         switch state {
+        case .activity where compactActivity:
+            // Always drawn, also without the pill switch: the key was swallowed, so this is the only answer.
+            if notch.height > 0 { return CGSize(width: notch.width + 2 * m.hudWing + 2 * m.collapsedFillet, height: notch.height) }
+            return CGSize(width: max(m.pillWidth, 18 + m.wingSpacing * 2 + m.hudBarWidth + 2 * m.wingInset), height: m.pillHeight)
         case .collapsed:
             let (left, right) = wingItems(itemCount: itemCount, timerActive: timerActive,
                                           nowPlayingActive: nowPlayingActive, agentActive: agentActive, agentBusy: agentBusy,
@@ -246,11 +255,11 @@ enum NotchSurfaceLayout {
                       itemCount: Int, notch: CGRect, screen: CGRect, visible: CGRect,
                       pointer: CGPoint, timerActive: Bool = false, nowPlayingActive: Bool = false,
                       agentActive: Bool = false, agentBusy: Bool = false, agentCount: Int = 1, pillOnPlainScreens: Bool = true,
-                      metrics m: Metrics = .standard) -> CGRect? {
+                      compactActivity: Bool = false, metrics m: Metrics = .standard) -> CGRect? {
         guard let size = size(for: state, anchor: anchor, itemCount: itemCount, notch: notch,
                               timerActive: timerActive, nowPlayingActive: nowPlayingActive, agentActive: agentActive,
                               agentBusy: agentBusy, agentCount: agentCount,
-                              pillOnPlainScreens: pillOnPlainScreens, metrics: m) else { return nil }
+                              pillOnPlainScreens: pillOnPlainScreens, compactActivity: compactActivity, metrics: m) else { return nil }
         if case .expanded = state, anchor == .pointer {
             let centre = CGPoint(x: pointer.x, y: pointer.y - m.pointerGap - size.height / 2)
             return SurfaceGeometry.frame(size: size, anchor: .pointer(centre), screen: screen, visible: visible)

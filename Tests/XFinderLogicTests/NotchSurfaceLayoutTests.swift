@@ -129,6 +129,25 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         XCTAssertEqual(sides.left, [.agent, .files]); XCTAssertEqual(sides.right, [.music, .timer])
     }
 
+    /// Volume / brightness wear the collapsed wings' shape: notch-high, symmetric, no strip below the notch.
+    func testKeyFeedbackIsDrawnInTheWingsShapeNotAsAStrip() {
+        let m = L.Metrics.standard
+        let hud = L.size(for: .activity, anchor: .notch, itemCount: 0, notch: notch, compactActivity: true)!
+        XCTAssertEqual(hud.height, notch.height, "nothing below the notch")
+        XCTAssertEqual(hud.width, notch.width + 2 * m.hudWing + 2 * m.collapsedFillet, accuracy: 0.001)
+        let strip = L.size(for: .activity, anchor: .notch, itemCount: 0, notch: notch)!
+        XCTAssertGreaterThan(strip.height, notch.height, "an ordinary notice keeps its strip")
+        XCTAssertLessThan(hud.width, strip.width)
+        XCTAssertGreaterThanOrEqual(m.hudWing, m.wingEdgePadding + m.hudBarWidth, "the bar fits its wing")
+        let v = L.notch(screen: external, auxLeft: nil, auxRight: nil)
+        let pill = L.size(for: .activity, anchor: .notch, itemCount: 0, notch: v, pillOnPlainScreens: false, compactActivity: true)
+        XCTAssertEqual(pill?.height, m.pillHeight, "a plain screen gets the pill — even with the pill switch off (the key was swallowed)")
+        let frame = L.frame(for: .activity, anchor: .notch, itemCount: 0, notch: notch, screen: CGRect(x: 0, y: 0, width: 1728, height: 1117),
+                            visible: CGRect(x: 0, y: 0, width: 1728, height: 1084), pointer: .zero, compactActivity: true)!
+        XCTAssertEqual(frame.maxY, notch.maxY, accuracy: 0.001, "glued to the top edge like the wings")
+        XCTAssertEqual(frame.midX, notch.midX, accuracy: 0.001, "centred on the camera")
+    }
+
     func testSizesGrowBadgeToPeekToExpanded() {
         let b = L.size(for: .collapsed, anchor: .notch, itemCount: 1, notch: notch)!
         let p = L.size(for: .peek, anchor: .notch, itemCount: 1, notch: notch)!
