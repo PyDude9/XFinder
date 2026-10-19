@@ -65,10 +65,29 @@ final class LiveActivityTests: XCTestCase {
         XCTAssertNil(q.advance())
     }
 
+    /// A volume press must answer at once even while another notice is up; the notice comes back right after.
+    func testKeyFeedbackJumpsTheQueueAndTheNoticeItInterruptedReturnsFirst() {
+        var q = A.Queue()
+        q.push(item(.agent, "Claude is waiting"))
+        q.push(item(.network, "net"))
+        XCTAssertTrue(q.push(item(.volume, "vol 31")), "feedback becomes current — the caller re-renders")
+        XCTAssertEqual(q.current?.titleKey, "vol 31")
+        XCTAssertEqual(q.pending.map(\.titleKey), ["Claude is waiting", "net"], "the interrupted notice is next, then the rest")
+        XCTAssertTrue(q.push(item(.brightness, "bri 50")))
+        XCTAssertEqual(q.current?.titleKey, "bri 50")
+        XCTAssertFalse(q.pending.contains { $0.kind.isKeyFeedback }, "an interrupted volume level is dropped, not replayed")
+        XCTAssertEqual(q.advance()?.titleKey, "Claude is waiting")
+        // A notice arriving during feedback still waits its turn.
+        var f = A.Queue(); f.push(item(.volume, "v")); XCTAssertFalse(f.push(item(.alert, "a")))
+        XCTAssertEqual(f.current?.titleKey, "v")
+        XCTAssertTrue(A.Kind.volume.isKeyFeedback && A.Kind.brightness.isKeyFeedback)
+        XCTAssertFalse(A.Kind.allCases.filter { $0 != .volume && $0 != .brightness }.contains { $0.isKeyFeedback })
+    }
+
     /// Exhaustive: any 6 pushes/advances keep at most one item per kind in the whole queue and never
     /// exceed the bound.
     func testNoSequenceHoldsTwoOfAKind() {
-        let kinds: [A.Kind] = [.power, .network, .capsLock]
+        let kinds: [A.Kind] = [.power, .network, .volume, .brightness]
         func walk(_ q: A.Queue, _ depth: Int) {
             let all = (q.current.map { [$0] } ?? []) + q.pending
             XCTAssertEqual(Set(all.map(\.kind)).count, all.count, "duplicate kind: \(all.map(\.kind))")

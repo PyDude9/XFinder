@@ -173,7 +173,7 @@ final class LiveActivityMonitor: NSObject {
     /// Nothing observes brightness, so the key XFinder just applied reports the level it landed on. The
     /// native square is swallowed for that key, so this is the ONLY readout — it answers even at 0 or 1.
     func brightnessKeyed(level: Double) {
-        guard master, brightnessOn, NotchSurfaceController.shared.canPresentActivities else { return }
+        guard master, brightnessOn, NotchSurfaceController.shared.canShowKeyFeedback else { return }
         present(LiveActivity.brightnessItem(level: level))
     }
 
@@ -182,7 +182,7 @@ final class LiveActivityMonitor: NSObject {
     /// (already at 0 or 1), because CoreAudio reports nothing then. The notification that follows carries the
     /// same item and simply replaces it.
     func volumeKeyed(_ state: LiveActivity.VolumeState) {
-        guard master, volumeOn, NotchSurfaceController.shared.canPresentActivities else { return }
+        guard master, volumeOn, NotchSurfaceController.shared.canShowKeyFeedback else { return }
         present(LiveActivity.volumeItem(state))
     }
 

@@ -182,7 +182,7 @@ final class NotchSurfaceMachineTests: XCTestCase {
     func testNoShortSequenceLeavesTheSurfaceStuckOpen() {
         let events: [M.Event] = [.hoverInZone(since: t0), .fileDragInZone, .shake, .activate,
                                  .dropped(count: 2), .itemsChanged(count: 0), .pointerOnSurface, .dismiss,
-                                 .taskStarted, .taskEnded, .activityShown, .activityEnded,
+                                 .taskStarted, .taskEnded, .activityShown, .activityEnded, .feedbackShown,
                                  .switchPage(.clipboard), .switchPage(.files)]
         var visited = 0, stuck = 0, undismissable = 0
         func walk(_ m: M.Machine, _ depth: Int) {
@@ -202,7 +202,7 @@ final class NotchSurfaceMachineTests: XCTestCase {
             for e in events { var n = m; n.handle(e, settings: s, now: at(Double(depth) + 1)); walk(n, depth + 1) }
         }
         walk(M.Machine(), 0)
-        XCTAssertEqual(visited, 41371, "the walk must cover the whole tree (14 events, depth 4)")
+        XCTAssertEqual(visited, 54241, "the walk must cover the whole tree (15 events, depth 4)")
         XCTAssertEqual(stuck, 0)
         XCTAssertEqual(undismissable, 0)
     }
@@ -265,6 +265,24 @@ final class NotchSurfaceMachineTests: XCTestCase {
         var held = holding(2); held.handle(.activityShown, settings: s, now: t0)
         held.handle(.hoverInZone(since: at(1)), settings: s, now: at(2))
         XCTAssertEqual(held.state, .peek, "hovering during a notice still peeks the held files")
+    }
+
+    /// Volume / brightness feedback replaces a passive peek (the key was swallowed — nothing else answers) but never the hub.
+    func testKeyFeedbackReplacesAPeekButNotTheHub() {
+        var peek = holding(2); peek.handle(.hoverInZone(since: t0), settings: s, now: at(5))
+        XCTAssertEqual(peek.state, .peek)
+        peek.handle(.feedbackShown, settings: s, now: at(6))
+        XCTAssertEqual(peek.state, .activity, "the level shows over the peek")
+        peek.handle(.activityEnded, settings: s, now: at(8))
+        XCTAssertEqual(peek.state, .collapsed)
+        var notice = holding(2); notice.handle(.hoverInZone(since: t0), settings: s, now: at(5))
+        notice.handle(.activityShown, settings: s, now: at(6))
+        XCTAssertEqual(notice.state, .peek, "an ordinary notice still never interrupts a peek")
+        var idle = M.Machine(); idle.handle(.feedbackShown, settings: s, now: t0)
+        XCTAssertEqual(idle.state, .activity)
+        var hub = M.Machine(); hub.handle(.activateOn(.nowPlaying), settings: s, now: t0)
+        hub.handle(.feedbackShown, settings: s, now: at(1))
+        XCTAssertEqual(hub.state, .expanded(.nowPlaying), "the open hub is never taken over — macOS answers the key there")
     }
 
     /// §3b #33 — a meeting alert has buttons; the pointer that comes to press one must not turn it into a peek.

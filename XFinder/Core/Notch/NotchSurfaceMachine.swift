@@ -104,6 +104,10 @@ enum NotchSurfaceMachine {
         /// A live activity is ready / its time is up.
         case activityShown
         case activityEnded
+        /// Key feedback (volume / brightness) is ready. Unlike a notice it also replaces a PEEK — the peek is passive
+        /// (a hover, a playing track) and the key was swallowed, so this is the only answer the person gets. It never
+        /// takes over the open hub: there the key is passed to macOS instead (`canShowKeyFeedback`).
+        case feedbackShown
         /// The close button.
         case dismiss
         /// The feature was switched off.
@@ -124,6 +128,8 @@ enum NotchSurfaceMachine {
                 collapse()
             case .activityShown:
                 if state.isIdle { state = .activity; anchor = .notch }   // never interrupts a peek or the hub
+            case .feedbackShown:
+                if state.isIdle || state == .peek { state = .activity; anchor = .notch }
             case .activityEnded:
                 if state == .activity { state = .collapsed }
             case .taskStarted:

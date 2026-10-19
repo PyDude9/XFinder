@@ -6,7 +6,12 @@ import Foundation
 /// flagsChanged, IOBluetooth connect notifications); nothing polls.
 enum LiveActivity {
 
-    enum Kind: String, CaseIterable { case power, network, capsLock, bluetooth, alert, volume, brightness, timer, meeting, agent }
+    enum Kind: String, CaseIterable {
+        case power, network, capsLock, bluetooth, alert, volume, brightness, timer, meeting, agent
+        /// The answer to a key the person just pressed (the native square is swallowed for it). It cannot wait its turn
+        /// behind a notice, and a stale one is worthless — see `Queue.push` and `NotchSurfaceMachine.Event.feedbackShown`.
+        var isKeyFeedback: Bool { self == .volume || self == .brightness }
+    }
 
     enum Tint: Equatable { case neutral, good, warning, bad }
 
@@ -347,6 +352,16 @@ enum LiveActivity {
         @discardableResult
         mutating func push(_ item: Item) -> Bool {
             if current == nil { current = item; return true }
+            // Key feedback goes on screen NOW (2026-10-19: volume presses landed behind an agent notice and showed
+            // nothing while the key was swallowed). The notice it interrupts comes back first; an interrupted feedback
+            // item is dropped — a volume level from two presses ago is not news.
+            if item.kind.isKeyFeedback, let c = current, c.kind != item.kind {
+                pending.removeAll { $0.kind.isKeyFeedback }
+                if !c.kind.isKeyFeedback { pending.insert(c, at: 0) }
+                if pending.count > Self.maxPending { pending.removeLast(pending.count - Self.maxPending) }
+                current = item
+                return true
+            }
             if let c = current, c.kind == item.kind {
                 if Self.outranks(c, item) { enqueue(item); return false }
                 current = item; return true

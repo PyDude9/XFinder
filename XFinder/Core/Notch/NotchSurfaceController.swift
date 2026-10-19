@@ -1154,8 +1154,19 @@ final class NotchSurfaceController {
     /// fallback (AlertMonitor's banner) check this first.
     var canPresentActivities: Bool { enabled && panel != nil }
 
+    /// Volume / brightness feedback can be drawn right now: everywhere but the open hub. The key interceptor swallows
+    /// a key only when this is true, so inside the hub the key reaches macOS and its own square answers.
+    var canShowKeyFeedback: Bool {
+        guard canPresentActivities else { return false }
+        if case .expanded = machine.state { return false }
+        return true
+    }
+
     func present(_ item: LiveActivity.Item) {
         guard canPresentActivities else { return }
+        // A level that could not be drawn now would surface later as stale news (the CoreAudio path reports changes
+        // made inside the hub, where the key went to macOS).
+        if item.kind.isKeyFeedback, !canShowKeyFeedback { return }
         if activityQueue.push(item) { showCurrentActivity() }
     }
 
@@ -1163,9 +1174,9 @@ final class NotchSurfaceController {
         activityWork?.cancel(); activityWork = nil
         guard let item = activityQueue.current else { return }
         model.activity = item
-        if machine.state.isIdle {
-            if machine.state == .activity { render() } else { dispatch(.activityShown) }
-        }
+        if machine.state == .activity { render() }
+        else if item.kind.isKeyFeedback { dispatch(.feedbackShown) }
+        else if machine.state.isIdle { dispatch(.activityShown) }
         let work = DispatchWorkItem { [weak self] in MainActor.assumeIsolated { self?.activityTimeUp() } }
         activityWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + item.duration, execute: work)

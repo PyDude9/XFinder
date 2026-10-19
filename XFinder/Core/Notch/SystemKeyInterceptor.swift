@@ -144,7 +144,7 @@ final class SystemKeyInterceptor {
         case .brightnessUp, .brightnessDown: volumeWritable = false
         }
         return .init(hideSystemHUD: Self.hideSystemHUDEnabled,
-                     canPresent: NotchSurfaceController.shared.canPresentActivities,
+                     canPresent: NotchSurfaceController.shared.canShowKeyFeedback,
                      masterOn: monitor.master,
                      volumeOn: monitor.volumeOn,
                      brightnessOn: monitor.brightnessOn,

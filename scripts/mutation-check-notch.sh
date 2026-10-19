@@ -174,6 +174,12 @@ run "M58 a key pressed with a modifier is taken over" XFinder/Core/Notch/LiveAct
   "'            guard !context.modifiersHeld else { return .passThrough }\n'" "''"
 run "M59 a volume key is taken on an output that cannot set volume" XFinder/Core/Notch/LiveActivity.swift \
   "'            if key.isVolume { guard context.volumeOn, context.volumeWritable else { return .passThrough } }'" "'            if key.isVolume { guard context.volumeOn else { return .passThrough } }'"
+run "M60 key feedback waits behind another notice" XFinder/Core/Notch/LiveActivity.swift \
+  "'            if item.kind.isKeyFeedback, let c = current, c.kind != item.kind {'" "'            if false, item.kind.isKeyFeedback, let c = current, c.kind != item.kind {'"
+run "M61 key feedback does not replace a peek" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                if state.isIdle || state == .peek { state = .activity; anchor = .notch }'" "'                if state.isIdle { state = .activity; anchor = .notch }'"
+run "M62 the notice interrupted by feedback is lost" XFinder/Core/Notch/LiveActivity.swift \
+  "'                if !c.kind.isKeyFeedback { pending.insert(c, at: 0) }'" "'                _ = c'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/NotchInterfaceDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
 
