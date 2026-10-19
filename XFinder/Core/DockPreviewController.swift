@@ -29,8 +29,11 @@ final class DockPreviewController {
     private var panelPID: pid_t?
     private var hideWorkItem: DispatchWorkItem?
     /// Short enough to feel instant; long enough that merely sweeping the
-    /// pointer across the Dock does not fire a panel for every icon.
-    private let dwell: TimeInterval = 0.08
+    /// pointer across the Dock does not fire a panel for every icon. Settable (ms) for people who want the
+    /// panel only when they stop on an icon; read per hover, nothing to re-arm.
+    private var dwell: TimeInterval {
+        Double(UserDefaults.standard.object(forKey: "windowPreview.hoverDelayMs") as? Int ?? 80) / 1000
+    }
     private var lastIconLoad = Date.distantPast
 
     private init() {}

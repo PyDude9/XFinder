@@ -7,6 +7,7 @@ import AppKit
 /// máy chưa cấp quyền, và vẫn giữ danh sách cửa sổ + làm mới thủ công.
 struct WindowPreviewDetailView: View {
     @AppStorage("windowPreview.hoverEnabled") private var hoverEnabled = true
+    @AppStorage("windowPreview.hoverDelayMs") private var hoverDelayMs = 80
     @AppStorage("windowPreview.commandTabEnabled") private var commandTabEnabled = false
     @AppStorage("windowPreview.showHiddenWindows") private var showHiddenWindows = false
     @AppStorage("windowPreview.switcherHotkey") private var switcherHotkey = "commandTab"
@@ -84,6 +85,22 @@ struct WindowPreviewDetailView: View {
                               isOn: $hoverEnabled)
                         .onChange(of: hoverEnabled) { controller.applySettings() }
                         .settingsRow()
+                    SettingsDivider()
+                    HStack(spacing: XFinderTokens.Space.inline) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.t("Độ trễ trước khi hiện")).font(XFinderTokens.Font.row)
+                            Text(L10n.t("Thời gian con trỏ phải đứng trên biểu tượng Dock trước khi bảng xem trước mở."))
+                                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        }
+                        Spacer()
+                        Slider(value: Binding(get: { Double(hoverDelayMs) }, set: { hoverDelayMs = Int($0) }),
+                               in: 50...1000, step: 10)
+                            .frame(width: 160)
+                        Text("\(hoverDelayMs) ms").font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                            .frame(width: 60, alignment: .trailing)
+                    }
+                    .disabled(!hoverEnabled)
+                    .settingsRow()
                     SettingsDivider()
                     InlineNote(text: L10n.t("XFinder chỉ chụp ảnh thu nhỏ khi bảng xem trước đang hiển thị."))
                         .settingsRow()
