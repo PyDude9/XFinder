@@ -168,6 +168,27 @@ thống kê ẩn danh, không đối chiếu, báo trước + từ chối dễ).
 | Q-CREW-7 | v2c "From a Goal" (spec `docs/specs/XF-T23c-crew-from-goal.md`, Notion XF-T23c Draft): mặc định của template Lead Architect là **Lead đề xuất seat trước, bạn bấm Mở** (chỉ lead spawn; worktree/nhánh chỉ tạo lúc Mở) hay **Mở đủ 5 vai ngay** (= v2b)? | **Lead đề xuất trước** (khoá `crew.fromGoal` default true) |
 | Q-CREW-8 | "Không hỏi lại `npm test` trong crew này": nhớ trong RAM theo crew (mất khi crew dừng) hay persist theo repo (`updatedPermissions` `destination: localSettings` của repo thử — Claude Code có cơ chế này thật, đã đọc tài liệu 2026-10-18)? | **RAM theo crew** — hiện trên bảng, không ghi vào settings của repo |
 
+### Q-REF · Đối chiếu một app cùng loại trên máy (2026-10-19, 17 ảnh cài đặt chủ dự án gửi) — việc nhỏ đã làm, việc vừa/lớn chờ bạn
+
+Đã làm luôn (nhỏ, không chi phí nghỉ, API công khai): QR + trang chỉ mục cho Chia sẻ nhanh · Đếm ngược và Bóng đổ cửa sổ khi chụp ·
+Độ trễ Dock preview · Làm mới bộ nhớ đệm Quick Look · dòng trống Kết nối từ xa nói nút Tải lên ở đâu. Bỏ không bàn: công tắc menu
+ngữ cảnh Finder + Terminal mặc định (XFinder đã gỡ 2026-10-18 vì không gì đọc), bản quyền/mua hàng (XFinder không bán), chia sẻ qua cloud
+của hãng (trái thiết kế LAN-only). Đo trên binary app đó (`strings`/`otool`, không đọc source): nó link `MenuBarClientCore` private +
+`com.apple.MenuBarAgent` — **đúng cơ chế XFinder đã đo trả lỗi 4097 khi ký ad-hoc/tự ký**; app đó ký Developer ID (có `team-identifier`).
+
+| Mã | Câu hỏi | Mặc định |
+|:--|:--|:--|
+| Q-REF-1 | **Cuộn chuột**: đảo hướng riêng cho bánh xe (trackpad giữ nguyên, phân biệt bằng `scrollWheelEventIsContinuous`), cuộn mượt (engine nội suy theo frame clock — app kia có `SmoothScrollEngine`), tốc độ, per-app. Cần event tap scrollWheel luôn bật ⇒ hàng catalog `listensToMouse`. Làm không? | **Viết spec XF-T25 cho Builder** khi bạn gật; chưa code |
+| Q-REF-2 | **Kết nối từ xa** thêm SMB/SFTP/FTP + chính sách file trùng (giữ cả hai / bỏ qua / ghi đè) + mật khẩu trong Keychain. SMB mount được bằng `NetFSMountURLSync` (công khai); scp không có chính sách trùng ⇒ phải đổi sang sftp batch/rsync. Vừa–lớn | **Chưa**; nói mã nếu muốn |
+| Q-REF-3 | **Chia sẻ nhanh** lên bucket S3/R2 **của bạn** (SigV4 bằng CryptoKit, không máy chủ trung gian của XFinder) — cho link ngoài LAN | **Chưa** — LAN + QR đủ cho "điện thoại cùng Wi-Fi"; nếu bạn hay gửi ra ngoài thì gật |
+| Q-REF-4 | **Ẩn icon menu bar app khác**: app kia dùng đúng cơ chế XFinder đo (MenuBarAgent) nhưng ký Developer ID. Bạn có chứng chỉ Developer ID không? Có ⇒ đo lại XF-T22 với bản ký thật | **Giữ explainer XF-T22**; T-REF-1 bên dưới xác nhận app kia có ẩn thật không |
+| Q-REF-5 | **Ghi chú mép**: ẩn khi đang dùng app đã chọn · chọn màn hình hiển thị · 6 vị trí (trên/giữa/dưới × trái/phải) · độ trễ rê chuột trước khi peek | **Chưa**; cái rẻ nhất là độ trễ peek (một khoá) |
+| Q-REF-6 | **Quay màn hình** (phím tắt quay/dừng, tạm dừng, webcam, fps) và **chụp cuộn** | **Không** — hai tính năng lớn, macOS có ⇧⌘5 |
+
+| Mã | Thao tác | Kỳ vọng |
+|:--|:--|:--|
+| T-REF-1 | Trong app kia: Biểu tượng thanh menu ▸ bật ẩn cho **1Password** (hoặc Claude) ▸ thu gọn | Icon 1Password **biến mất** khỏi thanh menu thật? Có ⇒ cơ chế sống với chữ ký Developer ID, XF-T22 cần đo lại; không ⇒ explainer đúng |
+
 ## Phần 2 — Cần test tay (T)
 
 Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
@@ -200,8 +221,14 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-T24-1 | Ghi chú mép: rê chuột lên viên của một ghi chú 9 dòng (như ảnh 7 things before every trade) | thẻ hiện **đủ 9 dòng**, rộng hơn (248 pt), chữ 11 pt; ghi chú rất dài: cắt "…" + dòng "còn N dòng nữa — bấm để mở"; với 1–2 ghi chú thẻ **không** bị cắt đáy; rê dọc dải vẫn chuyển từ ghi chú này sang ghi chú kế mà không nhảy **Lần 1 (20:4x) HỎNG: 8/9 dòng — đo chữ 13 pt/dòng thay vì 14 của SwiftUI; sửa `1560eb6`, đã cài. Lần 2: **PASS** (chủ dự án, đủ 9 dòng).** |
 | T-T24-2 | Ghi chú ▸ Ghi chú ở mép màn hình ▸ bật "Phím tắt ⌃⌥N…"; vào Safari, bấm ⌃⌥N; bấm lại | editor mép mở trên ghi chú đầu dải, gõ được ngay; bấm lại thì đóng; không có ghi chú ⇒ tạo mới **PASS 2026-10-18 (chủ dự án) sau khi bật công tắc; lần đầu "không mở" vì công tắc chưa bật — khoá vắng trong defaults.** |
 | T-T24-3 | Sửa một ghi chú bất kỳ; Ghi chú ▸ Nhập / Xuất ▸ "Mở thư mục sao lưu" | có `notes-<hôm nay>.json` + `.md`; "Nhập… ▸ JSON" từ file đó khôi phục đủ danh sách; "Bản gần nhất: <ngày>" hiện trên trang **PASS 2026-10-18 (chủ dự án): file có từ 20:36, nhập JSON khôi phục đủ (nhập = thay toàn bộ, không nhân đôi).** |
-| T-T21-1 | Chia sẻ nhanh ▸ chia sẻ một file, chép link, mở trên điện thoại cùng Wi-Fi (hoặc `curl -O <link>`); rồi Tính năng & Quyền ▸ **Tắt tất cả** (hoặc tắt "Cho phép Chia sẻ nhanh" đầu trang) | tải được trước khi tắt; sau khi tắt: danh sách liên kết rỗng, nhãn đầu trang "Đang tắt", link cũ **không** tải được (kết nối bị từ chối), nút "Chọn file…" xám. File tên tiếng Việt tải về **giữ đúng tên** (trước đây header thô) |
-| T-T21-2 | Kết nối từ xa ▸ tắt "Cho phép Kết nối từ xa" | "Tải lên…" và "Kiểm tra kết nối" xám; danh sách kết nối vẫn còn; bật lại ⇒ dùng như cũ |
+| T-T21-1 | Chia sẻ nhanh ▸ chia sẻ một file, chép link, mở trên điện thoại cùng Wi-Fi (hoặc `curl -O <link>`); rồi Tính năng & Quyền ▸ **Tắt tất cả** (hoặc tắt "Cho phép Chia sẻ nhanh" đầu trang) | **PASS 2026-10-19 (chủ dự án: "đã làm việc"). Câu hỏi kèm theo "điện thoại lấy link kiểu gì" ⇒ QR (T-T21-3/4).**  tải được trước khi tắt; sau khi tắt: danh sách liên kết rỗng, nhãn đầu trang "Đang tắt", link cũ **không** tải được (kết nối bị từ chối), nút "Chọn file…" xám. File tên tiếng Việt tải về **giữ đúng tên** (trước đây header thô) |
+| T-T21-2 | Kết nối từ xa ▸ **Thêm kết nối…** một máy chủ bất kỳ (tên + host là đủ, không cần đúng) rồi tắt "Cho phép Kết nối từ xa" | Nút "Tải lên…" nằm **trên hàng của từng kết nối** — chưa có kết nối thì không có nút (2026-10-19 chủ dự án "không thấy nút": đúng, trang rỗng; giờ dòng trống nói rõ điều đó). Sau khi tắt: "Tải lên…", "Kiểm tra kết nối" (menu ⋯) và "Kiểm tra" trong hộp thêm/sửa đều xám; danh sách vẫn còn; bật lại ⇒ dùng như cũ |
+| T-T21-3 | Chia sẻ nhanh ▸ chia sẻ một file ▸ bấm nút **QR** trên hàng ▸ mở Camera iPhone/Android cùng Wi-Fi, quét | Safari/Chrome của điện thoại mở `http://<ip>:<cổng>/<mã>` và tải file đúng tên; không cần cài gì |
+| T-T21-4 | Chia sẻ 2–3 file ▸ **QR cho tất cả** ▸ quét | Trang web liệt kê đủ các file, chạm một file thì tải; tên file có `<` `"` hiện nguyên văn (không thành thẻ HTML); sau "Thu hồi tất cả" quét lại ⇒ không mở được |
+| T-POL-1 | Chụp màn hình ▸ Đếm ngược = 3 giây ▸ bấm "Chụp" ở hàng **Toàn màn hình** | chụp sau ~3 s; kiểu Vùng chọn/Chú thích/Chữ/Màu không đếm (vì có bước chọn) |
+| T-POL-2 | Chụp màn hình ▸ tắt "Bóng đổ cửa sổ" ▸ chụp **Cửa sổ đang mở** | ảnh không có viền bóng macOS; bật lại ⇒ có bóng |
+| T-POL-3 | Xem trước cửa sổ ▸ kéo "Độ trễ trước khi hiện" lên 600 ms ▸ lướt chuột qua Dock | lướt nhanh không mở bảng; dừng ≥ 0,6 s mới mở; kéo về 80 ms thì gần như tức thì |
+| T-POL-4 | Quick Look ▸ Bảo trì ▸ "Làm mới bộ nhớ đệm Quick Look" | dòng "Đã xoá bộ nhớ đệm…" hiện sau ~1 s; Finder vẽ lại ảnh thu nhỏ khi mở lại thư mục |
 | T-SNAPMEM-2 | Với luật trên, rút màn ngoài rồi cắm lại (hoặc ngược lại) | Luật ghi với bộ "màn trong + HC-L200A" chỉ áp khi đủ hai màn; khi chỉ còn màn trong, Chrome **không** bị kéo đi; cắm lại ⇒ áp trong ~1–3 s |
 | T-SNAPMEM-3 | Đưa một app đã có luật vào toàn màn hình (nút xanh), thoát app, mở lại | Hàng luật đổi thành "Toàn màn hình (Space riêng)"; mở lại ⇒ app vào toàn màn hình trên đúng màn. App không cho đặt ⇒ hàng ghi "App không cho đặt toàn màn hình qua Trợ năng", không thử lại |
 | T-SNAPMEM-4 | Mở hộp thoại Lưu (⌘S) hoặc ⌘N trong app đã có luật, đang chạy | Cửa sổ chính **không** bị kéo lại chỗ cũ (chỉ lần mở app mới áp) |
