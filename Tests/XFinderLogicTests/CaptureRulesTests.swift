@@ -207,11 +207,36 @@ final class CaptureRulesTests: XCTestCase {
         XCTAssertEqual(args.last, "/tmp/anywhere.png")
     }
 
-    func testScreencaptureArgumentsNeverContainsDashO() {
+    func testScreencaptureArgumentsNeverContainsDashOByDefault() {
         for mode in CaptureMode.allCases {
             let args = CaptureRules.screencaptureArguments(mode: mode, output: "/tmp/x.png", sound: true, windowID: 1, display: 0)
-            XCTAssertFalse(args.contains("-o"), "mode \(mode) should never pass -o (keep window shadow)")
+            XCTAssertFalse(args.contains("-o"), "mode \(mode) should never pass -o by default (keep window shadow)")
+            XCTAssertFalse(args.contains("-T"), "mode \(mode) should never pass -T by default (no countdown)")
         }
+    }
+
+    func testWindowShadowOffAddsDashOForWindowShotsOnly() {
+        for mode in CaptureMode.allCases {
+            let args = CaptureRules.screencaptureArguments(mode: mode, output: "/tmp/x.png", sound: true, windowID: 1, display: 0, windowShadow: false)
+            XCTAssertEqual(args.contains("-o"), mode == .window, "mode \(mode)")
+        }
+        let byID = CaptureRules.screencaptureArguments(mode: .window, output: "/tmp/x.png", sound: true, windowID: 42, display: 0, windowShadow: false)
+        XCTAssertEqual(byID, ["-l", "42", "-o", "-t", "png", "/tmp/x.png"])
+    }
+
+    func testCountdownAppliesOnlyWhereNobodyPicksARegion() {
+        XCTAssertEqual(CaptureRules.screencaptureArguments(mode: .fullscreen, output: "/tmp/x.png", sound: true, windowID: nil, display: 2, countdown: 3),
+                       ["-D", "2", "-T", "3", "-t", "png", "/tmp/x.png"])
+        XCTAssertEqual(CaptureRules.screencaptureArguments(mode: .window, output: "/tmp/x.png", sound: true, windowID: 7, display: 1, countdown: 5),
+                       ["-l", "7", "-T", "5", "-t", "png", "/tmp/x.png"])
+        for mode in [CaptureMode.area, .areaAnnotate, .text, .color] {
+            let args = CaptureRules.screencaptureArguments(mode: mode, output: "/tmp/x.png", sound: true, windowID: nil, display: 1, countdown: 10)
+            XCTAssertFalse(args.contains("-T"), "\(mode) has a selection step — the person decides when")
+        }
+        let noID = CaptureRules.screencaptureArguments(mode: .window, output: "/tmp/x.png", sound: true, windowID: nil, display: 1, countdown: 10)
+        XCTAssertFalse(noID.contains("-T"), "a window picked by hand (-i -W) is a selection step too")
+        XCTAssertFalse(CaptureRules.screencaptureArguments(mode: .fullscreen, output: "/tmp/x.png", sound: true, windowID: nil, display: 1, countdown: 0).contains("-T"))
+        XCTAssertEqual(CaptureRules.countdownKey, "capture.countdown"); XCTAssertEqual(CaptureRules.windowShadowKey, "capture.windowShadow")
     }
 
     // MARK: - fileName

@@ -11458,6 +11458,58 @@
     "Chạm vào một file để tải về. Liên kết chỉ hoạt động trong cùng mạng Wi-Fi và tự hết hạn.": {
       "en": "Tap a file to download it. Links work only on the same Wi-Fi and expire on their own.",
       "scope": "sentence"
+    },
+    "Thêm máy chủ để tải lên từ XFinder. Mỗi kết nối có nút Tải lên… ngay trên hàng của nó.": {
+      "en": "Add a server to upload from XFinder. Each connection has its Upload… button right on its row.",
+      "scope": "sentence"
+    },
+    "Kết nối từ xa đang tắt — bật ở trên để kiểm tra hay tải lên.": {
+      "en": "Remote Connect is off — turn it on above to test or upload.",
+      "scope": "sentence"
+    },
+    "Đếm ngược": {
+      "en": "Countdown",
+      "scope": "sentence"
+    },
+    "Chỉ cho Toàn màn hình và Cửa sổ đang mở; kiểu chụp có bước chọn vùng không đếm.": {
+      "en": "Only for Full screen and the front window; modes with a selection step do not count down.",
+      "scope": "sentence"
+    },
+    "Bóng đổ cửa sổ": {
+      "en": "Window shadow",
+      "scope": "sentence"
+    },
+    "Tắt để ảnh chụp cửa sổ không kèm viền bóng của macOS.": {
+      "en": "Off: window shots come without the macOS shadow border.",
+      "scope": "sentence"
+    },
+    "Độ trễ trước khi hiện": {
+      "en": "Delay before showing",
+      "scope": "sentence"
+    },
+    "Thời gian con trỏ phải đứng trên biểu tượng Dock trước khi bảng xem trước mở.": {
+      "en": "How long the pointer must rest on a Dock icon before the preview opens.",
+      "scope": "sentence"
+    },
+    "Bảo trì": {
+      "en": "Maintenance",
+      "scope": "sentence"
+    },
+    "Khi Finder vẫn hiện ảnh thu nhỏ cũ hoặc Quick Look không nhận tiện ích mới: xoá bộ nhớ đệm ảnh thu nhỏ và nạp lại các tiện ích (qlmanage của macOS).": {
+      "en": "When Finder still shows an old thumbnail or Quick Look ignores a new extension: empty the thumbnail cache and reload the extensions (macOS's qlmanage).",
+      "scope": "sentence"
+    },
+    "Làm mới bộ nhớ đệm Quick Look": {
+      "en": "Refresh the Quick Look cache",
+      "scope": "sentence"
+    },
+    "Đã xoá bộ nhớ đệm ảnh thu nhỏ và nạp lại các tiện ích Quick Look.": {
+      "en": "Thumbnail cache emptied and the Quick Look extensions reloaded.",
+      "scope": "sentence"
+    },
+    "qlmanage báo lỗi — đóng cửa sổ Quick Look đang mở rồi thử lại.": {
+      "en": "qlmanage reported an error — close any open Quick Look window and try again.",
+      "scope": "sentence"
     }
   }
 }

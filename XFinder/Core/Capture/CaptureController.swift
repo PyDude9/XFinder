@@ -39,6 +39,12 @@ final class CaptureController {
     private var soundEnabled: Bool {
         UserDefaults.standard.object(forKey: "capture.sound") as? Bool ?? true
     }
+    private var countdownSeconds: Int {
+        UserDefaults.standard.object(forKey: "capture.countdown") as? Int ?? 0
+    }
+    private var windowShadowEnabled: Bool {
+        UserDefaults.standard.object(forKey: "capture.windowShadow") as? Bool ?? true
+    }
     private var savedFolderRaw: String {
         UserDefaults.standard.string(forKey: "capture.saveFolder") ?? ""
     }
@@ -251,7 +257,8 @@ final class CaptureController {
         let windowID = (mode == .window) ? Self.frontmostOtherWindowID() : nil
         let display = Self.displayIndexUnderPointer()
         let args = CaptureRules.screencaptureArguments(mode: mode, output: tmp.path, sound: sound,
-                                                        windowID: windowID, display: display)
+                                                        windowID: windowID, display: display,
+                                                        countdown: countdownSeconds, windowShadow: windowShadowEnabled)
         Task.detached(priority: .userInitiated) {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")

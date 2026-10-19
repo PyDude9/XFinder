@@ -59,6 +59,10 @@ run "K9  pushing an unchanged document adds an undo step" $A \
   "'        guard next != present else { return }'" "'        _ = next == present'"
 run "K10 the minimal preset may need a permission again" $O \
   "'!\$0.idle.isBackgroundActive && \$0.permissions.isEmpty }'" "'!\$0.idle.isBackgroundActive }'"
+run "K11 the countdown also delays a shot the person is still selecting" $R \
+  "'        if countdown > 0, !args.contains(\"-i\") {'" "'        if countdown > 0 {'"
+run "K12 shadow off strips the shadow flag from every mode (screencapture rejects -o outside window shots)" $R \
+  "'        if mode == .window, !windowShadow {'" "'        if !windowShadow {'"
 echo "RESULT: $red/$total mutations RED"
 restore
 after=$(fails); echo "after restore failures: $after"

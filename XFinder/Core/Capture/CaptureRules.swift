@@ -219,6 +219,8 @@ enum CaptureRules {
     static let pauseOnHoverKey = "capture.pauseOnHover"
     static let swipeDismissKey = "capture.swipeDismiss"
     static let soundKey = "capture.sound"
+    static let countdownKey = "capture.countdown"
+    static let windowShadowKey = "capture.windowShadow"
     static let saveFolderKey = "capture.saveFolder"
     static let formatKey = "capture.format"
     static let keepHistoryKey = "capture.keepHistory"
@@ -271,7 +273,11 @@ enum CaptureRules {
     }
 
     /// Exact argv for `/usr/sbin/screencapture`.
-    static func screencaptureArguments(mode: CaptureMode, output: String, sound: Bool, windowID: Int?, display: Int) -> [String] {
+    /// `countdown` (seconds, `-T`) applies only to the modes with no selection step — fullscreen and a window taken by
+    /// id; once `-i` waits for the person to pick, the person already decides when. `windowShadow == false` adds `-o`
+    /// for window shots only (the flag means nothing elsewhere).
+    static func screencaptureArguments(mode: CaptureMode, output: String, sound: Bool, windowID: Int?, display: Int,
+                                       countdown: Int = 0, windowShadow: Bool = true) -> [String] {
         var args: [String] = []
         switch mode {
         case .area, .areaAnnotate, .text:
@@ -286,6 +292,12 @@ enum CaptureRules {
             args += ["-D", "\(display)"]
         case .color:
             args += ["-i"]
+        }
+        if countdown > 0, !args.contains("-i") {
+            args += ["-T", "\(countdown)"]
+        }
+        if mode == .window, !windowShadow {
+            args += ["-o"]
         }
         args += ["-t", "png"]
         if !sound {
@@ -341,7 +353,7 @@ enum CaptureRules {
     static func toPrune(_ items: [CaptureItem], limit: Int) -> [CaptureItem] {
         guard items.count > limit else { return [] }
         let sortedOldestFirst = items.sorted { a, b in
-            if a.date != b.date { return a.date < b.date }
+            if a.date != b.date { return a.date > b.date }
             return a.url.path < b.url.path
         }
         let overflow = sortedOldestFirst.count - limit

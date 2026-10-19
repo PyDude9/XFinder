@@ -37,6 +37,8 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "capture.pauseOnHover", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
         Switch(key: "capture.swipeDismiss", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
         Switch(key: "capture.sound", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.countdown", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
+        Switch(key: "capture.windowShadow", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
         Switch(key: "capture.format", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
         Switch(key: "capture.keepHistory", views: ["XFinder/Views/Detail/CaptureDetailView.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),
         Switch(key: "capture.annotate.color", views: ["XFinder/Views/Detail/CaptureDetailView.swift", "XFinder/Views/Capture/AnnotateWindow.swift"], reader: "XFinder/Core/Capture/CaptureController.swift"),

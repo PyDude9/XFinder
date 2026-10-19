@@ -16,6 +16,8 @@ struct CaptureDetailView: View {
     @AppStorage("capture.pauseOnHover") private var pauseOnHover = true
     @AppStorage("capture.swipeDismiss") private var swipeDismiss = true
     @AppStorage("capture.sound") private var sound = true
+    @AppStorage("capture.countdown") private var countdown = 0
+    @AppStorage("capture.windowShadow") private var windowShadow = true
     @AppStorage("capture.format") private var formatRaw = "png"
     @AppStorage("capture.keepHistory") private var keepHistory = true
     @AppStorage("capture.annotate.color") private var annotateColorRaw = "red"
@@ -64,6 +66,21 @@ struct CaptureDetailView: View {
                 SettingsDivider()
                 captureModeRow(mode)
             }
+            SettingsDivider()
+            PickerRow(title: L10n.t("Đếm ngược"),
+                      subtitle: L10n.t("Chỉ cho Toàn màn hình và Cửa sổ đang mở; kiểu chụp có bước chọn vùng không đếm."),
+                      selection: $countdown, width: 110) {
+                Text(L10n.t("Không")).tag(0)
+                Text("3\(L10n.t(" giây"))").tag(3)
+                Text("5\(L10n.t(" giây"))").tag(5)
+                Text("10\(L10n.t(" giây"))").tag(10)
+            }
+            .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Bóng đổ cửa sổ"),
+                      subtitle: L10n.t("Tắt để ảnh chụp cửa sổ không kèm viền bóng của macOS."),
+                      isOn: $windowShadow)
+                .settingsRow()
             SettingsDivider()
             SettingsLinkRow(title: L10n.t("Đổi phím tắt trong Phím tắt"), destination: .shortcuts)
         }
