@@ -353,7 +353,7 @@ enum CaptureRules {
     static func toPrune(_ items: [CaptureItem], limit: Int) -> [CaptureItem] {
         guard items.count > limit else { return [] }
         let sortedOldestFirst = items.sorted { a, b in
-            if a.date != b.date { return a.date > b.date }
+            if a.date != b.date { return a.date < b.date }
             return a.url.path < b.url.path
         }
         let overflow = sortedOldestFirst.count - limit
