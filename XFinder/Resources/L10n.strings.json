@@ -11510,6 +11510,14 @@
     "qlmanage báo lỗi — đóng cửa sổ Quick Look đang mở rồi thử lại.": {
       "en": "qlmanage reported an error — close any open Quick Look window and try again.",
       "scope": "sentence"
+    },
+    "Mã QR": {
+      "en": "QR code",
+      "scope": "sentence"
+    },
+    "Chọn file để chia sẻ — mã QR hiện ngay để điện thoại cùng Wi-Fi quét.": {
+      "en": "Choose files to share — the QR code opens at once for a phone on the same Wi-Fi to scan.",
+      "scope": "sentence"
     }
   }
 }

@@ -40,12 +40,9 @@ struct QuickShareDetailView: View {
                     if !controller.shares.isEmpty {
                         Button { qrAll = true } label: { Label(L10n.t("QR cho tất cả"), systemImage: "qrcode") }
                             .buttonStyle(.bordered).controlSize(.small)
-                            .disabled(controller.indexLink == nil)
                             .popover(isPresented: $qrAll, arrowEdge: .bottom) {
-                                if let link = controller.indexLink {
-                                    QuickShareQRPopover(link: link, title: L10n.t("Mọi file đang chia sẻ"),
-                                                        caption: L10n.t("Ai có mã này thấy cả danh sách. Quét bằng Camera của điện thoại cùng Wi-Fi."))
-                                }
+                                QuickShareQRPopover(link: controller.indexLink, title: L10n.t("Mọi file đang chia sẻ"),
+                                                    caption: L10n.t("Ai có mã này thấy cả danh sách. Quét bằng Camera của điện thoại cùng Wi-Fi."))
                             }
                         Button(L10n.t("Thu hồi tất cả")) { controller.revokeAll() }
                             .buttonStyle(.bordered).controlSize(.small)
@@ -71,7 +68,7 @@ struct QuickShareDetailView: View {
                             .font(XFinderTokens.Font.pageIcon).foregroundColor(.secondary)
                         Text(L10n.t("Chưa chia sẻ file nào"))
                             .font(XFinderTokens.Font.sectionTitle)
-                        Text(enabled ? L10n.t("Chọn file để tạo liên kết cho thiết bị trong cùng mạng Wi-Fi.")
+                        Text(enabled ? L10n.t("Chọn file để chia sẻ — mã QR hiện ngay để điện thoại cùng Wi-Fi quét.")
                                      : L10n.t("Chia sẻ nhanh đang tắt — bật ở trên để tạo liên kết."))
                             .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                     }
@@ -126,15 +123,13 @@ struct QuickShareDetailView: View {
             Spacer(minLength: XFinderTokens.Space.inline)
             Text(expiryText(share))
                 .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-            Button { qrShare = share.id } label: { Image(systemName: "qrcode") }
+            // A labelled button, not a bare glyph: the first hand test (2026-10-19) did not find an icon-only QR.
+            Button { qrShare = share.id } label: { Label(L10n.t("Mã QR"), systemImage: "qrcode") }
                 .buttonStyle(.bordered).controlSize(.small)
-                .disabled(link == nil)
                 .help(L10n.t("Mã QR cho điện thoại quét"))
                 .popover(isPresented: Binding(get: { qrShare == share.id }, set: { if !$0 { qrShare = nil } }), arrowEdge: .bottom) {
-                    if let link {
-                        QuickShareQRPopover(link: link, title: share.name,
-                                            caption: L10n.t("Quét bằng Camera của điện thoại cùng Wi-Fi — không cần cài app."))
-                    }
+                    QuickShareQRPopover(link: link, title: share.name,
+                                        caption: L10n.t("Quét bằng Camera của điện thoại cùng Wi-Fi — không cần cài app."))
                 }
             Button(copied == share.id ? L10n.t("Đã chép") : L10n.t("Chép link")) {
                 guard let link else { return }
@@ -167,21 +162,29 @@ struct QuickShareDetailView: View {
         panel.allowsMultipleSelection = true
         panel.prompt = L10n.t("Chia sẻ")
         guard panel.runModal() == .OK, !panel.urls.isEmpty else { return }
-        _ = controller.share(files: panel.urls)
+        // The QR opens by itself: the code is what a phone needs, so it should not hide behind a second click.
+        let made = controller.share(files: panel.urls)
+        if made.count == 1 { qrShare = made[0].id } else if made.count > 1 { qrAll = true }
     }
 }
 
 /// A QR code of a share link, with the link under it so the person can read what the phone is about to open.
 private struct QuickShareQRPopover: View {
-    let link: String
+    /// nil while the listener is still coming up (a few ms after the first share) — the popover waits instead of hiding.
+    let link: String?
     let title: String
     let caption: String
 
     var body: some View {
         VStack(spacing: XFinderTokens.Space.inline) {
             Text(title).font(XFinderTokens.Font.row).lineLimit(1).truncationMode(.middle)
-            QRCodeView(text: link, size: 200)
-            Text(link).font(XFinderTokens.Font.mono).foregroundColor(.secondary).textSelection(.enabled)
+            if let link {
+                QRCodeView(text: link, size: 200)
+                Text(link).font(XFinderTokens.Font.mono).foregroundColor(.secondary).textSelection(.enabled)
+            } else {
+                ProgressView().controlSize(.small).frame(width: 200, height: 200)
+                Text(L10n.t("Đang chờ địa chỉ mạng…")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+            }
             Text(caption).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
