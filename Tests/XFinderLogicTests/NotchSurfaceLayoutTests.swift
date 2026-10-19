@@ -146,6 +146,7 @@ final class NotchSurfaceLayoutTests: XCTestCase {
                             visible: CGRect(x: 0, y: 0, width: 1728, height: 1084), pointer: .zero, compactActivity: true)!
         XCTAssertEqual(frame.maxY, notch.maxY, accuracy: 0.001, "glued to the top edge like the wings")
         XCTAssertEqual(frame.midX, notch.midX, accuracy: 0.001, "centred on the camera")
+        XCTAssertEqual(frame.height, notch.height, accuracy: 0.001, "the frame follows the compact size (mutation M64: it used the strip)")
     }
 
     func testSizesGrowBadgeToPeekToExpanded() {
