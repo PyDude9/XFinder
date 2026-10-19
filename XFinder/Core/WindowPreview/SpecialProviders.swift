@@ -136,6 +136,20 @@ public func browserPanelDimensions(tabCount: Int) -> DockPreviewDimensions {
     }
 }
 
+/// Dock preview of an app's windows (2026-10-19 redesign): a header row (app icon, name, window count) above one card
+/// per window — a 16 : 10 thumbnail with the window title under it. Wider cards for fewer windows; 12 pt padding,
+/// 10 pt between cards. Pure, tested.
+public func windowPanelDimensions(count: Int) -> DockPreviewDimensions {
+    let n = max(1, min(4, count))
+    let cardW: CGFloat = [296, 240, 210, 196][n - 1]
+    let thumbH = (cardW * 10 / 16).rounded()
+    let header: CGFloat = 28, titleRow: CGFloat = 22, pad: CGFloat = 12, gap: CGFloat = 10
+    let panelW = CGFloat(n) * cardW + CGFloat(n - 1) * gap + 2 * pad
+    let panelH = pad + header + 6 + thumbH + titleRow + pad
+    return DockPreviewDimensions(panelWidth: panelW, panelHeight: panelH, cardWidth: cardW, cardHeight: thumbH + titleRow,
+                                 thumbWidth: cardW, thumbHeight: thumbH)
+}
+
 // Cho Cmd+Tab switcher — hiện TẤT CẢ tabs của window đó nhưng vẫn có label
 public func isTabVisibleForSwitcher(_ t: BrowserTab) -> Bool {
     return !t.isDiscarded && !t.isHidden

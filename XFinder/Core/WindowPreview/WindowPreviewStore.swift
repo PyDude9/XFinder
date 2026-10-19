@@ -207,7 +207,7 @@ public final class WindowPreviewStore {
             let isMinimized = checkWindowMinimized(windowID: wid, pid: pid)
             if isMinimized && !isOnScreen { continue }
 
-            let isStageMiniature = (bounds.width <= 260 && bounds.height <= 260) || (bounds.origin.x <= 80 && bounds.width <= 280)
+            let isStageMiniature = ScreenCaptureProvider.isStageManagerProxy(frame: bounds)
             let isOnOtherSpace = !isOnScreen && layer == 0 && !isHidden && !isMinimized && !isStageMiniature
             print("[Space] \(bundleID) onScreen=\(isOnScreen) hidden=\(isHidden) isStage=\(isStageMiniature) -> otherSpace=\(isOnOtherSpace)")
 
@@ -229,21 +229,31 @@ public final class WindowPreviewStore {
         self.weatherProvider = weatherProvider
     }
 
+    /// At most this many window cards in the Dock preview; the header says how many more there are.
+    nonisolated public static let dockMaxCards = 4
+
+    /// The windows a Dock preview shows, in order (pure, tested). Tiny utility windows (palettes, < 260 × 180) are left
+    /// out unless they are all there is; a Stage Manager strip tile IS the app's parked window and stays. Titled windows
+    /// on the current Space come first, then other titled ones, then the rest — each group in the lister's z-order.
+    nonisolated public static func dockWindowCards(_ wins: [WindowRef]) -> [WindowRef] {
+        let real = wins.filter { $0.isStageMiniature || ($0.bounds.width >= 260 && $0.bounds.height >= 180) }
+        let pool = real.isEmpty ? wins : real
+        func rank(_ w: WindowRef) -> Int { (w.title.isEmpty ? 2 : 0) + (w.isOnCurrentSpace || w.isStageMiniature ? 0 : 1) }
+        return pool.enumerated().sorted { a, b in
+            rank(a.element) != rank(b.element) ? rank(a.element) < rank(b.element) : a.offset < b.offset
+        }.map(\.element)
+    }
+
     /// Load window previews for a specific application PID (for Dock hover).
     public func loadDockPreviews(for pid: pid_t) {
         let allWins = windowLister().filter { $0.ownerPID == pid }
         let bundleID = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier ?? ""
         let isBrowser = BrowserTabProvider.isSupportedBrowser(bundleID: bundleID)
 
-        // Dock hover: strictly 1 primary window preview.
-        // Filter out Stage Manager miniature tiles and tiny utility windows:
-        let validWins = allWins.filter { !$0.isStageMiniature && $0.bounds.width >= 260 && $0.bounds.height >= 180 }
-        let candidates = !validWins.isEmpty ? validWins : allWins
-        let titledWins = candidates.filter { !$0.title.isEmpty }
-        guard let win = titledWins.first(where: { $0.isOnCurrentSpace })
-            ?? titledWins.first
-            ?? candidates.first(where: { $0.isOnCurrentSpace })
-            ?? candidates.first else {
+        // Browsers: one primary window (their tabs are the cards). Other apps: one card per window (2026-10-19 redesign),
+        // see `dockWindowCards`.
+        let windows = Self.dockWindowCards(allWins)
+        guard let win = windows.first else {
             self.previewItems = []
             self.activeBrowserTabs = []
             return
@@ -266,17 +276,30 @@ public final class WindowPreviewStore {
             windowIDs: allWins.map { $0.id },
             isStageMiniature: win.isStageMiniature
         )
-        self.previewItems = [item]
+        if isBrowser {
+            self.previewItems = [item]
+        } else {
+            let cache = (captureProvider as? ScreenCaptureProvider)?.cache
+            self.previewItems = windows.prefix(Self.dockMaxCards).map { w in
+                PreviewItem(windowID: w.id, bundleID: bundleID,
+                            title: w.title.isEmpty ? appName : w.title, appName: appName,
+                            thumbnail: cache?.get(w.id), isFrozen: false, tabs: [],
+                            isOnOtherSpace: !w.isOnCurrentSpace && !w.isStageMiniature, isGroup: false,
+                            windowCount: allWins.count, windowIDs: [w.id], isStageMiniature: w.isStageMiniature)
+            }
+        }
         self.isScreenRecordingDenied = !captureProvider.isScreenRecordingAllowed()
 
-        // Asynchronously fetch thumbnail
+        // Asynchronously fetch thumbnails (fresh cache entries come back without a capture).
+        let ids = self.previewItems.map(\.windowID)
         Task {
-            let thumbs = await captureProvider.captureWindows(windowIDs: [win.id], maxSize: 800)
-            if let thumb = thumbs[win.id], !self.previewItems.isEmpty {
-                self.previewItems[0].thumbnail = thumb
-                if isBrowser, let actTab = self.activeBrowserTabs.first(where: { $0.isActive }) ?? self.activeBrowserTabs.first {
-                    TabPreviewCache.shared.setPreview(tabId: actTab.id, image: thumb)
-                }
+            let thumbs = await captureProvider.captureWindows(windowIDs: ids, maxSize: 800)
+            for (i, it) in self.previewItems.enumerated() where it.bundleID == bundleID {
+                if let thumb = thumbs[it.windowID] { self.previewItems[i].thumbnail = thumb }
+            }
+            if isBrowser, let thumb = thumbs[win.id],
+               let actTab = self.activeBrowserTabs.first(where: { $0.isActive }) ?? self.activeBrowserTabs.first {
+                TabPreviewCache.shared.setPreview(tabId: actTab.id, image: thumb)
             }
         }
 

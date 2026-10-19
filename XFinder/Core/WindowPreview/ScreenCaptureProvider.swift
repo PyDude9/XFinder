@@ -3,32 +3,50 @@ import AppKit
 import ScreenCaptureKit
 
 /// Thread-safe LRU cache for window thumbnails.
+///
+/// 2026-10-19 (owner: "the preview is taken skewed"): entries used to live until evicted — the FIRST capture of a
+/// window was shown forever, stale, and when it happened while the window sat in the Stage Manager strip (macOS draws
+/// it there as a small 3-D tilted tile, and ScreenCaptureKit captures exactly that) the tilt stayed for good. Entries
+/// now carry when they were taken and whether they came from such a tile; an upright image is never replaced by a
+/// tile image, and callers recapture by `ThumbnailFreshness`.
 public final class LRUThumbnailCache: @unchecked Sendable {
+    public struct Entry {
+        public let image: NSImage
+        public let capturedAt: Date
+        /// Taken from the Stage Manager strip tile (straightened, low resolution) or by the legacy path.
+        public let fromProxy: Bool
+    }
+
     private let lock = NSLock()
     public let capacity: Int
-    private var entries: [CGWindowID: (image: NSImage, lastAccess: Date)] = [:]
+    private var entries: [CGWindowID: (entry: Entry, lastAccess: Date)] = [:]
 
     public init(capacity: Int = 40) {
         self.capacity = capacity
     }
 
-    public func get(_ key: CGWindowID) -> NSImage? {
+    public func get(_ key: CGWindowID) -> NSImage? { entry(key)?.image }
+
+    public func entry(_ key: CGWindowID) -> Entry? {
         lock.lock()
         defer { lock.unlock() }
-        guard let entry = entries[key] else { return nil }
-        entries[key] = (entry.image, Date())
-        return entry.image
+        guard let e = entries[key] else { return nil }
+        entries[key] = (e.entry, Date())
+        return e.entry
     }
 
-    public func set(_ key: CGWindowID, image: NSImage) {
+    /// An upright image is never replaced by a tile image: the sharp, flat picture of the window from when it was on
+    /// stage is worth more than a blurred un-warp of the strip tile.
+    public func set(_ key: CGWindowID, image: NSImage, fromProxy: Bool = false, at date: Date = Date()) {
         lock.lock()
         defer { lock.unlock() }
+        if fromProxy, let old = entries[key]?.entry, !old.fromProxy { return }
         if entries.count >= capacity, entries[key] == nil {
             if let oldest = entries.min(by: { $0.value.lastAccess < $1.value.lastAccess })?.key {
                 entries.removeValue(forKey: oldest)
             }
         }
-        entries[key] = (image, Date())
+        entries[key] = (Entry(image: image, capturedAt: date, fromProxy: fromProxy), Date())
     }
 
     public func remove(_ key: CGWindowID) {
@@ -47,6 +65,28 @@ public final class LRUThumbnailCache: @unchecked Sendable {
         lock.lock()
         defer { lock.unlock() }
         return entries.count
+    }
+}
+
+/// When a cached thumbnail is good enough to show without capturing again (pure, tested).
+public enum ThumbnailFreshness {
+    /// A preview opened twice within this long reuses the picture; after it, the window may have changed.
+    public static let maxAge: TimeInterval = 2
+
+    /// Capture again when nothing is cached, when the cached picture is a strip-tile un-warp (the window may be back
+    /// on stage), or when the upright picture is older than `maxAge`.
+    public static func needsCapture(_ entry: LRUThumbnailCache.Entry?, now: Date, maxAge: TimeInterval = maxAge) -> Bool {
+        guard let entry else { return true }
+        if entry.fromProxy { return true }
+        return now.timeIntervalSince(entry.capturedAt) >= maxAge
+    }
+
+    /// Pixel size to capture a window of `frame` points at: the screen's scale, but never a longest side above
+    /// `maxPixels` — a full-screen window at 2× was 3456 × 2234 px (~30 MB) for a 300-pt thumbnail, ×40 in the cache.
+    public static func captureSize(frame: CGSize, scale: CGFloat, maxPixels: CGFloat) -> (width: Int, height: Int) {
+        let longest = max(frame.width, frame.height, 1)
+        let factor = min(scale, maxPixels / longest)
+        return (max(1, Int((frame.width * factor).rounded())), max(1, Int((frame.height * factor).rounded())))
     }
 }
 
@@ -157,111 +197,80 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
     }
 
     public func captureWindow(windowID: CGWindowID, maxSize: CGFloat = 800) async -> NSImage? {
-        if let cached = cache.get(windowID) {
-            return cached
-        }
-        guard isScreenRecordingAllowed() else { return nil }
-
-        do {
-            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
-            if let win = content.windows.first(where: { $0.windowID == windowID }),
-               win.frame.width > 1, win.frame.height > 1 {
-                let filter = SCContentFilter(desktopIndependentWindow: win)
-                let scale = NSScreen.main?.backingScaleFactor ?? 2.0
-                let config = SCStreamConfiguration()
-                config.width = max(200, Int(win.frame.width * scale))
-                config.height = max(200, Int(win.frame.height * scale))
-                config.scalesToFit = false
-                config.showsCursor = false
-                config.capturesAudio = false
-                config.captureResolution = .best
-
-                let cgImage = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
-                let finalCG: CGImage = (win.frame.width <= 260 && win.frame.height <= 260)
-                    ? Self.straightenImageIfNeeded(cgImage)
-                    : cgImage
-                let ptW = CGFloat(finalCG.width) / scale
-                let ptH = CGFloat(finalCG.height) / scale
-                let img = NSImage(cgImage: finalCG, size: NSSize(width: ptW, height: ptH))
-                cache.set(windowID, image: img)
-                return img
-            }
-        } catch {
-            // SCK failed, try legacy fallback
-        }
-
-        // Fallback for On another Space, Stage Manager or SCK miss:
-        if let fallbackCG = legacyWindowCapture(windowID: windowID) {
-            let scale = NSScreen.main?.backingScaleFactor ?? 2.0
-            let ptW = CGFloat(fallbackCG.width) / scale
-            let ptH = CGFloat(fallbackCG.height) / scale
-            let img = NSImage(cgImage: fallbackCG, size: NSSize(width: ptW, height: ptH))
-            cache.set(windowID, image: img)
-            return img
-        }
-
-        return nil
+        await captureWindows(windowIDs: [windowID], maxSize: maxSize)[windowID]
     }
 
+    /// Fresh cached pictures are returned as they are; the rest are captured in one ScreenCaptureKit query. A window
+    /// that is a Stage Manager strip tile keeps its upright picture when one exists (`LRUThumbnailCache.set`).
     public func captureWindows(windowIDs: [CGWindowID], maxSize: CGFloat = 800) async -> [CGWindowID: NSImage] {
         guard !windowIDs.isEmpty else { return [:] }
         var result: [CGWindowID: NSImage] = [:]
         var neededIDs: [CGWindowID] = []
-
+        let now = Date()
         for wid in windowIDs {
-            if let cached = cache.get(wid) {
-                result[wid] = cached
-            } else {
-                neededIDs.append(wid)
-            }
+            let entry = cache.entry(wid)
+            if let entry, !ThumbnailFreshness.needsCapture(entry, now: now) { result[wid] = entry.image } else { neededIDs.append(wid) }
+        }
+        guard !neededIDs.isEmpty, isScreenRecordingAllowed() else {
+            for wid in neededIDs { if let stale = cache.get(wid) { result[wid] = stale } }
+            return result
         }
 
-        guard !neededIDs.isEmpty, isScreenRecordingAllowed() else { return result }
-
-        do {
-            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
+        if let content = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false) {
             let wanted = Set(neededIDs)
-            let scale = NSScreen.main?.backingScaleFactor ?? 2.0
             for win in content.windows where wanted.contains(win.windowID) {
-                guard win.frame.width > 1, win.frame.height > 1 else { continue }
-                let filter = SCContentFilter(desktopIndependentWindow: win)
-                let config = SCStreamConfiguration()
-                config.width = max(200, Int(win.frame.width * scale))
-                config.height = max(200, Int(win.frame.height * scale))
-                config.scalesToFit = false
-                config.showsCursor = false
-                config.capturesAudio = false
-                config.captureResolution = .best
-
-                guard let cgImage = try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config) else {
-                    continue
-                }
-                let finalCG: CGImage = (win.frame.width <= 260 && win.frame.height <= 260)
-                    ? Self.straightenImageIfNeeded(cgImage)
-                    : cgImage
-                let ptW = CGFloat(finalCG.width) / scale
-                let ptH = CGFloat(finalCG.height) / scale
-                let img = NSImage(cgImage: finalCG, size: NSSize(width: ptW, height: ptH))
-                cache.set(win.windowID, image: img)
-                result[win.windowID] = img
+                if let img = await capture(win, maxSize: maxSize) { result[win.windowID] = img }
             }
-        } catch {
-            // SCK failed, proceed to fallback for remaining
         }
 
-        // Fallback for any needed windows not captured by SCK:
+        // Fallback for windows ScreenCaptureKit did not give (another Space, a miss). Marked as less trusted so it never
+        // replaces an upright capture.
         for wid in neededIDs where result[wid] == nil {
             if let fallbackCG = legacyWindowCapture(windowID: wid) {
                 let scale = NSScreen.main?.backingScaleFactor ?? 2.0
-                let ptW = CGFloat(fallbackCG.width) / scale
-                let ptH = CGFloat(fallbackCG.height) / scale
-                let img = NSImage(cgImage: fallbackCG, size: NSSize(width: ptW, height: ptH))
-                cache.set(wid, image: img)
-                result[wid] = img
+                let img = NSImage(cgImage: fallbackCG, size: NSSize(width: CGFloat(fallbackCG.width) / scale,
+                                                                    height: CGFloat(fallbackCG.height) / scale))
+                cache.set(wid, image: img, fromProxy: true)
+                result[wid] = cache.get(wid)
+            } else if let stale = cache.get(wid) {
+                result[wid] = stale
             }
         }
-
         return result
+    }
+
+    /// One window. A strip tile with an upright picture already cached is not captured at all.
+    private func capture(_ win: SCWindow, maxSize: CGFloat) async -> NSImage? {
+        guard win.frame.width > 1, win.frame.height > 1 else { return nil }
+        let isProxy = Self.isStageManagerProxy(frame: win.frame)
+        if isProxy, let upright = cache.entry(win.windowID), !upright.fromProxy { return upright.image }
+        let scale = NSScreen.main?.backingScaleFactor ?? 2.0
+        let px = ThumbnailFreshness.captureSize(frame: win.frame.size, scale: scale, maxPixels: maxSize)
+        let config = SCStreamConfiguration()
+        config.width = px.width
+        config.height = px.height
+        config.scalesToFit = false
+        config.showsCursor = false
+        config.capturesAudio = false
+        config.captureResolution = .best
+        guard let cgImage = try? await SCScreenshotManager.captureImage(contentFilter: SCContentFilter(desktopIndependentWindow: win),
+                                                                         configuration: config) else { return nil }
+        let finalCG = isProxy ? Self.straightenImageIfNeeded(cgImage) : cgImage
+        let img = NSImage(cgImage: finalCG, size: NSSize(width: CGFloat(finalCG.width) / scale, height: CGFloat(finalCG.height) / scale))
+        cache.set(win.windowID, image: img, fromProxy: isProxy)
+        return cache.get(win.windowID)
+    }
+
+    /// Stage Manager only: called a moment after an app comes on stage, so its windows have an upright picture before
+    /// they are parked in the strip again (where only a tilted tile can be captured). At most three windows.
+    public func warmUprightPictures(pid: pid_t, maxSize: CGFloat = 800) async {
+        guard isScreenRecordingAllowed(),
+              let content = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true) else { return }
+        let wins = content.windows.filter {
+            $0.owningApplication?.processID == pid && $0.windowLayer == 0 && $0.isOnScreen
+                && !Self.isStageManagerProxy(frame: $0.frame) && $0.frame.width >= 260 && $0.frame.height >= 180
+        }
+        for win in wins.prefix(3) { _ = await capture(win, maxSize: maxSize) }
     }
 
     private func legacyWindowCapture(windowID: CGWindowID) -> CGImage? {

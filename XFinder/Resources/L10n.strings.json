@@ -11518,6 +11518,10 @@
     "Chọn file để chia sẻ — mã QR hiện ngay để điện thoại cùng Wi-Fi quét.": {
       "en": "Choose files to share — the QR code opens at once for a phone on the same Wi-Fi to scan.",
       "scope": "sentence"
+    },
+    " cửa sổ": {
+      "en": " windows",
+      "scope": "fragment"
     }
   }
 }

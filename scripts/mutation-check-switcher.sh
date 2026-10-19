@@ -5,14 +5,14 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-switcher.XXXXXX)
-FILES="XFinder/Core/WindowPreview/WindowPreviewStore.swift"
+FILES="XFinder/Core/WindowPreview/WindowPreviewStore.swift XFinder/Core/WindowPreview/ScreenCaptureProvider.swift XFinder/Core/WindowPreview/SpecialProviders.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
 # A signal must END the run: with INT/TERM in the restore trap, sh restored the files and carried on — a killed harness
 # kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
 trap 'exit 143' INT TERM
-FILTER='SwitcherPhaseC|WindowPreviewStore'
+FILTER='SwitcherPhaseC|WindowPreviewStore|DockPreviewRedesign'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -46,6 +46,19 @@ run "S4 the selection is not clamped after cards disappear" XFinder/Core/WindowP
   "'        count <= 0 ? 0 : min(max(0, index), count - 1)'" "'        index'"
 run "S5 closing a group's representative keeps the dead window on the card" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
   "'            guard item.windowIDs.contains(windowID) else { return item }'" "'            return item'"
+C=XFinder/Core/WindowPreview/ScreenCaptureProvider.swift
+run "D1 a Stage Manager tile overwrites the upright picture (the skew comes back)" $C \
+  "'        if fromProxy, let old = entries[key]?.entry, !old.fromProxy { return }'" "'        _ = fromProxy'"
+run "D2 a cached picture never goes stale" $C \
+  "'        return now.timeIntervalSince(entry.capturedAt) >= maxAge'" "'        return false'"
+run "D3 thumbnails captured at full Retina size" $C \
+  "'        let factor = min(scale, maxPixels / longest)'" "'        let factor = scale'"
+run "D4 a tile picture is never retried" $C \
+  "'        if entry.fromProxy { return true }'" "'        if entry.fromProxy { return false }'"
+run "D5 Dock cards include utility palettes" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
+  "'        let real = wins.filter { \$0.isStageMiniature || (\$0.bounds.width >= 260 && \$0.bounds.height >= 180) }'" "'        let real = wins'"
+run "D6 parked Stage Manager windows are dropped from the Dock cards" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
+  "'        let real = wins.filter { \$0.isStageMiniature || (\$0.bounds.width >= 260 && \$0.bounds.height >= 180) }'" "'        let real = wins.filter { \$0.bounds.width >= 260 && \$0.bounds.height >= 180 }'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails); echo "suite after restore: $after failure(s)"

@@ -270,7 +270,9 @@ enum WindowManager {
         var windowsRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(appEl, kAXWindowsAttribute as CFString, &windowsRef) == .success,
            let axWindows = windowsRef as? [AXUIElement], !axWindows.isEmpty {
-            let target = axWindows.first { el in
+            // By window id first: two windows may share a title (two "Untitled" documents).
+            let byID = axWindows.first { el in var wid: CGWindowID = 0; return axGetWindowID(el, &wid) == .success && wid == info.id }
+            let target = byID ?? axWindows.first { el in
                 var titleRef: CFTypeRef?
                 let title = AXUIElementCopyAttributeValue(el, kAXTitleAttribute as CFString, &titleRef) == .success
                     ? (titleRef as? String ?? "") : ""

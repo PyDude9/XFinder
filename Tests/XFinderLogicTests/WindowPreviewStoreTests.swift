@@ -301,11 +301,11 @@ final class WindowPreviewStoreTests: XCTestCase {
             ]
         }
 
-        // Hover over PID 5001 (Safari)
+        // Hover over PID 5001 (no running app ⇒ not a browser): one card per window since the 2026-10-19 redesign
         store.loadDockPreviews(for: 5001)
-        XCTAssertEqual(store.previewItems.count, 1)
-        XCTAssertEqual(store.previewItems[0].windowID, 301)
+        XCTAssertEqual(store.previewItems.map(\.windowID), [301, 302])
         XCTAssertEqual(store.previewItems[0].windowCount, 2)
+        XCTAssertEqual(store.previewItems[1].title, "Apple Developer")
 
         // Hover over PID 5002 (Terminal)
         store.loadDockPreviews(for: 5002)
@@ -671,10 +671,9 @@ final class WindowPreviewStoreTests: XCTestCase {
         // Switcher removes Open Tabs
         XCTAssertTrue(store.activeBrowserTabs.isEmpty)
 
-        // 2. Dock Hover isolation: 1 window thumbnail on top
+        // 2. Dock Hover isolation: only the hovered app's windows, one card each (2026-10-19 redesign), front first
         store.loadDockPreviews(for: 1000)
-        XCTAssertEqual(store.previewItems.count, 1)
-        XCTAssertEqual(store.previewItems.first?.windowID, 101)
+        XCTAssertEqual(store.previewItems.map(\.windowID), [101, 102, 103])
         XCTAssertEqual(store.previewItems.first?.windowCount, 3)
 
         store.loadDockPreviews(for: 3000)

@@ -35,6 +35,9 @@ final class DockPreviewController {
         Double(UserDefaults.standard.object(forKey: "windowPreview.hoverDelayMs") as? Int ?? 80) / 1000
     }
     private var lastIconLoad = Date.distantPast
+    /// Stage Manager only: an app that comes on stage gets its windows' upright pictures taken (0.8 s later, after
+    /// macOS's move animation) — once parked in the strip, only a tilted tile can be captured.
+    private var activationObserver: NSObjectProtocol?
 
     private init() {}
 
@@ -72,6 +75,18 @@ final class DockPreviewController {
             Task { @MainActor in self?.tick() }
             return event
         }
+        if activationObserver == nil {
+            activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
+                forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { note in
+                guard WindowManager.isStageManagerEnabled,
+                      let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                      app.activationPolicy == .regular, app.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
+                let pid = app.processIdentifier
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    Task.detached(priority: .utility) { await ScreenCaptureProvider.shared.warmUprightPictures(pid: pid) }
+                }
+            }
+        }
     }
 
     func stop() {
@@ -81,6 +96,8 @@ final class DockPreviewController {
         if let localMonitor { NSEvent.removeMonitor(localMonitor) }
         monitor = nil
         localMonitor = nil
+        if let activationObserver { NSWorkspace.shared.notificationCenter.removeObserver(activationObserver) }
+        activationObserver = nil
         hoveredPID = nil
         hidePanel()
     }
@@ -222,7 +239,9 @@ final class DockPreviewController {
         let isBrowser = BrowserTabProvider.isSupportedBrowser(bundleID: bundleID)
         let activeTabs = isBrowser ? activeTabsForDockPreview(WindowPreviewStore.shared.activeBrowserTabs) : []
         let tabCount = isBrowser ? (activeTabs.isEmpty ? 1 : activeTabs.count) : 1
-        let dims = isBrowser ? browserPanelDimensions(tabCount: tabCount) : PanelDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
+        let windowCount = isBrowser ? 1 : min(WindowPreviewStore.dockMaxCards,
+                                                WindowPreviewStore.dockWindowCards(WindowPreviewStore.shared.windowLister().filter { $0.ownerPID == icon.pid }).count)
+        let dims = isBrowser ? browserPanelDimensions(tabCount: tabCount) : windowPanelDimensions(count: windowCount)
         let panelWidth = dims.panelWidth
         let panelHeight = dims.panelHeight
 
@@ -376,8 +395,10 @@ struct DockPreviewView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 12)
                 .frame(width: dims.panelWidth, height: dims.panelHeight)
+            } else if !isBrowser {
+                DockWindowCardsView(pid: pid, title: title, items: dockItems, store: store, onPick: onPick)
             } else {
-                // Single card mode: for 1-tab browser or standard apps (320x220)
+                // Single card mode: a browser with one tab (320x220)
                 let targetHeight: CGFloat = (bundleID == "com.apple.iCal" && !store.calendarEvents.isEmpty) || (bundleID == "com.apple.weather" && store.weatherInfo != nil) ? 280 : 220
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -484,7 +505,7 @@ struct DockPreviewView: View {
                 .frame(width: 320, height: targetHeight)
             }
         }
-        .liquidGlassContainer(cornerRadius: LiquidGlassTokens.Container.cornerRadius)
+        .dockGlass(cornerRadius: LiquidGlassTokens.Container.cornerRadius)
         .offset(y: offset)
         .opacity(opacity)
         .onAppear {
@@ -498,6 +519,12 @@ struct DockPreviewView: View {
             withTransaction(Transaction(animation: nil)) {
                 store.loadDockPreviews(for: newPID)
             }
+        }
+        .onChange(of: store.previewItems.count) { _, n in
+            guard !isBrowser else { return }
+            let dims = windowPanelDimensions(count: n)
+            DockPreviewController.shared.updatePanelSize(width: dims.panelWidth, height: dims.panelHeight + Self.widgetHeight(bundleID, store),
+                                                         animated: true)
         }
         .onChange(of: store.activeBrowserTabs) { _, _ in
             if isBrowser {
@@ -513,6 +540,132 @@ struct DockPreviewView: View {
         guard let app = NSRunningApplication(processIdentifier: p),
               let url = app.bundleURL else { return nil }
         return NSWorkspace.shared.icon(forFile: url.path)
+    }
+
+    /// Calendar's next events / Weather's conditions under the cards (60 pt), else nothing.
+    static func widgetHeight(_ bundleID: String, _ store: WindowPreviewStore) -> CGFloat {
+        (bundleID == "com.apple.iCal" && !store.calendarEvents.isEmpty) || (bundleID == "com.apple.weather" && store.weatherInfo != nil) ? 60 : 0
+    }
+}
+
+/// One card per window of a non-browser app (2026-10-19 redesign): a header with the app and how many windows it has,
+/// then up to four cards — the whole window fitted into a 16 : 10 frame (never cropped; the old single card filled and
+/// cut the top and bottom), its title under it, and a small label when the window is parked in Stage Manager or on
+/// another Space. A click raises THAT window.
+struct DockWindowCardsView: View {
+    let pid: pid_t
+    let title: String
+    let items: [PreviewItem]
+    let store: WindowPreviewStore
+    let onPick: () -> Void
+
+    var body: some View {
+        let dims = windowPanelDimensions(count: items.count)
+        let total = items.first?.windowCount ?? items.count
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 7) {
+                if let icon = ClipboardAppIcon.icon(forBundleID: items.first?.bundleID) {
+                    Image(nsImage: icon).resizable().frame(width: 16, height: 16)
+                }
+                Text(items.first?.appName ?? title)
+                    .font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                Spacer(minLength: 8)
+                if total > 1 {
+                    Text("\(total)\(L10n.t(" cửa sổ"))")
+                        .font(.system(size: 11)).foregroundStyle(.secondary).monospacedDigit()
+                }
+            }
+            .frame(height: 28)
+
+            if items.isEmpty {
+                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06))
+                    .overlay { ProgressView().controlSize(.small) }
+                    .frame(width: dims.thumbWidth, height: dims.thumbHeight)
+            } else {
+                HStack(alignment: .top, spacing: 10) {
+                    ForEach(items) { item in
+                        DockWindowCard(item: item, pid: pid, dims: dims, onPick: onPick)
+                    }
+                }
+            }
+
+            if let bid = items.first?.bundleID, bid == "com.apple.iCal", !store.calendarEvents.isEmpty {
+                CalendarPreviewView(events: store.calendarEvents).frame(height: 54)
+            } else if let bid = items.first?.bundleID, bid == "com.apple.weather", let weather = store.weatherInfo {
+                WeatherPreviewView(weather: weather).frame(height: 54)
+            }
+        }
+        .padding(12)
+    }
+}
+
+private struct DockWindowCard: View {
+    let item: PreviewItem
+    let pid: pid_t
+    let dims: DockPreviewDimensions
+    let onPick: () -> Void
+    @State private var hovered = false
+
+    var body: some View {
+        Button {
+            let info = WindowManager.WindowInfo(id: item.windowID, ownerPID: pid, ownerName: item.appName, title: item.title,
+                                                bounds: .zero, isOnScreen: true)
+            WindowManager.raiseWindow(info)
+            onPick()
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06))
+                    if let image = item.thumbnail {
+                        Image(nsImage: image)
+                            .resizable().interpolation(.high)
+                            .aspectRatio(contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                            .shadow(color: .black.opacity(0.18), radius: 3, y: 1)
+                            .padding(6)
+                    } else {
+                        AppHeroCardView(appName: item.appName, title: item.title, bundleID: item.bundleID,
+                                        isStageMiniature: item.isStageMiniature, isOnOtherSpace: item.isOnOtherSpace,
+                                        width: dims.thumbWidth, height: dims.thumbHeight)
+                    }
+                }
+                .frame(width: dims.thumbWidth, height: dims.thumbHeight)
+                .overlay(alignment: .topLeading) {
+                    if item.thumbnail != nil, item.isStageMiniature || item.isOnOtherSpace {
+                        Text(item.isStageMiniature ? L10n.t("Trong Stage Manager") : L10n.t("Ở Space khác"))
+                            .font(.system(size: 10, weight: .medium))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(.ultraThinMaterial, in: Capsule())
+                            .padding(8)
+                    }
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(hovered ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: hovered ? 2 : 1)
+                }
+                Text(item.title)
+                    .font(.system(size: 11, weight: .medium))
+                    .lineLimit(1).truncationMode(.middle)
+                    .frame(width: dims.thumbWidth, alignment: .leading)
+                    .foregroundStyle(hovered ? .primary : .secondary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .animation(.easeOut(duration: 0.12), value: hovered)
+        .help(item.title)
+    }
+}
+
+extension View {
+    /// macOS 26+: the system's Liquid Glass material. Earlier: the visual-effect container this panel always used.
+    @ViewBuilder func dockGlass(cornerRadius: CGFloat) -> some View {
+        if #available(macOS 26.0, *) {
+            self.glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+        } else {
+            self.liquidGlassContainer(cornerRadius: cornerRadius)
+        }
     }
 }
 
