@@ -41,6 +41,29 @@ final class ConnectRulesTests: XCTestCase {
         XCTAssertFalse(QuickShareRules.contentDisposition(filename: "a\\b").contains("\\"), "a backslash would escape the quote")
     }
 
+    /// One QR code opens this page; a file name is user text and must not become markup.
+    func testTheIndexPageEscapesFileNamesAndLinksEveryShareByItsToken() {
+        let evil = "<img src=x onerror=alert(1)>.png"
+        let strings = QuickShareRules.IndexStrings(title: "T & <U>", empty: "nothing", footer: "f")
+        let page = QuickShareRules.indexPage(entries: [
+            .init(name: evil, token: "ab12", detail: "1 MB"),
+            .init(name: "Báo cáo \"Q3\".pdf", token: "cd34", detail: "2 MB"),
+        ], strings: strings)
+        XCTAssertFalse(page.contains("<img"), "the file name rendered as markup")
+        XCTAssertTrue(page.contains("&lt;img src=x onerror=alert(1)&gt;.png"))
+        XCTAssertTrue(page.contains("href=\"/ab12\" download"), "links go by token, relative to whatever address the phone used")
+        XCTAssertTrue(page.contains("href=\"/cd34\" download"))
+        XCTAssertTrue(page.contains("Báo cáo &quot;Q3&quot;.pdf"))
+        XCTAssertTrue(page.contains("<title>T &amp; &lt;U&gt;</title>"))
+        XCTAssertTrue(page.contains("width=device-width"), "a phone page")
+        XCTAssertFalse(page.contains("http://"), "no absolute address baked in")
+
+        let empty = QuickShareRules.indexPage(entries: [], strings: strings)
+        XCTAssertTrue(empty.contains("nothing")); XCTAssertFalse(empty.contains("<li>"))
+        XCTAssertEqual(QuickShareRules.htmlEscape("a&b<c>d\"e'f"), "a&amp;b&lt;c&gt;d&quot;e&#39;f")
+        XCTAssertEqual(QuickShareRules.htmlEscape("plain.txt"), "plain.txt")
+    }
+
     func testSshAndScpArgumentsFailFastAndEndOptionsBeforeUserText() {
         let t = RemoteConnectRules.testArguments(host: "-oProxyCommand=touch /tmp/x", port: 2222, user: "me", keyPath: "")
         XCTAssertEqual(Array(t.prefix(6)), ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-p", "2222"])

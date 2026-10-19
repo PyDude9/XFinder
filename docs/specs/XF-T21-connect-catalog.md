@@ -67,3 +67,19 @@ Không đổi giao thức chia sẻ, không thêm xác thực, không đụng `C
   hình học) ⇒ trần exemption 5 → **4**.
 - Mutation `scripts/mutation-check-connect.sh` (C1–C9). "Tắt mà server vẫn chạy" nằm trong controller (cần app chạy) ⇒
   không mutate được trong package; nghiệm thu bằng T-T21-1.
+
+## 7. Phụ lục 2026-10-19 — điện thoại lấy liên kết bằng QR
+
+Câu hỏi của chủ dự án sau T-T21-1: "điện thoại lấy link kiểu gì, ngoài iPhone cùng Apple ID?" Trả lời: **mã QR**, không cần
+app điện thoại. Camera của iOS và Android đều đọc QR chứa URL và mở thẳng trình duyệt; liên kết `http://<ip-LAN>:<cổng>/<mã>`
+chỉ sống trong cùng Wi-Fi nên không cần đăng nhập.
+
+- Nút **QR** trên từng hàng (popover: mã + liên kết + ghi chú) — `QRCodeView` (`CIQRCodeGenerator`, công khai, offline; vẽ
+  nearest-neighbour; dựng trong `.task(id:)`, không trong `body`).
+- **QR cho tất cả**: một `indexToken` mỗi lần server chạy; `GET /<indexToken>` trả trang HTML liệt kê mọi file đang chia sẻ
+  (`QuickShareRules.indexPage`, thuần, có test): link **tương đối** `/<token>` nên đúng với bất kỳ địa chỉ nào điện thoại
+  dùng; tên file và chi tiết qua `htmlEscape` (tên file là text người dùng — `<script>.txt` là một cái tên). Header
+  `text/html; charset=utf-8`, `nosniff`, `no-store`. Ai có liên kết chỉ mục thấy cả danh sách — popover nói thẳng.
+- Khi tắt công tắc: index cũng 404 (`isEnabled` kiểm trước), token xoá khi server dừng.
+- Mutation C10 (không escape `<`), C11 (link theo tên thay vì token). T-T21-3/4.
+- Không làm: mDNS/Bonjour tên `.local` (Android không phân giải trong trình duyệt), app điện thoại, relay ngoài LAN (Q-REF-3).

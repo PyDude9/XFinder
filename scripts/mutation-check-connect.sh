@@ -50,6 +50,10 @@ run "C7 scp files can be read as options (no --)" XFinder/Core/ConnectRules.swif
   'return args + ["--"] + files +' 'return args + files +'
 run "C8 a timeout gets no explanation" XFinder/Core/ConnectRules.swift \
   'if lower.contains("timed out") {' 'if lower.contains("timed out!") {'
+run "C10 the index page does not escape < in a file name" XFinder/Core/ConnectRules.swift \
+  'case "<": out += "&lt;"' 'case "<": out += "<"'
+run "C11 the index page links by (escaped) name instead of token" XFinder/Core/ConnectRules.swift \
+  'rows += "<li><a href=\"/\(e.token)\" download>' 'rows += "<li><a href=\"/\(htmlEscape(e.name))\" download>'
 run "C9 the LAN server is labelled nothing-at-rest (Yên tĩnh would leave it on)" XFinder/Core/FeatureCatalog.swift \
   'defaultOn: true, permissions: [], idle: .timerWhileActive),' 'defaultOn: true, permissions: [], idle: .nothingAtRest),'
 

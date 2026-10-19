@@ -34,6 +34,76 @@ enum QuickShareRules {
         let encoded = filename.addingPercentEncoding(withAllowedCharacters: allowed) ?? fallback
         return "attachment; filename=\"\(fallback)\"; filename*=UTF-8''\(encoded)"
     }
+
+    // MARK: Index page (one QR code for every live share)
+
+    /// The five characters that can end a text node or an attribute. A file name is user text; `<script>.txt` is a file.
+    static func htmlEscape(_ s: String) -> String {
+        var out = ""
+        out.reserveCapacity(s.utf8.count)
+        for ch in s {
+            switch ch {
+            case "&": out += "&amp;"
+            case "<": out += "&lt;"
+            case ">": out += "&gt;"
+            case "\"": out += "&quot;"
+            case "'": out += "&#39;"
+            default: out.append(ch)
+            }
+        }
+        return out
+    }
+
+    struct IndexEntry: Equatable {
+        var name: String
+        var token: String
+        /// Already formatted ("1,2 MB · còn 3 giờ") — the page shows it as is.
+        var detail: String
+    }
+
+    struct IndexStrings: Equatable {
+        var title: String
+        var empty: String
+        var footer: String
+    }
+
+    /// The page the shared QR code opens on a phone: every live share as a tap-to-download link. Links are relative
+    /// (`/<token>`), so the page works from whichever address the phone reached; names and details are escaped.
+    static func indexPage(entries: [IndexEntry], strings: IndexStrings) -> String {
+        var rows = ""
+        if entries.isEmpty {
+            rows = "<p class=\"empty\">\(htmlEscape(strings.empty))</p>"
+        } else {
+            for e in entries {
+                rows += "<li><a href=\"/\(e.token)\" download><span class=\"name\">\(htmlEscape(e.name))</span>"
+                rows += "<span class=\"detail\">\(htmlEscape(e.detail))</span></a></li>\n"
+            }
+            rows = "<ul>\n\(rows)</ul>"
+        }
+        return """
+        <!doctype html>
+        <html><head><meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="referrer" content="no-referrer">
+        <title>\(htmlEscape(strings.title))</title>
+        <style>
+        body{font:17px -apple-system,system-ui,sans-serif;margin:0;padding:24px 16px;background:#f2f2f7;color:#111}
+        h1{font-size:22px;margin:0 0 16px}
+        ul{list-style:none;padding:0;margin:0;background:#fff;border-radius:14px;overflow:hidden}
+        li+li{border-top:1px solid #e5e5ea}
+        a{display:flex;justify-content:space-between;gap:12px;padding:14px 16px;color:#0a60ff;text-decoration:none}
+        .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .detail{color:#6e6e73;font-size:14px;white-space:nowrap}
+        .empty,.footer{color:#6e6e73;font-size:14px}
+        .footer{margin-top:20px}
+        @media (prefers-color-scheme:dark){body{background:#000;color:#f2f2f7}ul{background:#1c1c1e}li+li{border-color:#3a3a3c}}
+        </style></head><body>
+        <h1>\(htmlEscape(strings.title))</h1>
+        \(rows)
+        <p class="footer">\(htmlEscape(strings.footer))</p>
+        </body></html>
+        """
+    }
 }
 
 enum RemoteConnectRules {

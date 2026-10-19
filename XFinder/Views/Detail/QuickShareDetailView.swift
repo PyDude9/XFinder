@@ -8,6 +8,8 @@ struct QuickShareDetailView: View {
     // XF-T21: the catalog switch (same key + default as QuickShareController.isEnabled).
     @AppStorage("quickShare.enabled") private var enabled = true
     @State private var copied: UUID?
+    @State private var qrShare: UUID?
+    @State private var qrAll = false
 
     var body: some View {
         ScrollView {
@@ -36,6 +38,15 @@ struct QuickShareDetailView: View {
                     .disabled(!enabled)
 
                     if !controller.shares.isEmpty {
+                        Button { qrAll = true } label: { Label(L10n.t("QR cho tất cả"), systemImage: "qrcode") }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .disabled(controller.indexLink == nil)
+                            .popover(isPresented: $qrAll, arrowEdge: .bottom) {
+                                if let link = controller.indexLink {
+                                    QuickShareQRPopover(link: link, title: L10n.t("Mọi file đang chia sẻ"),
+                                                        caption: L10n.t("Ai có mã này thấy cả danh sách. Quét bằng Camera của điện thoại cùng Wi-Fi."))
+                                }
+                            }
                         Button(L10n.t("Thu hồi tất cả")) { controller.revokeAll() }
                             .buttonStyle(.bordered).controlSize(.small)
                     }
@@ -81,6 +92,9 @@ struct QuickShareDetailView: View {
                     note(L10n.t("Chỉ thiết bị trong **cùng mạng Wi-Fi/LAN** mở được liên kết. Không có tài khoản, không qua máy chủ trung gian."))
                         .settingsRow()
                     SettingsDivider()
+                    note(L10n.t("Điện thoại lấy liên kết bằng cách **quét mã QR** (nút QR cạnh mỗi file, hoặc một mã chung cho cả danh sách) — Camera của iPhone và Android mở thẳng, không cần cài gì. Wi-Fi khách có bật cách ly thiết bị sẽ chặn."))
+                        .settingsRow()
+                    SettingsDivider()
                     note(L10n.t("Mỗi liên kết có mã ngẫu nhiên 160-bit và tự hết hạn; máy chủ tự tắt khi không còn liên kết nào."))
                         .settingsRow()
                     SettingsDivider()
@@ -112,6 +126,16 @@ struct QuickShareDetailView: View {
             Spacer(minLength: XFinderTokens.Space.inline)
             Text(expiryText(share))
                 .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+            Button { qrShare = share.id } label: { Image(systemName: "qrcode") }
+                .buttonStyle(.bordered).controlSize(.small)
+                .disabled(link == nil)
+                .help(L10n.t("Mã QR cho điện thoại quét"))
+                .popover(isPresented: Binding(get: { qrShare == share.id }, set: { if !$0 { qrShare = nil } }), arrowEdge: .bottom) {
+                    if let link {
+                        QuickShareQRPopover(link: link, title: share.name,
+                                            caption: L10n.t("Quét bằng Camera của điện thoại cùng Wi-Fi — không cần cài app."))
+                    }
+                }
             Button(copied == share.id ? L10n.t("Đã chép") : L10n.t("Chép link")) {
                 guard let link else { return }
                 NSPasteboard.general.clearContents()
@@ -144,5 +168,24 @@ struct QuickShareDetailView: View {
         panel.prompt = L10n.t("Chia sẻ")
         guard panel.runModal() == .OK, !panel.urls.isEmpty else { return }
         _ = controller.share(files: panel.urls)
+    }
+}
+
+/// A QR code of a share link, with the link under it so the person can read what the phone is about to open.
+private struct QuickShareQRPopover: View {
+    let link: String
+    let title: String
+    let caption: String
+
+    var body: some View {
+        VStack(spacing: XFinderTokens.Space.inline) {
+            Text(title).font(XFinderTokens.Font.row).lineLimit(1).truncationMode(.middle)
+            QRCodeView(text: link, size: 200)
+            Text(link).font(XFinderTokens.Font.mono).foregroundColor(.secondary).textSelection(.enabled)
+            Text(caption).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(XFinderTokens.Space.section)
+        .frame(width: 280)
     }
 }

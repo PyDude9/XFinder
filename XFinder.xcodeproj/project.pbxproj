@@ -73,6 +73,7 @@
 		7F1A004F /* Components/StatBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0046 /* Components/StatBarView.swift */; };
 		7F1A0050 /* Components/SparklineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0047 /* Components/SparklineView.swift */; };
 		7F1A0051 /* Components/ToggleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0048 /* Components/ToggleRow.swift */; };
+		7F1A041D /* Components/QRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A041C /* Components/QRCodeView.swift */; };
 		7F1A0059 /* Detail/DashboardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0052 /* Detail/DashboardDetailView.swift */; };
 		7F1A005A /* Detail/SystemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0053 /* Detail/SystemDetailView.swift */; };
 		7F1A005B /* Detail/PinDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0054 /* Detail/PinDetailView.swift */; };
@@ -436,6 +437,7 @@
 		7F1A0046 /* Components/StatBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/StatBarView.swift; sourceTree = "<group>"; };
 		7F1A0047 /* Components/SparklineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/SparklineView.swift; sourceTree = "<group>"; };
 		7F1A0048 /* Components/ToggleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/ToggleRow.swift; sourceTree = "<group>"; };
+		7F1A041C /* Components/QRCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/QRCodeView.swift; sourceTree = "<group>"; };
 		7F1A0052 /* Detail/DashboardDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/DashboardDetailView.swift; sourceTree = "<group>"; };
 		7F1A0053 /* Detail/SystemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SystemDetailView.swift; sourceTree = "<group>"; };
 		7F1A0054 /* Detail/PinDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/PinDetailView.swift; sourceTree = "<group>"; };
@@ -1039,6 +1041,7 @@
 				7F1A0046 /* Components/StatBarView.swift */,
 				7F1A0047 /* Components/SparklineView.swift */,
 				7F1A0048 /* Components/ToggleRow.swift */,
+				7F1A041C /* Components/QRCodeView.swift */,
 				7F1A00EC /* Components/MouseDiagramView.swift */,
 				7F1A00EE /* Components/GestureDetailPanel.swift */,
 				7F1A0102 /* Components/GestureArmView.swift */,
@@ -1298,6 +1301,7 @@
 				7F1A004F /* Components/StatBarView.swift in Sources */,
 				7F1A0050 /* Components/SparklineView.swift in Sources */,
 				7F1A0051 /* Components/ToggleRow.swift in Sources */,
+				7F1A041D /* Components/QRCodeView.swift in Sources */,
 				7F1A0059 /* Detail/DashboardDetailView.swift in Sources */,
 				7F1A005A /* Detail/SystemDetailView.swift in Sources */,
 				7F1A005B /* Detail/PinDetailView.swift in Sources */,

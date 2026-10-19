@@ -11422,6 +11422,42 @@
     "Kết nối từ xa đang tắt — bật lại ở đầu trang.": {
       "en": "Remote Connect is off — turn it back on at the top of the page.",
       "scope": "sentence"
+    },
+    "QR cho tất cả": {
+      "en": "QR for all",
+      "scope": "sentence"
+    },
+    "Mọi file đang chia sẻ": {
+      "en": "Every file being shared",
+      "scope": "sentence"
+    },
+    "Ai có mã này thấy cả danh sách. Quét bằng Camera của điện thoại cùng Wi-Fi.": {
+      "en": "Anyone with this code sees the whole list. Scan it with the camera of a phone on the same Wi-Fi.",
+      "scope": "sentence"
+    },
+    "Mã QR cho điện thoại quét": {
+      "en": "QR code for a phone to scan",
+      "scope": "sentence"
+    },
+    "Quét bằng Camera của điện thoại cùng Wi-Fi — không cần cài app.": {
+      "en": "Scan with the camera of a phone on the same Wi-Fi — nothing to install.",
+      "scope": "sentence"
+    },
+    "Điện thoại lấy liên kết bằng cách **quét mã QR** (nút QR cạnh mỗi file, hoặc một mã chung cho cả danh sách) — Camera của iPhone và Android mở thẳng, không cần cài gì. Wi-Fi khách có bật cách ly thiết bị sẽ chặn.": {
+      "en": "A phone gets the link by **scanning a QR code** (the QR button beside each file, or one code for the whole list) — the iPhone and Android camera opens it directly, nothing to install. A guest Wi-Fi with client isolation blocks it.",
+      "scope": "sentence"
+    },
+    "File chia sẻ từ máy Mac": {
+      "en": "Files shared from the Mac",
+      "scope": "sentence"
+    },
+    "Không còn file nào đang chia sẻ.": {
+      "en": "Nothing is being shared any more.",
+      "scope": "sentence"
+    },
+    "Chạm vào một file để tải về. Liên kết chỉ hoạt động trong cùng mạng Wi-Fi và tự hết hạn.": {
+      "en": "Tap a file to download it. Links work only on the same Wi-Fi and expire on their own.",
+      "scope": "sentence"
     }
   }
 }

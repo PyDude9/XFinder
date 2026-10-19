@@ -31,6 +31,9 @@ final class QuickShareController {
 
     private(set) var shares: [Share] = []
     private(set) var isRunning = false
+    /// One token per server run: `GET /<indexToken>` is an HTML page listing every live share, so a single QR code
+    /// hands a phone all the files. Anyone with this link sees the whole list — the page says so.
+    private(set) var indexToken = ""
     var lastError: String?
 
     private var listener: NWListener?
@@ -96,6 +99,11 @@ final class QuickShareController {
         QuickShareRules.link(address: localAddress, port: port, token: share.token)
     }
 
+    /// The link the shared QR code encodes; nil until the listener is ready.
+    var indexLink: String? {
+        QuickShareRules.link(address: localAddress, port: port, token: indexToken)
+    }
+
     func revoke(_ share: Share) {
         shares.removeAll { $0.id == share.id }
         if shares.isEmpty { stop() }
@@ -132,6 +140,7 @@ final class QuickShareController {
             }
             listener.start(queue: .main)
             self.listener = listener
+            indexToken = Self.makeToken()
             startSweep()
         } catch {
             lastError = "\(L10n.t("Không khởi động được máy chủ: "))\(error.localizedDescription)"
@@ -143,6 +152,7 @@ final class QuickShareController {
         listener = nil
         port = 0
         isRunning = false
+        indexToken = ""
         sweepTimer?.invalidate()
         sweepTimer = nil
     }
@@ -171,6 +181,13 @@ final class QuickShareController {
             let token = QuickShareRules.token(fromRequest: request)
 
             Task { @MainActor in
+                if self.isEnabled, !token.isEmpty, token == self.indexToken {
+                    let body = Data(self.indexPageHTML().utf8)
+                    let header = "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nX-Content-Type-Options: nosniff\r\n"
+                        + "Cache-Control: no-store\r\nContent-Length: \(body.count)\r\nConnection: close\r\n\r\n"
+                    Self.send(connection, header: header, body: body)
+                    return
+                }
                 guard self.isEnabled, !token.isEmpty,
                       let share = self.shares.first(where: { $0.token == token && !$0.isExpired }),
                       let payload = try? Data(contentsOf: share.url) else {
@@ -188,6 +205,20 @@ final class QuickShareController {
                 Self.send(connection, header: header, body: payload)
             }
         }
+    }
+
+    /// The index page for the shares alive right now, in the app's language.
+    private func indexPageHTML() -> String {
+        let live = shares.filter { !$0.isExpired }
+        let entries = live.map { share -> QuickShareRules.IndexEntry in
+            let size = (try? FileManager.default.attributesOfItem(atPath: share.url.path)[.size] as? Int64) ?? 0
+            let sizeText = ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
+            return QuickShareRules.IndexEntry(name: share.name, token: share.token, detail: sizeText)
+        }
+        return QuickShareRules.indexPage(entries: entries, strings: QuickShareRules.IndexStrings(
+            title: L10n.t("File chia sẻ từ máy Mac"),
+            empty: L10n.t("Không còn file nào đang chia sẻ."),
+            footer: L10n.t("Chạm vào một file để tải về. Liên kết chỉ hoạt động trong cùng mạng Wi-Fi và tự hết hạn.")))
     }
 
     private nonisolated static func send(_ connection: NWConnection, header: String, body: Data?) {
