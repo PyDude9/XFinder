@@ -106,44 +106,38 @@ public struct DockPreviewDimensions: Equatable {
     }
 }
 
-public func browserPanelDimensions(tabCount: Int) -> DockPreviewDimensions {
-    let count = max(1, min(5, tabCount))
-    switch count {
-    case 1:
-        return DockPreviewDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
-    case 2:
-        let cW: CGFloat = 240, cH: CGFloat = 165
-        let pW: CGFloat = cW * 2 + 12 + 24 // 516
-        let pH: CGFloat = cH + 24 // 189
-        return DockPreviewDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
-    case 3:
-        let cW: CGFloat = 220, cH: CGFloat = 165
-        let pW: CGFloat = cW * 3 + 12 * 2 + 24 // 708
-        let pH: CGFloat = cH + 24 // 189
-        return DockPreviewDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
-    case 4:
-        let cW: CGFloat = 210, cH: CGFloat = 160
-        let pW: CGFloat = cW * 4 + 10 * 3 + 24 // 894
-        let pH: CGFloat = cH + 24 // 184
-        return DockPreviewDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
-    case 5:
-        let cW: CGFloat = 200, cH: CGFloat = 155
-        let pW: CGFloat = cW * 5 + 10 * 4 + 24 // 1064
-        let pH: CGFloat = cH + 24 // 179
-        return DockPreviewDimensions(panelWidth: pW, panelHeight: pH, cardWidth: cW, cardHeight: cH, thumbWidth: cW - 16, thumbHeight: cH - 46)
-    default:
-        return DockPreviewDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160)
+/// One card size for every Dock preview card — a window, a browser tab, one or several (owner, 2026-10-20: the size
+/// must not jump between apps, and 304 × 160 was too big). 16 : 10 picture under a 30-pt header; 8-pt padding and a
+/// 10-pt gap; only the number of cards changes the panel.
+public enum DockCard {
+    public static let width: CGFloat = 208
+    public static let thumbHeight: CGFloat = 130
+    public static let header: CGFloat = 30
+    public static let headerGap: CGFloat = 6
+    public static let padding: CGFloat = 8
+    public static let gap: CGFloat = 10
+    public static var height: CGFloat { header + headerGap + thumbHeight }
+
+    /// Panel for `count` cards (1…`maxCards`).
+    public static func panel(count: Int, maxCards: Int) -> (width: CGFloat, height: CGFloat) {
+        let n = CGFloat(max(1, min(maxCards, count)))
+        return (n * width + (n - 1) * gap + 2 * padding, height + 2 * padding)
     }
 }
 
-/// Dock preview of an app's windows. One FIXED card per window — the browser's own single card, 304 × 160 thumbnail under
-/// a 36-pt header (icon, window title, app name) — so every app's preview is the same size and only the number of cards
-/// changes (owner, 2026-10-20: cards that shrank with the window count made the preview jump between apps). Pure, tested.
+/// Browser tabs: the same card as a window. The tab card draws its picture inside a 6-pt inset, so its thumbnail is the
+/// card width minus 12 and the card height minus its 41-pt header block.
+public func browserPanelDimensions(tabCount: Int) -> DockPreviewDimensions {
+    let p = DockCard.panel(count: tabCount, maxCards: 5)
+    return DockPreviewDimensions(panelWidth: p.width, panelHeight: p.height, cardWidth: DockCard.width, cardHeight: DockCard.height,
+                                 thumbWidth: DockCard.width - 12, thumbHeight: DockCard.height - 41)
+}
+
+/// Windows of a non-browser app: one `DockCard` per window, at most four.
 public func windowPanelDimensions(count: Int) -> DockPreviewDimensions {
-    let n = CGFloat(max(1, min(4, count)))
-    let cardW: CGFloat = 304, thumbH: CGFloat = 160, header: CGFloat = 36, pad: CGFloat = 8, gap: CGFloat = 10
-    return DockPreviewDimensions(panelWidth: n * cardW + (n - 1) * gap + 2 * pad, panelHeight: pad + header + 6 + thumbH + 10,
-                                 cardWidth: cardW, cardHeight: header + 6 + thumbH, thumbWidth: cardW, thumbHeight: thumbH)
+    let p = DockCard.panel(count: count, maxCards: 4)
+    return DockPreviewDimensions(panelWidth: p.width, panelHeight: p.height, cardWidth: DockCard.width, cardHeight: DockCard.height,
+                                 thumbWidth: DockCard.width, thumbHeight: DockCard.thumbHeight)
 }
 
 extension DockPreviewDimensions {

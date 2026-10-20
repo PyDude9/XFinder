@@ -82,13 +82,15 @@ final class DockPreviewRedesignTests: XCTestCase {
         let browser = browserPanelDimensions(tabCount: 1)
         for n in 1...6 {
             let d = windowPanelDimensions(count: n)
-            XCTAssertEqual(d.thumbWidth, browser.thumbWidth, "n=\(n): same picture width as Chrome's card")
-            XCTAssertEqual(d.thumbHeight, browser.thumbHeight, "n=\(n): same picture height as Chrome's card")
+            XCTAssertEqual(d.cardWidth, browser.cardWidth, "n=\(n): the same card as a browser tab")
+            XCTAssertEqual(d.cardHeight, browser.cardHeight)
             XCTAssertEqual(d.panelHeight, browser.panelHeight, "n=\(n): the panel never changes height")
             let k = CGFloat(min(n, 4))
-            XCTAssertEqual(d.panelWidth, k * d.cardWidth + (k - 1) * 10 + 16, accuracy: 0.001, "n=\(n): only the card count changes the width")
+            XCTAssertEqual(d.panelWidth, k * d.cardWidth + (k - 1) * DockCard.gap + 2 * DockCard.padding, accuracy: 0.001, "n=\(n): only the card count changes the width")
         }
         XCTAssertEqual(windowPanelDimensions(count: 1).panelWidth, browser.panelWidth, "one window = exactly Chrome's panel")
+        XCTAssertLessThanOrEqual(DockCard.width, 220, "owner: 304 × 160 was too big")
+        XCTAssertEqual(DockCard.thumbHeight / DockCard.width, 10.0 / 16.0, accuracy: 0.01, "16:10 picture")
     }
 
     func testTheSwitcherUsesRealWindowsPerApp() {

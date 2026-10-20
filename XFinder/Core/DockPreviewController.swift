@@ -380,7 +380,7 @@ struct DockPreviewView: View {
         Group {
             if isBrowser && tabCount >= 2 {
                 // Windows Taskbar style: up to 5 preview cards side by side (active tabs only)
-                HStack(spacing: tabCount >= 4 ? 10 : 12) {
+                HStack(spacing: DockCard.gap) {
                     ForEach(visibleTabs) { tab in
                         DockBrowserTabCard(
                             tab: tab,
@@ -396,19 +396,18 @@ struct DockPreviewView: View {
                         )
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 12)
+                .padding(DockCard.padding)
                 .frame(width: dims.panelWidth, height: dims.panelHeight)
             } else if !isBrowser {
                 DockWindowCardsView(pid: pid, title: title,
                                     items: store.previewItems.filter { !$0.isOnOtherSpace || $0.isStageMiniature },
                                     store: store, onPick: onPick)
             } else {
-                // Single card mode: a browser with one tab (320x220)
-                let targetHeight: CGFloat = (bundleID == "com.apple.iCal" && !store.calendarEvents.isEmpty) || (bundleID == "com.apple.weather" && store.weatherInfo != nil) ? 280 : 220
+                // Single card mode: a browser with one tab — the same DockCard as every other preview.
+                let targetHeight: CGFloat = windowPanelDimensions(count: 1).withExtraHeight(Self.widgetHeight(bundleID, store)).panelHeight
 
                 VStack(alignment: .leading, spacing: 6) {
-                    // Header: fixed 36px
+                    // Header: DockCard.header
                     HStack(spacing: 7) {
                         if let icon = iconForPID(pid) {
                             Image(nsImage: icon)
@@ -430,20 +429,19 @@ struct DockPreviewView: View {
                                 return title
                             }()
                             Text(displayTitle)
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(.primary)
                                 .lineLimit(1)
                             Text(displaySubtitle)
-                                .font(.system(size: 11))
+                                .font(.system(size: 10))
                                 .foregroundColor(.primary.opacity(0.55))
                                 .lineLimit(1)
                         }
                         Spacer()
                     }
-                    .frame(height: 36)
-                    .padding(.horizontal, 8)
+                    .frame(height: DockCard.header)
 
-                    // Thumbnail / WebSnapshotCardView / AppHeroCardView: fixed 304x160
+                    // Thumbnail / WebSnapshotCardView / AppHeroCardView: one DockCard picture
                     if isBrowser, let cur = visibleTabs.first ?? store.activeBrowserTabs.first(where: { $0.isActive }) ?? store.activeBrowserTabs.first {
                         Button(action: {
                             BrowserTabProvider.shared.selectTab(tab: cur, in: bundleID)
@@ -451,27 +449,26 @@ struct DockPreviewView: View {
                             onPick()
                         }) {
                             if let tabThumb = TabPreviewCache.shared.getPreview(tabId: cur.id) {
-                                WindowThumbnailView(image: tabThumb, width: 304, height: 160)
+                                WindowThumbnailView(image: tabThumb, width: DockCard.width, height: DockCard.thumbHeight)
                             } else if let firstThumb = dockItems.first?.thumbnail {
-                                WindowThumbnailView(image: firstThumb, width: 304, height: 160)
+                                WindowThumbnailView(image: firstThumb, width: DockCard.width, height: DockCard.thumbHeight)
                             } else {
                                 WebSnapshotCardView(
                                     tab: cur,
-                                    width: 304,
-                                    height: 160,
+                                    width: DockCard.width,
+                                    height: DockCard.thumbHeight,
                                     showFullDetails: true
                                 )
                             }
                         }
                         .buttonStyle(.plain)
-                        .padding(.horizontal, 8)
                     } else if let first = dockItems.first {
                         Button(action: {
                             WindowManager.activate(pid: pid)
                             onPick()
                         }) {
                             if let thumb = first.thumbnail {
-                                WindowThumbnailView(image: thumb, width: 304, height: 160)
+                                WindowThumbnailView(image: thumb, width: DockCard.width, height: DockCard.thumbHeight)
                             } else {
                                 AppHeroCardView(
                                     appName: first.appName.isEmpty ? title : first.appName,
@@ -479,21 +476,19 @@ struct DockPreviewView: View {
                                     bundleID: bundleID,
                                     isStageMiniature: first.isStageMiniature,
                                     isOnOtherSpace: first.isOnOtherSpace,
-                                    width: 304,
-                                    height: 160
+                                    width: DockCard.width,
+                                    height: DockCard.thumbHeight
                                 )
                             }
                         }
                         .buttonStyle(.plain)
-                        .padding(.horizontal, 8)
                     } else {
                         ZStack {
                             Color.white.opacity(0.06)
                             ProgressView().scaleEffect(0.6)
                         }
-                        .frame(width: 304, height: 160)
+                        .frame(width: DockCard.width, height: DockCard.thumbHeight)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .padding(.horizontal, 8)
                     }
 
                     // Special widgets
@@ -507,8 +502,8 @@ struct DockPreviewView: View {
                             .padding(.horizontal, 8)
                     }
                 }
-                .padding(.vertical, 4)
-                .frame(width: 320, height: targetHeight)
+                .padding(DockCard.padding)
+                .frame(width: DockCard.width + 2 * DockCard.padding, height: targetHeight)
             }
         }
         .dockGlass(cornerRadius: LiquidGlassTokens.Container.cornerRadius)
@@ -550,7 +545,7 @@ struct DockPreviewView: View {
 }
 
 /// One card per window of a non-browser app: the same card the browser uses for its single tab — header (icon, window
-/// title, app name) over a 304 × 160 picture of the whole window, never cropped — side by side, at most four. A click
+/// title, app name) over a DockCard picture of the whole window, never cropped — side by side, at most four. A click
 /// raises THAT window. Fixed size: only the number of cards changes from app to app.
 struct DockWindowCardsView: View {
     let pid: pid_t
@@ -562,7 +557,7 @@ struct DockWindowCardsView: View {
     var body: some View {
         let dims = windowPanelDimensions(count: items.count)
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .top, spacing: 10) {
+            HStack(alignment: .top, spacing: DockCard.gap) {
                 if items.isEmpty {
                     DockWindowCard(item: nil, fallbackTitle: title, pid: pid, dims: dims, onPick: onPick)
                 } else {
@@ -577,7 +572,7 @@ struct DockWindowCardsView: View {
                 WeatherPreviewView(weather: weather).frame(height: 54)
             }
         }
-        .padding(8)
+        .padding(DockCard.padding)
     }
 }
 
@@ -597,20 +592,20 @@ private struct DockWindowCard: View {
             WindowManager.raiseWindow(info)
             onPick()
         } label: {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 7) {
+            VStack(alignment: .leading, spacing: DockCard.headerGap) {
+                HStack(spacing: 6) {
                     if let icon = ClipboardAppIcon.icon(forBundleID: item?.bundleID) {
-                        Image(nsImage: icon).resizable().frame(width: 16, height: 16)
+                        Image(nsImage: icon).resizable().frame(width: 14, height: 14)
                     }
                     VStack(alignment: .leading, spacing: 1) {
                         Text(item?.title ?? fallbackTitle)
-                            .font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.middle)
+                            .font(.system(size: 11, weight: .medium)).lineLimit(1).truncationMode(.middle)
                         Text(item?.appName ?? fallbackTitle)
-                            .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                            .font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
                     }
                     Spacer(minLength: 0)
                 }
-                .frame(width: dims.cardWidth, height: 36, alignment: .leading)
+                .frame(width: dims.cardWidth, height: DockCard.header, alignment: .leading)
                 ZStack {
                     RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(0.06))
                     if let image = item?.thumbnail {

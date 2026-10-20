@@ -63,8 +63,8 @@ run "D7 tabs and helper windows count as windows (AX list ignored)" XFinder/Core
   "'            if !known.isEmpty { return dockWindowCards(known) }'" "'            _ = known'"
 run "D8 the switcher keeps hidden helper windows (blank cards)" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
   "'        wins = Self.realWindows(wins, axWindowIDs: axWindowIDs)'" "'        _ = Self.realWindows'"
-run "D9 cards shrink with the window count again" XFinder/Core/WindowPreview/SpecialProviders.swift \
-  "'    let cardW: CGFloat = 304, thumbH: CGFloat = 160,'" "'    let cardW: CGFloat = n > 1 ? 240 : 304, thumbH: CGFloat = 160,'"
+run "D9 window cards use a different size than browser cards" XFinder/Core/WindowPreview/SpecialProviders.swift \
+  "'    return DockPreviewDimensions(panelWidth: p.width, panelHeight: p.height, cardWidth: DockCard.width, cardHeight: DockCard.height,\n                                 thumbWidth: DockCard.width, thumbHeight: DockCard.thumbHeight)'" "'    return DockPreviewDimensions(panelWidth: p.width + 96, panelHeight: p.height + 36, cardWidth: DockCard.width + 96, cardHeight: DockCard.height + 30,\n                                 thumbWidth: DockCard.width + 96, thumbHeight: DockCard.thumbHeight + 30)'"
 run "D10 the switcher card shows the front-most window, titled or not" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
   "'            if ka.1 != kb.1 { return ka.1 < kb.1 }'" "'            if false { return ka.1 < kb.1 }'"
 restore

@@ -836,12 +836,13 @@ final class WindowPreviewStoreTests: XCTestCase {
     }
 
     func testBrowserPanelDimensions() {
-        XCTAssertEqual(browserPanelDimensions(tabCount: 1), DockPreviewDimensions(panelWidth: 320, panelHeight: 220, cardWidth: 304, cardHeight: 160, thumbWidth: 304, thumbHeight: 160))
-        XCTAssertEqual(browserPanelDimensions(tabCount: 2), DockPreviewDimensions(panelWidth: 516, panelHeight: 189, cardWidth: 240, cardHeight: 165, thumbWidth: 224, thumbHeight: 119))
-        XCTAssertEqual(browserPanelDimensions(tabCount: 3), DockPreviewDimensions(panelWidth: 708, panelHeight: 189, cardWidth: 220, cardHeight: 165, thumbWidth: 204, thumbHeight: 119))
-        XCTAssertEqual(browserPanelDimensions(tabCount: 4), DockPreviewDimensions(panelWidth: 894, panelHeight: 184, cardWidth: 210, cardHeight: 160, thumbWidth: 194, thumbHeight: 114))
-        XCTAssertEqual(browserPanelDimensions(tabCount: 5), DockPreviewDimensions(panelWidth: 1064, panelHeight: 179, cardWidth: 200, cardHeight: 155, thumbWidth: 184, thumbHeight: 109))
-        // Clamping check
+        // 2026-10-20: one DockCard for every preview — width grows only with the card count, the height never changes.
+        for n in 1...5 {
+            let d = browserPanelDimensions(tabCount: n)
+            XCTAssertEqual(d.cardWidth, DockCard.width); XCTAssertEqual(d.cardHeight, DockCard.height)
+            XCTAssertEqual(d.panelWidth, CGFloat(n) * DockCard.width + CGFloat(n - 1) * DockCard.gap + 2 * DockCard.padding)
+            XCTAssertEqual(d.panelHeight, DockCard.height + 2 * DockCard.padding)
+        }
         XCTAssertEqual(browserPanelDimensions(tabCount: 0), browserPanelDimensions(tabCount: 1))
         XCTAssertEqual(browserPanelDimensions(tabCount: 10), browserPanelDimensions(tabCount: 5))
     }
