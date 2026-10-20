@@ -226,7 +226,10 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
         // Fallback for windows ScreenCaptureKit did not give (another Space, a miss). Marked as less trusted so it never
         // replaces an upright capture.
         for wid in neededIDs where result[wid] == nil {
-            if let fallbackCG = legacyWindowCapture(windowID: wid) {
+            if let rawCG = legacyWindowCapture(windowID: wid) {
+                // The legacy path returns full backing size (3456 × 2168 for a full-screen window on another Space,
+                // measured) — scale to the same cap as a ScreenCaptureKit capture before it goes into the cache.
+                let fallbackCG = Self.downscaled(rawCG, maxPixels: maxSize) ?? rawCG
                 let scale = NSScreen.main?.backingScaleFactor ?? 2.0
                 let img = NSImage(cgImage: fallbackCG, size: NSSize(width: CGFloat(fallbackCG.width) / scale,
                                                                     height: CGFloat(fallbackCG.height) / scale))
@@ -259,6 +262,18 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
         let img = NSImage(cgImage: finalCG, size: NSSize(width: CGFloat(finalCG.width) / scale, height: CGFloat(finalCG.height) / scale))
         cache.set(win.windowID, image: img, fromProxy: isProxy)
         return cache.get(win.windowID)
+    }
+
+    static func downscaled(_ image: CGImage, maxPixels: CGFloat) -> CGImage? {
+        let longest = CGFloat(max(image.width, image.height))
+        guard longest > maxPixels, maxPixels > 0 else { return image }
+        let f = maxPixels / longest
+        let w = max(1, Int((CGFloat(image.width) * f).rounded())), h = max(1, Int((CGFloat(image.height) * f).rounded()))
+        guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.interpolationQuality = .high
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        return ctx.makeImage()
     }
 
     /// Stage Manager only: called a moment after an app comes on stage, so its windows have an upright picture before

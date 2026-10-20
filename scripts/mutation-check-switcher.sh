@@ -65,6 +65,8 @@ run "D8 the switcher keeps hidden helper windows (blank cards)" XFinder/Core/Win
   "'        wins = Self.realWindows(wins, axWindowIDs: axWindowIDs)'" "'        _ = Self.realWindows'"
 run "D9 cards shrink with the window count again" XFinder/Core/WindowPreview/SpecialProviders.swift \
   "'    let cardW: CGFloat = 304, thumbH: CGFloat = 160,'" "'    let cardW: CGFloat = n > 1 ? 240 : 304, thumbH: CGFloat = 160,'"
+run "D10 the switcher card shows the front-most window, titled or not" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
+  "'            if ka.1 != kb.1 { return ka.1 < kb.1 }'" "'            if false { return ka.1 < kb.1 }'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails); echo "suite after restore: $after failure(s)"

@@ -254,6 +254,24 @@ public final class WindowPreviewStore {
         }.map(\.element)
     }
 
+    /// The window an app's switcher card shows (pure, tested): not a Stage Manager tile when there is anything else, then
+    /// on the current Space, then titled, then the largest. Measured 2026-10-20: Safari full-screen on another Space — AX
+    /// lists nothing there, and the first CG window in z-order was an untitled, empty 500 × 500 helper, so the card was
+    /// blank while the 1728 × 1084 titled window captured fine (through the legacy path; ScreenCaptureKit refuses windows
+    /// on another Space).
+    nonisolated public static func bestWindow(_ wins: [WindowRef]) -> WindowRef {
+        let nonTiles = wins.filter { !$0.isStageMiniature }
+        let pool = nonTiles.isEmpty ? wins : nonTiles
+        func key(_ w: WindowRef) -> (Int, Int, CGFloat) { (w.isOnCurrentSpace ? 1 : 0, w.title.isEmpty ? 0 : 1, w.bounds.width * w.bounds.height) }
+        return pool.enumerated().max { a, b in
+            let ka = key(a.element), kb = key(b.element)
+            if ka.0 != kb.0 { return ka.0 < kb.0 }
+            if ka.1 != kb.1 { return ka.1 < kb.1 }
+            if ka.2 != kb.2 { return ka.2 < kb.2 }
+            return a.offset > b.offset          // equal: the front-most (lister order) wins
+        }!.element
+    }
+
     /// Per app: only the windows its Accessibility list names, when that list is known and matches any; otherwise all.
     /// Keeps the lister's order (pure, tested).
     nonisolated public static func realWindows(_ wins: [WindowRef], axWindowIDs: (pid_t) -> Set<CGWindowID>?) -> [WindowRef] {
@@ -405,11 +423,7 @@ public final class WindowPreviewStore {
         for bID in orderedBundleIDs {
             guard let appWins = winsByBundle[bID], !appWins.isEmpty else { continue }
             // Pick most active/frontmost window on current space if available, preferring non-miniature
-            let nonMiniatures = appWins.filter { !$0.isStageMiniature }
-            let bestWin = nonMiniatures.first(where: { $0.isOnCurrentSpace })
-                ?? nonMiniatures.first
-                ?? appWins.first(where: { $0.isOnCurrentSpace })
-                ?? appWins.first!
+            let bestWin = Self.bestWindow(appWins)
             let appName = NSRunningApplication(processIdentifier: bestWin.ownerPID)?.localizedName ?? (bestWin.ownerName.isEmpty ? bID : bestWin.ownerName)
             let fallbackTitle = appWins.first(where: { !$0.title.isEmpty })?.title ?? ""
             let title = bestWin.title.isEmpty ? (fallbackTitle.isEmpty ? appName : fallbackTitle) : bestWin.title

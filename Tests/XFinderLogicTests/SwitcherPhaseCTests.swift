@@ -50,6 +50,21 @@ final class SwitcherPhaseCTests: XCTestCase {
         XCTAssertEqual(tv?.windowCount, 1, "the helper is not counted")
     }
 
+    /// Measured: Safari full-screen on another Space — the first CG window was an untitled empty 500×500 helper.
+    func testTheCardPicksTheTitledLargestWindowWhenNothingIsOnThisSpace() {
+        func w(_ id: CGWindowID, _ title: String, _ width: CGFloat, _ height: CGFloat, current: Bool = false, stage: Bool = false) -> S.WindowRef {
+            S.WindowRef(id: id, ownerPID: 1, ownerName: "Safari", title: title, bounds: CGRect(x: 0, y: 0, width: width, height: height),
+                        isOnCurrentSpace: current, isStageMiniature: stage)
+        }
+        let safari = [w(107, "", 500, 500), w(98, "", 1728, 90), w(109, "", 869, 161), w(97, "WoLong — 0.04461", 1728, 1084)]
+        XCTAssertEqual(S.bestWindow(safari).id, 97)
+        XCTAssertEqual(S.bestWindow(safari + [w(5, "Here", 400, 300, current: true)]).id, 5, "a window on this Space still wins")
+        XCTAssertEqual(S.bestWindow([w(1, "A", 800, 600), w(2, "B", 800, 600)]).id, 1, "a tie keeps the front-most")
+        XCTAssertEqual(S.bestWindow([w(6, "", 900, 700), w(7, "Doc", 800, 600)]).id, 7, "titled beats a bigger untitled helper")
+        XCTAssertEqual(S.bestWindow([w(3, "tile", 143, 148, current: true, stage: true), w(4, "", 800, 600)]).id, 4,
+                       "a Stage Manager tile only when there is nothing else (unchanged)")
+    }
+
     @MainActor
     func testBackquoteFlipsBetweenOneCardPerAppAndTheAppsWindowsAndBack() {
         let store = S(captureProvider: MockScreenCaptureProvider(isAllowed: true))
