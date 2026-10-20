@@ -246,8 +246,8 @@ final class DockPreviewController {
         // included) and drew another — an empty slot, or content taller than the panel spilling past the screen edge.
         WindowPreviewStore.shared.loadDockPreviews(for: icon.pid)
         let windowCount = isBrowser ? 1 : WindowPreviewStore.shared.previewItems.filter { !$0.isOnOtherSpace || $0.isStageMiniature }.count
-        let dims = isBrowser ? browserPanelDimensions(tabCount: tabCount)
-            : windowPanelDimensions(count: windowCount).withExtraHeight(DockPreviewView.widgetHeight(bundleID, WindowPreviewStore.shared))
+        let dims = isBrowser ? browserPanelDimensions(tabCount: tabCount, aspect: dockScreenAspect)
+            : windowPanelDimensions(count: windowCount, aspect: dockScreenAspect).withExtraHeight(DockPreviewView.widgetHeight(bundleID, WindowPreviewStore.shared))
         let panelWidth = dims.panelWidth
         let panelHeight = dims.panelHeight
 
@@ -375,7 +375,7 @@ struct DockPreviewView: View {
         let dockItems = store.previewItems.filter { !$0.isOnOtherSpace }
         let visibleTabs = isBrowser ? activeTabsForDockPreview(store.activeBrowserTabs) : []
         let tabCount = visibleTabs.count
-        let dims = browserPanelDimensions(tabCount: max(1, tabCount))
+        let dims = browserPanelDimensions(tabCount: max(1, tabCount), aspect: dockScreenAspect)
 
         Group {
             if isBrowser && tabCount >= 2 {
@@ -404,7 +404,7 @@ struct DockPreviewView: View {
                                     store: store, onPick: onPick)
             } else {
                 // Single card mode: a browser with one tab — the same DockCard as every other preview.
-                let targetHeight: CGFloat = windowPanelDimensions(count: 1).withExtraHeight(Self.widgetHeight(bundleID, store)).panelHeight
+                let targetHeight: CGFloat = windowPanelDimensions(count: 1, aspect: dockScreenAspect).withExtraHeight(Self.widgetHeight(bundleID, store)).panelHeight
 
                 VStack(alignment: .leading, spacing: 6) {
                     // Header: DockCard.header
@@ -449,14 +449,14 @@ struct DockPreviewView: View {
                             onPick()
                         }) {
                             if let tabThumb = TabPreviewCache.shared.getPreview(tabId: cur.id) {
-                                WindowThumbnailView(image: tabThumb, width: DockCard.width, height: DockCard.thumbHeight)
+                                WindowThumbnailView(image: tabThumb, width: DockCard.width, height: DockCard.thumbHeight(aspect: dockScreenAspect))
                             } else if let firstThumb = dockItems.first?.thumbnail {
-                                WindowThumbnailView(image: firstThumb, width: DockCard.width, height: DockCard.thumbHeight)
+                                WindowThumbnailView(image: firstThumb, width: DockCard.width, height: DockCard.thumbHeight(aspect: dockScreenAspect))
                             } else {
                                 WebSnapshotCardView(
                                     tab: cur,
                                     width: DockCard.width,
-                                    height: DockCard.thumbHeight,
+                                    height: DockCard.thumbHeight(aspect: dockScreenAspect),
                                     showFullDetails: true
                                 )
                             }
@@ -468,7 +468,7 @@ struct DockPreviewView: View {
                             onPick()
                         }) {
                             if let thumb = first.thumbnail {
-                                WindowThumbnailView(image: thumb, width: DockCard.width, height: DockCard.thumbHeight)
+                                WindowThumbnailView(image: thumb, width: DockCard.width, height: DockCard.thumbHeight(aspect: dockScreenAspect))
                             } else {
                                 AppHeroCardView(
                                     appName: first.appName.isEmpty ? title : first.appName,
@@ -477,7 +477,7 @@ struct DockPreviewView: View {
                                     isStageMiniature: first.isStageMiniature,
                                     isOnOtherSpace: first.isOnOtherSpace,
                                     width: DockCard.width,
-                                    height: DockCard.thumbHeight
+                                    height: DockCard.thumbHeight(aspect: dockScreenAspect)
                                 )
                             }
                         }
@@ -487,7 +487,7 @@ struct DockPreviewView: View {
                             Color.white.opacity(0.06)
                             ProgressView().scaleEffect(0.6)
                         }
-                        .frame(width: DockCard.width, height: DockCard.thumbHeight)
+                        .frame(width: DockCard.width, height: DockCard.thumbHeight(aspect: dockScreenAspect))
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
 
@@ -519,14 +519,14 @@ struct DockPreviewView: View {
         }
         .onChange(of: store.calendarEvents.count + (store.weatherInfo == nil ? 0 : 1)) { _, _ in
             guard !isBrowser else { return }   // a widget arriving after the panel opened grows it
-            let dims = windowPanelDimensions(count: store.previewItems.count).withExtraHeight(Self.widgetHeight(bundleID, store))
+            let dims = windowPanelDimensions(count: store.previewItems.count, aspect: dockScreenAspect).withExtraHeight(Self.widgetHeight(bundleID, store))
             DockPreviewController.shared.updatePanelSize(width: dims.panelWidth, height: dims.panelHeight, animated: true)
         }
         .onChange(of: store.activeBrowserTabs) { _, _ in
             if isBrowser {
                 let visible = activeTabsForDockPreview(store.activeBrowserTabs)
                 let count = visible.isEmpty ? 1 : visible.count
-                let dims = browserPanelDimensions(tabCount: count)
+                let dims = browserPanelDimensions(tabCount: count, aspect: dockScreenAspect)
                 DockPreviewController.shared.updatePanelSize(width: dims.panelWidth, height: dims.panelHeight, animated: true)
             }
         }
@@ -544,6 +544,14 @@ struct DockPreviewView: View {
     }
 }
 
+/// The screen the Dock is on, as width / height — the Dock cards' pictures take its proportions (Apple's way).
+@MainActor var dockScreenAspect: CGFloat {
+    guard let f = (NSScreen.screens.first { $0.frame.minY == 0 && $0.frame.minX == 0 } ?? NSScreen.main)?.frame, f.height > 0 else {
+        return DockCard.defaultAspect
+    }
+    return f.width / f.height
+}
+
 /// One card per window of a non-browser app: the same card the browser uses for its single tab — header (icon, window
 /// title, app name) over a DockCard picture of the whole window, never cropped — side by side, at most four. A click
 /// raises THAT window. Fixed size: only the number of cards changes from app to app.
@@ -555,7 +563,7 @@ struct DockWindowCardsView: View {
     let onPick: () -> Void
 
     var body: some View {
-        let dims = windowPanelDimensions(count: items.count)
+        let dims = windowPanelDimensions(count: items.count, aspect: dockScreenAspect)
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: DockCard.gap) {
                 if items.isEmpty {

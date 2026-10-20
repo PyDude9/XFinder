@@ -106,38 +106,49 @@ public struct DockPreviewDimensions: Equatable {
     }
 }
 
-/// One card size for every Dock preview card — a window, a browser tab, one or several (owner, 2026-10-20: the size
-/// must not jump between apps, and 304 × 160 was too big). 16 : 10 picture under a 30-pt header; 8-pt padding and a
-/// 10-pt gap; only the number of cards changes the panel.
+/// One card size for every Dock preview card — a window, a browser's single tab or its tab row. The picture is as wide
+/// as the ⌘-Tab switcher's (184 pt) and as tall as the SCREEN's proportions make it (owner, 2026-10-20: "like the
+/// switcher, or Apple's way — size from the screen's ratio"): 184 × 119 on a 1728 × 1117 display, so a full-screen
+/// window fills its card exactly. 30-pt header, 12-pt panel padding (the switcher's container padding), 10-pt gap; only
+/// the number of cards changes the panel.
 public enum DockCard {
-    public static let width: CGFloat = 208
-    public static let thumbHeight: CGFloat = 130
+    public static let width: CGFloat = 184
     public static let header: CGFloat = 30
     public static let headerGap: CGFloat = 6
-    public static let padding: CGFloat = 8
+    public static let padding: CGFloat = 12
     public static let gap: CGFloat = 10
-    public static var height: CGFloat { header + headerGap + thumbHeight }
+    /// 16 : 10 when the screen is unknown (tests, no screen).
+    public static let defaultAspect: CGFloat = 16.0 / 10.0
+
+    /// Picture height for a screen of `aspect` (width / height), clamped to sane displays (4:3 … 21:9).
+    public static func thumbHeight(aspect: CGFloat) -> CGFloat {
+        let a = min(max(aspect.isFinite && aspect > 0 ? aspect : defaultAspect, 4.0 / 3.0), 21.0 / 9.0)
+        return (width / a).rounded()
+    }
+    public static func height(aspect: CGFloat) -> CGFloat { header + headerGap + thumbHeight(aspect: aspect) }
 
     /// Panel for `count` cards (1…`maxCards`).
-    public static func panel(count: Int, maxCards: Int) -> (width: CGFloat, height: CGFloat) {
+    public static func panel(count: Int, maxCards: Int, aspect: CGFloat) -> (width: CGFloat, height: CGFloat) {
         let n = CGFloat(max(1, min(maxCards, count)))
-        return (n * width + (n - 1) * gap + 2 * padding, height + 2 * padding)
+        return (n * width + (n - 1) * gap + 2 * padding, height(aspect: aspect) + 2 * padding)
     }
 }
 
 /// Browser tabs: the same card as a window. The tab card draws its picture inside a 6-pt inset, so its thumbnail is the
 /// card width minus 12 and the card height minus its 41-pt header block.
-public func browserPanelDimensions(tabCount: Int) -> DockPreviewDimensions {
-    let p = DockCard.panel(count: tabCount, maxCards: 5)
-    return DockPreviewDimensions(panelWidth: p.width, panelHeight: p.height, cardWidth: DockCard.width, cardHeight: DockCard.height,
-                                 thumbWidth: DockCard.width - 12, thumbHeight: DockCard.height - 41)
+public func browserPanelDimensions(tabCount: Int, aspect: CGFloat = DockCard.defaultAspect) -> DockPreviewDimensions {
+    let p = DockCard.panel(count: tabCount, maxCards: 5, aspect: aspect)
+    let h = DockCard.height(aspect: aspect)
+    return DockPreviewDimensions(panelWidth: p.width, panelHeight: p.height, cardWidth: DockCard.width, cardHeight: h,
+                                 thumbWidth: DockCard.width - 12, thumbHeight: h - 41)
 }
 
 /// Windows of a non-browser app: one `DockCard` per window, at most four.
-public func windowPanelDimensions(count: Int) -> DockPreviewDimensions {
-    let p = DockCard.panel(count: count, maxCards: 4)
-    return DockPreviewDimensions(panelWidth: p.width, panelHeight: p.height, cardWidth: DockCard.width, cardHeight: DockCard.height,
-                                 thumbWidth: DockCard.width, thumbHeight: DockCard.thumbHeight)
+public func windowPanelDimensions(count: Int, aspect: CGFloat = DockCard.defaultAspect) -> DockPreviewDimensions {
+    let p = DockCard.panel(count: count, maxCards: 4, aspect: aspect)
+    return DockPreviewDimensions(panelWidth: p.width, panelHeight: p.height, cardWidth: DockCard.width,
+                                 cardHeight: DockCard.height(aspect: aspect),
+                                 thumbWidth: DockCard.width, thumbHeight: DockCard.thumbHeight(aspect: aspect))
 }
 
 extension DockPreviewDimensions {
