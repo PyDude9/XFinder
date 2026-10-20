@@ -231,11 +231,21 @@ public final class WindowPreviewStore {
 
     /// At most this many window cards in the Dock preview; the header says how many more there are.
     nonisolated public static let dockMaxCards = 4
+    /// The app's real windows through Accessibility (set by the app at launch; nil in tests and without the permission).
+    public var axWindowIDs: (pid_t) -> Set<CGWindowID>? = { _ in nil }
 
     /// The windows a Dock preview shows, in order (pure, tested). Tiny utility windows (palettes, < 260 × 180) are left
     /// out unless they are all there is; a Stage Manager strip tile IS the app's parked window and stays. Titled windows
     /// on the current Space come first, then other titled ones, then the rest — each group in the lister's z-order.
-    nonisolated public static func dockWindowCards(_ wins: [WindowRef]) -> [WindowRef] {
+    ///
+    /// `axWindows` (the app's own window list through Accessibility) decides what a window IS when known: measured
+    /// 2026-10-20, CGWindowList lists every Finder TAB as a window (Finder with one 3-tab window and one other window:
+    /// 5 entries, AX says 2) and every app's hidden helper windows (Claude 3 sized entries, AX 1; TradingView 6, AX 1).
+    nonisolated public static func dockWindowCards(_ wins: [WindowRef], axWindows: Set<CGWindowID>? = nil) -> [WindowRef] {
+        if let ax = axWindows, !ax.isEmpty {
+            let known = wins.filter { ax.contains($0.id) }
+            if !known.isEmpty { return dockWindowCards(known) }
+        }
         let real = wins.filter { $0.isStageMiniature || ($0.bounds.width >= 260 && $0.bounds.height >= 180) }
         let pool = real.isEmpty ? wins : real
         func rank(_ w: WindowRef) -> Int { (w.title.isEmpty ? 2 : 0) + (w.isOnCurrentSpace || w.isStageMiniature ? 0 : 1) }
@@ -252,7 +262,7 @@ public final class WindowPreviewStore {
 
         // Browsers: one primary window (their tabs are the cards). Other apps: one card per window (2026-10-19 redesign),
         // see `dockWindowCards`.
-        let windows = Self.dockWindowCards(allWins)
+        let windows = Self.dockWindowCards(allWins, axWindows: axWindowIDs(pid))
         guard let win = windows.first else {
             self.previewItems = []
             self.activeBrowserTabs = []
@@ -285,7 +295,7 @@ public final class WindowPreviewStore {
                             title: w.title.isEmpty ? appName : w.title, appName: appName,
                             thumbnail: cache?.get(w.id), isFrozen: false, tabs: [],
                             isOnOtherSpace: !w.isOnCurrentSpace && !w.isStageMiniature, isGroup: false,
-                            windowCount: allWins.count, windowIDs: [w.id], isStageMiniature: w.isStageMiniature)
+                            windowCount: windows.count, windowIDs: [w.id], isStageMiniature: w.isStageMiniature)
             }
         }
         self.isScreenRecordingDenied = !captureProvider.isScreenRecordingAllowed()

@@ -60,6 +60,8 @@ final class DockPreviewController {
             return
         }
         statusHint = L10n.t("Đang chờ: di chuột vào icon app trên Dock.")
+        // Real windows through Accessibility (tabs and hidden helper windows are not windows) — see dockWindowCards.
+        WindowPreviewStore.shared.axWindowIDs = { axWindowIDs(pid: $0) }
         guard monitor == nil else { return }
         reloadIcons()
         // Event-driven: `mouseMoved` fires only on actual movement, so hovering
@@ -239,13 +241,15 @@ final class DockPreviewController {
         let isBrowser = BrowserTabProvider.isSupportedBrowser(bundleID: bundleID)
         let activeTabs = isBrowser ? activeTabsForDockPreview(WindowPreviewStore.shared.activeBrowserTabs) : []
         let tabCount = isBrowser ? (activeTabs.isEmpty ? 1 : activeTabs.count) : 1
-        let windowCount = isBrowser ? 1 : min(WindowPreviewStore.dockMaxCards,
-                                                WindowPreviewStore.dockWindowCards(WindowPreviewStore.shared.windowLister().filter { $0.ownerPID == icon.pid }).count)
-        let dims = isBrowser ? browserPanelDimensions(tabCount: tabCount) : windowPanelDimensions(count: windowCount)
+        if panelPID == icon.pid, panel != nil { return }
+        // Load first, then size from what will actually be drawn: the panel was sized from one count (CG windows, tabs
+        // included) and drew another — an empty slot, or content taller than the panel spilling past the screen edge.
+        WindowPreviewStore.shared.loadDockPreviews(for: icon.pid)
+        let windowCount = isBrowser ? 1 : WindowPreviewStore.shared.previewItems.filter { !$0.isOnOtherSpace || $0.isStageMiniature }.count
+        let dims = isBrowser ? browserPanelDimensions(tabCount: tabCount)
+            : windowPanelDimensions(count: windowCount).withExtraHeight(DockPreviewView.widgetHeight(bundleID, WindowPreviewStore.shared))
         let panelWidth = dims.panelWidth
         let panelHeight = dims.panelHeight
-
-        if panelPID == icon.pid, panel != nil { return }
 
         // If panel already exists, smoothly morph to new icon without tearing down the window
         if let panel = self.panel, let host = panel.contentView as? NSHostingView<DockPreviewView> {
@@ -396,7 +400,9 @@ struct DockPreviewView: View {
                 .padding(.vertical, 12)
                 .frame(width: dims.panelWidth, height: dims.panelHeight)
             } else if !isBrowser {
-                DockWindowCardsView(pid: pid, title: title, items: dockItems, store: store, onPick: onPick)
+                DockWindowCardsView(pid: pid, title: title,
+                                    items: store.previewItems.filter { !$0.isOnOtherSpace || $0.isStageMiniature },
+                                    store: store, onPick: onPick)
             } else {
                 // Single card mode: a browser with one tab (320x220)
                 let targetHeight: CGFloat = (bundleID == "com.apple.iCal" && !store.calendarEvents.isEmpty) || (bundleID == "com.apple.weather" && store.weatherInfo != nil) ? 280 : 220
@@ -513,18 +519,13 @@ struct DockPreviewView: View {
                 offset = 0
                 opacity = 1.0
             }
-            store.loadDockPreviews(for: pid)
         }
         .onChange(of: pid) { _, newPID in
-            withTransaction(Transaction(animation: nil)) {
-                store.loadDockPreviews(for: newPID)
-            }
         }
-        .onChange(of: store.previewItems.count) { _, n in
-            guard !isBrowser else { return }
-            let dims = windowPanelDimensions(count: n)
-            DockPreviewController.shared.updatePanelSize(width: dims.panelWidth, height: dims.panelHeight + Self.widgetHeight(bundleID, store),
-                                                         animated: true)
+        .onChange(of: store.calendarEvents.count + (store.weatherInfo == nil ? 0 : 1)) { _, _ in
+            guard !isBrowser else { return }   // a widget arriving after the panel opened grows it
+            let dims = windowPanelDimensions(count: store.previewItems.count).withExtraHeight(Self.widgetHeight(bundleID, store))
+            DockPreviewController.shared.updatePanelSize(width: dims.panelWidth, height: dims.panelHeight, animated: true)
         }
         .onChange(of: store.activeBrowserTabs) { _, _ in
             if isBrowser {

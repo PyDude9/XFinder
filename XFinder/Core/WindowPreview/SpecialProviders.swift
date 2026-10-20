@@ -150,6 +150,14 @@ public func windowPanelDimensions(count: Int) -> DockPreviewDimensions {
                                  thumbWidth: cardW, thumbHeight: thumbH)
 }
 
+extension DockPreviewDimensions {
+    /// The same panel with room for a widget row under the cards (Calendar, Weather).
+    public func withExtraHeight(_ h: CGFloat) -> DockPreviewDimensions {
+        DockPreviewDimensions(panelWidth: panelWidth, panelHeight: panelHeight + h, cardWidth: cardWidth, cardHeight: cardHeight,
+                              thumbWidth: thumbWidth, thumbHeight: thumbHeight)
+    }
+}
+
 // Cho Cmd+Tab switcher — hiện TẤT CẢ tabs của window đó nhưng vẫn có label
 public func isTabVisibleForSwitcher(_ t: BrowserTab) -> Bool {
     return !t.isDiscarded && !t.isHidden

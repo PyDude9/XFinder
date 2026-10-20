@@ -65,6 +65,18 @@ final class DockPreviewRedesignTests: XCTestCase {
         XCTAssertEqual(WindowPreviewStore.dockMaxCards, 4)
     }
 
+    /// Measured 2026-10-20: Finder with one 3-tab window and one other window listed 5 CG windows; AX lists 2.
+    func testAccessibilityDecidesWhatAWindowIs() {
+        let finder = [ref(1930, "Downloads", w: 84, h: 160, stage: true), ref(53, "docs", w: 840, h: 1021, current: false),
+                      ref(51, "opencode", w: 83, h: 150, current: false, stage: true), ref(50, "Downloads", w: 83, h: 160, stage: true)]
+        XCTAssertEqual(Set(WindowPreviewStore.dockWindowCards(finder, axWindows: [50, 1930]).map(\.id)), [50, 1930], "tabs are not windows")
+        XCTAssertEqual(WindowPreviewStore.dockWindowCards(finder, axWindows: nil).count, 4, "without AX the CG heuristics stay")
+        XCTAssertEqual(WindowPreviewStore.dockWindowCards(finder, axWindows: [999]).count, 4, "an AX list that matches nothing is ignored")
+        let claude = [ref(3056, "", w: 800, h: 600, current: false), ref(3053, "", w: 500, h: 500, current: false), ref(3051, "Claude", w: 1510, h: 1022)]
+        XCTAssertEqual(WindowPreviewStore.dockWindowCards(claude, axWindows: [3051]).map(\.id), [3051])
+        XCTAssertEqual(windowPanelDimensions(count: 1).withExtraHeight(60).panelHeight, windowPanelDimensions(count: 1).panelHeight + 60)
+    }
+
     func testPanelDimensionsFitTheCards() {
         for n in 1...6 {
             let d = windowPanelDimensions(count: n)

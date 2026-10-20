@@ -59,6 +59,8 @@ run "D5 Dock cards include utility palettes" XFinder/Core/WindowPreview/WindowPr
   "'        let real = wins.filter { \$0.isStageMiniature || (\$0.bounds.width >= 260 && \$0.bounds.height >= 180) }'" "'        let real = wins'"
 run "D6 parked Stage Manager windows are dropped from the Dock cards" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
   "'        let real = wins.filter { \$0.isStageMiniature || (\$0.bounds.width >= 260 && \$0.bounds.height >= 180) }'" "'        let real = wins.filter { \$0.bounds.width >= 260 && \$0.bounds.height >= 180 }'"
+run "D7 tabs and helper windows count as windows (AX list ignored)" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
+  "'            if !known.isEmpty { return dockWindowCards(known) }'" "'            _ = known'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails); echo "suite after restore: $after failure(s)"
