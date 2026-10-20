@@ -549,10 +549,9 @@ struct DockPreviewView: View {
     }
 }
 
-/// One card per window of a non-browser app (2026-10-19 redesign): a header with the app and how many windows it has,
-/// then up to four cards — the whole window fitted into a 16 : 10 frame (never cropped; the old single card filled and
-/// cut the top and bottom), its title under it, and a small label when the window is parked in Stage Manager or on
-/// another Space. A click raises THAT window.
+/// One card per window of a non-browser app: the same card the browser uses for its single tab — header (icon, window
+/// title, app name) over a 304 × 160 picture of the whole window, never cropped — side by side, at most four. A click
+/// raises THAT window. Fixed size: only the number of cards changes from app to app.
 struct DockWindowCardsView: View {
     let pid: pid_t
     let title: String
@@ -562,46 +561,29 @@ struct DockWindowCardsView: View {
 
     var body: some View {
         let dims = windowPanelDimensions(count: items.count)
-        let total = items.first?.windowCount ?? items.count
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 7) {
-                if let icon = ClipboardAppIcon.icon(forBundleID: items.first?.bundleID) {
-                    Image(nsImage: icon).resizable().frame(width: 16, height: 16)
-                }
-                Text(items.first?.appName ?? title)
-                    .font(.system(size: 12, weight: .semibold)).lineLimit(1)
-                Spacer(minLength: 8)
-                if total > 1 {
-                    Text("\(total)\(L10n.t(" cửa sổ"))")
-                        .font(.system(size: 11)).foregroundStyle(.secondary).monospacedDigit()
-                }
-            }
-            .frame(height: 28)
-
-            if items.isEmpty {
-                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06))
-                    .overlay { ProgressView().controlSize(.small) }
-                    .frame(width: dims.thumbWidth, height: dims.thumbHeight)
-            } else {
-                HStack(alignment: .top, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                if items.isEmpty {
+                    DockWindowCard(item: nil, fallbackTitle: title, pid: pid, dims: dims, onPick: onPick)
+                } else {
                     ForEach(items) { item in
-                        DockWindowCard(item: item, pid: pid, dims: dims, onPick: onPick)
+                        DockWindowCard(item: item, fallbackTitle: title, pid: pid, dims: dims, onPick: onPick)
                     }
                 }
             }
-
             if let bid = items.first?.bundleID, bid == "com.apple.iCal", !store.calendarEvents.isEmpty {
                 CalendarPreviewView(events: store.calendarEvents).frame(height: 54)
             } else if let bid = items.first?.bundleID, bid == "com.apple.weather", let weather = store.weatherInfo {
                 WeatherPreviewView(weather: weather).frame(height: 54)
             }
         }
-        .padding(12)
+        .padding(8)
     }
 }
 
 private struct DockWindowCard: View {
-    let item: PreviewItem
+    let item: PreviewItem?
+    let fallbackTitle: String
     let pid: pid_t
     let dims: DockPreviewDimensions
     let onPick: () -> Void
@@ -609,53 +591,50 @@ private struct DockWindowCard: View {
 
     var body: some View {
         Button {
+            guard let item else { return }
             let info = WindowManager.WindowInfo(id: item.windowID, ownerPID: pid, ownerName: item.appName, title: item.title,
                                                 bounds: .zero, isOnScreen: true)
             WindowManager.raiseWindow(info)
             onPick()
         } label: {
             VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 7) {
+                    if let icon = ClipboardAppIcon.icon(forBundleID: item?.bundleID) {
+                        Image(nsImage: icon).resizable().frame(width: 16, height: 16)
+                    }
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(item?.title ?? fallbackTitle)
+                            .font(.system(size: 12, weight: .medium)).lineLimit(1).truncationMode(.middle)
+                        Text(item?.appName ?? fallbackTitle)
+                            .font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(width: dims.cardWidth, height: 36, alignment: .leading)
                 ZStack {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06))
-                    if let image = item.thumbnail {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(0.06))
+                    if let image = item?.thumbnail {
                         Image(nsImage: image)
                             .resizable().interpolation(.high)
                             .aspectRatio(contentMode: .fit)
-                            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-                            .shadow(color: .black.opacity(0.18), radius: 3, y: 1)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                             .padding(6)
                     } else {
-                        AppHeroCardView(appName: item.appName, title: item.title, bundleID: item.bundleID,
-                                        isStageMiniature: item.isStageMiniature, isOnOtherSpace: item.isOnOtherSpace,
-                                        width: dims.thumbWidth, height: dims.thumbHeight)
+                        ProgressView().controlSize(.small)
                     }
                 }
                 .frame(width: dims.thumbWidth, height: dims.thumbHeight)
-                .overlay(alignment: .topLeading) {
-                    if item.thumbnail != nil, item.isStageMiniature || item.isOnOtherSpace {
-                        Text(item.isStageMiniature ? L10n.t("Trong Stage Manager") : L10n.t("Ở Space khác"))
-                            .font(.system(size: 10, weight: .medium))
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(.ultraThinMaterial, in: Capsule())
-                            .padding(8)
-                    }
-                }
                 .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(hovered ? Color.accentColor : Color.primary.opacity(0.08), lineWidth: hovered ? 2 : 1)
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(hovered ? Color.accentColor : Color.clear, lineWidth: 2)
                 }
-                Text(item.title)
-                    .font(.system(size: 11, weight: .medium))
-                    .lineLimit(1).truncationMode(.middle)
-                    .frame(width: dims.thumbWidth, alignment: .leading)
-                    .foregroundStyle(hovered ? .primary : .secondary)
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
         .animation(.easeOut(duration: 0.12), value: hovered)
-        .help(item.title)
+        .help(item?.title ?? fallbackTitle)
     }
 }
 

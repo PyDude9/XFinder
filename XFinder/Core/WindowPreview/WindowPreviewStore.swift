@@ -254,6 +254,16 @@ public final class WindowPreviewStore {
         }.map(\.element)
     }
 
+    /// Per app: only the windows its Accessibility list names, when that list is known and matches any; otherwise all.
+    /// Keeps the lister's order (pure, tested).
+    nonisolated public static func realWindows(_ wins: [WindowRef], axWindowIDs: (pid_t) -> Set<CGWindowID>?) -> [WindowRef] {
+        var axByPID: [pid_t: Set<CGWindowID>] = [:]
+        for pid in Set(wins.map(\.ownerPID)) {
+            if let ax = axWindowIDs(pid), wins.contains(where: { $0.ownerPID == pid && ax.contains($0.id) }) { axByPID[pid] = ax }
+        }
+        return wins.filter { w in axByPID[w.ownerPID].map { $0.contains(w.id) } ?? true }
+    }
+
     /// Load window previews for a specific application PID (for Dock hover).
     public func loadDockPreviews(for pid: pid_t) {
         let allWins = windowLister().filter { $0.ownerPID == pid }
@@ -361,6 +371,10 @@ public final class WindowPreviewStore {
         var wins = allWins.filter { $0.bounds.width >= 40 && $0.bounds.height >= 40 }
         if let screenCG { wins = wins.filter { Self.isOnScreen($0, screenCG: screenCG) } }
         lastScreenCG = screenCG
+
+        // Real windows only (AX): a hidden 800 × 600 helper was picked as an app's "best" window and captured blank —
+        // the switcher's empty cards for TradingView, Chrome, Safari… (owner, 2026-10-20) — and tabs inflated "N windows".
+        wins = Self.realWindows(wins, axWindowIDs: axWindowIDs)
 
         // Filter excluded apps
         let allowedWins = wins.filter { win in

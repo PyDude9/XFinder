@@ -77,15 +77,27 @@ final class DockPreviewRedesignTests: XCTestCase {
         XCTAssertEqual(windowPanelDimensions(count: 1).withExtraHeight(60).panelHeight, windowPanelDimensions(count: 1).panelHeight + 60)
     }
 
-    func testPanelDimensionsFitTheCards() {
+    /// Owner, 2026-10-20: every app's preview the same size — one fixed card per window, the browser's own card.
+    func testEveryCardIsTheSameFixedSizeAndMatchesTheBrowserCard() {
+        let browser = browserPanelDimensions(tabCount: 1)
         for n in 1...6 {
             let d = windowPanelDimensions(count: n)
+            XCTAssertEqual(d.thumbWidth, browser.thumbWidth, "n=\(n): same picture width as Chrome's card")
+            XCTAssertEqual(d.thumbHeight, browser.thumbHeight, "n=\(n): same picture height as Chrome's card")
+            XCTAssertEqual(d.panelHeight, browser.panelHeight, "n=\(n): the panel never changes height")
             let k = CGFloat(min(n, 4))
-            XCTAssertEqual(d.panelWidth, k * d.cardWidth + (k - 1) * 10 + 24, accuracy: 0.001, "n=\(n)")
-            XCTAssertEqual(d.thumbHeight / d.thumbWidth, 10.0 / 16.0, accuracy: 0.01, "16:10 thumbnails, n=\(n)")
-            XCTAssertEqual(d.panelHeight, 12 + 28 + 6 + d.thumbHeight + 22 + 12, accuracy: 0.001)
+            XCTAssertEqual(d.panelWidth, k * d.cardWidth + (k - 1) * 10 + 16, accuracy: 0.001, "n=\(n): only the card count changes the width")
         }
-        XCTAssertGreaterThan(windowPanelDimensions(count: 1).cardWidth, windowPanelDimensions(count: 4).cardWidth, "fewer windows ⇒ bigger cards")
-        XCTAssertLessThan(windowPanelDimensions(count: 4).panelWidth, 1000, "four cards fit a 13-inch screen")
+        XCTAssertEqual(windowPanelDimensions(count: 1).panelWidth, browser.panelWidth, "one window = exactly Chrome's panel")
+    }
+
+    func testTheSwitcherUsesRealWindowsPerApp() {
+        let wins = [ref(172, "TradingView", w: 800, h: 600, current: false), ref(176, "USOIL", w: 143, h: 148, stage: true)]
+            .map { Ref(id: $0.id, ownerPID: 7, ownerName: "TV", title: $0.title, bounds: $0.bounds, isOnCurrentSpace: $0.isOnCurrentSpace,
+                       isStageMiniature: $0.isStageMiniature) }
+            + [Ref(id: 9, ownerPID: 8, ownerName: "Other", title: "x", bounds: CGRect(x: 0, y: 0, width: 800, height: 600))]
+        let real = WindowPreviewStore.realWindows(wins, axWindowIDs: { $0 == 7 ? [176] : nil })
+        XCTAssertEqual(real.map(\.id), [176, 9], "the hidden 800×600 helper is not TradingView's window; apps without AX keep theirs")
+        XCTAssertEqual(WindowPreviewStore.realWindows(wins, axWindowIDs: { _ in [12345] }).count, 3, "an AX list matching nothing is ignored")
     }
 }

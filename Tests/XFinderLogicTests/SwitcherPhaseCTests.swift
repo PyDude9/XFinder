@@ -37,6 +37,19 @@ final class SwitcherPhaseCTests: XCTestCase {
         XCTAssertEqual(store.previewItems.count, 2, "no filter ⇒ both")
     }
 
+    /// Owner, 2026-10-20: the switcher's cards were blank because a hidden helper window was the app's "best" window.
+    @MainActor
+    func testTheSwitcherCardShowsTheAppsRealWindowNotAHiddenHelper() {
+        let store = S(captureProvider: MockScreenCaptureProvider(isAllowed: true))
+        store.windowLister = { [self.ref(172, 10, "TradingView", "", x: 100), self.ref(176, 10, "TradingView", "BTCUSDT", x: 100),
+                                self.ref(3, 20, "Terminal", "zsh")] }
+        store.axWindowIDs = { $0 == 10 ? [176] : nil }
+        store.loadSwitchableWindows()
+        let tv = store.previewItems.first { $0.windowIDs.contains(176) }
+        XCTAssertEqual(tv?.windowID, 176, "the card captures the real window")
+        XCTAssertEqual(tv?.windowCount, 1, "the helper is not counted")
+    }
+
     @MainActor
     func testBackquoteFlipsBetweenOneCardPerAppAndTheAppsWindowsAndBack() {
         let store = S(captureProvider: MockScreenCaptureProvider(isAllowed: true))

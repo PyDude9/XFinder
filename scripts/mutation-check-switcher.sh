@@ -61,6 +61,10 @@ run "D6 parked Stage Manager windows are dropped from the Dock cards" XFinder/Co
   "'        let real = wins.filter { \$0.isStageMiniature || (\$0.bounds.width >= 260 && \$0.bounds.height >= 180) }'" "'        let real = wins.filter { \$0.bounds.width >= 260 && \$0.bounds.height >= 180 }'"
 run "D7 tabs and helper windows count as windows (AX list ignored)" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
   "'            if !known.isEmpty { return dockWindowCards(known) }'" "'            _ = known'"
+run "D8 the switcher keeps hidden helper windows (blank cards)" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
+  "'        wins = Self.realWindows(wins, axWindowIDs: axWindowIDs)'" "'        _ = Self.realWindows'"
+run "D9 cards shrink with the window count again" XFinder/Core/WindowPreview/SpecialProviders.swift \
+  "'    let cardW: CGFloat = 304, thumbH: CGFloat = 160,'" "'    let cardW: CGFloat = n > 1 ? 240 : 304, thumbH: CGFloat = 160,'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails); echo "suite after restore: $after failure(s)"
