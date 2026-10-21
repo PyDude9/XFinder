@@ -26,25 +26,6 @@ enum WindowManager {
         var isOnScreen: Bool
     }
 
-    public static func isWindowMinimized(windowID: CGWindowID, pid: pid_t) -> Bool {
-        let appElement = AXUIElementCreateApplication(pid)
-        var windowsRef: CFTypeRef?
-        if AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) == .success,
-           let windows = windowsRef as? [AXUIElement] {
-            for win in windows {
-                var wid: CGWindowID = 0
-                if axGetWindowID(win, &wid) == .success, wid == windowID {
-                    var minRef: CFTypeRef?
-                    if AXUIElementCopyAttributeValue(win, kAXMinimizedAttribute as CFString, &minRef) == .success,
-                       let isMini = minRef as? Bool {
-                        return isMini
-                    }
-                }
-            }
-        }
-        return false
-    }
-
     // MARK: - List (public, always works)
 
     static func listWindows() -> [WindowInfo] {
@@ -52,6 +33,7 @@ enum WindowManager {
         else { return [] }
         // Same hidden-app rule as the switcher's lister, read through its single accessor.
         let showHidden = WindowPreviewStore.showsHiddenWindows
+        var minimized = PerPIDMemo(axMinimizedWindowIDs)
         var out: [WindowInfo] = []
         for dict in raw {
             guard let owner = dict[kCGWindowOwnerName as String] as? String,
@@ -83,11 +65,7 @@ enum WindowManager {
             if !WindowPreviewStore.listsWindow(ofHiddenApp: isHidden, showHidden: showHidden) { continue }
             if let app = runningApp, app.activationPolicy != .regular { continue }
 
-            let isMinimized = isWindowMinimized(windowID: wid, pid: pid)
-            if isMinimized && !isOnScreen { continue }
-
-            let isOnOtherSpace = !isOnScreen && layer == 0 && !isHidden && !isMinimized
-            print("[Space] \(bundleID) onScreen=\(isOnScreen) hidden=\(isHidden) -> otherSpace=\(isOnOtherSpace)")
+            if !isOnScreen && minimized(pid).contains(wid) { continue }
 
             let title = (dict[kCGWindowName as String] as? String) ?? ""
             out.append(WindowInfo(id: wid, ownerPID: pid, ownerName: owner, title: title, bounds: bounds, isOnScreen: isOnScreen))

@@ -138,4 +138,16 @@ final class DockPreviewRedesignTests: XCTestCase {
         XCTAssertEqual(real.map(\.id), [176, 9], "the hidden 800×600 helper is not TradingView's window; apps without AX keep theirs")
         XCTAssertEqual(WindowPreviewStore.realWindows(wins, axWindowIDs: { _ in [12345] }).count, 3, "an AX list matching nothing is ignored")
     }
+
+    // MARK: Review fixes, 2026-10-21
+
+    /// The window listers ask Accessibility once per APP per listing, not once per window.
+    func testTheMinimisedLookupRunsOncePerApp() {
+        var asked: [pid_t] = []
+        var memo = PerPIDMemo<Set<CGWindowID>> { pid in asked.append(pid); return pid == 1 ? [7] : [] }
+        let windows: [(pid: pid_t, id: CGWindowID)] = [(1, 7), (1, 8), (2, 9), (1, 10), (2, 11)]
+        let minimised = windows.filter { memo($0.pid).contains($0.id) }.map(\.id)
+        XCTAssertEqual(minimised, [7])
+        XCTAssertEqual(asked, [1, 2])
+    }
 }

@@ -5,7 +5,7 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-switcher.XXXXXX)
-FILES="XFinder/Core/WindowPreview/WindowPreviewStore.swift XFinder/Core/WindowPreview/ScreenCaptureProvider.swift XFinder/Core/WindowPreview/SpecialProviders.swift"
+FILES="XFinder/Core/WindowPreview/WindowPreviewStore.swift XFinder/Core/WindowPreview/ScreenCaptureProvider.swift XFinder/Core/WindowPreview/SpecialProviders.swift XFinder/Core/AXWindowID.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
@@ -75,6 +75,8 @@ run "D14 thumbnails captured at 800 px again" XFinder/Core/WindowPreview/ScreenC
   "'    public static let cardPixels: CGFloat = 480'" "'    public static let cardPixels: CGFloat = 800'"
 run "D15 the zoom reuses a card-sized picture" XFinder/Core/WindowPreview/ScreenCaptureProvider.swift \
   "'        if entry.maxPixels < wantPixels { return true }'" "'        _ = wantPixels'"
+run "D19 the minimised lookup asks once per window again" XFinder/Core/AXWindowID.swift \
+  "'        if let cached = values[pid] { return cached }'" "'        _ = values[pid]'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails); echo "suite after restore: $after failure(s)"

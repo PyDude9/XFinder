@@ -2,25 +2,6 @@ import Foundation
 import AppKit
 import ApplicationServices
 
-private func checkWindowMinimized(windowID: CGWindowID, pid: pid_t) -> Bool {
-    let appElement = AXUIElementCreateApplication(pid)
-    var windowsRef: CFTypeRef?
-    if AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &windowsRef) == .success,
-       let windows = windowsRef as? [AXUIElement] {
-        for win in windows {
-            var wid: CGWindowID = 0
-            if axGetWindowID(win, &wid) == .success, wid == windowID {
-                var minRef: CFTypeRef?
-                if AXUIElementCopyAttributeValue(win, kAXMinimizedAttribute as CFString, &minRef) == .success,
-                   let isMini = minRef as? Bool {
-                    return isMini
-                }
-            }
-        }
-    }
-    return false
-}
-
 /// Single source of truth for window previews and special previews.
 @MainActor
 @Observable
@@ -173,6 +154,7 @@ public final class WindowPreviewStore {
     public var windowLister: () -> [WindowRef] = {
         guard let raw = CGWindowListCopyWindowInfo(.optionAll, kCGNullWindowID) as? [[String: Any]] else { return [] }
         let showHidden = WindowPreviewStore.showsHiddenWindows
+        var minimized = PerPIDMemo(axMinimizedWindowIDs)
         var out: [WindowRef] = []
         for dict in raw {
             guard let owner = dict[kCGWindowOwnerName as String] as? String,
@@ -204,12 +186,9 @@ public final class WindowPreviewStore {
             if !WindowPreviewStore.listsWindow(ofHiddenApp: isHidden, showHidden: showHidden) { continue }
             if let app = runningApp, app.activationPolicy != .regular { continue }
 
-            let isMinimized = checkWindowMinimized(windowID: wid, pid: pid)
-            if isMinimized && !isOnScreen { continue }
+            if !isOnScreen && minimized(pid).contains(wid) { continue }
 
             let isStageMiniature = ScreenCaptureProvider.isStageManagerProxy(frame: bounds)
-            let isOnOtherSpace = !isOnScreen && layer == 0 && !isHidden && !isMinimized && !isStageMiniature
-            print("[Space] \(bundleID) onScreen=\(isOnScreen) hidden=\(isHidden) isStage=\(isStageMiniature) -> otherSpace=\(isOnOtherSpace)")
 
             let title = (dict[kCGWindowName as String] as? String) ?? ""
             out.append(WindowRef(id: wid, ownerPID: pid, ownerName: owner, title: title, bounds: bounds, isOnCurrentSpace: isOnScreen, isStageMiniature: isStageMiniature))
