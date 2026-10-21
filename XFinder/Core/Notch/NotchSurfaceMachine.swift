@@ -119,9 +119,14 @@ enum NotchSurfaceMachine {
         var anchor: Anchor = .notch
         var itemCount = 0
         var taskRunning = false
+        /// Key feedback replaced a PEEK: when it ends the peek comes back, if it still has files or a track to show. It
+        /// went to `collapsed` — the Now Playing strip the person was looking at vanished after one volume press, until the
+        /// pointer moved again. Only meaningful while the state is `.activity`; cleared on every other state.
+        var peekUnderFeedback = false
 
         /// Advance. `now` makes dwell/grace decisions deterministic.
         mutating func handle(_ e: Event, settings s: Settings, now: Date) {
+            defer { if state != .activity { peekUnderFeedback = false } }
             guard s.enabled else { collapse(); return }
             switch e {
             case .disabled, .dismiss:
@@ -129,9 +134,11 @@ enum NotchSurfaceMachine {
             case .activityShown:
                 if state.isIdle { state = .activity; anchor = .notch }   // never interrupts a peek or the hub
             case .feedbackShown:
+                if state == .peek { peekUnderFeedback = true }
                 if state.isIdle || state == .peek { state = .activity; anchor = .notch }
             case .activityEnded:
-                if state == .activity { state = .collapsed }
+                guard state == .activity else { return }
+                state = peekUnderFeedback && (itemCount > 0 || s.nowPlayingActive) ? .peek : .collapsed
             case .taskStarted:
                 taskRunning = true
             case .taskEnded:

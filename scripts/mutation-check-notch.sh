@@ -186,6 +186,12 @@ run "M64 the frame ignores the compact HUD" XFinder/Core/Notch/NotchSurfaceLayou
   "'                              pillOnPlainScreens: pillOnPlainScreens, compactActivity: compactActivity, metrics: m) else { return nil }'" "'                              pillOnPlainScreens: pillOnPlainScreens, metrics: m) else { return nil }'"
 run "M8 view default disagrees with its reader" XFinder/Views/Detail/NotchInterfaceDetailView.swift \
   "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = true'" "'@AppStorage(\"dropTray.hoverEnabled\") private var hoverEnabled = false'"
+run "M65 key feedback over a peek ends in nothing again" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'                state = peekUnderFeedback && (itemCount > 0 || s.nowPlayingActive) ? .peek : .collapsed'" "'                state = .collapsed'"
+run "M66 the peek comes back with nothing to show" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'peekUnderFeedback && (itemCount > 0 || s.nowPlayingActive) ? .peek'" "'peekUnderFeedback ? .peek'"
+run "M67 an old peek outlives the hub opened over the level" XFinder/Core/Notch/NotchSurfaceMachine.swift \
+  "'            defer { if state != .activity { peekUnderFeedback = false } }'" "'            defer { _ = state }'"
 
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done

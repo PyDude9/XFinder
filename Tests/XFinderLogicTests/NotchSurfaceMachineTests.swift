@@ -210,7 +210,7 @@ final class NotchSurfaceMachineTests: XCTestCase {
     /// No sequence can show the peek strip while the tray is empty — peek exists to show held files.
     func testPeekIsNeverEmpty() {
         let events: [M.Event] = [.hoverInZone(since: t0), .dropped(count: 1), .itemsChanged(count: 0),
-                                 .itemsChanged(count: 2), .dismiss, .pointerAway(since: t0)]
+                                 .itemsChanged(count: 2), .dismiss, .pointerAway(since: t0), .feedbackShown, .activityEnded]
         var bad = 0
         func walk(_ m: M.Machine, _ depth: Int) {
             if m.state == .peek && m.itemCount == 0 { bad += 1 }
@@ -274,7 +274,9 @@ final class NotchSurfaceMachineTests: XCTestCase {
         peek.handle(.feedbackShown, settings: s, now: at(6))
         XCTAssertEqual(peek.state, .activity, "the level shows over the peek")
         peek.handle(.activityEnded, settings: s, now: at(8))
-        XCTAssertEqual(peek.state, .collapsed)
+        XCTAssertEqual(peek.state, .peek, "the peek comes back when the level is gone — it still holds 2 files")
+        peek.handle(.pointerAway(since: at(8)), settings: s, now: at(10))
+        XCTAssertEqual(peek.state, .collapsed, "and leaves with the pointer like any peek")
         var notice = holding(2); notice.handle(.hoverInZone(since: t0), settings: s, now: at(5))
         notice.handle(.activityShown, settings: s, now: at(6))
         XCTAssertEqual(notice.state, .peek, "an ordinary notice still never interrupts a peek")
@@ -283,6 +285,36 @@ final class NotchSurfaceMachineTests: XCTestCase {
         var hub = M.Machine(); hub.handle(.activateOn(.nowPlaying), settings: s, now: t0)
         hub.handle(.feedbackShown, settings: s, now: at(1))
         XCTAssertEqual(hub.state, .expanded(.nowPlaying), "the open hub is never taken over — macOS answers the key there")
+    }
+
+    /// A peek over a playing track comes back after the level; one with nothing left to show does not, and a notice that
+    /// interrupted nothing still ends in `collapsed`.
+    func testThePeekReturnsAfterKeyFeedbackOnlyWhileItHasSomethingToShow() {
+        var track = s; track.nowPlayingActive = true
+        var m = M.Machine(); m.handle(.hoverInZone(since: t0), settings: track, now: at(5))
+        XCTAssertEqual(m.state, .peek)
+        m.handle(.feedbackShown, settings: track, now: at(6))
+        m.handle(.activityEnded, settings: track, now: at(8))
+        XCTAssertEqual(m.state, .peek, "a playing track is never empty")
+        var stopped = M.Machine(); stopped.handle(.hoverInZone(since: t0), settings: track, now: at(5))
+        stopped.handle(.feedbackShown, settings: track, now: at(6))
+        stopped.handle(.activityEnded, settings: s, now: at(8))          // the track ended meanwhile, nothing held
+        XCTAssertEqual(stopped.state, .collapsed)
+        var emptied = holding(2); emptied.handle(.hoverInZone(since: t0), settings: s, now: at(5))
+        emptied.handle(.feedbackShown, settings: s, now: at(6))
+        emptied.handle(.itemsChanged(count: 0), settings: s, now: at(7))
+        emptied.handle(.activityEnded, settings: s, now: at(8))
+        XCTAssertEqual(emptied.state, .collapsed, "the tray was emptied during the level")
+        var idle = holding(2); idle.handle(.feedbackShown, settings: s, now: t0)
+        idle.handle(.activityEnded, settings: s, now: at(2))
+        XCTAssertEqual(idle.state, .collapsed, "feedback over nothing returns to nothing")
+        var reopened = holding(2); reopened.handle(.hoverInZone(since: t0), settings: s, now: at(5))
+        reopened.handle(.feedbackShown, settings: s, now: at(6))
+        reopened.handle(.activate, settings: s, now: at(7))
+        reopened.handle(.dismiss, settings: s, now: at(8))
+        reopened.handle(.feedbackShown, settings: s, now: at(9))
+        reopened.handle(.activityEnded, settings: s, now: at(10))
+        XCTAssertEqual(reopened.state, .collapsed, "the old peek is forgotten once anything else was shown")
     }
 
     /// §3b #33 — a meeting alert has buttons; the pointer that comes to press one must not turn it into a peek.

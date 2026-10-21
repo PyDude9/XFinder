@@ -1206,6 +1206,12 @@ final class NotchSurfaceController {
         } else {
             model.activity = nil
             dispatch(.activityEnded)
+            // The peek came back: the leave clock restarts now (a pointer that left during the level gets the full grace
+            // from this moment), and one tick decides instead of waiting for the next mouse move.
+            if machine.state == .peek {
+                leftAt = nil; graceWork?.cancel(); graceWork = nil
+                tick()
+            }
         }
     }
 
