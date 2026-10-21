@@ -41,6 +41,13 @@ enum ScreenTextRecognizer {
         return recognizeHere(image, level: level)
     }
 
+    /// An image FILE: its bytes go to the child as they are (it decodes and turns them upright), so the app never holds
+    /// the decoded pixels. nil when the file is not an image.
+    static func recognize(fileAt url: URL, level: Level = .accurate) -> [OCRText.Line]? {
+        guard let data = VisionChild.fileBytes(url) else { return nil }
+        return recognize(imageData: data, level: level)
+    }
+
     /// In THIS process.
     static func recognizeHere(_ image: CGImage, level: Level) -> [OCRText.Line] {
         let request = VNRecognizeTextRequest()

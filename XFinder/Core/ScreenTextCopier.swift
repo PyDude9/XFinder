@@ -72,9 +72,8 @@ final class ScreenTextCopier {
             p.waitUntilExit()
             // Esc leaves no file (exit status is 0 either way), so existence IS the cancel signal.
             guard let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize, size > 0,
-                  let src = CGImageSourceCreateWithURL(url as CFURL, nil),
-                  let image = CGImageSourceCreateImageAtIndex(src, 0, nil) else { return .cancelled }
-            guard let text = OCRText.assemble(ScreenTextRecognizer.recognize(image)) else { return .noText }
+                  let lines = ScreenTextRecognizer.recognize(fileAt: url) else { return .cancelled }
+            guard let text = OCRText.assemble(lines) else { return .noText }
             return .text(text)
         }.value
     }

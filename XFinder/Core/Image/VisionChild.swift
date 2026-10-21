@@ -48,10 +48,25 @@ enum VisionChild {
         return CGImageDestinationFinalize(dest) ? data as Data : nil
     }
 
+    /// Upright (EXIF orientation applied) and at most `maxPixels` on the long side — the cap the cutout always had.
+    /// Decoding happens HERE, in the child: the app sends a file's bytes as they are. Measured 2026-10-21: when the app
+    /// decoded a large photo and re-encoded it as TIFF before handing it over, its own footprint peaked at 813 MB and
+    /// settled at 162 MB (freed malloc pages that stay dirty), although Vision itself never ran in it.
+    static let maxPixels = 8192
+
     static func decode(_ data: Data) -> CGImage? {
-        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
-        return CGImageSourceCreateImageAtIndex(src, 0, nil)
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil), CGImageSourceGetCount(src) > 0 else { return nil }
+        let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any]
+        let longest = max(props?[kCGImagePropertyPixelWidth] as? Int ?? 0, props?[kCGImagePropertyPixelHeight] as? Int ?? 0, 1)
+        return CGImageSourceCreateThumbnailAtIndex(src, 0, [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: min(longest, maxPixels),
+        ] as CFDictionary)
     }
+
+    /// A file's bytes without copying them into the heap first (mapped when the file system allows it).
+    static func fileBytes(_ url: URL) -> Data? { try? Data(contentsOf: url, options: .mappedIfSafe) }
 
     /// The child. Never returns.
     static func main() -> Never {

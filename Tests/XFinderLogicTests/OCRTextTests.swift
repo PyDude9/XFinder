@@ -1,6 +1,7 @@
 import XCTest
 import Foundation
 import AppKit
+import ImageIO
 
 final class OCRTextTests: XCTestCase {
     private func line(_ t: String, x: CGFloat, y: CGFloat, w: CGFloat = 0.2, h: CGFloat = 0.04, c: Float = 0.9) -> OCRText.Line {
@@ -115,6 +116,31 @@ final class OCRTextTests: XCTestCase {
         let back = try XCTUnwrap(VisionChild.decode(XCTUnwrap(VisionChild.encode(image))))
         XCTAssertEqual(back.width, image.width)
         XCTAssertEqual(back.height, image.height)
+    }
+
+    /// The child decodes: EXIF orientation is applied (a phone photo stored sideways reads upright) and the long side
+    /// is capped, so a huge image never becomes a huge bitmap.
+    func testDecodingTurnsTheImageUprightAndCapsItsSize() throws {
+        let image = render(["Open ports"])
+        let data = NSMutableData()
+        let dest = try XCTUnwrap(CGImageDestinationCreateWithData(data as CFMutableData, "public.jpeg" as CFString, 1, nil))
+        CGImageDestinationAddImage(dest, image, [kCGImagePropertyOrientation: 6] as CFDictionary)   // rotated 90°
+        XCTAssertTrue(CGImageDestinationFinalize(dest))
+        let upright = try XCTUnwrap(VisionChild.decode(data as Data))
+        XCTAssertEqual(upright.width, image.height, "orientation 6 swaps width and height once applied")
+        XCTAssertEqual(upright.height, image.width)
+        let wide = CGContext(data: nil, width: 9000, height: 10, bitsPerComponent: 8, bytesPerRow: 0,
+                             space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!.makeImage()!
+        XCTAssertEqual(try XCTUnwrap(VisionChild.decode(XCTUnwrap(VisionChild.encode(wide)))).width, VisionChild.maxPixels)
+    }
+
+    func testImageFilesAreReadFromTheirBytes() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("xf-ocr-\(UUID().uuidString).tiff")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try XCTUnwrap(VisionChild.encode(render(["Open ports and settings"]))).write(to: url)
+        let lines = try XCTUnwrap(ScreenTextRecognizer.recognize(fileAt: url))
+        XCTAssertTrue(lines.map(\.text).joined(separator: " ").lowercased().contains("open ports"), "\(lines)")
+        XCTAssertNil(ScreenTextRecognizer.recognize(fileAt: url.appendingPathExtension("missing")))
     }
 
     func testImageBytesAreReadAtTheFastLevelAndNonImagesAreNil() throws {

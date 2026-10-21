@@ -47,8 +47,7 @@ enum ImageTextOCR {
     /// Runs on the calling thread (call it off the main actor). The first call per process waits for the
     /// Neural Engine daemon — measured 1–8 s on OneNotch's notes, 0.4 s warm.
     static func recognize(_ url: URL) -> Result<String, Failure> {
-        guard let cg = PDFAssembler.orientedImage(at: url) else { return .failure(.unreadable(url.lastPathComponent)) }
-        let lines = ScreenTextRecognizer.recognize(cg)
+        guard let lines = ScreenTextRecognizer.recognize(fileAt: url) else { return .failure(.unreadable(url.lastPathComponent)) }
         let text = text(from: lines).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return .failure(.noText(url.lastPathComponent)) }
         return .success(text)

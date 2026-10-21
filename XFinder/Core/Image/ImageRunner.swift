@@ -83,6 +83,16 @@ enum ImageRunner {
     /// Vision foreground segmentation (macOS 14+, on-device, no permission) → PNG with alpha.
     /// Measured: ~2.2 s on the first call (model load), corner alpha 0, subject alpha 255.
     static func removeBackground(_ source: URL) -> Result<URL, Failure> {
+        // The file's bytes go to the Vision child as they are: decoding a 48-MP photo here first cost the app hundreds
+        // of megabytes it kept (see VisionChild.decode).
+        if VisionChild.isAvailable, let data = VisionChild.fileBytes(source), let reply = VisionChild.run(.cutout, imageData: data) {
+            switch reply.status {
+            case VisionChild.Status.ok where !reply.output.isEmpty: return write(reply.output, for: source)
+            case VisionChild.Status.noSubject: return .failure(.noSubject(source.lastPathComponent))
+            case VisionChild.Status.notAnImage: return .failure(.unreadable(source.lastPathComponent))
+            default: break      // the child failed: do it here
+            }
+        }
         guard let src = CGImageSourceCreateWithURL(source as CFURL, nil),
               let image = CGImageSourceCreateThumbnailAtIndex(src, 0, [
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
@@ -90,23 +100,17 @@ enum ImageRunner {
                 kCGImageSourceThumbnailMaxPixelSize: 8192,
               ] as CFDictionary) else { return .failure(.unreadable(source.lastPathComponent)) }
         let png: Data
-        switch cutout(image, name: source.lastPathComponent) {
+        switch cutoutHere(image, name: source.lastPathComponent) {
         case .success(let data): png = data
         case .failure(let f): return .failure(f)
         }
+        return write(png, for: source)
+    }
+
+    private static func write(_ png: Data, for source: URL) -> Result<URL, Failure> {
         let out = ImageEngine.outputURL(for: source, operation: .removeBackground, exists: exists)
         do { try png.write(to: out, options: .atomic) } catch { return .failure(.writeFailed(out.lastPathComponent)) }
         return .success(out)
-    }
-
-    /// PNG bytes of the subject on a transparent background — in the Vision child when it can run (it keeps ~29 MB in
-    /// whichever process ran it, see `VisionChild`), else here. "No subject" is the child's answer, not a failure of it.
-    static func cutout(_ image: CGImage, name: String) -> Result<Data, Failure> {
-        if VisionChild.isAvailable, let data = VisionChild.encode(image), let reply = VisionChild.run(.cutout, imageData: data) {
-            if reply.status == VisionChild.Status.ok, !reply.output.isEmpty { return .success(reply.output) }
-            if reply.status == VisionChild.Status.noSubject { return .failure(.noSubject(name)) }
-        }
-        return cutoutHere(image, name: name)
     }
 
     /// In THIS process: the child's work, and what the tests run.

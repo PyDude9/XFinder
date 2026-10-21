@@ -464,11 +464,9 @@ final class CaptureController {
     private static let copyTextToast = ToastSurface(style: .toast)
 
     func copyText(_ item: CaptureItem) {
-        guard let src = CGImageSourceCreateWithURL(item.url as CFURL, nil),
-              let image = CGImageSourceCreateImageAtIndex(src, 0, nil) else { return }
+        let url = item.url
         Task.detached(priority: .userInitiated) {
-            let lines = ScreenTextRecognizer.recognize(image)
-            let text = OCRText.assemble(lines)
+            let text = ScreenTextRecognizer.recognize(fileAt: url).flatMap(OCRText.assemble)
             await MainActor.run {
                 guard let text else {
                     Self.copyTextToast.show(symbol: "text.viewfinder", title: L10n.t("Không tìm thấy chữ"), duration: 2.4)

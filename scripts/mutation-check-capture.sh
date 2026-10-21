@@ -78,6 +78,10 @@ run "K17 the fast level is sent to the child as the accurate job" $T \
   "'        var job: VisionChild.Job { self == .fast ? .ocrFast : .ocrAccurate }'" "'        var job: VisionChild.Job { .ocrAccurate }'"
 run "K18 two of the child's answers share an exit status" $V \
   "'        static let noSubject: Int32 = 3'" "'        static let noSubject: Int32 = 2'"
+run "K20 the child decodes sideways photos sideways" $V \
+  "'            kCGImageSourceCreateThumbnailWithTransform: true,\n            kCGImageSourceThumbnailMaxPixelSize: min(longest, maxPixels),'" "'            kCGImageSourceCreateThumbnailWithTransform: false,\n            kCGImageSourceThumbnailMaxPixelSize: min(longest, maxPixels),'"
+run "K21 a huge image is decoded at full size" $V \
+  "'            kCGImageSourceThumbnailMaxPixelSize: min(longest, maxPixels),'" "'            kCGImageSourceThumbnailMaxPixelSize: longest,'"
 run "K19 a plain image is cut out as an empty picture instead of \"no subject\"" $I \
   "'        guard let obs = request.results?.first, !obs.allInstances.isEmpty else {\n            return .failure(.noSubject(name))'" "'        guard let obs = request.results?.first, !obs.allInstances.isEmpty else {\n            return .success(Data())'"
 echo "RESULT: $red/$total mutations RED"
