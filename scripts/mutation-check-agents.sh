@@ -91,6 +91,12 @@ run "A13 a Codex event with null windows becomes a 0 % record" $U \
   "'        guard p != nil || s != nil else { return nil }'" "'        _ = 0'"
 run "A14 a window past its reset still reads as current" $U \
   "'    static func isCurrent(_ w: CodexWindow, now: Date) -> Bool { w.resetsAt > now }'" "'    static func isCurrent(_ w: CodexWindow, now: Date) -> Bool { true }'"
+run "U1 the unfinished last line is thrown away (a message being written is lost)" $U \
+  "'        tail.pending = Data(buffer[start...])'" "'        tail.pending = Data()'"
+run "U2 the read position never moves (every scan re-reads the whole file)" $U \
+  "'        tail.offset += UInt64(chunk.count)'" "'        _ = chunk.count'"
+run "U3 a truncated file is never read again" $U \
+  "'    static func mustRestart(_ tail: LogTail, fileSize: UInt64) -> Bool { fileSize < tail.offset }'" "'    static func mustRestart(_ tail: LogTail, fileSize: UInt64) -> Bool { false }'"
 # P2 — ClaudeStatusLine.swift (install rules + rate-limit cache parser). Numbered from A16: A12-A14 belong to AgentUsage.swift.
 CSL=XFinder/Core/Agents/ClaudeStatusLine.swift
 run "A16 previousCommand allowed to point back at us" $CSL \

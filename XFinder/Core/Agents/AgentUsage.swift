@@ -14,6 +14,37 @@ import Foundation
 ///   `message.id` + `requestId`, keeping the largest output count (a streamed message's last line).
 enum AgentUsage {
 
+    // MARK: Reading a growing JSONL file — only what was appended since the last scan
+
+    /// Where the last scan stopped in one file, plus a line still being written (no newline yet). 2026-10-21: the scan read
+    /// every transcript of the week WHOLE into a String once a minute; this session's own transcript was 256 MB, so the
+    /// app gained two 255 MB blocks per scan (vmmap `Malloc Large`) and sat at 592 MB half an hour after launch.
+    struct LogTail: Equatable, Sendable {
+        var offset: UInt64 = 0
+        var pending = Data()
+    }
+
+    /// The complete lines in `chunk`, appended to what `tail` was holding; the unfinished end stays in `tail`.
+    static func lines(in chunk: Data, tail: inout LogTail) -> [Data] {
+        tail.offset += UInt64(chunk.count)
+        var buffer = tail.pending
+        buffer.append(chunk)
+        var out: [Data] = []
+        var start = buffer.startIndex
+        while let nl = buffer[start...].firstIndex(of: 0x0A) {
+            if nl > start { out.append(buffer[start..<nl]) }
+            start = buffer.index(after: nl)
+        }
+        tail.pending = Data(buffer[start...])
+        return out
+    }
+
+    /// The file shrank (truncated, replaced): start over.
+    static func mustRestart(_ tail: LogTail, fileSize: UInt64) -> Bool { fileSize < tail.offset }
+
+    /// A byte search, so lines without the marker never become a String.
+    static func contains(_ line: Data, _ marker: String) -> Bool { line.range(of: Data(marker.utf8)) != nil }
+
     // MARK: Claude Code — tokens from transcripts
 
     struct ClaudeLine: Equatable {

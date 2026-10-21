@@ -146,4 +146,27 @@ final class AgentUsageTests: XCTestCase {
         XCTAssertEqual(t.output, (25 - 5) + 40)
         XCTAssertEqual(t.messages, 2, "one point at/after `since` per session")
     }
+
+    // MARK: Reading only what was appended (2026-10-21)
+
+    func testLinesAreSplitAcrossChunksAndTheUnfinishedEndWaits() {
+        var tail = AgentUsage.LogTail()
+        XCTAssertEqual(AgentUsage.lines(in: Data("a\nbb\ncc".utf8), tail: &tail).map { String(decoding: $0, as: UTF8.self) }, ["a", "bb"])
+        XCTAssertEqual(tail.pending, Data("cc".utf8), "the line still being written waits for its newline")
+        XCTAssertEqual(AgentUsage.lines(in: Data("c\n\nd".utf8), tail: &tail).map { String(decoding: $0, as: UTF8.self) }, ["ccc"])
+        XCTAssertEqual(tail.offset, 11, "offset counts every byte read, so the next scan seeks past them")
+        XCTAssertEqual(tail.pending, Data("d".utf8))
+    }
+
+    func testAShrunkFileIsReadAgainFromTheStart() {
+        let tail = AgentUsage.LogTail(offset: 500, pending: Data())
+        XCTAssertTrue(AgentUsage.mustRestart(tail, fileSize: 100))
+        XCTAssertFalse(AgentUsage.mustRestart(tail, fileSize: 500))
+        XCTAssertFalse(AgentUsage.mustRestart(tail, fileSize: 900))
+    }
+
+    func testTheMarkerIsFoundInBytes() {
+        XCTAssertTrue(AgentUsage.contains(Data("{\"usage\":{}}".utf8), "\"usage\""))
+        XCTAssertFalse(AgentUsage.contains(Data("{\"type\":\"user\"}".utf8), "\"usage\""))
+    }
 }
