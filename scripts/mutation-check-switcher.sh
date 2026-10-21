@@ -63,8 +63,8 @@ run "D7 tabs and helper windows count as windows (AX list ignored)" XFinder/Core
   "'            if !known.isEmpty { return dockWindowCards(known) }'" "'            _ = known'"
 run "D8 the switcher keeps hidden helper windows (blank cards)" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
   "'        wins = Self.realWindows(wins, axWindowIDs: axWindowIDs)'" "'        _ = Self.realWindows'"
-run "D9 window cards use a different size than browser cards" XFinder/Core/WindowPreview/SpecialProviders.swift \
-  "'                                 thumbWidth: DockCard.thumbWidth, thumbHeight: DockCard.thumbHeight)'" "'                                 thumbWidth: DockCard.thumbWidth + 96, thumbHeight: DockCard.thumbHeight + 30)'"
+run "D9 the window panel takes more than four cards" XFinder/Core/WindowPreview/SpecialProviders.swift \
+  "'dockPanelDimensions(count: count, maxCards: 4)'" "'dockPanelDimensions(count: count, maxCards: 6)'"
 run "D11 the Dock card stops matching the switcher's picture" XFinder/Core/WindowPreview/SpecialProviders.swift \
   "'    public static let thumbHeight: CGFloat = 86'" "'    public static let thumbHeight: CGFloat = 119'"
 run "D12 a tilted picture is reported upright (cached for good)" XFinder/Core/WindowPreview/ScreenCaptureProvider.swift \

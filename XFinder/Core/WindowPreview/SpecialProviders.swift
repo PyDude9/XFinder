@@ -131,16 +131,14 @@ public enum DockCard {
     }
 }
 
-/// Browser tabs: exactly the window card (DockBrowserTabCard draws the same header + picture).
-public func browserPanelDimensions(tabCount: Int) -> DockPreviewDimensions {
-    let p = DockCard.panel(count: tabCount, maxCards: 5)
-    return DockPreviewDimensions(panelWidth: p.width, panelHeight: p.height, cardWidth: DockCard.width, cardHeight: DockCard.height,
-                                 thumbWidth: DockCard.thumbWidth, thumbHeight: DockCard.thumbHeight)
-}
+/// Browser tabs: exactly the window card (DockBrowserTabCard draws the same header + picture), up to five.
+public func browserPanelDimensions(tabCount: Int) -> DockPreviewDimensions { dockPanelDimensions(count: tabCount, maxCards: 5) }
 
 /// Windows of a non-browser app: one `DockCard` per window, at most four.
-public func windowPanelDimensions(count: Int) -> DockPreviewDimensions {
-    let p = DockCard.panel(count: count, maxCards: 4)
+public func windowPanelDimensions(count: Int) -> DockPreviewDimensions { dockPanelDimensions(count: count, maxCards: 4) }
+
+private func dockPanelDimensions(count: Int, maxCards: Int) -> DockPreviewDimensions {
+    let p = DockCard.panel(count: count, maxCards: maxCards)
     return DockPreviewDimensions(panelWidth: p.width, panelHeight: p.height, cardWidth: DockCard.width, cardHeight: DockCard.height,
                                  thumbWidth: DockCard.thumbWidth, thumbHeight: DockCard.thumbHeight)
 }
