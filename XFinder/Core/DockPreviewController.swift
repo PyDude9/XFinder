@@ -246,8 +246,8 @@ final class DockPreviewController {
         // included) and drew another — an empty slot, or content taller than the panel spilling past the screen edge.
         WindowPreviewStore.shared.loadDockPreviews(for: icon.pid)
         let windowCount = isBrowser ? 1 : WindowPreviewStore.shared.previewItems.filter { !$0.isOnOtherSpace || $0.isStageMiniature }.count
-        let dims = isBrowser ? browserPanelDimensions(tabCount: tabCount, aspect: dockScreenAspect)
-            : windowPanelDimensions(count: windowCount, aspect: dockScreenAspect).withExtraHeight(DockPreviewView.widgetHeight(bundleID, WindowPreviewStore.shared))
+        let dims = isBrowser ? browserPanelDimensions(tabCount: tabCount)
+            : windowPanelDimensions(count: windowCount).withExtraHeight(DockPreviewView.widgetHeight(bundleID, WindowPreviewStore.shared))
         let panelWidth = dims.panelWidth
         let panelHeight = dims.panelHeight
 
@@ -375,7 +375,7 @@ struct DockPreviewView: View {
         let dockItems = store.previewItems.filter { !$0.isOnOtherSpace }
         let visibleTabs = isBrowser ? activeTabsForDockPreview(store.activeBrowserTabs) : []
         let tabCount = visibleTabs.count
-        let dims = browserPanelDimensions(tabCount: max(1, tabCount), aspect: dockScreenAspect)
+        let dims = browserPanelDimensions(tabCount: max(1, tabCount))
 
         Group {
             if isBrowser && tabCount >= 2 {
@@ -404,7 +404,7 @@ struct DockPreviewView: View {
                                     store: store, onPick: onPick)
             } else {
                 // Single card mode: a browser with one tab — the same DockCard as every other preview.
-                let targetHeight: CGFloat = windowPanelDimensions(count: 1, aspect: dockScreenAspect).withExtraHeight(Self.widgetHeight(bundleID, store)).panelHeight
+                let targetHeight: CGFloat = windowPanelDimensions(count: 1).withExtraHeight(Self.widgetHeight(bundleID, store)).panelHeight
 
                 VStack(alignment: .leading, spacing: 6) {
                     // Header: DockCard.header
@@ -449,14 +449,14 @@ struct DockPreviewView: View {
                             onPick()
                         }) {
                             if let tabThumb = TabPreviewCache.shared.getPreview(tabId: cur.id) {
-                                WindowThumbnailView(image: tabThumb, width: DockCard.width, height: DockCard.thumbHeight(aspect: dockScreenAspect))
+                                WindowThumbnailView(image: tabThumb, width: DockCard.thumbWidth, height: DockCard.thumbHeight)
                             } else if let firstThumb = dockItems.first?.thumbnail {
-                                WindowThumbnailView(image: firstThumb, width: DockCard.width, height: DockCard.thumbHeight(aspect: dockScreenAspect))
+                                WindowThumbnailView(image: firstThumb, width: DockCard.thumbWidth, height: DockCard.thumbHeight)
                             } else {
                                 WebSnapshotCardView(
                                     tab: cur,
-                                    width: DockCard.width,
-                                    height: DockCard.thumbHeight(aspect: dockScreenAspect),
+                                    width: DockCard.thumbWidth,
+                                    height: DockCard.thumbHeight,
                                     showFullDetails: true
                                 )
                             }
@@ -468,7 +468,7 @@ struct DockPreviewView: View {
                             onPick()
                         }) {
                             if let thumb = first.thumbnail {
-                                WindowThumbnailView(image: thumb, width: DockCard.width, height: DockCard.thumbHeight(aspect: dockScreenAspect))
+                                WindowThumbnailView(image: thumb, width: DockCard.thumbWidth, height: DockCard.thumbHeight)
                             } else {
                                 AppHeroCardView(
                                     appName: first.appName.isEmpty ? title : first.appName,
@@ -476,8 +476,8 @@ struct DockPreviewView: View {
                                     bundleID: bundleID,
                                     isStageMiniature: first.isStageMiniature,
                                     isOnOtherSpace: first.isOnOtherSpace,
-                                    width: DockCard.width,
-                                    height: DockCard.thumbHeight(aspect: dockScreenAspect)
+                                    width: DockCard.thumbWidth,
+                                    height: DockCard.thumbHeight
                                 )
                             }
                         }
@@ -487,7 +487,7 @@ struct DockPreviewView: View {
                             Color.white.opacity(0.06)
                             ProgressView().scaleEffect(0.6)
                         }
-                        .frame(width: DockCard.width, height: DockCard.thumbHeight(aspect: dockScreenAspect))
+                        .frame(width: DockCard.thumbWidth, height: DockCard.thumbHeight)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                     }
 
@@ -502,7 +502,7 @@ struct DockPreviewView: View {
                             .padding(.horizontal, 8)
                     }
                 }
-                .padding(DockCard.padding)
+                .padding(DockCard.padding + DockCard.inset)
                 .frame(width: DockCard.width + 2 * DockCard.padding, height: targetHeight)
             }
         }
@@ -519,14 +519,14 @@ struct DockPreviewView: View {
         }
         .onChange(of: store.calendarEvents.count + (store.weatherInfo == nil ? 0 : 1)) { _, _ in
             guard !isBrowser else { return }   // a widget arriving after the panel opened grows it
-            let dims = windowPanelDimensions(count: store.previewItems.count, aspect: dockScreenAspect).withExtraHeight(Self.widgetHeight(bundleID, store))
+            let dims = windowPanelDimensions(count: store.previewItems.count).withExtraHeight(Self.widgetHeight(bundleID, store))
             DockPreviewController.shared.updatePanelSize(width: dims.panelWidth, height: dims.panelHeight, animated: true)
         }
         .onChange(of: store.activeBrowserTabs) { _, _ in
             if isBrowser {
                 let visible = activeTabsForDockPreview(store.activeBrowserTabs)
                 let count = visible.isEmpty ? 1 : visible.count
-                let dims = browserPanelDimensions(tabCount: count, aspect: dockScreenAspect)
+                let dims = browserPanelDimensions(tabCount: count)
                 DockPreviewController.shared.updatePanelSize(width: dims.panelWidth, height: dims.panelHeight, animated: true)
             }
         }
@@ -544,14 +544,6 @@ struct DockPreviewView: View {
     }
 }
 
-/// The screen the Dock is on, as width / height — the Dock cards' pictures take its proportions (Apple's way).
-@MainActor var dockScreenAspect: CGFloat {
-    guard let f = (NSScreen.screens.first { $0.frame.minY == 0 && $0.frame.minX == 0 } ?? NSScreen.main)?.frame, f.height > 0 else {
-        return DockCard.defaultAspect
-    }
-    return f.width / f.height
-}
-
 /// One card per window of a non-browser app: the same card the browser uses for its single tab — header (icon, window
 /// title, app name) over a DockCard picture of the whole window, never cropped — side by side, at most four. A click
 /// raises THAT window. Fixed size: only the number of cards changes from app to app.
@@ -563,7 +555,7 @@ struct DockWindowCardsView: View {
     let onPick: () -> Void
 
     var body: some View {
-        let dims = windowPanelDimensions(count: items.count, aspect: dockScreenAspect)
+        let dims = windowPanelDimensions(count: items.count)
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: DockCard.gap) {
                 if items.isEmpty {
@@ -600,39 +592,29 @@ private struct DockWindowCard: View {
             WindowManager.raiseWindow(info)
             onPick()
         } label: {
+            // The switcher card's anatomy, without its subtitle and corner badge: icon + app name, then the picture.
             VStack(alignment: .leading, spacing: DockCard.headerGap) {
-                HStack(spacing: 6) {
+                HStack(spacing: 7) {
                     if let icon = ClipboardAppIcon.icon(forBundleID: item?.bundleID) {
-                        Image(nsImage: icon).resizable().frame(width: 14, height: 14)
+                        Image(nsImage: icon).resizable()
+                            .frame(width: LiquidGlassTokens.Card.appIconSize, height: LiquidGlassTokens.Card.appIconSize)
+                            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
                     }
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(item?.title ?? fallbackTitle)
-                            .font(.system(size: 11, weight: .medium)).lineLimit(1).truncationMode(.middle)
-                        Text(item?.appName ?? fallbackTitle)
-                            .font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1)
-                    }
+                    Text(item?.appName ?? fallbackTitle)
+                        .font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
                     Spacer(minLength: 0)
                 }
-                .frame(width: dims.cardWidth, height: DockCard.header, alignment: .leading)
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(0.06))
-                    if let image = item?.thumbnail {
-                        Image(nsImage: image)
-                            .resizable().interpolation(.high)
-                            .aspectRatio(contentMode: .fit)
-                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                            .padding(6)
-                    } else {
-                        ProgressView().controlSize(.small)
-                    }
-                }
-                .frame(width: dims.thumbWidth, height: dims.thumbHeight)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(hovered ? Color.accentColor : Color.clear, lineWidth: 2)
-                }
+                .frame(height: DockCard.header)
+                WindowThumbnailView(image: item?.thumbnail, width: dims.thumbWidth, height: dims.thumbHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTokens.thumbRadius, style: .continuous))
             }
-            .contentShape(Rectangle())
+            .padding(DockCard.inset)
+            .frame(width: dims.cardWidth, height: dims.cardHeight, alignment: .topLeading)
+            .background {
+                RoundedRectangle(cornerRadius: LiquidGlassTokens.cardRadius, style: .continuous)
+                    .fill(hovered ? LiquidGlassTokens.cardSelectedBackground : LiquidGlassTokens.cardBackground)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: LiquidGlassTokens.cardRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }

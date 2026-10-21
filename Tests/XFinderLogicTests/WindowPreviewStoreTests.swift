@@ -839,9 +839,9 @@ final class WindowPreviewStoreTests: XCTestCase {
         // 2026-10-20: one DockCard for every preview — width grows only with the card count, the height never changes.
         for n in 1...5 {
             let d = browserPanelDimensions(tabCount: n)
-            XCTAssertEqual(d.cardWidth, DockCard.width); XCTAssertEqual(d.cardHeight, DockCard.height(aspect: DockCard.defaultAspect))
+            XCTAssertEqual(d.cardWidth, DockCard.width); XCTAssertEqual(d.cardHeight, DockCard.height)
             XCTAssertEqual(d.panelWidth, CGFloat(n) * DockCard.width + CGFloat(n - 1) * DockCard.gap + 2 * DockCard.padding)
-            XCTAssertEqual(d.panelHeight, DockCard.height(aspect: DockCard.defaultAspect) + 2 * DockCard.padding)
+            XCTAssertEqual(d.panelHeight, DockCard.height + 2 * DockCard.padding)
         }
         XCTAssertEqual(browserPanelDimensions(tabCount: 0), browserPanelDimensions(tabCount: 1))
         XCTAssertEqual(browserPanelDimensions(tabCount: 10), browserPanelDimensions(tabCount: 5))

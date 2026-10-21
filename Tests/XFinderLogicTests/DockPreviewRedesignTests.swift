@@ -32,6 +32,25 @@ final class DockPreviewRedesignTests: XCTestCase {
         XCTAssertTrue(ThumbnailFreshness.needsCapture(tile, now: t0), "a tile picture is retried: the window may be back on stage")
     }
 
+    /// A capture taken mid-way into the Stage Manager strip is tilted although its frame is not tile-sized; the pixels
+    /// decide (owner, 2026-10-21: TradingView's switcher card).
+    func testTiltIsDetectedFromThePixelsAndAnUprightWindowIsLeftAlone() {
+        func image(_ quad: [CGPoint]) -> CGImage {
+            let ctx = CGContext(data: nil, width: 300, height: 300, bitsPerComponent: 8, bytesPerRow: 0,
+                                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+            ctx.setFillColor(CGColor(red: 0.9, green: 0.9, blue: 0.9, alpha: 1))
+            ctx.move(to: quad[0]); for p in quad.dropFirst() { ctx.addLine(to: p) }; ctx.closePath(); ctx.fillPath()
+            return ctx.makeImage()!
+        }
+        // CG y up: the right edge shorter, like the measured Claude tile (left 5…291, right 33…293 in y-down pixels).
+        let tilted = image([CGPoint(x: 6, y: 295), CGPoint(x: 280, y: 267), CGPoint(x: 282, y: 7), CGPoint(x: 6, y: 9)])
+        XCTAssertTrue(ScreenCaptureProvider.straightened(tilted).wasTilted)
+        let upright = image([CGPoint(x: 6, y: 290), CGPoint(x: 290, y: 290), CGPoint(x: 290, y: 10), CGPoint(x: 6, y: 10)])
+        let s = ScreenCaptureProvider.straightened(upright)
+        XCTAssertFalse(s.wasTilted, "a flat window is not warped")
+        XCTAssertTrue(s.image === upright)
+    }
+
     func testCaptureSizeIsCappedForThumbnails() {
         let full = ThumbnailFreshness.captureSize(frame: CGSize(width: 1728, height: 1117), scale: 2, maxPixels: 800)
         XCTAssertEqual(full.width, 800, "a full-screen window was captured at 3456 px for a 300-pt thumbnail")
@@ -89,13 +108,9 @@ final class DockPreviewRedesignTests: XCTestCase {
             XCTAssertEqual(d.panelWidth, k * d.cardWidth + (k - 1) * DockCard.gap + 2 * DockCard.padding, accuracy: 0.001, "n=\(n): only the card count changes the width")
         }
         XCTAssertEqual(windowPanelDimensions(count: 1).panelWidth, browser.panelWidth, "one window = exactly Chrome's panel")
-        XCTAssertEqual(DockCard.width, 184, "the switcher's picture width")
-        XCTAssertEqual(DockCard.thumbHeight(aspect: 1728.0 / 1117.0), 119, "this Mac's 1728 × 1117 screen: a full-screen window fills the card")
-        XCTAssertEqual(DockCard.thumbHeight(aspect: 16.0 / 9.0), 104, "a 16:9 external display")
-        XCTAssertEqual(DockCard.thumbHeight(aspect: 10), DockCard.thumbHeight(aspect: 21.0 / 9.0), "clamped to 21:9")
-        XCTAssertEqual(DockCard.thumbHeight(aspect: .nan), DockCard.thumbHeight(aspect: DockCard.defaultAspect))
-        let mac = windowPanelDimensions(count: 2, aspect: 1728.0 / 1117.0)
-        XCTAssertEqual(mac.thumbHeight, 119); XCTAssertEqual(mac.panelHeight, 30 + 6 + 119 + 24)
+        XCTAssertEqual(DockCard.width, 200, "the switcher's card width")
+        XCTAssertEqual(DockCard.thumbWidth, 184); XCTAssertEqual(DockCard.thumbHeight, 86, "the switcher's picture")
+        XCTAssertEqual(windowPanelDimensions(count: 1).panelHeight, 8 + 22 + 8 + 86 + 8 + 24)
     }
 
     func testTheSwitcherUsesRealWindowsPerApp() {

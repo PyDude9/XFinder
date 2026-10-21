@@ -120,7 +120,15 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
 
     /// Automatically detects if an image has Stage Manager 3D perspective distortion,
     /// and un-warps it into an upright, flat, sharp rectangle using CoreImage CIPerspectiveCorrection.
-    public static func straightenImageIfNeeded(_ cgImage: CGImage) -> CGImage {
+    public static func straightenImageIfNeeded(_ cgImage: CGImage) -> CGImage { straightened(cgImage).image }
+
+    /// The image, un-warped when it shows Stage Manager's 3-D tilt, and whether it did.
+    public static func straightened(_ cgImage: CGImage) -> (image: CGImage, wasTilted: Bool) {
+        let warped = straightenCore(cgImage)
+        return (warped, warped !== cgImage)
+    }
+
+    private static func straightenCore(_ cgImage: CGImage) -> CGImage {
         let width = cgImage.width
         let height = cgImage.height
         guard width > 30, height > 30 else { return cgImage }
@@ -258,9 +266,15 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
         config.captureResolution = .best
         guard let cgImage = try? await SCScreenshotManager.captureImage(contentFilter: SCContentFilter(desktopIndependentWindow: win),
                                                                          configuration: config) else { return nil }
-        let finalCG = isProxy ? Self.straightenImageIfNeeded(cgImage) : cgImage
+        // The tilt is checked on the PIXELS for every window short of a big one, not only for a strip-sized frame: a
+        // capture taken while the window flies into the Stage Manager strip has a mid-size frame and is already tilted
+        // (owner, 2026-10-21: TradingView's switcher card showed the tilt now and then). Such a picture was cached as
+        // upright, and "an upright picture is never replaced by a tile picture" then kept it.
+        let checkTilt = isProxy || win.frame.width < 700
+        let s = checkTilt ? Self.straightened(cgImage) : (image: cgImage, wasTilted: false)
+        let finalCG = s.image
         let img = NSImage(cgImage: finalCG, size: NSSize(width: CGFloat(finalCG.width) / scale, height: CGFloat(finalCG.height) / scale))
-        cache.set(win.windowID, image: img, fromProxy: isProxy)
+        cache.set(win.windowID, image: img, fromProxy: isProxy || s.wasTilted)
         return cache.get(win.windowID)
     }
 

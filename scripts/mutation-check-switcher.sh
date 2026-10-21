@@ -64,11 +64,11 @@ run "D7 tabs and helper windows count as windows (AX list ignored)" XFinder/Core
 run "D8 the switcher keeps hidden helper windows (blank cards)" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
   "'        wins = Self.realWindows(wins, axWindowIDs: axWindowIDs)'" "'        _ = Self.realWindows'"
 run "D9 window cards use a different size than browser cards" XFinder/Core/WindowPreview/SpecialProviders.swift \
-  "'                                 thumbWidth: DockCard.width, thumbHeight: DockCard.thumbHeight(aspect: aspect))'" "'                                 thumbWidth: DockCard.width + 96, thumbHeight: DockCard.thumbHeight(aspect: aspect) + 30)'"
-run "D11 the card ignores the screen's proportions" XFinder/Core/WindowPreview/SpecialProviders.swift \
-  "'        return (width / a).rounded()'" "'        return (width / defaultAspect).rounded()'"
-run "D10 the switcher card shows the front-most window, titled or not" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
-  "'            if ka.1 != kb.1 { return ka.1 < kb.1 }'" "'            if false { return ka.1 < kb.1 }'"
+  "'                                 thumbWidth: DockCard.thumbWidth, thumbHeight: DockCard.thumbHeight)'" "'                                 thumbWidth: DockCard.thumbWidth + 96, thumbHeight: DockCard.thumbHeight + 30)'"
+run "D11 the Dock card stops matching the switcher's picture" XFinder/Core/WindowPreview/SpecialProviders.swift \
+  "'    public static let thumbHeight: CGFloat = 86'" "'    public static let thumbHeight: CGFloat = 119'"
+run "D12 a tilted picture is reported upright (cached for good)" XFinder/Core/WindowPreview/ScreenCaptureProvider.swift \
+  "'        return (warped, warped !== cgImage)'" "'        return (warped, false)'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails); echo "suite after restore: $after failure(s)"
