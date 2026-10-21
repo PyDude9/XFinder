@@ -97,6 +97,20 @@ final class ImageEngineTests: XCTestCase {
         XCTAssertEqual(alpha(400, 300), 255, "the centre is the subject")
     }
 
+    /// The cutout in this process: a plain image has no subject (the child answers with its own exit status for that),
+    /// and the bytes it returns are a PNG.
+    func testCutoutHereSaysNoSubjectForAPlainImageAndReturnsPNGForOne() throws {
+        let plain = CGContext(data: nil, width: 400, height: 300, bitsPerComponent: 8, bytesPerRow: 0,
+                              space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        plain.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1)); plain.fill(CGRect(x: 0, y: 0, width: 400, height: 300))
+        XCTAssertEqual(ImageRunner.cutoutHere(plain.makeImage()!, name: "plain.png"), .failure(.noSubject("plain.png")))
+        let src = makeImage("subject.png", type: "public.png")
+        let image = CGImageSourceCreateImageAtIndex(CGImageSourceCreateWithURL(src as CFURL, nil)!, 0, nil)!
+        guard case .success(let png) = ImageRunner.cutoutHere(image, name: "subject.png") else { return XCTFail("Vision found no subject") }
+        XCTAssertEqual(Array(png.prefix(4)), [0x89, 0x50, 0x4E, 0x47], "PNG signature")
+        XCTAssertEqual(CGImageSourceGetType(CGImageSourceCreateWithData(png as CFData, nil)!) as String?, "public.png")
+    }
+
     func testANonImageFailsAndWritesNothing() {
         let junk = dir.appendingPathComponent("fake.jpg")
         try? "not an image".write(to: junk, atomically: true, encoding: .utf8)

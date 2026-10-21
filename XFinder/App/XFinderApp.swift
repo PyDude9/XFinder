@@ -11,6 +11,8 @@ struct XFinderApp: App {
         if CommandLine.arguments.contains("--mcp") { MCPServer.run() }
         // XF-T23 v2b: a crew member's PreToolUse hook (Core/Agents/CrewGuardMain.swift). Never returns.
         if CommandLine.arguments.contains("--crew-guard") { CrewGuardMain.run() }
+        // One Vision job (text, cutout) in a child process, so Vision's memory leaves with it (VisionChild). Never returns.
+        if CommandLine.arguments.contains(VisionChild.flag) { VisionChild.main() }
     }
 
     var body: some Scene {

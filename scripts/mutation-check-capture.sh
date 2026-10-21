@@ -5,14 +5,14 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-capture.XXXXXX)
-FILES="XFinder/Core/Capture/CaptureRules.swift XFinder/Core/Capture/Annotation.swift XFinder/Core/Onboarding.swift"
+FILES="XFinder/Core/Capture/CaptureRules.swift XFinder/Core/Capture/Annotation.swift XFinder/Core/Onboarding.swift XFinder/Core/ScreenTextRecognizer.swift XFinder/Core/Image/VisionChild.swift XFinder/Core/Image/ImageRunner.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
 # A signal must END the run: with INT/TERM in the restore trap, sh restored the files and carried on — a killed harness
 # kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
 trap 'exit 143' INT TERM
-FILTER='CaptureRulesTests|AnnotationTests|CaptureVocabularyL10nTests|OnboardingTests'
+FILTER='CaptureRulesTests|AnnotationTests|CaptureVocabularyL10nTests|OnboardingTests|OCRTextTests|ImageEngineTests'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -63,6 +63,23 @@ run "K11 the countdown also delays a shot the person is still selecting" $R \
   "'        if countdown > 0, !args.contains(\"-i\") {'" "'        if countdown > 0 {'"
 run "K12 shadow off strips the shadow flag from every mode (screencapture rejects -o outside window shots)" $R \
   "'        if mode == .window, !windowShadow {'" "'        if !windowShadow {'"
+T=XFinder/Core/ScreenTextRecognizer.swift
+V=XFinder/Core/Image/VisionChild.swift
+I=XFinder/Core/Image/ImageRunner.swift
+run "K13 the Vision child's answer swaps x and y" $T \
+  "'x: Double(\$0.box.minX), y: Double(\$0.box.minY)'" "'x: Double(\$0.box.minY), y: Double(\$0.box.minX)'"
+run "K14 a typo after --vision silently runs the accurate OCR" $V \
+  "'        return Job(rawValue: args[i + 1])'" "'        return Job(rawValue: args[i + 1]) ?? .ocrAccurate'"
+run "K15 bytes that are not an image read as an image with no text" $T \
+  "'        guard let image = VisionChild.decode(imageData) else { return nil }'" "'        guard let image = VisionChild.decode(imageData) else { return [] }'"
+run "K16 a crashed child's empty answer is taken as no text (no fallback)" $T \
+  "'        guard let wire = try? JSONDecoder().decode([Line].self, from: data) else { return nil }'" "'        guard let wire = try? JSONDecoder().decode([Line].self, from: data) else { return [] }'"
+run "K17 the fast level is sent to the child as the accurate job" $T \
+  "'        var job: VisionChild.Job { self == .fast ? .ocrFast : .ocrAccurate }'" "'        var job: VisionChild.Job { .ocrAccurate }'"
+run "K18 two of the child's answers share an exit status" $V \
+  "'        static let noSubject: Int32 = 3'" "'        static let noSubject: Int32 = 2'"
+run "K19 a plain image is cut out as an empty picture instead of \"no subject\"" $I \
+  "'        guard let obs = request.results?.first, !obs.allInstances.isEmpty else {\n            return .failure(.noSubject(name))'" "'        guard let obs = request.results?.first, !obs.allInstances.isEmpty else {\n            return .success(Data())'"
 echo "RESULT: $red/$total mutations RED"
 restore
 after=$(fails); echo "after restore failures: $after"

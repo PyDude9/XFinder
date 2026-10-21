@@ -1,8 +1,6 @@
 import AppKit
 import Foundation
 import ImageIO
-import Vision
-import Vision
 
 /// Disk offload (payloads + 300px thumbnails under Application Support) and
 /// Vision OCR for copied images. All work is nonisolated/background-safe; the
@@ -57,7 +55,9 @@ enum ClipboardPayloadStore {
     }
 }
 
-/// Vision OCR for a stored image payload path. Returns recognized text or nil.
+/// Vision OCR for a stored image payload path. Returns recognized text or nil. `.fast` — it feeds the search index —
+/// and in a short-lived child process (`ScreenTextRecognizer`), so a copied screenshot no longer leaves Vision's tens of
+/// megabytes in the app.
 enum ClipboardOCR {
     static func recognizeText(atPath path: String) -> String? {
         let url = URL(fileURLWithPath: path)
@@ -66,22 +66,8 @@ enum ClipboardOCR {
     }
 
     static func recognizeText(data: Data) -> String? {
-        guard let cg = cgImage(from: data) else { return nil }
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .fast
-        request.usesLanguageCorrection = false
-        let handler = VNImageRequestHandler(cgImage: cg, options: [:])
-        do {
-            try handler.perform([request])
-        } catch { return nil }
-        let lines = (request.results ?? [])
-            .compactMap { $0.topCandidates(1).first?.string }
-        let joined = lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let lines = ScreenTextRecognizer.recognize(imageData: data, level: .fast) else { return nil }
+        let joined = lines.map(\.text).joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
         return joined.isEmpty ? nil : joined
-    }
-
-    private static func cgImage(from data: Data) -> CGImage? {
-        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
-        return CGImageSourceCreateImageAtIndex(src, 0, nil)
     }
 }

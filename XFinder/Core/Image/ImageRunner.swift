@@ -89,13 +89,35 @@ enum ImageRunner {
                 kCGImageSourceCreateThumbnailWithTransform: true,
                 kCGImageSourceThumbnailMaxPixelSize: 8192,
               ] as CFDictionary) else { return .failure(.unreadable(source.lastPathComponent)) }
+        let png: Data
+        switch cutout(image, name: source.lastPathComponent) {
+        case .success(let data): png = data
+        case .failure(let f): return .failure(f)
+        }
+        let out = ImageEngine.outputURL(for: source, operation: .removeBackground, exists: exists)
+        do { try png.write(to: out, options: .atomic) } catch { return .failure(.writeFailed(out.lastPathComponent)) }
+        return .success(out)
+    }
+
+    /// PNG bytes of the subject on a transparent background — in the Vision child when it can run (it keeps ~29 MB in
+    /// whichever process ran it, see `VisionChild`), else here. "No subject" is the child's answer, not a failure of it.
+    static func cutout(_ image: CGImage, name: String) -> Result<Data, Failure> {
+        if VisionChild.isAvailable, let data = VisionChild.encode(image), let reply = VisionChild.run(.cutout, imageData: data) {
+            if reply.status == VisionChild.Status.ok, !reply.output.isEmpty { return .success(reply.output) }
+            if reply.status == VisionChild.Status.noSubject { return .failure(.noSubject(name)) }
+        }
+        return cutoutHere(image, name: name)
+    }
+
+    /// In THIS process: the child's work, and what the tests run.
+    static func cutoutHere(_ image: CGImage, name: String) -> Result<Data, Failure> {
         let request = VNGenerateForegroundInstanceMaskRequest()
         let handler = VNImageRequestHandler(cgImage: image)
         do {
             try handler.perform([request])
         } catch { return .failure(.visionFailed(error.localizedDescription)) }
         guard let obs = request.results?.first, !obs.allInstances.isEmpty else {
-            return .failure(.noSubject(source.lastPathComponent))
+            return .failure(.noSubject(name))
         }
         let buffer: CVPixelBuffer
         do {
@@ -106,14 +128,12 @@ enum ImageRunner {
                                                 format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)) else {
             return .failure(.visionFailed("render"))
         }
-        let out = ImageEngine.outputURL(for: source, operation: .removeBackground, exists: exists)
-        guard let dest = CGImageDestinationCreateWithURL(out as CFURL, "public.png" as CFString, 1, nil) else {
+        let data = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(data as CFMutableData, "public.png" as CFString, 1, nil) else {
             return .failure(.noEncoder("PNG"))
         }
         CGImageDestinationAddImage(dest, cg, nil)
-        guard CGImageDestinationFinalize(dest) else {
-            try? FileManager.default.removeItem(at: out); return .failure(.writeFailed(out.lastPathComponent))
-        }
-        return .success(out)
+        guard CGImageDestinationFinalize(dest) else { return .failure(.visionFailed("encode")) }
+        return .success(data as Data)
     }
 }
