@@ -109,9 +109,11 @@ final class DockPreviewRedesignTests: XCTestCase {
             XCTAssertEqual(d.panelWidth, k * d.cardWidth + (k - 1) * DockCard.gap + 2 * DockCard.padding, accuracy: 0.001, "n=\(n): only the card count changes the width")
         }
         XCTAssertEqual(windowPanelDimensions(count: 1).panelWidth, browser.panelWidth, "one window = exactly Chrome's panel")
-        XCTAssertEqual(DockCard.width, 200, "the switcher's card width")
         XCTAssertEqual(DockCard.thumbWidth, 184); XCTAssertEqual(DockCard.thumbHeight, 86, "the switcher's picture")
-        XCTAssertEqual(windowPanelDimensions(count: 1).panelHeight, 8 + 22 + 8 + 86 + 8 + 24)
+        let one = windowPanelDimensions(count: 1)
+        XCTAssertEqual(one.panelWidth - one.thumbWidth, 12, "owner: a bezel as thin as a MacBook's — 6 pt a side")
+        XCTAssertEqual(one.panelHeight, 6 + 20 + 5 + 86 + 6)
+        XCTAssertEqual(DockCard.panelRadius, DockCard.thumbRadius + DockCard.padding, "concentric corners")
     }
 
     func testTheSwitcherUsesRealWindowsPerApp() {

@@ -269,7 +269,7 @@ final class DockPreviewController {
         }
         let host = NSHostingView(rootView: content)
         host.wantsLayer = true
-        host.layer?.cornerRadius = LiquidGlassTokens.containerRadius
+        host.layer?.cornerRadius = DockCard.panelRadius
         host.layer?.masksToBounds = true
         host.layer?.backgroundColor = NSColor.clear.cgColor
         let panel = NSPanel(contentRect: NSRect(origin: .zero, size: NSSize(width: panelWidth, height: panelHeight)),
@@ -506,7 +506,7 @@ struct DockPreviewView: View {
                 .frame(width: DockCard.width + 2 * DockCard.padding, height: targetHeight)
             }
         }
-        .dockGlass(cornerRadius: LiquidGlassTokens.Container.cornerRadius)
+        .dockGlass(cornerRadius: DockCard.panelRadius)
         .offset(y: offset)
         .opacity(opacity)
         .onAppear {
@@ -592,29 +592,27 @@ private struct DockWindowCard: View {
             WindowManager.raiseWindow(info)
             onPick()
         } label: {
-            // The switcher card's anatomy, without its subtitle and corner badge: icon + app name, then the picture.
+            // The switcher card's anatomy, without its subtitle and corner badge, and without a card around it: the app
+            // name, then the picture — hover outlines the picture instead of filling a card.
             VStack(alignment: .leading, spacing: DockCard.headerGap) {
-                HStack(spacing: 7) {
+                HStack(spacing: 6) {
                     if let icon = ClipboardAppIcon.icon(forBundleID: item?.bundleID) {
-                        Image(nsImage: icon).resizable()
-                            .frame(width: LiquidGlassTokens.Card.appIconSize, height: LiquidGlassTokens.Card.appIconSize)
-                            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                        Image(nsImage: icon).resizable().frame(width: 16, height: 16)
                     }
                     Text(item?.appName ?? fallbackTitle)
-                        .font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
+                        .font(.system(size: 12, weight: .semibold)).lineLimit(1)
                     Spacer(minLength: 0)
                 }
                 .frame(height: DockCard.header)
                 WindowThumbnailView(image: item?.thumbnail, width: dims.thumbWidth, height: dims.thumbHeight)
-                    .clipShape(RoundedRectangle(cornerRadius: LiquidGlassTokens.thumbRadius, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: DockCard.thumbRadius, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: DockCard.thumbRadius, style: .continuous)
+                            .strokeBorder(hovered ? Color.accentColor : Color.clear, lineWidth: 1.5)
+                    }
             }
-            .padding(DockCard.inset)
             .frame(width: dims.cardWidth, height: dims.cardHeight, alignment: .topLeading)
-            .background {
-                RoundedRectangle(cornerRadius: LiquidGlassTokens.cardRadius, style: .continuous)
-                    .fill(hovered ? LiquidGlassTokens.cardSelectedBackground : LiquidGlassTokens.cardBackground)
-            }
-            .contentShape(RoundedRectangle(cornerRadius: LiquidGlassTokens.cardRadius, style: .continuous))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }

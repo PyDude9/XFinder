@@ -69,6 +69,8 @@ run "D11 the Dock card stops matching the switcher's picture" XFinder/Core/Windo
   "'    public static let thumbHeight: CGFloat = 86'" "'    public static let thumbHeight: CGFloat = 119'"
 run "D12 a tilted picture is reported upright (cached for good)" XFinder/Core/WindowPreview/ScreenCaptureProvider.swift \
   "'        return (warped, warped !== cgImage)'" "'        return (warped, false)'"
+run "D13 the bezel grows back" XFinder/Core/WindowPreview/SpecialProviders.swift \
+  "'    public static let padding: CGFloat = 6'" "'    public static let padding: CGFloat = 12'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails); echo "suite after restore: $after failure(s)"

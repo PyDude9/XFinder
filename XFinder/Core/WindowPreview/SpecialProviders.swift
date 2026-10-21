@@ -106,20 +106,22 @@ public struct DockPreviewDimensions: Equatable {
     }
 }
 
-/// One card for every Dock preview — a window, a browser's single tab or its tab row — with the ⌘-Tab switcher card's
-/// geometry (owner, 2026-10-21: "proportions as perfect as the switcher's; keep the app name and the content, thinner
-/// edges"): a 200-pt card, 8-pt inner padding, a 22-pt header with the app's icon and name, and a 184 × 86 picture that
-/// fills its frame like the switcher's. 12-pt panel padding and a 10-pt gap, as the switcher container; only the number
-/// of cards changes the panel.
+/// One card for every Dock preview — a window, a browser's single tab or its tab row. The switcher's 184 × 86 picture
+/// and app-name header, with a bezel as thin as a MacBook Pro's (owner, 2026-10-21: "so thin you barely see it"): no
+/// inset inside the card, 6 pt from the picture to the panel edge, 6 pt between cards, and a panel corner concentric
+/// with the picture's (8 + 6 = 14). Only the number of cards changes the panel.
 public enum DockCard {
-    public static let width: CGFloat = 200
-    public static let inset: CGFloat = 8
-    public static let header: CGFloat = 22
-    public static let headerGap: CGFloat = 8
     public static let thumbWidth: CGFloat = 184
     public static let thumbHeight: CGFloat = 86
-    public static let padding: CGFloat = 12
-    public static let gap: CGFloat = 10
+    public static let thumbRadius: CGFloat = 8
+    public static let inset: CGFloat = 0
+    public static let header: CGFloat = 20
+    public static let headerGap: CGFloat = 5
+    public static let padding: CGFloat = 6
+    public static let gap: CGFloat = 6
+    /// Concentric with the picture's corner: the bezel reads as one even line all round.
+    public static var panelRadius: CGFloat { thumbRadius + padding }
+    public static var width: CGFloat { thumbWidth + 2 * inset }
     public static var height: CGFloat { inset + header + headerGap + thumbHeight + inset }
 
     /// Panel for `count` cards (1…`maxCards`).
