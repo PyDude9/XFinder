@@ -102,6 +102,7 @@ final class DockPreviewRedesignTests: XCTestCase {
         for n in 1...6 {
             let d = windowPanelDimensions(count: n)
             XCTAssertEqual(d.cardWidth, browser.cardWidth, "n=\(n): the same card as a browser tab")
+            XCTAssertEqual(d.thumbWidth, DockCard.thumbWidth); XCTAssertEqual(d.thumbHeight, DockCard.thumbHeight, "n=\(n): the switcher's picture")
             XCTAssertEqual(d.cardHeight, browser.cardHeight)
             XCTAssertEqual(d.panelHeight, browser.panelHeight, "n=\(n): the panel never changes height")
             let k = CGFloat(min(n, 4))
