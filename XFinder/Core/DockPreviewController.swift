@@ -413,30 +413,11 @@ struct DockPreviewView: View {
                             Image(nsImage: icon)
                                 .resizable()
                                 .frame(width: 16, height: 16)
-                                .clipShape(RoundedRectangle(cornerRadius: 3))
                         }
-                        VStack(alignment: .leading, spacing: 1) {
-                            let curTab = visibleTabs.first ?? store.activeBrowserTabs.first(where: { $0.isActive }) ?? store.activeBrowserTabs.first
-                            let firstItem = dockItems.first
-                            let displayTitle: String = {
-                                if isBrowser, let tab = curTab { return tab.title }
-                                if let item = firstItem, !item.title.isEmpty { return item.title }
-                                return title
-                            }()
-                            let displaySubtitle: String = {
-                                if isBrowser, let tab = curTab { return tab.domain }
-                                if let item = firstItem, !item.appName.isEmpty { return item.appName }
-                                return title
-                            }()
-                            Text(displayTitle)
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(.primary)
-                                .lineLimit(1)
-                            Text(displaySubtitle)
-                                .font(.system(size: 10))
-                                .foregroundColor(.primary.opacity(0.55))
-                                .lineLimit(1)
-                        }
+                        let curTab = visibleTabs.first ?? store.activeBrowserTabs.first(where: { $0.isActive }) ?? store.activeBrowserTabs.first
+                        Text(curTab.map { $0.title.isEmpty ? $0.domain : $0.title } ?? (dockItems.first?.appName ?? title))
+                            .font(.system(size: 12, weight: .semibold))
+                            .lineLimit(1)
                         Spacer()
                     }
                     .frame(height: DockCard.header)
@@ -653,74 +634,42 @@ struct DockBrowserTabCard: View {
             WindowManager.activate(pid: pid)
             onPick()
         }) {
-            VStack(alignment: .leading, spacing: 5) {
-                // Header: favicon/app icon + title + domain
+            // The window card's anatomy (DockWindowCard): icon + the tab's title on one line, then the picture with the
+            // thin MacBook-style bezel; hover outlines the picture. No card fill, frame or shadow of its own.
+            VStack(alignment: .leading, spacing: DockCard.headerGap) {
                 HStack(spacing: 6) {
-                    if let appIcon = appIcon {
-                        Image(nsImage: appIcon)
-                            .resizable()
-                            .frame(width: 14, height: 14)
-                            .clipShape(RoundedRectangle(cornerRadius: 3))
+                    if let appIcon {
+                        Image(nsImage: appIcon).resizable().frame(width: 16, height: 16)
                     } else {
-                        Image(systemName: tab.isSecure ? "lock.fill" : "globe")
-                            .font(.system(size: 10))
-                            .foregroundColor(.blue)
+                        Image(systemName: tab.isSecure ? "lock.fill" : "globe").font(.system(size: 11)).foregroundStyle(.secondary)
                     }
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(tab.title.isEmpty ? tab.domain : tab.title)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                        Text(tab.domain)
-                            .font(.system(size: 9.5))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-
+                    Text(tab.title.isEmpty ? tab.domain : tab.title)
+                        .font(.system(size: 12, weight: .semibold)).lineLimit(1).truncationMode(.tail)
                     Spacer(minLength: 0)
-
                     if tab.isActive {
-                        Circle()
-                            .fill(Color.blue)
-                            .frame(width: 5, height: 5)
+                        Circle().fill(Color.accentColor).frame(width: 5, height: 5)
                     }
                 }
-                .frame(height: 26)
-                .padding(.horizontal, 6)
-                .padding(.top, 4)
-
-                // Thumbnail: Retina crisp
+                .frame(height: DockCard.header)
                 Group {
                     if let tabThumb = TabPreviewCache.shared.getPreview(tabId: tab.id) {
                         WindowThumbnailView(image: tabThumb, width: thumbWidth, height: thumbHeight)
                     } else if tab.isActive, let primaryThumb = primaryThumb {
                         WindowThumbnailView(image: primaryThumb, width: thumbWidth, height: thumbHeight)
                     } else {
-                        WebSnapshotCardView(
-                            tab: tab,
-                            width: thumbWidth,
-                            height: thumbHeight,
-                            showFullDetails: false
-                        )
+                        WebSnapshotCardView(tab: tab, width: thumbWidth, height: thumbHeight, showFullDetails: false)
                     }
                 }
                 .frame(width: thumbWidth, height: thumbHeight)
-                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .padding(.horizontal, 6)
-                .padding(.bottom, 6)
+                .clipShape(RoundedRectangle(cornerRadius: DockCard.thumbRadius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: DockCard.thumbRadius, style: .continuous)
+                        .strokeBorder(isHovered ? Color.accentColor : Color.clear, lineWidth: 1.5)
+                }
             }
-            .frame(width: cardWidth, height: cardHeight)
-            .background {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(isHovered ? Color.white.opacity(0.12) : Color.white.opacity(0.05))
-            }
-            .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(isHovered ? Color.blue.opacity(0.55) : Color.white.opacity(0.12), lineWidth: 1)
-            }
-            .shadow(color: isHovered ? Color.blue.opacity(0.18) : Color.black.opacity(0.08), radius: isHovered ? 8 : 4, y: 2)
-            .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .frame(width: cardWidth, height: cardHeight, alignment: .topLeading)
+            .contentShape(Rectangle())
+            .help(tab.title.isEmpty ? tab.domain : tab.title)
         }
         .buttonStyle(.plain)
         .onHover { h in
@@ -731,49 +680,3 @@ struct DockBrowserTabCard: View {
     }
 }
 
-/// Placeholder card during initial async tab discovery.
-struct DockTabPlaceholderCard: View {
-    let title: String
-    let appIcon: NSImage?
-    var width: CGFloat = 240
-    var height: CGFloat = 165
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) {
-                if let appIcon = appIcon {
-                    Image(nsImage: appIcon)
-                        .resizable()
-                        .frame(width: 14, height: 14)
-                        .clipShape(RoundedRectangle(cornerRadius: 3))
-                }
-                Text(title)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                Spacer()
-            }
-            .frame(height: 26)
-            .padding(.horizontal, 6)
-            .padding(.top, 4)
-
-            ZStack {
-                Color.white.opacity(0.06)
-                ProgressView().scaleEffect(0.6)
-            }
-            .frame(width: width - 16, height: height - 46)
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .padding(.horizontal, 6)
-            .padding(.bottom, 6)
-        }
-        .frame(width: width, height: height)
-        .background {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.white.opacity(0.05))
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        }
-    }
-}

@@ -131,11 +131,11 @@ public enum DockCard {
     }
 }
 
-/// Browser tabs: the same card. The tab card draws its picture inside a 6-pt inset under a 41-pt header block.
+/// Browser tabs: exactly the window card (DockBrowserTabCard draws the same header + picture).
 public func browserPanelDimensions(tabCount: Int) -> DockPreviewDimensions {
     let p = DockCard.panel(count: tabCount, maxCards: 5)
     return DockPreviewDimensions(panelWidth: p.width, panelHeight: p.height, cardWidth: DockCard.width, cardHeight: DockCard.height,
-                                 thumbWidth: DockCard.width - 12, thumbHeight: DockCard.height - 41)
+                                 thumbWidth: DockCard.thumbWidth, thumbHeight: DockCard.thumbHeight)
 }
 
 /// Windows of a non-browser app: one `DockCard` per window, at most four.

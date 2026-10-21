@@ -104,6 +104,8 @@ final class DockPreviewRedesignTests: XCTestCase {
             XCTAssertEqual(d.cardWidth, browser.cardWidth, "n=\(n): the same card as a browser tab")
             XCTAssertEqual(d.thumbWidth, DockCard.thumbWidth); XCTAssertEqual(d.thumbHeight, DockCard.thumbHeight, "n=\(n): the switcher's picture")
             XCTAssertEqual(d.cardHeight, browser.cardHeight)
+            XCTAssertEqual(browserPanelDimensions(tabCount: n).thumbWidth, DockCard.thumbWidth, "n=\(n): a tab card shows the same picture")
+            XCTAssertEqual(browserPanelDimensions(tabCount: n).thumbHeight, DockCard.thumbHeight)
             XCTAssertEqual(d.panelHeight, browser.panelHeight, "n=\(n): the panel never changes height")
             let k = CGFloat(min(n, 4))
             XCTAssertEqual(d.panelWidth, k * d.cardWidth + (k - 1) * DockCard.gap + 2 * DockCard.padding, accuracy: 0.001, "n=\(n): only the card count changes the width")
