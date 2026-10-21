@@ -141,6 +141,33 @@ final class DockPreviewRedesignTests: XCTestCase {
 
     // MARK: Review fixes, 2026-10-21
 
+    /// The panel and the cards read ONE list: windows on this Space plus Stage Manager tiles; another Space's window is
+    /// not drawn, so it must not be counted either (a late Calendar widget resized from the raw count).
+    func testTheDockDrawsAndSizesFromOneList() {
+        let here = PreviewItem(windowID: 1, bundleID: "a", title: "here")
+        let elsewhere = PreviewItem(windowID: 2, bundleID: "a", title: "far", isOnOtherSpace: true)
+        let tile = PreviewItem(windowID: 3, bundleID: "a", title: "tile", isOnOtherSpace: true, isStageMiniature: true)
+        XCTAssertEqual(WindowPreviewStore.dockCardItems([here, elsewhere, tile]).map(\.windowID), [1, 3])
+        XCTAssertEqual(WindowPreviewStore.dockCardItems([elsewhere]), [])
+        // The flag itself, shared by the browser card and the per-window cards: a strip tile is never "another Space".
+        func ref(onSpace: Bool, tile: Bool) -> Ref { Ref(id: 9, ownerPID: 1, ownerName: "a", title: "t", isOnCurrentSpace: onSpace, isStageMiniature: tile) }
+        XCTAssertFalse(WindowPreviewStore.isOnOtherSpace(ref(onSpace: false, tile: true)), "a Stage Manager tile is the parked window")
+        XCTAssertTrue(WindowPreviewStore.isOnOtherSpace(ref(onSpace: false, tile: false)))
+        XCTAssertFalse(WindowPreviewStore.isOnOtherSpace(ref(onSpace: true, tile: false)))
+    }
+
+    /// One Stage Manager warm per app per 30 s, however often the person switches; the log forgets old apps.
+    func testWarmCapturesAreAtMostOnePerAppPerInterval() {
+        var log: [pid_t: Date] = [:]
+        XCTAssertTrue(ThumbnailFreshness.claimWarm(pid: 10, now: t0, log: &log))
+        XCTAssertFalse(ThumbnailFreshness.claimWarm(pid: 10, now: t0.addingTimeInterval(5), log: &log), "⌘-Tab back 5 s later")
+        XCTAssertTrue(ThumbnailFreshness.claimWarm(pid: 11, now: t0.addingTimeInterval(6), log: &log), "another app is its own")
+        XCTAssertTrue(ThumbnailFreshness.claimWarm(pid: 10, now: t0.addingTimeInterval(ThumbnailFreshness.warmInterval), log: &log))
+        XCTAssertEqual(Set(log.keys), [10, 11])
+        _ = ThumbnailFreshness.claimWarm(pid: 12, now: t0.addingTimeInterval(200), log: &log)
+        XCTAssertEqual(Set(log.keys), [12], "apps not switched to for 30 s leave the log")
+    }
+
     /// The window listers ask Accessibility once per APP per listing, not once per window.
     func testTheMinimisedLookupRunsOncePerApp() {
         var asked: [pid_t] = []

@@ -38,6 +38,7 @@ final class DockPreviewController {
     /// Stage Manager only: an app that comes on stage gets its windows' upright pictures taken (0.8 s later, after
     /// macOS's move animation) — once parked in the strip, only a tilted tile can be captured.
     private var activationObserver: NSObjectProtocol?
+    private var warmLog: [pid_t: Date] = [:]
 
     private init() {}
 
@@ -79,13 +80,16 @@ final class DockPreviewController {
         }
         if activationObserver == nil {
             activationObserver = NSWorkspace.shared.notificationCenter.addObserver(
-                forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { note in
+                forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] note in
                 guard WindowManager.isStageManagerEnabled,
                       let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
                       app.activationPolicy == .regular, app.processIdentifier != ProcessInfo.processInfo.processIdentifier else { return }
                 let pid = app.processIdentifier
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                    Task.detached(priority: .utility) { await ScreenCaptureProvider.shared.warmUprightPictures(pid: pid) }
+                MainActor.assumeIsolated {      // queue: .main
+                    guard let self, ThumbnailFreshness.claimWarm(pid: pid, now: Date(), log: &self.warmLog) else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        Task.detached(priority: .utility) { await ScreenCaptureProvider.shared.warmUprightPictures(pid: pid) }
+                    }
                 }
             }
         }
@@ -100,6 +104,7 @@ final class DockPreviewController {
         localMonitor = nil
         if let activationObserver { NSWorkspace.shared.notificationCenter.removeObserver(activationObserver) }
         activationObserver = nil
+        warmLog = [:]
         hoveredPID = nil
         hidePanel()
     }
@@ -245,7 +250,7 @@ final class DockPreviewController {
         // Load first, then size from what will actually be drawn: the panel was sized from one count (CG windows, tabs
         // included) and drew another — an empty slot, or content taller than the panel spilling past the screen edge.
         WindowPreviewStore.shared.loadDockPreviews(for: icon.pid)
-        let windowCount = isBrowser ? 1 : WindowPreviewStore.shared.previewItems.filter { !$0.isOnOtherSpace || $0.isStageMiniature }.count
+        let windowCount = isBrowser ? 1 : WindowPreviewStore.dockCardItems(WindowPreviewStore.shared.previewItems).count
         let dims = isBrowser ? browserPanelDimensions(tabCount: tabCount)
             : windowPanelDimensions(count: windowCount).withExtraHeight(DockPreviewView.widgetHeight(bundleID, WindowPreviewStore.shared))
         let panelWidth = dims.panelWidth
@@ -372,7 +377,7 @@ struct DockPreviewView: View {
     }
 
     var body: some View {
-        let dockItems = store.previewItems.filter { !$0.isOnOtherSpace }
+        let dockItems = WindowPreviewStore.dockCardItems(store.previewItems)
         let visibleTabs = isBrowser ? activeTabsForDockPreview(store.activeBrowserTabs) : []
         let tabCount = visibleTabs.count
         let dims = browserPanelDimensions(tabCount: max(1, tabCount))
@@ -384,7 +389,7 @@ struct DockPreviewView: View {
                     ForEach(visibleTabs) { tab in
                         DockBrowserTabCard(
                             tab: tab,
-                            appIcon: iconForPID(pid),
+                            appIcon: ClipboardAppIcon.icon(forBundleID: bundleID),
                             bundleID: bundleID,
                             pid: pid,
                             primaryThumb: tab.isActive ? dockItems.first?.thumbnail : nil,
@@ -400,7 +405,7 @@ struct DockPreviewView: View {
                 .frame(width: dims.panelWidth, height: dims.panelHeight)
             } else if !isBrowser {
                 DockWindowCardsView(pid: pid, title: title,
-                                    items: store.previewItems.filter { !$0.isOnOtherSpace || $0.isStageMiniature },
+                                    items: WindowPreviewStore.dockCardItems(store.previewItems),
                                     store: store, onPick: onPick)
             } else {
                 // Single card mode: a browser with one tab — the same DockCard as every other preview.
@@ -409,7 +414,7 @@ struct DockPreviewView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     // Header: DockCard.header
                     HStack(spacing: 7) {
-                        if let icon = iconForPID(pid) {
+                        if let icon = ClipboardAppIcon.icon(forBundleID: bundleID) {
                             Image(nsImage: icon)
                                 .resizable()
                                 .frame(width: 16, height: 16)
@@ -500,7 +505,8 @@ struct DockPreviewView: View {
         }
         .onChange(of: store.calendarEvents.count + (store.weatherInfo == nil ? 0 : 1)) { _, _ in
             guard !isBrowser else { return }   // a widget arriving after the panel opened grows it
-            let dims = windowPanelDimensions(count: store.previewItems.count).withExtraHeight(Self.widgetHeight(bundleID, store))
+            let dims = windowPanelDimensions(count: WindowPreviewStore.dockCardItems(store.previewItems).count)
+                .withExtraHeight(Self.widgetHeight(bundleID, store))
             DockPreviewController.shared.updatePanelSize(width: dims.panelWidth, height: dims.panelHeight, animated: true)
         }
         .onChange(of: store.activeBrowserTabs) { _, _ in
@@ -511,12 +517,6 @@ struct DockPreviewView: View {
                 DockPreviewController.shared.updatePanelSize(width: dims.panelWidth, height: dims.panelHeight, animated: true)
             }
         }
-    }
-
-    private func iconForPID(_ p: pid_t) -> NSImage? {
-        guard let app = NSRunningApplication(processIdentifier: p),
-              let url = app.bundleURL else { return nil }
-        return NSWorkspace.shared.icon(forFile: url.path)
     }
 
     /// Calendar's next events / Weather's conditions under the cards (60 pt), else nothing.

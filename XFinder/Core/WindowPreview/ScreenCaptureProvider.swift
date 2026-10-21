@@ -99,6 +99,19 @@ public enum ThumbnailFreshness {
         let factor = min(scale, maxPixels / longest)
         return (max(1, Int((frame.width * factor).rounded())), max(1, Int((frame.height * factor).rounded())))
     }
+
+    /// Stage Manager warm captures: at most one per app per this long.
+    public static let warmInterval: TimeInterval = 30
+
+    /// True when `pid` may be warmed now, and records it. Every app switch used to start a ScreenCaptureKit enumeration of
+    /// all on-screen windows — ⌘-Tab between three apps all day, with no Dock hover at all. Entries older than the interval
+    /// are dropped first, so the log holds only the apps switched to in the last 30 s.
+    public static func claimWarm(pid: pid_t, now: Date, log: inout [pid_t: Date]) -> Bool {
+        log = log.filter { now.timeIntervalSince($0.value) < warmInterval }
+        guard log[pid] == nil else { return false }
+        log[pid] = now
+        return true
+    }
 }
 
 /// Protocol for screen capture operations.

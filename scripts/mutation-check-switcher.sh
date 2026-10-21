@@ -75,8 +75,16 @@ run "D14 thumbnails captured at 800 px again" XFinder/Core/WindowPreview/ScreenC
   "'    public static let cardPixels: CGFloat = 480'" "'    public static let cardPixels: CGFloat = 800'"
 run "D15 the zoom reuses a card-sized picture" XFinder/Core/WindowPreview/ScreenCaptureProvider.swift \
   "'        if entry.maxPixels < wantPixels { return true }'" "'        _ = wantPixels'"
+run "D16 the panel counts windows it does not draw" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
+  "'        items.filter { !\$0.isOnOtherSpace || \$0.isStageMiniature }'" "'        items'"
+run "D17 every app switch warms again" XFinder/Core/WindowPreview/ScreenCaptureProvider.swift \
+  "'        guard log[pid] == nil else { return false }'" "'        _ = log[pid]'"
+run "D18 the warm log keeps every app forever" XFinder/Core/WindowPreview/ScreenCaptureProvider.swift \
+  "'        log = log.filter { now.timeIntervalSince(\$0.value) < warmInterval }'" "'        _ = warmInterval'"
 run "D19 the minimised lookup asks once per window again" XFinder/Core/AXWindowID.swift \
   "'        if let cached = values[pid] { return cached }'" "'        _ = values[pid]'"
+run "D20 a browser parked in the Stage Manager strip is \"on another Space\" again" XFinder/Core/WindowPreview/WindowPreviewStore.swift \
+  "'    nonisolated public static func isOnOtherSpace(_ w: WindowRef) -> Bool { !w.isOnCurrentSpace && !w.isStageMiniature }'" "'    nonisolated public static func isOnOtherSpace(_ w: WindowRef) -> Bool { !w.isOnCurrentSpace }'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails); echo "suite after restore: $after failure(s)"

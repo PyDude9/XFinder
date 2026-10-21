@@ -251,6 +251,17 @@ public final class WindowPreviewStore {
         }!.element
     }
 
+    /// The cards a Dock preview draws: windows on this Space and Stage Manager strip tiles (pure, tested). The panel is
+    /// sized from this SAME list — a widget arriving late resized it from the unfiltered one and left an empty slot.
+    nonisolated public static func dockCardItems(_ items: [PreviewItem]) -> [PreviewItem] {
+        items.filter { !$0.isOnOtherSpace || $0.isStageMiniature }
+    }
+
+    /// "On another Space" for a Dock card: off this Space AND not a Stage Manager tile — a tile IS the app's parked window.
+    /// One rule for the browser card and the per-window cards; the browser one lacked the tile clause, so a browser whose
+    /// only window sat in the strip drew a spinner for good (review, 2026-10-21).
+    nonisolated public static func isOnOtherSpace(_ w: WindowRef) -> Bool { !w.isOnCurrentSpace && !w.isStageMiniature }
+
     /// Per app: only the windows its Accessibility list names, when that list is known and matches any; otherwise all.
     /// Keeps the lister's order (pure, tested).
     nonisolated public static func realWindows(_ wins: [WindowRef], axWindowIDs: (pid_t) -> Set<CGWindowID>?) -> [WindowRef] {
@@ -287,7 +298,7 @@ public final class WindowPreviewStore {
             thumbnail: (captureProvider as? ScreenCaptureProvider)?.cache.get(win.id),
             isFrozen: false,
             tabs: [],
-            isOnOtherSpace: !win.isOnCurrentSpace,
+            isOnOtherSpace: Self.isOnOtherSpace(win),
             isGroup: false,
             windowCount: allWins.count,
             windowIDs: allWins.map { $0.id },
@@ -301,7 +312,7 @@ public final class WindowPreviewStore {
                 PreviewItem(windowID: w.id, bundleID: bundleID,
                             title: w.title.isEmpty ? appName : w.title, appName: appName,
                             thumbnail: cache?.get(w.id), isFrozen: false, tabs: [],
-                            isOnOtherSpace: !w.isOnCurrentSpace && !w.isStageMiniature, isGroup: false,
+                            isOnOtherSpace: Self.isOnOtherSpace(w), isGroup: false,
                             windowCount: windows.count, windowIDs: [w.id], isStageMiniature: w.isStageMiniature)
             }
         }
