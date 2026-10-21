@@ -71,6 +71,10 @@ run "D12 a tilted picture is reported upright (cached for good)" XFinder/Core/Wi
   "'        return (warped, warped !== cgImage)'" "'        return (warped, false)'"
 run "D13 the bezel grows back" XFinder/Core/WindowPreview/SpecialProviders.swift \
   "'    public static let padding: CGFloat = 6'" "'    public static let padding: CGFloat = 12'"
+run "D14 thumbnails captured at 800 px again" XFinder/Core/WindowPreview/ScreenCaptureProvider.swift \
+  "'    public static let cardPixels: CGFloat = 480'" "'    public static let cardPixels: CGFloat = 800'"
+run "D15 the zoom reuses a card-sized picture" XFinder/Core/WindowPreview/ScreenCaptureProvider.swift \
+  "'        if entry.maxPixels < wantPixels { return true }'" "'        _ = wantPixels'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails); echo "suite after restore: $after failure(s)"

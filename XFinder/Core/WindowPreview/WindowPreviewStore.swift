@@ -331,7 +331,7 @@ public final class WindowPreviewStore {
         // Asynchronously fetch thumbnails (fresh cache entries come back without a capture).
         let ids = self.previewItems.map(\.windowID)
         Task {
-            let thumbs = await captureProvider.captureWindows(windowIDs: ids, maxSize: 800)
+            let thumbs = await captureProvider.captureWindows(windowIDs: ids, maxSize: ThumbnailFreshness.cardPixels)
             for (i, it) in self.previewItems.enumerated() where it.bundleID == bundleID {
                 if let thumb = thumbs[it.windowID] { self.previewItems[i].thumbnail = thumb }
             }
@@ -466,7 +466,7 @@ public final class WindowPreviewStore {
         let ids = self.previewItems.filter { $0.windowID != 0 }.map { $0.windowID }
         guard !ids.isEmpty else { return }
         Task {
-            let thumbs = await captureProvider.captureWindows(windowIDs: ids, maxSize: 800)
+            let thumbs = await captureProvider.captureWindows(windowIDs: ids, maxSize: ThumbnailFreshness.cardPixels)
             for (idx, item) in self.previewItems.enumerated() {
                 if let thumb = thumbs[item.windowID] {
                     self.previewItems[idx].thumbnail = thumb
@@ -510,7 +510,7 @@ public final class WindowPreviewStore {
         zoomImage = item.thumbnail
         let id = item.windowID
         Task {
-            let big = await captureProvider.captureWindows(windowIDs: [id], maxSize: 1600)
+            let big = await captureProvider.captureWindows(windowIDs: [id], maxSize: ThumbnailFreshness.zoomPixels)
             if self.isZoomed, self.commitSelection()?.windowID == id, let img = big[id] { self.zoomImage = img }
         }
     }

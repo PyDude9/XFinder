@@ -15,6 +15,8 @@ public final class LRUThumbnailCache: @unchecked Sendable {
         public let capturedAt: Date
         /// Taken from the Stage Manager strip tile (straightened, low resolution) or by the legacy path.
         public let fromProxy: Bool
+        /// The longest-side pixel cap it was captured at; a request for more (the switcher's zoom) recaptures.
+        public var maxPixels: CGFloat = ThumbnailFreshness.cardPixels
     }
 
     private let lock = NSLock()
@@ -37,7 +39,8 @@ public final class LRUThumbnailCache: @unchecked Sendable {
 
     /// An upright image is never replaced by a tile image: the sharp, flat picture of the window from when it was on
     /// stage is worth more than a blurred un-warp of the strip tile.
-    public func set(_ key: CGWindowID, image: NSImage, fromProxy: Bool = false, at date: Date = Date()) {
+    public func set(_ key: CGWindowID, image: NSImage, fromProxy: Bool = false, at date: Date = Date(),
+                    maxPixels: CGFloat = ThumbnailFreshness.cardPixels) {
         lock.lock()
         defer { lock.unlock() }
         if fromProxy, let old = entries[key]?.entry, !old.fromProxy { return }
@@ -46,7 +49,7 @@ public final class LRUThumbnailCache: @unchecked Sendable {
                 entries.removeValue(forKey: oldest)
             }
         }
-        entries[key] = (Entry(image: image, capturedAt: date, fromProxy: fromProxy), Date())
+        entries[key] = (Entry(image: image, capturedAt: date, fromProxy: fromProxy, maxPixels: maxPixels), Date())
     }
 
     public func remove(_ key: CGWindowID) {
@@ -72,12 +75,20 @@ public final class LRUThumbnailCache: @unchecked Sendable {
 public enum ThumbnailFreshness {
     /// A preview opened twice within this long reuses the picture; after it, the window may have changed.
     public static let maxAge: TimeInterval = 2
+    /// Longest side of a card picture, in pixels: the Dock and switcher cards draw 184 × 86 pt, 368 px wide on a Retina
+    /// screen. Measured 2026-10-21: at the old 800-px cap the cached pictures were ~25 MB of the app's 52 MB footprint
+    /// (eight 1.6 MB blocks in `heap`), with room for 40.
+    public static let cardPixels: CGFloat = 480
+    /// The switcher's Space zoom shows one window large.
+    public static let zoomPixels: CGFloat = 1600
 
     /// Capture again when nothing is cached, when the cached picture is a strip-tile un-warp (the window may be back
     /// on stage), or when the upright picture is older than `maxAge`.
-    public static func needsCapture(_ entry: LRUThumbnailCache.Entry?, now: Date, maxAge: TimeInterval = maxAge) -> Bool {
+    public static func needsCapture(_ entry: LRUThumbnailCache.Entry?, now: Date, maxAge: TimeInterval = maxAge,
+                                    wantPixels: CGFloat = cardPixels) -> Bool {
         guard let entry else { return true }
         if entry.fromProxy { return true }
+        if entry.maxPixels < wantPixels { return true }   // a card picture is too small for the zoom
         return now.timeIntervalSince(entry.capturedAt) >= maxAge
     }
 
@@ -103,7 +114,7 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
 
     public let cache: LRUThumbnailCache
 
-    public init(cache: LRUThumbnailCache = LRUThumbnailCache(capacity: 40)) {
+    public init(cache: LRUThumbnailCache = LRUThumbnailCache(capacity: 24)) {
         self.cache = cache
     }
 
@@ -204,20 +215,20 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
         return context.createCGImage(outputCI, from: outputCI.extent) ?? cgImage
     }
 
-    public func captureWindow(windowID: CGWindowID, maxSize: CGFloat = 800) async -> NSImage? {
+    public func captureWindow(windowID: CGWindowID, maxSize: CGFloat = ThumbnailFreshness.cardPixels) async -> NSImage? {
         await captureWindows(windowIDs: [windowID], maxSize: maxSize)[windowID]
     }
 
     /// Fresh cached pictures are returned as they are; the rest are captured in one ScreenCaptureKit query. A window
     /// that is a Stage Manager strip tile keeps its upright picture when one exists (`LRUThumbnailCache.set`).
-    public func captureWindows(windowIDs: [CGWindowID], maxSize: CGFloat = 800) async -> [CGWindowID: NSImage] {
+    public func captureWindows(windowIDs: [CGWindowID], maxSize: CGFloat = ThumbnailFreshness.cardPixels) async -> [CGWindowID: NSImage] {
         guard !windowIDs.isEmpty else { return [:] }
         var result: [CGWindowID: NSImage] = [:]
         var neededIDs: [CGWindowID] = []
         let now = Date()
         for wid in windowIDs {
             let entry = cache.entry(wid)
-            if let entry, !ThumbnailFreshness.needsCapture(entry, now: now) { result[wid] = entry.image } else { neededIDs.append(wid) }
+            if let entry, !ThumbnailFreshness.needsCapture(entry, now: now, wantPixels: maxSize) { result[wid] = entry.image } else { neededIDs.append(wid) }
         }
         guard !neededIDs.isEmpty, isScreenRecordingAllowed() else {
             for wid in neededIDs { if let stale = cache.get(wid) { result[wid] = stale } }
@@ -241,7 +252,7 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
                 let scale = NSScreen.main?.backingScaleFactor ?? 2.0
                 let img = NSImage(cgImage: fallbackCG, size: NSSize(width: CGFloat(fallbackCG.width) / scale,
                                                                     height: CGFloat(fallbackCG.height) / scale))
-                cache.set(wid, image: img, fromProxy: true)
+                cache.set(wid, image: img, fromProxy: true, maxPixels: maxSize)
                 result[wid] = cache.get(wid)
             } else if let stale = cache.get(wid) {
                 result[wid] = stale
@@ -274,7 +285,7 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
         let s = checkTilt ? Self.straightened(cgImage) : (image: cgImage, wasTilted: false)
         let finalCG = s.image
         let img = NSImage(cgImage: finalCG, size: NSSize(width: CGFloat(finalCG.width) / scale, height: CGFloat(finalCG.height) / scale))
-        cache.set(win.windowID, image: img, fromProxy: isProxy || s.wasTilted)
+        cache.set(win.windowID, image: img, fromProxy: isProxy || s.wasTilted, maxPixels: maxSize)
         return cache.get(win.windowID)
     }
 
@@ -292,7 +303,7 @@ public final class ScreenCaptureProvider: ScreenCaptureProviding, @unchecked Sen
 
     /// Stage Manager only: called a moment after an app comes on stage, so its windows have an upright picture before
     /// they are parked in the strip again (where only a tilted tile can be captured). At most three windows.
-    public func warmUprightPictures(pid: pid_t, maxSize: CGFloat = 800) async {
+    public func warmUprightPictures(pid: pid_t, maxSize: CGFloat = ThumbnailFreshness.cardPixels) async {
         guard isScreenRecordingAllowed(),
               let content = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true) else { return }
         let wins = content.windows.filter {

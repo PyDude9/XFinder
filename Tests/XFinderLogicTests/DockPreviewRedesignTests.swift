@@ -51,6 +51,17 @@ final class DockPreviewRedesignTests: XCTestCase {
         XCTAssertTrue(s.image === upright)
     }
 
+    /// Measured 2026-10-21: 800-px pictures were ~25 MB of a 52 MB footprint. Card pictures are 480 px; the zoom asks more.
+    func testCardPicturesAreSmallAndTheZoomRecaptures() {
+        XCTAssertGreaterThanOrEqual(ThumbnailFreshness.cardPixels, 368, "a 184-pt card at 2×")
+        XCTAssertLessThanOrEqual(ThumbnailFreshness.cardPixels, 512)
+        XCTAssertLessThanOrEqual(ScreenCaptureProvider().cache.capacity, 24)
+        let card = LRUThumbnailCache.Entry(image: NSImage(size: NSSize(width: 1, height: 1)), capturedAt: t0, fromProxy: false, maxPixels: 480)
+        XCTAssertFalse(ThumbnailFreshness.needsCapture(card, now: t0.addingTimeInterval(1)))
+        XCTAssertTrue(ThumbnailFreshness.needsCapture(card, now: t0.addingTimeInterval(1), wantPixels: ThumbnailFreshness.zoomPixels),
+                      "the zoom does not reuse a card-sized picture")
+    }
+
     func testCaptureSizeIsCappedForThumbnails() {
         let full = ThumbnailFreshness.captureSize(frame: CGSize(width: 1728, height: 1117), scale: 2, maxPixels: 800)
         XCTAssertEqual(full.width, 800, "a full-screen window was captured at 3456 px for a 300-pt thumbnail")
