@@ -67,6 +67,30 @@ enum ScrollStitch {
         return true
     }
 
+    // MARK: Pixels from ScreenCaptureKit
+
+    /// ScreenCaptureKit's BGRA rows (`bytesPerRow` may be padded: 6528 for a 1628 px row, measured) as packed RGBA.
+    ///
+    /// Why not draw the capture into an RGBA context: measured 2026-10-23, every `CGContext.draw` of a ScreenCaptureKit
+    /// image left a full-size converted copy in CoreGraphics' caches — 30 captures, 30 live 10 MB blocks; one scrolling
+    /// capture left 12 (118 MB) in the installed app. Asking ScreenCaptureKit for sRGB and copying the bytes gives the
+    /// same pixels (0 bytes differ from the drawn copy) and leaves nothing behind (probe `scratchpad/scmem/probe.swift`).
+    static func rgba(fromBGRA src: UnsafeRawBufferPointer, width: Int, height: Int, bytesPerRow: Int) -> [UInt8]? {
+        guard width > 0, height > 0, bytesPerRow >= width * 4, src.count >= bytesPerRow * (height - 1) + width * 4 else { return nil }
+        let out = width * 4
+        var pixels = [UInt8](repeating: 0, count: out * height)
+        pixels.withUnsafeMutableBufferPointer { dst in
+            for y in 0..<height {
+                let s = y * bytesPerRow, d = y * out
+                for x in 0..<width {
+                    let i = s + x * 4, o = d + x * 4
+                    dst[o] = src[i + 2]; dst[o + 1] = src[i + 1]; dst[o + 2] = src[i]; dst[o + 3] = src[i + 3]
+                }
+            }
+        }
+        return pixels
+    }
+
     // MARK: Comparing two captures
 
     struct Match: Equatable {

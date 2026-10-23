@@ -175,6 +175,24 @@ final class ScrollStitchTests: XCTestCase {
         XCTAssertFalse(S.compose(S.Manifest(strips: [top.path, dir.appendingPathComponent("missing.png").path], output: out.path, scale: 2)))
     }
 
+    /// ScreenCaptureKit's padded BGRA rows become packed RGBA: channels swapped, alpha kept, the padding dropped.
+    func testBGRARowsBecomePackedRGBA() {
+        // 2 × 2 pixels, rows padded to 12 bytes (2 px = 8 bytes + 4 bytes of padding filled with 0xEE).
+        let bgra: [UInt8] = [
+            1, 2, 3, 4,     5, 6, 7, 8,       0xEE, 0xEE, 0xEE, 0xEE,
+            9, 10, 11, 12,  13, 14, 15, 16,   0xEE, 0xEE, 0xEE, 0xEE,
+        ]
+        let rgba = bgra.withUnsafeBytes { S.rgba(fromBGRA: $0, width: 2, height: 2, bytesPerRow: 12) }
+        XCTAssertEqual(rgba, [3, 2, 1, 4,  7, 6, 5, 8,  11, 10, 9, 12,  15, 14, 13, 16])
+        // The last row may end without its padding.
+        let short = Array(bgra.prefix(12 + 8))
+        XCTAssertEqual(short.withUnsafeBytes { S.rgba(fromBGRA: $0, width: 2, height: 2, bytesPerRow: 12) }, rgba)
+        // Too few bytes, or rows narrower than the width, is no image — never a read past the buffer.
+        XCTAssertNil(Array(bgra.prefix(19)).withUnsafeBytes { S.rgba(fromBGRA: $0, width: 2, height: 2, bytesPerRow: 12) })
+        XCTAssertNil(bgra.withUnsafeBytes { S.rgba(fromBGRA: $0, width: 2, height: 2, bytesPerRow: 7) })
+        XCTAssertNil(bgra.withUnsafeBytes { S.rgba(fromBGRA: $0, width: 0, height: 2, bytesPerRow: 12) })
+    }
+
     func testTheManifestRoundTrips() throws {
         let m = S.Manifest(strips: ["/a/1.png", "/a/2.png"], output: "/a/out.png", scale: 2)
         XCTAssertEqual(try JSONDecoder().decode(S.Manifest.self, from: JSONEncoder().encode(m)), m)

@@ -15,8 +15,13 @@ trap 'exit 143' INT TERM
 FILTER='CaptureRulesTests|AnnotationTests|CaptureVocabularyL10nTests|OnboardingTests|OCRTextTests|ImageEngineTests|ScrollStitchTests'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
-    | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
+    | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)}
+           /Fatal error|Exited with (unexpected )?signal/ {crash=1}
+           END {print (crash ? "CRASH" : (f==""?"NORESULT":f))}'
 }
+# A trap (a bounds check, a precondition) ends the runner after some suites already printed "Executed … with 0
+# failures": reading the last such line called X15's out-of-bounds read GREEN (2026-10-23). A crash IS the suite
+# noticing the mutant, and is reported as one.
 mutate() {
   python3 - "$1" "$2" "$3" <<'PY' || { echo "HARNESS ERROR: anchor not found in $1"; exit 2; }
 import sys, ast
@@ -33,7 +38,8 @@ run() {
   total=$((total+1)); mutate "$2" "$3" "$4" || exit 2
   n=$(fails); restore
   if [ "$n" = "NORESULT" ]; then echo "HARNESS ERROR: $1 produced no test result (mutant did not compile?)"; exit 2; fi
-  if [ "$n" != "0" ]; then red=$((red+1)); echo "RED   $1 ($n failing)"
+  if [ "$n" = "CRASH" ]; then red=$((red+1)); echo "RED   $1 (the suite crashed)"
+  elif [ "$n" != "0" ]; then red=$((red+1)); echo "RED   $1 ($n failing)"
   else echo "GREEN $1 (0) <-- the tests do not guard this"; fi
 }
 R=XFinder/Core/Capture/CaptureRules.swift
@@ -109,6 +115,12 @@ run "X11 a missing strip writes a shorter image instead of failing" $X \
   "'guard images.count == manifest.strips.count, let width = images.first?.width else { return false }'" "'guard let width = images.first?.width else { return false }'"
 run "X12 the long image loses the Retina DPI" $X \
   "'let dpi = 72 * max(scale, 1)'" "'let dpi = 72.0'"
+run "X13 BGRA is copied without swapping red and blue" $X \
+  "'dst[o] = src[i + 2]; dst[o + 1] = src[i + 1]; dst[o + 2] = src[i]; dst[o + 3] = src[i + 3]'" "'dst[o] = src[i]; dst[o + 1] = src[i + 1]; dst[o + 2] = src[i + 2]; dst[o + 3] = src[i + 3]'"
+run "X14 padded rows are read as if packed (every row after the first slides)" $X \
+  "'let s = y * bytesPerRow, d = y * out'" "'let s = y * out, d = y * out'"
+run "X15 a short buffer is read past its end" $X \
+  "'src.count >= bytesPerRow * (height - 1) + width * 4 else { return nil }'" "'true else { return nil }'"
 run "K22 \"never\" deletes every capture by age" $R \
   "'        guard days > 0 else { return [] }'" "'        _ = 0'"
 run "K23 captures are kept one day longer than chosen" $R \

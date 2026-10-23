@@ -229,17 +229,17 @@ actor ScrollShooter {
         config.height = Int((rect.height * scale).rounded())
         config.showsCursor = false
         config.capturesAudio = false
-        guard let image = try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config) else { return nil }
-        let w = image.width, h = image.height, bpr = w * 4
-        var pixels = [UInt8](repeating: 0, count: bpr * h)
-        let drawn = pixels.withUnsafeMutableBytes { buf -> Bool in
-            guard let ctx = CGContext(data: buf.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: bpr,
-                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
-                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
-            ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
-            return true
-        }
-        return drawn ? ScrollBitmap(width: w, height: h, bytesPerRow: bpr, pixels: pixels) : nil
+        // sRGB BGRA straight from ScreenCaptureKit, copied byte for byte — never drawn (ScrollStitch.rgba: drawing left a
+        // 10 MB converted copy per capture in CoreGraphics' caches).
+        config.colorSpaceName = CGColorSpace.sRGB
+        config.pixelFormat = kCVPixelFormatType_32BGRA
+        guard let image = try? await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config),
+              image.bitsPerPixel == 32, image.bitmapInfo.contains(.byteOrder32Little),     // B, G, R, A in memory
+              let data = image.dataProvider?.data, let base = CFDataGetBytePtr(data) else { return nil }
+        let w = image.width, h = image.height
+        let pixels = ScrollStitch.rgba(fromBGRA: UnsafeRawBufferPointer(start: base, count: CFDataGetLength(data)),
+                                       width: w, height: h, bytesPerRow: image.bytesPerRow)
+        return pixels.map { ScrollBitmap(width: w, height: h, bytesPerRow: w * 4, pixels: $0) }
     }
 }
 
