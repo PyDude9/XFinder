@@ -315,7 +315,8 @@ final class ClipboardManager {
 
             let ext = first.pathExtension.lowercased()
             if captureImages && imageExtensions.contains(ext),
-               let stored = ClipboardImageStore.storeThumbnail(ofFile: first, in: ClipboardPayloadStore.baseDir(), stamp: ClipboardPayloadStore.stamp()) {
+               let stored = ClipboardImageStore.storeThumbnail(ofFile: first, in: ClipboardPayloadStore.baseDir(), stamp: ClipboardPayloadStore.stamp())
+                   ?? ClipboardPayloadStore.storeSVGThumbnail(ofFile: first) {
                 let w = stored.width, h = stored.height
                 let record = ClipboardRecord(
                     type: .image,
@@ -418,7 +419,8 @@ final class ClipboardManager {
             if possiblePath.hasPrefix("/") && FileManager.default.fileExists(atPath: possiblePath) {
                 let ext = URL(fileURLWithPath: possiblePath).pathExtension.lowercased()
                 if captureImages && imageExtensions.contains(ext),
-                   let stored = ClipboardImageStore.storeThumbnail(ofFile: URL(fileURLWithPath: possiblePath), in: ClipboardPayloadStore.baseDir(), stamp: ClipboardPayloadStore.stamp()) {
+                   let stored = ClipboardImageStore.storeThumbnail(ofFile: URL(fileURLWithPath: possiblePath), in: ClipboardPayloadStore.baseDir(), stamp: ClipboardPayloadStore.stamp())
+                       ?? ClipboardPayloadStore.storeSVGThumbnail(ofFile: URL(fileURLWithPath: possiblePath)) {
                     guard !isDuplicateContent(possiblePath) else { return }
                     let w = stored.width, h = stored.height
                     let record = ClipboardRecord(
