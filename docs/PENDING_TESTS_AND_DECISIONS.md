@@ -260,6 +260,11 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-T26-3 | Trang có header dính (GitHub, Notion) | Header xuất hiện một lần ở đầu ảnh |
 | T-T26-4 | Cuộn tay thật nhanh một cú dài | Thanh báo "Không ghép được đoạn mới — cuộn ngược lên một chút"; cuộn ngược ⇒ ghép tiếp |
 | T-T26-5 | Tự cuộn một trang rất dài | Dừng ở 20 000 px ("Đã đến giới hạn chiều cao"); footprint app không tăng (ảnh dài được dựng ở tiến trình con) |
+| T-T27-1 | Hệ thống ▸ Chống ngủ 15 phút ▸ để yên máy quá thời gian tắt màn hình thường lệ; Terminal: `pmset -g assertions \| grep XFinder` | Màn hình **không** tắt; có 2 dòng XFinder (hệ thống + màn hình). Tắt "Giữ cả màn hình sáng" ⇒ còn 1 dòng |
+| T-T27-2 | Bật Chống ngủ vô hạn, thoát XFinder, mở lại | Vẫn bật ("∞ Vô hạn") |
+| T-T27-3 | Menu bar ▸ Lau bàn phím… | Lớp phủ trên mọi màn hình, gõ không ra chữ, phím âm lượng/độ sáng không đổi gì, chuột vẫn bấm được; Esc 5 lần ⇒ mở; để yên 2 phút ⇒ tự mở |
+| T-CAP-RET | Chụp màn hình ▸ Gần đây ▸ Xoá ảnh chụp sau = 1 ngày | Ảnh cũ hơn 1 ngày biến khỏi lưới và nằm trong Thùng rác |
+| T-MEM-4 | Mở Thư viện clipboard, cuộn qua nhiều ảnh, đóng lại; `footprint` trước/sau | Footprint quay về gần mức trước khi mở (đối chiếu: ứng dụng tham chiếu báo tới ~330 MB giữ lại sau khi đóng) |
 | T-HUD-7 | Đang phát nhạc: rê lên notch cho dải Đang phát hiện, giữ chuột ở đó, bấm phím âm lượng | Ô âm lượng hiện thay dải nhạc; ~1,5 s sau **dải nhạc quay lại** (trước: biến mất tới khi rê lại). Bấm xong rời chuột khỏi notch ⇒ dải đóng như thường |
 | T-SNAPMEM-2 | Với luật trên, rút màn ngoài rồi cắm lại (hoặc ngược lại) | Luật ghi với bộ "màn trong + HC-L200A" chỉ áp khi đủ hai màn; khi chỉ còn màn trong, Chrome **không** bị kéo đi; cắm lại ⇒ áp trong ~1–3 s |
 | T-SNAPMEM-3 | Đưa một app đã có luật vào toàn màn hình (nút xanh), thoát app, mở lại | Hàng luật đổi thành "Toàn màn hình (Space riêng)"; mở lại ⇒ app vào toàn màn hình trên đúng màn. App không cho đặt ⇒ hàng ghi "App không cho đặt toàn màn hình qua Trợ năng", không thử lại |
