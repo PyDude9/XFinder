@@ -13,6 +13,8 @@ import CoreGraphics
 
 enum CaptureMode: String, CaseIterable, Codable {
     case area, window, fullscreen, areaAnnotate, text, color
+    /// XF-T26 — last, so the Carbon hotkey ids of the older modes (their index + 1) do not move.
+    case scrolling
 
     var titleKey: String {
         switch self {
@@ -22,6 +24,7 @@ enum CaptureMode: String, CaseIterable, Codable {
         case .areaAnnotate: return "Chụp vùng rồi chú thích"
         case .text: return "Chép chữ từ màn hình"
         case .color: return "Lấy màu từ màn hình"
+        case .scrolling: return "Chụp cuộn"
         }
     }
 
@@ -33,6 +36,7 @@ enum CaptureMode: String, CaseIterable, Codable {
         case .areaAnnotate: return "Khoanh vùng rồi mở ngay cửa sổ chú thích"
         case .text: return "Nhận diện và sao chép chữ trong vùng bạn chọn"
         case .color: return "Lấy mã màu tại điểm bạn trỏ tới"
+        case .scrolling: return "Chọn một vùng rồi cuộn — XFinder ghép thành một ảnh dài"
         }
     }
 
@@ -44,6 +48,7 @@ enum CaptureMode: String, CaseIterable, Codable {
         case .areaAnnotate: return "pencil.and.outline"
         case .text: return "text.viewfinder"
         case .color: return "eyedropper"
+        case .scrolling: return "rectangle.expand.vertical"
         }
     }
 
@@ -290,7 +295,7 @@ enum CaptureRules {
             }
         case .fullscreen:
             args += ["-D", "\(display)"]
-        case .color:
+        case .color, .scrolling:      // .scrolling never reaches screencapture (ScreenCaptureKit); kept exhaustive
             args += ["-i"]
         }
         if countdown > 0, !args.contains("-i") {

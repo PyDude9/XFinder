@@ -11598,6 +11598,74 @@
     "Lần cuộn vừa rồi: trackpad hoặc Magic Mouse — giữ nguyên.": {
       "en": "Last scroll: trackpad or Magic Mouse — left as is.",
       "scope": "sentence"
+    },
+    "Chụp cuộn": {
+      "en": "Scrolling capture",
+      "scope": "sentence"
+    },
+    "Chọn một vùng rồi cuộn — XFinder ghép thành một ảnh dài": {
+      "en": "Pick an area and scroll — XFinder stitches it into one long image",
+      "scope": "sentence"
+    },
+    "Chọn vùng ít nhất 48 × 48 điểm.": {
+      "en": "Choose an area at least 48 × 48 points.",
+      "scope": "sentence"
+    },
+    "Kéo để chọn vùng sẽ cuộn · Esc để huỷ": {
+      "en": "Drag to choose the area to scroll · Esc to cancel",
+      "scope": "sentence"
+    },
+    "Không chụp được vùng này.": {
+      "en": "This area could not be captured.",
+      "scope": "sentence"
+    },
+    "Đã đến cuối trang.": {
+      "en": "Reached the end of the page.",
+      "scope": "sentence"
+    },
+    "Đã đến giới hạn chiều cao.": {
+      "en": "Reached the height limit.",
+      "scope": "sentence"
+    },
+    "Không ghép được đoạn mới — cuộn ngược lên một chút.": {
+      "en": "Lost the place — scroll back up a little.",
+      "scope": "sentence"
+    },
+    "Không ghép được ảnh chụp cuộn.": {
+      "en": "The scrolling capture could not be stitched.",
+      "scope": "sentence"
+    },
+    "Đang ghép ảnh…": {
+      "en": "Stitching…",
+      "scope": "sentence"
+    },
+    "Cuộn trong vùng để chụp tiếp": {
+      "en": "Scroll inside the area to keep capturing",
+      "scope": "sentence"
+    },
+    "Enter: xong · Esc: huỷ": {
+      "en": "Enter: done · Esc: cancel",
+      "scope": "sentence"
+    },
+    "Dừng tự cuộn": {
+      "en": "Stop auto-scroll",
+      "scope": "sentence"
+    },
+    "Tự cuộn": {
+      "en": "Auto-scroll",
+      "scope": "sentence"
+    },
+    "XFinder tự cuộn xuống tới cuối trang.": {
+      "en": "XFinder scrolls down to the end of the page by itself.",
+      "scope": "sentence"
+    },
+    "Cần quyền Trợ năng để tự cuộn.": {
+      "en": "Auto-scroll needs the Accessibility permission.",
+      "scope": "sentence"
+    },
+    "Huỷ": {
+      "en": "Cancel",
+      "scope": "sentence"
     }
   }
 }

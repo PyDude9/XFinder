@@ -5,14 +5,14 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-capture.XXXXXX)
-FILES="XFinder/Core/Capture/CaptureRules.swift XFinder/Core/Capture/Annotation.swift XFinder/Core/Onboarding.swift XFinder/Core/ScreenTextRecognizer.swift XFinder/Core/Image/VisionChild.swift XFinder/Core/Image/ImageRunner.swift"
+FILES="XFinder/Core/Capture/CaptureRules.swift XFinder/Core/Capture/Annotation.swift XFinder/Core/Onboarding.swift XFinder/Core/ScreenTextRecognizer.swift XFinder/Core/Image/VisionChild.swift XFinder/Core/Image/ImageRunner.swift XFinder/Core/Capture/ScrollStitch.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
 # A signal must END the run: with INT/TERM in the restore trap, sh restored the files and carried on — a killed harness
 # kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
 trap 'exit 143' INT TERM
-FILTER='CaptureRulesTests|AnnotationTests|CaptureVocabularyL10nTests|OnboardingTests|OCRTextTests|ImageEngineTests'
+FILTER='CaptureRulesTests|AnnotationTests|CaptureVocabularyL10nTests|OnboardingTests|OCRTextTests|ImageEngineTests|ScrollStitchTests'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -84,6 +84,31 @@ run "K21 a huge image is decoded at full size" $V \
   "'            kCGImageSourceThumbnailMaxPixelSize: min(longest, maxPixels),'" "'            kCGImageSourceThumbnailMaxPixelSize: longest,'"
 run "K19 a plain image is cut out as an empty picture instead of \"no subject\"" $I \
   "'        guard let obs = request.results?.first, !obs.allInstances.isEmpty else {\n            return .failure(.noSubject(name))'" "'        guard let obs = request.results?.first, !obs.allInstances.isEmpty else {\n            return .success(Data())'"
+X=XFinder/Core/Capture/ScrollStitch.swift
+run "X1  the scroll-bar edge is sampled (every row looks changed while scrolling)" $X \
+  "'let left = width * 4 / 100, right = width - width * 8 / 100'" "'let left = width * 4 / 100, right = width'"
+run "X2  flat rows count as evidence of a shift" $X \
+  "'informative[y] = hi - lo >= informativeSpan'" "'informative[y] = true'"
+run "X3  rows must match exactly (anti-aliasing breaks every match)" $X \
+  "'static let rowTolerancePerSample = 2'" "'static let rowTolerancePerSample = 0'"
+run "X4  a sticky header is not recognised as pinned" $X \
+  "'while top < h / 3, rowsMatch(a, top, b, top) { top += 1 }'" "'_ = top'"
+run "X5  a sticky footer is not recognised as pinned" $X \
+  "'while bottom < h / 3, rowsMatch(a, h - 1 - bottom, b, h - 1 - bottom) { bottom += 1 }'" "'_ = bottom'"
+run "X6  an unchanged area is not \"nothing new\"" $X \
+  "'if agreement(a, b, shift: 0, top: 0, bottom: 0) ?? 1 >= 0.98 { return .same }'" "'_ = 0'"
+run "X7  the first capture keeps its footer rows in the middle of the image" $X \
+  "'let prevFooter = steps.count == 1 ? match.bottom : footer'" "'let prevFooter = footer'"
+run "X8  new rows start below the old footer (content hidden behind it is lost)" $X \
+  "'let start = max(h - prevFooter - match.shift, match.top)'" "'let start = max(h - match.shift, match.top)'"
+run "X9  a tiny area passes the 48-point minimum" $X \
+  "'width >= minimumSide && height >= minimumSide'" "'width >= minimumSide || height >= minimumSide'"
+run "X10 strips are stacked from the bottom up" $X \
+  "'            y -= image.height                                  // CoreGraphics: origin at the bottom\n            ctx.draw(image, in: CGRect(x: 0, y: y, width: image.width, height: image.height))'" "'            ctx.draw(image, in: CGRect(x: 0, y: height - y, width: image.width, height: image.height))\n            y -= image.height'"
+run "X11 a missing strip writes a shorter image instead of failing" $X \
+  "'guard images.count == manifest.strips.count, let width = images.first?.width else { return false }'" "'guard let width = images.first?.width else { return false }'"
+run "X12 the long image loses the Retina DPI" $X \
+  "'let dpi = 72 * max(scale, 1)'" "'let dpi = 72.0'"
 echo "RESULT: $red/$total mutations RED"
 restore
 after=$(fails); echo "after restore failures: $after"

@@ -90,6 +90,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         QuitProtectionController.shared.applySettings()
         QuitOnCloseController.shared.applySettings()           // F3: AX observers only for listed apps
         CaptureController.shared.applySettings()               // F4: Carbon hotkeys for the assigned capture shortcuts
+        Task.detached(priority: .utility) { ScrollCaptureController.sweepLeftovers() }   // XF-T26: strips of a crashed session
         AlertMonitor.shared.applySettings()
         NotchSurfaceController.shared.applySettings()
         SystemKeyInterceptor.shared.applySettings()   // owner's HUD request: after the surface exists
@@ -209,6 +210,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // D0: `xfinder://clipboard` = the ⌘⇧V hotkey (Shortcuts, scripts, probes) — the same router,
             // so it honours `clipboard.hotkeySurface` and the notch surface's master switch.
             Task { @MainActor in ClipboardShelfController.shared.hotkeyPressed() }
+        case "capture":
+            // `xfinder://capture?mode=scrolling` = that mode's capture hotkey (Shortcuts, scripts, probes). An unknown
+            // mode does nothing; a switched-off Capture does nothing either.
+            guard let mode = comps.queryItems?.first(where: { $0.name == "mode" })?.value.flatMap(CaptureMode.init(rawValue:)) else { break }
+            Task { @MainActor in
+                guard CaptureController.shared.isEnabled else { return }
+                CaptureController.shared.capture(mode)
+            }
         case "notch":
             // `xfinder://notch?page=nowPlaying` opens the hub on a page (Shortcuts, scripts, probes). An unknown or
             // hidden page resolves the same way a click would; no page = the tray.

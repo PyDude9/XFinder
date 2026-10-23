@@ -239,6 +239,8 @@ final class CaptureController {
             ScreenColorPicker.shared.pick()
         case .area, .window, .fullscreen, .areaAnnotate:
             captureScreen(mode)
+        case .scrolling:
+            ScrollCaptureController.shared.start()      // XF-T26
         }
     }
 
@@ -275,7 +277,8 @@ final class CaptureController {
         }
     }
 
-    private func finishCapture(mode: CaptureMode, tempURL: URL) {
+    /// Also the end of a scrolling capture (XF-T26), with the stitched PNG.
+    func finishCapture(mode: CaptureMode, tempURL: URL) {
         defer { try? FileManager.default.removeItem(at: tempURL) }
         guard let size = (try? tempURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize, size > 0,
               let src = CGImageSourceCreateWithURL(tempURL as CFURL, nil),

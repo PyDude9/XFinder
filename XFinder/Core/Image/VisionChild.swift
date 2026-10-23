@@ -16,6 +16,8 @@ enum VisionChild {
 
     enum Job: String, CaseIterable {
         case ocrFast = "ocr-fast", ocrAccurate = "ocr-accurate", cutout
+        /// XF-T26: stdin is a `ScrollStitch.Manifest` (JSON), the child writes the long image itself.
+        case stitch
     }
 
     /// The child's exit statuses. Anything else (a kill, a crash) is "no answer": the parent does the work itself.
@@ -72,12 +74,18 @@ enum VisionChild {
     static func main() -> Never {
         guard let job = job(fromArguments: CommandLine.arguments) else { exit(Status.usage) }
         let input = FileHandle.standardInput.readDataToEndOfFile()
+        if job == .stitch {
+            guard let manifest = try? JSONDecoder().decode(ScrollStitch.Manifest.self, from: input) else { exit(Status.usage) }
+            exit(ScrollStitch.compose(manifest) ? Status.ok : Status.visionFailed)
+        }
         guard let image = decode(input) else { exit(Status.notAnImage) }
         switch job {
         case .ocrFast, .ocrAccurate:
             let lines = ScreenTextRecognizer.recognizeHere(image, level: job == .ocrFast ? .fast : .accurate)
             FileHandle.standardOutput.write(OCRWire.encode(lines))
             exit(Status.ok)
+        case .stitch:
+            exit(Status.usage)          // handled above
         case .cutout:
             switch ImageRunner.cutoutHere(image, name: "stdin") {
             case .success(let png):
@@ -92,7 +100,7 @@ enum VisionChild {
     }
 
     /// The parent: the child's exit status and stdout, or nil when it could not start, was killed, or crashed.
-    static func run(_ job: Job, imageData: Data) -> (status: Int32, output: Data)? {
+    static func run(_ job: Job, imageData: Data, timeout: TimeInterval = 30) -> (status: Int32, output: Data)? {
         guard let exe = Bundle.main.executableURL else { return nil }
         oneAtATime.lock()
         defer { oneAtATime.unlock() }
@@ -107,7 +115,7 @@ enum VisionChild {
         // A stuck child must not hold the next one forever: measured ≤ 0.2 s warm; the very first run after a build waited
         // on the Neural Engine daemon once for > 15 s.
         let killer = DispatchWorkItem { if p.isRunning { p.terminate() } }
-        DispatchQueue.global().asyncAfter(deadline: .now() + 30, execute: killer)
+        DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: killer)
         // F_SETNOSIGPIPE: a child that dies before reading its stdin must not take XFinder down with SIGPIPE. The child reads
         // all of stdin before it writes a byte, so writing first and reading after cannot deadlock.
         _ = fcntl(inPipe.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
