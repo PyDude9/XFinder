@@ -34,6 +34,8 @@ struct FinderSearchDetailView: View {
     @State private var criteria = FileSearchEngine.Criteria()
     @State private var scopes: [URL] = []
     @State private var results: [FileSearchEngine.ResultItem] = []
+    /// Spotlight had more than the rows kept: the count reads "100+".
+    @State private var truncated = false
     @State private var isSearching = false
     @State private var searched = false
     // Tìm nhanh (kiểu TinyCast) — engine gộp app/link/phép tính/file.
@@ -127,7 +129,7 @@ struct FinderSearchDetailView: View {
     private var resultsSection: some View {
         SettingsSection(
             title: searched
-                ? (results.isEmpty ? L10n.t("Không tìm thấy gì") : "\(results.count)\(L10n.t(" kết quả"))")
+                ? (results.isEmpty ? L10n.t("Không tìm thấy gì") : "\(results.count)\(truncated ? "+" : "")\(L10n.t(" kết quả"))")
                 : L10n.t("Kết quả")
         ) {
             VStack(spacing: 6) {
@@ -135,7 +137,7 @@ struct FinderSearchDetailView: View {
                     FileResultRow(item: item)
                 }
                 if results.count > 50 {
-                    Text("\(L10n.t("…và "))\(results.count - 50)\(L10n.t(" kết quả nữa — hãy thu hẹp điều kiện."))")
+                    Text("\(L10n.t("…và "))\(results.count - 50)\(truncated ? "+" : "")\(L10n.t(" kết quả nữa — hãy thu hẹp điều kiện."))")
                         .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 }
             }
@@ -330,7 +332,8 @@ struct FinderSearchDetailView: View {
         Task.detached(priority: .userInitiated) {
             let found = FileSearchEngine.search(criteria: crit, scopes: sc)
             await MainActor.run {
-                results = found
+                results = found.items
+                truncated = found.truncated
                 searched = true
                 isSearching = false
             }
@@ -345,6 +348,8 @@ struct AiSearchDetailView: View {
     @State private var queryText = ""
     @State private var explanation: String? = nil
     @State private var results: [FileSearchEngine.ResultItem] = []
+    /// Spotlight had more than the rows kept: the count reads "100+".
+    @State private var truncated = false
     @State private var isSearching = false
     @State private var searched = false
 
@@ -394,7 +399,7 @@ struct AiSearchDetailView: View {
 
                 SettingsSection(
                     title: searched
-                        ? (results.isEmpty ? L10n.t("Không tìm thấy gì") : "\(results.count)\(L10n.t(" kết quả"))")
+                        ? (results.isEmpty ? L10n.t("Không tìm thấy gì") : "\(results.count)\(truncated ? "+" : "")\(L10n.t(" kết quả"))")
                         : L10n.t("Kết quả")
                 ) {
                     VStack(spacing: 6) {
@@ -402,7 +407,7 @@ struct AiSearchDetailView: View {
                             FileResultRow(item: item)
                         }
                         if results.count > 50 {
-                            Text("\(L10n.t("…và "))\(results.count - 50)\(L10n.t(" kết quả nữa."))")
+                            Text("\(L10n.t("…và "))\(results.count - 50)\(truncated ? "+" : "")\(L10n.t(" kết quả nữa."))")
                                 .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         }
                     }
@@ -423,7 +428,8 @@ struct AiSearchDetailView: View {
             let found = FileSearchEngine.runMdfind(query: query)
             await MainActor.run {
                 explanation = expl
-                results = found
+                results = found.items
+                truncated = found.truncated
                 searched = true
                 isSearching = false
             }

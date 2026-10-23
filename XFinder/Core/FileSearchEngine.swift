@@ -12,32 +12,39 @@ enum FileSearchEngine {
         var name: String { URL(fileURLWithPath: path).lastPathComponent }
     }
 
-    /// Raw mdfind runner. `query` is an mdfind expression, `scopes` are folders
-    /// (empty = whole machine). Returns up to `limit` paths, empty on error.
-    static func runMdfind(query: String, scopes: [URL] = [], limit: Int = 100) -> [ResultItem] {
+    /// What one search found: at most `limit` paths, and whether Spotlight had more.
+    struct Found: Equatable {
+        var items: [ResultItem] = []
+        var truncated = false
+    }
+
+    /// Raw mdfind runner. `query` is an mdfind expression, `scopes` are folders (empty = whole machine). Reads the
+    /// output in chunks and stops `mdfind` once `limit` paths (and proof of one more) are in — before 2026-10-23 every
+    /// path was read first (up to 134 MB / 35 s for a broad query, measured) and all but 100 thrown away.
+    static func runMdfind(query: String, scopes: [URL] = [], limit: Int = 100) -> Found {
         var args = ["-0"]
         for s in scopes { args += ["-onlyin", s.path] }
         args += [query]
-        let out = runProcess(exe: "/usr/bin/mdfind", args: args)
-        guard !out.isEmpty else { return [] }
-        let paths = out.split(separator: "\0").map(String.init).prefix(limit)
-        return paths.map { ResultItem(path: $0) }
-    }
-
-    private static func runProcess(exe: String, args: [String]) -> String {
         let p = Process()
-        p.executableURL = URL(fileURLWithPath: exe)
+        p.executableURL = URL(fileURLWithPath: "/usr/bin/mdfind")
         p.arguments = args
         let pipe = Pipe()
         p.standardOutput = pipe
-        p.standardError = Pipe()
-        do {
-            try p.run()
-        } catch { return "" }
-        // Drain before waiting — a >64KB result would otherwise deadlock the child.
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.standardError = FileHandle.nullDevice
+        do { try p.run() } catch { return Found() }
+        var records = NulRecords(limit: limit)
+        let reader = pipe.fileHandleForReading
+        while true {
+            let chunk = autoreleasepool { reader.availableData }
+            if chunk.isEmpty { break }                     // end of output
+            records.append(chunk)
+            if records.truncated { break }                  // a record beyond the limit: enough
+        }
+        if p.isRunning { p.terminate() }
+        try? reader.close()
         p.waitUntilExit()
-        return String(data: data, encoding: .utf8) ?? ""
+        records.finish()
+        return Found(items: records.records.map { ResultItem(path: $0) }, truncated: records.truncated)
     }
 
     // MARK: - Basic structured search (Tìm kiếm page)
@@ -91,7 +98,7 @@ enum FileSearchEngine {
         }
     }
 
-    static func search(criteria: Criteria, scopes: [URL] = []) -> [ResultItem] {
+    static func search(criteria: Criteria, scopes: [URL] = []) -> Found {
         runMdfind(query: criteria.mdfindQuery(), scopes: scopes)
     }
 

@@ -157,6 +157,7 @@
 		7F1A032D /* FileWalk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A032C /* FileWalk.swift */; };
 		7F1A0082 /* BatchRenameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0068 /* BatchRenameEngine.swift */; };
 		7F1A0083 /* FileSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0069 /* FileSearchEngine.swift */; };
+		7F1A0017 /* NulRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0016 /* NulRecords.swift */; };
 		7F1A0084 /* WindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006A /* WindowManager.swift */; };
 		7F1A0085 /* Detail/NotesDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006B /* Detail/NotesDetailView.swift */; };
 		7F1A0086 /* Detail/BatchRenameDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006C /* Detail/BatchRenameDetailView.swift */; };
@@ -530,6 +531,7 @@
 		7F1A032C /* FileWalk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileWalk.swift; sourceTree = "<group>"; };
 		7F1A0068 /* BatchRenameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchRenameEngine.swift; sourceTree = "<group>"; };
 		7F1A0069 /* FileSearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchEngine.swift; sourceTree = "<group>"; };
+		7F1A0016 /* NulRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NulRecords.swift; sourceTree = "<group>"; };
 		7F1A006A /* WindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowManager.swift; sourceTree = "<group>"; };
 		7F1A006B /* Detail/NotesDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/NotesDetailView.swift; sourceTree = "<group>"; };
 		7F1A006C /* Detail/BatchRenameDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/BatchRenameDetailView.swift; sourceTree = "<group>"; };
@@ -811,6 +813,7 @@
 				7F1A032C /* FileWalk.swift */,
 				7F1A0068 /* BatchRenameEngine.swift */,
 				7F1A0069 /* FileSearchEngine.swift */,
+				7F1A0016 /* NulRecords.swift */,
 				7F1A0073 /* ClipboardPasteEngine.swift */,
 				7F1A0203 /* Surface/ToastSurface.swift */,
 				7F1A01FF /* Surface/SurfacePanel.swift */,
@@ -1410,6 +1413,7 @@
 				7F1A032D /* FileWalk.swift in Sources */,
 				7F1A0082 /* BatchRenameEngine.swift in Sources */,
 				7F1A0083 /* FileSearchEngine.swift in Sources */,
+				7F1A0017 /* NulRecords.swift in Sources */,
 				7F1A0084 /* WindowManager.swift in Sources */,
 				7F1A00C9 /* UpdateChecker.swift in Sources */,
 				7F1A0085 /* Detail/NotesDetailView.swift in Sources */,
