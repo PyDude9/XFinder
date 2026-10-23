@@ -502,4 +502,18 @@ final class CaptureRulesTests: XCTestCase {
         XCTAssertEqual(CaptureRules.historyLimit, 50)
         XCTAssertEqual(CaptureRules.cardSecondsChoices, [5, 10, 30, 0])
     }
+
+    // MARK: Delete captures after (2026-10-23)
+
+    func testCapturesOlderThanTheChosenAgeExpire() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        func item(_ daysAgo: Double, _ n: String) -> CaptureItem {
+            CaptureItem(url: URL(fileURLWithPath: "/c/\(n).png"), date: now.addingTimeInterval(-daysAgo * 86_400), pixelWidth: 1, pixelHeight: 1)
+        }
+        let items = [item(0.5, "a"), item(6.9, "b"), item(7.1, "c"), item(400, "d")]
+        XCTAssertEqual(CaptureRules.expired(items, olderThanDays: 7, now: now).map(\.url.lastPathComponent), ["c.png", "d.png"])
+        XCTAssertEqual(CaptureRules.expired(items, olderThanDays: 0, now: now), [], "0 = never: only the 50-capture limit")
+        XCTAssertEqual(CaptureRules.expired(items, olderThanDays: 365, now: now).map(\.url.lastPathComponent), ["d.png"])
+        XCTAssertEqual(CaptureRules.deleteAfterChoices, [0, 1, 7, 30, 365])
+    }
 }

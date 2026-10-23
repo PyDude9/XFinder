@@ -355,6 +355,16 @@ enum CaptureRules {
 
     /// Items beyond `limit`, oldest first out (sorted by date ascending; ties broken by path so the result is
     /// deterministic).
+    /// "Xoá ảnh chụp sau": days (0 = keep until the 50-capture limit). The reference app offers the same five.
+    static let deleteAfterChoices = [0, 1, 7, 30, 365]
+
+    /// Captures older than `days` (none when `days` is 0 or not positive).
+    static func expired(_ items: [CaptureItem], olderThanDays days: Int, now: Date) -> [CaptureItem] {
+        guard days > 0 else { return [] }
+        let cutoff = now.addingTimeInterval(-Double(days) * 86_400)
+        return items.filter { $0.date < cutoff }
+    }
+
     static func toPrune(_ items: [CaptureItem], limit: Int) -> [CaptureItem] {
         guard items.count > limit else { return [] }
         let sortedOldestFirst = items.sorted { a, b in

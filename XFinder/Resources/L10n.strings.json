@@ -11666,6 +11666,30 @@
     "Huỷ": {
       "en": "Cancel",
       "scope": "sentence"
+    },
+    "Xoá ảnh chụp sau": {
+      "en": "Delete captures after",
+      "scope": "sentence"
+    },
+    "Ảnh cũ hơn được đưa vào Thùng rác — vẫn khôi phục được.": {
+      "en": "Older captures go to the Trash — you can still restore them.",
+      "scope": "sentence"
+    },
+    "1 ngày": {
+      "en": "1 day",
+      "scope": "sentence"
+    },
+    "1 tuần": {
+      "en": "1 week",
+      "scope": "sentence"
+    },
+    "1 tháng": {
+      "en": "1 month",
+      "scope": "sentence"
+    },
+    "1 năm": {
+      "en": "1 year",
+      "scope": "sentence"
     }
   }
 }

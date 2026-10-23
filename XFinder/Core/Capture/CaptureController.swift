@@ -54,6 +54,10 @@ final class CaptureController {
     private var keepHistory: Bool {
         UserDefaults.standard.object(forKey: "capture.keepHistory") as? Bool ?? true
     }
+    /// Days after which a capture goes to the Trash; 0 = only the 50-capture limit (the behaviour before this setting).
+    private var deleteAfterDays: Int {
+        UserDefaults.standard.object(forKey: "capture.deleteAfterDays") as? Int ?? 0
+    }
     /// The editor's one reader form for its own defaults (CONTRACT: CORE must expose these so the
     /// default-agreement gate has one reader; the editor itself uses `@AppStorage` with the same keys).
     var defaultColor: MarkColor {
@@ -321,13 +325,21 @@ final class CaptureController {
         (try? FileManager.default.contentsOfDirectory(atPath: capturesFolder.path)).map(Set.init) ?? []
     }
 
-    private func pruneHistory() {
+    func pruneHistory() {
         guard keepHistory else {
             // History disabled: keep only what is still referenced by a visible card or an open editor.
             let toRemove = history.filter { !QuickAccessController.shared.isShowing($0) && !AnnotateWindowController.shared.isOpen($0) }
             for item in toRemove { try? FileManager.default.removeItem(at: item.url) }
             history.removeAll { toRemove.contains($0) }
             return
+        }
+        // Expired by age → Trash (restorable), except what a card or the editor still shows.
+        let expired = CaptureRules.expired(history, olderThanDays: deleteAfterDays, now: Date())
+            .filter { !QuickAccessController.shared.isShowing($0) && !AnnotateWindowController.shared.isOpen($0) }
+        if !expired.isEmpty {
+            for item in expired { try? FileManager.default.trashItem(at: item.url, resultingItemURL: nil) }
+            let gone = Set(expired.map(\.id))
+            history.removeAll { gone.contains($0.id) }
         }
         let prune = CaptureRules.toPrune(history, limit: CaptureRules.historyLimit)
         guard !prune.isEmpty else { return }
@@ -345,7 +357,10 @@ final class CaptureController {
         let folder = capturesFolder
         Task.detached(priority: .utility) {
             let items = CaptureController.scanHistory(folder: folder)
-            await MainActor.run { CaptureController.shared.history = items }
+            await MainActor.run {
+                CaptureController.shared.history = items
+                CaptureController.shared.pruneHistory()      // "Xoá ảnh chụp sau" also applies to captures from earlier days
+            }
         }
     }
 

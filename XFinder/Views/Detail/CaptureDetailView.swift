@@ -20,6 +20,7 @@ struct CaptureDetailView: View {
     @AppStorage("capture.windowShadow") private var windowShadow = true
     @AppStorage("capture.format") private var formatRaw = "png"
     @AppStorage("capture.keepHistory") private var keepHistory = true
+    @AppStorage("capture.deleteAfterDays") private var deleteAfterDays = 0
     @AppStorage("capture.annotate.color") private var annotateColorRaw = "red"
     @AppStorage("capture.annotate.width") private var annotateWidthRaw = "medium"
 
@@ -296,6 +297,25 @@ struct CaptureDetailView: View {
                       subtitle: L10n.t("Tối đa 50 ảnh, trong thư mục của XFinder trên máy này."),
                       isOn: $keepHistory)
                 .settingsRow()
+            SettingsDivider()
+            HStack(spacing: XFinderTokens.Space.inline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.t("Xoá ảnh chụp sau")).font(XFinderTokens.Font.row)
+                    Text(L10n.t("Ảnh cũ hơn được đưa vào Thùng rác — vẫn khôi phục được.")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                }
+                Spacer()
+                Picker("", selection: $deleteAfterDays) {
+                    Text(L10n.t("Không bao giờ")).tag(0)
+                    Text(L10n.t("1 ngày")).tag(1)
+                    Text(L10n.t("1 tuần")).tag(7)
+                    Text(L10n.t("1 tháng")).tag(30)
+                    Text(L10n.t("1 năm")).tag(365)
+                }
+                .labelsHidden().pickerStyle(.menu).fixedSize()
+                .onChange(of: deleteAfterDays) { controller.pruneHistory() }
+            }
+            .disabled(!keepHistory)
+            .settingsRow()
             SettingsDivider()
             if controller.history.isEmpty {
                 Text(L10n.t("Chưa có ảnh chụp nào."))

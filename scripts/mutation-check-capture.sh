@@ -109,6 +109,10 @@ run "X11 a missing strip writes a shorter image instead of failing" $X \
   "'guard images.count == manifest.strips.count, let width = images.first?.width else { return false }'" "'guard let width = images.first?.width else { return false }'"
 run "X12 the long image loses the Retina DPI" $X \
   "'let dpi = 72 * max(scale, 1)'" "'let dpi = 72.0'"
+run "K22 \"never\" deletes every capture by age" $R \
+  "'        guard days > 0 else { return [] }'" "'        _ = 0'"
+run "K23 captures are kept one day longer than chosen" $R \
+  "'        let cutoff = now.addingTimeInterval(-Double(days) * 86_400)'" "'        let cutoff = now.addingTimeInterval(-Double(days + 1) * 86_400)'"
 echo "RESULT: $red/$total mutations RED"
 restore
 after=$(fails); echo "after restore failures: $after"
