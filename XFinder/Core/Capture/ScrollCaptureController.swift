@@ -436,38 +436,23 @@ private final class Session {
         model.message = nil
     }
 
-    /// One step down the page: pixel scroll events for the window in the middle of the area, tagged as our own.
-    /// Measured 2026-10-22: a session-tap event does NOT go to the window at its `.location` — it goes to whatever is
-    /// under the pointer (here: the bar the person just clicked). So the events are posted to the PROCESS owning the
-    /// front window at the area's middle; the pointer is never moved.
+    /// One step down the page: pixel scroll events at the middle of the area, tagged as our own. Measured 2026-10-23 with
+    /// a probe whose positive control passed (pointer warped onto the window: moved 240 pt): a session-tap event with
+    /// `.location` set scrolls the window at that location while the pointer is elsewhere (moved 240 pt), whereas
+    /// `postToPid` to the window's process moved it 0 pt. The pointer is never moved.
     private func scrollOnce() {
         let pinned = Double((assembly?.footer ?? 0)) / screen.backingScaleFactor
         let step = ScrollStitch.autoScrollStep(areaHeightPoints: rect.height, pinnedPoints: pinned)
         let primaryTop = NSScreen.screens.first?.frame.maxY ?? screen.frame.maxY
         let location = CGPoint(x: rect.midX, y: primaryTop - rect.midY)     // Quartz: top-left origin
-        let target = Self.ownerOfWindow(at: location)
         let pieces = 6
         for _ in 0..<pieces {
             guard let e = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1,
                                   wheel1: Int32(-(step / Double(pieces)).rounded()), wheel2: 0, wheel3: 0) else { continue }
             e.location = location
             e.setIntegerValueField(.eventSourceUserData, value: ScrollStitch.autoScrollTag)
-            if let target { e.postToPid(target) } else { e.post(tap: .cgSessionEventTap) }
+            e.post(tap: .cgSessionEventTap)
         }
-    }
-
-    /// The process of the front-most normal window containing `point` (Quartz coordinates), never XFinder itself.
-    private static func ownerOfWindow(at point: CGPoint) -> pid_t? {
-        let me = ProcessInfo.processInfo.processIdentifier
-        guard let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else { return nil }
-        for w in list {
-            guard (w[kCGWindowLayer as String] as? Int) == 0,
-                  let pid = w[kCGWindowOwnerPID as String] as? pid_t, pid != me,
-                  let b = w[kCGWindowBounds as String] as? NSDictionary, let r = CGRect(dictionaryRepresentation: b),
-                  r.contains(point) else { continue }
-            return pid
-        }
-        return nil
     }
 
     // MARK: End
