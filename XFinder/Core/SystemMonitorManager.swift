@@ -350,6 +350,8 @@ final class SystemMonitorManager {
 
         for source in list {
             guard let desc = IOPSGetPowerSourceDescription(blob, source)?.takeUnretainedValue() as? [String: Any] else { continue }
+            // The Mac's own battery only: a UPS is a power source too, and was read instead when IOKit listed it first.
+            guard (desc[kIOPSTypeKey] as? String) == kIOPSInternalBatteryType else { continue }
             guard let cur = desc[kIOPSCurrentCapacityKey] as? Int,
                   let maxCap = desc[kIOPSMaxCapacityKey] as? Int, maxCap > 0 else { continue }
             let charging = (desc[kIOPSIsChargingKey] as? Bool) ?? false
