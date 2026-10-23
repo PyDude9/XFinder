@@ -443,11 +443,7 @@ final class CaptureController {
     private func writeToPasteboard(png: Data) {
         let pb = NSPasteboard.general
         pb.clearContents()
-        let item = NSPasteboardItem()
-        item.setData(png, forType: .png)
-        // The pasteboard item keeps its provider (measured: served after the last reference here was gone).
-        item.setDataProvider(LazyTIFFProvider(png: png), forTypes: [.tiff])
-        pb.writeObjects([item])
+        ImagePasteboard.write(imageData: png, to: pb)
     }
 
     @discardableResult
@@ -800,15 +796,5 @@ final class PinnedImageWindow: NSPanel {
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 53 { close(); return } // Esc
         super.keyDown(with: event)
-    }
-}
-
-/// The TIFF of a copied capture, built only if a pasting app asks for TIFF rather than PNG.
-final class LazyTIFFProvider: NSObject, NSPasteboardItemDataProvider {
-    private let png: Data
-    init(png: Data) { self.png = png }
-
-    func pasteboard(_ pasteboard: NSPasteboard?, item: NSPasteboardItem, provideDataForType type: NSPasteboard.PasteboardType) {
-        if let tiff = ClipboardImageStore.tiff(from: png) { item.setData(tiff, forType: type) }
     }
 }

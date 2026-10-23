@@ -64,8 +64,11 @@ enum ClipboardPasteEngine {
             if plainText, let ocr = record.ocrText, !ocr.isEmpty {
                 return pb.setString(ocr, forType: .string)
             }
-            if let path = record.payloadPath ?? record.thumbnailPath,
-               let img = NSImage(contentsOfFile: path) {
+            guard let path = record.payloadPath ?? record.thumbnailPath else { return false }
+            if let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe),
+               ImagePasteboard.write(imageData: data, to: pb) { return true }
+            // What ImageIO cannot read (an SVG file) still goes through AppKit.
+            if let img = NSImage(contentsOfFile: path) {
                 pb.writeObjects([img])
                 return true
             }
@@ -114,8 +117,9 @@ enum ClipboardPasteEngine {
             if plainText, let ocr = record.ocrText, !ocr.isEmpty {
                 return pb.setString(ocr, forType: .string)
             }
-            guard let data = unlocked.payloadData ?? unlocked.thumbnailData,
-                  let img = NSImage(data: data) else { return false }
+            guard let data = unlocked.payloadData ?? unlocked.thumbnailData else { return false }
+            if ImagePasteboard.write(imageData: data, to: pb) { return true }
+            guard let img = NSImage(data: data) else { return false }
             pb.writeObjects([img])
             return true
         }
@@ -643,3 +647,27 @@ final class ClipboardIntelligenceEngine {
     }
 }
 
+/// Image bytes onto the pasteboard without decoding them here: PNG as it is (or turned into PNG once), and a TIFF only
+/// if a pasting app asks for TIFF. `pb.writeObjects([NSImage])` decoded the image and wrote an uncompressed TIFF —
+/// measured 2026-10-23 with a 1628×6710 capture: 94 MB left in the app per copy, against 4 MB this way.
+enum ImagePasteboard {
+    @discardableResult
+    static func write(imageData data: Data, to pb: NSPasteboard) -> Bool {
+        guard let png = ClipboardImageStore.png(from: data) else { return false }
+        let item = NSPasteboardItem()
+        item.setData(png, forType: .png)
+        // The pasteboard item keeps its provider (measured: served after the last reference here was gone).
+        item.setDataProvider(LazyTIFFProvider(png: png), forTypes: [.tiff])
+        return pb.writeObjects([item])
+    }
+}
+
+/// The TIFF of an image on the pasteboard, built only if a pasting app asks for TIFF rather than PNG.
+final class LazyTIFFProvider: NSObject, NSPasteboardItemDataProvider {
+    private let png: Data
+    init(png: Data) { self.png = png }
+
+    func pasteboard(_ pasteboard: NSPasteboard?, item: NSPasteboardItem, provideDataForType type: NSPasteboard.PasteboardType) {
+        if let tiff = ClipboardImageStore.tiff(from: png) { item.setData(tiff, forType: type) }
+    }
+}
