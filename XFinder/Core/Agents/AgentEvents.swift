@@ -146,6 +146,18 @@ enum AgentEvents {
         f.dateFormat = "yyyy-MM-dd"
         return "events-\(f.string(from: date)).jsonl"
     }
+
+    /// Day files the hook wrote more than `keepDays` days ago. Nothing ever removed them: measured 2026-10-23, 10 days
+    /// of Claude Code events were 62 MB on this Mac (the reference app's changelog reports gigabytes). Only names of the
+    /// exact `events-YYYY-MM-DD.jsonl` shape are ever returned; the monitor reads just today and yesterday.
+    static let keepDays = 7
+    static func expiredEventFiles(_ names: [String], now: Date, keepDays: Int = keepDays) -> [String] {
+        let cutoff = eventsFileName(for: now.addingTimeInterval(-Double(keepDays) * 86_400))
+        return names.filter { name in
+            name.count == cutoff.count && name.hasPrefix("events-") && name.hasSuffix(".jsonl")
+                && name.dropFirst(7).prefix(10).allSatisfy({ $0.isNumber || $0 == "-" }) && name < cutoff
+        }
+    }
 }
 
 /// One agent session (Claude Code, Codex, OpenCode) as the notch shows it.

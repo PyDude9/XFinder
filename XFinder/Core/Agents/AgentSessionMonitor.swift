@@ -108,6 +108,7 @@ final class AgentSessionMonitor {
         answered = []
         for agent in Self.hookAgents {
             ensureDirectories(for: agent)
+            pruneEventFiles(for: agent)
             let tail = EventTail(agent: agent, eventsDir: eventsDir(for: agent))
             tail.onChange = { [weak self] in self?.scheduleReload() }
             tails[agent] = tail
@@ -129,6 +130,18 @@ final class AgentSessionMonitor {
         if !sessions.isEmpty { sessions = []; onChange?() }
     }
 
+    /// Day files older than `AgentEvents.keepDays` are app logs nobody reads again — removed at start and once a day.
+    private func pruneEventFiles(for agent: AgentKind) {
+        let fm = FileManager.default
+        let dir = eventsDir(for: agent)
+        let names = (try? fm.contentsOfDirectory(atPath: dir.path)) ?? []
+        for name in AgentEvents.expiredEventFiles(names, now: Date()) {
+            try? fm.removeItem(at: dir.appendingPathComponent(name))
+        }
+        lastPruneDay = AgentEvents.eventsFileName(for: Date())
+    }
+    private var lastPruneDay = ""
+
     private func ensureDirectories(for agent: AgentKind) {
         let fm = FileManager.default
         for dir in [Self.supportDir(for: agent), eventsDir(for: agent), decisionsDir(for: agent), hookURL(for: agent).deletingLastPathComponent()] {
@@ -138,6 +151,7 @@ final class AgentSessionMonitor {
 
     /// Coalesce bursts (a tool call writes Pre + Post within milliseconds) into one rebuild.
     private func scheduleReload() {
+        if lastPruneDay != AgentEvents.eventsFileName(for: Date()) { Self.hookAgents.forEach(pruneEventFiles) }
         reloadWork?.cancel()
         let w = DispatchWorkItem { [weak self] in
             MainActor.assumeIsolated {

@@ -169,4 +169,15 @@ final class AgentUsageTests: XCTestCase {
         XCTAssertTrue(AgentUsage.contains(Data("{\"usage\":{}}".utf8), "\"usage\""))
         XCTAssertFalse(AgentUsage.contains(Data("{\"type\":\"user\"}".utf8), "\"usage\""))
     }
+
+    // MARK: Hook event logs are kept 7 days (2026-10-23)
+
+    func testOnlyEventDayFilesOlderThanAWeekExpire() {
+        let now = ISO8601DateFormatter().date(from: "2026-10-23T12:00:00Z")!
+        let names = ["events-2026-10-14.jsonl", "events-2026-10-15.jsonl", "events-2026-10-16.jsonl", "events-2026-10-23.jsonl",
+                     "events-2026-10-01.json", "events-2026-10-011.jsonl", "notes.jsonl", "events-latest.jsonl", "events-2026-10-1x.jsonl"]
+        XCTAssertEqual(AgentEvents.expiredEventFiles(names, now: now), ["events-2026-10-14.jsonl", "events-2026-10-15.jsonl"],
+                       "the 16th is exactly 7 days old and stays; anything not shaped like a day file is never touched")
+        XCTAssertEqual(AgentEvents.keepDays, 7)
+    }
 }

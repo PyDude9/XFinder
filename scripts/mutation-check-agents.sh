@@ -97,6 +97,11 @@ run "U2 the read position never moves (every scan re-reads the whole file)" $U \
   "'        tail.offset += UInt64(chunk.count)'" "'        _ = chunk.count'"
 run "U3 a truncated file is never read again" $U \
   "'    static func mustRestart(_ tail: LogTail, fileSize: UInt64) -> Bool { fileSize < tail.offset }'" "'    static func mustRestart(_ tail: LogTail, fileSize: UInt64) -> Bool { false }'"
+E=XFinder/Core/Agents/AgentEvents.swift
+run "U4 a day-old event log is already deleted (the week is ignored)" $E \
+  "'let cutoff = eventsFileName(for: now.addingTimeInterval(-Double(keepDays) * 86_400))'" "'let cutoff = eventsFileName(for: now)'"
+run "U5 a file that is not an events day file is deleted" $E \
+  "'name.count == cutoff.count && name.hasPrefix(\"events-\")'" "'name.hasPrefix(\"events-\")'"
 # P2 — ClaudeStatusLine.swift (install rules + rate-limit cache parser). Numbered from A16: A12-A14 belong to AgentUsage.swift.
 CSL=XFinder/Core/Agents/ClaudeStatusLine.swift
 run "A16 previousCommand allowed to point back at us" $CSL \
