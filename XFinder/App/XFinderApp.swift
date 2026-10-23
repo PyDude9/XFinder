@@ -83,6 +83,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         SnapZoneController.shared.applySettings()
         SnapMemoryController.shared.applySettings()            // SNAPMEM: observers only for remembered apps
         SmoothScrollController.shared.applySettings()          // XF-T25: a scroll tap only while on
+        CaffeineController.shared.restoreIfNeeded()            // XF-T27: a hold running at quit / update carries on
         MenuBarHiderController.shared.autoHideTimer?.invalidate()
         MenuBarHiderController.shared.applySettings()
         ClipboardShelfController.shared.applySettings()

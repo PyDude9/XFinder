@@ -11690,6 +11690,54 @@
     "1 năm": {
       "en": "1 year",
       "scope": "sentence"
+    },
+    "Đã tắt Chống ngủ vì pin yếu.": {
+      "en": "Keep Awake turned off: the battery is low.",
+      "scope": "sentence"
+    },
+    "Giữ cả màn hình sáng khi Chống ngủ": {
+      "en": "Keep the screen on too while Keep Awake runs",
+      "scope": "sentence"
+    },
+    "Lần trước đã tự tắt vì pin yếu (≤ 10 %, đang chạy pin).": {
+      "en": "Last time it turned itself off for a low battery (≤ 10 %, on battery power).",
+      "scope": "sentence"
+    },
+    "Chống ngủ tự tắt khi chạy pin và còn ≤ 10 %.": {
+      "en": "Keep Awake turns itself off on battery power at ≤ 10 %.",
+      "scope": "sentence"
+    },
+    "Lau bàn phím": {
+      "en": "Clean the keyboard",
+      "scope": "sentence"
+    },
+    "Lau bàn phím…": {
+      "en": "Clean the Keyboard…",
+      "scope": "sentence"
+    },
+    "Khoá bàn phím để lau; chuột vẫn dùng được. Esc 5 lần hoặc nút Mở khoá để thoát.": {
+      "en": "Locks the keyboard so you can wipe it; the mouse still works. Esc five times or the Unlock button to leave.",
+      "scope": "sentence"
+    },
+    "Bắt đầu lau": {
+      "en": "Start",
+      "scope": "sentence"
+    },
+    "Cần quyền Trợ năng để khoá bàn phím.": {
+      "en": "Locking the keyboard needs the Accessibility permission.",
+      "scope": "sentence"
+    },
+    "Đang lau bàn phím": {
+      "en": "Cleaning the keyboard",
+      "scope": "sentence"
+    },
+    "Bàn phím đang khoá. Bấm Esc 5 lần hoặc Mở khoá.": {
+      "en": "The keyboard is locked. Press Esc five times or Unlock.",
+      "scope": "sentence"
+    },
+    "Mở khoá": {
+      "en": "Unlock",
+      "scope": "sentence"
     }
   }
 }

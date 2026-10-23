@@ -130,6 +130,7 @@ final class MenubarController: NSObject, NSMenuDelegate {
             menu.addItem(timerItem())
         }
         menu.addItem(antiSleepItem())
+        menu.addItem(ActionItem(L10n.t("Lau bàn phím…")) { CleaningModeController.shared.start() })
         // `createNote()` turns the screen-edge notes on itself when they are off — this row is how a note is made.
         menu.addItem(ActionItem(L10n.t("Ghi chú mới")) { EdgeNotesController.shared.createNote() })
         menu.addItem(.separator())

@@ -53,6 +53,8 @@
 		7F1A003D /* Sidebar/SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0038 /* Sidebar/SidebarView.swift */; };
 		7F1A003E /* Detail/PlaceholderDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0039 /* Detail/PlaceholderDetailView.swift */; };
 		7F1A0049 /* SystemMonitor/CaffeineController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0040 /* SystemMonitor/CaffeineController.swift */; };
+		7F1A0283 /* SystemMonitor/CleaningModeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0282 /* SystemMonitor/CleaningModeController.swift */; };
+		7F1A0281 /* SystemMonitor/CaffeineRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0280 /* SystemMonitor/CaffeineRules.swift */; };
 		7F1A004A /* SystemMonitor/PowerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0041 /* SystemMonitor/PowerManager.swift */; };
 		7F1A01B6 /* SystemMonitor/SMARTStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01B5 /* SystemMonitor/SMARTStatus.swift */; };
 		7F1A01B4 /* SystemMonitor/GPUUtilization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01B3 /* SystemMonitor/GPUUtilization.swift */; };
@@ -423,6 +425,8 @@
 		7F1A0038 /* Sidebar/SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebar/SidebarView.swift; sourceTree = "<group>"; };
 		7F1A0039 /* Detail/PlaceholderDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/PlaceholderDetailView.swift; sourceTree = "<group>"; };
 		7F1A0040 /* SystemMonitor/CaffeineController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor/CaffeineController.swift; sourceTree = "<group>"; };
+		7F1A0282 /* SystemMonitor/CleaningModeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor/CleaningModeController.swift; sourceTree = "<group>"; };
+		7F1A0280 /* SystemMonitor/CaffeineRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor/CaffeineRules.swift; sourceTree = "<group>"; };
 		7F1A0041 /* SystemMonitor/PowerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor/PowerManager.swift; sourceTree = "<group>"; };
 		7F1A01B5 /* SystemMonitor/SMARTStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor/SMARTStatus.swift; sourceTree = "<group>"; };
 		7F1A01B3 /* SystemMonitor/GPUUtilization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitor/GPUUtilization.swift; sourceTree = "<group>"; };
@@ -788,6 +792,8 @@
 				7F1A000F /* SystemMonitorManager.swift */,
 				7F1A0010 /* DatabaseService.swift */,
 				7F1A0040 /* SystemMonitor/CaffeineController.swift */,
+				7F1A0282 /* SystemMonitor/CleaningModeController.swift */,
+				7F1A0280 /* SystemMonitor/CaffeineRules.swift */,
 				7F1A0041 /* SystemMonitor/PowerManager.swift */,
 				7F1A01B5 /* SystemMonitor/SMARTStatus.swift */,
 				7F1A01B3 /* SystemMonitor/GPUUtilization.swift */,
@@ -1293,6 +1299,8 @@
 				7F1A003D /* Sidebar/SidebarView.swift in Sources */,
 				7F1A003E /* Detail/PlaceholderDetailView.swift in Sources */,
 				7F1A0049 /* SystemMonitor/CaffeineController.swift in Sources */,
+				7F1A0283 /* SystemMonitor/CleaningModeController.swift in Sources */,
+				7F1A0281 /* SystemMonitor/CaffeineRules.swift in Sources */,
 				7F1A004A /* SystemMonitor/PowerManager.swift in Sources */,
 				7F1A01B6 /* SystemMonitor/SMARTStatus.swift in Sources */,
 				7F1A01B4 /* SystemMonitor/GPUUtilization.swift in Sources */,

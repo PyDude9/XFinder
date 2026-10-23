@@ -33,6 +33,9 @@ struct SystemControlsPanel: View {
     /// The duration the next "on" uses (nil = until turned off). Chosen before switching on, like the old Chống ngủ page
     /// that was folded into this row: a running hold keeps the duration it started with.
     @State private var antiSleepMinutes: Int? = nil
+    @AppStorage("caffeine.keepDisplayOn") private var keepDisplayOn = true
+    @AppStorage("cleaning.minutes") private var cleaningMinutes = 2
+    @State private var cleaning = CleaningModeController.shared
 
     /// Dock auto-hide is a real, readable/writable public preference, so it is
     /// a genuine two-way toggle rather than a fire-and-forget button.
@@ -232,6 +235,27 @@ struct SystemControlsPanel: View {
                 Divider()
 
                 antiSleepRow
+
+                ToggleRow(title: L10n.t("Giữ cả màn hình sáng khi Chống ngủ"),
+                          subtitle: caffeine.endedForBattery ? L10n.t("Lần trước đã tự tắt vì pin yếu (≤ 10 %, đang chạy pin).")
+                                                             : L10n.t("Chống ngủ tự tắt khi chạy pin và còn ≤ 10 %."),
+                          isOn: $keepDisplayOn)
+                    .onChange(of: keepDisplayOn) { caffeine.applyDisplaySetting() }
+
+                HStack(spacing: XFinderTokens.Space.inline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.t("Lau bàn phím")).font(XFinderTokens.Font.row)
+                        Text(L10n.t("Khoá bàn phím để lau; chuột vẫn dùng được. Esc 5 lần hoặc nút Mở khoá để thoát."))
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Picker(L10n.t("Thời lượng"), selection: $cleaningMinutes) {
+                        ForEach(Array(CaffeineRules.cleaningRange), id: \.self) { m in Text("\(m)\(L10n.t(" phút"))").tag(m) }
+                    }
+                    .pickerStyle(.menu).labelsHidden().frame(width: 90)
+                    Button(L10n.t("Bắt đầu lau")) { cleaning.start() }.disabled(cleaning.isActive)
+                }
+                .padding(.vertical, 2)
 
                 ToggleRow(title: L10n.t("Tự động ẩn Dock"), isOn: $dockAutohide)
                     .onChange(of: dockAutohide) { _, on in DockPrefs.setAutohide(on) }
