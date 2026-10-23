@@ -315,16 +315,13 @@ final class ClipboardManager {
 
             let ext = first.pathExtension.lowercased()
             if captureImages && imageExtensions.contains(ext),
-               let img = NSImage(contentsOfFile: first.path) ?? NSImage(contentsOf: first) {
-                let stored = ClipboardPayloadStore.storeImage(img)
-                let rep = img.representations.first(where: { $0.pixelsWide > 0 && $0.pixelsHigh > 0 })
-                let w = rep?.pixelsWide ?? Int(img.size.width)
-                let h = rep?.pixelsHigh ?? Int(img.size.height)
+               let stored = ClipboardImageStore.storeThumbnail(ofFile: first, in: ClipboardPayloadStore.baseDir(), stamp: ClipboardPayloadStore.stamp()) {
+                let w = stored.width, h = stored.height
                 let record = ClipboardRecord(
                     type: .image,
                     sourceBundleID: bundleID, sourceAppName: appName,
                     textSnippet: first.lastPathComponent,
-                    thumbnailPath: stored?.thumb,
+                    thumbnailPath: stored.thumb,
                     payloadPath: first.path,
                     metadata: [
                         "width": "\(w)",
@@ -337,7 +334,7 @@ final class ClipboardManager {
                 ClipboardSounds.playCopy()
                 if enableOCR {
                     let rid = record.id
-                    let ocrPath = stored?.payload ?? first.path
+                    let ocrPath = first.path
                     Task.detached(priority: .background) {
                         if let ocr = ClipboardOCR.recognizeText(atPath: ocrPath) {
                             await MainActor.run {
@@ -364,27 +361,26 @@ final class ClipboardManager {
 
         // 2. Raw image on pasteboard (e.g. direct screenshot shortcut ⌘⌃⇧4, browser image copy)
         let isFinderIcon = (bundleID == "com.apple.finder") && (types.contains(NSPasteboard.PasteboardType("com.apple.finder.noderef")) || types.contains(NSPasteboard.PasteboardType("com.apple.icns")))
+        // The pasteboard's own bytes, PNG first (lossless, usually the smallest) — never decoded here (ClipboardImageStore).
         if captureImages, !isFinderIcon,
-           types.contains(.tiff) || types.contains(.png) || types.contains(NSPasteboard.PasteboardType("public.jpeg")),
-           let image = NSImage(pasteboard: pb) {
-
-            let stored = ClipboardPayloadStore.storeImage(image)
-            let rep = image.representations.first(where: { $0.pixelsWide > 0 && $0.pixelsHigh > 0 })
-            let w = rep?.pixelsWide ?? Int(image.size.width)
-            let h = rep?.pixelsHigh ?? Int(image.size.height)
+           let data = pb.data(forType: .png) ?? pb.data(forType: .tiff) ?? pb.data(forType: NSPasteboard.PasteboardType("public.jpeg")),
+           ClipboardImageStore.size(of: data) != nil {
+            guard !isDuplicateContent(ClipboardImageStore.duplicateKey(data)),
+                  let stored = ClipboardImageStore.store(data, in: ClipboardPayloadStore.baseDir(), stamp: ClipboardPayloadStore.stamp()) else { return }
+            let w = stored.width, h = stored.height
             let isScreenshot = (bundleID?.contains("screencapture") == true)
             let record = ClipboardRecord(
                 type: .image,
                 sourceBundleID: bundleID, sourceAppName: appName,
                 textSnippet: isScreenshot ? "Chụp màn hình" : "Image",
-                thumbnailPath: stored?.thumb, payloadPath: stored?.payload,
+                thumbnailPath: stored.thumb, payloadPath: stored.payload,
                 metadata: ["width": "\(w)",
                            "height": "\(h)",
                            "dimensions": "\(w)×\(h)"]
             )
             addToHistory(record)
             ClipboardSounds.playCopy()
-            if enableOCR, let payload = stored?.payload {
+            if enableOCR, let payload = stored.payload {
                 let rid = record.id
                 Task.detached(priority: .background) {
                     if let ocr = ClipboardOCR.recognizeText(atPath: payload) {
@@ -422,17 +418,14 @@ final class ClipboardManager {
             if possiblePath.hasPrefix("/") && FileManager.default.fileExists(atPath: possiblePath) {
                 let ext = URL(fileURLWithPath: possiblePath).pathExtension.lowercased()
                 if captureImages && imageExtensions.contains(ext),
-                   let img = NSImage(contentsOfFile: possiblePath) {
+                   let stored = ClipboardImageStore.storeThumbnail(ofFile: URL(fileURLWithPath: possiblePath), in: ClipboardPayloadStore.baseDir(), stamp: ClipboardPayloadStore.stamp()) {
                     guard !isDuplicateContent(possiblePath) else { return }
-                    let stored = ClipboardPayloadStore.storeImage(img)
-                    let rep = img.representations.first(where: { $0.pixelsWide > 0 && $0.pixelsHigh > 0 })
-                    let w = rep?.pixelsWide ?? Int(img.size.width)
-                    let h = rep?.pixelsHigh ?? Int(img.size.height)
+                    let w = stored.width, h = stored.height
                     let record = ClipboardRecord(
                         type: .image,
                         sourceBundleID: bundleID, sourceAppName: appName,
                         textSnippet: URL(fileURLWithPath: possiblePath).lastPathComponent,
-                        thumbnailPath: stored?.thumb,
+                        thumbnailPath: stored.thumb,
                         payloadPath: possiblePath,
                         metadata: [
                             "width": "\(w)",
@@ -443,10 +436,10 @@ final class ClipboardManager {
                     )
                     addToHistory(record)
                     ClipboardSounds.playCopy()
-                    if enableOCR, let payload = stored?.payload {
+                    if enableOCR {
                         let rid = record.id
                         Task.detached(priority: .background) {
-                            if let ocr = ClipboardOCR.recognizeText(atPath: payload) {
+                            if let ocr = ClipboardOCR.recognizeText(atPath: possiblePath) {
                                 await MainActor.run {
                                     ClipboardManager.shared.applyOCR(rid, text: ocr)
                                 }

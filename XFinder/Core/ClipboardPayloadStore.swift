@@ -1,8 +1,6 @@
-import AppKit
 import Foundation
-import ImageIO
 
-/// Disk offload (payloads + 300px thumbnails under Application Support) and
+/// Disk offload (payloads under Application Support; images go through `ClipboardImageStore`) and
 /// Vision OCR for copied images. All work is nonisolated/background-safe; the
 /// manager hops back to @MainActor only to apply results.
 enum ClipboardPayloadStore {
@@ -15,43 +13,17 @@ enum ClipboardPayloadStore {
         return dir
     }
 
-    /// Write full image data, return (payloadPath, thumbnailPath).
-    static func storeImage(_ image: NSImage) -> (payload: String, thumb: String)? {
-        guard let tiff = image.tiffRepresentation,
-              let rep = NSBitmapImageRep(data: tiff),
-              let png = rep.representation(using: .png, properties: [:]) else { return nil }
-        let dir = baseDir()
-        let stamp = String(Int(Date().timeIntervalSince1970 * 1000))
-        let payloadURL = dir.appendingPathComponent("img-\(stamp).png")
-        do { try png.write(to: payloadURL) } catch { return nil }
-        let thumbURL = dir.appendingPathComponent("thumb-\(stamp).png")
-        if let thumb = thumbnailPNG(from: png, maxPixel: 300) {
-            try? thumb.write(to: thumbURL)
-        }
-        return (payloadURL.path, thumbURL.path)
-    }
+    /// File-name stamp of one copied item (milliseconds since 1970).
+    static func stamp() -> String { String(Int(Date().timeIntervalSince1970 * 1000)) }
 
     /// Write raw text payload (>4KB snippets) so history stays light in RAM.
     static func storeText(_ text: String) -> String? {
         guard ClipboardText.needsPayload(text) else { return nil }
-        let stamp = String(Int(Date().timeIntervalSince1970 * 1000))
-        let url = baseDir().appendingPathComponent("txt-\(stamp).txt")
+        let url = baseDir().appendingPathComponent("txt-\(stamp()).txt")
         do {
             try text.write(to: url, atomically: true, encoding: .utf8)
             return url.path
         } catch { return nil }
-    }
-
-    private static func thumbnailPNG(from data: Data, maxPixel: CGFloat) -> Data? {
-        guard let src = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
-        let opts: CFDictionary = [
-            kCGImageSourceCreateThumbnailWithTransform: false,
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixel,
-        ] as CFDictionary
-        guard let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, opts) else { return nil }
-        let rep = NSBitmapImageRep(cgImage: cg)
-        return rep.representation(using: .png, properties: [:])
     }
 }
 
@@ -61,7 +33,7 @@ enum ClipboardPayloadStore {
 enum ClipboardOCR {
     static func recognizeText(atPath path: String) -> String? {
         let url = URL(fileURLWithPath: path)
-        guard let data = try? Data(contentsOf: url) else { return nil }
+        guard let data = VisionChild.fileBytes(url) else { return nil }
         return recognizeText(data: data)
     }
 

@@ -11,7 +11,7 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-clipboard.XXXXXX)
-FILES="XFinder/Core/Clipboard/ClipboardFilterToken.swift XFinder/Core/Clipboard/ClipboardTransform.swift XFinder/Core/Clipboard/PasteQueue.swift XFinder/Core/Clipboard/ClipboardText.swift"
+FILES="XFinder/Core/Clipboard/ClipboardFilterToken.swift XFinder/Core/Clipboard/ClipboardTransform.swift XFinder/Core/Clipboard/PasteQueue.swift XFinder/Core/Clipboard/ClipboardText.swift XFinder/Core/Clipboard/ClipboardImageStore.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
@@ -19,7 +19,7 @@ trap 'restore' EXIT
 # kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
 trap 'exit 143' INT TERM
 
-FILTER='ClipboardFilterToken|ClipboardTransform|PasteQueue|ClipboardText'
+FILTER='ClipboardFilterToken|ClipboardTransform|PasteQueue|ClipboardText|ClipboardImageStore'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} END {print (f==""?"NORESULT":f)}'
@@ -67,6 +67,19 @@ run "C7 the measured bug: only clips above 4 096 characters get a payload" XFind
 run "C8 pasting reads the 200-character preview instead of the payload" XFinder/Core/Clipboard/ClipboardText.swift \
   "'        if let p = payloadPath, !p.isEmpty, let full = read(p), !full.isEmpty { return full }\n'" "''"
 
+I=XFinder/Core/Clipboard/ClipboardImageStore.swift
+run "C9  a PNG is re-encoded instead of kept byte for byte" $I \
+  "'        if (CGImageSourceGetType(src) as String?) == \"public.png\" { return data }\n'" "''"
+run "C10 a TIFF is stored as TIFF bytes under a .png name" $I \
+  "'        guard let size = size(of: data), let png = png(from: data) else { return nil }'" "'        guard let size = size(of: data) else { return nil }; let png = data'"
+run "C11 the thumbnail is the full image" $I \
+  "'                  kCGImageSourceThumbnailMaxPixelSize: maxPixels,\n'" "''"
+run "C12 a copied file is copied again in full" $I \
+  "'        return Stored(payload: nil, thumb: writeThumbnail(data, in: dir, stamp: stamp), width: size.width, height: size.height)'" "'        let copy = dir.appendingPathComponent(\"img-\\(stamp).png\"); try? data.write(to: copy)\n        return Stored(payload: copy.path, thumb: writeThumbnail(data, in: dir, stamp: stamp), width: size.width, height: size.height)'"
+run "C13 different images share one duplicate key" $I \
+  "'\"image:\" + SHA256.hash(data: data).map { String(format: \"%02x\", \$0) }.joined()'" "'\"image:\" + String(repeating: \"0\", count: 64) + String(data.count > 0)'"
+run "C14 junk bytes are stored as an image" $I \
+  "'              w > 0, h > 0 else { return nil }\n        return (w, h)'" "'              w > 0, h > 0 else { return (1, 1) }\n        return (w, h)'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)
