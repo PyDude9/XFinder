@@ -40,6 +40,24 @@ enum ClipboardImageStore {
         return CGImageDestinationFinalize(dest) ? out as Data : nil
     }
 
+    /// `data` re-encoded as TIFF (what an app that only reads TIFF gets, asked for lazily — never built up front).
+    static func tiff(from data: Data) -> Data? {
+        guard let src = CGImageSourceCreateWithData(data as CFData, nil), CGImageSourceGetCount(src) > 0 else { return nil }
+        let out = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(out as CFMutableData, "public.tiff" as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImageFromSource(dest, src, 0, nil)
+        return CGImageDestinationFinalize(dest) ? out as Data : nil
+    }
+
+    /// An image held in memory (an annotated capture) as PNG with the screen's DPI, so its point size survives the paste.
+    static func png(from image: CGImage, scale: Double) -> Data? {
+        let out = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(out as CFMutableData, "public.png" as CFString, 1, nil) else { return nil }
+        let dpi = 72 * max(scale, 1)
+        CGImageDestinationAddImage(dest, image, [kCGImagePropertyDPIWidth: dpi, kCGImagePropertyDPIHeight: dpi] as CFDictionary)
+        return CGImageDestinationFinalize(dest) ? out as Data : nil
+    }
+
     /// A PNG at most `maxPixels` on the long side.
     static func thumbnail(from data: Data, maxPixels: Int = thumbnailPixels) -> Data? {
         guard let src = CGImageSourceCreateWithData(data as CFData, nil), CGImageSourceGetCount(src) > 0,

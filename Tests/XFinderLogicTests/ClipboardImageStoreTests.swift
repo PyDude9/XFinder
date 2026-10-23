@@ -75,6 +75,24 @@ final class ClipboardImageStoreTests: XCTestCase {
         XCTAssertNil(S.storeThumbnail(ofFile: dir.appendingPathComponent("missing.png"), in: dir, stamp: "8"))
     }
 
+    func testTheLazyTIFFIsTheSameImage() throws {
+        let png = encoded("public.png", width: 70, height: 20)
+        let tiff = try XCTUnwrap(S.tiff(from: png))
+        XCTAssertEqual(type(of: tiff), "public.tiff")
+        XCTAssertEqual(S.size(of: tiff)?.width, 70); XCTAssertEqual(S.size(of: tiff)?.height, 20)
+        XCTAssertNil(S.tiff(from: Data("nope".utf8)))
+    }
+
+    func testAnInMemoryImageKeepsItsRetinaDPI() throws {
+        let ctx = CGContext(data: nil, width: 40, height: 30, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        let png = try XCTUnwrap(S.png(from: ctx.makeImage()!, scale: 2))
+        XCTAssertEqual(type(of: png), "public.png")
+        let props = CGImageSourceCreateWithData(png as CFData, nil).flatMap { CGImageSourceCopyPropertiesAtIndex($0, 0, nil) as? [CFString: Any] }
+        XCTAssertEqual((props?[kCGImagePropertyDPIWidth] as? NSNumber)?.doubleValue ?? 0, 144, accuracy: 0.5)
+        XCTAssertEqual(S.size(of: png)?.width, 40)
+    }
+
     func testTheSameBytesGiveTheSameDuplicateKey() {
         let a = encoded("public.png", width: 20, height: 20), b = encoded("public.png", width: 21, height: 20)
         XCTAssertEqual(S.duplicateKey(a), S.duplicateKey(a))

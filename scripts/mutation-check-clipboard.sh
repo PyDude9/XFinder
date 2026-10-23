@@ -80,6 +80,10 @@ run "C13 different images share one duplicate key" $I \
   "'\"image:\" + SHA256.hash(data: data).map { String(format: \"%02x\", \$0) }.joined()'" "'\"image:\" + String(repeating: \"0\", count: 64) + String(data.count > 0)'"
 run "C14 junk bytes are stored as an image" $I \
   "'              w > 0, h > 0 else { return nil }\n        return (w, h)'" "'              w > 0, h > 0 else { return (1, 1) }\n        return (w, h)'"
+run "C15 the lazy TIFF is a PNG under the TIFF type" $I \
+  "'        guard let dest = CGImageDestinationCreateWithData(out as CFMutableData, \"public.tiff\" as CFString, 1, nil) else { return nil }'" "'        guard let dest = CGImageDestinationCreateWithData(out as CFMutableData, \"public.png\" as CFString, 1, nil) else { return nil }'"
+run "C16 a copied annotated capture loses its Retina DPI" $I \
+  "'        let dpi = 72 * max(scale, 1)'" "'        let dpi = 72.0'"
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)

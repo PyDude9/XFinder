@@ -424,23 +424,29 @@ final class CaptureController {
         QuickAccessController.shared.editorDidChange()
     }
 
+    /// A saved capture: its file's bytes go on the pasteboard as they are (PNG, or turned into PNG once).
+    ///
+    /// Measured 2026-10-23 with a 1628×6710 scrolling capture: decoding the file, encoding a new PNG and an uncompressed
+    /// TIFF left **94 MB** in the app per copy (peak 136 MB); the file's bytes + a TIFF made only when an app asks for one:
+    /// 4 MB (probe `scratchpad/scmem/copy.swift`; the lazy TIFF is the same 1628×6710 image).
     func copy(_ item: CaptureItem) {
-        guard let src = CGImageSourceCreateWithURL(item.url as CFURL, nil),
-              let image = CGImageSourceCreateImageAtIndex(src, 0, nil) else { return }
-        copyImage(image, scale: 1)
+        guard let data = try? Data(contentsOf: item.url, options: .mappedIfSafe),
+              let png = ClipboardImageStore.png(from: data) else { return }
+        writeToPasteboard(png: png)
     }
 
     func copyImage(_ image: CGImage, scale: CGFloat) {
-        let rep = NSBitmapImageRep(cgImage: image)
-        guard let png = rep.representation(using: .png, properties: [:]) else { return }
-        let nsImage = NSImage(cgImage: image, size: NSSize(width: CGFloat(image.width) / scale, height: CGFloat(image.height) / scale))
+        guard let png = ClipboardImageStore.png(from: image, scale: Double(scale)) else { return }
+        writeToPasteboard(png: png)
+    }
+
+    private func writeToPasteboard(png: Data) {
         let pb = NSPasteboard.general
         pb.clearContents()
         let item = NSPasteboardItem()
         item.setData(png, forType: .png)
-        if let tiff = nsImage.tiffRepresentation {
-            item.setData(tiff, forType: .tiff)
-        }
+        // The pasteboard item keeps its provider (measured: served after the last reference here was gone).
+        item.setDataProvider(LazyTIFFProvider(png: png), forTypes: [.tiff])
         pb.writeObjects([item])
     }
 
@@ -794,5 +800,15 @@ final class PinnedImageWindow: NSPanel {
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 53 { close(); return } // Esc
         super.keyDown(with: event)
+    }
+}
+
+/// The TIFF of a copied capture, built only if a pasting app asks for TIFF rather than PNG.
+final class LazyTIFFProvider: NSObject, NSPasteboardItemDataProvider {
+    private let png: Data
+    init(png: Data) { self.png = png }
+
+    func pasteboard(_ pasteboard: NSPasteboard?, item: NSPasteboardItem, provideDataForType type: NSPasteboard.PasteboardType) {
+        if let tiff = ClipboardImageStore.tiff(from: png) { item.setData(tiff, forType: type) }
     }
 }
