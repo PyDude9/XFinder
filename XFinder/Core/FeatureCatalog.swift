@@ -107,6 +107,7 @@ enum FeatureID: String, CaseIterable {
     case menuBarReadouts
     case systemHUD
     case quickShare, remoteConnect   // XF-T21
+    case smoothScroll                // XF-T25: a scroll-wheel tap while on
 }
 
 struct FeatureDef: Equatable {
@@ -148,6 +149,10 @@ enum FeatureCatalog {
                    symbol: "rectangle.split.3x1", group: .windows, enabledKey: "snapzones.enabled",
                    defaultOn: true, permissions: [.accessibility], idle: .listensToMouse),
         // SNAPMEM (2026-10-18). Off by default: it watches the remembered apps and moves their windows at launch.
+        FeatureDef(id: .smoothScroll, titleKey: "Cuộn chuột mượt",
+                   subtitleKey: "Bánh xe chuột trôi như trackpad; trackpad và Magic Mouse giữ nguyên.",
+                   symbol: "computermouse", group: .windows, enabledKey: "smoothScroll.enabled",
+                   defaultOn: false, permissions: [.accessibility], idle: .listensToMouse),
         FeatureDef(id: .snapMemory, titleKey: "Nhớ bố cục cửa sổ",
                    subtitleKey: "Đưa app về đúng chỗ đã bắt dính khi nó mở lại hoặc khi đổi bộ màn hình.",
                    symbol: "rectangle.3.group", group: .windows, enabledKey: "snapzones.remember",

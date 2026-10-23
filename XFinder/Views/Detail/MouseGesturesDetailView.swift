@@ -298,6 +298,9 @@ struct MouseGesturesDetailView: View {
                 // ── Khối 6 — nút giữ & cuộn (F7/F22/F23/S47-S51) ──────────────────────────
                 switchesSection
 
+                // ── XF-T25 — cuộn chuột mượt (engine + khoá riêng, không thuộc blob cử chỉ) ──────
+                SmoothScrollSection()
+
                 // ── Khối 7 — nghiêng con lăn (F20/S41-S42) ────────────────────────────────
                 tiltRow
 

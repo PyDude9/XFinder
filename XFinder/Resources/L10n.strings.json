@@ -11522,6 +11522,82 @@
     " cửa sổ": {
       "en": " windows",
       "scope": "fragment"
+    },
+    "Cuộn chuột mượt": {
+      "en": "Smooth mouse scrolling",
+      "scope": "sentence"
+    },
+    "Bánh xe chuột trôi như trackpad; trackpad và Magic Mouse giữ nguyên.": {
+      "en": "The mouse wheel glides like a trackpad; the trackpad and the Magic Mouse stay as they are.",
+      "scope": "sentence"
+    },
+    "Chỉ bánh xe chuột được làm mượt. Trackpad và Magic Mouse giữ nguyên cách cuộn của macOS.": {
+      "en": "Only the mouse wheel is smoothed. The trackpad and the Magic Mouse keep macOS's own scrolling.",
+      "scope": "sentence"
+    },
+    "Làm mượt bánh xe chuột": {
+      "en": "Smooth the mouse wheel",
+      "scope": "sentence"
+    },
+    "Bánh xe trôi như trackpad thay vì nhảy từng nấc.": {
+      "en": "The wheel glides like a trackpad instead of jumping notch by notch.",
+      "scope": "sentence"
+    },
+    "Tốc độ": {
+      "en": "Speed",
+      "scope": "sentence"
+    },
+    "Quãng cuộn của mỗi nấc bánh xe.": {
+      "en": "How far each wheel notch scrolls.",
+      "scope": "sentence"
+    },
+    "Độ mượt": {
+      "en": "Smoothness",
+      "scope": "sentence"
+    },
+    "Thời gian dàn một nấc ra thành chuyển động — cao hơn là trôi lâu hơn.": {
+      "en": "How long one notch is spread over — higher glides longer.",
+      "scope": "sentence"
+    },
+    "Đảo chiều bánh xe": {
+      "en": "Reverse the wheel",
+      "scope": "sentence"
+    },
+    "Chỉ áp cho chuột. Trackpad giữ cài đặt Cuộn tự nhiên của macOS.": {
+      "en": "Mouse only. The trackpad keeps macOS's Natural scrolling setting.",
+      "scope": "sentence"
+    },
+    "Đang tắt — bánh xe cuộn như macOS gốc.": {
+      "en": "Off — the wheel scrolls as plain macOS does.",
+      "scope": "sentence"
+    },
+    "Đang làm mượt bánh xe chuột.": {
+      "en": "Smoothing the mouse wheel.",
+      "scope": "sentence"
+    },
+    "Cần quyền Trợ năng để đọc bánh xe chuột.": {
+      "en": "Needs the Accessibility permission to read the mouse wheel.",
+      "scope": "sentence"
+    },
+    "Đang tạm dừng: ": {
+      "en": "Paused: ",
+      "scope": "fragment"
+    },
+    " cũng làm mượt cuộn — tắt một trong hai.": {
+      "en": " also smooths scrolling — turn one of them off.",
+      "scope": "fragment"
+    },
+    "Đang tạm dừng trong lúc chụp cuộn.": {
+      "en": "Paused during a scrolling capture.",
+      "scope": "sentence"
+    },
+    "Lần cuộn vừa rồi: bánh xe chuột — đã làm mượt.": {
+      "en": "Last scroll: mouse wheel — smoothed.",
+      "scope": "sentence"
+    },
+    "Lần cuộn vừa rồi: trackpad hoặc Magic Mouse — giữ nguyên.": {
+      "en": "Last scroll: trackpad or Magic Mouse — left as is.",
+      "scope": "sentence"
     }
   }
 }

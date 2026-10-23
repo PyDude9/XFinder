@@ -31,7 +31,7 @@ final class FeatureContractTests: XCTestCase {
         .calendar: .pure(["Core/Calendar/GlanceRules.swift"]),
         .translateSelection: .pure(["Core/Translate/TranslateSelectionRules.swift"]),
         .quitOnClose: .pure(["Core/QuitOnClose/QuitOnCloseRules.swift"]),
-        .capture: .pure(["Core/Capture/CaptureRules.swift", "Core/Capture/Annotation.swift"]),
+        .capture: .pure(["Core/Capture/CaptureRules.swift", "Core/Capture/Annotation.swift"])
         .smartSelect: .pure(["Core/SmartSelect/SmartSelectionRules.swift", "Core/SmartSelect/UnitConversion.swift",
                              "Core/SmartSelect/TimeZoneConversion.swift", "Core/SmartSelect/CurrencyConversion.swift"]),
         .linkPreviews: .pure(["Core/Clipboard/LinkPreviewRules.swift"]),
@@ -47,6 +47,7 @@ final class FeatureContractTests: XCTestCase {
 
         .snapZones: .pure(["Core/Snap/SnapLayout.swift"]),
         .snapMemory: .pure(["Core/Snap/SnapMemory.swift"]),
+        .smoothScroll: .pure(["Core/SmoothScroll/SmoothScrollRules.swift"]),
         .clipboardShelf: .exempt("Classification and the privacy filter are tested through duplicated copies (ClipboardClassifierTests). Fix: extract them from ClipboardManager into a symlinked file."),
         .suggestions: .exempt("ClipboardIntelligenceEngine's ranking lives inside ClipboardPasteEngine.swift with AppKit imports. Fix: extract the scoring into a pure file."),
         .quickSearch: .exempt("Calculator / quicklink matching live in Core/QuickSearch beside AppKit code and are untested. Fix: symlink the calculator and fuzzy matcher."),

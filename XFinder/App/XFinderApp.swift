@@ -82,6 +82,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         CommandTabController.shared.applySettings()
         SnapZoneController.shared.applySettings()
         SnapMemoryController.shared.applySettings()            // SNAPMEM: observers only for remembered apps
+        SmoothScrollController.shared.applySettings()          // XF-T25: a scroll tap only while on
         MenuBarHiderController.shared.autoHideTimer?.invalidate()
         MenuBarHiderController.shared.applySettings()
         ClipboardShelfController.shared.applySettings()
@@ -128,6 +129,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 CommandTabController.shared.applySettings()
                 SnapZoneController.shared.applySettings()
                 SnapMemoryController.shared.applySettings()
+                SmoothScrollController.shared.applySettings()
                 FinderKeyboardController.shared.applySettings()
                 QuitProtectionController.shared.applySettings()
                 QuitOnCloseController.shared.applySettings()
