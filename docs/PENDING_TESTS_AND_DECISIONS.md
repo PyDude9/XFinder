@@ -189,6 +189,18 @@ của hãng (trái thiết kế LAN-only). Đo trên binary app đó (`strings`/
 |:--|:--|:--|
 | T-REF-1 | Trong app kia: Biểu tượng thanh menu ▸ bật ẩn cho **1Password** (hoặc Claude) ▸ thu gọn | Icon 1Password **biến mất** khỏi thanh menu thật? Có ⇒ cơ chế sống với chữ ký Developer ID, XF-T22 cần đo lại; không ⇒ explainer đúng |
 
+### Q-SS / Q-SC · Cuộn chuột mượt và Chụp cuộn (2026-10-22, `docs/specs/XF-T25-smooth-scrolling.md`, `XF-T26-scrolling-capture.md`)
+
+| Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
+|:--|:--|:--|:--|
+| Q-SS-4 | Quy tắc riêng theo app (tắt cuộn mượt trong game, tốc độ riêng cho Xcode…)? | (a) để v2 · (b) làm ngay | **(a)** — v1: bật/tắt + tốc độ + độ mượt + đảo chiều cho mọi app |
+| Q-SS-5 | Cuộn mượt mặc định bật hay tắt? | Bật · Tắt | **Tắt** — tính năng nuốt mọi sự kiện bánh xe, người dùng phải tự chọn |
+| Q-SS-6 | Mos (hoặc công cụ làm mượt khác) đang chạy thì sao? | (a) XFinder tạm dừng + nói rõ · (b) chạy song song | **(a)** — hai lớp làm mượt chồng nhau là cảm giác "trôi kép" |
+| Q-SC-1 | Chụp cuộn: cuộn tay hay tự cuộn? | (a) cuộn tay mặc định, nút Tự cuộn trong phiên · (b) chỉ một cách | **(a)** |
+| Q-SC-2 | Biết "hết trang" bằng gì? | (a) 3 lần tự cuộn không đổi · (b) đọc thanh cuộn qua Trợ năng | **(a)** — (b) cần đọc AX từng app, để v2 |
+| Q-SC-3 | Trần chiều cao ảnh dài | số px | **20 000 px** — đo lại ở T-T26-5 |
+| Q-SC-4 | Ghép cả khi cuộn ngược lên? | (a) chỉ cuộn xuống ở v1 · (b) hai chiều | **(a)** — cuộn lên ⇒ báo "cuộn ngược lên một chút" |
+
 ## Phần 2 — Cần test tay (T)
 
 Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng tay thật**. Ghi kết quả: ✅ / ❌ + mô tả.
@@ -238,6 +250,16 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-MEM-2 | Chụp màn hình ▸ một ảnh trong Lịch sử ▸ "Sao chép chữ"; và notch ▸ Khay ▸ một ảnh ▸ OCR | Chữ vào clipboard như trước (tiếng Việt giữ dấu). Lần **đầu tiên** sau khi cài có thể chờ vài giây (daemon Neural Engine — đo một lần > 15 s, các lần sau 0,2 s) |
 | T-MEM-3 | Notch ▸ Khay ▸ thả một ảnh có chủ thể ▸ **Tách nền**; và Thao tác Finder ▸ Tách nền | File `<tên>-cutout.png` nền trong suốt như trước; footprint app không tăng sau đó (tách nền cũng chạy trong `XFinder --vision cutout`; đo trong app cũ giữ lại +29 MB mỗi tiến trình). Ảnh không có chủ thể ⇒ thông báo "Không tìm thấy chủ thể…" như cũ (nút chỉ hiện sau khi chọn ảnh: Thao tác Finder ▸ "Đọc lựa chọn" ▸ nhóm Ảnh; hoặc khay notch đang giữ ảnh) |
 | T-DOCK-4 | Stage Manager bật. ⌘-Tab qua lại liên tục giữa 3 app trong 1 phút, rồi rê lên icon Dock của một app đang nằm ở dải trái | Ảnh vẫn thẳng (chụp lúc app lên giữa, cũ nhất ~30 s). Bản này chỉ chụp sẵn tối đa 1 lần/app/30 s thay vì mỗi lần chuyển app |
+| T-T25-1 | Chuột & cử chỉ ▸ Cuộn chuột mượt ▸ bật. Lăn bánh xe chuột (Razer) trong Safari, Finder, Xcode | Trôi mượt thay vì nhảy nấc; dòng trạng thái ghi "Lần cuộn vừa rồi: bánh xe chuột — đã làm mượt" |
+| T-T25-2 | Cuộn bằng trackpad / Magic Mouse khi cuộn mượt đang bật | Như cũ (có quán tính của macOS); dòng trạng thái ghi "trackpad hoặc Magic Mouse — giữ nguyên" |
+| T-T25-3 | Giữ ⌘ (hoặc ⌥) rồi lăn trong trình duyệt / Preview | Phóng to như cũ, không bị làm mượt |
+| T-T25-4 | Mở Mos khi cuộn mượt đang bật; rồi thoát Mos | Trang ghi "Đang tạm dừng: Mos cũng làm mượt cuộn"; thoát Mos ⇒ chạy lại |
+| T-T25-5 | Kéo Tốc độ lên 200 %, Độ mượt xuống 80 ms; bật Đảo chiều | Mỗi nấc đi xa gấp đôi, dừng nhanh; chiều bánh xe đảo, trackpad không đổi |
+| T-T26-1 | Chụp màn hình ▸ Chụp cuộn ▸ kéo một vùng trên một trang web dài ▸ tự cuộn bằng tay xuống ▸ Enter | Một ảnh dài trong Lịch sử + thẻ Quick Access; không lặp, không hụt đoạn |
+| T-T26-2 | Như trên nhưng bấm **Tự cuộn** | XFinder tự cuộn, tự dừng ở cuối trang ("Đã đến cuối trang") |
+| T-T26-3 | Trang có header dính (GitHub, Notion) | Header xuất hiện một lần ở đầu ảnh |
+| T-T26-4 | Cuộn tay thật nhanh một cú dài | Thanh báo "Không ghép được đoạn mới — cuộn ngược lên một chút"; cuộn ngược ⇒ ghép tiếp |
+| T-T26-5 | Tự cuộn một trang rất dài | Dừng ở 20 000 px ("Đã đến giới hạn chiều cao"); footprint app không tăng (ảnh dài được dựng ở tiến trình con) |
 | T-HUD-7 | Đang phát nhạc: rê lên notch cho dải Đang phát hiện, giữ chuột ở đó, bấm phím âm lượng | Ô âm lượng hiện thay dải nhạc; ~1,5 s sau **dải nhạc quay lại** (trước: biến mất tới khi rê lại). Bấm xong rời chuột khỏi notch ⇒ dải đóng như thường |
 | T-SNAPMEM-2 | Với luật trên, rút màn ngoài rồi cắm lại (hoặc ngược lại) | Luật ghi với bộ "màn trong + HC-L200A" chỉ áp khi đủ hai màn; khi chỉ còn màn trong, Chrome **không** bị kéo đi; cắm lại ⇒ áp trong ~1–3 s |
 | T-SNAPMEM-3 | Đưa một app đã có luật vào toàn màn hình (nút xanh), thoát app, mở lại | Hàng luật đổi thành "Toàn màn hình (Space riêng)"; mở lại ⇒ app vào toàn màn hình trên đúng màn. App không cho đặt ⇒ hàng ghi "App không cho đặt toàn màn hình qua Trợ năng", không thử lại |
