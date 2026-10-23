@@ -65,6 +65,23 @@ final class LiveActivityTests: XCTestCase {
         XCTAssertNil(q.advance())
     }
 
+    /// A notice whose turn comes while the hub is open is held, not consumed: it shows once the notch is idle again.
+    func testANoticeThatCannotBeDrawnIsHeldNotLost() {
+        var q = A.Queue()
+        q.push(item(.agent, "A")); q.push(item(.network, "B"))
+        XCTAssertEqual(q.advance()?.titleKey, "B", "A's time is up while the hub is open")
+        q.hold()
+        XCTAssertNil(q.current)
+        XCTAssertEqual(q.pending.map(\.titleKey), ["B"], "B waits at the head of the line")
+        XCTAssertEqual(q.resume()?.titleKey, "B", "resume with nothing current brings B back")
+        XCTAssertEqual(q.current?.titleKey, "B")
+        XCTAssertTrue(q.pending.isEmpty)
+        XCTAssertNil(q.resume(), "nothing to resume while something is current")
+        q.hold(); q.push(item(.power, "C"))
+        XCTAssertEqual(q.current?.titleKey, "C", "a new notice may show; the held one stays queued")
+        XCTAssertEqual(q.advance()?.titleKey, "B", "and B comes back after it")
+    }
+
     /// A volume press must answer at once even while another notice is up; the notice comes back right after.
     func testKeyFeedbackJumpsTheQueueAndTheNoticeItInterruptedReturnsFirst() {
         var q = A.Queue()

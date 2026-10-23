@@ -395,6 +395,22 @@ enum LiveActivity {
             return current
         }
 
+        /// The surface cannot draw `current` right now (the hub is open): put it back at the head of the line instead of
+        /// letting its timer run unseen. `resume()` brings it back once the notch is idle again.
+        mutating func hold() {
+            guard let c = current else { return }
+            pending.insert(c, at: 0)
+            current = nil
+        }
+
+        /// Nothing is showing but something waits (it was held): make the head current. Returns it, nil ⇒ nothing to do.
+        @discardableResult
+        mutating func resume() -> Item? {
+            guard current == nil, !pending.isEmpty else { return nil }
+            current = pending.removeFirst()
+            return current
+        }
+
         mutating func clear() { current = nil; pending = [] }
     }
 }

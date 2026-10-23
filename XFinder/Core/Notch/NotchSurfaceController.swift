@@ -378,6 +378,8 @@ final class NotchSurfaceController {
         syncHubSwipe()
         syncNowPlayingTicker()
         syncWaveform()
+        // A notice held while the hub was open comes back now.
+        if machine.state.isIdle, activityQueue.resume() != nil { showCurrentActivity() }
     }
 
     /// §3b #21 — the tap runs only while a waveform is on screen (the Now Playing page, or the peek showing the track).
@@ -1174,10 +1176,16 @@ final class NotchSurfaceController {
     private func showCurrentActivity() {
         activityWork?.cancel(); activityWork = nil
         guard let item = activityQueue.current else { return }
+        // A notice that cannot be drawn now (hub open, peek) waits in line instead of timing out unseen; `dispatch`
+        // resumes it when the notch is idle again.
+        guard machine.state.isIdle || item.kind.isKeyFeedback else {
+            activityQueue.hold(); model.activity = nil
+            return
+        }
         model.activity = item
         if machine.state == .activity { render() }
         else if item.kind.isKeyFeedback { dispatch(.feedbackShown) }
-        else if machine.state.isIdle { dispatch(.activityShown) }
+        else { dispatch(.activityShown) }
         let work = DispatchWorkItem { [weak self] in MainActor.assumeIsolated { self?.activityTimeUp() } }
         activityWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + item.duration, execute: work)
