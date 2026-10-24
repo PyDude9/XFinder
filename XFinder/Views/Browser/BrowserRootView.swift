@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// XF-T28 cluster E — the file browser window's root chrome: toolbar, sidebar + pane grid, Shelf strip, and the
 /// sheets/overlays everything else in the window funnels through (conflict, batch rename, recovery, command
@@ -11,9 +12,13 @@ struct BrowserRootView: View {
     let model: BrowserWindowModel
 
     @State private var showingWorkspaceSaveSheet = false
+    @State private var showingOpenWorkspaceSheet = false
+    @State private var showingManageWorkspacesSheet = false
     @State private var showingOperationsPopover = false
     @State private var workspaceName = ""
     @State private var bannerWorkItem: DispatchWorkItem?
+    @State private var license = LicenseManager.shared
+    @State private var isSyncing = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,7 +29,13 @@ struct BrowserRootView: View {
                 BrowserSidebarView(model: model)
                     .frame(width: Self.sidebarWidth)
                 Rectangle().fill(XFinderTokens.Fill.hairline).frame(width: 1)
-                PaneGridView(model: model)
+                VStack(spacing: 0) {
+                    if let pair = model.activeSyncPair {
+                        syncBar(pair)
+                        Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
+                    }
+                    PaneGridView(model: model)
+                }
             }
 
             if model.shelfVisible {
@@ -66,6 +77,12 @@ struct BrowserRootView: View {
         }
         .sheet(isPresented: $showingWorkspaceSaveSheet) {
             saveWorkspaceSheet
+        }
+        .sheet(isPresented: $showingOpenWorkspaceSheet) {
+            openWorkspaceSheet
+        }
+        .sheet(isPresented: $showingManageWorkspacesSheet) {
+            ManageWorkspacesSheet(model: model)
         }
         .onChange(of: model.banner) { _, newValue in
             scheduleBannerAutoHide(newValue)
@@ -113,6 +130,14 @@ struct BrowserRootView: View {
         .padding(.vertical, XFinderTokens.Space.tight)
     }
 
+    /// True once the pane count has reached what Free allows (`ProLimit.browserPanes`, default 2) — the split/preset
+    /// items still work (an already-open layout keeps working per XF-T29 rule 3), they just carry a PRO tag so the
+    /// surface says why a further split needs Pro rather than silently doing nothing.
+    private var paneLimitReachedInFree: Bool {
+        guard let limit = license.limit(.browserPanes) else { return false }
+        return model.tree.count >= limit
+    }
+
     private var presetMenu: some View {
         Menu {
             Button(L10n.t("Một ngăn")) { _ = model.perform(.presetSingle) }
@@ -120,19 +145,31 @@ struct BrowserRootView: View {
             Button(L10n.t("Chồng lên nhau")) { _ = model.perform(.presetStacked) }
             Button(L10n.t("Lưới 2×2")) { _ = model.perform(.presetGrid) }
             Divider()
-            Button(L10n.t("Chia ngăn sang phải")) { _ = model.perform(.splitRight) }
-                .disabled(!model.tree.canSplit)
-            Button(L10n.t("Chia ngăn sang trái")) { _ = model.perform(.splitLeft) }
-                .disabled(!model.tree.canSplit)
-            Button(L10n.t("Chia ngăn xuống dưới")) { _ = model.perform(.splitDown) }
-                .disabled(!model.tree.canSplit)
-            Button(L10n.t("Chia ngăn lên trên")) { _ = model.perform(.splitUp) }
-                .disabled(!model.tree.canSplit)
+            splitMenuItem(L10n.t("Chia ngăn sang phải")) { _ = model.perform(.splitRight) }
+            splitMenuItem(L10n.t("Chia ngăn sang trái")) { _ = model.perform(.splitLeft) }
+            splitMenuItem(L10n.t("Chia ngăn xuống dưới")) { _ = model.perform(.splitDown) }
+            splitMenuItem(L10n.t("Chia ngăn lên trên")) { _ = model.perform(.splitUp) }
             Divider()
             Button(L10n.t("Chia đều các ngăn")) { _ = model.perform(.equalizePanes) }
         } label: {
             Image(systemName: "rectangle.3.group")
         }
+    }
+
+    /// A split item: disabled past `PaneTree.maxPanes` same as before, and additionally labelled PRO (still
+    /// clickable, since a menu label can't host `.proGated`'s own disable — the pane limit itself already blocks the
+    /// split once Free's cap is hit via `canPerform`/`PaneTree.canSplit` upstream) once Free's own lower cap is reached.
+    private func splitMenuItem(_ title: String, action: @escaping () -> Void) -> some View {
+        Button {
+            action()
+        } label: {
+            if paneLimitReachedInFree {
+                Text(title + " (" + L10n.t("Pro") + ")")
+            } else {
+                Text(title)
+            }
+        }
+        .disabled(!model.tree.canSplit || paneLimitReachedInFree)
     }
 
     private var operationsButton: some View {
@@ -155,37 +192,49 @@ struct BrowserRootView: View {
 
     private var workspaceMenu: some View {
         Menu {
-            Button(L10n.t("Lưu Workspace")) {
+            Button {
                 workspaceName = ""
                 showingWorkspaceSaveSheet = true
+            } label: {
+                HStack {
+                    Text(L10n.t("Lưu Workspace…"))
+                    if !license.allows(.browserWorkspaces) { ProBadge() }
+                }
             }
-            // "Mở Workspace" needs a list of saved workspaces, which only `BrowserWindowController` (Cluster C)
-            // can read (workspaces.json); its stub does not yet expose that store, so the item is disabled rather
-            // than wired to a no-op — a future Cluster-C method is the only thing this menu item is waiting on.
-            Button(L10n.t("Mở Workspace")) {}
-                .disabled(true)
+            Button {
+                showingOpenWorkspaceSheet = true
+            } label: {
+                HStack {
+                    Text(L10n.t("Mở"))
+                    if !license.allows(.browserWorkspaces) { ProBadge() }
+                }
+            }
+            .disabled(model.workspaces.isEmpty)
+            Divider()
+            Button(L10n.t("Quản lý Workspace…")) {
+                showingManageWorkspacesSheet = true
+            }
+            .disabled(model.workspaces.isEmpty)
         } label: {
             Image(systemName: "square.stack.3d.up")
         }
     }
 
-    /// Builds the `WindowSnapshot` for the current window (`model.snapshot(frame:)`) and names it; persisting that
-    /// snapshot into `workspaces.json` (`WorkspaceStore.save`, loaded/saved once per app by `BrowserWindowController`
-    /// per ui-contract Cụm C) is a Cluster-C responsibility this stub does not yet expose a hook for — documented as
-    /// a contract gap in the final report rather than reaching into another cluster's persistence file from here.
+    /// Names the current window's layout and persists it via `model.saveWorkspace(named:)` (Pro-gated: Free gets a
+    /// banner from the model itself and no workspace is written).
     private var saveWorkspaceSheet: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             Text(L10n.t("Lưu Workspace"))
                 .font(XFinderTokens.Font.sectionTitle)
             TextField(L10n.t("Tên Workspace"), text: $workspaceName)
                 .textFieldStyle(.roundedBorder)
+                .onSubmit { commitSaveWorkspace() }
             HStack {
                 Spacer()
                 Button(L10n.t("Dừng")) { showingWorkspaceSaveSheet = false }
                     .keyboardShortcut(.cancelAction)
                 Button(L10n.t("Lưu Workspace")) {
-                    _ = model.snapshot(frame: nil)
-                    showingWorkspaceSaveSheet = false
+                    commitSaveWorkspace()
                 }
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.defaultAction)
@@ -193,6 +242,95 @@ struct BrowserRootView: View {
         }
         .padding(XFinderTokens.Space.section)
         .frame(width: 320)
+    }
+
+    private func commitSaveWorkspace() {
+        _ = model.saveWorkspace(named: workspaceName)
+        showingWorkspaceSaveSheet = false
+    }
+
+    /// Picks one of `model.workspaces` to replace this window's layout with (`model.openWorkspace(_:)`).
+    private var openWorkspaceSheet: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            Text(L10n.t("Mở Workspace"))
+                .font(XFinderTokens.Font.sectionTitle)
+            if model.workspaces.isEmpty {
+                Text(L10n.t("Chưa có Workspace nào"))
+                    .font(XFinderTokens.Font.rowValue)
+                    .foregroundColor(.secondary)
+            } else {
+                List(model.workspaces) { workspace in
+                    Button {
+                        model.openWorkspace(workspace.id)
+                        showingOpenWorkspaceSheet = false
+                    } label: {
+                        HStack {
+                            Text(workspace.name)
+                            Spacer()
+                            Text(workspace.savedAt, style: .date)
+                                .font(XFinderTokens.Font.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(minHeight: 160)
+            }
+            HStack {
+                Spacer()
+                Button(L10n.t("Dừng")) { showingOpenWorkspaceSheet = false }
+                    .keyboardShortcut(.cancelAction)
+            }
+        }
+        .padding(XFinderTokens.Space.section)
+        .frame(width: 360)
+    }
+
+    // MARK: - Folder sync bar
+
+    /// A slim bar above the grid while `model.activeSyncPair` is set: names source → destination, runs the pair
+    /// (`model.syncNow()`, Pro-gated via `.folderSync` — Free still sees the pair and the bar, just not a working
+    /// button), shows the last result, and links to the pair's own settings page.
+    private func syncBar(_ pair: FolderSyncController.Pair) -> some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            Image(systemName: "arrow.triangle.2.circlepath")
+                .foregroundColor(.secondary)
+            Text(L10n.t("Đồng bộ ") + pair.sourceName + " → " + pair.destName)
+                .font(XFinderTokens.Font.rowValue)
+
+            if let lastResult = pair.lastResult {
+                Text(lastResult)
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            Button {
+                isSyncing = true
+                Task {
+                    _ = await model.syncNow()
+                    isSyncing = false
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    if isSyncing { ProgressView().controlSize(.small) }
+                    Text(L10n.t("Đồng bộ ngay"))
+                }
+            }
+            .disabled(isSyncing)
+            .proGated(.folderSync)
+
+            Button(L10n.t("Cài đặt cặp này…")) {
+                AppState.shared.navigate(to: .sync)
+            }
+            .buttonStyle(.plain)
+            .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, XFinderTokens.Space.row)
+        .padding(.vertical, XFinderTokens.Space.tight)
+        .background(XFinderTokens.Fill.surface)
     }
 
     // MARK: - Banner
@@ -217,5 +355,104 @@ struct BrowserRootView: View {
         }
         bannerWorkItem = work
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.bannerAutoHide, execute: work)
+    }
+}
+
+/// "Quản lý Workspace…" — a list with inline rename, duplicate, delete (behind a confirmation), and an export to a
+/// JSON file the person picks with `NSSavePanel` (`model.exportWorkspaces()`). Rename/duplicate/delete work the same
+/// in Free and Pro (XF-T29: `.browserWorkspaces` only gates saving a NEW one and opening one into a window); this
+/// sheet never creates a workspace, so it carries no gate of its own.
+private struct ManageWorkspacesSheet: View {
+    let model: BrowserWindowModel
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var renamingID: UUID?
+    @State private var renameText = ""
+    @State private var pendingDeleteID: UUID?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            Text(L10n.t("Quản lý Workspace"))
+                .font(XFinderTokens.Font.sectionTitle)
+
+            if model.workspaces.isEmpty {
+                Text(L10n.t("Chưa có Workspace nào"))
+                    .font(XFinderTokens.Font.rowValue)
+                    .foregroundColor(.secondary)
+            } else {
+                List(model.workspaces) { workspace in
+                    row(for: workspace)
+                }
+                .frame(minHeight: 200)
+            }
+
+            HStack {
+                Button(L10n.t("Xuất JSON…")) {
+                    exportToFile()
+                }
+                .disabled(model.workspaces.isEmpty)
+                Spacer()
+                Button(L10n.t("Xong")) { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(XFinderTokens.Space.section)
+        .frame(width: 420)
+        .confirmationDialog(
+            L10n.t("Xoá Workspace này?"),
+            isPresented: Binding(get: { pendingDeleteID != nil }, set: { if !$0 { pendingDeleteID = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button(L10n.t("Xoá"), role: .destructive) {
+                if let id = pendingDeleteID { model.deleteWorkspace(id) }
+                pendingDeleteID = nil
+            }
+            Button(L10n.t("Dừng"), role: .cancel) { pendingDeleteID = nil }
+        }
+    }
+
+    @ViewBuilder
+    private func row(for workspace: Workspace) -> some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            if renamingID == workspace.id {
+                TextField(L10n.t("Tên Workspace"), text: $renameText)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { commitRename(workspace.id) }
+                Button(L10n.t("Xong")) { commitRename(workspace.id) }
+                Button(L10n.t("Dừng")) { renamingID = nil }
+            } else {
+                Text(workspace.name)
+                    .font(XFinderTokens.Font.rowValue)
+                Spacer()
+                Button(L10n.t("Đổi tên")) {
+                    renameText = workspace.name
+                    renamingID = workspace.id
+                }
+                .buttonStyle(.plain)
+                Button(L10n.t("Nhân đôi")) {
+                    model.duplicateWorkspace(workspace.id)
+                }
+                .buttonStyle(.plain)
+                Button(L10n.t("Xoá")) {
+                    pendingDeleteID = workspace.id
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.red)
+            }
+        }
+        .settingsRow()
+    }
+
+    private func commitRename(_ id: UUID) {
+        _ = model.renameWorkspace(id, to: renameText)
+        renamingID = nil
+    }
+
+    private func exportToFile() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.json]
+        panel.nameFieldStringValue = "workspaces.json"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        try? model.exportWorkspaces().write(to: url, options: .atomic)
     }
 }

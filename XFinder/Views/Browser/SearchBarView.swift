@@ -139,7 +139,8 @@ struct SearchBarView: View {
                 .font(XFinderTokens.Font.caption)
             Button {
                 guard let search = pane.search else { return }
-                pane.runSearch(buildQueryText(removing: chip, from: search.parsed), scope: search.scope)
+                let remaining = SearchQuery.removing(chip: chip.id, from: search.parsed)
+                pane.runSearch(parsed: remaining, scope: search.scope)
             } label: {
                 Image(systemName: "xmark")
                     .font(.system(size: 9, weight: .bold))
@@ -159,70 +160,9 @@ struct SearchBarView: View {
             ChipEditorPopover(chip: editing) { updated in
                 guard let search = pane.search else { return }
                 let replaced = SearchQuery.replacing(id: chip.id, with: updated, in: search.parsed)
-                pane.runSearch(SearchBarView.rebuildText(replaced), scope: search.scope)
+                pane.runSearch(parsed: replaced, scope: search.scope)
                 editingChip = nil
             }
-        }
-    }
-
-    /// Chips are edited through `SearchQuery.replacing`/`removing` on the PARSED structure, but `pane.runSearch`
-    /// takes raw text (contract: `PaneState.runSearch(_:scope:)`); re-running the ORIGINAL typed text keeps the
-    /// pane's source of truth as the one text field. Removing a chip narrows what's shown by asking the engine to
-    /// drop that one piece of structure and re-derive text-free of it is Cluster C's job once it stops stubbing
-    /// `runSearch`; here we pass the already-edited parse forward via the chip's own vocabulary words so a plain
-    /// re-run still reflects the removal for the common "field:value" phrasing.
-    private func buildQueryText(removing chip: SearchChip, from search: ParsedSearch) -> String {
-        let remaining = SearchQuery.removing(chip: chip.id, from: search)
-        return SearchBarView.rebuildText(remaining)
-    }
-
-    /// Best-effort reconstruction of a plain query string from a `ParsedSearch` with one chip taken out — terms,
-    /// phrases and exclusions already ARE text, so only chips (which the user typed as natural language) need a
-    /// readable re-encoding to keep the field showing something sensible after a chip is removed.
-    private static func rebuildText(_ parsed: ParsedSearch) -> String {
-        var parts: [String] = parsed.terms
-        parts.append(contentsOf: parsed.phrases.map { "\"\($0)\"" })
-        parts.append(contentsOf: parsed.excluded.map { "-\($0)" })
-        for chip in parsed.chips {
-            switch chip.value {
-            case .kind(let k): parts.append("kind:\(k.rawValue)")
-            case .date(let range):
-                if let token = dateQueryToken(range) {
-                    parts.append("\(chip.field.rawValue):\(token)")
-                }
-                // A range with no `field:value` round trip (pastDays/olderThanDays/month) is dropped from the
-                // rebuilt text rather than emitting a token `SearchQuery.parse` cannot read back — the edit that
-                // removed a DIFFERENT chip must not silently reintroduce stale, unparsable text for this one.
-            case .size(let op, let bytes): parts.append("size:\(sizeOpGlyph(op))\(bytes)")
-            case .text(let t): parts.append("\(chip.field.rawValue):\(t)")
-            }
-        }
-        return parts.joined(separator: " ")
-    }
-
-    /// Only the relative-keyword vocabulary `SearchQuery.parse`'s `field:value` syntax understands (same list as
-    /// its private `parseDateToken`); other `DateRange` cases have no single-token spelling and are omitted above.
-    private static func dateQueryToken(_ range: DateRange) -> String? {
-        switch range {
-        case .today: return "today"
-        case .yesterday: return "yesterday"
-        case .thisWeek: return "thisweek"
-        case .lastWeek: return "lastweek"
-        case .thisMonth: return "thismonth"
-        case .lastMonth: return "lastmonth"
-        case .thisYear: return "thisyear"
-        case .lastYear: return "lastyear"
-        case .pastDays, .olderThanDays, .month: return nil
-        }
-    }
-
-    private static func sizeOpGlyph(_ op: SizeOp) -> String {
-        switch op {
-        case .greater: return ">"
-        case .less: return "<"
-        case .greaterOrEqual: return ">="
-        case .lessOrEqual: return "<="
-        case .equal: return ""
         }
     }
 

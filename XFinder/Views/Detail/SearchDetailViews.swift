@@ -360,6 +360,18 @@ struct AiSearchDetailView: View {
                     subtitle: L10n.t("Hiểu câu tự nhiên và tự tạo câu truy vấn Spotlight — 100% trên máy")
                 )
 
+                SettingsSection(title: L10n.t("Trình duyệt tệp")) {
+                    HStack(spacing: XFinderTokens.Space.inline) {
+                        Text(L10n.t("Tìm bằng câu thường ngay trong Trình duyệt tệp — có chip sửa được"))
+                            .font(XFinderTokens.Font.rowValue)
+                        Spacer()
+                        Button(L10n.t("Mở thanh tìm")) {
+                            BrowserWindowController.shared.openWindow(path: nil, startSearch: true)
+                        }
+                    }
+                    .settingsRow()
+                }
+
                 SettingsSection(
                     title: L10n.t("Hỏi bằng câu tự nhiên"),
                     footer: L10n.t("100% trên máy — ví dụ: “ảnh sửa tuần này”")

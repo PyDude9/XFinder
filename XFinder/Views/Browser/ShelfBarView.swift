@@ -12,6 +12,11 @@ struct ShelfBarView: View {
 
     @State private var isTargeted = false
     @State private var shelfSelection: Set<String> = []
+    @State private var license = LicenseManager.shared
+
+    /// Existing items stay usable in Free (XF-T29 rule 3: a downgrade never breaks what's already there) — the gate
+    /// only covers ADDING to the Shelf (drop target and the explicit add affordance), per the Wave 4 task.
+    private var canAddToShelf: Bool { license.allows(.browserShelf) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -29,6 +34,7 @@ struct ShelfBarView: View {
         }
         .overlay(isTargeted ? RoundedRectangle(cornerRadius: 0).strokeBorder(Color.accentColor, lineWidth: 2) : nil)
         .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
+            guard canAddToShelf else { return false }
             handleDrop(providers)
             return true
         }
@@ -38,12 +44,18 @@ struct ShelfBarView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: XFinderTokens.Space.tight) {
                 if model.shelf.items.isEmpty {
-                    Text(L10n.t("Kéo tệp vào đây để thêm vào Shelf"))
-                        .font(XFinderTokens.Font.caption)
-                        .foregroundColor(.secondary)
+                    HStack(spacing: XFinderTokens.Space.tight) {
+                        Text(L10n.t("Kéo tệp vào đây để thêm vào Shelf"))
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
+                        if !canAddToShelf { ProBadge() }
+                    }
                 } else {
                     ForEach(model.shelf.items) { item in
                         shelfItemView(item)
+                    }
+                    if !canAddToShelf {
+                        ProBadge()
                     }
                 }
             }
