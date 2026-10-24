@@ -269,6 +269,11 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-CLIP-IMG | Chép cùng một ảnh hai lần trong 10 s; chép một file `.svg` trong Finder | Lần hai không thành dòng mới; SVG hiện là **ảnh** có thumbnail (`e05a67f`) |
 | T-SEARCH-1 | Tìm kiếm AI: gõ "ảnh"; trang Tìm kiếm: để trống điều kiện rồi Tìm | Kết quả hiện gần như ngay (< 1 s cho "ảnh"), tiêu đề "100+ kết quả", dòng cuối "…và 50+ kết quả nữa"; không treo (trước: 2 s / 35 s, "100 kết quả") |
 | T-PASTE-1 | Chụp màn hình → bấm Sao chép; dán vào Messages/Notes/Preview (Tệp ▸ Mới từ Clipboard); mở Thư viện clipboard, dán lại một ảnh cũ | Dán được ở cả ba app (Preview đọc TIFF lười — kiểm nó vẫn ra ảnh); `footprint` không tăng vài chục MB mỗi lần (trước: 92–94 MB/lần với ảnh chụp cuộn) |
+| Q-T28-1 | Trình duyệt tệp: phân tầng Free/PRO như FileOctopus (2 ngăn miễn phí)? | **Mặc định: mọi thứ miễn phí, 16 ngăn** — XFinder không có hệ thống giấy phép |
+| Q-T28-3 | ⌘F trong trình duyệt = lọc thư mục hiện tại, ⌥⌘F = tìm kiếm (FileOctopus: ⌘F = tìm)? | **Mặc định như bên trái** |
+| Q-T28-4 | Di chuyển khác ổ: bản gốc sau khi kiểm SHA-256 đi đâu? | **Mặc định: Thùng rác** (luật 9); FileOctopus xoá hẳn |
+| Q-T28-6 | "Mở trong Google Drive" / "Sao chép liên kết Drive" | v2 — máy này không cài Drive/Dropbox, chưa đo được xattr của Drive |
+| T-T28-1…10 | Trình duyệt tệp — xem `docs/specs/XF-T28-file-browser.md` §7 (bước + kỳ vọng từng mục) | chờ bản cài có giao diện thật |
 | T-HUD-7 | Đang phát nhạc: rê lên notch cho dải Đang phát hiện, giữ chuột ở đó, bấm phím âm lượng | Ô âm lượng hiện thay dải nhạc; ~1,5 s sau **dải nhạc quay lại** (trước: biến mất tới khi rê lại). Bấm xong rời chuột khỏi notch ⇒ dải đóng như thường |
 | T-SNAPMEM-2 | Với luật trên, rút màn ngoài rồi cắm lại (hoặc ngược lại) | Luật ghi với bộ "màn trong + HC-L200A" chỉ áp khi đủ hai màn; khi chỉ còn màn trong, Chrome **không** bị kéo đi; cắm lại ⇒ áp trong ~1–3 s |
 | T-SNAPMEM-3 | Đưa một app đã có luật vào toàn màn hình (nút xanh), thoát app, mở lại | Hàng luật đổi thành "Toàn màn hình (Space riêng)"; mở lại ⇒ app vào toàn màn hình trên đúng màn. App không cho đặt ⇒ hàng ghi "App không cho đặt toàn màn hình qua Trợ năng", không thử lại |

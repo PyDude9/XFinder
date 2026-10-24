@@ -21,6 +21,24 @@ struct DirectoryEntry: Hashable, Sendable, Identifiable {
     let modified: Date
     let created: Date
     let volumeID: Int32
+    /// The name folded once (case, diacritics, "đ" → "d") as UTF-8 bytes — what filter, sort and type-select compare.
+    /// Measured 2026-10-24 (-O, 100 000 entries, two thirds Vietnamese names): folding inside every filter keystroke cost
+    /// 363–440 ms and `localizedStandardCompare` sorting 735 ms; on this precomputed key: filter 1 ms, sort ~60 ms.
+    let nameKey: [UInt8]
+
+    init(name: String, path: String, kind: Kind, isPackage: Bool, isHidden: Bool, size: Int64, modified: Date,
+         created: Date, volumeID: Int32) {
+        self.name = name
+        self.path = path
+        self.kind = kind
+        self.isPackage = isPackage
+        self.isHidden = isHidden
+        self.size = size
+        self.modified = modified
+        self.created = created
+        self.volumeID = volumeID
+        self.nameKey = EntryRules.foldBytes(name)
+    }
 
     /// Lowercased extension, "" when the name has none (dotfiles like ".gitignore" count as none).
     var ext: String {
@@ -58,21 +76,92 @@ enum EntryRules {
     /// keyboard layout cannot type "đ" at all. Shared by `filter` and `TypeSelect` so both treat a
     /// name the same way; callers filtering a stable list many times over should cache this per entry.
     static func foldKey(_ name: String) -> String {
-        name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
-            .replacingOccurrences(of: "đ", with: "d")
-            .replacingOccurrences(of: "Đ", with: "d")
+        String(decoding: foldBytes(name), as: UTF8.self)
+    }
+
+    /// `foldKey` as UTF-8 bytes, fast: ASCII is lowercased byte by byte; Latin-1, Latin Extended-A/B and Latin Extended
+    /// Additional (every Vietnamese letter) come from `foldTable`, each scalar folded by Foundation ONCE; anything else
+    /// (CJK, emoji…) keeps its own lowercase bytes. Same result as Foundation's diacritic+case folding for those ranges.
+    static func foldBytes(_ name: String) -> [UInt8] {
+        var out = [UInt8]()
+        out.reserveCapacity(name.utf8.count)
+        var ascii = true
+        for b in name.utf8 {
+            if b >= 0x80 { ascii = false; break }
+            out.append(b >= 65 && b <= 90 ? b + 32 : b)
+        }
+        if ascii { return out }
+        out.removeAll(keepingCapacity: true)
+        for scalar in name.unicodeScalars {
+            let v = scalar.value
+            if v < 0x80 {
+                let b = UInt8(v)
+                out.append(b >= 65 && b <= 90 ? b + 32 : b)
+            } else if let folded = foldTable[v] {
+                out.append(contentsOf: folded)
+            } else {
+                out.append(contentsOf: String(scalar).lowercased().utf8)
+            }
+        }
+        return out
+    }
+
+    /// U+0080–U+024F and U+1E00–U+1EFF folded once by Foundation (case + diacritics) plus "đ"/"Đ" → "d", which Foundation
+    /// leaves alone (a base letter, not a combining mark).
+    private static let foldTable: [UInt32: [UInt8]] = {
+        var table: [UInt32: [UInt8]] = [:]
+        for range in [0x80...0x24F, 0x1E00...0x1EFF] {
+            for v in range {
+                guard let scalar = Unicode.Scalar(UInt32(v)) else { continue }
+                let folded = String(scalar).folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
+                table[UInt32(v)] = Array(folded.utf8)
+            }
+        }
+        table[0x0110] = Array("d".utf8)   // Đ
+        table[0x0111] = Array("d".utf8)   // đ
+        return table
+    }()
+
+    /// Natural ("File 2" < "File 10") three-way compare of two folded keys: digit runs compare by value (shorter run of
+    /// significant digits is smaller), everything else byte by byte; digits sort before letters, as in Finder.
+    static func naturalCompare(_ a: [UInt8], _ b: [UInt8]) -> Int {
+        var i = 0, j = 0
+        let na = a.count, nb = b.count
+        while i < na && j < nb {
+            let ca = a[i], cb = b[j]
+            let da = ca >= 0x30 && ca <= 0x39, db = cb >= 0x30 && cb <= 0x39
+            if da && db {
+                var si = i; while si < na && a[si] == 0x30 { si += 1 }
+                var sj = j; while sj < nb && b[sj] == 0x30 { sj += 1 }
+                var ei = si; while ei < na && a[ei] >= 0x30 && a[ei] <= 0x39 { ei += 1 }
+                var ej = sj; while ej < nb && b[ej] >= 0x30 && b[ej] <= 0x39 { ej += 1 }
+                let la = ei - si, lb = ej - sj
+                if la != lb { return la < lb ? -1 : 1 }
+                var k = 0
+                while k < la {
+                    if a[si + k] != b[sj + k] { return a[si + k] < b[sj + k] ? -1 : 1 }
+                    k += 1
+                }
+                i = ei; j = ej
+                continue
+            }
+            if ca != cb { return ca < cb ? -1 : 1 }
+            i += 1; j += 1
+        }
+        if na - i == nb - j { return 0 }
+        return na - i < nb - j ? -1 : 1
     }
 
     /// Sort used by every pane's List/Icon/Column/Gallery view. Each key has its own tie-break so the
     /// order is always fully determined (never "equal" → stable-sort luck):
-    /// - `.name`: `localizedStandardCompare` ("File 2" < "File 10"); equal names (case variants on a
-    ///   case-insensitive volume) break by `path`.
+    /// - `.name`: `naturalCompare` on the folded `nameKey` ("File 2" < "File 10", case- and accent-insensitive like
+    ///   Finder's primary collation); equal keys break by `path`.
     /// - `.size`: directories (logical size -1) sort before files when ascending, and among
     ///   directories the order is by name (there is no size to compare). Files compare by `size`,
     ///   ties by name.
     /// - `.kind`: by `kindName(entry)` — the already-localized type name the column shows ("Thư mục",
-    ///   "Tài liệu PDF"), exactly how Finder sorts its Kind column, not by raw extension — compared
-    ///   with `localizedStandardCompare`, ties by name.
+    ///   "Tài liệu PDF"), exactly how Finder sorts its Kind column, not by raw extension — folded once per distinct
+    ///   kind and compared with `naturalCompare`, ties by name.
     /// - `.modified`: by `modified`, ties by name.
     ///
     /// `foldersFirst` (the "Ưu tiên thư mục" view option) is applied as a key ABOVE all of the above:
@@ -84,60 +173,106 @@ enum EntryRules {
         _ entries: [DirectoryEntry], by order: SortOrder, foldersFirst: Bool,
         kindName: (DirectoryEntry) -> String
     ) -> [DirectoryEntry] {
-        // Precompute kind names once; calling the closure inside the comparator would re-derive the
-        // localized string O(n log n) times instead of O(n).
-        let kindNames: [String: String]
-        if order.key == .kind {
-            var map: [String: String] = [:]
-            map.reserveCapacity(entries.count)
-            for entry in entries where map[entry.path] == nil {
-                map[entry.path] = kindName(entry)
+        // Everything the comparator reads is pulled out first and an array of indices is sorted; the folded names (and
+        // kind names) live in ONE contiguous byte buffer read through a pointer. Measured 2026-10-24, 100 000 entries:
+        // comparing `DirectoryEntry` values moved whole structs per comparison (145 ms by name), and even `[[UInt8]]`
+        // paid a retain/release per access (137 ms); the flat buffer is what makes this cheap.
+        let n = entries.count
+        var names = FlatKeys(capacity: n)
+        var folders = [Bool](); folders.reserveCapacity(n)
+        for e in entries { names.append(e.nameKey); folders.append(e.isFolderLike) }
+        let paths = entries.map(\.path)
+        var kinds = FlatKeys(capacity: order.key == .kind ? n : 0)
+        var dates: [Date] = []
+        var sizes: [Int64] = []
+        switch order.key {
+        case .kind:
+            var folded: [String: [UInt8]] = [:]
+            for e in entries {
+                let k = kindName(e)
+                if let f = folded[k] { kinds.append(f) } else { let f = foldBytes(k); folded[k] = f; kinds.append(f) }
             }
-            kindNames = map
-        } else {
-            kindNames = [:]
+        case .modified: dates = entries.map(\.modified)
+        case .size: sizes = entries.map(\.size)
+        case .name: break
         }
 
-        func namesAscending(_ a: DirectoryEntry, _ b: DirectoryEntry) -> Bool {
-            let cmp = a.name.localizedStandardCompare(b.name)
-            if cmp != .orderedSame { return cmp == .orderedAscending }
-            return a.path < b.path
+        var indices = Array(0..<n)
+        names.bytes.withUnsafeBufferPointer { nameBytes in
+            kinds.bytes.withUnsafeBufferPointer { kindBytes in
+                func nameCompare(_ x: Int, _ y: Int) -> Int {
+                    naturalCompare(nameBytes, names.starts[x], names.starts[x + 1], names.starts[y], names.starts[y + 1])
+                }
+                func primary(_ x: Int, _ y: Int) -> Int {
+                    switch order.key {
+                    case .name:
+                        return nameCompare(x, y)
+                    case .modified:
+                        return dates[x] == dates[y] ? 0 : (dates[x] < dates[y] ? -1 : 1)
+                    case .size:
+                        let xDir = sizes[x] < 0, yDir = sizes[y] < 0
+                        if xDir != yDir { return xDir ? -1 : 1 }
+                        if xDir { return 0 }                         // both directories: fall through to name
+                        return sizes[x] == sizes[y] ? 0 : (sizes[x] < sizes[y] ? -1 : 1)
+                    case .kind:
+                        return naturalCompare(kindBytes, kinds.starts[x], kinds.starts[x + 1], kinds.starts[y], kinds.starts[y + 1])
+                    }
+                }
+                indices.sort { x, y in
+                    if foldersFirst, folders[x] != folders[y] { return folders[x] }
+                    let c = primary(x, y)
+                    if c != 0 { return order.ascending ? c < 0 : c > 0 }
+                    if order.key != .name {
+                        let t = nameCompare(x, y)
+                        if t != 0 { return t < 0 }
+                    }
+                    return paths[x] < paths[y]
+                }
+            }
         }
+        return indices.map { entries[$0] }
+    }
 
-        func primaryOrder(_ a: DirectoryEntry, _ b: DirectoryEntry) -> ComparisonResult {
-            switch order.key {
-            case .name:
-                return a.name.localizedStandardCompare(b.name)
-            case .modified:
-                if a.modified == b.modified { return .orderedSame }
-                return a.modified < b.modified ? .orderedAscending : .orderedDescending
-            case .size:
-                let aDir = a.size < 0
-                let bDir = b.size < 0
-                if aDir != bDir { return aDir ? .orderedAscending : .orderedDescending }
-                if aDir && bDir { return .orderedSame }  // both directories: fall through to name
-                if a.size == b.size { return .orderedSame }
-                return a.size < b.size ? .orderedAscending : .orderedDescending
-            case .kind:
-                let ak = kindNames[a.path] ?? ""
-                let bk = kindNames[b.path] ?? ""
-                return ak.localizedStandardCompare(bk)
-            }
+    /// Keys packed end to end; key `i` is `bytes[starts[i] ..< starts[i + 1]]`.
+    private struct FlatKeys {
+        var bytes: [UInt8] = []
+        var starts: [Int] = [0]
+        init(capacity: Int) {
+            bytes.reserveCapacity(capacity * 24)
+            starts.reserveCapacity(capacity + 1)
         }
+        mutating func append(_ key: [UInt8]) {
+            bytes.append(contentsOf: key)
+            starts.append(bytes.count)
+        }
+    }
 
-        return entries.sorted { a, b in
-            if foldersFirst {
-                let aFolder = a.isFolderLike
-                let bFolder = b.isFolderLike
-                if aFolder != bFolder { return aFolder }
+    /// `naturalCompare` on two ranges of one buffer (the sort's hot path — no array per key).
+    private static func naturalCompare(_ buf: UnsafeBufferPointer<UInt8>, _ a0: Int, _ a1: Int, _ b0: Int, _ b1: Int) -> Int {
+        var i = a0, j = b0
+        while i < a1 && j < b1 {
+            let ca = buf[i], cb = buf[j]
+            let da = ca >= 0x30 && ca <= 0x39, db = cb >= 0x30 && cb <= 0x39
+            if da && db {
+                var si = i; while si < a1 && buf[si] == 0x30 { si += 1 }
+                var sj = j; while sj < b1 && buf[sj] == 0x30 { sj += 1 }
+                var ei = si; while ei < a1 && buf[ei] >= 0x30 && buf[ei] <= 0x39 { ei += 1 }
+                var ej = sj; while ej < b1 && buf[ej] >= 0x30 && buf[ej] <= 0x39 { ej += 1 }
+                let la = ei - si, lb = ej - sj
+                if la != lb { return la < lb ? -1 : 1 }
+                var k = 0
+                while k < la {
+                    if buf[si + k] != buf[sj + k] { return buf[si + k] < buf[sj + k] ? -1 : 1 }
+                    k += 1
+                }
+                i = ei; j = ej
+                continue
             }
-            let cmp = primaryOrder(a, b)
-            if cmp != .orderedSame {
-                let ascendingResult = cmp == .orderedAscending
-                return order.ascending ? ascendingResult : !ascendingResult
-            }
-            return namesAscending(a, b)
+            if ca != cb { return ca < cb ? -1 : 1 }
+            i += 1; j += 1
         }
+        if a1 - i == b1 - j { return 0 }
+        return a1 - i < b1 - j ? -1 : 1
     }
 
     /// `⇧⌘.` toggle: dotfiles and `UF_HIDDEN` entries are simply absent when off, present when on —
@@ -150,57 +285,18 @@ enum EntryRules {
     /// survives only if its folded name contains EVERY word (any order) — same contract as
     /// `SidebarSearch`. An empty/blank query returns `entries` unchanged without walking it.
     ///
-    /// Budget: 100 000 entries in < 16 ms (-O, one keystroke's worth of work — spec §6). Measured:
-    /// `foldKey` (Foundation `.folding` + two `replacingOccurrences`) alone costs ~250 ms / 100 000
-    /// names — the two string-literal replacements dominate, not the Unicode folding. Almost every
-    /// real filename is pure ASCII (no "đ", no accents), so each entry's name is lowercased with a
-    /// byte-level ASCII fast path (~9 ms / 100 000 total, words included) and only the rare non-ASCII
-    /// name pays for the correct-but-slow `foldKey`. Both paths agree on ASCII input (folding ASCII
-    /// text is just lowercasing it), so this is not a second, divergent notion of "folded".
+    /// Budget: 100 000 entries in < 16 ms (-O, one keystroke — spec §6). The name was folded once when the entry was
+    /// made (`nameKey`); a keystroke only folds the query and runs a byte search per entry (measured 1 ms / 100 000).
     static func filter(_ entries: [DirectoryEntry], query: String) -> [DirectoryEntry] {
-        // Slow-but-always-correct path, shared by the few non-ASCII cases below.
-        func foldedFilter() -> [DirectoryEntry] {
-            let words = foldKey(query).split(whereSeparator: { $0.isWhitespace })
-            guard !words.isEmpty else { return entries }
-            return entries.filter { entry in
-                let key = foldKey(entry.name)
-                for word in words where !key.contains(word) { return false }
-                return true
-            }
-        }
-        guard let queryBytes = asciiLowercasedUTF8(query) else {
-            // Non-ASCII query (e.g. a literal "đ"): fold it instead of refusing to match.
-            return foldedFilter()
-        }
-        let words = splitOnASCIIWhitespace(queryBytes)
+        let words = splitOnASCIIWhitespace(foldBytes(query))
         guard !words.isEmpty else { return entries }
         return entries.filter { entry in
-            guard let key = asciiLowercasedUTF8(entry.name) else {
-                // Non-ASCII entry name (e.g. "café.txt"): compare correctly rather than silently
-                // excluding it — re-fold just the query against just this one name.
-                let foldedKey = foldKey(entry.name)
-                let foldedWords = foldKey(query).split(whereSeparator: { $0.isWhitespace })
-                for word in foldedWords where !foldedKey.contains(word) { return false }
-                return true
-            }
-            for word in words where !containsASCIIBytes(key, word) { return false }
+            for word in words where !containsASCIIBytes(entry.nameKey, word) { return false }
             return true
         }
     }
 
-    /// `name`'s UTF-8 bytes with A–Z lowercased to a–z, or nil the moment a non-ASCII byte is seen
-    /// (the caller then falls back to `foldKey`, which is correct for any script but far slower).
-    private static func asciiLowercasedUTF8(_ name: String) -> [UInt8]? {
-        var buf = [UInt8]()
-        buf.reserveCapacity(name.utf8.count)
-        for byte in name.utf8 {
-            guard byte < 0x80 else { return nil }
-            buf.append(byte >= 65 && byte <= 90 ? byte + 32 : byte)
-        }
-        return buf
-    }
-
-    /// Splits already-ASCII-lowercased bytes on ASCII whitespace (space/tab), dropping empty runs —
+    /// Splits folded bytes on ASCII whitespace (space/tab), dropping empty runs —
     /// the byte-level equivalent of `String.split(whereSeparator: \.isWhitespace)`.
     private static func splitOnASCIIWhitespace(_ bytes: [UInt8]) -> [[UInt8]] {
         var words: [[UInt8]] = []
@@ -219,7 +315,7 @@ enum EntryRules {
         return words
     }
 
-    /// Plain substring search over raw bytes (both already ASCII-lowercased) — a hand-rolled
+    /// Plain substring search over folded bytes — a hand-rolled
     /// `contains` because `String.contains` walks grapheme clusters, which this hot path doesn't need.
     private static func containsASCIIBytes(_ haystack: [UInt8], _ needle: [UInt8]) -> Bool {
         if needle.isEmpty { return true }
@@ -264,9 +360,8 @@ enum EntryRules {
         /// "z" lands near where one would be); if still none (prefix sorts after everything), the
         /// last entry; nil only when `names` is empty.
         ///
-        /// "Sorts after" is `localizedStandardCompare` — the SAME natural-order comparator
-        /// `EntryRules.sorted(by: .name)` uses (spec: "theo thứ tự hiện có", i.e. the order the pane
-        /// already shows). A plain `String >` would disagree with it: in a naturally-sorted list like
+        /// "Sorts after" is `naturalCompare` on folded keys — the SAME comparator `EntryRules.sorted(by: .name)` uses
+        /// (spec: "theo thứ tự hiện có", i.e. the order the pane already shows). A plain `String >` would disagree with it: in a naturally-sorted list like
         /// ["file2", "file10", "file99"], "file10" < "file99" lexically treats the digit '1' as less
         /// than '9' at the same position, so a prefix like "file5" would wrongly skip past "file10"
         /// (which should be the landing spot) straight to "file99".
@@ -277,7 +372,8 @@ enum EntryRules {
             for (index, name) in names.enumerated() where foldKey(name).hasPrefix(key) {
                 return index
             }
-            for (index, name) in names.enumerated() where prefix.localizedStandardCompare(name) == .orderedAscending {
+            let prefixKey = foldBytes(prefix)
+            for (index, name) in names.enumerated() where naturalCompare(prefixKey, foldBytes(name)) < 0 {
                 return index
             }
             return names.count - 1

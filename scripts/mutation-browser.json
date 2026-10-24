@@ -158,7 +158,7 @@
   "name": "M11-removeMissing-skip-forward-filter",
   "file": "XFinder/Core/Browser/PaneHistory.swift",
   "anchor": "forward.removeAll { !exists($0) }",
-  "replacement": "(line removed)"
+  "replacement": "_ = exists"
  },
  {
   "id": "PaneHistory-12",
@@ -259,41 +259,6 @@
   "replacement": "String(other[length]) == c"
  },
  {
-  "id": "DirectoryEntry-01",
-  "name": "M1-ascii-lowercase-wrong-direction",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "byte >= 65 && byte <= 90 ? byte + 32 : byte",
-  "replacement": "byte >= 65 && byte <= 90 ? byte - 32 : byte"
- },
- {
-  "id": "DirectoryEntry-02",
-  "name": "M2-size-directory-boundary-off-by-one",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "let aDir = a.size < 0",
-  "replacement": "let aDir = a.size <= 0"
- },
- {
-  "id": "DirectoryEntry-03",
-  "name": "M3-size-sort-ascending-descending-swapped",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "if aDir != bDir { return aDir ? .orderedAscending : .orderedDescending }",
-  "replacement": "if aDir != bDir { return aDir ? .orderedDescending : .orderedAscending }"
- },
- {
-  "id": "DirectoryEntry-04",
-  "name": "M4-descending-negation-dropped",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "return order.ascending ? ascendingResult : !ascendingResult",
-  "replacement": "return ascendingResult"
- },
- {
-  "id": "DirectoryEntry-05",
-  "name": "M5-foldersFirst-inverted",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "if aFolder != bFolder { return aFolder }",
-  "replacement": "if aFolder != bFolder { return !aFolder }"
- },
- {
   "id": "DirectoryEntry-06",
   "name": "M6-visible-ternary-inverted",
   "file": "XFinder/Core/Browser/DirectoryEntry.swift",
@@ -329,25 +294,11 @@
   "replacement": "var isFolderLike: Bool { kind == .directory || !isPackage }"
  },
  {
-  "id": "DirectoryEntry-11",
-  "name": "M11-foldKey-drops-vietnamese-d-mapping",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": ".replacingOccurrences(of: \"đ\", with: \"d\")",
-  "replacement": ".replacingOccurrences(of: \"đ\", with: \"x\")"
- },
- {
   "id": "DirectoryEntry-12",
   "name": "M12-typeselect-match-last-fallback-wrong-index",
   "file": "XFinder/Core/Browser/DirectoryEntry.swift",
   "anchor": "return names.count - 1",
   "replacement": "return 0"
- },
- {
-  "id": "DirectoryEntry-13",
-  "name": "M13-typeselect-match-fallback-comparison-direction-flipped",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "prefix.localizedStandardCompare(name) == .orderedAscending",
-  "replacement": "prefix.localizedStandardCompare(name) == .orderedDescending"
  },
  {
   "id": "SearchQuery-01",
@@ -880,5 +831,75 @@
   "file": "XFinder/Core/Browser/SearchQuery.swift",
   "anchor": "        for word in search.excluded {",
   "replacement": "        for word in [String]() where !search.excluded.isEmpty {"
+ },
+ {
+  "id": "DirectoryEntry-N1",
+  "name": "N1 the ASCII fast path does not lowercase",
+  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+  "anchor": "            out.append(b >= 65 && b <= 90 ? b + 32 : b)\n        }\n        if ascii { return out }",
+  "replacement": "            out.append(b)\n        }\n        if ascii { return out }"
+ },
+ {
+  "id": "DirectoryEntry-N2",
+  "name": "N2 \"đ\" is not folded to \"d\"",
+  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+  "anchor": "        table[0x0111] = Array(\"d\".utf8)   // đ",
+  "replacement": "        table[0x0111] = Array(\"đ\".utf8)   // đ"
+ },
+ {
+  "id": "DirectoryEntry-N3",
+  "name": "N3 a longer number sorts before a shorter one",
+  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+  "anchor": "                if la != lb { return la < lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if a[si + k]",
+  "replacement": "                if la != lb { return la > lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if a[si + k]"
+ },
+ {
+  "id": "DirectoryEntry-N4",
+  "name": "N4 the sort hot path ignores digit values",
+  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+  "anchor": "                if la != lb { return la < lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if buf[si + k]",
+  "replacement": "                if false && la != lb { return la < lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if buf[si + k]"
+ },
+ {
+  "id": "DirectoryEntry-N5",
+  "name": "N5 descending is ignored",
+  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+  "anchor": "                    if c != 0 { return order.ascending ? c < 0 : c > 0 }",
+  "replacement": "                    if c != 0 { return c < 0 }"
+ },
+ {
+  "id": "DirectoryEntry-N6",
+  "name": "N6 folders-first is inverted",
+  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+  "anchor": "                    if foldersFirst, folders[x] != folders[y] { return folders[x] }",
+  "replacement": "                    if foldersFirst, folders[x] != folders[y] { return folders[y] }"
+ },
+ {
+  "id": "DirectoryEntry-N7",
+  "name": "N7 directories sort after files by size",
+  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+  "anchor": "                        if xDir != yDir { return xDir ? -1 : 1 }",
+  "replacement": "                        if xDir != yDir { return xDir ? 1 : -1 }"
+ },
+ {
+  "id": "DirectoryEntry-N8",
+  "name": "N8 the filter needs only one of the words",
+  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+  "anchor": "            for word in words where !containsASCIIBytes(entry.nameKey, word) { return false }\n            return true",
+  "replacement": "            for word in words where containsASCIIBytes(entry.nameKey, word) { return true }\n            return false"
+ },
+ {
+  "id": "DirectoryEntry-N9",
+  "name": "N9 equal names are not broken by path",
+  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+  "anchor": "                    return paths[x] < paths[y]",
+  "replacement": "                    return false"
+ },
+ {
+  "id": "DirectoryEntry-N10",
+  "name": "N10 type-select fallback compares the wrong way",
+  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+  "anchor": "            for (index, name) in names.enumerated() where naturalCompare(prefixKey, foldBytes(name)) < 0 {",
+  "replacement": "            for (index, name) in names.enumerated() where naturalCompare(prefixKey, foldBytes(name)) > 0 {"
  }
 ]

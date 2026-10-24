@@ -498,3 +498,50 @@ final class DirectoryEntryTests: XCTestCase {
         XCTAssertEqual(EntryRules.TypeSelect.match(prefix: "banana", in: names), 1)
     }
 }
+
+/// 2026-10-24 — the precomputed fold key and natural compare that took filtering from 363 ms to 2 ms and name sorting
+/// from 735 ms to 38 ms per 100 000 entries (-O). Semantics must stay Finder's: case/accent-insensitive, "đ" = "d",
+/// numbers by value, digits before letters.
+final class DirectoryEntryFoldKeyTests: XCTestCase {
+    func entry(_ name: String) -> DirectoryEntry {
+        DirectoryEntry(name: name, path: "/t/\(name)", kind: .file, isPackage: false, isHidden: false, size: 1,
+                       modified: Date(timeIntervalSince1970: 0), created: Date(timeIntervalSince1970: 0), volumeID: 1)
+    }
+
+    func testNameKeyIsTheFoldedName() {
+        for n in ["Report.PDF", "Đơn hàng Ảnh.xlsx", "ĐỒNG Ý", "café ß", "日本語ファイル", "Ứng dụng"] {
+            XCTAssertEqual(entry(n).nameKey, Array(EntryRules.foldKey(n).utf8), n)
+        }
+        XCTAssertEqual(EntryRules.foldKey("Đơn HÀNG Ảnh Tiếng Việt"), "don hang anh tieng viet")
+        XCTAssertEqual(EntryRules.foldKey("ỨNG dụng Ộ ữ"), "ung dung o u")
+    }
+
+    func testVietnameseFilterWithoutAccents() {
+        let list = ["Đơn hàng 12.xlsx", "Ảnh chụp màn hình.png", "Report.pdf"].map(entry)
+        XCTAssertEqual(EntryRules.filter(list, query: "don hang").map(\.name), ["Đơn hàng 12.xlsx"])
+        XCTAssertEqual(EntryRules.filter(list, query: "ĐƠN").map(\.name), ["Đơn hàng 12.xlsx"])
+        XCTAssertEqual(EntryRules.filter(list, query: "anh chup").map(\.name), ["Ảnh chụp màn hình.png"])
+        XCTAssertEqual(EntryRules.filter(list, query: "chụp ảnh").map(\.name), ["Ảnh chụp màn hình.png"], "any word order")
+    }
+
+    func testNaturalCompare() {
+        func c(_ a: String, _ b: String) -> Int { EntryRules.naturalCompare(Array(EntryRules.foldKey(a).utf8), Array(EntryRules.foldKey(b).utf8)) }
+        XCTAssertEqual(c("File 2", "File 10"), -1)
+        XCTAssertEqual(c("File 10", "File 2"), 1)
+        XCTAssertEqual(c("file 007", "file 7"), 0, "leading zeros do not change the value")
+        XCTAssertEqual(c("a99", "a100"), -1)
+        XCTAssertEqual(c("9 lives", "apple"), -1, "digits before letters, as in Finder")
+        XCTAssertEqual(c("Ảnh", "anh"), 0, "accents and case are a tie at this level")
+        XCTAssertEqual(c("abc", "abcd"), -1)
+        XCTAssertEqual(c("", "a"), -1)
+    }
+
+    func testNameSortIsNaturalAndAccentInsensitiveWithPathTieBreak() {
+        let list = ["file10", "File2", "ảnh 3", "anh 20", "Anh 1"].map(entry)
+        let sorted = EntryRules.sorted(list, by: .finderDefault, foldersFirst: false, kindName: { _ in "" }).map(\.name)
+        XCTAssertEqual(sorted, ["Anh 1", "ảnh 3", "anh 20", "File2", "file10"])
+        let twins = [entry("B"), entry("b")]   // a case-sensitive volume can hold both
+        let t = EntryRules.sorted(twins, by: .finderDefault, foldersFirst: false, kindName: { _ in "" }).map(\.path)
+        XCTAssertEqual(t, ["/t/B", "/t/b"], "equal keys break by path, deterministically")
+    }
+}
