@@ -202,3 +202,36 @@ dịch) · `PaneID` khai `<` (struct không tự sinh Comparable — tái hiện
 tìm kiếm (§6) · `content:` 0 kết quả có cảnh báo · IdleCost `onlyWhileOpen`. Bác: hai phím cho một lệnh (đã có ⌘↓ qua
 `command(for:)`), id chip trùng field, gộp thư mục (v2 + Giữ cả hai/Bỏ qua), type-select vòng lại, khoá L10n qua biến (đã có
 luật test từ vựng). Dữ liệu: output workflow `xf-t28-spec-review`.
+
+## 9. Gộp với trang cũ + phần còn thiếu + bẫy từ changelog FileOctopus (2026-10-24, Wave 4)
+
+Chủ dự án: "một số tính năng trùng lặp có thể gộp luôn, nếu FileOctopus hiển thị trực quan hơn settings của XFinder cũ,
+ví dụ Folder Sync, Remote Control". Đo: FileOctopus **không** có sync/remote (trang limitations của họ); Remote Connect của
+XFinder là `scp`/`ssh` tải lên (không gắn ổ). Quyết định (mặc định, không hỏi — chủ dự án đã cho phép gộp):
+
+| Trang | Trong trình duyệt | Trang cũ |
+|:--|:--|:--|
+| Đồng bộ thư mục | nhóm sidebar "Đồng bộ": mỗi cặp ⇒ bố cục 2 ngăn nguồn \| đích + nút "Đồng bộ ngay" gọi CÙNG hàm của `FolderSyncController`; badge trên thư mục nguồn | giữ (cấu hình lịch, xoá phần thừa) |
+| Kết nối từ xa | chuột phải "Tải lên ‹đích›" gọi `RemoteConnectController` | giữ (cấu hình máy) — gắn ổ mạng là tính năng mới, Q-T28-7 |
+| Chia sẻ nhanh | lệnh "Chia sẻ qua QR" | giữ (thu hồi, hạn) |
+| Đổi tên hàng loạt, Nén | sheet/lệnh trong trình duyệt (cùng engine) | giữ + `SettingsLinkRow` "Mở trong Trình duyệt tệp"; deep link `.batchRename` vẫn chạy |
+| Tìm kiếm AI / Tìm kiếm | thanh tìm + chip (⌥⌘F) | thêm liên kết sang trình duyệt; phần Tìm nhanh ⌘K giữ |
+| Dọn rác | lệnh "Dọn rác thư mục này" trên thư mục | giữ |
+| Khay thả (notch) | lệnh "Gửi vào Khay thả" từ Shelf | giữ — Shelf theo cửa sổ, Khay thả lâu dài; KHÔNG gộp |
+| Tiện ích Finder (ẩn/hiện tệp của Finder) | — | thêm câu phân biệt: ⇧⌘. của trình duyệt không đổi cài đặt Finder |
+
+Còn thiếu so với FileOctopus 1.0.3 (thêm vào Wave 4): **Get Info** (⌘I: Chung · Thêm thông tin · Tên & đuôi · Thẻ ·
+Chia sẻ & quyền; cỡ thư mục tính nền; ổ: định dạng/dung lượng/điểm gắn) · **Cài đặt ▸ Bàn phím** (mỗi lệnh: phím + phím
+phụ + mặc định, ghi phím, chặn phím hệ thống/Return/Space/Tab/mũi tên, profile Finder/Windows Explorer/Total Commander,
+xuất/nhập JSON có kiểm) · **tuỳ biến sidebar** (nhóm, đổi tên hiển thị, ẩn ổ — schema có phiên bản từ đầu) · **danh sách
+Problems** có Thử lại · **thư mục gần đây** + giữ Back/Forward để hiện danh sách · **nút chuột 4/5** (tắt/đổi) ·
+**hoàn tác bền** 20 bước/24 giờ, kiểm lại "vẫn là tệp đó, ở chỗ đó" trước khi làm.
+
+Bẫy (bản sửa lỗi FileOctopus ⇒ ca kiểm của ta): kéo nhiều tệp crash — **kiểm từng kiểu xem riêng** (họ sửa một view, view
+khác tái phát) · Quick Look phải theo **ngăn đang chọn** · chép **không** được làm ngăn nguồn tải lại · đẩy ổ từ ngoài
+(Disk Utility) phải cập nhật **mọi** cửa sổ · đổi tên chỉ khác hoa/thường phải hiện là thay đổi · Esc khi đổi tên không huỷ
+⌘X đang chờ · Cột ↔ Tìm kiếm/Thẻ không crash · menu chuột phải bật/tắt giống nhau ở 4 kiểu xem · tỉ lệ chia hỏng trong
+workspace bị kẹp từng ngăn · không cấm `/tmp` · kiểm bản sao chỉ so **nội dung** (SHA-256), không ACL/xattr · bị kill đúng
+lúc khởi động lại với nhật ký "đang chạy" không được crash (họ sửa hai lần) · thư mục hiện tại bị xoá ⇒ lên tổ tiên còn
+tồn tại (kể cả ông/bà) · bộ nhớ sau **chuỗi thao tác nặng**, không chỉ một danh sách lớn · ô lọc của hai ngăn không giành
+tiêu điểm của nhau · Thùng rác không bị nhận nhầm "cần quyền".
