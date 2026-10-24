@@ -19,13 +19,13 @@ set -u
 cd "$(dirname "$0")/.."
 MUTANTS=scripts/mutation-browser.json
 BK=$(mktemp -d /tmp/xf-mut-browser.XXXXXX)
-FILES="XFinder/Core/Browser/PaneTree.swift XFinder/Core/Browser/PaneHistory.swift XFinder/Core/Browser/BrowserPath.swift XFinder/Core/Browser/DirectoryEntry.swift XFinder/Core/Browser/SearchQuery.swift XFinder/Core/Browser/FileOperationRules.swift XFinder/Core/Browser/BrowserCommands.swift XFinder/Core/Browser/CloudBadge.swift XFinder/Core/Browser/ShelfModel.swift XFinder/Core/Browser/BrowserWorkspace.swift"
+FILES="XFinder/Core/Browser/PaneTree.swift XFinder/Core/Browser/PaneHistory.swift XFinder/Core/Browser/BrowserPath.swift XFinder/Core/Browser/DirectoryEntry.swift XFinder/Core/Browser/SearchQuery.swift XFinder/Core/Browser/FileOperationRules.swift XFinder/Core/Browser/BrowserCommands.swift XFinder/Core/Browser/CloudBadge.swift XFinder/Core/Browser/ShelfModel.swift XFinder/Core/Browser/BrowserWorkspace.swift XFinder/Core/Browser/SidebarLayout.swift XFinder/Core/Browser/FileInfoRules.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
 trap 'exit 143' INT TERM
 
-FILTER='PaneTreeTests|PaneHistoryTests|BrowserPathTests|DirectoryEntryTests|SearchQueryTests|FileOperationRulesTests|BrowserCommandsTests|CloudBadgeTests|ShelfModelTests|BrowserWorkspaceTests|BrowserVocabularyL10nTests'
+FILTER='PaneTreeTests|PaneHistoryTests|BrowserPathTests|DirectoryEntryTests|SearchQueryTests|FileOperationRulesTests|BrowserCommandsTests|CloudBadgeTests|ShelfModelTests|BrowserWorkspaceTests|BrowserVocabularyL10nTests|SidebarLayoutTests|FileInfoRulesTests'
 # One test run may take at most RUN_TIMEOUT seconds. A mutant that loops forever (BrowserPath-11, 2026-10-24: 42 min at
 # 100 % CPU before it was noticed) is killed WITH its process group — killing only swift-test left orphaned xctest
 # processes burning a core each for 90 minutes — and reported as HANG, which counts as RED: the suite never passes.

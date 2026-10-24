@@ -901,5 +901,61 @@
   "file": "XFinder/Core/Browser/DirectoryEntry.swift",
   "anchor": "            for (index, name) in names.enumerated() where naturalCompare(prefixKey, foldBytes(name)) < 0 {",
   "replacement": "            for (index, name) in names.enumerated() where naturalCompare(prefixKey, foldBytes(name)) > 0 {"
+ },
+ {
+  "id": "SidebarLayout-1",
+  "name": "S1 deleting a group loses its items",
+  "file": "XFinder/Core/Browser/SidebarLayout.swift",
+  "anchor": "        for item in returning where !seenPaths.contains(item.path) {",
+  "replacement": "        for item in returning where false && !seenPaths.contains(item.path) {"
+ },
+ {
+  "id": "SidebarLayout-2",
+  "name": "S2 a group may take a taken name",
+  "file": "XFinder/Core/Browser/SidebarLayout.swift",
+  "anchor": "        guard !trimmed.isEmpty, !groups.contains(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame })",
+  "replacement": "        guard !trimmed.isEmpty, true || !groups.contains(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame })"
+ },
+ {
+  "id": "SidebarLayout-3",
+  "name": "S3 an empty display name is stored instead of reset",
+  "file": "XFinder/Core/Browser/SidebarLayout.swift",
+  "anchor": "        let resolved = (trimmed?.isEmpty ?? true) ? nil : trimmed",
+  "replacement": "        let resolved = trimmed"
+ },
+ {
+  "id": "SidebarLayout-4",
+  "name": "S4 a hidden disk is never reported hidden",
+  "file": "XFinder/Core/Browser/SidebarLayout.swift",
+  "anchor": "        hiddenVolumeUUIDs.contains(uuid)",
+  "replacement": "        hiddenVolumeUUIDs.contains(uuid) && false"
+ },
+ {
+  "id": "FileInfoRules-1",
+  "name": "F1 read and write bits swapped",
+  "file": "XFinder/Core/Browser/FileInfoRules.swift",
+  "anchor": "        let r = (mode >> (shift + 2)) & 1 == 1",
+  "replacement": "        let r = (mode >> (shift + 1)) & 1 == 1"
+ },
+ {
+  "id": "FileInfoRules-2",
+  "name": "F2 read-only keeps the write bit",
+  "file": "XFinder/Core/Browser/FileInfoRules.swift",
+  "anchor": "            result |= rBit; result &= ~wBit",
+  "replacement": "            result |= rBit"
+ },
+ {
+  "id": "FileInfoRules-3",
+  "name": "F3 a colon is accepted in a name",
+  "file": "XFinder/Core/Browser/FileInfoRules.swift",
+  "anchor": "        if trimmed.contains(\"/\") || trimmed.contains(\":\") {",
+  "replacement": "        if trimmed.contains(\"/\") {"
+ },
+ {
+  "id": "FileInfoRules-4",
+  "name": "F4 mixed kinds read as one kind",
+  "file": "XFinder/Core/Browser/FileInfoRules.swift",
+  "anchor": "        let kindSummary = distinctKinds.count == 1 ? (distinctKinds.first ?? \"\") : \"Nhiều loại\"",
+  "replacement": "        let kindSummary = distinctKinds.first ?? \"\""
  }
 ]
