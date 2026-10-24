@@ -58,6 +58,24 @@ ENTRIES = {
     "Xem Pro": ("View Pro", S),
     "Khoá bảng này… (Cần Pro)": ("Lock this board… (Pro required)", S),
     " · PRO": (" · PRO", F),
+    # Pro gates in clipboard/capture/tools/voice (2026-10-24)
+    'Bản Free chỉ chia sẻ 1 liên kết cùng lúc — thu hồi liên kết cũ hoặc nâng cấp để chia sẻ thêm.': ('The free version shares 1 link at a time — revoke the old link or upgrade to share more.', S),
+    'Bản Free giữ nguyên mọi cặp đồng bộ nhưng không tự chạy, kể cả “Đồng bộ ngay” — cần XFinder Pro để chạy đồng bộ.': ('The free version keeps every sync pair but does not run them, “Sync Now” included — syncing needs XFinder Pro.', S),
+    'Chụp cuộn cần XFinder Pro': ('Scrolling capture needs XFinder Pro', S),
+    'Các ảnh cũ hơn mục Free hiện được sẽ chuyển vào Thùng rác — vẫn khôi phục được.': ('Captures older than the free version shows go to the Trash — still restorable.', S),
+    'Cần XFinder Pro để chạy đồng bộ. Cặp đồng bộ vẫn được giữ nguyên.': ('Syncing needs XFinder Pro. Your sync pairs are kept as they are.', S),
+    'Cần XFinder Pro để tút văn bản bằng AI — XFinder sẽ chèn nguyên văn bạn nói thay vì chế độ này.': ('AI polishing needs XFinder Pro — XFinder inserts exactly what you said instead of this mode.', S),
+    'Cần XFinder Pro để tút văn bản bằng AI — đã chèn nguyên văn.': ('AI polishing needs XFinder Pro — inserted your words as spoken.', S),
+    'Cần XFinder Pro để tạo vault mới. Vault đã có vẫn mở khóa và dùng được bình thường.': ('Creating a new vault needs XFinder Pro. Existing vaults still unlock and work normally.', S),
+    'Cần XFinder Pro để tải lên. Danh sách kết nối và Kiểm tra kết nối vẫn dùng được ở bản Free.': ('Uploading needs XFinder Pro. The connection list and Test Connection still work in the free version.', S),
+    'Cần XFinder Pro để tải lên. Danh sách kết nối vẫn được giữ nguyên.': ('Uploading needs XFinder Pro. Your connection list is kept as it is.', S),
+    'Cần XFinder Pro để tự đặt lại bố cục. Luật đã ghi vẫn được giữ, chỉ không tự áp dụng ở bản Free.': ('Restoring layouts automatically needs XFinder Pro. Recorded rules are kept, just not applied in the free version.', S),
+    'Dọn vào Thùng rác': ('Move to Trash', S),
+    'Dọn ảnh cũ vào Thùng rác': ('Move older captures to the Trash', S),
+    'Dọn ảnh cũ vào Thùng rác?': ('Move older captures to the Trash?', S),
+    'Tắt công tắc này chỉ dừng các lượt tự động; nút “Đồng bộ ngay” cần XFinder Pro để chạy ở cả hai trường hợp.': ('Turning this off only stops the automatic runs; “Sync Now” needs XFinder Pro either way.', S),
+    'Vault đã tạo vẫn mở khóa và dùng bình thường ở bản Free — chỉ tạo vault MỚI cần XFinder Pro.': ('Vaults you already made still unlock and work in the free version — only creating a NEW vault needs XFinder Pro.', S),
+    'Điều khiển các lượt Khi thay đổi và Hằng ngày.': ('Controls the On change and Daily runs.', S),
 }
 def main() -> int:
     data = json.loads(STORE.read_text(encoding="utf-8")); e = data["entries"]

@@ -12222,6 +12222,330 @@
     " · PRO": {
       "en": " · PRO",
       "scope": "fragment"
+    },
+    "Báo cáo khôi phục": {
+      "en": "Recovery report",
+      "scope": "sentence"
+    },
+    "Bản trình chiếu": {
+      "en": "Presentations",
+      "scope": "sentence"
+    },
+    "Bảng tính": {
+      "en": "Spreadsheets",
+      "scope": "sentence"
+    },
+    "Bằng": {
+      "en": "Equal to",
+      "scope": "sentence"
+    },
+    "Chép vào ngăn đang chọn": {
+      "en": "Copy to the active pane",
+      "scope": "sentence"
+    },
+    "Chạy kế tiếp": {
+      "en": "Run next",
+      "scope": "sentence"
+    },
+    "Chọn cách xử lý cho mục này.": {
+      "en": "Choose what to do with this item.",
+      "scope": "sentence"
+    },
+    "Chờ xong rồi hãy thoát, hay dừng việc đang chạy và thoát ngay?": {
+      "en": "Wait until it finishes, or stop the running work and quit now?",
+      "scope": "sentence"
+    },
+    "Các ngăn": {
+      "en": "Open panes",
+      "scope": "sentence"
+    },
+    "Cỡ": {
+      "en": "Size",
+      "scope": "sentence"
+    },
+    "Di chuyển vào ngăn đang chọn": {
+      "en": "Move to the active pane",
+      "scope": "sentence"
+    },
+    "Dừng và thoát": {
+      "en": "Stop and quit",
+      "scope": "sentence"
+    },
+    "Giá trị": {
+      "en": "Value",
+      "scope": "sentence"
+    },
+    "Gõ đường dẫn…": {
+      "en": "Type a path…",
+      "scope": "sentence"
+    },
+    "Gõ để tìm hoặc \">\" để gõ lệnh": {
+      "en": "Type to search, or \">\" for commands",
+      "scope": "sentence"
+    },
+    "Không có thư mục": {
+      "en": "No folders",
+      "scope": "sentence"
+    },
+    "Không có tuỳ chọn khác": {
+      "en": "No other options",
+      "scope": "sentence"
+    },
+    "Không có việc nào": {
+      "en": "No operations",
+      "scope": "sentence"
+    },
+    "Không xem được": {
+      "en": "Can't show folders",
+      "scope": "sentence"
+    },
+    "Kéo tệp vào đây để thêm vào Shelf": {
+      "en": "Drag files here to add them to the Shelf",
+      "scope": "sentence"
+    },
+    "Lọc trong thư mục này": {
+      "en": "Filter this folder",
+      "scope": "sentence"
+    },
+    "Lớn hơn": {
+      "en": "Larger than",
+      "scope": "sentence"
+    },
+    "Màn hình nền": {
+      "en": "Desktop",
+      "scope": "sentence"
+    },
+    "Máy này": {
+      "en": "This Mac",
+      "scope": "sentence"
+    },
+    "Mới hơn": {
+      "en": "Newer",
+      "scope": "sentence"
+    },
+    "Mở ở ngăn kia": {
+      "en": "Open in Other Pane",
+      "scope": "sentence"
+    },
+    "Mục đang chép": {
+      "en": "Item being copied",
+      "scope": "sentence"
+    },
+    "Mục đã có": {
+      "en": "Existing item",
+      "scope": "sentence"
+    },
+    "Mục ưa thích": {
+      "en": "Favorites",
+      "scope": "sentence"
+    },
+    "Ngăn đang mở": {
+      "en": "Open pane",
+      "scope": "sentence"
+    },
+    "Nhỏ hơn": {
+      "en": "Smaller than",
+      "scope": "sentence"
+    },
+    "Năm nay": {
+      "en": "This year",
+      "scope": "sentence"
+    },
+    "Năm ngoái": {
+      "en": "Last year",
+      "scope": "sentence"
+    },
+    "So sánh": {
+      "en": "Compare",
+      "scope": "sentence"
+    },
+    "Spotlight có thể chưa lập chỉ mục nội dung ở đây": {
+      "en": "Spotlight may not have indexed the contents here",
+      "scope": "sentence"
+    },
+    "Thao tác sau đây có thể đã bị cắt ngang. Xem lại trước khi coi là xong.": {
+      "en": "These operations may have been interrupted. Review them before treating them as done.",
+      "scope": "sentence"
+    },
+    "Tháng này": {
+      "en": "This month",
+      "scope": "sentence"
+    },
+    "Tháng trước": {
+      "en": "Last month",
+      "scope": "sentence"
+    },
+    "Thư mục này": {
+      "en": "This folder",
+      "scope": "sentence"
+    },
+    "Thẻ": {
+      "en": "Tag",
+      "scope": "sentence"
+    },
+    "Tiếp tục tất cả": {
+      "en": "Resume All",
+      "scope": "sentence"
+    },
+    "Tuần này": {
+      "en": "This week",
+      "scope": "sentence"
+    },
+    "Tuần trước": {
+      "en": "Last week",
+      "scope": "sentence"
+    },
+    "Tên Workspace": {
+      "en": "Workspace name",
+      "scope": "sentence"
+    },
+    "Tìm kiếm…": {
+      "en": "Search…",
+      "scope": "sentence"
+    },
+    "Tạm dừng tất cả": {
+      "en": "Pause All",
+      "scope": "sentence"
+    },
+    "Tạo lúc": {
+      "en": "Created",
+      "scope": "sentence"
+    },
+    "Tệp nén": {
+      "en": "Archives",
+      "scope": "sentence"
+    },
+    "Từ": {
+      "en": "From",
+      "scope": "sentence"
+    },
+    "Vẫn còn thao tác tệp đang chạy": {
+      "en": "File operations are still running",
+      "scope": "sentence"
+    },
+    "Vị trí": {
+      "en": "Locations",
+      "scope": "sentence"
+    },
+    "XFinder đang thực hiện một thao tác tệp trên ổ đĩa này": {
+      "en": "XFinder is running a file operation on this disk",
+      "scope": "sentence"
+    },
+    "Xoá hết": {
+      "en": "Clear",
+      "scope": "sentence"
+    },
+    "Đang chờ": {
+      "en": "Waiting",
+      "scope": "sentence"
+    },
+    "Đang hoàn tất": {
+      "en": "Finishing",
+      "scope": "sentence"
+    },
+    "Đang kiểm": {
+      "en": "Verifying",
+      "scope": "sentence"
+    },
+    "Đang tải…": {
+      "en": "Loading…",
+      "scope": "sentence"
+    },
+    "Đuôi": {
+      "en": "Extension",
+      "scope": "sentence"
+    },
+    "Đã có tệp trùng tên": {
+      "en": "An item with this name already exists",
+      "scope": "sentence"
+    },
+    "Đã huỷ": {
+      "en": "Cancelled",
+      "scope": "sentence"
+    },
+    "Đã tạm dừng": {
+      "en": "Paused",
+      "scope": "sentence"
+    },
+    "Đã xem xong": {
+      "en": "Done reviewing",
+      "scope": "sentence"
+    },
+    "Đợi": {
+      "en": "Wait",
+      "scope": "sentence"
+    },
+    "Ảnh chụp màn hình": {
+      "en": "Screenshots",
+      "scope": "sentence"
+    },
+    "Bản Free chỉ chia sẻ 1 liên kết cùng lúc — thu hồi liên kết cũ hoặc nâng cấp để chia sẻ thêm.": {
+      "en": "The free version shares 1 link at a time — revoke the old link or upgrade to share more.",
+      "scope": "sentence"
+    },
+    "Bản Free giữ nguyên mọi cặp đồng bộ nhưng không tự chạy, kể cả “Đồng bộ ngay” — cần XFinder Pro để chạy đồng bộ.": {
+      "en": "The free version keeps every sync pair but does not run them, “Sync Now” included — syncing needs XFinder Pro.",
+      "scope": "sentence"
+    },
+    "Chụp cuộn cần XFinder Pro": {
+      "en": "Scrolling capture needs XFinder Pro",
+      "scope": "sentence"
+    },
+    "Các ảnh cũ hơn mục Free hiện được sẽ chuyển vào Thùng rác — vẫn khôi phục được.": {
+      "en": "Captures older than the free version shows go to the Trash — still restorable.",
+      "scope": "sentence"
+    },
+    "Cần XFinder Pro để chạy đồng bộ. Cặp đồng bộ vẫn được giữ nguyên.": {
+      "en": "Syncing needs XFinder Pro. Your sync pairs are kept as they are.",
+      "scope": "sentence"
+    },
+    "Cần XFinder Pro để tút văn bản bằng AI — XFinder sẽ chèn nguyên văn bạn nói thay vì chế độ này.": {
+      "en": "AI polishing needs XFinder Pro — XFinder inserts exactly what you said instead of this mode.",
+      "scope": "sentence"
+    },
+    "Cần XFinder Pro để tút văn bản bằng AI — đã chèn nguyên văn.": {
+      "en": "AI polishing needs XFinder Pro — inserted your words as spoken.",
+      "scope": "sentence"
+    },
+    "Cần XFinder Pro để tạo vault mới. Vault đã có vẫn mở khóa và dùng được bình thường.": {
+      "en": "Creating a new vault needs XFinder Pro. Existing vaults still unlock and work normally.",
+      "scope": "sentence"
+    },
+    "Cần XFinder Pro để tải lên. Danh sách kết nối và Kiểm tra kết nối vẫn dùng được ở bản Free.": {
+      "en": "Uploading needs XFinder Pro. The connection list and Test Connection still work in the free version.",
+      "scope": "sentence"
+    },
+    "Cần XFinder Pro để tải lên. Danh sách kết nối vẫn được giữ nguyên.": {
+      "en": "Uploading needs XFinder Pro. Your connection list is kept as it is.",
+      "scope": "sentence"
+    },
+    "Cần XFinder Pro để tự đặt lại bố cục. Luật đã ghi vẫn được giữ, chỉ không tự áp dụng ở bản Free.": {
+      "en": "Restoring layouts automatically needs XFinder Pro. Recorded rules are kept, just not applied in the free version.",
+      "scope": "sentence"
+    },
+    "Dọn vào Thùng rác": {
+      "en": "Move to Trash",
+      "scope": "sentence"
+    },
+    "Dọn ảnh cũ vào Thùng rác": {
+      "en": "Move older captures to the Trash",
+      "scope": "sentence"
+    },
+    "Dọn ảnh cũ vào Thùng rác?": {
+      "en": "Move older captures to the Trash?",
+      "scope": "sentence"
+    },
+    "Tắt công tắc này chỉ dừng các lượt tự động; nút “Đồng bộ ngay” cần XFinder Pro để chạy ở cả hai trường hợp.": {
+      "en": "Turning this off only stops the automatic runs; “Sync Now” needs XFinder Pro either way.",
+      "scope": "sentence"
+    },
+    "Vault đã tạo vẫn mở khóa và dùng bình thường ở bản Free — chỉ tạo vault MỚI cần XFinder Pro.": {
+      "en": "Vaults you already made still unlock and work in the free version — only creating a NEW vault needs XFinder Pro.",
+      "scope": "sentence"
+    },
+    "Điều khiển các lượt Khi thay đổi và Hằng ngày.": {
+      "en": "Controls the On change and Daily runs.",
+      "scope": "sentence"
     }
   }
 }
