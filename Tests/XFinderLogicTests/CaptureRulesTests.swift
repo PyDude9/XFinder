@@ -516,4 +516,75 @@ final class CaptureRulesTests: XCTestCase {
         XCTAssertEqual(CaptureRules.expired(items, olderThanDays: 365, now: now).map(\.url.lastPathComponent), ["d.png"])
         XCTAssertEqual(CaptureRules.deleteAfterChoices, [0, 1, 7, 30, 365])
     }
+
+    // MARK: - Free/Pro visible history (XF-T29)
+
+    private func makeItems(_ n: Int, now: Date) -> [CaptureItem] {
+        // Newest first by construction index: item 0 is the newest, oldest is item n-1.
+        (0..<n).map { i in
+            CaptureItem(url: URL(fileURLWithPath: "/c/\(i).png"), date: now.addingTimeInterval(-Double(i) * 60), pixelWidth: 1, pixelHeight: 1)
+        }
+    }
+
+    func testVisibleHistoryShowsEverythingWhenLimitIsNil() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let items = makeItems(25, now: now)
+        let result = CaptureRules.visibleHistory(items, limit: nil)
+        XCTAssertEqual(result.visible.count, 25)
+        XCTAssertEqual(result.hiddenCount, 0)
+    }
+
+    func testVisibleHistoryKeepsNewestUnderTheFreeLimit() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let items = makeItems(25, now: now) // item 0 is newest, item 24 is oldest
+        let result = CaptureRules.visibleHistory(items, limit: 20)
+        XCTAssertEqual(result.visible.count, 20)
+        XCTAssertEqual(result.hiddenCount, 5)
+        // The 20 newest (indices 0...19) are visible; the 5 oldest (20...24) are hidden.
+        let visibleNames = Set(result.visible.map(\.url.lastPathComponent))
+        for i in 0..<20 { XCTAssertTrue(visibleNames.contains("\(i).png")) }
+        for i in 20..<25 { XCTAssertFalse(visibleNames.contains("\(i).png")) }
+    }
+
+    func testVisibleHistoryUnderTheLimitHidesNothing() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let items = makeItems(10, now: now)
+        let result = CaptureRules.visibleHistory(items, limit: 20)
+        XCTAssertEqual(result.visible.count, 10)
+        XCTAssertEqual(result.hiddenCount, 0)
+    }
+
+    func testVisibleHistoryAtExactlyTheLimitHidesNothing() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let items = makeItems(20, now: now)
+        let result = CaptureRules.visibleHistory(items, limit: 20)
+        XCTAssertEqual(result.visible.count, 20)
+        XCTAssertEqual(result.hiddenCount, 0)
+    }
+
+    func testHiddenByLimitReturnsExactlyTheOldOnesNeverDeletingAnything() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let items = makeItems(25, now: now)
+        let hidden = CaptureRules.hiddenByLimit(items, limit: 20)
+        XCTAssertEqual(hidden.count, 5)
+        XCTAssertEqual(Set(hidden.map(\.url.lastPathComponent)), Set((20..<25).map { "\($0).png" }))
+    }
+
+    func testHiddenByLimitIsEmptyWhenUnlimited() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let items = makeItems(90, now: now)
+        XCTAssertEqual(CaptureRules.hiddenByLimit(items, limit: nil), [])
+    }
+
+    func testVisibleHistoryTieBreaksByPathSoTheSplitIsDeterministic() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let items = [
+            CaptureItem(url: URL(fileURLWithPath: "/c/b.png"), date: now, pixelWidth: 1, pixelHeight: 1),
+            CaptureItem(url: URL(fileURLWithPath: "/c/a.png"), date: now, pixelWidth: 1, pixelHeight: 1),
+            CaptureItem(url: URL(fileURLWithPath: "/c/c.png"), date: now, pixelWidth: 1, pixelHeight: 1),
+        ]
+        let result = CaptureRules.visibleHistory(items, limit: 2)
+        XCTAssertEqual(result.visible.map(\.url.lastPathComponent), ["a.png", "b.png"])
+        XCTAssertEqual(result.hiddenCount, 1)
+    }
 }

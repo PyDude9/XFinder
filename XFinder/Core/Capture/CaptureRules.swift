@@ -375,6 +375,31 @@ enum CaptureRules {
         return Array(sortedOldestFirst.prefix(overflow))
     }
 
+    // MARK: - Free/Pro visible history (XF-T29)
+
+    /// What the Free tier SHOWS of the capture history: the newest `limit` items (by date, ties broken by path so
+    /// the split is deterministic) are visible; the rest stay on disk — never deleted here — and are only counted.
+    /// `limit == nil` (Pro/trial, via `LicenseManager.shared.limit(.captures)`) shows everything. This is a display
+    /// filter layered on top of the existing age-based retention (`expired`/`toPrune`): it never changes which files
+    /// exist, only which already-kept items the grid shows.
+    static func visibleHistory(_ items: [CaptureItem], limit: Int?) -> (visible: [CaptureItem], hiddenCount: Int) {
+        guard let limit else { return (items, 0) }
+        guard limit >= 0, items.count > limit else { return (items, 0) }
+        let sortedNewestFirst = items.sorted { a, b in
+            if a.date != b.date { return a.date > b.date }
+            return a.url.path < b.url.path
+        }
+        let visible = Array(sortedNewestFirst.prefix(limit))
+        return (visible, sortedNewestFirst.count - limit)
+    }
+
+    /// The items hidden by `visibleHistory` — the ones a "Dọn ảnh cũ vào Thùng rác" action would move to Trash.
+    static func hiddenByLimit(_ items: [CaptureItem], limit: Int?) -> [CaptureItem] {
+        guard let limit else { return [] }
+        let visible = Set(visibleHistory(items, limit: limit).visible.map(\.id))
+        return items.filter { !visible.contains($0.id) }
+    }
+
     /// Card frame in AppKit coordinates (origin bottom-left): anchored to the bottom corner of `visible` on
     /// `edge`, 16 pt inset from both edges, stacked UPWARD by index with a 10 pt gap between cards.
     static func cardFrame(visible: CGRect, edge: CaptureCardEdge, size: CGSize, index: Int) -> CGRect {

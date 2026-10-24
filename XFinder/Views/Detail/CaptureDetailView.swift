@@ -24,6 +24,10 @@ struct CaptureDetailView: View {
     @AppStorage("capture.annotate.color") private var annotateColorRaw = "red"
     @AppStorage("capture.annotate.width") private var annotateWidthRaw = "medium"
 
+    /// XF-T29: confirms "Dọn ảnh cũ vào Thùng rác" before it runs (CLAUDE.md rule 9 — never remove user data
+    /// without the user asking first; a Trash move is reversible, but still a one-tap "are you sure").
+    @State private var confirmingTrashHiddenOlder = false
+
     private var format: CaptureFormat { CaptureFormat(rawValue: formatRaw) ?? .png }
 
     var body: some View {
@@ -53,6 +57,12 @@ struct CaptureDetailView: View {
             .pageWidthSafe()
         }
         .background(XFinderTokens.Settings.contentBackground)
+        .alert(L10n.t("Dọn ảnh cũ vào Thùng rác?"), isPresented: $confirmingTrashHiddenOlder) {
+            Button(L10n.t("Hủy"), role: .cancel) {}
+            Button(L10n.t("Dọn vào Thùng rác"), role: .destructive) { controller.trashHiddenOlderCaptures() }
+        } message: {
+            Text(L10n.t("Các ảnh cũ hơn mục Free hiện được sẽ chuyển vào Thùng rác — vẫn khôi phục được."))
+        }
     }
 
     // MARK: Chụp
@@ -91,26 +101,15 @@ struct CaptureDetailView: View {
     private func captureModeRow(_ mode: CaptureMode) -> some View {
         let shortcut = controller.shortcut(for: mode)
         VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: XFinderTokens.Space.inline) {
-                Image(systemName: mode.symbol)
-                    .foregroundColor(.secondary)
-                    .frame(width: 18)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(L10n.t(mode.titleKey)).font(XFinderTokens.Font.row)
-                    Text(L10n.t(mode.descriptionKey)).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                }
-                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-                if let shortcut {
-                    ShortcutChip(label: shortcut.label)
+            Group {
+                // XF-T29: Scrolling capture is a Pro feature — `.proGated` disables the picker + "Chụp" button and
+                // appends a PRO badge linking to the Pro page, for this one mode only.
+                if mode == .scrolling {
+                    captureModeRowContent(mode, shortcut: shortcut)
+                        .proGated(.scrollingCapture)
                 } else {
-                    Text(L10n.t("Chưa gán"))
-                        .font(XFinderTokens.Font.caption)
-                        .foregroundColor(.secondary)
+                    captureModeRowContent(mode, shortcut: shortcut)
                 }
-                // P3 review: the split dropped this — without it, the three modes the flyout lacks (annotate, text,
-                // colour) could only be reached by assigning a shortcut first.
-                Button(L10n.t("Chụp")) { controller.capture(mode) }
-                    .controlSize(.small)
             }
             if let conflict = controller.lastConflict, conflict.mode == mode {
                 conflictCaption(conflict.conflict, mode: mode)
@@ -120,6 +119,31 @@ struct CaptureDetailView: View {
             }
         }
         .settingsRow()
+    }
+
+    @ViewBuilder
+    private func captureModeRowContent(_ mode: CaptureMode, shortcut: CaptureShortcut?) -> some View {
+        HStack(spacing: XFinderTokens.Space.inline) {
+            Image(systemName: mode.symbol)
+                .foregroundColor(.secondary)
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(L10n.t(mode.titleKey)).font(XFinderTokens.Font.row)
+                Text(L10n.t(mode.descriptionKey)).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+            }
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            if let shortcut {
+                ShortcutChip(label: shortcut.label)
+            } else {
+                Text(L10n.t("Chưa gán"))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+            }
+            // P3 review: the split dropped this — without it, the three modes the flyout lacks (annotate, text,
+            // colour) could only be reached by assigning a shortcut first.
+            Button(L10n.t("Chụp")) { controller.capture(mode) }
+                .controlSize(.small)
+        }
     }
 
     @ViewBuilder
@@ -325,6 +349,18 @@ struct CaptureDetailView: View {
             } else {
                 recentGrid
                     .settingsRow()
+                if hiddenOlderCount > 0 {
+                    SettingsDivider()
+                    hiddenOlderCaption
+                        .settingsRow()
+                    SettingsDivider()
+                    SettingsLinkRow(title: L10n.t("Xem XFinder Pro"), destination: .pro)
+                    SettingsDivider()
+                    Button(L10n.t("Dọn ảnh cũ vào Thùng rác")) { confirmingTrashHiddenOlder = true }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .settingsRow()
+                }
             }
             SettingsDivider()
             Button(L10n.t("Xoá lịch sử")) { controller.clearHistory() }
@@ -335,14 +371,27 @@ struct CaptureDetailView: View {
         }
     }
 
+    /// `.unlimitedCaptures` / `ProLimit.captures` (XF-T29): the grid only shows what the current tier allows; the
+    /// rest stay on disk, counted here, never deleted unless the user confirms "Dọn ảnh cũ vào Thùng rác".
+    private var hiddenOlderCount: Int { controller.visibleHistory.hiddenCount }
+
     private var recentGrid: some View {
-        let items = Array(controller.history.prefix(12))
+        let items = Array(controller.visibleHistory.visible.prefix(12))
         let columns = [GridItem(.adaptive(minimum: 120, maximum: 160), spacing: XFinderTokens.Space.row)]
         return LazyVGrid(columns: columns, spacing: XFinderTokens.Space.row) {
             ForEach(items) { item in
                 recentTile(item)
             }
         }
+    }
+
+    /// "<n> ảnh cũ hơn — mở bằng Pro": the Free cap hides older captures without deleting them (CLAUDE.md rule 9).
+    /// The row below links to the Pro page; the "Dọn ảnh cũ" button after it offers to clear them out instead.
+    private var hiddenOlderCaption: some View {
+        Text("\(hiddenOlderCount)\(L10n.t(" ảnh cũ hơn — mở bằng Pro"))")
+            .font(XFinderTokens.Font.caption)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func recentTile(_ item: CaptureItem) -> some View {

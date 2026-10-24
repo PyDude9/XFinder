@@ -235,7 +235,16 @@ final class CaptureController {
 
     // MARK: - Capture
 
+    private static let proToast = ToastSurface(style: .toast)
+
+    /// The single chokepoint every path into a capture goes through — the mode's hotkey (Carbon), the settings
+    /// page's own "Chụp" button, and `xfinder://capture?mode=` (XFinderApp's deep link router) all call this, so a
+    /// Pro gate placed here (XF-T29) covers all three without touching any of those callers.
     func capture(_ mode: CaptureMode) {
+        if mode == .scrolling, !LicenseManager.shared.allows(.scrollingCapture) {
+            Self.proToast.show(symbol: "lock.fill", title: L10n.t("Chụp cuộn cần XFinder Pro"), duration: 2.4)
+            return
+        }
         switch mode {
         case .text:
             ScreenTextCopier.shared.start()
@@ -346,6 +355,29 @@ final class CaptureController {
         for item in prune { try? FileManager.default.removeItem(at: item.url) }
         let pruneSet = Set(prune.map(\.id))
         history.removeAll { pruneSet.contains($0.id) }
+    }
+
+    // MARK: - Free/Pro visible history (XF-T29)
+
+    /// `.unlimitedCaptures` / `ProLimit.captures`: nil in Pro/trial, 20 in Free (Entitlement.freeLimits). A DISPLAY
+    /// filter only — never touches disk, never interferes with the age-based `capture.deleteAfterDays` retention
+    /// above, which already ran by the time anyone reads this.
+    private var captureLimit: Int? { LicenseManager.shared.limit(.captures) }
+
+    /// What the history grid should show right now, and how many older captures are hidden behind the Free limit.
+    var visibleHistory: (visible: [CaptureItem], hiddenCount: Int) {
+        CaptureRules.visibleHistory(history, limit: captureLimit)
+    }
+
+    /// "Dọn ảnh cũ vào Thùng rác": moves exactly the captures the Free limit is hiding — never the ones still shown,
+    /// never a card or editor's own item — to the Trash (restorable), same mechanism as the age-based retention.
+    func trashHiddenOlderCaptures() {
+        let hidden = CaptureRules.hiddenByLimit(history, limit: captureLimit)
+            .filter { !QuickAccessController.shared.isShowing($0) && !AnnotateWindowController.shared.isOpen($0) }
+        guard !hidden.isEmpty else { return }
+        for item in hidden { try? FileManager.default.trashItem(at: item.url, resultingItemURL: nil) }
+        let gone = Set(hidden.map(\.id))
+        history.removeAll { gone.contains($0.id) }
     }
 
     /// The directory listing + one ImageIO header read per PNG used to run synchronously on the main thread at launch;
