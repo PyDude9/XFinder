@@ -94,6 +94,9 @@ final class FeatureHub {
         case .snapZones:       SnapZoneController.shared.applySettings()
         case .snapMemory:      SnapMemoryController.shared.applySettings()      // SNAPMEM
         case .smoothScroll:    SmoothScrollController.shared.applySettings()    // XF-T25
+        case .fileBrowser:                                                       // XF-T28: off closes every browser window
+            BrowserSettings.shared.applySettings()
+            if !BrowserSettings.isEnabled { BrowserWindowController.shared.closeAllWindows() }
         case .quitProtection:  QuitProtectionController.shared.applySettings()
         case .quitOnClose:     QuitOnCloseController.shared.applySettings()            // F3
         case .clipboardShelf:  ClipboardShelfController.shared.applySettings()

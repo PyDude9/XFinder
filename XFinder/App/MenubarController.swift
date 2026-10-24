@@ -105,6 +105,9 @@ final class MenubarController: NSObject, NSMenuDelegate {
         }
 
         // Clipboard
+        if BrowserSettings.isEnabled {
+            menu.addItem(ActionItem(L10n.t("Trình duyệt tệp")) { BrowserWindowController.shared.openWindow(path: nil) })
+        }
         menu.addItem(ActionItem(L10n.t("Thư viện Clipboard")) { AppState.shared.navigate(to: .clipboard) })
         menu.addItem(clipboardOpenItem())
         let paused = ClipboardManager.shared.isPaused

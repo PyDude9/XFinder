@@ -31,6 +31,8 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case mouseGestures
     case menuIcons
     // FINDER & TÌM KIẾM
+    /// XF-T28 (2026-10-24): the file browser window — multi-pane Finder; this page opens it and holds its settings.
+    case fileBrowser
     case finderKeyboard
     case finderActions
     case finderSearch
@@ -135,6 +137,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .finderKeyboard: return "Bàn phím Finder"
         case .finderActions: return "Thao tác Finder"
         case .finderSearch: return "Tìm kiếm"
+        case .fileBrowser: return "Trình duyệt tệp"
         case .aiSearch: return "Tìm kiếm AI"
         case .batchRename: return "Đổi tên hàng loạt"
         case .junkCleanup: return "Dọn rác thư mục"
@@ -184,6 +187,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .mouseGestures: return "computermouse"
         case .snapZones: return "rectangle.split.3x1"
         case .menuIcons: return "menubar.rectangle"
+        case .fileBrowser: return "square.split.2x2"
         case .finderKeyboard: return "keyboard.fill"
         case .finderActions: return "contextualmenu.and.cursorarrow"
         case .finderSearch: return "magnifyingglass"
@@ -227,7 +231,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .dashboard, .storage, .menuIcons, .finderKeyboard, .actionHistory, .folderLock, .finderUtils, .about: return .gray
         case .features, .snapZones: return .indigo
-        case .shortcuts, .finderSearch, .quickShare, .quickLookPage: return .cyan
+        case .shortcuts, .finderSearch, .quickShare, .quickLookPage, .fileBrowser: return .cyan
         case .antiSleep, .aiSearch, .smartSelect, .aiAgents: return .purple
         case .system, .notchInterface, .windowPreview, .finderActions, .remoteConnect: return .blue
         case .network, .settingsClipboard, .ports: return .teal
@@ -255,7 +259,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             // P3: everything the notch shows, by what the user comes to do — the old "Notch & Khay thả" page split six ways.
             ("NOTCH", [.notchInterface, .dropTray, .media, .aiAgents, .calendar, .liveActivities]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .appQuit, .mouseGestures, .menuIcons]),
-            ("FINDER & TÌM KIẾM", [.finderKeyboard, .finderActions, .finderSearch,
+            ("FINDER & TÌM KIẾM", [.fileBrowser, .finderKeyboard, .finderActions, .finderSearch,
                                    .batchRename, .junkCleanup, .actionHistory]),
             ("CÔNG CỤ", [.voiceTyping, .smartSelect, .capture, .clipboard, .settingsClipboard, .notes, .compress, .pdfTools, .folderLock]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare, .ports]),

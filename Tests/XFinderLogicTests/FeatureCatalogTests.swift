@@ -170,6 +170,11 @@ final class FeatureCatalogTests: XCTestCase {
             XCTAssertTrue(c.isBackgroundActive)
             XCTAssertFalse(c.badgeKey.isEmpty)
         }
+        // XF-T28: a feature that runs only while its own window is open is not background work — but it is not
+        // "nothing at rest" either while a window is open, and its catalogue row must say which.
+        XCTAssertFalse(IdleCost.onlyWhileOpen.isBackgroundActive)
+        XCTAssertNotEqual(IdleCost.onlyWhileOpen.badgeKey, IdleCost.nothingAtRest.badgeKey)
+        XCTAssertEqual(FeatureCatalog.def(.fileBrowser).idle, .onlyWhileOpen)
         // Anything whose engine installs an event tap or monitor must NOT claim to be idle.
         for id in [FeatureID.dockPreview, .commandTab, .snapZones, .quitProtection, .clipboardShelf, .voice] {
             XCTAssertTrue(FeatureCatalog.def(id).idle.isBackgroundActive, "\(id) installs a tap/monitor")
@@ -186,7 +191,7 @@ final class FeatureCatalogTests: XCTestCase {
         for f in FeatureCatalog.all { keys += [f.titleKey, f.subtitleKey] }
         for g in FeatureGroup.allCases { keys.append(g.titleKey) }
         for p in AppPermission.allCases { keys += [p.titleKey, p.purposeKey] }
-        for c: IdleCost in [.nothingAtRest, .listensToKeyboard, .listensToMouse, .timerWhileActive, .helperProcess, .watchesWindows] { keys.append(c.badgeKey) }
+        for c: IdleCost in [.nothingAtRest, .listensToKeyboard, .listensToMouse, .timerWhileActive, .helperProcess, .watchesWindows, .onlyWhileOpen] { keys.append(c.badgeKey) }
         for b in FeatureCatalog.bundles { keys += [b.titleKey, b.descriptionKey] }
         XCTAssertGreaterThanOrEqual(Set(keys).count, 40, "the vocabulary walk collapsed")
         let sameByDesign = try L10nFixture.allowlist()

@@ -11738,6 +11738,306 @@
     "Mở khoá": {
       "en": "Unlock",
       "scope": "sentence"
+    },
+    "Trình duyệt tệp": {
+      "en": "File Browser",
+      "scope": "sentence"
+    },
+    "Finder nhiều ngăn: chép giữa các ngăn, tìm bằng một câu thường, hàng đợi chép an toàn.": {
+      "en": "Finder with split panes: copy between panes, search in plain words, a safe copy queue.",
+      "scope": "sentence"
+    },
+    "Chỉ chạy khi cửa sổ đang mở": {
+      "en": "Runs only while its window is open",
+      "scope": "sentence"
+    },
+    "Mở trình duyệt tệp từ mọi app": {
+      "en": "Open the file browser from any app",
+      "scope": "sentence"
+    },
+    "Duyệt, gom và chép tệp giữa nhiều thư mục trong một cửa sổ — như Finder, chia được tới 16 ngăn.": {
+      "en": "Browse, collect and copy files across folders in one window — like Finder, split into up to 16 panes.",
+      "scope": "sentence"
+    },
+    "Mở trình duyệt": {
+      "en": "Open the browser",
+      "scope": "sentence"
+    },
+    "Mở cửa sổ mới": {
+      "en": "Open a new window",
+      "scope": "sentence"
+    },
+    "Trình duyệt tệp đang tắt — bật ở công tắc bên dưới.": {
+      "en": "The file browser is off — turn it on with the switch below.",
+      "scope": "sentence"
+    },
+    "Bật trình duyệt tệp": {
+      "en": "Turn on the file browser",
+      "scope": "sentence"
+    },
+    "Không chạy gì khi chưa mở cửa sổ; đóng cửa sổ là hết theo dõi thư mục.": {
+      "en": "Nothing runs until a window is open; closing the window stops watching folders.",
+      "scope": "sentence"
+    },
+    "Phím tắt toàn cục ⌃⌥⌘F": {
+      "en": "Global shortcut ⌃⌥⌘F",
+      "scope": "sentence"
+    },
+    "Một ứng dụng khác đang giữ ⌃⌥⌘F — phím tắt chưa hoạt động.": {
+      "en": "Another app holds ⌃⌥⌘F — the shortcut is not working.",
+      "scope": "sentence"
+    },
+    "Mở trình duyệt từ mọi ứng dụng. Tắt sẵn vì nó chiếm phím này của mọi ứng dụng khác.": {
+      "en": "Open the browser from any app. Off by default because it takes this key from every other app.",
+      "scope": "sentence"
+    },
+    "Khi mở": {
+      "en": "When it opens",
+      "scope": "sentence"
+    },
+    "Mở lại cửa sổ lần trước": {
+      "en": "Reopen last session's windows",
+      "scope": "sentence"
+    },
+    "Cửa sổ, ngăn, thư mục và lịch sử quay lại trở về khi XFinder mở. Giữ Shift khi mở để bắt đầu với cửa sổ trống.": {
+      "en": "Windows, panes, folders and Back history come back when XFinder opens. Hold Shift at launch to start with an empty window.",
+      "scope": "sentence"
+    },
+    "Kiểu xem của ngăn mới": {
+      "en": "View for new panes",
+      "scope": "sentence"
+    },
+    "Hiện tệp ẩn": {
+      "en": "Show hidden files",
+      "scope": "sentence"
+    },
+    "Áp dụng cho ngăn mới; ⇧⌘. bật/tắt cho từng ngăn.": {
+      "en": "Applies to new panes; ⇧⌘. toggles it per pane.",
+      "scope": "sentence"
+    },
+    "Thư mục luôn ở trên": {
+      "en": "Keep folders on top",
+      "scope": "sentence"
+    },
+    "Như tuỳ chọn “Giữ thư mục ở trên cùng” của Finder.": {
+      "en": "Like Finder's “Keep folders on top” option.",
+      "scope": "sentence"
+    },
+    "Phím tắt trong cửa sổ": {
+      "en": "Shortcuts in the window",
+      "scope": "sentence"
+    },
+    "Mọi lệnh cũng có trong bảng lệnh: ⌃⇧⌘P, hoặc gõ > trong ⌃⌘P.": {
+      "en": "Every command is also in the command palette: ⌃⇧⌘P, or type > in ⌃⌘P.",
+      "scope": "sentence"
+    },
+    "Cửa sổ mới": {
+      "en": "New Window",
+      "scope": "sentence"
+    },
+    "Thư mục mới": {
+      "en": "New Folder",
+      "scope": "sentence"
+    },
+    "Lên thư mục cha": {
+      "en": "Enclosing Folder",
+      "scope": "sentence"
+    },
+    "Lùi lại": {
+      "en": "Back",
+      "scope": "sentence"
+    },
+    "Tiến tới": {
+      "en": "Forward",
+      "scope": "sentence"
+    },
+    "Đổi tên": {
+      "en": "Rename",
+      "scope": "sentence"
+    },
+    "Nhân bản": {
+      "en": "Duplicate",
+      "scope": "sentence"
+    },
+    "Xem nhanh": {
+      "en": "Quick Look",
+      "scope": "sentence"
+    },
+    "Dán và di chuyển": {
+      "en": "Move Item Here",
+      "scope": "sentence"
+    },
+    "Hiện hoặc ẩn tệp ẩn": {
+      "en": "Show or Hide Hidden Files",
+      "scope": "sentence"
+    },
+    "Chọn tất cả": {
+      "en": "Select All",
+      "scope": "sentence"
+    },
+    "Xem dạng biểu tượng": {
+      "en": "as Icons",
+      "scope": "sentence"
+    },
+    "Xem dạng danh sách": {
+      "en": "as List",
+      "scope": "sentence"
+    },
+    "Xem dạng cột": {
+      "en": "as Columns",
+      "scope": "sentence"
+    },
+    "Xem dạng gallery": {
+      "en": "as Gallery",
+      "scope": "sentence"
+    },
+    "Lọc thư mục hiện tại": {
+      "en": "Filter Current Folder",
+      "scope": "sentence"
+    },
+    "Gõ đường dẫn": {
+      "en": "Edit Location",
+      "scope": "sentence"
+    },
+    "Đến thư mục": {
+      "en": "Go to Folder",
+      "scope": "sentence"
+    },
+    "Mở nhanh": {
+      "en": "Quick Open",
+      "scope": "sentence"
+    },
+    "Chia ngăn sang phải": {
+      "en": "Split Right",
+      "scope": "sentence"
+    },
+    "Chia ngăn sang trái": {
+      "en": "Split Left",
+      "scope": "sentence"
+    },
+    "Chia ngăn xuống dưới": {
+      "en": "Split Down",
+      "scope": "sentence"
+    },
+    "Chia ngăn lên trên": {
+      "en": "Split Up",
+      "scope": "sentence"
+    },
+    "Đóng ngăn": {
+      "en": "Close Pane",
+      "scope": "sentence"
+    },
+    "Chia đều các ngăn": {
+      "en": "Make Panes Equal Size",
+      "scope": "sentence"
+    },
+    "Phóng to ngăn": {
+      "en": "Zoom Pane",
+      "scope": "sentence"
+    },
+    "Ngăn kế tiếp": {
+      "en": "Next Pane",
+      "scope": "sentence"
+    },
+    "Ngăn trước đó": {
+      "en": "Previous Pane",
+      "scope": "sentence"
+    },
+    "Một ngăn": {
+      "en": "Single",
+      "scope": "sentence"
+    },
+    "Cạnh nhau": {
+      "en": "Side by Side",
+      "scope": "sentence"
+    },
+    "Chồng lên nhau": {
+      "en": "Stacked",
+      "scope": "sentence"
+    },
+    "Lưới 2×2": {
+      "en": "2×2 Grid",
+      "scope": "sentence"
+    },
+    "Sao chép sang ngăn kia": {
+      "en": "Copy to Other Pane",
+      "scope": "sentence"
+    },
+    "Di chuyển sang ngăn kia": {
+      "en": "Move to Other Pane",
+      "scope": "sentence"
+    },
+    "Thêm vào Shelf": {
+      "en": "Add to Shelf",
+      "scope": "sentence"
+    },
+    "Hiện hoặc ẩn Shelf": {
+      "en": "Show or Hide Shelf",
+      "scope": "sentence"
+    },
+    "Hàng đợi thao tác": {
+      "en": "Operations",
+      "scope": "sentence"
+    },
+    "Lưu Workspace": {
+      "en": "Save Workspace",
+      "scope": "sentence"
+    },
+    "Mở Workspace": {
+      "en": "Open Workspace",
+      "scope": "sentence"
+    },
+    "Tải về ngay": {
+      "en": "Download Now",
+      "scope": "sentence"
+    },
+    "Gỡ bản tải": {
+      "en": "Remove Download",
+      "scope": "sentence"
+    },
+    "Đóng cửa sổ": {
+      "en": "Close Window",
+      "scope": "sentence"
+    },
+    "Có thể còn tệp chép dở ở đích": {
+      "en": "A partly copied file may be left at the destination",
+      "scope": "sentence"
+    },
+    "Bản sao chưa được kiểm": {
+      "en": "The copy was not verified",
+      "scope": "sentence"
+    },
+    "Bản gốc vẫn còn ở chỗ cũ": {
+      "en": "The original is still in its old place",
+      "scope": "sentence"
+    },
+    "Bản gốc có thể đã vào Thùng rác — kiểm tra trước khi coi là mất": {
+      "en": "The original may already be in the Trash — check before treating it as lost",
+      "scope": "sentence"
+    },
+    "Toán tử không rõ: giữ là chữ": {
+      "en": "Unknown operator: kept as text",
+      "scope": "sentence"
+    },
+    "XFinder chưa được phép đọc thư mục này": {
+      "en": "XFinder isn't allowed to read this folder yet",
+      "scope": "sentence"
+    },
+    "Thư mục không còn tồn tại": {
+      "en": "This folder no longer exists",
+      "scope": "sentence"
+    },
+    "Đây không phải là thư mục": {
+      "en": "This isn't a folder",
+      "scope": "sentence"
+    },
+    "Thư mục phản hồi quá chậm": {
+      "en": "This folder is responding too slowly",
+      "scope": "sentence"
+    },
+    "Không đọc được thư mục này": {
+      "en": "Couldn't read this folder",
+      "scope": "sentence"
     }
   }
 }

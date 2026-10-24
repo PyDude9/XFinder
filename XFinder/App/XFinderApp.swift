@@ -92,6 +92,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         QuitOnCloseController.shared.applySettings()           // F3: AX observers only for listed apps
         CaptureController.shared.applySettings()               // F4: Carbon hotkeys for the assigned capture shortcuts
         Task.detached(priority: .utility) { ScrollCaptureController.sweepLeftovers() }   // XF-T26: strips of a crashed session
+        // XF-T28: the optional global hotkey, an interrupted-operation report, and the browser windows of the last session.
+        BrowserSettings.shared.applySettings()
+        FileOperationQueue.shared.loadRecovery()
+        if BrowserSettings.isEnabled { BrowserWindowController.shared.restoreSessionAtLaunch() }
         AlertMonitor.shared.applySettings()
         NotchSurfaceController.shared.applySettings()
         SystemKeyInterceptor.shared.applySettings()   // owner's HUD request: after the surface exists
@@ -160,9 +164,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
+    /// XF-T28: a copy/move still running is asked about (wait / stop and quit) instead of being cut off mid-file.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        BrowserWindowController.shared.confirmQuit() ? .terminateNow : .terminateCancel
+    }
+
     /// D4: a Quick Look temp copy of an unlocked clip must not survive the process.
     func applicationWillTerminate(_ notification: Notification) {
         DiagnosticsCenter.shared.markQuit()
+        BrowserWindowController.shared.saveSession()   // XF-T28: windows, panes, folders, Back history
         ClipboardLibraryStore.shared.relockAll()
         // Review 2026-10-18: the members are told to stop FIRST, and the crew cleanup waits (briefly) for their processes to
         // exit before it moves or removes the worktrees they were working in — the old order retired a worktree under a live member.
@@ -194,6 +204,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let comps = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
         let path = comps.queryItems?.first(where: { $0.name == "path" })?.value
         switch comps.host {
+        case "browser":
+            // XF-T28: `xfinder://browser?path=/some/folder` opens a file browser window there (no path = Home).
+            Task { @MainActor in
+                guard BrowserSettings.isEnabled else { return }
+                BrowserWindowController.shared.openWindow(path: path)
+            }
         case "droptray-add":
             if let path {
                 Task { @MainActor in

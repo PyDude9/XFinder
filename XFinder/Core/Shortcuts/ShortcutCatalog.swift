@@ -207,6 +207,11 @@ enum ShortcutCatalog {
             Entry(id: "notes.pin", titleKey: "Ghim hoặc bỏ ghim ghi chú đầu danh sách (chưa lưu trữ)",
                   chord: Chord(keyCode: 35, modifiers: [.command, .option]), // P
                   scope: .whenXFinderFrontmost, ownerPage: SidebarDestination.notes.rawValue),
+            // XF-T28 — BrowserSettings.applySettings (Carbon, opt-in)
+            Entry(id: "fileBrowser.open", titleKey: "Mở trình duyệt tệp từ mọi app",
+                  chord: Chord(keyCode: 3, modifiers: [.control, .option, .command]), // F
+                  scope: .global, ownerPage: SidebarDestination.fileBrowser.rawValue,
+                  gateKey: "fileBrowser.globalHotkey", gateDefault: false),
             // XF-T24 — EdgeNotesController.syncGlobalHotkey (Carbon, opt-in)
             Entry(id: "notes.summon", titleKey: "Mở ghi chú mép từ mọi app",
                   chord: Chord(keyCode: 45, modifiers: [.control, .option]), // N

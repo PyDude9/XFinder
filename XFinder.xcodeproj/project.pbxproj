@@ -170,6 +170,23 @@
 		7F1A0089 /* Detail/DropTrayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006F /* Detail/DropTrayDetailView.swift */; };
 		7F1A008A /* Detail/WindowDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0070 /* Detail/WindowDetailViews.swift */; };
 		7F1A025B /* Detail/SmoothScrollSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A025A /* Detail/SmoothScrollSection.swift */; };
+		7F1A011A /* Detail/FileBrowserDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0119 /* Detail/FileBrowserDetailView.swift */; };
+		7F1A0118 /* Browser/ShelfBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0117 /* Browser/ShelfBarView.swift */; };
+		7F1A0116 /* Browser/SearchBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0115 /* Browser/SearchBarView.swift */; };
+		7F1A0114 /* Browser/RecoveryReportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0113 /* Browser/RecoveryReportSheet.swift */; };
+		7F1A0112 /* Browser/PaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A010F /* Browser/PaneView.swift */; };
+		7F1A010E /* Browser/PaneGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A010D /* Browser/PaneGridView.swift */; };
+		7F1A010C /* Browser/OperationsPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0109 /* Browser/OperationsPanelView.swift */; };
+		7F1A0108 /* Browser/LocationBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00FF /* Browser/LocationBarView.swift */; };
+		7F1A00FE /* Browser/FileListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00FD /* Browser/FileListView.swift */; };
+		7F1A00FC /* Browser/FileIconView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00FB /* Browser/FileIconView.swift */; };
+		7F1A00FA /* Browser/FileGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E3 /* Browser/FileGalleryView.swift */; };
+		7F1A00E2 /* Browser/FileColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E1 /* Browser/FileColumnView.swift */; };
+		7F1A00E0 /* Browser/ConflictSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00DA /* Browser/ConflictSheet.swift */; };
+		7F1A00D9 /* Browser/CommandPaletteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D8 /* Browser/CommandPaletteView.swift */; };
+		7F1A00CB /* Browser/BrowserSidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00CA /* Browser/BrowserSidebarView.swift */; };
+		7F1A00B3 /* Browser/BrowserRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B2 /* Browser/BrowserRootView.swift */; };
+		7F1A009F /* Browser/BrowserBatchRenameSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A009E /* Browser/BrowserBatchRenameSheet.swift */; };
 		7F1A008B /* Detail/QuickLookDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0071 /* Detail/QuickLookDetailView.swift */; };
 		7F1A008C /* Detail/FinderToolDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0072 /* Detail/FinderToolDetailViews.swift */; };
 		7F1A0091 /* DockPreviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0090 /* DockPreviewController.swift */; };
@@ -307,6 +324,23 @@
 		7F1A040F /* Snap/SnapMemoryController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A040E /* Snap/SnapMemoryController.swift */; };
 		7F1A0259 /* SmoothScroll/SmoothScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0258 /* SmoothScroll/SmoothScrollController.swift */; };
 		7F1A0257 /* SmoothScroll/SmoothScrollRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0256 /* SmoothScroll/SmoothScrollRules.swift */; };
+		7F1A009D /* Browser/BrowserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A009C /* Browser/BrowserSettings.swift */; };
+		7F1A009B /* Browser/BrowserWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A009A /* Browser/BrowserWindowController.swift */; };
+		7F1A0099 /* Browser/BrowserWindowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0098 /* Browser/BrowserWindowModel.swift */; };
+		7F1A0097 /* Browser/EjectGuard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0096 /* Browser/EjectGuard.swift */; };
+		7F1A008F /* Browser/FileOperationQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A008E /* Browser/FileOperationQueue.swift */; };
+		7F1A008D /* Browser/FileIconCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007F /* Browser/FileIconCache.swift */; };
+		7F1A007E /* Browser/DirectoryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007D /* Browser/DirectoryReader.swift */; };
+		7F1A007C /* Browser/BrowserWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007B /* Browser/BrowserWorkspace.swift */; };
+		7F1A007A /* Browser/ShelfModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0079 /* Browser/ShelfModel.swift */; };
+		7F1A0078 /* Browser/CloudBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0077 /* Browser/CloudBadge.swift */; };
+		7F1A0076 /* Browser/BrowserCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A005F /* Browser/BrowserCommands.swift */; };
+		7F1A0058 /* Browser/FileOperationRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A003F /* Browser/FileOperationRules.swift */; };
+		7F1A002D /* Browser/SearchQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A002C /* Browser/SearchQuery.swift */; };
+		7F1A002B /* Browser/DirectoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A002A /* Browser/DirectoryEntry.swift */; };
+		7F1A0029 /* Browser/BrowserPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0026 /* Browser/BrowserPath.swift */; };
+		7F1A0021 /* Browser/PaneHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A001A /* Browser/PaneHistory.swift */; };
+		7F1A0019 /* Browser/PaneTree.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0018 /* Browser/PaneTree.swift */; };
 		7F1A021C /* Notch/NotchTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A021B /* Notch/NotchTask.swift */; };
 		7F1A0210 /* Archive/ArchiveEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A020F /* Archive/ArchiveEngine.swift */; };
 		7F1A0212 /* Archive/ArchiveRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0211 /* Archive/ArchiveRunner.swift */; };
@@ -544,6 +578,23 @@
 		7F1A006F /* Detail/DropTrayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/DropTrayDetailView.swift; sourceTree = "<group>"; };
 		7F1A0070 /* Detail/WindowDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/WindowDetailViews.swift; sourceTree = "<group>"; };
 		7F1A025A /* Detail/SmoothScrollSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SmoothScrollSection.swift; sourceTree = "<group>"; };
+		7F1A0119 /* Detail/FileBrowserDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FileBrowserDetailView.swift; sourceTree = "<group>"; };
+		7F1A0117 /* Browser/ShelfBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ShelfBarView.swift; sourceTree = "<group>"; };
+		7F1A0115 /* Browser/SearchBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SearchBarView.swift; sourceTree = "<group>"; };
+		7F1A0113 /* Browser/RecoveryReportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/RecoveryReportSheet.swift; sourceTree = "<group>"; };
+		7F1A010F /* Browser/PaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PaneView.swift; sourceTree = "<group>"; };
+		7F1A010D /* Browser/PaneGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PaneGridView.swift; sourceTree = "<group>"; };
+		7F1A0109 /* Browser/OperationsPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/OperationsPanelView.swift; sourceTree = "<group>"; };
+		7F1A00FF /* Browser/LocationBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/LocationBarView.swift; sourceTree = "<group>"; };
+		7F1A00FD /* Browser/FileListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileListView.swift; sourceTree = "<group>"; };
+		7F1A00FB /* Browser/FileIconView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileIconView.swift; sourceTree = "<group>"; };
+		7F1A00E3 /* Browser/FileGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileGalleryView.swift; sourceTree = "<group>"; };
+		7F1A00E1 /* Browser/FileColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileColumnView.swift; sourceTree = "<group>"; };
+		7F1A00DA /* Browser/ConflictSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ConflictSheet.swift; sourceTree = "<group>"; };
+		7F1A00D8 /* Browser/CommandPaletteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/CommandPaletteView.swift; sourceTree = "<group>"; };
+		7F1A00CA /* Browser/BrowserSidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserSidebarView.swift; sourceTree = "<group>"; };
+		7F1A00B2 /* Browser/BrowserRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserRootView.swift; sourceTree = "<group>"; };
+		7F1A009E /* Browser/BrowserBatchRenameSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserBatchRenameSheet.swift; sourceTree = "<group>"; };
 		7F1A0071 /* Detail/QuickLookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/QuickLookDetailView.swift; sourceTree = "<group>"; };
 		7F1A0072 /* Detail/FinderToolDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FinderToolDetailViews.swift; sourceTree = "<group>"; };
 		7F1A0073 /* ClipboardPasteEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardPasteEngine.swift; sourceTree = "<group>"; };
@@ -572,6 +623,23 @@
 		7F1A040E /* Snap/SnapMemoryController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snap/SnapMemoryController.swift; sourceTree = "<group>"; };
 		7F1A0258 /* SmoothScroll/SmoothScrollController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothScroll/SmoothScrollController.swift; sourceTree = "<group>"; };
 		7F1A0256 /* SmoothScroll/SmoothScrollRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothScroll/SmoothScrollRules.swift; sourceTree = "<group>"; };
+		7F1A009C /* Browser/BrowserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserSettings.swift; sourceTree = "<group>"; };
+		7F1A009A /* Browser/BrowserWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserWindowController.swift; sourceTree = "<group>"; };
+		7F1A0098 /* Browser/BrowserWindowModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserWindowModel.swift; sourceTree = "<group>"; };
+		7F1A0096 /* Browser/EjectGuard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/EjectGuard.swift; sourceTree = "<group>"; };
+		7F1A008E /* Browser/FileOperationQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileOperationQueue.swift; sourceTree = "<group>"; };
+		7F1A007F /* Browser/FileIconCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileIconCache.swift; sourceTree = "<group>"; };
+		7F1A007D /* Browser/DirectoryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/DirectoryReader.swift; sourceTree = "<group>"; };
+		7F1A007B /* Browser/BrowserWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserWorkspace.swift; sourceTree = "<group>"; };
+		7F1A0079 /* Browser/ShelfModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ShelfModel.swift; sourceTree = "<group>"; };
+		7F1A0077 /* Browser/CloudBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/CloudBadge.swift; sourceTree = "<group>"; };
+		7F1A005F /* Browser/BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserCommands.swift; sourceTree = "<group>"; };
+		7F1A003F /* Browser/FileOperationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileOperationRules.swift; sourceTree = "<group>"; };
+		7F1A002C /* Browser/SearchQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SearchQuery.swift; sourceTree = "<group>"; };
+		7F1A002A /* Browser/DirectoryEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/DirectoryEntry.swift; sourceTree = "<group>"; };
+		7F1A0026 /* Browser/BrowserPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserPath.swift; sourceTree = "<group>"; };
+		7F1A001A /* Browser/PaneHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PaneHistory.swift; sourceTree = "<group>"; };
+		7F1A0018 /* Browser/PaneTree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PaneTree.swift; sourceTree = "<group>"; };
 		7F1A021B /* Notch/NotchTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchTask.swift; sourceTree = "<group>"; };
 		7F1A020F /* Archive/ArchiveEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Archive/ArchiveEngine.swift; sourceTree = "<group>"; };
 		7F1A0211 /* Archive/ArchiveRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Archive/ArchiveRunner.swift; sourceTree = "<group>"; };
@@ -884,6 +952,23 @@
 				7F1A040E /* Snap/SnapMemoryController.swift */,
 				7F1A0258 /* SmoothScroll/SmoothScrollController.swift */,
 				7F1A0256 /* SmoothScroll/SmoothScrollRules.swift */,
+				7F1A009C /* Browser/BrowserSettings.swift */,
+				7F1A009A /* Browser/BrowserWindowController.swift */,
+				7F1A0098 /* Browser/BrowserWindowModel.swift */,
+				7F1A0096 /* Browser/EjectGuard.swift */,
+				7F1A008E /* Browser/FileOperationQueue.swift */,
+				7F1A007F /* Browser/FileIconCache.swift */,
+				7F1A007D /* Browser/DirectoryReader.swift */,
+				7F1A007B /* Browser/BrowserWorkspace.swift */,
+				7F1A0079 /* Browser/ShelfModel.swift */,
+				7F1A0077 /* Browser/CloudBadge.swift */,
+				7F1A005F /* Browser/BrowserCommands.swift */,
+				7F1A003F /* Browser/FileOperationRules.swift */,
+				7F1A002C /* Browser/SearchQuery.swift */,
+				7F1A002A /* Browser/DirectoryEntry.swift */,
+				7F1A0026 /* Browser/BrowserPath.swift */,
+				7F1A001A /* Browser/PaneHistory.swift */,
+				7F1A0018 /* Browser/PaneTree.swift */,
 				7F1A021B /* Notch/NotchTask.swift */,
 				7F1A020F /* Archive/ArchiveEngine.swift */,
 				7F1A0211 /* Archive/ArchiveRunner.swift */,
@@ -1134,6 +1219,23 @@
 				7F1A036C /* Detail/ShortcutsDetailView.swift */,
 				7F1A0070 /* Detail/WindowDetailViews.swift */,
 				7F1A025A /* Detail/SmoothScrollSection.swift */,
+				7F1A0119 /* Detail/FileBrowserDetailView.swift */,
+				7F1A0117 /* Browser/ShelfBarView.swift */,
+				7F1A0115 /* Browser/SearchBarView.swift */,
+				7F1A0113 /* Browser/RecoveryReportSheet.swift */,
+				7F1A010F /* Browser/PaneView.swift */,
+				7F1A010D /* Browser/PaneGridView.swift */,
+				7F1A0109 /* Browser/OperationsPanelView.swift */,
+				7F1A00FF /* Browser/LocationBarView.swift */,
+				7F1A00FD /* Browser/FileListView.swift */,
+				7F1A00FB /* Browser/FileIconView.swift */,
+				7F1A00E3 /* Browser/FileGalleryView.swift */,
+				7F1A00E1 /* Browser/FileColumnView.swift */,
+				7F1A00DA /* Browser/ConflictSheet.swift */,
+				7F1A00D8 /* Browser/CommandPaletteView.swift */,
+				7F1A00CA /* Browser/BrowserSidebarView.swift */,
+				7F1A00B2 /* Browser/BrowserRootView.swift */,
+				7F1A009E /* Browser/BrowserBatchRenameSheet.swift */,
 				7F1A0071 /* Detail/QuickLookDetailView.swift */,
 				7F1A0075 /* ClipboardCardView.swift */,
 				7F1A00C4 /* EdgeNotesViews.swift */,
@@ -1427,6 +1529,23 @@
 				7F1A0089 /* Detail/DropTrayDetailView.swift in Sources */,
 				7F1A008A /* Detail/WindowDetailViews.swift in Sources */,
 				7F1A025B /* Detail/SmoothScrollSection.swift in Sources */,
+				7F1A011A /* Detail/FileBrowserDetailView.swift in Sources */,
+				7F1A0118 /* Browser/ShelfBarView.swift in Sources */,
+				7F1A0116 /* Browser/SearchBarView.swift in Sources */,
+				7F1A0114 /* Browser/RecoveryReportSheet.swift in Sources */,
+				7F1A0112 /* Browser/PaneView.swift in Sources */,
+				7F1A010E /* Browser/PaneGridView.swift in Sources */,
+				7F1A010C /* Browser/OperationsPanelView.swift in Sources */,
+				7F1A0108 /* Browser/LocationBarView.swift in Sources */,
+				7F1A00FE /* Browser/FileListView.swift in Sources */,
+				7F1A00FC /* Browser/FileIconView.swift in Sources */,
+				7F1A00FA /* Browser/FileGalleryView.swift in Sources */,
+				7F1A00E2 /* Browser/FileColumnView.swift in Sources */,
+				7F1A00E0 /* Browser/ConflictSheet.swift in Sources */,
+				7F1A00D9 /* Browser/CommandPaletteView.swift in Sources */,
+				7F1A00CB /* Browser/BrowserSidebarView.swift in Sources */,
+				7F1A00B3 /* Browser/BrowserRootView.swift in Sources */,
+				7F1A009F /* Browser/BrowserBatchRenameSheet.swift in Sources */,
 				7F1A008B /* Detail/QuickLookDetailView.swift in Sources */,
 				7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */,
 				7F1A0204 /* Surface/ToastSurface.swift in Sources */,
@@ -1454,6 +1573,23 @@
 				7F1A040F /* Snap/SnapMemoryController.swift in Sources */,
 				7F1A0259 /* SmoothScroll/SmoothScrollController.swift in Sources */,
 				7F1A0257 /* SmoothScroll/SmoothScrollRules.swift in Sources */,
+				7F1A009D /* Browser/BrowserSettings.swift in Sources */,
+				7F1A009B /* Browser/BrowserWindowController.swift in Sources */,
+				7F1A0099 /* Browser/BrowserWindowModel.swift in Sources */,
+				7F1A0097 /* Browser/EjectGuard.swift in Sources */,
+				7F1A008F /* Browser/FileOperationQueue.swift in Sources */,
+				7F1A008D /* Browser/FileIconCache.swift in Sources */,
+				7F1A007E /* Browser/DirectoryReader.swift in Sources */,
+				7F1A007C /* Browser/BrowserWorkspace.swift in Sources */,
+				7F1A007A /* Browser/ShelfModel.swift in Sources */,
+				7F1A0078 /* Browser/CloudBadge.swift in Sources */,
+				7F1A0076 /* Browser/BrowserCommands.swift in Sources */,
+				7F1A0058 /* Browser/FileOperationRules.swift in Sources */,
+				7F1A002D /* Browser/SearchQuery.swift in Sources */,
+				7F1A002B /* Browser/DirectoryEntry.swift in Sources */,
+				7F1A0029 /* Browser/BrowserPath.swift in Sources */,
+				7F1A0021 /* Browser/PaneHistory.swift in Sources */,
+				7F1A0019 /* Browser/PaneTree.swift in Sources */,
 				7F1A021C /* Notch/NotchTask.swift in Sources */,
 				7F1A0210 /* Archive/ArchiveEngine.swift in Sources */,
 				7F1A0212 /* Archive/ArchiveRunner.swift in Sources */,

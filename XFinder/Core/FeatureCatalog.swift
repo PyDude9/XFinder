@@ -65,6 +65,9 @@ enum IdleCost: String, Equatable {
     case helperProcess
     /// F3: an AX observer on the windows of the apps the user listed — nothing runs between window events.
     case watchesWindows
+    /// XF-T28: a folder watcher per visible pane while one of the feature's windows is open; with no window open nothing
+    /// runs at all (so the "quiet" bundle has nothing to switch off — `isBackgroundActive` is false).
+    case onlyWhileOpen
 
     var badgeKey: String {
         switch self {
@@ -74,10 +77,11 @@ enum IdleCost: String, Equatable {
         case .timerWhileActive:  return "Có bộ hẹn giờ"
         case .helperProcess:     return "Một tiến trình phụ"
         case .watchesWindows:    return "Theo dõi cửa sổ app đã chọn"
+        case .onlyWhileOpen:     return "Chỉ chạy khi cửa sổ đang mở"
         }
     }
     /// Whether it keeps something running that the "quiet" bundle should switch off.
-    var isBackgroundActive: Bool { self != .nothingAtRest }
+    var isBackgroundActive: Bool { self != .nothingAtRest && self != .onlyWhileOpen }
 }
 
 enum FeatureGroup: String, CaseIterable {
@@ -108,6 +112,7 @@ enum FeatureID: String, CaseIterable {
     case systemHUD
     case quickShare, remoteConnect   // XF-T21
     case smoothScroll                // XF-T25: a scroll-wheel tap while on
+    case fileBrowser                 // XF-T28: a window; folder watchers only while it is open
 }
 
 struct FeatureDef: Equatable {
@@ -185,6 +190,11 @@ enum FeatureCatalog {
                    symbol: "sparkles", group: .clipboard, enabledKey: "clipboard.intelligentSuggestions",
                    defaultOn: true, permissions: [], idle: .nothingAtRest),
 
+        // XF-T28 (2026-10-24). On by default: nothing runs until a browser window is opened.
+        FeatureDef(id: .fileBrowser, titleKey: "Trình duyệt tệp",
+                   subtitleKey: "Finder nhiều ngăn: chép giữa các ngăn, tìm bằng một câu thường, hàng đợi chép an toàn.",
+                   symbol: "square.split.2x2", group: .tools, enabledKey: "fileBrowser.enabled",
+                   defaultOn: true, permissions: [], idle: .onlyWhileOpen),
         FeatureDef(id: .quickSearch, titleKey: "Bảng lệnh ⌘K",
                    subtitleKey: "Tìm ứng dụng, tệp và tính toán từ một ô nhập.",
                    symbol: "magnifyingglass", group: .tools, enabledKey: "quickSearch.enabled",

@@ -108,6 +108,8 @@ struct DetailHostView: View {
                 QuickShareDetailView()
             case .finderSearch:
                 FinderSearchDetailView()
+            case .fileBrowser:
+                FileBrowserDetailView()
             case .aiSearch:
                 AiSearchDetailView()
             case .batchRename:
