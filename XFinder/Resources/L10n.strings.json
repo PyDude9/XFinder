@@ -12550,6 +12550,170 @@
     "Lấy thông tin": {
       "en": "Get Info",
       "scope": "sentence"
+    },
+    "Lưu Workspace…": {
+      "en": "Save Workspace…",
+      "scope": "sentence"
+    },
+    "Quản lý Workspace…": {
+      "en": "Manage Workspaces…",
+      "scope": "sentence"
+    },
+    "Quản lý Workspace": {
+      "en": "Manage Workspaces",
+      "scope": "sentence"
+    },
+    "Chưa có Workspace nào": {
+      "en": "No workspaces yet",
+      "scope": "sentence"
+    },
+    "Cài đặt cặp này…": {
+      "en": "Settings for this pair…",
+      "scope": "sentence"
+    },
+    "Xuất JSON…": {
+      "en": "Export JSON…",
+      "scope": "sentence"
+    },
+    "Xoá Workspace này?": {
+      "en": "Delete this workspace?",
+      "scope": "sentence"
+    },
+    "Nhân đôi": {
+      "en": "Duplicate",
+      "scope": "sentence"
+    },
+    "Tìm bằng câu thường ngay trong Trình duyệt tệp — có chip sửa được": {
+      "en": "Search in plain words right in the File Browser — with editable chips",
+      "scope": "sentence"
+    },
+    "Mở thanh tìm": {
+      "en": "Open the search bar",
+      "scope": "sentence"
+    },
+    " (đang tính…)": {
+      "en": " (calculating…)",
+      "scope": "fragment"
+    },
+    "Bỏ khỏi sidebar": {
+      "en": "Remove from Sidebar",
+      "scope": "sentence"
+    },
+    "Chỉ đổi tên hiện trên sidebar — thư mục thật không đổi tên.": {
+      "en": "Only the name shown in the sidebar changes — the real folder keeps its name.",
+      "scope": "sentence"
+    },
+    "Khoá": {
+      "en": "Locked",
+      "scope": "sentence"
+    },
+    "Không còn ở đây": {
+      "en": "No longer here",
+      "scope": "sentence"
+    },
+    "Loại:": {
+      "en": "Kind:",
+      "scope": "fragment"
+    },
+    "Mọi người khác": {
+      "en": "Everyone",
+      "scope": "sentence"
+    },
+    "Nhóm mới…": {
+      "en": "New Group…",
+      "scope": "sentence"
+    },
+    "Số mục:": {
+      "en": "Items:",
+      "scope": "fragment"
+    },
+    "Thêm thông tin": {
+      "en": "More Info",
+      "scope": "sentence"
+    },
+    "Thẻ, cách nhau bằng dấu phẩy": {
+      "en": "Tags, separated by commas",
+      "scope": "sentence"
+    },
+    "Tên & đuôi": {
+      "en": "Name & Extension",
+      "scope": "sentence"
+    },
+    "Tên nhóm": {
+      "en": "Group name",
+      "scope": "sentence"
+    },
+    "Tạo nhóm và chuyển vào đây": {
+      "en": "Create a group and move this here",
+      "scope": "sentence"
+    },
+    "Tổng kích thước:": {
+      "en": "Total size:",
+      "scope": "fragment"
+    },
+    "Xoá nhóm": {
+      "en": "Delete Group",
+      "scope": "sentence"
+    },
+    "Đang tính…": {
+      "en": "Calculating…",
+      "scope": "sentence"
+    },
+    "Đặt lại tên": {
+      "en": "Reset Name",
+      "scope": "sentence"
+    },
+    "Đổi tên hiển thị": {
+      "en": "Rename in sidebar",
+      "scope": "sentence"
+    },
+    "Đổi tên…": {
+      "en": "Rename…",
+      "scope": "sentence"
+    },
+    "Ẩn đuôi tệp": {
+      "en": "Hide extension",
+      "scope": "sentence"
+    },
+    "Ẩn ổ": {
+      "en": "Hide Disk",
+      "scope": "sentence"
+    },
+    "Ổ bị ẩn khỏi mục Vị trí của sidebar trình duyệt tệp — vẫn gắn vào máy bình thường.": {
+      "en": "Disks hidden from Locations in the file browser sidebar — they stay mounted as usual.",
+      "scope": "sentence"
+    },
+    "Ổ chưa gắn vào máy": {
+      "en": "Disk not connected",
+      "scope": "sentence"
+    },
+    "Ổ đã ẩn": {
+      "en": "Hidden disks",
+      "scope": "sentence"
+    },
+    "Chỉ ghi": {
+      "en": "Write only",
+      "scope": "sentence"
+    },
+    "Chỉ đọc": {
+      "en": "Read only",
+      "scope": "sentence"
+    },
+    "Không truy cập": {
+      "en": "No Access",
+      "scope": "sentence"
+    },
+    "Đọc & ghi": {
+      "en": "Read & Write",
+      "scope": "sentence"
+    },
+    "Tên không được để trống.": {
+      "en": "The name can't be empty.",
+      "scope": "sentence"
+    },
+    "Tên không được chứa dấu hai chấm hoặc dấu gạch chéo.": {
+      "en": "The name can't contain a colon or a slash.",
+      "scope": "sentence"
     }
   }
 }
