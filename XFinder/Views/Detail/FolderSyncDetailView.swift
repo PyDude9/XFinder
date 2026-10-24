@@ -36,12 +36,15 @@ struct FolderSyncDetailView: View {
                 }
 
                 HStack(alignment: .top, spacing: 8) {
-                    Text(L10n.t("Điều khiển các lượt Khi thay đổi và Hằng ngày. Đồng bộ ngay thủ công vẫn khả dụng."))
+                    // XF-T29: this used to say manual "Đồng bộ ngay" always works regardless of the switch — no
+                    // longer true, the button is gated by Pro too (see `FolderSyncController.run`), so this is a
+                    // new key rather than editing the old one under a changed meaning (CLAUDE.md rule 8).
+                    Text(L10n.t("Điều khiển các lượt Khi thay đổi và Hằng ngày."))
                         .font(XFinderTokens.Font.rowValue)
                     Spacer(minLength: 8)
                     Image(systemName: "questionmark.circle")
                         .foregroundColor(.secondary)
-                        .help(L10n.t("Tắt công tắc này chỉ dừng các lượt tự động; nút “Đồng bộ ngay” vẫn chạy được."))
+                        .help(L10n.t("Tắt công tắc này chỉ dừng các lượt tự động; nút “Đồng bộ ngay” cần XFinder Pro để chạy ở cả hai trường hợp."))
                 }
                 .padding(12)
                 .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control)

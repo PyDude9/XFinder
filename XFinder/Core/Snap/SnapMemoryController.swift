@@ -201,7 +201,12 @@ final class SnapMemoryController {
         attachIfNeeded(app)
     }
 
+    // XF-T29: the ONE chokepoint before every AXObserver attach (`attachAllRemembered`, `appLaunched`, and
+    // `didSnap` all funnel here) — without this check, `didSnap` (reachable from the always-free "Vùng bắt
+    // dính" snap action, not just `applySettings`/`reapplyNow`) could arm a live replay for Free, bypassing
+    // the `.snapMemory` gate entirely the first time a user snaps a window by hand.
     private func attachIfNeeded(_ app: NSRunningApplication) {
+        guard LicenseManager.shared.allows(.snapMemory) else { return }
         guard watches[app.processIdentifier] == nil, attachRetries[app.processIdentifier] == nil,
               let bundleID = app.bundleIdentifier, bundleID != ownBundleID else { return }
         attach(app, attempt: 0)
@@ -302,7 +307,10 @@ final class SnapMemoryController {
     // MARK: AX callback
 
     private func handle(_ notification: String, pid: pid_t) {
-        guard isEnabled, var w = watches[pid] else { return }
+        // XF-T29: defense in depth — a downgrade (trial end) mid-session must stop replay even for an
+        // app whose observer was attached while still Pro; `attachIfNeeded` keeps new attaches out, this
+        // keeps an already-attached one from doing anything once the tier drops to Free.
+        guard isEnabled, LicenseManager.shared.allows(.snapMemory), var w = watches[pid] else { return }
         switch notification {
         case kAXWindowCreatedNotification as String:
             log.notice("windowCreated pid=\(pid) appliedThisLaunch=\(w.appliedThisLaunch)")
