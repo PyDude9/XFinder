@@ -208,6 +208,7 @@ struct AIAgentsDetailView: View {
             if e.agent == .claude, let cwd = e.cwd {
                 Button(L10n.t("Mở không cửa sổ")) { resumeWindowless(e, cwd: cwd) }
                     .controlSize(.small)
+                    .proGated(.windowlessAgents)
             }
             Button(copiedID == e.id ? L10n.t("Đã chép") : L10n.t("Sao chép lệnh")) {
                 let pb = NSPasteboard.general
@@ -411,6 +412,7 @@ struct AIAgentsDetailView: View {
             Button(L10n.t("Bắt đầu phiên")) { startWindowless() }
                 .controlSize(.small)
                 .disabled(windowlessStarting || windowlessFolder == nil || windowlessClaudeOK == false)
+                .proGated(.windowlessAgents)
         }
     }
 
@@ -595,6 +597,7 @@ struct AIAgentsDetailView: View {
             Button(L10n.t("Bắt đầu crew")) { startCrew() }
                 .controlSize(.small)
                 .disabled(crewStarting || crewFolder == nil || crewGoal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .proGated(.agentCrews)
         }
     }
 

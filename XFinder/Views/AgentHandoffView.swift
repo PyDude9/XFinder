@@ -90,6 +90,7 @@ struct AgentHandoffView: View {
             Button(L10n.t("Gửi")) { model.onSend() }
                 .keyboardShortcut(.defaultAction)
                 .disabled(model.loading || model.sending || model.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .proGated(.agentHandoff)
         }
     }
 }

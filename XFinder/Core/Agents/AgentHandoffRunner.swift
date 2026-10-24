@@ -66,14 +66,18 @@ final class AgentHandoffRunner {
     }
 
     /// Start the target with the (possibly edited) message. Spends one model turn on the target agent.
+    ///
+    /// XF-T29: handoff (to any target) is its own Pro gate — a session already talking keeps talking, only a NEW
+    /// handoff send is blocked.
     func send(_ draft: Draft) async -> Outcome {
+        guard LicenseManager.shared.allows(.agentHandoff) else { return .failed("Cần XFinder Pro") }
         guard let message = WindowlessRules.cleanMessage(draft.text) else { return .failed("Tin chuyển giao đang trống.") }
         switch draft.target {
         case .claude:
             guard let folder = draft.folder, !folder.isEmpty else { return .failed("Phiên gốc không ghi thư mục.") }
             do {
                 _ = try await WindowlessSessionManager.shared.startClaude(folder: URL(fileURLWithPath: folder, isDirectory: true),
-                                                                        firstMessage: message)
+                                                                        firstMessage: message, gated: false)
                 log.info("handoff \(draft.source.rawValue, privacy: .public) -> claude started")
                 return .started
             } catch let e as WindowlessSessionManager.StartError {
@@ -102,7 +106,7 @@ final class AgentHandoffRunner {
             guard let folder = draft.folder, !folder.isEmpty else { return .failed("Phiên gốc không ghi thư mục.") }
             do {
                 _ = try await WindowlessSessionManager.shared.startCodex(folder: URL(fileURLWithPath: folder, isDirectory: true),
-                                                                       firstMessage: message)
+                                                                       firstMessage: message, gated: false)
                 log.info("handoff \(draft.source.rawValue, privacy: .public) -> codex started")
                 return .started
             } catch let e as WindowlessSessionManager.StartError {

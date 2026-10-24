@@ -16,6 +16,7 @@ final class WindowlessSessionManager {
 
     enum StartError: Error, Equatable {
         case noClaude, noCodex, badFolder, badSessionID, alreadyRunning, openElsewhere, launchFailed(String)
+        case proRequired
         /// A store key for the page.
         var key: String {
             switch self {
@@ -24,6 +25,7 @@ final class WindowlessSessionManager {
             case .badFolder: return "Thư mục không còn."
             case .openElsewhere: return "Phiên này đang mở ở nơi khác — đóng nó trước rồi mở lại."
             case .badSessionID, .alreadyRunning, .launchFailed: return "Không chạy được claude."
+            case .proRequired: return "Cần XFinder Pro"
             }
         }
         var detail: String? { if case .launchFailed(let s) = self { return s }; return nil }
@@ -149,9 +151,13 @@ final class WindowlessSessionManager {
     // MARK: - Start / resume
 
     /// A new windowless session in `folder`; `firstMessage` (optional) is sent as its first turn. Returns the session id.
+    ///
+    /// XF-T29: `gated` is `false` only for a caller that already checked its OWN Pro feature upstream (a crew member, a
+    /// handoff) — the stand-alone "Bắt đầu phiên" action in the UI leaves it `true`.
     @discardableResult
     func startClaude(folder: URL, firstMessage: String?, extraArguments: [String] = [], extraEnvironment: [String: String] = [:],
-                     pathPrepend: String? = nil) async throws -> String {
+                     pathPrepend: String? = nil, gated: Bool = true) async throws -> String {
+        if gated { guard LicenseManager.shared.allows(.windowlessAgents) else { throw StartError.proRequired } }
         let id = UUID().uuidString.lowercased()
         try await launch(sessionID: id, folder: folder, resume: false, extraArguments: extraArguments,
                          extraEnvironment: extraEnvironment, pathPrepend: pathPrepend)
@@ -162,8 +168,11 @@ final class WindowlessSessionManager {
     /// P11 — a new windowless Codex session: `codex app-server` as XFinder's child. The handshake (initialize →
     /// initialized → thread/start) runs as its replies arrive; `firstMessage` waits for the thread and then becomes the
     /// first `turn/start`. Returns XFinder's own id for the record (the thread id arrives later).
+    ///
+    /// XF-T29: `gated` is `false` only for a caller that already checked its OWN Pro feature upstream (a handoff).
     @discardableResult
-    func startCodex(folder: URL, firstMessage: String?) async throws -> String {
+    func startCodex(folder: URL, firstMessage: String?, gated: Bool = true) async throws -> String {
+        if gated { guard LicenseManager.shared.allows(.windowlessAgents) else { throw StartError.proRequired } }
         let id = UUID().uuidString.lowercased()
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isDir), isDir.boolValue else { throw StartError.badFolder }
@@ -182,7 +191,10 @@ final class WindowlessSessionManager {
     /// Reopen a stored Claude Code conversation windowless (Phiên gần đây). `folder` is where it ran.
     /// `liveSessions`: the hook rows the caller knows (`AgentSessionMonitor.shared.sessions`), passed in so this file stays
     /// free of the monitor.
+    ///
+    /// XF-T29: reopening windowless is "starting a windowless session" too — gated the same as a fresh one.
     func resumeClaude(sessionID: String, folder: URL, liveSessions: [AgentSession]) async throws {
+        guard LicenseManager.shared.allows(.windowlessAgents) else { throw StartError.proRequired }
         let sid = sessionID.lowercased()
         // Review: the recent list can be stale — the same conversation may be open in a terminal again, and two writers on
         // one transcript interleave. A live hook row, or a `claude` process whose arguments name the id, refuses it.

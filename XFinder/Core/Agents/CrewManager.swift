@@ -56,6 +56,7 @@ final class CrewManager {
 
     enum StartError: Error, Equatable {
         case badFolder, noScript, setupFailed, notGit, noCommit, noBranchName, git(String), member(WindowlessSessionManager.StartError)
+        case proRequired
         var key: String {
             switch self {
             case .badFolder: return "Thư mục không còn."
@@ -65,6 +66,7 @@ final class CrewManager {
             case .noBranchName: return "Không đặt được tên nhánh cho crew."
             case .git: return "git không tạo được worktree cho crew."
             case .member(let e): return e.key
+            case .proRequired: return "Cần XFinder Pro"
             }
         }
     }
@@ -198,6 +200,9 @@ final class CrewManager {
     @discardableResult
     func start(template: CrewRules.Template, folder: URL, goal: String) async throws -> String {
         startIfNeeded()
+        // XF-T29: a crew (Lead Architect or not) is a Pro feature — a session already running keeps running, this only
+        // gates a NEW start.
+        guard LicenseManager.shared.allows(.agentCrews) else { throw StartError.proRequired }
         var isDir: ObjCBool = false
         guard FileManager.default.fileExists(atPath: folder.path, isDirectory: &isDir), isDir.boolValue else { throw StartError.badFolder }
         guard let goalText = WindowlessRules.cleanMessage(goal) else { throw StartError.setupFailed }
@@ -293,10 +298,12 @@ final class CrewManager {
                 if let b = memberBranch { env["XFINDER_CREW_BRANCH"] = b }
             }
             do {
+                // Already gated above by `.agentCrews` — a crew member's own windowless session is not a second, separate
+                // "Bắt đầu phiên" action.
                 let sid = try await WindowlessSessionManager.shared.startClaude(
                     folder: plan?.cwd[role.name] ?? folder, firstMessage: nil,
                     extraArguments: CrewRules.launchArguments(for: role, in: template, settingsPath: settingsPath, branch: memberBranch),
-                    extraEnvironment: env, pathPrepend: Self.binDir.path)
+                    extraEnvironment: env, pathPrepend: Self.binDir.path, gated: false)
                 members[role.name] = sid
             } catch let e as WindowlessSessionManager.StartError {
                 undoStart(Array(members.values))
