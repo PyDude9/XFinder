@@ -23,9 +23,21 @@ final class ActionHistoryStore {
 
     /// Minimal data needed to reverse an action. Renames/trashes move items
     /// back; anything without a payload is informational only.
+    ///
+    /// `trashOnUndo` (added for the file browser's copy/duplicate undo, XF-T28) is additive and optional so every
+    /// existing payload — which only ever moved `from` back `to` — decodes unchanged: a copy or duplicate has no
+    /// "original location" to move anything back to, so undoing it means trashing the items it created instead.
+    /// When `trashOnUndo` is non-nil, `from`/`to` are ignored by `undo(_:)`.
     struct UndoPayload: Codable, Sendable, Equatable {
         var from: [String]     // current paths (to move from)
         var to: [String]       // original paths (to restore to)
+        var trashOnUndo: [String]? = nil   // paths to move to Trash instead, for a copy/duplicate's undo
+
+        init(from: [String], to: [String], trashOnUndo: [String]? = nil) {
+            self.from = from
+            self.to = to
+            self.trashOnUndo = trashOnUndo
+        }
     }
 
     private(set) var entries: [Entry] = []
@@ -71,8 +83,13 @@ final class ActionHistoryStore {
 
     /// Returns a message describing the outcome; never throws.
     func undo(_ entry: Entry) -> String {
-        guard entry.reversible, let payload = entry.undoPayload,
-              payload.from.count == payload.to.count else {
+        guard entry.reversible, let payload = entry.undoPayload else {
+            return L10n.t("Không thể hoàn tác thao tác này.")
+        }
+        if let trashOnUndo = payload.trashOnUndo {
+            return undoByTrashing(trashOnUndo, entry: entry)
+        }
+        guard payload.from.count == payload.to.count else {
             return L10n.t("Không thể hoàn tác thao tác này.")
         }
         var restored = 0, failed = 0
@@ -97,6 +114,30 @@ final class ActionHistoryStore {
         return failed == 0
             ? "\(L10n.t("Đã hoàn tác "))\(restored)\(L10n.t(" mục."))"
             : "\(L10n.t("Khôi phục "))\(restored)\(L10n.t(", "))\(failed)\(L10n.t(" mục thất bại."))"
+    }
+
+    /// Undo for a copy or duplicate: the items it created have no earlier location to move back to, so undoing
+    /// means moving each of them to the Trash (never `removeItem` — CLAUDE.md rule 9, "never rm user data").
+    /// A path already gone (the user deleted it themselves since) is not an error — there is nothing left to undo
+    /// for it, so it counts neither as restored nor failed.
+    private func undoByTrashing(_ paths: [String], entry: Entry) -> String {
+        guard !paths.isEmpty else { return L10n.t("Không thể hoàn tác thao tác này.") }
+        var trashed = 0, failed = 0
+        let fm = FileManager.default
+        for path in paths {
+            guard fm.fileExists(atPath: path) else { continue }
+            do {
+                try fm.trashItem(at: URL(fileURLWithPath: path), resultingItemURL: nil)
+                trashed += 1
+            } catch { failed += 1 }
+        }
+        if trashed > 0, let i = entries.firstIndex(where: { $0.id == entry.id }) {
+            entries.remove(at: i)
+            record(kind: "other", summary: "\(L10n.t("Hoàn tác: chuyển "))\(trashed)\(L10n.t(" mục vào Thùng rác."))", reversible: false)
+        }
+        return failed == 0
+            ? "\(L10n.t("Đã hoàn tác "))\(trashed)\(L10n.t(" mục."))"
+            : "\(L10n.t("Khôi phục "))\(trashed)\(L10n.t(", "))\(failed)\(L10n.t(" mục thất bại."))"
     }
 
     // MARK: - Persistence
