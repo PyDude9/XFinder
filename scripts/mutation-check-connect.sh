@@ -14,7 +14,7 @@ trap 'exit 143' INT TERM
 
 fails() {
   swift test --package-path Tests --filter ConnectRulesTests 2>&1 \
-    | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} /Fatal error|Exited with (unexpected )?signal/ {crash=1} END {print (crash ? "CRASH" : (f==""?"NORESULT":f))}'
+    | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} /[Ff]atal error|[Ee]xited with (unexpected )?signal/ {crash=1} END {print (crash ? "CRASH" : (f==""?"NORESULT":f))}'
 }
 base=$(fails); echo "baseline failures: $base"
 [ "$base" = "0" ] || { echo "FAIL: baseline is not green"; exit 1; }

@@ -43,7 +43,7 @@ timed() {
 fails() {
   timed swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)}
-           /Fatal error|Exited with (unexpected )?signal/ {crash=1}
+           /[Ff]atal error|[Ee]xited with (unexpected )?signal/ {crash=1}
            /HARNESS-TIMEOUT/ {hang=1}
            END {print (hang ? "HANG" : (crash ? "CRASH" : (f==""?"NORESULT":f)))}'
 }
