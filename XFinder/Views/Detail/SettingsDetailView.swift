@@ -292,11 +292,15 @@ private struct ClipboardSettingsBody: View {
             }
 
             // D — Clipboard MCP: the app binary as a stdio server for Claude Code / Cursor / Codex.
+            // XF-T29 — Pro only: the switch here is informational in Free (the server itself always
+            // answers "XFinder Pro is required…" per LicenseManager, whatever this toggle says), so it is
+            // disabled and tagged rather than silently doing nothing (CLAUDE.md rule 7).
             SettingsSection(
-                title: L10n.t("Clipboard MCP cho agent AI"),
+                title: "\(L10n.t("Clipboard MCP cho agent AI")) · PRO",
                 footer: L10n.t("Claude Code, Cursor, Codex đọc được lịch sử clipboard qua MCP. Chỉ đọc, chỉ văn bản, không bao giờ trả mục từ trình quản lý mật khẩu; tắt công tắc thì mọi lệnh trả lỗi.")
             ) {
                 ToggleRow(title: L10n.t("Cho phép agent đọc clipboard qua MCP"), isOn: $mcpEnabled)
+                    .proGated(.clipboardMCP)
                     .settingsRow()
                 SettingsDivider()
                 HStack(alignment: .top, spacing: XFinderTokens.Space.inline) {

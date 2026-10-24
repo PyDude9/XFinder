@@ -11,8 +11,8 @@ final class MCPProtocolTests: XCTestCase {
                         sourceAppName: app, textSnippet: text, thumbnailPath: nil, payloadPath: nil, ocrText: ocr, pinboardID: nil, metadata: [:])
     }
 
-    func ctx(enabled: Bool = true, _ records: [ClipboardRecord], full: [UUID: String] = [:]) -> MCP.Context {
-        MCP.Context(enabled: enabled, appVersion: "1.2.3", records: { records }, fullText: { full[$0.id] ?? $0.textSnippet })
+    func ctx(enabled: Bool = true, proAllowed: Bool = true, _ records: [ClipboardRecord], full: [UUID: String] = [:]) -> MCP.Context {
+        MCP.Context(enabled: enabled, proAllowed: proAllowed, appVersion: "1.2.3", records: { records }, fullText: { full[$0.id] ?? $0.textSnippet })
     }
 
     func json(_ s: String?) -> [String: Any] {
@@ -68,6 +68,25 @@ final class MCPProtocolTests: XCTestCase {
         XCTAssertTrue(((call["error"] as? [String: Any])?["message"] as? String ?? "").contains("turned off"))
         let list = json(MCP.handle(line: #"{"jsonrpc":"2.0","id":4,"method":"tools/list"}"#, context: c))
         XCTAssertNotNil(list["result"], "listing tools is harmless; only calls are fenced")
+    }
+
+    /// XF-T29 — Free: the server is on, but the tier does not allow `.clipboardMCP`.
+    func testWhenTierDoesNotAllowMCPEveryToolCallSaysProIsRequired() {
+        let c = ctx(enabled: true, proAllowed: false, [rec("secret-ish")])
+        let call = json(MCP.handle(line: #"{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"clipboard_list_recent","arguments":{}}}"#, context: c))
+        XCTAssertEqual((call["error"] as? [String: Any])?["code"] as? Int, -32000)
+        XCTAssertEqual((call["error"] as? [String: Any])?["message"] as? String, MCP.proRequiredMessage)
+        let search = json(MCP.handle(line: #"{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"clipboard_search","arguments":{"query":"x"}}}"#, context: c))
+        XCTAssertEqual((search["error"] as? [String: Any])?["message"] as? String, MCP.proRequiredMessage)
+        let list = json(MCP.handle(line: #"{"jsonrpc":"2.0","id":5,"method":"tools/list"}"#, context: c))
+        XCTAssertNotNil(list["result"], "listing tools is harmless; only calls are fenced")
+    }
+
+    func testTheOffSwitchIsCheckedBeforeTheTierSoTheMessageMatchesWhichOneIsActuallyWrong() {
+        let c = ctx(enabled: false, proAllowed: false, [rec("x")])
+        let call = json(MCP.handle(line: #"{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"clipboard_list_recent","arguments":{}}}"#, context: c))
+        XCTAssertTrue(((call["error"] as? [String: Any])?["message"] as? String ?? "").contains("turned off"),
+                      "off beats Pro-required: flipping the switch is the first thing to try")
     }
 
     func testPasswordManagerRecordsNeverAppearInAnyTool() {

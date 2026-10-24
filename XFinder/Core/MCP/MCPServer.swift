@@ -17,7 +17,14 @@ enum MCPServer {
     static func run() -> Never {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
         let dbPath = databasePath()
+        // XF-T29 — this process has no app UI, but `LicenseManager` reads the same UserDefaults/Keychain
+        // the GUI does, so the tier check is identical. `run()` is called from `XFinderApp.init()` before
+        // any scene, run loop or second thread exists — the one point where reaching across to the
+        // MainActor from here is provably safe (CLAUDE.md rule 12: assumeIsolated only when the caller is
+        // certain to be on the main run loop already).
+        let proAllowed = MainActor.assumeIsolated { LicenseManager.shared.allows(.clipboardMCP) }
         let context = MCP.Context(enabled: isEnabled,
+                                  proAllowed: proAllowed,
                                   appVersion: version,
                                   records: { readRecords(dbPath: dbPath) },
                                   fullText: { r in ClipboardText.fullText(snippet: r.textSnippet, payloadPath: r.type == .file ? nil : r.payloadPath) })

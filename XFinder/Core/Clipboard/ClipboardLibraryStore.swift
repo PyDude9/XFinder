@@ -59,11 +59,34 @@ final class ClipboardLibraryStore {
     @ObservationIgnored private var facetsCache: (version: Int, boards: [Pinboard], value: ClipboardLibrary.Facets)?
     @ObservationIgnored private var filteredCache: (version: Int, boards: [Pinboard], query: ClipboardLibrary.Query,
                                                      minute: Int, value: [ClipboardRecord])?
+    @ObservationIgnored private var proGateCache: (version: Int, limit: Int?, value: [ClipboardRecord])?
+
+    // MARK: - Free/Pro (XF-T29)
+
+    /// `records` (every SQLite row), gated by `ProLimit.clipboardItems`: this store reads EVERY row —
+    /// unlike `ClipboardManager.history`, which is already capped by `clipboard.maxHistory` — so without
+    /// this gate the Library would be a loophole around the Free limit. `facets`/`filtered`/`visible` all
+    /// build on this, never on `records` directly; search (through `filtered`) therefore also only
+    /// covers the visible part in Free, per spec XF-T29 §2. Keyed on the limit too (not just
+    /// `recordsVersion`): activating a licence or flipping `pro.simulateTier` must take effect without a
+    /// reload of `records`.
+    private var proGatedRecords: [ClipboardRecord] {
+        let limit = LicenseManager.shared.limit(.clipboardItems)
+        if let c = proGateCache, c.version == recordsVersion, c.limit == limit { return c.value }
+        let value = ClipboardProGate.visible(records, limit: limit)
+        proGateCache = (recordsVersion, limit, value)
+        return value
+    }
+
+    /// How many rows the Free limit hides right now — the "N mục cũ hơn" notice.
+    var hiddenByProLimit: Int {
+        ClipboardProGate.hiddenCount(records, limit: LicenseManager.shared.limit(.clipboardItems))
+    }
 
     var facets: ClipboardLibrary.Facets {
         let b = boards
         if let c = facetsCache, c.version == recordsVersion, c.boards == b { return c.value }
-        let value = ClipboardLibrary.facets(records, boards: b)
+        let value = ClipboardLibrary.facets(proGatedRecords, boards: b)
         facetsCache = (recordsVersion, b, value)
         return value
     }
@@ -75,7 +98,7 @@ final class ClipboardLibraryStore {
         if let c = filteredCache, c.version == recordsVersion, c.boards == b, c.query == query, c.minute == minute {
             return c.value
         }
-        let value = ClipboardLibrary.apply(query, to: records, boards: b, now: now, calendar: .current)
+        let value = ClipboardLibrary.apply(query, to: proGatedRecords, boards: b, now: now, calendar: .current)
         filteredCache = (recordsVersion, b, query, minute, value)
         return value
     }

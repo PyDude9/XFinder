@@ -112,6 +112,23 @@ final class NotchClipboardRulesTests: XCTestCase {
                        .notice("n"), "but a fresh action's result still shows first")
     }
 
+    func testProLimitNoticeIsLowestPriorityAmbientStatus() {
+        XCTAssertEqual(R.footer(pasteStackActive: false, remaining: 0, interceptsCommandV: false, notice: nil, autoPaste: false,
+                                accessibilityTrusted: true, hiddenByProLimit: 10), .proLimit(hidden: 10),
+                       "nothing more urgent to show ⇒ the Free-limit notice takes the hint slot")
+        XCTAssertEqual(R.footer(pasteStackActive: false, remaining: 0, interceptsCommandV: false, notice: nil, autoPaste: false,
+                                accessibilityTrusted: true, hiddenByProLimit: 0), .hints, "nothing hidden ⇒ ordinary hints")
+        XCTAssertEqual(R.footer(pasteStackActive: true, remaining: 2, interceptsCommandV: true, notice: nil, autoPaste: false,
+                                accessibilityTrusted: true, hiddenByProLimit: 10), .pasteStack(remaining: 2, interceptsCommandV: true),
+                       "an active Paste Stack still outranks it")
+        XCTAssertEqual(R.footer(pasteStackActive: false, remaining: 0, interceptsCommandV: false, notice: "n", autoPaste: false,
+                                accessibilityTrusted: true, hiddenByProLimit: 10), .notice("n"), "a fresh notice still outranks it")
+        XCTAssertEqual(R.footer(pasteStackActive: false, remaining: 0, interceptsCommandV: false, notice: nil, paused: true, autoPaste: false,
+                                accessibilityTrusted: true, hiddenByProLimit: 10), .paused, "paused still outranks it")
+        XCTAssertEqual(R.footer(pasteStackActive: false, remaining: 0, interceptsCommandV: false, notice: nil, autoPaste: true,
+                                accessibilityTrusted: false, hiddenByProLimit: 10), .accessibilityMissing, "the Accessibility warning still outranks it")
+    }
+
     // MARK: Image tiles
 
     func testImagesFillTheTileOnlyWhenTheirShapeIsCloseToIt() {

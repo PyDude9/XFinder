@@ -66,7 +66,8 @@ final class NotchClipboardModel {
         let parsed = ClipboardFilterToken.parse(query)
         var boardIDs: Set<UUID>?
         if case .board(let id) = scope, let b = manager.pinboards.first(where: { $0.id == id }) { boardIDs = Set(b.itemIDs) }
-        var list = NotchClipboardRules.apply(scope: scope, boardItemIDs: boardIDs, to: manager.history)
+        // XF-T29 — Free: the gated history, not the raw array; search (below) only ever sees what is visible.
+        var list = NotchClipboardRules.apply(scope: scope, boardItemIDs: boardIDs, to: manager.visibleHistory)
         if parsed.app != nil {
             list = list.filter { ClipboardFilterToken.appMatches(token: parsed.app, appName: $0.sourceAppName, bundleID: $0.sourceBundleID) }
         }
@@ -209,7 +210,9 @@ struct NotchClipboardView: View {
     private var customBoards: [Pinboard] { manager.pinboards.filter { !$0.isBuiltIn } }
 
     private var chipRow: some View {
-        let history = manager.history
+        // XF-T29 — Free: chip counts match what the deck actually shows (`visibleHistory`); pinned/saved
+        // items are exempt from the limit so their counts are unaffected either way.
+        let history = manager.visibleHistory
         let typeCounts = NotchClipboardRules.typeCounts(history.map(\.type))
         let typeChips = NotchClipboardRules.chips(from: typeCounts)
         let pinned = history.filter(\.isPinned).count
@@ -425,7 +428,8 @@ struct NotchClipboardView: View {
                                                   notice: model.notice,
                                                   paused: manager.isPaused,
                                                   autoPaste: ClipboardShelfController.shared.autoPasteAfterSelection,
-                                                  accessibilityTrusted: WindowManager.isTrusted)
+                                                  accessibilityTrusted: WindowManager.isTrusted,
+                                                  hiddenByProLimit: manager.hiddenHistoryCount)
         switch decision {
         case .hints:
             if !locked {
@@ -477,6 +481,18 @@ struct NotchClipboardView: View {
             .frame(maxWidth: 380)
             .layoutPriority(1)
             .help(L10n.t("Chưa có Trợ năng: ↩ chỉ sao chép, dán bằng ⌘V."))
+        case .proLimit(let hidden):
+            // XF-T29 — Free: items past the 50-item limit stay in the database, just not shown here.
+            let line = "\(hidden)\(L10n.t(" mục cũ hơn — mở bằng Pro."))"
+            Button { AppState.shared.navigate(to: .pro) } label: {
+                pill {
+                    Image(systemName: "lock.fill").foregroundColor(.secondary)
+                    Text(line).lineLimit(1).truncationMode(.tail)
+                }
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: 260)
+            .help(line)
         }
     }
 

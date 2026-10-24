@@ -276,3 +276,42 @@ enum ClipboardLibrary {
         }
     }
 }
+
+/// XF-T29 — the Free-tier clipboard-history gate (ProFeature `.unlimitedClipboard` / ProLimit
+/// `.clipboardItems`), used by `ClipboardManager` (the notch page and ⌘⇧V shelf), `ClipboardLibraryStore`
+/// and the notch page's footer. Kept in this file (not a new one) because every new Core file needs a
+/// hand-authored `project.pbxproj` entry — the integrator's job, not this change's.
+///
+/// Spec (docs/specs/XF-T29-free-pro.md §2, §4): a pinned clip or one saved to a board ("snippet") never
+/// counts against the limit and always shows. Of the rest, the newest `limit` show; the remainder is
+/// HIDDEN — still in the database, never deleted (CLAUDE.md rule 9) — until the owner unlocks Pro.
+enum ClipboardProGate {
+    /// `limit` is `LicenseManager.shared.limit(.clipboardItems)` — nil (Pro/trial) shows everything.
+    /// Order is preserved from `records` (callers pass already-sorted history, newest first); "newest"
+    /// among the non-exempt rows is therefore simply the first ones encountered, not a re-sort here.
+    static func visible(_ records: [ClipboardRecord], limit: Int?) -> [ClipboardRecord] {
+        guard let limit else { return records }
+        var shown: [ClipboardRecord] = []
+        var countedSoFar = 0
+        for r in records {
+            if isExempt(r) || countedSoFar < limit {
+                shown.append(r)
+                if !isExempt(r) { countedSoFar += 1 }
+            }
+        }
+        return shown
+    }
+
+    /// How many non-exempt rows are hidden beyond `limit` — the number the notice line reports.
+    static func hiddenCount(_ records: [ClipboardRecord], limit: Int?) -> Int {
+        guard let limit else { return 0 }
+        let countable = records.filter { !isExempt($0) }.count
+        return max(0, countable - limit)
+    }
+
+    /// A pinned clip or one saved to a board never counts against the Free limit (spec §2: "ghim/snippet
+    /// không tính").
+    static func isExempt(_ r: ClipboardRecord) -> Bool {
+        r.isPinned || r.isSavedSnippet
+    }
+}

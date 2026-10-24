@@ -197,24 +197,34 @@ struct ClipboardLibraryView: View {
     @ViewBuilder private var footer: some View {
         let filteredCount = store.filtered.count
         let visibleCount = store.visible.count
-        HStack(spacing: XFinderTokens.Space.inline) {
-            if store.isLoading && store.records.isEmpty {
-                Text(L10n.t("Đang nạp lịch sử…"))
-                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-            } else if filteredCount == 0 {
-                Text(L10n.t("Không có mục nào khớp."))
-                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-            } else {
-                Text("\(L10n.t("Hiện "))1–\(visibleCount)\(L10n.t(" trong "))\(filteredCount)")
-                    .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                    .monospacedDigit()
-                if visibleCount < filteredCount {
-                    Button(L10n.t("Tải thêm")) { store.loadMore() }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            HStack(spacing: XFinderTokens.Space.inline) {
+                if store.isLoading && store.records.isEmpty {
+                    Text(L10n.t("Đang nạp lịch sử…"))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                } else if filteredCount == 0 {
+                    Text(L10n.t("Không có mục nào khớp."))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                } else {
+                    Text("\(L10n.t("Hiện "))1–\(visibleCount)\(L10n.t(" trong "))\(filteredCount)")
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        .monospacedDigit()
+                    if visibleCount < filteredCount {
+                        Button(L10n.t("Tải thêm")) { store.loadMore() }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            // XF-T29 — Free: items past the 50-item limit are not counted in `filteredCount` above
+            // either (they never reach `proGatedRecords`); this line is the only place that says so.
+            if store.hiddenByProLimit > 0 {
+                InlineNote(text: "\(store.hiddenByProLimit)\(L10n.t(" mục cũ hơn — mở bằng Pro."))",
+                           buttonTitle: L10n.t("Xem Pro")) {
+                    AppState.shared.navigate(to: .pro)
                 }
             }
-            Spacer(minLength: 0)
         }
         .padding(.vertical, XFinderTokens.Space.tight)
     }
@@ -357,11 +367,18 @@ private struct FilterRail: View {
         .buttonStyle(.plain)
         .contextMenu {
             if b.isLocked {
+                // XF-T29: a board locked earlier (trial, or before a downgrade) must stay readable and
+                // unlockable in Free — CLAUDE.md rule "never lock someone out of their own data".
                 Button(L10n.t("Gỡ khoá (giải mã lại)")) { store.unlockBoardPermanently(b) }
-            } else if BoardLockKeys.isAvailable {
+            } else if !BoardLockKeys.isAvailable {
+                Text(L10n.t("Không khoá được — máy này không có Secure Enclave."))
+            } else if LicenseManager.shared.allows(.lockedBoard) {
                 Button(L10n.t("Khoá bảng này…")) { pendingLockBoard = b }
             } else {
-                Text(L10n.t("Không khoá được — máy này không có Secure Enclave."))
+                // XF-T29: locking a NEW board is Pro-gated; the row still says why instead of vanishing.
+                Button { AppState.shared.navigate(to: .pro) } label: {
+                    Label(L10n.t("Khoá bảng này… (Cần Pro)"), systemImage: "lock.fill")
+                }
             }
         }
     }

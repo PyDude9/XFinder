@@ -618,8 +618,25 @@ final class ClipboardManager {
         }
     }
 
+    // MARK: - Free/Pro (XF-T29)
+
+    /// `history`, gated by `ProLimit.clipboardItems` (`ClipboardProGate`): in Free only the newest 50
+    /// non-pinned/non-saved items show — the rest stay in `history`/SQLite untouched (CLAUDE.md rule 9),
+    /// just not surfaced here. Pro and the trial see everything `history` already holds. This is the ONE
+    /// place the history panel, the ⌘⇧V shelf and the notch clipboard page should read from.
+    var visibleHistory: [ClipboardRecord] {
+        ClipboardProGate.visible(history, limit: LicenseManager.shared.limit(.clipboardItems))
+    }
+
+    /// How many items are hidden by the Free limit right now — the count the "N mục cũ hơn" notice shows.
+    var hiddenHistoryCount: Int {
+        ClipboardProGate.hiddenCount(history, limit: LicenseManager.shared.limit(.clipboardItems))
+    }
+
+    /// Spec XF-T29 §2 ("search must also only search the visible part in Free"): built on
+    /// `visibleHistory`, not the raw `history`, so a Free user cannot search past the limit either.
     func filteredHistory() -> [ClipboardRecord] {
-        var list = history
+        var list = visibleHistory
 
         // 1. Slice filter
         switch selectedSlice {

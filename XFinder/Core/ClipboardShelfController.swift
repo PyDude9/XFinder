@@ -547,6 +547,10 @@ private struct ClipboardShelfView: View {
         VStack(spacing: 0) {
             topBar
             Divider().opacity(0.5)
+            if manager.selectedSlice == .all, manager.hiddenHistoryCount > 0 {
+                hiddenHistoryNotice
+                Divider().opacity(0.5)
+            }
             deck
             if manager.isMultiSelectActive {
                 multiSelectActionBar
@@ -554,6 +558,16 @@ private struct ClipboardShelfView: View {
             Divider().opacity(0.5)
             hintBar
         }
+    }
+
+    /// XF-T29 — Free: items past `ProLimit.clipboardItems` stay in the database but do not show here.
+    private var hiddenHistoryNotice: some View {
+        InlineNote(text: "\(manager.hiddenHistoryCount)\(L10n.t(" mục cũ hơn — mở bằng Pro."))",
+                   buttonTitle: L10n.t("Xem Pro")) {
+            AppState.shared.navigate(to: .pro)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
     }
 
     // MARK: - Unified Header Bar (Paste 7 style)
@@ -593,7 +607,7 @@ private struct ClipboardShelfView: View {
                         title: L10n.t("Lịch sử Clipboard"),
                         icon: "clock.arrow.circlepath",
                         dot: nil,
-                        count: manager.history.count,
+                        count: manager.visibleHistory.count,
                         shortcut: "⌘1",
                         selected: isHistorySel
                     ) {

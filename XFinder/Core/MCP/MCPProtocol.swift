@@ -7,7 +7,8 @@ import Foundation
 /// Scope, stated honestly: the server runs only when an agent starts `XFinder --mcp`; it reads the
 /// clipboard database read-only; it returns TEXT (snippets or full text), never image/file bytes; it
 /// never returns a record from a password manager (those are also never recorded — this is the
-/// second fence); and when `clipboard.mcpEnabled` is off every tool call answers with an error.
+/// second fence); and when `clipboard.mcpEnabled` is off, or the tier does not allow `.clipboardMCP`
+/// (XF-T29 — Free), every tool call answers with an error.
 enum MCP {
     static let protocolVersion = "2024-11-05"
     static let serverName = "xfinder-clipboard"
@@ -17,9 +18,15 @@ enum MCP {
     /// Bundle-id fragments of password managers — the same list the capture filter uses (`SecretApps`).
     static let excludedBundleFragments = SecretApps.fragments
 
+    /// Exact text XF-T29 asks for — a Free user's agent must see this, not a generic "disabled".
+    static let proRequiredMessage = "XFinder Pro is required for the clipboard MCP server"
+
     /// What the server needs from the outside, injected so tests run with fixtures.
     struct Context {
         var enabled: Bool
+        /// `LicenseManager.shared.allows(.clipboardMCP)` — this process has no app UI, but `LicenseManager`
+        /// reads the same UserDefaults/Keychain, so the check is the same one the Pro page shows (XF-T29).
+        var proAllowed: Bool = true
         var appVersion: String
         var records: () -> [ClipboardRecord]
         /// Full text of a record (payload file first, snippet second); nil when there is none.
@@ -58,6 +65,11 @@ enum MCP {
         case "tools/call":
             guard context.enabled else {
                 return encode(error(id: id, code: -32000, message: "Clipboard MCP is turned off in XFinder ▸ Cài đặt Clipboard"))
+            }
+            // XF-T29 — Free: checked after the on/off switch (a clear "which setting do I flip" story
+            // would be wrong; this is a tier, not a setting) but before any record ever leaves the gate.
+            guard context.proAllowed else {
+                return encode(error(id: id, code: -32000, message: proRequiredMessage))
             }
             return encode(callTool(id: id, params: params, context: context))
         default:

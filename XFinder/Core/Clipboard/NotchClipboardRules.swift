@@ -115,18 +115,24 @@ enum NotchClipboardRules {
         case notice(String)
         case paused
         case accessibilityMissing
+        /// XF-T29 — Free, scope `.history`, at least one item hidden past `ProLimit.clipboardItems`.
+        case proLimit(hidden: Int)
     }
 
     /// The one-line footer, most urgent first: a running Paste Stack, then the last action's notice,
     /// then "recording is paused" (D1 #14 — the deck looks normal while nothing new arrives, so the
     /// page must say so), then the standing warning that Return can only COPY (auto-paste on, no
-    /// Accessibility — the user must learn this before the first click, not after), then the key hints.
+    /// Accessibility — the user must learn this before the first click, not after), then the Free-tier
+    /// hidden-items notice (ambient, lowest priority — it never hides a warning that needs action), then
+    /// the key hints.
     static func footer(pasteStackActive: Bool, remaining: Int, interceptsCommandV: Bool,
-                       notice: String?, paused: Bool = false, autoPaste: Bool, accessibilityTrusted: Bool) -> Footer {
+                       notice: String?, paused: Bool = false, autoPaste: Bool, accessibilityTrusted: Bool,
+                       hiddenByProLimit: Int = 0) -> Footer {
         if pasteStackActive { return .pasteStack(remaining: remaining, interceptsCommandV: interceptsCommandV) }
         if let notice, !notice.isEmpty { return .notice(notice) }
         if paused { return .paused }
         if autoPaste && !accessibilityTrusted { return .accessibilityMissing }
+        if hiddenByProLimit > 0 { return .proLimit(hidden: hiddenByProLimit) }
         return .hints
     }
 
