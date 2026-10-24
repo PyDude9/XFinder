@@ -173,6 +173,8 @@ struct DetailHostView: View {
                 CompressDetailView()
             case .pdfTools:
                 PdfToolsDetailView()
+            case .pro:
+                ProDetailView()
             case .about:
                 AboutView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

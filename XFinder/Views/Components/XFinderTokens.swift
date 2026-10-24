@@ -22,6 +22,8 @@ enum XFinderTokens {
         /// Inside a row (icon ↔ label, label ↔ control).
         static let inline: CGFloat = 12
         static let tight: CGFloat = 6
+        /// The vertical inset of a small tag (the PRO badge).
+        static let hairline: CGFloat = 2
     }
 
     /// Corner radii. Five values; anything else is a design mistake, not a choice.

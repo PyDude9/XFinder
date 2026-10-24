@@ -127,6 +127,8 @@ final class FeatureKeyDefaultsTests: XCTestCase {
                reader: "XFinder/Core/Browser/BrowserSettings.swift"),
         Switch(key: "fileBrowser.globalHotkey", views: ["XFinder/Views/Detail/FileBrowserDetailView.swift"],
                reader: "XFinder/Core/Browser/BrowserSettings.swift"),
+        Switch(key: "pro.simulateTier", views: ["XFinder/Views/Detail/ProDetailView.swift"],
+               reader: "XFinder/Core/Pro/LicenseManager.swift"),
         Switch(key: "smoothScroll.enabled", views: ["XFinder/Views/Detail/SmoothScrollSection.swift"],
                reader: "XFinder/Core/SmoothScroll/SmoothScrollController.swift"),
         Switch(key: "smoothScroll.speed", views: ["XFinder/Views/Detail/SmoothScrollSection.swift"],

@@ -170,6 +170,8 @@
 		7F1A0089 /* Detail/DropTrayDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A006F /* Detail/DropTrayDetailView.swift */; };
 		7F1A008A /* Detail/WindowDetailViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0070 /* Detail/WindowDetailViews.swift */; };
 		7F1A025B /* Detail/SmoothScrollSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A025A /* Detail/SmoothScrollSection.swift */; };
+		7F1A0134 /* Detail/ProDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0133 /* Detail/ProDetailView.swift */; };
+		7F1A0132 /* Components/ProBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A012F /* Components/ProBadge.swift */; };
 		7F1A011A /* Detail/FileBrowserDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0119 /* Detail/FileBrowserDetailView.swift */; };
 		7F1A0118 /* Browser/ShelfBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0117 /* Browser/ShelfBarView.swift */; };
 		7F1A0116 /* Browser/SearchBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0115 /* Browser/SearchBarView.swift */; };
@@ -324,6 +326,9 @@
 		7F1A040F /* Snap/SnapMemoryController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A040E /* Snap/SnapMemoryController.swift */; };
 		7F1A0259 /* SmoothScroll/SmoothScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0258 /* SmoothScroll/SmoothScrollController.swift */; };
 		7F1A0257 /* SmoothScroll/SmoothScrollRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0256 /* SmoothScroll/SmoothScrollRules.swift */; };
+		7F1A012E /* Pro/LicenseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A011F /* Pro/LicenseManager.swift */; };
+		7F1A011E /* Pro/LicenseKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A011D /* Pro/LicenseKey.swift */; };
+		7F1A011C /* Pro/Entitlement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A011B /* Pro/Entitlement.swift */; };
 		7F1A009D /* Browser/BrowserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A009C /* Browser/BrowserSettings.swift */; };
 		7F1A009B /* Browser/BrowserWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A009A /* Browser/BrowserWindowController.swift */; };
 		7F1A0099 /* Browser/BrowserWindowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0098 /* Browser/BrowserWindowModel.swift */; };
@@ -578,6 +583,8 @@
 		7F1A006F /* Detail/DropTrayDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/DropTrayDetailView.swift; sourceTree = "<group>"; };
 		7F1A0070 /* Detail/WindowDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/WindowDetailViews.swift; sourceTree = "<group>"; };
 		7F1A025A /* Detail/SmoothScrollSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SmoothScrollSection.swift; sourceTree = "<group>"; };
+		7F1A0133 /* Detail/ProDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/ProDetailView.swift; sourceTree = "<group>"; };
+		7F1A012F /* Components/ProBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/ProBadge.swift; sourceTree = "<group>"; };
 		7F1A0119 /* Detail/FileBrowserDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FileBrowserDetailView.swift; sourceTree = "<group>"; };
 		7F1A0117 /* Browser/ShelfBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ShelfBarView.swift; sourceTree = "<group>"; };
 		7F1A0115 /* Browser/SearchBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SearchBarView.swift; sourceTree = "<group>"; };
@@ -623,6 +630,9 @@
 		7F1A040E /* Snap/SnapMemoryController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snap/SnapMemoryController.swift; sourceTree = "<group>"; };
 		7F1A0258 /* SmoothScroll/SmoothScrollController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothScroll/SmoothScrollController.swift; sourceTree = "<group>"; };
 		7F1A0256 /* SmoothScroll/SmoothScrollRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothScroll/SmoothScrollRules.swift; sourceTree = "<group>"; };
+		7F1A011F /* Pro/LicenseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pro/LicenseManager.swift; sourceTree = "<group>"; };
+		7F1A011D /* Pro/LicenseKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pro/LicenseKey.swift; sourceTree = "<group>"; };
+		7F1A011B /* Pro/Entitlement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pro/Entitlement.swift; sourceTree = "<group>"; };
 		7F1A009C /* Browser/BrowserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserSettings.swift; sourceTree = "<group>"; };
 		7F1A009A /* Browser/BrowserWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserWindowController.swift; sourceTree = "<group>"; };
 		7F1A0098 /* Browser/BrowserWindowModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserWindowModel.swift; sourceTree = "<group>"; };
@@ -952,6 +962,9 @@
 				7F1A040E /* Snap/SnapMemoryController.swift */,
 				7F1A0258 /* SmoothScroll/SmoothScrollController.swift */,
 				7F1A0256 /* SmoothScroll/SmoothScrollRules.swift */,
+				7F1A011F /* Pro/LicenseManager.swift */,
+				7F1A011D /* Pro/LicenseKey.swift */,
+				7F1A011B /* Pro/Entitlement.swift */,
 				7F1A009C /* Browser/BrowserSettings.swift */,
 				7F1A009A /* Browser/BrowserWindowController.swift */,
 				7F1A0098 /* Browser/BrowserWindowModel.swift */,
@@ -1219,6 +1232,8 @@
 				7F1A036C /* Detail/ShortcutsDetailView.swift */,
 				7F1A0070 /* Detail/WindowDetailViews.swift */,
 				7F1A025A /* Detail/SmoothScrollSection.swift */,
+				7F1A0133 /* Detail/ProDetailView.swift */,
+				7F1A012F /* Components/ProBadge.swift */,
 				7F1A0119 /* Detail/FileBrowserDetailView.swift */,
 				7F1A0117 /* Browser/ShelfBarView.swift */,
 				7F1A0115 /* Browser/SearchBarView.swift */,
@@ -1529,6 +1544,8 @@
 				7F1A0089 /* Detail/DropTrayDetailView.swift in Sources */,
 				7F1A008A /* Detail/WindowDetailViews.swift in Sources */,
 				7F1A025B /* Detail/SmoothScrollSection.swift in Sources */,
+				7F1A0134 /* Detail/ProDetailView.swift in Sources */,
+				7F1A0132 /* Components/ProBadge.swift in Sources */,
 				7F1A011A /* Detail/FileBrowserDetailView.swift in Sources */,
 				7F1A0118 /* Browser/ShelfBarView.swift in Sources */,
 				7F1A0116 /* Browser/SearchBarView.swift in Sources */,
@@ -1573,6 +1590,9 @@
 				7F1A040F /* Snap/SnapMemoryController.swift in Sources */,
 				7F1A0259 /* SmoothScroll/SmoothScrollController.swift in Sources */,
 				7F1A0257 /* SmoothScroll/SmoothScrollRules.swift in Sources */,
+				7F1A012E /* Pro/LicenseManager.swift in Sources */,
+				7F1A011E /* Pro/LicenseKey.swift in Sources */,
+				7F1A011C /* Pro/Entitlement.swift in Sources */,
 				7F1A009D /* Browser/BrowserSettings.swift in Sources */,
 				7F1A009B /* Browser/BrowserWindowController.swift in Sources */,
 				7F1A0099 /* Browser/BrowserWindowModel.swift in Sources */,

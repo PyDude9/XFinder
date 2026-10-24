@@ -93,6 +93,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         CaptureController.shared.applySettings()               // F4: Carbon hotkeys for the assigned capture shortcuts
         Task.detached(priority: .utility) { ScrollCaptureController.sweepLeftovers() }   // XF-T26: strips of a crashed session
         // XF-T28: the optional global hotkey, an interrupted-operation report, and the browser windows of the last session.
+        LicenseManager.shared.refresh()                // XF-T29: starts the 14-day trial on first launch; DEBUG builds stay full
         BrowserSettings.shared.applySettings()
         FileOperationQueue.shared.loadRecovery()
         if BrowserSettings.isEnabled { BrowserWindowController.shared.restoreSessionAtLaunch() }
@@ -131,6 +132,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ) { _ in
             Task { @MainActor in
                 PermissionManager.shared.updateStatuses()
+                LicenseManager.shared.refresh()        // XF-T29: the trial's day count moves on while XFinder stays open
                 DockPreviewController.shared.applySettings()
                 CommandTabController.shared.applySettings()
                 SnapZoneController.shared.applySettings()

@@ -5,6 +5,11 @@
 > Đọc là: Free giữ tối đa **50 mục Clipboard** và **20 ảnh chụp**; cộng các tính năng người dùng chuyên nghiệp mới cần.
 > Trả lời Q-T28-1: trình duyệt tệp cũng phân tầng.
 
+> **Quyết định 2026-10-24** (chủ dự án): làm theo bảng §2 (Q-PRO-1 = như bảng); **dùng thử Pro 14 ngày bật mặc định**;
+> "build ở đây thì cứ build full; sau khi final release mới free/pro" ⇒ cổng chỉ **thực thi trong bản không có `DEBUG`**
+> (bản cài trên máy chủ dự án là Debug ⇒ luôn đủ); bản Debug có `pro.simulateTier` để tự thử free/trial/pro.
+> Q-PRO-2 (vượt giới hạn) theo mặc định: **ẩn, không xoá**.
+
 ## 0. Câu việc
 
 "Bản miễn phí đủ dùng hằng ngày; ai làm việc nặng (nhiều dữ liệu, tự động hoá, bảo mật, AI agent) trả một lần để mở
@@ -59,6 +64,58 @@ giới hạn — và không ai mất dữ liệu vì hết dùng thử hay hạ 
   + nút xem Pro thay vì công tắc chết (luật 7: bề mặt phải nói nó đang tắt và vì sao).
 - Khoá ký: chủ dự án giữ khoá riêng, script `scripts/make-license.py` (chạy trên máy chủ dự án) ký khoá cho người mua.
   Claude **không** tạo hay đọc khoá riêng (luật: không đụng credential).
+
+## 3b. Hợp đồng (bắt buộc)
+
+```swift
+// Core/Pro/Entitlement.swift — thuần, symlink
+enum ProTier: Equatable, Sendable { case free; case trial(daysLeft: Int); case pro }
+enum ProFeature: String, CaseIterable, Sendable {
+    case unlimitedClipboard, unlimitedCaptures, lockedBoard, clipboardMCP, scrollingCapture
+    case browserPanes, browserShelf, browserWorkspaces, browserQueue, browserBatchCloud
+    case agentCrews, windowlessAgents, agentHandoff, folderLock, folderSync, remoteConnect, snapMemory
+    case unlimitedQuickShare, voiceAIRefine
+    var titleKey: String { get }                       // khoá L10n, vd "Bảng khoá Clipboard"
+}
+enum ProLimit: String, CaseIterable, Sendable { case clipboardItems, captures, browserPanes, quickShareLinks }
+enum Entitlement {
+    static let trialDays = 14
+    static let freeLimits: [ProLimit: Int]             // clipboardItems 50, captures 20, browserPanes 2, quickShareLinks 1
+    /// !enforced ⇒ .pro. licenseValid ⇒ .pro. trialStart nil ⇒ .trial(daysLeft: 14) (người gọi ghi trialStart = now).
+    /// Đồng hồ: effectiveNow = max(now, maxSeen); daysLeft = ⌈(14 ngày − đã qua) / 1 ngày⌉ (ngày đầu = 14), hết 14 ngày ⇒ .free.
+    static func tier(enforced: Bool, licenseValid: Bool, trialStart: Date?, now: Date, maxSeen: Date?) -> ProTier
+    static func allows(_ feature: ProFeature, tier: ProTier) -> Bool   // pro/trial: true; free: false
+    static func limit(_ limit: ProLimit, tier: ProTier) -> Int?          // nil = không giới hạn (pro/trial)
+    /// Ẩn phần vượt giới hạn: `pinned` mục luôn hiện và không tính vào giới hạn; còn lại hiện `limit` mục mới nhất.
+    static func visibleCount(total: Int, pinned: Int, limit: Int?) -> (visible: Int, hidden: Int)
+}
+// Core/Pro/LicenseKey.swift — thuần, symlink (CryptoKit Curve25519.Signing)
+struct LicensePayload: Codable, Equatable, Sendable { let id: String; let licensee: String; let edition: String; let issued: Date }
+enum LicenseKey {
+    /// "XF1-" + base64url(payload JSON) + "." + base64url(chữ ký 64 byte); bỏ qua khoảng trắng/xuống dòng.
+    static func verify(_ text: String, publicKey: Data) -> LicensePayload?
+    static func make(payload: LicensePayload, privateKey: Data) -> String?   // dùng bởi test và scripts/make-license.swift
+    /// Khoá công khai của chủ dự án (Q-PRO-5); nil ⇒ mọi khoá không hợp lệ (dùng thử vẫn chạy).
+    static let publicKeyRaw: Data?
+}
+// Core/Pro/LicenseManager.swift — @MainActor @Observable
+@MainActor @Observable final class LicenseManager {
+    static let shared: LicenseManager
+    private(set) var tier: ProTier
+    var isEnforced: Bool { get }                       // #if DEBUG false (trừ khi pro.simulateTier được đặt), ngược lại true
+    func allows(_ feature: ProFeature) -> Bool
+    func limit(_ limit: ProLimit) -> Int?
+    @discardableResult func activate(_ key: String) -> Bool   // kiểm chữ ký, lưu vào Keychain của app
+    func deactivate()
+    func refresh()                                     // launch + didBecomeActive: bắt đầu dùng thử lần đầu, cập nhật maxSeen
+}
+// Views/Components/ProBadge.swift
+struct ProBadge: View { }                              // nhãn "PRO"
+extension View { func proGated(_ feature: ProFeature) -> some View }   // tắt control + nhãn + tooltip "Cần XFinder Pro" khi !allows
+```
+Khoá (ONE reader trong LicenseManager): `pro.trialStart` (Double, 0), `pro.maxSeenDate` (Double, 0), `pro.simulateTier`
+(String, "" — chỉ đọc trong DEBUG: "free" | "trial" | "pro"). Khoá giấy phép: Keychain (generic password, service
+`com.xfinder.app.license`) — dữ liệu của chính app.
 
 ## 4. Ca hỏng
 

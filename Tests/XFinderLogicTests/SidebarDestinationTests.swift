@@ -10,10 +10,12 @@ final class SidebarDestinationTests: XCTestCase {
 
     func testEveryPageExceptAboutIsInExactlyOneGroup() {
         let counts = Dictionary(grouping: grouped, by: { $0 }).mapValues(\.count)
-        for dest in SidebarDestination.allCases where dest != .about && dest.hostRow == dest {
+        // The footer rows (XF-T29 Pro, About) sit under the groups, never in one.
+        for dest in SidebarDestination.allCases where dest != .about && dest != .pro && dest.hostRow == dest {
             XCTAssertEqual(counts[dest], 1, "\(dest.rawValue) must appear in exactly one sidebar group")
         }
         XCTAssertNil(counts[.about], "About is the footer row, never a group member")
+        XCTAssertNil(counts[.pro], "Pro is a footer row, never a group member")
         XCTAssertGreaterThan(SidebarDestination.allCases.count, 40, "the case list collapsed — the check would pass on nothing")
     }
 

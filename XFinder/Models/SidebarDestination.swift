@@ -70,6 +70,8 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     // catch-all settings bucket duplicated pages that own their own settings.
     case settingsClipboard
     // Footer
+    /// XF-T29 (2026-10-24): tier, trial, licence key, Free vs Pro.
+    case pro
     case about
 
     var id: String { rawValue }
@@ -160,6 +162,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .capture: return "Chụp & chú thích"
         case .clipboard: return "Thư viện Clipboard"
         case .settingsClipboard: return "Cài đặt Clipboard"
+        case .pro: return "XFinder Pro"
         case .about: return "Giới thiệu"
         case .shortcuts: return "Phím tắt"
         case .notchInterface: return "Giao diện notch"
@@ -215,6 +218,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .capture: return "camera.viewfinder"
         case .clipboard: return "doc.on.clipboard"
         case .settingsClipboard: return "gearshape"
+        case .pro: return "star.circle.fill"
         case .about: return "info.circle"
         case .shortcuts: return "command"
         case .notchInterface: return "rectangle.topthird.inset.filled"
@@ -241,7 +245,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .media, .voiceTyping, .mediaCompat: return .pink
         case .liveActivities, .batchRename, .notes: return .orange
         case .mouseGestures, .compress: return .brown
-        case .capture: return .yellow
+        case .capture, .pro: return .yellow
         }
     }
 

@@ -12038,6 +12038,174 @@
     "Không đọc được thư mục này": {
       "en": "Couldn't read this folder",
       "scope": "sentence"
+    },
+    "XFinder Pro": {
+      "en": "XFinder Pro",
+      "scope": "sentence"
+    },
+    "Pro": {
+      "en": "Pro",
+      "scope": "sentence"
+    },
+    "Bản miễn phí đủ dùng hằng ngày; Pro mở giới hạn cho việc nặng — quy mô, tự động hoá, bảo mật, AI agent.": {
+      "en": "The free version covers everyday use; Pro lifts the limits for heavy work — scale, automation, security, AI agents.",
+      "scope": "sentence"
+    },
+    "Bản phát triển: luôn đầy đủ": {
+      "en": "Development build: always full",
+      "scope": "sentence"
+    },
+    "Khoá giấy phép": {
+      "en": "Licence key",
+      "scope": "sentence"
+    },
+    "Khoá được kiểm ngay trên máy, không cần mạng và không cần tài khoản.": {
+      "en": "The key is checked on this Mac — no network, no account.",
+      "scope": "sentence"
+    },
+    "Đã kích hoạt cho ": {
+      "en": "Activated for ",
+      "scope": "fragment"
+    },
+    "Gỡ khoá": {
+      "en": "Remove key",
+      "scope": "sentence"
+    },
+    "Dán khoá XF1-…": {
+      "en": "Paste an XF1-… key",
+      "scope": "sentence"
+    },
+    "Kích hoạt": {
+      "en": "Activate",
+      "scope": "sentence"
+    },
+    "Khoá không hợp lệ.": {
+      "en": "This key is not valid.",
+      "scope": "sentence"
+    },
+    "Bản miễn phí": {
+      "en": "Free version",
+      "scope": "sentence"
+    },
+    "Lịch sử ảnh chụp": {
+      "en": "Capture history",
+      "scope": "sentence"
+    },
+    " ảnh": {
+      "en": " captures",
+      "scope": "fragment"
+    },
+    "Ngăn trong trình duyệt tệp": {
+      "en": "Panes in the file browser",
+      "scope": "sentence"
+    },
+    " ngăn": {
+      "en": " panes",
+      "scope": "fragment"
+    },
+    "Liên kết Chia sẻ nhanh cùng lúc": {
+      "en": "Quick Share links at a time",
+      "scope": "sentence"
+    },
+    " liên kết": {
+      "en": " links",
+      "scope": "fragment"
+    },
+    "Vượt giới hạn thì phần cũ hơn bị ẩn, không bị xoá — mở Pro là thấy lại.": {
+      "en": "Beyond a limit the older part is hidden, never deleted — Pro shows it again.",
+      "scope": "sentence"
+    },
+    "Pro thêm gì": {
+      "en": "What Pro adds",
+      "scope": "sentence"
+    },
+    "Thử giới hạn (bản phát triển)": {
+      "en": "Try the limits (development build)",
+      "scope": "sentence"
+    },
+    "Bản phát triển luôn đầy đủ; chọn một bậc ở đây để thử các cổng giới hạn.": {
+      "en": "A development build is always full; pick a tier here to try the gates.",
+      "scope": "sentence"
+    },
+    "Không giả lập": {
+      "en": "Not simulating",
+      "scope": "sentence"
+    },
+    "Miễn phí": {
+      "en": "Free",
+      "scope": "sentence"
+    },
+    "Dùng thử": {
+      "en": "Trial",
+      "scope": "sentence"
+    },
+    "Dùng thử Pro — còn ": {
+      "en": "Pro trial — ",
+      "scope": "fragment"
+    },
+    "Cần XFinder Pro": {
+      "en": "Needs XFinder Pro",
+      "scope": "sentence"
+    },
+    "Cần XFinder Pro — bấm để xem": {
+      "en": "Needs XFinder Pro — click to see",
+      "scope": "sentence"
+    },
+    "Lịch sử Clipboard không giới hạn": {
+      "en": "Unlimited clipboard history",
+      "scope": "sentence"
+    },
+    "Lịch sử ảnh chụp không giới hạn": {
+      "en": "Unlimited capture history",
+      "scope": "sentence"
+    },
+    "Bảng khoá Clipboard": {
+      "en": "Locked clipboard board",
+      "scope": "sentence"
+    },
+    "Máy chủ MCP Clipboard cho AI agent": {
+      "en": "Clipboard MCP server for AI agents",
+      "scope": "sentence"
+    },
+    "Trình duyệt tệp tới 16 ngăn": {
+      "en": "Up to 16 panes in the file browser",
+      "scope": "sentence"
+    },
+    "Shelf trong trình duyệt tệp": {
+      "en": "Shelf in the file browser",
+      "scope": "sentence"
+    },
+    "Workspace có tên": {
+      "en": "Named workspaces",
+      "scope": "sentence"
+    },
+    "Hàng đợi nhiều thao tác chép": {
+      "en": "A queue of copy operations",
+      "scope": "sentence"
+    },
+    "Tải về và gỡ đám mây hàng loạt": {
+      "en": "Download and remove cloud files in bulk",
+      "scope": "sentence"
+    },
+    "Phiên agent không cửa sổ": {
+      "en": "Windowless agent sessions",
+      "scope": "sentence"
+    },
+    "Chuyển phiên agent": {
+      "en": "Agent handoff",
+      "scope": "sentence"
+    },
+    "Khoá thư mục": {
+      "en": "Folder Lock",
+      "scope": "sentence"
+    },
+    "Chia sẻ nhanh không giới hạn liên kết": {
+      "en": "Quick Share with unlimited links",
+      "scope": "sentence"
+    },
+    "Tinh chỉnh giọng nói bằng AI": {
+      "en": "AI voice refinement",
+      "scope": "sentence"
     }
   }
 }

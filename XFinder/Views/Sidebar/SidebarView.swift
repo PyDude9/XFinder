@@ -71,6 +71,10 @@ struct SidebarView: View {
         }
     }
 
+    private var showsPro: Bool {
+        SidebarSearch.matches(query: query, texts: [SidebarDestination.pro.titleKey, L10n.english(SidebarDestination.pro.titleKey), SidebarDestination.pro.rawValue])
+    }
+
     private var showsAbout: Bool {
         SidebarSearch.matches(query: query, texts: [SidebarDestination.about.titleKey, L10n.english(SidebarDestination.about.titleKey), SidebarDestination.about.rawValue])
     }
@@ -119,14 +123,20 @@ struct SidebarView: View {
             // actually live — a board list here could only jump to a page that
             // no longer shows content.
 
-            if showsAbout {
+            if showsAbout || showsPro {
                 Section {
-                    SidebarRow(title: SidebarDestination.about.titleVI, icon: SidebarDestination.about.icon, tile: SidebarDestination.about.tile)
-                        .tag(SidebarDestination.about)
+                    if showsPro {
+                        SidebarRow(title: SidebarDestination.pro.titleVI, icon: SidebarDestination.pro.icon, tile: SidebarDestination.pro.tile)
+                            .tag(SidebarDestination.pro)
+                    }
+                    if showsAbout {
+                        SidebarRow(title: SidebarDestination.about.titleVI, icon: SidebarDestination.about.icon, tile: SidebarDestination.about.tile)
+                            .tag(SidebarDestination.about)
+                    }
                 }
             }
 
-            if groups.isEmpty && !showsAbout {
+            if groups.isEmpty && !showsAbout && !showsPro {
                 Text(L10n.t("Không có trang nào khớp."))
                     .font(.system(size: 12)).foregroundColor(.secondary)
                     .padding(.vertical, 6)

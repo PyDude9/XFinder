@@ -1,0 +1,1 @@
+../../XFinder/Core/Pro/Entitlement.swift
