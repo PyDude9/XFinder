@@ -3,7 +3,7 @@
 > Chủ dự án 2026-10-24: "Cập nhật thêm tính năng App Finder cho tôi giống app FileOctopus nhưng cải thiện tối ưu tốc độ"
 > (kèm prompt PRD: 4 kiểu xem, tới 16 ngăn, thanh đường dẫn có chevron, command palette, tìm kiếm ngôn ngữ tự nhiên +
 > chip, Shelf, Workspaces, hàng đợi copy/move an toàn, đổi tên hàng loạt, ZIP, đám mây, phân tầng Free/PRO).
-> Luật CLAUDE.md §1 "làm y X": chép **cơ chế + vị trí**, không chép code; đo trước. Bằng chứng: `scratchpad/fo/res-*.md`
+> Luật CLAUDE.md §1 "làm y X": chép **cơ chế + vị trí**, không chép code; đo trước. Bằng chứng: `docs/FILEOCTOPUS_EVIDENCE_2026-10-24.md`
 > (4 agent, 2026-10-24) — tài liệu FileOctopus 1.0.3, kiểm toán tái dùng XFinder, số đo API trên máy này, checklist Finder.
 
 ## 0. Câu việc
@@ -158,7 +158,7 @@ L10n `scripts/add-file-browser-l10n-entries.py` · harness `scripts/mutation-che
 
 ## 5. Checklist Finder phải giữ
 
-Bảng phím và 25 ca hỏng: `scratchpad/fo/res-89c1ab46.md` (§1–§10, "Top 25") — chép phần v1 vào test tay T-T28-*.
+Bảng phím và 25 ca hỏng: `docs/FILEOCTOPUS_EVIDENCE_2026-10-24.md` §4 ("Top 25") — chép phần v1 vào test tay T-T28-*.
 
 ## 6. Nghiệm thu (đo, không ước)
 
@@ -183,7 +183,7 @@ Bảng phím và 25 ca hỏng: `scratchpad/fo/res-89c1ab46.md` (§1–§10, "Top
 - **Q-T28-6** Google Drive/Dropbox không cài trên máy: "Mở trong Google Drive"/"Sao chép liên kết" cần đo xattr của
   Drive (`com.google.drivefs.*`) trên máy có Drive — v2.
 - **T-T28-1** Mở trình duyệt từ menu bar; chia 4 ngăn (Lưới), ⇧⌘↩ phóng/trả; kéo vạch chia.
-- **T-T28-2** Thư mục 100 000 tệp (`scratchpad/fo/big/d100000`): mở, cuộn, ⌘F lọc "999".
+- **T-T28-2** Thư mục 100 000 tệp (tạo: `python3 -c "import os; d='/tmp/xf-browser-100k'; os.makedirs(d, exist_ok=True); [open(f'{d}/f{i:06d}.dat','w').close() for i in range(100000)]"`): mở, cuộn, ⌘F lọc "999".
 - **T-T28-3** Chép 1 GiB giữa hai ngăn ⌃⇧⌘C, tạm dừng/tiếp tục; trùng tên ⇒ hộp thoại, Return = Giữ cả hai.
 - **T-T28-4** Tìm "pdfs from last week" và "ảnh hôm nay" ⇒ chip; xoá chip ⇒ kết quả rộng ra.
 - **T-T28-5** Shelf: gom 3 tệp từ 2 ngăn, Chép vào ngăn đang chọn.
@@ -191,7 +191,7 @@ Bảng phím và 25 ca hỏng: `scratchpad/fo/res-89c1ab46.md` (§1–§10, "Top
 - **T-T28-7** ⌃⌘P gõ tên thư mục; `>` "new folder".
 - **T-T28-8** Đổi tên hàng loạt 10 tệp, ⌘Z; Nén ZIP, ⌘Z.
 - **T-T28-9** Tệp OneDrive/iCloud chưa tải ⇒ badge; Tải về ngay; Gỡ bản tải.
-- **T-T28-10** 25 ca Finder (`res-89c1ab46.md` "Top 25") — phần v1.
+- **T-T28-10** 25 ca Finder (`docs/FILEOCTOPUS_EVIDENCE_2026-10-24.md` §4 "Top 25") — phần v1.
 
 ## 8. Review spec + hợp đồng (2026-10-24, 3 góc × 2 người phản bác, 37 agent)
 
@@ -201,4 +201,4 @@ dịch) · `PaneID` khai `<` (struct không tự sinh Comparable — tái hiện
 · chặn đẩy ổ **đã đo** (§1) · pha nhật ký `trashing` · `canPause` (tắt nút khi Kiểm/Hoàn tất) · giao thức đo bộ nhớ và
 tìm kiếm (§6) · `content:` 0 kết quả có cảnh báo · IdleCost `onlyWhileOpen`. Bác: hai phím cho một lệnh (đã có ⌘↓ qua
 `command(for:)`), id chip trùng field, gộp thư mục (v2 + Giữ cả hai/Bỏ qua), type-select vòng lại, khoá L10n qua biến (đã có
-luật test từ vựng). Dữ liệu: `scratchpad/fo/review1.json`.
+luật test từ vựng). Dữ liệu: output workflow `xf-t28-spec-review`.
