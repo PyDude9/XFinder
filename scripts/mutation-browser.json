@@ -309,10 +309,10 @@
  },
  {
   "id": "SearchQuery-02",
-  "name": "M2_kib_not_same_as_kb",
+  "name": "M2 a kilobyte counts as 1000 bytes",
   "file": "XFinder/Core/Browser/SearchQuery.swift",
   "anchor": "case \"kb\", \"kib\": multiplier = 1024",
-  "replacement": "case \"kb\": multiplier = 1024 / case \"kib\": multiplier = 1000"
+  "replacement": "case \"kb\", \"kib\": multiplier = 1000"
  },
  {
   "id": "SearchQuery-03",
@@ -330,10 +330,10 @@
  },
  {
   "id": "SearchQuery-05",
-  "name": "M5_created_modified_swapped",
+  "name": "M5 created and modified dates are swapped",
   "file": "XFinder/Core/Browser/SearchQuery.swift",
   "anchor": "let key = chip.field == .created ? \"kMDItemFSCreationDate\" : \"kMDItemFSContentChangeDate\"",
-  "replacement": "swapped the two branches"
+  "replacement": "let key = chip.field != .created ? \"kMDItemFSCreationDate\" : \"kMDItemFSContentChangeDate\""
  },
  {
   "id": "SearchQuery-07",

@@ -9,9 +9,11 @@
 #   * every target is in FILES; an anchor that does not occur EXACTLY once aborts the run (exit 2) — a mutation that
 #     cannot be injected is a broken gate, and a broken gate reads like a passing one;
 #   * sources are restored byte-identical by `cp` from a backup (EXIT trap), INT/TERM end the run;
-#   * a crashed suite (a trap) counts as RED — it noticed the mutant — and is reported as such;
+#   * a crashed suite (a trap) counts as RED — it noticed the mutant — and is reported as such; so does a hung one
+#     (each run is capped at RUN_TIMEOUT seconds and killed with its whole process group);
 #   * the restored tree must be green (exit 1 otherwise).
-# Options: ONLY=<id prefix> runs a subset; DRY=1 only checks that every anchor occurs exactly once (seconds).
+# Options: ONLY=<id prefix> runs a subset; FROM=<id> resumes there; DRY=1 only checks that every anchor occurs exactly
+# once (seconds); RUN_TIMEOUT=<s> caps one test run (default 600).
 # Run it detached and poll the log: `nohup sh scripts/mutation-check-browser.sh > <scratch>/m.log 2>&1 &`
 set -u
 cd "$(dirname "$0")/.."
@@ -24,11 +26,21 @@ trap 'restore' EXIT
 trap 'exit 143' INT TERM
 
 FILTER='PaneTreeTests|PaneHistoryTests|BrowserPathTests|DirectoryEntryTests|SearchQueryTests|FileOperationRulesTests|BrowserCommandsTests|CloudBadgeTests|ShelfModelTests|BrowserWorkspaceTests|BrowserVocabularyL10nTests'
+# One test run may take at most RUN_TIMEOUT seconds. A mutant that loops forever (BrowserPath-11, 2026-10-24: 42 min at
+# 100 % CPU before it was noticed) is killed WITH its process group — killing only swift-test left orphaned xctest
+# processes burning a core each for 90 minutes — and reported as HANG, which counts as RED: the suite never passes.
+RUN_TIMEOUT=${RUN_TIMEOUT:-600}
+timed() {
+  perl -e '$t = shift; $pid = fork; if (!$pid) { setpgrp(0, 0); exec @ARGV; exit 127 }
+           $SIG{ALRM} = sub { kill "TERM", -$pid; sleep 3; kill "KILL", -$pid; print "HARNESS-TIMEOUT\n"; exit 124 };
+           alarm $t; waitpid($pid, 0); exit($? >> 8)' "$RUN_TIMEOUT" "$@"
+}
 fails() {
-  swift test --package-path Tests --filter "$FILTER" 2>&1 \
+  timed swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)}
            /Fatal error|Exited with (unexpected )?signal/ {crash=1}
-           END {print (crash ? "CRASH" : (f==""?"NORESULT":f))}'
+           /HARNESS-TIMEOUT/ {hang=1}
+           END {print (hang ? "HANG" : (crash ? "CRASH" : (f==""?"NORESULT":f)))}'
 }
 
 # Every target must be in FILES, every anchor must occur exactly once.
@@ -48,7 +60,12 @@ PY
 base=$(fails); echo "baseline failures: $base"
 [ "$base" = "0" ] || { echo "FAIL: baseline is not green"; exit 1; }
 
-IDS=$(python3 -c "import json,sys; [print(m['id']) for m in json.load(open('$MUTANTS')) if m['id'].startswith('${ONLY:-}')]")
+# FROM=<id> resumes at that mutant (a run cut short by a broken mutant need not start over).
+IDS=$(python3 -c "
+import json
+ms = [m['id'] for m in json.load(open('$MUTANTS')) if m['id'].startswith('${ONLY:-}')]
+start = ms.index('${FROM:-}') if '${FROM:-}' in ms else 0
+print('\n'.join(ms[start:]))")
 red=0; total=0
 for id in $IDS; do
   total=$((total+1))
@@ -63,7 +80,8 @@ PY
 ) || { echo "HARNESS ERROR: anchor not found for $id"; exit 2; }
   n=$(fails); restore
   if [ "$n" = "NORESULT" ]; then echo "HARNESS ERROR: $id produced no test result (mutant did not compile?)"; exit 2; fi
-  if [ "$n" = "CRASH" ]; then red=$((red+1)); echo "RED   $id $name (the suite crashed)"
+  if [ "$n" = "HANG" ]; then red=$((red+1)); echo "RED   $id $name (the suite hung — killed after ${RUN_TIMEOUT}s)"
+  elif [ "$n" = "CRASH" ]; then red=$((red+1)); echo "RED   $id $name (the suite crashed)"
   elif [ "$n" != "0" ]; then red=$((red+1)); echo "RED   $id $name ($n failing)"
   else echo "GREEN $id $name (0) <-- the tests do not guard this"; fi
 done
