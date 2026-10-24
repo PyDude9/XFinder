@@ -274,6 +274,11 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | Q-T28-4 | Di chuyển khác ổ: bản gốc sau khi kiểm SHA-256 đi đâu? | **Mặc định: Thùng rác** (luật 9); FileOctopus xoá hẳn |
 | Q-T28-6 | "Mở trong Google Drive" / "Sao chép liên kết Drive" | v2 — máy này không cài Drive/Dropbox, chưa đo được xattr của Drive |
 | T-T28-1…10 | Trình duyệt tệp — xem `docs/specs/XF-T28-file-browser.md` §7 (bước + kỳ vọng từng mục) | chờ bản cài có giao diện thật |
+| Q-PRO-5 | Tạo cặp khoá ký giấy phép trên máy bạn: `swift scripts/make-license.swift init ~/Private/xfinder-license.key`, dán khoá công khai in ra vào `LicenseKey.publicKeyRaw` | chưa có ⇒ mọi khoá không hợp lệ; dùng thử + bản Debug vẫn đủ |
+| Q-PRO-6 | Free: xuất toàn bộ lịch sử Clipboard (.xfinderclip) có bị giới hạn 50 mục không? | **Mặc định: không** — dữ liệu của chính người dùng (luật 9) |
+| T-PRO-1 | Trang XFinder Pro ▸ Thử giới hạn = Miễn phí; chép 60 mục | 50 hiện + dòng "10 mục cũ hơn — mở bằng Pro"; chọn Pro ⇒ hiện đủ 60 |
+| T-PRO-2 | Thử giới hạn = Miễn phí; chụp 25 ảnh | 20 hiện + nút "Dọn ảnh cũ vào Thùng rác"; Chụp cuộn hiện nhãn PRO |
+| T-PRO-3 | Thử giới hạn = Miễn phí; trình duyệt chia ngăn thứ 3; Lưu Workspace; Đồng bộ ngay | bị chặn kèm nhãn PRO / banner; bố cục, cặp đồng bộ, vault đã có vẫn còn |
 | T-HUD-7 | Đang phát nhạc: rê lên notch cho dải Đang phát hiện, giữ chuột ở đó, bấm phím âm lượng | Ô âm lượng hiện thay dải nhạc; ~1,5 s sau **dải nhạc quay lại** (trước: biến mất tới khi rê lại). Bấm xong rời chuột khỏi notch ⇒ dải đóng như thường |
 | T-SNAPMEM-2 | Với luật trên, rút màn ngoài rồi cắm lại (hoặc ngược lại) | Luật ghi với bộ "màn trong + HC-L200A" chỉ áp khi đủ hai màn; khi chỉ còn màn trong, Chrome **không** bị kéo đi; cắm lại ⇒ áp trong ~1–3 s |
 | T-SNAPMEM-3 | Đưa một app đã có luật vào toàn màn hình (nút xanh), thoát app, mở lại | Hàng luật đổi thành "Toàn màn hình (Space riêng)"; mở lại ⇒ app vào toàn màn hình trên đúng màn. App không cho đặt ⇒ hàng ghi "App không cho đặt toàn màn hình qua Trợ năng", không thử lại |
