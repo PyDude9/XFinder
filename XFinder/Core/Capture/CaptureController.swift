@@ -338,7 +338,8 @@ final class CaptureController {
         guard keepHistory else {
             // History disabled: keep only what is still referenced by a visible card or an open editor.
             let toRemove = history.filter { !QuickAccessController.shared.isShowing($0) && !AnnotateWindowController.shared.isOpen($0) }
-            for item in toRemove { try? FileManager.default.removeItem(at: item.url) }
+            // Captures are the person's screenshots: to the Trash, restorable — never removeItem (CLAUDE.md rule 9).
+            for item in toRemove { try? FileManager.default.trashItem(at: item.url, resultingItemURL: nil) }
             history.removeAll { toRemove.contains($0) }
             return
         }
@@ -352,7 +353,7 @@ final class CaptureController {
         }
         let prune = CaptureRules.toPrune(history, limit: CaptureRules.historyLimit)
         guard !prune.isEmpty else { return }
-        for item in prune { try? FileManager.default.removeItem(at: item.url) }
+        for item in prune { try? FileManager.default.trashItem(at: item.url, resultingItemURL: nil) }   // rule 9: Trash, not rm
         let pruneSet = Set(prune.map(\.id))
         history.removeAll { pruneSet.contains($0.id) }
     }
@@ -537,14 +538,15 @@ final class CaptureController {
         NSWorkspace.shared.activateFileViewerSelecting([item.url])
     }
 
+    /// To the Trash (restorable), like every deletion of the person's files (CLAUDE.md rule 9).
     func delete(_ item: CaptureItem) {
-        try? FileManager.default.removeItem(at: item.url)
+        try? FileManager.default.trashItem(at: item.url, resultingItemURL: nil)
         history.removeAll { $0.id == item.id }
         QuickAccessController.shared.dismiss(item)
     }
 
     func clearHistory() {
-        for item in history { try? FileManager.default.removeItem(at: item.url) }
+        for item in history { try? FileManager.default.trashItem(at: item.url, resultingItemURL: nil) }
         history.removeAll()
     }
 
