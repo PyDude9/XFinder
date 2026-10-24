@@ -12206,6 +12206,22 @@
     "Tinh chỉnh giọng nói bằng AI": {
       "en": "AI voice refinement",
       "scope": "sentence"
+    },
+    " mục cũ hơn — mở bằng Pro.": {
+      "en": " older items — unlock with Pro.",
+      "scope": "fragment"
+    },
+    "Xem Pro": {
+      "en": "View Pro",
+      "scope": "sentence"
+    },
+    "Khoá bảng này… (Cần Pro)": {
+      "en": "Lock this board… (Pro required)",
+      "scope": "sentence"
+    },
+    " · PRO": {
+      "en": " · PRO",
+      "scope": "fragment"
     }
   }
 }

@@ -296,7 +296,7 @@ private struct ClipboardSettingsBody: View {
             // answers "XFinder Pro is required…" per LicenseManager, whatever this toggle says), so it is
             // disabled and tagged rather than silently doing nothing (CLAUDE.md rule 7).
             SettingsSection(
-                title: "\(L10n.t("Clipboard MCP cho agent AI")) · PRO",
+                title: "\(L10n.t("Clipboard MCP cho agent AI"))\(L10n.t(" · PRO"))",
                 footer: L10n.t("Claude Code, Cursor, Codex đọc được lịch sử clipboard qua MCP. Chỉ đọc, chỉ văn bản, không bao giờ trả mục từ trình quản lý mật khẩu; tắt công tắc thì mọi lệnh trả lỗi.")
             ) {
                 ToggleRow(title: L10n.t("Cho phép agent đọc clipboard qua MCP"), isOn: $mcpEnabled)

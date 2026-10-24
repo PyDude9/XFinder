@@ -53,6 +53,11 @@ ENTRIES = {
     "Khoá thư mục": ("Folder Lock", S),
     "Chia sẻ nhanh không giới hạn liên kết": ("Quick Share with unlimited links", S),
     "Tinh chỉnh giọng nói bằng AI": ("AI voice refinement", S),
+    # Clipboard Free-tier gate (XF-T29 §2/§4: history panel, ⌘⇧V shelf, notch page, Library)
+    " mục cũ hơn — mở bằng Pro.": (" older items — unlock with Pro.", F),
+    "Xem Pro": ("View Pro", S),
+    "Khoá bảng này… (Cần Pro)": ("Lock this board… (Pro required)", S),
+    " · PRO": (" · PRO", F),
 }
 def main() -> int:
     data = json.loads(STORE.read_text(encoding="utf-8")); e = data["entries"]
