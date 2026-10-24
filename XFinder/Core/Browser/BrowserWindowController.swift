@@ -25,19 +25,34 @@ import Quartz
 
     // MARK: - Opening
 
-    /// ⌘N, menu bar item, deep link `xfinder://browser?path=`. `path` nil ⇒ Home.
-    /// XF-T28 Wave 4 — STUB: opens a window and starts ⌥⌘F search in its active pane (the AI Search page's link).
-    func openWindow(path: String?, startSearch: Bool) { openWindow(path: path) }
+    /// ⌘N, menu bar item, deep link `xfinder://browser?path=`. `path` nil ⇒ Home. `startSearch`: the AI Search
+    /// page's "Mở thanh tìm" link — opens the window then starts ⌥⌘F (an empty, editable search) in its active
+    /// pane, same as pressing the chord by hand right after the window appears.
+    func openWindow(path: String?, startSearch: Bool) {
+        let model = openWindow(path: path)
+        if startSearch {
+            model.perform(.find)
+        }
+    }
 
-    func openWindow(path: String?) {
+    @discardableResult
+    func openWindow(path: String?) -> BrowserWindowModel {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let model = BrowserWindowModel(snapshot: nil, initialPath: path ?? home)
         presentNewWindow(for: model, frame: nil)
+        return model
     }
 
     private func openWindow(snapshot: WindowSnapshot) {
         let model = BrowserWindowModel(snapshot: snapshot, initialPath: nil)
         presentNewWindow(for: model, frame: snapshot.frame)
+    }
+
+    /// XF-T28 Wave 4 — `BrowserWindowModel.openWorkspace` opens any window beyond the workspace's first one
+    /// (which replaces the CALLING window's own layout instead) through here; same mechanism as session restore,
+    /// just invoked one window at a time instead of for a whole saved session.
+    func openRestoredWindow(_ snapshot: WindowSnapshot) {
+        openWindow(snapshot: snapshot)
     }
 
     private func presentNewWindow(for model: BrowserWindowModel, frame: CGRect?) {

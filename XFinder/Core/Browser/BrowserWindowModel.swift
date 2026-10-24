@@ -200,15 +200,34 @@ struct PaneSearchState: Equatable {
         let now = Date()
         let calendar = Calendar.current
         let parsed = SearchQuery.parse(text, now: now, calendar: calendar)
+        startSearch(text: text, parsed: parsed, scope: scope, paneFolders: paneFolders, now: now, calendar: calendar)
+    }
+
+    /// Runs a search straight from an already-`ParsedSearch` (edited chips): same pipeline as
+    /// `runSearch(_:scope:paneFolders:)` but skips `SearchQuery.parse` — a chip edit (remove/replace) only ever
+    /// changes `ParsedSearch`, and rebuilding it back into text first would drop chips that cannot round-trip
+    /// through text (pastDays / olderThan / month — spec XF-T28 Wave 4 §E), which is exactly the bug this exists to
+    /// fix. `text` on the resulting `PaneSearchState` is kept as whatever free terms/phrases remain so the search
+    /// bar's text field still shows something sensible; a chips-only edit (no terms left) shows an empty field,
+    /// same as starting a fresh search would.
+    func runSearch(parsed: ParsedSearch, scope: PaneSearchState.Scope, paneFolders: [String] = []) {
+        let now = Date()
+        let calendar = Calendar.current
+        let text = (parsed.terms + parsed.phrases.map { "\"\($0)\"" }).joined(separator: " ")
+        startSearch(text: text, parsed: parsed, scope: scope, paneFolders: paneFolders, now: now, calendar: calendar)
+    }
+
+    /// Shared tail of both `runSearch` overloads (text and chip-edited): builds the `mdfind` expression and scopes,
+    /// then runs the actual search off the main actor. Both the `mdfind` process AND the `lstat()` of every hit (up
+    /// to 200) belong off the main actor — a network-mounted result can stall each stat for a while, and this used
+    /// to run the whole `lstat` loop back on `@MainActor` after only the process hop was detached.
+    private func startSearch(text: String, parsed: ParsedSearch, scope: PaneSearchState.Scope, paneFolders: [String],
+                             now: Date, calendar: Calendar) {
         search = PaneSearchState(text: text, parsed: parsed, scope: scope, results: [], running: true, truncated: false)
         let generation = currentGeneration
         let expression = SearchQuery.mdfindExpression(parsed, now: now, calendar: calendar)
         let scopes = searchScopes(for: scope, paneFolders: paneFolders)
-        let currentPath = path
         Task { [weak self] in
-            // Both the mdfind process AND the lstat() of every hit (up to 200) belong off the main actor — a
-            // network-mounted result can stall each stat for a while, and this used to run the whole lstat loop
-            // back on @MainActor after only the process hop was detached.
             let results = await Task.detached(priority: .userInitiated) { () -> (found: FileSearchEngine.Found, entries: [DirectoryEntry]) in
                 let found = FileSearchEngine.runMdfind(query: expression, scopes: scopes, limit: 200)
                 var entries: [DirectoryEntry] = []
@@ -224,7 +243,6 @@ struct PaneSearchState: Equatable {
             self.search?.results = results.entries
             self.search?.running = false
             self.search?.truncated = results.found.truncated
-            _ = currentPath
             self.applyEntries()
         }
     }
@@ -298,6 +316,9 @@ struct PaneSearchState: Equatable {
     /// itself, not about a ZIP this model asked `ArchiveRunner` to build directly).
     private var lastCompressedArchive: String?
     private var bannerClearTask: Task<Void, Never>?
+    /// The sync pair shown side by side in this window (XF-T28 Wave 4 §C). Backing storage for the public
+    /// `activeSyncPair` read-only property in the Wave 4 extension below.
+    fileprivate var activeSyncPairStorage: FolderSyncController.Pair?
 
     init(snapshot: WindowSnapshot?, initialPath: String?) {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
@@ -379,8 +400,14 @@ struct PaneSearchState: Equatable {
         case .selectAll:
             active.selection = Set(active.entries.map(\.path))
         case .undo:
-            if let message = FileOperationQueue.shared.undoLast() {
-                banner = message
+            // `FileOperationQueue.undoLast()` returns ALREADY-RENDERED text (it calls `L10n.t` itself before
+            // returning — the same "model returns rendered text" trap `L10n.swift`'s header warns about, and the
+            // exact one `syncNow` below works around): routing it through `banner`, which `BrowserRootView` passes
+            // through `L10n.t` a second time, double-translates it. A fixed literal here, like `syncNow`'s own
+            // banner, side-steps that; the detailed per-item count still shows wherever `undoLast()`'s caller
+            // already displays it verbatim (Lịch sử thao tác page).
+            if FileOperationQueue.shared.undoLast() != nil {
+                banner = "Đã hoàn tác"
             } else if let archive = lastCompressedArchive {
                 _ = FileOperationQueue.shared.enqueue(.trash, sources: [archive], destination: nil)
                 lastCompressedArchive = nil
@@ -408,13 +435,13 @@ struct PaneSearchState: Equatable {
         case .commandPalette:
             palette = .commands
         case .splitRight:
-            split(.right)
+            splitGated(.right)
         case .splitLeft:
-            split(.left)
+            splitGated(.left)
         case .splitDown:
-            split(.down)
+            splitGated(.down)
         case .splitUp:
-            split(.up)
+            splitGated(.up)
         case .closePane:
             if let next = tree.close(activePane) {
                 let removedPane = panes.removeValue(forKey: activePane)
@@ -442,7 +469,7 @@ struct PaneSearchState: Equatable {
         case .moveToOtherPane:
             copyOrMoveToOtherPane(move: true)
         case .addToShelf:
-            addSelectionToShelf()
+            addSelectionToShelfGated()
         case .toggleShelf:
             shelfVisible.toggle()
         case .operations:
@@ -454,12 +481,14 @@ struct PaneSearchState: Equatable {
         case .compress:
             compressSelection()
         case .saveWorkspace:
-            saveWorkspace()
+            _ = saveWorkspace(named: "Workspace")
         case .openWorkspace:
             break   // view-only: opens the workspace list sheet.
         case .downloadNow:
+            guard batchCloudGated(active.selectedEntries) else { return true }
             downloadSelectionNow()
         case .removeDownload:
+            guard batchCloudGated(active.selectedEntries) else { return true }
             removeDownloadForSelection()
         case .showInFinder:
             let urls = active.selectedEntries.map { URL(fileURLWithPath: $0.path) }
@@ -468,15 +497,26 @@ struct PaneSearchState: Equatable {
         case .closeWindow:
             break   // view-only: the owning NSWindow closes itself.
         case .getInfo:
-            return false   // XF-T28 Wave 4 STUB: W4-model opens GetInfoWindowController here.
+            let paths = getInfoTargetPaths()
+            guard !paths.isEmpty else { return false }
+            GetInfoWindowController.shared.show(paths: paths, readOnly: active.search != nil)
         }
         return true
+    }
+
+    /// `.getInfo`'s target: the selection, or — with nothing selected — the folder the active pane shows (same as
+    /// Finder's ⌘I with no selection: "Get Info" on the enclosing folder itself).
+    private func getInfoTargetPaths() -> [String] {
+        let selected = active.selectedEntries.map(\.path)
+        return selected.isEmpty ? [active.path] : selected
     }
 
     func canPerform(_ command: BrowserCommand) -> Bool {
         switch command {
         case .splitRight, .splitLeft, .splitDown, .splitUp:
-            return tree.canSplit
+            // XF-T29: false at the Free pane limit, same as at the hard 16-pane ceiling — a layout already bigger
+            // than the limit (inherited from a trial or a Workspace) stays usable, just cannot grow further.
+            return canSplitUnderLicense
         case .closePane:
             return tree.count > 1
         case .rename:
@@ -507,7 +547,9 @@ struct PaneSearchState: Equatable {
              .operations, .saveWorkspace, .openWorkspace, .closeWindow:
             return true
         case .getInfo:
-            return false   // XF-T28 Wave 4 STUB
+            // A search pane with no results yet still shows an (empty) folder-less state — only true when there is
+            // something to describe: a selection, or a normal (non-search) pane showing a real folder.
+            return !active.selectedEntries.isEmpty || active.search == nil
         }
     }
 
@@ -644,14 +686,14 @@ struct PaneSearchState: Equatable {
         } else {
             shouldCopy = !sameVolume
         }
-        _ = FileOperationQueue.shared.enqueue(shouldCopy ? .copy : .move, sources: paths, destination: folder)
+        enqueueGated(shouldCopy ? .copy : .move, sources: paths, destination: folder)
     }
 
     private func copyOrMoveToOtherPane(move: Bool) {
         guard let other = tree.other(than: activePane), let otherPane = panes[other] else { return }
         let paths = active.selectedEntries.map(\.path)
         guard !paths.isEmpty else { return }
-        _ = FileOperationQueue.shared.enqueue(move ? .move : .copy, sources: paths, destination: otherPane.path)
+        enqueueGated(move ? .move : .copy, sources: paths, destination: otherPane.path)
     }
 
     // MARK: - Search
@@ -699,15 +741,6 @@ struct PaneSearchState: Equatable {
         }
     }
 
-    // MARK: - Workspaces
-
-    private func saveWorkspace() {
-        let snap = snapshot(frame: nil)
-        var (store, _) = WorkspaceStore.decode(WorkspaceStore.load())
-        _ = store.save(name: "Workspace", windows: [snap], now: Date())
-        store.persist()
-    }
-
     // MARK: - Cloud
 
     private func downloadSelectionNow() {
@@ -751,36 +784,202 @@ struct PaneSearchState: Equatable {
     }
 }
 
-// MARK: - Wave 4 API (XF-T28 Wave 4 — STUB bodies written by the integrator; the W4-model agent implements them.
-// Signatures are binding: docs/specs/XF-T28-wave4.md §E.)
-
-extension PaneState {
-    /// Runs a search straight from edited chips — no round trip through text (pastDays / olderThan / month chips could
-    /// not be rebuilt as text and were dropped).
-    func runSearch(parsed: ParsedSearch, scope: PaneSearchState.Scope, paneFolders: [String] = []) {}
-}
+// MARK: - Wave 4 API (XF-T28 Wave 4 / XF-T29 Pro gates)
 
 extension BrowserWindowModel {
-    /// Saved workspaces (read from disk on first use).
-    var workspaces: [Workspace] { [] }
-    /// Pro (.browserWorkspaces); Free ⇒ banner + nil.
-    @discardableResult func saveWorkspace(named name: String) -> Workspace? { nil }
-    /// Pro (.browserWorkspaces). Replaces this window's layout with the workspace's first window (others open new windows).
-    func openWorkspace(_ id: UUID) {}
-    @discardableResult func renameWorkspace(_ id: UUID, to name: String) -> Bool { false }
-    func duplicateWorkspace(_ id: UUID) {}
-    func deleteWorkspace(_ id: UUID) {}
-    func exportWorkspaces() -> Data { Data() }
+    /// Saved workspaces, read from disk on first use each call — the store is a small JSON file (not kept resident
+    /// in the model), so every reader always sees the latest save made from any window.
+    var workspaces: [Workspace] {
+        WorkspaceStore.decode(WorkspaceStore.load()).store.workspaces
+    }
 
-    /// The sync pair shown side by side in this window (nil when none).
-    var activeSyncPair: FolderSyncController.Pair? { nil }
-    /// Side by Side: left = source, right = destination; remembers the pair for the sync bar.
-    func openSyncPair(_ pair: FolderSyncController.Pair) {}
-    /// Runs FolderSyncController.shared.run(pair) for the active pair (Pro .folderSync); false when nothing ran.
-    func syncNow() async -> Bool { false }
+    /// Pro (`.browserWorkspaces`; XF-T29 — rename/delete/export stay free, only save/open are gated). Free ⇒ banner
+    /// + nil, nothing written.
+    @discardableResult
+    func saveWorkspace(named name: String) -> Workspace? {
+        guard LicenseManager.shared.allows(.browserWorkspaces) else {
+            banner = "Cần XFinder Pro để lưu Workspace"
+            return nil
+        }
+        var (store, _) = WorkspaceStore.decode(WorkspaceStore.load())
+        let saved = store.save(name: name, windows: [snapshot(frame: nil)], now: Date())
+        store.persist()
+        return saved
+    }
 
-    /// One-line notice (L10n key), auto-hidden by the view.
+    /// Pro (`.browserWorkspaces`). Replaces THIS window's layout with the workspace's first window; any further
+    /// windows the workspace remembers open as new windows (one window can only show one layout at a time).
+    func openWorkspace(_ id: UUID) {
+        guard LicenseManager.shared.allows(.browserWorkspaces) else {
+            banner = "Cần XFinder Pro để mở Workspace"
+            return
+        }
+        guard let workspace = workspaces.first(where: { $0.id == id }), let first = workspace.windows.first else { return }
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let (restored, missing) = SessionRestore.restored(first, exists: { FileManager.default.fileExists(atPath: $0) }, home: home)
+        replaceLayout(with: restored)
+        if !missing.isEmpty {
+            banner = "Một số thư mục của Workspace này không còn tồn tại"
+        }
+        for extra in workspace.windows.dropFirst() {
+            let (restoredExtra, _) = SessionRestore.restored(extra, exists: { FileManager.default.fileExists(atPath: $0) }, home: home)
+            BrowserWindowController.shared.openRestoredWindow(restoredExtra)
+        }
+    }
+
+    /// Replaces this window's own pane tree/layout in place (used by `openWorkspace` — stays free to read, the
+    /// gate is on reaching this method at all).
+    private func replaceLayout(with snapshot: WindowSnapshot) {
+        for pane in panes.values { pane.stopWatching() }
+        tree = snapshot.tree
+        var built: [PaneID: PaneState] = [:]
+        for paneSnapshot in snapshot.panes {
+            built[paneSnapshot.id] = PaneState(
+                id: paneSnapshot.id, path: paneSnapshot.path, viewMode: paneSnapshot.viewMode,
+                sort: paneSnapshot.sort, showHidden: paneSnapshot.showHidden, history: paneSnapshot.history)
+        }
+        for id in snapshot.tree.panes where built[id] == nil {
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            built[id] = PaneState(id: id, path: home, viewMode: BrowserSettings.defaultView,
+                                  sort: .finderDefault, showHidden: BrowserSettings.showHidden, history: nil)
+        }
+        panes = built
+        shelfVisible = snapshot.shelfVisible
+        activePane = snapshot.tree.panes.contains(snapshot.activePane) ? snapshot.activePane : (snapshot.tree.panes.first ?? activePane)
+        activeSyncPairStorage = nil
+    }
+
+    /// Rename/delete/export stay free (spec XF-T29 §2): only saving/opening a workspace needs Pro.
+    @discardableResult
+    func renameWorkspace(_ id: UUID, to name: String) -> Bool {
+        var (store, _) = WorkspaceStore.decode(WorkspaceStore.load())
+        guard store.rename(id, to: name) else { return false }
+        store.persist()
+        return true
+    }
+
+    func duplicateWorkspace(_ id: UUID) {
+        var (store, _) = WorkspaceStore.decode(WorkspaceStore.load())
+        guard store.duplicate(id, now: Date()) != nil else { return }
+        store.persist()
+    }
+
+    func deleteWorkspace(_ id: UUID) {
+        var (store, _) = WorkspaceStore.decode(WorkspaceStore.load())
+        store.delete(id)
+        store.persist()
+    }
+
+    func exportWorkspaces() -> Data {
+        WorkspaceStore.decode(WorkspaceStore.load()).store.exportJSON()
+    }
+
+    // MARK: - Sync pair
+
+    /// Side by Side: left pane = source, right pane = destination; opening either pane somewhere else clears the
+    /// pair (`observeSyncPaneDrift`, installed by `openSyncPair`).
+    func openSyncPair(_ pair: FolderSyncController.Pair) {
+        applyPreset(.sideBySide)
+        let ids = tree.panes
+        guard ids.count >= 2, let sourcePane = panes[ids[0]], let destPane = panes[ids[1]] else { return }
+        sourcePane.navigate(to: pair.sourcePath)
+        destPane.navigate(to: pair.destPath)
+        activeSyncPairStorage = pair
+        observeSyncPaneDrift(sourceID: ids[0], destID: ids[1], pair: pair)
+    }
+
+    /// Runs `FolderSyncController.shared.run(pair)` off the main thread (the controller itself hops to a detached
+    /// task for the `rsync` process — this only awaits it and brings the banner back to main), for the window's
+    /// `activeSyncPair`. Pro-gated inside `FolderSyncController.run` itself (`.folderSync`); false when nothing ran,
+    /// either because there is no active pair or because Free has no sync pro access.
+    @discardableResult
+    func syncNow() async -> Bool {
+        guard let pair = activeSyncPair else { return false }
+        let ok = await FolderSyncController.shared.run(pair)
+        // `FolderSyncController.lastError` is already display text (it calls `L10n.t` itself before storing it —
+        // the exact "model returns rendered text" trap `L10n.swift`'s own header comment warns about), so it must
+        // NOT be routed through `banner`, which `BrowserRootView` passes through `L10n.t` a second time. This
+        // model's own banner literal covers both outcomes instead; the sync pairs page still shows the detailed
+        // per-pair result from `FolderSyncController` itself.
+        banner = ok ? "Đồng bộ xong" : "Đồng bộ không thành công — xem chi tiết ở trang Đồng bộ"
+        return ok
+    }
+
+    /// One-line notice (an L10n key — the Vietnamese sentence itself), auto-hidden by the view.
     func showBanner(_ key: String) { banner = key }
+
+    // MARK: - Pro gates (XF-T29)
+
+    /// `.splitRight/.splitLeft/.splitDown/.splitUp` at the Free pane limit: an existing larger layout (reached
+    /// during a trial, or inherited from a Workspace) stays fully usable — this only blocks making it bigger.
+    var canSplitUnderLicense: Bool {
+        guard let limit = LicenseManager.shared.limit(.browserPanes) else { return tree.canSplit }
+        return tree.canSplit && tree.count < limit
+    }
+
+    private func splitGated(_ direction: SplitDirection) {
+        guard canSplitUnderLicense else {
+            banner = "Bản Free chỉ chia được 2 ngăn — cần XFinder Pro để chia thêm"
+            return
+        }
+        split(direction)
+    }
+
+    private func addSelectionToShelfGated() {
+        guard LicenseManager.shared.allows(.browserShelf) else {
+            banner = "Cần XFinder Pro để thêm vào Shelf"
+            return
+        }
+        addSelectionToShelf()
+    }
+
+    /// Free: starting a copy/move while another file operation is already running shows a banner instead of
+    /// queueing it — Pro (`.browserQueue`) queues normally, same as `FileOperationQueue` already does on its own.
+    private func enqueueGated(_ kind: FileOperationKind, sources: [String], destination: String?) {
+        if kind == .copy || kind == .move, !LicenseManager.shared.allows(.browserQueue), FileOperationQueue.shared.hasActiveWork {
+            banner = "Bản Free chạy một thao tác chép một lúc — chờ việc đang chạy xong"
+            return
+        }
+        _ = FileOperationQueue.shared.enqueue(kind, sources: sources, destination: destination)
+    }
+
+    /// `.downloadNow`/`.removeDownload` on more than one item need Pro (`.browserBatchCloud`); a single item is
+    /// free either tier.
+    private func batchCloudGated(_ selection: [DirectoryEntry]) -> Bool {
+        guard selection.count > 1, !LicenseManager.shared.allows(.browserBatchCloud) else { return true }
+        banner = "Cần XFinder Pro để tải về hoặc gỡ nhiều mục đám mây cùng lúc"
+        return false
+    }
+}
+
+/// Drift tracking for `activeSyncPair` (the stored property itself lives on the main class, declared next to
+/// `lastCompressedArchive`/`bannerClearTask`).
+extension BrowserWindowModel {
+    /// The sync pair shown side by side in this window (nil when none, or after either pane navigated away).
+    var activeSyncPair: FolderSyncController.Pair? { activeSyncPairStorage }
+
+    /// Clears `activeSyncPair` the moment either the source or destination pane's folder changes — a manual
+    /// navigation away from the pair means the sync bar no longer describes what's on screen (spec XF-T28 §C:
+    /// "clear it when the person navigates either pane away"). One-shot per registration like
+    /// `BrowserWindowController.observeTitle`: `withObservationTracking`'s `onChange` fires once, so this
+    /// re-installs itself after every fire until the pair itself is cleared.
+    private func observeSyncPaneDrift(sourceID: PaneID, destID: PaneID, pair: FolderSyncController.Pair) {
+        guard let sourcePane = panes[sourceID], let destPane = panes[destID] else { return }
+        withObservationTracking {
+            _ = sourcePane.path
+            _ = destPane.path
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self, self.activeSyncPairStorage?.id == pair.id else { return }
+                let stillMatches = self.panes[sourceID]?.path == pair.sourcePath && self.panes[destID]?.path == pair.destPath
+                if stillMatches {
+                    self.observeSyncPaneDrift(sourceID: sourceID, destID: destID, pair: pair)
+                } else {
+                    self.activeSyncPairStorage = nil
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Workspace persistence (JSON at a fixed path, per the contract)
