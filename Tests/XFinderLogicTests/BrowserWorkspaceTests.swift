@@ -78,9 +78,11 @@ final class BrowserWorkspaceTests: XCTestCase {
 
     func testRestoreOpensHomeForAMissingFolderAndFiltersHistory() {
         var w = window(["/gone", "/kept"])
+        w.panes[1].history.visit("/gone/a")          // a folder that is gone sits IN the Back history…
         w.panes[1].history.visit("/kept/sub")
-        w.panes[1].history.visit("/gone/deeper")
+        w.panes[1].history.visit("/gone/deeper")     // …and is also the current folder
         w.panes[1].path = "/gone/deeper"
+        XCTAssertTrue(w.panes[1].history.back.contains("/gone/a"), "precondition: the test must put a gone folder in Back")
         let exists: (String) -> Bool = { !$0.hasPrefix("/gone") }
         let r = SessionRestore.restored(w, exists: exists, home: "/Users/me")
         XCTAssertEqual(r.missing, ["/gone", "/gone/deeper"])
