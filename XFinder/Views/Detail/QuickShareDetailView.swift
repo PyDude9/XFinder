@@ -10,6 +10,7 @@ struct QuickShareDetailView: View {
     @State private var copied: UUID?
     @State private var qrShare: UUID?
     @State private var qrAll = false
+    @State private var license = LicenseManager.shared
 
     var body: some View {
         ScrollView {
@@ -60,6 +61,16 @@ struct QuickShareDetailView: View {
                 if let err = controller.lastError {
                     Text(err).font(XFinderTokens.Font.caption).foregroundColor(.red)
                         .padding(.horizontal, XFinderTokens.Space.page)
+                }
+
+                if controller.blockedByLimit {
+                    HStack(spacing: XFinderTokens.Space.tight) {
+                        Text(L10n.t("Bản Free chỉ chia sẻ 1 liên kết cùng lúc — thu hồi liên kết cũ hoặc nâng cấp để chia sẻ thêm."))
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        Button { AppState.shared.navigate(to: .pro) } label: { ProBadge() }
+                            .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, XFinderTokens.Space.page)
                 }
 
                 if controller.shares.isEmpty {

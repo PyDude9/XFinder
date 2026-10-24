@@ -238,6 +238,7 @@ struct SnapZonesDetailView: View {
     @State private var controller = SnapZoneController.shared
     @State private var trusted = WindowManager.isTrusted
     @State private var memory = SnapMemoryController.shared
+    @State private var license = LicenseManager.shared
 
     var body: some View {
         ScrollView {
@@ -409,7 +410,15 @@ struct SnapZonesDetailView: View {
                       subtitle: L10n.t("Một app vào danh sách này ngay lần đầu bạn bắt dính nó bằng XFinder. Lần sau app đó mở, hoặc khi bộ màn hình thay đổi, XFinder tự đặt lại đúng chỗ."),
                       isOn: $rememberLayouts)
                 .onChange(of: rememberLayouts) { memory.applySettings() }
+                .proGated(.snapMemory)
                 .settingsRow()
+
+            if !license.allows(.snapMemory) {
+                SettingsDivider()
+                InlineNote(kind: .warning,
+                           text: L10n.t("Cần XFinder Pro để tự đặt lại bố cục. Luật đã ghi vẫn được giữ, chỉ không tự áp dụng ở bản Free."))
+                    .settingsRow()
+            }
             SettingsDivider()
 
             ToggleRow(title: L10n.t("Nhớ cả vị trí tự kéo"),
@@ -472,6 +481,7 @@ struct SnapZonesDetailView: View {
             Button(L10n.t("Áp lại ngay")) { memory.reapplyNow() }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .proGated(.snapMemory)
                 .disabled(!rememberLayouts || memory.store.rules(for: memory.currentArrangement).isEmpty)
             Spacer()
             Button(L10n.t("Xoá tất cả"), role: .destructive) { memory.forgetAll() }

@@ -85,6 +85,11 @@ final class RemoteConnectController {
     func upload(files: [URL], to destination: Destination) async {
         guard !files.isEmpty else { return }
         guard isEnabled else { state = .failed(L10n.t("Kết nối từ xa đang tắt — bật lại ở đầu trang.")); return }
+        // XF-T29: uploading is the Pro gate (`.remoteConnect`) — saved destinations are kept either way.
+        guard LicenseManager.shared.allows(.remoteConnect) else {
+            state = .failed(L10n.t("Cần XFinder Pro để tải lên. Danh sách kết nối vẫn được giữ nguyên."))
+            return
+        }
         state = .running("\(L10n.t("Đang tải lên "))\(files.count)\(L10n.t(" mục…"))")
 
         let args = RemoteConnectRules.uploadArguments(files: files.map(\.path), host: destination.host, port: destination.port,

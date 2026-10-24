@@ -8,6 +8,7 @@ struct RemoteConnectDetailView: View {
     @State private var showAdd = false
     // XF-T21: the catalog switch (same key + default as RemoteConnectController.isEnabled).
     @AppStorage("remoteConnect.enabled") private var enabled = true
+    @State private var license = LicenseManager.shared
 
     var body: some View {
         ScrollView {
@@ -21,6 +22,13 @@ struct RemoteConnectDetailView: View {
                               isOn: $enabled)
                         .onChange(of: enabled) { FeatureHub.apply(.remoteConnect) }
                         .settingsRow()
+
+                    if !license.allows(.remoteConnect) {
+                        SettingsDivider()
+                        InlineNote(kind: .warning,
+                                   text: L10n.t("Cần XFinder Pro để tải lên. Danh sách kết nối và Kiểm tra kết nối vẫn dùng được ở bản Free."))
+                            .settingsRow()
+                    }
                 }
 
                 HStack {
@@ -117,6 +125,7 @@ struct RemoteConnectDetailView: View {
             Button(L10n.t("Tải lên…")) { pickAndUpload(dest) }
                 .buttonStyle(.bordered).controlSize(.small)
                 .disabled(!enabled)
+                .proGated(.remoteConnect)
             Menu {
                 Button(L10n.t("Kiểm tra kết nối")) { Task { await controller.test(dest) } }
                     .disabled(!enabled)

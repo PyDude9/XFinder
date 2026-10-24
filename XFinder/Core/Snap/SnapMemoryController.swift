@@ -54,8 +54,11 @@ final class SnapMemoryController {
 
     /// Called at launch, on `didBecomeActive` (Accessibility granted later), from the page's `.onChange`,
     /// and from FeatureHub.
+    ///
+    /// XF-T29: `.snapMemory` is a Pro gate — Free never attaches an AX observer or replays a rule. Rules already
+    /// recorded stay in `store` either way (spec XF-T29 §1 rule 2); they just do not fire until Pro/trial.
     func applySettings() {
-        guard isEnabled, WindowManager.isTrusted else { stop(); return }
+        guard isEnabled, WindowManager.isTrusted, LicenseManager.shared.allows(.snapMemory) else { stop(); return }
         guard !isRunning else { attachAllRemembered(); return }
         isRunning = true
         let nc = NSWorkspace.shared.notificationCenter
@@ -158,7 +161,7 @@ final class SnapMemoryController {
 
     /// The page's button: replay every rule of the arrangement attached right now.
     func reapplyNow() {
-        guard isEnabled, WindowManager.isTrusted else { return }
+        guard isEnabled, WindowManager.isTrusted, LicenseManager.shared.allows(.snapMemory) else { return }
         let arrangement = currentArrangement
         for rule in store.rules(for: arrangement) {
             guard let app = runningApp(bundleID: rule.bundleID) else { continue }

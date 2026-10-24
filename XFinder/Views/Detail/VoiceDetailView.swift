@@ -64,6 +64,7 @@ struct VoiceDetailView: View {
     @State private var newModeName = ""
     @State private var newModeInstruction = ""
     @State private var customModes: [DictationMode.Custom] = []
+    @State private var license = LicenseManager.shared
 
     private enum ConnectionResult: Equatable {
         case ok(String)
@@ -195,8 +196,22 @@ struct VoiceDetailView: View {
                     .font(XFinderTokens.Font.rowValue)
                     .foregroundColor(.secondary)
                 Spacer(minLength: 0)
+                if mode.usesLanguageModel, !license.allows(.voiceAIRefine) {
+                    Button { AppState.shared.navigate(to: .pro) } label: { ProBadge() }
+                        .buttonStyle(.plain)
+                        .help(L10n.t("Cần XFinder Pro — bấm để xem"))
+                }
             }
             .settingsRow()
+
+            // XF-T29: `.voiceAIRefine` gates every mode but "Chép nguyên văn" — Free still gets its words,
+            // just not tút lại by AI (VoiceManager falls back to inserting the raw transcription).
+            if mode.usesLanguageModel, !license.allows(.voiceAIRefine) {
+                SettingsDivider()
+                InlineNote(kind: .warning,
+                           text: L10n.t("Cần XFinder Pro để tút văn bản bằng AI — XFinder sẽ chèn nguyên văn bạn nói thay vì chế độ này."))
+                    .settingsRow()
+            }
 
             if mode == .cleanUp {
                 SettingsDivider()

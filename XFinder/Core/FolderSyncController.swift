@@ -48,9 +48,12 @@ final class FolderSyncController {
 
     // MARK: Lifecycle
 
+    /// XF-T29: `.folderSync` gates every automatic run (watchers + the daily timer) — Free keeps every pair but
+    /// none of them run on their own; a manual "Đồng bộ ngay" is gated too (see `run`). Nothing here ever removes
+    /// a pair (spec XF-T29 §1 rule 2).
     func applySettings() {
         stopWatching()
-        guard autoEnabled else { return }
+        guard autoEnabled, LicenseManager.shared.allows(.folderSync) else { return }
         for pair in pairs where pair.onChange { startWatching(pair) }
         // The 60 s check only exists when some pair is on a daily schedule (audit 2026-10-18, P-4); on-change pairs are
         // served by their DispatchSource watchers alone.
@@ -148,6 +151,12 @@ final class FolderSyncController {
 
     @discardableResult
     func run(_ pair: Pair) async -> Bool {
+        // XF-T29: gated too — spec §TASK says "no, gate it", so Free never runs rsync, manual or scheduled.
+        // The pair itself is never touched here, only the run.
+        guard LicenseManager.shared.allows(.folderSync) else {
+            lastError = L10n.t("Cần XFinder Pro để chạy đồng bộ. Cặp đồng bộ vẫn được giữ nguyên.")
+            return false
+        }
         guard !runningIDs.contains(pair.id) else { return false }
         runningIDs.insert(pair.id)
         defer { runningIDs.remove(pair.id) }

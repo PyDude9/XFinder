@@ -259,7 +259,12 @@ public final class VoiceManager {
 
             pendingTranscription = text
 
-            if snapshot.mode.usesLanguageModel {
+            // XF-T29: `.voiceAIRefine` gates the AI refine modes — plain dictation (`raw`) stays free in every
+            // tier. Free still gets the words inserted, raw, with a short notice instead of losing the session.
+            if snapshot.mode.usesLanguageModel, !LicenseManager.shared.allows(.voiceAIRefine) {
+                finish(inserting: text, snapshot: snapshot)
+                showTransientNotice(L10n.t("Cần XFinder Pro để tút văn bản bằng AI — đã chèn nguyên văn."))
+            } else if snapshot.mode.usesLanguageModel {
                 await refine(text: text, snapshot: snapshot)
             } else {
                 finish(inserting: text, snapshot: snapshot)

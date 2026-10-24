@@ -7,6 +7,7 @@ struct FolderSyncDetailView: View {
     @State private var controller = FolderSyncController.shared
     @AppStorage("sync.autoEnabled") private var autoEnabled = false
     @State private var editing: FolderSyncController.Pair?
+    @State private var license = LicenseManager.shared
 
     var body: some View {
         ScrollView {
@@ -22,10 +23,17 @@ struct FolderSyncDetailView: View {
                                     .labelsHidden()
                                     .onChange(of: autoEnabled) { controller.applySettings() }
                             }
+                            .proGated(.folderSync)
                             Text(L10n.t("Đồng bộ tự động"))
                                 .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         }
                     ))
+
+                if !license.allows(.folderSync) {
+                    InlineNote(kind: .warning,
+                               text: L10n.t("Bản Free giữ nguyên mọi cặp đồng bộ nhưng không tự chạy, kể cả “Đồng bộ ngay” — cần XFinder Pro để chạy đồng bộ."))
+                        .padding(.horizontal, XFinderTokens.Space.page)
+                }
 
                 HStack(alignment: .top, spacing: 8) {
                     Text(L10n.t("Điều khiển các lượt Khi thay đổi và Hằng ngày. Đồng bộ ngay thủ công vẫn khả dụng."))
@@ -130,6 +138,7 @@ struct FolderSyncDetailView: View {
                 } else {
                     Button(L10n.t("Đồng bộ ngay")) { Task { await controller.run(pair) } }
                         .buttonStyle(.bordered).controlSize(.small)
+                        .proGated(.folderSync)
                 }
                 Menu {
                     Button(L10n.t("Tùy chọn…")) { editing = pair }

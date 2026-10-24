@@ -47,7 +47,14 @@ final class FolderLockController {
 
     /// Encrypts `folder` into a new vault. `deleteOriginal` is honoured only
     /// after the copy is verified.
+    ///
+    /// XF-T29: creating a NEW vault is the Pro gate (`.folderLock`) — unlocking and opening vaults you already
+    /// have stays free in every tier, so nobody is ever locked out of their own data (spec XF-T29 §1 rule 2).
     func createVault(from folder: URL, password: String, deleteOriginal: Bool) async -> Bool {
+        guard LicenseManager.shared.allows(.folderLock) else {
+            lastError = L10n.t("Cần XFinder Pro để tạo vault mới. Vault đã có vẫn mở khóa và dùng được bình thường.")
+            return false
+        }
         busy = true
         lastError = nil
         defer { busy = false }

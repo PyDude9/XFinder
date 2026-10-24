@@ -35,6 +35,9 @@ final class QuickShareController {
     /// hands a phone all the files. Anyone with this link sees the whole list — the page says so.
     private(set) var indexToken = ""
     var lastError: String?
+    /// XF-T29: set by `share(files:)` when the Free cap (`ProLimit.quickShareLinks`) turned away a file — the page
+    /// reads this to show a notice + PRO tag. Existing links are never revoked by the gate (spec XF-T29 §1 rule 2).
+    var blockedByLimit = false
 
     private var listener: NWListener?
     private var port: UInt16 = 0
@@ -83,14 +86,22 @@ final class QuickShareController {
 
     func share(files: [URL]) -> [Share] {
         guard isEnabled else { return [] }
+        blockedByLimit = false
+        // XF-T29: `ProLimit.quickShareLinks` caps Free at 1 ACTIVE link at a time — existing links are never
+        // revoked to make room (spec XF-T29 §1 rule 2); a new one beyond the cap is simply refused.
+        let limit = LicenseManager.shared.limit(.quickShareLinks)
+        let active = shares.filter { !$0.isExpired }.count
+        var remaining = limit.map { max(0, $0 - active) } ?? files.count
         startIfNeeded()
         var made: [Share] = []
         for url in files {
+            guard remaining > 0 else { blockedByLimit = true; continue }
             let share = Share(token: Self.makeToken(),
                               url: url,
                               expiresAt: Date().addingTimeInterval(expiryHours * 3600))
             shares.append(share)
             made.append(share)
+            remaining -= 1
         }
         return made
     }

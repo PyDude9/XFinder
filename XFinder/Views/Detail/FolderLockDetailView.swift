@@ -7,6 +7,7 @@ struct FolderLockDetailView: View {
     @State private var showCreate = false
     @State private var unlockTarget: FolderLockController.Vault?
     @State private var password = ""
+    @State private var license = LicenseManager.shared
 
     var body: some View {
         ScrollView {
@@ -26,7 +27,13 @@ struct FolderLockDetailView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
+                        .proGated(.folderLock)
                         .disabled(controller.busy)
+
+                        if !license.allows(.folderLock) {
+                            Text(L10n.t("Vault đã tạo vẫn mở khóa và dùng bình thường ở bản Free — chỉ tạo vault MỚI cần XFinder Pro."))
+                                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        }
 
                         if controller.busy {
                             HStack(spacing: 8) {
