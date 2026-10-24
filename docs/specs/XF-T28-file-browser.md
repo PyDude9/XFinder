@@ -209,7 +209,12 @@ Chủ dự án: "một số tính năng trùng lặp có thể gộp luôn, nế
 ví dụ Folder Sync, Remote Control". Đo: FileOctopus **không** có sync/remote (trang limitations của họ); Remote Connect của
 XFinder là `scp`/`ssh` tải lên (không gắn ổ).
 
-> **CHỈ LÀ ĐỀ XUẤT — chưa làm.** Chủ dự án 2026-10-24: "nếu bạn đổi nhiều thì phải hỏi ý tôi list gộp trước, ko được gộp
+> **Chủ dự án đã chọn (2026-10-24, AskUserQuestion):** ✅ Đồng bộ thư mục (lối vào trong trình duyệt) · ✅ Tìm kiếm AI
+> (liên kết sang thanh tìm của trình duyệt) · ✅ Wave 4: **Get Info** và **tuỳ biến sidebar**. ❌ Mọi dòng khác (Kết nối từ
+> xa, Chia sẻ QR, Dọn rác, Khay thả, liên kết Đổi tên hàng loạt/Nén, câu Tiện ích Finder, Cài đặt Bàn phím, Problems/gần
+> đây/hoàn tác bền): KHÔNG làm — trang cũ giữ nguyên, trình duyệt không thêm lối vào.
+>
+> Bản ghi gốc của đề xuất: Chủ dự án 2026-10-24: "nếu bạn đổi nhiều thì phải hỏi ý tôi list gộp trước, ko được gộp
 > hết tất cả vào trang Finder này". Mỗi dòng dưới đây chờ chủ dự án duyệt (Q-T28-MERGE); dòng nào không được duyệt thì
 > trang cũ giữ nguyên, trình duyệt không thêm lối vào đó.
 
