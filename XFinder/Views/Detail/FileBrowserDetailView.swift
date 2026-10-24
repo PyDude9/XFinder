@@ -11,6 +11,8 @@ struct FileBrowserDetailView: View {
     @AppStorage("fileBrowser.defaultView") private var defaultView = "list"
     @AppStorage("fileBrowser.globalHotkey") private var globalHotkey = false
     @State private var settings = BrowserSettings.shared
+    @State private var sidebarLayout = BrowserSettings.sidebarLayout
+    @State private var hiddenVolumeNames: [String: String] = [:]   // volume UUID -> name, when the volume is mounted
 
     var body: some View {
         ScrollView {
@@ -83,6 +85,33 @@ struct FileBrowserDetailView: View {
                         .settingsRow()
                 }
 
+                if !sidebarLayout.hiddenVolumeUUIDs.isEmpty {
+                    SettingsSection(title: L10n.t("Ổ đã ẩn"),
+                                    footer: L10n.t("Ổ bị ẩn khỏi mục Vị trí của sidebar trình duyệt tệp — vẫn gắn vào máy bình thường.")) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(sidebarLayout.hiddenVolumeUUIDs).sorted(), id: \.self) { uuid in
+                                HStack {
+                                    Image(systemName: "externaldrive")
+                                        .foregroundColor(.secondary).font(XFinderTokens.Font.caption)
+                                    Text(hiddenVolumeNames[uuid] ?? L10n.t("Ổ chưa gắn vào máy"))
+                                        .font(XFinderTokens.Font.rowValue)
+                                    Spacer()
+                                    Button(L10n.t("Khôi phục")) {
+                                        var layout = BrowserSettings.sidebarLayout
+                                        layout.showVolume(uuid: uuid)
+                                        BrowserSettings.sidebarLayout = layout
+                                        sidebarLayout = layout
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                }
+                                .settingsRow()
+                                if uuid != Array(sidebarLayout.hiddenVolumeUUIDs).sorted().last { SettingsDivider() }
+                            }
+                        }
+                    }
+                }
+
                 SettingsSection(title: L10n.t("Phím tắt trong cửa sổ"),
                                 footer: L10n.t("Mọi lệnh cũng có trong bảng lệnh: ⌃⇧⌘P, hoặc gõ > trong ⌃⌘P.")) {
                     VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
@@ -104,6 +133,26 @@ struct FileBrowserDetailView: View {
             .pageWidthSafe()
         }
         .background(XFinderTokens.Settings.contentBackground)
+        .onAppear(perform: reloadHiddenVolumeNames)
+    }
+
+    /// Resolves a name for every currently-hidden volume UUID that happens to be mounted right now (an unmounted one
+    /// keeps the placeholder) — `mountedVolumeURLs` is disk I/O, so the scan runs off the main actor.
+    private func reloadHiddenVolumeNames() {
+        let hidden = sidebarLayout.hiddenVolumeUUIDs
+        guard !hidden.isEmpty else { return }
+        Task.detached(priority: .utility) {
+            let keys: [URLResourceKey] = [.volumeNameKey, .volumeUUIDStringKey]
+            var names: [String: String] = [:]
+            if let urls = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: keys, options: [.skipHiddenVolumes]) {
+                for url in urls {
+                    guard let values = try? url.resourceValues(forKeys: Set(keys)), let uuid = values.volumeUUIDString,
+                          hidden.contains(uuid) else { continue }
+                    names[uuid] = values.volumeName ?? url.lastPathComponent
+                }
+            }
+            await MainActor.run { hiddenVolumeNames = names }
+        }
     }
 
     /// The shortcuts a newcomer needs first; the palette lists the rest.

@@ -22,6 +22,13 @@ final class BrowserSettings {
     /// The ONE reader of `fileBrowser.globalHotkey` (default off: a global chord is taken from every app).
     static var globalHotkeyEnabled: Bool { UserDefaults.standard.object(forKey: "fileBrowser.globalHotkey") as? Bool ?? false }
 
+    /// The ONE reader+writer of `fileBrowser.sidebarLayout` (XF-T28 Wave 4 §B) — JSON `SidebarLayout`, not a toggle,
+    /// so there is no `FeatureKeyDefaultsTests` row for it; `SidebarLayout.decode` tolerates a missing/damaged value.
+    static var sidebarLayout: SidebarLayout {
+        get { SidebarLayout.decode(UserDefaults.standard.data(forKey: "fileBrowser.sidebarLayout")) }
+        set { UserDefaults.standard.set(newValue.encoded(), forKey: "fileBrowser.sidebarLayout") }
+    }
+
     // MARK: Global hotkey ⌃⌥⌘F (Carbon, no permission) — ShortcutCatalog `fileBrowser.open`
 
     /// F, and ⌃⌥⌘ — ⌃⌥F already belongs to another entry (ShortcutCatalog), ⌃⌥⌘F to nothing.
