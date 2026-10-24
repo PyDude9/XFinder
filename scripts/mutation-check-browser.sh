@@ -31,8 +31,13 @@ FILTER='PaneTreeTests|PaneHistoryTests|BrowserPathTests|DirectoryEntryTests|Sear
 # processes burning a core each for 90 minutes — and reported as HANG, which counts as RED: the suite never passes.
 RUN_TIMEOUT=${RUN_TIMEOUT:-600}
 timed() {
+  # Kill the WHOLE descendant tree, found through `pgrep -P`: swift-test starts xctest in its own process group, so a
+  # process-group kill left the hung xctest alive (measured 2026-10-24: orphan at 100 % CPU after the first fix).
   perl -e '$t = shift; $pid = fork; if (!$pid) { setpgrp(0, 0); exec @ARGV; exit 127 }
-           $SIG{ALRM} = sub { kill "TERM", -$pid; sleep 3; kill "KILL", -$pid; print "HARNESS-TIMEOUT\n"; exit 124 };
+           sub tree { my @all = ($_[0]); my @q = ($_[0]);
+                      while (@q) { my $p = shift @q; my @c = split /\s+/, `pgrep -P $p`; @c = grep { /^\d+$/ } @c; push @all, @c; push @q, @c }
+                      return @all }
+           $SIG{ALRM} = sub { my @p = tree($pid); kill "TERM", @p; sleep 3; kill "KILL", @p; print "HARNESS-TIMEOUT\n"; exit 124 };
            alarm $t; waitpid($pid, 0); exit($? >> 8)' "$RUN_TIMEOUT" "$@"
 }
 fails() {
