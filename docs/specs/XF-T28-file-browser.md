@@ -207,7 +207,11 @@ luật test từ vựng). Dữ liệu: output workflow `xf-t28-spec-review`.
 
 Chủ dự án: "một số tính năng trùng lặp có thể gộp luôn, nếu FileOctopus hiển thị trực quan hơn settings của XFinder cũ,
 ví dụ Folder Sync, Remote Control". Đo: FileOctopus **không** có sync/remote (trang limitations của họ); Remote Connect của
-XFinder là `scp`/`ssh` tải lên (không gắn ổ). Quyết định (mặc định, không hỏi — chủ dự án đã cho phép gộp):
+XFinder là `scp`/`ssh` tải lên (không gắn ổ).
+
+> **CHỈ LÀ ĐỀ XUẤT — chưa làm.** Chủ dự án 2026-10-24: "nếu bạn đổi nhiều thì phải hỏi ý tôi list gộp trước, ko được gộp
+> hết tất cả vào trang Finder này". Mỗi dòng dưới đây chờ chủ dự án duyệt (Q-T28-MERGE); dòng nào không được duyệt thì
+> trang cũ giữ nguyên, trình duyệt không thêm lối vào đó.
 
 | Trang | Trong trình duyệt | Trang cũ |
 |:--|:--|:--|
@@ -220,7 +224,7 @@ XFinder là `scp`/`ssh` tải lên (không gắn ổ). Quyết định (mặc đ
 | Khay thả (notch) | lệnh "Gửi vào Khay thả" từ Shelf | giữ — Shelf theo cửa sổ, Khay thả lâu dài; KHÔNG gộp |
 | Tiện ích Finder (ẩn/hiện tệp của Finder) | — | thêm câu phân biệt: ⇧⌘. của trình duyệt không đổi cài đặt Finder |
 
-Còn thiếu so với FileOctopus 1.0.3 (thêm vào Wave 4): **Get Info** (⌘I: Chung · Thêm thông tin · Tên & đuôi · Thẻ ·
+Còn thiếu so với FileOctopus 1.0.3 (phạm vi của chính trình duyệt — đề xuất Wave 4, cũng chờ duyệt): **Get Info** (⌘I: Chung · Thêm thông tin · Tên & đuôi · Thẻ ·
 Chia sẻ & quyền; cỡ thư mục tính nền; ổ: định dạng/dung lượng/điểm gắn) · **Cài đặt ▸ Bàn phím** (mỗi lệnh: phím + phím
 phụ + mặc định, ghi phím, chặn phím hệ thống/Return/Space/Tab/mũi tên, profile Finder/Windows Explorer/Total Commander,
 xuất/nhập JSON có kiểm) · **tuỳ biến sidebar** (nhóm, đổi tên hiển thị, ẩn ổ — schema có phiên bản từ đầu) · **danh sách
