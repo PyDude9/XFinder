@@ -29,6 +29,7 @@ enum BrowserCommand: String, CaseIterable, Sendable {
     case presetSingle, presetSideBySide, presetStacked, presetGrid
     case copyToOtherPane, moveToOtherPane, addToShelf, toggleShelf, operations
     case batchRename, compress, saveWorkspace, openWorkspace, downloadNow, removeDownload, showInFinder, closeWindow
+    case getInfo   // XF-T28 Wave 4: ⌘I, like Finder
 }
 
 /// XF-T28 — the file browser's ONE keyboard table (spec §2.3): every chord a browser window owns goes through here,
@@ -83,6 +84,7 @@ enum BrowserCommands {
         .toggleShelf: KeyChord("b", command: true, option: true),
         .operations: KeyChord("o", command: true, option: true),
         .batchRename: KeyChord("r", command: true, control: true),
+        .getInfo: KeyChord("i", command: true),
         .closeWindow: KeyChord("w", command: true),
         // No chord (spec §2.3 "không phím"): presetSingle, presetSideBySide, presetStacked, presetGrid, compress,
         // saveWorkspace, openWorkspace, downloadNow, removeDownload, showInFinder — menu/palette only.
@@ -163,6 +165,7 @@ enum BrowserCommands {
         case .removeDownload: return "Gỡ bản tải"
         case .showInFinder: return "Hiện trong Finder"
         case .closeWindow: return "Đóng cửa sổ"
+        case .getInfo: return "Lấy thông tin"
         }
     }
 

@@ -42,3 +42,17 @@ Câu việc: "Sidebar trình duyệt có đúng những chỗ tôi dùng, theo n
 - Trang Tìm kiếm AI thêm một hàng: "Tìm bằng câu thường ngay trong Trình duyệt tệp — có chip sửa được" + nút
   "Mở thanh tìm" ⇒ `BrowserWindowController.shared.openWindow(path: nil)` rồi mở ⌥⌘F ở ngăn đang chọn (thêm
   `openWindow(path:startSearch:)`); trang cũ giữ nguyên mọi thứ khác.
+
+## E. API chốt giữa các cụm (stub đã có trên main — chữ ký bắt buộc)
+
+- `PaneState.runSearch(parsed:scope:paneFolders:)` — chạy thẳng từ chip (sửa lỗi chip 7 ngày/cũ hơn/tháng bị rơi).
+- `BrowserWindowModel`: `workspaces`, `saveWorkspace(named:)`, `openWorkspace(_:)`, `renameWorkspace(_:to:)`,
+  `duplicateWorkspace(_:)`, `deleteWorkspace(_:)`, `exportWorkspaces()`, `activeSyncPair`, `openSyncPair(_:)`,
+  `syncNow() async -> Bool`, `showBanner(_:)`; `perform(.getInfo)` ⇒ `GetInfoWindowController.shared.show(paths:readOnly:)`.
+- `BrowserWindowController.openWindow(path:startSearch:)`.
+- `BrowserCommand.getInfo` ⌘I ("Lấy thông tin") — đã thêm.
+- `GetInfoWindowController.shared.show(paths:readOnly:)` (Views/Browser/GetInfoWindow.swift), `FileInfoRules` (thuần),
+  `SidebarLayout` (thuần) — stub rỗng, cụm tương ứng định nghĩa đầy đủ.
+- Cổng Pro trong trình duyệt (XF-T29): `LicenseManager.shared.limit(.browserPanes)` (Free 2 — chia ngăn thứ 3 bị chặn,
+  bố cục đã có vẫn dùng được), `.browserShelf` (thêm vào Shelf), `.browserWorkspaces` (lưu/mở; Free vẫn xem/đổi tên/xoá/xuất),
+  `.browserQueue` (Free: thêm việc khi đang có việc chạy ⇒ banner thay vì xếp hàng), `.browserBatchCloud` (tải về/gỡ > 1 mục).

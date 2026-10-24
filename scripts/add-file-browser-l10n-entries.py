@@ -159,6 +159,8 @@ ENTRIES = {
     'Đã xem xong': ('Done reviewing', S),
     'Đợi': ('Wait', S),
     'Ảnh chụp màn hình': ('Screenshots', S),
+    # Wave 4
+    'Lấy thông tin': ('Get Info', S),
 }
 def main() -> int:
     data = json.loads(STORE.read_text(encoding="utf-8")); e = data["entries"]

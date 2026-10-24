@@ -12546,6 +12546,10 @@
     "Điều khiển các lượt Khi thay đổi và Hằng ngày.": {
       "en": "Controls the On change and Daily runs.",
       "scope": "sentence"
+    },
+    "Lấy thông tin": {
+      "en": "Get Info",
+      "scope": "sentence"
     }
   }
 }

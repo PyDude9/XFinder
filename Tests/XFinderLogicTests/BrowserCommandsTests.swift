@@ -54,6 +54,7 @@ final class BrowserCommandsTests: XCTestCase {
         .toggleShelf: KeyChord("b", command: true, option: true),
         .operations: KeyChord("o", command: true, option: true),
         .batchRename: KeyChord("r", command: true, control: true),
+        .getInfo: KeyChord("i", command: true),   // XF-T28 Wave 4
         .closeWindow: KeyChord("w", command: true),
     ]
 

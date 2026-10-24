@@ -26,6 +26,9 @@ import Quartz
     // MARK: - Opening
 
     /// ⌘N, menu bar item, deep link `xfinder://browser?path=`. `path` nil ⇒ Home.
+    /// XF-T28 Wave 4 — STUB: opens a window and starts ⌥⌘F search in its active pane (the AI Search page's link).
+    func openWindow(path: String?, startSearch: Bool) { openWindow(path: path) }
+
     func openWindow(path: String?) {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let model = BrowserWindowModel(snapshot: nil, initialPath: path ?? home)

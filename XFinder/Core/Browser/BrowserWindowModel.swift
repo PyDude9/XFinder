@@ -467,6 +467,8 @@ struct PaneSearchState: Equatable {
             NSWorkspace.shared.activateFileViewerSelecting(urls)
         case .closeWindow:
             break   // view-only: the owning NSWindow closes itself.
+        case .getInfo:
+            return false   // XF-T28 Wave 4 STUB: W4-model opens GetInfoWindowController here.
         }
         return true
     }
@@ -504,6 +506,8 @@ struct PaneSearchState: Equatable {
              .nextPane, .previousPane, .presetSingle, .presetSideBySide, .presetStacked, .presetGrid, .toggleShelf,
              .operations, .saveWorkspace, .openWorkspace, .closeWindow:
             return true
+        case .getInfo:
+            return false   // XF-T28 Wave 4 STUB
         }
     }
 
@@ -745,6 +749,38 @@ struct PaneSearchState: Equatable {
         bannerClearTask?.cancel()
         for pane in panes.values { pane.stopWatching() }
     }
+}
+
+// MARK: - Wave 4 API (XF-T28 Wave 4 — STUB bodies written by the integrator; the W4-model agent implements them.
+// Signatures are binding: docs/specs/XF-T28-wave4.md §E.)
+
+extension PaneState {
+    /// Runs a search straight from edited chips — no round trip through text (pastDays / olderThan / month chips could
+    /// not be rebuilt as text and were dropped).
+    func runSearch(parsed: ParsedSearch, scope: PaneSearchState.Scope, paneFolders: [String] = []) {}
+}
+
+extension BrowserWindowModel {
+    /// Saved workspaces (read from disk on first use).
+    var workspaces: [Workspace] { [] }
+    /// Pro (.browserWorkspaces); Free ⇒ banner + nil.
+    @discardableResult func saveWorkspace(named name: String) -> Workspace? { nil }
+    /// Pro (.browserWorkspaces). Replaces this window's layout with the workspace's first window (others open new windows).
+    func openWorkspace(_ id: UUID) {}
+    @discardableResult func renameWorkspace(_ id: UUID, to name: String) -> Bool { false }
+    func duplicateWorkspace(_ id: UUID) {}
+    func deleteWorkspace(_ id: UUID) {}
+    func exportWorkspaces() -> Data { Data() }
+
+    /// The sync pair shown side by side in this window (nil when none).
+    var activeSyncPair: FolderSyncController.Pair? { nil }
+    /// Side by Side: left = source, right = destination; remembers the pair for the sync bar.
+    func openSyncPair(_ pair: FolderSyncController.Pair) {}
+    /// Runs FolderSyncController.shared.run(pair) for the active pair (Pro .folderSync); false when nothing ran.
+    func syncNow() async -> Bool { false }
+
+    /// One-line notice (L10n key), auto-hidden by the view.
+    func showBanner(_ key: String) { banner = key }
 }
 
 // MARK: - Workspace persistence (JSON at a fixed path, per the contract)
