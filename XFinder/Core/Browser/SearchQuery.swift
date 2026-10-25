@@ -22,7 +22,7 @@ enum DateRange: Hashable, Codable, Sendable {
 enum SizeOp: String, Codable, Sendable { case greater, less, greaterOrEqual, lessOrEqual, equal }
 
 struct SearchChip: Hashable, Codable, Sendable, Identifiable {
-    enum Field: String, Codable, Sendable { case kind, modified, created, size, source, ext, tag, content }
+    enum Field: String, Codable, Sendable { case kind, modified, created, size, source, ext, tag, content, folder }
     enum Value: Hashable, Codable, Sendable { case kind(KindFilter); case date(DateRange); case size(SizeOp, Int64); case text(String) }
     var field: Field
     var value: Value
@@ -456,6 +456,15 @@ enum SearchQuery {
             guard !value.isEmpty else { return nil }
             return SearchChip(field: .content, value: .text(value), uncertain: false)
 
+        case "in", "trong":
+            // `in:<folder>` / Vietnamese `trong:<thư mục>` — a path-prefix constraint INSIDE whatever scope is
+            // already in effect. Contract (XF-T30 W5a §1, FileOctopus): "in: chỉ thu hẹp trong phạm vi, không bao
+            // giờ mở rộng" — this file only records the folder name as text; the actual narrowing-not-widening
+            // guarantee lives in `SearchCoordinator.rootsInScope`/`chipsAllow`, which intersect this chip's path
+            // with the caller's scope rather than ever searching outside it.
+            guard !value.isEmpty else { return nil }
+            return SearchChip(field: .folder, value: .text(value), uncertain: false)
+
         case "size":
             return parseSizeToken(value, defaultField: .size)
 
@@ -684,6 +693,13 @@ enum SearchQuery {
                 return "kMDItemUserTags == \"\(escapeForMDQuery(value))\"cd"
             case .ext:
                 return "kMDItemFSName == \"*.\(escapeForMDQuery(value))\"c"
+            case .folder:
+                // `in:<folder>` narrows to paths whose directory chain contains a component named `folder` —
+                // `kMDItemPath` is the only Spotlight key with the full path, so this is a substring compare on
+                // it, not an exact segment compare (`mdfind` has no path-segment operator); never widens because
+                // the caller's own `scopes:`/`-onlyin` argument to `mdfind` already limits the search root — this
+                // clause only adds an extra AND, it can only remove matches, never add ones outside that scope.
+                return "kMDItemPath == \"*/\(escapeForMDQuery(value))/*\"cd"
             case .kind, .modified, .created, .size:
                 // Not reachable given how chips are constructed above, but keeps this switch exhaustive and safe.
                 return "kMDItemFSName == \"*\(escapeForMDQuery(value))*\"cd"

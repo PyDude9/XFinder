@@ -1,3 +1,4 @@
+import CoreServices
 import Foundation
 import UniformTypeIdentifiers
 
@@ -132,10 +133,13 @@ final class SearchCoordinator {
             Task {
                 let hits = await FilenameIndex.shared.search(Self.indexQueryText(parsed), within: rootPaths, limit: perSourceLimit)
                 guard !handle.cancelled else { return }
-                // `chipsAllow` calls `lstat` — kept off the main actor (rule 15: no main-thread disk I/O), same as
-                // `BrowserWindowModel.entry(forPath:)` detaches its own `lstat` loop.
+                // `chipsAllow`/`metadataChipsAllow` call `lstat`/`MDItemCreate` — kept off the main actor (rule 15:
+                // no main-thread disk I/O), same as `BrowserWindowModel.entry(forPath:)` detaching its own `lstat`
+                // loop. Metadata (tag:/from:/content:) hits only go through the second, more expensive pass.
                 let allowed = await Task.detached(priority: .userInitiated) {
-                    hits.filter { Self.chipsAllow(parsed, path: $0.path, now: now, calendar: calendar) }
+                    let afterCheap = hits.filter { Self.chipsAllow(parsed, path: $0.path, now: now, calendar: calendar) }
+                    let allowedPaths = Self.metadataChipsAllow(parsed, paths: afterCheap.map(\.path))
+                    return afterCheap.filter { allowedPaths.contains($0.path) }
                 }.value
                 guard !handle.cancelled else { return }
                 let truncated = hits.count >= perSourceLimit
@@ -162,7 +166,9 @@ final class SearchCoordinator {
                 let hits = await ContentIndex.shared.search(queryText, within: rootPaths, limit: perSourceLimit)
                 guard !handle.cancelled else { return }
                 let allowed = await Task.detached(priority: .userInitiated) {
-                    hits.filter { Self.chipsAllow(parsed, path: $0.path, now: now, calendar: calendar) }
+                    let afterCheap = hits.filter { Self.chipsAllow(parsed, path: $0.path, now: now, calendar: calendar) }
+                    let allowedPaths = Self.metadataChipsAllow(parsed, paths: afterCheap.map(\.path))
+                    return afterCheap.filter { allowedPaths.contains($0.path) }
                 }.value
                 guard !handle.cancelled else { return }
                 let truncated = hits.count >= perSourceLimit
@@ -217,14 +223,12 @@ final class SearchCoordinator {
     // MARK: - Chip post-filter for index hits (Spotlight already applied every chip as part of its predicate)
 
     /// Whether `path` still matches every chip in `parsed`, checked with `lstat` since a filename/content-index hit
-    /// never went through `mdfind`. `kind`/`modified`/`created`/`size`/`ext:` are checkable this way (`in:` has no
-    /// chip of its own yet — `SearchQuery.parseFieldValue` does not recognize the `in` field, so it cannot reach this
-    /// function today; nothing to filter on until that lands). `tag:`/`from:`/`content:` chips need Spotlight
-    /// metadata (user tags, quarantine where-from, full-text) that a bare `lstat` cannot read, and `SearchQuery`'s
-    /// `mdfind`-clause builder for them is private to that file — those three chip kinds are deliberately left
-    /// unfiltered here (an index hit that only matches on filename can surface under a `tag:`/`from:`/`content:` chip
-    /// it does not actually satisfy; see deviations). `excluded` filename terms ARE checked since they are plain
-    /// substring checks on the name, same information the index already matched on.
+    /// never went through `mdfind`. `kind`/`modified`/`created`/`size`/`ext:`/`in:` are checkable this way.
+    /// `tag:`/`from:`/`content:` chips need Spotlight metadata (user tags, quarantine where-from, full-text) that a
+    /// bare `lstat` cannot read — those are filtered separately, in a batch, by `metadataChipsAllow` below (never
+    /// silently let through unfiltered: an index hit that only matched on filename must not surface under a
+    /// `tag:`/`from:`/`content:` chip it does not actually satisfy). `excluded` filename terms ARE checked since
+    /// they are plain substring checks on the name, same information the index already matched on.
     /// `nonisolated`: called from `Task.detached` (rule 15, no main-thread `lstat`), touches no actor state.
     fileprivate nonisolated static func chipsAllow(_ parsed: ParsedSearch, path: String, now: Date, calendar: Calendar) -> Bool {
         let name = (path as NSString).lastPathComponent
@@ -233,6 +237,13 @@ final class SearchCoordinator {
             for word in parsed.excluded where !NameMatcher.fold(word).isEmpty {
                 if containsSubsequenceAsSubstring(haystack: folded, needle: NameMatcher.fold(word)) { return false }
             }
+        }
+        for chip in parsed.chips where chip.field == .folder {
+            // `in:<folder>` — path must contain `/folder/` as a directory component (same substring rule as the
+            // `kMDItemPath` clause `SearchQuery` builds for Spotlight, kept consistent between the two sources so a
+            // folder-scoped query behaves the same whether a result came from Spotlight or an index).
+            guard case .text(let folderName) = chip.value, !folderName.isEmpty else { continue }
+            if !path.localizedCaseInsensitiveContains("/\(folderName)/") { return false }
         }
         let checkableFields: Set<SearchChip.Field> = [.kind, .modified, .created, .size, .ext]
         guard parsed.chips.contains(where: { checkableFields.contains($0.field) }) else { return true }
@@ -264,11 +275,60 @@ final class SearchCoordinator {
                 case .equal: if size != bytes { return false }
                 }
             case .text(let value):
-                guard chip.field == .ext else { continue } // tag: / from: / content: — see doc comment above.
+                guard chip.field == .ext else { continue } // tag: / from: / content: / in: — handled above/below.
                 if ext.lowercased() != value.lowercased() { return false }
             }
         }
         return true
+    }
+
+    /// Second filter pass: which of `paths` still satisfy every `tag:`/`from:`/`content:` chip in `parsed`, read
+    /// through Spotlight's per-item metadata API (`MDItemCreate`/`MDItemCopyAttribute`) in one batch rather than one
+    /// dispatch per candidate — the same "batch, don't let unfiltered metadata chips through" shape as
+    /// `FileMetadataCache.prefetch`'s off-main `MDItemCreate` reads (rule 15: no main-thread disk/Spotlight work).
+    /// Returns the SUBSET of `paths` that pass; a path Spotlight has no metadata for (unindexed, not yet scanned,
+    /// or the item vanished) fails every metadata chip rather than being let through — an index hit under a
+    /// `tag:`/`from:`/`content:` chip it cannot be shown to actually satisfy must not surface (contract: "chip …
+    /// được lọc … không bỏ qua"). When `parsed` has none of these three chip kinds this is a no-op pass-through
+    /// (no `MDItemCreate` call at all) so a plain filename search pays nothing for this step.
+    /// `nonisolated`: called from `Task.detached`, touches no actor state.
+    fileprivate nonisolated static func metadataChipsAllow(_ parsed: ParsedSearch, paths: [String]) -> Set<String> {
+        let metadataChips = parsed.chips.filter { $0.field == .tag || $0.field == .source || $0.field == .content }
+        guard !metadataChips.isEmpty else { return Set(paths) }
+        guard !paths.isEmpty else { return [] }
+
+        // `kMDItemUserTags`/`kMDItemTextContent` have no Swift-visible constant in this SDK (only `kMDItemWhereFroms`/
+        // `kMDItemLastUsedDate` are declared in `MDItem.h`; the other two are exported symbols with no header
+        // declaration) — `VirtualLocations.swift` hits the same gap and already uses the bare attribute-name string
+        // in an `mdfind` query text; `MDItemCopyAttribute` takes that same name as a `CFString`, literal here.
+        let tagsKey = "kMDItemUserTags" as CFString
+        let textContentKey = "kMDItemTextContent" as CFString
+
+        var allowed = Set<String>()
+        allowed.reserveCapacity(paths.count)
+        for path in paths {
+            guard let item = MDItemCreate(nil, path as CFString) else { continue }
+            var matchesAll = true
+            for chip in metadataChips {
+                guard case .text(let value) = chip.value else { continue }
+                switch chip.field {
+                case .tag:
+                    guard let tags = MDItemCopyAttribute(item, tagsKey) as? [String] else { matchesAll = false; break }
+                    if !tags.contains(where: { $0.localizedCaseInsensitiveCompare(value) == .orderedSame }) { matchesAll = false }
+                case .source:
+                    guard let sources = MDItemCopyAttribute(item, kMDItemWhereFroms) as? [String] else { matchesAll = false; break }
+                    if !sources.contains(where: { $0.localizedCaseInsensitiveContains(value) }) { matchesAll = false }
+                case .content:
+                    guard let text = MDItemCopyAttribute(item, textContentKey) as? String else { matchesAll = false; break }
+                    if !text.localizedCaseInsensitiveContains(value) { matchesAll = false }
+                default:
+                    continue
+                }
+                if !matchesAll { break }
+            }
+            if matchesAll { allowed.insert(path) }
+        }
+        return allowed
     }
 
     /// Same screenshot special-case as `SearchQuery.clause(for:)` (`kMDItemIsScreenCapture`, not just "is a PNG") is

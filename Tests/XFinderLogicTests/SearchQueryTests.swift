@@ -372,6 +372,46 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(p.chips, [SearchChip(field: .tag, value: .text("work in progress"), uncertain: false)])
     }
 
+    // MARK: - in: / trong: (folder scope narrowing)
+
+    func test_inSyntaxIsFolderChip() {
+        let p = parse("in:Reports")
+        XCTAssertEqual(p.chips, [SearchChip(field: .folder, value: .text("Reports"), uncertain: false)])
+    }
+
+    func test_inSyntaxQuotedMultiWord() {
+        let p = parse("in:\"Monthly Reports\"")
+        XCTAssertEqual(p.chips, [SearchChip(field: .folder, value: .text("Monthly Reports"), uncertain: false)])
+    }
+
+    func test_trongSyntaxVietnameseIsFolderChip() {
+        let p = parse("trong:BaoCao")
+        XCTAssertEqual(p.chips, [SearchChip(field: .folder, value: .text("BaoCao"), uncertain: false)])
+    }
+
+    /// A trailing bare colon with nothing after it ("in:") never reaches `fieldValue` tokenization at all (same
+    /// rule as every other `field:` operator in this tokenizer) — it stays a single plain filename word.
+    func test_inSyntaxEmptyValueStaysPlainWord() {
+        let p = parse("in:")
+        XCTAssertTrue(p.chips.isEmpty)
+        XCTAssertEqual(p.terms, ["in:"])
+    }
+
+    func test_inSyntaxCombinesWithOtherChipsAnded() {
+        let p = parse("invoice in:Reports ext:pdf")
+        XCTAssertEqual(p.terms, ["invoice"])
+        XCTAssertTrue(p.chips.contains(SearchChip(field: .folder, value: .text("Reports"), uncertain: false)))
+        XCTAssertTrue(p.chips.contains(SearchChip(field: .ext, value: .text("pdf"), uncertain: false)))
+    }
+
+    /// `in:` id is stable across re-parses of the same folder name, same contract as every other text chip
+    /// (`SearchChip.id` folds the value) — required for the chip-editing UI to match a chip back to its edit.
+    func test_inSyntaxChipIdIsStableAndFolded() {
+        let p1 = parse("in:Reports")
+        let p2 = parse("in:REPORTS")
+        XCTAssertEqual(p1.chips.first?.id, p2.chips.first?.id)
+    }
+
     func test_contentSyntax() {
         let p = parse("content:invoice")
         XCTAssertEqual(p.chips, [SearchChip(field: .content, value: .text("invoice"), uncertain: false)])
@@ -557,6 +597,21 @@ final class SearchQueryTests: XCTestCase {
     func test_expressionExtUsesFSNameSuffix() {
         let e = expr("ext:pdf")
         XCTAssertEqual(e, "kMDItemFSName == \"*.pdf\"c")
+    }
+
+    func test_expressionInUsesPathSubstring() {
+        let e = expr("in:Reports")
+        XCTAssertEqual(e, "kMDItemPath == \"*/Reports/*\"cd")
+    }
+
+    func test_expressionInCombinesWithTermAnd() {
+        let e = expr("invoice in:Reports")
+        XCTAssertEqual(e, "kMDItemFSName == \"*invoice*\"cd && kMDItemPath == \"*/Reports/*\"cd")
+    }
+
+    func test_expressionInEscapesSlashlessMultiWordFolderName() {
+        let e = expr("in:\"Monthly Reports\"")
+        XCTAssertEqual(e, "kMDItemPath == \"*/Monthly Reports/*\"cd")
     }
 
     func test_expressionSizeUsesFSSize() {

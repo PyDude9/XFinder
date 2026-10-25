@@ -235,6 +235,7 @@ struct SearchBarView: View {
         case .ext: return L10n.t("Đuôi")
         case .tag: return L10n.t("Thẻ")
         case .content: return L10n.t("Nội dung")
+        case .folder: return L10n.t("Trong")
         }
     }
 
