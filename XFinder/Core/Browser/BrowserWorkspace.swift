@@ -6,6 +6,24 @@ import CoreGraphics
 /// A workspace is a layout, not a backup: it remembers windows, their pane trees, each pane's folder, view, sort and
 /// Back/Forward history — never file contents. Restoring never mounts a disk or recreates a folder: a pane whose folder
 /// is gone opens Home and the person is told which folders were missing (spec XF-T28 §2.1 item 12, §4).
+/// XF-T30 W1 — one tab of a pane (FileOctopus keeps folder, Back history, selection and view per pane tab).
+struct TabSnapshot: Codable, Equatable, Sendable {
+    var path: String
+    var viewMode: BrowserViewMode
+    var sort: SortOrder
+    var history: PaneHistory
+    var showHidden: Bool
+    /// Names (not paths) selected in the tab, reselected after restore; at most `TabSnapshot.selectionLimit`.
+    var selectedNames: [String]? = nil
+    var groupBy: GroupBy? = nil
+    /// Column view's whole column trail (Q-T30-7: restore it, FileOctopus only restores the last folder). W2 fills it.
+    var columnPath: [String]? = nil
+
+    static let selectionLimit = 200
+}
+
+/// A pane. The top-level path/view/sort/history/showHidden are the v1 (XF-T28) fields and always mirror the selected
+/// tab, so a v1 build reading a v2 file still opens the right folder; `tabs` is nil in a v1 file.
 struct PaneSnapshot: Codable, Equatable, Sendable {
     var id: PaneID
     var path: String
@@ -13,6 +31,30 @@ struct PaneSnapshot: Codable, Equatable, Sendable {
     var sort: SortOrder
     var history: PaneHistory
     var showHidden: Bool
+    var tabs: [TabSnapshot]? = nil
+    var selectedTab: Int? = nil
+
+    /// Every tab, v1 files included (one tab built from the top-level fields). W1 builder: implement.
+    var allTabs: [TabSnapshot] {
+        [TabSnapshot(path: path, viewMode: viewMode, sort: sort, history: history, showHidden: showHidden)]
+    }
+
+    /// The selected tab's index into `allTabs`, clamped. W1 builder: implement.
+    var selectedTabIndex: Int { 0 }
+
+    /// A v2 snapshot whose top-level fields mirror `tabs[selectedTab]`. W1 builder: implement.
+    init(id: PaneID, tabs: [TabSnapshot], selectedTab: Int) {
+        let t = tabs.isEmpty ? nil : tabs[max(0, min(selectedTab, tabs.count - 1))]
+        self.init(id: id, path: t?.path ?? "/", viewMode: t?.viewMode ?? .list, sort: t?.sort ?? .finderDefault,
+                  history: t?.history ?? PaneHistory(current: t?.path ?? "/"), showHidden: t?.showHidden ?? false,
+                  tabs: tabs, selectedTab: selectedTab)
+    }
+
+    init(id: PaneID, path: String, viewMode: BrowserViewMode, sort: SortOrder, history: PaneHistory, showHidden: Bool,
+         tabs: [TabSnapshot]? = nil, selectedTab: Int? = nil) {
+        self.id = id; self.path = path; self.viewMode = viewMode; self.sort = sort; self.history = history
+        self.showHidden = showHidden; self.tabs = tabs; self.selectedTab = selectedTab
+    }
 }
 
 struct WindowSnapshot: Codable, Equatable, Sendable {
@@ -21,6 +63,11 @@ struct WindowSnapshot: Codable, Equatable, Sendable {
     var panes: [PaneSnapshot]
     var activePane: PaneID
     var shelfVisible: Bool
+    /// XF-T30 W1 — native window tabs: windows with the same `tabGroup` were one tab group, in `tabIndex` order;
+    /// `selectedInGroup` marks the tab that was in front. nil for a window without tabs (and in v1 files).
+    var tabGroup: Int? = nil
+    var tabIndex: Int? = nil
+    var selectedInGroup: Bool? = nil
 }
 
 struct Workspace: Codable, Equatable, Identifiable, Sendable {

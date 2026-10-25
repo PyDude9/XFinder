@@ -55,6 +55,10 @@ import Quartz
         openWindow(snapshot: snapshot)
     }
 
+    /// XF-T30 W1 — ⌘T / the native tab bar's +: a new browser window added as a native tab of `model`'s window.
+    /// W1 builder (chrome): implement.
+    func openWindowTab(besideWindowOf model: BrowserWindowModel) {}
+
     private func presentNewWindow(for model: BrowserWindowModel, frame: CGRect?) {
         let contentRect = frame.map { NSRect(x: $0.minX, y: $0.minY, width: $0.width, height: $0.height) }
             ?? NSRect(x: 0, y: 0, width: Self.minimumContentSize.width, height: Self.minimumContentSize.height)

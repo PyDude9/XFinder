@@ -175,6 +175,9 @@
 		7F1A0132 /* Components/ProBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A012F /* Components/ProBadge.swift */; };
 		7F1A011A /* Detail/FileBrowserDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0119 /* Detail/FileBrowserDetailView.swift */; };
 		7F1A0118 /* Browser/ShelfBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0117 /* Browser/ShelfBarView.swift */; };
+		7F1A050D /* Browser/StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A050C /* Browser/StatusBarView.swift */; };
+		7F1A050B /* Browser/PathBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A050A /* Browser/PathBarView.swift */; };
+		7F1A0509 /* Browser/PaneTabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0508 /* Browser/PaneTabStripView.swift */; };
 		7F1A0116 /* Browser/SearchBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0115 /* Browser/SearchBarView.swift */; };
 		7F1A0114 /* Browser/RecoveryReportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0113 /* Browser/RecoveryReportSheet.swift */; };
 		7F1A0112 /* Browser/PaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A010F /* Browser/PaneView.swift */; };
@@ -341,6 +344,10 @@
 		7F1A007E /* Browser/DirectoryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007D /* Browser/DirectoryReader.swift */; };
 		7F1A007C /* Browser/BrowserWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007B /* Browser/BrowserWorkspace.swift */; };
 		7F1A007A /* Browser/ShelfModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0079 /* Browser/ShelfModel.swift */; };
+		7F1A0507 /* Browser/BrowserMainMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0506 /* Browser/BrowserMainMenu.swift */; };
+		7F1A0505 /* Browser/BrowserToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0504 /* Browser/BrowserToolbar.swift */; };
+		7F1A0503 /* Browser/GroupBy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0502 /* Browser/GroupBy.swift */; };
+		7F1A0501 /* Browser/PaneTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0500 /* Browser/PaneTabs.swift */; };
 		7F1A0078 /* Browser/CloudBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0077 /* Browser/CloudBadge.swift */; };
 		7F1A0076 /* Browser/BrowserCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A005F /* Browser/BrowserCommands.swift */; };
 		7F1A0058 /* Browser/FileOperationRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A003F /* Browser/FileOperationRules.swift */; };
@@ -591,6 +598,9 @@
 		7F1A012F /* Components/ProBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/ProBadge.swift; sourceTree = "<group>"; };
 		7F1A0119 /* Detail/FileBrowserDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FileBrowserDetailView.swift; sourceTree = "<group>"; };
 		7F1A0117 /* Browser/ShelfBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ShelfBarView.swift; sourceTree = "<group>"; };
+		7F1A050C /* Browser/StatusBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/StatusBarView.swift; sourceTree = "<group>"; };
+		7F1A050A /* Browser/PathBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PathBarView.swift; sourceTree = "<group>"; };
+		7F1A0508 /* Browser/PaneTabStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PaneTabStripView.swift; sourceTree = "<group>"; };
 		7F1A0115 /* Browser/SearchBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SearchBarView.swift; sourceTree = "<group>"; };
 		7F1A0113 /* Browser/RecoveryReportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/RecoveryReportSheet.swift; sourceTree = "<group>"; };
 		7F1A010F /* Browser/PaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PaneView.swift; sourceTree = "<group>"; };
@@ -648,6 +658,10 @@
 		7F1A007D /* Browser/DirectoryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/DirectoryReader.swift; sourceTree = "<group>"; };
 		7F1A007B /* Browser/BrowserWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserWorkspace.swift; sourceTree = "<group>"; };
 		7F1A0079 /* Browser/ShelfModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ShelfModel.swift; sourceTree = "<group>"; };
+		7F1A0506 /* Browser/BrowserMainMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserMainMenu.swift; sourceTree = "<group>"; };
+		7F1A0504 /* Browser/BrowserToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserToolbar.swift; sourceTree = "<group>"; };
+		7F1A0502 /* Browser/GroupBy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/GroupBy.swift; sourceTree = "<group>"; };
+		7F1A0500 /* Browser/PaneTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PaneTabs.swift; sourceTree = "<group>"; };
 		7F1A0077 /* Browser/CloudBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/CloudBadge.swift; sourceTree = "<group>"; };
 		7F1A005F /* Browser/BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserCommands.swift; sourceTree = "<group>"; };
 		7F1A003F /* Browser/FileOperationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileOperationRules.swift; sourceTree = "<group>"; };
@@ -982,6 +996,10 @@
 				7F1A007D /* Browser/DirectoryReader.swift */,
 				7F1A007B /* Browser/BrowserWorkspace.swift */,
 				7F1A0079 /* Browser/ShelfModel.swift */,
+				7F1A0506 /* Browser/BrowserMainMenu.swift */,
+				7F1A0504 /* Browser/BrowserToolbar.swift */,
+				7F1A0502 /* Browser/GroupBy.swift */,
+				7F1A0500 /* Browser/PaneTabs.swift */,
 				7F1A0077 /* Browser/CloudBadge.swift */,
 				7F1A005F /* Browser/BrowserCommands.swift */,
 				7F1A003F /* Browser/FileOperationRules.swift */,
@@ -1245,6 +1263,9 @@
 				7F1A012F /* Components/ProBadge.swift */,
 				7F1A0119 /* Detail/FileBrowserDetailView.swift */,
 				7F1A0117 /* Browser/ShelfBarView.swift */,
+				7F1A050C /* Browser/StatusBarView.swift */,
+				7F1A050A /* Browser/PathBarView.swift */,
+				7F1A0508 /* Browser/PaneTabStripView.swift */,
 				7F1A0115 /* Browser/SearchBarView.swift */,
 				7F1A0113 /* Browser/RecoveryReportSheet.swift */,
 				7F1A010F /* Browser/PaneView.swift */,
@@ -1558,6 +1579,9 @@
 				7F1A0132 /* Components/ProBadge.swift in Sources */,
 				7F1A011A /* Detail/FileBrowserDetailView.swift in Sources */,
 				7F1A0118 /* Browser/ShelfBarView.swift in Sources */,
+				7F1A050D /* Browser/StatusBarView.swift in Sources */,
+				7F1A050B /* Browser/PathBarView.swift in Sources */,
+				7F1A0509 /* Browser/PaneTabStripView.swift in Sources */,
 				7F1A0116 /* Browser/SearchBarView.swift in Sources */,
 				7F1A0114 /* Browser/RecoveryReportSheet.swift in Sources */,
 				7F1A0112 /* Browser/PaneView.swift in Sources */,
@@ -1614,6 +1638,10 @@
 				7F1A007E /* Browser/DirectoryReader.swift in Sources */,
 				7F1A007C /* Browser/BrowserWorkspace.swift in Sources */,
 				7F1A007A /* Browser/ShelfModel.swift in Sources */,
+				7F1A0507 /* Browser/BrowserMainMenu.swift in Sources */,
+				7F1A0505 /* Browser/BrowserToolbar.swift in Sources */,
+				7F1A0503 /* Browser/GroupBy.swift in Sources */,
+				7F1A0501 /* Browser/PaneTabs.swift in Sources */,
 				7F1A0078 /* Browser/CloudBadge.swift in Sources */,
 				7F1A0076 /* Browser/BrowserCommands.swift in Sources */,
 				7F1A0058 /* Browser/FileOperationRules.swift in Sources */,

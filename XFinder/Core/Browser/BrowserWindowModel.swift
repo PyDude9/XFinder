@@ -21,7 +21,18 @@ struct PaneSearchState: Equatable {
 }
 
 @MainActor @Observable final class PaneState: Identifiable {
+    /// The pane this tab lives in. XF-T30 W1: a PaneState is ONE TAB of a pane. `id` stays immutable (a `let` keeps the
+    /// `Identifiable` conformance nonisolated under Swift 6): a tab moved to another pane becomes a NEW PaneState there
+    /// carrying the same `tabID`, folder, history, view, sort, selection and groupBy (one reload).
     let id: PaneID
+    /// The tab's own identity — kept across moves between panes.
+    let tabID: TabID
+    /// XF-T30: Group By for this tab (W2 implements the grouping; W1 only stores it and shows it in the Group menu).
+    var groupBy: GroupBy = .none
+    /// ⌃⌘0 Use Groups — independent of the chosen field.
+    var useGroups = false
+    /// Names to reselect after the first load (session restore, `TabSnapshot.selectedNames`). W1 builder (model).
+    var restoreSelectionNames: [String]?
     private(set) var path: String
     private(set) var history: PaneHistory
     var viewMode: BrowserViewMode
@@ -47,8 +58,10 @@ struct PaneSearchState: Equatable {
     /// fresh disk read.
     private var rawEntries: [DirectoryEntry] = []
 
-    init(id: PaneID, path: String, viewMode: BrowserViewMode, sort: SortOrder, showHidden: Bool, history: PaneHistory?) {
+    init(id: PaneID, path: String, viewMode: BrowserViewMode, sort: SortOrder, showHidden: Bool, history: PaneHistory?,
+         tabID: TabID = TabID()) {
         self.id = id
+        self.tabID = tabID
         self.path = path
         self.history = history ?? PaneHistory(current: path)
         self.viewMode = viewMode
@@ -82,6 +95,10 @@ struct PaneSearchState: Equatable {
         startLoad(of: destination)
         installWatcher()
     }
+
+    /// XF-T30 W1 — the toolbar's history menus. W1 builder (model): implement via `PaneHistory.goBack(steps:)`.
+    func goBack(steps: Int) {}
+    func goForward(steps: Int) {}
 
     /// ⌘↑: remember the folder we're leaving so re-entering the parent can reselect it, same as Finder.
     func goUp() {
@@ -296,8 +313,30 @@ struct PaneSearchState: Equatable {
     ]
 }
 
+/// XF-T30 W1 — what the window chrome (toolbar, window controller) does for the model. Implemented by
+/// `BrowserToolbarController`; the model holds it weakly.
+@MainActor protocol BrowserChrome: AnyObject {
+    func focusSearchField()
+    func toggleToolbarShown()
+    func runToolbarCustomization()
+}
+
+/// XF-T30 W1 — sheets any surface (toolbar item, menu, palette) can ask the root view to present.
+enum BrowserSheet: String, Identifiable {
+    case saveWorkspace, openWorkspace, manageWorkspaces
+    var id: String { rawValue }
+}
+
 @MainActor @Observable final class BrowserWindowModel {
     enum PaletteMode: Equatable { case quickOpen, commands }
+
+    /// XF-T30 W1: the chrome that owns the toolbar of this model's window.
+    weak var chrome: BrowserChrome?
+    /// XF-T30 W1: the sheet to present (BrowserRootView binds to it).
+    var sheet: BrowserSheet?
+    /// XF-T30 W1: "Lọc thư mục hiện tại" (no chord since ⌘F became Find, Q-T30-2) asks this pane's filter field to show
+    /// and take focus; the search bar clears it once focused.
+    var filterFocusRequest: PaneID?
 
     var tree: PaneTree
     private(set) var panes: [PaneID: PaneState]
@@ -500,6 +539,12 @@ struct PaneSearchState: Equatable {
             let paths = getInfoTargetPaths()
             guard !paths.isEmpty else { return false }
             GetInfoWindowController.shared.show(paths: paths, readOnly: active.search != nil)
+        case .newWindowTab, .newPaneTab, .nextPaneTab, .previousPaneTab, .closePaneTab, .moveTabToNextPane,
+             .moveTabToNewPaneRight, .moveTabToNewPaneBelow, .swapWithNextPane, .moveTabToWindow, .paneLeft, .paneRight,
+             .paneAbove, .paneBelow, .makePaneWider, .makePaneNarrower, .makePaneTaller, .makePaneShorter,
+             .toggleLocationBar, .togglePathBar, .toggleStatusBar, .toggleToolbar, .customizeToolbar, .toggleSidebar,
+             .openInNewTab, .openInNewWindow, .useGroups:
+            return false   // XF-T30 W1 builder (model): implement.
         }
         return true
     }
@@ -550,6 +595,12 @@ struct PaneSearchState: Equatable {
             // A search pane with no results yet still shows an (empty) folder-less state — only true when there is
             // something to describe: a selection, or a normal (non-search) pane showing a real folder.
             return !active.selectedEntries.isEmpty || active.search == nil
+        case .newWindowTab, .newPaneTab, .nextPaneTab, .previousPaneTab, .closePaneTab, .moveTabToNextPane,
+             .moveTabToNewPaneRight, .moveTabToNewPaneBelow, .swapWithNextPane, .moveTabToWindow, .paneLeft, .paneRight,
+             .paneAbove, .paneBelow, .makePaneWider, .makePaneNarrower, .makePaneTaller, .makePaneShorter,
+             .toggleLocationBar, .togglePathBar, .toggleStatusBar, .toggleToolbar, .customizeToolbar, .toggleSidebar,
+             .openInNewTab, .openInNewWindow, .useGroups:
+            return false   // XF-T30 W1 builder (model): implement.
         }
     }
 
@@ -999,4 +1050,37 @@ extension WorkspaceStore {
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? exportJSON().write(to: url, options: .atomic)
     }
+}
+
+// MARK: - XF-T30 W1 pane tabs (contract docs/specs/XF-T30-w1-contract.md §3) — W1 builder (model): implement.
+
+extension BrowserWindowModel {
+    /// The tabs of `pane`, in strip order (the selected one is `panes[pane]`).
+    func tabs(of pane: PaneID) -> [PaneState] { panes[pane].map { [$0] } ?? [] }
+
+    /// Shows `tab` in its pane and focuses that pane.
+    func selectTab(_ tab: TabID) {}
+
+    /// A new tab right after the selected one of `pane`, on `path` (nil = the selected tab's folder), selected.
+    @discardableResult
+    func newTab(in pane: PaneID, path: String?) -> TabID? { nil }
+
+    /// Q-T30-4: the last tab of a pane closes the pane when another pane exists; the last tab of the last pane stays.
+    func closeTab(_ tab: TabID) {}
+
+    /// Moves `tab` into `pane` at `index` (nil = after its selected tab) and selects it there.
+    func moveTab(_ tab: TabID, toPane pane: PaneID, at index: Int?) {}
+
+    /// Splits `pane` toward `dir` (Pro-gated like any split) and moves `tab` into the new pane. Returns the new pane.
+    @discardableResult
+    func moveTabToNewPane(_ tab: TabID, beside pane: PaneID, _ dir: SplitDirection) -> PaneID? { nil }
+
+    /// Opens a new window holding only `tab` (folder, history, view) and closes it here.
+    func moveTabToWindow(_ tab: TabID) {}
+
+    /// The pane that holds `tab`.
+    func pane(containing tab: TabID) -> PaneID? { nil }
+
+    /// A tab dragged inside this window and dropped on `pane` (`PaneTabRules.dropTarget` decided `target`).
+    func dropTab(_ tab: TabID, onto pane: PaneID, target: PaneTabRules.DropTarget) {}
 }

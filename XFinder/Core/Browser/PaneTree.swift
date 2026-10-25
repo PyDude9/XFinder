@@ -398,3 +398,25 @@ private extension PaneTree {
         }
     }
 }
+
+// MARK: - XF-T30 W1: directional focus and keyboard resize
+
+extension PaneTree {
+    /// ⌃⇧⌘←→↑↓ (Pane on Left/Right/Above/Below): the pane adjacent to `pane` in `dir`, by the frames the layout gives
+    /// in `rect` — grid-aware, never creation order. Among panes whose frame lies wholly on that side and touches or
+    /// overlaps the source's span on the cross axis, the one with the largest overlap wins; a tie goes to the nearest
+    /// centre. nil at the window edge. W1 builder: implement.
+    func neighbor(of pane: PaneID, toward dir: SplitDirection, in rect: CGRect, divider: CGFloat) -> PaneID? {
+        nil
+    }
+
+    /// Make Pane Wider / Narrower (axis `.horizontal` split, i.e. side-by-side) and Taller / Shorter (`.vertical`):
+    /// moves the nearest ancestor divider of that axis by `step` of its parent so `pane` grows (`grow`) or shrinks,
+    /// clamped to `minFraction`. No ancestor of that axis ⇒ no change. W1 builder: implement (and state which
+    /// `SplitAxis` value means side-by-side by reading `split(_:_:)`).
+    mutating func resize(_ pane: PaneID, axis: SplitAxis, grow: Bool, step: Double = 0.05) {}
+
+    /// The preset this tree currently is, or nil for a custom layout — the toolbar's Pane Layout icon follows it
+    /// (FileOctopus 1.0.3). Zoom does not count. W1 builder: implement.
+    var currentPreset: PanePreset? { nil }
+}

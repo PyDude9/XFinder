@@ -12714,6 +12714,138 @@
     "Tên không được chứa dấu hai chấm hoặc dấu gạch chéo.": {
       "en": "The name can't contain a colon or a slash.",
       "scope": "sentence"
+    },
+    "Tab cửa sổ mới": {
+      "en": "New Window Tab",
+      "scope": "sentence"
+    },
+    "Tab ngăn mới": {
+      "en": "New Pane Tab",
+      "scope": "sentence"
+    },
+    "Tab ngăn kế tiếp": {
+      "en": "Next Pane Tab",
+      "scope": "sentence"
+    },
+    "Tab ngăn trước": {
+      "en": "Previous Pane Tab",
+      "scope": "sentence"
+    },
+    "Đóng tab ngăn": {
+      "en": "Close Pane Tab",
+      "scope": "sentence"
+    },
+    "Chuyển tab sang ngăn kế": {
+      "en": "Move Tab to Next Pane",
+      "scope": "sentence"
+    },
+    "Chuyển tab sang ngăn mới bên phải": {
+      "en": "Move Tab to New Pane on Right",
+      "scope": "sentence"
+    },
+    "Chuyển tab sang ngăn mới bên dưới": {
+      "en": "Move Tab to New Pane Below",
+      "scope": "sentence"
+    },
+    "Đổi chỗ với ngăn kế": {
+      "en": "Swap with Next Pane",
+      "scope": "sentence"
+    },
+    "Chuyển tab ra cửa sổ mới": {
+      "en": "Move Tab to Window",
+      "scope": "sentence"
+    },
+    "Ngăn bên trái": {
+      "en": "Pane on Left",
+      "scope": "sentence"
+    },
+    "Ngăn bên phải": {
+      "en": "Pane on Right",
+      "scope": "sentence"
+    },
+    "Ngăn phía trên": {
+      "en": "Pane Above",
+      "scope": "sentence"
+    },
+    "Ngăn phía dưới": {
+      "en": "Pane Below",
+      "scope": "sentence"
+    },
+    "Làm ngăn rộng hơn": {
+      "en": "Make Pane Wider",
+      "scope": "sentence"
+    },
+    "Làm ngăn hẹp hơn": {
+      "en": "Make Pane Narrower",
+      "scope": "sentence"
+    },
+    "Làm ngăn cao hơn": {
+      "en": "Make Pane Taller",
+      "scope": "sentence"
+    },
+    "Làm ngăn thấp hơn": {
+      "en": "Make Pane Shorter",
+      "scope": "sentence"
+    },
+    "Hiện hoặc ẩn thanh vị trí": {
+      "en": "Show or Hide Location Bar",
+      "scope": "sentence"
+    },
+    "Hiện hoặc ẩn thanh đường dẫn": {
+      "en": "Show or Hide Path Bar",
+      "scope": "sentence"
+    },
+    "Hiện hoặc ẩn thanh trạng thái": {
+      "en": "Show or Hide Status Bar",
+      "scope": "sentence"
+    },
+    "Hiện hoặc ẩn thanh công cụ": {
+      "en": "Show or Hide Toolbar",
+      "scope": "sentence"
+    },
+    "Tuỳ biến thanh công cụ…": {
+      "en": "Customize Toolbar…",
+      "scope": "sentence"
+    },
+    "Hiện hoặc ẩn sidebar": {
+      "en": "Show or Hide Sidebar",
+      "scope": "sentence"
+    },
+    "Mở trong tab mới": {
+      "en": "Open in New Tab",
+      "scope": "sentence"
+    },
+    "Mở trong cửa sổ mới": {
+      "en": "Open in New Window",
+      "scope": "sentence"
+    },
+    "Dùng nhóm": {
+      "en": "Use Groups",
+      "scope": "sentence"
+    },
+    "Không nhóm": {
+      "en": "None",
+      "scope": "sentence"
+    },
+    "Ngày mở gần nhất": {
+      "en": "Date Last Opened",
+      "scope": "sentence"
+    },
+    "Ngày thêm": {
+      "en": "Date Added",
+      "scope": "sentence"
+    },
+    "Ngày sửa": {
+      "en": "Date Modified",
+      "scope": "sentence"
+    },
+    "Ngày tạo": {
+      "en": "Date Created",
+      "scope": "sentence"
+    },
+    "Các thẻ": {
+      "en": "Tags",
+      "scope": "sentence"
     }
   }
 }

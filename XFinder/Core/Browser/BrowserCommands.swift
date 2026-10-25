@@ -30,6 +30,13 @@ enum BrowserCommand: String, CaseIterable, Sendable {
     case copyToOtherPane, moveToOtherPane, addToShelf, toggleShelf, operations
     case batchRename, compress, saveWorkspace, openWorkspace, downloadNow, removeDownload, showInFinder, closeWindow
     case getInfo   // XF-T28 Wave 4: ⌘I, like Finder
+    // XF-T30 W1 — pane tabs, window tabs, directional focus, keyboard resize, bars (contract XF-T30-w1-contract.md)
+    case newWindowTab, newPaneTab, nextPaneTab, previousPaneTab, closePaneTab
+    case moveTabToNextPane, moveTabToNewPaneRight, moveTabToNewPaneBelow, swapWithNextPane, moveTabToWindow
+    case paneLeft, paneRight, paneAbove, paneBelow
+    case makePaneWider, makePaneNarrower, makePaneTaller, makePaneShorter
+    case toggleLocationBar, togglePathBar, toggleStatusBar, toggleToolbar, customizeToolbar, toggleSidebar
+    case openInNewTab, openInNewWindow, useGroups
 }
 
 /// XF-T28 — the file browser's ONE keyboard table (spec §2.3): every chord a browser window owns goes through here,
@@ -166,6 +173,33 @@ enum BrowserCommands {
         case .showInFinder: return "Hiện trong Finder"
         case .closeWindow: return "Đóng cửa sổ"
         case .getInfo: return "Lấy thông tin"
+        case .newWindowTab: return "Tab cửa sổ mới"
+        case .newPaneTab: return "Tab ngăn mới"
+        case .nextPaneTab: return "Tab ngăn kế tiếp"
+        case .previousPaneTab: return "Tab ngăn trước"
+        case .closePaneTab: return "Đóng tab ngăn"
+        case .moveTabToNextPane: return "Chuyển tab sang ngăn kế"
+        case .moveTabToNewPaneRight: return "Chuyển tab sang ngăn mới bên phải"
+        case .moveTabToNewPaneBelow: return "Chuyển tab sang ngăn mới bên dưới"
+        case .swapWithNextPane: return "Đổi chỗ với ngăn kế"
+        case .moveTabToWindow: return "Chuyển tab ra cửa sổ mới"
+        case .paneLeft: return "Ngăn bên trái"
+        case .paneRight: return "Ngăn bên phải"
+        case .paneAbove: return "Ngăn phía trên"
+        case .paneBelow: return "Ngăn phía dưới"
+        case .makePaneWider: return "Làm ngăn rộng hơn"
+        case .makePaneNarrower: return "Làm ngăn hẹp hơn"
+        case .makePaneTaller: return "Làm ngăn cao hơn"
+        case .makePaneShorter: return "Làm ngăn thấp hơn"
+        case .toggleLocationBar: return "Hiện hoặc ẩn thanh vị trí"
+        case .togglePathBar: return "Hiện hoặc ẩn thanh đường dẫn"
+        case .toggleStatusBar: return "Hiện hoặc ẩn thanh trạng thái"
+        case .toggleToolbar: return "Hiện hoặc ẩn thanh công cụ"
+        case .customizeToolbar: return "Tuỳ biến thanh công cụ…"
+        case .toggleSidebar: return "Hiện hoặc ẩn sidebar"
+        case .openInNewTab: return "Mở trong tab mới"
+        case .openInNewWindow: return "Mở trong cửa sổ mới"
+        case .useGroups: return "Dùng nhóm"
         }
     }
 
