@@ -12846,6 +12846,38 @@
     "Các thẻ": {
       "en": "Tags",
       "scope": "sentence"
+    },
+    "Bố cục ngăn": {
+      "en": "Pane Layout",
+      "scope": "sentence"
+    },
+    "Thao tác": {
+      "en": "Action",
+      "scope": "sentence"
+    },
+    "Các Workspace": {
+      "en": "Workspaces",
+      "scope": "sentence"
+    },
+    "Đi": {
+      "en": "Go",
+      "scope": "sentence"
+    },
+    "Chia phải": {
+      "en": "Split Right",
+      "scope": "sentence"
+    },
+    "Chia dưới": {
+      "en": "Split Down",
+      "scope": "sentence"
+    },
+    "Đóng các tab khác": {
+      "en": "Close Other Tabs",
+      "scope": "sentence"
+    },
+    "Cần quyền Full Disk Access": {
+      "en": "Full Disk Access needed",
+      "scope": "sentence"
     }
   }
 }
