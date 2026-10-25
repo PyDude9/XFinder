@@ -20,6 +20,10 @@ import Quartz
     private var toolbarsByWindow: [ObjectIdentifier: BrowserToolbarController] = [:]
     private let quickLook = BrowserQuickLookController()
     private weak var quickLookModel: BrowserWindowModel?
+    /// XF-T30 W5b — index lifecycle (contract §"Vòng đời chỉ mục"): observes `fileBrowser.search.roots` so a change
+    /// made in Settings ▸ Search reaches the running `FilenameIndex`/`ContentIndex` without a relaunch.
+    private var indexRootsObserver: NSObjectProtocol?
+    private var lastKnownIndexRoots: [IndexRoot] = []
 
     private override init() { super.init() }
 
@@ -108,6 +112,7 @@ import Quartz
         if frame == nil {
             window.center()
         }
+        let isFirstWindow = windows.isEmpty
         windows.append(window)
         modelsByWindow[ObjectIdentifier(window)] = model
         let toolbar = BrowserToolbarController(model: model, window: window)
@@ -115,7 +120,55 @@ import Quartz
         toolbarsByWindow[ObjectIdentifier(window)] = toolbar
         window.makeKeyAndOrderFront(nil)
         observeTitle(of: model, window: window)
+        if isFirstWindow { indexLifecycleWindowOpened() }
         return window
+    }
+
+    // MARK: - Index lifecycle (XF-T30 W5b)
+
+    /// The first browser window of this launch (or since the last "all windows closed"): starts the indexes
+    /// (contract: "cửa sổ trình duyệt đầu tiên mở ⇒ `resume()` + `setRoots()`") and arms the Settings ▸ Search
+    /// observer so a root added/removed/paused later reaches the running indexes without a relaunch.
+    private func indexLifecycleWindowOpened() {
+        lastKnownIndexRoots = BrowserSettings.indexRoots
+        Task {
+            await FilenameIndex.shared.resume()
+            await FilenameIndex.shared.setRoots(lastKnownIndexRoots)
+            await ContentIndex.shared.resume()
+            await ContentIndex.shared.setRoots(lastKnownIndexRoots)
+        }
+        guard indexRootsObserver == nil else { return }
+        indexRootsObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.indexRootsMayHaveChanged()
+            }
+        }
+    }
+
+    /// `UserDefaults.didChangeNotification` fires for EVERY default write app-wide, not just
+    /// `fileBrowser.search.roots` — compare against `lastKnownIndexRoots` so an unrelated setting change (or this
+    /// same `setRoots` call's own write-back, if any) does not re-issue an identical `setRoots` on every keystroke
+    /// elsewhere in the app.
+    private func indexRootsMayHaveChanged() {
+        guard !windows.isEmpty else { return }
+        let current = BrowserSettings.indexRoots
+        guard current != lastKnownIndexRoots else { return }
+        lastKnownIndexRoots = current
+        Task {
+            await FilenameIndex.shared.setRoots(current)
+            await ContentIndex.shared.setRoots(current)
+        }
+    }
+
+    /// No browser window left open: stops FSEvents watching (cursors are kept — contract: "đóng hết ⇒ dừng FSEvents,
+    /// lưu con trỏ"), so a reopened window can catch up instead of rescanning from zero.
+    private func indexLifecycleAllWindowsClosed() {
+        Task {
+            await FilenameIndex.shared.suspend()
+            await ContentIndex.shared.suspend()
+        }
     }
 
     /// Keeps the title in step with the active pane's folder — a window's title is "the active pane's folder
@@ -148,6 +201,7 @@ import Quartz
         saveSession()
         if windows.isEmpty {
             FileIconCache.shared.purge()
+            indexLifecycleAllWindowsClosed()
         }
     }
 

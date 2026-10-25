@@ -68,6 +68,7 @@ final class BrowserMainMenu {
         insertedGoMenuItem = nil
         activeModel = nil
         recentFoldersModel = nil
+        savedSearchesModel = nil
     }
 
     // MARK: - Building blocks
@@ -125,6 +126,17 @@ final class BrowserMainMenu {
         recentItem.submenu = recentMenu
         recentFoldersModel = model
         goMenu.addItem(recentItem)
+        goMenu.addItem(.separator())
+
+        // XF-T30 W5b — "Tìm kiếm đã lưu" (contract §"Tìm đã lưu": "menu Đi ▸ Tìm kiếm đã lưu (Hiện trong sidebar /
+        // Đổi tên / Xoá / Sao chép câu tìm)"), built fresh each time it opens, same pattern as Recent Folders above.
+        let savedSearchesItem = NSMenuItem(title: L10n.t("Tìm kiếm đã lưu"), action: nil, keyEquivalent: "")
+        let savedSearchesMenu = NSMenu(title: L10n.t("Tìm kiếm đã lưu"))
+        savedSearchesMenu.delegate = savedSearchesMenuDelegate
+        savedSearchesMenu.autoenablesItems = false
+        savedSearchesItem.submenu = savedSearchesMenu
+        savedSearchesModel = model
+        goMenu.addItem(savedSearchesItem)
         goMenu.addItem(.separator())
 
         for command: BrowserCommand in [.connectToServer, .eject] {
@@ -201,6 +213,110 @@ final class BrowserMainMenu {
             clear.target = owner
             clear.isEnabled = !paths.isEmpty
             menu.addItem(clear)
+        }
+    }
+
+    // MARK: - Saved Searches submenu (XF-T30 W5b, built when opened)
+
+    /// The model `dispatchRunSavedSearch`/`dispatchRenameSavedSearch`/`dispatchDeleteSavedSearch`/
+    /// `dispatchToggleSavedSearchSidebar`/`dispatchCopySavedSearchText` act on.
+    private weak var savedSearchesModel: BrowserWindowModel?
+    private lazy var savedSearchesMenuDelegate = SavedSearchesMenuDelegate(owner: self)
+
+    @objc private func dispatchRunSavedSearch(_ sender: NSMenuItem) {
+        guard let saved = sender.representedObject as? SavedSearch, let model = savedSearchesModel else { return }
+        model.active.runSavedSearch(saved, paneFolders: model.tree.panes.compactMap { model.panes[$0]?.path })
+    }
+
+    /// Contract: "Hiện trong sidebar" is a checkmark TOGGLE on the saved search's own row's submenu, not a separate
+    /// command — flips `showInSidebar` in place (`BrowserSidebarView`, a different builder's file, is what actually
+    /// reads it to decide whether to draw the row).
+    @objc private func dispatchToggleSavedSearchSidebar(_ sender: NSMenuItem) {
+        guard let saved = sender.representedObject as? SavedSearch else { return }
+        var store = BrowserSettings.savedSearches
+        store.setShowInSidebar(saved.id, !saved.showInSidebar)
+        BrowserSettings.savedSearches = store
+    }
+
+    @objc private func dispatchRenameSavedSearch(_ sender: NSMenuItem) {
+        guard let saved = sender.representedObject as? SavedSearch else { return }
+        let alert = NSAlert()
+        alert.messageText = L10n.t("Đổi tên tìm kiếm đã lưu")
+        let field = NSTextField(string: saved.name)
+        field.frame = NSRect(x: 0, y: 0, width: 240, height: 24)
+        alert.accessoryView = field
+        alert.addButton(withTitle: L10n.t("Đổi tên"))
+        alert.addButton(withTitle: L10n.t("Huỷ"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        var store = BrowserSettings.savedSearches
+        store.rename(saved.id, to: field.stringValue)
+        BrowserSettings.savedSearches = store
+    }
+
+    @objc private func dispatchDeleteSavedSearch(_ sender: NSMenuItem) {
+        guard let saved = sender.representedObject as? SavedSearch else { return }
+        var store = BrowserSettings.savedSearches
+        store.delete(saved.id)
+        BrowserSettings.savedSearches = store
+    }
+
+    @objc private func dispatchCopySavedSearchText(_ sender: NSMenuItem) {
+        guard let saved = sender.representedObject as? SavedSearch else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(saved.query, forType: .string)
+    }
+
+    /// `NSMenuDelegate` that rebuilds "Tìm kiếm đã lưu ▸" every time it is about to open (same reasoning as Recent
+    /// Folders): clicking a row runs that search; each row's own submenu carries the four per-item actions the
+    /// contract lists (Hiện trong sidebar / Đổi tên / Xoá / Sao chép câu tìm — never deletes the matched files,
+    /// only the saved query, per the FileOctopus semantic the data layer already documents).
+    private final class SavedSearchesMenuDelegate: NSObject, NSMenuDelegate {
+        private weak var owner: BrowserMainMenu?
+        init(owner: BrowserMainMenu) { self.owner = owner }
+
+        func menuNeedsUpdate(_ menu: NSMenu) {
+            guard let owner else { return }
+            menu.removeAllItems()
+            let searches = BrowserSettings.savedSearches.searches
+            if searches.isEmpty {
+                let empty = NSMenuItem(title: L10n.t("Không có tìm kiếm đã lưu nào"), action: nil, keyEquivalent: "")
+                empty.isEnabled = false
+                menu.addItem(empty)
+                return
+            }
+            for saved in searches {
+                let item = NSMenuItem(title: saved.name, action: #selector(owner.dispatchRunSavedSearch(_:)), keyEquivalent: "")
+                item.target = owner
+                item.representedObject = saved
+                item.toolTip = saved.query
+                item.submenu = Self.itemSubmenu(for: saved, owner: owner)
+                menu.addItem(item)
+            }
+        }
+
+        private static func itemSubmenu(for saved: SavedSearch, owner: BrowserMainMenu) -> NSMenu {
+            let submenu = NSMenu(title: saved.name)
+            let showInSidebar = NSMenuItem(
+                title: L10n.t("Hiện trong sidebar"), action: #selector(owner.dispatchToggleSavedSearchSidebar(_:)), keyEquivalent: ""
+            )
+            showInSidebar.target = owner
+            showInSidebar.representedObject = saved
+            showInSidebar.state = saved.showInSidebar ? .on : .off
+            submenu.addItem(showInSidebar)
+            submenu.addItem(.separator())
+            let rename = NSMenuItem(title: L10n.t("Đổi tên tìm kiếm đã lưu"), action: #selector(owner.dispatchRenameSavedSearch(_:)), keyEquivalent: "")
+            rename.target = owner
+            rename.representedObject = saved
+            submenu.addItem(rename)
+            let delete = NSMenuItem(title: L10n.t("Xoá tìm kiếm đã lưu"), action: #selector(owner.dispatchDeleteSavedSearch(_:)), keyEquivalent: "")
+            delete.target = owner
+            delete.representedObject = saved
+            submenu.addItem(delete)
+            let copyText = NSMenuItem(title: L10n.t("Sao chép câu tìm"), action: #selector(owner.dispatchCopySavedSearchText(_:)), keyEquivalent: "")
+            copyText.target = owner
+            copyText.representedObject = saved
+            submenu.addItem(copyText)
+            return submenu
         }
     }
 

@@ -10,6 +10,8 @@ struct SearchBarView: View {
 
     @State private var searchText: String = ""
     @State private var editingChip: SearchChip?
+    @State private var indexing = false
+    @State private var showSaveSearch = false
     @FocusState private var filterFieldFocused: Bool
 
     var body: some View {
@@ -18,6 +20,11 @@ struct SearchBarView: View {
                 searchRow
                 if let search = pane.search, !search.parsed.chips.isEmpty {
                     chipsRow(search.parsed)
+                }
+                if indexing {
+                    Text(L10n.t("Đang cập nhật chỉ mục…"))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
                 }
                 if let search = pane.search, isContentOnlyZeroResults(search) {
                     Text(L10n.t("Spotlight có thể chưa lập chỉ mục nội dung ở đây"))
@@ -36,6 +43,31 @@ struct SearchBarView: View {
             filterFieldFocused = true
             model.filterFocusRequest = nil
         }
+        .onChange(of: pane.search?.scope) { _, _ in refreshIndexingState() }
+        .onChange(of: pane.search == nil) { _, _ in refreshIndexingState() }
+        .task(id: indexingRefreshKey) { await refreshIndexingStateAsync() }
+    }
+
+    /// Re-evaluated whenever the search's scope, running state, or whether a search exists at all changes — the
+    /// `.task(id:)` above restarts its lookup each time this key changes, same pattern `FileListView`'s own async
+    /// lookups use for "don't poll continuously, just re-check on the events that could change the answer".
+    private var indexingRefreshKey: String {
+        guard let search = pane.search else { return "none" }
+        return "\(search.scope.rawValue)|\(search.running)"
+    }
+
+    private func refreshIndexingState() {
+        Task { await refreshIndexingStateAsync() }
+    }
+
+    private func refreshIndexingStateAsync() async {
+        guard let search = pane.search else {
+            indexing = false
+            return
+        }
+        let paneFolders = search.scope == .panes ? model.tree.panes.compactMap { model.panes[$0]?.path } : []
+        let folders = pane.searchScopeFolderPaths(for: search.scope, paneFolders: paneFolders)
+        indexing = await BrowserWindowModel.scopeIsIndexing(folders: folders)
     }
 
     // MARK: - Filter (⌘F)
@@ -76,7 +108,7 @@ struct SearchBarView: View {
                 .textFieldStyle(.plain)
                 .font(XFinderTokens.Font.rowValue)
                 .onSubmit {
-                    pane.runSearch(searchText, scope: pane.search?.scope ?? .folder)
+                    model.runSearch(searchText, scope: pane.search?.scope ?? BrowserWindowModel.resolvedDefaultSearchScope())
                 }
             if let search = pane.search, search.running {
                 ProgressView().controlSize(.small)
@@ -87,6 +119,7 @@ struct SearchBarView: View {
                     .foregroundColor(.secondary)
             }
             scopePicker
+            saveSearchButton
             Button {
                 pane.endSearch()
             } label: {
@@ -100,18 +133,37 @@ struct SearchBarView: View {
         .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control, style: .continuous).fill(XFinderTokens.Fill.inset))
     }
 
+    /// FileOctopus: "Open Panes" only ever appears once there is more than one pane to span (contract §1, 3 scopes
+    /// "This Mac / Current Folder / Open Panes") — a lone-pane window never offers a scope choice that cannot
+    /// differ from "Current Folder".
     private var scopePicker: some View {
         Picker("", selection: Binding(
-            get: { pane.search?.scope ?? .folder },
-            set: { pane.runSearch(searchText, scope: $0) }
+            get: { pane.search?.scope ?? BrowserWindowModel.resolvedDefaultSearchScope() },
+            set: { model.runSearch(searchText, scope: $0) }
         )) {
-            Text(L10n.t("Thư mục này")).tag(PaneSearchState.Scope.folder)
+            Text(L10n.t("Thư mục hiện tại")).tag(PaneSearchState.Scope.folder)
             Text(L10n.t("Máy này")).tag(PaneSearchState.Scope.mac)
-            Text(L10n.t("Các ngăn")).tag(PaneSearchState.Scope.panes)
+            if model.tree.panes.count > 1 {
+                Text(L10n.t("Các ngăn đang mở")).tag(PaneSearchState.Scope.panes)
+            }
         }
         .pickerStyle(.menu)
         .labelsHidden()
-        .frame(width: 120)
+        .frame(width: 150)
+    }
+
+    private var saveSearchButton: some View {
+        Button {
+            showSaveSearch = true
+        } label: {
+            Image(systemName: "bookmark")
+        }
+        .buttonStyle(.plain)
+        .foregroundColor(.secondary)
+        .disabled(pane.search == nil || (pane.search?.text.isEmpty ?? true))
+        .popover(isPresented: $showSaveSearch) {
+            SaveSearchPopover(pane: pane, model: model) { showSaveSearch = false }
+        }
     }
 
     private func resultCountLabel(_ search: PaneSearchState) -> String {
@@ -347,6 +399,42 @@ private struct ChipEditorPopover: View {
                 onReplace(SearchChip(field: chip.field, value: .size(sizeOp, bytes), uncertain: false))
             }
             .buttonStyle(.borderedProminent)
+        }
+    }
+}
+
+/// XF-T30 W5b — "Lưu tìm kiếm…": name + "Thêm vào sidebar" (contract §"Tìm đã lưu"). `BrowserSidebarView` (a
+/// different builder's file) is the thing that actually renders a saved search's sidebar row; this popover only
+/// writes the entry into `BrowserSettings.savedSearches` via `BrowserWindowModel.saveCurrentSearch`.
+private struct SaveSearchPopover: View {
+    let pane: PaneState
+    let model: BrowserWindowModel
+    let onDone: () -> Void
+
+    @State private var name = ""
+    @State private var addToSidebar = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            Text(L10n.t("Lưu tìm kiếm…"))
+                .font(XFinderTokens.Font.row)
+            TextField(L10n.t("Tên"), text: $name)
+                .textFieldStyle(.roundedBorder)
+                .frame(minWidth: 220)
+            Toggle(L10n.t("Thêm vào sidebar"), isOn: $addToSidebar)
+            HStack {
+                Spacer()
+                Button(L10n.t("Huỷ")) { onDone() }
+                Button(L10n.t("Lưu")) {
+                    pane.saveCurrentSearch(name: name, addToSidebar: addToSidebar)
+                    onDone()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(XFinderTokens.Space.row)
+        .onAppear {
+            if name.isEmpty { name = pane.search?.text ?? "" }
         }
     }
 }

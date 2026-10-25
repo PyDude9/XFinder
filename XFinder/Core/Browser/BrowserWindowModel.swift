@@ -18,6 +18,13 @@ struct PaneSearchState: Equatable {
     var results: [DirectoryEntry]
     var running: Bool
     var truncated: Bool
+    /// XF-T30 W5b — per-path metadata `SearchCoordinator.search` returns alongside `results` that `DirectoryEntry`
+    /// has no field for (its file, `DirectoryEntry.swift`, belongs to a different builder): which source(s) matched
+    /// (tên / Spotlight / nội dung) and the content-index snippet, keyed by `DirectoryEntry.path`. Only ever
+    /// populated for a `SearchCoordinator`-backed search (contract §"Một đường tìm"); empty for a plain Spotlight
+    /// fallback run before this existed would simply show no source label, never a wrong one.
+    var sources: [String: Set<SearchCoordinator.Source>] = [:]
+    var snippets: [String: String] = [:]
 }
 
 @MainActor @Observable final class PaneState: Identifiable {
@@ -58,6 +65,9 @@ struct PaneSearchState: Equatable {
     private var currentGeneration = 0
     private var loadTask: Task<Void, Never>?
     private var watcher: DirectoryWatcher?
+    /// XF-T30 W5b — the live `SearchCoordinator` run behind `search`, if any; cancelled whenever the tab navigates
+    /// to a different folder, is closed, or the search itself ends/restarts (contract: "huỷ khi tab đổi thư mục/đóng").
+    private var searchHandle: SearchCoordinator.Handle?
     /// The raw listing from the last successful load, before `visible`/`filter`/`sorted` — kept so a view-option
     /// change (sort, showHidden, foldersFirst, filterText) or a search ending can re-derive `entries` without a
     /// fresh disk read.
@@ -83,6 +93,7 @@ struct PaneSearchState: Equatable {
         guard path != self.path else { return }
         history.visit(path)
         self.path = path
+        cancelSearch()   // XF-T30 W5b: a tab that leaves its folder drops any live search (contract "huỷ khi ... đổi thư mục")
         startLoad(of: path)
         installWatcher()
         BrowserWindowModel.noteRecentFolder(path)   // XF-T30 W3 (BrowserWindowModel+Go.swift)
@@ -91,6 +102,7 @@ struct PaneSearchState: Equatable {
     func goBack() {
         guard let destination = history.goBack() else { return }
         path = destination
+        cancelSearch()
         startLoad(of: destination)
         installWatcher()
     }
@@ -98,6 +110,7 @@ struct PaneSearchState: Equatable {
     func goForward() {
         guard let destination = history.goForward() else { return }
         path = destination
+        cancelSearch()
         startLoad(of: destination)
         installWatcher()
     }
@@ -107,6 +120,7 @@ struct PaneSearchState: Equatable {
     func goBack(steps: Int) {
         guard let destination = history.goBack(steps: steps) else { return }
         path = destination
+        cancelSearch()
         startLoad(of: destination)
         installWatcher()
     }
@@ -114,6 +128,7 @@ struct PaneSearchState: Equatable {
     func goForward(steps: Int) {
         guard let destination = history.goForward(steps: steps) else { return }
         path = destination
+        cancelSearch()
         startLoad(of: destination)
         installWatcher()
     }
@@ -144,11 +159,20 @@ struct PaneSearchState: Equatable {
 
     /// The tab is going away (closed, its pane closed, moved and re-created, window closed): stop the watcher AND the
     /// load still in flight (review 2026-10-25: only the watcher stopped; a slow folder kept reading up to 5 s).
+    /// XF-T30 W5b: also cancels a live search (contract "huỷ khi ... đóng").
     func stopWatching() {
         watcher?.cancel()
         watcher = nil
         loadTask?.cancel()
         loadTask = nil
+        cancelSearch()
+    }
+
+    /// Cancels the `SearchCoordinator` run behind `search`, if any — idempotent, safe to call whether or not a
+    /// search is in flight.
+    private func cancelSearch() {
+        searchHandle?.cancel()
+        searchHandle = nil
     }
 
     var selectedEntries: [DirectoryEntry] {
@@ -274,32 +298,51 @@ struct PaneSearchState: Equatable {
         startSearch(text: text, parsed: parsed, scope: scope, paneFolders: paneFolders, now: now, calendar: calendar)
     }
 
-    /// Shared tail of both `runSearch` overloads (text and chip-edited): builds the `mdfind` expression and scopes,
-    /// then runs the actual search off the main actor. Both the `mdfind` process AND the `lstat()` of every hit (up
-    /// to 200) belong off the main actor — a network-mounted result can stall each stat for a while, and this used
-    /// to run the whole `lstat` loop back on `@MainActor` after only the process hop was detached.
+    /// Shared tail of both `runSearch` overloads (text and chip-edited): resolves the scope's folders, then hands
+    /// off to `SearchCoordinator.shared.search` (contract "Một đường tìm" — filename index + Spotlight + content
+    /// index merged, streamed back live via `onUpdate`) instead of calling `FileSearchEngine.runMdfind` directly.
+    /// `_ = now`/`calendar` stay as parameters only so both callers keep sharing one `Date()`/`Calendar.current`
+    /// snapshot for the whole search (chip date ranges resolve against the moment the search started, not whenever
+    /// a later `onUpdate` callback happens to run).
     private func startSearch(text: String, parsed: ParsedSearch, scope: PaneSearchState.Scope, paneFolders: [String],
                              now: Date, calendar: Calendar) {
+        cancelSearch()   // a re-run (new text, scope change, chip edit) replaces whatever search was already live.
         search = PaneSearchState(text: text, parsed: parsed, scope: scope, results: [], running: true, truncated: false)
         let generation = currentGeneration
-        let expression = SearchQuery.mdfindExpression(parsed, now: now, calendar: calendar)
         let scopes = searchScopes(for: scope, paneFolders: paneFolders)
+        searchHandle = SearchCoordinator.shared.search(
+            parsed, folders: scopes, limit: 500,
+            onUpdate: { [weak self] results in
+                guard let self, generation == self.currentGeneration, self.search != nil else { return }
+                self.applySearchResults(results)
+            },
+            onFinish: { [weak self] truncated in
+                guard let self, generation == self.currentGeneration, self.search != nil else { return }
+                self.search?.running = false
+                self.search?.truncated = truncated
+            }
+        )
+    }
+
+    /// Converts `SearchCoordinator.Result`s (path + sources + tier + snippet) into `DirectoryEntry`s via `lstat`,
+    /// off the main actor (same reasoning as the old direct-`mdfind` path: a network-mounted hit can stall a stat
+    /// call, and up to 500 of them must not block the UI). A path that no longer exists by the time this runs
+    /// (deleted between index/Spotlight returning it and the stat here) is silently dropped, same as before.
+    private func applySearchResults(_ results: [SearchCoordinator.Result]) {
+        let generation = currentGeneration
         Task { [weak self] in
-            let results = await Task.detached(priority: .userInitiated) { () -> (found: FileSearchEngine.Found, entries: [DirectoryEntry]) in
-                let found = FileSearchEngine.runMdfind(query: expression, scopes: scopes, limit: 200)
-                var entries: [DirectoryEntry] = []
-                entries.reserveCapacity(found.items.count)
-                for item in found.items {
-                    if let entry = PaneState.entry(forPath: item.path) {
-                        entries.append(entry)
-                    }
+            let built = await Task.detached(priority: .userInitiated) { () -> [(DirectoryEntry, Set<SearchCoordinator.Source>, String?)] in
+                results.compactMap { result in
+                    guard let entry = PaneState.entry(forPath: result.path) else { return nil }
+                    return (entry, result.sources, result.snippet)
                 }
-                return (found, entries)
             }.value
             guard let self, generation == self.currentGeneration, self.search != nil else { return }
-            self.search?.results = results.entries
-            self.search?.running = false
-            self.search?.truncated = results.found.truncated
+            self.search?.results = built.map(\.0)
+            self.search?.sources = Dictionary(uniqueKeysWithValues: built.map { ($0.0.path, $0.1) })
+            self.search?.snippets = Dictionary(uniqueKeysWithValues: built.compactMap { entry, _, snippet in
+                snippet.map { (entry.path, $0) }
+            })
             self.applyEntries()
         }
     }
@@ -318,9 +361,45 @@ struct PaneSearchState: Equatable {
         }
     }
 
+    /// Public wrapper of `searchScopes(for:paneFolders:)` as plain path strings — the search bar uses this to ask
+    /// `BrowserWindowModel.scopeIsIndexing` about the CURRENT search's scope, without duplicating the folder-resolution
+    /// rule above.
+    func searchScopeFolderPaths(for scope: PaneSearchState.Scope, paneFolders: [String]) -> [String] {
+        searchScopes(for: scope, paneFolders: paneFolders).map(\.path)
+    }
+
     func endSearch() {
+        cancelSearch()
         search = nil
         applyEntries()
+    }
+
+    // MARK: - Saved search (XF-T30 W5b)
+
+    /// "Lưu tìm kiếm…" on the search bar: persists the query text + scope (+ folder, for `.folder`) into
+    /// `BrowserSettings.savedSearches` — contract: "lưu câu tìm + phạm vi, không lưu kết quả", so this deliberately
+    /// ignores `search.results`. Does nothing without a live search (nothing to save).
+    @discardableResult
+    func saveCurrentSearch(name: String, addToSidebar: Bool) -> SavedSearch? {
+        guard let search else { return nil }
+        var store = BrowserSettings.savedSearches
+        let folder = search.scope == .folder ? path : nil
+        let saved = store.add(name: name, query: search.text, scope: search.scope.rawValue, folder: folder,
+                              showInSidebar: addToSidebar, now: Date())
+        BrowserSettings.savedSearches = store
+        return saved
+    }
+
+    /// Go ▸ Tìm kiếm đã lưu / a sidebar row: re-runs a saved query against its saved scope — contract: "mở = chạy
+    /// lại câu tìm (ngày tương đối tính lại)", automatic here since `runSearch` always resolves relative dates
+    /// (`today`/`last week`/…) against `Date()` at the moment it runs, never a date baked in when the search was
+    /// first saved.
+    func runSavedSearch(_ saved: SavedSearch, paneFolders: [String] = []) {
+        let scope = PaneSearchState.Scope(rawValue: saved.scope) ?? .mac
+        if scope == .folder, let folder = saved.folder, folder != path {
+            navigate(to: folder)
+        }
+        runSearch(saved.query, scope: scope, paneFolders: paneFolders)
     }
 
     /// Builds a `DirectoryEntry` for a search hit via `lstat` (a search result may be anywhere on disk, not just
@@ -543,7 +622,7 @@ enum BrowserSheet: String, Identifiable {
             if let chrome {
                 chrome.focusSearchField()
             } else if active.search == nil {
-                runSearch("", scope: .folder)
+                runSearch("", scope: BrowserWindowModel.resolvedDefaultSearchScope())
             }
         case .editLocation:
             editingLocation = activePane
@@ -1028,6 +1107,60 @@ enum BrowserSheet: String, Identifiable {
     func runSearch(_ text: String, scope: PaneSearchState.Scope) {
         let folders = scope == .panes ? tree.panes.compactMap { panes[$0]?.path } : []
         active.runSearch(text, scope: scope, paneFolders: folders)
+        BrowserWindowModel.lastUsedScope = scope   // XF-T30 W5b: fileBrowser.search.defaultScope == "previous"
+    }
+
+    /// Chip-edit counterpart of `runSearch(_:scope:)` (same `.panes` folder resolution + "previous scope" memory),
+    /// used when a chip popover replaces/removes a chip on an already-running search.
+    func runSearch(parsed: ParsedSearch, scope: PaneSearchState.Scope) {
+        let folders = scope == .panes ? tree.panes.compactMap { panes[$0]?.path } : []
+        active.runSearch(parsed: parsed, scope: scope, paneFolders: folders)
+        BrowserWindowModel.lastUsedScope = scope
+    }
+
+    /// `fileBrowser.search.defaultScope` resolved to an actual `PaneSearchState.Scope`: `mac`/`folder` map directly,
+    /// `previous` reads the in-session memory of whatever scope the last search anywhere in the app used (contract
+    /// "nhớ trong phiên" — process lifetime, not persisted to disk), falling back to `.mac` the very first time a
+    /// search starts in this launch (nothing to remember yet, same default the setting itself ships with).
+    static func resolvedDefaultSearchScope() -> PaneSearchState.Scope {
+        switch BrowserSettings.defaultSearchScope {
+        case "folder": return .folder
+        case "previous": return lastUsedScope ?? .mac
+        default: return .mac
+        }
+    }
+
+    /// In-process memory for `defaultSearchScope == "previous"` — deliberately `static` (not per-window/per-pane):
+    /// FileOctopus's own "Use the Previous Search Scope" means the last scope searched ANYWHERE, not per-window.
+    private static var lastUsedScope: PaneSearchState.Scope?
+
+    /// Whether any approved index root inside `folders` (empty = every root, "This Mac") is still building or
+    /// catching up — contract: "'Đang cập nhật chỉ mục…' ở thanh tìm khi một gốc trong phạm vi đang indexing/updating".
+    /// Reads both `FilenameIndex` and `ContentIndex` status (either indexing a root makes the combined answer for
+    /// that root "still settling", since a content-index root is always also a filename-index root).
+    static func scopeIsIndexing(folders: [String]) async -> Bool {
+        let roots = BrowserSettings.indexRoots.filter { !$0.paused }
+        let folderPaths = folders.map { URL(fileURLWithPath: $0).standardizedFileURL.path }
+        // Same "root is inside/under a scope folder" test `SearchCoordinator.rootsInScope` applies (that one is
+        // `fileprivate` to its own file) — empty `folders` ("This Mac") matches every approved root.
+        let scoped: [IndexRoot] = folderPaths.isEmpty ? roots : roots.filter { root in
+            folderPaths.contains { folder in
+                root.path == folder || folder.hasPrefix(root.path.hasSuffix("/") ? root.path : root.path + "/")
+                    || root.path.hasPrefix(folder.hasSuffix("/") ? folder : folder + "/")
+            }
+        }
+        guard !scoped.isEmpty else { return false }
+        let ids = Set(scoped.map(\.id))
+        async let nameStatus = FilenameIndex.shared.status()
+        async let contentStatus = ContentIndex.shared.status()
+        let (names, contents) = await (nameStatus, contentStatus)
+        func isSettling(_ status: IndexRootStatus?) -> Bool {
+            switch status {
+            case .indexing, .updating: return true
+            default: return false
+            }
+        }
+        return ids.contains { isSettling(names[$0]) || isSettling(contents[$0]) }
     }
 
     // MARK: - Shelf

@@ -144,6 +144,7 @@ struct FileListView: NSViewRepresentable {
         private var cloudFactsCache: [String: CloudFacts] = [:]
         private var lastSyncedSelection: Set<String> = []
         private var lastColumns: [ListColumn] = []
+        private var lastShowingParentFolderColumn = false
 
         /// Per-folder-path state for every row that has ever been expanded: its off-main listing (sorted the same
         /// way as the top level), a `DirectoryWatcher` so a change inside it refreshes without the user re-opening
@@ -188,17 +189,29 @@ struct FileListView: NSViewRepresentable {
             NSUserInterfaceItemIdentifier(column.rawValue)
         }
 
+        /// XF-T30 W5b — "Nơi chứa" (parent folder), shown only while searching (contract §"Một đường tìm": "cột 'Nơi
+        /// chứa' ... trong List khi đang tìm"). A synthetic column OUTSIDE `ListColumn` (that enum is a different
+        /// builder's file, `FolderViewOptions.swift`, and is also the user-toggleable set `FolderViewPrefs` persists
+        /// — this column is neither user-toggleable nor ever saved to a folder's remembered columns) rather than a
+        /// case added there.
+        private static let parentFolderIdentifier = NSUserInterfaceItemIdentifier("xfSearchParentFolder")
+
         private func activeColumns() -> [ListColumn] {
             pane.folderPrefs?.columns ?? FolderViewPrefs.defaultColumns
         }
 
-        /// Rebuilds the table columns from `activeColumns()` when they differ from what is on screen — called from
-        /// `makeNSView` and again whenever the header's toggle menu or `FolderViewPrefs` changes the set, never on
-        /// every `updateNSView` (contract: "no O(n)/layout work per frame" applies to column churn too).
+        /// Rebuilds the table columns from `activeColumns()` (+ "Nơi chứa" while searching) when they differ from
+        /// what is on screen — called from `makeNSView` and again whenever the header's toggle menu, `FolderViewPrefs`,
+        /// or `pane.search` starting/ending changes the set, never on every `updateNSView` (contract: "no O(n)/layout
+        /// work per frame" applies to column churn too).
         func rebuildColumns(in outlineView: NSOutlineView) {
             let wanted = activeColumns()
-            guard wanted != lastColumns || outlineView.tableColumns.count != wanted.count else { return }
+            let searching = pane.search != nil
+            guard wanted != lastColumns || searching != lastShowingParentFolderColumn
+                    || outlineView.tableColumns.count != wanted.count + (searching ? 1 : 0)
+            else { return }
             lastColumns = wanted
+            lastShowingParentFolderColumn = searching
             let existing = Dictionary(uniqueKeysWithValues: outlineView.tableColumns.map { ($0.identifier, $0) })
             for column in outlineView.tableColumns { outlineView.removeTableColumn(column) }
             for (index, column) in wanted.enumerated() {
@@ -206,6 +219,10 @@ struct FileListView: NSViewRepresentable {
                 let tableColumn = existing[identifier] ?? Self.makeTableColumn(column)
                 outlineView.addTableColumn(tableColumn)
                 if index == 0 { outlineView.outlineTableColumn = tableColumn }
+            }
+            if searching {
+                let parentColumn = existing[Self.parentFolderIdentifier] ?? Self.makeParentFolderColumn()
+                outlineView.addTableColumn(parentColumn)
             }
         }
 
@@ -217,6 +234,14 @@ struct FileListView: NSViewRepresentable {
             if let sortKey = column.sortKey {
                 tableColumn.sortDescriptorPrototype = NSSortDescriptor(key: sortKey.rawValue, ascending: true)
             }
+            return tableColumn
+        }
+
+        private static func makeParentFolderColumn() -> NSTableColumn {
+            let tableColumn = NSTableColumn(identifier: parentFolderIdentifier)
+            tableColumn.title = L10n.t("Nơi chứa")
+            tableColumn.minWidth = 120
+            tableColumn.width = 200
             return tableColumn
         }
 
@@ -462,8 +487,11 @@ struct FileListView: NSViewRepresentable {
                 else { return NSTableCellView() }
                 return Self.makeHeaderCell(title: title)
             }
-            guard let tableColumn, let column = ListColumn(rawValue: tableColumn.identifier.rawValue),
-                  let entry = node.entry else { return nil }
+            guard let tableColumn, let entry = node.entry else { return nil }
+            if tableColumn.identifier == Self.parentFolderIdentifier {
+                return parentFolderCell(for: entry, in: outlineView)
+            }
+            guard let column = ListColumn(rawValue: tableColumn.identifier.rawValue) else { return nil }
             let identifier = tableColumn.identifier
             let cell: NSTableCellView
             if let reused = outlineView.makeView(withIdentifier: identifier, owner: self) as? NSTableCellView {
@@ -472,6 +500,32 @@ struct FileListView: NSViewRepresentable {
                 cell = Self.makeCell(column: column, identifier: identifier)
             }
             configure(cell: cell, column: column, entry: entry)
+            return cell
+        }
+
+        /// XF-T30 W5b — "Nơi chứa" cell: the result's parent folder, truncated from the middle (contract rule 14:
+        /// every filename-bearing row needs `.truncationMode(.middle)`) — a search hit can live anywhere on disk, so
+        /// this is the one place in List view where the shown text is a whole path rather than a single name.
+        private func parentFolderCell(for entry: DirectoryEntry, in outlineView: NSOutlineView) -> NSTableCellView {
+            let cell: NSTableCellView
+            if let reused = outlineView.makeView(withIdentifier: Self.parentFolderIdentifier, owner: self) as? NSTableCellView {
+                cell = reused
+            } else {
+                cell = NSTableCellView()
+                cell.identifier = Self.parentFolderIdentifier
+                let text = NSTextField(labelWithString: "")
+                text.font = .systemFont(ofSize: NSFont.systemFontSize)
+                text.lineBreakMode = .byTruncatingMiddle
+                text.translatesAutoresizingMaskIntoConstraints = false
+                cell.textField = text
+                cell.addSubview(text)
+                NSLayoutConstraint.activate([
+                    text.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 2),
+                    text.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
+                    text.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+                ])
+            }
+            cell.textField?.stringValue = (entry.path as NSString).deletingLastPathComponent
             return cell
         }
 
@@ -551,7 +605,7 @@ struct FileListView: NSViewRepresentable {
         private func configure(cell: NSTableCellView, column: ListColumn, entry: DirectoryEntry) {
             switch column {
             case .name:
-                cell.textField?.stringValue = entry.name
+                cell.textField?.attributedStringValue = nameCellText(for: entry)
                 cell.imageView?.image = FileIconCache.shared.icon(for: entry)
                 let badge = cloudBadgeSymbol(for: cloudFacts(for: entry.path))
                 (cell.viewWithTag(Self.cloudBadgeTag) as? NSImageView)?.image = badge
@@ -577,6 +631,40 @@ struct FileListView: NSViewRepresentable {
             case .tags:
                 cell.textField?.stringValue = (entry.tags ?? []).joined(separator: ", ")
             }
+        }
+
+        /// XF-T30 W5b — while searching, the Name cell gets a grayed suffix: the source label (tên / Spotlight / nội
+        /// dung — `DirectoryEntry` itself has no field for this, so it comes from `PaneSearchState.sources`/
+        /// `snippets`, see `BrowserWindowModel.applySearchResults`) and, for a content-index hit, its snippet.
+        /// Plain `entry.name` outside a search, same as before this feature existed.
+        private func nameCellText(for entry: DirectoryEntry) -> NSAttributedString {
+            let name = NSMutableAttributedString(string: entry.name, attributes: [.foregroundColor: NSColor.labelColor])
+            guard let search = pane.search else { return name }
+            var suffixParts: [String] = []
+            if let sources = search.sources[entry.path], !sources.isEmpty {
+                suffixParts.append(sourceLabel(sources))
+            }
+            if let snippet = search.snippets[entry.path], !snippet.isEmpty {
+                suffixParts.append(snippet)
+            }
+            guard !suffixParts.isEmpty else { return name }
+            let suffix = NSAttributedString(
+                string: "  —  " + suffixParts.joined(separator: " · "),
+                attributes: [.foregroundColor: NSColor.secondaryLabelColor, .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)]
+            )
+            name.append(suffix)
+            return name
+        }
+
+        /// Vietnamese label for a result's source set (contract: "nhãn nguồn (tên / Spotlight / nội dung)") — a hit
+        /// found by more than one source shows every label it matched under, joined, same ordering as
+        /// `SearchCoordinator.Source`'s declaration (name, Spotlight, content).
+        private func sourceLabel(_ sources: Set<SearchCoordinator.Source>) -> String {
+            var labels: [String] = []
+            if sources.contains(.name) { labels.append(L10n.t("tên")) }
+            if sources.contains(.spotlight) { labels.append(L10n.t("Spotlight")) }
+            if sources.contains(.content) { labels.append(L10n.t("nội dung")) }
+            return labels.joined(separator: ", ")
         }
 
         /// The first Finder tag's colour (dot shown is the primary tag, same as Finder's own single-dot summary in
