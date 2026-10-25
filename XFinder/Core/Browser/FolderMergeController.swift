@@ -1,13 +1,17 @@
 import AppKit
 import CryptoKit
 
-/// XF-T30 W6 — runs a `MergePlan` through the file operation queue: walks the two trees off main into the
-/// `[MergeNode]` lists `FolderMerge.plan` (pure, `FolderMerge.swift`) needs, presents the preview via `completion`,
-/// then — once the owner picks a policy — executes each step against disk: same-volume items use a plain
-/// `copyfile`/`rename` through `FileOperationQueue` (no verify needed, the kernel already guarantees it), a
-/// cross-disk move/replace verifies with SHA-256 before the losing side is trashed (contract §2 "SHA-256 khi khác
-/// ổ"), replaced items and folders left empty by the merge go to Trash (never a hard delete), and a `MergeReport` is
-/// handed back summarizing what happened. W6 builder (AppKit).
+/// XF-T30 W6 — runs a `MergePlan` against disk: walks the two trees off main into the `[MergeNode]` lists
+/// `FolderMerge.plan` (pure, `FolderMerge.swift`) needs, presents the preview via `completion`, then — once the
+/// owner picks a policy — executes each step: same-volume items use a plain `rename(2)`/`copyItem` (no verify
+/// needed, the kernel already guarantees a same-volume rename), a cross-disk move/replace verifies with SHA-256
+/// before the losing side is trashed (contract §2 "SHA-256 khi khác ổ"), replaced items and folders left empty by
+/// the merge go to Trash (never a hard delete), and a `MergeReport` is handed back summarizing what happened.
+/// NOTE (deviation from contract §2 "Gộp thư mục chạy qua cùng hàng đợi"): this runs its own disk work directly
+/// rather than through `FileOperationQueue.enqueue` — `FileOperationKind` has no `.merge` case to enqueue as (that
+/// enum is `FileOperationRules`' contract, not this file's to extend), so a merge does not show up in the
+/// Operations panel, cannot be paused/resumed, and is not covered by the crash-recovery journal. W6 builder
+/// (AppKit).
 struct MergeReport: Equatable, Sendable {
     var copied = 0
     var replaced = 0
@@ -59,13 +63,11 @@ final class FolderMergeController {
         }
     }
 
-    // MARK: - Run (contract §2 "Gộp thư mục chạy qua cùng hàng đợi")
+    // MARK: - Run (contract §2 "Gộp thư mục chạy qua cùng hàng đợi" — see deviation note above: NOT yet true)
 
-    /// Executes an already-approved `MergePlan` by routing each step through `FileOperationQueue` so merge jobs show
-    /// up in the same Operations panel, share pause/resume, and get the same crash-recovery journal as any other
-    /// copy/move — the queue already serializes work, so `run` awaits one `FileOperationQueue.enqueue` job at a time
-    /// rather than enqueuing the whole plan at once (which would just queue up behind itself anyway, and would make
-    /// per-step SHA-256-across-disks verification harder to attribute to the right `MergeReport` row).
+    /// Executes an already-approved `MergePlan` step by step directly against disk (see the type-level deviation
+    /// note: this does not go through `FileOperationQueue.enqueue`, so it has none of that queue's Operations-panel
+    /// visibility, pause/resume, or crash-recovery journal yet).
     func run(_ plan: MergePlan, source: String, destination: String, completion: @escaping @MainActor (MergeReport) -> Void) {
         Task.detached(priority: .userInitiated) {
             var report = MergeReport()
@@ -80,9 +82,12 @@ final class FolderMergeController {
                 case .skip:
                     report.skipped += 1
                 case .keepBoth(let from, let to):
+                    // `to` is already the final Keep-Both-renamed relative path (`FolderMerge.plan` computes the
+                    // numbered name at plan time, same as the preview table's counts) — `destinationPath` below is
+                    // already correct as-is and must NOT be renamed a second time against its own containing folder.
                     let sourcePath = (source as NSString).appendingPathComponent(from)
                     let destinationPath = (destination as NSString).appendingPathComponent(to)
-                    if await Self.moveOrCopyKeepingBoth(sourcePath, to: destinationPath, sameVolume: sameVolume) {
+                    if await Self.moveVerified(sourcePath, to: destinationPath, sameVolume: sameVolume, trashExistingAt: nil) {
                         report.renamed += 1
                     } else {
                         report.failures.append(ProblemItem(path: sourcePath, reason: .other, systemMessage: nil, beforeWrite: true))
@@ -121,8 +126,8 @@ final class FolderMergeController {
     /// outright). Cross-volume: copy the bytes, verify with SHA-256 on both sides (contract §2 "SHA-256 khi khác
     /// ổ"), THEN remove the source — mirroring `FileOperationQueue.copyVerifyTrashOrCopy`'s own measured strategy
     /// for a cross-volume move, kept independent here since this is a plain function the merge steps call directly
-    /// rather than going through a `FileJob` (a merge's "job" for `FileOperationQueue`'s own Operations-panel
-    /// visibility is the trash-the-emptied-folders step below, which DOES enqueue onto the shared queue).
+    /// rather than going through a `FileJob` (neither this nor the trash-emptied-folders step below goes through
+    /// `FileOperationQueue` yet — see the type-level deviation note).
     private nonisolated static func moveVerified(_ sourcePath: String, to destinationPath: String, sameVolume: Bool, trashExistingAt: String?) async -> Bool {
         let fm = FileManager.default
         guard fm.fileExists(atPath: sourcePath) else { return false }
@@ -152,18 +157,6 @@ final class FolderMergeController {
             // `FileOperationQueue.copyVerifyTrashOrCopy` does for the same case.
         }
         return true
-    }
-
-    /// Keep Both: the incoming item is renamed with the same "copy" numbering `FileOperationRules.keepBothName`
-    /// already defines, so the result matches what a plain copy/move conflict would have produced.
-    private nonisolated static func moveOrCopyKeepingBoth(_ sourcePath: String, to destinationFolder: String, sameVolume: Bool) async -> Bool {
-        let fm = FileManager.default
-        guard fm.fileExists(atPath: sourcePath) else { return false }
-        let name = (sourcePath as NSString).lastPathComponent
-        let existing = Set((try? fm.contentsOfDirectory(atPath: destinationFolder)) ?? [])
-        let finalName = FileOperationRules.keepBothName(for: name, existing: existing)
-        let destinationPath = (destinationFolder as NSString).appendingPathComponent(finalName)
-        return await moveVerified(sourcePath, to: destinationPath, sameVolume: sameVolume, trashExistingAt: nil)
     }
 
     private nonisolated static func sameHash(_ a: String, _ b: String) async -> Bool {
