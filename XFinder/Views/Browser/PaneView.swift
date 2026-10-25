@@ -1,20 +1,37 @@
 import SwiftUI
 import AppKit
 
-/// XF-T28 cluster E — one pane: location bar, search/filter bar (only while active), the view for
-/// `pane.viewMode`, and a status line. Handles the `.failed`/`.notPermitted` error state per contract.
+/// XF-T28 cluster E / XF-T30 W1 — one pane: an accent-color cue when it is the active pane of ≥ 2, its own tab
+/// strip (always visible), location bar (per `fileBrowser.showLocationBar`), search/filter bar (also while
+/// `model.filterFocusRequest == pane.id`), the view for `pane.viewMode`, Path Bar (`fileBrowser.showPathBar`) and
+/// Status Bar (`fileBrowser.showStatusBar`) in place of the old always-on status line. Handles the
+/// `.failed`/`.notPermitted` error state per contract.
 struct PaneView: View {
     let pane: PaneState
     let model: BrowserWindowModel
     let isActive: Bool
 
+    /// Same keys/defaults as `BrowserSettings` (contract §4: "via @AppStorage with the SAME defaults as
+    /// BrowserSettings") — a View-menu toggle (`model.perform(.togglePathBar)` etc.) flips the UserDefaults key and
+    /// every open window's `@AppStorage` picks it up without any direct window-to-window wiring.
+    @AppStorage("fileBrowser.showLocationBar") private var showLocationBar = true
+    @AppStorage("fileBrowser.showPathBar") private var showPathBar = false
+    @AppStorage("fileBrowser.showStatusBar") private var showStatusBar = true
+
     var body: some View {
         VStack(spacing: 0) {
-            LocationBarView(pane: pane, model: model)
-                .padding(.horizontal, XFinderTokens.Space.tight)
-                .padding(.top, XFinderTokens.Space.tight)
+            accentLine
 
-            if pane.search != nil || !pane.filterText.isEmpty {
+            PaneTabStripView(paneID: pane.id, model: model, isActive: isActive)
+            Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
+
+            if showLocationBar {
+                LocationBarView(pane: pane, model: model)
+                    .padding(.horizontal, XFinderTokens.Space.tight)
+                    .padding(.top, XFinderTokens.Space.tight)
+            }
+
+            if pane.search != nil || !pane.filterText.isEmpty || model.filterFocusRequest == pane.id {
                 SearchBarView(pane: pane, model: model)
                     .padding(.horizontal, XFinderTokens.Space.tight)
                     .padding(.top, 2)
@@ -24,13 +41,31 @@ struct PaneView: View {
 
             content
 
-            Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
-            statusLine
+            if showPathBar {
+                Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
+                PathBarView(pane: pane, model: model)
+            }
+
+            if showStatusBar {
+                Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
+                StatusBarView(pane: pane)
+            }
         }
         .background(XFinderTokens.Fill.window)
         .contentShape(Rectangle())
         .onTapGesture {
             model.focus(pane.id)
+        }
+    }
+
+    /// Contract §4: "vạch nhấn màu nhấn … trên đỉnh ngăn đang chọn khi có ≥ 2 ngăn (cue duy nhất)" — the only focus
+    /// cue, so it is skipped entirely with a single pane (nothing to distinguish it from).
+    @ViewBuilder
+    private var accentLine: some View {
+        if isActive && model.tree.count >= 2 {
+            Rectangle()
+                .fill(Color.accentColor)
+                .frame(height: XFinderTokens.Space.hairline)
         }
     }
 
@@ -88,30 +123,5 @@ struct PaneView: View {
     private func openFullDiskAccessSettings() {
         guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") else { return }
         NSWorkspace.shared.open(url)
-    }
-
-    private var statusLine: some View {
-        HStack(spacing: XFinderTokens.Space.inline) {
-            Text(itemCountLabel)
-                .font(XFinderTokens.Font.caption)
-                .foregroundColor(.secondary)
-            if !pane.selection.isEmpty {
-                Text("\(pane.selection.count)\(L10n.t(" mục được chọn"))")
-                    .font(XFinderTokens.Font.caption)
-                    .foregroundColor(.secondary)
-            }
-            Spacer()
-            if let free = DirectoryReader.freeSpace(of: pane.path) {
-                Text("\(L10n.t("Còn trống: "))\(ByteCountFormatter.string(fromByteCount: free, countStyle: .file))")
-                    .font(XFinderTokens.Font.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding(.horizontal, XFinderTokens.Space.row)
-        .padding(.vertical, 4)
-    }
-
-    private var itemCountLabel: String {
-        "\(pane.entries.count)\(L10n.t(" mục"))"
     }
 }

@@ -1,9 +1,11 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// XF-T28 cluster E — the file browser window's root chrome: toolbar, sidebar + pane grid, Shelf strip, and the
+/// XF-T28 cluster E / XF-T30 W1 — the file browser window's root chrome: sidebar + pane grid, Shelf strip, and the
 /// sheets/overlays everything else in the window funnels through (conflict, batch rename, recovery, command
-/// palette, a one-line auto-hiding banner).
+/// palette, a one-line auto-hiding banner, and the workspace sheets, now driven by `model.sheet` since the native
+/// `NSToolbar` — builder C's `BrowserToolbarController` — replaces the old SwiftUI toolbar row entirely: this view
+/// no longer draws a toolbar of its own).
 struct BrowserRootView: View {
     static let minimumSize = CGSize(width: 720, height: 460)
     private static let sidebarWidth: CGFloat = 200
@@ -11,24 +13,19 @@ struct BrowserRootView: View {
 
     let model: BrowserWindowModel
 
-    @State private var showingWorkspaceSaveSheet = false
-    @State private var showingOpenWorkspaceSheet = false
-    @State private var showingManageWorkspacesSheet = false
-    @State private var showingOperationsPopover = false
     @State private var workspaceName = ""
     @State private var bannerWorkItem: DispatchWorkItem?
-    @State private var license = LicenseManager.shared
     @State private var isSyncing = false
+    @AppStorage("fileBrowser.showSidebar") private var showSidebar = true
 
     var body: some View {
         VStack(spacing: 0) {
-            toolbar
-            Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
-
             HStack(spacing: 0) {
-                BrowserSidebarView(model: model)
-                    .frame(width: Self.sidebarWidth)
-                Rectangle().fill(XFinderTokens.Fill.hairline).frame(width: 1)
+                if showSidebar {
+                    BrowserSidebarView(model: model)
+                        .frame(width: Self.sidebarWidth)
+                    Rectangle().fill(XFinderTokens.Fill.hairline).frame(width: 1)
+                }
                 VStack(spacing: 0) {
                     if let pair = model.activeSyncPair {
                         syncBar(pair)
@@ -75,148 +72,29 @@ struct BrowserRootView: View {
         )) {
             RecoveryReportSheet(queue: FileOperationQueue.shared)
         }
-        .sheet(isPresented: $showingWorkspaceSaveSheet) {
+        .sheet(isPresented: Binding(
+            get: { model.sheet == .saveWorkspace },
+            set: { if !$0 { model.sheet = nil } }
+        )) {
             saveWorkspaceSheet
         }
-        .sheet(isPresented: $showingOpenWorkspaceSheet) {
+        .sheet(isPresented: Binding(
+            get: { model.sheet == .openWorkspace },
+            set: { if !$0 { model.sheet = nil } }
+        )) {
             openWorkspaceSheet
         }
-        .sheet(isPresented: $showingManageWorkspacesSheet) {
+        .sheet(isPresented: Binding(
+            get: { model.sheet == .manageWorkspaces },
+            set: { if !$0 { model.sheet = nil } }
+        )) {
             ManageWorkspacesSheet(model: model)
         }
         .onChange(of: model.banner) { _, newValue in
             scheduleBannerAutoHide(newValue)
         }
-    }
-
-    // MARK: - Toolbar
-
-    private var toolbar: some View {
-        HStack(spacing: XFinderTokens.Space.inline) {
-            HStack(spacing: 2) {
-                Button { model.active.goBack() } label: { Image(systemName: "chevron.left") }
-                    .disabled(!model.active.history.canGoBack)
-                Button { model.active.goForward() } label: { Image(systemName: "chevron.right") }
-                    .disabled(!model.active.history.canGoForward)
-            }
-
-            Picker("", selection: Binding(
-                get: { model.active.viewMode },
-                set: { model.active.viewMode = $0 }
-            )) {
-                Image(systemName: "list.bullet").tag(BrowserViewMode.list)
-                Image(systemName: "square.grid.2x2").tag(BrowserViewMode.icons)
-                Image(systemName: "rectangle.split.3x1").tag(BrowserViewMode.columns)
-                Image(systemName: "rectangle.grid.1x2").tag(BrowserViewMode.gallery)
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 160)
-
-            presetMenu
-
-            Spacer()
-
-            Button {
-                _ = model.perform(.toggleShelf)
-            } label: {
-                Image(systemName: model.shelfVisible ? "tray.full.fill" : "tray")
-            }
-
-            operationsButton
-
-            workspaceMenu
-        }
-        .padding(.horizontal, XFinderTokens.Space.row)
-        .padding(.vertical, XFinderTokens.Space.tight)
-    }
-
-    /// True once the pane count has reached what Free allows (`ProLimit.browserPanes`, default 2) — the split/preset
-    /// items still work (an already-open layout keeps working per XF-T29 rule 3), they just carry a PRO tag so the
-    /// surface says why a further split needs Pro rather than silently doing nothing.
-    private var paneLimitReachedInFree: Bool {
-        guard let limit = license.limit(.browserPanes) else { return false }
-        return model.tree.count >= limit
-    }
-
-    private var presetMenu: some View {
-        Menu {
-            Button(L10n.t("Một ngăn")) { _ = model.perform(.presetSingle) }
-            Button(L10n.t("Cạnh nhau")) { _ = model.perform(.presetSideBySide) }
-            Button(L10n.t("Chồng lên nhau")) { _ = model.perform(.presetStacked) }
-            Button(L10n.t("Lưới 2×2")) { _ = model.perform(.presetGrid) }
-            Divider()
-            splitMenuItem(L10n.t("Chia ngăn sang phải")) { _ = model.perform(.splitRight) }
-            splitMenuItem(L10n.t("Chia ngăn sang trái")) { _ = model.perform(.splitLeft) }
-            splitMenuItem(L10n.t("Chia ngăn xuống dưới")) { _ = model.perform(.splitDown) }
-            splitMenuItem(L10n.t("Chia ngăn lên trên")) { _ = model.perform(.splitUp) }
-            Divider()
-            Button(L10n.t("Chia đều các ngăn")) { _ = model.perform(.equalizePanes) }
-        } label: {
-            Image(systemName: "rectangle.3.group")
-        }
-    }
-
-    /// A split item: disabled past `PaneTree.maxPanes` same as before, and additionally labelled PRO (still
-    /// clickable, since a menu label can't host `.proGated`'s own disable — the pane limit itself already blocks the
-    /// split once Free's cap is hit via `canPerform`/`PaneTree.canSplit` upstream) once Free's own lower cap is reached.
-    private func splitMenuItem(_ title: String, action: @escaping () -> Void) -> some View {
-        Button {
-            action()
-        } label: {
-            if paneLimitReachedInFree {
-                Text(title + " (" + L10n.t("Pro") + ")")
-            } else {
-                Text(title)
-            }
-        }
-        .disabled(!model.tree.canSplit || paneLimitReachedInFree)
-    }
-
-    private var operationsButton: some View {
-        let activeCount = FileOperationQueue.shared.queue.jobs.filter { !$0.isFinished }.count
-        return Button {
-            showingOperationsPopover = true
-        } label: {
-            HStack(spacing: 2) {
-                Image(systemName: "arrow.left.arrow.right.circle")
-                if activeCount > 0 {
-                    Text("\(activeCount)")
-                        .font(XFinderTokens.Font.caption)
-                }
-            }
-        }
-        .popover(isPresented: $showingOperationsPopover) {
-            OperationsPanelView(queue: FileOperationQueue.shared)
-        }
-    }
-
-    private var workspaceMenu: some View {
-        Menu {
-            Button {
-                workspaceName = ""
-                showingWorkspaceSaveSheet = true
-            } label: {
-                HStack {
-                    Text(L10n.t("Lưu Workspace…"))
-                    if !license.allows(.browserWorkspaces) { ProBadge() }
-                }
-            }
-            Button {
-                showingOpenWorkspaceSheet = true
-            } label: {
-                HStack {
-                    Text(L10n.t("Mở"))
-                    if !license.allows(.browserWorkspaces) { ProBadge() }
-                }
-            }
-            .disabled(model.workspaces.isEmpty)
-            Divider()
-            Button(L10n.t("Quản lý Workspace…")) {
-                showingManageWorkspacesSheet = true
-            }
-            .disabled(model.workspaces.isEmpty)
-        } label: {
-            Image(systemName: "square.stack.3d.up")
+        .onAppear {
+            workspaceName = ""
         }
     }
 
@@ -231,7 +109,7 @@ struct BrowserRootView: View {
                 .onSubmit { commitSaveWorkspace() }
             HStack {
                 Spacer()
-                Button(L10n.t("Dừng")) { showingWorkspaceSaveSheet = false }
+                Button(L10n.t("Dừng")) { model.sheet = nil }
                     .keyboardShortcut(.cancelAction)
                 Button(L10n.t("Lưu Workspace")) {
                     commitSaveWorkspace()
@@ -246,7 +124,7 @@ struct BrowserRootView: View {
 
     private func commitSaveWorkspace() {
         _ = model.saveWorkspace(named: workspaceName)
-        showingWorkspaceSaveSheet = false
+        model.sheet = nil
     }
 
     /// Picks one of `model.workspaces` to replace this window's layout with (`model.openWorkspace(_:)`).
@@ -262,7 +140,7 @@ struct BrowserRootView: View {
                 List(model.workspaces) { workspace in
                     Button {
                         model.openWorkspace(workspace.id)
-                        showingOpenWorkspaceSheet = false
+                        model.sheet = nil
                     } label: {
                         HStack {
                             Text(workspace.name)
@@ -278,7 +156,7 @@ struct BrowserRootView: View {
             }
             HStack {
                 Spacer()
-                Button(L10n.t("Dừng")) { showingOpenWorkspaceSheet = false }
+                Button(L10n.t("Dừng")) { model.sheet = nil }
                     .keyboardShortcut(.cancelAction)
             }
         }

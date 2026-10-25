@@ -1,14 +1,16 @@
 import SwiftUI
 
-/// XF-T28 cluster E — the strip under the location bar: the in-memory filter field (⌘F, `pane.filterText`) and the
-/// natural-language search field (⌥⌘F, `pane.runSearch`) with its chips and scope picker. Only shown while one of
-/// the two is active (filtering/searching) — contract: "PaneView: … SearchBarView (only when filtering/searching)".
+/// XF-T28 cluster E / XF-T30 W1 — the strip under the location bar: the in-memory filter field (⌘F,
+/// `pane.filterText`) and the natural-language search field (⌥⌘F, `pane.runSearch`) with its chips and scope
+/// picker. Shown while filtering/searching, OR while `model.filterFocusRequest == pane.id` (⌘F fired on an empty
+/// filter — the strip must appear so there is a field to focus, then the request is cleared once focus lands).
 struct SearchBarView: View {
     let pane: PaneState
     let model: BrowserWindowModel
 
     @State private var searchText: String = ""
     @State private var editingChip: SearchChip?
+    @FocusState private var filterFieldFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
@@ -22,12 +24,17 @@ struct SearchBarView: View {
                         .font(XFinderTokens.Font.caption)
                         .foregroundColor(.secondary)
                 }
-            } else if !pane.filterText.isEmpty {
+            } else if !pane.filterText.isEmpty || model.filterFocusRequest == pane.id {
                 filterRow
             }
         }
         .onChange(of: pane.search?.text) { _, newValue in
             if let newValue { searchText = newValue }
+        }
+        .onChange(of: model.filterFocusRequest) { _, newValue in
+            guard newValue == pane.id else { return }
+            filterFieldFocused = true
+            model.filterFocusRequest = nil
         }
     }
 
@@ -44,6 +51,7 @@ struct SearchBarView: View {
             ))
             .textFieldStyle(.plain)
             .font(XFinderTokens.Font.rowValue)
+            .focused($filterFieldFocused)
             Button {
                 pane.filterText = ""
             } label: {
