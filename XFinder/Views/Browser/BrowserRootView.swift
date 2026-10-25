@@ -93,13 +93,14 @@ struct BrowserRootView: View {
         .onChange(of: model.banner) { _, newValue in
             scheduleBannerAutoHide(newValue)
         }
-        .onAppear {
-            workspaceName = ""
-        }
     }
 
     /// Names the current window's layout and persists it via `model.saveWorkspace(named:)` (Pro-gated: Free gets a
-    /// banner from the model itself and no workspace is written).
+    /// banner from the model itself and no workspace is written). `workspaceName` is `BrowserRootView`'s own
+    /// long-lived `@State` (the window stays open across many save attempts), so it must be reset to empty every
+    /// time this sheet appears, not just once when the window itself first appears (CLAUDE.md rule 9: "store
+    /// @State trong view sống lâu (popover/panel) phải reset trước khi fetch") — otherwise reopening the sheet after
+    /// a previous save/cancel pre-fills the field with the last-typed name.
     private var saveWorkspaceSheet: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             Text(L10n.t("Lưu Workspace"))
@@ -120,6 +121,9 @@ struct BrowserRootView: View {
         }
         .padding(XFinderTokens.Space.section)
         .frame(width: 320)
+        .onAppear {
+            workspaceName = ""
+        }
     }
 
     private func commitSaveWorkspace() {

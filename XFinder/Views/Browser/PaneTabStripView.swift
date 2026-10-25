@@ -85,19 +85,19 @@ struct PaneTabStripView: View {
             model.selectTab(tab.tabID)
             _ = model.perform(.moveTabToNewPaneRight)
         }
-        .disabled(!model.canPerform(.moveTabToNewPaneRight))
+        .disabled(!focusedCanPerform(.moveTabToNewPaneRight))
         Button(L10n.t("Chuyển tab sang ngăn mới bên dưới")) {
             model.focus(paneID)
             model.selectTab(tab.tabID)
             _ = model.perform(.moveTabToNewPaneBelow)
         }
-        .disabled(!model.canPerform(.moveTabToNewPaneBelow))
+        .disabled(!focusedCanPerform(.moveTabToNewPaneBelow))
         Button(L10n.t("Chuyển tab ra cửa sổ mới")) {
             model.focus(paneID)
             model.selectTab(tab.tabID)
             _ = model.perform(.moveTabToWindow)
         }
-        .disabled(!model.canPerform(.moveTabToWindow))
+        .disabled(!focusedCanPerform(.moveTabToWindow))
     }
 
     private func closeTab(_ tab: TabID) {
@@ -138,17 +138,29 @@ struct PaneTabStripView: View {
                 .font(.system(size: 11))
         }
         .buttonStyle(.plain)
-        .disabled(!(paneID == model.activePane ? model.canPerform(command) : focusedCanPerform(command)))
+        .disabled(!focusedCanPerform(command))
         .help(help)
     }
 
     /// `canPerform` reads the model's CURRENT active pane, not `paneID` — a button on a non-active pane's strip
     /// still needs an answer before the click (which itself calls `model.focus(paneID)` first) actually runs.
-    /// Since every pane's tab-strip button focuses its own pane as the first step of its action, the gate here
-    /// is conservative: a pane with only one tab can still split (it is the SOURCE check that differs per pane,
-    /// not the destination), so this mirrors `canPerform` under the assumption `paneID` is about to become active.
+    /// Bug found in review: this used to just forward to `model.canPerform(command)` unchanged, which means every
+    /// inactive pane's buttons/menu items showed whatever the ACTIVE pane currently allows — e.g. a single-tab
+    /// pane's split buttons would render enabled (not greyed out) whenever some OTHER pane with ≥ 2 tabs happened
+    /// to be active, contradicting contract §3 ("moveTabToNewPane* cần ngăn nguồn ≥ 2 tab", "moveTabToWindow xám
+    /// khi là tab duy nhất của ngăn duy nhất"). Both rules are checkable locally from this pane's own tab count and
+    /// the tree's pane count, so they are applied here on top of the model's own answer, which still carries
+    /// whatever other gating (license/Pro limits) `canPerform` enforces.
     private func focusedCanPerform(_ command: BrowserCommand) -> Bool {
-        model.canPerform(command)
+        guard model.canPerform(command) else { return false }
+        switch command {
+        case .moveTabToNewPaneRight, .moveTabToNewPaneBelow:
+            return model.tabs(of: paneID).count >= 2
+        case .moveTabToWindow:
+            return model.tabs(of: paneID).count > 1 || model.tree.count > 1
+        default:
+            return true
+        }
     }
 
     // MARK: - Drop on strip background (append at end)
