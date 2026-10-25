@@ -457,15 +457,6 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
 
     // MARK: - Action ("…")
 
-    /// Rebuilt on every open from the active selection's commands, filtered by `canPerform` — "the same commands
-    /// as the selection's context menu" (reference app). A fixed, representative set of file-operation commands
-    /// (not literally every `BrowserCommand`, which would also list window/pane-layout chrome that does not belong
-    /// in a per-item action menu).
-    private static let actionCommands: [BrowserCommand] = [
-        .open, .openEnclosing, .getInfo, .rename, .duplicate, .copy, .paste, .pasteMove, .copyPath,
-        .compress, .addToShelf, .showInFinder, .quickLook, .moveToTrash,
-    ]
-
     private func makeActionItem() -> NSToolbarItem {
         let title = L10n.t("Thao tác")
         let menu = NSMenu()
@@ -482,10 +473,18 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
         return item
     }
 
+    /// Rebuilt on every open from `BrowserContextMenu` — "the same commands as the selection's context menu"
+    /// (reference app) is now literally true: the toolbar's "…" shows the exact same `NSMenuItem`s (Finder order,
+    /// Open With submenu, Tags submenu, Copy/Copy as Pathname alternate pair, canPerform-filtered enabling) the
+    /// right-click menu builds for the active pane's selection, rather than a second, separately maintained list.
+    /// `BrowserContextMenu.menu(for:pane:)` always returns a fresh `NSMenu`; its items are moved (not copied) onto
+    /// this button's own menu so the inert face item `makeMenuButton` installed at index 0 survives the rebuild.
     private func rebuildActionMenu(_ menu: NSMenu) {
         clearMenuKeepingFace(menu)
-        for command in Self.actionCommands {
-            menu.addItem(presetMenuItem(L10n.t(BrowserCommands.titleKey(command)), command))
+        let built = BrowserContextMenu.menu(for: model, pane: model.active)
+        for item in built.items {
+            built.removeItem(item)
+            menu.addItem(item)
         }
     }
 
