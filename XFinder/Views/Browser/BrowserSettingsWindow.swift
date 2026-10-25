@@ -931,8 +931,13 @@ private struct PrivacySettingsTab: View {
 
     private func recheckFullDiskAccess() {
         let previous = fullDiskAccess
-        fullDiskAccess = FullDiskAccessProbe.check()
-        if previous != .on && fullDiskAccess == .on { justGranted = true }
+        Task.detached(priority: .utility) {
+            let status = FullDiskAccessProbe.check()
+            await MainActor.run {
+                fullDiskAccess = status
+                if previous != .on && status == .on { justGranted = true }
+            }
+        }
     }
 
     private func openFullDiskAccessSettings() {
@@ -950,7 +955,10 @@ private struct PrivacySettingsTab: View {
                 await MainActor.run { folderStatus[name] = granted ? .granted : .denied }
             }
         }
-        fullDiskAccess = FullDiskAccessProbe.check()
+        Task.detached(priority: .utility) {
+            let status = FullDiskAccessProbe.check()
+            await MainActor.run { fullDiskAccess = status }
+        }
     }
 }
 

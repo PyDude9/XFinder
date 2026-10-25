@@ -122,7 +122,11 @@ private final class OnboardingModel {
     func advance() {
         guard let next = Step(rawValue: step.rawValue + 1) else { return }
         step = next
-        if next == .fullDiskAccess { fullDiskAccess = FullDiskAccessProbe.check() }
+        guard next == .fullDiskAccess else { return }
+        Task.detached(priority: .utility) { [weak self] in
+            let status = FullDiskAccessProbe.check()
+            await MainActor.run { self?.fullDiskAccess = status }
+        }
     }
 
     /// Reading the folder is the real TCC prompt the first time only; a folder already granted in an earlier run
