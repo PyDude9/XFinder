@@ -59,9 +59,13 @@ import Quartz
         }
         // No browser window open and no specific folder asked for: bring back the last session (FileOctopus R46 —
         // closing the last window behaves like quitting; it comes back on the next open). Owner report 2026-10-25:
-        // Side by Side came back as a single pane.
-        if windows.isEmpty, path == nil, BrowserSettings.reopenWindows, restoreSavedSession(),
+        // Side by Side came back as a single pane. A specific folder (deep link, sidebar, "show in folder") restores
+        // the session too and opens as a new tab of the active pane — the layout survives either way.
+        if windows.isEmpty, BrowserSettings.reopenWindows, restoreSavedSession(),
            let first = windows.first, let restored = modelsByWindow[ObjectIdentifier(first)] {
+            if let path, restored.panes[restored.activePane]?.path != path {
+                _ = restored.newTab(in: restored.activePane, path: path)
+            }
             return restored
         }
         let target = path ?? BrowserWindowModel.resolvedNewWindowTarget()
