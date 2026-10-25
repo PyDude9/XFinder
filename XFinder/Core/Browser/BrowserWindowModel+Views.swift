@@ -101,8 +101,14 @@ extension BrowserWindowModel {
         let paths = active.selectedEntries.map(\.path)
         guard !paths.isEmpty else { return }
         Task.detached(priority: .userInitiated) {
+            // Finder semantics: the swatch is a single on/off switch for the WHOLE selection, not per file — only
+            // when every selected item already carries `color` does clicking it remove the tag; otherwise it adds
+            // the tag to every item (including ones that already have it, idempotently). Deciding this per file
+            // (as a naive "has it ⇒ remove, else add" would) swaps tags across a mixed selection instead of
+            // unifying it.
+            let allHaveColor = paths.allSatisfy { Self.existingTags(at: $0).contains { $0.color == color } }
             for path in paths {
-                Self.applyTagToggle(color, at: path)
+                Self.applyTagToggle(color, at: path, removing: allHaveColor)
             }
             await MainActor.run { [weak self] in
                 self?.active.reload()
@@ -110,18 +116,20 @@ extension BrowserWindowModel {
         }
     }
 
+    /// `nonisolated`: runs inside the detached task above, off the main actor — reads one file's xattr only.
+    private nonisolated static func existingTags(at path: String) -> [FinderTag] {
+        guard let data = try? URL(fileURLWithPath: path).extendedAttribute(forName: "com.apple.metadata:_kMDItemUserTags") else {
+            return []
+        }
+        return FinderTags.decodeXattr(data)
+    }
+
     /// `nonisolated`: runs inside the detached task above, off the main actor — reads/writes one file's xattr only.
-    private nonisolated static func applyTagToggle(_ color: TagColor, at path: String) {
+    private nonisolated static func applyTagToggle(_ color: TagColor, at path: String, removing: Bool) {
         let url = URL(fileURLWithPath: path)
         let xattrName = "com.apple.metadata:_kMDItemUserTags"
-        let existing: [FinderTag]
-        if let data = try? url.extendedAttribute(forName: xattrName) {
-            existing = FinderTags.decodeXattr(data)
-        } else {
-            existing = []
-        }
-        let hasColor = existing.contains { $0.color == color }
-        let updated = hasColor ? existing.filter { $0.color != color } : existing + [FinderTag(name: color.titleKey, color: color)]
+        let existing = existingTags(at: path)
+        let updated = removing ? existing.filter { $0.color != color } : existing + [FinderTag(name: color.titleKey, color: color)]
         let encoded = FinderTags.encodeXattr(updated)
         if updated.isEmpty {
             try? url.removeExtendedAttribute(forName: xattrName)
@@ -132,6 +140,25 @@ extension BrowserWindowModel {
 
     // MARK: - Make Alias / Show Original
 
+    /// "photo.jpg" → "photo alias.jpg" (suffix before the LAST extension, same convention as Finder's "Report
+    /// copy.pdf"); a folder (or extension-less file) gets the bare suffix appended with no dot-splitting at all —
+    /// `FileOperationRules.keepBothName` would otherwise treat anything after the file's own last dot (e.g. the
+    /// "jpg" in "photo.jpg alias") as the extension to preserve, producing nonsense like "photo 2.jpg alias".
+    private func aliasFileName(for entry: DirectoryEntry, existing: Set<String>) -> String {
+        guard !entry.isFolderLike, let dot = entry.name.lastIndex(of: "."), dot != entry.name.startIndex else {
+            return FileOperationRules.keepBothName(for: "\(entry.name) alias", existing: existing)
+        }
+        let base = String(entry.name[entry.name.startIndex..<dot])
+        let ext = String(entry.name[entry.name.index(after: dot)...])
+        let strippedExisting = Set(existing.map {
+            // Strip the same extension from each existing name so collisions are detected on the base, not the
+            // whole filename (mirrors how `keepBothName` itself compares bases when it owns the extension split).
+            $0.hasSuffix(".\(ext)") ? String($0.dropLast(ext.count + 1)) : $0
+        })
+        let aliasedBase = FileOperationRules.keepBothName(for: "\(base) alias", existing: strippedExisting)
+        return "\(aliasedBase).\(ext)"
+    }
+
     private func makeAlias() {
         let selected = active.selectedEntries
         guard !selected.isEmpty, active.search == nil, !selectionInTrash(selected) else { return }
@@ -140,7 +167,7 @@ extension BrowserWindowModel {
         var taken = existing
         var createdNames: [String] = []
         for entry in selected {
-            let name = FileOperationRules.keepBothName(for: "\(entry.name) alias", existing: taken)
+            let name = aliasFileName(for: entry, existing: taken)
             taken.insert(name)
             let destination = (folder as NSString).appendingPathComponent(name)
             do {
