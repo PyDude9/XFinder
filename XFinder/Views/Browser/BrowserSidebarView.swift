@@ -99,6 +99,14 @@ struct BrowserSidebarView: View {
             .padding(.vertical, XFinderTokens.Space.row)
         }
         .onAppear(perform: reload)
+        // ⌘E from the menu / key bindings runs the same eject flow as the row's button (EjectRequestCenter).
+        .onChange(of: EjectRequestCenter.shared.pending) { _, _ in
+            guard let mountPath: String = EjectRequestCenter.shared.take(for: model) else { return }
+            let row: VolumeRow = volumes.first { $0.path == mountPath }
+                ?? VolumeRow(path: mountPath, uuid: nil, name: (mountPath as NSString).lastPathComponent, kind: .external,
+                             isEjectable: true)
+            beginEject(row, force: false)
+        }
         .sheet(item: $renamingItem) { target in
             renameSheet(target)
         }

@@ -1,4 +1,5 @@
 import AppKit
+import Observation
 
 /// XF-T30 W3 — the Go menu, recent folders, virtual locations (Recents, tags), Connect to Server, Eject.
 /// Contract docs/specs/XF-T30-w3-contract.md. W3 builder (model).
@@ -118,23 +119,45 @@ extension BrowserWindowModel {
     // MARK: - Eject
 
     /// The volume to eject: the selected entries' volume if there is a selection, else the active tab's own volume.
-    /// Contract §2 describes a multi-volume "this volume / all volumes" sheet and a busy/Force-Eject flow — that UI
-    /// (and `EjectGuard`-driven busy detection) belongs to `BrowserSidebarView`, owned by the W3 AppKit builder, not
-    /// this file. `EjectGuard` (the API this contract names) only ever *dissents* against an eject already under
-    /// way (`DARegisterDisk{Unmount,Eject}ApprovalCallback`); it exposes no "eject this volume" entry point to call
-    /// into. Per the task's stated fallback, this performs a plain, unconditional eject of one volume through
-    /// `NSWorkspace` off main — no multi-volume prompt, no busy/Force-Eject sheet. Flagged in deviations.
     private func ejectTargetVolume() -> URL? {
-        let candidatePath = active.selectedEntries.first?.path ?? active.path
+        let candidatePath: String = active.selectedEntries.first?.path ?? active.path
         guard VirtualLocation.parse(candidatePath) == nil else { return nil }
-        guard let mountPath = DirectoryReader.volumePath(of: candidatePath), mountPath != "/" else { return nil }
+        guard let mountPath: String = DirectoryReader.volumePath(of: candidatePath), mountPath != "/" else { return nil }
         return URL(fileURLWithPath: mountPath)
     }
 
+    /// ⌘E goes through the SAME flow as the sidebar's eject button (multi-volume prompt, busy app with Try Again /
+    /// Force Eject, refusal while an XFinder operation uses the disk) — integration audit 2026-10-25: it used to call
+    /// `unmountAndEjectDevice` directly and skipped all of that. The sidebar of this window performs the request.
     private func performEject() {
-        guard let volume = ejectTargetVolume() else { return }
-        Task.detached(priority: .userInitiated) {
-            try? NSWorkspace.shared.unmountAndEjectDevice(at: volume)
-        }
+        guard let volume: URL = ejectTargetVolume() else { return }
+        EjectRequestCenter.shared.request(mountPath: volume.path, for: self)
+    }
+}
+
+/// One pending ⌘E per window, picked up by that window's sidebar (which owns the eject sheets).
+@MainActor @Observable
+final class EjectRequestCenter {
+    static let shared: EjectRequestCenter = EjectRequestCenter()
+
+    struct Request: Equatable {
+        let mountPath: String
+        let window: ObjectIdentifier
+        let serial: Int
+    }
+
+    private(set) var pending: Request?
+    private var serial: Int = 0
+
+    func request(mountPath: String, for model: BrowserWindowModel) {
+        serial += 1
+        pending = Request(mountPath: mountPath, window: ObjectIdentifier(model), serial: serial)
+    }
+
+    /// The sidebar of `model`'s window takes the request (nil when it is for another window or already taken).
+    func take(for model: BrowserWindowModel) -> String? {
+        guard let request: Request = pending, request.window == ObjectIdentifier(model) else { return nil }
+        pending = nil
+        return request.mountPath
     }
 }
