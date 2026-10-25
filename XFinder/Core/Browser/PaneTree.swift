@@ -403,9 +403,10 @@ private extension PaneTree {
 
 extension PaneTree {
     /// ⌃⇧⌘←→↑↓ (Pane on Left/Right/Above/Below): the pane adjacent to `pane` in `dir`, by the frames the layout gives
-    /// in `rect` — grid-aware, never creation order. Among panes whose frame lies wholly on that side and touches or
-    /// overlaps the source's span on the cross axis, the one with the largest overlap wins; a tie goes to the nearest
-    /// centre. nil at the window edge.
+    /// in `rect` — grid-aware, never creation order. Among panes whose frame lies wholly on that side and overlaps the
+    /// source's span on the cross axis, the one with the largest overlap wins; ties go to the nearest one along the
+    /// direction of travel (the adjacent column/row, never one further away), then to the top-most / left-most one —
+    /// a total order, so the answer never depends on dictionary iteration order. nil at the window edge.
     ///
     /// Geometry is computed ignoring zoom (`Self.layout` directly, not `frames(in:divider:)`): while zoomed there is
     /// only one visible pane, so directional focus has nothing to compare against, but the underlying grid still has
@@ -417,7 +418,7 @@ extension PaneTree {
         Self.layout(root, in: rect, divider: divider, path: [], into: &laid, dividers: &noDividers)
         guard let source = laid[pane] else { return nil }
 
-        var best: (id: PaneID, overlap: CGFloat, centerDistance: CGFloat)?
+        var best: (id: PaneID, overlap: CGFloat, gap: CGFloat, cross: CGFloat)?
         for (id, frame) in laid where id != pane {
             let isOnSide: Bool
             let overlap: CGFloat
@@ -436,19 +437,25 @@ extension PaneTree {
                 overlap = Self.overlap1D(source.minX, source.maxX, frame.minX, frame.maxX)
             }
             guard isOnSide, overlap > 0 else { continue }
-            let centerDistance: CGFloat
+            // Distance from the source's edge to the candidate's near edge (0 for the adjacent column/row), and the
+            // candidate's position on the cross axis for the final tie-break.
+            let gap: CGFloat
+            let cross: CGFloat
             switch dir {
-            case .left, .right:
-                centerDistance = abs(frame.midX - source.midX)
-            case .up, .down:
-                centerDistance = abs(frame.midY - source.midY)
+            case .left: gap = source.minX - frame.maxX; cross = frame.minY
+            case .right: gap = frame.minX - source.maxX; cross = frame.minY
+            case .up: gap = source.minY - frame.maxY; cross = frame.minX
+            case .down: gap = frame.minY - source.maxY; cross = frame.minX
             }
-            if let current = best {
-                if overlap > current.overlap || (overlap == current.overlap && centerDistance < current.centerDistance) {
-                    best = (id, overlap, centerDistance)
-                }
-            } else {
-                best = (id, overlap, centerDistance)
+            let candidate = (id: id, overlap: overlap, gap: gap, cross: cross)
+            guard let current = best else { best = candidate; continue }
+            let eps: CGFloat = 0.001
+            if overlap > current.overlap + eps
+                || (abs(overlap - current.overlap) <= eps && gap < current.gap - eps)
+                || (abs(overlap - current.overlap) <= eps && abs(gap - current.gap) <= eps && cross < current.cross - eps)
+                || (abs(overlap - current.overlap) <= eps && abs(gap - current.gap) <= eps && abs(cross - current.cross) <= eps
+                    && id < current.id) {
+                best = candidate
             }
         }
         return best?.id

@@ -728,9 +728,20 @@ final class PaneTreeTests: XCTestCase {
         // only up to their own width — p1 overlaps [0,400]=400pt, p2 overlaps [400,800]=400pt: a true tie on
         // overlap, so the nearer center must decide. p0's center x = 400; p1's center x = 200 (distance 200);
         // p2's center x = 600 (distance 200) — genuinely tied, so just assert one of them is returned deterministically.
-        let result = t.neighbor(of: p0, toward: .down, in: rect, divider: 0)
-        XCTAssertNotNil(result)
-        XCTAssertTrue(result == p1 || result == p2)
+        // A true tie on overlap and distance: the left-most wins, every time (no dictionary-order dependence).
+        for _ in 0..<20 { XCTAssertEqual(t.neighbor(of: p0, toward: .down, in: rect, divider: 0), p1) }
+    }
+
+    func testNeighborPicksTheAdjacentColumnNotAFartherOne() {
+        // A | B | C, all full height: moving right from A must land on B (equal overlap with C, but B is adjacent).
+        var t = PaneTree()
+        let a = PaneID(raw: 0)
+        let b = t.split(a, .right)!
+        let c = t.split(b, .right)!
+        let rect = CGRect(x: 0, y: 0, width: 900, height: 600)
+        XCTAssertEqual(t.neighbor(of: a, toward: .right, in: rect, divider: 0), b)
+        XCTAssertEqual(t.neighbor(of: c, toward: .left, in: rect, divider: 0), b)
+        XCTAssertNil(t.neighbor(of: c, toward: .right, in: rect, divider: 0))
     }
 
     // MARK: - XF-T30 W1: resize

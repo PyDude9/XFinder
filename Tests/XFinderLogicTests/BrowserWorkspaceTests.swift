@@ -94,6 +94,17 @@ final class BrowserWorkspaceTests: XCTestCase {
         XCTAssertTrue(r.window.panes[1].history.back.contains("/kept/sub"))
     }
 
+    func testRestoreClampsAnOutOfRangeSelectedTab() {
+        var w = window(["/a"])
+        let t1 = TabSnapshot(path: "/a", viewMode: .list, sort: .finderDefault, history: PaneHistory(current: "/a"), showHidden: false)
+        let t2 = TabSnapshot(path: "/b", viewMode: .icons, sort: .finderDefault, history: PaneHistory(current: "/b"), showHidden: false)
+        w.panes[0] = PaneSnapshot(id: w.panes[0].id, tabs: [t1, t2], selectedTab: 1)
+        w.panes[0].selectedTab = 7                       // a hand-edited / damaged file
+        let r = SessionRestore.restored(w, exists: { _ in true }, home: "/h")
+        XCTAssertEqual(r.window.panes[0].selectedTab, 1, "the stored index is clamped, so the next save is clean too")
+        XCTAssertEqual(r.window.panes[0].path, "/b", "the v1 mirror follows the clamped tab")
+    }
+
     func testRestoreRepairsATreeAndPaneListThatDisagree() {
         var w = window(["/a", "/b"])
         let orphan = PaneSnapshot(id: PaneID(raw: 99), path: "/x", viewMode: .list, sort: .finderDefault,

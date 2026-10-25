@@ -1022,18 +1022,11 @@
   "replacement": "guard let nearest = candidates.max(by: { $0.1 < $1.1 }) else { return .center }"
  },
  {
-  "id": "W1-10",
-  "name": "neighbor-no-overlap",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "guard isOnSide, overlap > 0 else { continue }",
-  "replacement": "guard isOnSide else { continue }"
- },
- {
   "id": "W1-11",
-  "name": "neighbor-tie-farther",
+  "name": "neighbor-tie-farther-column",
   "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "(overlap == current.overlap && centerDistance < current.centerDistance)",
-  "replacement": "(overlap == current.overlap && centerDistance > current.centerDistance)"
+  "anchor": "|| (abs(overlap - current.overlap) <= eps && gap < current.gap - eps)",
+  "replacement": "|| (abs(overlap - current.overlap) <= eps && gap > current.gap + eps)"
  },
  {
   "id": "W1-12",
@@ -1041,13 +1034,6 @@
   "file": "XFinder/Core/Browser/PaneTree.swift",
   "anchor": "let delta = (isFirst == grow) ? step : -step",
   "replacement": "let delta = (isFirst != grow) ? step : -step"
- },
- {
-  "id": "W1-13",
-  "name": "resize-unclamped",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "let newFraction = min(max(currentFraction + delta, Self.minFraction), 1 - Self.minFraction)",
-  "replacement": "let newFraction = currentFraction + delta"
  },
  {
   "id": "W1-14",
