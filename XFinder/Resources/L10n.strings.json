@@ -13978,6 +13978,118 @@
     "Gần đây và ưa thích": {
       "en": "Recent and Favorites",
       "scope": "sentence"
+    },
+    "Bạn có chắc muốn xoá mục này khỏi Google Drive?": {
+      "en": "Are you sure you want to remove this item from Google Drive?",
+      "scope": "sentence"
+    },
+    "Bạn có chắc muốn xoá các mục này khỏi Google Drive?": {
+      "en": "Are you sure you want to remove these items from Google Drive?",
+      "scope": "sentence"
+    },
+    "Mục này cũng sẽ chuyển vào thùng rác của Google Drive, không chỉ Thùng rác trên máy.": {
+      "en": "This also moves the item into Google Drive's own trash, not just the Trash on this Mac.",
+      "scope": "sentence"
+    },
+    "Một số mục chỉ có trên đám mây — bấm \"Tải về ngay\" trước khi chép ra ngoài": {
+      "en": "Some items are cloud-only — click \"Download Now\" before copying them out",
+      "scope": "sentence"
+    },
+    "Nhà cung cấp đám mây khác": {
+      "en": "Other Cloud Providers",
+      "scope": "sentence"
+    },
+    "Chưa phát hiện nhà cung cấp đám mây nào khác.": {
+      "en": "No other cloud providers detected.",
+      "scope": "sentence"
+    },
+    "Tải ": {
+      "en": "Download ",
+      "scope": "fragment"
+    },
+    "…": {
+      "en": "…",
+      "scope": "fragment"
+    },
+    "Hiện": {
+      "en": "Show",
+      "scope": "sentence"
+    },
+    "Ẩn trong XFinder": {
+      "en": "Hide in XFinder",
+      "scope": "sentence"
+    },
+    " chưa được cài.": {
+      "en": " isn't installed.",
+      "scope": "fragment"
+    },
+    "đang chạy": {
+      "en": "running",
+      "scope": "fragment"
+    },
+    "chưa chạy": {
+      "en": "not running",
+      "scope": "fragment"
+    },
+    " đã cài, ": {
+      "en": " is installed, ",
+      "scope": "fragment"
+    },
+    ", chưa thấy thư mục đồng bộ.": {
+      "en": ", no synced folder found yet.",
+      "scope": "fragment"
+    },
+    " (đang ẩn trong XFinder)": {
+      "en": " (hidden in XFinder)",
+      "scope": "fragment"
+    },
+    "Trong": {
+      "en": "In",
+      "scope": "sentence"
+    },
+    "Sao chép câu tìm": {
+      "en": "Copy Search Text",
+      "scope": "sentence"
+    },
+    "Xoá tìm kiếm đã lưu": {
+      "en": "Delete Saved Search",
+      "scope": "sentence"
+    },
+    "Đã có tìm kiếm đã lưu khác tên này": {
+      "en": "Another saved search already has this name",
+      "scope": "sentence"
+    },
+    "Đang cập nhật chỉ mục…": {
+      "en": "Updating index…",
+      "scope": "sentence"
+    },
+    "Các ngăn đang mở": {
+      "en": "Open Panes",
+      "scope": "sentence"
+    },
+    "Lưu tìm kiếm…": {
+      "en": "Save Search…",
+      "scope": "sentence"
+    },
+    "Nơi chứa": {
+      "en": "Location",
+      "scope": "sentence"
+    },
+    "tên": {
+      "en": "name",
+      "scope": "fragment"
+    },
+    "nội dung": {
+      "en": "content",
+      "scope": "fragment"
+    },
+    "Không có tìm kiếm đã lưu nào": {
+      "en": "No saved searches",
+      "scope": "sentence"
+    },
+    "Đổi tên tìm kiếm đã lưu": {
+      "en": "Rename Saved Search",
+      "scope": "sentence"
     }
   }
 }
