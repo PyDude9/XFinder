@@ -52,6 +52,17 @@ actor FilenameIndex {
     private var roots: [String: IndexRoot] = [:]                 // root id -> current settings
     private var rootOrder: [String] = []                         // stable order for `status()`
     private var crawlTasks: [String: Task<Void, Never>] = [:]
+    /// The generation number the CURRENTLY-LAUNCHED crawl task for a root is building, set the instant `startCrawl`
+    /// creates that task. `finishCrawl` compares its own captured `generation` against this instead of asking
+    /// `crawlTasks[rootID]?.isCancelled`: that flag belongs to whatever Task object happens to be sitting in the
+    /// dictionary AT THE TIME `finishCrawl` runs, which is not necessarily the same Task that is finishing — a
+    /// superseding crawl (`rebuild`, a root whose path changed, or any path that calls `startCrawl` again before
+    /// the previous crawl's Task has actually stopped running) overwrites `crawlTasks[rootID]` with a brand new,
+    /// not-yet-cancelled Task, so the OLD crawl's `finishCrawl` would read that NEW task's `isCancelled` (false) and
+    /// wrongly promote its own stale generation to `active_generation`, racing the real (new) crawl. Comparing
+    /// generations is correct regardless of which Task object is current, because every `startCrawl` always
+    /// allocates a fresh, strictly increasing generation number.
+    private var crawlGeneration: [String: Int] = [:]
     private var streams: [String: FSEventStreamRef] = [:]
     /// Per-root generation counter kept in memory as a fast mirror of `index_generation`; the table itself
     /// remains the source of truth across relaunches.
@@ -382,11 +393,22 @@ actor FilenameIndex {
             return
         }
 
+        // Any crawl already running for this root is for a stale generation (or, after a path change, a stale
+        // PATH) the moment a new one is about to start — cancel it so its `finishCrawl` sees `Task.isCancelled`
+        // and exits without racing this one. (Every call site that starts a crawl funnels through here, including
+        // the `setRoots` "path changed under the same id" branch, which previously started a brand new crawl
+        // without cancelling whatever was still indexing the OLD path.)
+        crawlTasks[root.id]?.cancel()
+
         let home = fileManager.homeDirectoryForCurrentUser.path
         let generation = forceNewGeneration || statuses[root.id] == nil || statuses[root.id] == .failed
             ? newGeneration(db, rootID: root.id)
             : newGeneration(db, rootID: root.id)   // always a fresh generation: crawling never edits one in place
         statuses[root.id] = .indexing(done: 0)
+        // Recorded BEFORE the task launches so `finishCrawl` can tell whether it is still the latest crawl for
+        // this root by comparing generations, independent of which `Task` object `crawlTasks[root.id]` holds by
+        // the time it runs (see `crawlGeneration`'s doc comment).
+        crawlGeneration[root.id] = generation
 
         var st: OpaquePointer?
         let now = Date().timeIntervalSince1970
@@ -456,8 +478,36 @@ actor FilenameIndex {
         }
         var ftsStmt: OpaquePointer?
         sqlite3_prepare_v2(db, "INSERT INTO name_fts(rowid, name_key) VALUES (?, ?)", -1, &ftsStmt, nil)
+        // `names` has no secure-delete trigger, so an `INSERT OR REPLACE` that hits an existing (root_id, generation,
+        // path) row (the FSEvents update/rescan paths re-insert a path already present) deletes that row and gives
+        // the replacement a BRAND NEW rowid — `name_fts` is content-less and keyed by rowid, so the OLD fts row is
+        // left pointing at a rowid nothing in `names` owns any more (a permanent ghost hit for the old name) while
+        // the NEW names row gets no fts row at all (invisible to substring search) — found by probing
+        // `INSERT OR REPLACE` against a composite-PK table with sqlite3 directly (the new row's rowid was MAX+1, not
+        // the row it replaced) and confirmed against this exact schema shape. Fixed by deleting any existing fts row
+        // for this path FIRST, every time, before the replace — cheap during a fresh crawl (the lookup misses, one
+        // indexed point query) and correct during a live update (the lookup hits, one old rowid retired).
+        var oldRowidStmt: OpaquePointer?
+        sqlite3_prepare_v2(
+            db, "SELECT rowid FROM names WHERE root_id = ? AND generation = ? AND path = ?", -1, &oldRowidStmt, nil
+        )
+        var deleteFtsStmt: OpaquePointer?
+        sqlite3_prepare_v2(db, "DELETE FROM name_fts WHERE rowid = ?", -1, &deleteFtsStmt, nil)
 
         for entry in entries {
+            if let oldRowidStmt, let deleteFtsStmt {
+                sqlite3_reset(oldRowidStmt)
+                sqlite3_bind_text(oldRowidStmt, 1, rootID, -1, SQLITE_TRANSIENT)
+                sqlite3_bind_int64(oldRowidStmt, 2, Int64(generation))
+                sqlite3_bind_text(oldRowidStmt, 3, entry.path, -1, SQLITE_TRANSIENT)
+                if sqlite3_step(oldRowidStmt) == SQLITE_ROW {
+                    let oldRowid = sqlite3_column_int64(oldRowidStmt, 0)
+                    sqlite3_reset(deleteFtsStmt)
+                    sqlite3_bind_int64(deleteFtsStmt, 1, oldRowid)
+                    sqlite3_step(deleteFtsStmt)
+                }
+            }
+
             sqlite3_reset(nameStmt)
             let parent = (entry.path as NSString).deletingLastPathComponent
             let nameKey = String(decoding: entry.nameKey, as: UTF8.self)
@@ -485,6 +535,8 @@ actor FilenameIndex {
         }
         sqlite3_finalize(nameStmt)
         if let ftsStmt { sqlite3_finalize(ftsStmt) }
+        if let oldRowidStmt { sqlite3_finalize(oldRowidStmt) }
+        if let deleteFtsStmt { sqlite3_finalize(deleteFtsStmt) }
         exec(db, "COMMIT;")
         statuses[rootID] = .indexing(done: inserted)
         return inserted
@@ -492,10 +544,19 @@ actor FilenameIndex {
 
     private func finishCrawl(rootID: String, generation: Int, itemCount: Int) {
         guard let db = openIfNeeded() else { return }
-        guard !(crawlTasks[rootID]?.isCancelled ?? false) else {
-            crawlTasks[rootID] = nil
-            return
-        }
+        // A superseding crawl (rebuild, a path change, or any other `startCrawl` call for this root) may already
+        // have overwritten `crawlTasks[rootID]` with a new, not-yet-cancelled Task by the time THIS crawl's
+        // `finishCrawl` runs — `crawlTasks[rootID]?.isCancelled` would then read the WRONG task and wrongly treat
+        // a stale crawl as still current. Comparing against `crawlGeneration[rootID]` (the generation the most
+        // recently LAUNCHED crawl is building, set at launch, independent of Task identity) is what actually
+        // answers "is this still the current crawl for this root", and also doubles as the Task-cancellation
+        // check: cancelling a Task cannot be observed at all once `crawlSubtree` has already returned, but a
+        // generation mismatch always can be. The own task's cancellation during `crawlSubtree` is covered too — a
+        // genuinely-cancelled crawl's Task identity was replaced by this same `startCrawl` → `crawlGeneration`
+        // bump before cancellation happened, since cancelling the old task and starting the new one happen in the
+        // same synchronous call.
+        guard crawlGeneration[rootID] == generation else { return }
+
         // Atomic switch: `active_generation` only changes once this generation's rows are fully committed, so a
         // concurrent `search` never sees a half-built generation (contract §1 "never half-indexed").
         exec(db, "BEGIN IMMEDIATE;")
