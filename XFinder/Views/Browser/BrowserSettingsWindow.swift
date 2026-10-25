@@ -333,9 +333,27 @@ private struct SidebarSettingsTab: View {
 
 // MARK: - Cloud
 
+/// XF-T30 W8 — Settings ▸ Cloud: per-provider status (installed / running / account), Open app, Check Again, Hide in
+/// XFinder. Contract §W8 "không OAuth, không đọc token" — every state below comes from LaunchServices (bundle id →
+/// installed app URL) and `NSRunningApplication` (process list), never a provider SDK/login. "Hide in XFinder" never
+/// disconnects the provider's own app or touches its sync folder — it only removes that provider's sidebar rows,
+/// same spirit as the master "Hiện đám mây trong sidebar" toggle but scoped to one provider.
+private struct CloudProviderStatus: Equatable {
+    enum State: Equatable { case notInstalled, installedNoAccount(running: Bool), connected(running: Bool) }
+    let bundleID: String
+    let name: String
+    var state: State
+    /// Non-nil only for a provider the folder scan under `~/Library/CloudStorage` actually found (the closest this
+    /// app comes to "has an account", since it never logs into the provider itself — contract: "không đọc token").
+    var accountLabel: String?
+}
+
 private struct CloudSettingsTab: View {
     @AppStorage("fileBrowser.sidebar.cloudStorage") private var showInSidebar = true
-    @State private var providerFolders: [String] = []
+    @State private var googleDrive = CloudProviderStatus(bundleID: "com.google.drivefs", name: "Google Drive", state: .notInstalled, accountLabel: nil)
+    @State private var dropbox = CloudProviderStatus(bundleID: "com.getdropbox.dropbox", name: "Dropbox", state: .notInstalled, accountLabel: nil)
+    @State private var otherProviderFolders: [String] = []
+    @State private var hiddenProviders: Set<String> = CloudHiddenProviders.load()
 
     var body: some View {
         SettingsSection(title: L10n.t("Đám mây trong sidebar")) {
@@ -345,36 +363,152 @@ private struct CloudSettingsTab: View {
                 .settingsRow()
         }
 
-        SettingsSection(title: L10n.t("Nhà cung cấp đã phát hiện"),
+        SettingsSection(title: "Google Drive") {
+            providerRow(googleDrive) { toggleHidden(googleDrive.bundleID) }
+        }
+
+        SettingsSection(title: "Dropbox") {
+            providerRow(dropbox) { toggleHidden(dropbox.bundleID) }
+        }
+
+        SettingsSection(title: L10n.t("Nhà cung cấp đám mây khác"),
                         footer: L10n.t("Đọc từ ~/Library/CloudStorage — đăng nhập và đồng bộ qua ứng dụng riêng của mỗi hãng, XFinder không có OAuth riêng.")) {
-            if providerFolders.isEmpty {
-                Text(L10n.t("Chưa phát hiện nhà cung cấp đám mây nào."))
+            if otherProviderFolders.isEmpty {
+                Text(L10n.t("Chưa phát hiện nhà cung cấp đám mây nào khác."))
                     .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
                     .settingsRow()
             } else {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(providerFolders, id: \.self) { name in
+                    ForEach(otherProviderFolders, id: \.self) { name in
                         HStack {
                             Image(systemName: "cloud").foregroundColor(.secondary).font(XFinderTokens.Font.caption)
                             Text(name).font(XFinderTokens.Font.rowValue).lineLimit(1).truncationMode(.middle)
                             Spacer()
                         }
                         .settingsRow()
-                        if name != providerFolders.last { SettingsDivider() }
+                        if name != otherProviderFolders.last { SettingsDivider() }
                     }
                 }
             }
         }
-        .onAppear(perform: reloadProviders)
+        .onAppear(perform: reloadAll)
     }
 
-    /// `~/Library/CloudStorage` listing is disk I/O — never on the main thread (CLAUDE.md rule 14/58).
-    private func reloadProviders() {
-        Task.detached(priority: .utility) {
-            let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/CloudStorage")
-            let names = (try? FileManager.default.contentsOfDirectory(atPath: root.path).sorted()) ?? []
-            await MainActor.run { providerFolders = names }
+    @ViewBuilder
+    private func providerRow(_ status: CloudProviderStatus, onToggleHidden: @escaping () -> Void) -> some View {
+        let isHidden = hiddenProviders.contains(status.bundleID)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(statusLineText(status, isHidden: isHidden))
+                    .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary)
+                Spacer()
+            }
+            .settingsRow()
+            SettingsDivider()
+            HStack {
+                switch status.state {
+                case .notInstalled:
+                    Button(L10n.t("Tải ") + status.name + L10n.t("…")) { openDownloadPage(for: status) }
+                        .controlSize(.small)
+                case .installedNoAccount:
+                    Button(L10n.t("Mở ") + status.name) { openApp(bundleID: status.bundleID) }
+                        .controlSize(.small)
+                case .connected:
+                    Button(L10n.t("Mở ") + status.name) { openApp(bundleID: status.bundleID) }
+                        .controlSize(.small)
+                    Button(isHidden ? L10n.t("Hiện") : L10n.t("Ẩn trong XFinder")) { onToggleHidden() }
+                        .controlSize(.small)
+                }
+                Button(L10n.t("Kiểm lại")) { reloadAll() }
+                    .controlSize(.small)
+                Spacer()
+            }
+            .settingsRow()
         }
+    }
+
+    /// Spec §4: not-installed / installed-no-account / connected, each with a plain-language status line — never a
+    /// "Disconnect" control anywhere (contract: "never disconnects").
+    private func statusLineText(_ status: CloudProviderStatus, isHidden: Bool) -> String {
+        switch status.state {
+        case .notInstalled:
+            return status.name + L10n.t(" chưa được cài.")
+        case .installedNoAccount(let running):
+            let runningPart = running ? L10n.t("đang chạy") : L10n.t("chưa chạy")
+            return status.name + L10n.t(" đã cài, ") + runningPart + L10n.t(", chưa thấy thư mục đồng bộ.")
+        case .connected(let running):
+            let runningPart = running ? L10n.t("đang chạy") : L10n.t("chưa chạy")
+            var line = status.name + L10n.t(" đã cài, ") + runningPart
+            if let account = status.accountLabel { line += L10n.t(" — ") + account }
+            if isHidden { line += L10n.t(" (đang ẩn trong XFinder)") }
+            return line
+        }
+    }
+
+    private func toggleHidden(_ bundleID: String) {
+        if hiddenProviders.contains(bundleID) {
+            hiddenProviders.remove(bundleID)
+        } else {
+            hiddenProviders.insert(bundleID)
+        }
+        CloudHiddenProviders.save(hiddenProviders)
+    }
+
+    private func openApp(bundleID: String) {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return }
+        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    private func openDownloadPage(for status: CloudProviderStatus) {
+        let urlString = status.bundleID == "com.google.drivefs"
+            ? "https://www.google.com/drive/download/"
+            : "https://www.dropbox.com/install"
+        guard let url = URL(string: urlString) else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    /// LaunchServices (`urlForApplication(withBundleIdentifier:)`) and the running-process list are both disk/IPC
+    /// reads — off the main thread (CLAUDE.md rule 14), same pattern as `PrivacySettingsTab.recheckFullDiskAccess`.
+    private func reloadAll() {
+        Task.detached(priority: .utility) {
+            let googleInstalled = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.google.drivefs") != nil
+            let dropboxInstalled = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.getdropbox.dropbox") != nil
+            let googleRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "com.google.drivefs").isEmpty
+            let dropboxRunning = !NSRunningApplication.runningApplications(withBundleIdentifier: "com.getdropbox.dropbox").isEmpty
+
+            let root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/CloudStorage")
+            let folderNames = (try? FileManager.default.contentsOfDirectory(atPath: root.path).sorted()) ?? []
+            let parsed = folderNames.compactMap { CloudProviders.parse(folderName: $0, root: root.path) }
+            let googleAccounts = parsed.filter { $0.kind == .googleDrive }.map(\.displayName)
+            let dropboxAccounts = parsed.filter { $0.kind == .dropbox }.map(\.displayName)
+            let otherNames = parsed.filter { $0.kind != .googleDrive && $0.kind != .dropbox }.map(\.displayName).sorted()
+
+            await MainActor.run {
+                googleDrive.state = !googleInstalled ? .notInstalled
+                    : (googleAccounts.isEmpty ? .installedNoAccount(running: googleRunning) : .connected(running: googleRunning))
+                googleDrive.accountLabel = googleAccounts.first
+                dropbox.state = !dropboxInstalled ? .notInstalled
+                    : (dropboxAccounts.isEmpty ? .installedNoAccount(running: dropboxRunning) : .connected(running: dropboxRunning))
+                dropbox.accountLabel = dropboxAccounts.first
+                otherProviderFolders = otherNames
+            }
+        }
+    }
+}
+
+/// Per-provider "Hide in XFinder" (spec §4: a provider stays installed/synced on disk, only its sidebar rows
+/// disappear). A plain `Set<String>` of bundle ids in one key — not a `FeatureKeyDefaultsTests` row candidate, same
+/// as `BrowserSettings.indexRoots` above it: not a feature toggle, a per-item preference with no single default
+/// that a view's `@AppStorage` needs to match.
+enum CloudHiddenProviders {
+    private static let key = "fileBrowser.cloud.hiddenProviders"
+
+    static func load() -> Set<String> {
+        Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
+    }
+
+    static func save(_ ids: Set<String>) {
+        UserDefaults.standard.set(Array(ids).sorted(), forKey: key)
     }
 }
 

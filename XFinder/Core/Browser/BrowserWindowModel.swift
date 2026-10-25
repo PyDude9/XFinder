@@ -684,10 +684,10 @@ enum BrowserSheet: String, Identifiable {
             break   // view-only: opens the workspace list sheet.
         case .downloadNow:
             guard batchCloudGated(active.selectedEntries) else { return true }
-            downloadSelectionNow()
+            downloadSelectionNowCloudAware()   // XF-T30 W8 hook: BrowserWindowModel+Cloud.swift
         case .removeDownload:
             guard batchCloudGated(active.selectedEntries) else { return true }
-            removeDownloadForSelection()
+            removeDownloadForSelectionCloudAware()   // XF-T30 W8 hook: BrowserWindowModel+Cloud.swift
         case .showInFinder:
             let urls = active.selectedEntries.map { URL(fileURLWithPath: $0.path) }
             guard !urls.isEmpty else { return false }
@@ -798,8 +798,10 @@ enum BrowserSheet: String, Identifiable {
             return !active.selectedEntries.isEmpty
         case .batchRename:
             return !active.entries.isEmpty
-        case .downloadNow, .removeDownload:
-            return !active.selectedEntries.isEmpty
+        case .downloadNow:
+            return canDownloadNowCloudAware   // XF-T30 W8 hook: BrowserWindowModel+Cloud.swift
+        case .removeDownload:
+            return canRemoveDownloadCloudAware   // XF-T30 W8 hook: BrowserWindowModel+Cloud.swift
         case .undo:
             return true
         case .newWindow, .newFolder, .toggleHidden, .selectAll, .viewIcons, .viewList, .viewColumns, .viewGallery,
@@ -1013,6 +1015,7 @@ enum BrowserSheet: String, Identifiable {
     private func trashSelection() {
         let paths = active.selectedEntries.map(\.path)
         guard !paths.isEmpty else { return }
+        guard confirmTrashIfGoogleDrive(paths: paths) else { return }   // XF-T30 W8 hook
         _ = FileOperationQueue.shared.enqueue(.trash, sources: paths, destination: nil)
     }
 
@@ -1081,6 +1084,7 @@ enum BrowserSheet: String, Identifiable {
             banner = "Không thể chép một thư mục vào chính nó"
             return
         }
+        guard !blockCrossBoundaryCloudDrop(paths: paths, destination: folder) else { return }   // XF-T30 W8 hook
         let sameVolume = DirectoryReader.volumeID(of: folder) != nil
             && paths.allSatisfy { DirectoryReader.volumeID(of: $0) == DirectoryReader.volumeID(of: folder) }
         let shouldCopy: Bool
@@ -1200,17 +1204,9 @@ enum BrowserSheet: String, Identifiable {
 
     // MARK: - Cloud
 
-    private func downloadSelectionNow() {
-        for entry in active.selectedEntries {
-            try? FileManager.default.startDownloadingUbiquitousItem(at: URL(fileURLWithPath: entry.path))
-        }
-    }
-
-    private func removeDownloadForSelection() {
-        for entry in active.selectedEntries {
-            try? FileManager.default.evictUbiquitousItem(at: URL(fileURLWithPath: entry.path))
-        }
-    }
+    // XF-T30 W8: downloadSelectionNowCloudAware()/removeDownloadForSelectionCloudAware() in
+    // BrowserWindowModel+Cloud.swift replace the two private helpers that used to live here (they skipped
+    // non-eligible items with no `CloudRules` check at all — e.g. Remove Download could evict a file mid-upload).
 
     // MARK: - Banner
 
