@@ -279,7 +279,11 @@ struct BrowserSidebarView: View {
 
     private func scheduleSpringLoad(path: String) {
         cancelSpringLoad()
-        let delay = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0 : 0.6
+        // System Settings ▸ Accessibility ▸ Pointer Control ▸ Spring-loading decides both whether and how fast
+        // (review 2026-10-25: a hard-coded 0.6 s ignored the switch and the user's delay).
+        let spring: (enabled: Bool, delay: TimeInterval) = DragDropCoordinator.springLoading
+        guard spring.enabled else { return }
+        let delay: TimeInterval = max(0, spring.delay)
         springLoadTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             guard !Task.isCancelled else { return }

@@ -259,7 +259,32 @@ struct KeyBindings: Codable, Equatable, Sendable {
             tabSwitchesPanes: raw.tabSwitchesPanes,
             mouse: raw.mouse
         )
+        // Review 2026-10-25: duplicates were only looked for INSIDE the file's overrides, so an override taking a
+        // chord that an untouched command still holds by default (⌘C for .duplicate while .copy keeps ⌘C) imported
+        // cleanly and left one of them unreachable. Check the EFFECTIVE table the import would produce.
+        let clashes: [ImportError] = Self.effectiveClashes(of: bindings, overridden: Set(raw.overrides.keys))
+        guard clashes.isEmpty else { return .failure(ImportFailure(errors: clashes)) }
         return .success(bindings)
+    }
+
+    /// Every overridden command whose chord (primary or extra) is also held by another command in the effective table.
+    private static func effectiveClashes(of bindings: KeyBindings, overridden: Set<String>) -> [ImportError] {
+        var holders: [KeyChord: [BrowserCommand]] = [:]
+        for command: BrowserCommand in BrowserCommand.allCases {
+            let binding: KeyBinding = bindings.binding(for: command)
+            for chord: KeyChord in [binding.primary, binding.extra].compactMap({ $0 }) {
+                holders[chord, default: []].append(command)
+            }
+        }
+        var reported: Set<String> = []
+        var errors: [ImportError] = []
+        for (_, commands) in holders where Set(commands).count > 1 {
+            for command: BrowserCommand in commands where overridden.contains(command.rawValue) && !reported.contains(command.rawValue) {
+                reported.insert(command.rawValue)
+                errors.append(.keyUsedTwice(command.rawValue))
+            }
+        }
+        return errors.sorted { String(describing: $0) < String(describing: $1) }
     }
 
     /// Mirrors `KeyBindings`' own shape so a garbage/partial file still decodes far enough to report WHICH fields

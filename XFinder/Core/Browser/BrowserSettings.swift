@@ -72,6 +72,12 @@ final class BrowserSettings {
     static var returnOpens: Bool { UserDefaults.standard.object(forKey: "fileBrowser.returnOpens") as? Bool ?? false }
     static var cutWithCmdX: Bool { UserDefaults.standard.object(forKey: "fileBrowser.cutWithCmdX") as? Bool ?? false }
     static var showAllExtensions: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showAllExtensions") as? Bool ?? false }
+    /// The ONE reader+writer of `fileBrowser.onboardingGrants`: folders the Welcome window saw granted (a list, not
+    /// a toggle ⇒ no FeatureKeyDefaults row).
+    static var onboardingGrants: [String] {
+        get { UserDefaults.standard.stringArray(forKey: "fileBrowser.onboardingGrants") ?? [] }
+        set { UserDefaults.standard.set(newValue, forKey: "fileBrowser.onboardingGrants") }
+    }
     static var onboardingDone: Bool { UserDefaults.standard.object(forKey: "fileBrowser.onboardingDone") as? Bool ?? false }
     /// The ONE reader+writer of `fileBrowser.keyBindings` (JSON `KeyBindings`; absent or damaged = Finder profile).
     static var keyBindings: KeyBindings {

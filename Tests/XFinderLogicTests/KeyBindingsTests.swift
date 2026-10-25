@@ -470,4 +470,15 @@ final class KeyBindingsTests: XCTestCase {
         a.profile = .explorer
         XCTAssertEqual(a, b)
     }
+
+    /// Review 2026-10-25: an override reusing a chord another command still holds by default must be refused.
+    func testImportRefusesAnOverrideThatClashesWithAnUntouchedDefault() throws {
+        guard let copyChord = BrowserCommands.chord(for: .copy) else { return XCTFail("precondition: .copy has a chord") }
+        var b = KeyBindings()
+        b.overrides[BrowserCommand.duplicate.rawValue] = KeyBinding(primary: copyChord, extra: nil)
+        switch KeyBindings.importing(b.export()) {
+        case .success: XCTFail("a chord used twice in the effective table must not import")
+        case .failure(let f): XCTAssertTrue(f.errors.contains(.keyUsedTwice(BrowserCommand.duplicate.rawValue)))
+        }
+    }
 }

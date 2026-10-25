@@ -2,6 +2,8 @@ import Foundation
 
 /// XF-T30 W6 — the browser's persistent Undo (FileOctopus: 20 steps / 24 h across quit, metadata only, revalidated
 /// before replay, never partial). Pure, symlinked. Contract XF-T30-w6 §1. W6 builder (pure): implement.
+/// Undo moves `from` (where the item is now) back to `to` (where it was); `to` is empty for an item undo trashes
+/// (a copy or duplicate). `inode`/`size`/`modified` describe the item at `from` when the step was recorded.
 struct UndoItem: Codable, Equatable, Sendable {
     var from: String
     var to: String
@@ -74,7 +76,9 @@ struct UndoJournal: Codable, Equatable, Sendable {
         // step is refused — never a partial undo of "the ones that still work".
         for item in step.items {
             guard volumeMounted(item.to), volumeMounted(item.from) else { return .diskMissing }
-            guard exists(item.to) else {
+            // `from` is where the item IS now (the queue records "undo moves from → to"); review 2026-10-25: this
+            // checked `to` — the original place, empty after any successful move or trash — so undo was never available.
+            guard exists(item.from) else {
                 return .unavailable(reasonKey: "Một mục không còn ở chỗ cũ")
             }
             guard let recordedInode = item.inode, let recordedSize = item.size, let recordedModified = item.modified else {
@@ -83,7 +87,7 @@ struct UndoJournal: Codable, Equatable, Sendable {
                 // contradict, so it passes through rather than being refused for a check it never promised.
                 continue
             }
-            guard let currentIdentity = identity(item.to) else {
+            guard let currentIdentity = identity(item.from) else {
                 return .unavailable(reasonKey: "Một mục không còn ở chỗ cũ")
             }
             guard currentIdentity.inode == recordedInode, currentIdentity.size == recordedSize,

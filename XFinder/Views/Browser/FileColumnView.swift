@@ -334,8 +334,8 @@ struct FileColumnView: NSViewRepresentable {
                 browserCell.isGroupHeader = true
                 browserCell.isLeaf = true
                 browserCell.image = nil
-                let title = L10n.t(titleKey)
-                browserCell.stringValue = titleArg.map { "\(title) \($0)" } ?? title
+                browserCell.stringValue = EntrySection(titleKey: titleKey, titleArg: titleArg, entries: [])
+                    .displayTitle { L10n.t($0) }
             case .entry(let entry):
                 browserCell.stringValue = entry.name
                 browserCell.image = FileIconCache.shared.icon(for: entry)

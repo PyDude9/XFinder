@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import DiskArbitration
 
 /// XF-T28 cluster B / XF-T30 W3 (contract §2, spec-file-operations.md §11 R66–R70). Blocks `diskutil unmount`/`eject`
@@ -147,7 +147,9 @@ import DiskArbitration
     nonisolated func busyApplicationName(mountPath: String) -> String? {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/sbin/lsof")
-        process.arguments = ["+D", mountPath]
+        // `-t`: process ids only (a few bytes — the pipe can never fill before we read it, unlike full `+D` output on
+        // a busy volume), names resolved below. Review 2026-10-25: the COMMAND column is truncated by lsof.
+        process.arguments = ["-t", "+D", mountPath]
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = Pipe()
@@ -165,10 +167,18 @@ import DiskArbitration
         // First data line (after the header) names the process holding something open; XFinder's own handles on a
         // folder it is merely displaying would show as "XFinder" too, so the caller already excludes mounts
         // `busyVolumes` covers (an XFinder file-operation job) before ever asking this question.
-        let lines = text.split(separator: "\n").dropFirst()
-        guard let first = lines.first else { return nil }
-        let fields = first.split(separator: " ", omittingEmptySubsequences: true)
-        return fields.first.map(String.init)
+        let ownPID: pid_t = ProcessInfo.processInfo.processIdentifier
+        let pids: [pid_t] = text.split(separator: "\n").compactMap { pid_t($0.trimmingCharacters(in: .whitespaces)) }
+        guard let pid: pid_t = pids.first(where: { $0 != ownPID }) else { return nil }
+        return Self.displayName(of: pid)
+    }
+
+    /// The app's own name when it is an app (NSRunningApplication), else the executable's full file name.
+    private nonisolated static func displayName(of pid: pid_t) -> String? {
+        if let name: String = NSRunningApplication(processIdentifier: pid)?.localizedName, !name.isEmpty { return name }
+        var buffer = [CChar](repeating: 0, count: Int(MAXPATHLEN))
+        guard proc_pidpath(pid, &buffer, UInt32(buffer.count)) > 0 else { return nil }
+        return (String(cString: buffer) as NSString).lastPathComponent
     }
 
     // MARK: - XF-T30 W3: actually ejecting

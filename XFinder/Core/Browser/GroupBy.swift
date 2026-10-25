@@ -29,6 +29,14 @@ struct EntrySection: Equatable, Sendable {
     let titleKey: String
     let titleArg: String?
     let entries: [DirectoryEntry]
+
+    /// The header text every view shows: the translated key, then the verbatim argument; a label-only section (a kind,
+    /// application or tag name) has an empty key and shows just the argument.
+    func displayTitle(translate: (String) -> String) -> String {
+        let title: String = titleKey.isEmpty ? "" : translate(titleKey)
+        guard let arg: String = titleArg, !arg.isEmpty else { return title }
+        return title.isEmpty ? arg : "\(title) \(arg)"
+    }
 }
 
 extension GroupBy {
@@ -74,7 +82,11 @@ extension GroupBy {
             return finish(labelSections(entries) { kindName($0) })
 
         case .application:
-            return finish(labelSections(entries) { appName($0) ?? "Không rõ" })
+            // Unresolvable application ⇒ the translated "Không rõ" group, placed last (review 2026-10-25: the raw
+            // Vietnamese literal went out as an untranslated `titleArg`).
+            let known: [DirectoryEntry] = entries.filter { appName($0) != nil }
+            let unknown: [DirectoryEntry] = entries.filter { appName($0) == nil }
+            return finish(labelSections(known) { appName($0) ?? "" } + [(key: "Không rõ", arg: nil, entries: unknown)])
 
         case .size:
             return finish(sizeSections(entries))

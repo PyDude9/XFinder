@@ -117,6 +117,9 @@ private final class OnboardingModel {
     init(finish: @escaping (PanePreset, [String]) -> Void, close: @escaping () -> Void) {
         self.finish = finish
         self.close = close
+        // Replay (review 2026-10-25): show what was granted through this window before instead of every row
+        // reading "not allowed" — without touching the folders, which could raise a dialog for one never asked.
+        for key in BrowserSettings.onboardingGrants { folderStatus[key] = true }
     }
 
     func advance() {
@@ -135,7 +138,12 @@ private final class OnboardingModel {
         Task.detached(priority: .utility) { [weak self] in
             let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(folderKey)
             let granted = (try? FileManager.default.contentsOfDirectory(atPath: url.path)) != nil
-            await MainActor.run { self?.folderStatus[folderKey] = granted }
+            await MainActor.run {
+                self?.folderStatus[folderKey] = granted
+                var grants: Set<String> = Set(BrowserSettings.onboardingGrants)
+                if granted { grants.insert(folderKey) } else { grants.remove(folderKey) }
+                BrowserSettings.onboardingGrants = grants.sorted()
+            }
         }
     }
 

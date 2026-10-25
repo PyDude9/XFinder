@@ -22,13 +22,15 @@ enum VirtualLocations {
             let query = "kMDItemUserTags == \"\(escapeForMDQuery(name))\""
             return await runQuery(query, scopes: [])
         case .allTags:
-            // Contract §1: "a synthetic listing of tag folders is NOT needed — return the tag list as virtual folder
-            // entries if simple, else an empty listing and say so." The tag NAME list lives in `TagLibrary` (a W3
-            // AppKit file this builder does not own, `@MainActor`-isolated); this pure-ish listing function has no
-            // way to reach it without creating a dependency on that controller's running state. Deviation: returns
-            // an empty listing — the sidebar's "Tất cả thẻ…" row should read `TagLibrary` directly, not open this
-            // as a navigable virtual location.
-            return .success([])
+            // Every Finder tag as a folder-like entry whose path is that tag's virtual location (review 2026-10-25:
+            // this returned an empty listing). TagLibrary is main-actor state; read it there, build entries here.
+            let tags: [FinderTag] = await MainActor.run { TagLibrary.shared.tags }
+            let now: Date = Date()
+            let entries: [DirectoryEntry] = tags.map { tag in
+                DirectoryEntry(name: tag.name, path: VirtualLocation.tag(tag.name).path, kind: .directory, isPackage: false,
+                               isHidden: false, size: -1, modified: now, created: now, volumeID: 0)
+            }
+            return .success(entries)
         }
     }
 

@@ -2,7 +2,7 @@ import XCTest
 import Foundation
 
 final class UndoJournalTests: XCTestCase {
-    private func step(_ kind: UndoStep.Kind = .move, items: [UndoItem] = [UndoItem(from: "/src/a", to: "/dst/a", inode: 1, size: 10, modified: Date(timeIntervalSince1970: 100))],
+    private func step(_ kind: UndoStep.Kind = .move, items: [UndoItem] = [UndoItem(from: "/dst/a", to: "/src/a", inode: 1, size: 10, modified: Date(timeIntervalSince1970: 100))],
                        date: Date = Date()) -> UndoStep {
         UndoStep(id: UUID(), kind: kind, items: items, date: date)
     }
@@ -192,8 +192,8 @@ final class UndoJournalTests: XCTestCase {
     func testAvailabilityRefusesWholeStepWhenOneOfMultipleItemsFails() {
         let journal = UndoJournal()
         let items = [
-            UndoItem(from: "/src/a", to: "/dst/a", inode: 1, size: 10, modified: Date(timeIntervalSince1970: 100)),
-            UndoItem(from: "/src/b", to: "/dst/b", inode: 2, size: 20, modified: Date(timeIntervalSince1970: 200)),
+            UndoItem(from: "/dst/a", to: "/src/a", inode: 1, size: 10, modified: Date(timeIntervalSince1970: 100)),
+            UndoItem(from: "/dst/b", to: "/src/b", inode: 2, size: 20, modified: Date(timeIntervalSince1970: 200)),
         ]
         let s = UndoStep(id: UUID(), kind: .move, items: items, date: Date())
         let result = journal.availability(of: s, exists: { path in path != "/dst/b" },
@@ -205,8 +205,8 @@ final class UndoJournalTests: XCTestCase {
     func testAvailabilityAvailableOnlyWhenEveryItemChecksOut() {
         let journal = UndoJournal()
         let items = [
-            UndoItem(from: "/src/a", to: "/dst/a", inode: 1, size: 10, modified: Date(timeIntervalSince1970: 100)),
-            UndoItem(from: "/src/b", to: "/dst/b", inode: 2, size: 20, modified: Date(timeIntervalSince1970: 200)),
+            UndoItem(from: "/dst/a", to: "/src/a", inode: 1, size: 10, modified: Date(timeIntervalSince1970: 100)),
+            UndoItem(from: "/dst/b", to: "/src/b", inode: 2, size: 20, modified: Date(timeIntervalSince1970: 200)),
         ]
         let s = UndoStep(id: UUID(), kind: .move, items: items, date: Date())
         let identities: [String: (inode: UInt64, size: Int64, modified: Date)] = [
@@ -250,5 +250,16 @@ final class UndoJournalTests: XCTestCase {
     func testDecodeGarbageDataReturnsEmptyJournalRatherThanCrashing() {
         let garbage = Data([0xFF, 0x00, 0x12, 0x34])
         XCTAssertEqual(UndoJournal.decode(garbage), UndoJournal())
+    }
+
+    /// Review 2026-10-25: after a real move the ORIGINAL place is empty and the item sits at its new place — the step
+    /// must be available (it checked the original place and was never available).
+    func testAvailabilityAfterARealMoveChecksTheCurrentPlace() {
+        let item = UndoItem(from: "/dst/a", to: "/src/a", inode: 7, size: 3, modified: Date(timeIntervalSince1970: 5))
+        let s = UndoStep(id: UUID(), kind: .move, items: [item], date: Date())
+        let result = UndoJournal().availability(of: s, exists: { $0 == "/dst/a" },
+                                                identity: { $0 == "/dst/a" ? (inode: 7, size: 3, modified: Date(timeIntervalSince1970: 5)) : nil },
+                                                volumeMounted: { _ in true })
+        XCTAssertEqual(result, .available)
     }
 }

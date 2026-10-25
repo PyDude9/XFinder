@@ -262,7 +262,9 @@ final class GroupBySectionsTests: XCTestCase {
             [known, unknown], by: .application, sort: .finderDefault, foldersFirst: false, now: now, calendar: calendar,
             kindName: { _ in "" }, appName: { apps[$0.path] ?? nil }
         )
-        XCTAssertEqual(Set(result.map(\.titleArg)), ["Xcode", "Không rõ"])
+        XCTAssertEqual(result.map(\.titleArg), ["Xcode", nil])
+        XCTAssertEqual(result.last?.titleKey, "Không rõ", "the unknown group is a translated key, placed last")
+        XCTAssertEqual(result.last?.displayTitle { "<\($0)>" }, "<Không rõ>")
     }
 
     // MARK: - Size

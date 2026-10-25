@@ -119,7 +119,10 @@ final class TagLibrary {
                 // second" of the edit (contract XF-T30-w3 §2).
                 self[keyPath: keyPath]?.cancel()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                    self?.watch(path: path, keyPath: keyPath)
+                    // stop() may have run in between (last window closed): never re-arm with nobody watching
+                    // (review 2026-10-25: the watcher resurrected itself at refCount 0 and lived forever).
+                    guard let self, self.refCount > 0 else { return }
+                    self.watch(path: path, keyPath: keyPath)
                 }
             }
         }

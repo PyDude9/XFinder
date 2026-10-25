@@ -102,12 +102,8 @@ struct FileIconView: NSViewRepresentable {
         required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
         func configure(titleKey: String, titleArg: String?) {
-            guard !titleKey.isEmpty else {
-                label.stringValue = ""
-                return
-            }
-            let title = L10n.t(titleKey)
-            label.stringValue = titleArg.map { "\(title) \($0)" } ?? title
+            // Same text as every other view (kind / application / tag groups have no key, only the name).
+            label.stringValue = EntrySection(titleKey: titleKey, titleArg: titleArg, entries: []).displayTitle { L10n.t($0) }
         }
     }
 
