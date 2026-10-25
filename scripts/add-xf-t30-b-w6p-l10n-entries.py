@@ -24,6 +24,8 @@ ENTRIES = {
     "Sẽ bỏ qua": ("Will skip", S),
     "Sẽ đổi tên": ("Will rename", S),
     "Bỏ qua (không hợp lệ)": ("Skipped (not valid)", S),
+    " — ": (" — ", F),
+    "Áp dụng cho tất cả": ("Apply to all", S),
 }
 def main() -> int:
     data = json.loads(STORE.read_text(encoding="utf-8")); e = data["entries"]

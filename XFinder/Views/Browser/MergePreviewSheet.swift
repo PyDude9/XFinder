@@ -49,7 +49,7 @@ struct MergePreviewSheet: View {
                         .foregroundColor(.secondary)
                     ForEach(Array(excludedSteps.enumerated()), id: \.offset) { _, step in
                         if case let .excluded(path, reason) = step {
-                            Text("\((path as NSString).lastPathComponent) — \(reason)")
+                            Text("\((path as NSString).lastPathComponent)\(L10n.t(" — "))\(L10n.t(reason))")
                                 .font(XFinderTokens.Font.caption)
                                 .foregroundColor(.secondary)
                                 .lineLimit(1)
