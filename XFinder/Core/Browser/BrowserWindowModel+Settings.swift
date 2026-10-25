@@ -36,8 +36,11 @@ extension BrowserWindowModel {
         }
     }
 
-    /// `BrowserWindowController.restoreSessionAtLaunch` calls this once, before any session restore, when the
-    /// browser's very first window of a fresh install is about to open (`fileBrowser.onboardingDone == false`).
+    /// `BrowserWindowController.openWindow(path:)` calls this once, right before opening the browser's very first
+    /// window of a fresh install (`windows.isEmpty && fileBrowser.onboardingDone == false`) — NOT at app launch:
+    /// `restoreSessionAtLaunch()` goes straight through `openWindow(snapshot:)`, which never passes through this
+    /// gate, so an install with a saved session never shows Welcome again even on a later crash-relaunch before
+    /// `onboardingDone` got set.
     static func showWelcomeIfFirstRun() {
         guard !BrowserSettings.onboardingDone else { return }
         showWelcome()
