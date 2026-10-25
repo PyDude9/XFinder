@@ -1,0 +1,1 @@
+../../XFinder/Core/Browser/CutBoard.swift

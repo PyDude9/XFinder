@@ -71,6 +71,30 @@ final class BrowserCommandsTests: XCTestCase {
         .toggleToolbar: KeyChord("t", command: true, option: true),
         .toggleSidebar: KeyChord("s", command: true, option: true),
         .useGroups: KeyChord("0", command: true, control: true),
+        // XF-T30 W2–W7 (FileOctopus Finder profile)
+        .makeAlias: KeyChord("a", command: true, control: true),
+        .showOriginal: KeyChord("r", command: true),
+        .addToSidebar: KeyChord("t", command: true, control: true),
+        .showViewOptions: KeyChord("j", command: true),
+        .goRecents: KeyChord("f", command: true, shift: true),
+        .goDocuments: KeyChord("o", command: true, shift: true),
+        .goDesktop: KeyChord("d", command: true, shift: true),
+        .goDownloads: KeyChord("l", command: true, option: true),
+        .goHome: KeyChord("h", command: true, shift: true),
+        .goAirDrop: KeyChord("r", command: true, shift: true),
+        .goNetwork: KeyChord("k", command: true, shift: true),
+        .goICloud: KeyChord("i", command: true, shift: true),
+        .goApplications: KeyChord("a", command: true, shift: true),
+        .goUtilities: KeyChord("u", command: true, shift: true),
+        .goComputer: KeyChord("c", command: true, shift: true),
+        .connectToServer: KeyChord("k", command: true),
+        .eject: KeyChord("e", command: true),
+        .openBrowserSettings: KeyChord(",", command: true),
+        .newFolderWithSelection: KeyChord("n", command: true, control: true),
+        .cut: KeyChord("x", command: true),
+        .redo: KeyChord("z", command: true, shift: true),
+        .togglePreview: KeyChord("p", command: true, shift: true),
+        .slideshow: KeyChord("y", command: true, option: true),
     ]
 
     /// Commands the spec explicitly says have no chord — palette/menu only.
@@ -81,6 +105,8 @@ final class BrowserCommandsTests: XCTestCase {
         .filter, .closePaneTab, .moveTabToNextPane, .swapWithNextPane, .moveTabToWindow,
         .makePaneWider, .makePaneNarrower, .makePaneTaller, .makePaneShorter,
         .toggleLocationBar, .customizeToolbar, .openInNewTab, .openInNewWindow,
+        // XF-T30 W2–W7
+        .share, .clearRecentFolders, .showWelcome, .clearOperationHistory,
     ]
 
     func testEveryRequiredChordRoundTrips() {

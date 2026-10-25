@@ -17,6 +17,8 @@ struct PaneView: View {
     @AppStorage("fileBrowser.showLocationBar") private var showLocationBar = true
     @AppStorage("fileBrowser.showPathBar") private var showPathBar = false
     @AppStorage("fileBrowser.showStatusBar") private var showStatusBar = true
+    /// XF-T30 W7 — the Preview pane (⇧⌘P), same default as `BrowserSettings.showPreview`.
+    @AppStorage("fileBrowser.showPreview") private var showPreview = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,7 +41,13 @@ struct PaneView: View {
 
             Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1).padding(.top, XFinderTokens.Space.tight)
 
-            content
+            HStack(spacing: 0) {
+                content
+                if showPreview {
+                    Rectangle().fill(XFinderTokens.Fill.hairline).frame(width: 1)
+                    PreviewPaneView(pane: pane, model: model)
+                }
+            }
 
             if showPathBar {
                 Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)

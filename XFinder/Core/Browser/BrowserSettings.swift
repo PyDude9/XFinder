@@ -43,6 +43,49 @@ final class BrowserSettings {
         set { UserDefaults.standard.set(newValue.encoded(), forKey: "fileBrowser.savedSearches") }
     }
 
+    // MARK: XF-T30 W3 — sidebar rows (Settings ▸ Sidebar; hiding a row never deletes anything)
+    static var sidebarRecents: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.recents") as? Bool ?? true }
+    static var sidebarAirDrop: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.airDrop") as? Bool ?? true }
+    static var sidebarFavorites: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.favorites") as? Bool ?? true }
+    static var sidebarICloud: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.iCloud") as? Bool ?? true }
+    static var sidebarHardDisks: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.hardDisks") as? Bool ?? true }
+    static var sidebarExternalDisks: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.externalDisks") as? Bool ?? true }
+    static var sidebarCloudStorage: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.cloudStorage") as? Bool ?? true }
+    static var sidebarConnectedServers: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.connectedServers") as? Bool ?? true }
+    static var sidebarBonjour: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.bonjour") as? Bool ?? false }
+    static var sidebarRecentTags: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.recentTags") as? Bool ?? true }
+    static var sidebarGroupLocationsByType: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.groupLocationsByType") as? Bool ?? false }
+    static var sidebarHighlightCurrent: Bool { UserDefaults.standard.object(forKey: "fileBrowser.sidebar.highlightCurrent") as? Bool ?? false }
+    /// The ONE reader+writer of `fileBrowser.recentFolders` (Go ▸ Recent Folders, local only).
+    static var recentFolders: RecentFolders {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: "fileBrowser.recentFolders") else { return RecentFolders() }
+            return (try? JSONDecoder().decode(RecentFolders.self, from: data)) ?? RecentFolders()
+        }
+        set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: "fileBrowser.recentFolders") }
+    }
+
+    // MARK: XF-T30 W4 — Settings window keys
+    /// `home` | `desktop` | `documents` | `downloads` | `recents` | `custom` (Settings ▸ General ▸ New windows show).
+    static var newWindowTarget: String { UserDefaults.standard.string(forKey: "fileBrowser.newWindowTarget") ?? "home" }
+    static var newWindowCustomPath: String { UserDefaults.standard.string(forKey: "fileBrowser.newWindowCustomPath") ?? "" }
+    static var returnOpens: Bool { UserDefaults.standard.object(forKey: "fileBrowser.returnOpens") as? Bool ?? false }
+    static var cutWithCmdX: Bool { UserDefaults.standard.object(forKey: "fileBrowser.cutWithCmdX") as? Bool ?? false }
+    static var showAllExtensions: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showAllExtensions") as? Bool ?? false }
+    static var onboardingDone: Bool { UserDefaults.standard.object(forKey: "fileBrowser.onboardingDone") as? Bool ?? false }
+    /// The ONE reader+writer of `fileBrowser.keyBindings` (JSON `KeyBindings`; absent or damaged = Finder profile).
+    static var keyBindings: KeyBindings {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: "fileBrowser.keyBindings") else { return KeyBindings() }
+            return (try? JSONDecoder().decode(KeyBindings.self, from: data)) ?? KeyBindings()
+        }
+        set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: "fileBrowser.keyBindings") }
+    }
+
+    // MARK: XF-T30 W7 — Preview pane
+    static var showPreview: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showPreview") as? Bool ?? false }
+    static var previewShowMore: Bool { UserDefaults.standard.object(forKey: "fileBrowser.previewShowMore") as? Bool ?? false }
+
     /// The ONE reader of `fileBrowser.globalHotkey` (default off: a global chord is taken from every app).
     static var globalHotkeyEnabled: Bool { UserDefaults.standard.object(forKey: "fileBrowser.globalHotkey") as? Bool ?? false }
 

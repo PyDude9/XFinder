@@ -12878,6 +12878,114 @@
     "Cần quyền Full Disk Access": {
       "en": "Full Disk Access needed",
       "scope": "sentence"
+    },
+    "Tạo bí danh": {
+      "en": "Make Alias",
+      "scope": "sentence"
+    },
+    "Hiện bản gốc": {
+      "en": "Show Original",
+      "scope": "sentence"
+    },
+    "Thêm vào sidebar": {
+      "en": "Add to Sidebar",
+      "scope": "sentence"
+    },
+    "Chia sẻ…": {
+      "en": "Share…",
+      "scope": "sentence"
+    },
+    "Hiện tuỳ chọn xem": {
+      "en": "Show View Options",
+      "scope": "sentence"
+    },
+    "Mục gần đây": {
+      "en": "Recents",
+      "scope": "sentence"
+    },
+    "Thư mục Tải về": {
+      "en": "Downloads",
+      "scope": "sentence"
+    },
+    "Thư mục nhà": {
+      "en": "Home",
+      "scope": "sentence"
+    },
+    "AirDrop": {
+      "en": "AirDrop",
+      "scope": "sentence"
+    },
+    "iCloud Drive": {
+      "en": "iCloud Drive",
+      "scope": "sentence"
+    },
+    "Các ứng dụng": {
+      "en": "Applications",
+      "scope": "sentence"
+    },
+    "Tiện ích hệ thống": {
+      "en": "Utilities",
+      "scope": "sentence"
+    },
+    "Máy tính": {
+      "en": "Computer",
+      "scope": "sentence"
+    },
+    "Kết nối máy chủ…": {
+      "en": "Connect to Server…",
+      "scope": "sentence"
+    },
+    "Đẩy ra": {
+      "en": "Eject",
+      "scope": "sentence"
+    },
+    "Xoá menu": {
+      "en": "Clear Menu",
+      "scope": "sentence"
+    },
+    "Cài đặt trình duyệt…": {
+      "en": "Browser Settings…",
+      "scope": "sentence"
+    },
+    "Hiện cửa sổ Chào…": {
+      "en": "Show Welcome Window…",
+      "scope": "sentence"
+    },
+    "Thư mục mới chứa mục chọn": {
+      "en": "New Folder with Selection",
+      "scope": "sentence"
+    },
+    "Cắt tệp": {
+      "en": "Cut",
+      "scope": "sentence"
+    },
+    "Xoá lịch sử thao tác": {
+      "en": "Clear File Operation History",
+      "scope": "sentence"
+    },
+    "Hiện hoặc ẩn xem trước": {
+      "en": "Show or Hide Preview",
+      "scope": "sentence"
+    },
+    "Trình chiếu": {
+      "en": "Slideshow",
+      "scope": "sentence"
+    },
+    "Không màu": {
+      "en": "No Color",
+      "scope": "sentence"
+    },
+    "Xám": {
+      "en": "Gray",
+      "scope": "sentence"
+    },
+    "Vàng": {
+      "en": "Yellow",
+      "scope": "sentence"
+    },
+    "Đỏ": {
+      "en": "Red",
+      "scope": "sentence"
     }
   }
 }

@@ -33,6 +33,11 @@ struct PaneSearchState: Equatable {
     var useGroups = false
     /// Names to reselect after the first load (session restore, `TabSnapshot.selectedNames`). W1 builder (model).
     var restoreSelectionNames: [String]?
+    /// XF-T30 W2 — this folder's remembered view options (nil = defaults), the Group By sections of `entries` (empty
+    /// when not grouping), and Column view's whole column trail (Q-T30-7). Maintained by BrowserWindowModel+Views.swift.
+    var folderPrefs: FolderViewPrefs?
+    var sections: [EntrySection] = []
+    var columnPath: [String] = []
     private(set) var path: String
     private(set) var history: PaneHistory
     var viewMode: BrowserViewMode
@@ -192,6 +197,7 @@ struct PaneSearchState: Equatable {
         entries = EntryRules.sorted(filtered, by: sort, foldersFirst: foldersFirst) { entry in
             FileIconCache.shared.kindName(for: entry)
         }
+        rebuildSections()   // XF-T30 W2 (BrowserWindowModel+Views.swift)
     }
 
     private func installWatcher() {
@@ -651,6 +657,18 @@ enum BrowserSheet: String, Identifiable {
             openSelectionInNewWindows()
         case .useGroups:
             active.useGroups.toggle()
+        // XF-T30 W2–W7: each wave owns its own extension file (contracts XF-T30-w2/w3/w4/w6/w78).
+        case .makeAlias, .showOriginal, .addToSidebar, .share, .showViewOptions:
+            return performViewsCommand(command)
+        case .goRecents, .goDocuments, .goDesktop, .goDownloads, .goHome, .goAirDrop, .goNetwork, .goICloud,
+             .goApplications, .goUtilities, .goComputer, .connectToServer, .eject, .clearRecentFolders:
+            return performGoCommand(command)
+        case .openBrowserSettings, .showWelcome:
+            return performSettingsCommand(command)
+        case .newFolderWithSelection, .cut, .redo, .clearOperationHistory:
+            return performFileOpsCommand(command)
+        case .togglePreview, .slideshow:
+            return performPreviewCommand(command)
         }
         return true
     }
@@ -725,6 +743,17 @@ enum BrowserSheet: String, Identifiable {
             return chrome != nil
         case .openInNewTab, .openInNewWindow:
             return !active.selectedEntries.isEmpty
+        case .makeAlias, .showOriginal, .addToSidebar, .share, .showViewOptions:
+            return canPerformViewsCommand(command)
+        case .goRecents, .goDocuments, .goDesktop, .goDownloads, .goHome, .goAirDrop, .goNetwork, .goICloud,
+             .goApplications, .goUtilities, .goComputer, .connectToServer, .eject, .clearRecentFolders:
+            return canPerformGoCommand(command)
+        case .openBrowserSettings, .showWelcome:
+            return canPerformSettingsCommand(command)
+        case .newFolderWithSelection, .cut, .redo, .clearOperationHistory:
+            return canPerformFileOpsCommand(command)
+        case .togglePreview, .slideshow:
+            return canPerformPreviewCommand(command)
         }
     }
 

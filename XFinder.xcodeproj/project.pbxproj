@@ -175,6 +175,14 @@
 		7F1A0132 /* Components/ProBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A012F /* Components/ProBadge.swift */; };
 		7F1A011A /* Detail/FileBrowserDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0119 /* Detail/FileBrowserDetailView.swift */; };
 		7F1A0118 /* Browser/ShelfBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0117 /* Browser/ShelfBarView.swift */; };
+		7F1A0551 /* Browser/VolumeInfoWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0550 /* Browser/VolumeInfoWindow.swift */; };
+		7F1A054F /* Browser/PreviewPaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A054E /* Browser/PreviewPaneView.swift */; };
+		7F1A054D /* Browser/MergePreviewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A054C /* Browser/MergePreviewSheet.swift */; };
+		7F1A054B /* Browser/OnboardingWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A054A /* Browser/OnboardingWindow.swift */; };
+		7F1A0549 /* Browser/BrowserSettingsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0548 /* Browser/BrowserSettingsWindow.swift */; };
+		7F1A0547 /* Browser/ViewOptionsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0546 /* Browser/ViewOptionsPanel.swift */; };
+		7F1A0545 /* Browser/DragDropCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0544 /* Browser/DragDropCoordinator.swift */; };
+		7F1A0543 /* Browser/BrowserContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0542 /* Browser/BrowserContextMenu.swift */; };
 		7F1A050D /* Browser/StatusBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A050C /* Browser/StatusBarView.swift */; };
 		7F1A050B /* Browser/PathBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A050A /* Browser/PathBarView.swift */; };
 		7F1A0509 /* Browser/PaneTabStripView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0508 /* Browser/PaneTabStripView.swift */; };
@@ -344,6 +352,26 @@
 		7F1A007E /* Browser/DirectoryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007D /* Browser/DirectoryReader.swift */; };
 		7F1A007C /* Browser/BrowserWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007B /* Browser/BrowserWorkspace.swift */; };
 		7F1A007A /* Browser/ShelfModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0079 /* Browser/ShelfModel.swift */; };
+		7F1A0541 /* Browser/FolderMergeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0540 /* Browser/FolderMergeController.swift */; };
+		7F1A053F /* Browser/ConnectToServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A053E /* Browser/ConnectToServer.swift */; };
+		7F1A053D /* Browser/TagLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A053C /* Browser/TagLibrary.swift */; };
+		7F1A053B /* Browser/SidebarSources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A053A /* Browser/SidebarSources.swift */; };
+		7F1A0539 /* Browser/FileMetadataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0538 /* Browser/FileMetadataCache.swift */; };
+		7F1A0537 /* Browser/BrowserWindowModel+Preview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0536 /* Browser/BrowserWindowModel+Preview.swift */; };
+		7F1A0535 /* Browser/BrowserWindowModel+FileOps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0534 /* Browser/BrowserWindowModel+FileOps.swift */; };
+		7F1A0533 /* Browser/BrowserWindowModel+Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0532 /* Browser/BrowserWindowModel+Settings.swift */; };
+		7F1A0531 /* Browser/BrowserWindowModel+Go.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0530 /* Browser/BrowserWindowModel+Go.swift */; };
+		7F1A052F /* Browser/BrowserWindowModel+Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A052E /* Browser/BrowserWindowModel+Views.swift */; };
+		7F1A052D /* Browser/CloudProviders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A052C /* Browser/CloudProviders.swift */; };
+		7F1A052B /* Browser/CutBoard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A052A /* Browser/CutBoard.swift */; };
+		7F1A0529 /* Browser/UndoJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0528 /* Browser/UndoJournal.swift */; };
+		7F1A0527 /* Browser/ProblemsList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0526 /* Browser/ProblemsList.swift */; };
+		7F1A0525 /* Browser/FolderMerge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0524 /* Browser/FolderMerge.swift */; };
+		7F1A0523 /* Browser/KeyBindings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0522 /* Browser/KeyBindings.swift */; };
+		7F1A0521 /* Browser/RecentFolders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0520 /* Browser/RecentFolders.swift */; };
+		7F1A051F /* Browser/SidebarSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A051E /* Browser/SidebarSections.swift */; };
+		7F1A051D /* Browser/FinderTags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A051C /* Browser/FinderTags.swift */; };
+		7F1A051B /* Browser/FolderViewOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A051A /* Browser/FolderViewOptions.swift */; };
 		7F1A0519 /* Browser/SearchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0518 /* Browser/SearchCoordinator.swift */; };
 		7F1A0517 /* Browser/ContentIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0516 /* Browser/ContentIndex.swift */; };
 		7F1A0515 /* Browser/FilenameIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0514 /* Browser/FilenameIndex.swift */; };
@@ -604,6 +632,14 @@
 		7F1A012F /* Components/ProBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/ProBadge.swift; sourceTree = "<group>"; };
 		7F1A0119 /* Detail/FileBrowserDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FileBrowserDetailView.swift; sourceTree = "<group>"; };
 		7F1A0117 /* Browser/ShelfBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ShelfBarView.swift; sourceTree = "<group>"; };
+		7F1A0550 /* Browser/VolumeInfoWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/VolumeInfoWindow.swift; sourceTree = "<group>"; };
+		7F1A054E /* Browser/PreviewPaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PreviewPaneView.swift; sourceTree = "<group>"; };
+		7F1A054C /* Browser/MergePreviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/MergePreviewSheet.swift; sourceTree = "<group>"; };
+		7F1A054A /* Browser/OnboardingWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/OnboardingWindow.swift; sourceTree = "<group>"; };
+		7F1A0548 /* Browser/BrowserSettingsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserSettingsWindow.swift; sourceTree = "<group>"; };
+		7F1A0546 /* Browser/ViewOptionsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ViewOptionsPanel.swift; sourceTree = "<group>"; };
+		7F1A0544 /* Browser/DragDropCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/DragDropCoordinator.swift; sourceTree = "<group>"; };
+		7F1A0542 /* Browser/BrowserContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserContextMenu.swift; sourceTree = "<group>"; };
 		7F1A050C /* Browser/StatusBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/StatusBarView.swift; sourceTree = "<group>"; };
 		7F1A050A /* Browser/PathBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PathBarView.swift; sourceTree = "<group>"; };
 		7F1A0508 /* Browser/PaneTabStripView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PaneTabStripView.swift; sourceTree = "<group>"; };
@@ -664,6 +700,26 @@
 		7F1A007D /* Browser/DirectoryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/DirectoryReader.swift; sourceTree = "<group>"; };
 		7F1A007B /* Browser/BrowserWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserWorkspace.swift; sourceTree = "<group>"; };
 		7F1A0079 /* Browser/ShelfModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ShelfModel.swift; sourceTree = "<group>"; };
+		7F1A0540 /* Browser/FolderMergeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FolderMergeController.swift; sourceTree = "<group>"; };
+		7F1A053E /* Browser/ConnectToServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ConnectToServer.swift; sourceTree = "<group>"; };
+		7F1A053C /* Browser/TagLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/TagLibrary.swift; sourceTree = "<group>"; };
+		7F1A053A /* Browser/SidebarSources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SidebarSources.swift; sourceTree = "<group>"; };
+		7F1A0538 /* Browser/FileMetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileMetadataCache.swift; sourceTree = "<group>"; };
+		7F1A0536 /* Browser/BrowserWindowModel+Preview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Browser/BrowserWindowModel+Preview.swift"; sourceTree = "<group>"; };
+		7F1A0534 /* Browser/BrowserWindowModel+FileOps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Browser/BrowserWindowModel+FileOps.swift"; sourceTree = "<group>"; };
+		7F1A0532 /* Browser/BrowserWindowModel+Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Browser/BrowserWindowModel+Settings.swift"; sourceTree = "<group>"; };
+		7F1A0530 /* Browser/BrowserWindowModel+Go.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Browser/BrowserWindowModel+Go.swift"; sourceTree = "<group>"; };
+		7F1A052E /* Browser/BrowserWindowModel+Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Browser/BrowserWindowModel+Views.swift"; sourceTree = "<group>"; };
+		7F1A052C /* Browser/CloudProviders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/CloudProviders.swift; sourceTree = "<group>"; };
+		7F1A052A /* Browser/CutBoard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/CutBoard.swift; sourceTree = "<group>"; };
+		7F1A0528 /* Browser/UndoJournal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/UndoJournal.swift; sourceTree = "<group>"; };
+		7F1A0526 /* Browser/ProblemsList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ProblemsList.swift; sourceTree = "<group>"; };
+		7F1A0524 /* Browser/FolderMerge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FolderMerge.swift; sourceTree = "<group>"; };
+		7F1A0522 /* Browser/KeyBindings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/KeyBindings.swift; sourceTree = "<group>"; };
+		7F1A0520 /* Browser/RecentFolders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/RecentFolders.swift; sourceTree = "<group>"; };
+		7F1A051E /* Browser/SidebarSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SidebarSections.swift; sourceTree = "<group>"; };
+		7F1A051C /* Browser/FinderTags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FinderTags.swift; sourceTree = "<group>"; };
+		7F1A051A /* Browser/FolderViewOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FolderViewOptions.swift; sourceTree = "<group>"; };
 		7F1A0518 /* Browser/SearchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SearchCoordinator.swift; sourceTree = "<group>"; };
 		7F1A0516 /* Browser/ContentIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ContentIndex.swift; sourceTree = "<group>"; };
 		7F1A0514 /* Browser/FilenameIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FilenameIndex.swift; sourceTree = "<group>"; };
@@ -1008,6 +1064,26 @@
 				7F1A007D /* Browser/DirectoryReader.swift */,
 				7F1A007B /* Browser/BrowserWorkspace.swift */,
 				7F1A0079 /* Browser/ShelfModel.swift */,
+				7F1A0540 /* Browser/FolderMergeController.swift */,
+				7F1A053E /* Browser/ConnectToServer.swift */,
+				7F1A053C /* Browser/TagLibrary.swift */,
+				7F1A053A /* Browser/SidebarSources.swift */,
+				7F1A0538 /* Browser/FileMetadataCache.swift */,
+				7F1A0536 /* Browser/BrowserWindowModel+Preview.swift */,
+				7F1A0534 /* Browser/BrowserWindowModel+FileOps.swift */,
+				7F1A0532 /* Browser/BrowserWindowModel+Settings.swift */,
+				7F1A0530 /* Browser/BrowserWindowModel+Go.swift */,
+				7F1A052E /* Browser/BrowserWindowModel+Views.swift */,
+				7F1A052C /* Browser/CloudProviders.swift */,
+				7F1A052A /* Browser/CutBoard.swift */,
+				7F1A0528 /* Browser/UndoJournal.swift */,
+				7F1A0526 /* Browser/ProblemsList.swift */,
+				7F1A0524 /* Browser/FolderMerge.swift */,
+				7F1A0522 /* Browser/KeyBindings.swift */,
+				7F1A0520 /* Browser/RecentFolders.swift */,
+				7F1A051E /* Browser/SidebarSections.swift */,
+				7F1A051C /* Browser/FinderTags.swift */,
+				7F1A051A /* Browser/FolderViewOptions.swift */,
 				7F1A0518 /* Browser/SearchCoordinator.swift */,
 				7F1A0516 /* Browser/ContentIndex.swift */,
 				7F1A0514 /* Browser/FilenameIndex.swift */,
@@ -1281,6 +1357,14 @@
 				7F1A012F /* Components/ProBadge.swift */,
 				7F1A0119 /* Detail/FileBrowserDetailView.swift */,
 				7F1A0117 /* Browser/ShelfBarView.swift */,
+				7F1A0550 /* Browser/VolumeInfoWindow.swift */,
+				7F1A054E /* Browser/PreviewPaneView.swift */,
+				7F1A054C /* Browser/MergePreviewSheet.swift */,
+				7F1A054A /* Browser/OnboardingWindow.swift */,
+				7F1A0548 /* Browser/BrowserSettingsWindow.swift */,
+				7F1A0546 /* Browser/ViewOptionsPanel.swift */,
+				7F1A0544 /* Browser/DragDropCoordinator.swift */,
+				7F1A0542 /* Browser/BrowserContextMenu.swift */,
 				7F1A050C /* Browser/StatusBarView.swift */,
 				7F1A050A /* Browser/PathBarView.swift */,
 				7F1A0508 /* Browser/PaneTabStripView.swift */,
@@ -1597,6 +1681,14 @@
 				7F1A0132 /* Components/ProBadge.swift in Sources */,
 				7F1A011A /* Detail/FileBrowserDetailView.swift in Sources */,
 				7F1A0118 /* Browser/ShelfBarView.swift in Sources */,
+				7F1A0551 /* Browser/VolumeInfoWindow.swift in Sources */,
+				7F1A054F /* Browser/PreviewPaneView.swift in Sources */,
+				7F1A054D /* Browser/MergePreviewSheet.swift in Sources */,
+				7F1A054B /* Browser/OnboardingWindow.swift in Sources */,
+				7F1A0549 /* Browser/BrowserSettingsWindow.swift in Sources */,
+				7F1A0547 /* Browser/ViewOptionsPanel.swift in Sources */,
+				7F1A0545 /* Browser/DragDropCoordinator.swift in Sources */,
+				7F1A0543 /* Browser/BrowserContextMenu.swift in Sources */,
 				7F1A050D /* Browser/StatusBarView.swift in Sources */,
 				7F1A050B /* Browser/PathBarView.swift in Sources */,
 				7F1A0509 /* Browser/PaneTabStripView.swift in Sources */,
@@ -1656,6 +1748,26 @@
 				7F1A007E /* Browser/DirectoryReader.swift in Sources */,
 				7F1A007C /* Browser/BrowserWorkspace.swift in Sources */,
 				7F1A007A /* Browser/ShelfModel.swift in Sources */,
+				7F1A0541 /* Browser/FolderMergeController.swift in Sources */,
+				7F1A053F /* Browser/ConnectToServer.swift in Sources */,
+				7F1A053D /* Browser/TagLibrary.swift in Sources */,
+				7F1A053B /* Browser/SidebarSources.swift in Sources */,
+				7F1A0539 /* Browser/FileMetadataCache.swift in Sources */,
+				7F1A0537 /* Browser/BrowserWindowModel+Preview.swift in Sources */,
+				7F1A0535 /* Browser/BrowserWindowModel+FileOps.swift in Sources */,
+				7F1A0533 /* Browser/BrowserWindowModel+Settings.swift in Sources */,
+				7F1A0531 /* Browser/BrowserWindowModel+Go.swift in Sources */,
+				7F1A052F /* Browser/BrowserWindowModel+Views.swift in Sources */,
+				7F1A052D /* Browser/CloudProviders.swift in Sources */,
+				7F1A052B /* Browser/CutBoard.swift in Sources */,
+				7F1A0529 /* Browser/UndoJournal.swift in Sources */,
+				7F1A0527 /* Browser/ProblemsList.swift in Sources */,
+				7F1A0525 /* Browser/FolderMerge.swift in Sources */,
+				7F1A0523 /* Browser/KeyBindings.swift in Sources */,
+				7F1A0521 /* Browser/RecentFolders.swift in Sources */,
+				7F1A051F /* Browser/SidebarSections.swift in Sources */,
+				7F1A051D /* Browser/FinderTags.swift in Sources */,
+				7F1A051B /* Browser/FolderViewOptions.swift in Sources */,
 				7F1A0519 /* Browser/SearchCoordinator.swift in Sources */,
 				7F1A0517 /* Browser/ContentIndex.swift in Sources */,
 				7F1A0515 /* Browser/FilenameIndex.swift in Sources */,

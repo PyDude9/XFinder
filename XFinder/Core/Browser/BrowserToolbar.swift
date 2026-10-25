@@ -346,6 +346,9 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
         case .modified: return L10n.t("Ngày sửa")
         case .size: return L10n.t("Cỡ")
         case .kind: return L10n.t("Loại")
+        case .created: return L10n.t("Ngày tạo")
+        case .added: return L10n.t("Ngày thêm")
+        case .lastOpened: return L10n.t("Ngày mở gần nhất")
         }
     }
 

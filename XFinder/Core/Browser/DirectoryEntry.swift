@@ -25,6 +25,11 @@ struct DirectoryEntry: Hashable, Sendable, Identifiable {
     /// Measured 2026-10-24 (-O, 100 000 entries, two thirds Vietnamese names): folding inside every filter keystroke cost
     /// 363–440 ms and `localizedStandardCompare` sorting 735 ms; on this precomputed key: filter 1 ms, sort ~60 ms.
     let nameKey: [UInt8]
+    /// XF-T30 W2 — Date Added (`ATTR_CMN_ADDEDTIME`), Date Last Opened (Spotlight `kMDItemLastUsedDate`) and Finder tags.
+    /// nil = not read yet (filled lazily by `FileMetadataCache` / the reader), never "none".
+    var added: Date? = nil
+    var lastOpened: Date? = nil
+    var tags: [String]? = nil
 
     init(name: String, path: String, kind: Kind, isPackage: Bool, isHidden: Bool, size: Int64, modified: Date,
          created: Date, volumeID: Int32) {
@@ -60,6 +65,8 @@ enum BrowserViewMode: String, Codable, CaseIterable, Sendable {
 
 enum SortKey: String, Codable, CaseIterable, Sendable {
     case name, modified, size, kind
+    /// XF-T30 W2 — Sort By (FileOctopus: Name, Kind, Date Added, Date Modified, Date Created, Date Last Opened, Size).
+    case created, added, lastOpened
 }
 
 struct SortOrder: Codable, Equatable, Sendable {
@@ -193,6 +200,9 @@ enum EntryRules {
                 if let f = folded[k] { kinds.append(f) } else { let f = foldBytes(k); folded[k] = f; kinds.append(f) }
             }
         case .modified: dates = entries.map(\.modified)
+        case .created: dates = entries.map(\.created)
+        case .added: dates = entries.map { $0.added ?? .distantPast }
+        case .lastOpened: dates = entries.map { $0.lastOpened ?? .distantPast }
         case .size: sizes = entries.map(\.size)
         case .name: break
         }
@@ -207,7 +217,7 @@ enum EntryRules {
                     switch order.key {
                     case .name:
                         return nameCompare(x, y)
-                    case .modified:
+                    case .modified, .created, .added, .lastOpened:
                         return dates[x] == dates[y] ? 0 : (dates[x] < dates[y] ? -1 : 1)
                     case .size:
                         let xDir = sizes[x] < 0, yDir = sizes[y] < 0

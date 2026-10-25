@@ -37,6 +37,13 @@ enum BrowserCommand: String, CaseIterable, Sendable {
     case makePaneWider, makePaneNarrower, makePaneTaller, makePaneShorter
     case toggleLocationBar, togglePathBar, toggleStatusBar, toggleToolbar, customizeToolbar, toggleSidebar
     case openInNewTab, openInNewWindow, useGroups
+    // XF-T30 W2 views · W3 sidebar/Go · W4 settings · W6 file operations · W7 preview (stubs; owners in each contract)
+    case makeAlias, showOriginal, addToSidebar, share, showViewOptions
+    case goRecents, goDocuments, goDesktop, goDownloads, goHome, goAirDrop, goNetwork, goICloud, goApplications
+    case goUtilities, goComputer, connectToServer, eject, clearRecentFolders
+    case openBrowserSettings, showWelcome
+    case newFolderWithSelection, cut, redo, clearOperationHistory
+    case togglePreview, slideshow
 }
 
 /// XF-T28 — the file browser's ONE keyboard table (spec §2.3): every chord a browser window owns goes through here,
@@ -110,6 +117,30 @@ enum BrowserCommands {
         .toggleToolbar: KeyChord("t", command: true, option: true),
         .toggleSidebar: KeyChord("s", command: true, option: true),
         .useGroups: KeyChord("0", command: true, control: true),
+        // XF-T30 W2–W7 (FileOctopus Finder profile, spec-settings-keyboard §6)
+        .makeAlias: KeyChord("a", command: true, control: true),
+        .showOriginal: KeyChord("r", command: true),
+        .addToSidebar: KeyChord("t", command: true, control: true),
+        .showViewOptions: KeyChord("j", command: true),
+        .goRecents: KeyChord("f", command: true, shift: true),
+        .goDocuments: KeyChord("o", command: true, shift: true),
+        .goDesktop: KeyChord("d", command: true, shift: true),
+        .goDownloads: KeyChord("l", command: true, option: true),
+        .goHome: KeyChord("h", command: true, shift: true),
+        .goAirDrop: KeyChord("r", command: true, shift: true),
+        .goNetwork: KeyChord("k", command: true, shift: true),
+        .goICloud: KeyChord("i", command: true, shift: true),
+        .goApplications: KeyChord("a", command: true, shift: true),
+        .goUtilities: KeyChord("u", command: true, shift: true),
+        .goComputer: KeyChord("c", command: true, shift: true),
+        .connectToServer: KeyChord("k", command: true),
+        .eject: KeyChord("e", command: true),
+        .openBrowserSettings: KeyChord(",", command: true),
+        .newFolderWithSelection: KeyChord("n", command: true, control: true),
+        .cut: KeyChord("x", command: true),
+        .redo: KeyChord("z", command: true, shift: true),
+        .togglePreview: KeyChord("p", command: true, shift: true),
+        .slideshow: KeyChord("y", command: true, option: true),
         // No chord (spec §2.3 "không phím" + contract §2): presetSingle, presetSideBySide, presetStacked, presetGrid,
         // compress, saveWorkspace, openWorkspace, downloadNow, removeDownload, showInFinder, filter, closePaneTab,
         // moveTabToNextPane, swapWithNextPane, moveTabToWindow, makePaneWider/Narrower/Taller/Shorter,
@@ -219,6 +250,33 @@ enum BrowserCommands {
         case .openInNewTab: return "Mở trong tab mới"
         case .openInNewWindow: return "Mở trong cửa sổ mới"
         case .useGroups: return "Dùng nhóm"
+        case .makeAlias: return "Tạo bí danh"
+        case .showOriginal: return "Hiện bản gốc"
+        case .addToSidebar: return "Thêm vào sidebar"
+        case .share: return "Chia sẻ…"
+        case .showViewOptions: return "Hiện tuỳ chọn xem"
+        case .goRecents: return "Mục gần đây"
+        case .goDocuments: return "Tài liệu"
+        case .goDesktop: return "Màn hình nền"
+        case .goDownloads: return "Thư mục Tải về"
+        case .goHome: return "Thư mục nhà"
+        case .goAirDrop: return "AirDrop"
+        case .goNetwork: return "Mạng"
+        case .goICloud: return "iCloud Drive"
+        case .goApplications: return "Các ứng dụng"
+        case .goUtilities: return "Tiện ích hệ thống"
+        case .goComputer: return "Máy tính"
+        case .connectToServer: return "Kết nối máy chủ…"
+        case .eject: return "Đẩy ra"
+        case .clearRecentFolders: return "Xoá menu"
+        case .openBrowserSettings: return "Cài đặt trình duyệt…"
+        case .showWelcome: return "Hiện cửa sổ Chào…"
+        case .newFolderWithSelection: return "Thư mục mới chứa mục chọn"
+        case .cut: return "Cắt tệp"
+        case .redo: return "Làm lại"
+        case .clearOperationHistory: return "Xoá lịch sử thao tác"
+        case .togglePreview: return "Hiện hoặc ẩn xem trước"
+        case .slideshow: return "Trình chiếu"
         }
     }
 

@@ -22,3 +22,22 @@ enum GroupBy: String, Codable, CaseIterable, Sendable {
         }
     }
 }
+
+/// XF-T30 W2 — one group of a grouped listing. `titleKey` is an L10n key; `titleArg` a value shown after it (a month
+/// name, a year, a kind or tag name) that is not translated.
+struct EntrySection: Equatable, Sendable {
+    let titleKey: String
+    let titleArg: String?
+    let entries: [DirectoryEntry]
+}
+
+extension GroupBy {
+    /// Groups `entries` (already filtered) into sections in display order, each section sorted by `sort` — rules in
+    /// contract XF-T30-w2 §1 (relative dates Today / Yesterday / Previous 7 Days / Previous 30 Days / months / years,
+    /// first letter, kind, application, size buckets, tags). `.none` ⇒ one section with every entry. W2 builder (pure).
+    static func sections(_ entries: [DirectoryEntry], by group: GroupBy, sort: SortOrder, foldersFirst: Bool, now: Date,
+                         calendar: Calendar, kindName: (DirectoryEntry) -> String,
+                         appName: (DirectoryEntry) -> String?) -> [EntrySection] {
+        [EntrySection(titleKey: "", titleArg: nil, entries: entries)]
+    }
+}
