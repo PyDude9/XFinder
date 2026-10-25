@@ -115,8 +115,16 @@ import os
     /// (spec: "Không còn ở đây").
     private(set) var isGone = false
     private(set) var pixelSize: (width: Int, height: Int)?
+    private(set) var colorSpace: String?
+    private(set) var camera: String?
     private(set) var pdfPageCount: Int?
     private(set) var mediaDuration: TimeInterval?
+    private(set) var codecs: [String] = []
+    /// Cloud badge for the item (spec §5.2 "Cloud status:" row); nil for a plain local item — the row is omitted.
+    private(set) var cloudBadge: CloudBadge?
+    /// Apps `NSWorkspace` reports can open this item, default handler first (spec §5 "Open With", no "Change All").
+    private(set) var openWithApps: [FileInfoRules.OpenWithApp] = []
+    private(set) var defaultOpenWithBundleID: String?
 
     private(set) var message: InlineMessage?
 
@@ -178,11 +186,17 @@ import os
         loadGeneration += 1
         let generation = loadGeneration
         pixelSize = nil
+        colorSpace = nil
+        camera = nil
         pdfPageCount = nil
         mediaDuration = nil
+        codecs = []
         Task.detached(priority: .userInitiated) {
             let loaded = Self.readFacts(at: path)
             let extra = loaded.map { Self.readAdditionalInfo(path: path, isFolder: $0.isFolder) }
+            let badge = loaded.map { _ in Self.readCloudBadge(path: path) }
+            let apps = loaded.map { _ in Self.readOpenWithApps(path: path) } ?? []
+            let defaultBundleID = loaded != nil ? Self.readDefaultOpenWithBundleID(path: path) : nil
             await MainActor.run { [weak self] in
                 guard let self, generation == self.loadGeneration else { return }
                 guard let loaded else {
@@ -190,6 +204,9 @@ import os
                     return
                 }
                 self.facts = loaded
+                self.cloudBadge = badge
+                self.openWithApps = apps
+                self.defaultOpenWithBundleID = defaultBundleID
                 if loaded.isFolder {
                     self.startFolderWalk(path)
                 } else {
@@ -197,6 +214,8 @@ import os
                 }
                 if let extra {
                     self.pixelSize = extra.pixelSize
+                    self.colorSpace = extra.colorSpace
+                    self.camera = extra.camera
                     self.pdfPageCount = extra.pdfPages
                     if extra.isMedia { self.loadMediaDuration(path) }
                 }
@@ -240,37 +259,63 @@ import os
         sizingTask?.cancel()
     }
 
-    /// Image pixel size (`CGImageSource`), PDF page count (`CGPDFDocument`) and media duration (`AVURLAsset`,
-    /// loaded async) — spec §A "Thêm thông tin". A cloud placeholder is never downloaded just to read these
-    /// (spec: "Tệp iCloud chưa tải: không tải để đọc thêm thông tin") — `isLikelyNotDownloaded` is checked first.
+    /// Image pixel size/colour space/camera (`CGImageSource`), PDF page count (`CGPDFDocument`) and "is a
+    /// playable media file" (duration + codecs are loaded separately — AVFoundation's track metadata needs
+    /// async/synchronous calls this synchronous reader shouldn't block on) — spec §5.3 "Thêm thông tin theo loại".
+    /// A cloud placeholder is never downloaded just to read these (spec: "A file that is only in the cloud is
+    /// never downloaded to fill this in") — `isLikelyNotDownloaded` is checked first.
     nonisolated private static func readAdditionalInfo(path: String, isFolder: Bool)
-        -> (pixelSize: (Int, Int)?, pdfPages: Int?, isMedia: Bool) {
-        guard !isFolder, !isLikelyNotDownloaded(path) else { return (nil, nil, false) }
+        -> (pixelSize: (Int, Int)?, colorSpace: String?, camera: String?, pdfPages: Int?, isMedia: Bool) {
+        guard !isFolder, !isLikelyNotDownloaded(path) else { return (nil, nil, nil, nil, false) }
         let url = URL(fileURLWithPath: path)
         let ext = url.pathExtension.lowercased()
         if ext == "pdf" {
-            return (nil, CGPDFDocument(url as CFURL)?.numberOfPages, false)
+            return (nil, nil, nil, CGPDFDocument(url as CFURL)?.numberOfPages, false)
         }
-        guard let type = UTType(filenameExtension: ext) else { return (nil, nil, false) }
+        guard let type = UTType(filenameExtension: ext) else { return (nil, nil, nil, nil, false) }
         if type.conforms(to: .image) {
-            if let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-               let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
-               let width = props[kCGImagePropertyPixelWidth] as? Int,
-               let height = props[kCGImagePropertyPixelHeight] as? Int {
-                return ((width, height), nil, false)
+            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                  let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] else {
+                return (nil, nil, nil, nil, false)
             }
-            return (nil, nil, false)
+            var pixelSize: (Int, Int)?
+            if let width = props[kCGImagePropertyPixelWidth] as? Int, let height = props[kCGImagePropertyPixelHeight] as? Int {
+                pixelSize = (width, height)
+            }
+            let colorSpace = (props[kCGImagePropertyProfileName] as? String)
+                ?? (props[kCGImagePropertyColorModel] as? String)
+            var camera: String?
+            if let exif = props[kCGImagePropertyTIFFDictionary] as? [CFString: Any] {
+                let make = (exif[kCGImagePropertyTIFFMake] as? String)?.trimmingCharacters(in: .whitespaces)
+                let model = (exif[kCGImagePropertyTIFFModel] as? String)?.trimmingCharacters(in: .whitespaces)
+                camera = [make, model].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " ")
+                if camera?.isEmpty == true { camera = nil }
+            }
+            return (pixelSize, colorSpace, camera, nil, false)
         }
-        return (nil, nil, type.conforms(to: .audiovisualContent))
+        return (nil, nil, nil, nil, type.conforms(to: .audiovisualContent))
     }
 
-    /// AVFoundation loads the duration asynchronously on its own.
+    /// AVFoundation loads duration and per-track codec FourCCs asynchronously (same `formatDescriptions` +
+    /// `fourCC` approach `FinderToolDetailViews.inspect` already uses for the compatibility checker — kept here
+    /// as its own small helper since that file isn't this builder's to touch).
     private func loadMediaDuration(_ path: String) {
         let asset = AVURLAsset(url: URL(fileURLWithPath: path))
         Task { [weak self] in
-            guard let duration = try? await asset.load(.duration), duration.isValid, !duration.isIndefinite else { return }
+            let duration = try? await asset.load(.duration)
+            let tracks = (try? await asset.load(.tracks)) ?? []
+            var fourCCs: [String] = []
+            for track in tracks {
+                if let descriptions = try? await track.load(.formatDescriptions), let first = descriptions.first {
+                    fourCCs.append(Self.fourCCString(CMFormatDescriptionGetMediaSubType(first)))
+                }
+            }
             await MainActor.run { [weak self] in
-                self?.mediaDuration = CMTimeGetSeconds(duration)
+                guard let self else { return }
+                if let duration, duration.isValid, !duration.isIndefinite {
+                    self.mediaDuration = CMTimeGetSeconds(duration)
+                }
+                self.codecs = Array(Set(fourCCs)).sorted()
             }
         }
     }
@@ -415,6 +460,9 @@ import os
         let groupName = (try? FileManager.default.attributesOfItem(atPath: path)[.groupOwnerAccountName] as? String) ?? ""
         let logicalSize: Int64? = isFolder ? nil : Int64(statInfo.st_size)
         let physicalSize: Int64? = isFolder ? nil : Int64(statInfo.st_blocks) * 512
+        let appVersion: String? = (ext(of: path) == "app")
+            ? (Bundle(url: url)?.infoDictionary?["CFBundleShortVersionString"] as? String)
+            : nil
         return FileInfoFacts(
             name: name,
             path: path,
@@ -432,8 +480,13 @@ import os
             locked: values?.isUserImmutable ?? false,
             hidesExtension: values?.hasHiddenExtension ?? false,
             tags: values?.tagNames ?? [],
-            kind: kindName
+            kind: kindName,
+            appVersion: appVersion
         )
+    }
+
+    nonisolated private static func ext(of path: String) -> String {
+        (path as NSString).pathExtension.lowercased()
     }
 
     nonisolated private static func physicalSize(of path: String) -> Int64? {
@@ -449,18 +502,74 @@ import os
         guard let values = try? url.resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]) else { return false }
         return values.ubiquitousItemDownloadingStatus == .notDownloaded
     }
+
+    /// Cloud badge for the General section's "Cloud status:" row — same `CloudFacts`/`CloudRules.badge` the file
+    /// list's own badge overlay uses (`FileListView.cloudBadgeSymbol`), read fresh here rather than shared state
+    /// since this window can outlive the row that opened it.
+    nonisolated private static func readCloudBadge(path: String) -> CloudBadge {
+        let url = URL(fileURLWithPath: path)
+        guard let values = try? url.resourceValues(forKeys: [
+            .isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey, .ubiquitousItemIsDownloadingKey,
+            .ubiquitousItemIsUploadingKey, .ubiquitousItemIsUploadedKey,
+            .ubiquitousItemDownloadingErrorKey, .ubiquitousItemUploadingErrorKey,
+        ]) else { return .none }
+        let facts = CloudFacts(
+            isUbiquitous: values.isUbiquitousItem,
+            downloadingStatus: values.ubiquitousItemDownloadingStatus?.rawValue,
+            isDownloading: values.ubiquitousItemIsDownloading,
+            isUploading: values.ubiquitousItemIsUploading,
+            isUploaded: values.ubiquitousItemIsUploaded,
+            hasDownloadError: values.ubiquitousItemDownloadingError != nil,
+            hasUploadError: values.ubiquitousItemUploadingError != nil
+        )
+        return CloudRules.badge(facts)
+    }
+
+    /// Apps that can open this item (spec §5 "Open With: shows the apps that can open it", no "Change All…" —
+    /// Q-T30-15): `NSWorkspace.urlsForApplications(toOpen:)` never touches the file's bytes, so it is safe to call
+    /// even for a cloud-only placeholder. Display names/icons are resolved by the view (AppKit, `@MainActor`).
+    nonisolated private static func readOpenWithApps(path: String) -> [FileInfoRules.OpenWithApp] {
+        let url = URL(fileURLWithPath: path)
+        let urls = NSWorkspace.shared.urlsForApplications(toOpen: url)
+        return urls.map { appURL in
+            let bundle = Bundle(url: appURL)
+            let name = (bundle?.infoDictionary?["CFBundleName"] as? String)
+                ?? appURL.deletingPathExtension().lastPathComponent
+            return FileInfoRules.OpenWithApp(name: name, path: appURL.path, bundleID: bundle?.bundleIdentifier)
+        }
+    }
+
+    /// The app `LSCopyDefaultApplicationURLForURL` would hand the file to today — shown first in "Mở bằng" (spec
+    /// §5 ordering) if it is present in `readOpenWithApps`' own list.
+    nonisolated private static func readDefaultOpenWithBundleID(path: String) -> String? {
+        guard let defaultURL = NSWorkspace.shared.urlForApplication(toOpen: URL(fileURLWithPath: path)) else { return nil }
+        return Bundle(url: defaultURL)?.bundleIdentifier
+    }
+
+    nonisolated private static func fourCCString(_ code: FourCharCode) -> String {
+        let bytes: [UInt8] = [
+            UInt8((code >> 24) & 0xFF), UInt8((code >> 16) & 0xFF),
+            UInt8((code >> 8) & 0xFF), UInt8(code & 0xFF),
+        ]
+        let scalars = bytes.map { byte -> Character in
+            (32...126).contains(byte) ? Character(UnicodeScalar(byte)) : "?"
+        }
+        return String(scalars).trimmingCharacters(in: .whitespaces)
+    }
 }
 
 // MARK: - View
 
-/// Root content: either one item's four sections (Chung · Thêm thông tin · Tên & đuôi · Thẻ · Quyền) or, for a
-/// multi-item selection, the summary row set.
+/// Root content: either one item's five foldable sections, in order — Chung (General) · Thêm thông tin (More
+/// Info) · Tên & đuôi (Name & Extension) · Thẻ (Tags) · Chia sẻ & Quyền (Sharing & Permissions) — spec §5.1
+/// "exactly five, no more"; or, for a multi-item selection, the summary row set. A window opened from a search
+/// result shows a read-only banner with "Hiện trong thư mục chứa" (spec §5.8).
 struct GetInfoRootView: View {
     @Bindable var model: GetInfoModel
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
                 if model.isGone {
                     Text(L10n.t("Không còn ở đây"))
                         .font(XFinderTokens.Font.sectionTitle)
@@ -469,11 +578,15 @@ struct GetInfoRootView: View {
                 } else if case .summary = model.kind {
                     GetInfoSummarySection(model: model)
                 } else if let facts = model.facts {
-                    GetInfoGeneralSection(model: model, facts: facts)
-                    GetInfoAdditionalSection(model: model)
-                    GetInfoNameSection(model: model, facts: facts)
-                    GetInfoTagsSection(model: model, facts: facts)
-                    GetInfoPermissionsSection(model: model, facts: facts)
+                    if model.readOnly {
+                        GetInfoReadOnlyBanner(path: facts.path)
+                    }
+                    GetInfoFoldableSection(titleKey: "Chung") { GetInfoGeneralSection(model: model, facts: facts) }
+                    GetInfoFoldableSection(titleKey: "Thêm thông tin") { GetInfoAdditionalSection(model: model) }
+                    GetInfoFoldableSection(titleKey: "Mở bằng") { GetInfoOpenWithSection(model: model) }
+                    GetInfoFoldableSection(titleKey: "Tên & đuôi") { GetInfoNameSection(model: model, facts: facts) }
+                    GetInfoFoldableSection(titleKey: "Thẻ") { GetInfoTagsSection(model: model, facts: facts) }
+                    GetInfoFoldableSection(titleKey: "Chia sẻ & Quyền") { GetInfoPermissionsSection(model: model, facts: facts) }
                 } else {
                     ProgressView().padding(.top, XFinderTokens.Space.section)
                 }
@@ -481,6 +594,40 @@ struct GetInfoRootView: View {
             .padding(XFinderTokens.Space.page)
         }
         .frame(minWidth: 360, minHeight: 420)
+    }
+}
+
+/// One disclosure triangle per section (spec §5.1/§5 "five foldable sections", §R23 "independent disclosure
+/// triangle"); "Mở bằng" is this builder's own addition on top of the five named sections — folded inside "Thêm
+/// thông tin" would have mixed two different jobs, so it gets its own triangle instead of a sixth required one.
+private struct GetInfoFoldableSection<Content: View>: View {
+    let titleKey: String
+    @ViewBuilder let content: () -> Content
+    @State private var isExpanded = true
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            content().padding(.top, XFinderTokens.Space.tight)
+        } label: {
+            Text(L10n.t(titleKey)).font(XFinderTokens.Font.sectionTitle)
+        }
+    }
+}
+
+/// Spec §5.8: "Search-result items open a read-only Info window; use 'Show in Enclosing Folder' to change them."
+private struct GetInfoReadOnlyBanner: View {
+    let path: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            Text(L10n.t("Chỉ đọc — mục này đến từ kết quả tìm kiếm."))
+                .font(XFinderTokens.Font.caption)
+                .foregroundColor(.secondary)
+            Button(L10n.t("Hiện trong thư mục chứa")) {
+                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+            }
+            .font(XFinderTokens.Font.caption)
+        }
     }
 }
 
@@ -516,8 +663,8 @@ private struct GetInfoGeneralSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            Text(L10n.t("Chung")).font(XFinderTokens.Font.sectionTitle)
-            let rows = FileInfoRules.generalRows(facts, sizeText: sizeText, dateText: { dateFormatter.string(from: $0) })
+            let rows = FileInfoRules.generalRows(facts, sizeText: sizeText, dateText: { dateFormatter.string(from: $0) },
+                                                  cloudBadge: model.cloudBadge)
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                 LabeledContent(L10n.t(row.labelKey), value: row.value)
             }
@@ -539,12 +686,16 @@ private struct GetInfoAdditionalSection: View {
 
     var body: some View {
         let rows = FileInfoRules.additionalRows(
-            pixelSize: model.pixelSize, pdfPageCount: model.pdfPageCount, mediaDuration: model.mediaDuration,
+            pixelSize: model.pixelSize, colorSpace: model.colorSpace, camera: model.camera,
+            pdfPageCount: model.pdfPageCount, mediaDuration: model.mediaDuration, codecs: model.codecs,
             durationText: Self.durationText
         )
-        if !rows.isEmpty {
+        if rows.isEmpty {
+            Text(L10n.t("Không có thêm thông tin cho loại tệp này."))
+                .font(XFinderTokens.Font.caption)
+                .foregroundColor(.secondary)
+        } else {
             VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-                Text(L10n.t("Thêm thông tin")).font(XFinderTokens.Font.sectionTitle)
                 ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
                     LabeledContent(L10n.t(row.labelKey), value: row.value)
                 }
@@ -557,6 +708,39 @@ private struct GetInfoAdditionalSection: View {
         formatter.allowedUnits = seconds >= 3600 ? [.hour, .minute, .second] : [.minute, .second]
         formatter.zeroFormattingBehavior = .pad
         return formatter.string(from: seconds) ?? "\(Int(seconds))s"
+    }
+}
+
+/// "Mở bằng": the apps `NSWorkspace` reports can open this item, default handler first, each with its own icon
+/// (`NSWorkspace.icon(forFile:)`, cheap for an app bundle — no custom cache needed for a list this short). No
+/// "Change All…" control (spec §5/Q-T30-15: changing the system default handler is a machine-config change, out of
+/// scope unless the owner asks for it).
+private struct GetInfoOpenWithSection: View {
+    private static let iconSize: CGFloat = 16
+
+    let model: GetInfoModel
+
+    var body: some View {
+        let apps = FileInfoRules.orderedOpenWithApps(model.openWithApps, defaultBundleID: model.defaultOpenWithBundleID)
+        if apps.isEmpty {
+            Text(L10n.t("Không tìm thấy ứng dụng mở được tệp này."))
+                .font(XFinderTokens.Font.caption)
+                .foregroundColor(.secondary)
+        } else {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                ForEach(apps) { app in
+                    HStack(spacing: XFinderTokens.Space.tight) {
+                        Image(nsImage: NSWorkspace.shared.icon(forFile: app.path))
+                            .resizable()
+                            .frame(width: Self.iconSize, height: Self.iconSize)
+                        Text(app.name)
+                            .font(XFinderTokens.Font.rowValue)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -576,15 +760,14 @@ private struct GetInfoNameSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            Text(L10n.t("Tên & đuôi")).font(XFinderTokens.Font.sectionTitle)
             TextField(L10n.t("Tên"), text: $name)
-                .disabled(model.readOnly)
+                .disabled(!FileInfoRules.isControlEnabled(.rename, readOnly: model.readOnly, locked: facts.locked))
                 .onSubmit { model.rename(to: name) }
             if let message = model.message, message.kind == .rename {
                 Text(inlineMessageText(message)).font(XFinderTokens.Font.caption).foregroundColor(.red)
             }
             Toggle(L10n.t("Ẩn đuôi tệp"), isOn: $hidesExtension)
-                .disabled(model.readOnly || facts.isFolder)
+                .disabled(facts.isFolder || !FileInfoRules.isControlEnabled(.hideExtension, readOnly: model.readOnly, locked: facts.locked))
                 .onChange(of: hidesExtension) { _, newValue in model.setHidesExtension(newValue) }
             if let message = model.message, message.kind == .hideExtension {
                 Text(inlineMessageText(message)).font(XFinderTokens.Font.caption).foregroundColor(.red)
@@ -593,7 +776,7 @@ private struct GetInfoNameSection: View {
                 get: { facts.locked },
                 set: { model.setLocked($0) }
             ))
-            .disabled(model.readOnly)
+            .disabled(!FileInfoRules.isControlEnabled(.lock, readOnly: model.readOnly, locked: facts.locked))
             if let message = model.message, message.kind == .lock {
                 Text(inlineMessageText(message)).font(XFinderTokens.Font.caption).foregroundColor(.red)
             }
@@ -606,15 +789,16 @@ private struct GetInfoNameSection: View {
 }
 
 private struct GetInfoTagsSection: View {
+    private static let dotSize: CGFloat = 8
+
     let model: GetInfoModel
     let facts: FileInfoFacts
     @State private var tagsText: String = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            Text(L10n.t("Thẻ")).font(XFinderTokens.Font.sectionTitle)
             TextField(L10n.t("Thẻ, cách nhau bằng dấu phẩy"), text: $tagsText)
-                .disabled(model.readOnly)
+                .disabled(!FileInfoRules.isControlEnabled(.tags, readOnly: model.readOnly, locked: facts.locked))
                 .onSubmit {
                     let tags = tagsText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
                     model.setTags(tags)
@@ -622,8 +806,34 @@ private struct GetInfoTagsSection: View {
             if let message = model.message, message.kind == .tags {
                 Text(inlineMessageText(message)).font(XFinderTokens.Font.caption).foregroundColor(.red)
             }
+            // Finder tag colours (spec §5.5 "Tags look like Finder's" — 1.0.4 fixed the wrong/missing round trip):
+            // `FinderTags.parse` decodes the stored "Name\n<colour number>" string, this view only picks the dot.
+            if !facts.tags.isEmpty {
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    ForEach(facts.tags, id: \.self) { tag in
+                        let parsed = FinderTags.parse(tag)
+                        Circle()
+                            .fill(Self.dotColor(parsed.color))
+                            .frame(width: Self.dotSize, height: Self.dotSize)
+                        Text(parsed.name).font(XFinderTokens.Font.caption)
+                    }
+                }
+            }
         }
         .onAppear { tagsText = facts.tags.joined(separator: ", ") }
+    }
+
+    private static func dotColor(_ color: TagColor) -> Color {
+        switch color {
+        case .none: return .clear
+        case .gray: return .gray
+        case .green: return .green
+        case .purple: return .purple
+        case .blue: return .blue
+        case .yellow: return .yellow
+        case .red: return .red
+        case .orange: return .orange
+        }
     }
 }
 
@@ -633,9 +843,10 @@ private struct GetInfoPermissionsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            Text(L10n.t("Quyền")).font(XFinderTokens.Font.sectionTitle)
-            permissionRow(label: "\(facts.ownerName) \(L10n.t("(Chủ sở hữu)"))", who: .owner)
-            permissionRow(label: "\(facts.groupName) \(L10n.t("(Nhóm)"))", who: .group)
+            // Owner is marked "(Tôi)" only when the current user actually owns the item (spec §5.6 "(Me)"), not
+            // unconditionally — the original label here always said "(Chủ sở hữu)" regardless of `ownerIsMe`.
+            permissionRow(label: facts.ownerIsMe ? "\(facts.ownerName) \(L10n.t("(Tôi)"))" : facts.ownerName, who: .owner)
+            permissionRow(label: facts.groupName, who: .group)
             permissionRow(label: L10n.t("Mọi người khác"), who: .everyone)
             if let message = model.message, message.kind == .permission {
                 Text(inlineMessageText(message)).font(XFinderTokens.Font.caption).foregroundColor(.red)
@@ -653,6 +864,6 @@ private struct GetInfoPermissionsSection: View {
                 Text(L10n.t(access.titleKey)).tag(access)
             }
         }
-        .disabled(model.readOnly)
+        .disabled(!FileInfoRules.isControlEnabled(.permissions, readOnly: model.readOnly, locked: facts.locked))
     }
 }

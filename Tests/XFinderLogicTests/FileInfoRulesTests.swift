@@ -116,12 +116,54 @@ final class FileInfoRulesTests: XCTestCase {
 
     func test_generalRows_omitsAccessedWhenNil() {
         let rows = FileInfoRules.generalRows(facts(accessed: nil), sizeText: { _ in "" }, dateText: { _ in "" })
-        XCTAssertFalse(rows.map(\.labelKey).contains("Ngày mở gần nhất:"))
+        XCTAssertFalse(rows.map(\.labelKey).contains("Mở lần cuối:"))
     }
 
     func test_generalRows_includesAccessedWhenPresent() {
         let rows = FileInfoRules.generalRows(facts(accessed: Date()), sizeText: { _ in "" }, dateText: { _ in "" })
-        XCTAssertTrue(rows.map(\.labelKey).contains("Ngày mở gần nhất:"))
+        XCTAssertTrue(rows.map(\.labelKey).contains("Mở lần cuối:"))
+    }
+
+    // MARK: - generalRows: app version (apps only)
+
+    func test_generalRows_omitsVersionWhenNil() {
+        let rows = FileInfoRules.generalRows(facts(), sizeText: { _ in "" }, dateText: { _ in "" })
+        XCTAssertFalse(rows.map(\.labelKey).contains("Phiên bản:"))
+    }
+
+    func test_generalRows_includesVersionWhenPresent() {
+        var f = facts()
+        f = FileInfoFacts(name: f.name, path: f.path, isFolder: f.isFolder, isPackage: f.isPackage,
+                           logicalSize: f.logicalSize, physicalSize: f.physicalSize, created: f.created,
+                           modified: f.modified, accessed: f.accessed, posixMode: f.posixMode,
+                           ownerName: f.ownerName, groupName: f.groupName, ownerIsMe: f.ownerIsMe,
+                           locked: f.locked, hidesExtension: f.hidesExtension, tags: f.tags, kind: f.kind,
+                           appVersion: "1.4.0")
+        let rows = FileInfoRules.generalRows(f, sizeText: { _ in "" }, dateText: { _ in "" })
+        XCTAssertEqual(rows.first { $0.labelKey == "Phiên bản:" }?.value, "1.4.0")
+    }
+
+    // MARK: - generalRows: cloud status (cloud items only)
+
+    func test_generalRows_omitsCloudStatusWhenNilBadge() {
+        let rows = FileInfoRules.generalRows(facts(), sizeText: { _ in "" }, dateText: { _ in "" }, cloudBadge: nil)
+        XCTAssertFalse(rows.map(\.labelKey).contains("Trạng thái đám mây:"))
+    }
+
+    func test_generalRows_omitsCloudStatusWhenBadgeNone() {
+        let rows = FileInfoRules.generalRows(facts(), sizeText: { _ in "" }, dateText: { _ in "" }, cloudBadge: .none)
+        XCTAssertFalse(rows.map(\.labelKey).contains("Trạng thái đám mây:"))
+    }
+
+    func test_generalRows_includesCloudStatusWhenCloudOnly() {
+        let rows = FileInfoRules.generalRows(facts(), sizeText: { _ in "" }, dateText: { _ in "" }, cloudBadge: .cloudOnly)
+        XCTAssertEqual(rows.first { $0.labelKey == "Trạng thái đám mây:" }?.value, "Chỉ trên đám mây")
+    }
+
+    func test_cloudStatusValueKey_everyBadgeHasDistinctKey() {
+        let badges: [CloudBadge] = [.none, .cloudOnly, .downloading, .uploading, .downloadFailed, .uploadFailed]
+        let keys = Set(badges.map(FileInfoRules.cloudStatusValueKey))
+        XCTAssertEqual(keys.count, badges.count)
     }
 
     func test_generalRows_omitsSizeOnDiskWhenPhysicalSizeNil() {
@@ -165,12 +207,31 @@ final class FileInfoRulesTests: XCTestCase {
         XCTAssertEqual(rows.first?.value, "90s")
     }
 
-    func test_additionalRows_allThreeTogetherKeepOrder() {
-        let rows = FileInfoRules.additionalRows(pixelSize: (10, 20), pdfPageCount: 3, mediaDuration: 5, durationText: { "\($0)" })
-        XCTAssertEqual(rows.count, 3)
-        XCTAssertEqual(rows[0].labelKey, "Kích thước ảnh:")
-        XCTAssertEqual(rows[1].labelKey, "Số trang:")
-        XCTAssertEqual(rows[2].labelKey, "Thời lượng:")
+    func test_additionalRows_allTogetherKeepOrder() {
+        // Image dims/colour/camera, then media duration/codecs, then PDF pages — a file is never more than one
+        // kind, but the order is still a fixed contract for a window that is handed every field at once.
+        let rows = FileInfoRules.additionalRows(pixelSize: (10, 20), colorSpace: "sRGB", camera: "iPhone 15 Pro",
+                                                 pdfPageCount: 3, mediaDuration: 5, codecs: ["h264"],
+                                                 durationText: { "\($0)" })
+        XCTAssertEqual(rows.map(\.labelKey), [
+            "Kích thước ảnh:", "Không gian màu:", "Máy ảnh:", "Thời lượng:", "Codec:", "Số trang:",
+        ])
+    }
+
+    func test_additionalRows_colorSpaceAndCamera() {
+        let rows = FileInfoRules.additionalRows(colorSpace: "Display P3", camera: "Canon EOS R5", durationText: { "\($0)" })
+        XCTAssertEqual(rows.first { $0.labelKey == "Không gian màu:" }?.value, "Display P3")
+        XCTAssertEqual(rows.first { $0.labelKey == "Máy ảnh:" }?.value, "Canon EOS R5")
+    }
+
+    func test_additionalRows_codecsJoined() {
+        let rows = FileInfoRules.additionalRows(codecs: ["h264", "aac"], durationText: { "\($0)" })
+        XCTAssertEqual(rows.first { $0.labelKey == "Codec:" }?.value, "h264, aac")
+    }
+
+    func test_additionalRows_emptyCodecsOmitsRow() {
+        let rows = FileInfoRules.additionalRows(codecs: [], durationText: { "\($0)" })
+        XCTAssertFalse(rows.map(\.labelKey).contains("Codec:"))
     }
 
     // MARK: - Rename validation (reusing Finder rules)
@@ -293,5 +354,68 @@ final class FileInfoRulesTests: XCTestCase {
     func test_facts_equatable() {
         XCTAssertEqual(facts(), facts())
         XCTAssertNotEqual(facts(name: "A"), facts(name: "B"))
+    }
+
+    // MARK: - Locked restrictions (isControlEnabled)
+
+    func test_isControlEnabled_readOnlyDisablesEverythingButLockAndTags() {
+        for control in [FileInfoRules.EditableControl.rename, .trash, .hideExtension, .permissions] {
+            XCTAssertFalse(FileInfoRules.isControlEnabled(control, readOnly: true, locked: false))
+        }
+        XCTAssertTrue(FileInfoRules.isControlEnabled(.tags, readOnly: false, locked: false))
+        XCTAssertTrue(FileInfoRules.isControlEnabled(.lock, readOnly: false, locked: false))
+    }
+
+    func test_isControlEnabled_readOnlyDisablesLockToo() {
+        // Spec §5.8: a search-result window is read-only in-window for every editable surface.
+        XCTAssertFalse(FileInfoRules.isControlEnabled(.lock, readOnly: true, locked: false))
+        XCTAssertFalse(FileInfoRules.isControlEnabled(.tags, readOnly: true, locked: false))
+    }
+
+    func test_isControlEnabled_lockedDisablesRenameTrashHideExtensionPermissions() {
+        for control in [FileInfoRules.EditableControl.rename, .trash, .hideExtension, .permissions] {
+            XCTAssertFalse(FileInfoRules.isControlEnabled(control, readOnly: false, locked: true))
+        }
+    }
+
+    func test_isControlEnabled_lockedStillAllowsTagsAndLockToggle() {
+        // Tags aren't protected by Locked (spec §5.7 names rename/trash/extension/permissions only); the Lock
+        // checkbox itself must stay enabled so a locked item can be unlocked again.
+        XCTAssertTrue(FileInfoRules.isControlEnabled(.tags, readOnly: false, locked: true))
+        XCTAssertTrue(FileInfoRules.isControlEnabled(.lock, readOnly: false, locked: true))
+    }
+
+    func test_isControlEnabled_unlockedNotReadOnly_allowsEverything() {
+        for control in [FileInfoRules.EditableControl.rename, .trash, .hideExtension, .permissions, .tags, .lock] {
+            XCTAssertTrue(FileInfoRules.isControlEnabled(control, readOnly: false, locked: false))
+        }
+    }
+
+    // MARK: - Open With ordering
+
+    private func app(_ name: String, bundleID: String? = nil) -> FileInfoRules.OpenWithApp {
+        FileInfoRules.OpenWithApp(name: name, path: "/Applications/\(name).app", bundleID: bundleID ?? "com.example.\(name)")
+    }
+
+    func test_orderedOpenWithApps_noDefault_sortsAlphabetically() {
+        let result = FileInfoRules.orderedOpenWithApps([app("Zed"), app("Acorn"), app("Mimic")], defaultBundleID: nil)
+        XCTAssertEqual(result.map(\.name), ["Acorn", "Mimic", "Zed"])
+    }
+
+    func test_orderedOpenWithApps_defaultFirst_restAlphabetical() {
+        let result = FileInfoRules.orderedOpenWithApps(
+            [app("Zed"), app("Acorn", bundleID: "com.default.app"), app("Mimic")],
+            defaultBundleID: "com.default.app"
+        )
+        XCTAssertEqual(result.map(\.name), ["Acorn", "Mimic", "Zed"])
+    }
+
+    func test_orderedOpenWithApps_defaultNotInList_fallsBackToAlphabetical() {
+        let result = FileInfoRules.orderedOpenWithApps([app("Zed"), app("Acorn")], defaultBundleID: "com.missing.app")
+        XCTAssertEqual(result.map(\.name), ["Acorn", "Zed"])
+    }
+
+    func test_orderedOpenWithApps_empty() {
+        XCTAssertTrue(FileInfoRules.orderedOpenWithApps([], defaultBundleID: nil).isEmpty)
     }
 }
