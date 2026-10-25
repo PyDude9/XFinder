@@ -984,6 +984,9 @@ actor FilenameIndex {
     /// leading wildcard); substring goes through the trigram FTS5 table; fuzzy re-ranks a bounded candidate set
     /// (every substring-tier miss plus a syntactic prefix scan capped by `NameMatcher`'s budget) with
     /// `NameMatcher.rank`, which already enforces `fuzzyBudget` and reports `tierEnded`.
+    /// The fuzzy tier runs only when the exact / prefix / substring tiers returned fewer hits than this.
+    static let fuzzyOnlyBelow: Int = 20
+
     func search(_ query: String, within folders: [String]?, limit: Int) -> [Hit] {
         guard let db = openIfNeeded(), limit > 0 else { return [] }
         let foldedQuery = String(decoding: NameMatcher.fold(query), as: UTF8.self)
@@ -1015,7 +1018,10 @@ actor FilenameIndex {
             }
         }
 
-        if hits.count < limit {
+        // Fuzzy is the last, expensive tier: only when the cheap tiers found almost nothing (FileOctopus' tier
+        // escalation). Integration audit 2026-10-25: it ran whenever hits < limit — i.e. on nearly every query with
+        // limit 500 — scanning up to 20 000 candidates each time.
+        if hits.count < min(limit, Self.fuzzyOnlyBelow) {
             // Fuzzy: re-rank a small candidate set (every name in scope that the cheap tiers above did not already
             // place), budgeted by `NameMatcher.rank` so a huge index never makes a fuzzy query unbounded.
             let queryBytes = NameMatcher.fold(query)
