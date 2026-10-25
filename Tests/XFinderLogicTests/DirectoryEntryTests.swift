@@ -639,4 +639,18 @@ final class DirectoryEntryFoldKeyTests: XCTestCase {
         let t = EntryRules.sorted(twins, by: .finderDefault, foldersFirst: false, kindName: { _ in "" }).map(\.path)
         XCTAssertEqual(t, ["/t/B", "/t/b"], "equal keys break by path, deterministically")
     }
+
+    /// FileOctopus R18 (mutant W27-26): "keep folders on top" applies to name sorting only; sorting by size keeps a
+    /// big file above a small folder.
+    func testFoldersFirstOnlyAppliesWhenSortingByName() {
+        let zero = Date(timeIntervalSince1970: 0)
+        let folder = DirectoryEntry(name: "a-folder", path: "/tmp/a-folder", kind: .directory, isPackage: false, isHidden: false,
+                                    size: -1, modified: zero, created: zero, volumeID: 1)
+        let big = DirectoryEntry(name: "z-big", path: "/tmp/z-big", kind: .file, isPackage: false, isHidden: false,
+                                 size: 9_000, modified: zero, created: zero, volumeID: 1)
+        let bySize = EntryRules.sorted([folder, big], by: SortOrder(key: .size, ascending: false), foldersFirst: true) { _ in "" }
+        XCTAssertEqual(bySize.map { $0.name }.first, "z-big", "size sort ignores folders-first")
+        let byName = EntryRules.sorted([big, folder], by: .finderDefault, foldersFirst: true) { _ in "" }
+        XCTAssertEqual(byName.map { $0.name }.first, "a-folder")
+    }
 }

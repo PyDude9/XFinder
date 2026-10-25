@@ -158,4 +158,12 @@ final class SidebarSectionsTests: XCTestCase {
         XCTAssertEqual(a, b)
         XCTAssertEqual(a, ["Gần đây", "AirDrop", "iCloud Drive"])
     }
+
+    /// Mutant W27-08: a real folder whose path happens to end in "recents" past the scheme's length is NOT virtual.
+    func testARealFolderNamedRecentsIsNotAVirtualLocation() {
+        let path = "/tmp/abcdefghijkl/recents"              // 18 characters before "recents", like the scheme
+        XCTAssertEqual(VirtualLocation.scheme.count, 18)
+        XCTAssertNil(VirtualLocation.parse(path))
+        XCTAssertNil(VirtualLocation.parse("/Users/me/all-tags"))
+    }
 }

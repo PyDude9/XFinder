@@ -262,4 +262,17 @@ final class UndoJournalTests: XCTestCase {
                                                 volumeMounted: { _ in true })
         XCTAssertEqual(result, .available)
     }
+
+    /// Mutant W27-23: in a multi-item step, a missing disk for ANY item (not just the first) is diskMissing.
+    func testDiskMissingForASecondItemOnAnotherVolume() {
+        let items = [
+            UndoItem(from: "/Volumes/A/x", to: "/Users/me/x", inode: 1, size: 1, modified: Date(timeIntervalSince1970: 1)),
+            UndoItem(from: "/Volumes/B/y", to: "/Users/me/y", inode: 2, size: 2, modified: Date(timeIntervalSince1970: 2)),
+        ]
+        let s = UndoStep(id: UUID(), kind: .move, items: items, date: Date())
+        let result = UndoJournal().availability(of: s, exists: { _ in true },
+                                                identity: { $0 == "/Volumes/A/x" ? (inode: 1, size: 1, modified: Date(timeIntervalSince1970: 1)) : (inode: 2, size: 2, modified: Date(timeIntervalSince1970: 2)) },
+                                                volumeMounted: { !$0.hasPrefix("/Volumes/B") })
+        XCTAssertEqual(result, .diskMissing)
+    }
 }
