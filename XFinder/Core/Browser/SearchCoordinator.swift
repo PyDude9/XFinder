@@ -239,11 +239,16 @@ final class SearchCoordinator {
             }
         }
         for chip in parsed.chips where chip.field == .folder {
-            // `in:<folder>` — path must contain `/folder/` as a directory component (same substring rule as the
+            // `in:<folder>` — path must contain `/folder/` as a directory component, OR end in `/folder` (the
+            // folder itself, which has no trailing slash after its own name) — same two-clause rule as the
             // `kMDItemPath` clause `SearchQuery` builds for Spotlight, kept consistent between the two sources so a
-            // folder-scoped query behaves the same whether a result came from Spotlight or an index).
+            // folder-scoped query behaves the same whether a result came from Spotlight or an index.
             guard case .text(let folderName) = chip.value, !folderName.isEmpty else { continue }
-            if !path.localizedCaseInsensitiveContains("/\(folderName)/") { return false }
+            let suffix = "/\(folderName)"
+            let nested = path.localizedCaseInsensitiveContains(suffix + "/")
+            let isFolderItself = path.range(of: suffix, options: [.caseInsensitive, .backwards])
+                .map { $0.upperBound == path.endIndex } ?? false
+            if !nested && !isFolderItself { return false }
         }
         let checkableFields: Set<SearchChip.Field> = [.kind, .modified, .created, .size, .ext]
         guard parsed.chips.contains(where: { checkableFields.contains($0.field) }) else { return true }

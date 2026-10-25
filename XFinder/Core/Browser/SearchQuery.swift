@@ -699,7 +699,12 @@ enum SearchQuery {
                 // it, not an exact segment compare (`mdfind` has no path-segment operator); never widens because
                 // the caller's own `scopes:`/`-onlyin` argument to `mdfind` already limits the search root — this
                 // clause only adds an extra AND, it can only remove matches, never add ones outside that scope.
-                return "kMDItemPath == \"*/\(escapeForMDQuery(value))/*\"cd"
+                // Two clauses ORed: `*/folder/*` for anything nested inside it, `*/folder` for the folder entry
+                // itself (no trailing slash after the last path component) — without the second, searching
+                // `in:Reports` would never surface the "Reports" folder, only its contents (edge case found in
+                // review; see SearchCoordinator.chipsAllow for the matching index-side check).
+                let escaped = escapeForMDQuery(value)
+                return "(kMDItemPath == \"*/\(escaped)/*\"cd || kMDItemPath == \"*/\(escaped)\"cd)"
             case .kind, .modified, .created, .size:
                 // Not reachable given how chips are constructed above, but keeps this switch exhaustive and safe.
                 return "kMDItemFSName == \"*\(escapeForMDQuery(value))*\"cd"

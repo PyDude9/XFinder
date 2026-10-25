@@ -601,17 +601,28 @@ final class SearchQueryTests: XCTestCase {
 
     func test_expressionInUsesPathSubstring() {
         let e = expr("in:Reports")
-        XCTAssertEqual(e, "kMDItemPath == \"*/Reports/*\"cd")
+        XCTAssertEqual(e, "(kMDItemPath == \"*/Reports/*\"cd || kMDItemPath == \"*/Reports\"cd)")
     }
 
     func test_expressionInCombinesWithTermAnd() {
         let e = expr("invoice in:Reports")
-        XCTAssertEqual(e, "kMDItemFSName == \"*invoice*\"cd && kMDItemPath == \"*/Reports/*\"cd")
+        XCTAssertEqual(
+            e,
+            "kMDItemFSName == \"*invoice*\"cd && (kMDItemPath == \"*/Reports/*\"cd || kMDItemPath == \"*/Reports\"cd)"
+        )
     }
 
     func test_expressionInEscapesSlashlessMultiWordFolderName() {
         let e = expr("in:\"Monthly Reports\"")
-        XCTAssertEqual(e, "kMDItemPath == \"*/Monthly Reports/*\"cd")
+        XCTAssertEqual(e, "(kMDItemPath == \"*/Monthly Reports/*\"cd || kMDItemPath == \"*/Monthly Reports\"cd)")
+    }
+
+    /// Edge case found in review: without the second OR branch, `in:Reports` would only match paths that have
+    /// something INSIDE a "Reports" folder, never the "Reports" folder entry itself (no trailing `/` after the
+    /// last path component).
+    func test_expressionInMatchesTheFolderItselfNotOnlyItsContents() {
+        let e = expr("in:Reports")
+        XCTAssertTrue(e.contains("kMDItemPath == \"*/Reports\"cd"), "must also match the folder entry, not just its contents")
     }
 
     func test_expressionSizeUsesFSSize() {
