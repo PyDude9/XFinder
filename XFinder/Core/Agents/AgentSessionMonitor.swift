@@ -112,7 +112,7 @@ final class AgentSessionMonitor {
             let tail = EventTail(agent: agent, eventsDir: eventsDir(for: agent))
             tail.onChange = { [weak self] in self?.scheduleReload() }
             tails[agent] = tail
-            tail.reload(full: true)
+            tail.loadInitial { [weak self] in self?.rebuild() }
             tail.watch()
         }
         rebuild()
@@ -192,7 +192,9 @@ final class AgentSessionMonitor {
             sessions = new
             onChange?()
         }
-        notifyBaseline = running ? sessions : nil
+        // Until every tail's first read lands the list is partial: no baseline yet, so the first full snapshot is
+        // one (old = nil notifies nothing) instead of every existing session reading as new.
+        notifyBaseline = running && !tails.values.contains(where: \.loading) ? sessions : nil
         AgentTalkSender.shared.sessionsChanged(sessions)        // P6: held replies go out when their session is free
         syncLivenessTimer()
     }
@@ -653,7 +655,7 @@ private final class EventTail {
     /// Everything trimmed off the front of `events`, already replayed (2026-10-25: the old 20 000-event window held ~25 MB).
     private(set) var seed = AgentSessionRules.ReplaySeed()
     /// Events kept as events: enough for a burst between two rebuilds, small enough that a rebuild sorts little.
-    static let keptEvents = 1_000
+    nonisolated static let keptEvents = 1_000
     private var offsets: [String: UInt64] = [:]
     private var dirSource: DispatchSourceFileSystemObject?
     private var fileSource: DispatchSourceFileSystemObject?
@@ -685,6 +687,7 @@ private final class EventTail {
         dirSource?.cancel(); dirSource = nil
         fileSource?.cancel(); fileSource = nil; watchedFile = nil
         offsets = [:]; events = []; seed = AgentSessionRules.ReplaySeed()
+        loading = false; loadEpoch += 1
     }
 
     /// (Re)attach the file watch to today's file when it appears or the day rolls over.
@@ -702,45 +705,102 @@ private final class EventTail {
         watchedFile = today
     }
 
+    /// True while the first full read runs off the main thread; incremental reloads wait for it.
+    private(set) var loading: Bool = false
+    /// Bumped by `cancel()` so a first read that finishes after the tail was stopped is dropped.
+    private var loadEpoch: Int = 0
+
+    /// The first read at start: today's and yesterday's files can be tens of MB (2026-10-25: 70 MB, 4,3 s on the main
+    /// thread at launch). Parses and folds off the main actor, then catches up on whatever arrived meanwhile.
+    func loadInitial(done: @escaping @MainActor () -> Void) {
+        loadEpoch += 1
+        let epoch = loadEpoch
+        loading = true
+        let files = Self.dayFiles(in: eventsDir, now: Date())
+        let agent = agent
+        Task.detached(priority: .userInitiated) {
+            let read = Self.read(files: files, offsets: [:], agent: agent, into: AgentSessionRules.ReplaySeed())
+            await MainActor.run { [weak self] in
+                guard let self, self.loadEpoch == epoch else { return }
+                self.loading = false
+                self.events = read.events; self.seed = read.seed; self.offsets = read.offsets
+                self.trim(now: Date())
+                self.reload(full: false)
+                done()
+            }
+        }
+    }
+
     func reload(full: Bool) {
+        guard !loading else { return }
         let now = Date()
-        let files = [AgentEvents.eventsFileName(for: now.addingTimeInterval(-86_400)), AgentEvents.eventsFileName(for: now)]
-            .map { eventsDir.appendingPathComponent($0) }
         if full { events = []; offsets = [:]; seed = AgentSessionRules.ReplaySeed() }
+        let read = Self.read(files: Self.dayFiles(in: eventsDir, now: now), offsets: offsets, agent: agent, into: seed)
+        offsets = read.offsets
+        seed = read.seed
+        events.append(contentsOf: read.events)
+        trim(now: now)
+    }
+
+    /// Keeps the newest `keptEvents` as events; the rest is folded into `seed`, which then drops what will never show.
+    private func trim(now: Date) {
+        guard events.count > Self.keptEvents else { return }
+        let cut = events.count - Self.keptEvents
+        AgentSessionRules.fold(Array(events[..<cut]), into: &seed)
+        events.removeFirst(cut)
+        seed = AgentSessionRules.pruned(seed, now: now, keep: Set(events.map(AgentSessionRules.sessionKey)),
+                                        isAlive: AgentSessionMonitor.isAlive)
+    }
+
+    nonisolated private static func dayFiles(in dir: URL, now: Date) -> [URL] {
+        [AgentEvents.eventsFileName(for: now.addingTimeInterval(-86_400)), AgentEvents.eventsFileName(for: now)]
+            .map { dir.appendingPathComponent($0) }
+    }
+
+    /// Complete lines after each file's offset → events. Files are mapped (clean pages, not footprint), and every
+    /// `foldEvery` events the oldest beyond `keptEvents` are folded into the seed so a 40 000-line day never sits in
+    /// memory as events (measured: 104 MB peak holding all of them).
+    nonisolated private static func read(files: [URL], offsets: [String: UInt64], agent: AgentKind,
+                                         into seed: AgentSessionRules.ReplaySeed)
+        -> (events: [AgentEvents.Event], seed: AgentSessionRules.ReplaySeed, offsets: [String: UInt64]) {
+        var events: [AgentEvents.Event] = []
+        var seed = seed
+        var offsets = offsets
+        let foldEvery = 4_000
         for url in files {
-            guard let h = try? FileHandle(forReadingFrom: url) else { continue }
-            defer { try? h.close() }
-            let start = offsets[url.lastPathComponent] ?? 0
-            let size = (try? h.seekToEnd()) ?? 0
+            let name = url.lastPathComponent
+            guard let data = try? Data(contentsOf: url, options: .alwaysMapped) else { continue }
+            let size = UInt64(data.count)
+            let start = offsets[name] ?? 0
             guard size > start else {
-                if size < start { offsets[url.lastPathComponent] = 0 }   // truncated / replaced ⇒ re-read next time
+                if size < start { offsets[name] = 0 }   // truncated / replaced ⇒ re-read next time
                 continue
             }
-            try? h.seek(toOffset: start)
-            guard let data = try? h.readToEnd(), !data.isEmpty else { continue }
             // Only complete lines: the hook may be mid-write; the remainder is read on the next event.
-            var consumed = data
-            var carry: UInt64 = 0
-            if data.last != UInt8(ascii: "\n"), let nl = data.lastIndex(of: UInt8(ascii: "\n")) {
-                consumed = data[...nl]; carry = UInt64(data.count - consumed.count)
-            } else if data.last != UInt8(ascii: "\n") {
-                consumed = Data(); carry = UInt64(data.count)
-            }
-            offsets[url.lastPathComponent] = size - carry
-            if !consumed.isEmpty {
-                // The folder decides the agent: a line written by a pre-P5 Claude hook carries no `agent` field.
-                let parsed = AgentEvents.parse(jsonl: String(decoding: consumed, as: UTF8.self)).map { e -> AgentEvents.Event in
-                    var e = e; e.agent = agent; return e
+            let tail = data[(data.startIndex + Int(start))...]
+            guard let lastNewline = tail.lastIndex(of: UInt8(ascii: "\n")) else { continue }
+            offsets[name] = UInt64(lastNewline - data.startIndex + 1)
+            let complete = tail[...lastNewline]
+            var chunkStart = complete.startIndex
+            let chunkBytes = 4 << 20
+            while chunkStart < complete.endIndex {
+                var chunkEnd = min(chunkStart + chunkBytes, complete.endIndex)
+                if chunkEnd < complete.endIndex, let nl = complete[chunkEnd...].firstIndex(of: UInt8(ascii: "\n")) {
+                    chunkEnd = nl + 1
                 }
-                events.append(contentsOf: parsed)
+                // The folder decides the agent: a line written by a pre-P5 Claude hook carries no `agent` field.
+                for var e in AgentEvents.parse(jsonl: complete[chunkStart..<chunkEnd]) {
+                    e.agent = agent
+                    events.append(e)
+                }
+                chunkStart = chunkEnd
+                if events.count > keptEvents + foldEvery {
+                    let cut = events.count - keptEvents
+                    AgentSessionRules.fold(Array(events[..<cut]), into: &seed)
+                    events.removeFirst(cut)
+                }
             }
         }
-        if events.count > Self.keptEvents {
-            let cut = events.count - Self.keptEvents
-            AgentSessionRules.fold(Array(events[..<cut]), into: &seed)
-            events.removeFirst(cut)
-            seed = AgentSessionRules.pruned(seed, now: now, keep: Set(events.map(AgentSessionRules.sessionKey)),
-                                            isAlive: AgentSessionMonitor.isAlive)
-        }
+        return (events, seed, offsets)
     }
 }

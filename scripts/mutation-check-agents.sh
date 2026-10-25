@@ -443,6 +443,18 @@ run "R2 pruning drops a session that still has events in the kept window" XFinde
 run "R3 the folded prefix is forgotten" XFinder/Core/Agents/AgentEvents.swift \
   "'        var state = seed'" "'        var state = ReplaySeed()'"
 
+# 2026-10-25 — launch read: bytes per line, arithmetic timestamps (70 MB of hook logs took 4,3 s / 305 MB at launch)
+run "R4 the line after the first is lost" XFinder/Core/Agents/AgentEvents.swift \
+  "'                offset = end + 1'" "'                offset = raw.count'"
+run "R5 a slice is read from index 0 of its base" XFinder/Core/Agents/AgentEvents.swift \
+  "'        let origin = data.startIndex'" "'        let origin = 0'"
+run "R6 the fast timestamp drops the hour" XFinder/Core/Agents/AgentEvents.swift \
+  "'days * 86_400 + h * 3_600 + mi * 60 + sec'" "'days * 86_400 + mi * 60 + sec'"
+run "R8 March-based month shift is off by one" XFinder/Core/Agents/AgentEvents.swift \
+  "'        let mp = (month + 9) % 12'" "'        let mp = (month + 10) % 12'"
+run "R9 a dot passes as a session id character" XFinder/Core/Agents/AgentEvents.swift \
+  "'|| b == 0x2D || b == 0x5F'" "'|| b == 0x2D || b == 0x5F || b == 0x2E'"
+
 [ -n "${DRY:-}" ] && { [ "$DRY_BAD" = "0" ] && echo "DRY: every anchor found exactly once" && exit 0; echo "DRY: anchors missing"; exit 1; }
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done

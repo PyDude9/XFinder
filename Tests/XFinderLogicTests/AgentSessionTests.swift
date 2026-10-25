@@ -38,6 +38,40 @@ final class AgentSessionTests: XCTestCase {
         XCTAssertEqual(AgentEvents.parse(jsonl: line("Stop") + "\n\n" + "garbage\n" + line("Stop", at: 1)).count, 2)
     }
 
+    /// 2026-10-25: the launch read parses bytes per line (memchr) — blank lines, CRLF, a missing final newline and a
+    /// slice that does not start at index 0 (a mapped file read from an offset) all behave like the String path.
+    func testByteParserMatchesTheLineParser() {
+        let text = "\n" + line("Stop") + "\r\n  \n" + line("Notification", at: 2) + "\n" + line("Stop", at: 4)
+        let fromBytes = AgentEvents.parse(jsonl: Data(text.utf8))
+        let fromLines = text.split(separator: "\n").compactMap { AgentEvents.parse(line: String($0)) }
+        XCTAssertEqual(fromBytes, fromLines)
+        XCTAssertEqual(fromBytes.map(\.receivedAt), [0, 2, 4].map { t0.addingTimeInterval($0) })
+        let padded = Data(("garbage-prefix\n" + text).utf8)
+        let slice = padded[padded.index(padded.startIndex, offsetBy: 15)...]
+        XCTAssertEqual(AgentEvents.parse(jsonl: slice), fromBytes, "a slice keeps its own indices")
+    }
+
+    func testTimestampFastPathAgreesWithTheFormatter() {
+        for s in ["2026-10-25T03:32:17Z", "2024-02-29T23:59:59Z", "2000-02-29T00:00:00Z", "1970-01-01T00:00:00Z",
+                  "2100-03-01T12:00:00Z", "1969-12-31T23:59:59Z"] {
+            XCTAssertEqual(AgentEvents.timestamp(s), AgentEvents.iso.date(from: s), s)
+        }
+        // Out-of-range fields ⇒ the formatter decides, whatever it decides (measured: it rolls 02-30 over to 03-02).
+        for s in ["2026-02-30T00:00:00Z", "2100-02-29T00:00:00Z", "2026-10-25T24:00:00Z", "2026-1x-25T03:32:17Z"] {
+            XCTAssertEqual(AgentEvents.timestamp(s), AgentEvents.iso.date(from: s), s)
+        }
+        XCTAssertEqual(AgentEvents.timestamp("2026-10-25T10:32:17+07:00"), AgentEvents.timestamp("2026-10-25T03:32:17Z"),
+                       "an offset goes through the formatter")
+    }
+
+    func testSessionIDsAreAsciiWordCharactersOnly() {
+        XCTAssertTrue(AgentEvents.isSafeSessionID(sid))
+        XCTAssertTrue(AgentEvents.isSafeSessionID("abc_DEF-09"))
+        for bad in ["", "../x", "a b", "ạ", "١٢٣", "ｆｕｌｌ", "a/b", "a.b", String(repeating: "a", count: 129)] {
+            XCTAssertFalse(AgentEvents.isSafeSessionID(bad), bad)
+        }
+    }
+
     func testToolInputSummaryPrefersTheOneFieldAPersonNeedsAndCutsLongOnes() {
         XCTAssertEqual(AgentEvents.summary(ofToolInput: ["file_path": "/a/b.swift", "content": "…"]), "/a/b.swift")
         XCTAssertEqual(AgentEvents.summary(ofToolInput: ["command": String(repeating: "x", count: 200)])?.count, 161)

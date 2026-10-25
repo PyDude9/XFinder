@@ -78,7 +78,14 @@ enum AgentEvents {
     /// ignored; an unknown `hook_event_name` becomes `.other` with `rawName` kept.
     static func parse(line: String) -> Event? {
         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, let data = trimmed.data(using: .utf8),
+        guard !trimmed.isEmpty else { return nil }
+        return parse(lineData: Data(trimmed.utf8))
+    }
+
+    /// The same, straight from the bytes of one line (no `String` round trip). JSONSerialization skips surrounding
+    /// whitespace itself.
+    static func parse(lineData data: Data) -> Event? {
+        guard !data.isEmpty,
               let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
               let payload = obj["payload"] as? [String: Any] else { return nil }
         let rawName = payload["hook_event_name"] as? String ?? ""
@@ -86,7 +93,7 @@ enum AgentEvents {
         // P5 review: the id becomes part of a decision FILE NAME — `../` would point outside the decisions folder.
         guard isSafeSessionID(sessionID) else { return nil }
         let env = obj["env"] as? [String: Any] ?? [:]
-        let received = (obj["received_at"] as? String).flatMap(Self.iso.date(from:)) ?? Date(timeIntervalSince1970: 0)
+        let received = (obj["received_at"] as? String).flatMap(Self.timestamp(_:)) ?? Date(timeIntervalSince1970: 0)
         var e = Event(receivedAt: received, name: Event.Name(rawValue: rawName) ?? .other, rawName: rawName, sessionID: sessionID,
                       terminal: Terminal())
         e.requestID = obj["request_id"] as? String
@@ -113,11 +120,76 @@ enum AgentEvents {
     /// A session id that may become part of a file name: letters, digits, `-`, `_`; 1…128 characters. Claude Code and
     /// Codex hand out UUIDs; anything else is not a session this app will write a decision for.
     static func isSafeSessionID(_ s: String) -> Bool {
-        !s.isEmpty && s.utf8.count <= 128 && s.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-" || $0 == "_") }
+        // Bytes, not Characters: every non-ASCII byte fails, so Unicode letters/digits are refused as before.
+        !s.isEmpty && s.utf8.count <= 128 && s.utf8.allSatisfy { b in
+            (0x30...0x39).contains(b) || (0x41...0x5A).contains(b) || (0x61...0x7A).contains(b) || b == 0x2D || b == 0x5F
+        }
     }
 
     static func parse(jsonl: String) -> [Event] {
-        jsonl.split(separator: "\n", omittingEmptySubsequences: true).compactMap { parse(line: String($0)) }
+        parse(jsonl: Data(jsonl.utf8))
+    }
+
+    /// A day file's bytes → events, one line at a time. Each line's Foundation objects are released before the next
+    /// (2026-10-25: today + yesterday = 70 MB / 38 632 lines held 305 MB and 4,3 s at launch without the pool and
+    /// with `ISO8601DateFormatter` per line; this path measures ~0,6 s / ~50 MB on the same files).
+    static func parse(jsonl data: Data) -> [Event] {
+        // Line bounds by `memchr` (a byte loop over `Data` was ~18 % of the parse, sampled).
+        var bounds: [Range<Int>] = []
+        data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
+            guard let base = raw.baseAddress else { return }
+            var offset = 0
+            while offset < raw.count {
+                let rest = raw.count - offset
+                let end = memchr(base + offset, 0x0A, rest).map { $0 - UnsafeMutableRawPointer(mutating: base) } ?? raw.count
+                if end > offset { bounds.append(offset..<end) }
+                offset = end + 1
+            }
+        }
+        var events: [Event] = []
+        events.reserveCapacity(bounds.count)
+        let origin = data.startIndex
+        for r in bounds {
+            let line = data[(origin + r.lowerBound)..<(origin + r.upperBound)]
+            if let e = autoreleasepool(invoking: { parse(lineData: line) }) { events.append(e) }
+        }
+        return events
+    }
+
+    /// `received_at` as the hook writes it (`date -u +%Y-%m-%dT%H:%M:%SZ`, exactly 20 ASCII bytes) by arithmetic —
+    /// `ISO8601DateFormatter` costs ~57 µs a line (measured, 26 511 lines = 1,5 s). Anything else (fractional seconds,
+    /// an offset, an older writer) falls back to the formatter. A day past the month's end (02-30) needs no check: the
+    /// formatter rolls it over and `daysFromCivil` is linear in the day, so both give 03-02 (measured).
+    static func timestamp(_ s: String) -> Date? {
+        let b = Array(s.utf8)
+        guard b.count == 20, b[4] == 0x2D, b[7] == 0x2D, b[10] == 0x54, b[13] == 0x3A, b[16] == 0x3A, b[19] == 0x5A
+        else { return iso.date(from: s) }
+        func num(_ from: Int, _ len: Int) -> Int? {
+            var v = 0
+            for i in from..<(from + len) {
+                let d = Int(b[i]) - 48
+                guard (0...9).contains(d) else { return nil }
+                v = v * 10 + d
+            }
+            return v
+        }
+        guard let y = num(0, 4), let mo = num(5, 2), let d = num(8, 2), let h = num(11, 2), let mi = num(14, 2),
+              let sec = num(17, 2), (1...12).contains(mo), (1...31).contains(d), h < 24, mi < 60,
+              sec < 60
+        else { return iso.date(from: s) }
+        let days = daysFromCivil(year: y, month: mo, day: d)
+        return Date(timeIntervalSince1970: TimeInterval(days * 86_400 + h * 3_600 + mi * 60 + sec))
+    }
+
+    /// Days since 1970-01-01 in the proleptic Gregorian calendar (Howard Hinnant's `days_from_civil`).
+    private static func daysFromCivil(year: Int, month: Int, day: Int) -> Int {
+        let y = month <= 2 ? year - 1 : year
+        let era = (y >= 0 ? y : y - 399) / 400
+        let yoe = y - era * 400
+        let mp = (month + 9) % 12
+        let doy = (153 * mp + 2) / 5 + day - 1
+        let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy
+        return era * 146_097 + doe - 719_468
     }
 
     /// The one field of a tool's input a person needs to judge a permission request, on one line, cut at 160.
