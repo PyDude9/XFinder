@@ -24,11 +24,19 @@ final class FileMetadataCache {
     private var lastOpenedByPath: [String: Date?] = [:]
     private var appNameByPath: [String: String?] = [:]
 
-    /// One LRU order shared by all three maps — a path evicted here is dropped from whichever of the three
-    /// maps actually holds it (most paths have all three read together via `prefetch`).
-    private var order: [String] = []
-    private var orderIndex: [String: Int] = [:]
+    /// One LRU recency shared by all three maps — a path evicted here is dropped from whichever of the three
+    /// maps actually holds it (most paths have all three read together via `prefetch`). Recency is a monotonic
+    /// tick per path (`lastUsed`), not a reordered array: `touch` is called from `tags(for:)`/`lastOpened(for:)`/
+    /// `appName(for:)` on every cache READ, which fires once per visible row on every SwiftUI re-render during a
+    /// fast scroll — an array-splice-and-reindex `touch` (shift + renumber every later entry) turned a single
+    /// scroll through a warm 20 000-entry cache into O(n) per row, O(n²) overall, blowing the W2 contract's
+    /// "mở List ≤ 150 ms / 100 000 hàng" budget. A tick bump is O(1); eviction (`evictIfNeeded`) only scans once
+    /// it is actually over `capacity` and removes enough of the stalest entries to clear a slack margin, so a
+    /// full O(n) sort happens once per `evictBatch` insertions rather than once per insertion.
+    private var lastUsed: [String: UInt64] = [:]
+    private var tick: UInt64 = 0
     private let capacity = 20_000
+    private let evictBatch = 2_000
 
     /// Paths already queued for a background read, so a pane that calls `prefetch` again while the first
     /// batch is still in flight (e.g. re-rendering during a fast scroll) does not queue the same path twice.
@@ -101,8 +109,8 @@ final class FileMetadataCache {
         tagsByPath.removeAll()
         lastOpenedByPath.removeAll()
         appNameByPath.removeAll()
-        order.removeAll()
-        orderIndex.removeAll()
+        lastUsed.removeAll()
+        tick = 0
         pending.removeAll()
         version += 1
     }
@@ -131,30 +139,23 @@ final class FileMetadataCache {
     // MARK: - LRU bookkeeping
 
     private func touch(_ path: String) {
-        if let index = orderIndex[path] {
-            order.remove(at: index)
-            reindex(from: index)
-        }
-        orderIndex[path] = order.count
-        order.append(path)
+        tick += 1
+        lastUsed[path] = tick
     }
 
-    private func reindex(from start: Int) {
-        var i = start
-        while i < order.count {
-            orderIndex[order[i]] = i
-            i += 1
-        }
-    }
-
+    /// Only runs once `lastUsed.count` has actually exceeded `capacity`, and then evicts `evictBatch` entries
+    /// (the stalest first) in one sort — not one entry per call — so inserting past capacity one path at a
+    /// time (the common case: a batch lands, `apply` touches each path, count creeps past 20 000) does not
+    /// re-sort the whole cache on every single insertion.
     private func evictIfNeeded() {
-        while order.count > capacity {
-            let oldest = order.removeFirst()
-            orderIndex.removeValue(forKey: oldest)
-            tagsByPath.removeValue(forKey: oldest)
-            lastOpenedByPath.removeValue(forKey: oldest)
-            appNameByPath.removeValue(forKey: oldest)
-            reindex(from: 0)
+        guard lastUsed.count > capacity else { return }
+        let toEvict = lastUsed.count - capacity + evictBatch
+        let stalest = lastUsed.sorted { $0.value < $1.value }.prefix(toEvict)
+        for (path, _) in stalest {
+            lastUsed.removeValue(forKey: path)
+            tagsByPath.removeValue(forKey: path)
+            lastOpenedByPath.removeValue(forKey: path)
+            appNameByPath.removeValue(forKey: path)
         }
     }
 
