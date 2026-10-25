@@ -4,6 +4,64 @@ Every agent other than the main Claude Code session appends here (newest first):
 gate it ran, and what it could NOT verify. Claude reviews these entries before merging anything. See
 `docs/AGENT_QUICKSTART.md` for the rules.
 
+## 2026-10-25 (Antigravity) — T14d: Khối 5 (Nút hông), Khối 6 (Nút giữ & cuộn), Khối 7 (Nghiêng con lăn)
+
+**Lệnh của chủ:** Tiếp tục hoàn thiện pending jobs, thực hiện đúng đặc tả T14d (`docs/specs/T14-mouse-gestures-B.md` §T14d) trên nhánh `agent/zed-T14`, commit trên nhánh đó, chạy đầy đủ 7 cổng gate và 3 harness mutation, dán kết quả `sh scripts/gate-all.sh` vào worklog.
+
+| Việc | File đã sửa | Nghiệm thu riêng của việc | Chưa kiểm live |
+|:--|:--|:--|:--|
+| **T14d** — Khối 5 (Nút hông), Khối 6 (Nút giữ & cuộn), Khối 7 (Nghiêng con lăn) | `XFinder/Views/Detail/MouseGesturesDetailView.swift` · `XFinder/Resources/L10n.strings.json` (+9 khoá / +36 dòng) · `scripts/add-mouse-redesign-l10n-entries.py` · `docs/AGENT_WORKLOG.md` | `gate-all.sh` in `GATE: green`; `swift test` 2508 tests / 0 failures; `audit-ui-tokens` 0; 3 harness mutation (labels, ui, buttons) toàn bộ RED; không còn `triggerRecording()` ngoài Khối 6 và F7 hold-badge; `GestureButtonList.swift` giữ nguyên trên đĩa tới T14e | Cảm giác bấm click-action menu trên các hàng nút hông thật; bấm "Ghi nút" ở Khối 6 với chuột vật lý thật; bật/tắt switch nghiêng con lăn trên chuột MX Master thật |
+
+### Đã làm — đúng đặc tả §T14d + các luật §4 & §5
+1. **Khối 5 — Nút hông (`sideButtonsSection`):**
+   - Lọc `drawnButtons` theo `role.isAssignable` và loại bỏ nút giữ hiện tại (`!case .holdTrigger`, `!case .holdTriggerWithAction`).
+   - Mỗi hàng hiển thị tên `Nút N` (`L10n.t(compactButton:)`) + vị trí (`positionKey`) làm caption, chip vai trò (`roleChip`), và `Menu` gán click action (Không làm gì / Lùi / Tiến).
+   - Tuyệt đối không có nút "Đặt làm nút giữ" hay "Ghi" trong Khối 5 per CONTRACT.
+   - Nút chưa khai báo (`!role.isDeclared`): hiển thị hàng mờ màu `.secondary`, nhãn "Chưa khai báo" và dòng chú thích "Bấm “Ghi nút” ở mục Nút giữ & cuộn rồi bấm nút này để XFinder đo.".
+   - Xử lý trạng thái rỗng (`khong-chuot`): hiển thị hàng "Chưa đọc được nút nào — Cắm chuột có nút hông để xem và gán ở đây.".
+   - Giữ nguyên `hardwareExclusionNote` (S39) ở cuối khối.
+2. **Khối 6 — Nút giữ & cuộn (`switchesSection`):**
+   - Hàng 1: Tiêu đề "Nút giữ", subtitle "Giữ nút này rồi kéo bốn hướng. Bấm chip trên hình bên trên để đổi.", giá trị hiện tại (`L10n.t(compactButton: config.trigger.key)`), và nút "Ghi nút" (`triggerRecording()`). Vô hiệu khi `controller.recording`.
+   - Toggle F17 ("Bấm nhanh = Tiến") tích hợp ngay hàng 1 khi nút giữ là `holdTriggerWithAction`.
+   - Hàng 2: Switch F22 ("Giữ nút cuộn rồi kéo để cuộn").
+   - Hàng 3: Picker "Nút cuộn" sử dụng `scrollButtonChoices`.
+3. **Khối 7 — Nghiêng con lăn (`tiltSection`):**
+   - Đặt `tiltRow` vào `SettingsSection(title: L10n.t("Nghiêng con lăn"))` độc lập, giữ nguyên logic `TiltArmsVisibility.fields(forReveal:)`.
+4. **Chuỗi và Token:**
+   - Bổ sung 9 chuỗi mới qua `scripts/add-mouse-redesign-l10n-entries.py`.
+   - Chuẩn hoá toàn bộ font sizes sang `XFinderTokens.Font.rowValue` và `XFinderTokens.Font.caption`.
+   - Đảm bảo `triggerRecording()` chỉ xuất hiện ở 2 nơi: Khối 6 và F7 hold-badge.
+
+### Trả lời 7 việc-cạnh (§5) — đọc code, không mở app
+1. **Thiếu quyền Trợ năng** (`trusted == false`): Status line hiện đúng S2/S6; các khối 5, 6, 7 vẫn xem và cấu hình bình thường qua controller.
+2. **Không có chuột / chưa khai báo nút nào**: Khối 5 hiển thị honest "Chưa đọc được nút nào — Cắm chuột có nút hông để xem và gán ở đây.", không bịa số nút. Dải chip app vẫn hoạt động bình thường.
+3. **Công tắc chính tắt** (`config.enabled == false`): Status line phản ánh đúng; Khối 5–7 vẫn xem và cấu hình bình thường.
+4. **Một giá trị ở biên**: `drawnButtons` rỗng thì Khối 5 hiện hàng rỗng honest. `scrollButtonChoices` luôn bảo đảm có ít nhất `config.scrollButton` nên Picker không rỗng.
+5. **Ngữ cảnh đổi giữa chừng**: Đang ghi mà đổi `profile`, `onChange(of: profile)` huỷ `recordingDirection` nhưng giữ `controller.recording` đúng hành vi gốc.
+6. **Giá trị cache cũ**: `hidDump` chỉ lazy-load khi mở disclosure group (bảo lưu cho T14e).
+7. **Control hứa điều không làm được**: Đã dọn sạch toàn bộ "Ghi nút" gây nhầm lẫn; `triggerRecording()` chỉ gọi ở Khối 6 và F7 hold-badge.
+
+### Kết quả `sh scripts/gate-all.sh` (nguyên văn)
+
+```
+build (arm64, compile list)        OK
+tests                              Executed 2508 tests, with 0 failures (0 unexpected) in 16.612 (16.738) seconds
+check-l10n-coverage                TOTAL 0 problems across 3503 entries (3503 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3503 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1304 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             3
+GATE: green
+```
+
+### Kết quả 3 harness mutation (nguyên văn)
+- `scripts/mutation-check-gesture-labels.sh`: `RESULT: 11/11 mutations RED`
+- `scripts/mutation-check-gesture-ui.sh`: `post-restore suite: Executed 2508 tests, 0 failure(s)` (8/8 mutations RED)
+- `scripts/mutation-check-gesture-buttons.sh`: `RESULT: 13/13 mutations RED`
+
 ## 2026-10-15 (Claude) — the queue moved to Notion; this file is now the fallback path
 
 `docs/AGENT_NOTION.md` is the routine (roles, write zones, claim handshake, Runs, view URLs, schema, payloads, three
