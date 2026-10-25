@@ -209,13 +209,37 @@ final class CloudProvidersTests: XCTestCase {
         XCTAssertFalse(blocked)
     }
 
-    func test_copyOutBlocked_sourceNotInAnyProvider_isNotBlocked() {
+    func test_copyOutBlocked_cloudOnlySource_notInAnyParsedProvider_isStillBlocked() {
+        // The headline R28 acceptance scenario (contract §Nghiệm thu) is an iCloud Drive cloud-only item, and
+        // `CloudProviders.parse` deliberately excludes iCloud Drive (§1 "iCloud Drive riêng") — an iCloud path never
+        // appears in `providers`. Gating on source-path containment would make this permanently unblockable; the
+        // real gate is `sourceFacts` alone.
         let facts = CloudFacts(isUbiquitous: true, downloadingStatus: notDownloaded)
+        let blocked = CloudMoveRules.copyOutBlocked(
+            sourceFacts: facts, sourcePath: "/Users/x/Mobile Documents/com~apple~CloudDocs/report.pdf",
+            destinationPath: "/Users/x/Desktop/report.pdf", providers: [dropbox]
+        )
+        XCTAssertTrue(blocked)
+    }
+
+    func test_copyOutBlocked_plainLocalFile_isNotBlocked() {
+        let facts = CloudFacts()
         let blocked = CloudMoveRules.copyOutBlocked(
             sourceFacts: facts, sourcePath: "/Users/x/Desktop/report.pdf",
             destinationPath: "/Users/x/Documents/report.pdf", providers: [dropbox]
         )
         XCTAssertFalse(blocked)
+    }
+
+    func test_copyOutBlocked_downloadFailedSource_stillCloudOnly_isBlocked() {
+        // Spec §5: "Download failed: Transfer incomplete; file remains cloud-only" — `CloudRules.badge` reports
+        // `.downloadFailed` (not `.cloudOnly`) for this combination, so the gate must not be `badge == .cloudOnly`.
+        let facts = CloudFacts(isUbiquitous: true, downloadingStatus: notDownloaded, hasDownloadError: true)
+        let blocked = CloudMoveRules.copyOutBlocked(
+            sourceFacts: facts, sourcePath: root + "/Dropbox/report.pdf",
+            destinationPath: "/Users/x/Desktop/report.pdf", providers: [dropbox]
+        )
+        XCTAssertTrue(blocked)
     }
 
     func test_warnBeforeMovingOut_downloadedSource_destinationOutside_warns() {
@@ -251,6 +275,37 @@ final class CloudProvidersTests: XCTestCase {
         let warn = CloudMoveRules.warnBeforeMovingOut(
             sourceFacts: facts, sourcePath: "/Users/x/Desktop/report.pdf",
             destinationPath: "/Users/x/Documents/report.pdf", providers: [dropbox]
+        )
+        XCTAssertFalse(warn)
+    }
+
+    func test_warnBeforeMovingOut_downloadFailedSource_doesNotWarn_blockedInstead() {
+        // Same fix as copyOutBlocked's counterpart: a download-failed item has no local bytes (spec §5 "remains
+        // cloud-only"), so it must be blocked, not warned — `bytesPresentLocally` is false here.
+        let facts = CloudFacts(isUbiquitous: true, downloadingStatus: notDownloaded, hasDownloadError: true)
+        let warn = CloudMoveRules.warnBeforeMovingOut(
+            sourceFacts: facts, sourcePath: root + "/Dropbox/report.pdf",
+            destinationPath: "/Users/x/Desktop/report.pdf", providers: [dropbox]
+        )
+        XCTAssertFalse(warn)
+    }
+
+    func test_warnBeforeMovingOut_uploadNeverReachedCloud_doesNotWarn() {
+        // Spec §5: "Upload failed: File never reached cloud; Mac copy is the sole copy" — there is no cloud copy to
+        // lose, so warning about losing cloud sync would be misleading.
+        let facts = CloudFacts(isUbiquitous: true, downloadingStatus: current, isUploaded: false, hasUploadError: true)
+        let warn = CloudMoveRules.warnBeforeMovingOut(
+            sourceFacts: facts, sourcePath: root + "/Dropbox/report.pdf",
+            destinationPath: "/Users/x/Desktop/report.pdf", providers: [dropbox]
+        )
+        XCTAssertFalse(warn)
+    }
+
+    func test_warnBeforeMovingOut_notYetUploaded_doesNotWarn() {
+        let facts = CloudFacts(isUbiquitous: true, downloadingStatus: current, isUploaded: false)
+        let warn = CloudMoveRules.warnBeforeMovingOut(
+            sourceFacts: facts, sourcePath: root + "/Dropbox/report.pdf",
+            destinationPath: "/Users/x/Desktop/report.pdf", providers: [dropbox]
         )
         XCTAssertFalse(warn)
     }
