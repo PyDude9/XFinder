@@ -9,6 +9,12 @@ import os
 /// Đồng bộ group (XF-T28 Wave 4 §C) and Connect to Server. Every category's row visibility comes from
 /// `BrowserSettings.sidebar*` (W4 draws the on/off switch; this view only reads it — contract: "W4 vẽ control; W3
 /// đọc qua BrowserSettings").
+///
+/// XF-T30 W5b/W8 (contract): also the Tìm kiếm đã lưu section (`BrowserSettings.savedSearches`, only entries with
+/// `showInSidebar`, click re-runs the query against the active tab, context menu Đổi tên…/Xoá/Bỏ khỏi
+/// sidebar/Sao chép câu tìm) and cloud rows per provider/account (`SidebarSources.cloud`, one row per Google Drive
+/// account with its email, one for Dropbox, one per other `~/Library/CloudStorage` provider), gated by the same
+/// `fileBrowser.sidebar.cloudStorage` key the generic cloud-volume rows already use.
 struct BrowserSidebarView: View {
     private static let iconSize: CGFloat = 16
 
@@ -27,6 +33,11 @@ struct BrowserSidebarView: View {
     @State private var creatingGroup = false
     @State private var newGroupName = ""
     @State private var isTargeted = false
+    /// XF-T30 W5b — snapshot of `BrowserSettings.savedSearches`, reloaded on `.onAppear` and after every mutation
+    /// (rename/delete/toggle) the same way `layout`/`volumes` already refresh through `reload()`.
+    @State private var savedSearches = BrowserSettings.savedSearches
+    @State private var renamingSavedSearch: SavedSearch?
+    @State private var savedSearchRenameText = ""
     /// Set only by "Nhóm mới…" ▸ "Tạo nhóm và chuyển vào đây" on an item's own context menu, so `commitNewGroup`
     /// knows to move that one item into the group it is about to create instead of just opening the sheet.
     @State private var pendingMoveItemID: UUID?
@@ -47,9 +58,11 @@ struct BrowserSidebarView: View {
     }
 
     private struct CloudRow: Identifiable {
-        let id: String
+        var id: String { path }
         let name: String
         let path: String
+        let kind: CloudProvider.Kind
+        let account: String?
     }
 
     /// Which item a rename sheet-less inline edit is targeting — favorites have no group id, a group item does.
@@ -91,6 +104,9 @@ struct BrowserSidebarView: View {
                 if BrowserSettings.sidebarRecentTags {
                     tagsSection
                 }
+                if !sidebarSavedSearches.isEmpty {
+                    savedSearchesSection
+                }
                 if !sync.pairs.isEmpty {
                     syncSection
                 }
@@ -115,6 +131,9 @@ struct BrowserSidebarView: View {
         }
         .sheet(item: $busyEjectSheet) { sheet in
             busyEjectSheetView(sheet)
+        }
+        .sheet(item: $renamingSavedSearch) { search in
+            renameSavedSearchSheet(search)
         }
     }
 
@@ -526,8 +545,49 @@ struct BrowserSidebarView: View {
 
     private func locationRows(_ rows: [CloudRow]) -> some View {
         ForEach(rows) { cloud in
-            row(name: cloud.name, systemImage: "cloud", path: cloud.path, highlighted: isCurrentPath(cloud.path))
+            cloudRow(cloud)
         }
+    }
+
+    /// XF-T30 W8 — one row per cloud provider/account: Google Drive gets one row per signed-in account (email in
+    /// the name, contract §W8), Dropbox and other `~/Library/CloudStorage` entries get one row each. Shows the
+    /// provider's own installed app icon (`CloudProviderIcon`) when found, falling back to the generic cloud glyph
+    /// `row(name:systemImage:path:)` already draws for every other location row — never guesses an icon that isn't
+    /// actually on this Mac (CLAUDE.md Honesty Rule).
+    private func cloudRow(_ cloud: CloudRow) -> some View {
+        Group {
+            if let appIcon = CloudProviderIcon.shared.icon(for: cloud.kind) {
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    Image(nsImage: appIcon)
+                        .resizable()
+                        .frame(width: Self.iconSize, height: Self.iconSize)
+                    Text(cloud.name)
+                        .font(XFinderTokens.Settings.sidebarRow)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, XFinderTokens.Space.row)
+                .frame(minHeight: XFinderTokens.Settings.rowMinHeight)
+                .background(isCurrentPath(cloud.path) ? Color.accentColor.opacity(0.14) : Color.clear)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    model.active.navigate(to: cloud.path)
+                    BrowserWindowModel.noteRecentFolder(cloud.path)
+                }
+            } else {
+                row(name: cloud.name, systemImage: "cloud", path: cloud.path, highlighted: isCurrentPath(cloud.path))
+            }
+        }
+    }
+
+    /// Google Drive shows the signed-in account's email (contract: "Google Drive một hàng mỗi tài khoản có email");
+    /// every other provider (Dropbox, OneDrive, generic `~/Library/CloudStorage` entries) just shows its own name.
+    private func cloudRowName(for provider: CloudProvider) -> String {
+        if provider.kind == .googleDrive, let account = provider.account, !account.isEmpty {
+            return "\(provider.displayName) (\(account))"
+        }
+        return provider.displayName
     }
 
     private func icon(for kind: LocationKind) -> String {
@@ -608,6 +668,101 @@ struct BrowserSidebarView: View {
         }
     }
 
+    // MARK: - Tìm kiếm đã lưu (XF-T30 W5b)
+
+    /// Only entries the person chose to pin (`showInSidebar`), newest last — same ordering `SavedSearchStore.add`
+    /// appends in, so a newly saved search shows up at the bottom instead of jumping around.
+    private var sidebarSavedSearches: [SavedSearch] {
+        savedSearches.searches.filter(\.showInSidebar)
+    }
+
+    private var savedSearchesSection: some View {
+        section(title: L10n.t("Tìm kiếm đã lưu")) {
+            ForEach(sidebarSavedSearches) { search in
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    Image(systemName: "magnifyingglass")
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                        .frame(width: Self.iconSize)
+                    Text(search.name)
+                        .font(XFinderTokens.Settings.sidebarRow)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, XFinderTokens.Space.row)
+                .frame(minHeight: XFinderTokens.Settings.rowMinHeight)
+                .contentShape(Rectangle())
+                .onTapGesture { runSavedSearch(search) }
+                .contextMenu { savedSearchContextMenu(search) }
+            }
+        }
+    }
+
+    /// Click runs the saved query against the active tab (contract: "click runs the search in the active tab").
+    /// `.folder` scope re-navigates the active pane to the saved folder first — a saved search's folder may not be
+    /// where the active tab is sitting right now, and `PaneState.runSearch(.folder)` only ever searches its own
+    /// current path, never a path supplied separately.
+    private func runSavedSearch(_ search: SavedSearch) {
+        guard let scope = PaneSearchState.Scope(rawValue: search.scope) else { return }
+        if scope == .folder, let folder = search.folder, folder != model.active.path {
+            model.active.navigate(to: folder)
+        }
+        model.runSearch(search.query, scope: scope)
+    }
+
+    /// Contract §W5b: Đổi tên / Xoá / Bỏ khỏi sidebar / Sao chép câu tìm.
+    @ViewBuilder
+    private func savedSearchContextMenu(_ search: SavedSearch) -> some View {
+        Button(L10n.t("Đổi tên…")) {
+            savedSearchRenameText = search.name
+            renamingSavedSearch = search
+        }
+        Button(L10n.t("Xoá tìm kiếm đã lưu")) {
+            var store = savedSearches
+            store.delete(search.id)
+            savedSearches = store
+            BrowserSettings.savedSearches = store
+        }
+        Button(L10n.t("Bỏ khỏi sidebar")) {
+            var store = savedSearches
+            store.setShowInSidebar(search.id, false)
+            savedSearches = store
+            BrowserSettings.savedSearches = store
+        }
+        Divider()
+        Button(L10n.t("Sao chép câu tìm")) {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(search.query, forType: .string)
+        }
+    }
+
+    private func renameSavedSearchSheet(_ search: SavedSearch) -> some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
+            Text(L10n.t("Đổi tên…"))
+                .font(XFinderTokens.Font.row.weight(.semibold))
+            TextField("", text: $savedSearchRenameText)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit { commitSavedSearchRename(search) }
+            HStack {
+                Spacer()
+                Button(L10n.t("Huỷ")) { renamingSavedSearch = nil }
+                Button(L10n.t("Xong")) { commitSavedSearchRename(search) }
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(XFinderTokens.Space.section)
+        .frame(width: 320)
+    }
+
+    private func commitSavedSearchRename(_ search: SavedSearch) {
+        var store = savedSearches
+        store.rename(search.id, to: savedSearchRenameText)
+        savedSearches = store
+        BrowserSettings.savedSearches = store
+        renamingSavedSearch = nil
+    }
+
     // MARK: - Đồng bộ (XF-T28 Wave 4 §C)
 
     private var syncSection: some View {
@@ -653,6 +808,7 @@ struct BrowserSidebarView: View {
     /// main) by reading through `SidebarSources` (already off-main) and only hopping back for the filtered result.
     private func reload() {
         layout = BrowserSettings.sidebarLayout
+        savedSearches = BrowserSettings.savedSearches
         sources.start()
         tagLibrary.start()
         reloadRecents()
@@ -671,7 +827,10 @@ struct BrowserSidebarView: View {
             return VolumeRow(path: volume.path, uuid: volume.uuid, name: volume.name, kind: volume.kind,
                              isEjectable: volume.ejectable)
         }
-        cloudFolders = sources.cloud.map { CloudRow(id: $0.rootPath, name: $0.displayName, path: $0.rootPath) }
+        cloudFolders = sources.cloud.map { provider in
+            CloudRow(name: cloudRowName(for: provider), path: provider.rootPath, kind: provider.kind,
+                     account: provider.account)
+        }
     }
 
     // MARK: - Eject (R66–R70)
@@ -801,6 +960,42 @@ struct BrowserSidebarView: View {
             }
             persist()
         }
+    }
+}
+
+/// XF-T30 W8 — the installed app icon for a cloud provider's sidebar row, when that provider's own app is on this
+/// Mac (CLAUDE.md rule 14: every AppKit/LaunchServices lookup in a SwiftUI `body` goes through a `@MainActor`
+/// cache, never a bare lookup per render). iCloud Drive never goes through here — it has no separate app, and its
+/// row already uses the generic "cloud" glyph via `BrowserSidebarView.iCloudSection`.
+///
+/// Bundle identifiers are the provider's own published desktop-app IDs; a provider that isn't installed, or whose
+/// ID doesn't resolve, falls back to nil so the caller draws the same generic cloud glyph every other location row
+/// uses — never a guessed or placeholder icon (Honesty Rule: no claim of "this app is installed" without measuring
+/// `NSWorkspace.urlForApplication(withBundleIdentifier:)` actually resolving).
+@MainActor private final class CloudProviderIcon {
+    static let shared = CloudProviderIcon()
+
+    private static let bundleIDs: [CloudProvider.Kind: String] = [
+        .googleDrive: "com.google.GoogleDrive",
+        .dropbox: "com.getdropbox.dropbox",
+        .oneDrive: "com.microsoft.OneDrive",
+    ]
+
+    /// One lookup per `Kind` per app launch — a provider's app doesn't appear/disappear mid-session often enough to
+    /// justify re-probing `NSWorkspace` on every sidebar reload, and a stale "not found" only costs a generic glyph
+    /// instead of a crash or wrong icon.
+    private var cache: [CloudProvider.Kind: NSImage?] = [:]
+
+    private init() {}
+
+    func icon(for kind: CloudProvider.Kind) -> NSImage? {
+        if let cached = cache[kind] { return cached }
+        let image = Self.bundleIDs[kind].flatMap { bundleID -> NSImage? in
+            guard let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return nil }
+            return NSWorkspace.shared.icon(forFile: appURL.path)
+        }
+        cache[kind] = image
+        return image
     }
 }
 
