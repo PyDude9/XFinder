@@ -1,0 +1,275 @@
+[
+  {
+    "id": "N1",
+    "name": "output after the limit does not say \"100+\"",
+    "file": "XFinder/Core/NulRecords.swift",
+    "anchor": "        if isFull { truncated = true; return }\n        var rest",
+    "replacement": "        if isFull { return }\n        var rest"
+  },
+  {
+    "id": "N2",
+    "name": "the last path without its NUL is dropped",
+    "file": "XFinder/Core/NulRecords.swift",
+    "anchor": "        if isFull { truncated = true } else { records.append(String(decoding: partial, as: UTF8.self)) }",
+    "replacement": "        if isFull { truncated = true }"
+  },
+  {
+    "id": "N3",
+    "name": "an empty record becomes an empty row",
+    "file": "XFinder/Core/NulRecords.swift",
+    "anchor": "            guard !piece.isEmpty else { continue }\n",
+    "replacement": ""
+  },
+  {
+    "id": "N4",
+    "name": "a path split between two chunks is cut in two",
+    "file": "XFinder/Core/NulRecords.swift",
+    "anchor": "            let piece = partial + rest[rest.startIndex..<nul]",
+    "replacement": "            let piece = Data(rest[rest.startIndex..<nul])"
+  },
+  {
+    "id": "N5",
+    "name": "one row more than the limit is kept",
+    "file": "XFinder/Core/NulRecords.swift",
+    "anchor": "    var isFull: Bool { records.count >= limit }",
+    "replacement": "    var isFull: Bool { records.count > limit }"
+  },
+  {
+    "id": "NM1",
+    "name": "exact tier never fires (treated as nil)",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "        if query == name { return NameMatch(tier: .exact, score: 0) }",
+    "replacement": "        if false { return NameMatch(tier: .exact, score: 0) }"
+  },
+  {
+    "id": "NM2",
+    "name": "prefix tier requires name and query to be the same length",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "        if name.count >= query.count && Array(name[0..<query.count]) == query {",
+    "replacement": "        if name.count == query.count && Array(name[0..<query.count]) == query {"
+  },
+  {
+    "id": "NM3",
+    "name": "wordPrefix picks the LAST matching word start instead of the earliest",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "        if name.count >= query.count {\n            let starts = wordStarts(name).sorted()\n            for start in starts where start > 0 && start + query.count <= name.count {\n                if Array(name[start..<(start + query.count)]) == query {\n                    // Earlier word starts and tighter overall length both score better.\n                    return NameMatch(tier: .wordPrefix, score: -(start * 1000 + (name.count - query.count)))\n                }\n            }\n        }",
+    "replacement": "        if name.count >= query.count {\n            let starts = wordStarts(name).sorted()\n            var found: NameMatch?\n            for start in starts where start > 0 && start + query.count <= name.count {\n                if Array(name[start..<(start + query.count)]) == query {\n                    found = NameMatch(tier: .wordPrefix, score: -(start * 1000 + (name.count - query.count)))\n                }\n            }\n            if let found { return found }\n        }"
+  },
+  {
+    "id": "NM4",
+    "name": "substring tier never fires",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "        if let at = firstIndex(of: query, in: name) {\n            return NameMatch(tier: .substring, score: -at)\n        }",
+    "replacement": "        if false, let at = firstIndex(of: query, in: name) {\n            return NameMatch(tier: .substring, score: -at)\n        }"
+  },
+  {
+    "id": "NM5",
+    "name": "fuzzy match allows out-of-order bytes (any membership, not subsequence)",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "            if b == query[qi] {\n                if firstMatch < 0 { firstMatch = ni }\n                if starts.contains(ni) { score += 3 }\n                if ni == lastMatched + 1 { score += 2 }\n                lastMatched = ni\n                qi += 1\n            }",
+    "replacement": "            if query.contains(b) {\n                if firstMatch < 0 { firstMatch = ni }\n                if starts.contains(ni) { score += 3 }\n                if ni == lastMatched + 1 { score += 2 }\n                lastMatched = ni\n                qi += 1\n            }"
+  },
+  {
+    "id": "NM6",
+    "name": "word boundary at letter/digit transitions is dropped",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "            if (prevDigit && curLetter) || (prevLetter && curDigit) { starts.insert(i) }",
+    "replacement": "            _ = (prevDigit, curDigit, prevLetter, curLetter)"
+  },
+  {
+    "id": "NM7",
+    "name": "separator set drops underscore as a word boundary",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "    private static func isSeparator(_ b: UInt8) -> Bool { b == 0x20 || b == 0x2D || b == 0x5F || b == 0x2E }",
+    "replacement": "    private static func isSeparator(_ b: UInt8) -> Bool { b == 0x20 || b == 0x2D || b == 0x2E }"
+  },
+  {
+    "id": "NM8",
+    "name": "fold no longer precomposes, so NFD input stops matching",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "        EntryRules.foldBytes(s.precomposedStringWithCanonicalMapping)",
+    "replacement": "        EntryRules.foldBytes(s)"
+  },
+  {
+    "id": "NM9",
+    "name": "empty query is treated as a match instead of nil",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "        guard !query.isEmpty else { return nil }",
+    "replacement": "        guard true else { return nil }"
+  },
+  {
+    "id": "NM10",
+    "name": "rank sorts by score before tier (a loose exact match could lose to a fuzzy one)",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "            if lhs.ranked.match.tier != rhs.ranked.match.tier { return lhs.ranked.match.tier < rhs.ranked.match.tier }\n            if lhs.ranked.match.score != rhs.ranked.match.score { return lhs.ranked.match.score > rhs.ranked.match.score }",
+    "replacement": "            if lhs.ranked.match.score != rhs.ranked.match.score { return lhs.ranked.match.score > rhs.ranked.match.score }\n            if lhs.ranked.match.tier != rhs.ranked.match.tier { return lhs.ranked.match.tier < rhs.ranked.match.tier }"
+  },
+  {
+    "id": "NM11",
+    "name": "rank's limit is ignored (off-by-one, returns limit+1)",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "        if scored.count > limit { scored = Array(scored.prefix(limit)) }",
+    "replacement": "        if scored.count > limit { scored = Array(scored.prefix(limit + 1)) }"
+  },
+  {
+    "id": "NM12",
+    "name": "fuzzy budget counter never increments (every candidate gets a free try)",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "            guard fuzzyTried < fuzzyBudget else { tierEnded = true; continue }\n            fuzzyTried += 1",
+    "replacement": "            guard fuzzyTried < fuzzyBudget else { tierEnded = true; continue }"
+  },
+  {
+    "id": "NM13",
+    "name": "tierEnded is never reported even when the budget runs out",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "            guard fuzzyTried < fuzzyBudget else { tierEnded = true; continue }",
+    "replacement": "            guard fuzzyTried < fuzzyBudget else { continue }"
+  },
+  {
+    "id": "NM14",
+    "name": "cheapMatch also accepts a fuzzy result (fuzzy never goes through the budget)",
+    "file": "XFinder/Core/Browser/NameMatcher.swift",
+    "anchor": "        guard let m = match(query: query, name: name), m.tier != .fuzzy else { return nil }",
+    "replacement": "        guard let m = match(query: query, name: name) else { return nil }"
+  },
+  {
+    "id": "SI1",
+    "name": "~/Library itself is not excluded (only its contents are)",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        if isInside(parts, libraryParts) { return true }",
+    "replacement": "        if parts.count > libraryParts.count && isInside(parts, libraryParts) { return true }"
+  },
+  {
+    "id": "SI2",
+    "name": "excluded names match as a substring of a longer component",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        return parts.contains { excludedDirectoryNames.contains($0) }",
+    "replacement": "        return parts.contains { p in excludedDirectoryNames.contains { p.contains($0) } }"
+  },
+  {
+    "id": "SI3",
+    "name": "pdf extension no longer recognized",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        case \"pdf\":\n            return .pdf",
+    "replacement": "        case \"pdfx\":\n            return .pdf"
+  },
+  {
+    "id": "SI4",
+    "name": "image extensions fall through to plain text",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        case \"png\", \"jpg\", \"jpeg\", \"heic\", \"tiff\", \"tif\", \"gif\", \"bmp\", \"webp\":\n            return .image",
+    "replacement": "        case \"png\", \"jpg\", \"jpeg\", \"heic\", \"tiff\", \"tif\", \"gif\", \"bmp\", \"webp\":\n            return .plainText"
+  },
+  {
+    "id": "SI5",
+    "name": "RootChanged no longer wins over MustScanSubDirs",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        if flags & rootChanged != 0 { return .rootChanged }\n        if flags & (mustScanSubDirs | userDropped | kernelDropped) != 0 { return .rescanSubtree(path) }",
+    "replacement": "        if flags & (mustScanSubDirs | userDropped | kernelDropped) != 0 { return .rescanSubtree(path) }\n        if flags & rootChanged != 0 { return .rootChanged }"
+  },
+  {
+    "id": "SI6",
+    "name": "UserDropped is no longer treated as a rescan trigger",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        if flags & (mustScanSubDirs | userDropped | kernelDropped) != 0 { return .rescanSubtree(path) }",
+    "replacement": "        if flags & (mustScanSubDirs | kernelDropped) != 0 { return .rescanSubtree(path) }"
+  },
+  {
+    "id": "SI7",
+    "name": "ItemRemoved flag value is wrong (off by one bit)",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        let itemRemoved: UInt32 = 0x200",
+    "replacement": "        let itemRemoved: UInt32 = 0x400"
+  },
+  {
+    "id": "SI8",
+    "name": "ItemRemoved no longer removes the path (falls through to update)",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        if flags & itemRemoved != 0 { return .removePath(path) }",
+    "replacement": "        if false, flags & itemRemoved != 0 { return .removePath(path) }"
+  },
+  {
+    "id": "SI9",
+    "name": "a non-directory new root is accepted",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        guard isDirectory else { return .notADirectory }",
+    "replacement": "        guard true else { return .notADirectory }"
+  },
+  {
+    "id": "SI10",
+    "name": "an excluded new root is accepted",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        if isExcluded(path, home: home) { return .excluded }",
+    "replacement": "        if false { return .excluded }"
+  },
+  {
+    "id": "SI11",
+    "name": "isInside excludes the identical-path case (off-by-one: '>' instead of '>=')",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "inner.count >= outer.count && Array(inner.prefix(outer.count)) == outer",
+    "replacement": "inner.count > outer.count && Array(inner.prefix(outer.count)) == outer"
+  },
+  {
+    "id": "SI12",
+    "name": "coversExisting is never reported (new root containing old ones reads as plain ok)",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        if !covered.isEmpty { return .coversExisting(covered) }",
+    "replacement": "        if false { return .coversExisting(covered) }"
+  },
+  {
+    "id": "SI13",
+    "name": "indexing and updating status share a key with ready",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        case .ready: return \"Sẵn sàng\"",
+    "replacement": "        case .ready: return \"Đang đánh chỉ mục…\""
+  },
+  {
+    "id": "SI14",
+    "name": "movedOrReplaced collapses onto the same key as failed",
+    "file": "XFinder/Core/Browser/SearchIndexRules.swift",
+    "anchor": "        case .movedOrReplaced: return \"Đã di chuyển hoặc thay thế — thêm lại\"",
+    "replacement": "        case .movedOrReplaced: return \"Thất bại\""
+  },
+  {
+    "id": "SS1",
+    "name": "add never checks for a name collision (duplicates allowed)",
+    "file": "XFinder/Core/Browser/SavedSearch.swift",
+    "anchor": "if taken.contains(base.lowercased()) {",
+    "replacement": "if false {"
+  },
+  {
+    "id": "SS2",
+    "name": "rename allows an empty name",
+    "file": "XFinder/Core/Browser/SavedSearch.swift",
+    "anchor": "guard !trimmed.isEmpty, let i = searches.firstIndex(where: { $0.id == id }),",
+    "replacement": "guard let i = searches.firstIndex(where: { $0.id == id }),"
+  },
+  {
+    "id": "SS3",
+    "name": "rename collision check is case-sensitive (a mere-case duplicate is allowed)",
+    "file": "XFinder/Core/Browser/SavedSearch.swift",
+    "anchor": "!searches.contains(where: { $0.id != id && $0.name.lowercased() == trimmed.lowercased() }) else { return false }",
+    "replacement": "!searches.contains(where: { $0.id != id && $0.name == trimmed }) else { return false }"
+  },
+  {
+    "id": "SS4",
+    "name": "delete removes every entry, not just the matching id",
+    "file": "XFinder/Core/Browser/SavedSearch.swift",
+    "anchor": "searches.removeAll { $0.id == id }",
+    "replacement": "searches.removeAll { _ in true }"
+  },
+  {
+    "id": "SS5",
+    "name": "decode force-unwraps the optional data instead of guarding nil",
+    "file": "XFinder/Core/Browser/SavedSearch.swift",
+    "anchor": "        guard let data, !data.isEmpty,\n              let raw = try? JSONSerialization.jsonObject(with: data) as? [Any] else { return store }",
+    "replacement": "        let data = data!\n        guard !data.isEmpty,\n              let raw = try? JSONSerialization.jsonObject(with: data) as? [Any] else { return store }"
+  },
+  {
+    "id": "SS6",
+    "name": "one damaged entry drops the whole decode instead of costing only itself",
+    "file": "XFinder/Core/Browser/SavedSearch.swift",
+    "anchor": "guard let itemData = try? JSONSerialization.data(withJSONObject: item),\n                  let saved = try? decoder.decode(SavedSearch.self, from: itemData) else { continue }",
+    "replacement": "guard let itemData = try? JSONSerialization.data(withJSONObject: item),\n                  let saved = try? decoder.decode(SavedSearch.self, from: itemData) else { return SavedSearchStore() }"
+  }
+]
