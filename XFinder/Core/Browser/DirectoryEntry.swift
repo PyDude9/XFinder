@@ -30,6 +30,11 @@ struct DirectoryEntry: Hashable, Sendable, Identifiable {
     var added: Date? = nil
     var lastOpened: Date? = nil
     var tags: [String]? = nil
+    /// XF-T30 W5a — the real on-disk file id (`ATTR_CMN_FILEID`, a `u_int64_t`), read by `DirectoryReader.list`
+    /// in the same `getattrlistbulk` pass as everything else (contract W5a "real inodes via ATTR_CMN_FILEID").
+    /// nil only for a `DirectoryEntry` built without going through the reader (tests, `VirtualLocations`,
+    /// `BrowserWindowModel` synthetic rows) — never a sentinel like 0, which IS a valid file id on some filesystems.
+    var inode: UInt64? = nil
 
     init(name: String, path: String, kind: Kind, isPackage: Bool, isHidden: Bool, size: Int64, modified: Date,
          created: Date, volumeID: Int32) {

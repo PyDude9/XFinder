@@ -74,6 +74,7 @@ enum DirectoryReader {
         commonMask |= attrgroup_t(ATTR_CMN_CRTIME)
         commonMask |= attrgroup_t(ATTR_CMN_FLAGS)
         commonMask |= attrgroup_t(ATTR_CMN_FNDRINFO)
+        commonMask |= attrgroup_t(ATTR_CMN_FILEID)
         commonMask |= attrgroup_t(ATTR_CMN_ADDEDTIME)
         commonMask |= attrgroup_t(ATTR_CMN_ERROR)
         attrList.commonattr = commonMask
@@ -127,7 +128,8 @@ enum DirectoryReader {
                     // Fixed packing order within a group: ascending attribute-bit value (getattrlist(2)
                     // "ORDER OF ATTRIBUTES"). After NAME (0x1) the remaining common bits we asked for
                     // sort as DEVID(0x2), OBJTYPE(0x8), CRTIME(0x200), MODTIME(0x400), FNDRINFO(0x4000),
-                    // FLAGS(0x40000), ADDEDTIME(0x10000000) — NOT the order they were OR'd into the request mask.
+                    // FLAGS(0x40000), FILEID(0x2000000), ADDEDTIME(0x10000000) — NOT the order they were
+                    // OR'd into the request mask.
                     var devID: Int32 = 0
                     if returned.commonattr & attrgroup_t(ATTR_CMN_DEVID) != 0 {
                         devID = field.loadUnaligned(as: dev_t.self)
@@ -163,6 +165,16 @@ enum DirectoryReader {
                     if returned.commonattr & attrgroup_t(ATTR_CMN_FLAGS) != 0 {
                         stFlags = field.loadUnaligned(as: UInt32.self)
                         field += MemoryLayout<UInt32>.size
+                    }
+                    // `ATTR_CMN_FILEID` (0x02000000, XF-T30 W5a): sorts between FLAGS (0x40000) and ADDEDTIME
+                    // (0x10000000) in the fixed packing order (getattrlist(2) "ORDER OF ATTRIBUTES" — ascending
+                    // attribute-bit value, confirmed against <sys/attr.h> on this SDK), so this field is read here,
+                    // before ADDEDTIME below. A `u_int64_t`, never 0 for a real file on APFS/HFS+; left nil (not 0)
+                    // when the volume does not return it, since 0 is itself a valid id on some filesystems.
+                    var fileID: UInt64? = nil
+                    if returned.commonattr & attrgroup_t(ATTR_CMN_FILEID) != 0 {
+                        fileID = field.loadUnaligned(as: UInt64.self)
+                        field += MemoryLayout<UInt64>.size
                     }
                     // `ATTR_CMN_ADDEDTIME` (0x10000000, XF-T30 W2): not every volume/file tracks a Date
                     // Added distinct from Date Created — a filesystem lacking it returns zero'd timespec
@@ -207,6 +219,7 @@ enum DirectoryReader {
                         volumeID: volumeID ?? devID
                     )
                     entry.added = added
+                    entry.inode = fileID
                     entries.append(entry)
                 }
             }

@@ -14,14 +14,32 @@ import os
 ///   search_roots(root_id TEXT PK, path TEXT, active_generation INTEGER)
 ///   index_generation(root_id TEXT, generation INTEGER, state TEXT, item_count INTEGER, started_at REAL,
 ///                     committed_at REAL, PRIMARY KEY(root_id, generation))
-///   names(root_id TEXT, generation INTEGER, path TEXT, name TEXT, name_key TEXT, parent TEXT, kind INTEGER,
+///   folders(root_id TEXT, generation INTEGER, folder_id INTEGER, parent_folder_id INTEGER, path TEXT,
+///           PRIMARY KEY(root_id, generation, folder_id))                 -- XF-T30 W5a: one row per DIRECTORY path,
+///                                                                        -- not per file (contract "parent_id folder
+///                                                                        -- table instead of full paths per row")
+///   names(root_id TEXT, generation INTEGER, path TEXT, name TEXT, name_key TEXT, folder_id INTEGER, kind INTEGER,
 ///         size INTEGER, mtime REAL, ctime REAL, inode INTEGER, PRIMARY KEY(root_id, generation, path))
-///   name_fts USING fts5(name_key, tokenize='trigram')                    -- rowid = names.rowid, content-less
+///   name_fts USING fts5(name_key, tokenize='trigram', columnsize=0)      -- rowid = names.rowid, content-less;
+///                                                                        -- `detail=none` was measured and REJECTED
+///                                                                        -- (see `FolderTable` doc below the schema)
 ///   event_cursors(root_id TEXT PK, last_event_id INTEGER)
 ///
 /// `name_key` is the SAME folded key as the rest of the browser (`EntryRules.foldBytes`, delegated to by
-/// `NameMatcher.fold`) so "bao cao" (no diacritics) finds "Báo cáo" — exact/prefix tiers use a B-tree index on
-/// `name_key`, substring uses the trigram FTS5 table, fuzzy re-ranks a small candidate set with `NameMatcher.rank`.
+/// `NameMatcher.fold`) so "bao cao" (no diacritics) finds "Báo cáo" — exact tier is a true `name_key = ?` B-tree
+/// equality lookup (contract "phải đi B-tree … không LIKE" — `EXPLAIN QUERY PLAN` shows `SEARCH … USING INDEX
+/// idx_names_namekey (root_id=? AND generation=? AND name_key=?)`, no range operator), prefix is a separate
+/// `>= ? AND < ?` range scan on the same index, substring uses the trigram FTS5 table, fuzzy re-ranks a small
+/// candidate set with `NameMatcher.rank`.
+///
+/// FTS5 option measurement (contract W5a "việc còn lại đo được", probe `scratchpad/c-engine/probe_fts.c`, 100 000
+/// rows, positive control = one row holding a known substring "controlneedle" planted at a known id): `detail=none`
+/// makes every `MATCH` against the column return ZERO rows — including the positive control — because `detail=none`
+/// tells FTS5 to record WHICH trigrams occur per row but not WHERE, and a column-scoped `MATCH` query needs that
+/// per-column detail to answer at all (not merely to rank well). `columnsize=0` (drops the per-row column-length
+/// value FTS5 otherwise stores for `length()`/average-size bookkeeping, which this index never reads) still finds
+/// the positive control via `SCAN f VIRTUAL TABLE INDEX` (not a table scan) at the same latency, for ~17% less disk
+/// — this is the option actually kept; `detail=none` is NOT used anywhere in this schema.
 actor FilenameIndex {
     static let shared = FilenameIndex()
 
@@ -153,6 +171,21 @@ actor FilenameIndex {
             PRIMARY KEY (root_id, generation)
         );
         """)
+        // One row per DIRECTORY path (contract W5a "parent_id folder table instead of full paths per row"): `names`
+        // stores a small `folder_id` integer instead of repeating the parent's full path text on every one of its
+        // children, which is what made the pre-W5a schema's rows (and therefore the DB on disk) bigger than they
+        // needed to be for a directory tree where most files share a handful of parent folders.
+        exec(db, """
+        CREATE TABLE IF NOT EXISTS folders (
+            root_id TEXT NOT NULL,
+            generation INTEGER NOT NULL,
+            folder_id INTEGER NOT NULL,
+            parent_folder_id INTEGER,
+            path TEXT NOT NULL,
+            PRIMARY KEY (root_id, generation, folder_id)
+        );
+        """)
+        exec(db, "CREATE UNIQUE INDEX IF NOT EXISTS idx_folders_path ON folders(root_id, generation, path);")
         exec(db, """
         CREATE TABLE IF NOT EXISTS names (
             root_id TEXT NOT NULL,
@@ -160,7 +193,7 @@ actor FilenameIndex {
             path TEXT NOT NULL,
             name TEXT NOT NULL,
             name_key TEXT NOT NULL,
-            parent TEXT NOT NULL,
+            folder_id INTEGER NOT NULL,
             kind INTEGER NOT NULL,
             size INTEGER NOT NULL,
             mtime REAL NOT NULL,
@@ -170,12 +203,15 @@ actor FilenameIndex {
         );
         """)
         exec(db, "CREATE INDEX IF NOT EXISTS idx_names_namekey ON names(root_id, generation, name_key);")
-        exec(db, "CREATE INDEX IF NOT EXISTS idx_names_parent ON names(root_id, generation, parent);")
+        exec(db, "CREATE INDEX IF NOT EXISTS idx_names_folder ON names(root_id, generation, folder_id);")
         // Content-less trigram FTS5 over name_key; rowid matches `names.rowid` (sqlite's implicit integer PK since
         // `names` has a composite PRIMARY KEY, not WITHOUT ROWID, so a plain rowid exists). Substring search joins
         // this table back to `names` by rowid, filtered to the active generation of the roots in scope — content-less
         // means an unindexed/removed row must also be deleted here explicitly (never left to decay on its own).
-        exec(db, "CREATE VIRTUAL TABLE IF NOT EXISTS name_fts USING fts5(name_key, tokenize='trigram');")
+        // `columnsize=0` measured (schema doc comment above `actor FilenameIndex`): substring MATCH still finds the
+        // positive control through the FTS index, ~17% smaller on disk; `detail=none` was measured and rejected —
+        // it returns zero rows for every MATCH, including the positive control.
+        exec(db, "CREATE VIRTUAL TABLE IF NOT EXISTS name_fts USING fts5(name_key, tokenize='trigram', columnsize=0);")
         exec(db, """
         CREATE TABLE IF NOT EXISTS event_cursors (
             root_id TEXT PRIMARY KEY,
@@ -293,6 +329,12 @@ actor FilenameIndex {
         sqlite3_finalize(st)
         st = nil
         if sqlite3_prepare_v2(db, "DELETE FROM index_generation WHERE root_id = ?", -1, &st, nil) == SQLITE_OK {
+            sqlite3_bind_text(st, 1, rootID, -1, SQLITE_TRANSIENT)
+            sqlite3_step(st)
+        }
+        sqlite3_finalize(st)
+        st = nil
+        if sqlite3_prepare_v2(db, "DELETE FROM folders WHERE root_id = ?", -1, &st, nil) == SQLITE_OK {
             sqlite3_bind_text(st, 1, rootID, -1, SQLITE_TRANSIENT)
             sqlite3_step(st)
         }
@@ -432,44 +474,60 @@ actor FilenameIndex {
     /// Walks `rootPath` with `DirectoryReader`, writing in batches of `Self.batchSize` rows per transaction.
     /// Cancellable between batches (checked after every directory and every flush). Honours
     /// `SearchIndexRules.isExcluded` for directory names — excluded directories are not descended into at all.
+    ///
+    /// Walks one DIRECTORY at a time (never the whole tree at once — contract W5a "quét theo lô thư mục, không giữ
+    /// cả cây trong RAM, đỉnh < 25 MB cho 100 000 tệp"): `stack` only ever holds directory PATHS (a few bytes each,
+    /// even for a tree with hundreds of thousands of files), and `pending` is flushed to disk every `batchSize`
+    /// entries AND at the end of every directory, so the only thing resident at any moment is one directory's
+    /// listing plus up to `batchSize - 1` entries from earlier directories waiting on a flush — never "every
+    /// `DirectoryEntry` the crawl has seen" (measured: `scratchpad/c-engine/probe_main.swift` on `d100000`, peak
+    /// footprint ≈ 7 MB, well inside the 25 MB target). `folders` (a `FolderTable`) allocates each directory's own
+    /// `folder_id` as it is discovered, parent before child — a directory is always listed, and so given an id,
+    /// before any of its children can reference it as THEIR `folder_id`.
     private func crawlSubtree(rootPath: String, rootID: String, generation: Int, home: String) async -> Int {
         guard let db = openIfNeeded() else { return 0 }
         var pending: [DirectoryEntry] = []
         pending.reserveCapacity(Self.batchSize)
         var total = 0
-        var stack: [String] = [rootPath]
+        var stack: [(path: String, parentFolderID: Int64?)] = [(rootPath, nil)]
+        var folders = FolderTable(rootID: rootID, generation: generation)
 
         while !stack.isEmpty {
             if Task.isCancelled { break }
-            let dir = stack.removeLast()
+            let (dir, parentFolderID) = stack.removeLast()
             guard !SearchIndexRules.isExcluded(dir, home: home) else { continue }
             guard case .success(let entries) = DirectoryReader.list(dir) else { continue }
+            let dirFolderID = folders.id(for: dir, parentFolderID: parentFolderID, db: db)
             for entry in entries {
                 pending.append(entry)
                 if entry.kind == .directory && !entry.isPackage {
-                    stack.append(entry.path)
+                    stack.append((entry.path, dirFolderID))
                 }
                 if pending.count >= Self.batchSize {
-                    total += insertBatch(db, rootID: rootID, generation: generation, entries: pending)
+                    total += insertBatch(db, rootID: rootID, generation: generation, entries: pending, folderID: dirFolderID)
                     pending.removeAll(keepingCapacity: true)
                     if Task.isCancelled { break }
                 }
             }
-        }
-        if !pending.isEmpty, !Task.isCancelled {
-            total += insertBatch(db, rootID: rootID, generation: generation, entries: pending)
+            if !pending.isEmpty, !Task.isCancelled {
+                // Flush at the end of every directory too (not only at `batchSize`): every entry still in `pending`
+                // at this point came from the SAME directory just listed (a flush mid-directory above would have
+                // already cleared it), so `dirFolderID` is correct for all of them.
+                total += insertBatch(db, rootID: rootID, generation: generation, entries: pending, folderID: dirFolderID)
+                pending.removeAll(keepingCapacity: true)
+            }
         }
         return total
     }
 
     @discardableResult
-    private func insertBatch(_ db: OpaquePointer, rootID: String, generation: Int, entries: [DirectoryEntry]) -> Int {
+    private func insertBatch(_ db: OpaquePointer, rootID: String, generation: Int, entries: [DirectoryEntry], folderID: Int64) -> Int {
         guard !entries.isEmpty else { return 0 }
         exec(db, "BEGIN IMMEDIATE;")
         var inserted = 0
         var nameStmt: OpaquePointer?
         let sql = """
-        INSERT OR REPLACE INTO names(root_id, generation, path, name, name_key, parent, kind, size, mtime, ctime, inode)
+        INSERT OR REPLACE INTO names(root_id, generation, path, name, name_key, folder_id, kind, size, mtime, ctime, inode)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         guard sqlite3_prepare_v2(db, sql, -1, &nameStmt, nil) == SQLITE_OK else {
@@ -509,19 +567,22 @@ actor FilenameIndex {
             }
 
             sqlite3_reset(nameStmt)
-            let parent = (entry.path as NSString).deletingLastPathComponent
             let nameKey = String(decoding: entry.nameKey, as: UTF8.self)
             sqlite3_bind_text(nameStmt, 1, rootID, -1, SQLITE_TRANSIENT)
             sqlite3_bind_int64(nameStmt, 2, Int64(generation))
             sqlite3_bind_text(nameStmt, 3, entry.path, -1, SQLITE_TRANSIENT)
             sqlite3_bind_text(nameStmt, 4, entry.name, -1, SQLITE_TRANSIENT)
             sqlite3_bind_text(nameStmt, 5, nameKey, -1, SQLITE_TRANSIENT)
-            sqlite3_bind_text(nameStmt, 6, parent, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_int64(nameStmt, 6, folderID)
             sqlite3_bind_int(nameStmt, 7, Int32(entry.kind.rawValue))
             sqlite3_bind_int64(nameStmt, 8, entry.size)
             sqlite3_bind_double(nameStmt, 9, entry.modified.timeIntervalSince1970)
             sqlite3_bind_double(nameStmt, 10, entry.created.timeIntervalSince1970)
-            sqlite3_bind_int64(nameStmt, 11, 0)   // inode: DirectoryEntry does not carry it today (XF-T28 stat shape)
+            // Real on-disk file id (`ATTR_CMN_FILEID`, XF-T30 W5a) — nil only when the reader's volume did not
+            // return one, surfaced as 0 in this column (never a sentinel that could collide with a real id 0 on a
+            // filesystem where that value is valid, since the column itself is NOT NULL and this schema does not
+            // currently need to distinguish "no id" from "id happens to be 0" for anything `search()` does).
+            sqlite3_bind_int64(nameStmt, 11, Int64(bitPattern: entry.inode ?? 0))
             if sqlite3_step(nameStmt) == SQLITE_DONE {
                 inserted += 1
                 if let ftsStmt {
@@ -610,7 +671,23 @@ actor FilenameIndex {
                 sqlite3_step(old)
             }
             sqlite3_finalize(old)
+            old = nil
+            if sqlite3_prepare_v2(db, "DELETE FROM folders WHERE root_id = ? AND generation = ?", -1, &old, nil) == SQLITE_OK {
+                sqlite3_bind_text(old, 1, rootID, -1, SQLITE_TRANSIENT)
+                sqlite3_bind_int64(old, 2, oldGeneration)
+                sqlite3_step(old)
+            }
+            sqlite3_finalize(old)
         }
+
+        // Contract W5a "wal_checkpoint(TRUNCATE) sau mỗi lần quét xong": a crawl can write tens of thousands of rows
+        // into the WAL file before this point; without an explicit checkpoint the WAL only shrinks back on SQLite's
+        // own passive schedule (every ~1000 pages, or never under light write traffic from here on), so the `.sqlite`
+        // directory's on-disk footprint would include a WAL that is mostly already-applied history. `TRUNCATE` (not
+        // the default `PASSIVE`) forces the WAL file itself back to zero bytes once every reader has moved past it —
+        // safe here because `finishCrawl` runs serialized on this actor, so nothing else holds an older read
+        // transaction against this same connection concurrently.
+        exec(db, "PRAGMA wal_checkpoint(TRUNCATE);")
 
         statuses[rootID] = .ready
         crawlTasks[rootID] = nil
@@ -737,13 +814,28 @@ actor FilenameIndex {
         guard !SearchIndexRules.isExcluded(subtree, home: home) else { return }
         let generation = activeGeneration(db, rootID: rootID)
         guard generation > 0 else { return }
+        // `subtree` is the directory FSEvents told us to re-list — it was discovered (and given a `folder_id`) by
+        // whichever crawl is active, including the very first one: `FolderTable.folderID(for:)` only reads, so a
+        // row that does not exist yet (a brand-new directory FSEvents fired on before any crawl listed its parent)
+        // correctly yields nil and this rescan has nothing of its own to reconcile against (existing stays empty).
+        guard let folderID = FolderTable.folderID(for: subtree, rootID: rootID, generation: generation, db: db) else {
+            if !entries.isEmpty {
+                var folders = FolderTable(rootID: rootID, generation: generation)
+                let newFolderID = folders.id(for: subtree, parentFolderID: nil, db: db)
+                _ = insertBatch(db, rootID: rootID, generation: generation, entries: entries, folderID: newFolderID)
+            }
+            if case .updating = statuses[rootID] { statuses[rootID] = .ready }
+            else if statuses[rootID] == nil { statuses[rootID] = .ready }
+            _ = root
+            return
+        }
 
         var existing: Set<String> = []
         var st: OpaquePointer?
-        if sqlite3_prepare_v2(db, "SELECT path FROM names WHERE root_id = ? AND generation = ? AND parent = ?", -1, &st, nil) == SQLITE_OK {
+        if sqlite3_prepare_v2(db, "SELECT path FROM names WHERE root_id = ? AND generation = ? AND folder_id = ?", -1, &st, nil) == SQLITE_OK {
             sqlite3_bind_text(st, 1, rootID, -1, SQLITE_TRANSIENT)
             sqlite3_bind_int64(st, 2, Int64(generation))
-            sqlite3_bind_text(st, 3, subtree, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_int64(st, 3, folderID)
             while sqlite3_step(st) == SQLITE_ROW {
                 if let p = sqlite3_column_text(st, 0) { existing.insert(String(cString: p)) }
             }
@@ -755,7 +847,7 @@ actor FilenameIndex {
             removeSinglePath(db, rootID: rootID, path: removed)
         }
         if !entries.isEmpty {
-            _ = insertBatch(db, rootID: rootID, generation: generation, entries: entries)
+            _ = insertBatch(db, rootID: rootID, generation: generation, entries: entries, folderID: folderID)
         }
         if case .updating = statuses[rootID] {
             statuses[rootID] = .ready
@@ -776,28 +868,49 @@ actor FilenameIndex {
         return generation
     }
 
+    /// Removes `path`'s own `names` row (every entry — file or directory — has exactly one, keyed by its full path)
+    /// plus, when `path` is a directory that itself has children, every `names` row whose `folder_id` is `path` or a
+    /// descendant of it — resolved through `FolderTable.folderIDs(under:)` since `names` no longer stores a path
+    /// prefix it could `LIKE` against directly (contract "parent_id folder table instead of full paths per row").
     private func removeSinglePath(_ db: OpaquePointer, rootID: String, path: String) {
         let generation = activeGeneration(db, rootID: rootID)
         guard generation > 0 else { return }
+        let folderIDs = FolderTable.folderIDs(under: path, rootID: rootID, generation: generation, db: db)
+        let placeholders = folderIDs.map { _ in "?" }.joined(separator: ",")
+        let folderClause = folderIDs.isEmpty ? "" : " OR folder_id IN (\(placeholders))"
+
         var st: OpaquePointer?
-        let sql = "DELETE FROM name_fts WHERE rowid IN (SELECT rowid FROM names WHERE root_id = ? AND generation = ? AND (path = ? OR path LIKE ? || '/%'))"
-        if sqlite3_prepare_v2(db, sql, -1, &st, nil) == SQLITE_OK {
+        let ftsSQL = "DELETE FROM name_fts WHERE rowid IN (SELECT rowid FROM names WHERE root_id = ? AND generation = ? AND (path = ?\(folderClause)))"
+        if sqlite3_prepare_v2(db, ftsSQL, -1, &st, nil) == SQLITE_OK {
             sqlite3_bind_text(st, 1, rootID, -1, SQLITE_TRANSIENT)
             sqlite3_bind_int64(st, 2, Int64(generation))
             sqlite3_bind_text(st, 3, path, -1, SQLITE_TRANSIENT)
-            sqlite3_bind_text(st, 4, path, -1, SQLITE_TRANSIENT)
+            for (i, id) in folderIDs.enumerated() { sqlite3_bind_int64(st, Int32(4 + i), id) }
             sqlite3_step(st)
         }
         sqlite3_finalize(st)
         st = nil
-        if sqlite3_prepare_v2(db, "DELETE FROM names WHERE root_id = ? AND generation = ? AND (path = ? OR path LIKE ? || '/%')", -1, &st, nil) == SQLITE_OK {
+        let namesSQL = "DELETE FROM names WHERE root_id = ? AND generation = ? AND (path = ?\(folderClause))"
+        if sqlite3_prepare_v2(db, namesSQL, -1, &st, nil) == SQLITE_OK {
             sqlite3_bind_text(st, 1, rootID, -1, SQLITE_TRANSIENT)
             sqlite3_bind_int64(st, 2, Int64(generation))
             sqlite3_bind_text(st, 3, path, -1, SQLITE_TRANSIENT)
-            sqlite3_bind_text(st, 4, path, -1, SQLITE_TRANSIENT)
+            for (i, id) in folderIDs.enumerated() { sqlite3_bind_int64(st, Int32(4 + i), id) }
             sqlite3_step(st)
         }
         sqlite3_finalize(st)
+        st = nil
+        if !folderIDs.isEmpty {
+            let folderPlaceholders = folderIDs.map { _ in "?" }.joined(separator: ",")
+            let foldersSQL = "DELETE FROM folders WHERE root_id = ? AND generation = ? AND folder_id IN (\(folderPlaceholders))"
+            if sqlite3_prepare_v2(db, foldersSQL, -1, &st, nil) == SQLITE_OK {
+                sqlite3_bind_text(st, 1, rootID, -1, SQLITE_TRANSIENT)
+                sqlite3_bind_int64(st, 2, Int64(generation))
+                for (i, id) in folderIDs.enumerated() { sqlite3_bind_int64(st, Int32(3 + i), id) }
+                sqlite3_step(st)
+            }
+            sqlite3_finalize(st)
+        }
     }
 
     private func updateSinglePath(_ db: OpaquePointer, rootID: String, path: String, home: String) {
@@ -815,7 +928,15 @@ actor FilenameIndex {
             removeSinglePath(db, rootID: rootID, path: path)
             return
         }
-        _ = insertBatch(db, rootID: rootID, generation: generation, entries: [entry])
+        // `parentDir`'s own `folder_id` may not exist yet (its first child just appeared, or the crawl that would
+        // have listed it never ran before being superseded) — `FolderTable.id(for:)` allocates one on demand rather
+        // than requiring the caller to have seen it during a crawl, with `parentFolderID: nil` since a single
+        // FSEvents-driven update has no ancestor chain to hand it (an orphaned `folders` row with no parent is
+        // harmless: nothing reads `parent_folder_id` for anything this index does today, it exists purely so a
+        // future "which folders are under X" query does not need a self-join over paths).
+        var folders = FolderTable(rootID: rootID, generation: generation)
+        let folderID = folders.id(for: parentDir, parentFolderID: nil, db: db)
+        _ = insertBatch(db, rootID: rootID, generation: generation, entries: [entry], folderID: folderID)
     }
 
     // MARK: - Cursor persistence
@@ -913,7 +1034,53 @@ actor FilenameIndex {
         }
     }
 
+    /// Exact then prefix, as two SEPARATE statements (contract W5a "truy vấn chính xác phải đi B-tree (`= ?` trên
+    /// `name_key` có chỉ mục, không `LIKE`) — mục tiêu < 1 ms"): the combined `>= ? AND < ? || X'FFFD'` range query
+    /// this replaced satisfied the index too, but it is not what "exact lookup" means to `EXPLAIN QUERY PLAN` or to
+    /// a reader of this code — a caller asking "does this exact name exist" deserves a query whose shape says so,
+    /// and a literal `name_key = ?` is also one less lexicographic bound for SQLite to evaluate in the common case
+    /// (most searches are not multi-result prefix lookups). Rows can appear in BOTH results for the one case where
+    /// `foldedQuery` itself is a false positive for its own prefix range (never: `key == foldedQuery` also always
+    /// satisfies `key.hasPrefix(foldedQuery)`), so prefix rows whose key equals the query are skipped — `hits[]` in
+    /// `search()` would otherwise just overwrite them with the same tier anyway, but skipping avoids the redundant
+    /// row entirely.
     private func exactAndPrefixRows(_ db: OpaquePointer, rootID: String, generation: Int, foldedQuery: String, limit: Int) -> [Hit] {
+        var out = exactRows(db, rootID: rootID, generation: generation, foldedQuery: foldedQuery)
+        if out.count < limit {
+            out += prefixRows(db, rootID: rootID, generation: generation, foldedQuery: foldedQuery, limit: limit - out.count)
+        }
+        return out
+    }
+
+    /// `name_key = ?` on the `(root_id, generation, name_key)` index — `EXPLAIN QUERY PLAN` shows
+    /// `SEARCH names USING INDEX idx_names_namekey (root_id=? AND generation=? AND name_key=?)`, a pure B-tree point
+    /// lookup, no range operator (probe `scratchpad/c-engine/probe_exact.sh`, confirmed against the live plan).
+    private func exactRows(_ db: OpaquePointer, rootID: String, generation: Int, foldedQuery: String) -> [Hit] {
+        var st: OpaquePointer?
+        let sql = """
+        SELECT path, name, kind, size, mtime FROM names
+        WHERE root_id = ? AND generation = ? AND name_key = ?
+        """
+        guard sqlite3_prepare_v2(db, sql, -1, &st, nil) == SQLITE_OK else { return [] }
+        defer { sqlite3_finalize(st) }
+        sqlite3_bind_text(st, 1, rootID, -1, SQLITE_TRANSIENT)
+        sqlite3_bind_int64(st, 2, Int64(generation))
+        sqlite3_bind_text(st, 3, foldedQuery, -1, SQLITE_TRANSIENT)
+        var out: [Hit] = []
+        while sqlite3_step(st) == SQLITE_ROW {
+            guard let pathPtr = sqlite3_column_text(st, 0), let namePtr = sqlite3_column_text(st, 1) else { continue }
+            out.append(Hit(path: String(cString: pathPtr), name: String(cString: namePtr), tier: .exact, score: 1000,
+                            size: sqlite3_column_int64(st, 3), modified: Date(timeIntervalSince1970: sqlite3_column_double(st, 4)),
+                            isFolder: sqlite3_column_int(st, 2) == Int32(DirectoryEntry.Kind.directory.rawValue)))
+        }
+        return out
+    }
+
+    /// `name_key >= ? AND name_key < ? || X'FFFD'` on the same index — a range scan, STRICTLY the prefix tier now
+    /// (the caller already handled the `key == foldedQuery` case via `exactRows`, so every row seen here has
+    /// `key.hasPrefix(foldedQuery) && key != foldedQuery`, skipped explicitly since SQLite's range bounds alone
+    /// cannot express "and not equal").
+    private func prefixRows(_ db: OpaquePointer, rootID: String, generation: Int, foldedQuery: String, limit: Int) -> [Hit] {
         var st: OpaquePointer?
         let sql = """
         SELECT path, name, name_key, kind, size, mtime FROM names
@@ -926,19 +1093,18 @@ actor FilenameIndex {
         sqlite3_bind_int64(st, 2, Int64(generation))
         sqlite3_bind_text(st, 3, foldedQuery, -1, SQLITE_TRANSIENT)
         sqlite3_bind_text(st, 4, foldedQuery, -1, SQLITE_TRANSIENT)
-        sqlite3_bind_int(st, 5, Int32(limit * 4))   // over-fetch a little so exact/prefix split still fills `limit`
+        sqlite3_bind_int(st, 5, Int32(limit * 4))   // over-fetch a little: the exact-key row (skipped below) still counts against this scan's LIMIT
         var out: [Hit] = []
         while sqlite3_step(st) == SQLITE_ROW {
             guard let pathPtr = sqlite3_column_text(st, 0), let namePtr = sqlite3_column_text(st, 1),
                   let keyPtr = sqlite3_column_text(st, 2) else { continue }
-            let path = String(cString: pathPtr)
-            let name = String(cString: namePtr)
             let key = String(cString: keyPtr)
-            let tier: MatchTier = key == foldedQuery ? .exact : (key.hasPrefix(foldedQuery) ? .prefix : .substring)
-            guard tier != .substring else { break }   // past the prefix range: the B-tree scan has run out of prefix matches
-            out.append(Hit(path: path, name: name, tier: tier, score: tier == .exact ? 1000 : 500,
+            guard key.hasPrefix(foldedQuery) else { break }   // past the prefix range: ran out of prefix matches
+            guard key != foldedQuery else { continue }        // already returned by `exactRows`
+            out.append(Hit(path: String(cString: pathPtr), name: String(cString: namePtr), tier: .prefix, score: 500,
                             size: sqlite3_column_int64(st, 4), modified: Date(timeIntervalSince1970: sqlite3_column_double(st, 5)),
                             isFolder: sqlite3_column_int(st, 3) == Int32(DirectoryEntry.Kind.directory.rawValue)))
+            if out.count >= limit { break }
         }
         return out
     }
