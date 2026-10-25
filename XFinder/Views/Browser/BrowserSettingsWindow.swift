@@ -311,7 +311,8 @@ private struct SidebarSettingsTab: View {
                     ForEach(sorted, id: \.self) { uuid in
                         HStack {
                             Image(systemName: "externaldrive").foregroundColor(.secondary).font(XFinderTokens.Font.caption)
-                            Text(hiddenVolumeNames[uuid] ?? L10n.t("Ổ chưa gắn vào máy")).font(XFinderTokens.Font.rowValue)
+                            Text(SidebarSources.shared.volumes.first { $0.uuid == uuid }?.name
+                                 ?? hiddenVolumeNames[uuid] ?? L10n.t("Ổ chưa gắn vào máy")).font(XFinderTokens.Font.rowValue)
                             Spacer()
                             Button(L10n.t("Khôi phục")) {
                                 var layout = BrowserSettings.sidebarLayout
@@ -755,7 +756,18 @@ private struct KeyboardSettingsTab: View {
     /// Spec: a row a system-wide App Shortcuts override wins over reads "(Cài đặt hệ thống)". There is no public API
     /// to enumerate `NSApp.mainMenu`'s own App Shortcuts remaps from here, so this is always false until an
     /// integrator wires a real check — the label itself (not a fabricated true case) is the contract-compliant part.
-    private func isSystemOverridden(_ command: BrowserCommand) -> Bool { false }
+    /// System Settings ▸ Keyboard ▸ App Shortcuts stores overrides in `NSUserKeyEquivalents` (this app's domain or the
+    /// global one — `UserDefaults.standard` searches both), keyed by the menu item title, or by a menu path whose
+    /// components are separated by ESC (U+001B) on recent macOS. Such a row wins over XFinder's own binding.
+    private func isSystemOverridden(_ command: BrowserCommand) -> Bool {
+        guard let overrides: [String: Any] = UserDefaults.standard.dictionary(forKey: "NSUserKeyEquivalents"),
+              !overrides.isEmpty else { return false }
+        let title: String = L10n.t(BrowserCommands.titleKey(command))
+        return overrides.keys.contains { key in
+            key == title || key.split(separator: "\u{1b}").last.map(String.init) == title
+                || key.split(separator: ">").last.map(String.init) == title
+        }
+    }
 
     private func applyProfile(_ profile: KeyProfile) {
         bindings.apply(profile)
