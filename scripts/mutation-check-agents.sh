@@ -14,7 +14,7 @@ trap 'restore' EXIT
 # kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
 trap 'exit 143' INT TERM
 
-FILTER='CrewGate|AgentTranscriptLimit|LiveActivity|AgentQuota|CodexAppServer|AgentHandoff|Crew|Windowless|ChildStdin|AgentTalk|AgentSession|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
+FILTER='CrewGate|AgentTranscriptLimit|LiveActivity|AgentQuota|CodexAppServer|AgentHandoff|Crew|Windowless|ChildStdin|AgentTalk|AgentSession|AgentReplaySeed|AgentCodex|OpenCodeRules|AgentNotifyRecent|AgentUsage|ClaudeStatusLine|FeatureContract|FeatureCatalog'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} /[Ff]atal error|[Ee]xited with (unexpected )?signal/ {crash=1} END {print (crash ? "CRASH" : (f==""?"NORESULT":f))}'
@@ -60,10 +60,10 @@ run "A1 a dead claude process does not end the session" XFinder/Core/Agents/Agen
   "'                if let pid = s.agentPID, !isAlive(pid) { s.status = .ended }'" \
   "'                if let pid = s.agentPID, !isAlive(pid), Bool(\"false\") == true { s.status = .ended }'"
 run "A2 an answered permission request keeps waiting" XFinder/Core/Agents/AgentEvents.swift \
-  "'                if answered.contains(rid) { s.status = .running(tool: e.toolName) }\n                else {'" "'                do {'"
+  "'            if case .waitingForPermission(let p) = s.status, answered.contains(p.requestID) {'" "'            if case .waitingForPermission(let p) = s.status, false, answered.contains(p.requestID) {'"
 run "A3 a tool starting leaves the permission card up" XFinder/Core/Agents/AgentEvents.swift \
-  "'                s.status = .running(tool: e.toolName)\n            case .postToolUse, .postToolUseFailure:'" \
-  "'                if case .waitingForPermission = s.status {} else { s.status = .running(tool: e.toolName) }\n            case .postToolUse, .postToolUseFailure:'"
+  "'            s.status = .running(tool: e.toolName)\n        case .postToolUse, .postToolUseFailure:'" \
+  "'            if case .waitingForPermission = s.status {} else { s.status = .running(tool: e.toolName) }\n        case .postToolUse, .postToolUseFailure:'"
 run "A4 display order forgets that permissions come first" XFinder/Core/Agents/AgentEvents.swift \
   "'            case .waitingForPermission: return 0\n            case .waitingForInput: return 1'" \
   "'            case .waitingForPermission: return 1\n            case .waitingForInput: return 1'"
@@ -132,7 +132,7 @@ run "A22 our entry goes in FRONT of another tool's (Codex trust is per position:
 run "A23 Claude's command gains an argument (a hook installed by 1.3.0 no longer matches)" $H \
   "'        return agent == .claude ? quoted : quoted + \" \" + agent.rawValue'" "'        return quoted + \" \" + agent.rawValue'"
 run "A24 sessions keyed by id alone (a Claude and a Codex session with one id merge)" $E \
-  "r'            let key = \"\\(e.agent.rawValue):\\(e.sessionID)\"'" "'            let key = e.sessionID'"
+  "r'    static func sessionKey(_ e: AgentEvents.Event) -> String { \"\\(e.agent.rawValue):\\(e.sessionID)\" }'" "'    static func sessionKey(_ e: AgentEvents.Event) -> String { e.sessionID }'"
 run "A25 Codex SessionEnd timeout above its 3 s cap" $H \
   "'        (\"SessionStart\", 10), (\"SessionEnd\", 3), (\"UserPromptSubmit\", 10),'" "'        (\"SessionStart\", 10), (\"SessionEnd\", 10), (\"UserPromptSubmit\", 10),'"
 run "A26 the hook keeps Codex's answer text in the log" $Z \
@@ -140,7 +140,7 @@ run "A26 the hook keeps Codex's answer text in the log" $Z \
 run "A27 the parser ignores the line's agent" $E \
   "'        if let a = obj[\"agent\"] as? String { e.agent = AgentKind(rawValue: a) ?? .claude }'" "'        _ = obj[\"agent\"]'"
 run "A28 a Codex interrupt reads as still running" $E \
-  "'            case .stop, .interrupt:\n                s.status = .waitingForInput'" "'            case .stop, .interrupt:\n                s.status = e.name == .interrupt ? .running(tool: nil) : .waitingForInput'"
+  "'        case .stop, .interrupt:\n            s.status = .waitingForInput'" "'        case .stop, .interrupt:\n            s.status = e.name == .interrupt ? .running(tool: nil) : .waitingForInput'"
 run "A29 XFinder's own approval hook counted as another tool's" $H \
   "'.filter { (\$0[\"command\"] as? String) != nil && !isOurs(\$0, hookPath: hookPath) }'" "'.filter { (\$0[\"command\"] as? String) != nil }'"
 run "A30 a Codex hook with no codex ancestor records the shell's pid" $Z \
@@ -226,11 +226,11 @@ run "A61 non-ASCII text reaches the OpenCode argument raw" $T \
 run "A62 a reply longer than the cap goes through whole" $T \
   "'        if out.count > maxLength { out = String(out.prefix(maxLength)) }\n'" "''"
 run "A63 AskUserQuestion never marks a question pending" $E \
-  "'                s.questionPending = e.toolName == AgentSessionRules.questionTool'" "'                s.questionPending = false'"
+  "'            s.questionPending = e.toolName == AgentSessionRules.questionTool'" "'            s.questionPending = false'"
 run "A64 a dialog stays on screen after the person answered it" $E \
-  "'                 .permissionDenied, .sessionStart, .stopFailure:\n                s.dialogOnScreen = false'" "'                 .permissionDenied, .sessionStart, .stopFailure:\n                break'"
+  "'             .permissionDenied, .sessionStart, .stopFailure:\n            s.dialogOnScreen = false'" "'             .permissionDenied, .sessionStart, .stopFailure:\n            break'"
 run "A65 an elicitation dialog is not seen" $E \
-  "'                case \"permission_prompt\"?, \"elicitation_dialog\"?:'" "'                case \"permission_prompt\"?:'"
+  "'            case \"permission_prompt\"?, \"elicitation_dialog\"?:'" "'            case \"permission_prompt\"?:'"
 
 # P6 review
 run "A66 a newline in an env value splits the event (both halves dropped)" $Z \
@@ -305,11 +305,11 @@ run "Q6 a stale usage snapshot still rules agents in or out" $QR \
   "'guard statusLineInstalled, let quota, let scannedAt, now.timeIntervalSince(scannedAt) <= freshFor else'" \
   "'guard statusLineInstalled, let quota, let scannedAt else'"
 run "Q7 StopFailure leaves the row running" XFinder/Core/Agents/AgentEvents.swift \
-  "'                s.status = .waitingForInput\n                if AgentQuotaRules.isLimitStop(claudeError: e.errorType) {'" \
-  "'                if AgentQuotaRules.isLimitStop(claudeError: e.errorType) {'"
+  "'            s.status = .waitingForInput\n            if AgentQuotaRules.isLimitStop(claudeError: e.errorType) {'" \
+  "'            if AgentQuotaRules.isLimitStop(claudeError: e.errorType) {'"
 run "Q8 a new prompt or tool does not lift the limit stop" XFinder/Core/Agents/AgentEvents.swift \
-  "'            case .sessionStart, .userPromptSubmit, .preToolUse, .postToolUse, .postToolUseFailure, .stop, .interrupt,\n                 .permissionRequest, .permissionDenied:\n                s.limitStop = nil'" \
-  "'            case .sessionStart:\n                s.limitStop = nil'"
+  "'        case .sessionStart, .userPromptSubmit, .preToolUse, .postToolUse, .postToolUseFailure, .stop, .interrupt,\n             .permissionRequest, .permissionDenied:\n            s.limitStop = nil'" \
+  "'        case .sessionStart:\n            s.limitStop = nil'"
 run "Q9 the same limit stop is announced again" XFinder/Core/Agents/AgentNotify.swift \
   "'if settings.limit, before?.limitStop?.since != stop.since {'" "'if settings.limit {'"
 run "Q10 a limit stop is also announced as a finished turn" XFinder/Core/Agents/AgentNotify.swift \
@@ -349,8 +349,8 @@ run "Q26 a symlink inside projects points the read at another file" XFinder/Core
   "'        let resolved = URL(fileURLWithPath: path).resolvingSymlinksInPath().standardizedFileURL.path'" \
   "'        let resolved = URL(fileURLWithPath: path).standardizedFileURL.path'"
 run "Q25 a prompt quoting the limit text marks the session stopped (the sniffing fix)" XFinder/Core/Agents/AgentEvents.swift \
-  "'                s.lastPrompt = e.prompt\n                s.status = .running(tool: nil)'" \
-  "'                s.lastPrompt = e.prompt\n                if e.prompt?.contains(\"hit your session limit\") == true { s.status = .waitingForInput; s.limitStop = AgentSession.LimitStop(reason: \"rate_limit\", since: e.receivedAt) } else { s.status = .running(tool: nil) }'"
+  "'            s.lastPrompt = e.prompt\n            s.status = .running(tool: nil)'" \
+  "'            s.lastPrompt = e.prompt\n            if e.prompt?.contains(\"hit your session limit\") == true { s.status = .waitingForInput; s.limitStop = AgentSession.LimitStop(reason: \"rate_limit\", since: e.receivedAt) } else { s.status = .running(tool: nil) }'"
 
 # The restore check and the post-restore suite run come AFTER every mutation (they used to sit before A11, so the
 # later mutations ran unchecked — found while adding A20/A21).
@@ -434,6 +434,14 @@ run "H24 the CLI counts bytes, not characters" XFinder/Resources/Agents/xfinder-
   "'export LC_ALL=en_US.UTF-8'" "'export LC_ALL=C'"
 run "H25 the settings file lets the repository switch hooks off" XFinder/Core/Agents/CrewGate.swift \
   "'\"disableAllHooks\": false]'" "'\"disableAllHooks\": true]'"
+
+# 2026-10-25 — a tail folds what it trims into a ReplaySeed (20 000 kept events held ~25 MB)
+run "R1 pruning drops a session whose process is alive" XFinder/Core/Agents/AgentEvents.swift \
+  "'            let over = s.status == .ended || s.agentPID.map { !isAlive(\$0) } ?? true'" "'            let over = true'"
+run "R2 pruning drops a session that still has events in the kept window" XFinder/Core/Agents/AgentEvents.swift \
+  "'            if old && over && !keep.contains(key) { continue }'" "'            if old && over { continue }'"
+run "R3 the folded prefix is forgotten" XFinder/Core/Agents/AgentEvents.swift \
+  "'        var state = seed'" "'        var state = ReplaySeed()'"
 
 [ -n "${DRY:-}" ] && { [ "$DRY_BAD" = "0" ] && echo "DRY: every anchor found exactly once" && exit 0; echo "DRY: anchors missing"; exit 1; }
 restore

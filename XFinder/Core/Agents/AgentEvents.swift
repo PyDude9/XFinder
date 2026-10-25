@@ -328,103 +328,52 @@ enum AgentSessionRules {
     /// Ended sessions older than this are not listed at all.
     static let keepEndedFor: TimeInterval = 60 * 60
 
-    static func sessions(from events: [AgentEvents.Event], now: Date,
-                         answered: Set<String> = [],
-                         isAlive: (Int32) -> Bool) -> [AgentSession] {
+    /// The replay of events no longer held in memory. A tail keeps only its newest `AgentSessionMonitor` window of
+    /// events and folds what it trims off the front into this (measured 2026-10-25: 20 000 kept events held ~25 MB —
+    /// a 476-byte `Event` each plus ~5 strings — while the list only ever needed the folded state per session).
+    struct ReplaySeed: Equatable {
         var byID: [String: AgentSession] = [:]
         var order: [String] = []
-        for e in events.sorted(by: { $0.receivedAt < $1.receivedAt }) {
-            let key = "\(e.agent.rawValue):\(e.sessionID)"      // P5: one session per (agent, id)
-            var s = byID[key] ?? {
-                order.append(key)
-                return AgentSession(id: e.sessionID, agent: e.agent, cwd: e.cwd, transcriptPath: e.transcriptPath,
-                                    startedAt: e.receivedAt, updatedAt: e.receivedAt, status: .running(tool: nil),
-                                    lastTool: nil, lastPrompt: nil, agentPID: e.agentPID, terminal: e.terminal, eventCount: 0)
-            }()
-            s.eventCount += 1
-            s.updatedAt = max(s.updatedAt, e.receivedAt)
-            if let c = e.cwd { s.cwd = c }
-            if let t = e.transcriptPath { s.transcriptPath = t }
-            if let p = e.agentPID { s.agentPID = p }
-            if e.terminal != AgentEvents.Terminal() { s.terminal = e.terminal }
-            // P12: the work went on — a prompt, a tool, a finished turn — so the limit no longer stops it.
-            switch e.name {
-            case .sessionStart, .userPromptSubmit, .preToolUse, .postToolUse, .postToolUseFailure, .stop, .interrupt,
-                 .permissionRequest, .permissionDenied:
-                s.limitStop = nil
-            default: break
-            }
-            // P6: anything the person or the agent does next means the dialog / question on screen is gone.
-            switch e.name {
-            case .userPromptSubmit, .preToolUse, .postToolUse, .postToolUseFailure, .stop, .interrupt, .sessionEnd,
-                 .permissionDenied, .sessionStart, .stopFailure:
-                s.dialogOnScreen = false
-            default: break
-            }
-            switch e.name {
-            case .userPromptSubmit, .postToolUse, .postToolUseFailure, .stop, .interrupt, .sessionEnd, .sessionStart, .stopFailure:
-                s.questionPending = false
-            case .preToolUse:
-                s.questionPending = e.toolName == AgentSessionRules.questionTool
-            default: break
-            }
-            switch e.name {
-            case .sessionStart:
-                s.status = .running(tool: nil)
-            case .userPromptSubmit:
-                s.lastPrompt = e.prompt
-                s.status = .running(tool: nil)
-            case .preToolUse:
-                s.lastTool = e.toolName
-                // A tool starting means the request before it (if any) was answered, in the terminal or by us.
-                s.status = .running(tool: e.toolName)
-            case .postToolUse, .postToolUseFailure:
-                s.status = .running(tool: nil)
-            case .permissionRequest:
-                let rid = e.requestID ?? ""
-                if answered.contains(rid) { s.status = .running(tool: e.toolName) }
-                else {
-                    s.status = .waitingForPermission(.init(requestID: rid, toolName: e.toolName ?? "?",
-                                                           summary: e.toolInputSummary, since: e.receivedAt))
-                }
-            case .permissionDenied:
-                s.status = .running(tool: nil)
-            case .notification:
-                switch e.notificationType {
-                case "idle_prompt"?: s.status = .waitingForInput
-                case "permission_prompt"?, "elicitation_dialog"?:
-                    // Claude Code's own prompt is on screen; only a PermissionRequest hook can answer it from here.
-                    if case .waitingForPermission = s.status {} else { s.status = .waitingForInput }
-                    s.dialogOnScreen = true
-                // P12: Claude Code's own wait for a usage-limit reset (docs, v2.1.234+). "fired" = it continued the task;
-                // "stale" = the reset happened while the Mac slept and it waits for Enter; "disabled" = it gave up waiting.
-                case "quota_auto_resume_fired"?:
-                    s.limitStop = nil
-                    s.status = .running(tool: nil)
-                case "quota_auto_resume_stale"?:
-                    s.limitStop = nil
-                default: break
-                }
-            case .stop, .interrupt:
-                s.status = .waitingForInput
-            case .stopFailure:
-                // It runs INSTEAD of Stop when a turn ends on an API error (docs) — ignoring it left the row "running"
-                // until the 15-minute staleness rule. The turn is over either way; only `rate_limit` is a limit stop.
-                s.status = .waitingForInput
-                if AgentQuotaRules.isLimitStop(claudeError: e.errorType) {
-                    s.limitStop = AgentSession.LimitStop(reason: e.errorType ?? "", since: e.receivedAt)
-                }
-            case .sessionEnd:
-                s.status = .ended
-            case .subagentStart, .subagentStop, .preCompact, .postCompact, .messageDisplay, .other:
-                break
-            }
-            byID[key] = s
+    }
+
+    /// P5: one session per (agent, id).
+    static func sessionKey(_ e: AgentEvents.Event) -> String { "\(e.agent.rawValue):\(e.sessionID)" }
+
+    /// Replays `events` (oldest first) on top of `seed`. Which requests XFinder answered is NOT part of the replay —
+    /// `sessions(from:seed:…)` applies it at the end, so a request folded before its answer arrived is still caught.
+    static func fold(_ events: [AgentEvents.Event], into seed: inout ReplaySeed) {
+        for e in events.sorted(by: { $0.receivedAt < $1.receivedAt }) { apply(e, to: &seed) }
+    }
+
+    /// The seed without the sessions the list will never show again: ended (or dead, or silent with no process) for
+    /// longer than `keepEndedFor`. A session that still has an event in the kept window (`keep`) is never dropped —
+    /// the window's events would otherwise start it over with a new `startedAt`.
+    static func pruned(_ seed: ReplaySeed, now: Date, keep: Set<String>, isAlive: (Int32) -> Bool) -> ReplaySeed {
+        var out = ReplaySeed()
+        for key in seed.order {
+            guard let s = seed.byID[key] else { continue }
+            let old = now.timeIntervalSince(s.updatedAt) > keepEndedFor
+            let over = s.status == .ended || s.agentPID.map { !isAlive($0) } ?? true
+            if old && over && !keep.contains(key) { continue }
+            out.byID[key] = s
+            out.order.append(key)
         }
+        return out
+    }
+
+    static func sessions(from events: [AgentEvents.Event], seed: ReplaySeed = ReplaySeed(), now: Date,
+                         answered: Set<String> = [],
+                         isAlive: (Int32) -> Bool) -> [AgentSession] {
+        var state = seed
+        fold(events, into: &state)
         // Liveness and staleness, after the replay: a dead process ends the session whatever the log says.
         var out: [AgentSession] = []
-        for id in order {
-            guard var s = byID[id] else { continue }
+        for id in state.order {
+            guard var s = state.byID[id] else { continue }
+            // A request XFinder answered: the hook is past it, the tool is about to run.
+            if case .waitingForPermission(let p) = s.status, answered.contains(p.requestID) {
+                s.status = .running(tool: p.toolName)
+            }
             if s.status != .ended {
                 if let pid = s.agentPID, !isAlive(pid) { s.status = .ended }
                 else if s.agentPID == nil, now.timeIntervalSince(s.updatedAt) > staleAfter { s.status = .ended }
@@ -433,6 +382,90 @@ enum AgentSessionRules {
             out.append(s)
         }
         return out.sorted(by: displayOrder)
+    }
+
+    private static func apply(_ e: AgentEvents.Event, to state: inout ReplaySeed) {
+        let key = sessionKey(e)
+        if state.byID[key] == nil { state.order.append(key) }
+        var s = state.byID[key] ?? AgentSession(id: e.sessionID, agent: e.agent, cwd: e.cwd, transcriptPath: e.transcriptPath,
+                                                startedAt: e.receivedAt, updatedAt: e.receivedAt, status: .running(tool: nil),
+                                                lastTool: nil, lastPrompt: nil, agentPID: e.agentPID, terminal: e.terminal,
+                                                eventCount: 0)
+        s.eventCount += 1
+        s.updatedAt = max(s.updatedAt, e.receivedAt)
+        if let c = e.cwd { s.cwd = c }
+        if let t = e.transcriptPath { s.transcriptPath = t }
+        if let p = e.agentPID { s.agentPID = p }
+        if e.terminal != AgentEvents.Terminal() { s.terminal = e.terminal }
+        // P12: the work went on — a prompt, a tool, a finished turn — so the limit no longer stops it.
+        switch e.name {
+        case .sessionStart, .userPromptSubmit, .preToolUse, .postToolUse, .postToolUseFailure, .stop, .interrupt,
+             .permissionRequest, .permissionDenied:
+            s.limitStop = nil
+        default: break
+        }
+        // P6: anything the person or the agent does next means the dialog / question on screen is gone.
+        switch e.name {
+        case .userPromptSubmit, .preToolUse, .postToolUse, .postToolUseFailure, .stop, .interrupt, .sessionEnd,
+             .permissionDenied, .sessionStart, .stopFailure:
+            s.dialogOnScreen = false
+        default: break
+        }
+        switch e.name {
+        case .userPromptSubmit, .postToolUse, .postToolUseFailure, .stop, .interrupt, .sessionEnd, .sessionStart, .stopFailure:
+            s.questionPending = false
+        case .preToolUse:
+            s.questionPending = e.toolName == AgentSessionRules.questionTool
+        default: break
+        }
+        switch e.name {
+        case .sessionStart:
+            s.status = .running(tool: nil)
+        case .userPromptSubmit:
+            s.lastPrompt = e.prompt
+            s.status = .running(tool: nil)
+        case .preToolUse:
+            s.lastTool = e.toolName
+            // A tool starting means the request before it (if any) was answered, in the terminal or by us.
+            s.status = .running(tool: e.toolName)
+        case .postToolUse, .postToolUseFailure:
+            s.status = .running(tool: nil)
+        case .permissionRequest:
+            s.status = .waitingForPermission(.init(requestID: e.requestID ?? "", toolName: e.toolName ?? "?",
+                                                   summary: e.toolInputSummary, since: e.receivedAt))
+        case .permissionDenied:
+            s.status = .running(tool: nil)
+        case .notification:
+            switch e.notificationType {
+            case "idle_prompt"?: s.status = .waitingForInput
+            case "permission_prompt"?, "elicitation_dialog"?:
+                // Claude Code's own prompt is on screen; only a PermissionRequest hook can answer it from here.
+                if case .waitingForPermission = s.status {} else { s.status = .waitingForInput }
+                s.dialogOnScreen = true
+            // P12: Claude Code's own wait for a usage-limit reset (docs, v2.1.234+). "fired" = it continued the task;
+            // "stale" = the reset happened while the Mac slept and it waits for Enter; "disabled" = it gave up waiting.
+            case "quota_auto_resume_fired"?:
+                s.limitStop = nil
+                s.status = .running(tool: nil)
+            case "quota_auto_resume_stale"?:
+                s.limitStop = nil
+            default: break
+            }
+        case .stop, .interrupt:
+            s.status = .waitingForInput
+        case .stopFailure:
+            // It runs INSTEAD of Stop when a turn ends on an API error (docs) — ignoring it left the row "running"
+            // until the 15-minute staleness rule. The turn is over either way; only `rate_limit` is a limit stop.
+            s.status = .waitingForInput
+            if AgentQuotaRules.isLimitStop(claudeError: e.errorType) {
+                s.limitStop = AgentSession.LimitStop(reason: e.errorType ?? "", since: e.receivedAt)
+            }
+        case .sessionEnd:
+            s.status = .ended
+        case .subagentStart, .subagentStop, .preCompact, .postCompact, .messageDisplay, .other:
+            break
+        }
+        state.byID[key] = s
     }
 
     /// Permission requests first (oldest first — the one that has waited longest), then sessions waiting for

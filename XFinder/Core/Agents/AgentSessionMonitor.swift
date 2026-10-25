@@ -167,11 +167,15 @@ final class AgentSessionMonitor {
     private func rebuild() {
         let now = Date()
         var all: [AgentEvents.Event] = []
+        var seed = AgentSessionRules.ReplaySeed()           // keys carry the agent, so the tails' seeds never collide
         for (agent, tail) in tails {
             all.append(contentsOf: tail.events)
+            seed.byID.merge(tail.seed.byID) { a, _ in a }
+            seed.order += tail.seed.order
             if let last = tail.events.last?.receivedAt { lastEventAt[agent] = last }
         }
-        let hooked = (running ? AgentSessionRules.sessions(from: all, now: now, answered: answered, isAlive: Self.isAlive) : [])
+        let hooked = (running ? AgentSessionRules.sessions(from: all, seed: seed, now: now, answered: answered,
+                                                          isAlive: Self.isAlive) : [])
             .map { s in
                 // A refused turn (usage limit) leaves no hook event on the desktop app — read the transcript's tail.
                 guard AgentSessionRules.shouldReadTranscript(s, now: now, home: NSHomeDirectory()),
@@ -646,6 +650,10 @@ private final class EventTail {
     let eventsDir: URL
     var onChange: (() -> Void)?
     private(set) var events: [AgentEvents.Event] = []
+    /// Everything trimmed off the front of `events`, already replayed (2026-10-25: the old 20 000-event window held ~25 MB).
+    private(set) var seed = AgentSessionRules.ReplaySeed()
+    /// Events kept as events: enough for a burst between two rebuilds, small enough that a rebuild sorts little.
+    static let keptEvents = 1_000
     private var offsets: [String: UInt64] = [:]
     private var dirSource: DispatchSourceFileSystemObject?
     private var fileSource: DispatchSourceFileSystemObject?
@@ -676,7 +684,7 @@ private final class EventTail {
     func cancel() {
         dirSource?.cancel(); dirSource = nil
         fileSource?.cancel(); fileSource = nil; watchedFile = nil
-        offsets = [:]; events = []
+        offsets = [:]; events = []; seed = AgentSessionRules.ReplaySeed()
     }
 
     /// (Re)attach the file watch to today's file when it appears or the day rolls over.
@@ -698,7 +706,7 @@ private final class EventTail {
         let now = Date()
         let files = [AgentEvents.eventsFileName(for: now.addingTimeInterval(-86_400)), AgentEvents.eventsFileName(for: now)]
             .map { eventsDir.appendingPathComponent($0) }
-        if full { events = []; offsets = [:] }
+        if full { events = []; offsets = [:]; seed = AgentSessionRules.ReplaySeed() }
         for url in files {
             guard let h = try? FileHandle(forReadingFrom: url) else { continue }
             defer { try? h.close() }
@@ -727,6 +735,12 @@ private final class EventTail {
                 events.append(contentsOf: parsed)
             }
         }
-        if events.count > 20_000 { events.removeFirst(events.count - 20_000) }
+        if events.count > Self.keptEvents {
+            let cut = events.count - Self.keptEvents
+            AgentSessionRules.fold(Array(events[..<cut]), into: &seed)
+            events.removeFirst(cut)
+            seed = AgentSessionRules.pruned(seed, now: now, keep: Set(events.map(AgentSessionRules.sessionKey)),
+                                            isAlive: AgentSessionMonitor.isAlive)
+        }
     }
 }
