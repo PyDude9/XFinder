@@ -171,8 +171,10 @@ enum EntryRules {
     ///   kind and compared with `naturalCompare`, ties by name.
     /// - `.modified`: by `modified`, ties by name.
     ///
-    /// `foldersFirst` (the "Ưu tiên thư mục" view option) is applied as a key ABOVE all of the above:
-    /// every `isFolderLike` entry sorts before every non-folder one, regardless of `order.key`.
+    /// `foldersFirst` (the "Ưu tiên thư mục" view option, "Keep folders on top") is applied as a key ABOVE all of the
+    /// above, but ONLY when `order.key == .name` (FileOctopus R18 / Finder: "In windows when sorting by name") — sorting
+    /// by kind, size or any date already groups folders with other same-key entries in a way the user chose, and
+    /// `foldersFirst` does not override that for any other key.
     ///
     /// `ascending == false` reverses the PRIMARY key's order only; the secondary (name) tie-break
     /// stays ascending, matching Finder (descending-by-size still lists same-size files A→Z).
@@ -190,7 +192,7 @@ enum EntryRules {
         for e in entries { names.append(e.nameKey); folders.append(e.isFolderLike) }
         let paths = entries.map(\.path)
         var kinds = FlatKeys(capacity: order.key == .kind ? n : 0)
-        var dates: [Date] = []
+        var dates: [Date?] = []
         var sizes: [Int64] = []
         switch order.key {
         case .kind:
@@ -199,10 +201,10 @@ enum EntryRules {
                 let k = kindName(e)
                 if let f = folded[k] { kinds.append(f) } else { let f = foldBytes(k); folded[k] = f; kinds.append(f) }
             }
-        case .modified: dates = entries.map(\.modified)
-        case .created: dates = entries.map(\.created)
-        case .added: dates = entries.map { $0.added ?? .distantPast }
-        case .lastOpened: dates = entries.map { $0.lastOpened ?? .distantPast }
+        case .modified: dates = entries.map { $0.modified as Date? }
+        case .created: dates = entries.map { $0.created as Date? }
+        case .added: dates = entries.map(\.added)
+        case .lastOpened: dates = entries.map(\.lastOpened)
         case .size: sizes = entries.map(\.size)
         case .name: break
         }
@@ -213,12 +215,16 @@ enum EntryRules {
                 func nameCompare(_ x: Int, _ y: Int) -> Int {
                     naturalCompare(nameBytes, names.starts[x], names.starts[x + 1], names.starts[y], names.starts[y + 1])
                 }
+                // nil dates (Date Added / Date Last Opened not yet read) always sort LAST, in both ascending and
+                // descending order — nil-ness is handled in the `indices.sort` closure below, BEFORE the ascending
+                // flip, so it is never reversed by it; `primary` only compares two entries that both have a date.
                 func primary(_ x: Int, _ y: Int) -> Int {
                     switch order.key {
                     case .name:
                         return nameCompare(x, y)
                     case .modified, .created, .added, .lastOpened:
-                        return dates[x] == dates[y] ? 0 : (dates[x] < dates[y] ? -1 : 1)
+                        guard let dx = dates[x], let dy = dates[y] else { return 0 }   // nil handled before the ascending flip
+                        return dx == dy ? 0 : (dx < dy ? -1 : 1)
                     case .size:
                         let xDir = sizes[x] < 0, yDir = sizes[y] < 0
                         if xDir != yDir { return xDir ? -1 : 1 }
@@ -228,8 +234,17 @@ enum EntryRules {
                         return naturalCompare(kindBytes, kinds.starts[x], kinds.starts[x + 1], kinds.starts[y], kinds.starts[y + 1])
                     }
                 }
+                let isDateKey = [SortKey.modified, .created, .added, .lastOpened].contains(order.key)
                 indices.sort { x, y in
-                    if foldersFirst, folders[x] != folders[y] { return folders[x] }
+                    if foldersFirst, order.key == .name, folders[x] != folders[y] { return folders[x] }
+                    if isDateKey {
+                        switch (dates[x], dates[y]) {
+                        case (nil, nil): break                      // fall through to the name tie-break below
+                        case (nil, _): return false                 // x has no date: x is never "less than" y
+                        case (_, nil): return true                  // y has no date: x (which has one) sorts first
+                        default: break                              // both present: compare normally below
+                        }
+                    }
                     let c = primary(x, y)
                     if c != 0 { return order.ascending ? c < 0 : c > 0 }
                     if order.key != .name {

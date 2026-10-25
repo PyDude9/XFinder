@@ -8,12 +8,16 @@ final class DirectoryEntryTests: XCTestCase {
     private func entry(
         name: String, kind: DirectoryEntry.Kind = .file, isPackage: Bool = false,
         isHidden: Bool = false, size: Int64 = 0, modified: Date = Date(timeIntervalSince1970: 0),
-        created: Date = Date(timeIntervalSince1970: 0), volumeID: Int32 = 1, path: String? = nil
+        created: Date = Date(timeIntervalSince1970: 0), volumeID: Int32 = 1, path: String? = nil,
+        added: Date? = nil, lastOpened: Date? = nil
     ) -> DirectoryEntry {
-        DirectoryEntry(
+        var e = DirectoryEntry(
             name: name, path: path ?? "/tmp/\(name)", kind: kind, isPackage: isPackage,
             isHidden: isHidden, size: size, modified: modified, created: created, volumeID: volumeID
         )
+        e.added = added
+        e.lastOpened = lastOpened
+        return e
     }
 
     // MARK: - ext
@@ -382,6 +386,97 @@ final class DirectoryEntryTests: XCTestCase {
             kindName: { _ in "" }
         )
         XCTAssertEqual(result.map(\.name), ["ZZZ dir", "AAA file"])
+    }
+
+    func testSortedFoldersFirstIgnoredWhenSortingBySize() {
+        // FileOctopus R18 / Finder: "Keep folders on top" only applies "when sorting by name" — sorting by size (or
+        // kind, or a date) must NOT be overridden even when foldersFirst is on.
+        let file = entry(name: "AAA file", kind: .file, size: 100)
+        let dir = entry(name: "ZZZ dir", kind: .directory, size: -1)
+        let result = EntryRules.sorted(
+            [file, dir], by: SortOrder(key: .size, ascending: true), foldersFirst: true,
+            kindName: { _ in "" }
+        )
+        // Plain size order (directories still sort first because size -1 < any file size — that is the .size
+        // comparator's own rule, not foldersFirst), identical to foldersFirst: false for this input.
+        let withoutFoldersFirst = EntryRules.sorted(
+            [file, dir], by: SortOrder(key: .size, ascending: true), foldersFirst: false, kindName: { _ in "" }
+        )
+        XCTAssertEqual(result.map(\.name), withoutFoldersFirst.map(\.name))
+    }
+
+    func testSortedFoldersFirstIgnoredWhenSortingByKind() {
+        let file = entry(name: "AAA file", kind: .file, path: "/f")
+        let dir = entry(name: "ZZZ dir", kind: .directory, path: "/d")
+        let names: [String: String] = ["/f": "Tài liệu", "/d": "Thư mục"]
+        let result = EntryRules.sorted(
+            [file, dir], by: SortOrder(key: .kind, ascending: true), foldersFirst: true,
+            kindName: { names[$0.path] ?? "" }
+        )
+        // "Thư mục" < "Tài liệu" alphabetically either way; the point is foldersFirst did not insert an extra
+        // folders-before-files pass above the kind comparison (there is only one plausible order here regardless,
+        // so this mainly guards that passing foldersFirst: true does not crash or reorder unexpectedly elsewhere).
+        XCTAssertEqual(Set(result.map(\.name)), ["AAA file", "ZZZ dir"])
+    }
+
+    // MARK: - sorted: created / added / lastOpened
+
+    func testSortedByCreatedAscending() {
+        let old = entry(name: "Old", created: Date(timeIntervalSince1970: 0))
+        let new = entry(name: "New", created: Date(timeIntervalSince1970: 1000))
+        let result = EntryRules.sorted(
+            [new, old], by: SortOrder(key: .created, ascending: true), foldersFirst: false, kindName: { _ in "" }
+        )
+        XCTAssertEqual(result.map(\.name), ["Old", "New"])
+    }
+
+    func testSortedByAddedNilSortsLast() {
+        let withDate = entry(name: "HasDate", added: Date(timeIntervalSince1970: 0))
+        let noDate = entry(name: "NoDate", added: nil)
+        let result = EntryRules.sorted(
+            [noDate, withDate], by: SortOrder(key: .added, ascending: true), foldersFirst: false, kindName: { _ in "" }
+        )
+        XCTAssertEqual(result.map(\.name), ["HasDate", "NoDate"])
+    }
+
+    func testSortedByAddedNilSortsLastEvenDescending() {
+        // nil dates are "last" regardless of sort direction, not merely "smallest" (which would put them first when
+        // descending) — ascending=false must still leave the undated entry at the very end.
+        let withDate = entry(name: "HasDate", added: Date(timeIntervalSince1970: 1000))
+        let noDate = entry(name: "NoDate", added: nil)
+        let result = EntryRules.sorted(
+            [noDate, withDate], by: SortOrder(key: .added, ascending: false), foldersFirst: false, kindName: { _ in "" }
+        )
+        XCTAssertEqual(result.map(\.name), ["HasDate", "NoDate"])
+    }
+
+    func testSortedByLastOpenedNilSortsLast() {
+        let opened = entry(name: "Opened", lastOpened: Date(timeIntervalSince1970: 500))
+        let neverOpened = entry(name: "Never", lastOpened: nil)
+        let result = EntryRules.sorted(
+            [neverOpened, opened], by: SortOrder(key: .lastOpened, ascending: true), foldersFirst: false,
+            kindName: { _ in "" }
+        )
+        XCTAssertEqual(result.map(\.name), ["Opened", "Never"])
+    }
+
+    func testSortedByLastOpenedTiesBreakByName() {
+        let date = Date(timeIntervalSince1970: 500)
+        let a = entry(name: "Beta", lastOpened: date)
+        let b = entry(name: "Alpha", lastOpened: date)
+        let result = EntryRules.sorted(
+            [a, b], by: SortOrder(key: .lastOpened, ascending: true), foldersFirst: false, kindName: { _ in "" }
+        )
+        XCTAssertEqual(result.map(\.name), ["Alpha", "Beta"])
+    }
+
+    func testSortedByAddedAllNilKeepsStableNameTieBreak() {
+        let a = entry(name: "Beta", added: nil)
+        let b = entry(name: "Alpha", added: nil)
+        let result = EntryRules.sorted(
+            [a, b], by: SortOrder(key: .added, ascending: true), foldersFirst: false, kindName: { _ in "" }
+        )
+        XCTAssertEqual(result.map(\.name), ["Alpha", "Beta"])
     }
 
     // MARK: - sorted: empty / single

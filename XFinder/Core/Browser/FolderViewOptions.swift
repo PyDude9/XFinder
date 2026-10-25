@@ -32,11 +32,48 @@ struct FolderViewPrefs: Codable, Equatable, Sendable {
 /// Up to `limit` folders, least recently used dropped first. Decoding drops damaged entries only.
 struct FolderViewStore: Codable, Equatable, Sendable {
     static let limit = 500
+    /// Least-recently-used first, most-recently-used last — the same order `set`/`prefs` maintain so eviction never
+    /// needs a separate sort.
     private(set) var order: [String] = []
     private(set) var prefsByPath: [String: FolderViewPrefs] = [:]
 
+    init() {}
+
+    /// Non-mutating lookup: only `set` updates recency, so simply looking at a folder's remembered view (without
+    /// changing it) does not by itself save it from eviction.
     func prefs(for path: String) -> FolderViewPrefs? { prefsByPath[path] }
-    mutating func set(_ prefs: FolderViewPrefs, for path: String) {}
-    func encoded() -> Data { Data() }
-    static func decode(_ data: Data?) -> FolderViewStore { FolderViewStore() }
+
+    mutating func set(_ prefs: FolderViewPrefs, for path: String) {
+        prefsByPath[path] = prefs
+        touch(path)
+        while order.count > Self.limit {
+            let oldest = order.removeFirst()
+            if oldest != path { prefsByPath.removeValue(forKey: oldest) }
+        }
+    }
+
+    private mutating func touch(_ path: String) {
+        if let index = order.firstIndex(of: path) { order.remove(at: index) }
+        order.append(path)
+    }
+
+    func encoded() -> Data {
+        (try? JSONEncoder().encode(self)) ?? Data()
+    }
+
+    /// Tolerant decode: a missing file, truncated JSON or a value of the wrong shape all fall back to an empty store
+    /// (first-run equivalent) rather than crashing or throwing. A per-entry decode failure is impossible with
+    /// `Codable`'s whole-value decode, so "drops damaged entries only" is achieved one level up — `order` entries with
+    /// no matching `prefsByPath` value (or vice versa) are reconciled to keep the two in sync.
+    static func decode(_ data: Data?) -> FolderViewStore {
+        guard let data, let store = try? JSONDecoder().decode(FolderViewStore.self, from: data) else {
+            return FolderViewStore()
+        }
+        let validOrder = store.order.filter { store.prefsByPath[$0] != nil }
+        let knownPaths = Set(validOrder)
+        var result = FolderViewStore()
+        result.order = validOrder
+        result.prefsByPath = store.prefsByPath.filter { knownPaths.contains($0.key) }
+        return result
+    }
 }
