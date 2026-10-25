@@ -56,6 +56,20 @@ enum NameMatcher {
     /// wordPrefix: query starts a word inside name (after space, -, _, ., or a lowercase→digit / letter↔digit boundary);
     /// substring: anywhere; fuzzy: every query byte appears in order. Empty query ⇒ nil. W5a builder (pure): implement.
     static func match(query: [UInt8], name: [UInt8]) -> NameMatch? {
+        if let cheap = cheapMatch(query: query, name: name) { return cheap }
+        guard !query.isEmpty else { return nil }
+        // fuzzy: every query byte appears in order (subsequence), with bonuses for matching at a word start and for
+        // consecutive matched bytes (a tighter, more "word-like" match scores higher).
+        if let fuzzyScore = fuzzyScore(query: query, name: name) {
+            return NameMatch(tier: .fuzzy, score: fuzzyScore)
+        }
+        return nil
+    }
+
+    /// `match` restricted to the tiers cheaper than fuzzy (exact/prefix/wordPrefix/substring), nil if none of them
+    /// hit — used directly by `rank` so a candidate that needs the (budgeted) fuzzy pass only runs `fuzzyScore` once,
+    /// not once here (and discarded) plus once more in `rank`'s own budgeted fuzzy attempt.
+    private static func cheapMatch(query: [UInt8], name: [UInt8]) -> NameMatch? {
         guard !query.isEmpty else { return nil }
         if query == name { return NameMatch(tier: .exact, score: 0) }
         if name.count >= query.count && Array(name[0..<query.count]) == query {
@@ -75,11 +89,6 @@ enum NameMatcher {
         // substring: anywhere, prefer the earliest occurrence.
         if let at = firstIndex(of: query, in: name) {
             return NameMatch(tier: .substring, score: -at)
-        }
-        // fuzzy: every query byte appears in order (subsequence), with bonuses for matching at a word start and for
-        // consecutive matched bytes (a tighter, more "word-like" match scores higher).
-        if let fuzzyScore = fuzzyScore(query: query, name: name) {
-            return NameMatch(tier: .fuzzy, score: fuzzyScore)
         }
         return nil
     }
@@ -152,12 +161,5 @@ enum NameMatcher {
         }
         if scored.count > limit { scored = Array(scored.prefix(limit)) }
         return (scored.map(\.ranked), tierEnded)
-    }
-
-    /// `match` restricted to the tiers cheaper than fuzzy, used by `rank` to decide whether a candidate needs the
-    /// (budgeted) fuzzy pass at all.
-    private static func cheapMatch(query: [UInt8], name: [UInt8]) -> NameMatch? {
-        guard let m = match(query: query, name: name), m.tier != .fuzzy else { return nil }
-        return m
     }
 }

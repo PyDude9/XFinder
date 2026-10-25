@@ -94,8 +94,8 @@
     "id": "NM9",
     "name": "empty query is treated as a match instead of nil",
     "file": "XFinder/Core/Browser/NameMatcher.swift",
-    "anchor": "        guard !query.isEmpty else { return nil }",
-    "replacement": "        guard true else { return nil }"
+    "anchor": "        guard !query.isEmpty else { return nil }\n        if query == name { return NameMatch(tier: .exact, score: 0) }",
+    "replacement": "        guard true else { return nil }\n        if query == name { return NameMatch(tier: .exact, score: 0) }"
   },
   {
     "id": "NM10",
@@ -127,10 +127,10 @@
   },
   {
     "id": "NM14",
-    "name": "cheapMatch also accepts a fuzzy result (fuzzy never goes through the budget)",
+    "name": "cheapMatch also tries fuzzy and returns it (fuzzy never goes through rank's budget)",
     "file": "XFinder/Core/Browser/NameMatcher.swift",
-    "anchor": "        guard let m = match(query: query, name: name), m.tier != .fuzzy else { return nil }",
-    "replacement": "        guard let m = match(query: query, name: name) else { return nil }"
+    "anchor": "        // substring: anywhere, prefer the earliest occurrence.\n        if let at = firstIndex(of: query, in: name) {\n            return NameMatch(tier: .substring, score: -at)\n        }\n        return nil\n    }\n\n    /// Naive substring search",
+    "replacement": "        // substring: anywhere, prefer the earliest occurrence.\n        if let at = firstIndex(of: query, in: name) {\n            return NameMatch(tier: .substring, score: -at)\n        }\n        if let fz = fuzzyScore(query: query, name: name) { return NameMatch(tier: .fuzzy, score: fz) }\n        return nil\n    }\n\n    /// Naive substring search"
   },
   {
     "id": "SI1",
