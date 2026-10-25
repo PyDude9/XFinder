@@ -4,6 +4,43 @@ Every agent other than the main Claude Code session appends here (newest first):
 gate it ran, and what it could NOT verify. Claude reviews these entries before merging anything. See
 `docs/AGENT_QUICKSTART.md` for the rules.
 
+## 2026-10-25 (Antigravity) — T14f: Soát chuỗi lần cuối, 6 cổng L10n + 3 harness mutation
+
+**Lệnh của chủ:** Thực hiện nghiệm thu cuối cùng cho chuỗi T14 (`docs/specs/T14-mouse-gestures-B.md` §T14f) trên nhánh `agent/zed-T14`: soát toàn bộ diff chuỗi, chạy tuần tự 6 cổng L10n và 3 harness mutation, dán kết quả nguyên văn vào worklog.
+
+| Việc | File đã sửa | Nghiệm thu riêng của việc | Chưa kiểm live |
+|:--|:--|:--|:--|
+| **T14f** — Nghiệm thu toàn diện T14 (Chuỗi, 6 cổng L10n, 3 harness mutation) | `docs/AGENT_WORKLOG.md` | Cả 6 cổng L10n in `TOTAL 0`; 3 harness mutation chạy tuần tự đạt đủ 100% RED (labels: 11/11, ui: 8/8, buttons: 13/13); `gate-all.sh` in `GATE: green` (2508 tests, 0 failures; modified tracked files: 0) | Xem mục "Chưa kiểm live" của T14a–T14e (thao tác trực tiếp trên app đang chạy với các thiết bị chuột vật lý khác nhau) |
+
+### Kết quả 6 cổng L10n (nguyên văn)
+1. `python3 scripts/check-l10n-coverage.py`: `TOTAL 0 problems across 3504 entries (3504 checked, 31 allowlisted)`
+2. `python3 scripts/check-l10n-duplicates.py`: `TOTAL 0 duplicates across 3504 unique keys`
+3. `python3 scripts/audit-l10n-literals.py`: `TOTAL 0 wrapped-but-untranslated, 1304 unwrapped`
+4. `python3 scripts/audit-l10n-interpolations.py`: `TOTAL 0 interpolated strings with Vietnamese outside L10n.t`
+5. `python3 scripts/check-sidebar-groups-l10n.py`: `TOTAL 0 problems across 7 sidebar group headers and 47 page titles`
+6. `python3 scripts/verify-l10n-runtime.py`: `TOTAL 0 leaks in the resolved English UI`
+
+### Kết quả 3 harness mutation chạy tuần tự (nguyên văn)
+- `scripts/mutation-check-gesture-labels.sh`: `RESULT: 11/11 mutations RED` (post-restore suite: Executed 2508 tests, 0 failures)
+- `scripts/mutation-check-gesture-ui.sh`: 8/8 bugs RED as expected (`post-restore suite: Executed 2508 tests, 0 failure(s)`)
+- `scripts/mutation-check-gesture-buttons.sh`: `RESULT: 13/13 mutations RED` (post-restore suite: Executed 2508 tests, 0 failures)
+
+### Kết quả `sh scripts/gate-all.sh` (nguyên văn)
+```
+build (arm64, compile list)        OK
+tests                              Executed 2508 tests, with 0 failures (0 unexpected) in 16.209 (16.332) seconds
+check-l10n-coverage                TOTAL 0 problems across 3504 entries (3504 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3504 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1304 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             0
+GATE: green
+```
+
+
 ## 2026-10-25 (Antigravity) — T14e: Khối 8 (Chẩn đoán), Khối 9 (footer), xoá GestureButtonList và code chết
 
 **Lệnh của chủ:** Thực hiện đúng đặc tả T14e (`docs/specs/T14-mouse-gestures-B.md` §T14e) trên nhánh `agent/zed-T14`, commit trên nhánh đó, dán kết quả `sh scripts/gate-all.sh` vào worklog.
