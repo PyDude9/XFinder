@@ -74,6 +74,7 @@ enum DirectoryReader {
         commonMask |= attrgroup_t(ATTR_CMN_CRTIME)
         commonMask |= attrgroup_t(ATTR_CMN_FLAGS)
         commonMask |= attrgroup_t(ATTR_CMN_FNDRINFO)
+        commonMask |= attrgroup_t(ATTR_CMN_ADDEDTIME)
         commonMask |= attrgroup_t(ATTR_CMN_ERROR)
         attrList.commonattr = commonMask
         attrList.fileattr = attrgroup_t(ATTR_FILE_DATALENGTH)
@@ -126,7 +127,7 @@ enum DirectoryReader {
                     // Fixed packing order within a group: ascending attribute-bit value (getattrlist(2)
                     // "ORDER OF ATTRIBUTES"). After NAME (0x1) the remaining common bits we asked for
                     // sort as DEVID(0x2), OBJTYPE(0x8), CRTIME(0x200), MODTIME(0x400), FNDRINFO(0x4000),
-                    // FLAGS(0x40000) — NOT the order they were OR'd into the request mask.
+                    // FLAGS(0x40000), ADDEDTIME(0x10000000) — NOT the order they were OR'd into the request mask.
                     var devID: Int32 = 0
                     if returned.commonattr & attrgroup_t(ATTR_CMN_DEVID) != 0 {
                         devID = field.loadUnaligned(as: dev_t.self)
@@ -163,6 +164,17 @@ enum DirectoryReader {
                         stFlags = field.loadUnaligned(as: UInt32.self)
                         field += MemoryLayout<UInt32>.size
                     }
+                    // `ATTR_CMN_ADDEDTIME` (0x10000000, XF-T30 W2): not every volume/file tracks a Date
+                    // Added distinct from Date Created — a filesystem lacking it returns zero'd timespec
+                    // (epoch), which we surface as `nil` rather than a bogus 1970 date.
+                    var added: Date? = nil
+                    if returned.commonattr & attrgroup_t(ATTR_CMN_ADDEDTIME) != 0 {
+                        let ts = field.loadUnaligned(as: timespec.self)
+                        if ts.tv_sec != 0 || ts.tv_nsec != 0 {
+                            added = Date(timeIntervalSince1970: Double(ts.tv_sec) + Double(ts.tv_nsec) / 1e9)
+                        }
+                        field += MemoryLayout<timespec>.size
+                    }
                     var dataLength: Int64 = 0
                     if returned.fileattr & attrgroup_t(ATTR_FILE_DATALENGTH) != 0 {
                         dataLength = field.loadUnaligned(as: off_t.self)
@@ -183,7 +195,7 @@ enum DirectoryReader {
                     let isHidden = name.hasPrefix(".") || (stFlags & UInt32(UF_HIDDEN)) != 0
 
                     let entryPath = path.hasSuffix("/") ? path + name : path + "/" + name
-                    entries.append(DirectoryEntry(
+                    var entry = DirectoryEntry(
                         name: name,
                         path: entryPath,
                         kind: kind,
@@ -193,7 +205,9 @@ enum DirectoryReader {
                         modified: modified,
                         created: created,
                         volumeID: volumeID ?? devID
-                    ))
+                    )
+                    entry.added = added
+                    entries.append(entry)
                 }
             }
         }
