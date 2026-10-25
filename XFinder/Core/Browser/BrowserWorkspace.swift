@@ -34,15 +34,22 @@ struct PaneSnapshot: Codable, Equatable, Sendable {
     var tabs: [TabSnapshot]? = nil
     var selectedTab: Int? = nil
 
-    /// Every tab, v1 files included (one tab built from the top-level fields). W1 builder: implement.
+    /// Every tab, v1 files included (one tab built from the top-level fields).
     var allTabs: [TabSnapshot] {
-        [TabSnapshot(path: path, viewMode: viewMode, sort: sort, history: history, showHidden: showHidden)]
+        guard let tabs, !tabs.isEmpty else {
+            return [TabSnapshot(path: path, viewMode: viewMode, sort: sort, history: history, showHidden: showHidden)]
+        }
+        return tabs
     }
 
-    /// The selected tab's index into `allTabs`, clamped. W1 builder: implement.
-    var selectedTabIndex: Int { 0 }
+    /// The selected tab's index into `allTabs`, clamped.
+    var selectedTabIndex: Int {
+        let count = allTabs.count
+        guard count > 0 else { return 0 }
+        return min(max(selectedTab ?? 0, 0), count - 1)
+    }
 
-    /// A v2 snapshot whose top-level fields mirror `tabs[selectedTab]`. W1 builder: implement.
+    /// A v2 snapshot whose top-level fields mirror `tabs[selectedTab]`.
     init(id: PaneID, tabs: [TabSnapshot], selectedTab: Int) {
         let t = tabs.isEmpty ? nil : tabs[max(0, min(selectedTab, tabs.count - 1))]
         self.init(id: id, path: t?.path ?? "/", viewMode: t?.viewMode ?? .list, sort: t?.sort ?? .finderDefault,
@@ -152,17 +159,27 @@ struct WorkspaceStore: Codable, Equatable, Sendable {
 }
 
 enum SessionRestore {
-    /// A pane whose folder is gone opens `home`; its history keeps only folders that still exist. Never mounts anything.
+    /// v2 (XF-T30 W1): a tab whose current folder is gone KEEPS its path — it becomes a dead tab (the pane/tab state
+    /// reports the error and offers "Try Again"), never silently falling back to Home or a parent. History drops any
+    /// entry (back or forward) whose target no longer exists, same as v1. `selectedTab` is clamped into range. Tree
+    /// and pane-list disagreement (a hand-edited file) is repaired exactly as v1 did: panes outside the tree are
+    /// dropped, tree panes missing a snapshot open Home. Never mounts anything.
     static func restored(_ window: WindowSnapshot, exists: (String) -> Bool, home: String) -> (window: WindowSnapshot, missing: [String]) {
         var w = window
         var missing: [String] = []
         for i in w.panes.indices {
-            let path = w.panes[i].path
-            if !exists(path) {
-                missing.append(path)
-                w.panes[i].path = home
+            var tabs = w.panes[i].allTabs
+            for t in tabs.indices {
+                if !exists(tabs[t].path) {
+                    missing.append(tabs[t].path)
+                    // Dead tab: path is kept as-is (the view/model layer shows "Try Again" for it), only its
+                    // history is pruned of now-missing entries. The fallback passed to `removeMissing` is the
+                    // tab's own (unreachable) path, since v2 never redirects a dead tab's `current` elsewhere.
+                }
+                tabs[t].history.removeMissing(exists: exists, fallback: tabs[t].path)
             }
-            w.panes[i].history.removeMissing(exists: exists, fallback: w.panes[i].path)
+            let selected = min(max(w.panes[i].selectedTab ?? w.panes[i].selectedTabIndex, 0), max(tabs.count - 1, 0))
+            w.panes[i] = PaneSnapshot(id: w.panes[i].id, tabs: tabs, selectedTab: selected)
         }
         // A tree and a pane list that disagree (hand-edited file) must not leave a pane without a folder or a folder
         // without a pane: panes not in the tree are dropped; tree panes without a snapshot open home.

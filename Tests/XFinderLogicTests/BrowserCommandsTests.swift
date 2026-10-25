@@ -33,8 +33,7 @@ final class BrowserCommandsTests: XCTestCase {
         .viewList: KeyChord("2", command: true),
         .viewColumns: KeyChord("3", command: true),
         .viewGallery: KeyChord("4", command: true),
-        .filter: KeyChord("f", command: true),
-        .find: KeyChord("f", command: true, option: true),
+        .find: KeyChord("f", command: true),   // Q-T30-2: ⌘F is Find alone now; filter has no chord.
         .editLocation: KeyChord("l", command: true, control: true),
         .goToFolder: KeyChord("g", command: true, shift: true),
         .quickOpen: KeyChord("p", command: true, control: true),
@@ -56,12 +55,32 @@ final class BrowserCommandsTests: XCTestCase {
         .batchRename: KeyChord("r", command: true, control: true),
         .getInfo: KeyChord("i", command: true),   // XF-T28 Wave 4
         .closeWindow: KeyChord("w", command: true),
+        // XF-T30 W1 (contract §2):
+        .newWindowTab: KeyChord("t", command: true),
+        .newPaneTab: KeyChord("t", command: true, option: true, control: true),
+        .nextPaneTab: KeyChord("]", command: true, option: true),
+        .previousPaneTab: KeyChord("[", command: true, option: true),
+        .moveTabToNewPaneRight: KeyChord("right", command: true, shift: true, option: true),
+        .moveTabToNewPaneBelow: KeyChord("down", command: true, shift: true, option: true),
+        .paneLeft: KeyChord("left", command: true, shift: true, control: true),
+        .paneRight: KeyChord("right", command: true, shift: true, control: true),
+        .paneAbove: KeyChord("up", command: true, shift: true, control: true),
+        .paneBelow: KeyChord("down", command: true, shift: true, control: true),
+        .togglePathBar: KeyChord("p", command: true, option: true),
+        .toggleStatusBar: KeyChord("/", command: true),
+        .toggleToolbar: KeyChord("t", command: true, option: true),
+        .toggleSidebar: KeyChord("s", command: true, option: true),
+        .useGroups: KeyChord("0", command: true, control: true),
     ]
 
     /// Commands the spec explicitly says have no chord — palette/menu only.
     private let unboundCommands: Set<BrowserCommand> = [
         .presetSingle, .presetSideBySide, .presetStacked, .presetGrid,
         .compress, .saveWorkspace, .openWorkspace, .downloadNow, .removeDownload, .showInFinder,
+        // XF-T30 W1 (contract §2's "Không phím" list):
+        .filter, .closePaneTab, .moveTabToNextPane, .swapWithNextPane, .moveTabToWindow,
+        .makePaneWider, .makePaneNarrower, .makePaneTaller, .makePaneShorter,
+        .toggleLocationBar, .customizeToolbar, .openInNewTab, .openInNewWindow,
     ]
 
     func testEveryRequiredChordRoundTrips() {
@@ -84,6 +103,13 @@ final class BrowserCommandsTests: XCTestCase {
         for command in unboundCommands {
             XCTAssertNil(BrowserCommands.chord(for: command), "\(command) should have no chord")
         }
+    }
+
+    /// Q-T30-2: ⌘F is Find alone (FileOctopus parity); the old XF-T28 split of ⌘F/⌥⌘F between filter/find is gone —
+    /// filter has no chord at all now (palette/menu only).
+    func testCommandFQ_T30_2FindAloneFilterUnbound() {
+        XCTAssertEqual(BrowserCommands.command(for: KeyChord("f", command: true)), .find)
+        XCTAssertNil(BrowserCommands.chord(for: .filter))
     }
 
     func testOpenSecondaryChordCommandDown() {
@@ -175,6 +201,13 @@ final class BrowserCommandsTests: XCTestCase {
 
     func testDisplayNoModifiersJustReturn() {
         XCTAssertEqual(BrowserCommands.display(KeyChord("return")), "↩")
+    }
+
+    /// `toggleStatusBar` is ⌘/ (contract §2) — "/" is a literal punctuation key, not a named glyph, and must render
+    /// as itself (not uppercased, since it has no case).
+    func testDisplayToggleStatusBarSlash() {
+        XCTAssertEqual(BrowserCommands.display(KeyChord("/", command: true)), "⌘/")
+        XCTAssertEqual(BrowserCommands.chord(for: .toggleStatusBar), KeyChord("/", command: true))
     }
 
     // MARK: - score / fuzzy match

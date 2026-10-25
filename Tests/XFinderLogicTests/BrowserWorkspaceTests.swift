@@ -76,7 +76,9 @@ final class BrowserWorkspaceTests: XCTestCase {
         XCTAssertEqual(WorkspaceStore.decode(Data()).skipped, 0)
     }
 
-    func testRestoreOpensHomeForAMissingFolderAndFiltersHistory() {
+    /// v2 (XF-T30 W1): a tab whose current folder vanished becomes a dead tab — it KEEPS its path (the model/view
+    /// layer shows "Try Again" for it) instead of falling back to Home; only its history is pruned of missing entries.
+    func testRestoreKeepsDeadTabPathAndFiltersHistory() {
         var w = window(["/gone", "/kept"])
         w.panes[1].history.visit("/gone/a")          // a folder that is gone sits IN the Back history…
         w.panes[1].history.visit("/kept/sub")
@@ -86,8 +88,8 @@ final class BrowserWorkspaceTests: XCTestCase {
         let exists: (String) -> Bool = { !$0.hasPrefix("/gone") }
         let r = SessionRestore.restored(w, exists: exists, home: "/Users/me")
         XCTAssertEqual(r.missing, ["/gone", "/gone/deeper"])
-        XCTAssertEqual(r.window.panes[0].path, "/Users/me")
-        XCTAssertEqual(r.window.panes[1].path, "/Users/me")
+        XCTAssertEqual(r.window.panes[0].path, "/gone", "a dead tab keeps its path, it never falls back to Home")
+        XCTAssertEqual(r.window.panes[1].path, "/gone/deeper", "a dead tab keeps its path, it never falls back to Home")
         XCTAssertFalse(r.window.panes[1].history.back.contains { $0.hasPrefix("/gone") })
         XCTAssertTrue(r.window.panes[1].history.back.contains("/kept/sub"))
     }
@@ -109,5 +111,142 @@ final class BrowserWorkspaceTests: XCTestCase {
         XCTAssertTrue(SessionRestore.shouldRestore(shiftHeld: false, reopenEnabled: true))
         XCTAssertFalse(SessionRestore.shouldRestore(shiftHeld: true, reopenEnabled: true))
         XCTAssertFalse(SessionRestore.shouldRestore(shiftHeld: false, reopenEnabled: false))
+    }
+
+    // MARK: - XF-T30 W1: PaneSnapshot.allTabs / selectedTabIndex / init(id:tabs:selectedTab:)
+
+    func testAllTabsOnAV1SnapshotIsOneTabFromTopLevelFields() {
+        let history = PaneHistory(current: "/a")
+        let snap = PaneSnapshot(id: PaneID(raw: 0), path: "/a", viewMode: .gallery,
+                                 sort: SortOrder(key: .size, ascending: false), history: history, showHidden: true)
+        XCTAssertNil(snap.tabs, "precondition: a v1 snapshot has no tabs array")
+        let tabs = snap.allTabs
+        XCTAssertEqual(tabs.count, 1)
+        XCTAssertEqual(tabs[0].path, "/a")
+        XCTAssertEqual(tabs[0].viewMode, .gallery)
+        XCTAssertEqual(tabs[0].sort, SortOrder(key: .size, ascending: false))
+        XCTAssertEqual(tabs[0].history, history)
+        XCTAssertEqual(tabs[0].showHidden, true)
+    }
+
+    func testSelectedTabIndexOnAV1SnapshotIsZero() {
+        let snap = PaneSnapshot(id: PaneID(raw: 0), path: "/a", viewMode: .list, sort: .finderDefault,
+                                 history: PaneHistory(current: "/a"), showHidden: false)
+        XCTAssertEqual(snap.selectedTabIndex, 0)
+    }
+
+    func testAllTabsOnAV2SnapshotReturnsTheTabsArray() {
+        let t1 = TabSnapshot(path: "/a", viewMode: .list, sort: .finderDefault, history: PaneHistory(current: "/a"), showHidden: false)
+        let t2 = TabSnapshot(path: "/b", viewMode: .gallery, sort: .finderDefault, history: PaneHistory(current: "/b"), showHidden: false)
+        let snap = PaneSnapshot(id: PaneID(raw: 0), tabs: [t1, t2], selectedTab: 1)
+        XCTAssertEqual(snap.allTabs, [t1, t2])
+    }
+
+    func testSelectedTabIndexClampsAboveRange() {
+        let t1 = TabSnapshot(path: "/a", viewMode: .list, sort: .finderDefault, history: PaneHistory(current: "/a"), showHidden: false)
+        var snap = PaneSnapshot(id: PaneID(raw: 0), tabs: [t1], selectedTab: 0)
+        snap.selectedTab = 99
+        XCTAssertEqual(snap.selectedTabIndex, 0, "clamped to the last valid index (0) for a single tab")
+    }
+
+    func testSelectedTabIndexClampsBelowRange() {
+        let t1 = TabSnapshot(path: "/a", viewMode: .list, sort: .finderDefault, history: PaneHistory(current: "/a"), showHidden: false)
+        var snap = PaneSnapshot(id: PaneID(raw: 0), tabs: [t1], selectedTab: 0)
+        snap.selectedTab = -5
+        XCTAssertEqual(snap.selectedTabIndex, 0)
+    }
+
+    func testInitWithTabsMirrorsSelectedTabIntoTopLevelFields() {
+        let t1 = TabSnapshot(path: "/a", viewMode: .list, sort: .finderDefault, history: PaneHistory(current: "/a"), showHidden: false)
+        let t2 = TabSnapshot(path: "/b", viewMode: .gallery, sort: SortOrder(key: .size, ascending: true),
+                              history: PaneHistory(current: "/b"), showHidden: true)
+        let snap = PaneSnapshot(id: PaneID(raw: 3), tabs: [t1, t2], selectedTab: 1)
+        XCTAssertEqual(snap.path, "/b")
+        XCTAssertEqual(snap.viewMode, .gallery)
+        XCTAssertEqual(snap.sort, SortOrder(key: .size, ascending: true))
+        XCTAssertEqual(snap.showHidden, true)
+        XCTAssertEqual(snap.history, t2.history)
+        XCTAssertEqual(snap.tabs, [t1, t2])
+        XCTAssertEqual(snap.selectedTab, 1)
+    }
+
+    func testInitWithTabsClampsOutOfRangeSelectedTab() {
+        let t1 = TabSnapshot(path: "/a", viewMode: .list, sort: .finderDefault, history: PaneHistory(current: "/a"), showHidden: false)
+        let snap = PaneSnapshot(id: PaneID(raw: 0), tabs: [t1], selectedTab: 99)
+        XCTAssertEqual(snap.path, "/a", "an out-of-range selectedTab must not crash; it falls back within bounds")
+    }
+
+    func testInitWithEmptyTabsFallsBackToRootDefaults() {
+        let snap = PaneSnapshot(id: PaneID(raw: 0), tabs: [], selectedTab: 0)
+        XCTAssertEqual(snap.path, "/")
+        XCTAssertEqual(snap.viewMode, .list)
+    }
+
+    // MARK: - XF-T30 W1: v1 decodes to one tab, v2 round-trips
+
+    func testV1JSONDecodesIntoASnapshotWhoseAllTabsHasExactlyOneTab() throws {
+        // A hand-built v1 PaneSnapshot JSON (no "tabs"/"selectedTab" keys at all) must still decode and behave
+        // as a single-tab pane.
+        let json = """
+        {"id": {"raw": 0}, "path": "/a", "viewMode": "list", "sort": {"key": "name", "ascending": true},
+         "history": {"back": [], "forward": [], "current": "/a", "rememberedOrder": [], "remembered": {}}, "showHidden": false}
+        """
+        let decoded = try JSONDecoder().decode(PaneSnapshot.self, from: Data(json.utf8))
+        XCTAssertNil(decoded.tabs)
+        XCTAssertEqual(decoded.allTabs.count, 1)
+        XCTAssertEqual(decoded.allTabs[0].path, "/a")
+        XCTAssertEqual(decoded.selectedTabIndex, 0)
+    }
+
+    func testV2SnapshotRoundTripsThroughJSON() throws {
+        let t1 = TabSnapshot(path: "/a", viewMode: .list, sort: .finderDefault, history: PaneHistory(current: "/a"), showHidden: false)
+        let t2 = TabSnapshot(path: "/b", viewMode: .columns, sort: .finderDefault, history: PaneHistory(current: "/b"),
+                              showHidden: true, selectedNames: ["x.txt"], groupBy: .kind, columnPath: ["/b", "/b/sub"])
+        let snap = PaneSnapshot(id: PaneID(raw: 2), tabs: [t1, t2], selectedTab: 1)
+        let data = try JSONEncoder().encode(snap)
+        let decoded = try JSONDecoder().decode(PaneSnapshot.self, from: data)
+        XCTAssertEqual(decoded, snap)
+        XCTAssertEqual(decoded.allTabs, [t1, t2])
+        XCTAssertEqual(decoded.selectedTabIndex, 1)
+    }
+
+    // MARK: - XF-T30 W1: SessionRestore v2 — dead tab, multi-tab history pruning, selectedTab clamping
+
+    func testRestoreV2MultiTabPaneOnlyDeadTabKeepsItsPathOthersUnaffected() {
+        let t1 = TabSnapshot(path: "/kept1", viewMode: .list, sort: .finderDefault, history: PaneHistory(current: "/kept1"), showHidden: false)
+        let t2 = TabSnapshot(path: "/gone", viewMode: .list, sort: .finderDefault, history: PaneHistory(current: "/gone"), showHidden: false)
+        var tree = PaneTree()
+        let pane = PaneSnapshot(id: tree.panes[0], tabs: [t1, t2], selectedTab: 1)
+        let w = WindowSnapshot(frame: nil, tree: tree, panes: [pane], activePane: tree.panes[0], shelfVisible: false)
+        let exists: (String) -> Bool = { !$0.hasPrefix("/gone") }
+        let r = SessionRestore.restored(w, exists: exists, home: "/home")
+        let tabs = r.window.panes[0].allTabs
+        XCTAssertEqual(tabs[0].path, "/kept1")
+        XCTAssertEqual(tabs[1].path, "/gone", "the dead tab keeps its path")
+        XCTAssertEqual(r.missing, ["/gone"])
+    }
+
+    func testRestoreV2SelectedTabClampedWhenTabsArrayShrinks() {
+        // A hand-edited / damaged file could carry a selectedTab index beyond the tabs it actually has.
+        let t1 = TabSnapshot(path: "/a", viewMode: .list, sort: .finderDefault, history: PaneHistory(current: "/a"), showHidden: false)
+        var tree = PaneTree()
+        var pane = PaneSnapshot(id: tree.panes[0], tabs: [t1], selectedTab: 0)
+        pane.selectedTab = 5
+        let w = WindowSnapshot(frame: nil, tree: tree, panes: [pane], activePane: tree.panes[0], shelfVisible: false)
+        let r = SessionRestore.restored(w, exists: { _ in true }, home: "/home")
+        XCTAssertEqual(r.window.panes[0].selectedTabIndex, 0)
+    }
+
+    func testRestoreV2NeverMountsAnything() {
+        // "Never mounts anything" — restoring must not depend on any side effect beyond the `exists` closure the
+        // caller supplies; calling `restored` twice with the same inputs must be perfectly idempotent.
+        var tree = PaneTree()
+        let pane = PaneSnapshot(id: tree.panes[0], path: "/a", viewMode: .list, sort: .finderDefault,
+                                history: PaneHistory(current: "/a"), showHidden: false)
+        let w = WindowSnapshot(frame: nil, tree: tree, panes: [pane], activePane: tree.panes[0], shelfVisible: false)
+        let r1 = SessionRestore.restored(w, exists: { _ in true }, home: "/home")
+        let r2 = SessionRestore.restored(w, exists: { _ in true }, home: "/home")
+        XCTAssertEqual(r1.window, r2.window)
+        XCTAssertEqual(r1.missing, r2.missing)
     }
 }

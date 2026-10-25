@@ -70,8 +70,9 @@ enum BrowserCommands {
         .viewList: KeyChord("2", command: true),
         .viewColumns: KeyChord("3", command: true),
         .viewGallery: KeyChord("4", command: true),
-        .filter: KeyChord("f", command: true),
-        .find: KeyChord("f", command: true, option: true),
+        // filter: no chord (Q-T30-2 — ⌘F used to be split between filter and find; now ⌘F is Find alone, like
+        // FileOctopus, and "filter current folder" is a palette/menu-only command).
+        .find: KeyChord("f", command: true),
         .editLocation: KeyChord("l", command: true, control: true),
         .goToFolder: KeyChord("g", command: true, shift: true),
         .quickOpen: KeyChord("p", command: true, control: true),
@@ -93,8 +94,26 @@ enum BrowserCommands {
         .batchRename: KeyChord("r", command: true, control: true),
         .getInfo: KeyChord("i", command: true),
         .closeWindow: KeyChord("w", command: true),
-        // No chord (spec §2.3 "không phím"): presetSingle, presetSideBySide, presetStacked, presetGrid, compress,
-        // saveWorkspace, openWorkspace, downloadNow, removeDownload, showInFinder — menu/palette only.
+        // XF-T30 W1 — pane tabs, window tabs, directional focus, keyboard resize, bars (contract XF-T30-w1-contract.md §2).
+        .newWindowTab: KeyChord("t", command: true),
+        .newPaneTab: KeyChord("t", command: true, option: true, control: true),
+        .nextPaneTab: KeyChord("]", command: true, option: true),
+        .previousPaneTab: KeyChord("[", command: true, option: true),
+        .moveTabToNewPaneRight: KeyChord("right", command: true, shift: true, option: true),
+        .moveTabToNewPaneBelow: KeyChord("down", command: true, shift: true, option: true),
+        .paneLeft: KeyChord("left", command: true, shift: true, control: true),
+        .paneRight: KeyChord("right", command: true, shift: true, control: true),
+        .paneAbove: KeyChord("up", command: true, shift: true, control: true),
+        .paneBelow: KeyChord("down", command: true, shift: true, control: true),
+        .togglePathBar: KeyChord("p", command: true, option: true),
+        .toggleStatusBar: KeyChord("/", command: true),
+        .toggleToolbar: KeyChord("t", command: true, option: true),
+        .toggleSidebar: KeyChord("s", command: true, option: true),
+        .useGroups: KeyChord("0", command: true, control: true),
+        // No chord (spec §2.3 "không phím" + contract §2): presetSingle, presetSideBySide, presetStacked, presetGrid,
+        // compress, saveWorkspace, openWorkspace, downloadNow, removeDownload, showInFinder, filter, closePaneTab,
+        // moveTabToNextPane, swapWithNextPane, moveTabToWindow, makePaneWider/Narrower/Taller/Shorter,
+        // toggleLocationBar, customizeToolbar, openInNewTab, openInNewWindow — menu/palette only.
     ]
 
     /// `open`'s secondary chord (⌘↓, Finder's own "open" convention) — recognized by `command(for:)` but not

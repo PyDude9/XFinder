@@ -669,4 +669,217 @@ final class PaneTreeTests: XCTestCase {
         XCTAssertFalse(survivors.contains(newID))
         XCTAssertEqual(Set(t.panes).count, t.panes.count, "no duplicate ids after close+split")
     }
+
+    // MARK: - XF-T30 W1: neighbor
+
+    func testNeighborInTwoByTwoGrid() {
+        var t = PaneTree()
+        let ids = t.apply(.grid).kept // [topLeft, topRight, bottomLeft, bottomRight]
+        let rect = CGRect(x: 0, y: 0, width: 800, height: 600)
+        XCTAssertEqual(t.neighbor(of: ids[0], toward: .right, in: rect, divider: 0), ids[1], "top-left -> right is top-right")
+        XCTAssertEqual(t.neighbor(of: ids[0], toward: .down, in: rect, divider: 0), ids[2], "top-left -> down is bottom-left")
+        XCTAssertEqual(t.neighbor(of: ids[3], toward: .left, in: rect, divider: 0), ids[2], "bottom-right -> left is bottom-left")
+        XCTAssertEqual(t.neighbor(of: ids[3], toward: .up, in: rect, divider: 0), ids[1], "bottom-right -> up is top-right")
+    }
+
+    func testNeighborAtWindowEdgeIsNil() {
+        var t = PaneTree()
+        let ids = t.apply(.grid).kept
+        let rect = CGRect(x: 0, y: 0, width: 800, height: 600)
+        XCTAssertNil(t.neighbor(of: ids[0], toward: .left, in: rect, divider: 0), "top-left has no pane to its left")
+        XCTAssertNil(t.neighbor(of: ids[0], toward: .up, in: rect, divider: 0), "top-left has no pane above it")
+        XCTAssertNil(t.neighbor(of: ids[3], toward: .right, in: rect, divider: 0))
+        XCTAssertNil(t.neighbor(of: ids[3], toward: .down, in: rect, divider: 0))
+    }
+
+    func testNeighborOnSinglePaneIsNil() {
+        let t = PaneTree()
+        let rect = CGRect(x: 0, y: 0, width: 800, height: 600)
+        XCTAssertNil(t.neighbor(of: PaneID(raw: 0), toward: .right, in: rect, divider: 0))
+    }
+
+    func testNeighborUnevenThreePaneLayoutPicksLargestOverlap() {
+        // Layout: left column (p0) full height; right column split into top (p1) and bottom (p2).
+        // root = split(h, p0, split(v, p1, p2)). From p0 moving right, both p1 and p2 touch its full-height span,
+        // but p1 only overlaps the top half and p2 only the bottom half; neither has the FULL overlap, so the one
+        // nearer p0's vertical center (both tie on overlap amount: 300 each for a 600-tall rect) should resolve to
+        // the one with the larger overlap — here they're equal, so this test instead checks a genuinely uneven case.
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        let p1 = t.split(p0, .right)!
+        let p2 = t.split(p1, .down)!
+        // Skew the inner split so p1 (top) is much taller than p2 (bottom): p1 gets 0.8 of the right column.
+        t.setFraction(at: [true], 0.8)
+        let rect = CGRect(x: 0, y: 0, width: 800, height: 600)
+        // p0 spans the full height [0,600]; p1 spans [0,480]; p2 spans [480,600] (approx, before divider adjustments
+        // with divider=0). From p0 (full height) moving right, p1 has more vertical overlap with p0's span than p2.
+        XCTAssertEqual(t.neighbor(of: p0, toward: .right, in: rect, divider: 0), p1, "the pane with the larger overlap along the cross axis wins")
+    }
+
+    func testNeighborTieBreaksOnNearestCenter() {
+        // Grid where two candidate panes have EQUAL overlap with the source but different center distances.
+        // root = split(v, p0, split(h, p1, p2)): p0 on top (full width), p1/p2 split the bottom half left/right.
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        let p1 = t.split(p0, .down)!
+        let p2 = t.split(p1, .right)!
+        let rect = CGRect(x: 0, y: 0, width: 800, height: 600)
+        // p0 spans x:[0,800]; p1 spans x:[0,400]; p2 spans x:[400,800]. Both p1 and p2 fully overlap p0's x-span
+        // only up to their own width — p1 overlaps [0,400]=400pt, p2 overlaps [400,800]=400pt: a true tie on
+        // overlap, so the nearer center must decide. p0's center x = 400; p1's center x = 200 (distance 200);
+        // p2's center x = 600 (distance 200) — genuinely tied, so just assert one of them is returned deterministically.
+        let result = t.neighbor(of: p0, toward: .down, in: rect, divider: 0)
+        XCTAssertNotNil(result)
+        XCTAssertTrue(result == p1 || result == p2)
+    }
+
+    // MARK: - XF-T30 W1: resize
+
+    func testResizeWiderGrowsTheFirstSideFraction() {
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        _ = t.split(p0, .right)! // root = split(h, .5, p0, p1); p0 is first
+        t.resize(p0, axis: .horizontal, grow: true, step: 0.1)
+        guard case .split(_, let fraction, _, _) = t.root else { return XCTFail("expected split") }
+        XCTAssertEqual(fraction, 0.6, accuracy: 1e-9, "growing the first-side pane increases its fraction")
+    }
+
+    func testResizeNarrowerShrinksTheFirstSideFraction() {
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        _ = t.split(p0, .right)!
+        t.resize(p0, axis: .horizontal, grow: false, step: 0.1)
+        guard case .split(_, let fraction, _, _) = t.root else { return XCTFail("expected split") }
+        XCTAssertEqual(fraction, 0.4, accuracy: 1e-9)
+    }
+
+    func testResizeGrowingSecondSidePaneDecreasesFraction() {
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        let p1 = t.split(p0, .right)! // p1 is on the second side
+        t.resize(p1, axis: .horizontal, grow: true, step: 0.1)
+        guard case .split(_, let fraction, _, _) = t.root else { return XCTFail("expected split") }
+        XCTAssertEqual(fraction, 0.4, accuracy: 1e-9, "growing the second-side pane must decrease the first side's fraction")
+    }
+
+    func testResizeTallerUsesVerticalAxis() {
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        _ = t.split(p0, .down)! // root = split(v, .5, p0, p1)
+        t.resize(p0, axis: .vertical, grow: true, step: 0.1)
+        guard case .split(_, let fraction, _, _) = t.root else { return XCTFail("expected split") }
+        XCTAssertEqual(fraction, 0.6, accuracy: 1e-9)
+    }
+
+    func testResizeClampsToMinFraction() {
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        _ = t.split(p0, .right)!
+        t.resize(p0, axis: .horizontal, grow: false, step: 0.9)
+        guard case .split(_, let fraction, _, _) = t.root else { return XCTFail("expected split") }
+        XCTAssertEqual(fraction, PaneTree.minFraction, accuracy: 1e-9)
+    }
+
+    func testResizeClampsToMaxFraction() {
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        _ = t.split(p0, .right)!
+        t.resize(p0, axis: .horizontal, grow: true, step: 0.9)
+        guard case .split(_, let fraction, _, _) = t.root else { return XCTFail("expected split") }
+        XCTAssertEqual(fraction, 1 - PaneTree.minFraction, accuracy: 1e-9)
+    }
+
+    func testResizeWithNoAncestorOfThatAxisIsNoOp() {
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        _ = t.split(p0, .right)! // only a .horizontal ancestor exists
+        let before = t.root
+        t.resize(p0, axis: .vertical, grow: true) // asking for Taller/Shorter when only side-by-side exists
+        XCTAssertEqual(t.root, before, "no ancestor split of the requested axis means no change")
+    }
+
+    func testResizeOnSinglePaneIsNoOp() {
+        var t = PaneTree()
+        let before = t.root
+        t.resize(PaneID(raw: 0), axis: .horizontal, grow: true)
+        XCTAssertEqual(t.root, before)
+    }
+
+    func testResizeUsesNearestAncestorOfThatAxisNotTheRoot() {
+        // root = split(h, p0, split(v, p1, p2)) — p1's nearest .vertical ancestor is the INNER split, not root
+        // (which is .horizontal); resizing p1 taller must only move the inner fraction.
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        let p1 = t.split(p0, .right)!
+        _ = t.split(p1, .down)!
+        t.setFraction(at: [], 0.3) // outer (root) fraction
+        t.resize(p1, axis: .vertical, grow: true, step: 0.1)
+        guard case .split(_, let outerFraction, _, let second) = t.root else { return XCTFail("expected split") }
+        XCTAssertEqual(outerFraction, 0.3, accuracy: 1e-9, "resizing along a different axis must not touch the outer split")
+        guard case .split(_, let innerFraction, _, _) = second else { return XCTFail("expected inner split") }
+        XCTAssertEqual(innerFraction, 0.6, accuracy: 1e-9)
+    }
+
+    func testResizeOnMissingPaneIsNoOp() {
+        var t = PaneTree()
+        _ = t.split(PaneID(raw: 0), .right)
+        let before = t.root
+        t.resize(PaneID(raw: 99), axis: .horizontal, grow: true)
+        XCTAssertEqual(t.root, before)
+    }
+
+    // MARK: - XF-T30 W1: currentPreset
+
+    func testCurrentPresetSingle() {
+        let t = PaneTree()
+        XCTAssertEqual(t.currentPreset, .single)
+    }
+
+    func testCurrentPresetSideBySide() {
+        var t = PaneTree()
+        _ = t.apply(.sideBySide)
+        XCTAssertEqual(t.currentPreset, .sideBySide)
+    }
+
+    func testCurrentPresetStacked() {
+        var t = PaneTree()
+        _ = t.apply(.stacked)
+        XCTAssertEqual(t.currentPreset, .stacked)
+    }
+
+    func testCurrentPresetGrid() {
+        var t = PaneTree()
+        _ = t.apply(.grid)
+        XCTAssertEqual(t.currentPreset, .grid)
+    }
+
+    func testCurrentPresetCustomLayoutIsNil() {
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        let p1 = t.split(p0, .right)!
+        _ = t.split(p1, .down) // three panes: not any of the four fixed presets
+        XCTAssertNil(t.currentPreset)
+    }
+
+    func testCurrentPresetUnevenFractionIsCustom() {
+        var t = PaneTree()
+        _ = t.split(PaneID(raw: 0), .right)
+        t.setFraction(at: [], 0.7) // no longer a clean 50/50 side-by-side
+        XCTAssertNil(t.currentPreset)
+    }
+
+    func testCurrentPresetZoomDoesNotCount() {
+        var t = PaneTree()
+        let ids = t.apply(.grid).kept
+        t.toggleZoom(ids[0])
+        XCTAssertEqual(t.currentPreset, .grid, "zoom must not change what preset the underlying tree reports")
+    }
+
+    func testCurrentPresetSingleAfterSplitThenCloseBack() {
+        var t = PaneTree()
+        let p0 = PaneID(raw: 0)
+        let p1 = t.split(p0, .right)!
+        _ = t.close(p1)
+        XCTAssertEqual(t.currentPreset, .single)
+    }
 }

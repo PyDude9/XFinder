@@ -24,7 +24,8 @@ final class BrowserVocabularyL10nTests: XCTestCase {
         keys += SearchQuery.parse("bogus:thing", now: at, calendar: Calendar(identifier: .gregorian)).warnings
         keys += Access.allCases.map(\.titleKey)                                       // Get Info permissions
         keys += ["", "a/b", "a:b"].compactMap { FileInfoRules.renameRejectionKey(for: $0) }
-        XCTAssertGreaterThanOrEqual(keys.count, BrowserCommand.allCases.count + 5, "a collapsed list would pass as a clean one")
+        keys += GroupBy.allCases.map(\.titleKey)                                      // XF-T30 W1: toolbar Group menu
+        XCTAssertGreaterThanOrEqual(keys.count, BrowserCommand.allCases.count + GroupBy.allCases.count + 5, "a collapsed list would pass as a clean one")
         for k in keys {
             let en = (store[k] as? [String: Any])?["en"] as? String
             XCTAssertFalse((en ?? "").isEmpty, "not translated: \(k)")

@@ -90,7 +90,29 @@ struct PaneHistory: Codable, Equatable, Sendable {
     }
 
     /// XF-T30 W1 — press-and-hold on toolbar Back/Forward jumps several entries at once (FileOctopus: the menu lists the
-    /// tab's history). `steps` ≥ 1; more steps than entries ⇒ nil and nothing changes. W1 builder (pure): implement.
-    mutating func goBack(steps: Int) -> String? { nil }
-    mutating func goForward(steps: Int) -> String? { nil }
+    /// tab's history). `steps` ≥ 1; more steps than entries ⇒ nil and nothing changes. Atomic: equivalent to calling
+    /// `goBack()` `steps` times, but either all of them land or none do (no partial jump on an out-of-range count).
+    mutating func goBack(steps: Int) -> String? {
+        guard steps >= 1, back.count >= steps else { return nil }
+        var destination = current
+        for _ in 0..<steps {
+            guard let next = back.popLast() else { return nil }
+            forward.append(destination)
+            destination = next
+        }
+        current = destination
+        return destination
+    }
+
+    mutating func goForward(steps: Int) -> String? {
+        guard steps >= 1, forward.count >= steps else { return nil }
+        var destination = current
+        for _ in 0..<steps {
+            guard let next = forward.popLast() else { return nil }
+            back.append(destination)
+            destination = next
+        }
+        current = destination
+        return destination
+    }
 }

@@ -405,18 +405,148 @@ extension PaneTree {
     /// ⌃⇧⌘←→↑↓ (Pane on Left/Right/Above/Below): the pane adjacent to `pane` in `dir`, by the frames the layout gives
     /// in `rect` — grid-aware, never creation order. Among panes whose frame lies wholly on that side and touches or
     /// overlaps the source's span on the cross axis, the one with the largest overlap wins; a tie goes to the nearest
-    /// centre. nil at the window edge. W1 builder: implement.
+    /// centre. nil at the window edge.
+    ///
+    /// Geometry is computed ignoring zoom (`Self.layout` directly, not `frames(in:divider:)`): while zoomed there is
+    /// only one visible pane, so directional focus has nothing to compare against, but the underlying grid still has
+    /// a well-defined answer the moment zoom lifts — using the real multi-pane layout here (rather than the
+    /// single-rect zoomed view) keeps `neighbor` meaningful and testable independent of zoom state.
     func neighbor(of pane: PaneID, toward dir: SplitDirection, in rect: CGRect, divider: CGFloat) -> PaneID? {
-        nil
+        var laid: [PaneID: CGRect] = [:]
+        var noDividers: [PaneDivider]?
+        Self.layout(root, in: rect, divider: divider, path: [], into: &laid, dividers: &noDividers)
+        guard let source = laid[pane] else { return nil }
+
+        var best: (id: PaneID, overlap: CGFloat, centerDistance: CGFloat)?
+        for (id, frame) in laid where id != pane {
+            let isOnSide: Bool
+            let overlap: CGFloat
+            switch dir {
+            case .left:
+                isOnSide = frame.maxX <= source.minX + 0.001
+                overlap = Self.overlap1D(source.minY, source.maxY, frame.minY, frame.maxY)
+            case .right:
+                isOnSide = frame.minX >= source.maxX - 0.001
+                overlap = Self.overlap1D(source.minY, source.maxY, frame.minY, frame.maxY)
+            case .up:
+                isOnSide = frame.maxY <= source.minY + 0.001
+                overlap = Self.overlap1D(source.minX, source.maxX, frame.minX, frame.maxX)
+            case .down:
+                isOnSide = frame.minY >= source.maxY - 0.001
+                overlap = Self.overlap1D(source.minX, source.maxX, frame.minX, frame.maxX)
+            }
+            guard isOnSide, overlap > 0 else { continue }
+            let centerDistance: CGFloat
+            switch dir {
+            case .left, .right:
+                centerDistance = abs(frame.midX - source.midX)
+            case .up, .down:
+                centerDistance = abs(frame.midY - source.midY)
+            }
+            if let current = best {
+                if overlap > current.overlap || (overlap == current.overlap && centerDistance < current.centerDistance) {
+                    best = (id, overlap, centerDistance)
+                }
+            } else {
+                best = (id, overlap, centerDistance)
+            }
+        }
+        return best?.id
+    }
+
+    /// Overlap length of two 1-D spans; 0 (not negative) when they don't overlap at all.
+    private static func overlap1D(_ aMin: CGFloat, _ aMax: CGFloat, _ bMin: CGFloat, _ bMax: CGFloat) -> CGFloat {
+        max(0, min(aMax, bMax) - max(aMin, bMin))
     }
 
     /// Make Pane Wider / Narrower (axis `.horizontal` split, i.e. side-by-side) and Taller / Shorter (`.vertical`):
     /// moves the nearest ancestor divider of that axis by `step` of its parent so `pane` grows (`grow`) or shrinks,
-    /// clamped to `minFraction`. No ancestor of that axis ⇒ no change. W1 builder: implement (and state which
-    /// `SplitAxis` value means side-by-side by reading `split(_:_:)`).
-    mutating func resize(_ pane: PaneID, axis: SplitAxis, grow: Bool, step: Double = 0.05) {}
+    /// clamped to `minFraction`. No ancestor of that axis ⇒ no change.
+    ///
+    /// `split(_:_:)` makes `.horizontal` for `.left`/`.right` (side-by-side) and `.vertical` for `.up`/`.down`
+    /// (stacked) — so `axis: .horizontal` here means "Wider/Narrower" and `.vertical` means "Taller/Shorter".
+    mutating func resize(_ pane: PaneID, axis: SplitAxis, grow: Bool, step: Double = 0.05) {
+        guard let path = Self.pathToNearestAncestor(of: pane, axis: axis, in: root, path: []) else { return }
+        // `isFirst` tells us whether `pane` sits on the `first` side of that ancestor split: growing it means
+        // increasing `fraction` (the `first` side's share); on the `second` side, growing it means decreasing
+        // `fraction` (so more share goes to `second`).
+        let isFirst = Self.isOnFirstSide(of: pane, from: path, in: root)
+        guard let currentFraction = Self.fraction(at: path, in: root) else { return }
+        let delta = (isFirst == grow) ? step : -step
+        let newFraction = min(max(currentFraction + delta, Self.minFraction), 1 - Self.minFraction)
+        setFraction(at: path, newFraction)
+    }
+
+    /// The nearest ancestor split node of `axis` on the path down to `target`, or nil if none exists.
+    private static func pathToNearestAncestor(of target: PaneID, axis: SplitAxis, in node: PaneNode, path: [Bool]) -> [Bool]? {
+        switch node {
+        case .leaf(let id):
+            return id == target ? nil : nil
+        case .split(let nodeAxis, _, let first, let second):
+            if case .leaf(let id) = first, id == target {
+                return nodeAxis == axis ? path : nil
+            }
+            if case .leaf(let id) = second, id == target {
+                return nodeAxis == axis ? path : nil
+            }
+            if leaves(of: first).contains(target) {
+                if let deeper = pathToNearestAncestor(of: target, axis: axis, in: first, path: path + [false]) {
+                    return deeper
+                }
+                return nodeAxis == axis ? path : nil
+            }
+            if leaves(of: second).contains(target) {
+                if let deeper = pathToNearestAncestor(of: target, axis: axis, in: second, path: path + [true]) {
+                    return deeper
+                }
+                return nodeAxis == axis ? path : nil
+            }
+            return nil
+        }
+    }
+
+    /// Whether `target` is reachable from the `first` side of the split node at `path`.
+    private static func isOnFirstSide(of target: PaneID, from path: [Bool], in node: PaneNode) -> Bool {
+        guard let splitNode = Self.node(at: path, in: node), case .split(_, _, let first, _) = splitNode else { return true }
+        return leaves(of: first).contains(target)
+    }
+
+    /// Walks `path` to the node it addresses.
+    private static func node(at path: [Bool], in node: PaneNode) -> PaneNode? {
+        guard let goSecond = path.first else { return node }
+        guard case .split(_, _, let first, let second) = node else { return nil }
+        return Self.node(at: Array(path.dropFirst()), in: goSecond ? second : first)
+    }
+
+    /// The fraction stored at the split node `path` addresses.
+    private static func fraction(at path: [Bool], in node: PaneNode) -> Double? {
+        guard case .split(_, let fraction, _, _)? = Self.node(at: path, in: node) else { return nil }
+        return fraction
+    }
 
     /// The preset this tree currently is, or nil for a custom layout — the toolbar's Pane Layout icon follows it
-    /// (FileOctopus 1.0.3). Zoom does not count. W1 builder: implement.
-    var currentPreset: PanePreset? { nil }
+    /// (FileOctopus 1.0.3). Zoom does not count: a zoomed 2x2 grid is still reported as `.grid`, since the underlying
+    /// tree shape (what `apply(_:)` built) is unaffected by which pane happens to be zoomed.
+    var currentPreset: PanePreset? {
+        switch count {
+        case 1:
+            return .single
+        case 2:
+            guard case .split(let axis, let fraction, let first, let second) = root, fraction == 0.5 else { return nil }
+            guard case .leaf = first, case .leaf = second else { return nil }
+            switch axis {
+            case .horizontal: return .sideBySide
+            case .vertical: return .stacked
+            }
+        case 4:
+            guard case .split(.vertical, 0.5, let top, let bottom) = root else { return nil }
+            guard case .split(.horizontal, 0.5, let topFirst, let topSecond) = top,
+                  case .leaf = topFirst, case .leaf = topSecond else { return nil }
+            guard case .split(.horizontal, 0.5, let bottomFirst, let bottomSecond) = bottom,
+                  case .leaf = bottomFirst, case .leaf = bottomSecond else { return nil }
+            return .grid
+        default:
+            return nil
+        }
+    }
 }

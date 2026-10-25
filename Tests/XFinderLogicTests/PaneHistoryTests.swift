@@ -312,4 +312,97 @@ final class PaneHistoryTests: XCTestCase {
         a.visit("/c")
         XCTAssertNotEqual(a, b)
     }
+
+    // MARK: - XF-T30 W1: goBack(steps:) / goForward(steps:)
+
+    func testGoBackStepsEquivalentToCallingGoBackRepeatedly() {
+        var h = PaneHistory(current: "/a")
+        h.visit("/b")
+        h.visit("/c")
+        h.visit("/d")
+        let dest = h.goBack(steps: 2)
+        XCTAssertEqual(dest, "/b")
+        XCTAssertEqual(h.current, "/b")
+        XCTAssertEqual(h.goBack(), "/a", "one more single-step goBack should land where 3 total steps would have")
+    }
+
+    func testGoForwardStepsEquivalentToCallingGoForwardRepeatedly() {
+        var h = PaneHistory(current: "/a")
+        h.visit("/b")
+        h.visit("/c")
+        h.visit("/d")
+        _ = h.goBack(steps: 3) // current = /a, forward = [/b, /c, /d]
+        let dest = h.goForward(steps: 2)
+        XCTAssertEqual(dest, "/c")
+        XCTAssertEqual(h.current, "/c")
+    }
+
+    func testGoBackStepsMovesCurrentAndVisitedIntoForwardInOrder() {
+        var h = PaneHistory(current: "/a")
+        h.visit("/b")
+        h.visit("/c")
+        _ = h.goBack(steps: 2)
+        XCTAssertEqual(h.current, "/a")
+        XCTAssertEqual(h.goForward(), "/b", "forward must replay in the original visiting order")
+        XCTAssertEqual(h.goForward(), "/c")
+    }
+
+    func testGoBackStepsMoreThanAvailableIsAtomicNilAndNothingChanges() {
+        var h = PaneHistory(current: "/a")
+        h.visit("/b")
+        h.visit("/c") // back has 2 entries
+        let before = h
+        XCTAssertNil(h.goBack(steps: 3), "asking for more steps than entries must fail entirely")
+        XCTAssertEqual(h, before, "a failed goBack(steps:) must not partially consume the back stack")
+    }
+
+    func testGoForwardStepsMoreThanAvailableIsAtomicNilAndNothingChanges() {
+        var h = PaneHistory(current: "/a")
+        h.visit("/b")
+        h.visit("/c")
+        _ = h.goBack(steps: 2) // forward now has 2 entries
+        let before = h
+        XCTAssertNil(h.goForward(steps: 3))
+        XCTAssertEqual(h, before)
+    }
+
+    func testGoBackStepsOfOneEqualsPlainGoBack() {
+        var h = PaneHistory(current: "/a")
+        h.visit("/b")
+        XCTAssertEqual(h.goBack(steps: 1), "/a")
+        XCTAssertEqual(h.current, "/a")
+    }
+
+    func testGoBackStepsZeroOrNegativeReturnsNilWithoutChange() {
+        var h = PaneHistory(current: "/a")
+        h.visit("/b")
+        let before = h
+        XCTAssertNil(h.goBack(steps: 0))
+        XCTAssertNil(h.goBack(steps: -1))
+        XCTAssertEqual(h, before)
+    }
+
+    func testGoForwardStepsZeroOrNegativeReturnsNilWithoutChange() {
+        var h = PaneHistory(current: "/a")
+        h.visit("/b")
+        _ = h.goBack()
+        let before = h
+        XCTAssertNil(h.goForward(steps: 0))
+        XCTAssertNil(h.goForward(steps: -1))
+        XCTAssertEqual(h, before)
+    }
+
+    func testGoBackStepsOnEmptyBackIsNil() {
+        var h = PaneHistory(current: "/a")
+        XCTAssertNil(h.goBack(steps: 1))
+    }
+
+    func testGoBackStepsExactlyAllEntries() {
+        var h = PaneHistory(current: "/a")
+        h.visit("/b")
+        h.visit("/c")
+        XCTAssertEqual(h.goBack(steps: 2), "/a")
+        XCTAssertFalse(h.canGoBack)
+        XCTAssertTrue(h.canGoForward)
+    }
 }
