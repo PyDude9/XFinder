@@ -261,8 +261,17 @@ actor FilenameIndex {
             if !rootOrder.contains(id) { rootOrder.append(id) }
 
             if previous == nil {
-                // Brand new root: make sure the row exists, then crawl.
+                // First sight of this root in this process. At launch `roots` is empty, so every approved root lands
+                // here: one already indexed (same path, a committed generation, an FSEvents cursor) only catches up
+                // from the cursor — a full crawl on every app open was the launch cost (3,7 s / 100 000 files).
+                let indexed = storedPath(db, rootID: id) == root.path && activeGeneration(db, rootID: id) > 0
+                    && readCursor(id) != nil && fileManager.fileExists(atPath: root.path)
                 upsertRootRow(db, root: root)
+                if indexed && !root.paused {
+                    statuses[id] = .ready
+                    if !suspended { startWatching(root) }
+                    continue
+                }
                 if root.paused {
                     statuses[id] = .paused
                 } else {
@@ -456,6 +465,9 @@ actor FilenameIndex {
         // this root by comparing generations, independent of which `Task` object `crawlTasks[root.id]` holds by
         // the time it runs (see `crawlGeneration`'s doc comment).
         crawlGeneration[root.id] = generation
+        // The FSEvents position this crawl's listing is at least as new as: committed as the cursor when it finishes,
+        // so the stream replays whatever changed DURING the crawl and the next launch can resume instead of recrawl.
+        crawlStartEvent[root.id] = FSEventsGetCurrentEventId()
 
         var st: OpaquePointer?
         let now = Date().timeIntervalSince1970
@@ -694,6 +706,9 @@ actor FilenameIndex {
         // transaction against this same connection concurrently.
         exec(db, "PRAGMA wal_checkpoint(TRUNCATE);")
 
+        if let start = crawlStartEvent.removeValue(forKey: rootID), readCursor(rootID).map({ $0 < start }) ?? true {
+            writeCursor(rootID, eventID: start)
+        }
         statuses[rootID] = .ready
         crawlTasks[rootID] = nil
         if !suspended, let root = roots[rootID] {
@@ -716,6 +731,8 @@ actor FilenameIndex {
     /// Boxes kept alive for the lifetime of their stream (the FSEventStreamContext does not retain `info` here —
     /// retain/release are both nil — so this actor's own dictionary is what keeps them alive).
     private var streamBoxes: [String: StreamBox] = [:]
+    /// `FSEventsGetCurrentEventId()` when each root's latest crawl started (see `startCrawl`).
+    private var crawlStartEvent: [String: FSEventStreamEventId] = [:]
 
     private func startWatching(_ root: IndexRoot) {
         guard streams[root.id] == nil else { return }
@@ -868,6 +885,15 @@ actor FilenameIndex {
             statuses[rootID] = .ready
         }
         _ = root
+    }
+
+    private func storedPath(_ db: OpaquePointer, rootID: String) -> String? {
+        var st: OpaquePointer?
+        defer { sqlite3_finalize(st) }
+        guard sqlite3_prepare_v2(db, "SELECT path FROM search_roots WHERE root_id = ?", -1, &st, nil) == SQLITE_OK else { return nil }
+        sqlite3_bind_text(st, 1, rootID, -1, SQLITE_TRANSIENT)
+        guard sqlite3_step(st) == SQLITE_ROW, let text = sqlite3_column_text(st, 0) else { return nil }
+        return String(cString: text)
     }
 
     private func activeGeneration(_ db: OpaquePointer, rootID: String) -> Int {
