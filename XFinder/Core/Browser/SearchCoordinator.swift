@@ -43,7 +43,14 @@ final class SearchCoordinator {
         // falls back to the current folder here, XFinder keeps whole-machine Spotlight because it already has it.
         let scopedRoots = Self.rootsInScope(roots, folders: folderPaths)
         let nameIndexRuns = !scopedRoots.isEmpty
-        let hasWords = !parsed.terms.isEmpty || !parsed.phrases.isEmpty
+        // A bare `content:"…"` chip (no free terms/phrases) is the main reason to query the content index at all —
+        // `indexQueryText` below folds its text in alongside the free words, so `hasWords` has to see it too, or a
+        // query that is *only* `content:"launch checklist"` would silently never run ContentIndex.search at all.
+        let contentChipText = parsed.chips.first { $0.field == .content }.flatMap { chip -> String? in
+            if case .text(let value) = chip.value { return value }
+            return nil
+        }
+        let hasWords = !parsed.terms.isEmpty || !parsed.phrases.isEmpty || contentChipText != nil
         let contentRoots = scopedRoots.filter(\.contents)
         let contentIndexRuns = hasWords && !contentRoots.isEmpty
 
@@ -54,10 +61,26 @@ final class SearchCoordinator {
         // scope/query gating (no roots in scope, no words for content) never calls back, so it must not be waited on.
         let totalSources = 1 + (nameIndexRuns ? 1 : 0) + (contentIndexRuns ? 1 : 0)
         var anyTruncated = false
+        // A negative/zero `limit` from a misbehaving caller must not reach `prefix(_:)`, which traps on a negative
+        // count (SafeArithmetic-style crash surface, rule 15) — clamp once here instead of trusting every caller.
+        let safeLimit = max(0, limit)
 
+        // `limit` is the caller's real cap (each source's `perSourceLimit` above is only an over-generous per-source
+        // ceiling so the merge has enough to work with). Sorting by tier before truncating means a slower-arriving
+        // but better-tiered name-index hit (e.g. an exact match) is not dropped in favor of whatever merely arrived
+        // first from Spotlight's async race — ties keep arrival order (`enumerated()` index) so repeated publishes
+        // of the same underlying set stay stable instead of reshuffling on every call.
         func publish() {
             guard !handle.cancelled else { return }
-            let results = order.compactMap { merged[$0]?.toResult() }
+            let all = order.enumerated().compactMap { index, path in merged[path].map { (index, $0) } }
+            let sorted = all.sorted { lhs, rhs in
+                let lTier = lhs.1.tier?.rawValue ?? Int.max
+                let rTier = rhs.1.tier?.rawValue ?? Int.max
+                if lTier != rTier { return lTier < rTier }
+                return lhs.0 < rhs.0
+            }
+            if sorted.count > safeLimit { anyTruncated = true }
+            let results = sorted.prefix(safeLimit).map { $0.1.toResult() }
             onUpdate(results)
         }
 
@@ -127,7 +150,13 @@ final class SearchCoordinator {
         // MARK: Content index — only when the query has words and at least one in-scope root has Contents on.
         if contentIndexRuns {
             let rootPaths = contentRoots.map(\.path)
-            let queryText = Self.indexQueryText(parsed)
+            // Unlike the filename index (filenames never contain a `content:` chip's text), a bare word in a
+            // `content:"…"` chip IS the content query — fold it in alongside any free terms/phrases.
+            var queryWords = Self.indexQueryText(parsed)
+            if let contentChipText, !contentChipText.isEmpty {
+                queryWords = queryWords.isEmpty ? contentChipText : queryWords + " " + contentChipText
+            }
+            let queryText = queryWords
             let perSourceLimit = Self.perSourceLimit
             Task {
                 let hits = await ContentIndex.shared.search(queryText, within: rootPaths, limit: perSourceLimit)
