@@ -4,6 +4,48 @@ Every agent other than the main Claude Code session appends here (newest first):
 gate it ran, and what it could NOT verify. Claude reviews these entries before merging anything. See
 `docs/AGENT_QUICKSTART.md` for the rules.
 
+## 2026-10-25 (Antigravity) — T14e: Khối 8 (Chẩn đoán), Khối 9 (footer), xoá GestureButtonList và code chết
+
+**Lệnh của chủ:** Thực hiện đúng đặc tả T14e (`docs/specs/T14-mouse-gestures-B.md` §T14e) trên nhánh `agent/zed-T14`, commit trên nhánh đó, dán kết quả `sh scripts/gate-all.sh` vào worklog.
+
+| Việc | File đã sửa | Nghiệm thu riêng của việc | Chưa kiểm live |
+|:--|:--|:--|:--|
+| **T14e** — Khối 8 (Chẩn đoán), Khối 9 (footer), xoá GestureButtonList và code chết | `XFinder/Views/Detail/MouseGesturesDetailView.swift` · `XFinder/Views/Components/GestureButtonList.swift` (xoá) · `XFinder.xcodeproj/project.pbxproj` (-4 dòng) · `XFinder/Resources/L10n.strings.json` (+1 khoá / +4 dòng) · `scripts/add-mouse-redesign-l10n-entries.py` · `scripts/build-and-check.sh` · `scripts/verify-gesture-ui.sh` · `docs/AGENT_WORKLOG.md` | `gate-all.sh` in `GATE: green`; `swift test` 2508 tests / 0 failures; `audit-ui-tokens` 0; `plutil -lint project.pbxproj` sạch (OK); không còn `GestureButtonList.swift` trên đĩa và trong compile list; không còn `private var`/`private func` chết | Mở/đóng `DisclosureGroup` "Chẩn đoán chuột" trên app đang chạy; kiểm tra lazy load của "Mô tả HID thô" khi mở disclosure con trên máy thật |
+
+### Đã làm — đúng 3 điểm của §T14e
+1. **Khối 8 — Chẩn đoán chuột (`diagnosticsSection`):**
+   - Đặt trong một `DisclosureGroup` đóng mặc định (`diagnosticsExpanded = false`), nhãn "Chẩn đoán chuột" kèm icon `wrench.and.screwdriver`.
+   - Chứa 4 thành phần:
+     - Hàng "Thiết bị" (`deviceRow`) S13-S23.
+     - Hàng "Nút chuột XFinder thấy" (`buttonsDeclarationRow`) S29-S33 chuyển từ `GestureButtonList` sang với đầy đủ cảnh báo vendor/consumer counts và `declarationSummary`.
+     - `DisclosureGroup` con "Mô tả HID thô" (`hidDumpRow`) F19/S24-S25 (lazy-load khi mở).
+     - Hàng "Nút bạn vừa bấm" (`observedButtonRow`) S26 khi có `observedButton`.
+2. **Khối 9 — Footer (`footerNote`):**
+   - Giữ nguyên logic F26 + S53 (`footerNote` gồm link "Mở Phím tắt" và câu giải thích khi không hoạt động).
+3. **Dọn sạch code chết và xoá `GestureButtonList.swift`:**
+   - Xoá hoàn toàn `mappingSection`, `profileSidebar`, `profileRow`, `appPickerRow`, và computed property `orderedProfiles` không tham số.
+   - Xoá `XFinder/Views/Components/GestureButtonList.swift` trên đĩa.
+   - Dọn sạch đủ 4 dòng liên quan trong `XFinder.xcodeproj/project.pbxproj` (`plutil -lint` xác nhận OK).
+   - Cập nhật danh sách kiểm tra biên dịch trong `scripts/build-and-check.sh` và `scripts/verify-gesture-ui.sh`.
+   - Giữ nguyên `GestureActivityPanel.swift` vì vẫn cần cho `DEBUG_SHOW_ENGINE_LOG`.
+
+### Kết quả `sh scripts/gate-all.sh` (nguyên văn)
+
+```
+build (arm64, compile list)        OK
+tests                              Executed 2508 tests, with 0 failures (0 unexpected) in 16.105 (16.226) seconds
+check-l10n-coverage                TOTAL 0 problems across 3504 entries (3504 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3504 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1304 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             7
+GATE: green
+```
+
+
 ## 2026-10-25 (Antigravity) — T14d: Khối 5 (Nút hông), Khối 6 (Nút giữ & cuộn), Khối 7 (Nghiêng con lăn)
 
 **Lệnh của chủ:** Tiếp tục hoàn thiện pending jobs, thực hiện đúng đặc tả T14d (`docs/specs/T14-mouse-gestures-B.md` §T14d) trên nhánh `agent/zed-T14`, commit trên nhánh đó, chạy đầy đủ 7 cổng gate và 3 harness mutation, dán kết quả `sh scripts/gate-all.sh` vào worklog.
