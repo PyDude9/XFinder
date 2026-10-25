@@ -9,6 +9,17 @@ import os
 /// `copyfile(3)` with a status callback for progress/pause/cancel, `rename(2)` for a same-volume move, SHA-256
 /// verification (CryptoKit) before trashing the source of a cross-volume move, and an append-only JSON journal for
 /// crash recovery. Only one job runs at a time (`FileJobQueue.startNextIfIdle`).
+///
+/// XF-T30 W6 (contract docs/specs/XF-T30-w6-contract.md §2) adds: a batch keeps going when one item fails, recording
+/// a `ProblemEntry` instead of aborting the job (§8 spec-file-operations R45/R50); speed/ETA over a 5 s sliding
+/// window of byte samples, hidden per `isProgressVisible(for:)`; the seven stage labels via `stageLabelKey(for:)`
+/// (Waiting/Preparing are both `JobState.waiting` — "preparing" is the brief pre-walk the job does before its first
+/// item starts, tracked here, not a new `JobState` case, since that enum is `FileOperationRules`' contract); pause
+/// disabled only for the LAST item's Verify/Finish (`canPauseNow`); and the browser's own persistent `UndoJournal`
+/// (JSON at `~/Library/Application Support/XFinder/Browser/undo.json`, read/written off main) replacing
+/// `ActionHistoryStore` for this queue's own jobs — `undoLast()`/`redoLast()` revalidate via `UndoJournal
+/// .availability` before touching any file, and an undo requested while its own source job is still running is
+/// queued (`pendingUndoAfterJobs`) rather than raced or dropped.
 struct ConflictPrompt: Identifiable, Equatable {
     struct Side: Equatable {
         let path: String
@@ -37,6 +48,19 @@ final class FileOperationQueue {
     private(set) var recovery: [RecoveryItem] = []
     private(set) var lastErrorKey: String?
 
+    /// W6: the session's Problems list (one `ProblemEntry` per finished operation that had ≥1 failing item).
+    private(set) var problems = ProblemsList()
+    /// W6: the most recently finished operation's problems, shown as one alert dialog; the panel clears this after
+    /// presenting it (`dismissProblemAlert()`) — `problems.entries` itself is unaffected, so the row stays in the list.
+    private(set) var problemAlert: ProblemEntry?
+    /// W6: the browser's own persistent Undo/Redo (distinct from `ActionHistoryStore`, which other browser-unrelated
+    /// features still use). Loaded at init off the main thread's hot path is unnecessary — the file is tiny (≤20
+    /// steps) — but every WRITE after that happens off main via `Self.ioQueue`.
+    private(set) var undoJournal = UndoJournal()
+    /// Undo (or redo) requests made while the step's OWN originating job is still running/active are queued here
+    /// (spec R53) and replayed in `startNextIfNeeded`'s completion path once that job actually finishes.
+    private var pendingUndoAfterJobs: [UUID: [Bool]] = [:]  // jobID -> queue of (true = undo, false = redo) requests
+
     var hasActiveWork: Bool { queue.active != nil }
 
     /// One application-support directory for both the journal and this launch's own bookkeeping.
@@ -46,6 +70,8 @@ final class FileOperationQueue {
         return base.appendingPathComponent("XFinder/Browser", isDirectory: true)
     }()
     private static let journalURL = supportDirectory.appendingPathComponent("operations.jsonl")
+    private static let undoJournalURL = supportDirectory.appendingPathComponent("undo.json")
+    private static let ioQueue = DispatchQueue(label: "com.xfinder.browser.undo-journal-io", qos: .utility)
 
     /// Per-job runtime state not part of the pure `FileJob` (threads, control flags, conflict continuations).
     private final class Runtime {
@@ -54,16 +80,22 @@ final class FileOperationQueue {
         var conflictPolicy: ConflictChoice?      // set by "apply to all" after the first conflict of a job
         var continuation: CheckedContinuation<ConflictChoice, Never>?
         var startedAt = Date()
-        var lastSampleAt = Date()
         var lastSampleBytes: Int64 = 0
         var createdForUndo: [String] = []        // copy/duplicate: paths actually created (for undo = trash them)
         var movedPairs: [(from: String, to: String)] = []   // rename/move: for undo = move back
         var trashedPairs: [(trashedAt: String, original: String)] = []   // trash kind: for undo = move back from Trash
+        var failedItems: [ProblemItem] = []      // W6: items that failed this job but let the batch keep going
+        var currentItemIndex = 0                 // W6: index into the job's `sources`, for "is this the last item"
+        var totalItemCount = 0
+        /// W6: byte-sample ring buffer for the 5 s sliding-window speed, newest last. `(uptime seconds, bytesDone)`.
+        var samples: [(t: TimeInterval, bytes: Int64)] = []
+        var lastProgressAt = Date()              // W6: for "stalled > 3 s" (speed/ETA hidden)
     }
     private var runtimes: [UUID: Runtime] = [:]
 
     private init() {
         try? FileManager.default.createDirectory(at: Self.supportDirectory, withIntermediateDirectories: true)
+        undoJournal = Self.loadUndoJournal()
     }
 
     // MARK: - Public API (contract)
@@ -89,8 +121,24 @@ final class FileOperationQueue {
     }
 
     func pause(_ id: UUID) {
+        guard canPauseNow(id) else { return }
         guard queue.pause(id) else { return }
         runtimes[id]?.control.requestPause()
+    }
+
+    /// W6: pause is refused once the job's CURRENT item is its last one and that item has reached Verify/Finish —
+    /// there is no remaining safe point before the whole job ends (spec R37 / contract §2 "không cho tạm dừng ở bước
+    /// Kiểm/Hoàn tất của mục cuối"). Earlier items' Verify/Finish still allow pausing: the per-item loop in `run`
+    /// already checks for a pending pause BETWEEN items, so a pause requested mid-verify of a non-last item simply
+    /// takes effect once that item's `.done`/`.failed` outcome lands, before the next item starts.
+    func canPauseNow(_ id: UUID) -> Bool {
+        guard let job = currentJob(id), let runtime = runtimes[id] else { return false }
+        guard FileOperationRules.canPause(job.state) || job.state == .verifying || job.state == .finishing else {
+            return false
+        }
+        let isLastItem = runtime.totalItemCount > 0 && runtime.currentItemIndex == runtime.totalItemCount - 1
+        if isLastItem && (job.state == .verifying || job.state == .finishing) { return false }
+        return job.state == .running || job.state == .pausing || job.state == .verifying || job.state == .finishing
     }
 
     func resume(_ id: UUID) {
@@ -158,14 +206,223 @@ final class FileOperationQueue {
         Self.compactJournal(keep: { _ in false })
     }
 
-    /// Undo for the browser's own last finished action — distinct from the generic `ActionHistoryDetailView` (which
-    /// still works for anything already recorded with a reversible `UndoPayload`); this asks `ActionHistoryStore`
-    /// for the most recent entry this queue itself recorded and reverses exactly that one.
-    func undoLast() -> String? {
-        guard let entry = ActionHistoryStore.shared.entries.first(where: { $0.kind == Self.historyKind }) else {
-            return nil
+    // MARK: - W6: stage labels, progress visibility (contract §2)
+
+    /// Exactly the seven stage labels in the contract: Waiting, Preparing, Copying, Pausing, Verifying, Finishing,
+    /// and a terminal group (Done / Error / Stopped) — `JobState` has more raw cases than that (e.g. `.paused` is
+    /// still shown as "Đang tạm dừng" alongside `.pausing`, matching FileOctopus's own Pausing→Paused pair, which
+    /// the spec's stage-name table lists as one color-coded group, not two separate labels).
+    func stageLabelKey(for job: FileJob) -> String {
+        switch job.state {
+        case .waiting:
+            // "Preparing" is the pre-walk this queue itself does (computing `bytesTotal`, checking conflicts)
+            // before the first item of an ALREADY-STARTED job moves any bytes — a job still `.waiting` in the queue
+            // (behind another one) is "Waiting", not "Preparing".
+            return "Đang chờ"
+        case .running:
+            guard let runtime = runtimes[job.id] else { return "Đang chờ" }
+            return runtime.lastProgressAt.timeIntervalSinceNow > -0.001 && job.bytesDone == 0 && job.itemsDone == 0
+                ? "Đang chuẩn bị" : "Đang chép"
+        case .pausing, .paused: return "Đang tạm dừng"
+        case .verifying: return "Đang kiểm"
+        case .finishing: return "Đang hoàn tất"
+        case .done: return "Xong"
+        case .failed: return "Lỗi"
+        case .cancelled: return "Đã dừng"
         }
-        return ActionHistoryStore.shared.undo(entry)
+    }
+
+    /// Speed/ETA are hidden (contract §2 / spec R35): while Pausing/Paused, Verifying, Finishing, stalled > 3 s with
+    /// no byte progress, or for a zero-byte operation (rename-only moves, same-disk trash — `bytesTotal == 0`).
+    func isProgressVisible(for job: FileJob) -> Bool {
+        guard job.state == .running else { return false }
+        guard job.bytesTotal > 0 else { return false }
+        guard let runtime = runtimes[job.id] else { return false }
+        return Date().timeIntervalSince(runtime.lastProgressAt) <= 3
+    }
+
+    // MARK: - W6: Problems list (contract §2 / spec §8)
+
+    /// Dismisses the one-shot alert without touching `problems.entries` — the row stays in the panel's Problems
+    /// section until the user dismisses/clears/retries it there.
+    func dismissProblemAlert() {
+        problemAlert = nil
+    }
+
+    func dismissProblem(_ id: UUID) {
+        problems.dismiss(id)
+    }
+
+    func clearAllProblems() {
+        problems.clearAll()
+    }
+
+    /// Retry (spec R48): a brand-new job scoped to just the failed items of one `ProblemEntry`, re-validated against
+    /// current disk state — the normal conflict dialog reappears if a new collision exists. `destination` is the
+    /// folder the original operation targeted; trash/rename problems (no destination) are not retryable (`canRetry`
+    /// already reflects this via `beforeWrite`), so this is only ever called for copy/move/duplicate problems.
+    @discardableResult
+    func retryProblem(_ entry: ProblemEntry, kind: FileOperationKind, destination: String?) -> UUID? {
+        guard entry.canRetry else { return nil }
+        let paths = entry.items.map(\.path)
+        guard !paths.isEmpty else { return nil }
+        problems.dismiss(entry.id)
+        return enqueue(kind, sources: paths, destination: destination)
+    }
+
+    // MARK: - W6: persistent Undo / Redo (contract §2 / spec §9)
+
+    /// Undo for the browser's own last finished action. Revalidates with `UndoJournal.availability` BEFORE touching
+    /// any file (spec R56/R58): identity (inode/size/modified), existence, and — for a step whose paths live on a
+    /// volume that is not currently mounted — refuses with "Can't Undo…" rather than failing partway. If the step's
+    /// own originating job is still active, the request is queued (`pendingUndoAfterJobs`) and replayed once that
+    /// job's `run(job:runtime:)` finishes, instead of racing a copy that is still writing.
+    @discardableResult
+    /// Returns `nil` ONLY when this queue's journal has nothing to undo at all — `BrowserWindowModel`'s `.undo`
+    /// command relies on that exact contract (pre-W6 behavior, kept unchanged) to fall through to its own
+    /// `lastCompressedArchive` undo path when this queue has nothing of its own. A step that exists but could not be
+    /// undone (unavailable, partial failure) still returns a rendered message, same as the old `ActionHistoryStore`-
+    /// backed version always did once an entry existed.
+    func undoLast() -> String? {
+        guard let step = undoJournal.undo.first else { return nil }
+        if let jobID = activeJobID(producing: step), currentJob(jobID)?.isActive == true {
+            pendingUndoAfterJobs[jobID, default: []].append(true)
+            return L10n.t("Sẽ hoàn tác sau khi việc đang chạy xong")
+        }
+        return performUndo(step)
+    }
+
+    /// Redo (spec R52: same scrutiny as Undo). Queued the same way if its step's job is still active. `nil` only
+    /// when there is nothing in the redo stack (same contract as `undoLast()`).
+    @discardableResult
+    func redoLast() -> String? {
+        guard let step = undoJournal.redo.first else { return nil }
+        if let jobID = activeJobID(producing: step), currentJob(jobID)?.isActive == true {
+            pendingUndoAfterJobs[jobID, default: []].append(false)
+            return L10n.t("Sẽ làm lại sau khi việc đang chạy xong")
+        }
+        return performRedo(step)
+    }
+
+    /// Title for the Edit menu (spec R52: "Undo Move of 3 Items" style — verb + target already baked into
+    /// `UndoStep.titleKey` by whichever side records the step).
+    var undoTitleKey: String? { undoJournal.undo.first?.titleKey }
+    var redoTitleKey: String? { undoJournal.redo.first?.titleKey }
+
+    /// A step references a still-running job only in the narrow window between that job's `recordHistory` call and
+    /// its `runtimes.removeValue` cleanup — in practice this only matters for a multi-job queue where the user asks
+    /// to undo the MOST RECENT step while a LATER job is already running; `activeJobID` finds that case by matching
+    /// paths, not by storing a job id on `UndoStep` (which is `FileOperationRules`' contract, not mine to extend).
+    private func activeJobID(producing step: UndoStep) -> UUID? {
+        let stepPaths = Set(step.items.flatMap { [$0.from, $0.to] })
+        for job in queue.jobs where job.isActive {
+            if job.sources.contains(where: stepPaths.contains) { return job.id }
+            if let destination = job.destination, stepPaths.contains(where: { $0.hasPrefix(destination) }) { return job.id }
+        }
+        return nil
+    }
+
+    /// Undo moves `from → to` for every kind except copy/duplicate, which have no "original location": undoing one
+    /// of those trashes the item `copyOnly`/`performItem` created (`to` is the empty-string sentinel `recordHistory`
+    /// stores for these two kinds) — never a hard delete (spec R9 "Dữ liệu người dùng").
+    private func performUndo(_ step: UndoStep) -> String {
+        let availability = undoJournal.availability(
+            of: step, exists: { FileManager.default.fileExists(atPath: $0) },
+            identity: Self.fileIdentity, volumeMounted: Self.volumeMounted
+        )
+        guard case .available = availability else {
+            return Self.unavailableMessage(availability)
+        }
+        let fm = FileManager.default
+        var ok = 0
+        for item in step.items {
+            do {
+                switch step.kind {
+                case .copy, .duplicate:
+                    guard fm.fileExists(atPath: item.from) else { ok += 1; continue }
+                    try fm.trashItem(at: URL(fileURLWithPath: item.from), resultingItemURL: nil)
+                    ok += 1
+                default:
+                    if fm.fileExists(atPath: item.to) { continue }
+                    try fm.moveItem(atPath: item.from, toPath: item.to)
+                    ok += 1
+                }
+            } catch { /* spec R55: a partial failure here still leaves `ok < step.items.count`, reported below */ }
+        }
+        guard ok == step.items.count else {
+            return L10n.t("Không thể hoàn tác thao tác này.")
+        }
+        _ = undoJournal.popUndo()
+        Self.saveUndoJournal(undoJournal)
+        return "\(L10n.t("Đã hoàn tác "))\(step.items.count)\(L10n.t(" mục"))"
+    }
+
+    /// Redo re-applies the original direction (`to → from` for move/trash/rename). A copy/duplicate's redo has no
+    /// safe one-step replay (the original source location is not part of `UndoItem`, and re-running the whole copy
+    /// risks a different conflict outcome than the first time), so it is refused with its own reason rather than
+    /// guessed at — consistent with spec R58 "Redo faces the identical scrutiny".
+    private func performRedo(_ step: UndoStep) -> String {
+        guard step.kind != .copy, step.kind != .duplicate else {
+            return L10n.t("Không thể làm lại thao tác này.")
+        }
+        let availability = undoJournal.availability(
+            of: step, exists: { FileManager.default.fileExists(atPath: $0) },
+            identity: Self.fileIdentity, volumeMounted: Self.volumeMounted
+        )
+        guard case .available = availability else {
+            return Self.unavailableMessage(availability)
+        }
+        let fm = FileManager.default
+        var redone = 0
+        for item in step.items {
+            do {
+                if fm.fileExists(atPath: item.from) { continue }
+                try fm.moveItem(atPath: item.to, toPath: item.from)
+                redone += 1
+            } catch { }
+        }
+        guard redone == step.items.count else {
+            return L10n.t("Không thể hoàn tác thao tác này.")
+        }
+        _ = undoJournal.popRedo()
+        Self.saveUndoJournal(undoJournal)
+        return "\(L10n.t("Đã làm lại "))\(step.items.count)\(L10n.t(" mục"))"
+    }
+
+    private static func unavailableMessage(_ availability: UndoJournal.Availability) -> String {
+        switch availability {
+        case .available: return ""
+        case .diskMissing: return L10n.t("Không hoàn tác được…")
+        case .unavailable(let reasonKey): return reasonKey.isEmpty ? L10n.t("Không thể hoàn tác thao tác này.") : L10n.t(reasonKey)
+        }
+    }
+
+    private static func fileIdentity(_ path: String) -> (inode: UInt64, size: Int64, modified: Date)? {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: path) else { return nil }
+        guard let inode = (attrs[.systemFileNumber] as? NSNumber)?.uint64Value else { return nil }
+        let size = (attrs[.size] as? NSNumber)?.int64Value ?? 0
+        let modified = (attrs[.modificationDate] as? Date) ?? .distantPast
+        return (inode, size, modified)
+    }
+
+    private static func volumeMounted(_ path: String) -> Bool {
+        guard let mount = DirectoryReader.volumePath(of: path) else { return false }
+        return FileManager.default.fileExists(atPath: mount)
+    }
+
+    /// Replays any undo/redo requests that were queued because this job (as the step's own source) was still
+    /// running when the user asked. Called once per finished job, after `runtimes` still has the job's runtime
+    /// (so `activeJobID` for a DIFFERENT still-running job keeps working) but after this job itself is no longer
+    /// active.
+    private func drainPendingUndo(for jobID: UUID) {
+        guard let requests = pendingUndoAfterJobs.removeValue(forKey: jobID), !requests.isEmpty else { return }
+        for isUndo in requests {
+            if isUndo {
+                if let step = undoJournal.undo.first { _ = performUndo(step) }
+            } else {
+                if let step = undoJournal.redo.first { _ = performRedo(step) }
+            }
+        }
     }
 
     static let historyKind = "browser"
@@ -204,6 +461,7 @@ final class FileOperationQueue {
         var itemsDone = 0
         var bytesDone: Int64 = 0
         let bytesTotal = Self.totalBytes(of: originalJob.sources)
+        runtime.totalItemCount = originalJob.sources.count
         updateProgress(jobID, bytesDone: 0, itemsDone: 0, bytesTotal: bytesTotal, itemsTotal: originalJob.sources.count)
         appendJournal(job: jobID, kind: originalJob.kind, source: originalJob.sources.first ?? "", destination: originalJob.destination, phase: .started)
 
@@ -215,7 +473,8 @@ final class FileOperationQueue {
             return names
         }
 
-        itemLoop: for source in originalJob.sources {
+        itemLoop: for (index, source) in originalJob.sources.enumerated() {
+            runtime.currentItemIndex = index
             guard currentState(of: jobID) != .cancelled else { break }
             // Honor a pause requested between items: block here (off the UI) until resumed or cancelled.
             while currentState(of: jobID) == .paused || currentState(of: jobID) == .pausing {
@@ -245,11 +504,15 @@ final class FileOperationQueue {
                 queue.cancel(jobID)
                 break itemLoop
             case .failed(let key, let detail):
-                queue.finish(jobID, failedWith: key, detail: detail)
-                lastErrorKey = key
-                runtimes.removeValue(forKey: jobID)
-                updateEjectGuard()
-                return
+                // W6 (spec R45/R50): one failing item no longer aborts the whole batch — it is recorded as a
+                // `ProblemItem` and the loop moves on to the next source. The job itself still finishes as `.done`
+                // once every item has been attempted; `lastErrorKey` is kept for the (rare) case nothing in the job
+                // ever got a chance to run at all (e.g. `enqueue`'s own up-front checks), not for per-item failures.
+                let reason = ProblemReason.from(posix: Self.posixCode(fromDetail: detail))
+                runtime.failedItems.append(ProblemItem(path: source, reason: reason, systemMessage: detail, beforeWrite: true))
+                itemsDone += 1
+                updateProgress(jobID, bytesDone: bytesDone, itemsDone: itemsDone, bytesTotal: bytesTotal, itemsTotal: originalJob.sources.count)
+                _ = key // the per-item L10n key is folded into `reason`/`systemMessage` on the Problems row, not surfaced again here
             }
         }
 
@@ -259,29 +522,76 @@ final class FileOperationQueue {
         if currentState(of: jobID) != .cancelled {
             recordHistory(job: originalJob, runtime: runtime)
             queue.finish(jobID, failedWith: nil, detail: nil)
+            recordProblems(job: originalJob, runtime: runtime)
         }
         runtimes.removeValue(forKey: jobID)
         updateEjectGuard()
+        drainPendingUndo(for: jobID)
         startNextIfNeeded()
+    }
+
+    /// W6 (spec R45): one `ProblemEntry` per finished operation that had ≥1 failing item, surfaced once as an alert
+    /// (`problemAlert`) in addition to the persistent list row.
+    private func recordProblems(job: FileJob, runtime: Runtime) {
+        guard !runtime.failedItems.isEmpty else { return }
+        let entry = ProblemEntry(
+            id: UUID(), operationTitleKey: operationTitleKey(for: job), finished: Date(), items: runtime.failedItems
+        )
+        problems.add(entry)
+        problemAlert = entry
+    }
+
+    private func operationTitleKey(for job: FileJob) -> String {
+        switch job.kind {
+        case .copy: return "Sao chép"
+        case .move: return "Di chuyển"
+        case .duplicate: return "Nhân bản"
+        case .trash: return "Chuyển vào Thùng rác"
+        }
+    }
+
+    /// `performItem`'s `detail` string is free-form (`"\(error)"`, `"errno \(n)"`, or a hash-mismatch message) — this
+    /// pulls out a POSIX code when the detail happens to carry one so `ProblemReason.from(posix:)` can classify it;
+    /// anything else (including no match) maps to `.other`, which is still reported with the raw system text.
+    private static func posixCode(fromDetail detail: String?) -> Int32 {
+        guard let detail, let range = detail.range(of: "errno ") else { return 0 }
+        let digits = detail[range.upperBound...].prefix(while: \.isNumber)
+        return Int32(digits) ?? 0
     }
 
     private func currentState(of id: UUID) -> JobState? {
         queue.jobs.first(where: { $0.id == id })?.state
     }
 
+    private func currentJob(_ id: UUID) -> FileJob? {
+        queue.jobs.first(where: { $0.id == id })
+    }
+
+    /// W6 (contract §2 "tốc độ/ETA = byte qua cửa sổ trượt 5 s"): `runtime.samples` keeps every progress tick from
+    /// the last 5 real seconds (wall clock, not `elapsed` since the last sample — a slow filesystem can go a full
+    /// second between callback ticks); the rate is total bytes moved across that whole window divided by the
+    /// window's actual span, so a single huge tick right after a stall does not spike the reading the way the old
+    /// per-tick EMA could. `ProcessInfo.processInfo.systemUptime` (monotonic) is used instead of `Date()` for the
+    /// window math so a wall-clock adjustment mid-copy cannot corrupt it; `Date()` is still used for `lastProgressAt`
+    /// (the "stalled" check only needs this process's own data, and `isProgressVisible` compares it with `Date()`).
     private func updateProgress(_ id: UUID, bytesDone: Int64, itemsDone: Int, bytesTotal: Int64, itemsTotal: Int) {
         queue.progress(id, bytesDone: bytesDone, itemsDone: itemsDone)
         guard let runtime = runtimes[id] else { return }
-        let now = Date()
-        let elapsed = now.timeIntervalSince(runtime.lastSampleAt)
-        if elapsed > 0.2 {
-            let deltaBytes = bytesDone - runtime.lastSampleBytes
-            let sample = Double(deltaBytes) / elapsed
-            speed = FileOperationRules.smoothedSpeed(previous: speed, sample: max(sample, 0))
-            eta = FileOperationRules.eta(bytesDone: bytesDone, bytesTotal: bytesTotal, bytesPerSecond: speed ?? 0)
-            runtime.lastSampleAt = now
-            runtime.lastSampleBytes = bytesDone
+        if bytesDone > runtime.lastSampleBytes { runtime.lastProgressAt = Date() }
+        runtime.lastSampleBytes = bytesDone
+        let now = ProcessInfo.processInfo.systemUptime
+        runtime.samples.append((t: now, bytes: bytesDone))
+        let windowStart = now - 5
+        // Keep one sample AT OR BEFORE `windowStart` (if any) as the window's anchor, plus everything newer — never
+        // drop every sample just because the whole run so far is older than 5 s (a short copy must still get a rate
+        // once it has ≥ 2 ticks, from its own start to now, not wait for a full 5 s window to accumulate).
+        if let cutoff = runtime.samples.lastIndex(where: { $0.t < windowStart }) {
+            runtime.samples.removeFirst(cutoff)
         }
+        guard let oldest = runtime.samples.first, now - oldest.t > 0.2 else { return }
+        let sample = Double(bytesDone - oldest.bytes) / (now - oldest.t)
+        speed = max(sample, 0)
+        eta = FileOperationRules.eta(bytesDone: bytesDone, bytesTotal: bytesTotal, bytesPerSecond: speed ?? 0)
     }
 
     // MARK: - Per-item outcome
@@ -509,42 +819,52 @@ final class FileOperationQueue {
 
     // MARK: - History / undo
 
+    /// W6: records into the browser's own persistent `UndoJournal` (20 steps / 24 h, JSON off main) instead of the
+    /// app-wide `ActionHistoryStore` — spec §9 "Thay `ActionHistoryStore` chỉ trong trình duyệt". `UndoItem.from`/`to`
+    /// mean "undo moves FROM here TO here" for every kind except copy/duplicate, which have no natural pair (the
+    /// created item has no "original location" to move back to) — those store `from: <created path>, to: ""` and
+    /// `performUndo`/`performRedo` special-case `.copy`/`.duplicate` to trash-on-undo / refuse-on-redo accordingly.
     private func recordHistory(job: FileJob, runtime: Runtime) {
         let count = job.sources.count
         guard count > 0 else { return }
+        let step: UndoStep
         switch job.kind {
         case .move:
             guard !runtime.movedPairs.isEmpty else { return }
-            let summary = "\(L10n.t("Di chuyển "))\(count)\(L10n.t(" mục"))"
-            ActionHistoryStore.shared.record(
-                kind: FileOperationQueue.historyKind, summary: summary,
-                detail: job.destination, reversible: true,
-                undoPayload: ActionHistoryStore.UndoPayload(from: runtime.movedPairs.map(\.from), to: runtime.movedPairs.map(\.to))
+            step = UndoStep(
+                id: UUID(), kind: .move,
+                items: runtime.movedPairs.map { pair in
+                    UndoItem(from: pair.from, to: pair.to, inode: Self.fileIdentity(pair.from)?.inode,
+                             size: Self.fileIdentity(pair.from)?.size, modified: Self.fileIdentity(pair.from)?.modified)
+                },
+                date: Date()
             )
         case .copy, .duplicate:
             guard !runtime.createdForUndo.isEmpty else { return }
-            let summary = job.kind == .copy
-                ? "\(L10n.t("Sao chép "))\(count)\(L10n.t(" mục"))"
-                : "\(L10n.t("Nhân bản "))\(count)\(L10n.t(" mục"))"
-            ActionHistoryStore.shared.record(
-                kind: FileOperationQueue.historyKind, summary: summary,
-                detail: job.destination, reversible: true,
-                undoPayload: ActionHistoryStore.UndoPayload(from: [], to: [], trashOnUndo: runtime.createdForUndo)
+            step = UndoStep(
+                id: UUID(), kind: job.kind == .copy ? .copy : .duplicate,
+                items: runtime.createdForUndo.map { path in
+                    UndoItem(from: path, to: "", inode: Self.fileIdentity(path)?.inode,
+                             size: Self.fileIdentity(path)?.size, modified: Self.fileIdentity(path)?.modified)
+                },
+                date: Date()
             )
         case .trash:
-            // Unlike `ActionHistoryStore.recordTrash` (used elsewhere, always `reversible: false`), the browser
-            // knows the exact Trash URL `trashItem` produced for each source, so its own trash jobs CAN be undone —
-            // a plain move back from that URL to the original path (contract: "trash ⇒ move back from the Trash
-            // URL returned by trashItem").
+            // The browser knows the exact Trash URL `trashItem` produced for each source, so its own trash jobs CAN
+            // be undone — a plain move back from that URL to the original path.
             guard !runtime.trashedPairs.isEmpty else { return }
-            let summary = "\(L10n.t("Chuyển "))\(count)\(L10n.t(" mục vào Thùng rác"))"
-            ActionHistoryStore.shared.record(
-                kind: FileOperationQueue.historyKind, summary: summary, detail: nil, reversible: true,
-                undoPayload: ActionHistoryStore.UndoPayload(
-                    from: runtime.trashedPairs.map(\.trashedAt), to: runtime.trashedPairs.map(\.original)
-                )
+            step = UndoStep(
+                id: UUID(), kind: .trash,
+                items: runtime.trashedPairs.map { pair in
+                    UndoItem(from: pair.trashedAt, to: pair.original, inode: Self.fileIdentity(pair.trashedAt)?.inode,
+                             size: Self.fileIdentity(pair.trashedAt)?.size, modified: Self.fileIdentity(pair.trashedAt)?.modified)
+                },
+                date: Date()
             )
         }
+        undoJournal.pruned(now: Date())
+        undoJournal.record(step, now: Date())
+        Self.saveUndoJournal(undoJournal)
     }
 
     // MARK: - Byte totals (pre-walk)
@@ -601,6 +921,25 @@ final class FileOperationQueue {
             data.append(0x0A)
         }
         try? data.write(to: journalURL, options: .atomic)
+    }
+
+    // MARK: - W6: persistent UndoJournal (JSON, writes off main)
+
+    /// Read once at launch (`init`) — `UndoJournal.decode(_:)` is the pure side's contract for turning missing/
+    /// corrupt data into an empty journal, so a damaged file never crashes startup, it just starts fresh.
+    private static func loadUndoJournal() -> UndoJournal {
+        UndoJournal.decode(try? Data(contentsOf: undoJournalURL))
+    }
+
+    /// Every write after launch goes through `ioQueue` (a background serial queue), never the main thread — the
+    /// value is captured before hopping off so the write sees a consistent snapshot even if `undoJournal` on the
+    /// main actor changes again before this queue gets to run.
+    private static func saveUndoJournal(_ journal: UndoJournal) {
+        let data = journal.encoded()
+        ioQueue.async {
+            try? FileManager.default.createDirectory(at: supportDirectory, withIntermediateDirectories: true)
+            try? data.write(to: undoJournalURL, options: .atomic)
+        }
     }
 
     // MARK: - copyfile(3) static worker
