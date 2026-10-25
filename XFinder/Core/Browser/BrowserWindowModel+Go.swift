@@ -8,4 +8,7 @@ extension BrowserWindowModel {
 
     /// Opens a virtual location in the active tab.
     func open(_ location: VirtualLocation) {}
+
+    /// Every folder a tab navigates to (Go ▸ Recent Folders). Virtual locations are not recorded.
+    static func noteRecentFolder(_ path: String) {}
 }

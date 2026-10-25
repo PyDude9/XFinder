@@ -85,6 +85,7 @@ struct PaneSearchState: Equatable {
         self.path = path
         startLoad(of: path)
         installWatcher()
+        BrowserWindowModel.noteRecentFolder(path)   // XF-T30 W3 (BrowserWindowModel+Go.swift)
     }
 
     func goBack() {
@@ -162,7 +163,12 @@ struct PaneSearchState: Equatable {
         let generation = currentGeneration
         loadState = .loading
         loadTask = Task { [weak self] in
-            let result = await DirectoryReader.list(path, timeout: 5)
+            // XF-T30 W3: a virtual location (Recents, a tag) lists through Spotlight, not the directory reader.
+            let result = if let virtual = VirtualLocation.parse(path) {
+                await VirtualLocations.list(virtual)
+            } else {
+                await DirectoryReader.list(path, timeout: 5)
+            }
             guard let self, !Task.isCancelled, generation == self.currentGeneration else { return }
             switch result {
             case .success(let listing):
@@ -206,6 +212,9 @@ struct PaneSearchState: Equatable {
 
     private func installWatcher() {
         watcher?.cancel()
+        watcher = nil
+        // XF-T30 W3: nothing on disk to watch for a virtual location (a watcher would report it "gone").
+        guard VirtualLocation.parse(path) == nil else { return }
         let watchedPath = path
         watcher = DirectoryWatcher(
             path: watchedPath,
@@ -979,6 +988,7 @@ enum BrowserSheet: String, Identifiable {
     }
 
     private func pasteFromPasteboard(move: Bool) {
+        if pasteCutItems() { return }   // XF-T30 W6: a pending ⌘X cut moves instead (BrowserWindowModel+FileOps.swift)
         guard let items = NSPasteboard.general.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
               !items.isEmpty else { return }
         drop(items.map(\.path), into: active.path, copy: move ? false : true)

@@ -352,6 +352,7 @@
 		7F1A007E /* Browser/DirectoryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007D /* Browser/DirectoryReader.swift */; };
 		7F1A007C /* Browser/BrowserWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007B /* Browser/BrowserWorkspace.swift */; };
 		7F1A007A /* Browser/ShelfModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0079 /* Browser/ShelfModel.swift */; };
+		7F1A0553 /* Browser/VirtualLocations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0552 /* Browser/VirtualLocations.swift */; };
 		7F1A0541 /* Browser/FolderMergeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0540 /* Browser/FolderMergeController.swift */; };
 		7F1A053F /* Browser/ConnectToServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A053E /* Browser/ConnectToServer.swift */; };
 		7F1A053D /* Browser/TagLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A053C /* Browser/TagLibrary.swift */; };
@@ -700,6 +701,7 @@
 		7F1A007D /* Browser/DirectoryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/DirectoryReader.swift; sourceTree = "<group>"; };
 		7F1A007B /* Browser/BrowserWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserWorkspace.swift; sourceTree = "<group>"; };
 		7F1A0079 /* Browser/ShelfModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ShelfModel.swift; sourceTree = "<group>"; };
+		7F1A0552 /* Browser/VirtualLocations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/VirtualLocations.swift; sourceTree = "<group>"; };
 		7F1A0540 /* Browser/FolderMergeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FolderMergeController.swift; sourceTree = "<group>"; };
 		7F1A053E /* Browser/ConnectToServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ConnectToServer.swift; sourceTree = "<group>"; };
 		7F1A053C /* Browser/TagLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/TagLibrary.swift; sourceTree = "<group>"; };
@@ -1064,6 +1066,7 @@
 				7F1A007D /* Browser/DirectoryReader.swift */,
 				7F1A007B /* Browser/BrowserWorkspace.swift */,
 				7F1A0079 /* Browser/ShelfModel.swift */,
+				7F1A0552 /* Browser/VirtualLocations.swift */,
 				7F1A0540 /* Browser/FolderMergeController.swift */,
 				7F1A053E /* Browser/ConnectToServer.swift */,
 				7F1A053C /* Browser/TagLibrary.swift */,
@@ -1748,6 +1751,7 @@
 				7F1A007E /* Browser/DirectoryReader.swift in Sources */,
 				7F1A007C /* Browser/BrowserWorkspace.swift in Sources */,
 				7F1A007A /* Browser/ShelfModel.swift in Sources */,
+				7F1A0553 /* Browser/VirtualLocations.swift in Sources */,
 				7F1A0541 /* Browser/FolderMergeController.swift in Sources */,
 				7F1A053F /* Browser/ConnectToServer.swift in Sources */,
 				7F1A053D /* Browser/TagLibrary.swift in Sources */,
