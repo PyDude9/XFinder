@@ -11,6 +11,7 @@ F = "fragment"
 ENTRIES = {
     "Sao chép câu tìm": ("Copy Search Text", S),
     "Xoá tìm kiếm đã lưu": ("Delete Saved Search", S),
+    "Đã có tìm kiếm đã lưu khác tên này": ("Another saved search already has this name", S),
 }
 def main() -> int:
     data = json.loads(STORE.read_text(encoding="utf-8")); e = data["entries"]

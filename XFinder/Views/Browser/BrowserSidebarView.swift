@@ -755,9 +755,21 @@ struct BrowserSidebarView: View {
         .frame(width: 320)
     }
 
+    /// `SavedSearchStore.rename` refuses an empty name, or a name another saved search already has, by returning
+    /// `false` and leaving the store untouched (CLAUDE.md rule 7's "one key one control" idiom, mirroring
+    /// `BrowserWindowModel.commitRename`'s own `banner = "Đã có mục khác tên này"` for the equivalent file-rename
+    /// case) — dismissing the sheet unconditionally would silently drop the rejected rename with no sign anything
+    /// went wrong, so the sheet stays open and the owner sees why on a failed attempt.
     private func commitSavedSearchRename(_ search: SavedSearch) {
         var store = savedSearches
-        store.rename(search.id, to: savedSearchRenameText)
+        guard store.rename(search.id, to: savedSearchRenameText) else {
+            // `model.banner` carries the raw key — `BrowserRootView.bannerView` is the one place that wraps it
+            // through `L10n.t`, same as `BrowserWindowModel.commitRename` does for the equivalent file-rename
+            // conflict (that one's own literal is itself an unregistered L10n gap, so this uses its own key
+            // instead of reusing one with no English translation).
+            model.banner = "Đã có tìm kiếm đã lưu khác tên này"
+            return
+        }
         savedSearches = store
         BrowserSettings.savedSearches = store
         renamingSavedSearch = nil
