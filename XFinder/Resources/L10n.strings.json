@@ -14098,6 +14098,46 @@
     "Không gộp được thư mục": {
       "en": "Couldn't merge the folders",
       "scope": "sentence"
+    },
+    "Nút hông": {
+      "en": "Side buttons",
+      "scope": "fragment"
+    },
+    "Chưa đọc được nút nào": {
+      "en": "No buttons detected",
+      "scope": "sentence"
+    },
+    "Cắm chuột có nút hông để xem và gán ở đây.": {
+      "en": "Connect a mouse with side buttons to view and assign them here.",
+      "scope": "sentence"
+    },
+    "Bấm “Ghi nút” ở mục Nút giữ & cuộn rồi bấm nút này để XFinder đo.": {
+      "en": "Click “Record button” in the Hold & Scroll section, then click this button for XFinder to measure.",
+      "scope": "sentence"
+    },
+    "Chưa khai báo": {
+      "en": "Undeclared",
+      "scope": "fragment"
+    },
+    "Đổi nút giữ: bấm vào một ô nút trên hình phía trên.": {
+      "en": "Change hold button: click a button chip on the diagram above.",
+      "scope": "sentence"
+    },
+    "Nút giữ & cuộn": {
+      "en": "Hold & scroll buttons",
+      "scope": "sentence"
+    },
+    "Giữ nút này rồi kéo bốn hướng. Bấm chip trên hình bên trên để đổi.": {
+      "en": "Hold this button then drag four directions. Click a chip on the diagram above to change.",
+      "scope": "sentence"
+    },
+    "Nghiêng con lăn": {
+      "en": "Tilt wheel",
+      "scope": "fragment"
+    },
+    "Chẩn đoán chuột": {
+      "en": "Mouse diagnostics",
+      "scope": "fragment"
     }
   }
 }
