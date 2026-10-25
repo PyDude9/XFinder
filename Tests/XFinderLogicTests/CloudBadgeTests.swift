@@ -195,6 +195,30 @@ final class CloudBadgeTests: XCTestCase {
         XCTAssertFalse(CloudRules.canEvict(CloudFacts(isUploaded: true)))
     }
 
+    // MARK: canRemoveDownload — forwards to canEvict (ROLE spec names the action "canRemoveDownload"; refuses while
+    // uploading, like canEvict)
+
+    func test_canRemoveDownload_agreesWithCanEvict_whenEligible() {
+        let facts = CloudFacts(isUbiquitous: true, downloadingStatus: current, isUploaded: true)
+        XCTAssertTrue(CloudRules.canRemoveDownload(facts))
+        XCTAssertEqual(CloudRules.canRemoveDownload(facts), CloudRules.canEvict(facts))
+    }
+
+    func test_canRemoveDownload_refusesWhileUploading() {
+        let facts = CloudFacts(isUbiquitous: true, downloadingStatus: current, isUploading: true, isUploaded: true)
+        XCTAssertFalse(CloudRules.canRemoveDownload(facts))
+    }
+
+    func test_canRemoveDownload_refusesWhenNotYetUploaded() {
+        let facts = CloudFacts(isUbiquitous: true, downloadingStatus: current, isUploaded: false)
+        XCTAssertFalse(CloudRules.canRemoveDownload(facts))
+    }
+
+    func test_canRemoveDownload_refusesCloudOnlyItem() {
+        let facts = CloudFacts(isUbiquitous: true, downloadingStatus: notDownloaded)
+        XCTAssertFalse(CloudRules.canRemoveDownload(facts))
+    }
+
     // MARK: CloudFacts defaults
 
     func test_cloudFacts_defaultInit_allNilOrFalse() {
