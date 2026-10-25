@@ -57,6 +57,13 @@ import Quartz
             BrowserWindowModel.showWelcomeIfFirstRun()
             return BrowserWindowModel(snapshot: nil, initialPath: path ?? BrowserWindowModel.resolvedNewWindowTarget())
         }
+        // No browser window open and no specific folder asked for: bring back the last session (FileOctopus R46 —
+        // closing the last window behaves like quitting; it comes back on the next open). Owner report 2026-10-25:
+        // Side by Side came back as a single pane.
+        if windows.isEmpty, path == nil, BrowserSettings.reopenWindows, restoreSavedSession(),
+           let first = windows.first, let restored = modelsByWindow[ObjectIdentifier(first)] {
+            return restored
+        }
         let target = path ?? BrowserWindowModel.resolvedNewWindowTarget()
         let model = BrowserWindowModel(snapshot: nil, initialPath: target)
         presentNewWindow(for: model, frame: nil)
@@ -187,6 +194,11 @@ import Quartz
 
     func windowClosed(_ window: BrowserWindow) {
         guard let index = windows.firstIndex(where: { $0 === window }) else { return }
+        // The LAST window keeps its layout in the session (it used to be removed first, so an empty session overwrote
+        // the real one — measured: session.json held 0 windows after closing a Side by Side window). While quitting,
+        // the session was already saved with every window; closing them one by one must not shrink it.
+        let closingLast: Bool = windows.count == 1
+        if closingLast && !terminating { saveSession() }
         let model = modelsByWindow[ObjectIdentifier(window)]
         model?.tearDown()
         // The closing window's own model was driving Quick Look: the panel has nothing left to show for — close
@@ -198,7 +210,7 @@ import Quartz
         toolbarsByWindow.removeValue(forKey: ObjectIdentifier(window))?.tearDown()
         modelsByWindow.removeValue(forKey: ObjectIdentifier(window))
         windows.remove(at: index)
-        saveSession()
+        if !closingLast && !terminating { saveSession() }
         if windows.isEmpty {
             FileIconCache.shared.purge()
             indexLifecycleAllWindowsClosed()
@@ -235,9 +247,24 @@ import Quartz
     func restoreSessionAtLaunch() {
         let shiftHeld = NSEvent.modifierFlags.contains(.shift)
         guard SessionRestore.shouldRestore(shiftHeld: shiftHeld, reopenEnabled: BrowserSettings.reopenWindows) else { return }
+        _ = restoreSavedSession()
+    }
+
+    /// Set by `saveSessionForQuit()`: the windows AppKit closes while the app terminates must not rewrite the session.
+    private var terminating: Bool = false
+
+    /// App termination: save every open window once, then ignore the per-window closes that follow.
+    func saveSessionForQuit() {
+        saveSession()
+        terminating = true
+    }
+
+    /// Opens every window of the saved session; false when there is nothing to restore.
+    @discardableResult
+    func restoreSavedSession() -> Bool {
         guard let data = try? Data(contentsOf: Self.sessionURL),
               let snapshots = try? JSONDecoder().decode([WindowSnapshot].self, from: data), !snapshots.isEmpty
-        else { return }
+        else { return false }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         var missingFolders: [String] = []
         /// Most-recently-opened window per `tabGroup` number — `addTabbedWindow(_:ordered:)` inserts relative to
@@ -269,6 +296,7 @@ import Quartz
         if !missingFolders.isEmpty, let lastWindow = windows.last, let model = modelsByWindow[ObjectIdentifier(lastWindow)] {
             model.banner = "Một số thư mục đã phiên trước mở không còn tồn tại"
         }
+        return true
     }
 
     /// Called on window close and app quit (contract): every open window's layout goes to `session.json`.

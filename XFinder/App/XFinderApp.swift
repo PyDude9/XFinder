@@ -174,7 +174,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// D4: a Quick Look temp copy of an unlocked clip must not survive the process.
     func applicationWillTerminate(_ notification: Notification) {
         DiagnosticsCenter.shared.markQuit()
-        BrowserWindowController.shared.saveSession()   // XF-T28: windows, panes, folders, Back history
+        BrowserWindowController.shared.saveSessionForQuit()   // XF-T28: windows, panes, folders, Back history
         ClipboardLibraryStore.shared.relockAll()
         // Review 2026-10-18: the members are told to stop FIRST, and the crew cleanup waits (briefly) for their processes to
         // exit before it moves or removes the worktrees they were working in — the old order retired a worktree under a live member.
