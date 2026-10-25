@@ -442,4 +442,89 @@ enum FileOperationRules {
         case .sourceRemoved, .done: return nil
         }
     }
+
+    // MARK: Compress (XF-T30 W6 — spec §4 / R11–R16)
+
+    /// Single-item compress: append `.zip` to the FULL original name, extension and all — "notes.txt" becomes
+    /// "notes.txt.zip" (R11), never replacing the original extension the way a plain rename-the-extension approach
+    /// would. Multi-item compress uses the generic "Archive.zip", "Archive 2.zip"… scheme (R12), sharing the same
+    /// counting rule as Keep Both/Duplicate (first try bare, then numbered from 2, never doubled).
+    static func zipName(for selection: [String], existing: Set<String>) -> String {
+        if selection.count == 1, let only = selection.first {
+            let full = "\(only).zip"
+            guard existing.contains(full) else { return full }
+            // A single-item name collision (rare: compressing the same item twice into the same folder) falls back
+            // to the same numbered scheme Keep Both uses, rooted at the full "<name>.zip" so the thing being counted
+            // is the archive, not the original file's own extension.
+            return numberedZipName(base: full, existing: existing)
+        }
+        return numberedZipName(base: "Archive.zip", existing: existing)
+    }
+
+    /// Shared counting engine for `zipName`'s collision fallback: "Archive.zip" → "Archive 2.zip" → "Archive 3.zip"…
+    /// by inserting the number directly before the LAST extension, matching `keepBothName`'s "only the last
+    /// extension counts" rule so "Archive.tar.zip" would number as "Archive.tar 2.zip", not "Archive 2.tar.zip".
+    private static func numberedZipName(base: String, existing: Set<String>) -> String {
+        guard existing.contains(base) else { return base }
+        let (stem, ext) = splitExtension(base)
+        var n = 2
+        func candidate(_ n: Int) -> String { ext.isEmpty ? "\(stem) \(n)" : "\(stem) \(n).\(ext)" }
+        while existing.contains(candidate(n)) { n += 1 }
+        return candidate(n)
+    }
+
+    /// A pure description of "build off to the side, validate, only then reveal" (R13): the caller builds the
+    /// archive at `stagingPath`, lists/opens it to confirm it is not corrupt, and only on success moves it to
+    /// `finalPath` — a failed or interrupted build leaves only the staging file behind, never a partial `.zip` at
+    /// the name the user expects to see. This type carries no behavior itself (AppKit side does the actual
+    /// `NSFileCoordinator`/`ditto` work); it exists so the "never reveal before validated" contract has a named,
+    /// testable shape instead of being an implicit convention of the imperative code.
+    struct ZipBuildPlan: Equatable, Sendable {
+        var stagingPath: String
+        var finalPath: String
+    }
+
+    /// `stagingPath` lives in the SAME directory as `finalPath` (not a shared temp directory) so the final move is a
+    /// same-volume rename — the one move in this whole plan that must be atomic and cannot itself fail partway
+    /// with a corrupt result sitting at the destination name.
+    static func zipBuildPlan(finalPath: String) -> ZipBuildPlan {
+        let directory = (finalPath as NSString).deletingLastPathComponent
+        let name = (finalPath as NSString).lastPathComponent
+        let staging = (directory as NSString).appendingPathComponent(".\(name).xfinder-building-\(UUID().uuidString)")
+        return ZipBuildPlan(stagingPath: staging, finalPath: finalPath)
+    }
+
+    /// Compress is disabled (R15) for a selection that is EXACTLY one existing `.zip` file (compressing an archive
+    /// into another archive of the same thing is not useful), or when ANY selected item is a cloud placeholder that
+    /// has not been downloaded yet (nothing is pulled from the cloud just to zip it).
+    static func compressDisabled(selection: [(path: String, isCloudPlaceholder: Bool)]) -> Bool {
+        if selection.contains(where: { $0.isCloudPlaceholder }) { return true }
+        if selection.count == 1, let only = selection.first {
+            return (only.path as NSString).pathExtension.lowercased() == "zip"
+        }
+        return false
+    }
+
+    // MARK: Trash-resident item gating (XF-T30 W6 — spec §13 / changelog 1.0.4 fix)
+
+    /// Share, Duplicate, Compress, and Make Alias must be disabled for anything already sitting in the Trash (the
+    /// bug FileOctopus itself had to fix in 1.0.4) — none of those verbs make sense for a trashed item, and running
+    /// them risks operating on a path that is about to be permanently reclaimed by the system.
+    enum TrashGatedCommand: Sendable { case share, duplicate, compress, makeAlias }
+
+    static func isDisabledForTrashedItem(_ command: TrashGatedCommand, isInTrash: Bool) -> Bool {
+        isInTrash
+    }
+
+    // MARK: New Folder with Selection (XF-T30 W6 — spec §3 / R7)
+
+    /// "Thư mục mới chứa mục" (Finder's "New Folder With Items/Selection"): a bare name when nothing by that name
+    /// exists yet at the destination, else the familiar numbered fallback — sharing `keepBothName`'s counting
+    /// scheme so a second "New Folder with Selection" in the same place becomes "Thư mục mới chứa mục 2", not a
+    /// silent collision. `baseName` defaults to the Vietnamese source string (the view passes `L10n.t(...)` through
+    /// in the live UI; the default lets pure tests exercise the counting logic without a localization dependency).
+    static func newFolderWithSelectionName(existing: Set<String>, baseName: String = "Thư mục mới chứa mục") -> String {
+        guard existing.contains(baseName) else { return baseName }
+        return keepBothName(for: baseName, existing: existing)
+    }
 }

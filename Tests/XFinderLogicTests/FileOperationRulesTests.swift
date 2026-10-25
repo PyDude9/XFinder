@@ -788,4 +788,119 @@ final class FileOperationRulesTests: XCTestCase {
         let decoded = try JSONDecoder().decode(JournalEntry.self, from: data)
         XCTAssertEqual(decoded, entry)
     }
+
+    // MARK: zipName (XF-T30 W6 — R11/R12)
+
+    func testZipNameSingleItemAppendsDotZipToFullName() {
+        XCTAssertEqual(FileOperationRules.zipName(for: ["notes.txt"], existing: []), "notes.txt.zip")
+    }
+
+    func testZipNameSingleItemNoExtensionStillAppendsDotZip() {
+        XCTAssertEqual(FileOperationRules.zipName(for: ["Folder"], existing: []), "Folder.zip")
+    }
+
+    func testZipNameMultipleItemsUsesGenericArchiveName() {
+        XCTAssertEqual(FileOperationRules.zipName(for: ["a.txt", "b.txt"], existing: []), "Archive.zip")
+    }
+
+    func testZipNameMultipleItemsIncrementsOnCollision() {
+        XCTAssertEqual(FileOperationRules.zipName(for: ["a.txt", "b.txt"], existing: ["Archive.zip"]), "Archive 2.zip")
+    }
+
+    func testZipNameMultipleItemsSkipsTakenNumbers() {
+        let existing: Set<String> = ["Archive.zip", "Archive 2.zip"]
+        XCTAssertEqual(FileOperationRules.zipName(for: ["a.txt", "b.txt"], existing: existing), "Archive 3.zip")
+    }
+
+    func testZipNameSingleItemCollisionFallsBackToNumberedScheme() {
+        XCTAssertEqual(FileOperationRules.zipName(for: ["notes.txt"], existing: ["notes.txt.zip"]), "notes.txt 2.zip")
+    }
+
+    // MARK: zipBuildPlan (R13 — temp-then-validate)
+
+    func testZipBuildPlanStagingPathIsInSameDirectoryAsFinal() {
+        let plan = FileOperationRules.zipBuildPlan(finalPath: "/Users/x/Downloads/Archive.zip")
+        XCTAssertEqual((plan.stagingPath as NSString).deletingLastPathComponent, "/Users/x/Downloads")
+        XCTAssertEqual(plan.finalPath, "/Users/x/Downloads/Archive.zip")
+    }
+
+    func testZipBuildPlanStagingPathDiffersFromFinalPath() {
+        let plan = FileOperationRules.zipBuildPlan(finalPath: "/Users/x/Downloads/Archive.zip")
+        XCTAssertNotEqual(plan.stagingPath, plan.finalPath)
+    }
+
+    func testZipBuildPlanStagingPathsAreUniquePerCall() {
+        let a = FileOperationRules.zipBuildPlan(finalPath: "/Users/x/Archive.zip")
+        let b = FileOperationRules.zipBuildPlan(finalPath: "/Users/x/Archive.zip")
+        XCTAssertNotEqual(a.stagingPath, b.stagingPath, "two concurrent compresses to the same name must not collide on staging path")
+    }
+
+    func testZipBuildPlanStagingPathIsHiddenDotfile() {
+        // A visible half-built archive sitting next to the final name would defeat "never reveal before validated".
+        let plan = FileOperationRules.zipBuildPlan(finalPath: "/Users/x/Archive.zip")
+        XCTAssertTrue((plan.stagingPath as NSString).lastPathComponent.hasPrefix("."))
+    }
+
+    // MARK: compressDisabled (R15)
+
+    func testCompressDisabledForSingleExistingZip() {
+        XCTAssertTrue(FileOperationRules.compressDisabled(selection: [(path: "/a/Archive.zip", isCloudPlaceholder: false)]))
+    }
+
+    func testCompressDisabledCaseInsensitiveExtension() {
+        XCTAssertTrue(FileOperationRules.compressDisabled(selection: [(path: "/a/Archive.ZIP", isCloudPlaceholder: false)]))
+    }
+
+    func testCompressNotDisabledForSingleNonZipFile() {
+        XCTAssertFalse(FileOperationRules.compressDisabled(selection: [(path: "/a/notes.txt", isCloudPlaceholder: false)]))
+    }
+
+    func testCompressNotDisabledForMultipleZipFiles() {
+        // The "single existing zip" rule only applies to a selection of exactly one.
+        let selection = [(path: "/a/A.zip", isCloudPlaceholder: false), (path: "/a/B.zip", isCloudPlaceholder: false)]
+        XCTAssertFalse(FileOperationRules.compressDisabled(selection: selection))
+    }
+
+    func testCompressDisabledWhenAnyItemIsCloudPlaceholder() {
+        let selection = [(path: "/a/x.txt", isCloudPlaceholder: false), (path: "/a/y.txt", isCloudPlaceholder: true)]
+        XCTAssertTrue(FileOperationRules.compressDisabled(selection: selection))
+    }
+
+    func testCompressNotDisabledForOrdinaryMultiSelection() {
+        let selection = [(path: "/a/x.txt", isCloudPlaceholder: false), (path: "/a/y.txt", isCloudPlaceholder: false)]
+        XCTAssertFalse(FileOperationRules.compressDisabled(selection: selection))
+    }
+
+    // MARK: isDisabledForTrashedItem (spec §13 — changelog 1.0.4 fix)
+
+    func testShareDuplicateCompressMakeAliasDisabledForTrashedItem() {
+        for command in [FileOperationRules.TrashGatedCommand.share, .duplicate, .compress, .makeAlias] {
+            XCTAssertTrue(FileOperationRules.isDisabledForTrashedItem(command, isInTrash: true), "\(command) must be disabled in Trash")
+        }
+    }
+
+    func testShareDuplicateCompressMakeAliasEnabledOutsideTrash() {
+        for command in [FileOperationRules.TrashGatedCommand.share, .duplicate, .compress, .makeAlias] {
+            XCTAssertFalse(FileOperationRules.isDisabledForTrashedItem(command, isInTrash: false), "\(command) must stay enabled outside Trash")
+        }
+    }
+
+    // MARK: newFolderWithSelectionName (R7)
+
+    func testNewFolderWithSelectionNameUsesBareNameWhenFree() {
+        XCTAssertEqual(FileOperationRules.newFolderWithSelectionName(existing: []), "Thư mục mới chứa mục")
+    }
+
+    func testNewFolderWithSelectionNameNumbersOnCollision() {
+        XCTAssertEqual(FileOperationRules.newFolderWithSelectionName(existing: ["Thư mục mới chứa mục"]), "Thư mục mới chứa mục 2")
+    }
+
+    func testNewFolderWithSelectionNameSkipsTakenNumbers() {
+        let existing: Set<String> = ["Thư mục mới chứa mục", "Thư mục mới chứa mục 2"]
+        XCTAssertEqual(FileOperationRules.newFolderWithSelectionName(existing: existing), "Thư mục mới chứa mục 3")
+    }
+
+    func testNewFolderWithSelectionNameRespectsCustomBaseName() {
+        XCTAssertEqual(FileOperationRules.newFolderWithSelectionName(existing: ["Custom"], baseName: "Custom"), "Custom 2")
+    }
 }
