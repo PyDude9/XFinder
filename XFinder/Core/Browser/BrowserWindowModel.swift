@@ -96,9 +96,21 @@ struct PaneSearchState: Equatable {
         installWatcher()
     }
 
-    /// XF-T30 W1 — the toolbar's history menus. W1 builder (model): implement via `PaneHistory.goBack(steps:)`.
-    func goBack(steps: Int) {}
-    func goForward(steps: Int) {}
+    /// XF-T30 W1 — the toolbar's history menus (press-and-hold Back/Forward lists several entries; picking one
+    /// jumps straight there). Nothing changes when `steps` overshoots the available entries.
+    func goBack(steps: Int) {
+        guard let destination = history.goBack(steps: steps) else { return }
+        path = destination
+        startLoad(of: destination)
+        installWatcher()
+    }
+
+    func goForward(steps: Int) {
+        guard let destination = history.goForward(steps: steps) else { return }
+        path = destination
+        startLoad(of: destination)
+        installWatcher()
+    }
 
     /// ⌘↑: remember the folder we're leaving so re-entering the parent can reselect it, same as Finder.
     func goUp() {
@@ -152,8 +164,17 @@ struct PaneSearchState: Equatable {
                     // `appendingPathComponent`, not string concatenation — `path` can be "/" (a volume root),
                     // where "\(path)/\(wanted)" doubles the slash and never matches any entry's `path`.
                     self.selection = [(path as NSString).appendingPathComponent(wanted)]
+                } else if let names = self.restoreSelectionNames {
+                    // XF-T30 W1 — session restore (`TabSnapshot.selectedNames`): reselect only the names that still
+                    // exist after the first load; applied once (cleared right after), same as `selectAfterLoad`.
+                    let present = Set(listing.map(\.name))
+                    let kept = names.filter { present.contains($0) }
+                    if !kept.isEmpty {
+                        self.selection = Set(kept.map { (path as NSString).appendingPathComponent($0) })
+                    }
                 }
                 self.selectAfterLoad = nil
+                self.restoreSelectionNames = nil
             case .failure(let error):
                 self.rawEntries = []
                 self.entries = []
@@ -339,7 +360,11 @@ enum BrowserSheet: String, Identifiable {
     var filterFocusRequest: PaneID?
 
     var tree: PaneTree
-    private(set) var panes: [PaneID: PaneState]
+    /// XF-T30 W1 (contract §1/§3) — the tabs of every pane, and every tab's own state. A `PaneState` is one TAB: its
+    /// `id` (the pane it currently lives in) changes when the tab moves to another pane, its `tabID` never does.
+    /// `panes` below stays the read surface every pre-W1 call site already uses (the SELECTED tab of each pane).
+    private(set) var tabLists: [PaneID: PaneTabList] = [:]
+    private(set) var tabStates: [TabID: PaneState] = [:]
     var activePane: PaneID
     var shelf = ShelfModel()
     var shelfVisible = false
@@ -364,18 +389,13 @@ enum BrowserSheet: String, Identifiable {
         if let snapshot {
             self.tree = snapshot.tree
             self.activePane = snapshot.activePane
-            var built: [PaneID: PaneState] = [:]
             for paneSnapshot in snapshot.panes {
-                built[paneSnapshot.id] = PaneState(
-                    id: paneSnapshot.id, path: paneSnapshot.path, viewMode: paneSnapshot.viewMode,
-                    sort: paneSnapshot.sort, showHidden: paneSnapshot.showHidden, history: paneSnapshot.history)
+                installPane(paneSnapshot.id, tabs: paneSnapshot.allTabs, selectedIndex: paneSnapshot.selectedTabIndex)
             }
-            // A tree/pane-list mismatch (hand-edited session file) must not leave a leaf without a `PaneState`.
-            for id in snapshot.tree.panes where built[id] == nil {
-                built[id] = PaneState(id: id, path: home, viewMode: BrowserSettings.defaultView,
-                                      sort: .finderDefault, showHidden: BrowserSettings.showHidden, history: nil)
+            // A tree/pane-list mismatch (hand-edited session file) must not leave a leaf without tabs.
+            for id in snapshot.tree.panes where tabLists[id] == nil {
+                installPane(id, tabs: [defaultTabSnapshot(home: home)], selectedIndex: 0)
             }
-            self.panes = built
             self.shelfVisible = snapshot.shelfVisible
             if !snapshot.tree.panes.contains(activePane), let first = snapshot.tree.panes.first {
                 self.activePane = first
@@ -385,9 +405,46 @@ enum BrowserSheet: String, Identifiable {
             let first = tree.panes[0]
             self.tree = tree
             self.activePane = first
-            self.panes = [first: PaneState(id: first, path: initialPath ?? home, viewMode: BrowserSettings.defaultView,
-                                           sort: .finderDefault, showHidden: BrowserSettings.showHidden, history: nil)]
+            installPane(first, tabs: [defaultTabSnapshot(home: home, path: initialPath ?? home)], selectedIndex: 0)
         }
+    }
+
+    /// A single fresh tab using the browser's own defaults (new pane, or repairing a hand-edited/damaged session).
+    private func defaultTabSnapshot(home: String, path: String? = nil) -> TabSnapshot {
+        TabSnapshot(path: path ?? home, viewMode: BrowserSettings.defaultView, sort: .finderDefault,
+                   history: PaneHistory(current: path ?? home), showHidden: BrowserSettings.showHidden)
+    }
+
+    /// Builds `pane`'s `PaneTabList` from `tabs` (never empty — a `TabSnapshot.selectionLimit`-worth caller already
+    /// guarantees at least one) and installs a `PaneState` for each into `tabStates`. `selectedIndex` is clamped.
+    private func installPane(_ pane: PaneID, tabs: [TabSnapshot], selectedIndex: Int) {
+        let snapshots = tabs.isEmpty ? [defaultTabSnapshot(home: FileManager.default.homeDirectoryForCurrentUser.path)] : tabs
+        var ids: [TabID] = []
+        for snap in snapshots {
+            let tabID = TabID()
+            ids.append(tabID)
+            let state = PaneState(id: pane, path: snap.path, viewMode: snap.viewMode, sort: snap.sort,
+                                  showHidden: snap.showHidden, history: snap.history, tabID: tabID)
+            state.groupBy = snap.groupBy ?? .none
+            state.restoreSelectionNames = snap.selectedNames
+            tabStates[tabID] = state
+        }
+        let clampedIndex = max(0, min(selectedIndex, ids.count - 1))
+        var list = PaneTabList(first: ids[0])
+        for id in ids.dropFirst() { list.insert(id, at: list.count, select: false) }
+        _ = list.select(ids[clampedIndex])
+        tabLists[pane] = list
+    }
+
+    /// The selected tab of every pane (XF-T30 W1: pre-W1 call sites all read this; `tabs(of:)` reaches every tab).
+    /// Read-only — every write goes through the tab helpers in the XF-T30 W1 extension below, which keep `tabLists`
+    /// and `tabStates` (the actual storage) consistent with each other and with `tree`.
+    var panes: [PaneID: PaneState] {
+        var result: [PaneID: PaneState] = [:]
+        for (pane, list) in tabLists {
+            if let state = tabStates[list.selectedTab] { result[pane] = state }
+        }
+        return result
     }
 
     var active: PaneState { panes[activePane] ?? panes.values.first! }
@@ -483,9 +540,9 @@ enum BrowserSheet: String, Identifiable {
             splitGated(.up)
         case .closePane:
             if let next = tree.close(activePane) {
-                let removedPane = panes.removeValue(forKey: activePane)
-                removedPane?.stopWatching()
+                let closed = activePane
                 activePane = next
+                destroyPane(closed)
             }
         case .equalizePanes:
             tree.equalize()
@@ -539,12 +596,57 @@ enum BrowserSheet: String, Identifiable {
             let paths = getInfoTargetPaths()
             guard !paths.isEmpty else { return false }
             GetInfoWindowController.shared.show(paths: paths, readOnly: active.search != nil)
-        case .newWindowTab, .newPaneTab, .nextPaneTab, .previousPaneTab, .closePaneTab, .moveTabToNextPane,
-             .moveTabToNewPaneRight, .moveTabToNewPaneBelow, .swapWithNextPane, .moveTabToWindow, .paneLeft, .paneRight,
-             .paneAbove, .paneBelow, .makePaneWider, .makePaneNarrower, .makePaneTaller, .makePaneShorter,
-             .toggleLocationBar, .togglePathBar, .toggleStatusBar, .toggleToolbar, .customizeToolbar, .toggleSidebar,
-             .openInNewTab, .openInNewWindow, .useGroups:
-            return false   // XF-T30 W1 builder (model): implement.
+        case .newWindowTab:
+            BrowserWindowController.shared.openWindowTab(besideWindowOf: self)
+        case .newPaneTab:
+            _ = newTab(in: activePane, path: nil)
+        case .nextPaneTab:
+            selectAdjacentTab(in: activePane, forward: true)
+        case .previousPaneTab:
+            selectAdjacentTab(in: activePane, forward: false)
+        case .closePaneTab:
+            closeTab(active.tabID)
+        case .moveTabToNextPane:
+            guard let other = tree.other(than: activePane) else { return false }
+            moveTab(active.tabID, toPane: other, at: nil)
+        case .moveTabToNewPaneRight:
+            _ = moveTabToNewPane(active.tabID, beside: activePane, .right)
+        case .moveTabToNewPaneBelow:
+            _ = moveTabToNewPane(active.tabID, beside: activePane, .down)
+        case .swapWithNextPane:
+            guard let other = tree.other(than: activePane) else { return false }
+            swapPaneContents(activePane, other)
+        case .moveTabToWindow:
+            moveTabToWindow(active.tabID)
+        case .paneLeft, .paneRight, .paneAbove, .paneBelow:
+            guard let direction = Self.paneDirection(for: command), let target = neighborPane(toward: direction) else { return false }
+            activePane = target
+        case .makePaneWider:
+            tree.resize(activePane, axis: .horizontal, grow: true)
+        case .makePaneNarrower:
+            tree.resize(activePane, axis: .horizontal, grow: false)
+        case .makePaneTaller:
+            tree.resize(activePane, axis: .vertical, grow: true)
+        case .makePaneShorter:
+            tree.resize(activePane, axis: .vertical, grow: false)
+        case .toggleLocationBar:
+            setBrowserDefault(!BrowserSettings.showLocationBar, key: "fileBrowser.showLocationBar")
+        case .togglePathBar:
+            setBrowserDefault(!BrowserSettings.showPathBar, key: "fileBrowser.showPathBar")
+        case .toggleStatusBar:
+            setBrowserDefault(!BrowserSettings.showStatusBar, key: "fileBrowser.showStatusBar")
+        case .toggleToolbar:
+            chrome?.toggleToolbarShown()
+        case .customizeToolbar:
+            chrome?.runToolbarCustomization()
+        case .toggleSidebar:
+            setBrowserDefault(!BrowserSettings.showSidebar, key: "fileBrowser.showSidebar")
+        case .openInNewTab:
+            openSelectionInNewTabs()
+        case .openInNewWindow:
+            openSelectionInNewWindows()
+        case .useGroups:
+            active.useGroups.toggle()
         }
         return true
     }
@@ -595,22 +697,58 @@ enum BrowserSheet: String, Identifiable {
             // A search pane with no results yet still shows an (empty) folder-less state — only true when there is
             // something to describe: a selection, or a normal (non-search) pane showing a real folder.
             return !active.selectedEntries.isEmpty || active.search == nil
-        case .newWindowTab, .newPaneTab, .nextPaneTab, .previousPaneTab, .closePaneTab, .moveTabToNextPane,
-             .moveTabToNewPaneRight, .moveTabToNewPaneBelow, .swapWithNextPane, .moveTabToWindow, .paneLeft, .paneRight,
-             .paneAbove, .paneBelow, .makePaneWider, .makePaneNarrower, .makePaneTaller, .makePaneShorter,
-             .toggleLocationBar, .togglePathBar, .toggleStatusBar, .toggleToolbar, .customizeToolbar, .toggleSidebar,
-             .openInNewTab, .openInNewWindow, .useGroups:
-            return false   // XF-T30 W1 builder (model): implement.
+        case .newWindowTab, .newPaneTab, .nextPaneTab, .previousPaneTab, .toggleLocationBar, .togglePathBar,
+             .toggleStatusBar, .toggleSidebar, .useGroups:
+            return true
+        case .closePaneTab:
+            // Q-T30-4: the last tab of the last pane stays (nothing to close down to).
+            return (tabLists[activePane]?.count ?? 1) > 1 || tree.count > 1
+        case .moveTabToNewPaneRight, .moveTabToNewPaneBelow:
+            // Contract §3: the source pane needs at least 2 tabs (moving the only tab would leave an empty pane to
+            // split from); the split itself is also Pro-gated like any other split.
+            return (tabLists[activePane]?.count ?? 1) >= 2 && canSplitUnderLicense
+        case .moveTabToNextPane, .swapWithNextPane:
+            return tree.count >= 2 && tree.other(than: activePane) != nil
+        case .moveTabToWindow:
+            // Gray when it is the only tab of the only pane — nothing would be left behind.
+            return tree.count > 1 || (tabLists[activePane]?.count ?? 1) > 1
+        case .paneLeft, .paneRight, .paneAbove, .paneBelow:
+            guard let direction = Self.paneDirection(for: command) else { return false }
+            return neighborPane(toward: direction) != nil
+        case .makePaneWider, .makePaneNarrower, .makePaneTaller, .makePaneShorter:
+            return true
+        case .toggleToolbar, .customizeToolbar:
+            return chrome != nil
+        case .openInNewTab, .openInNewWindow:
+            return !active.selectedEntries.isEmpty
         }
     }
+
+    private static func paneDirection(for command: BrowserCommand) -> SplitDirection? {
+        switch command {
+        case .paneLeft: return .left
+        case .paneRight: return .right
+        case .paneAbove: return .up
+        case .paneBelow: return .down
+        default: return nil
+        }
+    }
+
+    /// `.pane{Left,Right,Above,Below}`'s target, via `tree.neighbor` over a fixed 1000×1000 rect (contract §3 — the
+    /// toolbar/menu only needs to know "is there one", not the window's actual on-screen geometry).
+    private func neighborPane(toward direction: SplitDirection) -> PaneID? {
+        tree.neighbor(of: activePane, toward: direction, in: Self.neighborProbeRect, divider: 1)
+    }
+
+    private static let neighborProbeRect = CGRect(x: 0, y: 0, width: 1000, height: 1000)
 
     // MARK: - Pane tree helpers
 
     private func split(_ direction: SplitDirection) {
         guard let newID = tree.split(activePane, direction) else { return }
         let template = active
-        panes[newID] = PaneState(id: newID, path: template.path, viewMode: template.viewMode, sort: template.sort,
-                                 showHidden: template.showHidden, history: nil)
+        createPane(newID, path: template.path, viewMode: template.viewMode, sort: template.sort,
+                  showHidden: template.showHidden)
         activePane = newID
     }
 
@@ -618,14 +756,101 @@ enum BrowserSheet: String, Identifiable {
         let template = active
         let (kept, removed) = tree.apply(preset)
         for id in removed {
-            panes.removeValue(forKey: id)?.stopWatching()
+            destroyPane(id)
         }
-        for id in kept where panes[id] == nil {
-            panes[id] = PaneState(id: id, path: template.path, viewMode: BrowserSettings.defaultView,
-                                  sort: .finderDefault, showHidden: BrowserSettings.showHidden, history: nil)
+        for id in kept where tabLists[id] == nil {
+            createPane(id, path: template.path, viewMode: BrowserSettings.defaultView,
+                      sort: .finderDefault, showHidden: BrowserSettings.showHidden)
         }
         if !kept.contains(activePane), let first = kept.first {
             activePane = first
+        }
+    }
+
+    /// A brand-new pane with ONE tab (contract §3: "ngăn mới = một tab copy thư mục + kiểu xem của tab đang chọn").
+    private func createPane(_ pane: PaneID, path: String, viewMode: BrowserViewMode, sort: SortOrder, showHidden: Bool) {
+        let tabID = TabID()
+        let state = PaneState(id: pane, path: path, viewMode: viewMode, sort: sort, showHidden: showHidden,
+                              history: nil, tabID: tabID)
+        tabStates[tabID] = state
+        tabLists[pane] = PaneTabList(first: tabID)
+    }
+
+    /// Stops every tab's watcher before dropping the pane — a removed pane must not leak a `DirectoryWatcher` for
+    /// any tab it held, not just the one that happened to be selected (contract §3, ca hỏng §7).
+    private func destroyPane(_ pane: PaneID) {
+        guard let list = tabLists.removeValue(forKey: pane) else { return }
+        for tabID in list.tabs {
+            tabStates.removeValue(forKey: tabID)?.stopWatching()
+        }
+    }
+
+    // MARK: - Pane tabs (XF-T30 W1 §3) — `.newPaneTab`/`.nextPaneTab`/etc. and the command helpers above
+
+    private func selectAdjacentTab(in pane: PaneID, forward: Bool) {
+        guard var list = tabLists[pane] else { return }
+        if forward { list.selectNext() } else { list.selectPrevious() }
+        tabLists[pane] = list
+    }
+
+    /// `.swapWithNextPane` (Q-T30-6): the two panes trade their WHOLE tab stacks (every tab + its history), their
+    /// position in the tree stays put. `PaneState.id` is immutable (contract §1/the doc comment on `PaneState.id`):
+    /// every tab that crosses to the other pane becomes a new `PaneState` there, carrying its `tabID`/folder/
+    /// history/view/sort/selection/groupBy across — same as `moveTab`'s own rebuild.
+    private func swapPaneContents(_ a: PaneID, _ b: PaneID) {
+        guard let listA = tabLists[a], let listB = tabLists[b] else { return }
+        var newListA = PaneTabList(first: listB.tabs[0])
+        for tabID in listB.tabs { rehome(tabID, into: a) }
+        for tabID in listB.tabs.dropFirst() { newListA.insert(tabID, at: newListA.count, select: false) }
+        if let selected = listB.tabs.firstIndex(of: listB.selectedTab) { _ = newListA.select(listB.tabs[selected]) }
+
+        var newListB = PaneTabList(first: listA.tabs[0])
+        for tabID in listA.tabs { rehome(tabID, into: b) }
+        for tabID in listA.tabs.dropFirst() { newListB.insert(tabID, at: newListB.count, select: false) }
+        if let selected = listA.tabs.firstIndex(of: listA.selectedTab) { _ = newListB.select(listA.tabs[selected]) }
+
+        tabLists[a] = newListA
+        tabLists[b] = newListB
+    }
+
+    /// Replaces the `PaneState` for `tabID` with a clone that lives in `pane` instead, carrying over its folder,
+    /// history, view, sort, selection, filter, groupBy and search — the one place `moveTab`/`moveTabToNewPane`/
+    /// `swapPaneContents` all go through, since `PaneState.id` cannot be mutated in place.
+    @discardableResult
+    private func rehome(_ tabID: TabID, into pane: PaneID) -> PaneState? {
+        guard let old = tabStates[tabID] else { return nil }
+        old.stopWatching()
+        let moved = PaneState(id: pane, path: old.path, viewMode: old.viewMode, sort: old.sort,
+                              showHidden: old.showHidden, history: old.history, tabID: tabID)
+        moved.groupBy = old.groupBy
+        moved.useGroups = old.useGroups
+        moved.foldersFirst = old.foldersFirst
+        moved.selection = old.selection
+        moved.filterText = old.filterText
+        tabStates[tabID] = moved
+        return moved
+    }
+
+    private func setBrowserDefault(_ value: Bool, key: String) {
+        UserDefaults.standard.set(value, forKey: key)
+    }
+
+    /// `.openInNewTab`: every selected folder becomes a new tab in the active pane, the last one selected
+    /// (contract §3). A selected file (not a folder) is skipped — there is nowhere for it to open as a tab.
+    private func openSelectionInNewTabs() {
+        let folders = active.selectedEntries.filter(\.isFolderLike).map(\.path)
+        guard !folders.isEmpty else { return }
+        for folder in folders {
+            _ = newTab(in: activePane, path: folder)
+        }
+    }
+
+    /// `.openInNewWindow`: every selected folder opens as its own new window.
+    private func openSelectionInNewWindows() {
+        let folders = active.selectedEntries.filter(\.isFolderLike).map(\.path)
+        guard !folders.isEmpty else { return }
+        for folder in folders {
+            BrowserWindowController.shared.openWindow(path: folder)
         }
     }
 
@@ -820,18 +1045,29 @@ enum BrowserSheet: String, Identifiable {
 
     // MARK: - Snapshot / teardown
 
+    /// Writes v2 (contract §3: every tab, `selectedNames` capped at `TabSnapshot.selectionLimit`, `groupBy`).
     func snapshot(frame: CGRect?) -> WindowSnapshot {
         let paneSnapshots = tree.panes.compactMap { id -> PaneSnapshot? in
-            guard let state = panes[id] else { return nil }
-            return PaneSnapshot(id: id, path: state.path, viewMode: state.viewMode, sort: state.sort,
-                               history: state.history, showHidden: state.showHidden)
+            guard let list = tabLists[id] else { return nil }
+            let tabs = list.tabs.compactMap { tabID -> TabSnapshot? in
+                guard let state = tabStates[tabID] else { return nil }
+                let names = Array(state.selection.map { ($0 as NSString).lastPathComponent }.prefix(TabSnapshot.selectionLimit))
+                return TabSnapshot(path: state.path, viewMode: state.viewMode, sort: state.sort, history: state.history,
+                                   showHidden: state.showHidden, selectedNames: names.isEmpty ? nil : names,
+                                   groupBy: state.groupBy)
+            }
+            guard !tabs.isEmpty else { return nil }
+            let selectedIndex = list.tabs.firstIndex(of: list.selectedTab) ?? 0
+            return PaneSnapshot(id: id, tabs: tabs, selectedTab: selectedIndex)
         }
         return WindowSnapshot(frame: frame, tree: tree, panes: paneSnapshots, activePane: activePane, shelfVisible: shelfVisible)
     }
 
+    /// Stops the watcher of EVERY tab of EVERY pane (contract §3/§7) — not just the selected one `panes.values`
+    /// alone would reach.
     func tearDown() {
         bannerClearTask?.cancel()
-        for pane in panes.values { pane.stopWatching() }
+        for state in tabStates.values { state.stopWatching() }
     }
 }
 
@@ -881,20 +1117,17 @@ extension BrowserWindowModel {
     /// Replaces this window's own pane tree/layout in place (used by `openWorkspace` — stays free to read, the
     /// gate is on reaching this method at all).
     private func replaceLayout(with snapshot: WindowSnapshot) {
-        for pane in panes.values { pane.stopWatching() }
+        for state in tabStates.values { state.stopWatching() }
+        tabLists = [:]
+        tabStates = [:]
         tree = snapshot.tree
-        var built: [PaneID: PaneState] = [:]
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
         for paneSnapshot in snapshot.panes {
-            built[paneSnapshot.id] = PaneState(
-                id: paneSnapshot.id, path: paneSnapshot.path, viewMode: paneSnapshot.viewMode,
-                sort: paneSnapshot.sort, showHidden: paneSnapshot.showHidden, history: paneSnapshot.history)
+            installPane(paneSnapshot.id, tabs: paneSnapshot.allTabs, selectedIndex: paneSnapshot.selectedTabIndex)
         }
-        for id in snapshot.tree.panes where built[id] == nil {
-            let home = FileManager.default.homeDirectoryForCurrentUser.path
-            built[id] = PaneState(id: id, path: home, viewMode: BrowserSettings.defaultView,
-                                  sort: .finderDefault, showHidden: BrowserSettings.showHidden, history: nil)
+        for id in snapshot.tree.panes where tabLists[id] == nil {
+            installPane(id, tabs: [defaultTabSnapshot(home: home)], selectedIndex: 0)
         }
-        panes = built
         shelfVisible = snapshot.shelfVisible
         activePane = snapshot.tree.panes.contains(snapshot.activePane) ? snapshot.activePane : (snapshot.tree.panes.first ?? activePane)
         activeSyncPairStorage = nil
@@ -1052,35 +1285,124 @@ extension WorkspaceStore {
     }
 }
 
-// MARK: - XF-T30 W1 pane tabs (contract docs/specs/XF-T30-w1-contract.md §3) — W1 builder (model): implement.
+// MARK: - XF-T30 W1 pane tabs (contract docs/specs/XF-T30-w1-contract.md §3)
 
 extension BrowserWindowModel {
     /// The tabs of `pane`, in strip order (the selected one is `panes[pane]`).
-    func tabs(of pane: PaneID) -> [PaneState] { panes[pane].map { [$0] } ?? [] }
+    func tabs(of pane: PaneID) -> [PaneState] {
+        guard let list = tabLists[pane] else { return [] }
+        return list.tabs.compactMap { tabStates[$0] }
+    }
 
     /// Shows `tab` in its pane and focuses that pane.
-    func selectTab(_ tab: TabID) {}
+    func selectTab(_ tab: TabID) {
+        guard let pane = pane(containing: tab), var list = tabLists[pane] else { return }
+        guard list.select(tab) else { return }
+        tabLists[pane] = list
+        activePane = pane
+    }
 
     /// A new tab right after the selected one of `pane`, on `path` (nil = the selected tab's folder), selected.
     @discardableResult
-    func newTab(in pane: PaneID, path: String?) -> TabID? { nil }
+    func newTab(in pane: PaneID, path: String?) -> TabID? {
+        guard var list = tabLists[pane], let template = tabStates[list.selectedTab] else { return nil }
+        let tabID = TabID()
+        let state = PaneState(id: pane, path: path ?? template.path, viewMode: template.viewMode, sort: template.sort,
+                              showHidden: template.showHidden, history: nil, tabID: tabID)
+        tabStates[tabID] = state
+        list.add(tabID)
+        tabLists[pane] = list
+        return tabID
+    }
 
     /// Q-T30-4: the last tab of a pane closes the pane when another pane exists; the last tab of the last pane stays.
-    func closeTab(_ tab: TabID) {}
+    func closeTab(_ tab: TabID) {
+        guard let pane = pane(containing: tab), var list = tabLists[pane] else { return }
+        if list.count == 1 {
+            guard tree.count > 1 else { return }   // the one pane left in the window keeps its one tab.
+            if let next = tree.close(pane) {
+                activePane = (activePane == pane) ? next : activePane
+                destroyPane(pane)
+            }
+            return
+        }
+        guard list.remove(tab) else { return }
+        tabStates.removeValue(forKey: tab)?.stopWatching()
+        tabLists[pane] = list
+    }
 
-    /// Moves `tab` into `pane` at `index` (nil = after its selected tab) and selects it there.
-    func moveTab(_ tab: TabID, toPane pane: PaneID, at index: Int?) {}
+    /// Moves `tab` into `pane` at `index` (nil = after its selected tab) and selects it there. A no-op when `tab`
+    /// is already the only tab of `pane` (dragging a one-tab pane's tab back onto itself — contract §7).
+    func moveTab(_ tab: TabID, toPane pane: PaneID, at index: Int?) {
+        guard let sourcePane = self.pane(containing: tab), var sourceList = tabLists[sourcePane] else { return }
+        if pane == sourcePane {
+            guard let targetIndex = index else { return }
+            sourceList.move(tab, to: targetIndex)
+            tabLists[pane] = sourceList
+            return
+        }
+        guard var destList = tabLists[pane] else { return }
+        guard sourceList.remove(tab) else { return }   // refuses when `tab` is the only tab of `sourcePane`.
+        let moved = rehome(tab, into: pane)
+        let insertIndex = index ?? (destList.selected + 1)
+        destList.insert(tab, at: insertIndex, select: true)
+        tabLists[sourcePane] = sourceList
+        tabLists[pane] = destList
+        if moved != nil { activePane = pane }
+    }
 
     /// Splits `pane` toward `dir` (Pro-gated like any split) and moves `tab` into the new pane. Returns the new pane.
+    /// A no-op (nil) when `tab` is the only tab of `pane` — there would be nothing left in `pane` to split from
+    /// (contract §7: "kéo tab của ngăn một-tab ra mép chính nó ⇒ không gì").
     @discardableResult
-    func moveTabToNewPane(_ tab: TabID, beside pane: PaneID, _ dir: SplitDirection) -> PaneID? { nil }
+    func moveTabToNewPane(_ tab: TabID, beside pane: PaneID, _ dir: SplitDirection) -> PaneID? {
+        guard canSplitUnderLicense, var sourceList = tabLists[pane], sourceList.count >= 2 else { return nil }
+        guard let newID = tree.split(pane, dir) else { return nil }
+        guard sourceList.remove(tab) else {
+            // Should not happen (count >= 2 was checked), but undo the tree split rather than leave a dangling pane.
+            _ = tree.close(newID)
+            return nil
+        }
+        tabLists[pane] = sourceList
+        let moved = rehome(tab, into: newID)
+        tabLists[newID] = PaneTabList(first: tab)
+        if moved != nil { activePane = newID }
+        return newID
+    }
 
-    /// Opens a new window holding only `tab` (folder, history, view) and closes it here.
-    func moveTabToWindow(_ tab: TabID) {}
+    /// Opens a new window holding only `tab` (folder, history, view) and closes it here. The new window gets a
+    /// single pane with `tab`'s exact state (Pro's pane limit does not apply — one pane is always allowed); a fresh
+    /// `PaneTree()` is always a single leaf, so its own (freshly minted) pane id is used, rather than reusing
+    /// `tab`'s current pane id, which the new tree knows nothing about.
+    func moveTabToWindow(_ tab: TabID) {
+        guard let state = tabStates[tab] else { return }
+        let newTree = PaneTree()
+        let newPaneID = newTree.panes[0]
+        let tabSnapshot = TabSnapshot(path: state.path, viewMode: state.viewMode, sort: state.sort, history: state.history,
+                                      showHidden: state.showHidden, groupBy: state.groupBy)
+        let paneSnapshot = PaneSnapshot(id: newPaneID, tabs: [tabSnapshot], selectedTab: 0)
+        let snapshot = WindowSnapshot(frame: nil, tree: newTree, panes: [paneSnapshot], activePane: newPaneID, shelfVisible: false)
+        BrowserWindowController.shared.openRestoredWindow(snapshot)
+        closeTab(tab)
+    }
 
     /// The pane that holds `tab`.
-    func pane(containing tab: TabID) -> PaneID? { nil }
+    func pane(containing tab: TabID) -> PaneID? {
+        for (pane, list) in tabLists where list.tabs.contains(tab) {
+            return pane
+        }
+        return nil
+    }
 
     /// A tab dragged inside this window and dropped on `pane` (`PaneTabRules.dropTarget` decided `target`).
-    func dropTab(_ tab: TabID, onto pane: PaneID, target: PaneTabRules.DropTarget) {}
+    func dropTab(_ tab: TabID, onto pane: PaneID, target: PaneTabRules.DropTarget) {
+        switch target {
+        case .strip(let index):
+            moveTab(tab, toPane: pane, at: index)
+        case .edge(let direction):
+            _ = moveTabToNewPane(tab, beside: pane, direction)
+        case .center:
+            moveTab(tab, toPane: pane, at: nil)
+        }
+    }
 }
