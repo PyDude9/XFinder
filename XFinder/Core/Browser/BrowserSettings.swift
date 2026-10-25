@@ -81,6 +81,13 @@ final class BrowserSettings {
         }
         set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: "fileBrowser.keyBindings") }
     }
+    /// The ONE reader of `fileBrowser.tabSwitchesPanes` (Settings ▸ Keyboard — the Total Commander habit, off by
+    /// default so plain Tab keeps doing nothing everywhere else).
+    static var tabSwitchesPanes: Bool { UserDefaults.standard.object(forKey: "fileBrowser.tabSwitchesPanes") as? Bool ?? false }
+    /// The ONE reader of `fileBrowser.mouseBackForward` (Settings ▸ Keyboard — side buttons 4/5: on, off, or swapped).
+    static var mouseBackForward: MouseBackForward {
+        MouseBackForward(rawValue: UserDefaults.standard.string(forKey: "fileBrowser.mouseBackForward") ?? "on") ?? .on
+    }
 
     // MARK: XF-T30 W7 — Preview pane
     static var showPreview: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showPreview") as? Bool ?? false }

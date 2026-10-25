@@ -30,9 +30,9 @@ import Quartz
 
     // MARK: - Opening
 
-    /// ⌘N, menu bar item, deep link `xfinder://browser?path=`. `path` nil ⇒ Home. `startSearch`: the AI Search
-    /// page's "Mở thanh tìm" link — opens the window then starts ⌥⌘F (an empty, editable search) in its active
-    /// pane, same as pressing the chord by hand right after the window appears.
+    /// ⌘N, menu bar item, deep link `xfinder://browser?path=`. `path` nil ⇒ `BrowserSettings.newWindowTarget`.
+    /// `startSearch`: the AI Search page's "Mở thanh tìm" link — opens the window then starts ⌥⌘F (an empty,
+    /// editable search) in its active pane, same as pressing the chord by hand right after the window appears.
     func openWindow(path: String?, startSearch: Bool) {
         let model = openWindow(path: path)
         if startSearch {
@@ -40,10 +40,21 @@ import Quartz
         }
     }
 
+    /// XF-T30 W4 §3 — a fresh install's very first browser window shows Welcome INSTEAD (its own layout step opens
+    /// the real window, "filled with folders you allowed" — FileOctopus' own wording); every later window opens
+    /// normally. Only an explicit request for a brand-new window goes through here — restored windows
+    /// (`openWindow(snapshot:)`, including the one Welcome's own completion opens via `openRestoredWindow`) never
+    /// re-enter this gate, so Welcome cannot loop into itself. Returns a model either way (Welcome's own window has
+    /// no `BrowserWindowModel` of its own) so every call site keeps working; the model returned in that branch is a
+    /// throwaway, unattached to any on-screen window, for API compatibility only.
     @discardableResult
     func openWindow(path: String?) -> BrowserWindowModel {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let model = BrowserWindowModel(snapshot: nil, initialPath: path ?? home)
+        if windows.isEmpty, !BrowserSettings.onboardingDone {
+            BrowserWindowModel.showWelcomeIfFirstRun()
+            return BrowserWindowModel(snapshot: nil, initialPath: path ?? BrowserWindowModel.resolvedNewWindowTarget())
+        }
+        let target = path ?? BrowserWindowModel.resolvedNewWindowTarget()
+        let model = BrowserWindowModel(snapshot: nil, initialPath: target)
         presentNewWindow(for: model, frame: nil)
         return model
     }
@@ -62,9 +73,8 @@ import Quartz
     }
 
     /// XF-T30 W1 — ⌘T / the native tab bar's +: a new browser window added as a native tab of `model`'s window.
-    /// Opens Home (same folder `openWindow(path: nil)` would), then slots it into the SAME `NSWindowTabGroup` as
-    /// `model`'s own window, right after it — "until W4 has 'New windows show'" (the contract's own wording for
-    /// where the opened folder comes from is still just Home at W1).
+    /// Opens `BrowserSettings.newWindowTarget` (XF-T30 W4 — W1's own comment here used to say "Home, until W4 has
+    /// 'New windows show'"), then slots it into the SAME `NSWindowTabGroup` as `model`'s own window, right after it.
     func openWindowTab(besideWindowOf model: BrowserWindowModel) {
         guard let existingWindow = windows.first(where: { modelsByWindow[ObjectIdentifier($0)] === model }) else {
             openWindow(path: nil)
@@ -334,16 +344,44 @@ final class BrowserWindow: NSWindow {
         // search fields, so it must NOT fall through there — only the rename editor (Finder: ⌘⌫ trashes the file
         // being renamed, same as when nothing is being edited) gets the carve-out, and only while `renaming` is
         // actually set for this window's model.
-        if let responder = firstResponder, isTextEditing(responder), !isNonTextChord(event, isRenaming: model?.renaming != nil) {
+        let editingText = firstResponder.map(isTextEditing) ?? false
+        if editingText, !isNonTextChord(event, isRenaming: model?.renaming != nil) {
             return super.performKeyEquivalent(with: event)
         }
-        guard let model,
-              let chord = Self.chord(from: event),
-              let command = BrowserCommands.command(for: chord)
-        else {
+        guard let model, let chord = Self.chord(from: event) else {
+            return super.performKeyEquivalent(with: event)
+        }
+        // XF-T30 W4 §1 "fileBrowser.tabSwitchesPanes" (Total Commander habit): plain Tab, with no field editor in
+        // the way, cycles the active pane instead of doing nothing (a browser window has no other Tab-stop chain
+        // worth preserving — focus only ever lives in a text field, already excluded above).
+        if BrowserSettings.tabSwitchesPanes, chord == Self.plainTab, !editingText {
+            return model.perform(.nextPane) || super.performKeyEquivalent(with: event)
+        }
+        // XF-T30 W4 §1 "fileBrowser.returnOpens" / F2 (Q-T30-10's Windows Explorer habit, also Total Commander's
+        // own Return): swaps which of the two Finder-default chords on plain Return / F2 means Open vs. Rename,
+        // on top of whatever `BrowserSettings.keyBindings` already resolved the chord to — a key-binding profile
+        // can rebind the surrounding chords, but this single legacy toggle still needs to flip just these two.
+        if let remapped = Self.remapReturnAndF2(chord, returnOpens: BrowserSettings.returnOpens) {
+            return model.perform(remapped) ? true : super.performKeyEquivalent(with: event)
+        }
+        guard let command = BrowserSettings.keyBindings.command(for: chord) else {
             return super.performKeyEquivalent(with: event)
         }
         return model.perform(command) ? true : super.performKeyEquivalent(with: event)
+    }
+
+    private static let plainTab = KeyChord("tab")
+
+    /// `chord` ⇒ the command `returnOpens` wants for plain Return / F2, or nil when `chord` is neither (every
+    /// other chord keeps going through `BrowserSettings.keyBindings.command(for:)` as usual). `returnOpens == false`
+    /// (Finder's own layout, the default): Return renames, F2 does nothing special here (no command owns it yet).
+    /// `returnOpens == true` (Windows Explorer / Total Commander habit): Return opens the selection, F2 renames.
+    private static func remapReturnAndF2(_ chord: KeyChord, returnOpens: Bool) -> BrowserCommand? {
+        guard chord.key == "return" || chord.key == "f2", !chord.command, !chord.shift, !chord.option, !chord.control
+        else { return nil }
+        if chord.key == "f2" { return returnOpens ? .rename : nil }
+        // chord.key == "return"
+        return returnOpens ? .open : nil   // nil ⇒ let `.rename`'s own ⌘-less Return binding fire as before.
     }
 
     private func modelForThisWindow() -> BrowserWindowModel? {
@@ -382,26 +420,34 @@ final class BrowserWindow: NSWindow {
 
     private static let specialKeys: [UInt16: String] = [
         36: "return", 51: "delete", 49: "space", 123: "left", 124: "right",
-        125: "down", 126: "up", 53: "escape", 48: "tab",
+        125: "down", 126: "up", 53: "escape", 48: "tab", 120: "f2",
     ]
 
+    /// XF-T30 W4 §1 "fileBrowser.mouseBackForward": `off` ⇒ side buttons 4/5 do nothing (the event falls through to
+    /// `super`, same as no handler being installed at all); `swapped` ⇒ button 4 (forward) acts as Back and button 5
+    /// (back) acts as Forward; `on` (default) is the existing behavior unchanged.
     override func otherMouseDown(with event: NSEvent) {
-        guard event.buttonNumber == 3 || event.buttonNumber == 4, let model = modelForThisWindow() else {
+        guard event.buttonNumber == 3 || event.buttonNumber == 4, let model = modelForThisWindow(),
+              BrowserSettings.mouseBackForward != .off
+        else {
             super.otherMouseDown(with: event)
             return
         }
-        navigate(model: model, at: event.locationInWindow, forward: event.buttonNumber == 4)
+        var forward = event.buttonNumber == 4
+        if BrowserSettings.mouseBackForward == .swapped { forward.toggle() }
+        navigate(model: model, at: event.locationInWindow, forward: forward)
     }
 
     override func swipe(with event: NSEvent) {
-        guard let model = modelForThisWindow() else {
+        guard let model = modelForThisWindow(), BrowserSettings.mouseBackForward != .off else {
             super.swipe(with: event)
             return
         }
+        let swapped = BrowserSettings.mouseBackForward == .swapped
         if event.deltaX > 0 {
-            navigate(model: model, at: event.locationInWindow, forward: false)
+            navigate(model: model, at: event.locationInWindow, forward: swapped)
         } else if event.deltaX < 0 {
-            navigate(model: model, at: event.locationInWindow, forward: true)
+            navigate(model: model, at: event.locationInWindow, forward: !swapped)
         } else {
             super.swipe(with: event)
         }

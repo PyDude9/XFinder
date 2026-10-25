@@ -1,18 +1,14 @@
 import SwiftUI
 import AppKit
 
-/// XF-T28 — Trình duyệt tệp. Job: "the person comes here to open the file browser and decide how it starts".
-/// Every switch here has its ONE reader in `BrowserSettings`; the defaults below must equal those readers.
+/// XF-T30 W4 (Q-T30-12) — Trình duyệt tệp. Job: "the person comes here to turn the browser on, open it, and reach
+/// its own Settings window". Reduced per the contract: every `fileBrowser.*` key besides `enabled`/`globalHotkey`
+/// now has its ONE control inside `BrowserSettingsWindowController` instead of here (CLAUDE.md rule 7 — a page that
+/// still mentions another page's setting gets a link, not a second switch).
 struct FileBrowserDetailView: View {
     @AppStorage("fileBrowser.enabled") private var enabled = true
-    @AppStorage("fileBrowser.reopenWindows") private var reopenWindows = true
-    @AppStorage("fileBrowser.showHidden") private var showHidden = false
-    @AppStorage("fileBrowser.foldersFirst") private var foldersFirst = false
-    @AppStorage("fileBrowser.defaultView") private var defaultView = "list"
     @AppStorage("fileBrowser.globalHotkey") private var globalHotkey = false
     @State private var settings = BrowserSettings.shared
-    @State private var sidebarLayout = BrowserSettings.sidebarLayout
-    @State private var hiddenVolumeNames: [String: String] = [:]   // volume UUID -> name, when the volume is mounted
 
     var body: some View {
         ScrollView {
@@ -51,69 +47,19 @@ struct FileBrowserDetailView: View {
                         .settingsRow()
                         .disabled(!enabled)
                         .onChange(of: globalHotkey) { _, _ in BrowserSettings.shared.applySettings() }
-                }
-
-                SettingsSection(title: L10n.t("Khi mở")) {
-                    ToggleRow(title: L10n.t("Mở lại cửa sổ lần trước"),
-                              subtitle: L10n.t("Cửa sổ, ngăn, thư mục và lịch sử quay lại trở về khi XFinder mở. Giữ Shift khi mở để bắt đầu với cửa sổ trống."),
-                              isOn: $reopenWindows)
-                        .settingsRow()
                     SettingsDivider()
-                    HStack {
-                        Text(L10n.t("Kiểu xem của ngăn mới")).font(XFinderTokens.Font.row)
-                        Spacer()
-                        Picker("", selection: $defaultView) {
-                            Text(L10n.t("Xem dạng biểu tượng")).tag("icons")
-                            Text(L10n.t("Xem dạng danh sách")).tag("list")
-                            Text(L10n.t("Xem dạng cột")).tag("columns")
-                            Text(L10n.t("Xem dạng gallery")).tag("gallery")
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
-                        .fixedSize()
+                    Button {
+                        BrowserSettingsWindowController.shared.show(tab: nil)
+                    } label: {
+                        Label(L10n.t(BrowserCommands.titleKey(.openBrowserSettings)), systemImage: "gearshape")
                     }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                     .settingsRow()
-                    SettingsDivider()
-                    ToggleRow(title: L10n.t("Hiện tệp ẩn"),
-                              subtitle: L10n.t("Áp dụng cho ngăn mới; ⇧⌘. bật/tắt cho từng ngăn."),
-                              isOn: $showHidden)
-                        .settingsRow()
-                    SettingsDivider()
-                    ToggleRow(title: L10n.t("Thư mục luôn ở trên"),
-                              subtitle: L10n.t("Như tuỳ chọn “Giữ thư mục ở trên cùng” của Finder."),
-                              isOn: $foldersFirst)
-                        .settingsRow()
-                }
-
-                if !sidebarLayout.hiddenVolumeUUIDs.isEmpty {
-                    SettingsSection(title: L10n.t("Ổ đã ẩn"),
-                                    footer: L10n.t("Ổ bị ẩn khỏi mục Vị trí của sidebar trình duyệt tệp — vẫn gắn vào máy bình thường.")) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            ForEach(Array(sidebarLayout.hiddenVolumeUUIDs).sorted(), id: \.self) { uuid in
-                                HStack {
-                                    Image(systemName: "externaldrive")
-                                        .foregroundColor(.secondary).font(XFinderTokens.Font.caption)
-                                    Text(hiddenVolumeNames[uuid] ?? L10n.t("Ổ chưa gắn vào máy"))
-                                        .font(XFinderTokens.Font.rowValue)
-                                    Spacer()
-                                    Button(L10n.t("Khôi phục")) {
-                                        var layout = BrowserSettings.sidebarLayout
-                                        layout.showVolume(uuid: uuid)
-                                        BrowserSettings.sidebarLayout = layout
-                                        sidebarLayout = layout
-                                    }
-                                    .buttonStyle(.bordered)
-                                    .controlSize(.small)
-                                }
-                                .settingsRow()
-                                if uuid != Array(sidebarLayout.hiddenVolumeUUIDs).sorted().last { SettingsDivider() }
-                            }
-                        }
-                    }
                 }
 
                 SettingsSection(title: L10n.t("Phím tắt trong cửa sổ"),
-                                footer: L10n.t("Mọi lệnh cũng có trong bảng lệnh: ⌃⇧⌘P, hoặc gõ > trong ⌃⌘P.")) {
+                                footer: L10n.t("Mọi lệnh cũng có trong bảng lệnh: ⌃⇧⌘P, hoặc gõ > trong ⌃⌘P. Đổi phím ở cửa sổ Cài đặt trình duyệt ▸ Bàn phím.")) {
                     VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                         ForEach(Self.highlighted, id: \.self) { command in
                             HStack {
@@ -133,29 +79,9 @@ struct FileBrowserDetailView: View {
             .pageWidthSafe()
         }
         .background(XFinderTokens.Settings.contentBackground)
-        .onAppear(perform: reloadHiddenVolumeNames)
     }
 
-    /// Resolves a name for every currently-hidden volume UUID that happens to be mounted right now (an unmounted one
-    /// keeps the placeholder) — `mountedVolumeURLs` is disk I/O, so the scan runs off the main actor.
-    private func reloadHiddenVolumeNames() {
-        let hidden = sidebarLayout.hiddenVolumeUUIDs
-        guard !hidden.isEmpty else { return }
-        Task.detached(priority: .utility) {
-            let keys: [URLResourceKey] = [.volumeNameKey, .volumeUUIDStringKey]
-            var names: [String: String] = [:]
-            if let urls = FileManager.default.mountedVolumeURLs(includingResourceValuesForKeys: keys, options: [.skipHiddenVolumes]) {
-                for url in urls {
-                    guard let values = try? url.resourceValues(forKeys: Set(keys)), let uuid = values.volumeUUIDString,
-                          hidden.contains(uuid) else { continue }
-                    names[uuid] = values.volumeName ?? url.lastPathComponent
-                }
-            }
-            await MainActor.run { hiddenVolumeNames = names }
-        }
-    }
-
-    /// The shortcuts a newcomer needs first; the palette lists the rest.
+    /// The shortcuts a newcomer needs first; the palette and the Keyboard tab of Settings list the rest.
     static let highlighted: [BrowserCommand] = [
         .splitRight, .splitDown, .zoomPane, .copyToOtherPane, .moveToOtherPane, .filter, .find,
         .quickOpen, .commandPalette, .toggleShelf, .operations, .batchRename,
