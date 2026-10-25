@@ -67,6 +67,7 @@ final class BrowserMainMenu {
         }
         insertedGoMenuItem = nil
         activeModel = nil
+        recentFoldersModel = nil
     }
 
     // MARK: - Building blocks
@@ -95,26 +96,112 @@ final class BrowserMainMenu {
     }
 
     /// A brand-new top-level "Đi" (Go) menu, inserted right before "Window" — fully synthetic, so it cannot collide
-    /// with any `CommandMenu`/`CommandGroup` SwiftUI's `.commands` block already declares.
+    /// with any `CommandMenu`/`CommandGroup` SwiftUI's `.commands` block already declares. Contract §3: every Go
+    /// command, plus a "Thư mục gần đây" (Recent Folders) submenu built when it opens, plus Clear Menu.
     private func insertGoMenu(into mainMenu: NSMenu, model: BrowserWindowModel) {
         let goMenu = NSMenu(title: L10n.t("Đi"))
         let goItem = NSMenuItem(title: L10n.t("Đi"), action: nil, keyEquivalent: "")
         goItem.submenu = goMenu
-        for command: BrowserCommand in [.openEnclosing, .goToFolder, .editLocation, .quickOpen] {
-            let item = NSMenuItem(title: L10n.t(BrowserCommands.titleKey(command)), action: #selector(dispatch(_:)), keyEquivalent: "")
-            item.target = self
-            item.representedObject = Box(command: command, model: model)
-            applyKeyEquivalent(command, to: item)
-            goMenu.addItem(item)
+
+        let primaryCommands: [BrowserCommand] = [.openEnclosing, .goToFolder, .editLocation, .quickOpen]
+        for command in primaryCommands {
+            addCommandItem(command, to: goMenu, model: model)
         }
+        goMenu.addItem(.separator())
+
+        let destinationCommands: [BrowserCommand] = [
+            .goRecents, .goDocuments, .goDesktop, .goDownloads, .goHome, .goAirDrop, .goNetwork, .goICloud,
+            .goApplications, .goUtilities, .goComputer,
+        ]
+        for command in destinationCommands {
+            addCommandItem(command, to: goMenu, model: model)
+        }
+        goMenu.addItem(.separator())
+
+        let recentItem = NSMenuItem(title: L10n.t("Thư mục gần đây"), action: nil, keyEquivalent: "")
+        let recentMenu = NSMenu(title: L10n.t("Thư mục gần đây"))
+        recentMenu.delegate = recentFoldersMenuDelegate
+        recentMenu.autoenablesItems = false
+        recentItem.submenu = recentMenu
+        recentFoldersModel = model
+        goMenu.addItem(recentItem)
+        goMenu.addItem(.separator())
+
+        for command: BrowserCommand in [.connectToServer, .eject] {
+            addCommandItem(command, to: goMenu, model: model)
+        }
+
         let windowMenuIndex = mainMenu.items.firstIndex { ["Window", "Cửa sổ"].contains($0.title) } ?? mainMenu.items.count
         mainMenu.insertItem(goItem, at: windowMenuIndex)
         insertedGoMenuItem = goItem
     }
 
+    private func addCommandItem(_ command: BrowserCommand, to menu: NSMenu, model: BrowserWindowModel) {
+        let item = NSMenuItem(title: L10n.t(BrowserCommands.titleKey(command)), action: #selector(dispatch(_:)), keyEquivalent: "")
+        item.target = self
+        item.representedObject = Box(command: command, model: model)
+        applyKeyEquivalent(command, to: item)
+        menu.addItem(item)
+    }
+
     @objc private func dispatch(_ sender: NSMenuItem) {
         guard let box = sender.representedObject as? Box else { return }
         _ = box.model.perform(box.command)
+    }
+
+    /// One folder from Go ▸ Recent Folders was chosen: navigate the active tab there, same as any other Go command.
+    @objc private func dispatchRecentFolder(_ sender: NSMenuItem) {
+        guard let path = sender.representedObject as? String, let model = recentFoldersModel else { return }
+        model.active.navigate(to: path)
+    }
+
+    @objc private func dispatchClearRecentFolders(_ sender: NSMenuItem) {
+        guard let model = recentFoldersModel else { return }
+        _ = model.perform(.clearRecentFolders)
+    }
+
+    // MARK: - Recent Folders submenu (built when opened, contract §3)
+
+    /// The model `dispatchRecentFolder(_:)`/`dispatchClearRecentFolders(_:)` act on — the submenu's own items carry a
+    /// plain path (or nothing) in `representedObject`, not a `Box`, so the model is kept here instead.
+    private weak var recentFoldersModel: BrowserWindowModel?
+    private lazy var recentFoldersMenuDelegate = RecentFoldersMenuDelegate(owner: self)
+
+    /// `NSMenuDelegate` that rebuilds the Recent Folders submenu every time it is about to open — contract §3:
+    /// "Thư mục gần đây ▸" (xây khi mở) — so a folder noted since the menu was last shown always shows up, and one
+    /// that stopped existing can be dropped (`RecentFolders.existing`).
+    private final class RecentFoldersMenuDelegate: NSObject, NSMenuDelegate {
+        private weak var owner: BrowserMainMenu?
+        init(owner: BrowserMainMenu) { self.owner = owner }
+
+        func menuNeedsUpdate(_ menu: NSMenu) {
+            guard let owner else { return }
+            menu.removeAllItems()
+            let paths = BrowserSettings.recentFolders.existing { FileManager.default.fileExists(atPath: $0) }
+            if paths.isEmpty {
+                let empty = NSMenuItem(title: L10n.t("Không có thư mục nào"), action: nil, keyEquivalent: "")
+                empty.isEnabled = false
+                menu.addItem(empty)
+            } else {
+                for path in paths {
+                    let item = NSMenuItem(
+                        title: (path as NSString).lastPathComponent, action: #selector(owner.dispatchRecentFolder(_:)), keyEquivalent: ""
+                    )
+                    item.target = owner
+                    item.representedObject = path
+                    item.toolTip = path
+                    menu.addItem(item)
+                }
+            }
+            menu.addItem(.separator())
+            let clear = NSMenuItem(
+                title: L10n.t(BrowserCommands.titleKey(.clearRecentFolders)), action: #selector(owner.dispatchClearRecentFolders(_:)),
+                keyEquivalent: ""
+            )
+            clear.target = owner
+            clear.isEnabled = !paths.isEmpty
+            menu.addItem(clear)
+        }
     }
 
     /// NSMenu asks before showing an item AND before firing its key equivalent. Review 2026-10-25: ⌘T / ⌘/ fired from
