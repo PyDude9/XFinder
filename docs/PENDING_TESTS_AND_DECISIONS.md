@@ -293,7 +293,7 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-T30-SEARCH | Cài đặt ▸ Tìm kiếm thêm một thư mục, bật Nội dung; tìm "bao cao" thấy "Báo cáo.pdf"; tìm "hop dong" thấy PDF có chữ "hợp đồng"; Lưu tìm kiếm vào sidebar | chờ bản cài |
 | T-T30-CLOUD | Google Drive / Dropbox: chưa cài trên máy ⇒ "Mở trong Google Drive" / "Sao chép liên kết" / "Xem trên Dropbox.com" chưa làm (không đo được cơ chế) | cần máy có cài |
 | T-T30-MENU | Menu bar khi cửa sổ trình duyệt ở trước có Tệp/Xem/Đi/Cửa sổ của trình duyệt không (SwiftUI có ghi đè không) | chờ bạn nhìn |
-| W6-MERGE-QUEUE | Gộp thư mục chạy thẳng, chưa qua hàng đợi (không hiện trong bảng thao tác, không tạm dừng được) — cần loại job `.merge` trong engine, spec riêng | việc kế |
+| W6-MERGE-QUEUE | **Đã làm** (`.merge` job): gộp hiện trong bảng Thao tác, tạm dừng / huỷ được, bước lỗi vào Sự cố, ⌘Z đưa từng mục về chỗ cũ | thử: gộp hai thư mục trùng tên lớn, bấm Tạm dừng giữa chừng, rồi ⌘Z |
 | Q-PRO-5 | Tạo cặp khoá ký giấy phép trên máy bạn: `swift scripts/make-license.swift init ~/Private/xfinder-license.key`, dán khoá công khai in ra vào `LicenseKey.publicKeyRaw` | chưa có ⇒ mọi khoá không hợp lệ; dùng thử + bản Debug vẫn đủ |
 | Q-PRO-6 | Free: xuất toàn bộ lịch sử Clipboard (.xfinderclip) có bị giới hạn 50 mục không? | **Mặc định: không** — dữ liệu của chính người dùng (luật 9) |
 | T-PRO-1 | Trang XFinder Pro ▸ Thử giới hạn = Miễn phí; chép 60 mục | 50 hiện + dòng "10 mục cũ hơn — mở bằng Pro"; chọn Pro ⇒ hiện đủ 60 |
