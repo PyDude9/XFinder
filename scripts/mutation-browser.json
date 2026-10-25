@@ -1272,5 +1272,12 @@
   "file": "XFinder/Core/Browser/DirectoryEntry.swift",
   "anchor": "                    if foldersFirst, order.key == .name, folders[x] != folders[y] { return folders[x] }",
   "replacement": "                    if foldersFirst, folders[x] != folders[y] { return folders[x] }"
+ },
+ {
+  "id": "W27-27",
+  "name": "merge-cross-volume-renames",
+  "file": "XFinder/Core/Browser/FileOperationRules.swift",
+  "anchor": "        case .move, .merge:\n            return sameVolume ? .rename : .copyVerifyTrash",
+  "replacement": "        case .move:\n            return sameVolume ? .rename : .copyVerifyTrash\n        case .merge:\n            return .rename"
  }
 ]

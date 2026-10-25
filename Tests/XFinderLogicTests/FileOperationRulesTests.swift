@@ -903,4 +903,21 @@ final class FileOperationRulesTests: XCTestCase {
     func testNewFolderWithSelectionNameRespectsCustomBaseName() {
         XCTAssertEqual(FileOperationRules.newFolderWithSelectionName(existing: ["Custom"], baseName: "Custom"), "Custom 2")
     }
+
+    // MARK: - XF-T30 W6: merge jobs
+
+    func testMergeMovesLikeAMoveOnEachVolumeKind() {
+        XCTAssertEqual(FileOperationRules.strategy(kind: .merge, sameVolume: true), .rename)
+        XCTAssertEqual(FileOperationRules.strategy(kind: .merge, sameVolume: false), .copyVerifyTrash)
+    }
+
+    func testAJobJournalledBeforeMergeExistedStillDecodes() throws {
+        let old: Data = Data(#"{"id":"6B1D5F9C-1E0F-4C55-9D7E-0C1B2A3D4E5F","kind":"move","sources":["/a"],"destination":"/b","state":"waiting","bytesDone":0,"bytesTotal":0,"itemsDone":0,"itemsTotal":0}"#.utf8)
+        let job: FileJob = try JSONDecoder().decode(FileJob.self, from: old)
+        XCTAssertNil(job.mergePolicy)
+        let merge: FileJob = FileJob(id: UUID(), kind: .merge, sources: ["/s"], destination: "/d", mergePolicy: .keepNewer)
+        let back: FileJob = try JSONDecoder().decode(FileJob.self, from: JSONEncoder().encode(merge))
+        XCTAssertEqual(back.mergePolicy, .keepNewer)
+        XCTAssertEqual(back.kind, .merge)
+    }
 }

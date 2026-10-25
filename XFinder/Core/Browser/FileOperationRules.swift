@@ -18,6 +18,9 @@ import Foundation
 /// Trash — never removed outright — even after a verified move).
 enum FileOperationKind: String, Codable, Sendable {
     case copy, move, duplicate, trash
+    /// XF-T30 W6 — merge one folder into another (`sources = [source folder]`, `destination` = folder merged into,
+    /// `FileJob.mergePolicy` set). Runs through the queue like every other job (panel, pause, problems, undo).
+    case merge
 }
 
 enum ConflictChoice: String, Codable, Sendable {
@@ -47,12 +50,15 @@ struct FileJob: Codable, Identifiable, Equatable, Sendable {
     var itemsTotal: Int
     var errorKey: String?
     var errorDetail: String?
+    /// Only for `.merge`: how name collisions resolve. Optional so journals written before W6 still decode.
+    var mergePolicy: MergePolicy?
 
-    init(id: UUID, kind: FileOperationKind, sources: [String], destination: String?) {
+    init(id: UUID, kind: FileOperationKind, sources: [String], destination: String?, mergePolicy: MergePolicy? = nil) {
         self.id = id
         self.kind = kind
         self.sources = sources
         self.destination = destination
+        self.mergePolicy = mergePolicy
         self.state = .waiting
         self.bytesDone = 0
         self.bytesTotal = 0
@@ -358,7 +364,7 @@ enum FileOperationRules {
             return .trash
         case .duplicate, .copy:
             return .cloneOrCopy
-        case .move:
+        case .move, .merge:
             return sameVolume ? .rename : .copyVerifyTrash
         }
     }

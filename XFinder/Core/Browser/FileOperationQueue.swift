@@ -100,6 +100,20 @@ final class FileOperationQueue {
 
     // MARK: - Public API (contract)
 
+    /// XF-T30 W6 — merges `source` into `destination` as a queued job (refused for the same or nested folders).
+    @discardableResult
+    func enqueueMerge(source: String, destination: String, policy: MergePolicy) -> UUID? {
+        if FolderMerge.refusal(source: source, destination: destination) != nil {
+            lastErrorKey = "Nguồn và đích không được trùng nhau."
+            return nil
+        }
+        let job: FileJob = FileJob(id: UUID(), kind: .merge, sources: [source], destination: destination, mergePolicy: policy)
+        queue.enqueue(job)
+        lastErrorKey = nil
+        startNextIfNeeded()
+        return job.id
+    }
+
     @discardableResult
     func enqueue(_ kind: FileOperationKind, sources: [String], destination: String?) -> UUID? {
         guard !sources.isEmpty else { lastErrorKey = "Không có gì để thao tác"; return nil }
@@ -357,6 +371,9 @@ final class FileOperationQueue {
                     ok += 1
                 default:
                     if fm.fileExists(atPath: item.to) { continue }
+                    // A merge trashed the source folders it emptied: recreate the parent before moving back.
+                    try? fm.createDirectory(atPath: (item.to as NSString).deletingLastPathComponent,
+                                            withIntermediateDirectories: true)
                     try fm.moveItem(atPath: item.from, toPath: item.to)
                     ok += 1
                 }
@@ -475,6 +492,10 @@ final class FileOperationQueue {
     // MARK: - Running a job (per-item dispatch)
 
     private func run(job originalJob: FileJob, runtime: Runtime) async {
+        if originalJob.kind == .merge {
+            await runMerge(job: originalJob, runtime: runtime)
+            return
+        }
         let jobID = originalJob.id
         var itemsDone = 0
         var bytesDone: Int64 = 0
@@ -548,6 +569,70 @@ final class FileOperationQueue {
         startNextIfNeeded()
     }
 
+    /// XF-T30 W6 — a `.merge` job: plan fresh, then one plan step per item with the same pause / cancel / progress /
+    /// problems / undo handling as every other job; emptied source folders go to Trash at the end.
+    private func runMerge(job: FileJob, runtime: Runtime) async {
+        let jobID: UUID = job.id
+        guard let source: String = job.sources.first, let destination: String = job.destination,
+              let policy: MergePolicy = job.mergePolicy else {
+            queue.finish(jobID, failedWith: "Không gộp được thư mục", detail: nil)
+            endRun(jobID)
+            return
+        }
+        appendJournal(job: jobID, kind: .merge, source: source, destination: destination, phase: .started)
+        let plan: MergePlan = await FolderMergeController.planned(source: source, destination: destination, policy: policy)
+        let steps: [MergePlan.Step] = FolderMergeController.actionableSteps(of: plan)
+        let sameVolume: Bool = FolderMergeController.onSameVolume(source, destination)
+        runtime.totalItemCount = steps.count
+        updateProgress(jobID, bytesDone: 0, itemsDone: 0, bytesTotal: 0, itemsTotal: steps.count)
+
+        var itemsDone: Int = 0
+        stepLoop: for (index, step) in steps.enumerated() {
+            runtime.currentItemIndex = index
+            guard await waitWhilePaused(jobID) else { break stepLoop }
+            let outcome: FolderMergeController.StepOutcome =
+                await FolderMergeController.execute(step, source: source, destination: destination, sameVolume: sameVolume)
+            switch outcome {
+            case .moved(let from, let to):
+                runtime.movedPairs.append((from: to, to: from))   // undo moves the item back from where it landed
+            case .skipped:
+                break
+            case .failed(let path, let message):
+                runtime.failedItems.append(ProblemItem(path: path, reason: .other, systemMessage: message, beforeWrite: true))
+            }
+            itemsDone += 1
+            updateProgress(jobID, bytesDone: 0, itemsDone: itemsDone, bytesTotal: 0, itemsTotal: steps.count)
+        }
+
+        if currentState(of: jobID) != .cancelled {
+            _ = await FolderMergeController.trashEmptiedFolders(under: source)
+            recordHistory(job: job, runtime: runtime)
+            queue.finish(jobID, failedWith: nil, detail: nil)
+            recordProblems(job: job, runtime: runtime)
+        }
+        endRun(jobID)
+    }
+
+    /// Blocks (off the UI) while the job is paused; false once it is cancelled.
+    private func waitWhilePaused(_ jobID: UUID) async -> Bool {
+        guard currentState(of: jobID) != .cancelled else { return false }
+        while currentState(of: jobID) == .paused || currentState(of: jobID) == .pausing {
+            _ = queue.setPhase(jobID, .paused)
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            if currentState(of: jobID) == .cancelled { return false }
+        }
+        if currentState(of: jobID) == .running { _ = queue.setPhase(jobID, .running) }
+        return currentState(of: jobID) != .cancelled
+    }
+
+    /// The tail every job run shares once it has finished or been cancelled.
+    private func endRun(_ jobID: UUID) {
+        runtimes.removeValue(forKey: jobID)
+        updateEjectGuard()
+        drainPendingUndo(for: jobID)
+        startNextIfNeeded()
+    }
+
     /// W6 (spec R45): one `ProblemEntry` per finished operation that had ≥1 failing item, surfaced once as an alert
     /// (`problemAlert`) in addition to the persistent list row.
     private func recordProblems(job: FileJob, runtime: Runtime) {
@@ -565,6 +650,7 @@ final class FileOperationQueue {
         case .move: return "Di chuyển"
         case .duplicate: return "Nhân bản"
         case .trash: return "Chuyển vào Thùng rác"
+        case .merge: return "Gộp thư mục"
         }
     }
 
@@ -847,10 +933,10 @@ final class FileOperationQueue {
         guard count > 0 else { return }
         let step: UndoStep
         switch job.kind {
-        case .move:
+        case .move, .merge:
             guard !runtime.movedPairs.isEmpty else { return }
             step = UndoStep(
-                id: UUID(), kind: .move,
+                id: UUID(), kind: job.kind == .merge ? .merge : .move,
                 items: runtime.movedPairs.map { pair in
                     UndoItem(from: pair.from, to: pair.to, inode: Self.fileIdentity(pair.from)?.inode,
                              size: Self.fileIdentity(pair.from)?.size, modified: Self.fileIdentity(pair.from)?.modified)

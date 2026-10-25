@@ -179,6 +179,7 @@ struct OperationsPanelView: View {
         case .copy: kind = L10n.t("Sao chép")
         case .move: kind = L10n.t("Di chuyển")
         case .duplicate: kind = L10n.t("Nhân bản")
+        case .merge: kind = L10n.t("Gộp thư mục")
         case .trash: kind = L10n.t("Chuyển vào Thùng rác")
         }
         let count = job.itemsTotal > 0 ? job.itemsTotal : job.sources.count

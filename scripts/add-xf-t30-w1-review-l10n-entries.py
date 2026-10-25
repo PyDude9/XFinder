@@ -12,6 +12,7 @@ ENTRIES = {
     "Còn trống: ": ("Available: ", F),
     # integration audit 2026-10-25
     "Đã làm lại": ("Redone", S),
+    "Không gộp được thư mục": ("Couldn't merge the folders", S),
 }
 def main() -> int:
     data = json.loads(STORE.read_text(encoding="utf-8")); e = data["entries"]

@@ -120,9 +120,9 @@ struct ConflictSheet: View {
         }
     }
 
+    /// Queues the merge with the confirmed policy; the queue re-plans at run time (the preview may be stale).
     private func runMerge() {
-        guard let plan = mergePlan else { return }
-        FolderMergeController.shared.run(plan, source: prompt.source.path, destination: prompt.destination.path) { _ in }
+        FolderMergeController.shared.enqueue(source: prompt.source.path, destination: prompt.destination.path, policy: mergePolicy)
     }
 
     private func sideView(title: String, side: ConflictPrompt.Side) -> some View {
