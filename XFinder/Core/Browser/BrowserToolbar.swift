@@ -467,6 +467,7 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
         let title = L10n.t("Thao tác")
         let menu = NSMenu()
         menu.delegate = self
+        rebuildActionMenu(menu)
         actionMenuRef = menu
         let image = NSImage(systemSymbolName: "ellipsis.circle", accessibilityDescription: title)!
         let button = makeMenuButton(image: image, title: title, menu: menu)
@@ -529,7 +530,7 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
     }
 
     private func makeWorkspacesItem() -> NSToolbarItem {
-        let title = L10n.t("Workspace")
+        let title = L10n.t("Các Workspace")
         let image = NSImage(systemSymbolName: "square.stack.3d.up", accessibilityDescription: title)!
         let button = makeMenuButton(image: image, title: title, menu: workspacesMenu())
         let item = NSToolbarItem(itemIdentifier: ID.workspaces)

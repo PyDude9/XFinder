@@ -13,7 +13,7 @@ ENTRIES = {
     # BrowserToolbarController: Pane Layout button label/tooltip, Action menu button ("…"), Workspaces menu button.
     "Bố cục ngăn": ("Pane Layout", S),
     "Thao tác": ("Action", S),
-    "Workspace": ("Workspace", S),
+    "Các Workspace": ("Workspaces", S),
     # BrowserMainMenu: the synthetic top-level "Go" menu (Q-T30-13).
     "Đi": ("Go", S),
 }

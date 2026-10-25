@@ -176,9 +176,11 @@ import Quartz
         else { return }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         var missingFolders: [String] = []
-        /// First window opened per `tabGroup` number — later windows in the same group are added to it via
-        /// `addTabbedWindow`, in ascending `tabIndex` order (the snapshots are sorted below before this loop runs).
-        var groupLeaders: [Int: BrowserWindow] = [:]
+        /// Most-recently-opened window per `tabGroup` number — `addTabbedWindow(_:ordered:)` inserts relative to
+        /// the window it is CALLED ON, not relative to the group's end, so the next tab must be added onto the
+        /// previous one (not always the first/leader) for ascending `tabIndex` order to survive a 3+-tab group;
+        /// calling it on a fixed leader every time would instead reverse every tab after the first.
+        var groupTail: [Int: BrowserWindow] = [:]
         var selectedInGroupWindow: [Int: BrowserWindow] = [:]
         let ordered = snapshots.sorted { lhs, rhs in
             (lhs.tabGroup ?? Int.max, lhs.tabIndex ?? 0) < (rhs.tabGroup ?? Int.max, rhs.tabIndex ?? 0)
@@ -188,11 +190,10 @@ import Quartz
             missingFolders.append(contentsOf: missing)
             let window = openWindow(snapshot: restored)
             if let group = snapshot.tabGroup {
-                if let leader = groupLeaders[group] {
-                    leader.addTabbedWindow(window, ordered: .above)
-                } else {
-                    groupLeaders[group] = window
+                if let tail = groupTail[group] {
+                    tail.addTabbedWindow(window, ordered: .above)
                 }
+                groupTail[group] = window
                 if snapshot.selectedInGroup == true {
                     selectedInGroupWindow[group] = window
                 }
