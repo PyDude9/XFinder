@@ -290,10 +290,7 @@ struct MouseGesturesDetailView: View {
                 }
 
                 // ── Khối 5 — nút hông (F8/F29/S34-S40, danh sách hàng ở T14d) ─────────────
-                VStack(alignment: .leading, spacing: 10) {
-                    buttonListSection
-                    legend
-                }
+                sideButtonsSection
 
                 // ── Khối 6 — nút giữ & cuộn (F7/F22/F23/S47-S51) ──────────────────────────
                 switchesSection
@@ -302,7 +299,7 @@ struct MouseGesturesDetailView: View {
                 SmoothScrollSection()
 
                 // ── Khối 7 — nghiêng con lăn (F20/S41-S42) ────────────────────────────────
-                tiltRow
+                tiltSection
 
                 // ── Khối 8 — chẩn đoán chuột (F19/S13-S33) ───────────────────────────────
                 VStack(alignment: .leading, spacing: 10) {
@@ -526,9 +523,8 @@ struct MouseGesturesDetailView: View {
                         .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
                     }
 
-                    buttonListSection
-                    legend
-                    tiltRow
+                    sideButtonsSection
+                    tiltSection
                     customBundleRow
 
                     HStack(spacing: 8) {
@@ -1165,40 +1161,146 @@ struct MouseGesturesDetailView: View {
         return ClipboardAppIcon.icon(forBundleID: bundle)
     }
 
-    /// The list of the mouse's controls and what each one is doing (PATCH v9.1 R3).
-    ///
-    /// Sits directly under the drawing rather than in a tab of its own: a chip and its row
-    /// are two views of one fact, and putting a click target in one place and its options in
-    /// another (with a scroll between them) is how "click the thing you want to change"
-    /// becomes "click, then hunt for what changed".
-    private var buttonListSection: some View {
-        GestureButtonList(
-            buttons: drawnButtons,
-            role: { buttonRole($0) },
-            selected: $pickedButton,
-            declaredEventButtons: roleContext.declaredEventButtons,
-            vendorControlCount: vendorControlCount,
-            consumerUsageCount: consumerUsageCount,
-            undeclaredPress: undeclaredPress,
-            underReported: underReported,
-            onSetTrigger: { button in
-                // The one write this section performs, and it goes through the same
-                // `update` path as every other control so `validate()` runs and the
-                // scroll modifier can be repaired if it collided with the new trigger.
-                controller.update { $0.trigger = .mouseButton(button) }
-            },
-            onRecordTrigger: { button in triggerRecording(button: button) },
-            recordingButton: recordingButton,
-            holdButtonSingleClickEnabled: Binding(
-                get: { config.holdButtonSingleClickEnabled },
-                set: { v in controller.update { $0.holdButtonSingleClickEnabled = v } }
-            ),
-            onSetAction: { button, action in
-                controller.update { config in
-                    config.buttonActions[button + 1] = action
+    // MARK: - Khối 5 — Nút hông (F8/F29/S34-S40)
+
+    private var sideButtons: [Int] {
+        drawnButtons.filter { button in
+            let role = buttonRole(button)
+            guard role.isAssignable else { return false }
+            switch role {
+            case .holdTrigger, .holdTriggerWithAction:
+                return false
+            default:
+                return true
+            }
+        }
+    }
+
+    private func buttonActionLabel(_ button: Int) -> String {
+        if let action = GestureConfigStore.action(in: config.buttonActions, forEventButton: button) {
+            switch action {
+            case .instant(.back): return L10n.t("Lùi (Cmd+[)")
+            case .instant(.forward): return L10n.t("Tiến (Cmd+])")
+            default: break
+            }
+        }
+        return L10n.t("Chưa gán")
+    }
+
+    private func roleChip(_ role: MouseButtonRole) -> some View {
+        Text(L10n.t(role.labelKey))
+            .font(XFinderTokens.Font.caption.weight(.medium))
+            .foregroundColor(roleColor(role))
+            .padding(.horizontal, 6).padding(.vertical, 1)
+            .background(Capsule().fill(roleColor(role).opacity(0.14)))
+            .fixedSize()
+            .help(L10n.t(role.explanationKey))
+    }
+
+    private var hardwareExclusionNote: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(L10n.t("Nút do chuột tự xử lý"))
+                .font(XFinderTokens.Font.caption.weight(.medium)).foregroundColor(.secondary)
+            ForEach(MouseHardwareExclusion.all, id: \.titleKey) { exclusion in
+                HStack(alignment: .top, spacing: 6) {
+                    Text(L10n.t(exclusion.titleKey))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        .frame(width: 130, alignment: .leading)
+                        .lineLimit(1)
+                    Text(L10n.t(exclusion.explanationKey))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
                 }
-            })
-        .padding(.horizontal, 20)
+            }
+        }
+    }
+
+    private func sideButtonRow(_ button: Int) -> some View {
+        let role = buttonRole(button)
+        return HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L10n.t(ButtonKey.index(button)))
+                    .font(XFinderTokens.Font.rowValue.weight(.medium))
+                    .foregroundColor(role.isDeclared ? .primary : .secondary)
+                if !role.isDeclared {
+                    Text(L10n.t("Bấm “Ghi nút” ở mục Nút giữ & cuộn rồi bấm nút này để XFinder đo."))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if let position = MouseControlSlot.slot(forEventButton: button)?.positionKey {
+                    Text(L10n.t(position))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            if !role.isDeclared {
+                Text(L10n.t("Chưa khai báo"))
+                    .font(XFinderTokens.Font.caption.weight(.medium))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 6).padding(.vertical, 1)
+                    .background(Capsule().fill(Color.secondary.opacity(0.14)))
+                    .fixedSize()
+            } else {
+                roleChip(role)
+
+                Menu {
+                    Button(L10n.t("Chưa gán")) {
+                        controller.update { $0.buttonActions[button + 1] = .unassigned }
+                    }
+                    Button(L10n.t("Lùi (Cmd+[)")) {
+                        controller.update { $0.buttonActions[button + 1] = .instant(.back) }
+                    }
+                    Button(L10n.t("Tiến (Cmd+])")) {
+                        controller.update { $0.buttonActions[button + 1] = .instant(.forward) }
+                    }
+                } label: {
+                    Text(buttonActionLabel(button))
+                }
+                .menuStyle(.borderedButton)
+                .controlSize(.small)
+            }
+        }
+        .settingsRow()
+    }
+
+    private var sideButtonsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SettingsSection(
+                title: L10n.t("Nút hông"),
+                footer: L10n.t("Đổi nút giữ: bấm vào một ô nút trên hình phía trên.")
+            ) {
+                if sideButtons.isEmpty {
+                    HStack(alignment: .top, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.t("Chưa đọc được nút nào"))
+                                .font(XFinderTokens.Font.rowValue.weight(.medium))
+                                .foregroundColor(.secondary)
+                            Text(L10n.t("Cắm chuột có nút hông để xem và gán ở đây."))
+                                .font(XFinderTokens.Font.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .settingsRow()
+                } else {
+                    ForEach(sideButtons, id: \.self) { button in
+                        sideButtonRow(button)
+                        SettingsDivider()
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    hardwareExclusionNote
+                }
+                .settingsRow()
+            }
+
+            legend
+        }
     }
 
     private var legend: some View {
@@ -1234,31 +1336,35 @@ struct MouseGesturesDetailView: View {
     /// arrival. `TiltArmsVisibility.fields(forReveal:)` is the tested contract for what this
     /// one switch writes, and the copy below says "turn on" rather than "show" because that
     /// is now what it does.
-    private var tiltRow: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Toggle(isOn: Binding(
-                get: { tiltArmsLive },
-                set: { v in
-                    let write = TiltArmsVisibility.fields(forReveal: v)
-                    controller.update {
-                        $0.tiltAvailable = write.available
-                        $0.tiltEnabled = write.enabled
-                    }
-                }))
-            {
-                Text(L10n.t("Bật hai hướng nghiêng con lăn")).font(XFinderTokens.Font.rowValue)
-            }
-            .toggleStyle(.switch).controlSize(.small)
-            Text(L10n.t("Chỉ dùng cho chuột có con lăn nghiêng được và có driver gửi cuộn ngang rời rạc — ví dụ Logitech MX Master với Logi Options. Đo trên máy này: Razer Basilisk và Magic Mouse đều báo cuộn liên tục, nên hai hướng đó sẽ không bao giờ chạy; tắt để sơ đồ khỏi vẽ thừa. XFinder không thể tự dò ra phần cứng của bạn."))
-                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            if tiltArmsLive {
-                Text(L10n.t("Công tắc này vừa hiện hai mũi tên vừa cho engine xử lý nghiêng con lăn — trước đây nó chỉ hiện mũi tên, nên gán phím cho nghiêng xong vẫn không có gì chạy. Nghiêng chỉ chạy khi công tắc chính ở trên cũng đang bật."))
+    // MARK: - Khối 7 — Nghiêng con lăn (F20/S41-S42)
+
+    private var tiltSection: some View {
+        SettingsSection(title: L10n.t("Nghiêng con lăn")) {
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle(isOn: Binding(
+                    get: { tiltArmsLive },
+                    set: { v in
+                        let write = TiltArmsVisibility.fields(forReveal: v)
+                        controller.update {
+                            $0.tiltAvailable = write.available
+                            $0.tiltEnabled = write.enabled
+                        }
+                    }))
+                {
+                    Text(L10n.t("Bật hai hướng nghiêng con lăn")).font(XFinderTokens.Font.rowValue)
+                }
+                .toggleStyle(.switch).controlSize(.small)
+                Text(L10n.t("Chỉ dùng cho chuột có con lăn nghiêng được và có driver gửi cuộn ngang rời rạc — ví dụ Logitech MX Master với Logi Options. Đo trên máy này: Razer Basilisk và Magic Mouse đều báo cuộn liên tục, nên hai hướng đó sẽ không bao giờ chạy; tắt để sơ đồ khỏi vẽ thừa. XFinder không thể tự dò ra phần cứng của bạn."))
                     .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                if tiltArmsLive {
+                    Text(L10n.t("Công tắc này vừa hiện hai mũi tên vừa cho engine xử lý nghiêng con lăn — trước đây nó chỉ hiện mũi tên, nên gán phím cho nghiêng xong vẫn không có gì chạy. Nghiêng chỉ chạy khi công tắc chính ở trên cũng đang bật."))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            .settingsRow()
         }
-        .padding(.horizontal, 20)
     }
 
     // MARK: - Activity (measured, from the engine's own callback)
@@ -1278,7 +1384,7 @@ struct MouseGesturesDetailView: View {
         }
     }
 
-    // MARK: - Switches
+    // MARK: - Khối 6 — Nút giữ & cuộn (F7/F22/F23/S47-S51)
 
     /// The buttons the scroll-button menu offers: the drawn buttons the mouse declares, minus the hold
     /// trigger (`validate()` refuses the two being one button). With no device measured yet nothing is
@@ -1298,17 +1404,29 @@ struct MouseGesturesDetailView: View {
     }
 
     private var switchesSection: some View {
-        SettingsSection(title: L10n.t("Nút giữ và cuộn"),
+        SettingsSection(title: L10n.t("Nút giữ & cuộn"),
                         footer: L10n.t("Nút giữ bắt đầu mọi cử chỉ. Nút cuộn là tuỳ chọn riêng, mặc định tắt.")) {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L10n.t("Nút giữ"))
                         .font(XFinderTokens.Font.rowValue.weight(.medium))
-                    Text(L10n.t("Giữ nút này rồi kéo bốn hướng. Mặc định là nút hông — con số tuỳ chuột, nên hãy ghi lại nếu bạn muốn nút khác."))
+                    Text(L10n.t("Giữ nút này rồi kéo bốn hướng. Bấm chip trên hình bên trên để đổi."))
                         .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
+
+                if case .mouseButton(let n) = config.trigger,
+                   case .holdTriggerWithAction = buttonRole(n) {
+                    Toggle(L10n.t("Bấm nhanh = Tiến"), isOn: Binding(
+                        get: { config.holdButtonSingleClickEnabled },
+                        set: { v in controller.update { $0.holdButtonSingleClickEnabled = v } }
+                    ))
+                    .toggleStyle(.checkbox)
+                    .font(XFinderTokens.Font.caption)
+                    .help(L10n.t("Bấm nhanh dưới 200ms là Tiến, giữ và kéo là cử chỉ"))
+                }
+
                 Text(L10n.t(compactButton: config.trigger.key))
                     .font(XFinderTokens.Font.rowValue.weight(.semibold))
                 Button(recordingTrigger ? L10n.t("Đang ghi…") : L10n.t("Ghi nút")) { triggerRecording() }

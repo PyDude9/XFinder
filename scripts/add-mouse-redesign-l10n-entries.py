@@ -30,6 +30,20 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Nút giữ cử chỉ hiện tại là ": ("The current gesture hold button is ", F),
     "Dùng làm nút giữ": ("Use as hold button", S),
     "Bấm nhanh": ("Quick click", S),
+    # T14d — blocks 5 (side buttons), 6 (hold & scroll), 7 (tilt)
+    "Nút hông": ("Side buttons", F),
+    "Chưa đọc được nút nào": ("No buttons detected", S),
+    "Cắm chuột có nút hông để xem và gán ở đây.":
+        ("Connect a mouse with side buttons to view and assign them here.", S),
+    "Bấm “Ghi nút” ở mục Nút giữ & cuộn rồi bấm nút này để XFinder đo.":
+        ("Click “Record button” in the Hold & Scroll section, then click this button for XFinder to measure.", S),
+    "Chưa khai báo": ("Undeclared", F),
+    "Đổi nút giữ: bấm vào một ô nút trên hình phía trên.":
+        ("Change hold button: click a button chip on the diagram above.", S),
+    "Nút giữ & cuộn": ("Hold & scroll buttons", S),
+    "Giữ nút này rồi kéo bốn hướng. Bấm chip trên hình bên trên để đổi.":
+        ("Hold this button then drag four directions. Click a chip on the diagram above to change.", S),
+    "Nghiêng con lăn": ("Tilt wheel", F),
 }
 
 def main() -> int:
