@@ -213,6 +213,12 @@ import DiskArbitration
     /// entry from the caller, are the only way `attemptEject` can promise that).
     private func ejectOne(mountPath: String, force: Bool) async -> DAReturn? {
         guard let session = DASessionCreate(kCFAllocatorDefault) else { return DAReturn(kDAReturnError) }
+        // Bug fix (verify pass, 2026-10-25): `DADiskUnmount`'s completion callback is delivered by this session's
+        // run loop — an unscheduled session never pumps it, so the continuation below would hang forever (measured:
+        // a real eject attempt never returned). Scheduled on the main run loop, same as `ensureSession()` above, and
+        // unscheduled again once this one-shot call completes (nothing else uses this private session).
+        DASessionScheduleWithRunLoop(session, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
+        defer { DASessionUnscheduleFromRunLoop(session, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue) }
         guard let disk = DADiskCreateFromVolumePath(kCFAllocatorDefault, session, URL(fileURLWithPath: mountPath) as CFURL)
         else { return nil }
         return await withCheckedContinuation { continuation in
