@@ -14090,6 +14090,10 @@
     "Đổi tên tìm kiếm đã lưu": {
       "en": "Rename Saved Search",
       "scope": "sentence"
+    },
+    "Đã làm lại": {
+      "en": "Redone",
+      "scope": "sentence"
     }
   }
 }

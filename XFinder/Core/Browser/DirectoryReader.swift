@@ -43,6 +43,8 @@ enum DirectoryReader {
     /// `kHasBundle` — bit 0x2000 of the Finder flags word (`FileInfo.finderFlags`/`FolderInfo.finderFlags`,
     /// both at byte offset 8 of the 32-byte `ATTR_CMN_FNDRINFO` blob, stored big-endian on disk).
     private static let finderFlagHasBundle: UInt16 = 0x2000
+    /// The per-file "hide extension" flag (bit 0x0010 of the same word — measured with a positive control).
+    private static let finderFlagHidesExtension: UInt16 = 0x0010
 
     /// One level of `getattrlistbulk(2)`. Synchronous — always call this off the main thread (the
     /// `timeout` overload below does that for you).
@@ -153,12 +155,14 @@ enum DirectoryReader {
                         field += MemoryLayout<timespec>.size
                     }
                     var hasFinderBundleFlag = false
+                    var hidesExtensionFlag = false
                     if returned.commonattr & attrgroup_t(ATTR_CMN_FNDRINFO) != 0 {
                         // 32-byte opaque Finder-info blob; `finderFlags`/`fdFlags` is a big-endian
                         // UInt16 at byte offset 8 for both `FileInfo` and `FolderInfo` (same layout
                         // for the first 8 bytes: a 4-byte type/creator pair, then the flags word).
                         let rawFlags = field.loadUnaligned(fromByteOffset: 8, as: UInt16.self)
                         hasFinderBundleFlag = (UInt16(bigEndian: rawFlags) & finderFlagHasBundle) != 0
+                        hidesExtensionFlag = (UInt16(bigEndian: rawFlags) & finderFlagHidesExtension) != 0
                         field += 32
                     }
                     var stFlags: UInt32 = 0
@@ -220,6 +224,7 @@ enum DirectoryReader {
                     )
                     entry.added = added
                     entry.inode = fileID
+                    entry.hidesExtension = hidesExtensionFlag
                     entries.append(entry)
                 }
             }

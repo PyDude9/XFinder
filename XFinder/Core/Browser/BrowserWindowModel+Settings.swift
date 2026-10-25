@@ -118,6 +118,12 @@ extension BrowserWindowModel {
     /// synchronous, non-isolated name formatter with no cache to read from yet — `FileMetadataCache`/W2 owns that
     /// cache and has not implemented it). Recorded as a deviation for the integrator.
     func displayName(for entry: DirectoryEntry) -> String {
-        entry.name
+        Self.displayName(for: entry, showAllExtensions: BrowserSettings.showAllExtensions)
+    }
+
+    /// Finder's rule: with "Show all filename extensions" off, a file whose own hide-extension flag is set shows its
+    /// name without the extension; folders, packages and names without an extension never change.
+    nonisolated static func displayName(for entry: DirectoryEntry, showAllExtensions: Bool) -> String {
+        EntryRules.displayName(entry, showAllExtensions: showAllExtensions)
     }
 }

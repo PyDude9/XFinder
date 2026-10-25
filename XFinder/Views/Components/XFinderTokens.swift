@@ -156,4 +156,9 @@ enum XFinderTokens {
         /// Switcher / HUD appearance. One token replaces the 0.18 s literals.
         static let overlayIn: TimeInterval = 0.16
     }
+
+    /// XF-T30 W6 — how a file pending a Windows-style ⌘X cut is drawn (Finder/Explorer fade it).
+    enum Emphasis {
+        static let cutItemAlpha: CGFloat = 0.45
+    }
 }

@@ -60,6 +60,7 @@ struct FileIconView: NSViewRepresentable {
         context.coordinator.reloadIfNeeded()
         context.coordinator.syncSelection()
         context.coordinator.beginRenameIfNeeded()
+        context.coordinator.redrawIfCutChanged(CutBoardStore.shared.version)
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(pane: pane, model: model) }
@@ -180,7 +181,8 @@ struct FileIconView: NSViewRepresentable {
         func configure(entry: DirectoryEntry, coordinator: Coordinator, iconSide: CGFloat) {
             self.coordinator = coordinator
             path = entry.path
-            nameField.stringValue = entry.name
+            nameField.stringValue = BrowserWindowModel.displayName(for: entry, showAllExtensions: BrowserSettings.showAllExtensions)
+            view.alphaValue = coordinator.model.isCut(entry.path) ? XFinderTokens.Emphasis.cutItemAlpha : 1
             nameField.font = .systemFont(ofSize: coordinator.textSize)
             if imageSide != iconSide {
                 imageSide = iconSide
@@ -249,6 +251,19 @@ struct FileIconView: NSViewRepresentable {
         var pane: PaneState
         var model: BrowserWindowModel
         weak var collectionView: NSCollectionView?
+        /// Spring-loaded folders (system timing; off when System Settings turns it off) — integration audit 2026-10-25.
+        private let springLoader: DragDropCoordinator.SpringLoader = DragDropCoordinator.SpringLoader()
+        private var lastCutVersion: Int = -1
+
+        /// A ⌘X cut started or ended: re-configure the visible items so cut ones fade / un-fade.
+        func redrawIfCutChanged(_ version: Int) {
+            guard version != lastCutVersion else { return }
+            lastCutVersion = version
+            guard let collectionView else { return }
+            let visible: Set<IndexPath> = collectionView.indexPathsForVisibleItems()
+            guard !visible.isEmpty else { return }
+            collectionView.reloadItems(at: visible)
+        }
 
         static let defaultIconSide: CGFloat = 64
 
@@ -547,14 +562,18 @@ struct FileIconView: NSViewRepresentable {
             guard draggingInfo.draggingPasteboard.canReadObject(forClasses: [NSURL.self], options: nil) else { return [] }
             let indexPath = proposedDropIndexPath.pointee as IndexPath
             if proposedDropOperation.pointee == .on, let entry = entry(at: indexPath), entry.isFolderLike {
+                let target: String = entry.path
+                springLoader.begin(hovering: target) { [weak self] in self?.pane.navigate(to: target) }
                 return dragOperation(for: draggingInfo)
             }
+            springLoader.cancel()
             proposedDropOperation.pointee = .before
             return dragOperation(for: draggingInfo)
         }
 
         func collectionView(_ collectionView: NSCollectionView, acceptDrop draggingInfo: NSDraggingInfo,
                              indexPath: IndexPath, dropOperation: NSCollectionView.DropOperation) -> Bool {
+            springLoader.cancel()
             guard let paths = draggedPaths(from: draggingInfo) else { return false }
             let destination: String
             if dropOperation == .on, let entry = entry(at: indexPath), entry.isFolderLike {

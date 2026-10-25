@@ -1,4 +1,5 @@
 import AppKit
+import Observation
 
 /// XF-T30 W6 — New Folder with Selection, ⌘X cut, Redo, Clear Operation History; persistent undo through `UndoJournal`.
 /// Contract docs/specs/XF-T30-w6-contract.md. W6 builder (model/panel, "b-w6p").
@@ -18,17 +19,28 @@ import AppKit
 /// count in the tens, not thousands, so this is bytes, not an `IdleCost` regression, but the integrator owning
 /// `BrowserWindowModel.swift` should add a `CutBoardStore.boards.removeValue(forKey:)` call to a window-close path
 /// if one gets added there.
-@MainActor
-private enum CutBoardStore {
-    static var boards: [ObjectIdentifier: CutBoard] = [:]
+/// Observable, so a row re-renders (fades or un-fades) the moment a cut starts or ends.
+@MainActor @Observable
+final class CutBoardStore {
+    static let shared: CutBoardStore = CutBoardStore()
+    var boards: [ObjectIdentifier: CutBoard] = [:] {
+        didSet { version &+= 1 }
+    }
+    /// Bumped on every change; the AppKit file views compare it in `updateNSView` to redraw faded rows.
+    private(set) var version: Int = 0
 }
 
 extension BrowserWindowModel {
     private var cutBoardKey: ObjectIdentifier { ObjectIdentifier(self) }
 
     private var cutBoard: CutBoard {
-        get { CutBoardStore.boards[cutBoardKey] ?? CutBoard() }
-        set { CutBoardStore.boards[cutBoardKey] = newValue }
+        get { CutBoardStore.shared.boards[cutBoardKey] ?? CutBoard() }
+        set { CutBoardStore.shared.boards[cutBoardKey] = newValue }
+    }
+
+    /// The window closed: drop its board (integration audit 2026-10-25 — boards were never pruned).
+    func discardCutBoard() {
+        CutBoardStore.shared.boards.removeValue(forKey: cutBoardKey)
     }
 
     /// View concern per contract §1: a row fades when its path is pending cut.
@@ -45,7 +57,9 @@ extension BrowserWindowModel {
             cutSelection()
             return true
         case .redo:
-            return false   // nothing to redo yet — see header note
+            guard FileOperationQueue.shared.redoLast() != nil else { return false }
+            banner = "Đã làm lại"
+            return true
         case .clearOperationHistory:
             FileOperationQueue.shared.clearFinished()
             return true
@@ -61,7 +75,7 @@ extension BrowserWindowModel {
         case .cut:
             return BrowserSettings.cutWithCmdX && !active.selectedEntries.isEmpty
         case .redo:
-            return false   // see header note — UndoJournal is not wired into the queue's run loop yet
+            return FileOperationQueue.shared.redoTitleKey != nil
         case .clearOperationHistory:
             return FileOperationQueue.shared.queue.jobs.contains { $0.isFinished }
         default:

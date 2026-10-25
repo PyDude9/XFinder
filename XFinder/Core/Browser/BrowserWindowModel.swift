@@ -97,6 +97,7 @@ struct PaneSearchState: Equatable {
         startLoad(of: path)
         installWatcher()
         BrowserWindowModel.noteRecentFolder(path)   // XF-T30 W3 (BrowserWindowModel+Go.swift)
+        BrowserWindowModel.applyRememberedViewOptions(to: self)   // XF-T30 W2: per-folder view options
     }
 
     func goBack() {
@@ -105,6 +106,7 @@ struct PaneSearchState: Equatable {
         cancelSearch()
         startLoad(of: destination)
         installWatcher()
+        BrowserWindowModel.applyRememberedViewOptions(to: self)
     }
 
     func goForward() {
@@ -113,6 +115,7 @@ struct PaneSearchState: Equatable {
         cancelSearch()
         startLoad(of: destination)
         installWatcher()
+        BrowserWindowModel.applyRememberedViewOptions(to: self)
     }
 
     /// XF-T30 W1 — the toolbar's history menus (press-and-hold Back/Forward lists several entries; picking one
@@ -525,6 +528,7 @@ enum BrowserSheet: String, Identifiable {
                                   showHidden: snap.showHidden, history: snap.history, tabID: tabID)
             state.groupBy = snap.groupBy ?? .none
             state.restoreSelectionNames = snap.selectedNames
+            state.columnPath = snap.columnPath ?? []   // Q-T30-7: Column view reopens its whole trail
             tabStates[tabID] = state
         }
         let clampedIndex = max(0, min(selectedIndex, ids.count - 1))
@@ -791,7 +795,10 @@ enum BrowserSheet: String, Identifiable {
         case .paste, .pasteMove:
             return true
         case .copyToOtherPane, .moveToOtherPane:
-            return tree.count >= 2 && !active.selectedEntries.isEmpty && tree.other(than: activePane) != nil
+            // FileOctopus R30: greyed when the other pane shows a virtual location (Recents, a tag) or is searching.
+            guard tree.count >= 2, !active.selectedEntries.isEmpty, let other: PaneID = tree.other(than: activePane),
+                  let target: PaneState = panes[other] else { return false }
+            return VirtualLocation.parse(target.path) == nil && target.search == nil
         case .addToShelf:
             return !active.selectedEntries.isEmpty
         case .compress:
@@ -1059,6 +1066,7 @@ enum BrowserSheet: String, Identifiable {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.writeObjects(urls)
+        cancelPendingCut()   // a fresh ⌘C cancels a pending ⌘X (CutBoard rule)
     }
 
     private func copySelectionPaths() {
@@ -1231,7 +1239,7 @@ enum BrowserSheet: String, Identifiable {
                 let names = Array(state.selection.map { ($0 as NSString).lastPathComponent }.prefix(TabSnapshot.selectionLimit))
                 return TabSnapshot(path: state.path, viewMode: state.viewMode, sort: state.sort, history: state.history,
                                    showHidden: state.showHidden, selectedNames: names.isEmpty ? nil : names,
-                                   groupBy: state.groupBy)
+                                   groupBy: state.groupBy, columnPath: state.columnPath.isEmpty ? nil : state.columnPath)
             }
             guard !tabs.isEmpty else { return nil }
             let selectedIndex = list.tabs.firstIndex(of: list.selectedTab) ?? 0
@@ -1245,6 +1253,7 @@ enum BrowserSheet: String, Identifiable {
     func tearDown() {
         bannerClearTask?.cancel()
         for state in tabStates.values { state.stopWatching() }
+        discardCutBoard()   // XF-T30 W6: the window's pending cut goes with it
     }
 }
 
@@ -1559,7 +1568,8 @@ extension BrowserWindowModel {
         let newTree = PaneTree()
         let newPaneID = newTree.panes[0]
         let tabSnapshot = TabSnapshot(path: state.path, viewMode: state.viewMode, sort: state.sort, history: state.history,
-                                      showHidden: state.showHidden, groupBy: state.groupBy)
+                                      showHidden: state.showHidden, groupBy: state.groupBy,
+                                      columnPath: state.columnPath.isEmpty ? nil : state.columnPath)
         let paneSnapshot = PaneSnapshot(id: newPaneID, tabs: [tabSnapshot], selectedTab: 0)
         let snapshot = WindowSnapshot(frame: nil, tree: newTree, panes: [paneSnapshot], activePane: newPaneID, shelfVisible: false)
         BrowserWindowController.shared.openRestoredWindow(snapshot)

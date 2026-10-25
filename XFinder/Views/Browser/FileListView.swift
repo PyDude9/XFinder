@@ -77,6 +77,7 @@ struct FileListView: NSViewRepresentable {
         context.coordinator.syncSelection()
         context.coordinator.syncSortIndicator()
         context.coordinator.beginRenameIfNeeded()
+        context.coordinator.redrawIfCutChanged(CutBoardStore.shared.version)
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(pane: pane, model: model) }
@@ -129,6 +130,20 @@ struct FileListView: NSViewRepresentable {
         var pane: PaneState
         var model: BrowserWindowModel
         weak var outlineView: NSOutlineView?
+        /// Spring-loaded folders (system timing; off when System Settings turns it off) — integration audit 2026-10-25.
+        private let springLoader: DragDropCoordinator.SpringLoader = DragDropCoordinator.SpringLoader()
+        private var lastCutVersion: Int = -1
+
+        /// A ⌘X cut started or ended: redraw the visible rows so cut items fade / un-fade.
+        func redrawIfCutChanged(_ version: Int) {
+            guard version != lastCutVersion else { return }
+            lastCutVersion = version
+            guard let outlineView else { return }
+            let visible: NSRange = outlineView.rows(in: outlineView.visibleRect)
+            guard visible.length > 0 else { return }
+            outlineView.reloadData(forRowIndexes: IndexSet(integersIn: visible.location..<(visible.location + visible.length)),
+                                   columnIndexes: IndexSet(integersIn: 0..<outlineView.numberOfColumns))
+        }
 
         /// Reload-coalescing fingerprint, same reasoning as the XF-T28 table view: count + first/last id is cheap to
         /// compare every `updateNSView` without diffing 100 000 rows; a revision bump also forces `syncSelection()`
@@ -606,6 +621,7 @@ struct FileListView: NSViewRepresentable {
             switch column {
             case .name:
                 cell.textField?.attributedStringValue = nameCellText(for: entry)
+                cell.imageView?.alphaValue = model.isCut(entry.path) ? XFinderTokens.Emphasis.cutItemAlpha : 1
                 cell.imageView?.image = FileIconCache.shared.icon(for: entry)
                 let badge = cloudBadgeSymbol(for: cloudFacts(for: entry.path))
                 (cell.viewWithTag(Self.cloudBadgeTag) as? NSImageView)?.image = badge
@@ -638,7 +654,10 @@ struct FileListView: NSViewRepresentable {
         /// `snippets`, see `BrowserWindowModel.applySearchResults`) and, for a content-index hit, its snippet.
         /// Plain `entry.name` outside a search, same as before this feature existed.
         private func nameCellText(for entry: DirectoryEntry) -> NSAttributedString {
-            let name = NSMutableAttributedString(string: entry.name, attributes: [.foregroundColor: NSColor.labelColor])
+            let shown: String = BrowserWindowModel.displayName(for: entry, showAllExtensions: BrowserSettings.showAllExtensions)
+            let colour: NSColor = model.isCut(entry.path)
+                ? NSColor.labelColor.withAlphaComponent(XFinderTokens.Emphasis.cutItemAlpha) : NSColor.labelColor
+            let name = NSMutableAttributedString(string: shown, attributes: [.foregroundColor: colour])
             guard let search = pane.search else { return name }
             var suffixParts: [String] = []
             if let sources = search.sources[entry.path], !sources.isEmpty {
@@ -1041,13 +1060,17 @@ struct FileListView: NSViewRepresentable {
             guard info.draggingPasteboard.canReadObject(forClasses: [NSURL.self], options: nil) else { return [] }
             let operation = dragOperation(for: info)
             if index == NSOutlineViewDropOnItemIndex, let node = item as? Node, let entry = node.entry, entry.isFolderLike {
+                let target: String = entry.path
+                springLoader.begin(hovering: target) { [weak self] in self?.pane.navigate(to: target) }
                 return operation
             }
+            springLoader.cancel()
             outlineView.setDropItem(nil, dropChildIndex: NSOutlineViewDropOnItemIndex)
             return operation
         }
 
         func outlineView(_ outlineView: NSOutlineView, acceptDrop info: NSDraggingInfo, item: Any?, childIndex index: Int) -> Bool {
+            springLoader.cancel()
             guard let paths = draggedPaths(from: info) else { return false }
             let destination: String
             if index == NSOutlineViewDropOnItemIndex, let node = item as? Node, let entry = node.entry, entry.isFolderLike {

@@ -337,7 +337,7 @@ struct FileColumnView: NSViewRepresentable {
                 browserCell.stringValue = EntrySection(titleKey: titleKey, titleArg: titleArg, entries: [])
                     .displayTitle { L10n.t($0) }
             case .entry(let entry):
-                browserCell.stringValue = entry.name
+                browserCell.stringValue = BrowserWindowModel.displayName(for: entry, showAllExtensions: BrowserSettings.showAllExtensions)
                 browserCell.image = FileIconCache.shared.icon(for: entry)
                 // Packages are leaves (contract): never shows the disclosure arrow even though it is a directory.
                 browserCell.isLeaf = !entry.isFolderLike

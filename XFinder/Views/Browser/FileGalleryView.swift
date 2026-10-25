@@ -259,7 +259,7 @@ private struct StripTile: View {
                         .background(XFinderTokens.Fill.surface, in: Circle())
                 }
             }
-            Text(entry.name)
+            Text(BrowserWindowModel.displayName(for: entry, showAllExtensions: BrowserSettings.showAllExtensions))
                 .font(XFinderTokens.Font.caption)
                 .lineLimit(1)
                 .truncationMode(.middle)

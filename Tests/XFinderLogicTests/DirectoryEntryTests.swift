@@ -592,6 +592,25 @@ final class DirectoryEntryTests: XCTestCase {
         let names = ["apple", "cherry"]
         XCTAssertEqual(EntryRules.TypeSelect.match(prefix: "banana", in: names), 1)
     }
+
+    // MARK: - display name (Settings ▸ Advanced ▸ Show all filename extensions)
+
+    func testDisplayNameHonoursTheFilesOwnHideExtensionFlag() {
+        var hidden = entry(name: "Report.pdf")
+        hidden.hidesExtension = true
+        XCTAssertEqual(EntryRules.displayName(hidden, showAllExtensions: false), "Report")
+        XCTAssertEqual(EntryRules.displayName(hidden, showAllExtensions: true), "Report.pdf")
+        XCTAssertEqual(EntryRules.displayName(entry(name: "Plain.txt"), showAllExtensions: false), "Plain.txt")
+        var folder = entry(name: "Photos.2026", kind: .directory)
+        folder.hidesExtension = true
+        XCTAssertEqual(EntryRules.displayName(folder, showAllExtensions: false), "Photos.2026", "folders keep their name")
+        var app = entry(name: "Tool.app", kind: .directory, isPackage: true)
+        app.hidesExtension = true
+        XCTAssertEqual(EntryRules.displayName(app, showAllExtensions: false), "Tool")
+        var dotfile = entry(name: ".profile")
+        dotfile.hidesExtension = true
+        XCTAssertEqual(EntryRules.displayName(dotfile, showAllExtensions: false), ".profile", "no base name to show")
+    }
 }
 
 /// 2026-10-24 — the precomputed fold key and natural compare that took filtering from 363 ms to 2 ms and name sorting

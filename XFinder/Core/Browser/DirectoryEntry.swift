@@ -30,6 +30,9 @@ struct DirectoryEntry: Hashable, Sendable, Identifiable {
     var added: Date? = nil
     var lastOpened: Date? = nil
     var tags: [String]? = nil
+    /// The file's own "hide extension" flag (Finder flags bit 0x0010 in `ATTR_CMN_FNDRINFO` — measured 2026-10-25:
+    /// `URLResourceValues.hasHiddenExtension = true` sets exactly that bit, the extended flags stay 0).
+    var hidesExtension: Bool = false
     /// XF-T30 W5a — the real on-disk file id (`ATTR_CMN_FILEID`, a `u_int64_t`), read by `DirectoryReader.list`
     /// in the same `getattrlistbulk` pass as everything else (contract W5a "real inodes via ATTR_CMN_FILEID").
     /// nil only for a `DirectoryEntry` built without going through the reader (tests, `VirtualLocations`,
@@ -82,6 +85,16 @@ struct SortOrder: Codable, Equatable, Sendable {
 }
 
 enum EntryRules {
+
+    /// Finder's rule for a shown name: with "Show all filename extensions" off, a FILE (or package) whose own
+    /// hide-extension flag is set shows without its extension; folders and names without an extension never change.
+    static func displayName(_ entry: DirectoryEntry, showAllExtensions: Bool) -> String {
+        guard !showAllExtensions, entry.hidesExtension, entry.kind != .directory || entry.isPackage else { return entry.name }
+        let ext: String = (entry.name as NSString).pathExtension
+        guard !ext.isEmpty else { return entry.name }
+        let base: String = (entry.name as NSString).deletingPathExtension
+        return base.isEmpty ? entry.name : base
+    }
 
     /// Normalized match key for a name: case- and diacritic-insensitive, with Vietnamese "đ"/"Đ"
     /// folded to "d" like the rest of the sidebar (`SidebarSearch.fold`) since a non-Vietnamese

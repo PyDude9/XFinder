@@ -70,6 +70,9 @@ actor FilenameIndex {
     private var roots: [String: IndexRoot] = [:]                 // root id -> current settings
     private var rootOrder: [String] = []                         // stable order for `status()`
     private var crawlTasks: [String: Task<Void, Never>] = [:]
+    /// Per-subtree rescans spawned by FSEvents (MustScanSubDirs …). Tracked so `suspend()` stops them too
+    /// (review 2026-10-25: they kept writing the database and set `.ready` after the last window closed).
+    private var rescanTasks: [UUID: Task<Void, Never>] = [:]
     /// The generation number the CURRENTLY-LAUNCHED crawl task for a root is building, set the instant `startCrawl`
     /// creates that task. `finishCrawl` compares its own captured `generation` against this instead of asking
     /// `crawlTasks[rootID]?.isCancelled`: that flag belongs to whatever Task object happens to be sitting in the
@@ -397,6 +400,8 @@ actor FilenameIndex {
             crawlTasks[id]?.cancel()
         }
         crawlTasks.removeAll()
+        for task in rescanTasks.values { task.cancel() }
+        rescanTasks.removeAll()
     }
 
     /// A browser window opened: catch up from the cursors.
@@ -798,8 +803,10 @@ actor FilenameIndex {
         if needsRescan {
             statuses[rootID] = .updating(changes: rescanPaths.count)
             for subtree in rescanPaths {
-                Task(priority: .utility) { [weak self] in
+                let token: UUID = UUID()
+                rescanTasks[token] = Task(priority: .utility) { [weak self] in
                     await self?.rescan(rootID: rootID, subtree: subtree, home: home)
+                    await self?.finishRescan(token)
                 }
             }
         }
@@ -808,7 +815,12 @@ actor FilenameIndex {
     /// `kFSEventStreamEventFlagMustScanSubDirs`-class events: re-list one directory (non-recursive — only entries
     /// directly inside `subtree` are refreshed; a nested directory that itself changed gets its own event) and
     /// reconcile against what the active generation already has for that parent.
+    private func finishRescan(_ token: UUID) {
+        rescanTasks.removeValue(forKey: token)
+    }
+
     private func rescan(rootID: String, subtree: String, home: String) async {
+        guard !suspended, !Task.isCancelled else { return }
         guard let db = openIfNeeded(), let root = roots[rootID] else { return }
         guard case .success(let entries) = DirectoryReader.list(subtree) else { return }
         guard !SearchIndexRules.isExcluded(subtree, home: home) else { return }
@@ -849,6 +861,7 @@ actor FilenameIndex {
         if !entries.isEmpty {
             _ = insertBatch(db, rootID: rootID, generation: generation, entries: entries, folderID: folderID)
         }
+        guard !suspended, !Task.isCancelled else { return }   // suspended mid-rescan: leave the status alone
         if case .updating = statuses[rootID] {
             statuses[rootID] = .ready
         } else if statuses[rootID] == nil {

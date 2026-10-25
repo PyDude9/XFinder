@@ -306,8 +306,9 @@ final class FileOperationQueue {
 
     /// Title for the Edit menu (spec R52: "Undo Move of 3 Items" style — verb + target already baked into
     /// `UndoStep.titleKey` by whichever side records the step).
-    var undoTitleKey: String? { undoJournal.undo.first?.titleKey }
-    var redoTitleKey: String? { undoJournal.redo.first?.titleKey }
+    /// The step ⌘Z / ⇧⌘Z would act on is the LAST one pushed (popLast) — these read `.first`, the oldest.
+    var undoTitleKey: String? { undoJournal.undo.last?.titleKey }
+    var redoTitleKey: String? { undoJournal.redo.last?.titleKey }
 
     /// A step references a still-running job only in the narrow window between that job's `recordHistory` call and
     /// its `runtimes.removeValue` cleanup — in practice this only matters for a multi-job queue where the user asks

@@ -269,7 +269,14 @@ extension BrowserWindowModel {
     /// actor; applies the result back on main only if the tab is still showing the same folder by the time it lands
     /// (a fast double-navigate must not stamp stale prefs onto a tab that has already moved on).
     func loadViewOptions(for tab: PaneState) {
-        let path = tab.path
+        Self.applyRememberedViewOptions(to: tab)
+    }
+
+    /// Called by every navigation of a tab (navigate / Back / Forward): the folder's remembered view options, if any,
+    /// replace the tab's current ones; a folder with nothing remembered keeps the tab's view.
+    static func applyRememberedViewOptions(to tab: PaneState) {
+        let path: String = tab.path
+        guard VirtualLocation.parse(path) == nil else { return }
         Task.detached(priority: .utility) {
             let store = FolderViewStore.decode(Self.readFolderViewStoreData())
             guard let prefs = store.prefs(for: path) else { return }
