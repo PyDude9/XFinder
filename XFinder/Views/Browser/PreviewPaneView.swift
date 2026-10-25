@@ -105,8 +105,11 @@ enum FilePreviewContent: Equatable {
 
 /// Reads facts and classifies media off the main actor (CLAUDE.md: no disk I/O in `body`/on main), and caches the
 /// result per "path@mtime" (contract: "metadata read off main and cached per path+mtime") so re-selecting the same
-/// unchanged file never re-reads disk. Only the single-selection case renders a preview (contract shows one item's
-/// Information/Tags/media at a time); a multi-selection or empty selection clears the pane.
+/// unchanged file never re-reads disk — except the tag list, which is re-read fresh on every lookup even on a cache
+/// hit, since Get Info's tag editor writes `kMDItemUserTags` without touching `mtime` (a bug fixed during review:
+/// the Preview pane's "Thẻ" section would otherwise keep showing the pre-edit tags for the life of the cache entry
+/// while Get Info stayed open on the same file). Only the single-selection case renders a preview (contract shows
+/// one item's Information/Tags/media at a time); a multi-selection or empty selection clears the pane.
 @MainActor @Observable final class FilePreviewPaneModel {
     private(set) var content: FilePreviewContent = .empty
 
@@ -145,7 +148,7 @@ enum FilePreviewContent: Equatable {
     }
 
     /// Off-main: `lstat`, resource values, image/PDF headers. `onFresh` reports a value just computed back to the
-    /// (main-actor) cache; a cache hit skips the callback entirely.
+    /// (main-actor) cache; a cache hit still re-reads tags fresh (see below) before returning.
     nonisolated private static func readItem(
         path: String, cache: [String: FilePreviewItem], onFresh: @escaping @MainActor (String, FilePreviewItem) -> Void
     ) async -> FilePreviewItem? {
@@ -153,7 +156,18 @@ enum FilePreviewContent: Equatable {
         guard lstat(path, &statInfo) == 0 else { return nil }
         let mtime = statInfo.st_mtimespec.tv_sec
         let key = "\(path)@\(mtime)"
-        if let cached = cache[key] { return cached }
+        if let cached = cache[key] {
+            // Tags (Finder/Get Info `tagNamesKey`) can change without touching `mtime` — Get Info's `setTags`
+            // writes `kMDItemUserTags` only. Re-reading just the tag list (one cheap resourceValues call, no
+            // stat/image/PDF work) keeps the Preview pane's "Thẻ" section from going stale after an edit in the
+            // still-open Get Info window, without paying for a full re-read of everything else.
+            let freshTags = currentTags(path: path) ?? cached.tags
+            return freshTags == cached.tags ? cached : FilePreviewItem(
+                path: cached.path, name: cached.name, kind: cached.kind, media: cached.media, facts: cached.facts,
+                pixelSize: cached.pixelSize, pdfPageCount: cached.pdfPageCount,
+                mediaDuration: cached.mediaDuration, tags: freshTags
+            )
+        }
 
         guard let facts = readFacts(path: path, statInfo: statInfo) else { return nil }
         let cloudOnly = isCloudOnly(path: path)
@@ -187,6 +201,13 @@ enum FilePreviewContent: Equatable {
         )
         await onFresh(key, item)
         return item
+    }
+
+    /// Just the tag list, for the cache-hit path above — cheap enough to call on every selection even when the
+    /// rest of the item comes from cache. `nil` on a read failure leaves the cached tags as they were rather than
+    /// clearing them.
+    nonisolated private static func currentTags(path: String) -> [String]? {
+        (try? URL(fileURLWithPath: path).resourceValues(forKeys: [.tagNamesKey]))?.tagNames
     }
 
     nonisolated private static func readFacts(path: String, statInfo: stat) -> FileInfoFacts? {

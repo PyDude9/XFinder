@@ -43,12 +43,15 @@ extension BrowserWindowModel {
     private init() {}
 
     /// The items a slideshow for `pane` would show, without starting anything — used by `canPerform` so the
-    /// toolbar/menu/palette can grey the command out instead of opening an empty full-screen panel.
+    /// toolbar/menu/palette can grey the command out instead of opening an empty full-screen panel. Both branches
+    /// filter to images: a slideshow is a sequence of pictures (job sentence: "full-screen slideshow of images"),
+    /// so a folder or document caught in a multi-item selection shouldn't ride along into `QLPreviewPanel` as a
+    /// slideshow frame — bug fixed during review (only the "nothing selected → whole folder" fallback filtered
+    /// before; selecting one non-image file used to report `canPerform == true` and open a one-item "slideshow"
+    /// of that document instead of greying the command out).
     static func items(for pane: PaneState) -> [URL] {
-        if !pane.selectedEntries.isEmpty {
-            return pane.selectedEntries.map { URL(fileURLWithPath: $0.path) }
-        }
-        return pane.entries.filter(Self.isImage).map { URL(fileURLWithPath: $0.path) }
+        let source = pane.selectedEntries.isEmpty ? pane.entries : pane.selectedEntries
+        return source.filter(Self.isImage).map { URL(fileURLWithPath: $0.path) }
     }
 
     @discardableResult
