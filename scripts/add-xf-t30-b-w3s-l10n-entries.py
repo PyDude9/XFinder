@@ -16,6 +16,9 @@ ENTRIES = {
     "Ngoài": ("External", S),
     "Đám mây": ("Cloud", S),
     "Tất cả thẻ…": ("All Tags…", S),
+    # Bonjour section header: distinct from "Mạng" (connected servers sub-header), which already has that meaning —
+    # a new key, not a reuse, so the two sections never render the same literal text (review fix).
+    "Máy tính lân cận": ("Nearby Computers", S),
 }
 def main() -> int:
     data = json.loads(STORE.read_text(encoding="utf-8")); e = data["entries"]

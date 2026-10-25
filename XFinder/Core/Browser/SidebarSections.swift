@@ -62,8 +62,13 @@ enum SidebarSections {
     /// Order (contract §1): Gần đây, AirDrop, (Mục ưa thích — rendered by the view from `SidebarLayout`, not listed
     /// here: its header is always shown once favourites exist, independent of this category list), iCloud, Vị trí
     /// (one header, or four sub-headers — Cục bộ / Ngoài / Đám mây / Mạng — when grouped by type and that kind's own
-    /// category is visible), Mạng (Bonjour), Thẻ + "Tất cả thẻ…" at the end of Thẻ. A category entirely hidden
-    /// contributes no header (hiding a row never deletes its data — CLAUDE.md — it just stops drawing it here).
+    /// category is visible), Máy tính lân cận (Bonjour), Thẻ + "Tất cả thẻ…" at the end of Thẻ. A category entirely
+    /// hidden contributes no header (hiding a row never deletes its data — CLAUDE.md — it just stops drawing it here).
+    ///
+    /// The Vị trí "Mạng" sub-header (connected servers, `.connectedServers`) and the Bonjour section are two
+    /// different things — already-mounted network shares versus nearby computers discovered but not connected — so
+    /// they use two distinct header strings; reusing "Mạng" for both would render as two adjacent, indistinguishable
+    /// "Mạng" headers with different rows under them whenever both are visible at once.
     static func headers(visible: Set<SidebarCategory>, groupLocationsByType: Bool) -> [String] {
         var result: [String] = []
 
@@ -84,7 +89,7 @@ enum SidebarSections {
             }
         }
 
-        if visible.contains(.bonjour) { result.append("Mạng") }
+        if visible.contains(.bonjour) { result.append("Máy tính lân cận") }
         if visible.contains(.recentTags) {
             result.append("Thẻ")
             result.append("Tất cả thẻ…")

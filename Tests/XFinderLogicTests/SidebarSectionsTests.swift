@@ -122,10 +122,20 @@ final class SidebarSectionsTests: XCTestCase {
         XCTAssertEqual(headers, ["Vị trí"])
     }
 
-    func testBonjourVisibleAddsNetworkHeaderAfterLocations() {
+    func testBonjourVisibleAddsNearbyComputersHeaderAfterLocations() {
         let visible: Set<SidebarCategory> = [.hardDisks, .bonjour]
         let headers = SidebarSections.headers(visible: visible, groupLocationsByType: false)
-        XCTAssertEqual(headers, ["Vị trí", "Mạng"])
+        XCTAssertEqual(headers, ["Vị trí", "Máy tính lân cận"])
+    }
+
+    func testBonjourAndGroupedConnectedServersProduceTwoDistinctHeadersNotTwoMạng() {
+        // Grouping Vị trí by type renders a "Mạng" sub-header for already-connected servers; Bonjour renders a
+        // different header for nearby, not-yet-connected computers. Both visible at once must not collide into two
+        // identical "Mạng" rows that look like one merged section.
+        let visible: Set<SidebarCategory> = [.connectedServers, .bonjour]
+        let headers = SidebarSections.headers(visible: visible, groupLocationsByType: true)
+        XCTAssertEqual(headers, ["Mạng", "Máy tính lân cận"])
+        XCTAssertEqual(Set(headers).count, headers.count, "headers must be pairwise distinct")
     }
 
     func testRecentTagsHiddenOmitsBothThẻAndAllTagsHeaders() {
