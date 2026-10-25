@@ -1,9 +1,12 @@
 import AppKit
 import SwiftUI
 
-/// XF-T28 cluster D — Gallery: a big preview of the selected item on top, a horizontal strip of thumbnails below.
-/// `LazyHStack` so 100 000 entries in the strip only ever build the cells currently scrolled into view (contract:
-/// "100 000 entries, no O(n) work per frame" — a plain `HStack` would materialize every thumbnail request at once).
+/// XF-T30 W2 (was XF-T28 cluster D) — Gallery: a big preview of the selected item on top, a horizontal strip of
+/// thumbnails below. `LazyHStack` so 100 000 entries in the strip only ever build the cells currently scrolled into
+/// view (contract: "100 000 entries, no O(n) work per frame" — a plain `HStack` would materialize every thumbnail
+/// request at once). W2 adds a cloud badge on each strip tile (contract: "Gallery: badge; chỉ Sắp theo" — no tag
+/// dots and no Group By here, only the toolbar's Sort By, which `BrowserToolbar` already renders for this view mode)
+/// and routes both the context menu and drag acceptance through the W2 shared helpers.
 struct FileGalleryView: View {
     let pane: PaneState
     let model: BrowserWindowModel
@@ -178,8 +181,9 @@ private struct TileDropModifier: ViewModifier {
     }
 }
 
-/// Shared drop-acceptance helper (⌥ forces copy, ⌘ forces move, else `model.drop` decides by volume — same
-/// contract as the other three views' `copyFlag(for:)`).
+/// Shared drop-acceptance helper: `DragDropCoordinator.verb` decides copy vs. move by volume and modifier keys
+/// (contract §3 — the same rule every view and the sidebar share), with `nil` for "no drop" (e.g. a nesting
+/// violation) falling through to `model.drop`'s own safety check so the error banner still comes from one place.
 @MainActor
 private enum GalleryDrop {
     /// Already main-actor by the time it runs (every call site is a synchronous `.onDrop` closure, itself always
@@ -187,12 +191,7 @@ private enum GalleryDrop {
     /// detached `Task`, is what lets Swift 6 see the resulting `Task { ... }` closure as running on the actor that
     /// already owns `providers`, instead of flagging the capture as an unsafe cross-actor send.
     static func accept(_ providers: [NSItemProvider], into destination: String, model: BrowserWindowModel) {
-        let copyFlag: Bool? = {
-            let flags = NSEvent.modifierFlags
-            if flags.contains(.option) { return true }
-            if flags.contains(.command) { return false }
-            return nil
-        }()
+        let modifiers = NSEvent.modifierFlags
         Task { @MainActor in
             var paths: [String] = []
             for provider in providers {
@@ -202,45 +201,64 @@ private enum GalleryDrop {
                 if let url { paths.append(url.path) }
             }
             guard !paths.isEmpty else { return }
+            let verb = DragDropCoordinator.verb(sources: paths, folder: destination, modifiers: modifiers)
+            let copyFlag: Bool? = verb == .none ? nil : (verb == .copy)
             model.drop(paths, into: destination, copy: copyFlag)
         }
     }
 }
 
+/// XF-T30 W2 contract §3: ONE menu builder for all four views — rebuilt from `BrowserContextMenu.menu(for:pane:)`
+/// on every open (selecting `entry` first, same as the other three views re-target the click before populating),
+/// its `NSMenuItem`s read into plain SwiftUI `Button`s since this is the one view whose menu chrome is SwiftUI's own
+/// `.contextMenu` rather than an `NSMenu` set directly on an `NSView`.
 private struct StripContextMenu: View {
     let entry: DirectoryEntry
     let pane: PaneState
     let model: BrowserWindowModel
 
-    private static let menuCommands: [BrowserCommand] = [
-        .open, .openEnclosing, .quickLook, .rename, .duplicate, .copy, .paste, .copyPath,
-        .moveToTrash, .compress, .showInFinder, .addToShelf,
-    ]
-
     var body: some View {
-        ForEach(Self.menuCommands.filter { model.canPerform($0) }, id: \.self) { command in
-            Button(L10n.t(BrowserCommands.titleKey(command))) {
-                pane.selection = [entry.path]
-                model.focus(pane.id)
-                _ = model.perform(command)
+        let menu = BrowserContextMenu.menu(for: model, pane: pane)
+        ForEach(Array(menu.items.enumerated()), id: \.offset) { _, item in
+            if item.isSeparatorItem {
+                Divider()
+            } else if item.isEnabled {
+                Button(item.title) {
+                    pane.selection = [entry.path]
+                    model.focus(pane.id)
+                    if let command = BrowserCommand(rawValue: item.representedObject as? String ?? "") {
+                        _ = model.perform(command)
+                    }
+                }
             }
         }
     }
 }
 
 /// One filmstrip tile: a small thumbnail (reusing `FileIconCache`'s 256-entry LRU, so a tile already rendered in
-/// icon view or elsewhere in this gallery costs nothing extra) and a single truncated-middle name line.
+/// icon view or elsewhere in this gallery costs nothing extra), a cloud badge over its corner (contract: "Gallery:
+/// badge"), and a single truncated-middle name line.
 private struct StripTile: View {
     let entry: DirectoryEntry
     let isSelected: Bool
     @State private var thumbnail: NSImage?
+    @State private var badgeSymbol: String?
 
     var body: some View {
         VStack(spacing: 2) {
-            Image(nsImage: thumbnail ?? FileIconCache.shared.icon(for: entry))
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 48, height: 48)
+            ZStack(alignment: .bottomTrailing) {
+                Image(nsImage: thumbnail ?? FileIconCache.shared.icon(for: entry))
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 48, height: 48)
+                if let badgeSymbol {
+                    Image(systemName: badgeSymbol)
+                        .font(.system(size: 9))
+                        .foregroundStyle(.secondary)
+                        .padding(1)
+                        .background(XFinderTokens.Fill.surface, in: Circle())
+                }
+            }
             Text(entry.name)
                 .font(XFinderTokens.Font.caption)
                 .lineLimit(1)
@@ -253,6 +271,9 @@ private struct StripTile: View {
                 .fill(isSelected ? XFinderTokens.Fill.focus : Color.clear)
         )
         .task(id: entry.path) {
+            // CLAUDE.md §3.3: no disk I/O in `body` — the cloud-facts read (same `URLResourceKey`s the other three
+            // views' `cloudFactsCache` reads) runs off-main here, same as the thumbnail fetch below already did.
+            badgeSymbol = await Self.readBadgeSymbol(for: entry.path)
             guard Self.isImageExtension(entry.ext) else { return }
             await withCheckedContinuation { continuation in
                 FileIconCache.shared.thumbnail(forPath: entry.path, side: 48, scale: 2) { image in
@@ -265,4 +286,34 @@ private struct StripTile: View {
 
     private static let imageExtensions: Set<String> = ["jpg", "jpeg", "png", "gif", "heic", "tiff", "bmp", "webp"]
     private static func isImageExtension(_ ext: String) -> Bool { imageExtensions.contains(ext) }
+
+    /// No cache: a filmstrip only ever renders the handful of tiles scrolled into view at once (same reasoning as
+    /// the thumbnail fetch above), so this costs nothing beyond what Icon/List/Column pay per visible row through
+    /// their own `cloudFactsCache` — but, like that fetch, it must stay off the main actor (CLAUDE.md §3.3).
+    private static func readBadgeSymbol(for path: String) async -> String? {
+        await Task.detached(priority: .utility) {
+            let url = URL(fileURLWithPath: path)
+            let keys: Set<URLResourceKey> = [
+                .isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey, .ubiquitousItemIsDownloadingKey,
+                .ubiquitousItemIsUploadingKey, .ubiquitousItemIsUploadedKey,
+                .ubiquitousItemDownloadingErrorKey, .ubiquitousItemUploadingErrorKey,
+            ]
+            guard let values = try? url.resourceValues(forKeys: keys) else { return nil }
+            let facts = CloudFacts(
+                isUbiquitous: values.isUbiquitousItem,
+                downloadingStatus: values.ubiquitousItemDownloadingStatus?.rawValue,
+                isDownloading: values.ubiquitousItemIsDownloading,
+                isUploading: values.ubiquitousItemIsUploading,
+                isUploaded: values.ubiquitousItemIsUploaded,
+                hasDownloadError: values.ubiquitousItemDownloadingError != nil,
+                hasUploadError: values.ubiquitousItemUploadingError != nil)
+            switch CloudRules.badge(facts) {
+            case .none: return nil
+            case .cloudOnly: return "icloud"
+            case .downloading: return "icloud.and.arrow.down"
+            case .uploading: return "icloud.and.arrow.up"
+            case .downloadFailed, .uploadFailed: return "exclamationmark.icloud"
+            }
+        }.value
+    }
 }
