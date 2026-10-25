@@ -10,9 +10,14 @@ import Quartz
 
     /// 720×460 — the contract's minimum content size for a browser window.
     private static let minimumContentSize = NSSize(width: 720, height: 460)
+    /// XF-T30 W1 §5 — every browser window shares this so macOS offers native tabbing between them.
+    static let tabbingIdentifier = "com.xfinder.browser"
 
     private var windows: [BrowserWindow] = []
     private var modelsByWindow: [ObjectIdentifier: BrowserWindowModel] = [:]
+    /// One `BrowserToolbarController` per window, kept alive here (the contract: "controller giữ strong") — the
+    /// toolbar itself only holds a `weak var window`, so nothing else keeps it around once a window closes.
+    private var toolbarsByWindow: [ObjectIdentifier: BrowserToolbarController] = [:]
     private let quickLook = BrowserQuickLookController()
     private weak var quickLookModel: BrowserWindowModel?
 
@@ -43,9 +48,10 @@ import Quartz
         return model
     }
 
-    private func openWindow(snapshot: WindowSnapshot) {
+    @discardableResult
+    private func openWindow(snapshot: WindowSnapshot) -> BrowserWindow {
         let model = BrowserWindowModel(snapshot: snapshot, initialPath: nil)
-        presentNewWindow(for: model, frame: snapshot.frame)
+        return presentNewWindow(for: model, frame: snapshot.frame)
     }
 
     /// XF-T28 Wave 4 — `BrowserWindowModel.openWorkspace` opens any window beyond the workspace's first one
@@ -56,10 +62,21 @@ import Quartz
     }
 
     /// XF-T30 W1 — ⌘T / the native tab bar's +: a new browser window added as a native tab of `model`'s window.
-    /// W1 builder (chrome): implement.
-    func openWindowTab(besideWindowOf model: BrowserWindowModel) {}
+    /// Opens Home (same folder `openWindow(path: nil)` would), then slots it into the SAME `NSWindowTabGroup` as
+    /// `model`'s own window, right after it — "until W4 has 'New windows show'" (the contract's own wording for
+    /// where the opened folder comes from is still just Home at W1).
+    func openWindowTab(besideWindowOf model: BrowserWindowModel) {
+        guard let existingWindow = windows.first(where: { modelsByWindow[ObjectIdentifier($0)] === model }) else {
+            openWindow(path: nil)
+            return
+        }
+        let newModel = openWindow(path: nil)
+        guard let newWindow = windows.first(where: { modelsByWindow[ObjectIdentifier($0)] === newModel }) else { return }
+        existingWindow.addTabbedWindow(newWindow, ordered: .above)
+    }
 
-    private func presentNewWindow(for model: BrowserWindowModel, frame: CGRect?) {
+    @discardableResult
+    private func presentNewWindow(for model: BrowserWindowModel, frame: CGRect?) -> BrowserWindow {
         let contentRect = frame.map { NSRect(x: $0.minX, y: $0.minY, width: $0.width, height: $0.height) }
             ?? NSRect(x: 0, y: 0, width: Self.minimumContentSize.width, height: Self.minimumContentSize.height)
         let window = BrowserWindow(
@@ -72,6 +89,9 @@ import Quartz
         window.contentMinSize = Self.minimumContentSize
         window.isReleasedWhenClosed = false
         window.title = (model.active.path as NSString).lastPathComponent
+        window.tabbingMode = .preferred
+        window.tabbingIdentifier = Self.tabbingIdentifier
+        window.toolbarStyle = .unified
         let hosting = NSHostingView(rootView: BrowserRootView(model: model))
         hosting.sizingOptions = []
         window.contentView = hosting
@@ -80,8 +100,12 @@ import Quartz
         }
         windows.append(window)
         modelsByWindow[ObjectIdentifier(window)] = model
+        let toolbar = BrowserToolbarController(model: model, window: window)
+        toolbar.install()
+        toolbarsByWindow[ObjectIdentifier(window)] = toolbar
         window.makeKeyAndOrderFront(nil)
         observeTitle(of: model, window: window)
+        return window
     }
 
     /// Keeps the title in step with the active pane's folder — a window's title is "the active pane's folder
@@ -108,6 +132,7 @@ import Quartz
             QLPreviewPanel.shared()?.orderOut(nil)
             quickLookModel = nil
         }
+        toolbarsByWindow.removeValue(forKey: ObjectIdentifier(window))?.tearDown()
         modelsByWindow.removeValue(forKey: ObjectIdentifier(window))
         windows.remove(at: index)
         saveSession()
@@ -116,12 +141,33 @@ import Quartz
         }
     }
 
+    // MARK: - Main menu (Q-T30-13)
+
+    /// `window` became key: ask `BrowserMainMenu` to show the browser's own menu items for it.
+    func windowBecameKey(_ window: BrowserWindow) {
+        guard let model = modelsByWindow[ObjectIdentifier(window)] else { return }
+        BrowserMainMenu.shared.activate(for: model)
+    }
+
+    /// `window` resigned key. Only removes the menu items when NO other browser window is now key — switching
+    /// focus from one browser window straight to another (e.g. clicking a background tab) fires resign-then-become
+    /// in that order, and tearing down between them would otherwise show a one-frame flash of the stock menu.
+    func windowResignedKey(_ window: BrowserWindow) {
+        guard !(NSApp.keyWindow is BrowserWindow) else { return }
+        BrowserMainMenu.shared.deactivate()
+    }
+
     var windowCount: Int { windows.count }
 
     // MARK: - Session
 
     /// `fileBrowser.reopenWindows` && not holding Shift at launch — holding Shift opens no windows (FileOctopus'
     /// one-time skip), same as a fresh install would see nothing to restore.
+    ///
+    /// XF-T30 W1 — native tab groups: snapshots carry `tabGroup`/`tabIndex`/`selectedInGroup`; windows sharing a
+    /// `tabGroup` number are opened in `tabIndex` order and re-grouped via `addTabbedWindow(_:ordered:)` as each one
+    /// comes up, so the group forms the same leading-to-trailing order it was saved in. A v1 session (every
+    /// `tabGroup` nil) opens every window standalone, same as before this feature existed.
     func restoreSessionAtLaunch() {
         let shiftHeld = NSEvent.modifierFlags.contains(.shift)
         guard SessionRestore.shouldRestore(shiftHeld: shiftHeld, reopenEnabled: BrowserSettings.reopenWindows) else { return }
@@ -130,10 +176,30 @@ import Quartz
         else { return }
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         var missingFolders: [String] = []
-        for snapshot in snapshots {
+        /// First window opened per `tabGroup` number — later windows in the same group are added to it via
+        /// `addTabbedWindow`, in ascending `tabIndex` order (the snapshots are sorted below before this loop runs).
+        var groupLeaders: [Int: BrowserWindow] = [:]
+        var selectedInGroupWindow: [Int: BrowserWindow] = [:]
+        let ordered = snapshots.sorted { lhs, rhs in
+            (lhs.tabGroup ?? Int.max, lhs.tabIndex ?? 0) < (rhs.tabGroup ?? Int.max, rhs.tabIndex ?? 0)
+        }
+        for snapshot in ordered {
             let (restored, missing) = SessionRestore.restored(snapshot, exists: { FileManager.default.fileExists(atPath: $0) }, home: home)
             missingFolders.append(contentsOf: missing)
-            openWindow(snapshot: restored)
+            let window = openWindow(snapshot: restored)
+            if let group = snapshot.tabGroup {
+                if let leader = groupLeaders[group] {
+                    leader.addTabbedWindow(window, ordered: .above)
+                } else {
+                    groupLeaders[group] = window
+                }
+                if snapshot.selectedInGroup == true {
+                    selectedInGroupWindow[group] = window
+                }
+            }
+        }
+        for window in selectedInGroupWindow.values {
+            window.tabGroup?.selectedWindow = window
         }
         if !missingFolders.isEmpty, let lastWindow = windows.last, let model = modelsByWindow[ObjectIdentifier(lastWindow)] {
             model.banner = "Một số thư mục đã phiên trước mở không còn tồn tại"
@@ -141,15 +207,42 @@ import Quartz
     }
 
     /// Called on window close and app quit (contract): every open window's layout goes to `session.json`.
+    ///
+    /// XF-T30 W1: `window.tabGroup` is `nil` for a window with no visible tab bar (a lone window, or one whose tab
+    /// bar the user hid) — such a window still gets a snapshot, just with `tabGroup`/`tabIndex`/`selectedInGroup`
+    /// all nil, same as a v1 (XF-T28) snapshot would have no such fields at all.
     func saveSession() {
+        let groupNumbers = Self.assignGroupNumbers(to: windows)
         let snapshots = windows.compactMap { window -> WindowSnapshot? in
             guard let model = modelsByWindow[ObjectIdentifier(window)] else { return nil }
-            return model.snapshot(frame: window.frame)
+            var snapshot = model.snapshot(frame: window.frame)
+            if let tabGroup = window.tabGroup, let groupMembers = tabGroup.windows as [NSWindow]?, groupMembers.count > 1 {
+                snapshot.tabGroup = groupNumbers[ObjectIdentifier(tabGroup)]
+                snapshot.tabIndex = groupMembers.firstIndex(where: { $0 === window })
+                snapshot.selectedInGroup = (tabGroup.selectedWindow === window)
+            }
+            return snapshot
         }
         guard let data = try? Self.encoder().encode(snapshots) else { return }
         let url = Self.sessionURL
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? data.write(to: url, options: .atomic)
+    }
+
+    /// A stable small integer per distinct `NSWindowTabGroup` among the windows being saved, so two windows that
+    /// share a group write the same `tabGroup` number (the group object itself has no number of its own to persist).
+    private static func assignGroupNumbers(to windows: [BrowserWindow]) -> [ObjectIdentifier: Int] {
+        var numbers: [ObjectIdentifier: Int] = [:]
+        var next = 0
+        for window in windows {
+            guard let tabGroup = window.tabGroup else { continue }
+            let id = ObjectIdentifier(tabGroup)
+            if numbers[id] == nil {
+                numbers[id] = next
+                next += 1
+            }
+        }
+        return numbers
     }
 
     private static func encoder() -> JSONEncoder {
@@ -330,6 +423,30 @@ final class BrowserWindow: NSWindow {
     override func close() {
         BrowserWindowController.shared.windowClosed(self)
         super.close()
+    }
+
+    /// Native tab bar's "+" (`NSResponder`'s own `IBAction`, fired by AppKit — not something this app calls
+    /// directly): same mechanism ⌘T goes through.
+    override func newWindowForTab(_ sender: Any?) {
+        guard let model = modelForThisWindow() else {
+            super.newWindowForTab(sender)
+            return
+        }
+        BrowserWindowController.shared.openWindowTab(besideWindowOf: model)
+    }
+
+    /// Q-T30-13: tells `BrowserMainMenu` when a browser window is/isn't the key window, so it can insert/remove
+    /// its tagged items. `NSWindow` itself posts `NSWindow.didBecomeKeyNotification`/`didResignKeyNotification`
+    /// AFTER these override points run, but overriding directly (rather than observing the notification) means no
+    /// extra observer registration/teardown pairing to get wrong on a window that can outlive a single model.
+    override func becomeKey() {
+        super.becomeKey()
+        BrowserWindowController.shared.windowBecameKey(self)
+    }
+
+    override func resignKey() {
+        super.resignKey()
+        BrowserWindowController.shared.windowResignedKey(self)
     }
 }
 
