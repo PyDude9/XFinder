@@ -26,6 +26,23 @@ final class BrowserSettings {
     static var showStatusBar: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showStatusBar") as? Bool ?? true }
     static var showSidebar: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showSidebar") as? Bool ?? true }
 
+    /// XF-T30 W5a — the approved index folders (JSON `[IndexRoot]`; empty = nothing is indexed, FileOctopus R29). Not a
+    /// toggle ⇒ no `FeatureKeyDefaultsTests` row; a damaged value reads as empty.
+    static var indexRoots: [IndexRoot] {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: "fileBrowser.search.roots") else { return [] }
+            return (try? JSONDecoder().decode([IndexRoot].self, from: data)) ?? []
+        }
+        set { UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: "fileBrowser.search.roots") }
+    }
+    /// The ONE reader of `fileBrowser.search.defaultScope`: `mac` | `folder` | `previous` (Settings ▸ Advanced).
+    static var defaultSearchScope: String { UserDefaults.standard.string(forKey: "fileBrowser.search.defaultScope") ?? "mac" }
+    /// The ONE reader+writer of `fileBrowser.savedSearches` (JSON `SavedSearchStore`).
+    static var savedSearches: SavedSearchStore {
+        get { SavedSearchStore.decode(UserDefaults.standard.data(forKey: "fileBrowser.savedSearches")) }
+        set { UserDefaults.standard.set(newValue.encoded(), forKey: "fileBrowser.savedSearches") }
+    }
+
     /// The ONE reader of `fileBrowser.globalHotkey` (default off: a global chord is taken from every app).
     static var globalHotkeyEnabled: Bool { UserDefaults.standard.object(forKey: "fileBrowser.globalHotkey") as? Bool ?? false }
 
