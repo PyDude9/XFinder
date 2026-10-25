@@ -238,6 +238,7 @@ struct FileListView: NSViewRepresentable {
             lastUseGroups = useGroups
             cloudFactsCache.removeAll()
             lastSyncedSelection = []
+            stopWatchingAll()
             cachedRootNodes = rebuildRootNodes()
             reloadColumnsIfNeeded()
             outlineView?.reloadData()
@@ -371,11 +372,28 @@ struct FileListView: NSViewRepresentable {
             return nil
         }
 
-        /// Cancels the watcher and drops the cached listing for a folder that just collapsed (contract ca hỏng:
-        /// "không rò DirectoryWatcher") — a later re-expand starts a fresh load.
+        /// Cancels the watcher and drops the cached listing for a folder that just collapsed, AND every
+        /// already-expanded descendant underneath it (contract ca hỏng: "không rò DirectoryWatcher"). Collapsing a
+        /// folder in `NSOutlineView` only fires `outlineViewItemDidCollapse` for the item the user actually
+        /// collapsed — a subfolder expanded earlier underneath it (e.g. A then A/B both opened, then A collapsed)
+        /// never gets its own collapse notification, so without walking `children` here its watcher would keep
+        /// firing forever on rows no longer visible. A later re-expand starts a fresh load at every level.
         private func stopWatching(_ path: String) {
-            expanded[path]?.watcher?.cancel()
+            guard let folder = expanded[path] else { return }
+            for child in folder.children where child.isFolderLike {
+                stopWatching(child.path)
+            }
+            folder.watcher?.cancel()
             expanded.removeValue(forKey: path)
+        }
+
+        /// Cancels every watcher this coordinator currently owns — used when the pane navigates to a different
+        /// folder entirely (contract ca hỏng: "không rò DirectoryWatcher"). `reloadData()` resets every disclosure
+        /// state in the outline, so any folder that was expanded under the OLD top-level listing must have its
+        /// watcher torn down here; nothing else ever calls `outlineViewItemDidCollapse` for it once its row is gone.
+        private func stopWatchingAll() {
+            for folder in expanded.values { folder.watcher?.cancel() }
+            expanded.removeAll()
         }
 
         // MARK: - NSOutlineViewDataSource
