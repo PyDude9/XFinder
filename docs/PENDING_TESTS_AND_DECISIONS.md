@@ -293,6 +293,8 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-T30-SEARCH | Cài đặt ▸ Tìm kiếm thêm một thư mục, bật Nội dung; tìm "bao cao" thấy "Báo cáo.pdf"; tìm "hop dong" thấy PDF có chữ "hợp đồng"; Lưu tìm kiếm vào sidebar | chờ bản cài |
 | T-T30-CLOUD | Google Drive / Dropbox: chưa cài trên máy ⇒ "Mở trong Google Drive" / "Sao chép liên kết" / "Xem trên Dropbox.com" chưa làm (không đo được cơ chế) | cần máy có cài |
 | T-T30-MENU | Menu bar khi cửa sổ trình duyệt ở trước có Tệp/Xem/Đi/Cửa sổ của trình duyệt không (SwiftUI có ghi đè không) | chờ bạn nhìn |
+| T-T30-SESSION | Mở trình duyệt, chọn Side by Side, đóng cửa sổ cuối (⌘W) rồi mở lại từ menu bar / ⌘N; lần hai: thoát app (⌘Q), mở lại; lần ba: đóng hết rồi bấm một thư mục trong sidebar XFinder | Cả ba lần quay về Side by Side đúng thư mục; lần ba thư mục vừa bấm là tab mới ở ngăn đang chọn |
+| T-PERF-LAUNCH | Thoát app, mở lại, đếm tới lúc notch/menu bar phản hồi | Không còn 4–5 s nặng máy; danh sách phiên agent hiện sau ~1 s, không có thông báo cũ bắn lại |
 | W6-MERGE-QUEUE | **Đã làm** (`.merge` job): gộp hiện trong bảng Thao tác, tạm dừng / huỷ được, bước lỗi vào Sự cố, ⌘Z đưa từng mục về chỗ cũ | thử: gộp hai thư mục trùng tên lớn, bấm Tạm dừng giữa chừng, rồi ⌘Z |
 | Q-PRO-5 | Tạo cặp khoá ký giấy phép trên máy bạn: `swift scripts/make-license.swift init ~/Private/xfinder-license.key`, dán khoá công khai in ra vào `LicenseKey.publicKeyRaw` | chưa có ⇒ mọi khoá không hợp lệ; dùng thử + bản Debug vẫn đủ |
 | Q-PRO-6 | Free: xuất toàn bộ lịch sử Clipboard (.xfinderclip) có bị giới hạn 50 mục không? | **Mặc định: không** — dữ liệu của chính người dùng (luật 9) |
