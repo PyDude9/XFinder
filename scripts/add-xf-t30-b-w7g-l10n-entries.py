@@ -13,6 +13,11 @@ STORE = Path(__file__).resolve().parent.parent / "XFinder/Resources/L10n.strings
 S = "sentence"
 F = "fragment"
 ENTRIES = {
+    # GetInfoRootView — foldable section titles (verifier fix: "Chung"/"Mở bằng"/"Chia sẻ & Quyền" were used via
+    # L10n.t() but never added here — audit-l10n-literals.py flagged all three as wrapped-but-untranslated)
+    "Chung": ("General", S),
+    "Mở bằng": ("Open With", S),
+    "Chia sẻ & Quyền": ("Sharing & Permissions", S),
     # FileInfoRules.Row.labelKey — General/More Info sections (XF-T28 rows that were never localized, plus this
     # builder's own General/More Info additions)
     "Kích thước:": ("Size:", F),

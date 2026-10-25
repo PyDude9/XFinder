@@ -711,10 +711,10 @@ private struct GetInfoAdditionalSection: View {
     }
 }
 
-/// "Mở bằng": the apps `NSWorkspace` reports can open this item, default handler first, each with its own icon
-/// (`NSWorkspace.icon(forFile:)`, cheap for an app bundle — no custom cache needed for a list this short). No
-/// "Change All…" control (spec §5/Q-T30-15: changing the system default handler is a machine-config change, out of
-/// scope unless the owner asks for it).
+/// "Mở bằng": the apps `NSWorkspace` reports can open this item, default handler first, each with its own icon —
+/// through `FileIconCache.shared.icon(forPath:)` (CLAUDE.md §3.3: every AppKit lookup in `body` goes through a
+/// `@MainActor` cache, never a raw `NSWorkspace` call per row). No "Change All…" control (spec §5/Q-T30-15:
+/// changing the system default handler is a machine-config change, out of scope unless the owner asks for it).
 private struct GetInfoOpenWithSection: View {
     private static let iconSize: CGFloat = 16
 
@@ -730,7 +730,7 @@ private struct GetInfoOpenWithSection: View {
             VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                 ForEach(apps) { app in
                     HStack(spacing: XFinderTokens.Space.tight) {
-                        Image(nsImage: NSWorkspace.shared.icon(forFile: app.path))
+                        Image(nsImage: FileIconCache.shared.icon(forPath: app.path))
                             .resizable()
                             .frame(width: Self.iconSize, height: Self.iconSize)
                         Text(app.name)
