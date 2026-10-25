@@ -13,7 +13,7 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Thông tin": ("Information", S),
     "Hiện thêm": ("Show More", S),
     "Hiện bớt": ("Show Less", S),
-    "Không có thẻ": ("No tags", S),
+    "Không có thẻ": ("No Tags", S),
     "Tệp chỉ có trên đám mây — xem trước không tải tệp về.": (
         "This file is cloud-only — the preview does not download it.", S),
     "Không xem trước được loại tệp này.": ("This file type can't be previewed.", S),

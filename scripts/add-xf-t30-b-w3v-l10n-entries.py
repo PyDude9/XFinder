@@ -8,6 +8,11 @@ STORE = Path(__file__).resolve().parent.parent / "XFinder/Resources/L10n.strings
 S = "sentence"
 F = "fragment"
 ENTRIES = {
+    # integration 2026-10-25: ConnectToServer strings the builder's script missed
+    "Không kết nối được máy chủ": ("Couldn't connect to the server", S),
+    "Địa chỉ không hợp lệ (smb:// afp:// nfs:// ftp:// webdav)": ("Invalid address (smb:// afp:// nfs:// ftp:// webdav)", S),
+    "Kết nối máy chủ": ("Connect to Server", S),
+    "Gần đây và ưa thích": ("Recent and Favorites", S),
     # BrowserSidebarView: eject flow, sidebar sections, AirDrop
     "Buộc đẩy": ("Force Eject", S),
     "Chỉ phân vùng này": ("Just This Volume", S),

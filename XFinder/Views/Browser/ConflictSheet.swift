@@ -98,13 +98,12 @@ struct ConflictSheet: View {
         }
     }
 
-    /// "Gộp…": plans the merge off-main through `FolderMergeController` (contract §2 — that controller is Q6's
-    /// AppKit file, not this one's to implement; its current `merge(source:into:completion:)` only plans, so the
-    /// actual run below calls the same entry point again once the user confirms a policy — see deviations in the
-    /// final report for the policy/"run vs. plan" split this stub does not yet distinguish).
+    /// "Gộp…": plans the merge off-main through `FolderMergeController.preview` (refused for nested folders or the same
+    /// folder), re-plans when the policy changes, and runs the approved plan.
     private func startMerge() {
         isPlanningMerge = true
-        FolderMergeController.shared.merge(source: prompt.source.path, into: prompt.destination.path) { plan in
+        FolderMergeController.shared.preview(source: prompt.source.path, destination: prompt.destination.path,
+                                             policy: mergePolicy) { plan, _ in
             isPlanningMerge = false
             guard let plan else { return }
             mergePlan = plan
@@ -114,14 +113,16 @@ struct ConflictSheet: View {
 
     private func planMerge() {
         isPlanningMerge = true
-        FolderMergeController.shared.merge(source: prompt.source.path, into: prompt.destination.path) { plan in
+        FolderMergeController.shared.replan(source: prompt.source.path, destination: prompt.destination.path,
+                                            policy: mergePolicy) { plan in
             isPlanningMerge = false
-            if let plan { mergePlan = plan }
+            mergePlan = plan
         }
     }
 
     private func runMerge() {
-        FolderMergeController.shared.merge(source: prompt.source.path, into: prompt.destination.path) { _ in }
+        guard let plan = mergePlan else { return }
+        FolderMergeController.shared.run(plan, source: prompt.source.path, destination: prompt.destination.path) { _ in }
     }
 
     private func sideView(title: String, side: ConflictPrompt.Side) -> some View {

@@ -385,9 +385,25 @@ private struct AdvancedSettingsTab: View {
     @AppStorage("fileBrowser.showHidden") private var showHidden = false
     @AppStorage("fileBrowser.foldersFirst") private var foldersFirst = false
     @AppStorage("fileBrowser.search.defaultScope") private var searchScope = "mac"
+    @AppStorage("fileBrowser.defaultView") private var defaultView = "list"
 
     var body: some View {
         SettingsSection(title: L10n.t("Hiển thị tệp")) {
+            HStack {
+                Text(L10n.t("Kiểu xem của ngăn mới")).font(XFinderTokens.Font.row)
+                Spacer()
+                Picker("", selection: $defaultView) {
+                    Text(L10n.t("Xem dạng biểu tượng")).tag("icons")
+                    Text(L10n.t("Xem dạng danh sách")).tag("list")
+                    Text(L10n.t("Xem dạng cột")).tag("columns")
+                    Text(L10n.t("Xem dạng gallery")).tag("gallery")
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .fixedSize()
+            }
+            .settingsRow()
+            SettingsDivider()
             ToggleRow(title: L10n.t("Hiện mọi đuôi tệp"),
                       subtitle: L10n.t("Trừ tệp tự đặt cờ ẩn đuôi riêng (Lấy thông tin ▸ Tên & Đuôi)."),
                       isOn: $showAllExtensions)

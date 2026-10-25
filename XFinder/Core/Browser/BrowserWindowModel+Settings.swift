@@ -31,8 +31,8 @@ extension BrowserWindowModel {
     /// list when the layout has more panes than allowed folders, same as a single-folder install only ever seeing
     /// that one folder in every pane).
     static func showWelcome() {
-        OnboardingWindowController.shared.show { preset in
-            openWindow(withLayout: preset)
+        OnboardingWindowController.shared.show { preset, allowed in
+            openWindow(withLayout: preset, allowed: allowed)
         }
     }
 
@@ -52,13 +52,16 @@ extension BrowserWindowModel {
     /// and keeping it pinned are the same act the Welcome window's own folder-access step already performs (its
     /// controller is W4's `OnboardingWindowController`, not this file). Folders that no longer exist fall back to
     /// Home, same as a dead session-restore pane would.
-    private static func openWindow(withLayout preset: PanePreset) {
+    private static func openWindow(withLayout preset: PanePreset, allowed: [String]) {
         var tree = PaneTree()
         tree.apply(preset)
         let paneIDs = tree.panes
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let fm = FileManager.default
-        var allowedFolders = BrowserSettings.sidebarLayout.favorites.map(\.path).filter { fm.fileExists(atPath: $0) }
+        // The folders the person allowed in the Welcome window come first; the sidebar favourites fill in otherwise.
+        var allowedFolders = (allowed + BrowserSettings.sidebarLayout.favorites.map(\.path)).filter { fm.fileExists(atPath: $0) }
+        var seen = Set<String>()
+        allowedFolders = allowedFolders.filter { seen.insert($0).inserted }
         if allowedFolders.isEmpty { allowedFolders = [home] }
         var paneSnapshots: [PaneSnapshot] = []
         for (index, paneID) in paneIDs.enumerated() {

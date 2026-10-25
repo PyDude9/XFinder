@@ -13022,6 +13022,962 @@
     "Tìm kiếm đã lưu": {
       "en": "Saved Search",
       "scope": "sentence"
+    },
+    "7 ngày trước": {
+      "en": "Previous 7 Days",
+      "scope": "sentence"
+    },
+    "30 ngày trước": {
+      "en": "Previous 30 Days",
+      "scope": "sentence"
+    },
+    "Chưa có ngày": {
+      "en": "No Date",
+      "scope": "sentence"
+    },
+    "Không byte": {
+      "en": "Zero Bytes",
+      "scope": "sentence"
+    },
+    "Dưới 100 KB": {
+      "en": "Under 100 KB",
+      "scope": "sentence"
+    },
+    "Từ 100 KB đến 1 MB": {
+      "en": "100 KB to 1 MB",
+      "scope": "sentence"
+    },
+    "Từ 1 đến 100 MB": {
+      "en": "1 to 100 MB",
+      "scope": "sentence"
+    },
+    "Từ 100 MB đến 1 GB": {
+      "en": "100 MB to 1 GB",
+      "scope": "sentence"
+    },
+    "Trên 1 GB": {
+      "en": "Over 1 GB",
+      "scope": "sentence"
+    },
+    "Không có thẻ": {
+      "en": "No Tags",
+      "scope": "sentence"
+    },
+    "Mở bằng": {
+      "en": "Open With",
+      "scope": "sentence"
+    },
+    "Không có ứng dụng nào": {
+      "en": "No Applications",
+      "scope": "sentence"
+    },
+    "Thẻ…": {
+      "en": "Tags…",
+      "scope": "sentence"
+    },
+    "Hiện trong thư mục chứa": {
+      "en": "Show in Enclosing Folder",
+      "scope": "sentence"
+    },
+    "Sao chép ": {
+      "en": "Copy ",
+      "scope": "fragment"
+    },
+    " dưới dạng đường dẫn": {
+      "en": " as Pathname",
+      "scope": "fragment"
+    },
+    " mục dưới dạng đường dẫn": {
+      "en": " Items as Pathname",
+      "scope": "fragment"
+    },
+    "Xem dạng": {
+      "en": "View As",
+      "scope": "sentence"
+    },
+    "Sắp theo": {
+      "en": "Sort By",
+      "scope": "sentence"
+    },
+    "Nhóm theo": {
+      "en": "Group By",
+      "scope": "sentence"
+    },
+    "Tuỳ chọn xem": {
+      "en": "View Options",
+      "scope": "sentence"
+    },
+    "Cỡ biểu tượng": {
+      "en": "Icon Size",
+      "scope": "sentence"
+    },
+    "Cột hiện": {
+      "en": "Visible Columns",
+      "scope": "sentence"
+    },
+    "Luôn mở theo kiểu này": {
+      "en": "Always Open in This View",
+      "scope": "sentence"
+    },
+    "Dùng làm mặc định": {
+      "en": "Use as Defaults",
+      "scope": "sentence"
+    },
+    "Vừa cỡ cột này": {
+      "en": "Fit This Column",
+      "scope": "sentence"
+    },
+    "Vừa cỡ mọi cột riêng": {
+      "en": "Fit All Columns Individually",
+      "scope": "sentence"
+    },
+    "Vừa cỡ mọi cột bằng nhau": {
+      "en": "Fit All Columns Equally",
+      "scope": "sentence"
+    },
+    "Đã mở quá nhiều thư mục con, dừng lại": {
+      "en": "Too many subfolders opened, stopped",
+      "scope": "sentence"
+    },
+    "Không tạo được bí danh": {
+      "en": "Couldn't create the alias",
+      "scope": "sentence"
+    },
+    "Không thêm được vào sidebar": {
+      "en": "Couldn't add to the sidebar",
+      "scope": "sentence"
+    },
+    "Không tìm thấy bản gốc": {
+      "en": "Couldn't find the original",
+      "scope": "sentence"
+    },
+    "Thư mục gần đây": {
+      "en": "Recent Folders",
+      "scope": "sentence"
+    },
+    "Không có thư mục nào": {
+      "en": "No Folders",
+      "scope": "sentence"
+    },
+    "Cục bộ": {
+      "en": "Local",
+      "scope": "sentence"
+    },
+    "Ngoài": {
+      "en": "External",
+      "scope": "sentence"
+    },
+    "Đám mây": {
+      "en": "Cloud",
+      "scope": "sentence"
+    },
+    "Tất cả thẻ…": {
+      "en": "All Tags…",
+      "scope": "sentence"
+    },
+    "Máy tính lân cận": {
+      "en": "Nearby Computers",
+      "scope": "sentence"
+    },
+    "Buộc đẩy": {
+      "en": "Force Eject",
+      "scope": "sentence"
+    },
+    "Chỉ phân vùng này": {
+      "en": "Just This Volume",
+      "scope": "sentence"
+    },
+    "Một ứng dụng đang dùng ổ này. Đẩy ngay có thể làm mất dữ liệu chưa lưu.": {
+      "en": "An app is using this disk. Ejecting now may lose its unsaved changes.",
+      "scope": "sentence"
+    },
+    "macOS không cho ứng dụng khác hiện thiết bị AirDrop gần đây — bấm để mở AirDrop của Finder": {
+      "en": "macOS doesn't let other apps show nearby AirDrop devices — click to open Finder's AirDrop",
+      "scope": "sentence"
+    },
+    "Đẩy mọi phân vùng": {
+      "en": "Eject All Volumes",
+      "scope": "sentence"
+    },
+    "Đẩy ổ đĩa này?": {
+      "en": "Eject This Disk?",
+      "scope": "sentence"
+    },
+    "Ổ này có nhiều phân vùng. Bạn muốn đẩy chỉ phân vùng này hay mọi phân vùng trên ổ?": {
+      "en": "This disk has several volumes. Eject just this one, or every volume on the disk?",
+      "scope": "sentence"
+    },
+    "Ổ đĩa đang bận": {
+      "en": "Disk Is Busy",
+      "scope": "sentence"
+    },
+    "Ứng dụng ": {
+      "en": "App ",
+      "scope": "fragment"
+    },
+    " đang dùng ổ này. Đẩy ngay có thể làm mất dữ liệu chưa lưu của ứng dụng đó.": {
+      "en": " is using this disk. Ejecting now may lose that app's unsaved changes.",
+      "scope": "fragment"
+    },
+    "AirDrop không khả dụng cho các mục này trên máy này.": {
+      "en": "AirDrop isn't available for these items on this Mac.",
+      "scope": "sentence"
+    },
+    "Không đẩy được — XFinder đang thực hiện một thao tác tệp trên ổ này.": {
+      "en": "Can't eject — XFinder is running a file operation on this disk.",
+      "scope": "sentence"
+    },
+    "Chung": {
+      "en": "General",
+      "scope": "sentence"
+    },
+    "Sidebar": {
+      "en": "Sidebar",
+      "scope": "sentence"
+    },
+    "Nâng cao": {
+      "en": "Advanced",
+      "scope": "sentence"
+    },
+    "Bàn phím": {
+      "en": "Keyboard",
+      "scope": "sentence"
+    },
+    "Quyền riêng tư": {
+      "en": "Privacy",
+      "scope": "sentence"
+    },
+    "Cài đặt trình duyệt": {
+      "en": "Browser Settings",
+      "scope": "sentence"
+    },
+    "Cửa sổ mới hiện": {
+      "en": "New windows show",
+      "scope": "sentence"
+    },
+    "Thư mục khác…": {
+      "en": "Other Folder…",
+      "scope": "sentence"
+    },
+    "Chọn thư mục cửa sổ mới sẽ mở.": {
+      "en": "Choose the folder new windows will open to.",
+      "scope": "sentence"
+    },
+    "Hiện trong cửa sổ": {
+      "en": "Show in window",
+      "scope": "sentence"
+    },
+    "Mở lại cửa sổ…": {
+      "en": "Reopen windows…",
+      "scope": "sentence"
+    },
+    "Cửa sổ, tab, ngăn và lịch sử Lùi/Tiến quay lại khi XFinder mở. Giữ Shift khi mở để bỏ qua lần đó.": {
+      "en": "Windows, tabs, panes and Back/Forward history come back when XFinder opens. Hold Shift while opening to skip it once.",
+      "scope": "sentence"
+    },
+    "Thói quen Windows (tuỳ chọn)": {
+      "en": "Windows habits (optional)",
+      "scope": "sentence"
+    },
+    "Return đổi tên / mở": {
+      "en": "Return renames / opens",
+      "scope": "sentence"
+    },
+    "Bật: Return mở mục đã chọn, đổi tên chuyển sang F2 hoặc menu Sửa. Tắt: Return đổi tên như Finder.": {
+      "en": "On: Return opens the selection, renaming moves to F2 or the Edit menu. Off: Return renames, like Finder.",
+      "scope": "sentence"
+    },
+    "⌘X để cắt": {
+      "en": "⌘X to Cut",
+      "scope": "sentence"
+    },
+    "Kiểu Windows: ⌘X đánh dấu cắt, ⌘V nơi khác sẽ chuyển thay vì chép.": {
+      "en": "Windows style: ⌘X marks items as cut, ⌘V elsewhere moves them instead of copying.",
+      "scope": "sentence"
+    },
+    "Cập nhật phần mềm": {
+      "en": "Software update",
+      "scope": "sentence"
+    },
+    "Cập nhật phần mềm trong bản này theo XFinder": {
+      "en": "Software updates follow XFinder's own updates for this build.",
+      "scope": "sentence"
+    },
+    "Hiện trong sidebar": {
+      "en": "Show in sidebar",
+      "scope": "sentence"
+    },
+    "Ổ trong máy": {
+      "en": "Internal Disks",
+      "scope": "sentence"
+    },
+    "Ổ ngoài": {
+      "en": "External Disks",
+      "scope": "sentence"
+    },
+    "Máy chủ đã nối": {
+      "en": "Connected Servers",
+      "scope": "sentence"
+    },
+    "Máy Bonjour": {
+      "en": "Bonjour Computers",
+      "scope": "sentence"
+    },
+    "Thẻ gần đây": {
+      "en": "Recent Tags",
+      "scope": "sentence"
+    },
+    "Tuỳ chọn": {
+      "en": "Options",
+      "scope": "sentence"
+    },
+    "Nhóm Vị trí theo loại": {
+      "en": "Group Locations by kind",
+      "scope": "sentence"
+    },
+    "Tách Vị trí thành Trong máy / Ngoài / Đám mây / Mạng.": {
+      "en": "Splits Locations into Internal / External / Cloud / Network.",
+      "scope": "sentence"
+    },
+    "Tô sáng vị trí chứa thư mục hiện tại": {
+      "en": "Highlight the location holding the current folder",
+      "scope": "sentence"
+    },
+    "Ổ bị ẩn khỏi mục Vị trí của sidebar — vẫn gắn vào máy bình thường.": {
+      "en": "A disk hidden from the sidebar's Locations group — still mounted normally.",
+      "scope": "sentence"
+    },
+    "Đám mây trong sidebar": {
+      "en": "Cloud in sidebar",
+      "scope": "sentence"
+    },
+    "Hiện đám mây trong sidebar": {
+      "en": "Show cloud storage in sidebar",
+      "scope": "sentence"
+    },
+    "Cùng công tắc với Sidebar ▸ Đám mây.": {
+      "en": "Same switch as Sidebar ▸ Cloud.",
+      "scope": "sentence"
+    },
+    "Nhà cung cấp đã phát hiện": {
+      "en": "Providers detected",
+      "scope": "sentence"
+    },
+    "Chưa phát hiện nhà cung cấp đám mây nào.": {
+      "en": "No cloud storage provider detected.",
+      "scope": "sentence"
+    },
+    "Đọc từ ~/Library/CloudStorage — đăng nhập và đồng bộ qua ứng dụng riêng của mỗi hãng, XFinder không có OAuth riêng.": {
+      "en": "Read from ~/Library/CloudStorage — sign-in and sync happen in each provider's own app; XFinder has no OAuth of its own.",
+      "scope": "sentence"
+    },
+    "Hiển thị tệp": {
+      "en": "File display",
+      "scope": "sentence"
+    },
+    "Hiện mọi đuôi tệp": {
+      "en": "Show all filename extensions",
+      "scope": "sentence"
+    },
+    "Trừ tệp tự đặt cờ ẩn đuôi riêng (Lấy thông tin ▸ Tên & Đuôi).": {
+      "en": "Except a file with its own hide-extension flag (Get Info ▸ Name & Extension).",
+      "scope": "sentence"
+    },
+    "Thư mục lên đầu khi sắp theo tên": {
+      "en": "Keep folders on top when sorted by name",
+      "scope": "sentence"
+    },
+    "Khi tìm kiếm": {
+      "en": "When searching",
+      "scope": "sentence"
+    },
+    "Phạm vi tìm mặc định": {
+      "en": "Default search scope",
+      "scope": "sentence"
+    },
+    "Thư mục hiện tại": {
+      "en": "Current Folder",
+      "scope": "sentence"
+    },
+    "Dùng phạm vi tìm trước": {
+      "en": "Use the previous search scope",
+      "scope": "sentence"
+    },
+    "Hồ sơ phím tắt": {
+      "en": "Shortcut profile",
+      "scope": "sentence"
+    },
+    "Finder": {
+      "en": "Finder",
+      "scope": "sentence"
+    },
+    "Windows Explorer": {
+      "en": "Windows Explorer",
+      "scope": "sentence"
+    },
+    "Total Commander": {
+      "en": "Total Commander",
+      "scope": "sentence"
+    },
+    "Tuỳ chỉnh": {
+      "en": "Custom",
+      "scope": "sentence"
+    },
+    "Bảng phím tắt": {
+      "en": "Shortcut table",
+      "scope": "sentence"
+    },
+    "Nhấp một ô rồi gõ phím mới. Esc huỷ, Delete xoá. Control-click một hàng để khôi phục riêng hàng đó.": {
+      "en": "Click a box, then type the new key. Esc cancels, Delete clears. Control-click a row to restore just that row.",
+      "scope": "sentence"
+    },
+    "Tìm theo tên hoặc phím": {
+      "en": "Search by name or key",
+      "scope": "sentence"
+    },
+    "(Cài đặt hệ thống)": {
+      "en": "(System Settings)",
+      "scope": "sentence"
+    },
+    "Nhấn phím…": {
+      "en": "Press a key…",
+      "scope": "sentence"
+    },
+    "Chuột": {
+      "en": "Mouse",
+      "scope": "sentence"
+    },
+    "Tab chuyển ngăn": {
+      "en": "Tab switches panes",
+      "scope": "sentence"
+    },
+    "Như Total Commander: Tab chuyển ngăn đang chọn thay vì focus trong ngăn.": {
+      "en": "Like Total Commander: Tab switches the selected pane instead of moving focus within a pane.",
+      "scope": "sentence"
+    },
+    "Nút chuột 4/5 (Lùi/Tiến)": {
+      "en": "Mouse buttons 4/5 (Back/Forward)",
+      "scope": "sentence"
+    },
+    "Đảo": {
+      "en": "Swapped",
+      "scope": "sentence"
+    },
+    "Xuất / nhập": {
+      "en": "Export / Import",
+      "scope": "sentence"
+    },
+    "Không nhập được — mọi lỗi dưới đây cần sửa trước:": {
+      "en": "Could not import — every error below needs fixing first:",
+      "scope": "fragment"
+    },
+    "Phím đang được dùng": {
+      "en": "Key already in use",
+      "scope": "sentence"
+    },
+    "Vẫn dùng": {
+      "en": "Use Anyway",
+      "scope": "sentence"
+    },
+    "Phím này đang dùng cho ": {
+      "en": "This key is already used for ",
+      "scope": "fragment"
+    },
+    "Chọn nơi lưu tệp phím tắt.": {
+      "en": "Choose where to save the shortcuts file.",
+      "scope": "sentence"
+    },
+    "Chọn tệp phím tắt đã xuất.": {
+      "en": "Choose an exported shortcuts file.",
+      "scope": "sentence"
+    },
+    "Tệp không đọc được.": {
+      "en": "The file could not be read.",
+      "scope": "sentence"
+    },
+    "Lệnh lạ: ": {
+      "en": "Unknown command: ",
+      "scope": "fragment"
+    },
+    "Phím dùng hai lần: ": {
+      "en": "Key used twice: ",
+      "scope": "fragment"
+    },
+    "Phím dành riêng: ": {
+      "en": "Reserved key: ",
+      "scope": "fragment"
+    },
+    "Thư mục được đánh chỉ mục": {
+      "en": "Indexed folders",
+      "scope": "sentence"
+    },
+    "Không tự quét toàn ổ đĩa — chỉ thư mục bạn thêm ở đây mới có chỉ mục tên/nội dung riêng; tìm theo Spotlight vẫn chạy ở mọi nơi khác.": {
+      "en": "Never scans the whole disk on its own — only a folder you add here gets its own name/content index; Spotlight search still works everywhere else.",
+      "scope": "sentence"
+    },
+    "Chưa có thư mục nào được thêm.": {
+      "en": "No folder has been added yet.",
+      "scope": "sentence"
+    },
+    "Chọn thư mục để đánh chỉ mục.": {
+      "en": "Choose a folder to index.",
+      "scope": "sentence"
+    },
+    "Dựng lại": {
+      "en": "Rebuild",
+      "scope": "sentence"
+    },
+    "Xoá chỉ mục…": {
+      "en": "Erase Index…",
+      "scope": "sentence"
+    },
+    "Quyền thư mục": {
+      "en": "Folder access",
+      "scope": "sentence"
+    },
+    "Chưa kiểm tra": {
+      "en": "Not checked",
+      "scope": "sentence"
+    },
+    "Chưa cho phép": {
+      "en": "Not allowed",
+      "scope": "sentence"
+    },
+    "Truy cập toàn bộ ổ đĩa": {
+      "en": "Full Disk Access",
+      "scope": "sentence"
+    },
+    "Full Disk Access": {
+      "en": "Full Disk Access",
+      "scope": "sentence"
+    },
+    "Mở Cài đặt hệ thống…": {
+      "en": "Open System Settings…",
+      "scope": "sentence"
+    },
+    "Kiểm lại": {
+      "en": "Check Again",
+      "scope": "sentence"
+    },
+    "Vừa cấp quyền? Thoát và mở lại XFinder để chắc chắn quyền có hiệu lực.": {
+      "en": "Just granted access? Quit and reopen XFinder to make sure it takes effect.",
+      "scope": "sentence"
+    },
+    "Khởi động": {
+      "en": "Startup",
+      "scope": "sentence"
+    },
+    "Chào mừng đến với XFinder": {
+      "en": "Welcome to XFinder",
+      "scope": "sentence"
+    },
+    "Cho phép XFinder đọc các thư mục hay dùng. Mỗi nút gọi đúng hộp thoại hệ thống — không gì tự cấp quyền.": {
+      "en": "Let XFinder read the folders you use most. Each button triggers the real system dialog — nothing grants itself access.",
+      "scope": "sentence"
+    },
+    "Cho phép tất cả": {
+      "en": "Allow All",
+      "scope": "sentence"
+    },
+    "Đã cho phép": {
+      "en": "Allowed",
+      "scope": "sentence"
+    },
+    "Full Disk Access (tuỳ chọn)": {
+      "en": "Full Disk Access (optional)",
+      "scope": "sentence"
+    },
+    "Cho mọi thư mục trên máy, kể cả thư mục của ứng dụng khác. Có thể bỏ qua và bật sau trong Cài đặt trình duyệt ▸ Quyền riêng tư.": {
+      "en": "Access to every folder on the Mac, including other apps' own folders. You can skip this and turn it on later in Browser Settings ▸ Privacy.",
+      "scope": "sentence"
+    },
+    "Trạng thái hiện tại": {
+      "en": "Current status",
+      "scope": "sentence"
+    },
+    "Tiếp tục không cần Full Disk Access": {
+      "en": "Continue Without Full Disk Access",
+      "scope": "sentence"
+    },
+    "Chọn bố cục": {
+      "en": "Choose a Layout",
+      "scope": "sentence"
+    },
+    "Cửa sổ đầu tiên sẽ mở các thư mục bạn vừa cho phép.": {
+      "en": "The first window opens the folders you just allowed.",
+      "scope": "sentence"
+    },
+    "Mở XFinder": {
+      "en": "Open XFinder",
+      "scope": "sentence"
+    },
+    "Mọi lệnh cũng có trong bảng lệnh: ⌃⇧⌘P, hoặc gõ > trong ⌃⌘P. Đổi phím ở cửa sổ Cài đặt trình duyệt ▸ Bàn phím.": {
+      "en": "Every command is also in the command palette: ⌃⇧⌘P, or type > in ⌃⌘P. Change keys in Browser Settings ▸ Keyboard.",
+      "scope": "sentence"
+    },
+    "Không có quyền": {
+      "en": "No Permission",
+      "scope": "sentence"
+    },
+    "Ổ đĩa đầy": {
+      "en": "Disk Full",
+      "scope": "sentence"
+    },
+    "Tệp đang được dùng": {
+      "en": "File In Use",
+      "scope": "sentence"
+    },
+    "Ổ đĩa hoặc máy chủ mất kết nối": {
+      "en": "Disk or Server Disconnected",
+      "scope": "sentence"
+    },
+    "Lỗi đọc hoặc ghi": {
+      "en": "Read or Write Error",
+      "scope": "sentence"
+    },
+    "Ổ đĩa chỉ đọc": {
+      "en": "Read-Only Disk",
+      "scope": "sentence"
+    },
+    "Tên quá dài": {
+      "en": "Name Too Long",
+      "scope": "sentence"
+    },
+    "Mục không còn tồn tại": {
+      "en": "Item No Longer Exists",
+      "scope": "sentence"
+    },
+    "Hoàn tác Chuyển": {
+      "en": "Undo Move",
+      "scope": "fragment"
+    },
+    "Hoàn tác Sao chép": {
+      "en": "Undo Copy",
+      "scope": "fragment"
+    },
+    "Hoàn tác Nhân bản": {
+      "en": "Undo Duplicate",
+      "scope": "fragment"
+    },
+    "Hoàn tác Chuyển vào Thùng rác": {
+      "en": "Undo Move to Trash",
+      "scope": "fragment"
+    },
+    "Hoàn tác Đổi tên": {
+      "en": "Undo Rename",
+      "scope": "fragment"
+    },
+    "Hoàn tác Tạo thư mục mới": {
+      "en": "Undo New Folder",
+      "scope": "fragment"
+    },
+    "Hoàn tác Gộp thư mục": {
+      "en": "Undo Merge",
+      "scope": "fragment"
+    },
+    "Hoàn tác Nén": {
+      "en": "Undo Compress",
+      "scope": "fragment"
+    },
+    "Hoàn tác Sửa thông tin": {
+      "en": "Undo Info Change",
+      "scope": "fragment"
+    },
+    "Không còn mục nào để hoàn tác": {
+      "en": "Nothing left to undo",
+      "scope": "sentence"
+    },
+    "Một mục không còn ở chỗ cũ": {
+      "en": "An item is no longer where it was",
+      "scope": "sentence"
+    },
+    "Mục đã bị đổi từ bên ngoài, không thể hoàn tác": {
+      "en": "The item was changed from outside the app and can't be undone",
+      "scope": "sentence"
+    },
+    "Gói ứng dụng — không gộp bên trong": {
+      "en": "App bundle — not merged inside",
+      "scope": "sentence"
+    },
+    "Liên kết tượng trưng — không gộp bên trong": {
+      "en": "Symbolic link — not merged inside",
+      "scope": "sentence"
+    },
+    "Thư mục đám mây — không gộp bên trong": {
+      "en": "Cloud folder — not merged inside",
+      "scope": "sentence"
+    },
+    "Khác kiểu mục — tệp và thư mục cùng tên": {
+      "en": "Mismatched kind — a file and a folder share this name",
+      "scope": "sentence"
+    },
+    "Thư mục mới chứa mục": {
+      "en": "New Folder With Items",
+      "scope": "sentence"
+    },
+    "Không tạm dừng được ở bước cuối": {
+      "en": "Can't pause at the final step",
+      "scope": "sentence"
+    },
+    "Đang chuẩn bị": {
+      "en": "Preparing",
+      "scope": "sentence"
+    },
+    "Đang chép": {
+      "en": "Copying",
+      "scope": "sentence"
+    },
+    "Sự cố": {
+      "en": "Problems",
+      "scope": "sentence"
+    },
+    "Hiện trong XFinder": {
+      "en": "Show in XFinder",
+      "scope": "sentence"
+    },
+    "Không có gì để thao tác": {
+      "en": "Nothing to do this with",
+      "scope": "sentence"
+    },
+    "Không tạo được thư mục mới": {
+      "en": "Couldn't create the new folder",
+      "scope": "sentence"
+    },
+    "Không thể chép một thư mục vào chính nó": {
+      "en": "Can't copy a folder into itself",
+      "scope": "sentence"
+    },
+    "Gộp…": {
+      "en": "Merge…",
+      "scope": "sentence"
+    },
+    "Khi trùng tên": {
+      "en": "When names match",
+      "scope": "sentence"
+    },
+    "Giữ bản mới hơn": {
+      "en": "Keep the newer one",
+      "scope": "sentence"
+    },
+    "Sẽ chép": {
+      "en": "Will copy",
+      "scope": "sentence"
+    },
+    "Sẽ thay": {
+      "en": "Will replace",
+      "scope": "sentence"
+    },
+    "Sẽ bỏ qua": {
+      "en": "Will skip",
+      "scope": "sentence"
+    },
+    "Sẽ đổi tên": {
+      "en": "Will rename",
+      "scope": "sentence"
+    },
+    "Bỏ qua (không hợp lệ)": {
+      "en": "Skipped (not valid)",
+      "scope": "sentence"
+    },
+    "Áp dụng cho tất cả": {
+      "en": "Apply to all",
+      "scope": "sentence"
+    },
+    "Đã làm lại ": {
+      "en": "Redone: ",
+      "scope": "fragment"
+    },
+    "Sẽ hoàn tác sau khi việc đang chạy xong": {
+      "en": "Will undo once the running operation finishes",
+      "scope": "sentence"
+    },
+    "Sẽ làm lại sau khi việc đang chạy xong": {
+      "en": "Will redo once the running operation finishes",
+      "scope": "sentence"
+    },
+    "Không thể làm lại thao tác này.": {
+      "en": "This action cannot be redone.",
+      "scope": "sentence"
+    },
+    "Không hoàn tác được…": {
+      "en": "Can't Undo…",
+      "scope": "sentence"
+    },
+    "Chia sẻ & Quyền": {
+      "en": "Sharing & Permissions",
+      "scope": "sentence"
+    },
+    "Kích thước:": {
+      "en": "Size:",
+      "scope": "fragment"
+    },
+    "Dung lượng trên đĩa:": {
+      "en": "On disk:",
+      "scope": "fragment"
+    },
+    "Nơi lưu:": {
+      "en": "Where:",
+      "scope": "fragment"
+    },
+    "Ngày tạo:": {
+      "en": "Created:",
+      "scope": "fragment"
+    },
+    "Ngày sửa đổi:": {
+      "en": "Modified:",
+      "scope": "fragment"
+    },
+    "Mở lần cuối:": {
+      "en": "Last opened:",
+      "scope": "fragment"
+    },
+    "Phiên bản:": {
+      "en": "Version:",
+      "scope": "fragment"
+    },
+    "Khoá:": {
+      "en": "Locked:",
+      "scope": "fragment"
+    },
+    "Trạng thái đám mây:": {
+      "en": "Cloud status:",
+      "scope": "fragment"
+    },
+    "Kích thước ảnh:": {
+      "en": "Dimensions:",
+      "scope": "fragment"
+    },
+    "Không gian màu:": {
+      "en": "Color space:",
+      "scope": "fragment"
+    },
+    "Máy ảnh:": {
+      "en": "Camera:",
+      "scope": "fragment"
+    },
+    "Thời lượng:": {
+      "en": "Duration:",
+      "scope": "fragment"
+    },
+    "Codec:": {
+      "en": "Codec:",
+      "scope": "fragment"
+    },
+    "Số trang:": {
+      "en": "Pages:",
+      "scope": "fragment"
+    },
+    "Có": {
+      "en": "Yes",
+      "scope": "sentence"
+    },
+    "Đã đồng bộ": {
+      "en": "Synced",
+      "scope": "sentence"
+    },
+    "Chỉ trên đám mây": {
+      "en": "Only in the cloud",
+      "scope": "sentence"
+    },
+    "Đang tải xuống": {
+      "en": "Downloading",
+      "scope": "sentence"
+    },
+    "Đang tải lên": {
+      "en": "Uploading",
+      "scope": "sentence"
+    },
+    "Tải xuống lỗi": {
+      "en": "Download failed",
+      "scope": "sentence"
+    },
+    "Tải lên lỗi": {
+      "en": "Upload failed",
+      "scope": "sentence"
+    },
+    "Chỉ đọc — mục này đến từ kết quả tìm kiếm.": {
+      "en": "Read-only — this item came from a search result.",
+      "scope": "sentence"
+    },
+    "Không có thêm thông tin cho loại tệp này.": {
+      "en": "No more info for this kind of file.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy ứng dụng mở được tệp này.": {
+      "en": "No app found that can open this file.",
+      "scope": "sentence"
+    },
+    "(Tôi)": {
+      "en": "(Me)",
+      "scope": "sentence"
+    },
+    "Định dạng:": {
+      "en": "Format:",
+      "scope": "fragment"
+    },
+    "Dung lượng:": {
+      "en": "Capacity:",
+      "scope": "fragment"
+    },
+    "Đã dùng:": {
+      "en": "Used:",
+      "scope": "fragment"
+    },
+    "Còn trống:": {
+      "en": "Available:",
+      "scope": "fragment"
+    },
+    "Không lấy được (ổ mạng không phản hồi)": {
+      "en": "Unavailable (network volume didn't respond)",
+      "scope": "sentence"
+    },
+    "Có thể giải phóng:": {
+      "en": "Purgeable:",
+      "scope": "fragment"
+    },
+    "Điểm gắn:": {
+      "en": "Mount point:",
+      "scope": "fragment"
+    },
+    "Chọn một mục để xem trước": {
+      "en": "Select an item to preview",
+      "scope": "sentence"
+    },
+    "Thông tin": {
+      "en": "Information",
+      "scope": "sentence"
+    },
+    "Hiện thêm": {
+      "en": "Show More",
+      "scope": "sentence"
+    },
+    "Hiện bớt": {
+      "en": "Show Less",
+      "scope": "sentence"
+    },
+    "Tệp chỉ có trên đám mây — xem trước không tải tệp về.": {
+      "en": "This file is cloud-only — the preview does not download it.",
+      "scope": "sentence"
+    },
+    "Không xem trước được loại tệp này.": {
+      "en": "This file type can't be previewed.",
+      "scope": "sentence"
+    },
+    "Không kết nối được máy chủ": {
+      "en": "Couldn't connect to the server",
+      "scope": "sentence"
+    },
+    "Địa chỉ không hợp lệ (smb:// afp:// nfs:// ftp:// webdav)": {
+      "en": "Invalid address (smb:// afp:// nfs:// ftp:// webdav)",
+      "scope": "sentence"
+    },
+    "Kết nối máy chủ": {
+      "en": "Connect to Server",
+      "scope": "sentence"
+    },
+    "Gần đây và ưa thích": {
+      "en": "Recent and Favorites",
+      "scope": "sentence"
     }
   }
 }
