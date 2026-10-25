@@ -39,6 +39,12 @@ final class KeyBindingsTests: XCTestCase {
         XCTAssertEqual(bindings.binding(for: .moveToTrash).primary, KeyChord("f8"))
         XCTAssertEqual(bindings.binding(for: .open).primary, KeyChord("return"))
         XCTAssertTrue(bindings.tabSwitchesPanes, "Total Commander profile switches panes via Tab")
+        // Bug found while reviewing: the profile rebinds .open's primary to bare Return but, before this fix,
+        // left .rename on its Finder default (also bare Return) — two commands on the one chord. Total Commander
+        // moves rename to F2 instead, like Windows Explorer.
+        XCTAssertEqual(bindings.binding(for: .rename).primary, KeyChord("f2"), "rename must move off Return once open claims it")
+        XCTAssertEqual(bindings.command(for: KeyChord("return")), .open, "Return must resolve to exactly one command")
+        XCTAssertNil(bindings.conflict(for: KeyChord("return"), excluding: .open), "open's own Return must not read as contested")
     }
 
     func testApplyingAProfileClearsPriorOverridesButStaysEditable() {
@@ -146,8 +152,8 @@ final class KeyBindingsTests: XCTestCase {
         bindings.apply(.commander)
         XCTAssertNil(bindings.validate(KeyChord("tab")))
         XCTAssertNil(bindings.validate(KeyChord("return")))
-        // F2 is not this profile's business, so it stays reserved.
-        XCTAssertEqual(bindings.validate(KeyChord("f2")), .reservedByViews)
+        // Total Commander also claims F2 for rename (moved off Return, which .open now owns).
+        XCTAssertNil(bindings.validate(KeyChord("f2")))
     }
 
     func testValidateStillRejectsArrowsUnderEveryProfile() {
@@ -180,6 +186,33 @@ final class KeyBindingsTests: XCTestCase {
     func testCommandForUnboundChordIsNil() {
         let bindings = KeyBindings()
         XCTAssertNil(bindings.command(for: KeyChord("k", command: true, shift: true, option: true, control: true)))
+    }
+
+    // `open`'s ⌘↓ extra chord (XF-T28 contract §2: "⌘↓ là chord phụ của open") is not stored in
+    // `BrowserCommands.table` (one chord per command) — `BrowserCommands.command(for:)` recognizes it via its own
+    // `openSecondary` constant. `KeyBindings` is meant to replace that dispatcher entirely, so it must keep
+    // resolving ⌘↓ to `.open` under every profile, by default and even after other edits, without anyone else
+    // claiming it.
+    func testOpenHasACommandDownArrowExtraChordByDefault() {
+        let bindings = KeyBindings()
+        XCTAssertEqual(bindings.binding(for: .open).primary, KeyChord("o", command: true))
+        XCTAssertEqual(bindings.binding(for: .open).extra, KeyChord("down", command: true))
+        XCTAssertEqual(bindings.command(for: KeyChord("down", command: true)), .open)
+    }
+
+    func testOpenKeepsItsCommandDownArrowExtraChordUnderEveryProfile() {
+        for profile in KeyProfile.allCases {
+            var bindings = KeyBindings()
+            bindings.apply(profile)
+            XCTAssertEqual(bindings.command(for: KeyChord("down", command: true)), .open, "\(profile) must still resolve ⌘↓ to open")
+        }
+    }
+
+    func testAssigningCommandDownArrowElsewhereStealsItFromOpen() {
+        var bindings = KeyBindings()
+        bindings.assign(KeyChord("down", command: true), to: .getInfo, extra: false)
+        XCTAssertEqual(bindings.command(for: KeyChord("down", command: true)), .getInfo)
+        XCTAssertNil(bindings.binding(for: .open).extra, "open must give up ⌘↓ once another command claims it")
     }
 
     // MARK: - Conflict + assign ("Use Anyway" moves the key)

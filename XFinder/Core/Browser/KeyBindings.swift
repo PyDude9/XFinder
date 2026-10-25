@@ -39,7 +39,7 @@ struct KeyBindings: Codable, Equatable, Sendable {
         switch profile {
         case .finder, .custom: return []
         case .explorer: return [KeyChord("return"), KeyChord("f2")]
-        case .commander: return [KeyChord("tab"), KeyChord("return")]
+        case .commander: return [KeyChord("tab"), KeyChord("return"), KeyChord("f2")]
         }
     }
 
@@ -64,6 +64,11 @@ struct KeyBindings: Codable, Equatable, Sendable {
                 .newFolder: KeyBinding(primary: KeyChord("f7"), extra: nil),
                 .moveToTrash: KeyBinding(primary: KeyChord("f8"), extra: nil),
                 .open: KeyBinding(primary: KeyChord("return"), extra: nil),
+                // Rename moves off bare Return (Total Commander's own convention, like Windows Explorer's) onto F2
+                // so it never collides with `.open`'s own Return above — the Finder default binds BOTH `.rename`
+                // and (via `openExtra`) effectively the same key family to Return, which only works because Finder
+                // itself never rebinds `.open`'s primary away from ⌘O.
+                .rename: KeyBinding(primary: KeyChord("f2"), extra: nil),
                 // Tab switches panes is a separate boolean (`tabSwitchesPanes`), not a per-command chord — Tab is
                 // not a `BrowserCommand` binding so there is nothing to list here for it.
             ]
@@ -94,10 +99,25 @@ struct KeyBindings: Codable, Equatable, Sendable {
 
     // MARK: - Lookup
 
+    /// `open`'s extra chord (⌘↓, Finder's own "open" convention) is fixed and not part of any profile's bulk
+    /// rebind table or `BrowserCommands.table` (which only stores one chord per command) — `BrowserCommands`
+    /// itself recognizes it separately via `openSecondary` (XF-T28 contract §2: "⌘↓ là chord phụ của open"). It
+    /// survives every profile/override combination so `command(for: ⌘↓) == .open` always holds, matching the
+    /// base contract's required-chords table.
+    private static let openExtra = KeyChord("down", command: true)
+
     /// The binding a command has under this profile + overrides (contract: "mặc định từ BrowserCommands").
     func binding(for command: BrowserCommand) -> KeyBinding {
         if let override = overrides[command.rawValue] { return override }
-        if let profileBinding = Self.profileTable(profile)[command] { return profileBinding }
+        if let profileBinding = Self.profileTable(profile)[command] {
+            if command == .open, profileBinding.extra == nil {
+                return KeyBinding(primary: profileBinding.primary, extra: Self.openExtra)
+            }
+            return profileBinding
+        }
+        if command == .open {
+            return KeyBinding(primary: BrowserCommands.chord(for: command), extra: Self.openExtra)
+        }
         return KeyBinding(primary: BrowserCommands.chord(for: command), extra: nil)
     }
 
