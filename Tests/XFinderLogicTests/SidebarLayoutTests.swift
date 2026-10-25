@@ -373,4 +373,188 @@ final class SidebarLayoutTests: XCTestCase {
         let decoded = SidebarLayout.decode(Data(json.utf8))
         XCTAssertTrue(decoded.favorites.isEmpty)
     }
+
+    // MARK: - schema 2: currentSchemaVersion
+
+    func testCurrentSchemaVersionIsTwo() {
+        XCTAssertEqual(SidebarLayout.currentSchemaVersion, 2)
+    }
+
+    // MARK: - schema 2: isDefault
+
+    func testFreshLayoutMarksAllFiveFavoritesAsDefault() {
+        let layout = SidebarLayout()
+        XCTAssertEqual(layout.favorites.count, 5)
+        XCTAssertTrue(layout.favorites.allSatisfy(\.isDefault))
+    }
+
+    func testItemAddedThroughAddItemIsNeverDefault() {
+        var layout = SidebarLayout()
+        layout.addItem(path: "/tmp/custom", toGroup: nil)
+        let added = layout.favorites.first { $0.path == "/tmp/custom" }
+        XCTAssertEqual(added?.isDefault, false)
+    }
+
+    func testGroupItemsAreNeverDefault() {
+        var layout = SidebarLayout()
+        let group = layout.addGroup(named: "G")!
+        layout.addItem(path: "/tmp/x", toGroup: group.id)
+        XCTAssertEqual(layout.groups[0].items[0].isDefault, false)
+    }
+
+    // MARK: - schema 2: resetFavoritesToDefault
+
+    func testResetFavoritesToDefaultRestoresShippedFiveInOrder() {
+        var layout = SidebarLayout()
+        layout.addItem(path: "/tmp/extra", toGroup: nil)
+        layout.removeItem(layout.favorites[0].id)
+        layout.resetFavoritesToDefault()
+        XCTAssertEqual(layout.favorites.map(\.path), SidebarLayout().favorites.map(\.path))
+        XCTAssertTrue(layout.favorites.allSatisfy(\.isDefault))
+    }
+
+    func testResetFavoritesToDefaultDoesNotTouchCustomGroups() {
+        var layout = SidebarLayout()
+        let group = layout.addGroup(named: "Dự án")!
+        layout.addItem(path: "/tmp/x", toGroup: group.id)
+        layout.resetFavoritesToDefault()
+        XCTAssertEqual(layout.groups.map(\.name), ["Dự án"])
+        XCTAssertEqual(layout.groups[0].items.map(\.path), ["/tmp/x"])
+    }
+
+    func testResetFavoritesToDefaultDiscardsAnyNonDefaultFavoritePin() {
+        var layout = SidebarLayout()
+        layout.addItem(path: "/tmp/extra", toGroup: nil)
+        layout.resetFavoritesToDefault()
+        XCTAssertFalse(layout.favorites.contains { $0.path == "/tmp/extra" })
+    }
+
+    func testResetFavoritesToDefaultClearsDisplayNameOverrides() {
+        var layout = SidebarLayout()
+        layout.setDisplayName(layout.favorites[0].id, to: "Tên riêng")
+        layout.resetFavoritesToDefault()
+        XCTAssertTrue(layout.favorites.allSatisfy { $0.displayName == nil })
+    }
+
+    // MARK: - schema 2: tag order
+
+    func testFreshLayoutHasNoTagOrder() {
+        XCTAssertTrue(SidebarLayout().userTagOrder.isEmpty)
+    }
+
+    func testMoveTagAddsItToOrder() {
+        var layout = SidebarLayout()
+        layout.moveTag("Đỏ", toIndex: 0)
+        XCTAssertEqual(layout.userTagOrder, ["Đỏ"])
+    }
+
+    func testMoveTagReordersExistingEntry() {
+        var layout = SidebarLayout()
+        layout.moveTag("A", toIndex: 0)
+        layout.moveTag("B", toIndex: 1)
+        layout.moveTag("A", toIndex: 1)
+        XCTAssertEqual(layout.userTagOrder, ["B", "A"])
+    }
+
+    func testMoveTagClampsOutOfRangeIndex() {
+        var layout = SidebarLayout()
+        layout.moveTag("A", toIndex: 0)
+        layout.moveTag("B", toIndex: 999)
+        XCTAssertEqual(layout.userTagOrder, ["A", "B"])
+    }
+
+    func testMoveTagIgnoresEmptyName() {
+        var layout = SidebarLayout()
+        layout.moveTag("", toIndex: 0)
+        XCTAssertTrue(layout.userTagOrder.isEmpty)
+    }
+
+    func testForgetTagOrderRemovesIt() {
+        var layout = SidebarLayout()
+        layout.moveTag("A", toIndex: 0)
+        layout.forgetTagOrder("A")
+        XCTAssertTrue(layout.userTagOrder.isEmpty)
+    }
+
+    func testForgetTagOrderOnUnknownNameIsHarmless() {
+        var layout = SidebarLayout()
+        layout.moveTag("A", toIndex: 0)
+        layout.forgetTagOrder("Z")
+        XCTAssertEqual(layout.userTagOrder, ["A"])
+    }
+
+    func testOrderedTagsFallsBackToFinderOrderWhenNoUserOrder() {
+        let layout = SidebarLayout()
+        XCTAssertEqual(layout.orderedTags(["Đỏ", "Xanh", "Vàng"]), ["Đỏ", "Xanh", "Vàng"])
+    }
+
+    func testOrderedTagsAppliesUserOrderFirst() {
+        var layout = SidebarLayout()
+        layout.moveTag("Xanh", toIndex: 0)
+        layout.moveTag("Đỏ", toIndex: 1)
+        XCTAssertEqual(layout.orderedTags(["Đỏ", "Xanh", "Vàng"]), ["Xanh", "Đỏ", "Vàng"])
+    }
+
+    func testOrderedTagsAppendsUnorderedNamesInFinderOrder() {
+        var layout = SidebarLayout()
+        layout.moveTag("Vàng", toIndex: 0)
+        // "Đỏ" and "Xanh" were never dragged; they should appear after "Vàng", in the order Finder gave them.
+        XCTAssertEqual(layout.orderedTags(["Đỏ", "Xanh", "Vàng"]), ["Vàng", "Đỏ", "Xanh"])
+    }
+
+    func testOrderedTagsDropsARememberedNameNoLongerInFinder() {
+        var layout = SidebarLayout()
+        layout.moveTag("Đã xoá", toIndex: 0)
+        layout.moveTag("Đỏ", toIndex: 1)
+        XCTAssertEqual(layout.orderedTags(["Đỏ", "Xanh"]), ["Đỏ", "Xanh"])
+    }
+
+    // MARK: - schema 1 → schema 2 decode compatibility
+
+    /// A document written by the schema-1 binary (no `isDefault`, no `userTagOrder` keys at all) must still decode
+    /// in full — the FileOctopus pitfall this whole file exists to avoid, now exercised across the schema bump.
+    func testDecodeSchema1DocumentReadsFavoritesWithIsDefaultFalse() {
+        let json = """
+        {
+          "schemaVersion": 1,
+          "favorites": [{"id": "\(UUID().uuidString)", "path": "/tmp/a"}],
+          "groups": []
+        }
+        """
+        let decoded = SidebarLayout.decode(Data(json.utf8))
+        XCTAssertEqual(decoded.favorites.map(\.path), ["/tmp/a"])
+        XCTAssertEqual(decoded.favorites.first?.isDefault, false)
+        XCTAssertTrue(decoded.userTagOrder.isEmpty)
+    }
+
+    func testDecodeSchema2DocumentReadsIsDefaultAndTagOrder() {
+        let json = """
+        {
+          "schemaVersion": 2,
+          "favorites": [{"id": "\(UUID().uuidString)", "path": "/tmp/a", "isDefault": true}],
+          "groups": [],
+          "userTagOrder": ["Xanh", "Đỏ"]
+        }
+        """
+        let decoded = SidebarLayout.decode(Data(json.utf8))
+        XCTAssertEqual(decoded.favorites.first?.isDefault, true)
+        XCTAssertEqual(decoded.userTagOrder, ["Xanh", "Đỏ"])
+    }
+
+    func testRoundTripEncodeDecodePreservesIsDefaultAndTagOrder() {
+        var layout = SidebarLayout()
+        layout.moveTag("Xanh", toIndex: 0)
+        let decoded = SidebarLayout.decode(layout.encoded())
+        XCTAssertEqual(decoded, layout)
+        XCTAssertTrue(decoded.favorites.allSatisfy(\.isDefault))
+        XCTAssertEqual(decoded.userTagOrder, ["Xanh"])
+    }
+
+    func testEncodedAfterSchema1DecodeWritesCurrentSchemaVersion() {
+        let decoded = SidebarLayout.decode(Data("""
+        {"schemaVersion": 1, "favorites": [], "groups": []}
+        """.utf8))
+        let reencoded = SidebarLayout.decode(decoded.encoded())
+        XCTAssertEqual(reencoded.schemaVersion, SidebarLayout.currentSchemaVersion)
+    }
 }
