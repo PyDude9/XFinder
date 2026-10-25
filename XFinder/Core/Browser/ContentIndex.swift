@@ -457,7 +457,10 @@ actor ContentIndex {
         WHERE content_fts MATCH ?
         """
         if let folders, !folders.isEmpty {
-            let clauses = folders.map { _ in "d.path LIKE ?" }.joined(separator: " OR ")
+            // ESCAPE '\' so a folder name that itself contains a literal "%" or "_" (both valid path
+            // characters) cannot act as a LIKE wildcard and leak matches from a sibling folder, or fail to
+            // match files inside the very folder being searched (bug found in review: escapeLike below).
+            let clauses = folders.map { _ in "d.path LIKE ? ESCAPE '\\'" }.joined(separator: " OR ")
             sql += " AND (\(clauses))"
         }
         sql += " ORDER BY rank LIMIT ?"
@@ -469,7 +472,7 @@ actor ContentIndex {
         if let folders, !folders.isEmpty {
             for folder in folders {
                 let prefix = folder.hasSuffix("/") ? folder : folder + "/"
-                sqlite3_bind_text(stmt, idx, prefix + "%", -1, SQLITE_TRANSIENT)
+                sqlite3_bind_text(stmt, idx, Self.escapeLikePattern(prefix) + "%", -1, SQLITE_TRANSIENT)
                 idx += 1
             }
         }
@@ -491,5 +494,14 @@ actor ContentIndex {
         text.split(whereSeparator: { $0.isWhitespace })
             .map { "\"\($0.replacingOccurrences(of: "\"", with: "\"\""))\"" }
             .joined(separator: " ")
+    }
+
+    /// `LIKE`'s own wildcards (`%`, `_`) are ordinary path characters too — a folder literally named
+    /// `100%done` must not have its `%` read as "any characters" when used as a scope prefix. Escapes the
+    /// backslash itself first, then both wildcards, for use with `LIKE ? ESCAPE '\'`.
+    private nonisolated static func escapeLikePattern(_ raw: String) -> String {
+        raw.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
     }
 }
