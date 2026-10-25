@@ -270,10 +270,20 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-SEARCH-1 | Tìm kiếm AI: gõ "ảnh"; trang Tìm kiếm: để trống điều kiện rồi Tìm | Kết quả hiện gần như ngay (< 1 s cho "ảnh"), tiêu đề "100+ kết quả", dòng cuối "…và 50+ kết quả nữa"; không treo (trước: 2 s / 35 s, "100 kết quả") |
 | T-PASTE-1 | Chụp màn hình → bấm Sao chép; dán vào Messages/Notes/Preview (Tệp ▸ Mới từ Clipboard); mở Thư viện clipboard, dán lại một ảnh cũ | Dán được ở cả ba app (Preview đọc TIFF lười — kiểm nó vẫn ra ảnh); `footprint` không tăng vài chục MB mỗi lần (trước: 92–94 MB/lần với ảnh chụp cuộn) |
 | Q-T28-1 | Trình duyệt tệp: phân tầng Free/PRO như FileOctopus (2 ngăn miễn phí)? | **Mặc định: mọi thứ miễn phí, 16 ngăn** — XFinder không có hệ thống giấy phép |
-| Q-T28-3 | ⌘F trong trình duyệt = lọc thư mục hiện tại, ⌥⌘F = tìm kiếm (FileOctopus: ⌘F = tìm)? | **Mặc định như bên trái** |
+| Q-T28-3 | ⌘F trong trình duyệt = lọc thư mục hiện tại, ⌥⌘F = tìm kiếm (FileOctopus: ⌘F = tìm)? | **Thay bởi Q-T30-2** (⌘F = Tìm như FileOctopus) |
 | Q-T28-4 | Di chuyển khác ổ: bản gốc sau khi kiểm SHA-256 đi đâu? | **Mặc định: Thùng rác** (luật 9); FileOctopus xoá hẳn |
 | Q-T28-6 | "Mở trong Google Drive" / "Sao chép liên kết Drive" | v2 — máy này không cài Drive/Dropbox, chưa đo được xattr của Drive |
 | T-T28-1…10 | Trình duyệt tệp — xem `docs/specs/XF-T28-file-browser.md` §7 (bước + kỳ vọng từng mục) | chờ bản cài có giao diện thật |
+| Q-T30-1 | Trình duyệt (XF-T30): nút Lùi/Tiến trên toolbar áp cho ngăn nào? | **Ngăn đang chọn** (như FileOctopus); nút chuột 4/5 + vuốt áp cho ngăn dưới con trỏ và chọn nó |
+| Q-T30-2 | ⌘F trong trình duyệt | **= Tìm** như FileOctopus (thay Q-T28-3); "Lọc thư mục hiện tại" thành lệnh không phím |
+| Q-T30-4 | Đóng tab cuối của một ngăn | **Đóng ngăn** nếu còn ngăn khác; ngăn cuối + tab cuối ⇒ lệnh xám |
+| Q-T30-6 | "Đổi chỗ với ngăn kế" | **Đổi nội dung** (chồng tab + lịch sử), vị trí ngăn giữ nguyên |
+| Q-T30-7 | Khôi phục Column view | **Hơn FileOctopus**: khôi phục cả đường cột (họ chỉ khôi phục thư mục cuối) |
+| Q-T30-8 | Cửa sổ License / dải "14 days left · Upgrade" / bước trial trong Welcome | **Không làm** khi Pro còn ngủ (bạn: chưa bán) |
+| Q-T30-9 | Bước "Usage Statistics" của Welcome | **Bỏ** — trình duyệt không gửi gì; Welcome 4 bước: Chào · Quyền thư mục · Full Disk Access (bỏ qua được) · Chọn bố cục |
+| Q-T30-12 | Trang "Trình duyệt tệp" cũ trong XFinder | Giữ bật/tắt + phím toàn cục + nút **"Mở cài đặt trình duyệt…"**; mọi cài đặt khác của trình duyệt chỉ ở cửa sổ Cài đặt trình duyệt (một khoá một control). Trang khác của XFinder **không** gộp |
+| Q-T30-13 | Menu bar khi cửa sổ trình duyệt ở trước | Thêm mục Tệp/Xem/Đi/Cửa sổ của trình duyệt nếu SwiftUI không ghi đè (chưa đo — T-T30-MENU) |
+| T-T30-1…6 | Trình duyệt W1 (tab trong ngăn, tab cửa sổ, toolbar, các thanh, chọn ngăn theo hướng) — bước + kỳ vọng ở `docs/specs/XF-T30-w1-contract.md` §8 | chờ bản cài W1 |
 | Q-PRO-5 | Tạo cặp khoá ký giấy phép trên máy bạn: `swift scripts/make-license.swift init ~/Private/xfinder-license.key`, dán khoá công khai in ra vào `LicenseKey.publicKeyRaw` | chưa có ⇒ mọi khoá không hợp lệ; dùng thử + bản Debug vẫn đủ |
 | Q-PRO-6 | Free: xuất toàn bộ lịch sử Clipboard (.xfinderclip) có bị giới hạn 50 mục không? | **Mặc định: không** — dữ liệu của chính người dùng (luật 9) |
 | T-PRO-1 | Trang XFinder Pro ▸ Thử giới hạn = Miễn phí; chép 60 mục | 50 hiện + dòng "10 mục cũ hơn — mở bằng Pro"; chọn Pro ⇒ hiện đủ 60 |
