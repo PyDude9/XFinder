@@ -12998,6 +12998,30 @@
     "Còn trống: ": {
       "en": "Available: ",
       "scope": "fragment"
+    },
+    "Đang đánh chỉ mục…": {
+      "en": "Indexing…",
+      "scope": "sentence"
+    },
+    "Đang cập nhật…": {
+      "en": "Updating…",
+      "scope": "sentence"
+    },
+    "Ngoại tuyến": {
+      "en": "Offline",
+      "scope": "sentence"
+    },
+    "Không có quyền truy cập": {
+      "en": "No Access",
+      "scope": "sentence"
+    },
+    "Đã di chuyển hoặc thay thế — thêm lại": {
+      "en": "Moved or Replaced — Add It Again",
+      "scope": "sentence"
+    },
+    "Tìm kiếm đã lưu": {
+      "en": "Saved Search",
+      "scope": "sentence"
     }
   }
 }
