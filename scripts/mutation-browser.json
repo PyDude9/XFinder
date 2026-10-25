@@ -750,10 +750,10 @@
  },
  {
   "id": "BrowserWorkspace-W4",
-  "name": "W4 a missing folder is restored as-is",
+  "name": "W4 a missing folder is not reported (v2: dead tab still listed as missing)",
   "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "            if !exists(path) {",
-  "replacement": "            if false && !exists(path) {"
+  "anchor": "                if !exists(tabs[t].path) {",
+  "replacement": "                if false {"
  },
  {
   "id": "BrowserWorkspace-W5",
@@ -773,8 +773,8 @@
   "id": "BrowserWorkspace-W7",
   "name": "W7 history keeps folders that are gone",
   "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "            w.panes[i].history.removeMissing(exists: exists, fallback: w.panes[i].path)",
-  "replacement": "            _ = i"
+  "anchor": "                tabs[t].history.removeMissing(exists: exists, fallback: tabs[t].path)",
+  "replacement": "                _ = exists"
  },
  {
   "id": "PaneHistory-R2",
@@ -957,5 +957,152 @@
   "file": "XFinder/Core/Browser/FileInfoRules.swift",
   "anchor": "        let kindSummary = distinctKinds.count == 1 ? (distinctKinds.first ?? \"\") : \"Nhiều loại\"",
   "replacement": "        let kindSummary = distinctKinds.first ?? \"\""
+ },
+ {
+  "id": "W1-01",
+  "name": "add-at-end",
+  "file": "XFinder/Core/Browser/PaneTabs.swift",
+  "anchor": "let insertAt = selected + 1",
+  "replacement": "let insertAt = tabs.count"
+ },
+ {
+  "id": "W1-02",
+  "name": "remove-last-tab",
+  "file": "XFinder/Core/Browser/PaneTabs.swift",
+  "anchor": "guard tabs.count > 1, let i = tabs.firstIndex(of: tab) else { return false }",
+  "replacement": "guard tabs.count > 0, let i = tabs.firstIndex(of: tab) else { return false }"
+ },
+ {
+  "id": "W1-03",
+  "name": "remove-selects-left",
+  "file": "XFinder/Core/Browser/PaneTabs.swift",
+  "anchor": "selected = min(i, tabs.count - 1)",
+  "replacement": "selected = max(i - 1, 0)"
+ },
+ {
+  "id": "W1-04",
+  "name": "previous-not-cyclic",
+  "file": "XFinder/Core/Browser/PaneTabs.swift",
+  "anchor": "selected = (selected - 1 + tabs.count) % tabs.count",
+  "replacement": "selected = max(selected - 1, 0)"
+ },
+ {
+  "id": "W1-05",
+  "name": "insert-duplicates",
+  "file": "XFinder/Core/Browser/PaneTabs.swift",
+  "anchor": "        if let existing = tabs.firstIndex(of: tab) {\n            tabs.remove(at: existing)\n        }\n        let clamped = min(max(index, 0), tabs.count)\n        tabs.insert(tab, at: clamped)\n        if select {",
+  "replacement": "        let clamped = min(max(index, 0), tabs.count)\n        tabs.insert(tab, at: clamped)\n        if select {"
+ },
+ {
+  "id": "W1-06",
+  "name": "move-duplicates",
+  "file": "XFinder/Core/Browser/PaneTabs.swift",
+  "anchor": "        tabs.remove(at: from)",
+  "replacement": "        _ = from"
+ },
+ {
+  "id": "W1-07",
+  "name": "strip-index-flipped",
+  "file": "XFinder/Core/Browser/PaneTabs.swift",
+  "anchor": "if point.x < midX {",
+  "replacement": "if point.x > midX {"
+ },
+ {
+  "id": "W1-08",
+  "name": "edge-zone-uncapped",
+  "file": "XFinder/Core/Browser/PaneTabs.swift",
+  "anchor": "let edgeZone = min(edgeZoneMax, edgeZoneFraction * min(paneRect.width, paneRect.height))",
+  "replacement": "let edgeZone = edgeZoneFraction * max(paneRect.width, paneRect.height)"
+ },
+ {
+  "id": "W1-09",
+  "name": "corner-farther-edge",
+  "file": "XFinder/Core/Browser/PaneTabs.swift",
+  "anchor": "guard let nearest = candidates.min(by: { $0.1 < $1.1 }) else { return .center }",
+  "replacement": "guard let nearest = candidates.max(by: { $0.1 < $1.1 }) else { return .center }"
+ },
+ {
+  "id": "W1-10",
+  "name": "neighbor-no-overlap",
+  "file": "XFinder/Core/Browser/PaneTree.swift",
+  "anchor": "guard isOnSide, overlap > 0 else { continue }",
+  "replacement": "guard isOnSide else { continue }"
+ },
+ {
+  "id": "W1-11",
+  "name": "neighbor-tie-farther",
+  "file": "XFinder/Core/Browser/PaneTree.swift",
+  "anchor": "(overlap == current.overlap && centerDistance < current.centerDistance)",
+  "replacement": "(overlap == current.overlap && centerDistance > current.centerDistance)"
+ },
+ {
+  "id": "W1-12",
+  "name": "resize-inverted",
+  "file": "XFinder/Core/Browser/PaneTree.swift",
+  "anchor": "let delta = (isFirst == grow) ? step : -step",
+  "replacement": "let delta = (isFirst != grow) ? step : -step"
+ },
+ {
+  "id": "W1-13",
+  "name": "resize-unclamped",
+  "file": "XFinder/Core/Browser/PaneTree.swift",
+  "anchor": "let newFraction = min(max(currentFraction + delta, Self.minFraction), 1 - Self.minFraction)",
+  "replacement": "let newFraction = currentFraction + delta"
+ },
+ {
+  "id": "W1-14",
+  "name": "preset-ignores-fraction",
+  "file": "XFinder/Core/Browser/PaneTree.swift",
+  "anchor": "guard case .split(let axis, let fraction, let first, let second) = root, fraction == 0.5 else { return nil }",
+  "replacement": "guard case .split(let axis, _, let first, let second) = root else { return nil }"
+ },
+ {
+  "id": "W1-15",
+  "name": "preset-axis-swapped",
+  "file": "XFinder/Core/Browser/PaneTree.swift",
+  "anchor": "            case .horizontal: return .sideBySide",
+  "replacement": "            case .horizontal: return .stacked"
+ },
+ {
+  "id": "W1-16",
+  "name": "history-steps-partial",
+  "file": "XFinder/Core/Browser/PaneHistory.swift",
+  "anchor": "guard steps >= 1, back.count >= steps else { return nil }",
+  "replacement": "guard steps >= 1 else { return nil }"
+ },
+ {
+  "id": "W1-17",
+  "name": "restore-dead-tab-to-home",
+  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+  "anchor": "                    missing.append(tabs[t].path)",
+  "replacement": "                    missing.append(tabs[t].path); tabs[t].path = home"
+ },
+ {
+  "id": "W1-18",
+  "name": "restore-selected-unclamped",
+  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+  "anchor": "let selected = min(max(w.panes[i].selectedTab ?? w.panes[i].selectedTabIndex, 0), max(tabs.count - 1, 0))",
+  "replacement": "let selected = w.panes[i].selectedTab ?? 0"
+ },
+ {
+  "id": "W1-19",
+  "name": "alltabs-ignores-v2",
+  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+  "anchor": "        guard let tabs, !tabs.isEmpty else {",
+  "replacement": "        guard let tabs, tabs.isEmpty else {"
+ },
+ {
+  "id": "W1-20",
+  "name": "find-back-to-option",
+  "file": "XFinder/Core/Browser/BrowserCommands.swift",
+  "anchor": ".find: KeyChord(\"f\", command: true),",
+  "replacement": ".find: KeyChord(\"f\", command: true, option: true),"
+ },
+ {
+  "id": "W1-21",
+  "name": "next-pane-tab-collides",
+  "file": "XFinder/Core/Browser/BrowserCommands.swift",
+  "anchor": ".nextPaneTab: KeyChord(\"]\", command: true, option: true),",
+  "replacement": ".nextPaneTab: KeyChord(\"]\", command: true, control: true),"
  }
 ]
