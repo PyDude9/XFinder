@@ -284,7 +284,9 @@ final class FileOperationQueue {
     /// undone (unavailable, partial failure) still returns a rendered message, same as the old `ActionHistoryStore`-
     /// backed version always did once an entry existed.
     func undoLast() -> String? {
-        guard let step = undoJournal.undo.first else { return nil }
+        // The MOST RECENT step (the one `popUndo()` removes) — integration audit 2026-10-25: this read `.first`, the
+        // oldest, replayed THAT step's moves, then popped the newest: ⌘Z could move the wrong files.
+        guard let step = undoJournal.undo.last else { return nil }
         if let jobID = activeJobID(producing: step), currentJob(jobID)?.isActive == true {
             pendingUndoAfterJobs[jobID, default: []].append(true)
             return L10n.t("Sẽ hoàn tác sau khi việc đang chạy xong")
@@ -296,7 +298,7 @@ final class FileOperationQueue {
     /// when there is nothing in the redo stack (same contract as `undoLast()`).
     @discardableResult
     func redoLast() -> String? {
-        guard let step = undoJournal.redo.first else { return nil }
+        guard let step = undoJournal.redo.last else { return nil }
         if let jobID = activeJobID(producing: step), currentJob(jobID)?.isActive == true {
             pendingUndoAfterJobs[jobID, default: []].append(false)
             return L10n.t("Sẽ làm lại sau khi việc đang chạy xong")
@@ -308,6 +310,16 @@ final class FileOperationQueue {
     /// `UndoStep.titleKey` by whichever side records the step).
     /// The step ⌘Z / ⇧⌘Z would act on is the LAST one pushed (popLast) — these read `.first`, the oldest.
     var undoTitleKey: String? { undoJournal.undo.last?.titleKey }
+
+    /// A rename done outside the queue (inline rename, Get Info) joins the same persistent undo history, so ⌘Z in the
+    /// browser undoes it (it went to ActionHistoryStore, which the browser's ⌘Z never reads).
+    func recordRename(from oldPath: String, to newPath: String) {
+        let identity: (inode: UInt64, size: Int64, modified: Date)? = Self.fileIdentity(newPath)
+        let item: UndoItem = UndoItem(from: newPath, to: oldPath, inode: identity?.inode, size: identity?.size,
+                                      modified: identity?.modified)
+        undoJournal.record(UndoStep(id: UUID(), kind: .rename, items: [item], date: Date()), now: Date())
+        Self.saveUndoJournal(undoJournal)
+    }
     var redoTitleKey: String? { undoJournal.redo.last?.titleKey }
 
     /// A step references a still-running job only in the narrow window between that job's `recordHistory` call and
@@ -366,8 +378,13 @@ final class FileOperationQueue {
         guard step.kind != .copy, step.kind != .duplicate else {
             return L10n.t("Không thể làm lại thao tác này.")
         }
+        // After an undo the item sits at `to`; the availability rule checks where an item IS (`from`), so it is asked
+        // about the mirrored step (integration audit 2026-10-25: redo was otherwise never available).
+        let mirrored: UndoStep = UndoStep(id: step.id, kind: step.kind, items: step.items.map {
+            UndoItem(from: $0.to, to: $0.from, inode: $0.inode, size: $0.size, modified: $0.modified)
+        }, date: step.date)
         let availability = undoJournal.availability(
-            of: step, exists: { FileManager.default.fileExists(atPath: $0) },
+            of: mirrored, exists: { FileManager.default.fileExists(atPath: $0) },
             identity: Self.fileIdentity, volumeMounted: Self.volumeMounted
         )
         guard case .available = availability else {

@@ -1048,6 +1048,7 @@ enum BrowserSheet: String, Identifiable {
         do {
             try FileManager.default.moveItem(atPath: path, toPath: destination)
             ActionHistoryStore.shared.recordRenames(pairs: [(old: URL(fileURLWithPath: path), new: URL(fileURLWithPath: destination))])
+            FileOperationQueue.shared.recordRename(from: path, to: destination)   // ⌘Z in the browser undoes it
             renaming = nil
             active.selection = [destination]
             active.reload()
