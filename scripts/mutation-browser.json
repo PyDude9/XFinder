@@ -871,8 +871,8 @@
   "id": "DirectoryEntry-N6",
   "name": "N6 folders-first is inverted",
   "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "                    if foldersFirst, folders[x] != folders[y] { return folders[x] }",
-  "replacement": "                    if foldersFirst, folders[x] != folders[y] { return folders[y] }"
+  "anchor": "                    if foldersFirst, order.key == .name, folders[x] != folders[y] { return folders[x] }",
+  "replacement": "                    if foldersFirst, order.key == .name, folders[x] != folders[y] { return folders[y] }"
  },
  {
   "id": "DirectoryEntry-N7",
@@ -1090,5 +1090,187 @@
   "file": "XFinder/Core/Browser/BrowserCommands.swift",
   "anchor": ".nextPaneTab: KeyChord(\"]\", command: true, option: true),",
   "replacement": ".nextPaneTab: KeyChord(\"]\", command: true, control: true),"
+ },
+ {
+  "id": "W27-01",
+  "name": "lru-no-eviction",
+  "file": "XFinder/Core/Browser/FolderViewOptions.swift",
+  "anchor": "        while order.count > Self.limit {",
+  "replacement": "        while order.count > Self.limit + 1_000_000 {"
+ },
+ {
+  "id": "W27-02",
+  "name": "lru-evicts-newest",
+  "file": "XFinder/Core/Browser/FolderViewOptions.swift",
+  "anchor": "            let oldest = order.removeFirst()",
+  "replacement": "            let oldest = order.removeLast()"
+ },
+ {
+  "id": "W27-03",
+  "name": "today-bucket-lost",
+  "file": "XFinder/Core/Browser/GroupBy.swift",
+  "anchor": "            if day >= today {",
+  "replacement": "            if day > today {"
+ },
+ {
+  "id": "W27-04",
+  "name": "yesterday-into-week",
+  "file": "XFinder/Core/Browser/GroupBy.swift",
+  "anchor": "            } else if day >= yesterdayStart {",
+  "replacement": "            } else if day > yesterdayStart.addingTimeInterval(86_400 * 2) {"
+ },
+ {
+  "id": "W27-05",
+  "name": "letter-digits-not-hash",
+  "file": "XFinder/Core/Browser/GroupBy.swift",
+  "anchor": "        guard let first = folded.first, first >= 0x61, first <= 0x7A else { return \"#\" }",
+  "replacement": "        guard let first = folded.first else { return \"#\" }"
+ },
+ {
+  "id": "W27-06",
+  "name": "zero-bytes-in-small",
+  "file": "XFinder/Core/Browser/GroupBy.swift",
+  "anchor": "            } else if entry.size == 0 {",
+  "replacement": "            } else if entry.size == -2 {"
+ },
+ {
+  "id": "W27-07",
+  "name": "colour-suffix-kept-in-name",
+  "file": "XFinder/Core/Browser/FinderTags.swift",
+  "anchor": "        return FinderTag(name: String(raw[raw.startIndex..<lastNewline]), color: color)",
+  "replacement": "        return FinderTag(name: raw, color: color)"
+ },
+ {
+  "id": "W27-08",
+  "name": "virtual-any-scheme",
+  "file": "XFinder/Core/Browser/SidebarSections.swift",
+  "anchor": "        guard path.hasPrefix(scheme) else { return nil }",
+  "replacement": "        guard !path.isEmpty else { return nil }"
+ },
+ {
+  "id": "W27-09",
+  "name": "group-by-type-ignored",
+  "file": "XFinder/Core/Browser/SidebarSections.swift",
+  "anchor": "            if groupLocationsByType {",
+  "replacement": "            if false, groupLocationsByType {"
+ },
+ {
+  "id": "W27-10",
+  "name": "virtual-recorded",
+  "file": "XFinder/Core/Browser/RecentFolders.swift",
+  "anchor": "        guard !path.isEmpty, VirtualLocation.parse(path) == nil else { return }",
+  "replacement": "        guard !path.isEmpty else { return }"
+ },
+ {
+  "id": "W27-11",
+  "name": "no-cap",
+  "file": "XFinder/Core/Browser/RecentFolders.swift",
+  "anchor": "        if paths.count > Self.limit {",
+  "replacement": "        if paths.count > Self.limit * 100 {"
+ },
+ {
+  "id": "W27-12",
+  "name": "system-chords-allowed",
+  "file": "XFinder/Core/Browser/KeyBindings.swift",
+  "anchor": "        if Self.systemReserved.contains(chord) { return .reservedBySystem }",
+  "replacement": "        if false, Self.systemReserved.contains(chord) { return .reservedBySystem }"
+ },
+ {
+  "id": "W27-13",
+  "name": "plain-letters-allowed",
+  "file": "XFinder/Core/Browser/KeyBindings.swift",
+  "anchor": "        if !chord.command && !chord.control && !isFunctionKey {",
+  "replacement": "        if false && !chord.command && !chord.control && !isFunctionKey {"
+ },
+ {
+  "id": "W27-14",
+  "name": "extra-key-ignored",
+  "file": "XFinder/Core/Browser/KeyBindings.swift",
+  "anchor": "            if b.primary == chord || b.extra == chord { return command }",
+  "replacement": "            if b.primary == chord { return command }"
+ },
+ {
+  "id": "W27-15",
+  "name": "same-folder-allowed",
+  "file": "XFinder/Core/Browser/FolderMerge.swift",
+  "anchor": "        if sourceStandard == destinationStandard { return .sameFolder }",
+  "replacement": "        if false { return .sameFolder }"
+ },
+ {
+  "id": "W27-16",
+  "name": "nested-allowed",
+  "file": "XFinder/Core/Browser/FolderMerge.swift",
+  "anchor": "        if FileOperationRules.isInside(destinationStandard, ancestor: sourceStandard) { return .nested }",
+  "replacement": "        if false { return .nested }"
+ },
+ {
+  "id": "W27-17",
+  "name": "keep-newer-always-replaces",
+  "file": "XFinder/Core/Browser/FolderMerge.swift",
+  "anchor": "                if FileOperationRules.isNewer(node.modified, than: existing.modified, coarseTimestamps: fat) {",
+  "replacement": "                if true {"
+ },
+ {
+  "id": "W27-18",
+  "name": "packages-merged-inside",
+  "file": "XFinder/Core/Browser/FolderMerge.swift",
+  "anchor": "        if source.isPackage || destination.isPackage { return \"Gói ứng dụng — không gộp bên trong\" }",
+  "replacement": "        if false { return \"Gói ứng dụng — không gộp bên trong\" }"
+ },
+ {
+  "id": "W27-19",
+  "name": "retry-after-write",
+  "file": "XFinder/Core/Browser/ProblemsList.swift",
+  "anchor": "        !items.isEmpty && items.allSatisfy { $0.beforeWrite && $0.reason.isRetryable }",
+  "replacement": "        !items.isEmpty && items.allSatisfy { $0.reason.isRetryable }"
+ },
+ {
+  "id": "W27-20",
+  "name": "enospc-not-disk-full",
+  "file": "XFinder/Core/Browser/ProblemsList.swift",
+  "anchor": "        case ENOSPC, EDQUOT: return .diskFull",
+  "replacement": "        case EDQUOT: return .diskFull"
+ },
+ {
+  "id": "W27-21",
+  "name": "no-limit",
+  "file": "XFinder/Core/Browser/UndoJournal.swift",
+  "anchor": "        if undo.count > Self.limit {",
+  "replacement": "        if undo.count > Self.limit * 100 {"
+ },
+ {
+  "id": "W27-22",
+  "name": "identity-unchecked",
+  "file": "XFinder/Core/Browser/UndoJournal.swift",
+  "anchor": "            guard currentIdentity.inode == recordedInode, currentIdentity.size == recordedSize,",
+  "replacement": "            guard true || currentIdentity.inode == recordedInode, currentIdentity.size == recordedSize || true,"
+ },
+ {
+  "id": "W27-23",
+  "name": "disk-missing-ignored",
+  "file": "XFinder/Core/Browser/UndoJournal.swift",
+  "anchor": "            guard volumeMounted(item.to), volumeMounted(item.from) else { return .diskMissing }",
+  "replacement": "            guard true else { return .diskMissing }"
+ },
+ {
+  "id": "W27-24",
+  "name": "stale-cut-pastes",
+  "file": "XFinder/Core/Browser/CutBoard.swift",
+  "anchor": "        guard changeCount != -1, currentChangeCount == changeCount, !paths.isEmpty else { return [] }",
+  "replacement": "        guard changeCount != -1, !paths.isEmpty else { return [] }"
+ },
+ {
+  "id": "W27-25",
+  "name": "same-folder-moves",
+  "file": "XFinder/Core/Browser/CutBoard.swift",
+  "anchor": "            return parentStandard != destinationStandard",
+  "replacement": "            return true"
+ },
+ {
+  "id": "W27-26",
+  "name": "folders-first-for-every-sort",
+  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+  "anchor": "                    if foldersFirst, order.key == .name, folders[x] != folders[y] { return folders[x] }",
+  "replacement": "                    if foldersFirst, folders[x] != folders[y] { return folders[x] }"
  }
 ]
