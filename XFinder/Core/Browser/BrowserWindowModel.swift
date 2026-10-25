@@ -281,7 +281,7 @@ struct PaneSearchState: Equatable {
         let now = Date()
         let calendar = Calendar.current
         let parsed = SearchQuery.parse(text, now: now, calendar: calendar)
-        startSearch(text: text, parsed: parsed, scope: scope, paneFolders: paneFolders, now: now, calendar: calendar)
+        startSearch(text: text, parsed: parsed, scope: scope, paneFolders: paneFolders)
     }
 
     /// Runs a search straight from an already-`ParsedSearch` (edited chips): same pipeline as
@@ -292,20 +292,20 @@ struct PaneSearchState: Equatable {
     /// bar's text field still shows something sensible; a chips-only edit (no terms left) shows an empty field,
     /// same as starting a fresh search would.
     func runSearch(parsed: ParsedSearch, scope: PaneSearchState.Scope, paneFolders: [String] = []) {
-        let now = Date()
-        let calendar = Calendar.current
         let text = (parsed.terms + parsed.phrases.map { "\"\($0)\"" }).joined(separator: " ")
-        startSearch(text: text, parsed: parsed, scope: scope, paneFolders: paneFolders, now: now, calendar: calendar)
+        startSearch(text: text, parsed: parsed, scope: scope, paneFolders: paneFolders)
     }
 
     /// Shared tail of both `runSearch` overloads (text and chip-edited): resolves the scope's folders, then hands
     /// off to `SearchCoordinator.shared.search` (contract "Một đường tìm" — filename index + Spotlight + content
     /// index merged, streamed back live via `onUpdate`) instead of calling `FileSearchEngine.runMdfind` directly.
-    /// `_ = now`/`calendar` stay as parameters only so both callers keep sharing one `Date()`/`Calendar.current`
-    /// snapshot for the whole search (chip date ranges resolve against the moment the search started, not whenever
-    /// a later `onUpdate` callback happens to run).
-    private func startSearch(text: String, parsed: ParsedSearch, scope: PaneSearchState.Scope, paneFolders: [String],
-                             now: Date, calendar: Calendar) {
+    /// No `now`/`calendar` parameters here: `SearchCoordinator.search` takes its own `Date()`/`Calendar.current`
+    /// snapshot internally for chip date-range resolution (review 2026-10-25: an earlier version of this comment
+    /// claimed this function forwarded a shared snapshot to the coordinator for that purpose — it never did; the
+    /// parameters were dead and have been removed instead of leaving a false invariant documented here. `parsed`'s
+    /// chips are already resolved to a `ParsedSearch` by `SearchQuery.parse`/the chip editor before reaching this
+    /// function, so this one caller's clock does not actually need to agree with the coordinator's for correctness).
+    private func startSearch(text: String, parsed: ParsedSearch, scope: PaneSearchState.Scope, paneFolders: [String]) {
         cancelSearch()   // a re-run (new text, scope change, chip edit) replaces whatever search was already live.
         search = PaneSearchState(text: text, parsed: parsed, scope: scope, results: [], running: true, truncated: false)
         let generation = currentGeneration

@@ -318,6 +318,11 @@ import Quartz
     }
 
     /// The feature was switched off: save the session, close every browser window, stop every watcher.
+    /// XF-T30 W5b: also stops the search indexes (contract "đóng hết ⇒ dừng FSEvents, lưu con trỏ") — this path
+    /// bypasses `windowClosed`'s one-at-a-time bookkeeping entirely, so without this call turning the feature off
+    /// would leave `FilenameIndex`/`ContentIndex` watching every approved root with no browser window left to use
+    /// the results (an `IdleCost.onlyWhileOpen` violation: the whole point of that contract line is "no window open
+    /// ⇒ zero indexing cost").
     func closeAllWindows() {
         saveSession()
         QLPreviewPanel.shared()?.orderOut(nil)
@@ -329,6 +334,7 @@ import Quartz
         windows.removeAll()
         modelsByWindow.removeAll()
         FileIconCache.shared.purge()
+        indexLifecycleAllWindowsClosed()
     }
 
     /// `applicationShouldTerminate`: a copy/move still running is asked about instead of being cut off mid-file.
