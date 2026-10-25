@@ -1,14 +1,21 @@
 import SwiftUI
 
-/// XF-T28 cluster E — the copy/move name-collision dialog: the two sides (source vs. destination), a "Mới hơn"
-/// badge on whichever is newer, and the four resolutions (contract: Giữ cả hai default/Return, Bỏ qua, Thay thế
-/// destructive/disabled when !replaceAllowed, Dừng/Esc), plus "Áp dụng cho tất cả".
+/// XF-T28 cluster E / XF-T30 W6 — the copy/move name-collision dialog: the two sides (source vs. destination), a
+/// "Mới hơn" badge on whichever is newer, and the four resolutions (contract: Giữ cả hai default/Return, Bỏ qua,
+/// Thay thế destructive/disabled when !replaceAllowed, Dừng/Esc), plus "Áp dụng cho tất cả" — and, folder vs folder
+/// only, a "Gộp…" button that opens `MergePreviewSheet` through `FolderMergeController` (contract §2).
 struct ConflictSheet: View {
     let prompt: ConflictPrompt
     let queue: FileOperationQueue
 
     @State private var applyToAll = false
     @FocusState private var defaultFocus: Bool
+    @State private var mergePlan: MergePlan?
+    @State private var mergePolicy: MergePolicy = .keepBoth
+    @State private var isPlanningMerge = false
+    @State private var showMergePreview = false
+
+    private var bothFolders: Bool { prompt.source.isFolder && prompt.destination.isFolder }
 
     var body: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
@@ -41,6 +48,11 @@ struct ConflictSheet: View {
 
                 Spacer()
 
+                if bothFolders {
+                    Button(L10n.t("Gộp…")) { startMerge() }
+                        .disabled(isPlanningMerge)
+                }
+
                 Button(L10n.t("Bỏ qua")) {
                     queue.resolveConflict(.skip, applyToAll: applyToAll)
                 }
@@ -62,6 +74,54 @@ struct ConflictSheet: View {
         .padding(XFinderTokens.Space.section)
         .frame(width: 440)
         .onAppear { defaultFocus = true }
+        .sheet(isPresented: $showMergePreview) {
+            if let plan = mergePlan {
+                MergePreviewSheet(
+                    plan: plan,
+                    initialPolicy: mergePolicy,
+                    onPolicyChange: { newPolicy in
+                        mergePolicy = newPolicy
+                        planMerge()
+                    },
+                    onConfirm: { policy, applyMergeToAll in
+                        mergePolicy = policy
+                        showMergePreview = false
+                        // Folder-vs-folder is handled entirely by the merge run, not the ordinary copy/replace
+                        // path below it — "Bỏ qua" here just steps the queue past this one conflict so it can
+                        // move on to the next pending item (contract §2 "Gộp thư mục chạy qua cùng hàng đợi").
+                        queue.resolveConflict(.skip, applyToAll: applyMergeToAll || applyToAll)
+                        runMerge()
+                    },
+                    onCancel: { showMergePreview = false }
+                )
+            }
+        }
+    }
+
+    /// "Gộp…": plans the merge off-main through `FolderMergeController` (contract §2 — that controller is Q6's
+    /// AppKit file, not this one's to implement; its current `merge(source:into:completion:)` only plans, so the
+    /// actual run below calls the same entry point again once the user confirms a policy — see deviations in the
+    /// final report for the policy/"run vs. plan" split this stub does not yet distinguish).
+    private func startMerge() {
+        isPlanningMerge = true
+        FolderMergeController.shared.merge(source: prompt.source.path, into: prompt.destination.path) { plan in
+            isPlanningMerge = false
+            guard let plan else { return }
+            mergePlan = plan
+            showMergePreview = true
+        }
+    }
+
+    private func planMerge() {
+        isPlanningMerge = true
+        FolderMergeController.shared.merge(source: prompt.source.path, into: prompt.destination.path) { plan in
+            isPlanningMerge = false
+            if let plan { mergePlan = plan }
+        }
+    }
+
+    private func runMerge() {
+        FolderMergeController.shared.merge(source: prompt.source.path, into: prompt.destination.path) { _ in }
     }
 
     private func sideView(title: String, side: ConflictPrompt.Side) -> some View {
