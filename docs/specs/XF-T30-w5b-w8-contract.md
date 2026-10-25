@@ -43,3 +43,19 @@ Chạy SAU khi W2–W7 và W5a đã gộp (chạm file của các đợt đó). 
 W5b: tìm "bao cao" thấy "Báo cáo.pdf" theo tên trong thư mục đã đánh chỉ mục trước khi Spotlight trả về; nội dung PDF có chữ
 "hợp đồng" tìm được bằng "hop dong"; lưu tìm "ảnh 7 ngày qua" vào sidebar, mở lại tuần sau ra kết quả mới. W8: Tải về ngay /
 Gỡ bản tải trong iCloud Drive; badge đổi trạng thái; chép tệp chỉ-trên-mây ra Desktop bị chặn kèm gợi ý.
+
+## W5a — việc còn lại đo được (đưa vào W5b)
+
+Số đo của builder trên `testdata/d100000` (100 000 tệp, probe riêng, DB tạm): quét 3,7 s; **DB 76,5 MiB** kể cả WAL/SHM;
+truy vấn chính xác 20,9 ms, chính xác-không-thấy 28,3 ms, tiền tố 1,45 ms, chuỗi con 35 ms; footprint probe đỉnh 51 MB khi quét
+(giữ 100 000 `DirectoryEntry` của một lần `list`), lắng 22 MB. Nội dung: 2 000 tệp 0,75 s, +11,8 MB, DB 1,8 MB, truy vấn 1,8 ms.
+
+- `wal_checkpoint(TRUNCATE)` sau mỗi lần quét xong; đo lại cỡ DB không WAL.
+- Bảng tên lưu `parent_id` (bảng thư mục) thay đường dẫn đầy đủ từng dòng; FTS5 trigram thử `detail=none`/`columnsize=0` — chỉ
+  giữ nếu đo được truy vấn chuỗi con vẫn dùng chỉ mục (positive control: một chuỗi con biết trước phải thấy).
+- Truy vấn chính xác phải đi B-tree (`= ?` trên `name_key` có chỉ mục, không `LIKE`) — mục tiêu < 1 ms; tìm nguyên nhân 20 ms
+  bằng `EXPLAIN QUERY PLAN`.
+- Quét theo lô thư mục (không giữ cả cây trong RAM): đỉnh < 25 MB cho 100 000 tệp.
+- `SearchQuery` thêm toán tử `in:<thư mục>` (FileOctopus: chỉ thu hẹp trong phạm vi, không bao giờ mở rộng); chip `tag:`/`from:`/
+  `content:` trên kết quả chỉ mục được lọc bằng `MDItem` theo lô (nền), không bỏ qua.
+- `names.inode` ghi inode thật (`DirectoryEntry` thêm trường `inode` qua `ATTR_CMN_FILEID` — đo +ms).
