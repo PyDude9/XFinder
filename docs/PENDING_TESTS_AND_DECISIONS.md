@@ -284,6 +284,16 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | Q-T30-12 | Trang "Trình duyệt tệp" cũ trong XFinder | Giữ bật/tắt + phím toàn cục + nút **"Mở cài đặt trình duyệt…"**; mọi cài đặt khác của trình duyệt chỉ ở cửa sổ Cài đặt trình duyệt (một khoá một control). Trang khác của XFinder **không** gộp |
 | Q-T30-13 | Menu bar khi cửa sổ trình duyệt ở trước | Thêm mục Tệp/Xem/Đi/Cửa sổ của trình duyệt nếu SwiftUI không ghi đè (chưa đo — T-T30-MENU) |
 | T-T30-1…6 | Trình duyệt W1 (tab trong ngăn, tab cửa sổ, toolbar, các thanh, chọn ngăn theo hướng) — bước + kỳ vọng ở `docs/specs/XF-T30-w1-contract.md` §8 | chờ bản cài W1 |
+| Q-T30-14 | Tìm "Máy này" khi chưa có thư mục đánh chỉ mục | **Spotlight toàn máy** (XFinder đã có); FileOctopus lùi về thư mục hiện tại |
+| Q-T30-15 | Get Info ▸ Mở bằng: có nút "Thay đổi tất cả…" (đổi app mặc định hệ thống)? | **Không** — đổi cấu hình máy, chỉ làm khi bạn gật |
+| T-T30-7…18 | Kiểu xem / sidebar / menu Đi (W2–W3): tam giác + ⌥→, Nhóm theo ngày, chuột phải tiêu đề cột, ⌘J, chấm thẻ, kéo giữ trên thư mục thì mở; Gần đây / AirDrop / Thẻ / Tất cả thẻ; cắm USB hiện ngay; ⌘E ổ hai phân vùng hỏi; ⇧⌘D / ⌥⌘L / ⇧⌘H; ⌘K | chờ bản cài |
+| T-T30-19…24 | Cài đặt trình duyệt (⌘, khi trình duyệt ở trước, 7 tab), đổi phím + xung đột "Vẫn dùng", hồ sơ Total Commander (F5 chép sang ngăn kia), Xuất/Nhập, Welcome lần đầu + "Hiện cửa sổ Chào…", ⌘X kiểu Windows (tệp mờ, ⌘V nơi khác chuyển) | chờ bản cài |
+| T-T30-25…30 | Gộp thư mục trùng tên, chép 1 000 tệp có 1 tệp khoá ⇒ 999 xong + Sự cố + Thử lại, tốc độ/ETA, thoát app rồi ⌘Z hoàn tác chuyển, ⇧⌘Z làm lại, ⌃⌘N | chờ bản cài |
+| T-T30-31…36 | ⇧⌘P xem trước, ⌥⌘Y trình chiếu, ⌘I đủ mục, Thông tin ổ, Tải về ngay / Gỡ bản tải trong iCloud Drive, badge đám mây | chờ bản cài |
+| T-T30-SEARCH | Cài đặt ▸ Tìm kiếm thêm một thư mục, bật Nội dung; tìm "bao cao" thấy "Báo cáo.pdf"; tìm "hop dong" thấy PDF có chữ "hợp đồng"; Lưu tìm kiếm vào sidebar | chờ bản cài |
+| T-T30-CLOUD | Google Drive / Dropbox: chưa cài trên máy ⇒ "Mở trong Google Drive" / "Sao chép liên kết" / "Xem trên Dropbox.com" chưa làm (không đo được cơ chế) | cần máy có cài |
+| T-T30-MENU | Menu bar khi cửa sổ trình duyệt ở trước có Tệp/Xem/Đi/Cửa sổ của trình duyệt không (SwiftUI có ghi đè không) | chờ bạn nhìn |
+| W6-MERGE-QUEUE | Gộp thư mục chạy thẳng, chưa qua hàng đợi (không hiện trong bảng thao tác, không tạm dừng được) — cần loại job `.merge` trong engine, spec riêng | việc kế |
 | Q-PRO-5 | Tạo cặp khoá ký giấy phép trên máy bạn: `swift scripts/make-license.swift init ~/Private/xfinder-license.key`, dán khoá công khai in ra vào `LicenseKey.publicKeyRaw` | chưa có ⇒ mọi khoá không hợp lệ; dùng thử + bản Debug vẫn đủ |
 | Q-PRO-6 | Free: xuất toàn bộ lịch sử Clipboard (.xfinderclip) có bị giới hạn 50 mục không? | **Mặc định: không** — dữ liệu của chính người dùng (luật 9) |
 | T-PRO-1 | Trang XFinder Pro ▸ Thử giới hạn = Miễn phí; chép 60 mục | 50 hiện + dòng "10 mục cũ hơn — mở bằng Pro"; chọn Pro ⇒ hiện đủ 60 |
