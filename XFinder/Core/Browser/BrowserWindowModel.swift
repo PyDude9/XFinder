@@ -519,7 +519,11 @@ enum BrowserSheet: String, Identifiable {
         case .filter:
             break   // the search bar owns first responder for the filter field; nothing to dispatch here.
         case .find:
-            if active.search == nil {
+            // XF-T30 W1 contract §3: `find` goes through `chrome` when the toolbar's search field exists (just
+            // focuses it, like Finder — the field itself starts the search on Return); no chrome ⇒ old behavior.
+            if let chrome {
+                chrome.focusSearchField()
+            } else if active.search == nil {
                 runSearch("", scope: .folder)
             }
         case .editLocation:
@@ -827,6 +831,7 @@ enum BrowserSheet: String, Identifiable {
         moved.foldersFirst = old.foldersFirst
         moved.selection = old.selection
         moved.filterText = old.filterText
+        moved.search = old.search
         tabStates[tabID] = moved
         return moved
     }
