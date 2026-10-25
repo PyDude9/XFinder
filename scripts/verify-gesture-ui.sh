@@ -45,11 +45,6 @@ files = ["XFinder/Views/Detail/MouseGesturesDetailView.swift",
          "XFinder/Views/Components/GestureArmView.swift",
          "XFinder/Views/Components/GestureActionPicker.swift",
          "XFinder/Views/Components/GestureActivityPanel.swift",
-         # PATCH v9.1: the list of the mouse's own controls. It renders role labels and
-         # explanations through `L10n.t(variable)`, so it belongs in the sweep and in the
-         # compile-log check below — a component outside both is how a page ships
-         # untranslated words plus a pbxproj entry that never got written.
-         "XFinder/Views/Components/GestureButtonList.swift",
          "XFinder/Core/MouseGestures/GestureModel.swift",
          # The intent vocabulary and the built-in map. Every `labelKey`/`groupKey` here
          # is a Vietnamese literal that only `L10n.t` turns into words, so it has to be
@@ -93,7 +88,7 @@ echo "=== 4. Tests ==="
 
 echo
 echo "=== 5. New sources present in the compile log by name ==="
-grep -E "MouseDiagramView|GestureDetailPanel|GestureArmView|GestureActionPicker|GestureActivityPanel|GestureButtonList|GestureMap|GestureUIDisplay|MouseGesturesDetailView|DeviceCapability|GestureLabelStructure|SpaceBinding" \
+grep -E "MouseDiagramView|GestureDetailPanel|GestureArmView|GestureActionPicker|GestureActivityPanel|GestureMap|GestureUIDisplay|MouseGesturesDetailView|DeviceCapability|GestureLabelStructure|SpaceBinding" \
   /tmp/xfinder-clean-build/dd/Build/Intermediates.noindex/XFinder.build/Debug/XFinder.build/Objects-normal/arm64/XFinder.SwiftFileList
 
 echo

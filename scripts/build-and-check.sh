@@ -42,7 +42,6 @@ MouseGesturesDetailView.swift MouseDiagramView.swift GestureDetailPanel.swift
 L10n.swift L10nStore.swift DeviceCapability.swift DeviceCapabilityTypes.swift
 DeviceCapabilityModel.swift GestureLabelStructure.swift GestureMap.swift
 GestureArmView.swift GestureActionPicker.swift GestureActivityPanel.swift
-GestureButtonList.swift
 SpaceBinding.swift
 ConnectedDeviceBattery.swift BatteryProvider.swift MacPowerSourceProvider.swift
 MagicBatteryReader.swift BluetoothBatteryReader.swift BatteryStore.swift

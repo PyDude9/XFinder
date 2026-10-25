@@ -44,6 +44,8 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Giữ nút này rồi kéo bốn hướng. Bấm chip trên hình bên trên để đổi.":
         ("Hold this button then drag four directions. Click a chip on the diagram above to change.", S),
     "Nghiêng con lăn": ("Tilt wheel", F),
+    # T14e — block 8 (diagnostics)
+    "Chẩn đoán chuột": ("Mouse diagnostics", F),
 }
 
 def main() -> int:

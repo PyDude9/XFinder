@@ -302,11 +302,7 @@ struct MouseGesturesDetailView: View {
                 tiltSection
 
                 // ── Khối 8 — chẩn đoán chuột (F19/S13-S33) ───────────────────────────────
-                VStack(alignment: .leading, spacing: 10) {
-                    deviceRow
-                    hidDumpRow
-                    observedButtonRow
-                }
+                diagnosticsSection
 
                 // ── Khối 9 — footer (F26/S53) ────────────────────────────────────────────
                 footerNote
@@ -448,150 +444,7 @@ struct MouseGesturesDetailView: View {
         .padding(.horizontal, 20)
     }
 
-    // MARK: - Mapping
 
-    private var mappingSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(icon: "computermouse",
-                          title: L10n.t("Sơ đồ cử chỉ"),
-                          subtitle: L10n.t("Số trên thân chuột là nút bạn giữ — bấm vào đó để đổi. Các nút của chuột hiện ngay trên hình: nút nào mờ là nút máy chưa đọc được."))
-
-            HStack(alignment: .top, spacing: 16) {
-                profileSidebar
-                    .frame(width: 240, alignment: .topLeading)
-
-                VStack(alignment: .leading, spacing: 10) {
-                    frontmostHint(chips: appChips(installed: Set(installedBundleIDs())))
-                    deviceRow
-                    hidDumpRow
-                    observedButtonRow
-
-                    HStack(alignment: .top, spacing: 18) {
-                        VStack(alignment: .leading, spacing: 10) {
-                            MouseDiagramView(
-                                selection: $pickedDirection,
-                                selectedButton: $pickedButton,
-                                row: { resolved($0) },
-                                actionName: { resolvedName($0) },
-                                tint: { sourceTint(profile, $0) },
-                                buttonRole: { buttonRole($0) },
-                                buttons: drawnButtons,
-                                style: diagramStyle,
-                                declaredEventButtons: roleContext.declaredEventButtons,
-                                trigger: config.trigger,
-                                unsupported: { DeviceCapabilityModel.armSupport(for: $0, device: activeDevice) },
-                                recordingDirection: recordingDirection,
-                                onRecordTrigger: { triggerRecording() },
-                                isRecordingTrigger: recordingTrigger)
-                                .frame(minWidth: 0, maxWidth: .infinity)
-                            if tiltArmsLive {
-                                TiltArmsRow(
-                                    selection: $pickedDirection,
-                                    row: { resolved($0) },
-                                    actionName: { resolvedName($0) },
-                                    tint: { sourceTint(profile, $0) },
-                                    unsupported: { DeviceCapabilityModel.armSupport(for: $0, device: activeDevice) },
-                                    recordingDirection: recordingDirection)
-                            }
-                        }
-                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            if let direction = pickedDirection {
-                                GestureDetailPanel(
-                                    direction: direction,
-                                    row: resolved(direction),
-                                    actionName: resolvedName(direction),
-                                    trigger: config.trigger,
-                                    isRecording: controller.recording && recordingDirection == direction,
-                                    appName: profileDisplayName(),
-                                    hasAppPreset: GestureProfiles.hasPreset(bundle: profile),
-                                    systemBindings: controller.systemBindings,
-                                    onPick: { choice in
-                                        controller.setAction(choice.action, bundle: profile, direction: direction)
-                                    },
-                                    onRecord: {
-                                        recordingDirection = direction
-                                        recordingTrigger = false
-                                        controller.recordShortcut(bundle: profile, direction: direction)
-                                    },
-                                    onReset: { controller.resetDirection(bundle: profile, direction: direction) })
-                            } else {
-                                emptySelectionHint
-                            }
-                        }
-                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
-                    }
-
-                    sideButtonsSection
-                    tiltSection
-                    customBundleRow
-
-                    HStack(spacing: 8) {
-                        Button(L10n.t("Khôi phục toàn bộ ứng dụng này về mặc định")) { controller.resetProfile(profile) }
-                            .buttonStyle(.bordered).controlSize(.small)
-                            .disabled(config.overrides[profile] == nil)
-                        Spacer(minLength: 0)
-                    }
-                }
-                .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
-            }
-            .padding(.horizontal, 20)
-            .frame(minWidth: 0, maxWidth: 920, alignment: .leading)
-        }
-    }
-
-    private var profileSidebar: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(L10n.t("Ứng dụng"))
-                .font(XFinderTokens.Font.rowValue.weight(.semibold))
-            ForEach(orderedProfiles) { item in
-                profileRow(id: item.id, title: item.id == GestureProfiles.fallback ? L10n.t("Mặc định toàn cục") : item.name)
-            }
-            if !GestureProfiles.hasPreset(bundle: frontmostBundle) && !frontmostBundle.isEmpty {
-                profileRow(id: frontmostBundle, title: L10n.t("Ứng dụng đang dùng"))
-            }
-            ForEach(customProfiles, id: \.self) { id in
-                profileRow(id: id, title: id)
-            }
-            if controller.recording {
-                HStack(spacing: 4) {
-                    Circle().fill(Color.orange).frame(width: 6, height: 6)
-                    Text(L10n.t("Đang ghi — Esc để hủy"))
-                        .font(XFinderTokens.Font.caption).foregroundColor(.orange)
-                }
-                .padding(.top, 4)
-            }
-        }
-        .frame(minWidth: 0, maxWidth: .infinity, alignment: .topLeading)
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(Color.secondary.opacity(0.05)))
-    }
-
-    private func profileRow(id: String, title: String) -> some View {
-        Button {
-            profile = id
-            pickedDirection = MouseDiagramSelection.afterProfileChange()
-            pickedButton = nil
-        } label: {
-            HStack(spacing: 7) {
-                if id == profile, let img = appIcon {
-                    Image(nsImage: img).resizable().frame(width: 18, height: 18).cornerRadius(4)
-                } else {
-                    Image(systemName: id == GestureProfiles.fallback ? "globe" : "app" )
-                        .font(XFinderTokens.Font.sectionIcon).foregroundColor(.secondary).frame(width: 18)
-                }
-                Text(title)
-                    .font(XFinderTokens.Font.rowValue.weight(id == profile ? .semibold : .regular))
-                    .lineLimit(1).truncationMode(.middle)
-                Spacer(minLength: 0)
-            }
-            .padding(.vertical, 4)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .foregroundColor(id == profile ? .accentColor : .primary)
-    }
 
     /// Shown before the user has clicked an arrow. It teaches the interaction instead of
     /// leaving an alarming blank half-page — and it states the *measured* button number
@@ -914,49 +767,6 @@ struct MouseGesturesDetailView: View {
         return .green
     }
 
-    /// Which app the diagram is describing.
-    private var appPickerRow: some View {
-        HStack(spacing: 10) {
-            if let img = appIcon {
-                Image(nsImage: img).resizable().frame(width: 20, height: 20).cornerRadius(4)
-            } else {
-                Image(systemName: "globe").font(XFinderTokens.Font.sectionIcon).foregroundColor(.secondary)
-                    .frame(width: 20)
-            }
-            Text(profileDisplayName())
-                .font(XFinderTokens.Font.row)
-                .lineLimit(1).truncationMode(.middle)
-            Picker("", selection: $profile) {
-                ForEach(orderedProfiles) { item in
-                    Text(item.id == GestureProfiles.fallback ? L10n.t("Mặc định toàn cục") : item.name)
-                        .tag(item.id)
-                }
-                if !GestureProfiles.hasPreset(bundle: frontmostBundle) {
-                    Text(L10n.t("Ứng dụng đang dùng") + " — " + frontmostBundle).tag(frontmostBundle)
-                }
-                ForEach(customProfiles, id: \.self) { id in Text(id).tag(id) }
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .frame(maxWidth: 220)
-            Spacer(minLength: 0)
-            if controller.recording {
-                HStack(spacing: 4) {
-                    Circle().fill(Color.orange).frame(width: 6, height: 6)
-                    Text(L10n.t("Đang ghi — Esc để hủy"))
-                        .font(XFinderTokens.Font.caption).foregroundColor(.orange)
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-    }
-
-    /// Preset-first ordering: apps the user is actually running come first, then the rest
-    /// of the built-in list, then Global last. A picker that opens on a list of
-    /// applications the user does not have installed is how "preset-first" reads as
-    /// "empty list" — the reader cannot find their own app in it.
-    private var orderedProfiles: [GestureProfile] { orderedProfiles(installed: Set(installedBundleIDs())) }
-
     /// `installedBundleIDs()` is one LaunchServices lookup per preset (21) — the body computes it ONCE per
     /// render and passes it here, instead of the four passes T14b's first version made.
     private func orderedProfiles(installed: Set<String>) -> [GestureProfile] {
@@ -1013,6 +823,70 @@ struct MouseGesturesDetailView: View {
         .padding(.horizontal, 20)
     }
 
+    // MARK: - Khối 8 — Chẩn đoán chuột (F19/S13-S33)
+
+    @State private var diagnosticsExpanded: Bool = false
+
+    private var diagnosticsSection: some View {
+        DisclosureGroup(isExpanded: $diagnosticsExpanded) {
+            VStack(alignment: .leading, spacing: 10) {
+                deviceRow
+                buttonsDeclarationRow
+                hidDumpRow
+                observedButtonRow
+            }
+            .padding(.top, 6)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "wrench.and.screwdriver")
+                    .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary).frame(width: 16)
+                Text(L10n.t("Chẩn đoán chuột"))
+                    .font(XFinderTokens.Font.rowValue.weight(.medium))
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private var buttonsDeclarationRow: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "computermouse.fill")
+                .font(XFinderTokens.Font.rowValue).foregroundColor(.secondary).frame(width: 16)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(L10n.t("Nút chuột XFinder thấy"))
+                    .font(XFinderTokens.Font.caption.weight(.medium)).foregroundColor(.secondary)
+                Text(declarationSummary)
+                    .font(XFinderTokens.Font.rowValue)
+                    .fixedSize(horizontal: false, vertical: true)
+                if vendorControlCount > 0 {
+                    Text(L10n.t("Ngoài ra mô tả HID còn khai báo các phần tử nút trên trang riêng của hãng: ")
+                         + "\(vendorControlCount)."
+                         + L10n.t(" Số đó không phải số nút và XFinder không đánh số được chúng — chỉ bấm nút thật mới biết số."))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if consumerUsageCount > 0 {
+                    Text(L10n.t("Ngoài ra mô tả HID còn khai báo các mã điều khiển trên trang Consumer: ")
+                         + "\(consumerUsageCount)."
+                         + L10n.t(" Số đó không phải số nút và XFinder không đánh số được chúng."))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var declarationSummary: String {
+        guard let declared = roleContext.declaredEventButtons else {
+            return L10n.t("Chưa đọc được mô tả HID của chuột, nên danh sách dưới chỉ là các nút thường gặp. “Ghi nút thật” luôn dùng được.")
+        }
+        if declared.isEmpty {
+            return L10n.t("Mô tả HID của chuột không khai báo nút nào.")
+        }
+        let names = declared.map { L10n.t(compactButton: ButtonKey.index($0)) }.joined(separator: ", ")
+        return L10n.t("Mô tả HID của chuột khai báo: ") + names
+    }
+
     /// Which mouse the diagram describes, and where that description came from.
     private var deviceRow: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -1034,7 +908,6 @@ struct MouseGesturesDetailView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
     }
 
     private var provenancePill: some View {
@@ -1080,7 +953,6 @@ struct MouseGesturesDetailView: View {
                     .font(XFinderTokens.Font.caption.weight(.medium)).foregroundColor(.secondary)
             }
         }
-        .padding(.horizontal, 20)
         .onChange(of: hidDumpExpanded) { _, expanded in
             if expanded, hidDump.isEmpty { loadHIDDump() }
         }
@@ -1120,7 +992,6 @@ struct MouseGesturesDetailView: View {
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 20)
         }
     }
 
