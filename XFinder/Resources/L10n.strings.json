@@ -12986,6 +12986,18 @@
     "Đỏ": {
       "en": "Red",
       "scope": "sentence"
+    },
+    " trên ": {
+      "en": " of ",
+      "scope": "fragment"
+    },
+    " mục được chọn": {
+      "en": " items selected",
+      "scope": "fragment"
+    },
+    "Còn trống: ": {
+      "en": "Available: ",
+      "scope": "fragment"
     }
   }
 }

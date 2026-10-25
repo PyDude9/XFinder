@@ -117,6 +117,19 @@ final class BrowserMainMenu {
         _ = box.model.perform(box.command)
     }
 
+    /// NSMenu asks before showing an item AND before firing its key equivalent. Review 2026-10-25: ⌘T / ⌘/ fired from
+    /// the menu bar while the rename editor, location bar or a search field was being typed in (the window had already
+    /// left those plain-⌘ chords to the text, the field editor did not use them, AppKit fell through to the menu). A
+    /// plain-⌘ item is off while a field editor is first responder; everything else follows `canPerform`.
+    @objc func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        guard let box = menuItem.representedObject as? Box else { return true }
+        if let responder = NSApp.keyWindow?.firstResponder, responder is NSText,
+           let chord = BrowserCommands.chord(for: box.command), !chord.control, !chord.option {
+            return false
+        }
+        return box.model.canPerform(box.command)
+    }
+
     /// Carries both the command and which window's model should receive it — `representedObject` only holds one
     /// value, and the active window can change between when a menu item was built and when it fires.
     private final class Box: NSObject {

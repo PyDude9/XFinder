@@ -38,9 +38,14 @@ struct PaneGridView: View {
                                 }
                             }
                             .overlay(alignment: .topLeading) {
-                                PaneTabDropZone(paneID: paneID, paneSize: frame.size, model: model)
-                                    .frame(width: frame.width, height: frame.height)
-                                    .position(x: frame.midX, y: frame.midY)
+                                // Below the tab strip only: the strip takes its own drops (insert at an index); an
+                                // overlay over it would catch them first and always append (review 2026-10-25).
+                                let strip = PaneTabStripView.height
+                                PaneTabDropZone(paneID: paneID,
+                                                paneSize: CGSize(width: frame.width, height: max(0, frame.height - strip)),
+                                                model: model)
+                                    .frame(width: frame.width, height: max(0, frame.height - strip))
+                                    .position(x: frame.midX, y: frame.midY + strip / 2)
                             }
                             .contentShape(Rectangle())
                             .onTapGesture {
@@ -85,7 +90,7 @@ private struct PaneTabDropZone: View {
         }
         .allowsHitTesting(true)
         .contentShape(Rectangle())
-        .onDrop(of: [UTType(PaneTabStripView.tabUTI) ?? .data],
+        .onDrop(of: [PaneTabStripView.tabType],
                 delegate: PaneTabDropDelegate(paneID: paneID, paneSize: paneSize, model: model, target: $target))
     }
 
@@ -147,7 +152,7 @@ private struct PaneTabDropDelegate: DropDelegate {
     @Binding var target: PaneTabRules.DropTarget?
 
     func validateDrop(info: DropInfo) -> Bool {
-        info.hasItemsConforming(to: [UTType(PaneTabStripView.tabUTI) ?? .data])
+        info.hasItemsConforming(to: [PaneTabStripView.tabType])
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
@@ -162,7 +167,7 @@ private struct PaneTabDropDelegate: DropDelegate {
 
     func performDrop(info: DropInfo) -> Bool {
         defer { target = nil }
-        guard let provider = info.itemProviders(for: [UTType(PaneTabStripView.tabUTI) ?? .data]).first else {
+        guard let provider = info.itemProviders(for: [PaneTabStripView.tabType]).first else {
             return false
         }
         let computed = computeTarget(at: info.location)
@@ -185,7 +190,8 @@ private struct PaneTabDropDelegate: DropDelegate {
 
     private func computeTarget(at location: CGPoint) -> PaneTabRules.DropTarget {
         let paneRect = CGRect(origin: .zero, size: paneSize)
-        return PaneTabRules.dropTarget(point: location, paneRect: paneRect, stripHeight: PaneTabStripView.height, tabFrames: [])
+        // The zone starts below the strip, so there is no strip band inside it.
+        return PaneTabRules.dropTarget(point: location, paneRect: paneRect, stripHeight: 0, tabFrames: [])
     }
 
     private func isEdgeOrCenter(_ target: PaneTabRules.DropTarget) -> Bool {

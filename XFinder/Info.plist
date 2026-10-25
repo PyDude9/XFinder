@@ -118,5 +118,20 @@
 	<string>EDD21AF7-EFBA-4AF9-A3C0-E3B424F36B62</string>
 	<key>XFAnalyticsTelemetryDeckNamespace</key>
 	<string>com.xfinder</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.xfinder.browser.tab</string>
+			<key>UTTypeDescription</key>
+			<string>XFinder browser tab</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict/>
+		</dict>
+	</array>
 </dict>
 </plist>

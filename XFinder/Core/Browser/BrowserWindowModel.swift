@@ -141,9 +141,13 @@ struct PaneSearchState: Equatable {
         }
     }
 
+    /// The tab is going away (closed, its pane closed, moved and re-created, window closed): stop the watcher AND the
+    /// load still in flight (review 2026-10-25: only the watcher stopped; a slow folder kept reading up to 5 s).
     func stopWatching() {
         watcher?.cancel()
         watcher = nil
+        loadTask?.cancel()
+        loadTask = nil
     }
 
     var selectedEntries: [DirectoryEntry] {
@@ -523,7 +527,7 @@ enum BrowserSheet: String, Identifiable {
         case .viewGallery:
             active.viewMode = .gallery
         case .filter:
-            break   // the search bar owns first responder for the filter field; nothing to dispatch here.
+            filterFocusRequest = activePane   // no chord since Q-T30-2; the search bar shows the filter field and focuses it
         case .find:
             // XF-T30 W1 contract §3: `find` goes through `chrome` when the toolbar's search field exists (just
             // focuses it, like Finder — the field itself starts the search on Return); no chrome ⇒ old behavior.
@@ -1322,6 +1326,9 @@ extension WorkspaceStore {
 // MARK: - XF-T30 W1 pane tabs (contract docs/specs/XF-T30-w1-contract.md §3)
 
 extension BrowserWindowModel {
+    /// The selected tab of `pane`, O(1) (the tab strip asks once per tab on every render).
+    func selectedTabID(of pane: PaneID) -> TabID? { tabLists[pane]?.selectedTab }
+
     /// The tabs of `pane`, in strip order (the selected one is `panes[pane]`).
     func tabs(of pane: PaneID) -> [PaneState] {
         guard let list = tabLists[pane] else { return [] }

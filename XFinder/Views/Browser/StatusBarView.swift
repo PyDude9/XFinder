@@ -61,10 +61,12 @@ private enum TrashLocation {
 private enum FullDiskAccess {
     /// Full Disk Access is granted when this process can list the protected `~/Library/Safari` folder — the same
     /// cheap, no-prompt probe TCC itself treats as evidence (listing it without the entitlement throws `EPERM`).
-    static var isGranted: Bool {
+    /// Read once per launch (it lists a folder — not something `body` may do on every render); a grant only takes
+    /// effect after XFinder is reopened anyway (FileOctopus documents the same).
+    static let isGranted: Bool = {
         let safari = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Safari")
         return (try? FileManager.default.contentsOfDirectory(atPath: safari.path)) != nil
-    }
+    }()
 }
 
 /// Off-main, per-volume free-space cache (contract §4: "Dung lượng trống qua cache @MainActor đọc nền (≥ 10 s mới

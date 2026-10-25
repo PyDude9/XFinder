@@ -4,10 +4,11 @@ import UniformTypeIdentifiers
 /// XF-T30 W1 — a pane's tab strip (FileOctopus: every pane has one, with + and two split buttons at its right end).
 /// Contract docs/specs/XF-T30-w1-contract.md §4. Always visible, even with a single tab (contract: "luôn hiện").
 struct PaneTabStripView: View {
-    /// Custom UT identifier for a dragged pane tab (contract §4). Not registered in Info.plist — a pane-tab drag
-    /// never leaves this app's own process, so no exported/imported `UTType` declaration is needed, only a private
-    /// NSItemProvider type identifier both the drag source and the drop target agree on.
+    /// Custom UT identifier for a dragged pane tab (contract §4), DECLARED in Info.plist (`UTExportedTypeDeclarations`,
+    /// conforming to public.data). Review 2026-10-25: undeclared, `UTType(tabUTI)` was nil, the drop targets fell back to
+    /// `.data` — and every file drag conforms to `.data`, so the tab-drop overlay swallowed file drops on every pane.
     static let tabUTI = "com.xfinder.browser.tab"
+    static let tabType = UTType(exportedAs: tabUTI, conformingTo: .data)
 
     let paneID: PaneID
     let model: BrowserWindowModel
@@ -41,7 +42,7 @@ struct PaneTabStripView: View {
         }
         .frame(height: Self.height)
         .background(XFinderTokens.Fill.surface)
-        .onDrop(of: [UTType(Self.tabUTI) ?? .data], isTargeted: nil) { providers, location in
+        .onDrop(of: [Self.tabType], isTargeted: nil) { providers, location in
             handleStripDrop(providers: providers, location: location)
         }
     }
@@ -54,7 +55,7 @@ struct PaneTabStripView: View {
 
     @ViewBuilder
     private func tabView(_ tab: PaneState) -> some View {
-        let selected = tab.tabID == model.panes[paneID]?.tabID
+        let selected = tab.tabID == model.selectedTabID(of: paneID)   // O(1); `panes` rebuilds a dictionary
         TabChip(tab: tab, isSelected: selected, isPaneActive: isActive) {
             model.selectTab(tab.tabID)
             model.focus(paneID)
