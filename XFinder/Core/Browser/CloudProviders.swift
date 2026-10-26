@@ -32,7 +32,9 @@ enum CloudProviders {
     /// with the raw folder name as both account and display name, per spec §1 "generic ~/Library/CloudStorage
     /// provider enumeration, Finder-style" — an unrecognized/future provider still shows up rather than vanishing.
     static func parse(folderName: String, root: String) -> CloudProvider? {
-        guard !folderName.isEmpty else { return nil }
+        // Hidden entries are never provider roots — `~/Library/CloudStorage/.DS_Store` is a file Finder drops there
+        // and showed up as a "Location" (owner screenshot 2026-10-26).
+        guard !folderName.isEmpty, !folderName.hasPrefix(".") else { return nil }
         let rootPath = root + "/" + folderName
         if folderName.hasPrefix("iCloudDrive") { return nil }
 

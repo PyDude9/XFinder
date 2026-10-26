@@ -119,7 +119,11 @@ final class SidebarSources {
         let home = NSHomeDirectory()
         let root = home + "/Library/CloudStorage"
         guard let entries = try? FileManager.default.contentsOfDirectory(atPath: root) else { return [] }
-        return entries.sorted().compactMap { CloudProviders.parse(folderName: $0, root: root) }
+        // Only directories: a provider root is a folder; anything else there (a `.DS_Store`) is not a location.
+        return entries.sorted().filter { name in
+            var isDirectory: ObjCBool = false
+            return FileManager.default.fileExists(atPath: root + "/" + name, isDirectory: &isDirectory) && isDirectory.boolValue
+        }.compactMap { CloudProviders.parse(folderName: $0, root: root) }
     }
 
     private nonisolated static func loadICloudDrivePath() -> String? {

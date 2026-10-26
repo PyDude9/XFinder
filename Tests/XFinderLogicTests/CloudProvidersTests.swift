@@ -13,6 +13,13 @@ final class CloudProvidersTests: XCTestCase {
         XCTAssertEqual(provider?.rootPath, root + "/GoogleDrive-dev3@howitwork.app")
     }
 
+    /// 2026-10-26: `~/Library/CloudStorage/.DS_Store` showed up as a sidebar Location — hidden names are never roots.
+    func test_parse_hiddenNames_areNotProviders() {
+        for name in [".DS_Store", ".Trash", ".hidden-provider"] {
+            XCTAssertNil(CloudProviders.parse(folderName: name, root: root), name)
+        }
+    }
+
     func test_parse_googleDrive_emptyAccount_fallsThroughToOther() {
         // "GoogleDrive-" with nothing after the dash is not a valid email account — not dropped entirely (spec §1:
         // unrecognized CloudStorage folders still show up), just not classified as Google Drive.
