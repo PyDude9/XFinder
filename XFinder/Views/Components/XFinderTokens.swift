@@ -73,8 +73,32 @@ enum XFinderTokens {
         static let window = Color(nsColor: .windowBackgroundColor)
     }
 
-    /// XF-T32 W2/W3 — custom-property colours (Tilde's 7). Chip = tint at `chipFill` opacity behind tint text.
-    /// STUB values — builder `sidebarparts` tunes them against the Tilde screenshots.
+    /// XF-T32 W2 — the file-browser sidebar (Tilde, read from sheet-spaces / sheet-live-groups: Space title 17 pt bold,
+    /// 28 pt rows, 16 pt icons, selected row = gray rounded 8, Live Group colour dot 8 pt, pager strip 28 pt).
+    enum BrowserSidebar {
+        static let spaceTitle: SwiftUI.Font = SwiftUI.Font.system(size: 17, weight: .bold)
+        static let headerHeight: CGFloat = 36
+        static let headerButton: SwiftUI.Font = SwiftUI.Font.system(size: 13, weight: .regular)
+        static let sectionTitle: SwiftUI.Font = SwiftUI.Font.system(size: 11, weight: .semibold)
+        static let sectionTopGap: CGFloat = 10
+        static let row: SwiftUI.Font = SwiftUI.Font.system(size: 13)
+        static let rowHeight: CGFloat = 28
+        static let iconSize: CGFloat = 16
+        static let rowRadius: CGFloat = 8
+        static let selectedFill: Color = Color.primary.opacity(0.09)
+        static let groupDot: CGFloat = 8
+        static let pagerHeight: CGFloat = 28
+        static let pagerDot: CGFloat = 6
+        static let pagerDotGap: CGFloat = 6
+        static let pagerDotInactive: Color = Color.primary.opacity(0.25)
+        static let pagerDotActive: Color = Color.primary.opacity(0.75)
+        /// More Spaces than this ⇒ the pager shows "3 / 12" instead of dots (dots would push ⊕ / + off the strip).
+        static let pagerMaxDots: Int = 12
+        static let sheetWidth: CGFloat = 300
+    }
+
+    /// XF-T32 W2/W3 — custom-property colours (Tilde's 7: Gray Red Orange Yellow Green Blue Purple, system tints so
+    /// light/dark follow the OS). Chip = tint at `chipFill` opacity behind tint text (Tilde: pale pill, bold tint text).
     enum PropertyTint {
         static let chipFill: Double = 0.18
         static func color(_ tint: PropertyColor) -> Color {
@@ -88,6 +112,8 @@ enum XFinderTokens {
             case .purple: return Color(nsColor: .systemPurple)
             }
         }
+        /// Chip background: the tint at `chipFill` opacity.
+        static func chipBackground(_ tint: PropertyColor) -> Color { color(tint).opacity(chipFill) }
     }
 
     /// Motion. Two curves only: surfaces that expand (notch, panels) and overlays that appear.
