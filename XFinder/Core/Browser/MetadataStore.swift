@@ -174,6 +174,18 @@ actor MetadataStore {
         return rows.first
     }
 
+    /// Emoji on the folder itself and its immediate children, including children without nicknames.
+    /// Prefix comparison is literal: SQL wildcard characters in filenames have no special meaning.
+    func emoji(in folder: String) -> [String: String] {
+        let key = Self.normalized(folder)
+        let prefix = key == "/" ? "/" : key + "/"
+        return pairs("""
+            SELECT folder_path, emoji FROM emoji WHERE folder_path = ? OR
+            (substr(folder_path, 1, length(?)) = ? AND
+             instr(substr(folder_path, length(?) + 1), '/') = 0)
+            """, [.text(key), .text(prefix), .text(prefix), .text(prefix)])
+    }
+
     func setEmoji(_ emoji: String?, for folder: String) {
         defer { bumpToken() }
         let key: String = Self.normalized(folder)
