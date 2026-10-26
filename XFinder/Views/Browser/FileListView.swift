@@ -653,11 +653,20 @@ struct FileListView: NSViewRepresentable {
         /// dung — `DirectoryEntry` itself has no field for this, so it comes from `PaneSearchState.sources`/
         /// `snippets`, see `BrowserWindowModel.applySearchResults`) and, for a content-index hit, its snippet.
         /// Plain `entry.name` outside a search, same as before this feature existed.
+        @MainActor private static let middleTruncating: NSParagraphStyle = {
+            let style = NSMutableParagraphStyle()
+            style.lineBreakMode = .byTruncatingMiddle
+            return style
+        }()
+
         private func nameCellText(for entry: DirectoryEntry) -> NSAttributedString {
             let shown: String = BrowserWindowModel.displayName(for: entry, showAllExtensions: BrowserSettings.showAllExtensions)
             let colour: NSColor = model.isCut(entry.path)
                 ? NSColor.labelColor.withAlphaComponent(XFinderTokens.Emphasis.cutItemAlpha) : NSColor.labelColor
-            let name = NSMutableAttributedString(string: shown, attributes: [.foregroundColor: colour])
+            // An attributed value replaces the field's own `lineBreakMode`: without a paragraph style a long name wrapped
+            // onto a second line drawn over the row above (owner screenshot 2026-10-26, "…2025.xl" / "sx").
+            let name = NSMutableAttributedString(string: shown, attributes: [.foregroundColor: colour,
+                                                                              .paragraphStyle: Self.middleTruncating])
             guard let search = pane.search else { return name }
             var suffixParts: [String] = []
             if let sources = search.sources[entry.path], !sources.isEmpty {
@@ -669,7 +678,8 @@ struct FileListView: NSViewRepresentable {
             guard !suffixParts.isEmpty else { return name }
             let suffix = NSAttributedString(
                 string: "  —  " + suffixParts.joined(separator: " · "),
-                attributes: [.foregroundColor: NSColor.secondaryLabelColor, .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)]
+                attributes: [.foregroundColor: NSColor.secondaryLabelColor, .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize),
+                             .paragraphStyle: Self.middleTruncating]
             )
             name.append(suffix)
             return name
