@@ -1335,5 +1335,33 @@
   "file": "XFinder/Core/Browser/LoadRules.swift",
   "anchor": "return (path as NSString).standardizingPath == (loadedPath as NSString).standardizingPath",
   "replacement": "return !loadedPath.isEmpty"
+ },
+ {
+  "id": "ListingDiff-01",
+  "name": "reorder-is-patched",
+  "file": "XFinder/Core/Browser/ListingDiff.swift",
+  "anchor": "guard keptOld == keptNew else { return .reload }",
+  "replacement": "guard keptOld.count == keptNew.count else { return .reload }"
+ },
+ {
+  "id": "ListingDiff-02",
+  "name": "duplicates-not-detected",
+  "file": "XFinder/Core/Browser/ListingDiff.swift",
+  "anchor": "guard oldSet.count == old.count, newSet.count == new.count else { return .reload }",
+  "replacement": "guard oldSet.count <= old.count, newSet.count <= new.count else { return .reload }"
+ },
+ {
+  "id": "ListingDiff-03",
+  "name": "inserted-indices-from-old",
+  "file": "XFinder/Core/Browser/ListingDiff.swift",
+  "anchor": "            if oldSet.contains(id) { keptNew.append(id) } else { inserted.insert(i) }",
+  "replacement": "            if oldSet.contains(id) { keptNew.append(id) } else { inserted.insert(max(0, i - removed.count)) }"
+ },
+ {
+  "id": "ListingDiff-04",
+  "name": "patch-cap-ignored",
+  "file": "XFinder/Core/Browser/ListingDiff.swift",
+  "anchor": "return removed.count + inserted.count <= maxPatchedRows",
+  "replacement": "return true"
  }
 ]

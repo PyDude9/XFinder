@@ -145,13 +145,9 @@ struct FileListView: NSViewRepresentable {
                                    columnIndexes: IndexSet(integersIn: 0..<outlineView.numberOfColumns))
         }
 
-        /// Reload-coalescing fingerprint, same reasoning as the XF-T28 table view: count + first/last id is cheap to
-        /// compare every `updateNSView` without diffing 100 000 rows; a revision bump also forces `syncSelection()`
-        /// to recompute row indices on the next call since positions may have moved even when the same paths stay
-        /// selected (e.g. a resort).
-        private var lastCount = -1
-        private var lastFirstID: String?
-        private var lastLastID: String?
+        /// `PaneState.listingRevision` last applied — one Int compare per `updateNSView` (the old count/first/last
+        /// fingerprint missed a change in the middle of the list, e.g. a rename that keeps the sort position).
+        private var lastRevision = -1
         private var lastUseGroups = false
         private var isSyncingSelection = false
         private var typeSelect = EntryRules.TypeSelect()
@@ -185,10 +181,6 @@ struct FileListView: NSViewRepresentable {
         // `DispatchSourceFileSystemObject` (contract ca hỏng: "không rò DirectoryWatcher" — the watcher's own
         // teardown, not this type's, is what closes the fd). A `deinit` here reading `expanded` would need to hop
         // back to the main actor from a nonisolated context for no benefit over just letting ARC do it.
-
-        private func fingerprint() -> (Int, String?, String?) {
-            (pane.entries.count, pane.entries.first?.id, pane.entries.last?.id)
-        }
 
         /// `rootNodes()` result, rebuilt only by `reloadIfNeeded()` (on the same fingerprint it already tracks).
         /// `outlineView(_:numberOfChildrenOfItem:)`/`child(index:ofItem:)` call this once PER ROW during a reload —
@@ -266,22 +258,63 @@ struct FileListView: NSViewRepresentable {
         }
 
         func reloadIfNeeded() {
-            let (count, first, last) = fingerprint()
+            let revision = pane.listingRevision
             let useGroups = pane.useGroups
-            guard count != lastCount || first != lastFirstID || last != lastLastID || useGroups != lastUseGroups else {
+            guard revision != lastRevision || useGroups != lastUseGroups else {
                 reloadColumnsIfNeeded()
                 return
             }
-            lastCount = count
-            lastFirstID = first
-            lastLastID = last
-            lastUseGroups = useGroups
+            lastRevision = revision
+            let newNodes = rebuildRootNodes()
             cloudCache.removeAll()
+            defer { reloadColumnsIfNeeded() }
+
+            // Same folder refreshed (watcher, ⌘R, an operation): patch the rows that changed and keep everything else —
+            // selection, scroll, disclosure, a rename in progress, the click in flight. Groups and search results are
+            // header/row mixes that still take the full reload; so does a resort (kept rows change order).
+            if let outlineView, !useGroups, !lastUseGroups, pane.search == nil, Self.canPatch(from: cachedRootNodes, to: newNodes) {
+                let plan = ListingDiff.plan(old: cachedRootNodes.map(Self.identity), new: newNodes.map(Self.identity))
+                if ListingDiff.shouldPatch(plan), case .patch(let removed, let inserted) = plan {
+                    for index in removed {
+                        guard let gone = cachedRootNodes[index].entry else { continue }
+                        expanded[gone.path]?.watcher?.cancel()
+                        expanded[gone.path] = nil
+                    }
+                    cachedRootNodes = newNodes
+                    if !removed.isEmpty || !inserted.isEmpty {
+                        outlineView.beginUpdates()
+                        outlineView.removeItems(at: removed, inParent: nil, withAnimation: [])
+                        outlineView.insertItems(at: inserted, inParent: nil, withAnimation: [])
+                        outlineView.endUpdates()
+                    }
+                    // Kept rows may show new metadata (size, date, cloud state): redraw what is on screen.
+                    let visible: NSRange = outlineView.rows(in: outlineView.visibleRect)
+                    if visible.length > 0 {
+                        outlineView.reloadData(forRowIndexes: IndexSet(integersIn: visible.location..<(visible.location + visible.length)),
+                                               columnIndexes: IndexSet(integersIn: 0..<outlineView.numberOfColumns))
+                    }
+                    lastUseGroups = useGroups
+                    return
+                }
+            }
+            lastUseGroups = useGroups
             lastSyncedSelection = []
             stopWatchingAll()
-            cachedRootNodes = rebuildRootNodes()
-            reloadColumnsIfNeeded()
+            cachedRootNodes = newNodes
             outlineView?.reloadData()
+        }
+
+        /// Row identity for `ListingDiff`: an entry's path; a header its title behind a NUL no path can contain.
+        private static func identity(_ node: Node) -> String {
+            switch node {
+            case .entry(let e): return e.path
+            case .header(let t): return "\u{0}" + t
+            }
+        }
+
+        /// Only entry rows on both sides (no headers) are patched — see `reloadIfNeeded`.
+        private static func canPatch(from old: [Node], to new: [Node]) -> Bool {
+            !old.contains { $0.entry == nil } && !new.contains { $0.entry == nil }
         }
 
         func syncSortIndicator() {

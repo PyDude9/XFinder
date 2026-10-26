@@ -52,6 +52,9 @@ struct PaneSearchState: Equatable {
     var showHidden: Bool
     var foldersFirst = false
     private(set) var entries: [DirectoryEntry] = []
+    /// Bumped every time `entries` is re-derived — the cheap "did the listing change" check a view needs on every
+    /// SwiftUI update (comparing 100 000 paths there would not be).
+    private(set) var listingRevision: Int = 0
     private(set) var loadState: PaneLoadState = .idle
     var selection: Set<String> = []
     var filterText = "" {
@@ -229,6 +232,7 @@ struct PaneSearchState: Equatable {
             case .failure(let error):
                 self.rawEntries = []
                 self.entries = []
+                self.listingRevision &+= 1
                 self.loadedPath = nil
                 self.loadState = .failed(error)
             }
@@ -244,6 +248,7 @@ struct PaneSearchState: Equatable {
         entries = EntryRules.sorted(filtered, by: sort, foldersFirst: foldersFirst) { entry in
             FileIconCache.shared.kindName(for: entry)
         }
+        listingRevision &+= 1
         rebuildSections()   // XF-T30 W2 (BrowserWindowModel+Views.swift)
     }
 
