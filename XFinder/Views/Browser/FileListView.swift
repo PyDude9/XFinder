@@ -156,7 +156,7 @@ struct FileListView: NSViewRepresentable {
         private var isSyncingSelection = false
         private var typeSelect = EntryRules.TypeSelect()
         private var renamingPath: String?
-        private var cloudFactsCache: [String: CloudFacts] = [:]
+        private let cloudCache: CloudFactsCache = CloudFactsCache()
         private var lastSyncedSelection: Set<String> = []
         private var lastColumns: [ListColumn] = []
         private var lastShowingParentFolderColumn = false
@@ -276,7 +276,7 @@ struct FileListView: NSViewRepresentable {
             lastFirstID = first
             lastLastID = last
             lastUseGroups = useGroups
-            cloudFactsCache.removeAll()
+            cloudCache.removeAll()
             lastSyncedSelection = []
             stopWatchingAll()
             cachedRootNodes = rebuildRootNodes()
@@ -716,13 +716,17 @@ struct FileListView: NSViewRepresentable {
             }
         }
 
-        /// A fresh `DateFormatter` per call (Swift 6: no `static let DateFormatter` — not `Sendable`); cheap enough
-        /// at table-cell cadence (only visible rows are configured, never all 100 000 at once).
-        private static func dateText(_ date: Date) -> String {
+        /// One formatter on the main actor (cells are configured there). A fresh `DateFormatter` per cell was 170 ms of
+        /// one scroll's 3,3 s main-thread stall (sampled 2026-10-26) — creating one loads locale data every time.
+        @MainActor private static let dateFormatter: DateFormatter = {
             let formatter = DateFormatter()
             formatter.dateStyle = .short
             formatter.timeStyle = .short
-            return formatter.string(from: date)
+            return formatter
+        }()
+
+        @MainActor private static func dateText(_ date: Date) -> String {
+            dateFormatter.string(from: date)
         }
 
         private static func sizeText(_ bytes: Int64) -> String {
@@ -1149,30 +1153,7 @@ struct FileListView: NSViewRepresentable {
 
         // MARK: - Cloud badge (lazy, visible rows only)
 
-        func cloudFacts(for path: String) -> CloudFacts {
-            if let cached = cloudFactsCache[path] { return cached }
-            let facts = Self.readCloudFacts(path: path)
-            cloudFactsCache[path] = facts
-            return facts
-        }
-
-        nonisolated private static func readCloudFacts(path: String) -> CloudFacts {
-            let url = URL(fileURLWithPath: path)
-            let keys: Set<URLResourceKey> = [
-                .isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey, .ubiquitousItemIsDownloadingKey,
-                .ubiquitousItemIsUploadingKey, .ubiquitousItemIsUploadedKey,
-                .ubiquitousItemDownloadingErrorKey, .ubiquitousItemUploadingErrorKey,
-            ]
-            guard let values = try? url.resourceValues(forKeys: keys) else { return CloudFacts() }
-            return CloudFacts(
-                isUbiquitous: values.isUbiquitousItem,
-                downloadingStatus: values.ubiquitousItemDownloadingStatus?.rawValue,
-                isDownloading: values.ubiquitousItemIsDownloading,
-                isUploading: values.ubiquitousItemIsUploading,
-                isUploaded: values.ubiquitousItemIsUploaded,
-                hasDownloadError: values.ubiquitousItemDownloadingError != nil,
-                hasUploadError: values.ubiquitousItemUploadingError != nil)
-        }
+        func cloudFacts(for path: String) -> CloudFacts { cloudCache.facts(for: path) }
     }
 }
 

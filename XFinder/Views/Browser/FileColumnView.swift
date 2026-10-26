@@ -164,7 +164,7 @@ struct FileColumnView: NSViewRepresentable {
         private var typeSelect = EntryRules.TypeSelect()
         private var renamingPath: String?
         private var lastDisplaySettings: DisplaySettings?
-        private var cloudFactsCache: [String: CloudFacts] = [:]
+        private let cloudCache: CloudFactsCache = CloudFactsCache()
         /// Set while a drag started from this browser is in flight, so a local Escape-key monitor can end it
         /// (contract: "Esc huỷ kéo").
         private var dragEscapeMonitor: Any?
@@ -651,30 +651,7 @@ struct FileColumnView: NSViewRepresentable {
 
         // MARK: - Cloud badge (lazy, visible rows only — same cache shape as FileListView's)
 
-        func cloudFacts(for path: String) -> CloudFacts {
-            if let cached = cloudFactsCache[path] { return cached }
-            let facts = Self.readCloudFacts(path: path)
-            cloudFactsCache[path] = facts
-            return facts
-        }
-
-        nonisolated private static func readCloudFacts(path: String) -> CloudFacts {
-            let url = URL(fileURLWithPath: path)
-            let keys: Set<URLResourceKey> = [
-                .isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey, .ubiquitousItemIsDownloadingKey,
-                .ubiquitousItemIsUploadingKey, .ubiquitousItemIsUploadedKey,
-                .ubiquitousItemDownloadingErrorKey, .ubiquitousItemUploadingErrorKey,
-            ]
-            guard let values = try? url.resourceValues(forKeys: keys) else { return CloudFacts() }
-            return CloudFacts(
-                isUbiquitous: values.isUbiquitousItem,
-                downloadingStatus: values.ubiquitousItemDownloadingStatus?.rawValue,
-                isDownloading: values.ubiquitousItemIsDownloading,
-                isUploading: values.ubiquitousItemIsUploading,
-                isUploaded: values.ubiquitousItemIsUploaded,
-                hasDownloadError: values.ubiquitousItemDownloadingError != nil,
-                hasUploadError: values.ubiquitousItemUploadingError != nil)
-        }
+        func cloudFacts(for path: String) -> CloudFacts { cloudCache.facts(for: path) }
     }
 }
 

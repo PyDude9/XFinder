@@ -120,30 +120,6 @@ extension BrowserWindowModel {
     }
 }
 
-/// The disk read four view files (`FileListView`, `FileIconView`, `FileColumnView`, `FileGalleryView`) each already
-/// duplicate privately as `readCloudFacts` — this is the one copy this W8 file's own guards use, kept separate
-/// rather than reaching into any of those view-private methods (out of this builder's owned files; refactoring the
-/// four existing duplicates to share this is noted as a follow-up, not done here to stay inside the W8 file list).
-enum CloudFactsReader {
-    nonisolated static func read(path: String) -> CloudFacts {
-        let url = URL(fileURLWithPath: path)
-        let keys: Set<URLResourceKey> = [
-            .isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey, .ubiquitousItemIsDownloadingKey,
-            .ubiquitousItemIsUploadingKey, .ubiquitousItemIsUploadedKey,
-            .ubiquitousItemDownloadingErrorKey, .ubiquitousItemUploadingErrorKey,
-        ]
-        guard let values = try? url.resourceValues(forKeys: keys) else { return CloudFacts() }
-        return CloudFacts(
-            isUbiquitous: values.isUbiquitousItem,
-            downloadingStatus: values.ubiquitousItemDownloadingStatus?.rawValue,
-            isDownloading: values.ubiquitousItemIsDownloading,
-            isUploading: values.ubiquitousItemIsUploading,
-            isUploaded: values.ubiquitousItemIsUploaded,
-            hasDownloadError: values.ubiquitousItemDownloadingError != nil,
-            hasUploadError: values.ubiquitousItemUploadingError != nil)
-    }
-}
-
 /// Background Download Now / Remove Download — off the main actor (disk/iCloud daemon round trip), one item at a
 /// time so a huge selection never blocks on the slowest item before starting the next (contract: "chạy nền").
 enum CloudActions {

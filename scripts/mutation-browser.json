@@ -1279,5 +1279,40 @@
   "file": "XFinder/Core/Browser/FileOperationRules.swift",
   "anchor": "        case .move, .merge:\n            return sameVolume ? .rename : .copyVerifyTrash",
   "replacement": "        case .move:\n            return sameVolume ? .rename : .copyVerifyTrash\n        case .merge:\n            return .rename"
+ },
+ {
+  "id": "CloudCache-01",
+  "name": "item-read-without-folder-gate",
+  "file": "XFinder/Core/Browser/CloudFactsCache.swift",
+  "anchor": "let facts: CloudFacts = inCloudFolder ? readItem(path) : CloudFacts()",
+  "replacement": "let facts: CloudFacts = readItem(path)"
+ },
+ {
+  "id": "CloudCache-02",
+  "name": "folder-probe-not-memoised",
+  "file": "XFinder/Core/Browser/CloudFactsCache.swift",
+  "anchor": "            folderIsCloud[parent] = inCloudFolder\n",
+  "replacement": "\n"
+ },
+ {
+  "id": "CloudCache-03",
+  "name": "item-facts-not-cached",
+  "file": "XFinder/Core/Browser/CloudFactsCache.swift",
+  "anchor": "        factsByPath[path] = facts\n",
+  "replacement": "\n"
+ },
+ {
+  "id": "CloudCache-04",
+  "name": "removeAll-keeps-folders",
+  "file": "XFinder/Core/Browser/CloudFactsCache.swift",
+  "anchor": "        folderIsCloud.removeAll()\n",
+  "replacement": "\n"
+ },
+ {
+  "id": "CloudCache-05",
+  "name": "root-is-its-own-parent",
+  "file": "XFinder/Core/Browser/CloudFactsCache.swift",
+  "anchor": "!parent.isEmpty && parent != path && probeFolder(parent)",
+  "replacement": "probeFolder(parent)"
  }
 ]
