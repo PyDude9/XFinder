@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Quartz
+import os
 
 /// XF-T28 cluster C (contract: docs/specs/XF-T28-ui-contract.md) — every file browser window: opening, session
 /// save/restore, the one keyboard dispatcher (`performKeyEquivalent`), mouse Back/Forward, and Quick Look for
@@ -25,7 +26,36 @@ import Quartz
     private var indexRootsObserver: NSObjectProtocol?
     private var lastKnownIndexRoots: [IndexRoot] = []
 
-    private override init() { super.init() }
+    private override init() {
+        super.init()
+        #if DEBUG
+        installClickTracer()
+        #endif
+    }
+
+    #if DEBUG
+    /// Debug builds only: one log line per left click in a browser window — the view the click hit, and the first
+    /// responder before and after — so "a click selects nothing" can be read from `log show` instead of guessed
+    /// (2026-10-26: a synthetic click left the window as first responder while AX-set selection worked).
+    private var clickTracer: Any?
+    private func installClickTracer() {
+        clickTracer = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
+            guard let window = event.window as? BrowserWindow else { return event }
+            let point = event.locationInWindow
+            var chain: [String] = []
+            var view: NSView? = window.contentView?.hitTest(point)
+            while let v = view, chain.count < 8 { chain.append(String(describing: type(of: v))); view = v.superview }
+            let before = String(describing: window.firstResponder.map { type(of: $0) })
+            Self.clickLog.info("down \(Int(point.x))×\(Int(point.y)) hit=\(chain.joined(separator: " < "), privacy: .public) first=\(before, privacy: .public)")
+            DispatchQueue.main.async {
+                let after = String(describing: window.firstResponder.map { type(of: $0) })
+                Self.clickLog.info("after first=\(after, privacy: .public)")
+            }
+            return event
+        }
+    }
+    private static let clickLog = Logger(subsystem: "com.xfinder.app", category: "clicks")
+    #endif
 
     private static var sessionURL: URL {
         FileManager.default.homeDirectoryForCurrentUser
