@@ -115,6 +115,17 @@ import QuickLookThumbnailing
         pendingThumbs.removeAll()
     }
 
+    /// XF-T32 W0 — memory pressure: keep the newest `PressureRules.keepCount` thumbnails and per-path icons
+    /// (critical drops per-path icons entirely); the per-type icons and kind names are a few KB and stay.
+    func relieve(_ plan: PressureRules.Plan) {
+        let keepThumbs: Int = PressureRules.keepCount(of: thumbOrder.count, plan: plan)
+        for key in thumbOrder.prefix(thumbOrder.count - keepThumbs) { thumbs.removeValue(forKey: key) }
+        thumbOrder.removeFirst(thumbOrder.count - keepThumbs)
+        let keepIcons: Int = plan.dropPathIcons ? 0 : PressureRules.keepCount(of: pathIconOrder.count, plan: plan)
+        for path in pathIconOrder.prefix(pathIconOrder.count - keepIcons) { pathIcons.removeValue(forKey: path) }
+        pathIconOrder.removeFirst(pathIconOrder.count - keepIcons)
+    }
+
     // MARK: - Private
 
     private func utType(forExtension ext: String) -> UTType? {

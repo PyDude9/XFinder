@@ -66,8 +66,13 @@ struct PaneSearchState: Equatable {
     /// Bumped on every `navigate`/`reload`; a load whose generation no longer matches `currentGeneration` when it
     /// completes is stale (the pane moved on) and its result is thrown away instead of overwriting newer entries.
     private var currentGeneration = 0
+    /// Only for virtual locations (Recents, tags), which list through Spotlight. Real folders go through
+    /// `subscription`.
     private var loadTask: Task<Void, Never>?
-    private var watcher: DirectoryWatcher?
+    /// XF-T32 W0 — the shared listing of a real folder (cache first, one read + one watcher per folder for every
+    /// pane). Replaces the per-tab `DirectoryWatcher`; cancelled when the tab leaves the folder or closes.
+    private var subscription: ListingSubscription?
+    private var subscribedPath: String?
     /// The folder `rawEntries` was read from; nil before the first load and after a failure.
     private var loadedPath: String?
     /// XF-T30 W5b — the live `SearchCoordinator` run behind `search`, if any; cancelled whenever the tab navigates
@@ -88,7 +93,6 @@ struct PaneSearchState: Equatable {
         self.sort = sort
         self.showHidden = showHidden
         startLoad(of: path)
-        installWatcher()
     }
 
     // MARK: - Navigation
@@ -100,7 +104,6 @@ struct PaneSearchState: Equatable {
         self.path = path
         cancelSearch()   // XF-T30 W5b: a tab that leaves its folder drops any live search (contract "huỷ khi ... đổi thư mục")
         startLoad(of: path)
-        installWatcher()
         BrowserWindowModel.noteRecentFolder(path)   // XF-T30 W3 (BrowserWindowModel+Go.swift)
         BrowserWindowModel.applyRememberedViewOptions(to: self)   // XF-T30 W2: per-folder view options
     }
@@ -110,7 +113,6 @@ struct PaneSearchState: Equatable {
         path = destination
         cancelSearch()
         startLoad(of: destination)
-        installWatcher()
         BrowserWindowModel.applyRememberedViewOptions(to: self)
     }
 
@@ -119,7 +121,6 @@ struct PaneSearchState: Equatable {
         path = destination
         cancelSearch()
         startLoad(of: destination)
-        installWatcher()
         BrowserWindowModel.applyRememberedViewOptions(to: self)
     }
 
@@ -130,7 +131,6 @@ struct PaneSearchState: Equatable {
         path = destination
         cancelSearch()
         startLoad(of: destination)
-        installWatcher()
     }
 
     func goForward(steps: Int) {
@@ -138,7 +138,6 @@ struct PaneSearchState: Equatable {
         path = destination
         cancelSearch()
         startLoad(of: destination)
-        installWatcher()
     }
 
     /// ⌘↑: remember the folder we're leaving so re-entering the parent can reselect it, same as Finder.
@@ -169,8 +168,7 @@ struct PaneSearchState: Equatable {
     /// load still in flight (review 2026-10-25: only the watcher stopped; a slow folder kept reading up to 5 s).
     /// XF-T30 W5b: also cancels a live search (contract "huỷ khi ... đóng").
     func stopWatching() {
-        watcher?.cancel()
-        watcher = nil
+        dropSubscription()
         loadTask?.cancel()
         loadTask = nil
         cancelSearch()
@@ -191,8 +189,9 @@ struct PaneSearchState: Equatable {
 
     private func startLoad(of path: String) {
         loadTask?.cancel()
+        loadTask = nil
         currentGeneration += 1
-        let generation = currentGeneration
+        let generation: Int = currentGeneration
         // A refresh of the folder already on screen (watcher, ⌘R, a finished operation) keeps showing it until the
         // new listing lands. `.loading` swaps the whole view for a spinner and rebuilds the table: scroll, expanded
         // folders, an inline rename and the click in flight were lost — 2 refreshes a minute in a home folder
@@ -200,42 +199,83 @@ struct PaneSearchState: Equatable {
         if !LoadRules.isRefresh(of: path, loadedPath: loadedPath, isLoaded: loadState == .loaded) {
             loadState = .loading
         }
-        loadTask = Task { [weak self] in
-            // XF-T30 W3: a virtual location (Recents, a tag) lists through Spotlight, not the directory reader.
-            let result = if let virtual = VirtualLocation.parse(path) {
-                await VirtualLocations.list(virtual)
-            } else {
-                await DirectoryReader.list(path, timeout: 5)
+        // XF-T30 W3: a virtual location (Recents, a tag) lists through Spotlight, not the directory reader.
+        if let virtual: VirtualLocation = VirtualLocation.parse(path) {
+            dropSubscription()
+            loadTask = Task { [weak self] in
+                let result: Result<[DirectoryEntry], DirectoryReadError> = await VirtualLocations.list(virtual)
+                guard let self, !Task.isCancelled, generation == self.currentGeneration else { return }
+                self.applyListing(result, path: path, settled: true)
             }
-            guard let self, !Task.isCancelled, generation == self.currentGeneration else { return }
-            switch result {
-            case .success(let listing):
-                self.rawEntries = listing
-                self.loadedPath = path
-                self.loadState = .loaded
-                self.applyEntries()
-                if let wanted = self.selectAfterLoad, listing.contains(where: { $0.name == wanted }) {
-                    // `appendingPathComponent`, not string concatenation — `path` can be "/" (a volume root),
-                    // where "\(path)/\(wanted)" doubles the slash and never matches any entry's `path`.
-                    self.selection = [(path as NSString).appendingPathComponent(wanted)]
-                } else if let names = self.restoreSelectionNames {
-                    // XF-T30 W1 — session restore (`TabSnapshot.selectedNames`): reselect only the names that still
-                    // exist after the first load; applied once (cleared right after), same as `selectAfterLoad`.
-                    let present = Set(listing.map(\.name))
-                    let kept = names.filter { present.contains($0) }
-                    if !kept.isEmpty {
-                        self.selection = Set(kept.map { (path as NSString).appendingPathComponent($0) })
-                    }
+            return
+        }
+        // Same folder, live subscription ⇒ ask the shared session to read again (coalesced with other panes).
+        if subscribedPath == path, subscription != nil {
+            DirectoryLoadCoordinator.shared.reload(path: path)
+            return
+        }
+        dropSubscription()
+        subscribedPath = path
+        subscription = DirectoryLoadCoordinator.shared.subscribe(
+            path: path,
+            onListing: { [weak self] result in
+                guard let self, self.subscribedPath == path else { return }
+                switch result {
+                case .success(let delivery):
+                    // A cached copy can lack a just-created name; only a disk read settles "not there".
+                    self.applyListing(.success(delivery.entries), path: path, settled: delivery.source == .disk)
+                case .failure(let error):
+                    self.applyListing(.failure(error), path: path, settled: true)
                 }
-                self.selectAfterLoad = nil
-                self.restoreSelectionNames = nil
-            case .failure(let error):
-                self.rawEntries = []
-                self.entries = []
-                self.listingRevision &+= 1
-                self.loadedPath = nil
-                self.loadState = .failed(error)
+            },
+            onGone: { [weak self] in
+                guard let self, self.subscribedPath == path, self.path == path else { return }
+                self.dropSubscription()
+                self.navigateToNearestExistingAncestor(from: path)
+            })
+    }
+
+    private func dropSubscription() {
+        subscription?.cancel()
+        subscription = nil
+        subscribedPath = nil
+    }
+
+    /// One listing (cache copy, disk read or virtual list) lands. `settled` = nothing newer is on its way, so a
+    /// pending reselection that found no match is given up.
+    private func applyListing(_ result: Result<[DirectoryEntry], DirectoryReadError>, path: String, settled: Bool) {
+        switch result {
+        case .success(let listing):
+            rawEntries = listing
+            loadedPath = path
+            loadState = .loaded
+            applyEntries()
+            var reselected: Bool = false
+            if let wanted: String = selectAfterLoad, listing.contains(where: { $0.name == wanted }) {
+                // `appendingPathComponent`, not string concatenation — `path` can be "/" (a volume root),
+                // where "\(path)/\(wanted)" doubles the slash and never matches any entry's `path`.
+                selection = [(path as NSString).appendingPathComponent(wanted)]
+                reselected = true
+            } else if let names: [String] = restoreSelectionNames {
+                // XF-T30 W1 — session restore (`TabSnapshot.selectedNames`): reselect only the names that still
+                // exist after the first load; applied once (cleared right after), same as `selectAfterLoad`.
+                let present: Set<String> = Set(listing.map(\.name))
+                let kept: [String] = names.filter { present.contains($0) }
+                if !kept.isEmpty {
+                    selection = Set(kept.map { (path as NSString).appendingPathComponent($0) })
+                    reselected = true
+                }
             }
+            if reselected || settled {
+                selectAfterLoad = nil
+                restoreSelectionNames = nil
+            }
+        case .failure(let error):
+            rawEntries = []
+            entries = []
+            listingRevision &+= 1
+            loadedPath = nil
+            loadState = .failed(error)
         }
     }
 
@@ -250,27 +290,6 @@ struct PaneSearchState: Equatable {
         }
         listingRevision &+= 1
         rebuildSections()   // XF-T30 W2 (BrowserWindowModel+Views.swift)
-    }
-
-    private func installWatcher() {
-        watcher?.cancel()
-        watcher = nil
-        // XF-T30 W3: nothing on disk to watch for a virtual location (a watcher would report it "gone").
-        guard VirtualLocation.parse(path) == nil else { return }
-        let watchedPath = path
-        watcher = DirectoryWatcher(
-            path: watchedPath,
-            onChange: { [weak self] in
-                guard let self, self.path == watchedPath else { return }
-                let keptSelection = self.selection
-                self.reload()
-                self.selection = keptSelection
-            },
-            onGone: { [weak self] in
-                guard let self, self.path == watchedPath else { return }
-                self.navigateToNearestExistingAncestor(from: watchedPath)
-            }
-        )
     }
 
     /// The watched folder vanished (deleted/renamed out from under us): walk up to the first ancestor that still

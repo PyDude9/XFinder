@@ -56,6 +56,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Local diagnostics first, so an unclean previous exit is noted before anything else runs.
         DiagnosticsCenter.shared.start()
+        // XF-T32 W0: one memory-pressure source (no timer, no cost at rest) trims the browser's image caches.
+        MemoryPressureRelief.shared.register("browser.fileIcons") { plan in FileIconCache.shared.relieve(plan) }
+        MemoryPressureRelief.shared.start()
         // Anonymous analytics: decided a few seconds after launch (windows settled, onboarding up if it shows), then on
         // every activation. Nothing is sent or announced while no receiver is configured in Info.plist.
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { AnalyticsCenter.shared.evaluate() }

@@ -155,6 +155,9 @@ import os
         }
         let isFirstWindow = windows.isEmpty
         windows.append(window)
+        // XF-T32 W0: hitch probe (Debug builds only) runs while a browser window is open — 10 wakeups/s would
+        // break the 0 s idle budget if it ran for the app's whole life.
+        MainThreadHitchProbe.shared.start()
         modelsByWindow[ObjectIdentifier(window)] = model
         let toolbar = BrowserToolbarController(model: model, window: window)
         toolbar.install()
@@ -247,6 +250,7 @@ import os
         if !closingLast && !terminating { saveSession() }
         if windows.isEmpty {
             FileIconCache.shared.purge()
+            MainThreadHitchProbe.shared.stop()
             indexLifecycleAllWindowsClosed()
         }
     }
@@ -396,6 +400,7 @@ import os
         windows.removeAll()
         modelsByWindow.removeAll()
         FileIconCache.shared.purge()
+        MainThreadHitchProbe.shared.stop()
         indexLifecycleAllWindowsClosed()
     }
 
