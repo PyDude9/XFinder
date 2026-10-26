@@ -295,6 +295,12 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-T30-MENU | Menu bar khi cửa sổ trình duyệt ở trước có Tệp/Xem/Đi/Cửa sổ của trình duyệt không (SwiftUI có ghi đè không) | chờ bạn nhìn |
 | T-T30-SESSION | Mở trình duyệt, chọn Side by Side, đóng cửa sổ cuối (⌘W) rồi mở lại từ menu bar / ⌘N; lần hai: thoát app (⌘Q), mở lại; lần ba: đóng hết rồi bấm một thư mục trong sidebar XFinder | Cả ba lần quay về Side by Side đúng thư mục; lần ba thư mục vừa bấm là tab mới ở ngăn đang chọn |
 | T-PERF-LAUNCH | Thoát app, mở lại, đếm tới lúc notch/menu bar phản hồi | Không còn 4–5 s nặng máy; danh sách phiên agent hiện sau ~1 s, không có thông báo cũ bắn lại |
+| T-T31-1 | Side by Side trên `~`, chọn một hàng, rồi từ Terminal `touch ~/x.txt` và `rm ~/x.txt` | hàng x.txt hiện/mất tại chỗ; hàng đang chọn và vị trí cuộn giữ nguyên; không có vòng xoay |
+| T-T31-2 | Mở rộng một thư mục con trong List (tam giác), rồi tạo tệp ở `~` | thư mục con vẫn mở rộng sau khi tệp mới hiện |
+| T-T31-3 | Đổi tên một tệp giữa danh sách sao cho vị trí sắp xếp đổi | danh sách sắp lại đúng (đường reload) |
+| Q-T31-1 | Hai ngăn/tab cùng thư mục: dùng chung listing + watcher (DirectoryLoadCoordinator)? | mặc định: làm sau khi h2h có số |
+| Q-T31-2 | Badge đám mây đọc theo lô 50 ở nền (CloudLookupBatch)? | mặc định: có, sau T-T31 |
+| Q-T31-3 | MainThreadWatchdog bản Debug (log + sample khi main > 250 ms)? | mặc định: có |
 | W6-MERGE-QUEUE | **Đã làm** (`.merge` job): gộp hiện trong bảng Thao tác, tạm dừng / huỷ được, bước lỗi vào Sự cố, ⌘Z đưa từng mục về chỗ cũ | thử: gộp hai thư mục trùng tên lớn, bấm Tạm dừng giữa chừng, rồi ⌘Z |
 | Q-PRO-5 | Tạo cặp khoá ký giấy phép trên máy bạn: `swift scripts/make-license.swift init ~/Private/xfinder-license.key`, dán khoá công khai in ra vào `LicenseKey.publicKeyRaw` | chưa có ⇒ mọi khoá không hợp lệ; dùng thử + bản Debug vẫn đủ |
 | Q-PRO-6 | Free: xuất toàn bộ lịch sử Clipboard (.xfinderclip) có bị giới hạn 50 mục không? | **Mặc định: không** — dữ liệu của chính người dùng (luật 9) |
