@@ -279,6 +279,9 @@ struct FileListView: NSViewRepresentable {
                         guard let gone = cachedRootNodes[index].entry else { continue }
                         expanded[gone.path]?.watcher?.cancel()
                         expanded[gone.path] = nil
+                        // The row under an inline rename is leaving: end the rename without committing, otherwise the
+                        // field editor outlives its row.
+                        if gone.path == renamingPath { endRename(commit: false, field: nil) }
                     }
                     cachedRootNodes = newNodes
                     if !removed.isEmpty || !inserted.isEmpty {
@@ -287,11 +290,16 @@ struct FileListView: NSViewRepresentable {
                         outlineView.insertItems(at: inserted, inParent: nil, withAnimation: [])
                         outlineView.endUpdates()
                     }
-                    // Kept rows may show new metadata (size, date, cloud state): redraw what is on screen.
+                    // Kept rows may show new metadata (size, date, cloud state): redraw what is on screen — except the
+                    // row being renamed (reloading it would replace the field editor; FileOctopus removes `editedRow`
+                    // from the same set, decompiled 2026-10-26).
                     let visible: NSRange = outlineView.rows(in: outlineView.visibleRect)
                     if visible.length > 0 {
-                        outlineView.reloadData(forRowIndexes: IndexSet(integersIn: visible.location..<(visible.location + visible.length)),
-                                               columnIndexes: IndexSet(integersIn: 0..<outlineView.numberOfColumns))
+                        var rows = IndexSet(integersIn: visible.location..<(visible.location + visible.length))
+                        if outlineView.editedRow >= 0 { rows.remove(outlineView.editedRow) }
+                        if !rows.isEmpty {
+                            outlineView.reloadData(forRowIndexes: rows, columnIndexes: IndexSet(integersIn: 0..<outlineView.numberOfColumns))
+                        }
                     }
                     lastUseGroups = useGroups
                     return
