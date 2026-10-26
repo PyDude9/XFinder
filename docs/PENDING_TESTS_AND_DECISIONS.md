@@ -304,6 +304,10 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | Q-T31-2 | Badge đám mây đọc theo lô 50 ở nền (CloudLookupBatch)? | mặc định: có, sau T-T31 |
 | Q-T31-3 | MainThreadWatchdog bản Debug (log + sample khi main > 250 ms)? | mặc định: có |
 | Q-T32-0…13 | Hướng Tilde cho trình duyệt (spec `docs/specs/XF-T32-tilde-direction.md`) | 2026-10-26 chủ dự án chọn: làm cả W0 → W1+W2+W3 → W4+W5 → W6, fan-out agent theo file; mặc định Q-T32-* giữ nguyên trừ khi trả lời bằng mã |
+| T-T32-W0-1 | Mở một thư mục nhiều tệp, sang thư mục khác, quay lại | lần quay lại danh sách hiện ngay (từ cache), vài trăm ms sau tự vá nếu có tệp đổi; không chớp spinner |
+| T-T32-W0-2 | Side by Side, hai ngăn cùng một thư mục; tạo một tệp mới trong Finder | cả hai ngăn cùng hiện tệp mới (một watcher chung), không ngăn nào mất cuộn/chọn |
+| T-T32-W0-3 | Chọn một thư mục con, ⌘↑ | thư mục vừa rời được chọn sẵn ở thư mục cha (cả khi danh sách đến từ cache) |
+| Q-T31-1 | (đã áp 26/10) Hai ngăn/tab cùng thư mục dùng chung listing + watcher | `DirectoryLoadCoordinator`, `60e8e71` |
 | W6-MERGE-QUEUE | **Đã làm** (`.merge` job): gộp hiện trong bảng Thao tác, tạm dừng / huỷ được, bước lỗi vào Sự cố, ⌘Z đưa từng mục về chỗ cũ | thử: gộp hai thư mục trùng tên lớn, bấm Tạm dừng giữa chừng, rồi ⌘Z |
 | Q-PRO-5 | Tạo cặp khoá ký giấy phép trên máy bạn: `swift scripts/make-license.swift init ~/Private/xfinder-license.key`, dán khoá công khai in ra vào `LicenseKey.publicKeyRaw` | chưa có ⇒ mọi khoá không hợp lệ; dùng thử + bản Debug vẫn đủ |
 | Q-PRO-6 | Free: xuất toàn bộ lịch sử Clipboard (.xfinderclip) có bị giới hạn 50 mục không? | **Mặc định: không** — dữ liệu của chính người dùng (luật 9) |
