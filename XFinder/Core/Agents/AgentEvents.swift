@@ -182,7 +182,7 @@ enum AgentEvents {
     }
 
     /// Days since 1970-01-01 in the proleptic Gregorian calendar (Howard Hinnant's `days_from_civil`).
-    private static func daysFromCivil(year: Int, month: Int, day: Int) -> Int {
+    static func daysFromCivil(year: Int, month: Int, day: Int) -> Int {
         let y = month <= 2 ? year - 1 : year
         let era = (y >= 0 ? y : y - 399) / 400
         let yoe = y - era * 400
@@ -212,11 +212,29 @@ enum AgentEvents {
         let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime]; return f
     }()
 
-    /// The day file a hook line lands in (UTC, like the hook's `date -u`).
+    /// The day file a hook line lands in (UTC, like the hook's `date -u`). Arithmetic, not a `DateFormatter`: this runs
+    /// on every coalesced hook event (sampled 2026-10-26: 475 of 935 busy main-thread samples were formatter set-up here).
     static func eventsFileName(for date: Date) -> String {
-        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(identifier: "UTC")
-        f.dateFormat = "yyyy-MM-dd"
-        return "events-\(f.string(from: date)).jsonl"
+        let seconds = date.timeIntervalSince1970.rounded(.down)
+        let days = Int((seconds / 86_400).rounded(.down))
+        let (y, m, d) = civilFromDays(days)
+        func two(_ v: Int) -> String { v < 10 ? "0\(v)" : String(v) }
+        return "events-\(y)-\(two(m))-\(two(d)).jsonl"
+    }
+
+    /// Proleptic Gregorian date of a day count since 1970-01-01 (Howard Hinnant's `civil_from_days`; the inverse of
+    /// `daysFromCivil`).
+    static func civilFromDays(_ z: Int) -> (year: Int, month: Int, day: Int) {
+        let z = z + 719_468
+        let era = (z >= 0 ? z : z - 146_096) / 146_097
+        let doe = z - era * 146_097
+        let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365
+        let y = yoe + era * 400
+        let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+        let mp = (5 * doy + 2) / 153
+        let d = doy - (153 * mp + 2) / 5 + 1
+        let m = mp < 10 ? mp + 3 : mp - 9
+        return (m <= 2 ? y + 1 : y, m, d)
     }
 
     /// Day files the hook wrote more than `keepDays` days ago. Nothing ever removed them: measured 2026-10-23, 10 days

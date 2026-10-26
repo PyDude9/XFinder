@@ -64,6 +64,26 @@ final class AgentSessionTests: XCTestCase {
                        "an offset goes through the formatter")
     }
 
+    func testEventsFileNameMatchesTheUTCFormatter() {
+        let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "yyyy-MM-dd"
+        // Every 7 h 13 min across 1969…2101 (crosses every month end, leap days, the epoch and negative days), plus the
+        // exact second before and after a UTC midnight.
+        var t = Date(timeIntervalSince1970: -40_000_000)
+        while t.timeIntervalSince1970 < 4_150_000_000 {
+            XCTAssertEqual(AgentEvents.eventsFileName(for: t), "events-\(f.string(from: t)).jsonl", "\(t)")
+            t = t.addingTimeInterval(7 * 3_600 + 13 * 60)
+        }
+        for s in [1_761_436_799.0, 1_761_436_800.0, 1_761_436_800.9, -1.0, 0.0] {
+            let d = Date(timeIntervalSince1970: s)
+            XCTAssertEqual(AgentEvents.eventsFileName(for: d), "events-\(f.string(from: d)).jsonl", "\(s)")
+        }
+        for days in [-1, 0, 1, 19_000, 59, 60, 11_016] {
+            let (y, m, d) = AgentEvents.civilFromDays(days)
+            XCTAssertEqual(AgentEvents.daysFromCivil(year: y, month: m, day: d), days, "round trip \(days)")
+        }
+    }
+
     func testSessionIDsAreAsciiWordCharactersOnly() {
         XCTAssertTrue(AgentEvents.isSafeSessionID(sid))
         XCTAssertTrue(AgentEvents.isSafeSessionID("abc_DEF-09"))

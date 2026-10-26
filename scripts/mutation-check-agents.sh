@@ -454,6 +454,10 @@ run "R8 March-based month shift is off by one" XFinder/Core/Agents/AgentEvents.s
   "'        let mp = (month + 9) % 12'" "'        let mp = (month + 10) % 12'"
 run "R9 a dot passes as a session id character" XFinder/Core/Agents/AgentEvents.swift \
   "'|| b == 0x2D || b == 0x5F'" "'|| b == 0x2D || b == 0x5F || b == 0x2E'"
+run "R10 the day file name is off by one day" XFinder/Core/Agents/AgentEvents.swift \
+  "'        let d = doy - (153 * mp + 2) / 5 + 1'" "'        let d = doy - (153 * mp + 2) / 5'"
+run "R11 January and February stay in the previous civil year" XFinder/Core/Agents/AgentEvents.swift \
+  "'        return (m <= 2 ? y + 1 : y, m, d)'" "'        return (y, m, d)'"
 
 [ -n "${DRY:-}" ] && { [ "$DRY_BAD" = "0" ] && echo "DRY: every anchor found exactly once" && exit 0; echo "DRY: anchors missing"; exit 1; }
 restore
