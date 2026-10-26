@@ -97,6 +97,7 @@ import os
     }
 
     @MainActor private final class Session {
+        /// Lexical key (`LoadCoordinatorRules.lexicalPath`) — also the path that is read, watched and cached.
         let path: String
         var subscribers: [UUID: Subscriber] = [:]
         /// Subscription order, so deliveries reach panes in the order they subscribed.
@@ -110,10 +111,11 @@ import os
         init(path: String) { self.path = path }
     }
 
-    /// Same folder ⇒ same key: `~`, `.`, `..`, duplicate and trailing slashes are folded by `standardizingPath`.
+    /// Same folder ⇒ same key. Lexical only (`~`, `.`, `..`, duplicate and trailing slashes): `standardizingPath`
+    /// also strips `/private` from an EXISTING `/private/var/…`, and the key is the path that gets read, so entry
+    /// paths would come back under a spelling the pane never asked for.
     private static func sessionKey(for path: String) -> String {
-        let standardized: String = (path as NSString).standardizingPath
-        return standardized.isEmpty ? path : standardized
+        LoadCoordinatorRules.lexicalPath((path as NSString).expandingTildeInPath)
     }
 
     private func isLive(_ session: Session) -> Bool { sessions[session.path] === session }
@@ -231,7 +233,7 @@ import os
         }
     }
 
-    /// `lstat` off the main thread (a dead network share must not freeze the UI).
+    /// `stat` off the main thread (a dead network share must not freeze the UI).
     private static func statToken(_ path: String) async -> ListingToken? {
         await Task.detached(priority: .userInitiated) { ListingDiskCache.currentToken(for: path) }.value
     }

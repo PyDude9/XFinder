@@ -66,6 +66,8 @@ enum ListingCacheRules {
     static let maxCachedEntries: Int = 20_000
     /// Target total size of the cache database.
     static let budgetBytes: Int64 = 64 << 20
+    /// `journal_size_limit` for the cache's -wal file.
+    static let walLimitBytes: Int64 = 8 << 20
     static let schemaVersion: Int32 = 1
 
     /// `current` nil (lstat failed: folder gone or unreadable) ⇒ never fresh. A rename keeps mtime but the token of the

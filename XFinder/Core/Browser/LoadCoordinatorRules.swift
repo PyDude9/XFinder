@@ -14,6 +14,26 @@ struct ListingDelivery: Sendable {
 }
 
 enum LoadCoordinatorRules {
+    /// Folds `.`, `..`, duplicate and trailing slashes without touching the file system (symlinks, `/private`
+    /// stay as spelled). `..` above the root stays at the root; a relative path stays relative; "" stays "".
+    static func lexicalPath(_ path: String) -> String {
+        guard !path.isEmpty else { return path }
+        let absolute: Bool = path.hasPrefix("/")
+        var parts: [Substring] = []
+        for part in path.split(separator: "/", omittingEmptySubsequences: true) {
+            switch part {
+            case ".": continue
+            case "..":
+                if let last: Substring = parts.last, last != ".." { parts.removeLast() }
+                else if !absolute { parts.append(part) }
+            default: parts.append(part)
+            }
+        }
+        let joined: String = parts.joined(separator: "/")
+        if absolute { return "/" + joined }
+        return joined.isEmpty ? "." : joined
+    }
+
     /// How many folder reads may hit the disk at the same time (shared by every pane).
     static let diskReadConcurrency: Int = 4
 
@@ -21,7 +41,9 @@ enum LoadCoordinatorRules {
 
     /// What to do when a folder session starts:
     /// - no cache (or a cache row without a token) ⇒ `[.readDisk]`;
-    /// - cache whose token equals the folder's current `lstat` token ⇒ `[.deliverCache(final: true)]`;
+    /// - cache whose token equals the folder's current `stat` token ⇒ `[.deliverCache(final: true), .readDisk]`:
+    ///   the copy is shown as fresh, but a child's size/dates change without touching the folder's own token, so a
+    ///   background read still revalidates (the pane patches the difference in place);
     /// - cache whose token differs, or the current token is unknown (stat failed) ⇒ show the cache now and
     ///   read the disk right after: `[.deliverCache(final: false), .readDisk]`. A failed stat never counts as fresh —
     ///   the disk read is what reports the real error.
@@ -30,7 +52,7 @@ enum LoadCoordinatorRules {
         guard let currentToken: ListingToken = current, currentToken == storedToken else {
             return [.deliverCache(final: false), .readDisk]
         }
-        return [.deliverCache(final: true)]
+        return [.deliverCache(final: true), .readDisk]
     }
 
     /// Pure membership book: which subscriber ids are attached to which (already normalised) folder path.

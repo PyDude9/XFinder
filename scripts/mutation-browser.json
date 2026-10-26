@@ -1363,5 +1363,124 @@
   "file": "XFinder/Core/Browser/ListingDiff.swift",
   "anchor": "return removed.count + inserted.count <= maxPatchedRows",
   "replacement": "return true"
+ },
+ {
+  "id": "W0-01",
+  "name": "fresh-ignores-nil",
+  "file": "XFinder/Core/Browser/ListingCacheRules.swift",
+  "anchor": "        guard let current: ListingToken = current else { return false }",
+  "replacement": "        guard let current: ListingToken = current else { return true }"
+ },
+ {
+  "id": "W0-02",
+  "name": "store-negative",
+  "file": "XFinder/Core/Browser/ListingCacheRules.swift",
+  "anchor": "        entryCount >= 0 && entryCount <= maxCachedEntries",
+  "replacement": "        entryCount <= maxCachedEntries"
+ },
+ {
+  "id": "W0-03",
+  "name": "evict-newest-first",
+  "file": "XFinder/Core/Browser/ListingCacheRules.swift",
+  "anchor": "if lhs.updatedAt != rhs.updatedAt { return lhs.updatedAt < rhs.updatedAt }",
+  "replacement": "if lhs.updatedAt != rhs.updatedAt { return lhs.updatedAt > rhs.updatedAt }"
+ },
+ {
+  "id": "W0-04",
+  "name": "evict-one-extra",
+  "file": "XFinder/Core/Browser/ListingCacheRules.swift",
+  "anchor": "            if remaining <= budgetBytes { break }",
+  "replacement": "            if remaining < 0 { break }"
+ },
+ {
+  "id": "W0-05",
+  "name": "plan-match-skips-disk",
+  "file": "XFinder/Core/Browser/LoadCoordinatorRules.swift",
+  "anchor": "        return [.deliverCache(final: true), .readDisk]",
+  "replacement": "        return [.deliverCache(final: true)]"
+ },
+ {
+  "id": "W0-06",
+  "name": "lexical-dotdot-ignored",
+  "file": "XFinder/Core/Browser/LoadCoordinatorRules.swift",
+  "anchor": "                if let last: Substring = parts.last, last != \"..\" { parts.removeLast() }",
+  "replacement": "                if let last: Substring = parts.last, last != \"..\" { _ = last }"
+ },
+ {
+  "id": "W0-07",
+  "name": "book-never-closes",
+  "file": "XFinder/Core/Browser/LoadCoordinatorRules.swift",
+  "anchor": "            if ids.isEmpty {",
+  "replacement": "            if ids.isEmpty && false {"
+ },
+ {
+  "id": "W0-08",
+  "name": "hitch-threshold-exclusive",
+  "file": "XFinder/Core/Browser/HitchRules.swift",
+  "anchor": "        return latency >= threshold && latency <= sleepWakeCutoff",
+  "replacement": "        return latency >= threshold"
+ },
+ {
+  "id": "W0-09",
+  "name": "sample-cap-off-by-one",
+  "file": "XFinder/Core/Browser/HitchRules.swift",
+  "anchor": "        return recentCount < maxSamplesPerHour",
+  "replacement": "        return recentCount <= maxSamplesPerHour"
+ },
+ {
+  "id": "W0-10",
+  "name": "pressure-critical-as-warning",
+  "file": "XFinder/Core/Browser/PressureRules.swift",
+  "anchor": "        if raw & DispatchBit.critical != 0 { return .critical }",
+  "replacement": "        if raw & DispatchBit.critical != 0 { return .warning }"
+ },
+ {
+  "id": "W0-11",
+  "name": "schema-vacuum-after-wal",
+  "file": "XFinder/Core/Browser/ListingDiskCache.swift",
+  "anchor": "        try db.execute(\"PRAGMA auto_vacuum=INCREMENTAL\")\n        try db.execute(\"PRAGMA journal_mode=WAL\")",
+  "replacement": "        try db.execute(\"PRAGMA journal_mode=WAL\")\n        try db.execute(\"PRAGMA auto_vacuum=INCREMENTAL\")"
+ },
+ {
+  "id": "W0-12",
+  "name": "token-lstat",
+  "file": "XFinder/Core/Browser/ListingDiskCache.swift",
+  "anchor": "        guard stat(folderPath, &info) == 0 else { return nil }",
+  "replacement": "        guard lstat(folderPath, &info) == 0 else { return nil }"
+ },
+ {
+  "id": "W0-13",
+  "name": "old-file-not-vacuumed",
+  "file": "XFinder/Core/Browser/ListingDiskCache.swift",
+  "anchor": "            if vacuumMode != 2 { try db.execute(\"VACUUM\") }\n            // Same version",
+  "replacement": "            // Same version"
+ },
+ {
+  "id": "W0-14",
+  "name": "coordinator-key-standardizing",
+  "file": "XFinder/Core/Browser/DirectoryLoadCoordinator.swift",
+  "anchor": "        LoadCoordinatorRules.lexicalPath((path as NSString).expandingTildeInPath)",
+  "replacement": "        (path as NSString).standardizingPath"
+ },
+ {
+  "id": "W0-15",
+  "name": "coordinator-cache-only",
+  "file": "XFinder/Core/Browser/DirectoryLoadCoordinator.swift",
+  "anchor": "            case .readDisk:\n                needsDisk = true",
+  "replacement": "            case .readDisk:\n                needsDisk = false"
+ },
+ {
+  "id": "W0-16",
+  "name": "limiter-unbounded",
+  "file": "XFinder/Core/Browser/DirectoryWorkLimiter.swift",
+  "anchor": "        if running < maxConcurrent && waiters.isEmpty {",
+  "replacement": "        if true {"
+ },
+ {
+  "id": "W0-17",
+  "name": "relief-replace-appends",
+  "file": "XFinder/Core/Browser/MemoryPressureRelief.swift",
+  "anchor": "        if let index: Int = relievers.firstIndex(where: { $0.name == name }) {",
+  "replacement": "        if let index: Int = relievers.firstIndex(where: { _ in false }) {"
  }
 ]

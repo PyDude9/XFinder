@@ -255,13 +255,14 @@ final class ListingDiskCacheTests: XCTestCase {
     func testOldestFolderIsEvictedPastTheBudget() async {
         let cache: ListingDiskCache = ListingDiskCache(databaseURL: dbURL)
         let longParent: String = "/" + String(repeating: "p", count: 6_000)
-        // ≈ 6 100 bytes (path + fixed) × 1 500 rows ≈ 9.2 MB per folder; 8 folders ≈ 73 MB > 64 MB.
-        for index in 0..<8 {
+        // Estimate per row ≈ (96 fixed + 6 000 path + name + 2 × folder path) × 3/2 ≈ 9.2 KB; × 1 500 rows ≈ 13.8 MB
+        // per folder; 5 folders ≈ 69 MB > 64 MB ⇒ exactly the oldest one goes.
+        for index in 0..<5 {
             await cache.store("/f\(index)", token: token, entries: entries(1_500, in: longParent + "\(index)"))
         }
         let oldestCount: Int? = await cache.lookup("/f0")?.entries.count
         let secondCount: Int? = await cache.lookup("/f1")?.entries.count
-        let newest: Int? = await cache.lookup("/f7")?.entries.count
+        let newest: Int? = await cache.lookup("/f4")?.entries.count
         XCTAssertNil(oldestCount)
         XCTAssertEqual(secondCount, 1_500, "only as many folders as needed are evicted")
         XCTAssertEqual(newest, 1_500)
@@ -291,6 +292,48 @@ final class ListingDiskCacheTests: XCTestCase {
         let replaced: ListingToken = try XCTUnwrap(ListingDiskCache.currentToken(for: dir.path))
         XCTAssertNotEqual(replaced.inode, afterAdd?.inode)
         XCTAssertFalse(ListingCacheRules.isFresh(stored: try XCTUnwrap(afterAdd), current: replaced))
+    }
+
+    func testCurrentTokenFollowsASymlinkToItsTarget() throws {
+        let target: URL = folder.appendingPathComponent("target", isDirectory: true)
+        let other: URL = folder.appendingPathComponent("other", isDirectory: true)
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: false)
+        try FileManager.default.createDirectory(at: other, withIntermediateDirectories: false)
+        let link: URL = folder.appendingPathComponent("link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: target)
+        let before: ListingToken = try XCTUnwrap(ListingDiskCache.currentToken(for: link.path))
+        XCTAssertEqual(before, ListingDiskCache.currentToken(for: target.path), "the link is fingerprinted as its target")
+        // A change inside the target never touches the link itself (lstat would stay equal).
+        try Data("x".utf8).write(to: target.appendingPathComponent("new.txt"))
+        XCTAssertFalse(ListingCacheRules.isFresh(stored: before, current: ListingDiskCache.currentToken(for: link.path)))
+        // Retargeting the link ⇒ another inode.
+        try FileManager.default.removeItem(at: link)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: other)
+        XCTAssertEqual(ListingDiskCache.currentToken(for: link.path)?.inode, ListingDiskCache.currentToken(for: other.path)?.inode)
+    }
+
+    // MARK: Vacuum
+
+    func testFreshDatabaseIsIncrementalAutoVacuumAndShrinksAfterRemoveAll() async throws {
+        let cache: ListingDiskCache = ListingDiskCache(databaseURL: dbURL)
+        await cache.store("/big", token: token, entries: entries(3_000, in: "/" + String(repeating: "q", count: 400)))
+        let full: Int64 = await cache.approximateBytes()
+        XCTAssertEqual(try rawScalar("PRAGMA auto_vacuum"), 2, "INCREMENTAL must be set before WAL writes page 1")
+        await cache.removeAll()
+        let emptied: Int64 = await cache.approximateBytes()
+        XCTAssertLessThan(emptied, full / 4, "full=\(full) emptied=\(emptied)")
+    }
+
+    func testOldFileWithoutAutoVacuumIsRebuiltOnOpen() async throws {
+        try rawExecute([
+            "PRAGMA journal_mode=WAL",
+            "CREATE TABLE junk (x)",
+            "PRAGMA user_version=\(ListingCacheRules.schemaVersion)"
+        ])
+        XCTAssertEqual(try rawScalar("PRAGMA auto_vacuum"), 0)
+        let cache: ListingDiskCache = ListingDiskCache(databaseURL: dbURL)
+        _ = await cache.approximateBytes()
+        XCTAssertEqual(try rawScalar("PRAGMA auto_vacuum"), 2)
     }
 
     // MARK: Measure

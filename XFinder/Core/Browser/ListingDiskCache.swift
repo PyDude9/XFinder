@@ -95,10 +95,11 @@ actor ListingDiskCache {
         }
     }
 
-    /// `lstat` of the folder itself (a symlink is fingerprinted as the link); nil when it fails.
+    /// `stat` of the folder (a symlink is followed, so a retargeted link or a change inside its target changes the
+    /// token); nil when it fails.
     nonisolated static func currentToken(for folderPath: String) -> ListingToken? {
         var info: stat = stat()
-        guard lstat(folderPath, &info) == 0 else { return nil }
+        guard stat(folderPath, &info) == 0 else { return nil }
         return ListingToken(modifiedNs: ListingTimestamp.nanoseconds(info.st_mtimespec),
                             changedNs: ListingTimestamp.nanoseconds(info.st_ctimespec),
                             size: Int64(info.st_size),
@@ -300,17 +301,27 @@ private final class ListingStatement {
 
 private enum ListingSchema {
     static func prepare(_ db: ListingConnection) throws {
+        // auto_vacuum must be chosen before anything writes page 1 — `journal_mode=WAL` does — or the file never shrinks.
+        try db.execute("PRAGMA auto_vacuum=INCREMENTAL")
         try db.execute("PRAGMA journal_mode=WAL")
         try db.execute("PRAGMA synchronous=NORMAL")
+        // The -wal file is cut back to this after a checkpoint instead of staying at its high-water mark.
+        try db.execute("PRAGMA journal_size_limit=\(ListingCacheRules.walLimitBytes)")
         let version: Int64 = try db.scalarInt64("PRAGMA user_version")
-        guard version != Int64(ListingCacheRules.schemaVersion) else { return }
+        let vacuumMode: Int64 = try db.scalarInt64("PRAGMA auto_vacuum")
+        guard version != Int64(ListingCacheRules.schemaVersion) else {
+            // A file written before auto_vacuum took effect (mode 0) is rebuilt once so eviction can shrink it.
+            if vacuumMode != 2 { try db.execute("VACUUM") }
+            // Same version but a table missing (hand-edited or half-written file) ⇒ recreate it, never fail every query.
+            try db.execute(createFolders)
+            try db.execute(createItems)
+            return
+        }
         if version != 0 {
             try db.execute("DROP TABLE IF EXISTS listing_items")
             try db.execute("DROP TABLE IF EXISTS listing_folders")
         }
-        // auto_vacuum only takes effect before the first table exists (or after VACUUM), so eviction can shrink the file.
-        try db.execute("PRAGMA auto_vacuum=INCREMENTAL")
-        if version != 0 { try db.execute("VACUUM") }
+        if version != 0 || vacuumMode != 2 { try db.execute("VACUUM") }
         try db.execute(createFolders)
         try db.execute(createItems)
         try db.execute("PRAGMA user_version=\(ListingCacheRules.schemaVersion)")
@@ -454,7 +465,7 @@ private enum ListingQueries {
             insertItem.bind(15, entry.lastOpened.map(ListingTimestamp.nanoseconds))
             insertItem.bind(16, tagsJSON)
             _ = try insertItem.step()
-            totalBytes &+= ListingRowSize.estimate(entry, tagsJSON: tagsJSON)
+            totalBytes &+= ListingRowSize.estimate(entry, tagsJSON: tagsJSON, folderPath: folderPath)
         }
         let insertHeader: ListingStatement = try db.prepare("""
             INSERT INTO listing_folders (folder_path, modified_ns, changed_ns, size, inode, item_count, bytes, updated_at)
@@ -483,12 +494,14 @@ private enum ListingQueries {
 }
 
 private enum ListingRowSize {
-    /// Fixed columns + key overhead ≈ 96 bytes; the variable part is the text the row stores.
+    /// Fixed columns + record overhead ≈ 96 bytes. The folder path sits in every row AND in the
+    /// (folder_path, sort_order) key index, so it counts twice; b-tree pages run about 2/3 full, hence the +1/2.
     static let fixedBytes: Int64 = 96
 
-    static func estimate(_ entry: DirectoryEntry, tagsJSON: String?) -> Int64 {
-        let variable: Int = entry.name.utf8.count + entry.path.utf8.count + (tagsJSON?.utf8.count ?? 0)
-        return fixedBytes + Int64(variable)
+    static func estimate(_ entry: DirectoryEntry, tagsJSON: String?, folderPath: String) -> Int64 {
+        let text: Int = entry.name.utf8.count + entry.path.utf8.count + (tagsJSON?.utf8.count ?? 0)
+        let raw: Int64 = fixedBytes + Int64(text) + 2 * Int64(folderPath.utf8.count)
+        return raw + raw / 2
     }
 }
 

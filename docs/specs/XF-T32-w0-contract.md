@@ -22,7 +22,7 @@ UI. File thuần = chỉ `import Foundation`, symlink vào `Tests/XFinderLogicTe
 + `ListingDiskCacheTests.swift` (DB trong thư mục tạm, không chạm DB thật).
 
 ```swift
-/// Dấu vân tay của một thư mục lúc liệt kê: `lstat` của chính thư mục. Bằng nhau ⇒ listing trong cache còn đúng.
+/// Dấu vân tay của một thư mục lúc liệt kê: `stat` của thư mục (đi theo symlink — sửa sau verify W0). Bằng nhau ⇒ listing trong cache còn đúng.
 struct ListingToken: Equatable, Codable, Sendable {
     let modifiedNs: Int64      // st_mtimespec
     let changedNs: Int64       // st_ctimespec
@@ -57,7 +57,7 @@ actor ListingDiskCache {
     func invalidate(_ folderPath: String)
     func removeAll()
     func approximateBytes() -> Int64                      // page_count × page_size
-    nonisolated static func currentToken(for folderPath: String) -> ListingToken?   // lstat, nil khi lỗi
+    nonisolated static func currentToken(for folderPath: String) -> ListingToken?   // stat (theo symlink), nil khi lỗi
 }
 ```
 
@@ -90,7 +90,8 @@ struct ListingDelivery: Sendable {
 enum LoadCoordinatorRules {
     static let diskReadConcurrency: Int = 4
     enum Decision: Equatable { case deliverCache(final: Bool), readDisk }
-    /// Quyết định khi có người đăng ký mới: có cache + token khớp ⇒ [.deliverCache(final: true)];
+    /// Quyết định khi có người đăng ký mới: có cache + token khớp ⇒ [.deliverCache(final: true), .readDisk]
+    /// (luôn đọc lại nền: kích thước/ngày của tệp con đổi mà token thư mục không đổi — sửa sau verify W0);
     /// có cache + lệch ⇒ [.deliverCache(final: false), .readDisk]; không cache ⇒ [.readDisk].
     static func plan(hasCache: Bool, stored: ListingToken?, current: ListingToken?) -> [Decision]
     /// Sổ đăng ký thuần: subscribe/unsubscribe theo đường dẫn, trả về .started (phiên mới) / .joined / .left / .closed.

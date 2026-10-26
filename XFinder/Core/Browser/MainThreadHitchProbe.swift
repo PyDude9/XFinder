@@ -178,15 +178,20 @@ private enum HitchSampler {
         return formatter.string(from: date)
     }
 
-    /// Never overwrites an earlier capture taken in the same second.
-    private static func uniqueFile(in directory: URL, stem: String) -> URL {
-        var candidate: URL = directory.appendingPathComponent(stem + ".txt")
-        var suffix: Int = 2
-        while FileManager.default.fileExists(atPath: candidate.path) {
-            candidate = directory.appendingPathComponent("\(stem)-\(suffix).txt")
-            suffix += 1
+    /// Never overwrites an earlier capture taken in the same second: the name is RESERVED with `O_CREAT | O_EXCL`,
+    /// so two captures racing on the utility queue cannot both pick the same free name. nil after 1 000 tries.
+    private static func uniqueFile(in directory: URL, stem: String) -> URL? {
+        for suffix in 1...1_000 {
+            let name: String = suffix == 1 ? stem + ".txt" : "\(stem)-\(suffix).txt"
+            let candidate: URL = directory.appendingPathComponent(name)
+            let descriptor: Int32 = open(candidate.path, O_CREAT | O_EXCL | O_WRONLY, 0o644)
+            if descriptor >= 0 {
+                close(descriptor)
+                return candidate
+            }
+            guard errno == EEXIST else { return nil }
         }
-        return candidate
+        return nil
     }
 
     private static func run(pid: Int32, output: URL) {

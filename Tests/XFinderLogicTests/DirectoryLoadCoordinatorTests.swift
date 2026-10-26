@@ -45,6 +45,7 @@ import XCTest
     private var root: URL!
     private var spy: WatcherFactorySpy!
     private var coordinator: DirectoryLoadCoordinator!
+    private var cache: ListingDiskCache!
 
     override func setUp() async throws {
         let base: URL = FileManager.default.temporaryDirectory.appendingPathComponent("xf-coord-\(UUID().uuidString)")
@@ -55,12 +56,14 @@ import XCTest
         root = base
         spy = WatcherFactorySpy()
         let cache: ListingDiskCache = ListingDiskCache(databaseURL: base.appendingPathComponent("listing-cache.sqlite"))
+        self.cache = cache
         coordinator = DirectoryLoadCoordinator(cache: cache, limiter: DirectoryWorkLimiter(maxConcurrent: 4),
                                                watcherFactory: spy.factory)
     }
 
     override func tearDown() async throws {
         coordinator = nil
+        cache = nil
         spy = nil
         if let root { try? FileManager.default.removeItem(at: root) }
         root = nil
@@ -85,6 +88,44 @@ import XCTest
 
     private func settle(_ seconds: TimeInterval = 0.3) async {
         try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+    }
+
+    // MARK: - Cache phase
+
+    func testCacheHitDeliversCacheFirstThenRevalidatesFromDisk() async throws {
+        // Seed the cache with a listing that differs from disk (2 rows vs 3) under the folder's current token.
+        let token: ListingToken = try XCTUnwrap(ListingDiskCache.currentToken(for: folder))
+        let all: [DirectoryEntry] = try DirectoryReader.list(folder).get()
+        let seeded: [DirectoryEntry] = Array(all.prefix(2))
+        XCTAssertEqual(seeded.count, 2)
+        await cache.store(folder, token: token, entries: seeded)
+        let recorder: Recorder = Recorder()
+        let sub: ListingSubscription = subscribe(folder, recorder)
+        await waitUntil("cache then disk") { recorder.results.count >= 2 }
+        guard case .success(let first) = recorder.results[0], case .success(let second) = recorder.results[1] else {
+            return XCTFail("expected two successes")
+        }
+        XCTAssertEqual(first.source, .cache)
+        XCTAssertEqual(first.entries.count, 2)
+        XCTAssertEqual(first.isFinal, true, "matching token ⇒ shown as fresh")
+        XCTAssertEqual(second.source, .disk, "a matching token still revalidates: a child can change in place")
+        XCTAssertEqual(second.entries.count, 3)
+        sub.cancel()
+    }
+
+    func testReadsWithTheSubscribersOwnSpellingNotTheStandardizedKey() async throws {
+        // NSTemporaryDirectory is /var/folders/… — a symlink into /private/var. standardizingPath strips /private,
+        // so reading with the session key would hand back entries under a path the pane never asked for.
+        guard folder.hasPrefix("/var/") else { throw XCTSkip("temporary directory is not under /var") }
+        let spelled: String = "/private" + folder
+        let recorder: Recorder = Recorder()
+        let sub: ListingSubscription = subscribe(spelled, recorder)
+        await waitUntil("delivered") { !recorder.diskDeliveries.isEmpty }
+        let paths: [String] = recorder.diskDeliveries.first?.entries.map(\.path) ?? []
+        XCTAssertEqual(paths.count, 3)
+        XCTAssertTrue(paths.allSatisfy { $0.hasPrefix(spelled + "/") }, "\(paths)")
+        XCTAssertEqual(spy.paths, [spelled], "the watcher follows the same spelling")
+        sub.cancel()
     }
 
     // MARK: - Sharing

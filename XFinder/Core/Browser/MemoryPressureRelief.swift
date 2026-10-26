@@ -32,6 +32,14 @@ import Foundation
         pressure.resume()
     }
 
+    /// Cancels the source (tests, or a future opt-out). `start()` may be called again afterwards.
+    func stop() {
+        source?.cancel()
+        source = nil
+    }
+
+    var isRunning: Bool { source != nil }
+
     /// Registers a reliever; a second registration under the same name replaces the first in place
     /// (keeps its original position, so order stays stable across re-registration).
     func register(_ name: String, _ reliever: @escaping @MainActor (PressureRules.Plan) -> Void) {

@@ -20,9 +20,10 @@ final class LoadCoordinatorRulesTests: XCTestCase {
         XCTAssertEqual(LoadCoordinatorRules.plan(hasCache: true, stored: nil, current: tokenA), [.readDisk])
     }
 
-    func testMatchingTokenDeliversFinalCacheOnly() {
+    func testMatchingTokenDeliversFinalCacheThenRevalidates() {
+        // A child's size or dates can change without touching the folder token ⇒ always revalidate.
         XCTAssertEqual(LoadCoordinatorRules.plan(hasCache: true, stored: tokenA, current: token()),
-                       [.deliverCache(final: true)])
+                       [.deliverCache(final: true), .readDisk])
     }
 
     func testEveryTokenFieldMismatchRevalidates() {
@@ -39,20 +40,33 @@ final class LoadCoordinatorRulesTests: XCTestCase {
                        [.deliverCache(final: false), .readDisk])
     }
 
-    func testPlanAlwaysEndsInEitherFinalCacheOrDiskRead() {
+    func testPlanAlwaysEndsInExactlyOneDiskRead() {
         let tokens: [ListingToken?] = [nil, tokenA, token(inode: 7)]
         for hasCache in [false, true] {
             for stored in tokens {
                 for current in tokens {
                     let plan: [LoadCoordinatorRules.Decision] = LoadCoordinatorRules.plan(hasCache: hasCache, stored: stored, current: current)
                     XCTAssertFalse(plan.isEmpty)
-                    let last: LoadCoordinatorRules.Decision? = plan.last
-                    XCTAssertTrue(last == .readDisk || last == .deliverCache(final: true), "\(plan)")
-                    if plan.contains(.deliverCache(final: false)) { XCTAssertEqual(plan.last, .readDisk) }
+                    XCTAssertEqual(plan.last, .readDisk, "\(plan)")
+                    XCTAssertEqual(plan.filter { $0 == .readDisk }.count, 1, "\(plan)")
                     if !hasCache { XCTAssertEqual(plan, [.readDisk]) }
                 }
             }
         }
+    }
+
+    func testLexicalPathFoldsWithoutTouchingTheDisk() {
+        XCTAssertEqual(LoadCoordinatorRules.lexicalPath("/private/var/x/sub/../sub/"), "/private/var/x/sub")
+        XCTAssertEqual(LoadCoordinatorRules.lexicalPath("/var//a/./b"), "/var/a/b")
+        XCTAssertEqual(LoadCoordinatorRules.lexicalPath("/"), "/")
+        XCTAssertEqual(LoadCoordinatorRules.lexicalPath("//"), "/")
+        XCTAssertEqual(LoadCoordinatorRules.lexicalPath("/.."), "/")
+        XCTAssertEqual(LoadCoordinatorRules.lexicalPath("/a/../.."), "/")
+        XCTAssertEqual(LoadCoordinatorRules.lexicalPath(""), "")
+        XCTAssertEqual(LoadCoordinatorRules.lexicalPath("a/../.."), "..")
+        XCTAssertEqual(LoadCoordinatorRules.lexicalPath("a/.."), ".")
+        XCTAssertEqual(LoadCoordinatorRules.lexicalPath("/a/b..c/..."), "/a/b..c/...")
+        XCTAssertEqual(LoadCoordinatorRules.lexicalPath("/Tài liệu/./ảnh"), "/Tài liệu/ảnh")
     }
 
     func testDiskReadConcurrency() {
