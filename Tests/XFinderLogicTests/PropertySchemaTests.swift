@@ -30,14 +30,16 @@ final class PropertySchemaTests: XCTestCase {
         XCTAssertEqual(catalog.add(name: " Status ").name, "Status 4")
     }
 
-    func testDuplicateCheckIsNFCNFDAndDiacriticInsensitive() {
+    func testDuplicateCheckIsNFCNFDInsensitiveButKeepsToneMarks() {
         var catalog: PropertyCatalog = PropertyCatalog()
         let nfc: String = "Trạng thái".precomposedStringWithCanonicalMapping
         let nfd: String = "Trạng thái".decomposedStringWithCanonicalMapping
         XCTAssertNotEqual(Array(nfc.utf8), Array(nfd.utf8))
         XCTAssertEqual(catalog.add(name: nfc).name, nfc)
         XCTAssertEqual(catalog.add(name: nfd).name, nfd + " 2")
-        XCTAssertEqual(catalog.add(name: "TRANG THAI").name, "TRANG THAI 3")
+        // Tone marks are part of a Vietnamese word: "TRANG THAI" is a different name, not a duplicate.
+        XCTAssertEqual(catalog.add(name: "TRANG THAI").name, "TRANG THAI")
+        XCTAssertEqual(catalog.add(name: "TRẠNG THÁI").name, "TRẠNG THÁI 3")
     }
 
     func testRename() {

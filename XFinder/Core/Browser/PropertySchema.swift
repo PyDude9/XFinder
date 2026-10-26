@@ -54,8 +54,8 @@ struct PropertyCatalog: Codable, Equatable, Sendable {
 
     // MARK: - Definitions
 
-    /// Adds a select property. Empty / whitespace-only name ⇒ `defaultNameKey`; a name already taken (compared folded:
-    /// case, diacritics and NFC/NFD insensitive) gets " 2", " 3"… until it is unique.
+    /// Adds a select property. Empty / whitespace-only name ⇒ `defaultNameKey`; a name already taken (compared by NFC +
+    /// case only — tone marks stay significant) gets " 2", " 3"… until it is unique.
     mutating func add(name: String) -> PropertyDefinition {
         let trimmed: String = PropertyNaming.trimmed(name)
         let base: String = trimmed.isEmpty ? Self.defaultNameKey : trimmed
@@ -152,8 +152,9 @@ private enum PropertyNaming {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// NFC + case only. Diacritics stay significant: "Mã", "Má" and "Ma" are different Vietnamese words.
     static func foldedKey(_ name: String) -> [UInt8] {
-        EntryRules.foldBytes(name.precomposedStringWithCanonicalMapping)
+        Array(name.precomposedStringWithCanonicalMapping.lowercased().utf8)
     }
 
     /// `base` when no folded match is taken, else the first free "base 2", "base 3"…

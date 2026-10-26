@@ -117,7 +117,8 @@ enum NicknameRules {
     static func normalized(_ raw: String) -> String? {
         var out: String = ""
         var pendingSpace: Bool = false
-        for character in raw {
+        // NFC first: a pasted or HFS+-sourced NFD nickname would otherwise be stored, searched and compared apart.
+        for character in raw.precomposedStringWithCanonicalMapping {
             if isWhitespace(character) {
                 pendingSpace = !out.isEmpty
                 continue
@@ -136,12 +137,12 @@ enum NicknameRules {
         return trimmed.isEmpty ? nil : trimmed
     }
 
-    /// The ⌘K/filter search key of an item: folded name, then (after a newline byte, so a query never matches across
-    /// the two) the folded nickname. Same folding as `EntryRules.foldBytes`.
+    /// The ⌘K/filter search key of an item: folded name, then (after a NUL byte — a file name can hold a newline but
+    /// never NUL — so a query never matches across the two) the folded nickname. Same folding as `EntryRules.foldBytes`.
     static func searchKey(name: String, nickname: String?) -> [UInt8] {
         var key: [UInt8] = EntryRules.foldBytes(name)
         guard let nickname, let clean = normalized(nickname) else { return key }
-        key.append(0x0A)
+        key.append(0x00)
         key.append(contentsOf: EntryRules.foldBytes(clean))
         return key
     }

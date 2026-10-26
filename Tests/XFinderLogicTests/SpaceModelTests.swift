@@ -348,13 +348,16 @@ final class SpaceModelTests: XCTestCase {
             ["id": "not-a-uuid", "name": "Bad id"],
             ["id": UUID().uuidString],
             ["id": UUID().uuidString, "name": 7],
-            ["id": UUID().uuidString, "name": "Bad sidebar", "sidebar": "oops"],
             "string element",
         ]
-        let spaces: [Any] = [spaceJSON(id: good1, name: "One")] + damaged + [spaceJSON(id: good2, name: "Two")]
+        // A Space whose sidebar alone is damaged keeps its name and gets a default sidebar (review 2026-10-26).
+        let badSidebar: UUID = UUID()
+        let spaces: [Any] = [spaceJSON(id: good1, name: "One")] + damaged
+            + [["id": badSidebar.uuidString, "name": "Bad sidebar", "sidebar": "oops"]] + [spaceJSON(id: good2, name: "Two")]
         let data: Data = json(["spaces": spaces, "activeID": good2.uuidString])
         let store: SpaceStore = SpaceStore.decode(data, fallbackLayout: SidebarLayout())
-        XCTAssertEqual(store.spaces.map(\.id), [good1, good2])
+        XCTAssertEqual(store.spaces.map(\.id), [good1, badSidebar, good2])
+        XCTAssertEqual(store.spaces[1].sidebar.favorites.map(\.path), SidebarLayout().favorites.map(\.path))
         XCTAssertEqual(store.active.name, "Two")
     }
 

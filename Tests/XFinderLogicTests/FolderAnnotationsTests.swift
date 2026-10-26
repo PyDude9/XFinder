@@ -128,7 +128,7 @@ final class FolderAnnotationsTests: XCTestCase {
         XCTAssertEqual(NicknameRules.searchKey(name: "Đơn.pdf", nickname: nil), EntryRules.foldBytes("Đơn.pdf"))
         XCTAssertEqual(NicknameRules.searchKey(name: "Đơn.pdf", nickname: "   "), EntryRules.foldBytes("Đơn.pdf"))
         let key: [UInt8] = NicknameRules.searchKey(name: "Đơn.pdf", nickname: " Hoá Đơn\nThuế ")
-        XCTAssertEqual(key, EntryRules.foldBytes("Đơn.pdf") + [0x0A] + Array("hoa don thue".utf8))
+        XCTAssertEqual(key, EntryRules.foldBytes("Đơn.pdf") + [0x00] + Array("hoa don thue".utf8))
     }
 
     // MARK: - EmojiRules

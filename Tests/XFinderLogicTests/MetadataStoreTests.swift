@@ -196,7 +196,7 @@ final class MetadataStoreTests: XCTestCase {
         await store.setPins(["/a/b/c", "/a/b"], in: "/a/b")
         await store.setPins(["/a/b"], in: "/a")
         await store.setEmoji("📁", for: "/a/b")
-        await store.setEmoji("🗂", for: "/a/bc")
+        await store.setEmoji("📁", for: "/a/bc")
         let showP: [(property: UUID, showInView: Bool)] = [(property: p, showInView: true)]
         await store.setFolderProperties("/a/b", showP)
         let rel: FolderRelation = FolderRelation(id: UUID(), a: "/a/b/c", b: "/a/bc")
@@ -225,7 +225,7 @@ final class MetadataStoreTests: XCTestCase {
         let emojiNew: String? = await store.emoji(for: "/z/new")
         XCTAssertEqual(emojiNew, "📁")
         let emojiBC: String? = await store.emoji(for: "/a/bc")
-        XCTAssertEqual(emojiBC, "🗂")
+        XCTAssertEqual(emojiBC, "📁")
         let props: [(property: UUID, showInView: Bool)] = await store.folderProperties("/z/new")
         XCTAssertEqual(props.map(\.property), [p])
         let relations: [FolderRelation] = await store.relations()

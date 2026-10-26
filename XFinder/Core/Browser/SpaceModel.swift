@@ -252,14 +252,17 @@ private enum SpaceDecoder {
         return result
     }
 
-    /// A Space is damaged (nil) when its id is not a UUID string, its name is not a string, or its sidebar is present
-    /// but not an object. A missing sidebar reads as a fresh default one.
+    /// A Space is damaged (nil) only when its id is not a UUID string or its name is not a string. A missing or
+    /// unreadable sidebar resets to a fresh default one (the name, Live Groups and workspaces survive); a blank name
+    /// reads as `defaultNewSpaceName`.
     private static func space(_ raw: Any) -> Space? {
         guard let dict: [String: Any] = raw as? [String: Any],
               let id: UUID = (dict["id"] as? String).flatMap(UUID.init(uuidString:)),
-              let name: String = dict["name"] as? String
+              let rawName: String = dict["name"] as? String
         else { return nil }
-        guard let sidebar: SidebarLayout = sidebar(dict["sidebar"]) else { return nil }
+        let trimmed: String = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name: String = trimmed.isEmpty ? SpaceStore.defaultNewSpaceName : trimmed
+        let sidebar: SidebarLayout = sidebar(dict["sidebar"]) ?? SidebarLayout()
         return Space(id: id, name: name, symbol: dict["symbol"] as? String, sidebar: sidebar,
                      liveGroups: liveGroups(dict["liveGroups"]), workspaceIDs: uuids(dict["workspaceIDs"]))
     }

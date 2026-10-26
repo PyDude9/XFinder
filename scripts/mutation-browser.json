@@ -1482,5 +1482,96 @@
   "file": "XFinder/Core/Browser/MemoryPressureRelief.swift",
   "anchor": "        if let index: Int = relievers.firstIndex(where: { $0.name == name }) {",
   "replacement": "        if let index: Int = relievers.firstIndex(where: { _ in false }) {"
+ },
+ {
+  "id": "T32W1-01",
+  "name": "property-name-case-sensitive",
+  "file": "XFinder/Core/Browser/PropertySchema.swift",
+  "anchor": "        Array(name.precomposedStringWithCanonicalMapping.lowercased().utf8)",
+  "replacement": "        Array(name.precomposedStringWithCanonicalMapping.utf8)"
+ },
+ {
+  "id": "T32W1-02",
+  "name": "property-name-nfd-apart",
+  "file": "XFinder/Core/Browser/PropertySchema.swift",
+  "anchor": "        Array(name.precomposedStringWithCanonicalMapping.lowercased().utf8)",
+  "replacement": "        Array(name.lowercased().utf8)"
+ },
+ {
+  "id": "T32W1-03",
+  "name": "sections-empty-kept",
+  "file": "XFinder/Core/Browser/PropertyRules.swift",
+  "anchor": "        for slot in 0..<optionCount where !buckets[slot].isEmpty {",
+  "replacement": "        for slot in 0..<optionCount {"
+ },
+ {
+  "id": "T32W1-04",
+  "name": "sections-unset-first",
+  "file": "XFinder/Core/Browser/PropertyRules.swift",
+  "anchor": "            let slot: Int = selections[entry.path].flatMap { slotByOption[$0] } ?? optionCount",
+  "replacement": "            let slot: Int = selections[entry.path].flatMap { slotByOption[$0] } ?? 0"
+ },
+ {
+  "id": "T32W1-05",
+  "name": "rewrite-not-component-wise",
+  "file": "XFinder/Core/Browser/FolderAnnotations.swift",
+  "anchor": "        let prefix: String = ancestor == \"/\" ? \"/\" : ancestor + \"/\"",
+  "replacement": "        let prefix: String = ancestor"
+ },
+ {
+  "id": "T32W1-06",
+  "name": "pin-cap-off",
+  "file": "XFinder/Core/Browser/FolderAnnotations.swift",
+  "anchor": "        guard distinctCount < maxPinsPerFolder else { return pins }",
+  "replacement": "        guard distinctCount <= maxPinsPerFolder else { return pins }"
+ },
+ {
+  "id": "T32W1-07",
+  "name": "nickname-nfd-kept",
+  "file": "XFinder/Core/Browser/FolderAnnotations.swift",
+  "anchor": "        for character in raw.precomposedStringWithCanonicalMapping {",
+  "replacement": "        for character in raw {"
+ },
+ {
+  "id": "T32W1-08",
+  "name": "searchkey-newline",
+  "file": "XFinder/Core/Browser/FolderAnnotations.swift",
+  "anchor": "        key.append(0x00)",
+  "replacement": "        key.append(0x0A)"
+ },
+ {
+  "id": "T32W1-09",
+  "name": "store-key-nfd",
+  "file": "XFinder/Core/Browser/MetadataStore.swift",
+  "anchor": "        for character in path.precomposedStringWithCanonicalMapping {",
+  "replacement": "        for character in path {"
+ },
+ {
+  "id": "T32W1-10",
+  "name": "store-purges-unknown",
+  "file": "XFinder/Core/Browser/MetadataStore.swift",
+  "anchor": "            let previous: [String: Set<String>] = Self.validOptions(self.catalog())",
+  "replacement": "            let previous: [String: Set<String>] = Self.validOptions(self.catalog()).merging([(UUID().uuidString, [])]) { a, _ in a }.merging(Dictionary(uniqueKeysWithValues: query(\"SELECT DISTINCT property_id FROM selections\", []) { stmt in Self.columnText(stmt, 0) }.map { ($0, Set<String>()) })) { a, _ in a }"
+ },
+ {
+  "id": "T32W1-11",
+  "name": "store-emoji-raw",
+  "file": "XFinder/Core/Browser/MetadataStore.swift",
+  "anchor": "        guard let raw: String = emoji, let emoji: String = EmojiRules.normalized(raw) else {",
+  "replacement": "        guard let emoji: String = emoji, !emoji.isEmpty else {"
+ },
+ {
+  "id": "T32W1-12",
+  "name": "space-bad-sidebar-dropped",
+  "file": "XFinder/Core/Browser/SpaceModel.swift",
+  "anchor": "        let sidebar: SidebarLayout = sidebar(dict[\"sidebar\"]) ?? SidebarLayout()",
+  "replacement": "        guard let sidebar: SidebarLayout = sidebar(dict[\"sidebar\"]) else { return nil }"
+ },
+ {
+  "id": "T32W1-13",
+  "name": "space-cycle-no-wrap",
+  "file": "XFinder/Core/Browser/SpaceModel.swift",
+  "anchor": "        let next: Int = ((current + delta) % count + count) % count",
+  "replacement": "        let next: Int = max(0, min(current + delta, count - 1))"
  }
 ]

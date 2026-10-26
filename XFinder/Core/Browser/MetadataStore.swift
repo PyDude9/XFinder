@@ -17,15 +17,17 @@ actor MetadataStore {
     static let schemaVersion: Int32 = 1
 
     private let databaseURL: URL
-    private var db: OpaquePointer?
+    /// The connection lives in a plain class so its `deinit` closes it: an actor's nonisolated `deinit` may not read
+    /// a non-Sendable `OpaquePointer` (Swift 6 error in the app target).
+    private let handle: MetadataConnectionHandle = MetadataConnectionHandle()
+    private var db: OpaquePointer? {
+        get { handle.db }
+        set { handle.db = newValue }
+    }
     private var openFailed: Bool = false
     private var token: Int = 0
 
     init(databaseURL: URL) { self.databaseURL = databaseURL }
-
-    deinit {
-        if let db { sqlite3_close_v2(db) }
-    }
 
     // MARK: - Properties
 
@@ -34,26 +36,27 @@ actor MetadataStore {
         return PropertyCatalog.decode(blobs.first)
     }
 
+    /// Saves the catalog and removes the selections/visibility of what this save REMOVED: a property or option
+    /// that was in the stored catalog and is gone from the new one. Ids the stored catalog never knew (a damaged
+    /// row, a newer build's property) are left alone — a smaller decode must never wipe user data.
     func saveCatalog(_ catalog: PropertyCatalog) {
         defer { bumpToken() }
         let valid: [String: Set<String>] = Self.validOptions(catalog)
         transaction { () -> Bool in
+            let previous: [String: Set<String>] = Self.validOptions(self.catalog())
             guard run("INSERT OR REPLACE INTO catalog(id, json) VALUES (0, ?)", [.blob(catalog.encoded())]) else {
                 return false
             }
-            let pairs: [(String, String)] = query("SELECT DISTINCT property_id, option_id FROM selections", []) { stmt in
-                guard let p: String = Self.columnText(stmt, 0), let o: String = Self.columnText(stmt, 1) else { return nil }
-                return (p, o)
-            }
-            for (property, option) in pairs where valid[property]?.contains(option) != true {
-                guard run("DELETE FROM selections WHERE property_id = ? AND option_id = ?",
-                          [.text(property), .text(option)]) else { return false }
-            }
-            let shown: [String] = query("SELECT DISTINCT property_id FROM folder_properties", []) { stmt in
-                Self.columnText(stmt, 0)
-            }
-            for property in shown where valid[property] == nil {
-                guard run("DELETE FROM folder_properties WHERE property_id = ?", [.text(property)]) else { return false }
+            for (property, oldOptions) in previous {
+                guard let newOptions: Set<String> = valid[property] else {
+                    guard run("DELETE FROM selections WHERE property_id = ?", [.text(property)]),
+                          run("DELETE FROM folder_properties WHERE property_id = ?", [.text(property)]) else { return false }
+                    continue
+                }
+                for option in oldOptions.subtracting(newOptions) {
+                    guard run("DELETE FROM selections WHERE property_id = ? AND option_id = ?",
+                              [.text(property), .text(option)]) else { return false }
+                }
             }
             return true
         }
@@ -157,7 +160,7 @@ actor MetadataStore {
     func setNickname(_ nickname: String?, for path: String) {
         defer { bumpToken() }
         let item: String = Self.normalized(path)
-        guard let nickname, !Self.isBlank(nickname) else {
+        guard let raw: String = nickname, let nickname: String = NicknameRules.normalized(raw) else {
             _ = run("DELETE FROM nicknames WHERE item_path = ?", [.text(item)])
             return
         }
@@ -174,7 +177,8 @@ actor MetadataStore {
     func setEmoji(_ emoji: String?, for folder: String) {
         defer { bumpToken() }
         let key: String = Self.normalized(folder)
-        guard let emoji, !Self.isBlank(emoji) else {
+        // Anything that is not one emoji (EmojiRules) clears the folder's emoji instead of storing text.
+        guard let raw: String = emoji, let emoji: String = EmojiRules.normalized(raw) else {
             _ = run("DELETE FROM emoji WHERE folder_path = ?", [.text(key)])
             return
         }
@@ -253,11 +257,25 @@ actor MetadataStore {
 
     // MARK: - Private: path helpers
 
-    /// Strips trailing `/` (root stays `/`). Empty stays empty.
-    private static func normalized(_ path: String) -> String {
-        var result: Substring = Substring(path)
-        while result.count > 1, result.hasSuffix("/") { result = result.dropLast() }
-        return String(result)
+    /// The stored spelling of a path: NFC (SQLite compares bytes, and a name can reach us as NFD from an old HFS+
+    /// copy or a paste), runs of `/` collapsed, trailing `/` stripped (root stays `/`). Empty stays empty.
+    /// Keys read back are NFC; Swift `String` equality is canonical, so `dict[entry.path]` still matches an NFD path.
+    static func normalized(_ path: String) -> String {
+        guard !path.isEmpty else { return path }
+        var result: String = ""
+        result.reserveCapacity(path.utf8.count)
+        var lastWasSlash: Bool = false
+        for character in path.precomposedStringWithCanonicalMapping {
+            if character == "/" {
+                if lastWasSlash { continue }
+                lastWasSlash = true
+            } else {
+                lastWasSlash = false
+            }
+            result.append(character)
+        }
+        if result.count > 1, result.hasSuffix("/") { result.removeLast() }
+        return result
     }
 
     /// Parent of a normalised absolute path: "/a/b" → "/a", "/a" → "/", "/" → "", "name" → "".
@@ -270,9 +288,6 @@ actor MetadataStore {
     /// The root (and the empty path) would match every row; never rewrite or delete by them.
     private static func isMovable(_ path: String) -> Bool { !path.isEmpty && path != "/" }
 
-    private static func isBlank(_ text: String) -> Bool {
-        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
 
     /// `column` is the path itself or one of its descendants. Binds the path three times.
     private static func subtreeClause(_ column: String) -> String {
@@ -514,5 +529,14 @@ actor MetadataStore {
             return sqlite3_column_type(stmt, index) == SQLITE_NULL ? nil : Data()
         }
         return Data(bytes: base, count: Int(count))
+    }
+}
+
+/// Owns the store's SQLite connection and closes it when the store goes away.
+private final class MetadataConnectionHandle {
+    var db: OpaquePointer?
+
+    deinit {
+        if let db { sqlite3_close_v2(db) }
     }
 }
