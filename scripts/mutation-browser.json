@@ -1314,5 +1314,26 @@
   "file": "XFinder/Core/Browser/CloudFactsCache.swift",
   "anchor": "!parent.isEmpty && parent != path && probeFolder(parent)",
   "replacement": "probeFolder(parent)"
+ },
+ {
+  "id": "LoadRules-01",
+  "name": "refresh-ignores-loaded-state",
+  "file": "XFinder/Core/Browser/LoadRules.swift",
+  "anchor": "guard isLoaded, let loadedPath, !path.isEmpty else { return false }",
+  "replacement": "guard let loadedPath, !path.isEmpty else { return false }"
+ },
+ {
+  "id": "LoadRules-02",
+  "name": "no-path-normalisation",
+  "file": "XFinder/Core/Browser/LoadRules.swift",
+  "anchor": "return (path as NSString).standardizingPath == (loadedPath as NSString).standardizingPath",
+  "replacement": "return path == loadedPath"
+ },
+ {
+  "id": "LoadRules-03",
+  "name": "any-folder-is-a-refresh",
+  "file": "XFinder/Core/Browser/LoadRules.swift",
+  "anchor": "return (path as NSString).standardizingPath == (loadedPath as NSString).standardizingPath",
+  "replacement": "return !loadedPath.isEmpty"
  }
 ]

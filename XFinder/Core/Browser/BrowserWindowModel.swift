@@ -65,6 +65,8 @@ struct PaneSearchState: Equatable {
     private var currentGeneration = 0
     private var loadTask: Task<Void, Never>?
     private var watcher: DirectoryWatcher?
+    /// The folder `rawEntries` was read from; nil before the first load and after a failure.
+    private var loadedPath: String?
     /// XF-T30 W5b — the live `SearchCoordinator` run behind `search`, if any; cancelled whenever the tab navigates
     /// to a different folder, is closed, or the search itself ends/restarts (contract: "huỷ khi tab đổi thư mục/đóng").
     private var searchHandle: SearchCoordinator.Handle?
@@ -188,7 +190,13 @@ struct PaneSearchState: Equatable {
         loadTask?.cancel()
         currentGeneration += 1
         let generation = currentGeneration
-        loadState = .loading
+        // A refresh of the folder already on screen (watcher, ⌘R, a finished operation) keeps showing it until the
+        // new listing lands. `.loading` swaps the whole view for a spinner and rebuilds the table: scroll, expanded
+        // folders, an inline rename and the click in flight were lost — 2 refreshes a minute in a home folder
+        // (measured 2026-10-26), both panes in Side by Side.
+        if !LoadRules.isRefresh(of: path, loadedPath: loadedPath, isLoaded: loadState == .loaded) {
+            loadState = .loading
+        }
         loadTask = Task { [weak self] in
             // XF-T30 W3: a virtual location (Recents, a tag) lists through Spotlight, not the directory reader.
             let result = if let virtual = VirtualLocation.parse(path) {
@@ -200,6 +208,7 @@ struct PaneSearchState: Equatable {
             switch result {
             case .success(let listing):
                 self.rawEntries = listing
+                self.loadedPath = path
                 self.loadState = .loaded
                 self.applyEntries()
                 if let wanted = self.selectAfterLoad, listing.contains(where: { $0.name == wanted }) {
@@ -220,6 +229,7 @@ struct PaneSearchState: Equatable {
             case .failure(let error):
                 self.rawEntries = []
                 self.entries = []
+                self.loadedPath = nil
                 self.loadState = .failed(error)
             }
         }

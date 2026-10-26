@@ -386,6 +386,7 @@
 		7F1A0501 /* Browser/PaneTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0500 /* Browser/PaneTabs.swift */; };
 		7F1A0078 /* Browser/CloudBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0077 /* Browser/CloudBadge.swift */; };
 		7F1A0557 /* Browser/CloudFactsCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0556 /* Browser/CloudFactsCache.swift */; };
+		7F1A0559 /* Browser/LoadRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0558 /* Browser/LoadRules.swift */; };
 		7F1A0076 /* Browser/BrowserCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A005F /* Browser/BrowserCommands.swift */; };
 		7F1A0058 /* Browser/FileOperationRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A003F /* Browser/FileOperationRules.swift */; };
 		7F1A002D /* Browser/SearchQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A002C /* Browser/SearchQuery.swift */; };
@@ -738,6 +739,7 @@
 		7F1A0500 /* Browser/PaneTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PaneTabs.swift; sourceTree = "<group>"; };
 		7F1A0077 /* Browser/CloudBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/CloudBadge.swift; sourceTree = "<group>"; };
 		7F1A0556 /* Browser/CloudFactsCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/CloudFactsCache.swift; sourceTree = "<group>"; };
+		7F1A0558 /* Browser/LoadRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/LoadRules.swift; sourceTree = "<group>"; };
 		7F1A005F /* Browser/BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserCommands.swift; sourceTree = "<group>"; };
 		7F1A003F /* Browser/FileOperationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileOperationRules.swift; sourceTree = "<group>"; };
 		7F1A002C /* Browser/SearchQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SearchQuery.swift; sourceTree = "<group>"; };
@@ -1105,6 +1107,7 @@
 				7F1A0500 /* Browser/PaneTabs.swift */,
 				7F1A0077 /* Browser/CloudBadge.swift */,
 				7F1A0556 /* Browser/CloudFactsCache.swift */,
+				7F1A0558 /* Browser/LoadRules.swift */,
 				7F1A005F /* Browser/BrowserCommands.swift */,
 				7F1A003F /* Browser/FileOperationRules.swift */,
 				7F1A002C /* Browser/SearchQuery.swift */,
@@ -1792,6 +1795,7 @@
 				7F1A0501 /* Browser/PaneTabs.swift in Sources */,
 				7F1A0078 /* Browser/CloudBadge.swift in Sources */,
 				7F1A0557 /* Browser/CloudFactsCache.swift in Sources */,
+				7F1A0559 /* Browser/LoadRules.swift in Sources */,
 				7F1A0076 /* Browser/BrowserCommands.swift in Sources */,
 				7F1A0058 /* Browser/FileOperationRules.swift in Sources */,
 				7F1A002D /* Browser/SearchQuery.swift in Sources */,
