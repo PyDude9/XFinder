@@ -1548,10 +1548,10 @@
  },
  {
   "id": "T32W1-10",
-  "name": "store-purges-unknown",
+  "name": "store-purges-kept-options",
   "file": "XFinder/Core/Browser/MetadataStore.swift",
-  "anchor": "            let previous: [String: Set<String>] = Self.validOptions(self.catalog())",
-  "replacement": "            let previous: [String: Set<String>] = Self.validOptions(self.catalog()).merging([(UUID().uuidString, [])]) { a, _ in a }.merging(Dictionary(uniqueKeysWithValues: query(\"SELECT DISTINCT property_id FROM selections\", []) { stmt in Self.columnText(stmt, 0) }.map { ($0, Set<String>()) })) { a, _ in a }"
+  "anchor": "                for option in oldOptions.subtracting(newOptions) {",
+  "replacement": "                for option in oldOptions.union(newOptions) {"
  },
  {
   "id": "T32W1-11",
