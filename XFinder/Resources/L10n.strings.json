@@ -14138,6 +14138,34 @@
     "Chẩn đoán chuột": {
       "en": "Mouse diagnostics",
       "scope": "fragment"
+    },
+    "Thêm mục liên quan": {
+      "en": "Add related items",
+      "scope": "sentence"
+    },
+    "Bỏ liên kết": {
+      "en": "Unlink",
+      "scope": "sentence"
+    },
+    "Tuỳ chọn thư mục": {
+      "en": "Folder options",
+      "scope": "sentence"
+    },
+    "Chọn thư mục liên quan tới thư mục này.": {
+      "en": "Choose folders related to this folder.",
+      "scope": "sentence"
+    },
+    "Làm nổi ngăn đang dùng": {
+      "en": "Highlight the active pane",
+      "scope": "sentence"
+    },
+    "Làm mờ ngăn khác": {
+      "en": "Dim other panes",
+      "scope": "sentence"
+    },
+    "Viền ngăn đang dùng": {
+      "en": "Outline the active pane",
+      "scope": "sentence"
     }
   }
 }

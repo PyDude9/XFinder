@@ -165,11 +165,13 @@ private struct GeneralSettingsTab: View {
     @AppStorage("fileBrowser.newWindowTarget") private var newWindowTarget = "home"
     @AppStorage("fileBrowser.newWindowCustomPath") private var newWindowCustomPath = ""
     @AppStorage("fileBrowser.showLocationBar") private var showLocationBar = true
-    @AppStorage("fileBrowser.showPathBar") private var showPathBar = false
+    @AppStorage("fileBrowser.showPathBar") private var showPathBar = true
     @AppStorage("fileBrowser.showStatusBar") private var showStatusBar = true
     @AppStorage("fileBrowser.reopenWindows") private var reopenWindows = true
     @AppStorage("fileBrowser.returnOpens") private var returnOpens = false
     @AppStorage("fileBrowser.cutWithCmdX") private var cutWithCmdX = false
+    /// XF-T32 W3 — same key/default as `BrowserSettings.paneFocusStyle`.
+    @AppStorage("fileBrowser.paneFocusStyle") private var paneFocusStyle = "dim"
 
     var body: some View {
         SettingsSection(title: L10n.t("Cửa sổ mới hiện")) {
@@ -211,6 +213,12 @@ private struct GeneralSettingsTab: View {
             ToggleRow(title: L10n.t("Path Bar"), isOn: $showPathBar).settingsRow()
             SettingsDivider()
             ToggleRow(title: L10n.t("Status Bar"), isOn: $showStatusBar).settingsRow()
+            SettingsDivider()
+            PickerRow(title: L10n.t("Làm nổi ngăn đang dùng"), selection: $paneFocusStyle, width: XFinderTokens.PaneChrome.focusPickerWidth) {
+                Text(L10n.t("Làm mờ ngăn khác")).tag("dim")
+                Text(L10n.t("Viền ngăn đang dùng")).tag("outline")
+            }
+            .settingsRow()
         }
 
         SettingsSection(title: L10n.t("Khi mở")) {
