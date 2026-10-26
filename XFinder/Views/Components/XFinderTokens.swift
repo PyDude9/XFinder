@@ -73,6 +73,23 @@ enum XFinderTokens {
         static let window = Color(nsColor: .windowBackgroundColor)
     }
 
+    /// XF-T32 W2/W3 — custom-property colours (Tilde's 7). Chip = tint at `chipFill` opacity behind tint text.
+    /// STUB values — builder `sidebarparts` tunes them against the Tilde screenshots.
+    enum PropertyTint {
+        static let chipFill: Double = 0.18
+        static func color(_ tint: PropertyColor) -> Color {
+            switch tint {
+            case .gray: return Color(nsColor: .systemGray)
+            case .red: return Color(nsColor: .systemRed)
+            case .orange: return Color(nsColor: .systemOrange)
+            case .yellow: return Color(nsColor: .systemYellow)
+            case .green: return Color(nsColor: .systemGreen)
+            case .blue: return Color(nsColor: .systemBlue)
+            case .purple: return Color(nsColor: .systemPurple)
+            }
+        }
+    }
+
     /// Motion. Two curves only: surfaces that expand (notch, panels) and overlays that appear.
     /// P1 — the notch surface's own palette and motion, measured on the owner's OneNotch screenshots
     /// (pt = px / 2 of its 700 × 745 window at 2×). Layout sizes live in `NotchSurfaceLayout.Metrics`.

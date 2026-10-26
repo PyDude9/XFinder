@@ -102,6 +102,10 @@ final class BrowserSettings {
     /// The ONE reader of `fileBrowser.globalHotkey` (default off: a global chord is taken from every app).
     static var globalHotkeyEnabled: Bool { UserDefaults.standard.object(forKey: "fileBrowser.globalHotkey") as? Bool ?? false }
 
+    /// XF-T32 W3 — the ONE reader of `fileBrowser.paneFocusStyle`: `"dim"` (inactive panes faded, Tilde default) or
+    /// `"outline"` (accent line on the active pane).
+    static var paneFocusStyle: String { UserDefaults.standard.string(forKey: "fileBrowser.paneFocusStyle") ?? "dim" }
+
     /// The ONE reader+writer of `fileBrowser.sidebarLayout` (XF-T28 Wave 4 §B) — JSON `SidebarLayout`, not a toggle,
     /// so there is no `FeatureKeyDefaultsTests` row for it; `SidebarLayout.decode` tolerates a missing/damaged value.
     static var sidebarLayout: SidebarLayout {
@@ -162,4 +166,14 @@ final class BrowserSettings {
             BrowserWindowController.shared.openWindow(path: nil)
         }
     }
+}
+
+extension SpaceController {
+    /// XF-T32 W2 — Spaces live in `fileBrowser.spaces` (JSON `SpaceStore`); the active Space's sidebar is mirrored
+    /// into `BrowserSettings.sidebarLayout`, which every sidebar already reads.
+    static let shared: SpaceController = SpaceController(
+        load: { UserDefaults.standard.data(forKey: "fileBrowser.spaces") },
+        save: { UserDefaults.standard.set($0, forKey: "fileBrowser.spaces") },
+        legacyLayout: { BrowserSettings.sidebarLayout },
+        writeLayout: { BrowserSettings.sidebarLayout = $0 })
 }

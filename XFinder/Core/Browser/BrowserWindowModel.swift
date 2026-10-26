@@ -36,6 +36,8 @@ struct PaneSearchState: Equatable {
     let tabID: TabID
     /// XF-T30: Group By for this tab (W2 implements the grouping; W1 only stores it and shows it in the Group menu).
     var groupBy: GroupBy = .none
+    /// XF-T32 W3 — group by a custom property (its id); nil = use `groupBy`. Sections are built in `rebuildSections`.
+    var propertyGroupID: UUID?
     /// ⌃⌘0 Use Groups — independent of the chosen field.
     var useGroups = false
     /// Names to reselect after the first load (session restore, `TabSnapshot.selectedNames`). W1 builder (model).
@@ -250,6 +252,7 @@ struct PaneSearchState: Equatable {
             loadedPath = path
             loadState = .loaded
             applyEntries()
+            BrowserMetadata.shared.load(folder: path)   // XF-T32 W3: pins, nicknames, chips for this folder
             var reselected: Bool = false
             if let wanted: String = selectAfterLoad, listing.contains(where: { $0.name == wanted }) {
                 // `appendingPathComponent`, not string concatenation — `path` can be "/" (a volume root),
