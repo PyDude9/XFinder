@@ -7,11 +7,56 @@ extension PaneState {
     /// `.none` or `useGroups == false` ⇒ one section holding everything, same as `GroupBy.sections` already returns
     /// for `.none` — `rebuildSections` just decides WHICH field (if any) to pass it, the grouping rules themselves
     /// live in `GroupBy.sections` (W2 pure builder).
+    ///
+    /// XF-T32 W3: with `useGroups` on and `propertyGroupID` naming a property of `BrowserMetadata.shared.catalog`, the
+    /// sections are that property's options (`PropertyRules.sections`, option order, unset last) instead. A property
+    /// id the catalog does not (or not yet — it loads asynchronously) know falls back to `groupBy`; the id is kept so
+    /// grouping comes back once the catalog has loaded.
     func rebuildSections() {
+        sections = computedSections()
+    }
+
+    /// Called when `BrowserMetadata` changed (a selection was set, the catalog edited, a folder's metadata loaded):
+    /// only a pane grouped by a property depends on it, and only a real difference is published (a rebuild that
+    /// produces the same sections must not make the views redraw).
+    func metadataDidChange() {
+        guard useGroups, propertyGroupID != nil else { return }
+        let updated: [EntrySection] = computedSections()
+        if updated != sections { sections = updated }
+    }
+
+    private func computedSections() -> [EntrySection] {
+        if useGroups, let property: PropertyDefinition = groupingProperty() {
+            return propertySections(property)
+        }
         let field: GroupBy = useGroups ? groupBy : .none
-        sections = GroupBy.sections(entries, by: field, sort: sort, foldersFirst: foldersFirst, now: Date(),
-                                    calendar: .current, kindName: { FileIconCache.shared.kindName(for: $0) },
-                                    appName: { FileMetadataCache.shared.appName(for: $0.path) })
+        return GroupBy.sections(entries, by: field, sort: sort, foldersFirst: foldersFirst, now: Date(),
+                                calendar: .current, kindName: { FileIconCache.shared.kindName(for: $0) },
+                                appName: { FileMetadataCache.shared.appName(for: $0.path) })
+    }
+
+    private func groupingProperty() -> PropertyDefinition? {
+        guard let id: UUID = propertyGroupID else { return nil }
+        return BrowserMetadata.shared.catalog.definition(id)
+    }
+
+    /// `entries` are already filtered + sorted; `PropertyRules.sections` keeps that order inside each section.
+    private func propertySections(_ property: PropertyDefinition) -> [EntrySection] {
+        let metadata: BrowserMetadata = BrowserMetadata.shared
+        var selections: [String: UUID] = [:]
+        selections.reserveCapacity(entries.count)
+        for entry in entries {
+            if let option: PropertyOption = metadata.option(for: entry.path, property: property.id) {
+                selections[entry.path] = option.id
+            }
+        }
+        let grouped: [PropertyRules.Section] = PropertyRules.sections(entries, property: property, selections: selections)
+        return grouped.map { (section: PropertyRules.Section) -> EntrySection in
+            guard let option: PropertyOption = section.option else {
+                return EntrySection(titleKey: PropertyRules.unsetTitleKey, titleArg: nil, entries: section.entries)
+            }
+            return EntrySection(titleKey: "", titleArg: option.title, entries: section.entries)
+        }
     }
 }
 
