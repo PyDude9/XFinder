@@ -84,3 +84,21 @@ XFinder (mọi tính năng, 11 h sau khi cài): footprint 133 MB, đỉnh 228 MB
   tầng có ngân sách fuzzy, ghép với `mdfind`/Spotlight đang có; chỉ mục nội dung FTS5 `unicode61 remove_diacritics 2`
   (tiếng Việt không dấu khớp có dấu) — OCR chạy ở tiến trình con `--vision` (luật Vision giữ bộ nhớ).
 - Giữ lợi thế đo được: `getattrlistbulk` (không readdir + stat), danh sách AppKit.
+
+## 8. Giải mã bằng REA + Hopper (2026-10-26) — danh sách cập nhật tại chỗ
+
+REA `open_binary` (provider Hopper 6.6 demo; bridge chỉ lên sau khi Hopper phân tích xong ~3 phút — đặt `hopper.startup_timeout_ms`
+1 200 000 rồi `close_binary` + mở lại), `binary_overview`: 51 863 thủ tục, 23 125 chuỗi; tên hàm Swift đã strip (`sub_…`), tên
+kiểu còn trong metadata (`_TtC12BetterFinder22DirectoryChangeMonitor`, `_TtC12BetterFinder18MainThreadWatchdog`,
+`_TtC14FileSystemCore16CloudLookupBatch`). Đường vào: `search_strings` selector → `xrefs` → `analyze_function`.
+
+- `sub_100170a18` (Evidence `ev_c9458b86…`, trong `DirectoryBrowserViewController`): kiểm `swift_task_isCurrentExecutor`
+  (MainActor) → `tableView.beginUpdates` → nếu `removed` không rỗng `removeItemsAtIndexes:inParent:nil withAnimation:` → nếu
+  `inserted` không rỗng `insertItemsAtIndexes:inParent:nil withAnimation:` → `endUpdates`. Hai IndexSet là hai trường của cùng
+  một struct kết quả diff.
+- `sub_100168b30` (`ev_ac252279…`, 3 142 lệnh, cùng file `DirectoryBrowserViewController.swift`): gọi hàm trên; có nhánh
+  `reloadData` dự phòng; `rowForItem:` + `reloadItem:reloadChildren:`; bật/tắt `usesAlternatingRowBackgroundColors`; sau đó
+  `rowsInRect:` (vùng nhìn thấy) → tập hàng → **`editedRow` ≥ 0 ⇒ `IndexSet.remove(editedRow)`** (asm `0x10016b224…b24c`) →
+  `reloadDataForRowIndexes:columnIndexes:` với `numberOfColumns`. Tức: vá tại chỗ, vẽ lại hàng đang hiện trừ hàng đang đổi tên.
+- XFinder chép cơ chế này trong `ListingDiff` + `FileListView.Coordinator.reloadIfNeeded` (commit `b8ba61f` và bản sửa
+  `editedRow`). Chưa giải mã: tham số `CloudLookupBatch` (cỡ lô) và ngưỡng `MainThreadWatchdog` — cần đi từ type descriptor.
