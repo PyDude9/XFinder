@@ -303,6 +303,7 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | Q-T31-1 | Hai ngăn/tab cùng thư mục: dùng chung listing + watcher (DirectoryLoadCoordinator)? | mặc định: làm sau khi h2h có số |
 | Q-T31-2 | Badge đám mây đọc theo lô 50 ở nền (CloudLookupBatch)? | mặc định: có, sau T-T31 |
 | Q-T31-3 | MainThreadWatchdog bản Debug (log + sample khi main > 250 ms)? | mặc định: có |
+| Q-T32-0…13 | Hướng Tilde cho trình duyệt (spec `docs/specs/XF-T32-tilde-direction.md`) | 2026-10-26 chủ dự án chọn: làm cả W0 → W1+W2+W3 → W4+W5 → W6, fan-out agent theo file; mặc định Q-T32-* giữ nguyên trừ khi trả lời bằng mã |
 | W6-MERGE-QUEUE | **Đã làm** (`.merge` job): gộp hiện trong bảng Thao tác, tạm dừng / huỷ được, bước lỗi vào Sự cố, ⌘Z đưa từng mục về chỗ cũ | thử: gộp hai thư mục trùng tên lớn, bấm Tạm dừng giữa chừng, rồi ⌘Z |
 | Q-PRO-5 | Tạo cặp khoá ký giấy phép trên máy bạn: `swift scripts/make-license.swift init ~/Private/xfinder-license.key`, dán khoá công khai in ra vào `LicenseKey.publicKeyRaw` | chưa có ⇒ mọi khoá không hợp lệ; dùng thử + bản Debug vẫn đủ |
 | Q-PRO-6 | Free: xuất toàn bộ lịch sử Clipboard (.xfinderclip) có bị giới hạn 50 mục không? | **Mặc định: không** — dữ liệu của chính người dùng (luật 9) |
