@@ -16,6 +16,10 @@ struct PaneGridView: View {
 
     let model: BrowserWindowModel
 
+    /// Live pane-tab drop target per pane (highlight only) — set by `PaneTabDropDelegate`, drawn by
+    /// `PaneTabDropHighlight`, never hit-testable.
+    @State private var dropTargets: [PaneID: PaneTabRules.DropTarget] = [:]
+
     var body: some View {
         GeometryReader { proxy in
             let rect = CGRect(origin: .zero, size: proxy.size)
@@ -25,7 +29,16 @@ struct PaneGridView: View {
             ZStack(alignment: .topLeading) {
                 ForEach(model.tree.panes, id: \.self) { paneID in
                     if let frame = frames[paneID], let pane = model.panes[paneID] {
+                        // `.onDrop` sits on the pane itself, not on an overlay: a hit-testable overlay over the
+                        // content area swallowed every click meant for the List/Icons/Columns view (measured
+                        // 2026-10-26: synthetic click ⇒ first responder stayed the window, AX-set selection worked).
+                        // A drop modifier claims no mouse events; the outline keeps its clicks and its file drops.
                         PaneView(pane: pane, model: model, isActive: paneID == model.activePane)
+                            .onDrop(of: [PaneTabStripView.tabType],
+                                    delegate: PaneTabDropDelegate(paneID: paneID, paneSize: frame.size,
+                                                                  stripHeight: PaneTabStripView.height, model: model,
+                                                                  target: Binding(get: { dropTargets[paneID] },
+                                                                                  set: { dropTargets[paneID] = $0 })))
                             .frame(width: frame.width, height: frame.height)
                             .position(x: frame.midX, y: frame.midY)
                             .overlay(alignment: .topLeading) {
@@ -38,14 +51,12 @@ struct PaneGridView: View {
                                 }
                             }
                             .overlay(alignment: .topLeading) {
-                                // Below the tab strip only: the strip takes its own drops (insert at an index); an
-                                // overlay over it would catch them first and always append (review 2026-10-25).
+                                // Highlight below the tab strip only (the strip draws its own insertion marker).
                                 let strip = PaneTabStripView.height
-                                PaneTabDropZone(paneID: paneID,
-                                                paneSize: CGSize(width: frame.width, height: max(0, frame.height - strip)),
-                                                model: model)
+                                PaneTabDropHighlight(target: dropTargets[paneID])
                                     .frame(width: frame.width, height: max(0, frame.height - strip))
                                     .position(x: frame.midX, y: frame.midY + strip / 2)
+                                    .allowsHitTesting(false)
                             }
                             .contentShape(Rectangle())
                             .onTapGesture {
@@ -70,17 +81,10 @@ struct PaneGridView: View {
     fileprivate static let coordinateSpaceName = "XFinder.PaneGridView"
 }
 
-/// Transparent overlay over one pane's content area: highlights `.edge`/`.center` targets while a pane-tab drag
-/// hovers, and performs `model.dropTab` on drop. `.strip` targets never reach here — the strip view accepts those
-/// itself, and a drop whose point falls inside the strip's own height band is ignored here to avoid double-handling.
-/// A `DropDelegate` (not `onDropSessionUpdated`, macOS 26+ only — this app's floor is 14.0) is what gives a live
-/// hover location for the highlight.
-private struct PaneTabDropZone: View {
-    let paneID: PaneID
-    let paneSize: CGSize
-    let model: BrowserWindowModel
-
-    @State private var target: PaneTabRules.DropTarget?
+/// The `.edge` / `.center` highlight while a pane tab hovers — drawing only, never hit-testable (the drop target is
+/// the pane itself, see `PaneGridView.body`). `.strip` targets draw nothing here: the strip view owns those.
+private struct PaneTabDropHighlight: View {
+    let target: PaneTabRules.DropTarget?
 
     var body: some View {
         ZStack {
@@ -88,10 +92,6 @@ private struct PaneTabDropZone: View {
                 highlight(for: target)
             }
         }
-        .allowsHitTesting(true)
-        .contentShape(Rectangle())
-        .onDrop(of: [PaneTabStripView.tabType],
-                delegate: PaneTabDropDelegate(paneID: paneID, paneSize: paneSize, model: model, target: $target))
     }
 
     @ViewBuilder
@@ -103,11 +103,9 @@ private struct PaneTabDropZone: View {
                     .frame(width: edgeWidth(proxy.size, direction), height: edgeHeight(proxy.size, direction))
                     .position(edgePosition(proxy.size, direction))
             }
-            .allowsHitTesting(false)
         case .center:
             RoundedRectangle(cornerRadius: 0, style: .continuous)
                 .strokeBorder(Color.accentColor, lineWidth: 2)
-                .allowsHitTesting(false)
         case .strip:
             EmptyView()
         }
@@ -129,7 +127,6 @@ private struct PaneTabDropZone: View {
         case .down: return CGPoint(x: size.width / 2, y: size.height * 3 / 4)
         }
     }
-
 }
 
 /// Same shape as `PaneTabStripView`'s own private payload type — kept as a second private declaration (rather than
@@ -147,7 +144,9 @@ private struct TabDropPayload: Codable {
 /// insertion index, which this zone never needs since `.strip` targets are ignored (the strip view owns those).
 private struct PaneTabDropDelegate: DropDelegate {
     let paneID: PaneID
+    /// The whole pane (strip included): `info.location` is in the pane's own coordinates.
     let paneSize: CGSize
+    let stripHeight: CGFloat
     let model: BrowserWindowModel
     @Binding var target: PaneTabRules.DropTarget?
 
@@ -189,9 +188,10 @@ private struct PaneTabDropDelegate: DropDelegate {
     }
 
     private func computeTarget(at location: CGPoint) -> PaneTabRules.DropTarget {
-        let paneRect = CGRect(origin: .zero, size: paneSize)
-        // The zone starts below the strip, so there is no strip band inside it.
-        return PaneTabRules.dropTarget(point: location, paneRect: paneRect, stripHeight: 0, tabFrames: [])
+        // The strip band maps to `.strip` (the strip view handles mid-strip insertion itself; a drop landing there
+        // through this delegate appends — see `performDrop`); the edge bands start right below it.
+        PaneTabRules.dropTarget(point: location, paneRect: CGRect(origin: .zero, size: paneSize),
+                                stripHeight: stripHeight, tabFrames: [])
     }
 
     private func isEdgeOrCenter(_ target: PaneTabRules.DropTarget) -> Bool {
