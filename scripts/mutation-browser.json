@@ -1436,10 +1436,10 @@
  },
  {
   "id": "W0-11",
-  "name": "schema-vacuum-after-wal",
+  "name": "schema-no-auto-vacuum",
   "file": "XFinder/Core/Browser/ListingDiskCache.swift",
   "anchor": "        try db.execute(\"PRAGMA auto_vacuum=INCREMENTAL\")\n        try db.execute(\"PRAGMA journal_mode=WAL\")",
-  "replacement": "        try db.execute(\"PRAGMA journal_mode=WAL\")\n        try db.execute(\"PRAGMA auto_vacuum=INCREMENTAL\")"
+  "replacement": "        try db.execute(\"PRAGMA journal_mode=WAL\")"
  },
  {
   "id": "W0-12",
