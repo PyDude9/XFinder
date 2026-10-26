@@ -68,11 +68,13 @@ struct PaneView: View {
 
     /// Contract §4: "vạch nhấn màu nhấn … trên đỉnh ngăn đang chọn khi có ≥ 2 ngăn (cue duy nhất)" — the only focus
     /// cue, so it is skipped entirely with a single pane (nothing to distinguish it from).
+    /// Always present with ≥ 2 panes (clear when inactive): inserting it on activation pushed the whole pane down by
+    /// its height under the pointer, in the middle of the click that activated it.
     @ViewBuilder
     private var accentLine: some View {
-        if isActive && model.tree.count >= 2 {
+        if model.tree.count >= 2 {
             Rectangle()
-                .fill(Color.accentColor)
+                .fill(isActive ? Color.accentColor : Color.clear)
                 .frame(height: XFinderTokens.Space.hairline)
         }
     }

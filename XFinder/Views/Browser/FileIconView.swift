@@ -27,6 +27,10 @@ struct FileIconView: NSViewRepresentable {
 
         let collectionView = KeyRoutingCollectionView(frame: .zero)
         collectionView.coordinator = context.coordinator
+        collectionView.activatePane = { [weak coordinator = context.coordinator] in
+            guard let coordinator else { return }
+            coordinator.model.focus(coordinator.pane.id)
+        }
         collectionView.collectionViewLayout = layout
         collectionView.isSelectable = true
         collectionView.allowsMultipleSelection = true
@@ -61,6 +65,9 @@ struct FileIconView: NSViewRepresentable {
         context.coordinator.syncSelection()
         context.coordinator.beginRenameIfNeeded()
         context.coordinator.redrawIfCutChanged(CutBoardStore.shared.version)
+        if let collection = nsView.documentView as? KeyRoutingCollectionView, let window = collection.window as? BrowserWindow {
+            window.focusFileView(collection, paneIsActive: model.activePane == pane.id)
+        }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(pane: pane, model: model) }
@@ -70,7 +77,8 @@ struct FileIconView: NSViewRepresentable {
     /// right-clicked item before the context menu opens, same contract `FileListView.populateContextMenu` already
     /// follows for `NSTableView` — `NSCollectionView` has no `clickedRow`, so this reads the click location straight
     /// off the event instead.
-    final class KeyRoutingCollectionView: NSCollectionView {
+    final class KeyRoutingCollectionView: NSCollectionView , PaneActivating {
+        var activatePane: (() -> Void)?
         weak var coordinator: Coordinator?
         override func keyDown(with event: NSEvent) {
             if coordinator?.handleKeyDown(event) == true { return }

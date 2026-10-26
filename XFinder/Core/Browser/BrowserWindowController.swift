@@ -453,9 +453,51 @@ import os
 
 /// One `NSWindow` subclass per browser window: it routes key equivalents through `BrowserCommands` and turns
 /// `otherMouseDown`/`swipe` into mouse Back/Forward on whichever pane sits under the cursor.
+/// A file view that belongs to one pane (List outline, Icons collection view, Columns browser). A mouse-down
+/// anywhere inside it — including the browser's internal column tables — makes that pane the active one.
+@MainActor
+protocol PaneActivating: AnyObject {
+    var activatePane: (() -> Void)? { get }
+}
+
 final class BrowserWindow: NSWindow {
     weak var controller: BrowserWindowController?
     fileprivate weak var model: BrowserWindowModel?
+
+    /// The active pane follows the click, before the view under it handles the event. A table or outline keeps the
+    /// whole mouse-down for its own tracking loop, so a SwiftUI tap gesture on the pane never fires there: the row
+    /// got selected while the blue border — and every keyboard command — stayed on the previous pane (owner
+    /// screenshot 2026-10-26).
+    override func sendEvent(_ event: NSEvent) {
+        switch event.type {
+        case .leftMouseDown, .rightMouseDown, .otherMouseDown:
+            if let hit = contentView?.hitTest(event.locationInWindow) { activatePane(containing: hit) }
+        default:
+            break
+        }
+        super.sendEvent(event)
+    }
+
+    /// The other direction: when the active pane changes by keyboard (Tab with "Tab switches panes", next/previous
+    /// pane chords), the pane's file view takes keyboard focus so arrows and type-select act where the border is.
+    /// Never steals from a text field (location bar, filter, rename editor) and does nothing when focus is already
+    /// inside `view`.
+    func focusFileView(_ view: NSView, paneIsActive: Bool) {
+        guard paneIsActive, view.window === self, !(firstResponder.map(isTextEditing) ?? false) else { return }
+        if let responder = firstResponder as? NSView, responder === view || responder.isDescendant(of: view) { return }
+        makeFirstResponder(view)
+    }
+
+    private func activatePane(containing view: NSView) {
+        var current: NSView? = view
+        while let candidate = current {
+            if let source = candidate as? PaneActivating {
+                source.activatePane?()
+                return
+            }
+            current = candidate.superview
+        }
+    }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let model = modelForThisWindow()

@@ -26,7 +26,8 @@ struct FileListView: NSViewRepresentable {
 
     /// Routes `keyDown` to the coordinator (type-select / Return-to-rename / ← → navigation) before falling back to
     /// `NSOutlineView`'s own handling, since the base class never calls the delegate for raw key events.
-    final class KeyRoutingOutlineView: NSOutlineView {
+    final class KeyRoutingOutlineView: NSOutlineView , PaneActivating {
+        var activatePane: (() -> Void)?
         weak var coordinator: Coordinator?
         override func keyDown(with event: NSEvent) {
             if coordinator?.handleKeyDown(event) == true { return }
@@ -37,6 +38,10 @@ struct FileListView: NSViewRepresentable {
     func makeNSView(context: Context) -> NSScrollView {
         let outlineView = KeyRoutingOutlineView()
         outlineView.coordinator = context.coordinator
+        outlineView.activatePane = { [weak coordinator = context.coordinator] in
+            guard let coordinator else { return }
+            coordinator.model.focus(coordinator.pane.id)
+        }
         outlineView.usesAlternatingRowBackgroundColors = true
         outlineView.rowHeight = Self.rowHeight
         outlineView.headerView = NSTableHeaderView()
@@ -78,6 +83,9 @@ struct FileListView: NSViewRepresentable {
         context.coordinator.syncSortIndicator()
         context.coordinator.beginRenameIfNeeded()
         context.coordinator.redrawIfCutChanged(CutBoardStore.shared.version)
+        if let window = context.coordinator.outlineView?.window as? BrowserWindow, let view = context.coordinator.outlineView {
+            window.focusFileView(view, paneIsActive: model.activePane == pane.id)
+        }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(pane: pane, model: model) }

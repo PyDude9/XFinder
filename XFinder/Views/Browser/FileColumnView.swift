@@ -15,6 +15,10 @@ struct FileColumnView: NSViewRepresentable {
     func makeNSView(context: Context) -> NSBrowser {
         let browser = KeyRoutingBrowser()
         browser.coordinator = context.coordinator
+        browser.activatePane = { [weak coordinator = context.coordinator] in
+            guard let coordinator else { return }
+            coordinator.model.focus(coordinator.pane.id)
+        }
         browser.delegate = context.coordinator
         browser.target = context.coordinator
         browser.action = #selector(Coordinator.selectionChanged)
@@ -46,7 +50,8 @@ struct FileColumnView: NSViewRepresentable {
 
     /// Routes `keyDown` (type-select / Return-to-rename / arrow keys skipping a group-header row) to the coordinator
     /// before `NSBrowser`'s own handling.
-    final class KeyRoutingBrowser: NSBrowser {
+    final class KeyRoutingBrowser: NSBrowser , PaneActivating {
+        var activatePane: (() -> Void)?
         weak var coordinator: Coordinator?
         override func keyDown(with event: NSEvent) {
             if coordinator?.handleKeyDown(event) == true { return }
