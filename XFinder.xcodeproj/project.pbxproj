@@ -388,6 +388,15 @@
 		7F1A0557 /* Browser/CloudFactsCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0556 /* Browser/CloudFactsCache.swift */; };
 		7F1A0559 /* Browser/LoadRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0558 /* Browser/LoadRules.swift */; };
 		7F1A055B /* Browser/ListingDiff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A055A /* Browser/ListingDiff.swift */; };
+		7F1A056D /* Browser/MemoryPressureRelief.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A056C /* Browser/MemoryPressureRelief.swift */; };
+		7F1A056B /* Browser/PressureRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A056A /* Browser/PressureRules.swift */; };
+		7F1A0569 /* Browser/MainThreadHitchProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0568 /* Browser/MainThreadHitchProbe.swift */; };
+		7F1A0567 /* Browser/HitchRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0566 /* Browser/HitchRules.swift */; };
+		7F1A0565 /* Browser/DirectoryLoadCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0564 /* Browser/DirectoryLoadCoordinator.swift */; };
+		7F1A0563 /* Browser/DirectoryWorkLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0562 /* Browser/DirectoryWorkLimiter.swift */; };
+		7F1A0561 /* Browser/LoadCoordinatorRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0560 /* Browser/LoadCoordinatorRules.swift */; };
+		7F1A055F /* Browser/ListingDiskCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A055E /* Browser/ListingDiskCache.swift */; };
+		7F1A055D /* Browser/ListingCacheRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A055C /* Browser/ListingCacheRules.swift */; };
 		7F1A0076 /* Browser/BrowserCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A005F /* Browser/BrowserCommands.swift */; };
 		7F1A0058 /* Browser/FileOperationRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A003F /* Browser/FileOperationRules.swift */; };
 		7F1A002D /* Browser/SearchQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A002C /* Browser/SearchQuery.swift */; };
@@ -742,6 +751,15 @@
 		7F1A0556 /* Browser/CloudFactsCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/CloudFactsCache.swift; sourceTree = "<group>"; };
 		7F1A0558 /* Browser/LoadRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/LoadRules.swift; sourceTree = "<group>"; };
 		7F1A055A /* Browser/ListingDiff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ListingDiff.swift; sourceTree = "<group>"; };
+		7F1A056C /* Browser/MemoryPressureRelief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/MemoryPressureRelief.swift; sourceTree = "<group>"; };
+		7F1A056A /* Browser/PressureRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PressureRules.swift; sourceTree = "<group>"; };
+		7F1A0568 /* Browser/MainThreadHitchProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/MainThreadHitchProbe.swift; sourceTree = "<group>"; };
+		7F1A0566 /* Browser/HitchRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/HitchRules.swift; sourceTree = "<group>"; };
+		7F1A0564 /* Browser/DirectoryLoadCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/DirectoryLoadCoordinator.swift; sourceTree = "<group>"; };
+		7F1A0562 /* Browser/DirectoryWorkLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/DirectoryWorkLimiter.swift; sourceTree = "<group>"; };
+		7F1A0560 /* Browser/LoadCoordinatorRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/LoadCoordinatorRules.swift; sourceTree = "<group>"; };
+		7F1A055E /* Browser/ListingDiskCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ListingDiskCache.swift; sourceTree = "<group>"; };
+		7F1A055C /* Browser/ListingCacheRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ListingCacheRules.swift; sourceTree = "<group>"; };
 		7F1A005F /* Browser/BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserCommands.swift; sourceTree = "<group>"; };
 		7F1A003F /* Browser/FileOperationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileOperationRules.swift; sourceTree = "<group>"; };
 		7F1A002C /* Browser/SearchQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SearchQuery.swift; sourceTree = "<group>"; };
@@ -1111,6 +1129,15 @@
 				7F1A0556 /* Browser/CloudFactsCache.swift */,
 				7F1A0558 /* Browser/LoadRules.swift */,
 				7F1A055A /* Browser/ListingDiff.swift */,
+				7F1A056C /* Browser/MemoryPressureRelief.swift */,
+				7F1A056A /* Browser/PressureRules.swift */,
+				7F1A0568 /* Browser/MainThreadHitchProbe.swift */,
+				7F1A0566 /* Browser/HitchRules.swift */,
+				7F1A0564 /* Browser/DirectoryLoadCoordinator.swift */,
+				7F1A0562 /* Browser/DirectoryWorkLimiter.swift */,
+				7F1A0560 /* Browser/LoadCoordinatorRules.swift */,
+				7F1A055E /* Browser/ListingDiskCache.swift */,
+				7F1A055C /* Browser/ListingCacheRules.swift */,
 				7F1A005F /* Browser/BrowserCommands.swift */,
 				7F1A003F /* Browser/FileOperationRules.swift */,
 				7F1A002C /* Browser/SearchQuery.swift */,
@@ -1800,6 +1827,15 @@
 				7F1A0557 /* Browser/CloudFactsCache.swift in Sources */,
 				7F1A0559 /* Browser/LoadRules.swift in Sources */,
 				7F1A055B /* Browser/ListingDiff.swift in Sources */,
+				7F1A056D /* Browser/MemoryPressureRelief.swift in Sources */,
+				7F1A056B /* Browser/PressureRules.swift in Sources */,
+				7F1A0569 /* Browser/MainThreadHitchProbe.swift in Sources */,
+				7F1A0567 /* Browser/HitchRules.swift in Sources */,
+				7F1A0565 /* Browser/DirectoryLoadCoordinator.swift in Sources */,
+				7F1A0563 /* Browser/DirectoryWorkLimiter.swift in Sources */,
+				7F1A0561 /* Browser/LoadCoordinatorRules.swift in Sources */,
+				7F1A055F /* Browser/ListingDiskCache.swift in Sources */,
+				7F1A055D /* Browser/ListingCacheRules.swift in Sources */,
 				7F1A0076 /* Browser/BrowserCommands.swift in Sources */,
 				7F1A0058 /* Browser/FileOperationRules.swift in Sources */,
 				7F1A002D /* Browser/SearchQuery.swift in Sources */,
