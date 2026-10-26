@@ -389,6 +389,11 @@
 		7F1A0559 /* Browser/LoadRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0558 /* Browser/LoadRules.swift */; };
 		7F1A055B /* Browser/ListingDiff.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A055A /* Browser/ListingDiff.swift */; };
 		7F1A056D /* Browser/MemoryPressureRelief.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A056C /* Browser/MemoryPressureRelief.swift */; };
+		7F1A0577 /* Browser/SpaceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0576 /* Browser/SpaceModel.swift */; };
+		7F1A0575 /* Browser/MetadataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0574 /* Browser/MetadataStore.swift */; };
+		7F1A0573 /* Browser/FolderAnnotations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0572 /* Browser/FolderAnnotations.swift */; };
+		7F1A0571 /* Browser/PropertyRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0570 /* Browser/PropertyRules.swift */; };
+		7F1A056F /* Browser/PropertySchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A056E /* Browser/PropertySchema.swift */; };
 		7F1A056B /* Browser/PressureRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A056A /* Browser/PressureRules.swift */; };
 		7F1A0569 /* Browser/MainThreadHitchProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0568 /* Browser/MainThreadHitchProbe.swift */; };
 		7F1A0567 /* Browser/HitchRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0566 /* Browser/HitchRules.swift */; };
@@ -752,6 +757,11 @@
 		7F1A0558 /* Browser/LoadRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/LoadRules.swift; sourceTree = "<group>"; };
 		7F1A055A /* Browser/ListingDiff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ListingDiff.swift; sourceTree = "<group>"; };
 		7F1A056C /* Browser/MemoryPressureRelief.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/MemoryPressureRelief.swift; sourceTree = "<group>"; };
+		7F1A0576 /* Browser/SpaceModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SpaceModel.swift; sourceTree = "<group>"; };
+		7F1A0574 /* Browser/MetadataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/MetadataStore.swift; sourceTree = "<group>"; };
+		7F1A0572 /* Browser/FolderAnnotations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FolderAnnotations.swift; sourceTree = "<group>"; };
+		7F1A0570 /* Browser/PropertyRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PropertyRules.swift; sourceTree = "<group>"; };
+		7F1A056E /* Browser/PropertySchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PropertySchema.swift; sourceTree = "<group>"; };
 		7F1A056A /* Browser/PressureRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PressureRules.swift; sourceTree = "<group>"; };
 		7F1A0568 /* Browser/MainThreadHitchProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/MainThreadHitchProbe.swift; sourceTree = "<group>"; };
 		7F1A0566 /* Browser/HitchRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/HitchRules.swift; sourceTree = "<group>"; };
@@ -1130,6 +1140,11 @@
 				7F1A0558 /* Browser/LoadRules.swift */,
 				7F1A055A /* Browser/ListingDiff.swift */,
 				7F1A056C /* Browser/MemoryPressureRelief.swift */,
+				7F1A0576 /* Browser/SpaceModel.swift */,
+				7F1A0574 /* Browser/MetadataStore.swift */,
+				7F1A0572 /* Browser/FolderAnnotations.swift */,
+				7F1A0570 /* Browser/PropertyRules.swift */,
+				7F1A056E /* Browser/PropertySchema.swift */,
 				7F1A056A /* Browser/PressureRules.swift */,
 				7F1A0568 /* Browser/MainThreadHitchProbe.swift */,
 				7F1A0566 /* Browser/HitchRules.swift */,
@@ -1828,6 +1843,11 @@
 				7F1A0559 /* Browser/LoadRules.swift in Sources */,
 				7F1A055B /* Browser/ListingDiff.swift in Sources */,
 				7F1A056D /* Browser/MemoryPressureRelief.swift in Sources */,
+				7F1A0577 /* Browser/SpaceModel.swift in Sources */,
+				7F1A0575 /* Browser/MetadataStore.swift in Sources */,
+				7F1A0573 /* Browser/FolderAnnotations.swift in Sources */,
+				7F1A0571 /* Browser/PropertyRules.swift in Sources */,
+				7F1A056F /* Browser/PropertySchema.swift in Sources */,
 				7F1A056B /* Browser/PressureRules.swift in Sources */,
 				7F1A0569 /* Browser/MainThreadHitchProbe.swift in Sources */,
 				7F1A0567 /* Browser/HitchRules.swift in Sources */,
