@@ -86,7 +86,7 @@ macOS 14+, SwiftUI + AppKit, Sparkle) — mọi cơ chế dưới đây **đo t�
 
 | Mã | Câu hỏi | Mặc định |
 |:--|:--|:--|
-| Q-T32-0 | Hướng UI: Tilde cho **cửa sổ trình duyệt**; các trang Cài đặt XFinder vẫn OneNotch | theo mặc định |
+| Q-T32-0 | Hướng UI | **chủ dự án chốt (26/10, /evon:ui-ux "nhớ sử dụng UI/UX từ Tilde")**: cửa sổ trình duyệt + Cài đặt trình duyệt bám **ảnh/video Tilde làm design ref** (bố cục, vị trí, màu, kiểu dáng — luật S12/S13 của skill ui-ux: giữ vị trí, không tự thêm khối); các trang Cài đặt app ngoài trình duyệt vẫn OneNotch |
 | Q-T32-1 | Bố cục mặc định: tree một cột (Tilde) hay giữ 4 kiểu xem | giữ 4 kiểu; **List thành tree** (bỏ header cột khi ≤ 1 cột hiện, Pinned + chip + nhóm thuộc tính); mặc định mới = List |
 | Q-T32-2 | Thuộc tính lưu ở đâu | SQLite sidecar `Browser/metadata.sqlite` (actor, WAL) — không ghi xattr; Finder tags vẫn là tags |
 | Q-T32-3 | Live Groups | nhóm sidebar = (thuộc tính, giá trị); liệt kê từ DB, không quét đĩa; đổi thuộc tính ⇒ sidebar cập nhật ngay |
@@ -100,6 +100,30 @@ macOS 14+, SwiftUI + AppKit, Sparkle) — mọi cơ chế dưới đây **đo t�
 | Q-T32-11 | Hiệu năng | **làm trước UI**: disk listing cache + validation token (mtime+size thư mục), projection ngoài main, work limiter, hitch probe Debug, pressure monitor; mốc §5 |
 | Q-T32-12 | Thanh "Add related items" | có, lưu `folder_relations` tương đương |
 | Q-T32-13 | Breadcrumb đáy | có, thay `PathBarView` vị trí (mặc định bật) |
+
+## 3b. Design ref Tilde — thứ phải khớp khi dựng W2/W3/W4/W6 (đọc từ 13 ảnh + 6 video)
+
+- **Sidebar**: nền vibrancy xám (`NSVisualEffectView .sidebar`), tiêu đề Space đậm 17 pt ở đầu, nút thu sidebar cạnh đèn
+  giao thông; nhóm chữ xám nhỏ (Workspaces · Favorites · Live Groups (chấm màu sau tên nhóm) · Recents · Locations); hàng 28 pt,
+  icon thư mục xanh 16 pt; hàng chọn = nền xám bo 8; Locations có icon SF Symbol đơn sắc, nút ⏏ phải; đáy: nút ⊕ trái, + phải,
+  chấm phân trang Space giữa.
+- **Thanh trên vùng nội dung**: ‹ › · tab dạng pill (icon thư mục + tên, nền xám nhạt, hover hiện ×) · + ; góc phải nhóm 3 nút
+  (cột / danh sách / chia). Dưới đó một dải: "+ Add related items" trái; 🔍 · ⋯ · + phải. **Không có toolbar NSToolbar dày.**
+- **Nội dung**: nền trắng, hàng 31 pt, không kẻ sọc, không header cột ở chế độ cây; khối **Pinned** là thẻ xám bo 10 ở đầu
+  ("Welcome.md · This folder"); chevron › phải mỗi thư mục; chip thuộc tính dạng viên thuốc màu nhạt + chữ đậm màu; nhãn **aka**
+  xám nhỏ sau tên; hover hàng hiện `⋯`.
+- **Breadcrumb đáy** (Home › Tilde Onboarding › Projects) nhỏ 12 pt, icon thư mục; nút 📖 Learn tròn nổi góc dưới phải.
+- **Ngăn chia**: mỗi ngăn có thanh tab + dải riêng; ngăn không active **làm mờ** (chữ/icon nhạt) — mặc định `dim`; tuỳ chọn viền.
+- **Popover/menu**: thẻ trắng bo 12, bóng nhẹ; menu `⋯` của thư mục: Filter · Sort · Properties (n visible) · Group (None);
+  Edit Properties: ‹ tiêu đề ⋯, ô tên, công tắc "Show in view", danh sách Options có tay kéo, "+ Add an option"; chọn màu: ô nhập
+  + 7 dòng chấm màu (Gray Red Orange Yellow Green Blue Purple).
+- **Coachmark Learn**: bong bóng trắng có tiêu đề đậm + "End" phải + mô tả + nút xanh "Got It".
+- **⌘K**: thẻ giữa màn rộng ~800, ô tìm có kính lúp, hàng có icon + tên + đường dẫn xám, phím tắt dạng phím ở phải; chân: ↵ Open ·
+  ⌘↵ New Tab · ⌥↵ Split … ⌘K Actions · esc Close.
+- **Cài đặt**: cửa sổ sidebar trái (General · License · Appearance · Shortcuts · Inspector · Contact Support đáy), nội dung là các
+  nhóm thẻ xám bo 12 có tiêu đề nhóm; control phải hàng (segmented xanh, công tắc, popup chữ xanh). Shortcuts: ô tìm, nhóm theo
+  mục, phím dạng ô vuông + ×, "Set Shortcut".
+- **Toast** đáy giữa: viên thuốc trắng "Moved to Images" + ↩ + ×.
 
 ## 4. Đợt làm (fan-out theo file, contract trước, stub biên dịch được)
 
