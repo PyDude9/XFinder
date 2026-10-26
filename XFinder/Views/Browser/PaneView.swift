@@ -60,10 +60,13 @@ struct PaneView: View {
             }
         }
         .background(XFinderTokens.Fill.window)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            model.focus(pane.id)
+        // No tap gesture here: an ancestor gesture makes AppKit delay every mouse-down to the file view until the
+        // recognisers decide. `BrowserWindow.sendEvent` activates the pane instead — the file view under the click,
+        // or the pane whose frame (reported below) contains it.
+        .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { frame in
+            model.paneFramesInWindow[pane.id] = frame
         }
+        .onDisappear { model.paneFramesInWindow[pane.id] = nil }
     }
 
     /// Contract §4: "vạch nhấn màu nhấn … trên đỉnh ngăn đang chọn khi có ≥ 2 ngăn (cue duy nhất)" — the only focus

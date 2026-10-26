@@ -482,6 +482,10 @@ enum BrowserSheet: String, Identifiable {
     private(set) var tabLists: [PaneID: PaneTabList] = [:]
     private(set) var tabStates: [TabID: PaneState] = [:]
     var activePane: PaneID
+    /// Each pane's frame in its window's content view (top-left origin), reported by `PaneView`. Read by
+    /// `BrowserWindow.sendEvent` to activate the pane under a click that lands outside a file view (path bar,
+    /// status bar, empty area). Not observed: a geometry write must never re-render the panes.
+    @ObservationIgnored var paneFramesInWindow: [PaneID: CGRect] = [:]
     var shelf = ShelfModel()
     var shelfVisible = false
     var palette: PaletteMode?

@@ -471,7 +471,9 @@ final class BrowserWindow: NSWindow {
     override func sendEvent(_ event: NSEvent) {
         switch event.type {
         case .leftMouseDown, .rightMouseDown, .otherMouseDown:
-            if let hit = contentView?.hitTest(event.locationInWindow) { activatePane(containing: hit) }
+            if let hit = contentView?.hitTest(event.locationInWindow), !activatePane(containing: hit) {
+                activatePane(at: event.locationInWindow)
+            }
         default:
             break
         }
@@ -488,15 +490,28 @@ final class BrowserWindow: NSWindow {
         makeFirstResponder(view)
     }
 
-    private func activatePane(containing view: NSView) {
+    @discardableResult
+    private func activatePane(containing view: NSView) -> Bool {
         var current: NSView? = view
         while let candidate = current {
             if let source = candidate as? PaneActivating {
                 source.activatePane?()
-                return
+                return true
             }
             current = candidate.superview
         }
+        return false
+    }
+
+    /// Outside a file view: the pane whose reported frame contains the click. Replaces a SwiftUI tap gesture on the
+    /// pane, which sat above the outline and made AppKit hold every mouse-down for the gesture recognisers
+    /// (`_NSGestureRecognizerSortAndSendDelayedEvents` before `-[NSOutlineView mouseDown:]`, sampled 2026-10-26).
+    private func activatePane(at locationInWindow: NSPoint) {
+        guard let content = contentView, let model = modelForThisWindow() else { return }
+        var point = content.convert(locationInWindow, from: nil)
+        if !content.isFlipped { point.y = content.bounds.height - point.y }
+        guard let pane = model.paneFramesInWindow.first(where: { $0.value.contains(point) })?.key else { return }
+        model.focus(pane)
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
