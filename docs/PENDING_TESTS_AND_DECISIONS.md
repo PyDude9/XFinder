@@ -298,6 +298,8 @@ Những thứ code + test tự động đã qua nhưng **chưa ai làm bằng ta
 | T-T31-1 | Side by Side trên `~`, chọn một hàng, rồi từ Terminal `touch ~/x.txt` và `rm ~/x.txt` | hàng x.txt hiện/mất tại chỗ; hàng đang chọn và vị trí cuộn giữ nguyên; không có vòng xoay |
 | T-T31-2 | Mở rộng một thư mục con trong List (tam giác), rồi tạo tệp ở `~` | thư mục con vẫn mở rộng sau khi tệp mới hiện |
 | T-T31-3 | Đổi tên một tệp giữa danh sách sao cho vị trí sắp xếp đổi | danh sách sắp lại đúng (đường reload) |
+| T-T31-4 | Side by Side, click một hàng ở ngăn KHÔNG đang chọn, rồi click một hàng ở ngăn đang chọn | cả hai lần hàng được chọn ngay; không cần click lần hai (trước 26/10 overlay nhận kéo tab nuốt mọi click vào nội dung ngăn) |
+| T-T31-5 | Kéo một tab ngăn thả vào mép trái/phải/dưới của ngăn khác, và thả vào giữa | mép ⇒ chia ngăn + tab vào ngăn mới (tô sáng nửa ngăn khi rê); giữa ⇒ tab nối cuối (viền quanh ngăn); thả vào dải tab ⇒ chèn đúng vị trí |
 | Q-T31-1 | Hai ngăn/tab cùng thư mục: dùng chung listing + watcher (DirectoryLoadCoordinator)? | mặc định: làm sau khi h2h có số |
 | Q-T31-2 | Badge đám mây đọc theo lô 50 ở nền (CloudLookupBatch)? | mặc định: có, sau T-T31 |
 | Q-T31-3 | MainThreadWatchdog bản Debug (log + sample khi main > 250 ms)? | mặc định: có |
