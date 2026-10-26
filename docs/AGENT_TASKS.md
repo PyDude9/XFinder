@@ -254,3 +254,7 @@ xuống mục 6 kèm các bước.
 - Đăng 1.4.0 (Q-RELEASE-14): script phát hành, ký, GitHub.
 - Theo dõi T-LIMIT-1: nếu lần chạm giới hạn thật cho kết quả khác, đo lại transcript và sửa `AgentEvents.swift`.
 - Mọi việc trong vùng cấm (mục 2) và mọi phép đo trên máy (quyền, Accessibility, dữ liệu thật).
+
+## XF-T32 W2/W3 (Sol)
+
+Jobs: `docs/specs/XF-T32-w23-handoff-sol.md` (B1 metadata, B2 tree, B3 menus, B4 chrome, S1 spaces fix, V1/V2 verify). One line per finished job below.
