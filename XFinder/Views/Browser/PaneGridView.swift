@@ -29,10 +29,12 @@ struct PaneGridView: View {
             ZStack(alignment: .topLeading) {
                 ForEach(model.tree.panes, id: \.self) { paneID in
                     if let frame = frames[paneID], let pane = model.panes[paneID] {
-                        // `.onDrop` sits on the pane itself, not on an overlay: a hit-testable overlay over the
-                        // content area swallowed every click meant for the List/Icons/Columns view (measured
-                        // 2026-10-26: synthetic click ⇒ first responder stayed the window, AX-set selection worked).
-                        // A drop modifier claims no mouse events; the outline keeps its clicks and its file drops.
+                        // Every modifier that takes events or draws over the pane comes BEFORE `.position`:
+                        // `.position` returns a view that fills the whole grid, so a `.contentShape(Rectangle())`
+                        // + tap gesture applied after it covered every pane, and the pane drawn last (right /
+                        // bottom-right) took every click in the window — "only the blue pane works" (owner,
+                        // 2026-10-26; probe: a click on the left square fired the right square's gesture).
+                        // `.onDrop` sits on the pane itself, not on a hit-testable overlay (that ate clicks too).
                         PaneView(pane: pane, model: model, isActive: paneID == model.activePane)
                             .onDrop(of: [PaneTabStripView.tabType],
                                     delegate: PaneTabDropDelegate(paneID: paneID, paneSize: frame.size,
@@ -40,28 +42,20 @@ struct PaneGridView: View {
                                                                   target: Binding(get: { dropTargets[paneID] },
                                                                                   set: { dropTargets[paneID] = $0 })))
                             .frame(width: frame.width, height: frame.height)
-                            .position(x: frame.midX, y: frame.midY)
-                            .overlay(alignment: .topLeading) {
+                            .overlay {
                                 if paneID == model.activePane {
                                     RoundedRectangle(cornerRadius: 0, style: .continuous)
                                         .strokeBorder(Color.accentColor, lineWidth: 1)
-                                        .frame(width: frame.width, height: frame.height)
-                                        .position(x: frame.midX, y: frame.midY)
                                         .allowsHitTesting(false)
                                 }
                             }
-                            .overlay(alignment: .topLeading) {
+                            .overlay(alignment: .top) {
                                 // Highlight below the tab strip only (the strip draws its own insertion marker).
-                                let strip = PaneTabStripView.height
                                 PaneTabDropHighlight(target: dropTargets[paneID])
-                                    .frame(width: frame.width, height: max(0, frame.height - strip))
-                                    .position(x: frame.midX, y: frame.midY + strip / 2)
+                                    .padding(.top, PaneTabStripView.height)
                                     .allowsHitTesting(false)
                             }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                model.focus(paneID)
-                            }
+                            .position(x: frame.midX, y: frame.midY)
                     }
                 }
 
