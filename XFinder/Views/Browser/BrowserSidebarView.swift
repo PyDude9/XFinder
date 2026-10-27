@@ -15,8 +15,20 @@ import os
 /// sidebar/Sao chép câu tìm) and cloud rows per provider/account (`SidebarSources.cloud`, one row per Google Drive
 /// account with its email, one for Dropbox, one per other `~/Library/CloudStorage` provider), gated by the same
 /// `fileBrowser.sidebar.cloudStorage` key the generic cloud-volume rows already use.
+///
+/// XF-T32 W2 (contract XF-T32-w23 §D) — composed the Tilde way: the Space title on top, Favorites (+ groups), the
+/// active Space's Live Groups, Recents, Locations, Tags, Saved searches, Sync, and the Space pager pinned at the
+/// bottom outside the scroll view, over the `.sidebar` vibrancy material. Rows are 28 pt with a 16 pt icon; the
+/// current row is a gray rounded fill. Every layout save is mirrored into the active Space
+/// (`SpaceController.sidebarDidChange`), and switching Space reloads the layout that Space wrote.
 struct BrowserSidebarView: View {
     private static let iconSize: CGFloat = 16
+    /// Tilde's sidebar row height (contact sheets: 28 pt rows).
+    private static let rowHeight: CGFloat = 28
+    /// The gray rounded fill behind the current row (Tilde: neutral gray, never the accent colour).
+    private static let selectionFill: Color = XFinderTokens.Settings.hairline
+    /// Finder-tag colour dot, centred in the 16 pt icon slot.
+    private static let tagDotSize: CGFloat = 10
 
     let model: BrowserWindowModel
 
@@ -47,6 +59,8 @@ struct BrowserSidebarView: View {
     /// exactly the volumes the person asked to eject (R67/R70 — never cascades to a sibling or an internal disk).
     @State private var busyEjectSheet: BusyEjectSheet?
     @State private var draggingItemID: UUID?
+    @State private var spaces: SpaceController = SpaceController.shared
+    @State private var metadata: BrowserMetadata = BrowserMetadata.shared
 
     private struct VolumeRow: Identifiable {
         var id: String { path }
@@ -85,36 +99,23 @@ struct BrowserSidebarView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.section) {
-                if BrowserSettings.sidebarRecents {
-                    recentsSection
-                }
-                if BrowserSettings.sidebarAirDrop {
-                    airDropSection
-                }
-                favoritesSection
-                if sources.iCloudDrive != nil, BrowserSettings.sidebarICloud {
-                    iCloudSection
-                }
-                locationsSection
-                if BrowserSettings.sidebarBonjour {
-                    networkSection
-                }
-                if BrowserSettings.sidebarRecentTags {
-                    tagsSection
-                }
-                if !sidebarSavedSearches.isEmpty {
-                    savedSearchesSection
-                }
-                if !sync.pairs.isEmpty {
-                    syncSection
-                }
-                newGroupRow
+        VStack(alignment: .leading, spacing: 0) {
+            SidebarSpaceHeader(spaces: spaces, onToggleSidebar: toggleSidebar)
+            ScrollView {
+                sectionStack
+                    .padding(.vertical, XFinderTokens.Space.tight)
             }
-            .padding(.vertical, XFinderTokens.Space.row)
+            // Pinned at the bottom, outside the scroll view (Tilde: ⊕ · page dots · +).
+            SidebarSpacePager(spaces: spaces, onNewGroup: beginNewGroup)
         }
+        .background(SidebarVibrancyBackground())
         .onAppear(perform: reload)
+        // Activating a Space writes its sidebar into `BrowserSettings.sidebarLayout` (SpaceController invariant)
+        // before `activeID` changes, so re-reading here shows that Space's favorites, groups and hidden volumes.
+        .onChange(of: spaces.store.activeID) { _, _ in
+            cancelPendingEdits()
+            reload()
+        }
         // ⌘E from the menu / key bindings runs the same eject flow as the row's button (EjectRequestCenter).
         .onChange(of: EjectRequestCenter.shared.pending) { _, _ in
             guard let mountPath: String = EjectRequestCenter.shared.take(for: model) else { return }
@@ -137,6 +138,113 @@ struct BrowserSidebarView: View {
         }
     }
 
+    /// Tilde's order: Favorites (+ groups) · Live Groups · Recents · Locations (AirDrop, iCloud, volumes, cloud,
+    /// network) · Tags · Saved searches · Sync. Each category keeps its own `BrowserSettings.sidebar*` switch.
+    private var sectionStack: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.inline) {
+            favoritesSection
+            if creatingGroup {
+                newGroupRow
+            }
+            SidebarLiveGroupsSection(spaces: spaces, metadata: metadata, onOpen: openFolder, isSelected: isCurrentPath)
+            if BrowserSettings.sidebarRecents {
+                recentsSection
+            }
+            if BrowserSettings.sidebarAirDrop {
+                airDropSection
+            }
+            if sources.iCloudDrive != nil, BrowserSettings.sidebarICloud {
+                iCloudSection
+            }
+            locationsSection
+            if BrowserSettings.sidebarBonjour {
+                networkSection
+            }
+            if BrowserSettings.sidebarRecentTags {
+                tagsSection
+            }
+            if !sidebarSavedSearches.isEmpty {
+                savedSearchesSection
+            }
+            if !sync.pairs.isEmpty {
+                syncSection
+            }
+        }
+    }
+
+    /// Same command ⌥⌘S and the View menu run (`fileBrowser.showSidebar`).
+    private func toggleSidebar() {
+        _ = model.perform(.toggleSidebar)
+    }
+
+    /// The pager's ⊕ opens the same inline "new group" field the old bottom "Nhóm mới…" button opened.
+    private func beginNewGroup() {
+        pendingMoveItemID = nil
+        newGroupName = ""
+        creatingGroup = true
+    }
+
+    /// Navigates the active pane and records the folder in Recents — the one path every sidebar row click takes.
+    private func openFolder(_ path: String) {
+        model.active.navigate(to: path)
+        BrowserWindowModel.noteRecentFolder(path)
+    }
+
+    /// A Space switch replaces `layout`: an open rename sheet, a half-typed group or a drag in flight all point at
+    /// item ids of the previous Space's layout, so they are dropped instead of being applied to the wrong Space.
+    private func cancelPendingEdits() {
+        renamingItem = nil
+        pendingMoveItemID = nil
+        creatingGroup = false
+        newGroupName = ""
+        draggingItemID = nil
+        cancelSpringLoad()
+    }
+
+    // MARK: - Row chrome (Tilde: 28 pt, 16 pt icon, gray rounded selection)
+
+    /// Wraps a row's content in the shared sidebar chrome: fixed 28 pt height, inset gray rounded fill when
+    /// `selected`, full-width hit area.
+    private func rowChrome<Content: View>(selected: Bool, @ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: XFinderTokens.Space.tight) {
+            content()
+        }
+        .padding(.horizontal, XFinderTokens.Space.tight)
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: Self.rowHeight, maxHeight: Self.rowHeight,
+               alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: XFinderTokens.Radius.control, style: .continuous)
+                .fill(selected ? Self.selectionFill : Color.clear)
+        )
+        .padding(.horizontal, XFinderTokens.Space.tight)
+        .contentShape(Rectangle())
+    }
+
+    /// A monochrome SF Symbol at the 16 pt icon slot (Tilde: Locations use monochrome symbols).
+    private func symbolIcon(_ systemImage: String) -> some View {
+        Image(systemName: systemImage)
+            .font(XFinderTokens.Settings.sidebarRow)
+            .foregroundColor(.secondary)
+            .frame(width: Self.iconSize, height: Self.iconSize)
+    }
+
+    /// The real Finder icon of a folder (blue folder, custom icons kept) through `FileIconCache` — never a bare
+    /// `NSWorkspace` lookup in `body` (CLAUDE.md §3.3 #14).
+    private func fileIcon(_ path: String) -> some View {
+        Image(nsImage: FileIconCache.shared.icon(forPath: path))
+            .resizable()
+            .interpolation(.high)
+            .frame(width: Self.iconSize, height: Self.iconSize)
+    }
+
+    private func rowLabel(_ name: String) -> some View {
+        Text(name)
+            .font(XFinderTokens.Settings.sidebarRow)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+    }
+
     // MARK: - Gần đây
 
     private var recentsSection: some View {
@@ -146,7 +254,7 @@ struct BrowserSidebarView: View {
             if !recentFolders.isEmpty {
                 ForEach(recentFolders, id: \.self) { path in
                     row(name: (path as NSString).lastPathComponent, systemImage: "folder", path: path,
-                       highlighted: isCurrentPath(path))
+                       highlighted: isCurrentPath(path), iconPath: path)
                 }
                 Button(L10n.t("Xoá menu")) {
                     BrowserSettings.recentFolders.clear()
@@ -155,7 +263,7 @@ struct BrowserSidebarView: View {
                 .buttonStyle(.plain)
                 .font(XFinderTokens.Font.caption)
                 .foregroundColor(.secondary)
-                .padding(.horizontal, XFinderTokens.Space.row)
+                .padding(.horizontal, XFinderTokens.Space.inline)
             }
         }
     }
@@ -169,18 +277,10 @@ struct BrowserSidebarView: View {
     /// `domain-AirDrop` host is the documented trick other apps use to raise exactly that window.
     private var airDropSection: some View {
         section(title: L10n.t("AirDrop")) {
-            HStack(spacing: XFinderTokens.Space.tight) {
-                Image(systemName: "airplayaudio")
-                    .font(XFinderTokens.Font.caption)
-                    .foregroundColor(.secondary)
-                    .frame(width: Self.iconSize)
-                Text(L10n.t("AirDrop"))
-                    .font(XFinderTokens.Settings.sidebarRow)
-                Spacer(minLength: 0)
+            rowChrome(selected: false) {
+                symbolIcon("airplayaudio")
+                rowLabel(L10n.t("AirDrop"))
             }
-            .padding(.horizontal, XFinderTokens.Space.row)
-            .frame(minHeight: XFinderTokens.Settings.rowMinHeight)
-            .contentShape(Rectangle())
             .onTapGesture { openFinderAirDropWindow() }
             .help(L10n.t("macOS không cho ứng dụng khác hiện thiết bị AirDrop gần đây — bấm để mở AirDrop của Finder"))
             .onDrop(of: [.fileURL], isTargeted: nil) { providers in
@@ -249,11 +349,14 @@ struct BrowserSidebarView: View {
     }
 
     private func section<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 0) {
             Text(title)
-                .font(XFinderTokens.Settings.sidebarHeader)
+                .font(XFinderTokens.Settings.sidebarHeader.weight(.semibold))
                 .foregroundColor(.secondary)
-                .padding(.horizontal, XFinderTokens.Space.row)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .padding(.horizontal, XFinderTokens.Space.inline)
+                .padding(.bottom, XFinderTokens.Space.hairline)
             content()
         }
     }
@@ -262,26 +365,27 @@ struct BrowserSidebarView: View {
         BrowserSettings.sidebarHighlightCurrent && model.active.path == path
     }
 
-    private func row(name: String, systemImage: String, path: String, highlighted: Bool = false) -> some View {
-        HStack(spacing: XFinderTokens.Space.tight) {
-            Image(systemName: systemImage)
-                .font(XFinderTokens.Font.caption)
-                .foregroundColor(.secondary)
-                .frame(width: Self.iconSize)
-            Text(name)
-                .font(XFinderTokens.Settings.sidebarRow)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Spacer(minLength: 0)
+    private func row(name: String, systemImage: String, path: String, highlighted: Bool = false,
+                     iconPath: String? = nil) -> some View {
+        row(name: name, systemImage: systemImage, path: path, highlighted: highlighted, iconPath: iconPath) {
+            EmptyView()
         }
-        .padding(.horizontal, XFinderTokens.Space.row)
-        .frame(minHeight: XFinderTokens.Settings.rowMinHeight)
-        .background(highlighted ? Color.accentColor.opacity(0.14) : Color.clear)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            model.active.navigate(to: path)
-            BrowserWindowModel.noteRecentFolder(path)
+    }
+
+    /// One navigable sidebar row. `iconPath` draws that folder's real Finder icon (Favorites, Recents); nil draws
+    /// the monochrome `systemImage` (Locations, virtual places). `trailing` sits inside the row's chrome (⏏).
+    private func row<Trailing: View>(name: String, systemImage: String, path: String, highlighted: Bool,
+                                     iconPath: String?, @ViewBuilder trailing: () -> Trailing) -> some View {
+        rowChrome(selected: highlighted) {
+            if let iconPath {
+                fileIcon(iconPath)
+            } else {
+                symbolIcon(systemImage)
+            }
+            rowLabel(name)
+            trailing()
         }
+        .onTapGesture { openFolder(path) }
         // Spring-loaded folders: a drag held over this row for the system's own delay navigates into it, same
         // timing System Settings ▸ Trackpad/Mouse's "Spring-loading" exposes (contract §2).
         .onDrop(of: [.fileURL], isTargeted: Binding(get: { false }, set: { targeted in
@@ -291,7 +395,7 @@ struct BrowserSidebarView: View {
 
     private func favoriteRow(_ item: SidebarLayout.Item, groupID: UUID?) -> some View {
         row(name: item.displayName ?? (item.path as NSString).lastPathComponent, systemImage: "folder", path: item.path,
-           highlighted: isCurrentPath(item.path))
+           highlighted: isCurrentPath(item.path), iconPath: item.path)
             .contextMenu { itemContextMenu(item, groupID: groupID) }
             .onDrag {
                 draggingItemID = item.id
@@ -377,37 +481,23 @@ struct BrowserSidebarView: View {
         }
     }
 
+    /// The inline "new group" field, shown under Favorites while `creatingGroup` — opened by the pager's ⊕, a
+    /// volume's "Nhóm mới…", or an item's "Tạo nhóm và chuyển vào đây" (Tilde has no separate bottom button).
     private var newGroupRow: some View {
-        Group {
-            if creatingGroup {
-                HStack(spacing: XFinderTokens.Space.tight) {
-                    TextField(L10n.t("Tên nhóm"), text: $newGroupName)
-                        .textFieldStyle(.roundedBorder)
-                        .font(XFinderTokens.Font.caption)
-                        .onSubmit(commitNewGroup)
-                    Button(L10n.t("Tạo")) { commitNewGroup() }
-                        .buttonStyle(.borderless)
-                    Button(L10n.t("Huỷ")) {
-                        pendingMoveItemID = nil
-                        creatingGroup = false
-                    }
-                    .buttonStyle(.borderless)
-                }
-                .padding(.horizontal, XFinderTokens.Space.row)
-            } else {
-                Button {
-                    pendingMoveItemID = nil
-                    creatingGroup = true
-                    newGroupName = ""
-                } label: {
-                    Label(L10n.t("Nhóm mới…"), systemImage: "folder.badge.plus")
-                        .font(XFinderTokens.Font.caption)
-                }
-                .buttonStyle(.plain)
-                .foregroundColor(.secondary)
-                .padding(.horizontal, XFinderTokens.Space.row)
+        HStack(spacing: XFinderTokens.Space.tight) {
+            TextField(L10n.t("Tên nhóm"), text: $newGroupName)
+                .textFieldStyle(.roundedBorder)
+                .font(XFinderTokens.Font.caption)
+                .onSubmit(commitNewGroup)
+            Button(L10n.t("Tạo")) { commitNewGroup() }
+                .buttonStyle(.borderless)
+            Button(L10n.t("Huỷ")) {
+                pendingMoveItemID = nil
+                creatingGroup = false
             }
+            .buttonStyle(.borderless)
         }
+        .padding(.horizontal, XFinderTokens.Space.inline)
     }
 
     private func commitNewGroup() {
@@ -454,8 +544,11 @@ struct BrowserSidebarView: View {
         renamingItem = nil
     }
 
+    /// The one place the sidebar saves its layout: the shared key (every open window's sidebar reads it) and the
+    /// active Space, so switching away and back keeps the edit.
     private func persist() {
         BrowserSettings.sidebarLayout = layout
+        SpaceController.shared.sidebarDidChange(layout)
     }
 
     // MARK: - iCloud
@@ -523,19 +616,18 @@ struct BrowserSidebarView: View {
 
     private func locationRows(_ rows: [VolumeRow]) -> some View {
         ForEach(rows) { volume in
-            HStack {
-                row(name: volume.name, systemImage: icon(for: volume.kind), path: volume.path,
-                   highlighted: isCurrentPath(volume.path))
+            row(name: volume.name, systemImage: icon(for: volume.kind), path: volume.path,
+                highlighted: isCurrentPath(volume.path), iconPath: nil) {
+                // Tilde: ⏏ at the right edge of the location row, inside its chrome.
                 if volume.isEjectable {
-                    Spacer(minLength: 0)
                     Button {
                         beginEject(volume, force: false)
                     } label: {
                         Image(systemName: "eject")
                             .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
                     }
                     .buttonStyle(.plain)
-                    .padding(.trailing, XFinderTokens.Space.tight)
                     .help(L10n.t("Đẩy ra"))
                 }
             }
@@ -557,24 +649,13 @@ struct BrowserSidebarView: View {
     private func cloudRow(_ cloud: CloudRow) -> some View {
         Group {
             if let appIcon = CloudProviderIcon.shared.icon(for: cloud.kind) {
-                HStack(spacing: XFinderTokens.Space.tight) {
+                rowChrome(selected: isCurrentPath(cloud.path)) {
                     Image(nsImage: appIcon)
                         .resizable()
                         .frame(width: Self.iconSize, height: Self.iconSize)
-                    Text(cloud.name)
-                        .font(XFinderTokens.Settings.sidebarRow)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Spacer(minLength: 0)
+                    rowLabel(cloud.name)
                 }
-                .padding(.horizontal, XFinderTokens.Space.row)
-                .frame(minHeight: XFinderTokens.Settings.rowMinHeight)
-                .background(isCurrentPath(cloud.path) ? Color.accentColor.opacity(0.14) : Color.clear)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    model.active.navigate(to: cloud.path)
-                    BrowserWindowModel.noteRecentFolder(cloud.path)
-                }
+                .onTapGesture { openFolder(cloud.path) }
             } else {
                 row(name: cloud.name, systemImage: "cloud", path: cloud.path, highlighted: isCurrentPath(cloud.path))
             }
@@ -612,9 +693,7 @@ struct BrowserSidebarView: View {
             }
         }
         Button(L10n.t("Nhóm mới…")) {
-            pendingMoveItemID = nil
-            creatingGroup = true
-            newGroupName = ""
+            beginNewGroup()
         }
     }
 
@@ -633,22 +712,16 @@ struct BrowserSidebarView: View {
     private var tagsSection: some View {
         section(title: L10n.t("Thẻ")) {
             ForEach(tagLibrary.tags.filter { $0.color != .none }, id: \.name) { tag in
-                HStack(spacing: XFinderTokens.Space.tight) {
+                let tagPath: String = VirtualLocation.tag(tag.name).path
+                rowChrome(selected: isCurrentPath(tagPath)) {
                     Circle()
                         .fill(Self.swiftUIColor(for: tag.color))
-                        .frame(width: 10, height: 10)
-                    Text(tag.name)
-                        .font(XFinderTokens.Settings.sidebarRow)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Spacer(minLength: 0)
+                        .frame(width: Self.tagDotSize, height: Self.tagDotSize)
+                        .frame(width: Self.iconSize, height: Self.iconSize)
+                    rowLabel(tag.name)
                 }
-                .padding(.horizontal, XFinderTokens.Space.row)
-                .frame(minHeight: XFinderTokens.Settings.rowMinHeight)
-                .contentShape(Rectangle())
                 .onTapGesture {
-                    let path = VirtualLocation.tag(tag.name).path
-                    model.active.navigate(to: path)
+                    model.active.navigate(to: tagPath)
                 }
             }
             row(name: L10n.t("Tất cả thẻ…"), systemImage: "tag", path: VirtualLocation.allTags.path)
@@ -679,20 +752,10 @@ struct BrowserSidebarView: View {
     private var savedSearchesSection: some View {
         section(title: L10n.t("Tìm kiếm đã lưu")) {
             ForEach(sidebarSavedSearches) { search in
-                HStack(spacing: XFinderTokens.Space.tight) {
-                    Image(systemName: "magnifyingglass")
-                        .font(XFinderTokens.Font.caption)
-                        .foregroundColor(.secondary)
-                        .frame(width: Self.iconSize)
-                    Text(search.name)
-                        .font(XFinderTokens.Settings.sidebarRow)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Spacer(minLength: 0)
+                rowChrome(selected: false) {
+                    symbolIcon("magnifyingglass")
+                    rowLabel(search.name)
                 }
-                .padding(.horizontal, XFinderTokens.Space.row)
-                .frame(minHeight: XFinderTokens.Settings.rowMinHeight)
-                .contentShape(Rectangle())
                 .onTapGesture { runSavedSearch(search) }
                 .contextMenu { savedSearchContextMenu(search) }
             }
@@ -781,17 +844,10 @@ struct BrowserSidebarView: View {
         section(title: L10n.t("Đồng bộ")) {
             ForEach(sync.pairs) { pair in
                 let allowed = license.allows(.folderSync)
-                HStack(spacing: XFinderTokens.Space.tight) {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(XFinderTokens.Font.caption)
-                        .foregroundColor(.secondary)
-                        .frame(width: Self.iconSize)
-                    Text("\(pair.sourceName) → \(pair.destName)")
-                        .font(XFinderTokens.Settings.sidebarRow)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                rowChrome(selected: false) {
+                    symbolIcon("arrow.triangle.2.circlepath")
+                    rowLabel("\(pair.sourceName) → \(pair.destName)")
                         .foregroundColor(allowed ? .primary : .secondary)
-                    Spacer(minLength: 0)
                     if !allowed {
                         Button {
                             AppState.shared.navigate(to: .pro)
@@ -800,9 +856,6 @@ struct BrowserSidebarView: View {
                         .help(L10n.t("Cần XFinder Pro — bấm để xem"))
                     }
                 }
-                .padding(.horizontal, XFinderTokens.Space.row)
-                .frame(minHeight: XFinderTokens.Settings.rowMinHeight)
-                .contentShape(Rectangle())
                 .onTapGesture {
                     guard allowed else {
                         AppState.shared.navigate(to: .pro)
@@ -1009,6 +1062,21 @@ struct BrowserSidebarView: View {
         cache[kind] = image
         return image
     }
+}
+
+/// The gray translucent sidebar background Tilde (and Finder) use: `NSVisualEffectView` with the `.sidebar`
+/// material blending behind the window, dimming with the window's active state like every system sidebar.
+private struct SidebarVibrancyBackground: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view: NSVisualEffectView = NSVisualEffectView()
+        view.material = .sidebar
+        view.blendingMode = .behindWindow
+        view.state = .followsWindowActiveState
+        view.isEmphasized = false
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
 /// Thread-safe fixed-slot collector for `BrowserSidebarView`'s drop handlers — each `NSItemProvider`'s completion
