@@ -356,3 +356,58 @@ GATE: green
 `plutil -lint XFinder.xcodeproj/project.pbxproj`: OK. `git diff --check`: clean. No new Swift files, project registrations or test symlinks. Existing B1 regression tests run in the full 2800-test suite (the AppKit views and queue wiring are validated by the app build, not exercised by those pure tests). Earlier B1 emoji mutant evidence remains recorded above; no mutation harness was rerun during integration.
 
 **Chưa kiểm live:** installed-app clicks, menus/popovers, VoiceOver, narrow layouts, metadata during real file moves/trash/conflict replacement/undo/redo, scrolling performance and idle/memory behavior. External filesystem changes are not newly instrumented by this integration. No installation, app launch, synthetic input, signing/release action or push. Main is updated only by fast-forward to the validated integration branch, with all commits created on `agent/codex-T32-integration` (no commit created on main).
+
+## XF-T32 W2/W3 completion — owner request, 2026-10-27
+
+Owner requested all remaining handoff work, including integration. Branch `agent/codex-T32-finish` starts at validated `main 0bd315e`; integrates the existing Spaces/sidebarparts/sidebar/chrome worker commits and retains the earlier B1/B2/menu integration. Before fixes, failure cases recorded: missing/corrupt Space or mirror data; default SidebarLayout creates fresh UUIDs; clean relaunch must not save/reset favorites; only one Space; empty/duplicate/deleted Space names; Space switch during rename/drag; same-Space sidebar edits in another window or settings; stale/missing/file/package Live Group paths; large Space count; missing folder permissions; cancelled related-folder picker; narrow panes; path bar and focus-style switches in both states. V1/V2 source findings are in docs/reviews (worker branches left unchanged). Live behavior remains a separate acceptance item.
+
+### Final result — all remaining handoff jobs complete in source
+
+Source fix commit `4d6acf4`, branch `agent/codex-T32-finish`. Preserved worker histories: spaces `713847a`, sidebarparts `cd3699a`, sidebar `22ef1e1`, chrome `903b04a`. B1/B2/B3 were already integrated at `main 0bd315e`. Resolved the chrome merge conflicts by retaining the metadata observer, one geometry observer/no ancestor tap gesture, and the union of added translations (existing keys unchanged).
+
+| Job | Result | Evidence / limits |
+|:--|:--|:--|
+| B4 chrome | Complete | Bottom 24 pt breadcrumb with default on in both views/reader, 28 pt related-items strip, dim/outline focus setting and opacity-only dimming. Existing path-bar choices retained; matching defaults covered by tests. Related-item label may compress in narrow panes. No live layout/click verification. |
+| S1 Spaces | Fixed | Explicit presence/validity check for the sidebar mirror, seed missing mirror from persisted active Space, semantic comparison before saving. Missing-mirror and first-launch tests were RED before the fix, as was the equivalent-JSON-format test; all now GREEN. 19 SpaceController tests + 2 default-key tests pass. The additive `hasLegacyLayout` initializer argument defaults false and is explicitly backed by the real stored-data check in BrowserSettings. |
+| V1 sidebar parts | Reviewed, rebuilt, fixed | `docs/reviews/XF-T32-w23-sidebarparts-sol.md`. Exact worker build GREEN. Composite group identity; folder/package/missing-path facts fetched off-main on metadata/Space events, loading distinct from empty; one scrollable dot per Space. Added a menu to select/unselect Live Groups so the feature is reachable. |
+| V2 sidebar | Reviewed, rebuilt, fixed | `docs/reviews/XF-T32-w23-sidebar-sol.md`. Exact worker build GREEN. Every external sidebar mirror writer forwards to the active Space; all same-Space windows/settings observe active.sidebar. Pending edits cancel on Space change; asynchronous drops check the target Space/group before applying. Existing eject, groups, rename, drag/drop, spring-load, Pro and provider behavior retained in source. |
+| B3 final contract check | Complete | Value menus now list all catalog properties; folder visibility is independent. No property is silently omitted because it is not yet shown in the folder. |
+
+V1 and V2 exact worker builds ran sequentially with their own XF_ROOT/XF_OUT, leaving both checkouts clean. Final integrated clean build ran via gate-all with `XF_OUT=/tmp/xfinder-t32-finish-build`; all seven Spaces/sidebar/chrome source files are in the app compile list, and the built L10n JSON equals the source (3587 entries). A final incremental app build then compiled the all-catalog menu correction successfully. `plutil -lint` and `git diff --check` pass.
+
+Full clean build + gate stdout (verbatim, before the final one-line menu scope correction; no new package sources changed afterward):
+
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2819 tests, with 0 failures (0 unexpected) in 24.115 (24.317) seconds
+check-l10n-coverage                TOTAL 0 problems across 3587 entries (3587 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3587 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1320 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             14
+GATE: green
+```
+
+Final gate stdout after the menu correction, using `--no-build` because the final incremental arm64 build had just succeeded (verbatim):
+
+```text
+tests                              Executed 2819 tests, with 0 failures (0 unexpected) in 23.830 (24.029) seconds
+check-l10n-coverage                TOTAL 0 problems across 3587 entries (3587 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3587 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1320 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             14
+GATE: green
+```
+
+Logs: `/tmp/xfinder-t32-s1-red.log` (2 regression tests RED on original implementation); `/tmp/xfinder-t32-s1-format-red.log` (format regression RED); `/tmp/xfinder-t32-s1-final-green.log` (21 tests GREEN); `/tmp/xfinder-t32-finish-status.json` (V1, V2, final pipeline exit codes all zero); `/tmp/xfinder-t32-finish-incremental.log` (final app build). Localization scripts sidebarparts/chrome/finish are add-only and were applied; no missing wrapped translations remain. No new Swift source files or project/test registrations were needed.
+
+**Chưa kiểm live:** visual comparison with Tilde (reference sheets absent; prior Tilde probe had no on-screen window), accessibility/VoiceOver, physical click/drag/eject flows, multi-window switching while editing, related-folder picker under real permissions, runtime persistence across installed-app relaunches, pane layout at narrow sizes, scrolling/idle CPU/memory. Live Group directory facts refresh on metadata/Space changes; arbitrary external changes elsewhere on disk do not get a new global watcher here. The original handoff's no-install/no-launch restriction remains respected. No install, app launch, input to other apps, release/signing action or push. All measurements above are terminal builds/tests, not installed-app measurements.
+
+The owner explicitly authorized finishing and integrating all remaining jobs; main is advanced only by fast-forward from the validated agent branch, with no commits created directly on main. Other worktrees' uncommitted changes were not touched.
