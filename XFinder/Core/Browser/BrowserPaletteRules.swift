@@ -14,6 +14,18 @@ enum BrowserPaletteRules {
         let aliases: [String]
         var isDirectory: Bool? = nil
     }
+    /// Resolve snapshot aliases once, but leave a typed target for commit-time validation.
+    static func preparing(_ items: [Item], destinationsOnly: Bool, typedPath: String?,
+                          knownKinds: [String: Bool], isDirectory: (String) -> Bool) -> [Item] {
+        guard destinationsOnly else { return items }
+        return items.map { original in
+            var item = original
+            if item.kind == .location, item.isDirectory == nil, item.target != typedPath {
+                item.isDirectory = knownKinds[item.target] ?? isDirectory(item.target)
+            }
+            return item
+        }
+    }
     static func usage(_ data: Data) -> [String: Int] {
         let decoded = (try? JSONDecoder().decode([String: Int].self, from: data)) ?? [:]
         return decoded.filter { !$0.key.isEmpty && $0.value > 0 }.mapValues { min($0, 1_000_000) }

@@ -21,6 +21,32 @@ final class BrowserPaletteRulesTests: XCTestCase {
         let result = BrowserPaletteRules.usage(BrowserPaletteRules.recording("chosen", in: original))
         XCTAssertEqual(result.count, 512); XCTAssertEqual(result["chosen"], 1)
     }
+    func testTypedMovePathDoesNotProbeDiskWhileTyping() {
+        let path = "/tmp/new-destination"
+        for length in 1...path.count {
+            let typed = String(path.prefix(length))
+            var probes: [String] = []
+            let prepared = BrowserPaletteRules.preparing(
+                [item(typed, typed), item("alias-folder", "Folder"), item("alias-file", "File"),
+                 item("cached-folder", "Cached"), item("command", "Command", kind: .command)],
+                destinationsOnly: true, typedPath: typed, knownKinds: [typed: false, "cached-folder": true]
+            ) { target in
+                probes.append(target)
+                return target == "alias-folder"
+            }
+            XCTAssertEqual(probes, ["alias-folder", "alias-file"])
+            XCTAssertNil(prepared[0].isDirectory)
+            XCTAssertEqual(BrowserPaletteRules.rank(query: "", items: prepared, usage: [:], destinationsOnly: true).map(\.id),
+                           [typed, "alias-folder", "cached-folder"])
+        }
+    }
+    func testQuickOpenPreparationDoesNotProbeUnknownCandidates() {
+        let items = [item("alias", "Unknown")]
+        XCTAssertEqual(BrowserPaletteRules.preparing(items, destinationsOnly: false, typedPath: nil, knownKinds: [:]) { _ in
+            XCTFail("Quick Open must not probe candidate paths")
+            return false
+        }, items)
+    }
     func testExplicitCmdKOverrideKeepsOwnership() {
         var keys = KeyBindings()
         keys.overrides[BrowserCommand.connectToServer.rawValue] = .init(primary: KeyChord("k", command: true), extra: nil)

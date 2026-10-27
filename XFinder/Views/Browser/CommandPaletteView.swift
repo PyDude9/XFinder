@@ -19,6 +19,7 @@ struct CommandPaletteView: View {
     private struct Preparation: Equatable {
         let items: [BrowserPaletteRules.Item]
         let moving: Bool
+        let typedPath: String?
     }
     private struct Ranking: Equatable {
         let items: [BrowserPaletteRules.Item]
@@ -48,20 +49,16 @@ struct CommandPaletteView: View {
         .onChange(of: model.active.tabID) { _, _ in model.palette = nil }
         .onChange(of: model.active.path) { _, _ in model.palette = nil }
         .onChange(of: model.active.selection) { _, _ in model.palette = nil }
-        .task(id: Preparation(items: rawCandidates, moving: !moveSources.isEmpty)) {
+        .task(id: Preparation(items: rawCandidates, moving: !moveSources.isEmpty, typedPath: typedPath)) {
             let snapshot = rawCandidates
             let moving = !moveSources.isEmpty
             let knownKinds = resolvedKinds
+            let typedPath = typedPath
             let prepared = await Task.detached(priority: .userInitiated) {
-                snapshot.compactMap { original -> BrowserPaletteRules.Item? in
-                    var item = original
-                    if moving, item.kind == .location, item.isDirectory == nil {
-                        if let known = knownKinds[item.target] { item.isDirectory = known; return item }
-                        var isDirectory: ObjCBool = false
-                        let exists = FileManager.default.fileExists(atPath: item.target, isDirectory: &isDirectory)
-                        item.isDirectory = exists && isDirectory.boolValue
-                    }
-                    return item
+                BrowserPaletteRules.preparing(snapshot, destinationsOnly: moving,
+                                              typedPath: typedPath, knownKinds: knownKinds) { path in
+                    var directory: ObjCBool = false
+                    return FileManager.default.fileExists(atPath: path, isDirectory: &directory) && directory.boolValue
                 }
             }.value
             guard !Task.isCancelled else { return }
@@ -166,6 +163,10 @@ struct CommandPaletteView: View {
         .shadow(radius: 20)
     }
 
+    private var typedPath: String? {
+        query.hasPrefix("/") || query.hasPrefix("~/") ? (query as NSString).expandingTildeInPath : nil
+    }
+
     private var rawCandidates: [BrowserPaletteRules.Item] {
         var items: [BrowserPaletteRules.Item] = []
         var seen = Set<String>()
@@ -187,9 +188,7 @@ struct CommandPaletteView: View {
         for recent in BrowserSettings.recentFolders.paths { add(recent, directory: true) }
         for item in metadata.paletteNicknames { add(item.path, title: item.nickname) }
         for entry in model.active.entries.prefix(1500) { add(entry.path, title: entry.name, directory: entry.isFolderLike) }
-        if query.hasPrefix("/") || query.hasPrefix("~/") {
-            add((query as NSString).expandingTildeInPath)
-        }
+        if let typedPath { add(typedPath) }
         if !model.active.selectedEntries.isEmpty, VirtualLocation.parse(model.active.path) == nil {
             items.append(.init(id: "action:move", title: L10n.t("Di chuyển đến…"), subtitle: L10n.t("Chọn thư mục đích"), target: "", kind: .move, aliases: ["move"]))
         }
