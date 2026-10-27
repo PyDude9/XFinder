@@ -8,6 +8,11 @@ final class InspectorPreviewRulesTests: XCTestCase {
         XCTAssertEqual(InspectorPreviewRules.decode(Data([0])), .binary)
         XCTAssertEqual(InspectorPreviewRules.decode(Data([0xff])), .binary)
     }
+    func testMarkdownKeepsBlockBreaksListMarkersAndEmphasis() {
+        let result = InspectorPreviewRules.markdown("# Heading\n\n**Bold** words\n\n- one\n- two")
+        XCTAssertEqual(String(result.characters), "Heading\n\nBold words\n\n• one\n\n• two")
+        XCTAssertTrue(result.runs.contains { $0.inlinePresentationIntent?.contains(.stronglyEmphasized) == true })
+    }
     func testKinds() {
         XCTAssertEqual(InspectorPreviewRules.kind(extension: "MD"), .markdown)
         XCTAssertEqual(InspectorPreviewRules.kind(extension: "swift"), .code)

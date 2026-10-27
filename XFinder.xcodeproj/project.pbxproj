@@ -172,6 +172,7 @@
 		7F1A025B /* Detail/SmoothScrollSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A025A /* Detail/SmoothScrollSection.swift */; };
 		7F1A015E /* Browser/RelatedItemsStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A015D /* Browser/RelatedItemsStrip.swift */; };
 		7F1A0B13 /* Browser/BrowserLearnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0B12 /* Browser/BrowserLearnView.swift */; };
+		7F1A0C17 /* Browser/InspectorImageActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0C16 /* Browser/InspectorImageActions.swift */; };
 		7F1A015C /* Browser/PropertyEditorPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A015B /* Browser/PropertyEditorPopover.swift */; };
 		7F1A015A /* Browser/RowActionsMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0159 /* Browser/RowActionsMenu.swift */; };
 		7F1A0158 /* Browser/SidebarLiveGroupsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0157 /* Browser/SidebarLiveGroupsSection.swift */; };
@@ -382,6 +383,8 @@
 		7F1A051F /* Browser/SidebarSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A051E /* Browser/SidebarSections.swift */; };
 		7F1A0B11 /* Browser/BrowserLearnProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0B10 /* Browser/BrowserLearnProgress.swift */; };
 		7F1A0C11 /* Browser/InspectorPreviewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0C10 /* Browser/InspectorPreviewRules.swift */; };
+		7F1A0C15 /* Browser/InspectorImageChild.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0C14 /* Browser/InspectorImageChild.swift */; };
+		7F1A0C13 /* Browser/InspectorImageRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0C12 /* Browser/InspectorImageRules.swift */; };
 		7F1A051D /* Browser/FinderTags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A051C /* Browser/FinderTags.swift */; };
 		7F1A051B /* Browser/FolderViewOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A051A /* Browser/FolderViewOptions.swift */; };
 		7F1A0519 /* Browser/SearchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0518 /* Browser/SearchCoordinator.swift */; };
@@ -659,6 +662,7 @@
 		7F1A025A /* Detail/SmoothScrollSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SmoothScrollSection.swift; sourceTree = "<group>"; };
 		7F1A015D /* Browser/RelatedItemsStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/RelatedItemsStrip.swift; sourceTree = "<group>"; };
 		7F1A0B12 /* Browser/BrowserLearnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserLearnView.swift; sourceTree = "<group>"; };
+		7F1A0C16 /* Browser/InspectorImageActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/InspectorImageActions.swift; sourceTree = "<group>"; };
 		7F1A015B /* Browser/PropertyEditorPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PropertyEditorPopover.swift; sourceTree = "<group>"; };
 		7F1A0159 /* Browser/RowActionsMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/RowActionsMenu.swift; sourceTree = "<group>"; };
 		7F1A0157 /* Browser/SidebarLiveGroupsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SidebarLiveGroupsSection.swift; sourceTree = "<group>"; };
@@ -761,6 +765,8 @@
 		7F1A051E /* Browser/SidebarSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SidebarSections.swift; sourceTree = "<group>"; };
 		7F1A0B10 /* Browser/BrowserLearnProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserLearnProgress.swift; sourceTree = "<group>"; };
 		7F1A0C10 /* Browser/InspectorPreviewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/InspectorPreviewRules.swift; sourceTree = "<group>"; };
+		7F1A0C14 /* Browser/InspectorImageChild.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/InspectorImageChild.swift; sourceTree = "<group>"; };
+		7F1A0C12 /* Browser/InspectorImageRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/InspectorImageRules.swift; sourceTree = "<group>"; };
 		7F1A051C /* Browser/FinderTags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FinderTags.swift; sourceTree = "<group>"; };
 		7F1A051A /* Browser/FolderViewOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FolderViewOptions.swift; sourceTree = "<group>"; };
 		7F1A0518 /* Browser/SearchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SearchCoordinator.swift; sourceTree = "<group>"; };
@@ -1148,6 +1154,8 @@
 				7F1A051E /* Browser/SidebarSections.swift */,
 				7F1A0B10 /* Browser/BrowserLearnProgress.swift */,
 				7F1A0C10 /* Browser/InspectorPreviewRules.swift */,
+				7F1A0C14 /* Browser/InspectorImageChild.swift */,
+				7F1A0C12 /* Browser/InspectorImageRules.swift */,
 				7F1A051C /* Browser/FinderTags.swift */,
 				7F1A051A /* Browser/FolderViewOptions.swift */,
 				7F1A0518 /* Browser/SearchCoordinator.swift */,
@@ -1437,6 +1445,7 @@
 				7F1A025A /* Detail/SmoothScrollSection.swift */,
 				7F1A015D /* Browser/RelatedItemsStrip.swift */,
 				7F1A0B12 /* Browser/BrowserLearnView.swift */,
+				7F1A0C16 /* Browser/InspectorImageActions.swift */,
 				7F1A015B /* Browser/PropertyEditorPopover.swift */,
 				7F1A0159 /* Browser/RowActionsMenu.swift */,
 				7F1A0157 /* Browser/SidebarLiveGroupsSection.swift */,
@@ -1768,6 +1777,7 @@
 				7F1A025B /* Detail/SmoothScrollSection.swift in Sources */,
 				7F1A015E /* Browser/RelatedItemsStrip.swift in Sources */,
 				7F1A0B13 /* Browser/BrowserLearnView.swift in Sources */,
+				7F1A0C17 /* Browser/InspectorImageActions.swift in Sources */,
 				7F1A015C /* Browser/PropertyEditorPopover.swift in Sources */,
 				7F1A015A /* Browser/RowActionsMenu.swift in Sources */,
 				7F1A0158 /* Browser/SidebarLiveGroupsSection.swift in Sources */,
@@ -1869,6 +1879,8 @@
 				7F1A051F /* Browser/SidebarSections.swift in Sources */,
 				7F1A0B11 /* Browser/BrowserLearnProgress.swift in Sources */,
 				7F1A0C11 /* Browser/InspectorPreviewRules.swift in Sources */,
+				7F1A0C15 /* Browser/InspectorImageChild.swift in Sources */,
+				7F1A0C13 /* Browser/InspectorImageRules.swift in Sources */,
 				7F1A051D /* Browser/FinderTags.swift in Sources */,
 				7F1A051B /* Browser/FolderViewOptions.swift in Sources */,
 				7F1A0519 /* Browser/SearchCoordinator.swift in Sources */,

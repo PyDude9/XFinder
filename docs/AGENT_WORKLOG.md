@@ -1,3 +1,31 @@
+## 2026-10-27 — Codex XF-T32 W4 step 2: child image operations and live fixes
+
+Branch agent/codex-T32-W4, follows 0f4d043. Run: https://app.notion.com/p/40697dfe4af381e89d69fa56e12a8f3f. Added XFinder --image early dispatch, JSON protocol, source identity revalidation, capped bytes/pixels, PNG/JPEG/WebP-if-encoder, smaller resize presets and EXIF-normalized flips. All pixels decode/encode in child, no UI-process fallback. One child globally, cancel on selection/disappear, 60 s deadline and terminate/kill escalation. New output staged on source volume and published with renamex_np(RENAME_EXCL); source and existing files never overwritten. Parent cleans owned staging after crash/cancel. A terminal probe confirmed Foundation traps when atomic and withoutOverwriting are combined, hence exclusive rename. No production code used that invalid combination.
+
+Tests: nine new rules/child tests plus one later Markdown layout regression, total full suite 2833/0. Generated asymmetric pixel tests verify both flip axes, dimensions, source preservation, same-format collisions and stale/corrupt rejection. Deliberate horizontal-flip mutant failed pixel comparison; restored. Text boundary mutant also failed then restored. Four pbx entries per new app source; child/protocol/rules symlinked into package.
+
+Live findings fixed before final install: SwiftUI Text discarded Markdown block intents, joining headings/paragraphs/lists; rules now materialize separators/list markers and keep inline formatting. Directory vnode did not report edits to a child's bytes; Inspector now watches only the selected file while visible, cancels watcher/tasks on disappearance, and keeps unchanged content mounted during unrelated folder refreshes (avoids canceling a job when its output enters the folder).
+
+Build: full integrated gate green below; subsequent watcher-only app build/check green. Final installed dylib matches build c1441fcab84f76c9504196b5457025658fb8ae701abd5e1112e6684a49211192. Stable signing retained; runtime English L10n TOTAL 0. plutil/diff checks green.
+
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2833 tests, with 0 failures (0 unexpected) in 24.309 (24.509) seconds
+check-l10n-coverage                TOTAL 0 problems across 3632 entries (3632 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3632 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1362 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             7
+GATE: green
+```
+
+Live in installed app: Markdown/code display, empty/binary/oversized text explanations, selected-file in-place edit and atomic replacement refresh, empty/multiple selection clear, image horizontal/vertical copies, JPEG 4096×2048, resized PNG 512×256, WebP encoder explainer. Cancel button interrupted an 80 MP flip; no worker or owned staging file remained. Preview thumbnail remains out of process; AVPlayer teardown corrected in source but video playback not live exercised. One 8 MP flip sampling: parent RSS 256512–258656 KiB; child observed 61488 KiB (sampling is not guaranteed peak footprint, no 8-hour claim). Fixture files confined to /tmp/xfinder-inspector-live-20261027. No user's files changed.
+
+Not fully live verified: permission-denied folder, cloud provider edge cases, child timeout/crash, every format/EXIF profile, full VoiceOver speech, long-run memory. Open/Reveal/Path/Share are wired native actions but external launch/share interaction not exercised. W5/W6 still pending, continue per owner request. No push.
+
 ## 2026-10-27 — Codex XF-T32 W4 step 1: preview content and refresh
 
 Direct owner instruction to continue all work. Branch agent/codex-T32-W4; spec docs/specs/XF-T32-w4-inspector-contract.md written before code. Added Info/Preview, Open/Reveal/Path/Share, capped UTF-8 text, Markdown and lexical code color. Existing pane.listingRevision drives refresh (no extra model revision needed). Stat cache now includes inode/size/nanosecond mtime/ctime. Thumbnail callback cannot assign after cancellation; failed thumbnail explains rather than spins forever; media view identity resets on source change; AVPlayer pauses/detaches on teardown. Dataless files excluded before reading bytes, nonregular nodes excluded from content decoding. Empty/unreadable text has explanation.

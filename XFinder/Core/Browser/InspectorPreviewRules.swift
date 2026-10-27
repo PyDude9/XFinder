@@ -17,6 +17,32 @@ enum InspectorPreviewRules {
         guard !data.contains(0), let string = String(data: data, encoding: .utf8) else { return .binary }
         return .text(string)
     }
+    /// SwiftUI Text ignores block presentation intents. Materialize separators and list markers
+    /// while retaining the Markdown parser's inline emphasis and links.
+    static func markdown(_ text: String) -> AttributedString {
+        guard let parsed = try? AttributedString(markdown: text) else { return AttributedString(text) }
+        var output = AttributedString()
+        var lastBlock: Int?
+        for run in parsed.runs {
+            let components = run.presentationIntent?.components ?? []
+            let block = components.first?.identity
+            var segment = AttributedString(parsed[run.range])
+            if block != lastBlock {
+                if !output.characters.isEmpty { output.append(AttributedString("\n\n")) }
+                if let listItem = components.first(where: { if case .listItem = $0.kind { return true }; return false }),
+                   case .listItem(let ordinal) = listItem.kind {
+                    let ordered = components.contains { if case .orderedList = $0.kind { return true }; return false }
+                    output.append(AttributedString(ordered ? "\(ordinal). " : "• "))
+                }
+                lastBlock = block
+            }
+            if components.contains(where: { if case .header = $0.kind { return true }; return false }) {
+                segment.inlinePresentationIntent = (segment.inlinePresentationIntent ?? []).union(.stronglyEmphasized)
+            }
+            output.append(segment)
+        }
+        return output
+    }
     struct Span: Equatable {
         enum Style { case keyword, string, comment }
         let range: NSRange

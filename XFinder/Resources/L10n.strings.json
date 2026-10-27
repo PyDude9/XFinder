@@ -14434,6 +14434,102 @@
     "Tệp văn bản trống.": {
       "en": "Text file is empty.",
       "scope": "sentence"
+    },
+    "Thao tác ảnh": {
+      "en": "Image actions",
+      "scope": "sentence"
+    },
+    "Tạo bản mới, chỉ xử lý khung hình đầu tiên. Lật và thu nhỏ xuất PNG.": {
+      "en": "Creates a copy using only the first frame. Flip and resize export PNG.",
+      "scope": "sentence"
+    },
+    "Giảm kích thước ảnh": {
+      "en": "Resize smaller",
+      "scope": "sentence"
+    },
+    "Lật ngang": {
+      "en": "Flip horizontal",
+      "scope": "sentence"
+    },
+    "Lật dọc": {
+      "en": "Flip vertical",
+      "scope": "sentence"
+    },
+    "ImageIO trên máy này chưa có bộ ghi WebP.": {
+      "en": "ImageIO on this Mac does not provide a WebP encoder.",
+      "scope": "sentence"
+    },
+    "Hiện bản ảnh mới": {
+      "en": "Reveal new image",
+      "scope": "sentence"
+    },
+    "Đang xử lý ảnh khác. Hãy chờ thao tác đó kết thúc.": {
+      "en": "Another image is being processed. Wait for it to finish.",
+      "scope": "sentence"
+    },
+    "Không thực hiện được thao tác ảnh.": {
+      "en": "Unable to complete the image operation.",
+      "scope": "sentence"
+    },
+    "Đã tạo bản ảnh mới.": {
+      "en": "Created a new image copy.",
+      "scope": "sentence"
+    },
+    "Thao tác ảnh quá thời gian cho phép.": {
+      "en": "The image operation timed out.",
+      "scope": "sentence"
+    },
+    "Không khởi chạy được tiến trình xử lý ảnh.": {
+      "en": "Unable to start the image worker.",
+      "scope": "sentence"
+    },
+    "Đã hủy thao tác ảnh.": {
+      "en": "Image operation canceled.",
+      "scope": "sentence"
+    },
+    "Yêu cầu thao tác ảnh không hợp lệ.": {
+      "en": "Invalid image operation request.",
+      "scope": "sentence"
+    },
+    "Tệp nguồn đã thay đổi. Hãy chọn lại tệp rồi thử lại.": {
+      "en": "The source file changed. Select it again and retry.",
+      "scope": "sentence"
+    },
+    "Tệp chỉ có trên đám mây — thao tác ảnh không tải tệp về.": {
+      "en": "This file is cloud-only. Image actions do not download it.",
+      "scope": "sentence"
+    },
+    "Ảnh vượt giới hạn xử lý an toàn (100 MiB hoặc 100 triệu điểm ảnh).": {
+      "en": "Image exceeds safe processing limits (100 MiB or 100 million pixels).",
+      "scope": "sentence"
+    },
+    "Ảnh không đọc được hoặc vượt giới hạn xử lý an toàn.": {
+      "en": "Image is unreadable or exceeds safe processing limits.",
+      "scope": "sentence"
+    },
+    "ImageIO trên máy này không có bộ ghi cho định dạng đã chọn.": {
+      "en": "ImageIO on this Mac has no encoder for the selected format.",
+      "scope": "sentence"
+    },
+    "Kích thước mới phải nhỏ hơn ảnh nguồn.": {
+      "en": "The new size must be smaller than the source image.",
+      "scope": "sentence"
+    },
+    "Không ghi được bản ảnh mới. Kiểm tra quyền ghi của thư mục.": {
+      "en": "Unable to write the new image. Check folder write permissions.",
+      "scope": "sentence"
+    },
+    "Có quá nhiều tệp trùng tên trong thư mục.": {
+      "en": "Too many conflicting file names in this folder.",
+      "scope": "sentence"
+    },
+    "Chuyển đổi": {
+      "en": "Convert",
+      "scope": "sentence"
+    },
+    "Xem trước": {
+      "en": "Preview",
+      "scope": "sentence"
     }
   }
 }

@@ -54,12 +54,16 @@ struct PreviewPaneView: View {
                         }
                         if let message = item.textMessage { Text(L10n.t(message)).font(XFinderTokens.Font.caption).foregroundStyle(.secondary) }
                     }
+                    if item.media == .image, ImageEngine.isImage(URL(fileURLWithPath: item.path)) {
+                        InspectorImageActions(item: item).id(item.identity)
+                    }
                 }
             }
             .padding(XFinderTokens.Space.page)
         }
         .frame(width: Self.width)
         .background(XFinderTokens.Fill.window)
+        .onDisappear { previewModel.stop() }
         .task(id: PreviewSelectionKey(paths: pane.selectedEntries.map(\.path), revision: pane.listingRevision)) {
             await previewModel.load(selection: pane.selectedEntries)
         }
@@ -127,7 +131,7 @@ enum FilePreviewContent: Equatable {
 }
 
 /// Reads facts and classifies media off the main actor (CLAUDE.md: no disk I/O in `body`/on main), and caches the
-/// result per "path@mtime" (contract: "metadata read off main and cached per path+mtime") so re-selecting the same
+/// result per path/device/inode/size/nanosecond mtime/ctime (contract: "metadata read off main and cached per path+mtime") so re-selecting the same
 /// unchanged file never re-reads disk — except the tag list, which is re-read fresh on every lookup even on a cache
 /// hit, since Get Info's tag editor writes `kMDItemUserTags` without touching `mtime` (a bug fixed during review:
 /// the Preview pane's "Thẻ" section would otherwise keep showing the pre-edit tags for the life of the cache entry
@@ -136,21 +140,48 @@ enum FilePreviewContent: Equatable {
 @MainActor @Observable final class FilePreviewPaneModel {
     private(set) var content: FilePreviewContent = .empty
 
-    /// Keyed by "path@mtime" — a changed mtime (edited file, replaced export) is a fresh cache entry rather than a
-    /// stale hit; the previous entry simply ages out (capacity bound below).
+    /// A full stat identity detects same-second edits and atomic replacement; old versions age out at the cap.
     private var cache: [String: FilePreviewItem] = [:]
     private var cacheOrder: [String] = []
     private let cacheCapacity = 64
     private var generation = 0
+    @ObservationIgnored private var fileWatch: DirectoryWatcher?
+    @ObservationIgnored private var watchedPath: String?
+    @ObservationIgnored private var refreshTask: Task<Void, Never>?
+
+    func stop() {
+        generation += 1
+        refreshTask?.cancel()
+        refreshTask = nil
+        fileWatch?.cancel()
+        fileWatch = nil
+        watchedPath = nil
+    }
 
     func load(selection: [DirectoryEntry]) async {
         generation += 1
         let myGeneration = generation
+        fileWatch?.cancel()
+        fileWatch = nil
+        watchedPath = nil
         guard selection.count == 1, let entry = selection.first else {
             content = .empty
             return
         }
-        content = .loading
+        if entry.kind == .file {
+            watchedPath = entry.path
+            let refresh: @MainActor () -> Void = { [weak self] in
+                guard let self, self.watchedPath == entry.path else { return }
+                self.refreshTask?.cancel()
+                self.refreshTask = Task { [weak self] in await self?.load(selection: [entry]) }
+            }
+            // Directory vnode events do not report edits to a child's bytes. Watch only
+            // the selected file while this Inspector is visible, with no polling.
+            fileWatch = DirectoryWatcher(path: entry.path, onChange: refresh, onGone: refresh)
+        }
+        // A folder watcher may refresh unrelated rows while an image job is running.
+        // Keep the same selection mounted until its new identity is known.
+        if case .loaded(let current) = content, current.path == entry.path { } else { content = .loading }
         let item = await Self.readItem(path: entry.path, cache: cache) { [weak self] key, item in
             guard let self else { return }
             self.store(key: key, item: item)
@@ -177,7 +208,7 @@ enum FilePreviewContent: Equatable {
     ) async -> FilePreviewItem? {
         var statInfo = stat()
         guard lstat(path, &statInfo) == 0 else { return nil }
-        let key = "\(path)@\(statInfo.st_dev):\(statInfo.st_ino):\(statInfo.st_size):\(statInfo.st_mtimespec.tv_sec):\(statInfo.st_mtimespec.tv_nsec):\(statInfo.st_ctimespec.tv_sec):\(statInfo.st_ctimespec.tv_nsec)"
+        let key = InspectorImageRules.identity(path: path, info: statInfo)
         if let cached = cache[key] {
             // Tags (Finder/Get Info `tagNamesKey`) can change without touching `mtime` — Get Info's `setTags`
             // writes `kMDItemUserTags` only. Re-reading just the tag list (one cheap resourceValues call, no
@@ -625,7 +656,7 @@ private struct InspectorTextView: View {
         }
         .task(id: text) {
             let result = await Task.detached(priority: .userInitiated) {
-                if kind == .markdown, let markdown = try? AttributedString(markdown: text) { return markdown }
+                if kind == .markdown { return InspectorPreviewRules.markdown(text) }
                 let value = NSMutableAttributedString(string: text)
                 if kind == .code {
                     for span in InspectorPreviewRules.spans(in: text) {
