@@ -78,7 +78,9 @@ struct FileListView: NSViewRepresentable {
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         context.coordinator.pane = pane
         context.coordinator.model = model
+        let metadataRevision = BrowserMetadata.shared.revision
         context.coordinator.reloadIfNeeded()
+        context.coordinator.redrawMetadataIfNeeded(metadataRevision)
         context.coordinator.syncSelection()
         context.coordinator.syncSortIndicator()
         context.coordinator.beginRenameIfNeeded()
@@ -99,6 +101,7 @@ struct FileListView: NSViewRepresentable {
     enum Node: Hashable {
         case entry(DirectoryEntry)
         case header(String)
+        case pinnedHeader
 
         var entry: DirectoryEntry? {
             if case .entry(let e) = self { return e }
@@ -109,6 +112,7 @@ struct FileListView: NSViewRepresentable {
             switch (lhs, rhs) {
             case (.entry(let a), .entry(let b)): return a.path == b.path
             case (.header(let a), .header(let b)): return a == b
+            case (.pinnedHeader, .pinnedHeader): return true
             default: return false
             }
         }
@@ -117,6 +121,7 @@ struct FileListView: NSViewRepresentable {
             switch self {
             case .entry(let e): hasher.combine(0); hasher.combine(e.path)
             case .header(let t): hasher.combine(1); hasher.combine(t)
+            case .pinnedHeader: hasher.combine(2)
             }
         }
     }
@@ -129,6 +134,145 @@ struct FileListView: NSViewRepresentable {
         override var tag: Int {
             get { storedTag }
             set { storedTag = newValue }
+        }
+    }
+
+    /// These views live inside the Name cell, so the outline keeps ownership of mouseDown, drag and rename.
+    private struct PropertyChips: View {
+        let options: [PropertyOption]
+        var body: some View {
+            HStack(spacing: XFinderTokens.Space.tight) {
+                ForEach(options) { option in
+                    Text(option.title)
+                        .font(XFinderTokens.Font.caption.weight(.semibold))
+                        .foregroundStyle(XFinderTokens.PropertyTint.color(option.color))
+                        .padding(.horizontal, XFinderTokens.Space.tight)
+                        .padding(.vertical, XFinderTokens.Space.hairline)
+                        .background(XFinderTokens.PropertyTint.color(option.color).opacity(XFinderTokens.PropertyTint.chipFill),
+                                    in: RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge))
+                }
+            }
+            .fixedSize()
+        }
+    }
+
+    private final class ChipStrip: NSHostingView<PropertyChips> {
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+
+    final class TreeNameCell: NSTableCellView {
+        let emojiLabel = NSTextField(labelWithString: "")
+        let nicknameLabel = NSTextField(labelWithString: "")
+        let folderArrow = NSImageView(image: NSImage(systemSymbolName: "chevron.right", accessibilityDescription: nil) ?? NSImage())
+        let actions = NSButton(image: NSImage(systemSymbolName: "ellipsis", accessibilityDescription: nil) ?? NSImage(),
+                               target: nil, action: nil)
+        private let chips = ChipStrip(rootView: PropertyChips(options: []))
+        private var tracking: NSTrackingArea?
+        var onActions: (() -> NSMenu)?
+        private var hovering = false
+
+        override init(frame frameRect: NSRect) {
+            super.init(frame: frameRect)
+            let icon = NSImageView()
+            icon.imageScaling = .scaleProportionallyDown
+            imageView = icon
+            let name = NSTextField(labelWithString: "")
+            name.lineBreakMode = .byTruncatingMiddle
+            name.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+            textField = name
+            nicknameLabel.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+            nicknameLabel.textColor = .secondaryLabelColor
+            nicknameLabel.lineBreakMode = .byTruncatingMiddle
+            nicknameLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+            emojiLabel.alignment = .center
+            folderArrow.contentTintColor = .secondaryLabelColor
+            actions.isBordered = false
+            actions.target = self
+            actions.action = #selector(showActions)
+            actions.toolTip = L10n.t("Thao tác trên mục đang chọn")
+            actions.setAccessibilityLabel(L10n.t("Thao tác trên mục đang chọn"))
+            let labels = NSStackView(views: [name, nicknameLabel])
+            labels.spacing = XFinderTokens.Space.tight
+            labels.alignment = .centerY
+            let content = NSStackView(views: [icon, labels, chips, actions, folderArrow])
+            content.spacing = XFinderTokens.Space.tight
+            content.alignment = .centerY
+            content.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(content)
+            emojiLabel.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(emojiLabel)
+            let badge = NSImageView()
+            badge.tag = Coordinator.cloudBadgeTag
+            badge.imageScaling = .scaleProportionallyDown
+            badge.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(badge)
+            let tagDot = TagDotView()
+            tagDot.tag = Coordinator.tagDotTag
+            tagDot.wantsLayer = true
+            tagDot.layer?.cornerRadius = XFinderTokens.Space.tight / 2
+            tagDot.translatesAutoresizingMaskIntoConstraints = false
+            labels.addArrangedSubview(tagDot)
+            NSLayoutConstraint.activate([
+                content.leadingAnchor.constraint(equalTo: leadingAnchor, constant: XFinderTokens.Space.hairline),
+                content.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -XFinderTokens.Space.tight),
+                content.centerYAnchor.constraint(equalTo: centerYAnchor),
+                icon.widthAnchor.constraint(equalToConstant: XFinderTokens.Space.row + XFinderTokens.Space.tight),
+                icon.heightAnchor.constraint(equalTo: icon.widthAnchor),
+                emojiLabel.centerXAnchor.constraint(equalTo: icon.centerXAnchor),
+                emojiLabel.centerYAnchor.constraint(equalTo: icon.centerYAnchor),
+                badge.trailingAnchor.constraint(equalTo: icon.trailingAnchor),
+                badge.bottomAnchor.constraint(equalTo: icon.bottomAnchor),
+                badge.widthAnchor.constraint(equalToConstant: XFinderTokens.Space.row),
+                badge.heightAnchor.constraint(equalTo: badge.widthAnchor),
+                actions.widthAnchor.constraint(equalToConstant: XFinderTokens.Space.page),
+                folderArrow.widthAnchor.constraint(equalToConstant: XFinderTokens.Space.row),
+                tagDot.widthAnchor.constraint(equalToConstant: XFinderTokens.Space.tight),
+                tagDot.heightAnchor.constraint(equalTo: tagDot.widthAnchor),
+            ])
+            actions.alphaValue = 0
+        }
+        required init?(coder: NSCoder) { nil }
+
+        func setOptions(_ options: [PropertyOption]) {
+            chips.rootView = PropertyChips(options: options)
+            chips.isHidden = options.isEmpty
+        }
+        override func updateTrackingAreas() {
+            if let tracking { removeTrackingArea(tracking) }
+            let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                                      owner: self, userInfo: nil)
+            tracking = area
+            addTrackingArea(area)
+            super.updateTrackingAreas()
+        }
+        override func mouseEntered(with event: NSEvent) { hovering = true; actions.alphaValue = 1 }
+        override func mouseExited(with event: NSEvent) { hovering = false; actions.alphaValue = 0 }
+        @objc private func showActions() {
+            guard let menu = onActions?() else { return }
+            menu.popUp(positioning: nil, at: NSPoint(x: actions.bounds.minX, y: actions.bounds.maxY), in: actions)
+            actions.alphaValue = hovering ? 1 : 0
+        }
+    }
+
+    final class PinnedRowView: NSTableRowView {
+        var pinned = false
+        var first = false
+        var last = false
+        override func drawBackground(in dirtyRect: NSRect) {
+            guard pinned else { super.drawBackground(in: dirtyRect); return }
+            let card = bounds.insetBy(dx: XFinderTokens.Space.hairline, dy: 0)
+            let radius = XFinderTokens.Settings.cardRadius
+            NSColor(XFinderTokens.Fill.inset).setFill()
+            NSBezierPath(roundedRect: card, xRadius: radius, yRadius: radius).fill()
+            // Square just the shared edge: adjacent rows then form one card, with corners only at its ends.
+            if !first {
+                NSRect(x: card.minX, y: isFlipped ? card.minY : card.midY,
+                       width: card.width, height: card.height / 2).fill()
+            }
+            if !last {
+                NSRect(x: card.minX, y: isFlipped ? card.midY : card.minY,
+                       width: card.width, height: card.height / 2).fill()
+            }
         }
     }
 
@@ -155,6 +299,13 @@ struct FileListView: NSViewRepresentable {
 
         /// `PaneState.listingRevision` last applied — one Int compare per `updateNSView` (the old count/first/last
         /// fingerprint missed a change in the middle of the list, e.g. a rename that keeps the sort position).
+        private var lastMetadataRevision = -1
+        private var lastPins: [String] = []
+        private var pinnedPaths: [String] = []
+        private var pinnedSet: Set<String> = []
+        private var selfEntry: DirectoryEntry?
+        private var lastPath: String?
+        private var isTreeMode: Bool { activeColumns() == [.name] && pane.search == nil }
         private var lastRevision = -1
         private var lastUseGroups = false
         private var isSyncingSelection = false
@@ -163,6 +314,7 @@ struct FileListView: NSViewRepresentable {
         private let cloudCache: CloudFactsCache = CloudFactsCache()
         private var lastSyncedSelection: Set<String> = []
         private var lastColumns: [ListColumn] = []
+        private var originalIntercellSpacing: NSSize?
         private var lastShowingParentFolderColumn = false
 
         /// Per-folder-path state for every row that has ever been expanded: its off-main listing (sorted the same
@@ -220,6 +372,12 @@ struct FileListView: NSViewRepresentable {
         /// or `pane.search` starting/ending changes the set, never on every `updateNSView` (contract: "no O(n)/layout
         /// work per frame" applies to column churn too).
         func rebuildColumns(in outlineView: NSOutlineView) {
+            if originalIntercellSpacing == nil { originalIntercellSpacing = outlineView.intercellSpacing }
+            if var spacing = originalIntercellSpacing {
+                // No white gap between the row backgrounds that form the pinned card.
+                if isTreeMode || !pinnedPaths.isEmpty { spacing.height = 0 }
+                if outlineView.intercellSpacing != spacing { outlineView.intercellSpacing = spacing }
+            }
             let wanted = activeColumns()
             let searching = pane.search != nil
             guard wanted != lastColumns || searching != lastShowingParentFolderColumn
@@ -227,6 +385,11 @@ struct FileListView: NSViewRepresentable {
             else { return }
             lastColumns = wanted
             lastShowingParentFolderColumn = searching
+            outlineView.headerView = isTreeMode ? nil : NSTableHeaderView()
+            outlineView.headerView?.menu = makeHeaderMenu()
+            outlineView.rowHeight = isTreeMode ? XFinderTokens.Settings.rowMinHeight : FileListView.rowHeight
+            outlineView.usesAlternatingRowBackgroundColors = !isTreeMode
+            outlineView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0..<outlineView.numberOfRows))
             let existing = Dictionary(uniqueKeysWithValues: outlineView.tableColumns.map { ($0.identifier, $0) })
             for column in outlineView.tableColumns { outlineView.removeTableColumn(column) }
             for (index, column) in wanted.enumerated() {
@@ -268,10 +431,17 @@ struct FileListView: NSViewRepresentable {
         func reloadIfNeeded() {
             let revision = pane.listingRevision
             let useGroups = pane.useGroups
-            guard revision != lastRevision || useGroups != lastUseGroups else {
+            let pins = BrowserMetadata.shared.pins(in: pane.path)
+            let pinsChanged = pins != lastPins
+            // A pin reorder must not destroy an active field editor. It will be applied when editing ends.
+            let applyPins = pinsChanged && renamingPath == nil
+            guard revision != lastRevision || useGroups != lastUseGroups || applyPins || lastPath != pane.path else {
                 reloadColumnsIfNeeded()
                 return
             }
+            let pathChanged = lastPath != pane.path
+            lastPath = pane.path
+            lastPins = pins
             lastRevision = revision
             let newNodes = rebuildRootNodes()
             cloudCache.removeAll()
@@ -280,7 +450,7 @@ struct FileListView: NSViewRepresentable {
             // Same folder refreshed (watcher, ⌘R, an operation): patch the rows that changed and keep everything else —
             // selection, scroll, disclosure, a rename in progress, the click in flight. Groups and search results are
             // header/row mixes that still take the full reload; so does a resort (kept rows change order).
-            if let outlineView, !useGroups, !lastUseGroups, pane.search == nil, Self.canPatch(from: cachedRootNodes, to: newNodes) {
+            if let outlineView, !pathChanged, !useGroups, !lastUseGroups, pane.search == nil, Self.canPatch(from: cachedRootNodes, to: newNodes) {
                 let plan = ListingDiff.plan(old: cachedRootNodes.map(Self.identity), new: newNodes.map(Self.identity))
                 if ListingDiff.shouldPatch(plan), case .patch(let removed, let inserted) = plan {
                     for index in removed {
@@ -325,12 +495,17 @@ struct FileListView: NSViewRepresentable {
             switch node {
             case .entry(let e): return e.path
             case .header(let t): return "\u{0}" + t
+            case .pinnedHeader: return "\u{0}pinned"
             }
         }
 
-        /// Only entry rows on both sides (no headers) are patched — see `reloadIfNeeded`.
+        /// Entry rows and the unique pinned header are patchable; user group headers retain the full reload path.
         private static func canPatch(from old: [Node], to new: [Node]) -> Bool {
-            !old.contains { $0.entry == nil } && !new.contains { $0.entry == nil }
+            func patchable(_ node: Node) -> Bool {
+                if case .pinnedHeader = node { return true }
+                return node.entry != nil
+            }
+            return old.allSatisfy(patchable) && new.allSatisfy(patchable)
         }
 
         func syncSortIndicator() {
@@ -359,13 +534,53 @@ struct FileListView: NSViewRepresentable {
         private func rootNodes() -> [Node] { cachedRootNodes }
 
         private func rebuildRootNodes() -> [Node] {
-            guard pane.useGroups else { return pane.entries.map(Node.entry) }
-            var nodes: [Node] = []
-            for section in pane.sections where !section.entries.isEmpty {
+            let split = PinRules.split(pane.entries, folder: pane.path, pins: BrowserMetadata.shared.pins(in: pane.path))
+            var pinned = split.pinned
+            selfEntry = nil
+            if split.pinsFolderItself, pane.search == nil {
+                let entry = DirectoryEntry(name: pane.path == "/" ? "/" : (pane.path as NSString).lastPathComponent, path: pane.path,
+                                           kind: .directory, isPackage: false, isHidden: false, size: -1,
+                                           modified: .distantPast, created: .distantPast, volumeID: 0)
+                selfEntry = entry
+                pinned.removeAll { $0.path == pane.path }
+                pinned.insert(entry, at: 0)
+            }
+            pinnedPaths = pinned.map(\.path)
+            pinnedSet = Set(pinnedPaths)
+            var nodes: [Node] = pinned.isEmpty ? [] : [.pinnedHeader] + pinned.map(Node.entry)
+            if !pane.useGroups {
+                return nodes + split.rest.filter { !pinnedSet.contains($0.path) }.map(Node.entry)
+            }
+            for section in pane.sections {
+                let entries = section.entries.filter { !pinnedSet.contains($0.path) }
+                guard !entries.isEmpty else { continue }
                 nodes.append(.header(sectionHeaderTitle(section)))
-                nodes.append(contentsOf: section.entries.map(Node.entry))
+                nodes.append(contentsOf: entries.map(Node.entry))
             }
             return nodes.isEmpty ? pane.entries.map(Node.entry) : nodes
+        }
+
+        func redrawMetadataIfNeeded(_ revision: Int) {
+            guard revision != lastMetadataRevision else { return }
+            lastMetadataRevision = revision
+            guard let outlineView else { return }
+            let visible = outlineView.rows(in: outlineView.visibleRect)
+            guard visible.location != NSNotFound, visible.length > 0 else { return }
+            var rows = IndexSet(integersIn: visible.location..<(visible.location + visible.length))
+            if outlineView.editedRow >= 0 { rows.remove(outlineView.editedRow) }
+            if let renamingPath, let entry = findEntry(path: renamingPath) {
+                let row = outlineView.row(forItem: Node.entry(entry))
+                if row >= 0 { rows.remove(row) }
+            }
+            outlineView.reloadData(forRowIndexes: rows, columnIndexes: IndexSet(integersIn: 0..<outlineView.numberOfColumns))
+            for index in rows {
+                guard let row = outlineView.rowView(atRow: index, makeIfNecessary: false) as? PinnedRowView,
+                      let entry = (outlineView.item(atRow: index) as? Node)?.entry else { continue }
+                row.pinned = pinnedSet.contains(entry.path)
+                row.first = entry.path == pinnedPaths.first
+                row.last = entry.path == pinnedPaths.last
+                row.needsDisplay = true
+            }
         }
 
         private func sectionHeaderTitle(_ section: EntrySection) -> String {
@@ -425,6 +640,7 @@ struct FileListView: NSViewRepresentable {
             case .failure:
                 folder.children = []
             }
+            BrowserMetadata.shared.load(folder: path)
             folder.loaded = true
             guard let outlineView, let parentEntry = findEntry(path: path) else { return }
             let wasExpanded = outlineView.isItemExpanded(Node.entry(parentEntry))
@@ -451,6 +667,7 @@ struct FileListView: NSViewRepresentable {
         /// plus every expanded folder's children) — needed because `reloadItem`/`collapseItem` want the actual
         /// `Node` value, not just its path.
         private func findEntry(path: String) -> DirectoryEntry? {
+            if let selfEntry, selfEntry.path == path { return selfEntry }
             if let hit = pane.entries.first(where: { $0.path == path }) { return hit }
             for folder in expanded.values {
                 if let hit = folder.children.first(where: { $0.path == path }) { return hit }
@@ -503,7 +720,7 @@ struct FileListView: NSViewRepresentable {
         func outlineView(_ outlineView: NSOutlineView, isItemExpandable item: Any) -> Bool {
             guard let node = item as? Node, let entry = node.entry else { return false }
             // Packages are leaves (contract: "packages are leaves") even though they are directories on disk.
-            return entry.isFolderLike
+            return entry.isFolderLike && entry.path != pane.path
         }
 
         func outlineView(_ outlineView: NSOutlineView, sortDescriptorsDidChange oldDescriptors: [NSSortDescriptor]) {
@@ -527,24 +744,36 @@ struct FileListView: NSViewRepresentable {
 
         func outlineView(_ outlineView: NSOutlineView, isGroupItem item: Any) -> Bool {
             guard let node = item as? Node else { return false }
-            if case .header = node { return true }
+            if node.entry == nil { return true }
             return false
         }
 
         func outlineView(_ outlineView: NSOutlineView, shouldSelectItem item: Any) -> Bool {
             guard let node = item as? Node else { return false }
-            if case .header = node { return false }   // group header rows: unselectable (contract §3)
+            if node.entry == nil { return false }   // group header rows: unselectable (contract §3)
             return true
         }
 
+        func outlineView(_ outlineView: NSOutlineView, rowViewForItem item: Any) -> NSTableRowView? {
+            let row = PinnedRowView()
+            if let entry = (item as? Node)?.entry {
+                row.pinned = pinnedSet.contains(entry.path)
+                row.first = entry.path == pinnedPaths.first
+                row.last = entry.path == pinnedPaths.last
+            }
+            return row
+        }
+
         func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
-            guard let node = item as? Node, case .header = node else { return FileListView.rowHeight }
+            guard let node = item as? Node, node.entry == nil else { return isTreeMode ? XFinderTokens.Settings.rowMinHeight : FileListView.rowHeight }
             return FileListView.groupRowHeight
         }
 
         func outlineView(_ outlineView: NSOutlineView, viewFor tableColumn: NSTableColumn?, item: Any) -> NSView? {
             guard let node = item as? Node else { return nil }
-            if case .header(let title) = node {
+            if node.entry == nil {
+                let title: String
+                if case .header(let value) = node { title = value } else { title = L10n.t("Đã ghim") }
                 // Only the outline (name) column draws the header's title; the other columns show an empty cell so
                 // the row still spans the full width without a title fighting the row-spanning drawing.
                 guard tableColumn == outlineView.outlineTableColumn || tableColumn == outlineView.tableColumns.first
@@ -552,16 +781,25 @@ struct FileListView: NSViewRepresentable {
                 return Self.makeHeaderCell(title: title)
             }
             guard let tableColumn, let entry = node.entry else { return nil }
+            // The self pin is synthetic: never present its placeholder dates/size as real filesystem metadata.
+            if entry.path == selfEntry?.path, tableColumn.identifier != Self.identifier(for: .name) {
+                return NSTableCellView()
+            }
             if tableColumn.identifier == Self.parentFolderIdentifier {
                 return parentFolderCell(for: entry, in: outlineView)
             }
             guard let column = ListColumn(rawValue: tableColumn.identifier.rawValue) else { return nil }
-            let identifier = tableColumn.identifier
+            let identifier = column == .name && isTreeMode ? NSUserInterfaceItemIdentifier("xfTreeName") : tableColumn.identifier
             let cell: NSTableCellView
             if let reused = outlineView.makeView(withIdentifier: identifier, owner: self) as? NSTableCellView {
                 cell = reused
             } else {
-                cell = Self.makeCell(column: column, identifier: identifier)
+                if column == .name && isTreeMode {
+                    cell = TreeNameCell()
+                    cell.identifier = identifier
+                } else {
+                    cell = Self.makeCell(column: column, identifier: identifier)
+                }
             }
             configure(cell: cell, column: column, entry: entry)
             return cell
@@ -672,6 +910,30 @@ struct FileListView: NSViewRepresentable {
                 cell.textField?.attributedStringValue = nameCellText(for: entry)
                 cell.imageView?.alphaValue = model.isCut(entry.path) ? XFinderTokens.Emphasis.cutItemAlpha : 1
                 cell.imageView?.image = FileIconCache.shared.icon(for: entry)
+                if let tree = cell as? TreeNameCell {
+                    let metadata = BrowserMetadata.shared
+                    let emoji = entry.isFolderLike ? metadata.emoji(for: entry.path) : nil
+                    tree.emojiLabel.stringValue = emoji ?? ""
+                    tree.emojiLabel.alphaValue = model.isCut(entry.path) ? XFinderTokens.Emphasis.cutItemAlpha : 1
+                    tree.imageView?.isHidden = emoji != nil
+                    tree.folderArrow.isHidden = !entry.isFolderLike
+                    if entry.path == selfEntry?.path {
+                        tree.nicknameLabel.stringValue = L10n.t("Thư mục này")
+                    } else if let nickname = metadata.nickname(for: entry.path) {
+                        tree.nicknameLabel.stringValue = L10n.t("còn gọi là ") + nickname
+                    } else {
+                        tree.nicknameLabel.stringValue = ""
+                    }
+                    tree.nicknameLabel.isHidden = tree.nicknameLabel.stringValue.isEmpty
+                    let folder = (entry.path as NSString).deletingLastPathComponent
+                    let properties = metadata.visibleProperties(in: entry.path == selfEntry?.path ? pane.path : folder)
+                    tree.setOptions(properties.compactMap { metadata.option(for: entry.path, property: $0.id) })
+                    tree.onActions = { [weak self] in
+                        guard let self else { return NSMenu() }
+                        self.model.focus(self.pane.id)
+                        return RowActionsMenu.menu(for: [entry], pane: self.pane, model: self.model)
+                    }
+                }
                 let badge = cloudBadgeSymbol(for: cloudFacts(for: entry.path))
                 (cell.viewWithTag(Self.cloudBadgeTag) as? NSImageView)?.image = badge
                 let dot = cell.viewWithTag(Self.tagDotTag)
@@ -716,6 +978,11 @@ struct FileListView: NSViewRepresentable {
             // onto a second line drawn over the row above (owner screenshot 2026-10-26, "…2025.xl" / "sx").
             let name = NSMutableAttributedString(string: shown, attributes: [.foregroundColor: colour,
                                                                               .paragraphStyle: Self.middleTruncating])
+            if entry.path == selfEntry?.path, !isTreeMode {
+                name.append(NSAttributedString(string: "  " + L10n.t("Thư mục này"),
+                                               attributes: [.foregroundColor: NSColor.secondaryLabelColor,
+                                                            .paragraphStyle: Self.middleTruncating]))
+            }
             guard let search = pane.search else { return name }
             var suffixParts: [String] = []
             if let sources = search.sources[entry.path], !sources.isEmpty {
@@ -973,7 +1240,7 @@ struct FileListView: NSViewRepresentable {
         private func handleArrow(_ arrow: Arrow, option: Bool) -> Bool {
             guard let outlineView, outlineView.selectedRow >= 0,
                   let node = outlineView.item(atRow: outlineView.selectedRow) as? Node, let entry = node.entry,
-                  entry.isFolderLike else { return false }
+                  entry.isFolderLike, entry.path != selfEntry?.path else { return false }
             switch arrow {
             case .right:
                 if option {
@@ -1008,7 +1275,7 @@ struct FileListView: NSViewRepresentable {
             var hitCap = false
             while !queue.isEmpty {
                 let node = queue.removeFirst()
-                guard let entry = node.entry, entry.isFolderLike else { continue }
+                guard let entry = node.entry, entry.isFolderLike, entry.path != selfEntry?.path else { continue }
                 if !outlineView.isItemExpanded(node) {
                     if opened >= FileListView.recursiveExpandCap { hitCap = true; break }
                     ensureChildrenLoaded(entry.path)
@@ -1100,6 +1367,7 @@ struct FileListView: NSViewRepresentable {
         private func endRename(commit: Bool, field: NSTextField?) {
             guard let path = renamingPath else { return }
             renamingPath = nil
+            defer { reloadIfNeeded() }
             field?.isEditable = false
             field?.delegate = nil
             if model.renaming == pane.id { model.renaming = nil }
