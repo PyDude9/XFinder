@@ -316,6 +316,8 @@ struct FileListView: NSViewRepresentable {
         private var lastSyncedSelection: Set<String> = []
         private var lastColumns: [ListColumn] = []
         private var originalIntercellSpacing: NSSize?
+        private var originalColumnAutoresizing: NSTableView.ColumnAutoresizingStyle?
+        private var tableNameWidth: CGFloat?
         private var lastShowingParentFolderColumn = false
 
         /// Per-folder-path state for every row that has ever been expanded: its off-main listing (sorted the same
@@ -365,7 +367,10 @@ struct FileListView: NSViewRepresentable {
         private static let parentFolderIdentifier = NSUserInterfaceItemIdentifier("xfSearchParentFolder")
 
         private func activeColumns() -> [ListColumn] {
-            pane.folderPrefs?.columns ?? FolderViewPrefs.defaultColumns
+            let stored = pane.folderPrefs?.columns ?? FolderViewPrefs.defaultColumns
+            var result: [ListColumn] = [.name]
+            for column in stored where !result.contains(column) { result.append(column) }
+            return result
         }
 
         /// Rebuilds the table columns from `activeColumns()` (+ "Nơi chứa" while searching) when they differ from
@@ -381,9 +386,13 @@ struct FileListView: NSViewRepresentable {
             }
             let wanted = activeColumns()
             let searching = pane.search != nil
+            let wasTree = lastColumns == [.name] && !lastShowingParentFolderColumn
             guard wanted != lastColumns || searching != lastShowingParentFolderColumn
                     || outlineView.tableColumns.count != wanted.count + (searching ? 1 : 0)
-            else { return }
+            else {
+                if isTreeMode { fitTreeColumn(in: outlineView) }
+                return
+            }
             lastColumns = wanted
             lastShowingParentFolderColumn = searching
             outlineView.headerView = isTreeMode ? nil : NSTableHeaderView()
@@ -392,17 +401,47 @@ struct FileListView: NSViewRepresentable {
             outlineView.usesAlternatingRowBackgroundColors = !isTreeMode
             outlineView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0..<outlineView.numberOfRows))
             let existing = Dictionary(uniqueKeysWithValues: outlineView.tableColumns.map { ($0.identifier, $0) })
-            for column in outlineView.tableColumns { outlineView.removeTableColumn(column) }
-            for (index, column) in wanted.enumerated() {
-                let identifier = Self.identifier(for: column)
-                let tableColumn = existing[identifier] ?? Self.makeTableColumn(column)
-                outlineView.addTableColumn(tableColumn)
-                if index == 0 { outlineView.outlineTableColumn = tableColumn }
+            // AppKit refuses to remove the outline column (even after assigning nil). Keep Name in place,
+            // remove only auxiliary columns, and never add Name a second time.
+            let nameColumn = existing[Self.identifier(for: .name)] ?? Self.makeTableColumn(.name)
+            if !outlineView.tableColumns.contains(where: { $0 === nameColumn }) { outlineView.addTableColumn(nameColumn) }
+            outlineView.outlineTableColumn = nameColumn
+            if originalColumnAutoresizing == nil { originalColumnAutoresizing = outlineView.columnAutoresizingStyle }
+            if isTreeMode {
+                if !wasTree { tableNameWidth = nameColumn.width }
+                outlineView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
+            } else {
+                outlineView.columnAutoresizingStyle = originalColumnAutoresizing ?? .uniformColumnAutoresizingStyle
+                if wasTree { nameColumn.width = tableNameWidth ?? ListColumn.name.defaultWidth }
+            }
+            for column in outlineView.tableColumns where column !== nameColumn { outlineView.removeTableColumn(column) }
+            for column in wanted.dropFirst() {
+                outlineView.addTableColumn(existing[Self.identifier(for: column)] ?? Self.makeTableColumn(column))
             }
             if searching {
                 let parentColumn = existing[Self.parentFolderIdentifier] ?? Self.makeParentFolderColumn()
                 outlineView.addTableColumn(parentColumn)
             }
+            if isTreeMode { fitTreeColumn(in: outlineView) }
+            // Name stays attached: explicitly replace visible cells when table/tree presentation changes.
+            let visible = outlineView.rows(in: outlineView.visibleRect)
+            if visible.location != NSNotFound, visible.length > 0 {
+                var rows = IndexSet(integersIn: visible.location..<(visible.location + visible.length))
+                if outlineView.editedRow >= 0 { rows.remove(outlineView.editedRow) }
+                if let renamingPath, let entry = findEntry(path: renamingPath) {
+                    let row = outlineView.row(forItem: Node.entry(entry))
+                    if row >= 0 { rows.remove(row) }
+                }
+                outlineView.reloadData(forRowIndexes: rows, columnIndexes: IndexSet(integersIn: 0..<outlineView.numberOfColumns))
+            }
+        }
+
+        private func fitTreeColumn(in outlineView: NSOutlineView) {
+            guard let name = outlineView.outlineTableColumn else { return }
+            let available = outlineView.visibleRect.width
+            guard available > 0 else { return }
+            let width = max(name.minWidth, available - outlineView.intercellSpacing.width)
+            if abs(name.width - width) > 0.5 { name.width = width }
         }
 
         private static func makeTableColumn(_ column: ListColumn) -> NSTableColumn {
@@ -779,7 +818,7 @@ struct FileListView: NSViewRepresentable {
                 if case .header(let value) = node { title = value } else { title = L10n.t("Đã ghim") }
                 // Only the outline (name) column draws the header's title; the other columns show an empty cell so
                 // the row still spans the full width without a title fighting the row-spanning drawing.
-                guard tableColumn == outlineView.outlineTableColumn || tableColumn == outlineView.tableColumns.first
+                guard tableColumn == nil || tableColumn == outlineView.outlineTableColumn || tableColumn == outlineView.tableColumns.first
                 else { return NSTableCellView() }
                 return Self.makeHeaderCell(title: title)
             }

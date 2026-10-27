@@ -411,3 +411,27 @@ Logs: `/tmp/xfinder-t32-s1-red.log` (2 regression tests RED on original implemen
 **Chưa kiểm live:** visual comparison with Tilde (reference sheets absent; prior Tilde probe had no on-screen window), accessibility/VoiceOver, physical click/drag/eject flows, multi-window switching while editing, related-folder picker under real permissions, runtime persistence across installed-app relaunches, pane layout at narrow sizes, scrolling/idle CPU/memory. Live Group directory facts refresh on metadata/Space changes; arbitrary external changes elsewhere on disk do not get a new global watcher here. The original handoff's no-install/no-launch restriction remains respected. No install, app launch, input to other apps, release/signing action or push. All measurements above are terminal builds/tests, not installed-app measurements.
 
 The owner explicitly authorized finishing and integrating all remaining jobs; main is advanced only by fast-forward from the validated agent branch, with no commits created directly on main. Other worktrees' uncommitted changes were not touched.
+
+## XF-T32 installed-app verification — 2026-10-27
+
+Owner explicitly authorized installation and live tests, superseding the earlier handoff's no-install/no-launch restriction for this verification. Installed validated `69e9b9b` using the existing signing/install script; dylib SHA-256 matched `ce3896c74720bec03144c57a19984e9ca41372a4fafbe56d49f82c0faa15ba6a`; stable designated requirement retained; installed English runtime gate TOTAL 0. Fixtures and prior-app/preferences backup are under `/tmp/xfinder-live-20261027` (private task directory).
+
+Live bug reproduced before fix: switching List columns caused the installed app to exit. Unified log: `NSOutlineView cannot remove outlineTableColumn with removeTableColumn:. Use setOutlineTableColumn: instead.` followed by `Swift/NativeDictionary.swift:823: Fatal error: Duplicate values for key: 'NSUserInterfaceItemIdentifier(_rawValue: name)'`. Cause: rebuildColumns removes all columns without first detaching the Name outline column. Native AppKit probe from terminal reproduces one leftover column with the original sequence. Assigning nil does not permit its removal on this OS, so that initial attempted fix was rejected before installation. The corrected native probe passes 20 rebuilds by retaining Name, removing only auxiliary columns and never re-adding Name; the production fix follows that sequence, normalizes columns to one Name first and reloads visible cells while excluding a rename. Failure cases for retest: multi-column→Name-only tree and back; repeated toggles; row selection and inline rename after rebuild; no duplicate columns, no crash, selection preserved. Live physical click of item-03.txt selected the row in 41 ms once XFinder was verified frontmost. The earlier click while Chrome was frontmost is invalid latency evidence and is excluded.
+
+Additional installed-app findings: pinning succeeded (SQLite read-only verification and a single moved row), but its group header rendered blank because AppKit requests spanning group cells with tableColumn=nil and the delegate rejected nil. Screenshot `tree-pinned.png` and AX dump show an empty group row. In Name-only mode AXColumn remained 292 pt in a 1309 pt outline; row actions/folder chevrons stayed near the old column edge. Fix accepts nil for group cells, fits the tree Name column to the viewport, and restores its saved table width/resize behavior when returning to multiple columns. These are visible live defects, not inferred from a green build.
+
+Final visual-fix build: `/tmp/xfinder-t32-live-visual-build`; full gate 2819 tests / 0 failures, all string/UI gates TOTAL 0, GATE green. Installed with the existing stable signing script. Installed-app AX confirms the Pinned header now has text. Pin and owned Space favorite survived reinstall; switching Spaces isolated the favorite in the earlier installed build. Final Name-only width and repeated-toggle live checks remain unverified: another XFinder window retained keyboard focus and the attempted click did not select the row; excluded as evidence. Native 20-cycle column probe passed; this is terminal probe evidence, not installed-app behavior. Owned test Space XF Live 20261027 and fixture pin remain for follow-up cleanup; no user's files changed. Inline rename, properties, related links, split focus and watcher changes not live verified in this run.
+
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2819 tests, with 0 failures (0 unexpected) in 24.240 (24.451) seconds
+check-l10n-coverage                TOTAL 0 problems across 3587 entries (3587 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3587 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1320 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             2
+GATE: green
+```
