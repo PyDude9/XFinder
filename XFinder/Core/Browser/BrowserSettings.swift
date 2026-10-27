@@ -22,7 +22,7 @@ final class BrowserSettings {
     /// XF-T30 W1 — the ONE readers of the window bars (FileOctopus: Location Bar on, Path Bar ⌥⌘P, Status Bar ⌘/,
     /// Sidebar ⌥⌘S). The View-menu commands flip these keys; every window follows.
     static var showLocationBar: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showLocationBar") as? Bool ?? true }
-    static var showPathBar: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showPathBar") as? Bool ?? false }
+    static var showPathBar: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showPathBar") as? Bool ?? true }
     static var showStatusBar: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showStatusBar") as? Bool ?? true }
     static var showSidebar: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showSidebar") as? Bool ?? true }
 
