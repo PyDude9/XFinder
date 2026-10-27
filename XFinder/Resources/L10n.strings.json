@@ -14138,6 +14138,122 @@
     "Chẩn đoán chuột": {
       "en": "Mouse diagnostics",
       "scope": "fragment"
+    },
+    "còn gọi là ": {
+      "en": "aka ",
+      "scope": "fragment"
+    },
+    "Thuộc tính này không còn nữa": {
+      "en": "This property no longer exists",
+      "scope": "sentence"
+    },
+    "Thuộc tính": {
+      "en": "Property",
+      "scope": "sentence"
+    },
+    "Tên thuộc tính": {
+      "en": "Property name",
+      "scope": "sentence"
+    },
+    "Hiện trong danh sách": {
+      "en": "Show in list",
+      "scope": "sentence"
+    },
+    "Lựa chọn": {
+      "en": "Options",
+      "scope": "sentence"
+    },
+    "Xoá lựa chọn": {
+      "en": "Delete option",
+      "scope": "sentence"
+    },
+    "Thêm lựa chọn": {
+      "en": "Add option",
+      "scope": "sentence"
+    },
+    "Sửa thuộc tính": {
+      "en": "Edit property",
+      "scope": "sentence"
+    },
+    "Xoá thuộc tính": {
+      "en": "Delete property",
+      "scope": "sentence"
+    },
+    "Tên lựa chọn": {
+      "en": "Option name",
+      "scope": "sentence"
+    },
+    "Bỏ ghim khỏi": {
+      "en": "Unpin from",
+      "scope": "fragment"
+    },
+    "Ghim vào": {
+      "en": "Pin in",
+      "scope": "fragment"
+    },
+    "Xoá giá trị": {
+      "en": "Clear value",
+      "scope": "sentence"
+    },
+    "Nhiều giá trị": {
+      "en": "Mixed values",
+      "scope": "sentence"
+    },
+    "Thêm thuộc tính": {
+      "en": "Add property",
+      "scope": "sentence"
+    },
+    "Thuộc tính mới…": {
+      "en": "New property…",
+      "scope": "sentence"
+    },
+    "Đặt biệt danh…": {
+      "en": "Set nickname…",
+      "scope": "sentence"
+    },
+    "Biệt danh": {
+      "en": "Nickname",
+      "scope": "sentence"
+    },
+    "Đặt emoji…": {
+      "en": "Set emoji…",
+      "scope": "sentence"
+    },
+    "Lọc": {
+      "en": "Filter",
+      "scope": "sentence"
+    },
+    "Tăng dần": {
+      "en": "Ascending",
+      "scope": "sentence"
+    },
+    "Giảm dần": {
+      "en": "Descending",
+      "scope": "sentence"
+    },
+    "đang hiện": {
+      "en": "visible",
+      "scope": "fragment"
+    },
+    "Nhóm": {
+      "en": "Group",
+      "scope": "sentence"
+    },
+    "Chưa đặt": {
+      "en": "Unset",
+      "scope": "sentence"
+    },
+    "Lục": {
+      "en": "Green",
+      "scope": "sentence"
+    },
+    "Lam": {
+      "en": "Blue",
+      "scope": "sentence"
+    },
+    "Biểu tượng emoji": {
+      "en": "Emoji",
+      "scope": "sentence"
     }
   }
 }

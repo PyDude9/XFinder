@@ -20,6 +20,12 @@ enum BrowserContextMenu {
             buildBackgroundMenu(menu, model: model, pane: pane)
         } else {
             buildSelectionMenu(menu, model: model, pane: pane)
+            let metadataActions = RowActionsMenu.menu(for: pane.selectedEntries, pane: pane, model: model)
+            if !metadataActions.items.isEmpty { menu.addItem(.separator()) }
+            for item in metadataActions.items {
+                metadataActions.removeItem(item)
+                menu.addItem(item)
+            }
         }
         return menu
     }
@@ -79,8 +85,11 @@ enum BrowserContextMenu {
 
         menu.addItem(.separator())
         menu.addItem(viewModeSubmenu(model: model, pane: pane))
-        menu.addItem(sortBySubmenu(model: model, pane: pane))
-        menu.addItem(groupBySubmenu(model: model, pane: pane))
+        let folderActions = RowActionsMenu.folderMenu(pane: pane, model: model)
+        for item in folderActions.items {
+            folderActions.removeItem(item)
+            menu.addItem(item)
+        }
 
         menu.addItem(.separator())
         addPlain(menu, title: L10n.t("Hiện tuỳ chọn xem"), command: .showViewOptions, model: model, pane: pane)

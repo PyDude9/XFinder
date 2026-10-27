@@ -328,6 +328,7 @@ final class FileOperationQueue {
     /// A rename done outside the queue (inline rename, Get Info) joins the same persistent undo history, so ⌘Z in the
     /// browser undoes it (it went to ActionHistoryStore, which the browser's ⌘Z never reads).
     func recordRename(from oldPath: String, to newPath: String) {
+        BrowserMetadata.shared.itemMoved(from: oldPath, to: newPath)
         let identity: (inode: UInt64, size: Int64, modified: Date)? = Self.fileIdentity(newPath)
         let item: UndoItem = UndoItem(from: newPath, to: oldPath, inode: identity?.inode, size: identity?.size,
                                       modified: identity?.modified)
@@ -375,6 +376,7 @@ final class FileOperationQueue {
                     try? fm.createDirectory(atPath: (item.to as NSString).deletingLastPathComponent,
                                             withIntermediateDirectories: true)
                     try fm.moveItem(atPath: item.from, toPath: item.to)
+                    BrowserMetadata.shared.itemMoved(from: item.from, to: item.to)
                     ok += 1
                 }
             } catch { /* spec R55: a partial failure here still leaves `ok < step.items.count`, reported below */ }
@@ -413,6 +415,7 @@ final class FileOperationQueue {
             do {
                 if fm.fileExists(atPath: item.from) { continue }
                 try fm.moveItem(atPath: item.to, toPath: item.from)
+                BrowserMetadata.shared.itemMoved(from: item.to, to: item.from)
                 redone += 1
             } catch { }
         }
@@ -594,6 +597,7 @@ final class FileOperationQueue {
                 await FolderMergeController.execute(step, source: source, destination: destination, sameVolume: sameVolume)
             switch outcome {
             case .moved(let from, let to):
+                BrowserMetadata.shared.itemMoved(from: from, to: to)
                 runtime.movedPairs.append((from: to, to: from))   // undo moves the item back from where it landed
             case .skipped:
                 break
@@ -763,6 +767,7 @@ final class FileOperationQueue {
         case .rename:
             appendJournal(job: jobID, kind: kind, source: source, destination: destinationPath, phase: .started)
             if rename(source, destinationPath) == 0 {
+                BrowserMetadata.shared.itemMoved(from: source, to: destinationPath)
                 appendJournal(job: jobID, kind: kind, source: source, destination: destinationPath, phase: .done)
                 runtime.movedPairs.append((from: destinationPath, to: source))
                 return .done(bytes: 0, createdForUndo: [])
@@ -893,6 +898,7 @@ final class FileOperationQueue {
         // The source is now in the Trash, not undone from there: `movedPairs` below already gives this move a
         // reversible undo (move the verified copy at `destinationPath` back to `source`), which is simpler and
         // matches what the user asked for (a move), rather than reaching into the Trash to resurrect the original.
+        BrowserMetadata.shared.itemMoved(from: source, to: destinationPath)
         appendJournal(job: jobID, kind: kind, source: source, destination: destinationPath, phase: .sourceRemoved)
         appendJournal(job: jobID, kind: kind, source: source, destination: destinationPath, phase: .done)
         _ = queue.setPhase(jobID, .running)
@@ -909,6 +915,7 @@ final class FileOperationQueue {
             return .failed(key: "Không di chuyển được — ứng dụng không cho phép hoặc thiếu quyền.", detail: "\(error)")
         }
         if let trashedPath = (resultingURL as URL?)?.path {
+            BrowserMetadata.shared.itemMoved(from: source, to: trashedPath)
             runtime.trashedPairs.append((trashedAt: trashedPath, original: source))
         }
         appendJournal(job: jobID, kind: .trash, source: source, destination: nil, phase: .done)

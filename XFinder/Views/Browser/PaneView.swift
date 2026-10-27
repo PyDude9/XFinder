@@ -67,6 +67,9 @@ struct PaneView: View {
             model.paneFramesInWindow[pane.id] = frame
         }
         .onDisappear { model.paneFramesInWindow[pane.id] = nil }
+        .onChange(of: BrowserMetadata.shared.revision, initial: true) { _, _ in
+            pane.metadataDidChange()
+        }
     }
 
     /// Contract §4: "vạch nhấn màu nhấn … trên đỉnh ngăn đang chọn khi có ≥ 2 ngăn (cue duy nhất)" — the only focus

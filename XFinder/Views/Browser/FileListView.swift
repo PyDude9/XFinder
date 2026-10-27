@@ -300,6 +300,7 @@ struct FileListView: NSViewRepresentable {
         /// `PaneState.listingRevision` last applied — one Int compare per `updateNSView` (the old count/first/last
         /// fingerprint missed a change in the middle of the list, e.g. a rename that keeps the sort position).
         private var lastMetadataRevision = -1
+        private var lastGroupingRevision = -1
         private var lastPins: [String] = []
         private var pinnedPaths: [String] = []
         private var pinnedSet: Set<String> = []
@@ -435,7 +436,8 @@ struct FileListView: NSViewRepresentable {
             let pinsChanged = pins != lastPins
             // A pin reorder must not destroy an active field editor. It will be applied when editing ends.
             let applyPins = pinsChanged && renamingPath == nil
-            guard revision != lastRevision || useGroups != lastUseGroups || applyPins || lastPath != pane.path else {
+            guard revision != lastRevision || useGroups != lastUseGroups || applyPins || lastPath != pane.path
+                    || (pane.metadataGroupingRevision != lastGroupingRevision && renamingPath == nil) else {
                 reloadColumnsIfNeeded()
                 return
             }
@@ -443,6 +445,7 @@ struct FileListView: NSViewRepresentable {
             lastPath = pane.path
             lastPins = pins
             lastRevision = revision
+            lastGroupingRevision = pane.metadataGroupingRevision
             let newNodes = rebuildRootNodes()
             cloudCache.removeAll()
             defer { reloadColumnsIfNeeded() }
@@ -1451,7 +1454,13 @@ struct FileListView: NSViewRepresentable {
                 outlineView.selectRowIndexes(IndexSet(integer: clickedRow), byExtendingSelection: false)
             }
             model.focus(pane.id)
-            let built = BrowserContextMenu.menu(for: model, pane: pane)
+            let built: NSMenu
+            if let selfEntry, pane.selection == Set([selfEntry.path]) {
+                // The synthetic self pin is absent from pane.selectedEntries; its own menu must still allow unpinning.
+                built = RowActionsMenu.menu(for: [selfEntry], pane: pane, model: model)
+            } else {
+                built = BrowserContextMenu.menu(for: model, pane: pane)
+            }
             for item in built.items {
                 built.removeItem(item)
                 menu.addItem(item)

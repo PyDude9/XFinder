@@ -38,6 +38,7 @@ struct PaneSearchState: Equatable {
     var groupBy: GroupBy = .none
     /// XF-T32 W3 — group by a custom property (its id); nil = use `groupBy`. Sections are built in `rebuildSections`.
     var propertyGroupID: UUID?
+    var metadataGroupingRevision: Int = 0
     /// ⌃⌘0 Use Groups — independent of the chosen field.
     var useGroups = false
     /// Names to reselect after the first load (session restore, `TabSnapshot.selectedNames`). W1 builder (model).

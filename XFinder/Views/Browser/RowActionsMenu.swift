@@ -324,7 +324,7 @@ private enum RowPathKey {
         let metadata: BrowserMetadata = context.metadata
         let current: String = paths.count == 1 ? (metadata.emoji(for: paths[0]) ?? "") : ""
         return RowMenuItem(title: L10n.t("Đặt emoji…"), symbol: "face.smiling") {
-            OneFieldSheet.run(title: L10n.t("Emoji"), initial: current, showsCharacterPalette: true) {
+            OneFieldSheet.run(title: L10n.t("Biểu tượng emoji"), initial: current, showsCharacterPalette: true) {
                 (text: String) -> Bool in
                 let trimmed: String = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 if trimmed.isEmpty {
@@ -363,7 +363,7 @@ private enum RowPathKey {
         }
         if let window: NSWindow = NSApp.keyWindow ?? NSApp.mainWindow, window.attachedSheet == nil {
             alert.beginSheetModal(for: window) { (response: NSApplication.ModalResponse) in
-                MainActor.assumeIsolated { finish(response) }
+                Task { @MainActor in finish(response) }
             }
             alert.window.makeFirstResponder(field)
             if showsCharacterPalette { NSApp.orderFrontCharacterPalette(field) }

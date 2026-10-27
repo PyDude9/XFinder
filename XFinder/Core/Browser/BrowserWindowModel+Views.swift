@@ -22,7 +22,10 @@ extension PaneState {
     func metadataDidChange() {
         guard useGroups, propertyGroupID != nil else { return }
         let updated: [EntrySection] = computedSections()
-        if updated != sections { sections = updated }
+        if updated != sections {
+            sections = updated
+            metadataGroupingRevision &+= 1
+        }
     }
 
     private func computedSections() -> [EntrySection] {
