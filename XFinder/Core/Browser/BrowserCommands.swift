@@ -82,7 +82,7 @@ enum BrowserCommands {
         .find: KeyChord("f", command: true),
         .editLocation: KeyChord("l", command: true, control: true),
         .goToFolder: KeyChord("g", command: true, shift: true),
-        .quickOpen: KeyChord("p", command: true, control: true),
+        .quickOpen: KeyChord("k", command: true),
         .commandPalette: KeyChord("p", command: true, shift: true, control: true),
         .splitRight: KeyChord("right", command: true, option: true, control: true),
         .splitLeft: KeyChord("left", command: true, option: true, control: true),
@@ -133,7 +133,6 @@ enum BrowserCommands {
         .goApplications: KeyChord("a", command: true, shift: true),
         .goUtilities: KeyChord("u", command: true, shift: true),
         .goComputer: KeyChord("c", command: true, shift: true),
-        .connectToServer: KeyChord("k", command: true),
         .eject: KeyChord("e", command: true),
         .openBrowserSettings: KeyChord(",", command: true),
         .newFolderWithSelection: KeyChord("n", command: true, control: true),
@@ -161,6 +160,7 @@ enum BrowserCommands {
     /// Space is deliberately absent from this table: spec §2.3 reserves it for Quick Look only while the view is
     /// NOT in a text-entry field, a decision the view makes (it owns first-responder state), not this pure file.
     static func command(for chord: KeyChord) -> BrowserCommand? {
+        if chord == KeyChord("p", command: true, control: true) { return .quickOpen }
         if chord == openSecondary { return .open }
         return table.first { $0.value == chord }?.key
     }

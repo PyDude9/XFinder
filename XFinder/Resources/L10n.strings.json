@@ -14530,6 +14530,54 @@
     "Xem trước": {
       "en": "Preview",
       "scope": "sentence"
+    },
+    "Chọn thư mục đích để di chuyển": {
+      "en": "Choose a destination folder to move to",
+      "scope": "sentence"
+    },
+    "Tìm thư mục, biệt danh hoặc lệnh…": {
+      "en": "Find folders, nicknames, or commands…",
+      "scope": "sentence"
+    },
+    "Không có kết quả phù hợp.": {
+      "en": "No matching results.",
+      "scope": "sentence"
+    },
+    "↵ Mở · ⌘↵ Tab mới · ⌥↵ Chia ngăn": {
+      "en": "↵ Open · ⌘↵ New Tab · ⌥↵ Split",
+      "scope": "sentence"
+    },
+    "↵ Di chuyển vào thư mục đã chọn": {
+      "en": "↵ Move to selected folder",
+      "scope": "sentence"
+    },
+    "⌘K Lệnh · esc Đóng": {
+      "en": "⌘K Actions · esc Close",
+      "scope": "sentence"
+    },
+    "Di chuyển đến…": {
+      "en": "Move to…",
+      "scope": "sentence"
+    },
+    "Chọn thư mục đích": {
+      "en": "Choose destination folder",
+      "scope": "sentence"
+    },
+    "Không mở được mục này. Tệp có thể đã bị xoá hoặc thiếu quyền truy cập.": {
+      "en": "Cannot open this item. It may have been deleted or access is denied.",
+      "scope": "sentence"
+    },
+    "Hãy chọn một thư mục thật làm đích di chuyển.": {
+      "en": "Choose a real folder as the move destination.",
+      "scope": "sentence"
+    },
+    "Không thể tạo thêm ngăn trong bố cục hoặc gói hiện tại.": {
+      "en": "Cannot create another pane with the current layout or plan.",
+      "scope": "sentence"
+    },
+    "Các lệnh": {
+      "en": "Commands",
+      "scope": "sentence"
     }
   }
 }

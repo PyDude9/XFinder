@@ -36,7 +36,7 @@ final class BrowserCommandsTests: XCTestCase {
         .find: KeyChord("f", command: true),   // Q-T30-2: ⌘F is Find alone now; filter has no chord.
         .editLocation: KeyChord("l", command: true, control: true),
         .goToFolder: KeyChord("g", command: true, shift: true),
-        .quickOpen: KeyChord("p", command: true, control: true),
+        .quickOpen: KeyChord("k", command: true),
         .commandPalette: KeyChord("p", command: true, shift: true, control: true),
         .splitRight: KeyChord("right", command: true, option: true, control: true),
         .splitLeft: KeyChord("left", command: true, option: true, control: true),
@@ -87,7 +87,6 @@ final class BrowserCommandsTests: XCTestCase {
         .goApplications: KeyChord("a", command: true, shift: true),
         .goUtilities: KeyChord("u", command: true, shift: true),
         .goComputer: KeyChord("c", command: true, shift: true),
-        .connectToServer: KeyChord("k", command: true),
         .eject: KeyChord("e", command: true),
         .openBrowserSettings: KeyChord(",", command: true),
         .newFolderWithSelection: KeyChord("n", command: true, control: true),
@@ -106,7 +105,7 @@ final class BrowserCommandsTests: XCTestCase {
         .makePaneWider, .makePaneNarrower, .makePaneTaller, .makePaneShorter,
         .toggleLocationBar, .customizeToolbar, .openInNewTab, .openInNewWindow,
         // XF-T30 W2–W7
-        .share, .clearRecentFolders, .showWelcome, .clearOperationHistory,
+        .share, .clearRecentFolders, .showWelcome, .clearOperationHistory, .connectToServer,
     ]
 
     func testEveryRequiredChordRoundTrips() {

@@ -92,6 +92,10 @@ import Observation
     }
 
     func pins(in folder: String) -> [String] { folders[MetadataStore.normalized(folder)]?.pins ?? [] }
+    var paletteNicknames: [(path: String, nickname: String)] {
+        _ = revision
+        return nicknames.sorted { $0.key < $1.key }.prefix(1000).map { (path: $0.key, nickname: $0.value) }
+    }
     func nickname(for path: String) -> String? { nicknames[MetadataStore.normalized(path)] }
     func emoji(for folder: String) -> String? {
         let key = MetadataStore.normalized(folder)
