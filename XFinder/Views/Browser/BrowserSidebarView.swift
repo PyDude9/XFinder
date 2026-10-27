@@ -22,11 +22,11 @@ import os
 /// current row is a gray rounded fill. Every layout save is mirrored into the active Space
 /// (`SpaceController.sidebarDidChange`), and switching Space reloads the layout that Space wrote.
 struct BrowserSidebarView: View {
-    private static let iconSize: CGFloat = 16
+    private static let iconSize: CGFloat = XFinderTokens.BrowserSidebar.iconSize
     /// Tilde's sidebar row height (contact sheets: 28 pt rows).
-    private static let rowHeight: CGFloat = 28
+    private static let rowHeight: CGFloat = XFinderTokens.BrowserSidebar.rowHeight
     /// The gray rounded fill behind the current row (Tilde: neutral gray, never the accent colour).
-    private static let selectionFill: Color = XFinderTokens.Settings.hairline
+    private static let selectionFill: Color = XFinderTokens.BrowserSidebar.selectedFill
     /// Finder-tag colour dot, centred in the 16 pt icon slot.
     private static let tagDotSize: CGFloat = 10
 
@@ -115,6 +115,12 @@ struct BrowserSidebarView: View {
         .onChange(of: spaces.store.activeID) { _, _ in
             cancelPendingEdits()
             reload()
+        }
+        .onChange(of: spaces.active.sidebar) { _, updated in
+            if layout != updated {
+                layout = updated
+                applySources()
+            }
         }
         // ⌘E from the menu / key bindings runs the same eject flow as the row's button (EjectRequestCenter).
         .onChange(of: EjectRequestCenter.shared.pending) { _, _ in
@@ -999,6 +1005,7 @@ struct BrowserSidebarView: View {
     private static let sidebarItemUTI = "com.xfinder.browser.sidebaritem"
 
     private func handleDrop(_ providers: [NSItemProvider], groupID: UUID?, index: Int) {
+        let targetSpace = spaces.active.id
         // A reorder (dragging an existing sidebar item) carries its own UUID string, no file URL to resolve.
         if let draggingItemID {
             layout.moveItem(draggingItemID, toGroup: groupID, index: index)
@@ -1017,6 +1024,9 @@ struct BrowserSidebarView: View {
             }
         }
         group.notify(queue: .main) {
+            guard spaces.active.id == targetSpace else { return }
+            if let groupID, !layout.groups.contains(where: { $0.id == groupID }) { return }
+
             let paths = collector.collected()
             guard !paths.isEmpty else { return }
             var isDirectory: ObjCBool = false

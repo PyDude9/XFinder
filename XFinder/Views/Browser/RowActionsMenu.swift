@@ -150,9 +150,9 @@ private enum RowPathKey {
 // MARK: - Property values
 
 @MainActor private enum RowPropertySection {
-    /// One row per property shown in this folder: "<Name>    [value pill]" with a submenu "Xoá giá trị" + every option.
+    /// One row per catalog property (visibility in this folder is independent): "<Name>    [value pill]" with a submenu "Xoá giá trị" + every option.
     static func items(_ context: RowMenuContext) -> [NSMenuItem] {
-        let definitions: [PropertyDefinition] = context.metadata.shownProperties(in: context.pane.path).map(\.definition)
+        let definitions: [PropertyDefinition] = context.metadata.catalog.definitions
         guard !definitions.isEmpty else { return [] }
         let menuFont: NSFont = NSFont.menuFont(ofSize: .zero)
         let values: [PropertyValueSummary] = definitions.map { PropertyValueSummary(definition: $0, context: context) }
@@ -190,6 +190,17 @@ private enum RowPathKey {
             let count: Int = summary.optionCounts[option.id] ?? 0
             item.state = count == paths.count ? .on : (count > 0 ? .mixed : .off)
             menu.addItem(item)
+        }
+        if !summary.definition.options.isEmpty {
+            let groups = NSMenu()
+            for option in summary.definition.options {
+                let ref = LiveGroupRef(propertyID: propertyID, optionID: option.id)
+                let item = RowMenuItem(title: option.title) { SpaceController.shared.toggleLiveGroup(ref) }
+                item.state = SpaceController.shared.active.liveGroups.contains(ref) ? .on : .off
+                groups.addItem(item)
+            }
+            menu.addItem(.separator())
+            menu.addItem(submenuItem(title: L10n.t("Hiện nhóm trong thanh bên"), symbol: "sidebar.left", submenu: groups))
         }
         return menu
     }

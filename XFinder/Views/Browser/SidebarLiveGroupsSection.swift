@@ -11,16 +11,44 @@ struct SidebarLiveGroupsSection: View {
     let onOpen: (String) -> Void
     let isSelected: (String) -> Bool
 
+    private struct RefreshKey: Equatable {
+        var revision: Int
+        var refs: [LiveGroupRef]
+    }
+    private struct IdentifiedGroup: Identifiable {
+        var value: PropertyRules.LiveGroup
+        var id: LiveGroupRef { LiveGroupRef(propertyID: value.property.id, optionID: value.option.id) }
+    }
+    @State private var directoryPaths: Set<String> = []
+    @State private var loadedKey: RefreshKey?
+
     var body: some View {
-        let refs: [LiveGroupRef] = spaces.active.liveGroups
+        let refs = spaces.active.liveGroups
+        let key = RefreshKey(revision: metadata.revision, refs: refs)
+        let groups = metadata.liveGroups(refs)
         if !refs.isEmpty {
-            let groups: [PropertyRules.LiveGroup] = metadata.liveGroups(refs)
             VStack(alignment: .leading, spacing: 0) {
-                ForEach(groups, id: \.option.id) { (group: PropertyRules.LiveGroup) in
-                    LiveGroupBlock(group: group, metadata: metadata, onOpen: onOpen, isSelected: isSelected) {
-                        spaces.toggleLiveGroup(LiveGroupRef(propertyID: group.property.id, optionID: group.option.id))
+                ForEach(groups.map { IdentifiedGroup(value: $0) }) { identified in
+                    let group = identified.value
+                    let folders = PropertyRules.LiveGroup(property: group.property, option: group.option,
+                                                         paths: group.paths.filter { directoryPaths.contains($0) })
+                    LiveGroupBlock(group: folders, metadata: metadata, onOpen: onOpen,
+                                   isSelected: isSelected, loading: loadedKey != key) {
+                        spaces.toggleLiveGroup(identified.id)
                     }
                 }
+            }
+            .task(id: key) {
+                let paths = Set(groups.flatMap(\.paths))
+                let directories = await Task.detached(priority: .utility) {
+                    Set(paths.filter { path in
+                        let facts = try? URL(fileURLWithPath: path).resourceValues(forKeys: [.isDirectoryKey, .isPackageKey])
+                        return facts?.isDirectory == true && facts?.isPackage != true
+                    })
+                }.value
+                guard !Task.isCancelled else { return }
+                directoryPaths = directories
+                loadedKey = key
             }
         }
     }
@@ -33,13 +61,14 @@ private struct LiveGroupBlock: View {
     let metadata: BrowserMetadata
     let onOpen: (String) -> Void
     let isSelected: (String) -> Bool
+    let loading: Bool
     let onRemove: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             title
-            if group.paths.isEmpty {
-                Text(L10n.t("Trống"))
+            if loading || group.paths.isEmpty {
+                Text(loading ? L10n.t("Đang tải…") : L10n.t("Trống"))
                     .font(XFinderTokens.BrowserSidebar.row)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, XFinderTokens.Space.row)

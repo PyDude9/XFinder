@@ -108,7 +108,6 @@ private struct RelatedAddButton: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .fixedSize()
     }
 }
 

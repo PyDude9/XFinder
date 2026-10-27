@@ -279,63 +279,69 @@ private struct SidebarSettingsTab: View {
     @State private var hiddenVolumeNames: [String: String] = [:]
 
     var body: some View {
-        SettingsSection(title: L10n.t("Hiện trong sidebar")) {
-            ToggleRow(title: L10n.t("Mục ưa thích"), isOn: $favorites).settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("iCloud Drive"), isOn: $iCloud).settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("Mục gần đây"), isOn: $recents).settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("AirDrop"), isOn: $airDrop).settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("Ổ trong máy"), isOn: $hardDisks).settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("Ổ ngoài"), isOn: $externalDisks).settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("Đám mây"), isOn: $cloudStorage).settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("Máy chủ đã nối"), isOn: $connectedServers).settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("Máy Bonjour"), isOn: $bonjour).settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("Thẻ gần đây"), isOn: $recentTags).settingsRow()
-        }
+        Group {
+            SettingsSection(title: L10n.t("Hiện trong sidebar")) {
+                ToggleRow(title: L10n.t("Mục ưa thích"), isOn: $favorites).settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("iCloud Drive"), isOn: $iCloud).settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("Mục gần đây"), isOn: $recents).settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("AirDrop"), isOn: $airDrop).settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("Ổ trong máy"), isOn: $hardDisks).settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("Ổ ngoài"), isOn: $externalDisks).settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("Đám mây"), isOn: $cloudStorage).settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("Máy chủ đã nối"), isOn: $connectedServers).settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("Máy Bonjour"), isOn: $bonjour).settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("Thẻ gần đây"), isOn: $recentTags).settingsRow()
+            }
 
-        SettingsSection(title: L10n.t("Tuỳ chọn")) {
-            ToggleRow(title: L10n.t("Nhóm Vị trí theo loại"),
-                      subtitle: L10n.t("Tách Vị trí thành Trong máy / Ngoài / Đám mây / Mạng."),
-                      isOn: $groupByType)
-                .settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("Tô sáng vị trí chứa thư mục hiện tại"), isOn: $highlightCurrent)
-                .settingsRow()
-        }
+            SettingsSection(title: L10n.t("Tuỳ chọn")) {
+                ToggleRow(title: L10n.t("Nhóm Vị trí theo loại"),
+                          subtitle: L10n.t("Tách Vị trí thành Trong máy / Ngoài / Đám mây / Mạng."),
+                          isOn: $groupByType)
+                    .settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("Tô sáng vị trí chứa thư mục hiện tại"), isOn: $highlightCurrent)
+                    .settingsRow()
+            }
 
-        if !sidebarLayout.hiddenVolumeUUIDs.isEmpty {
-            SettingsSection(title: L10n.t("Ổ đã ẩn"),
-                            footer: L10n.t("Ổ bị ẩn khỏi mục Vị trí của sidebar — vẫn gắn vào máy bình thường.")) {
-                VStack(alignment: .leading, spacing: 0) {
-                    let sorted = Array(sidebarLayout.hiddenVolumeUUIDs).sorted()
-                    ForEach(sorted, id: \.self) { uuid in
-                        HStack {
-                            Image(systemName: "externaldrive").foregroundColor(.secondary).font(XFinderTokens.Font.caption)
-                            Text(SidebarSources.shared.volumes.first { $0.uuid == uuid }?.name
-                                 ?? hiddenVolumeNames[uuid] ?? L10n.t("Ổ chưa gắn vào máy")).font(XFinderTokens.Font.rowValue)
-                            Spacer()
-                            Button(L10n.t("Khôi phục")) {
-                                var layout = BrowserSettings.sidebarLayout
-                                layout.showVolume(uuid: uuid)
-                                BrowserSettings.sidebarLayout = layout
-                                sidebarLayout = layout
+            if !sidebarLayout.hiddenVolumeUUIDs.isEmpty {
+                SettingsSection(title: L10n.t("Ổ đã ẩn"),
+                                footer: L10n.t("Ổ bị ẩn khỏi mục Vị trí của sidebar — vẫn gắn vào máy bình thường.")) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        let sorted = Array(sidebarLayout.hiddenVolumeUUIDs).sorted()
+                        ForEach(sorted, id: \.self) { uuid in
+                            HStack {
+                                Image(systemName: "externaldrive").foregroundColor(.secondary).font(XFinderTokens.Font.caption)
+                                Text(SidebarSources.shared.volumes.first { $0.uuid == uuid }?.name
+                                     ?? hiddenVolumeNames[uuid] ?? L10n.t("Ổ chưa gắn vào máy")).font(XFinderTokens.Font.rowValue)
+                                Spacer()
+                                Button(L10n.t("Khôi phục")) {
+                                    var layout = BrowserSettings.sidebarLayout
+                                    layout.showVolume(uuid: uuid)
+                                    BrowserSettings.sidebarLayout = layout
+                                    SpaceController.shared.sidebarDidChange(layout)
+                                    sidebarLayout = layout
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
                             }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
+                            .settingsRow()
+                            if uuid != sorted.last { SettingsDivider() }
                         }
-                        .settingsRow()
-                        if uuid != sorted.last { SettingsDivider() }
                     }
                 }
             }
+        }
+        .onChange(of: SpaceController.shared.active.sidebar, initial: true) { _, layout in
+            sidebarLayout = layout
         }
     }
 }

@@ -175,5 +175,11 @@ extension SpaceController {
         load: { UserDefaults.standard.data(forKey: "fileBrowser.spaces") },
         save: { UserDefaults.standard.set($0, forKey: "fileBrowser.spaces") },
         legacyLayout: { BrowserSettings.sidebarLayout },
-        writeLayout: { BrowserSettings.sidebarLayout = $0 })
+        writeLayout: { BrowserSettings.sidebarLayout = $0 },
+        hasLegacyLayout: {
+            guard let data = UserDefaults.standard.data(forKey: "fileBrowser.sidebarLayout"),
+                  let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+                  object["favorites"] is [Any] else { return false }
+            return true
+        })
 }

@@ -20,7 +20,8 @@ import XCTest
                 load: { [unowned self] in self.data },
                 save: { [unowned self] (bytes: Data) in self.data = bytes; self.saves += 1 },
                 legacyLayout: { [unowned self] in self.mirror },
-                writeLayout: { [unowned self] (layout: SidebarLayout) in self.mirror = layout; self.writes.append(layout) })
+                writeLayout: { [unowned self] (layout: SidebarLayout) in self.mirror = layout; self.writes.append(layout) },
+                hasLegacyLayout: { true })
         }
 
         var persisted: SpaceStore { SpaceStore.decode(data, fallbackLayout: SidebarLayout()) }
@@ -236,4 +237,39 @@ import XCTest
         XCTAssertTrue(harness.persisted.active.liveGroups.isEmpty)
         XCTAssertTrue(harness.writes.isEmpty)
     }
+    func testMissingMirrorRelaunchPreservesSidebarAndSavesNothing() {
+        var data: Data?
+        var saves = 0
+        var mirrorWrites: [SidebarLayout] = []
+        func make() -> SpaceController {
+            SpaceController(load: { data }, save: { data = $0; saves += 1 },
+                            legacyLayout: { SidebarLayout() }, writeLayout: { mirrorWrites.append($0) })
+        }
+        let first = make()
+        first.sidebarDidChange(layout(pinning: "/tmp/custom-favorite"))
+        let expected = first.store
+        let before = saves
+        let second = make()
+        XCTAssertEqual(second.store, expected)
+        XCTAssertEqual(saves, before, "an absent mirror must not reset UUIDs or trigger a store save")
+        XCTAssertEqual(mirrorWrites.last, expected.active.sidebar)
+    }
+
+    func testFirstLaunchSeedsTheMissingMirror() {
+        var mirrorWrites: [SidebarLayout] = []
+        let controller = SpaceController(load: { nil }, save: { _ in }, legacyLayout: { SidebarLayout() },
+                                         writeLayout: { mirrorWrites.append($0) })
+        XCTAssertEqual(mirrorWrites, [controller.active.sidebar])
+    }
+
+    func testEquivalentStoredFormattingDoesNotCauseASave() throws {
+        let harness = Harness(mirror: layout(pinning: "/tmp/preserved"))
+        _ = harness.make()
+        let object = try JSONSerialization.jsonObject(with: XCTUnwrap(harness.data))
+        harness.data = try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted])
+        let before = harness.saves
+        _ = harness.make()
+        XCTAssertEqual(harness.saves, before)
+    }
+
 }

@@ -14282,6 +14282,74 @@
     "Viền ngăn đang dùng": {
       "en": "Outline the active pane",
       "scope": "sentence"
+    },
+    "Xoá Space": {
+      "en": "Delete Space",
+      "scope": "sentence"
+    },
+    "Thanh bên của Space này sẽ mất. Tệp và thư mục trên đĩa không bị đụng tới.": {
+      "en": "This Space's sidebar will be lost. Files and folders on disk are not touched.",
+      "scope": "sentence"
+    },
+    "Space mới…": {
+      "en": "New Space…",
+      "scope": "sentence"
+    },
+    "Đổi tên Space…": {
+      "en": "Rename Space…",
+      "scope": "sentence"
+    },
+    "Đổi Space": {
+      "en": "Switch Space",
+      "scope": "sentence"
+    },
+    "Ẩn/hiện thanh bên": {
+      "en": "Show/hide sidebar",
+      "scope": "sentence"
+    },
+    "Xoá Space “": {
+      "en": "Delete Space “",
+      "scope": "fragment"
+    },
+    "”?": {
+      "en": "”?",
+      "scope": "fragment"
+    },
+    "Cá nhân": {
+      "en": "Personal",
+      "scope": "sentence"
+    },
+    "Tên Space": {
+      "en": "Space name",
+      "scope": "sentence"
+    },
+    "Đã có Space tên này.": {
+      "en": "A Space with this name already exists.",
+      "scope": "sentence"
+    },
+    "Space mới": {
+      "en": "New Space",
+      "scope": "sentence"
+    },
+    "Đổi tên Space": {
+      "en": "Rename Space",
+      "scope": "sentence"
+    },
+    "Space sau": {
+      "en": "Next Space",
+      "scope": "sentence"
+    },
+    "Trống": {
+      "en": "Empty",
+      "scope": "sentence"
+    },
+    "Bỏ khỏi thanh bên": {
+      "en": "Remove from Sidebar",
+      "scope": "sentence"
+    },
+    "Hiện nhóm trong thanh bên": {
+      "en": "Show group in sidebar",
+      "scope": "sentence"
     }
   }
 }

@@ -25,17 +25,18 @@ struct SidebarSpacePager: View {
 
     // MARK: - Pieces
 
-    @ViewBuilder private var pageIndicator: some View {
-        let all: [Space] = spaces.store.spaces
-        let activeID: UUID = spaces.active.id
-        if all.count > XFinderTokens.BrowserSidebar.pagerMaxDots {
-            compactIndicator(all: all, activeID: activeID)
-        } else {
-            HStack(spacing: XFinderTokens.BrowserSidebar.pagerDotGap) {
-                ForEach(all) { (space: Space) in
-                    dot(for: space, active: space.id == activeID)
+    private var pageIndicator: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: XFinderTokens.BrowserSidebar.pagerDotGap) {
+                    ForEach(spaces.store.spaces) { space in
+                        dot(for: space, active: space.id == spaces.active.id).id(space.id)
+                    }
                 }
+                .frame(maxWidth: .infinity)
             }
+            .onAppear { proxy.scrollTo(spaces.active.id, anchor: .center) }
+            .onChange(of: spaces.active.id) { _, id in proxy.scrollTo(id, anchor: .center) }
         }
     }
 
@@ -53,19 +54,6 @@ struct SidebarSpacePager: View {
         .help(SidebarSpaceNaming.displayName(space))
         .accessibilityLabel(SidebarSpaceNaming.displayName(space))
         .accessibilityAddTraits(active ? .isSelected : [])
-    }
-
-    /// Too many Spaces for dots: ‹ "3 / 12" › — the arrows step through Spaces (wrapping is SpaceController's rule).
-    private func compactIndicator(all: [Space], activeID: UUID) -> some View {
-        let position: Int = (all.firstIndex { $0.id == activeID } ?? 0) + 1
-        return HStack(spacing: XFinderTokens.Space.hairline) {
-            iconButton(systemImage: "chevron.left", help: L10n.t("Space trước")) { spaces.activatePrevious() }
-            Text(verbatim: "\(position) / \(all.count)")
-                .font(XFinderTokens.Font.caption)
-                .monospacedDigit()
-                .foregroundColor(.secondary)
-            iconButton(systemImage: "chevron.right", help: L10n.t("Space sau")) { spaces.activateNext() }
-        }
     }
 
     private func iconButton(systemImage: String, help: String, action: @escaping () -> Void) -> some View {

@@ -11,7 +11,8 @@ import Observation
 /// - `sidebarDidChange` stores into the active Space only and never calls `writeLayout` back (the sidebar has already
 ///   written the mirror — writing it again would loop).
 ///
-/// Launch reconciliation: the mirror is written on every activation and by every sidebar edit, so it is never older
+/// Launch reconciliation: a missing mirror must never overwrite persisted Spaces with fresh default UUIDs.
+/// A mirror explicitly present is written on every activation and by every sidebar edit, so it is never older
 /// than the active Space's copy. When stored data exists and the mirror differs from the active sidebar (an editor
 /// wrote the mirror without telling this controller), the mirror is adopted into the active Space — nothing the
 /// person last saw is lost. First launch (no data) or unreadable data ⇒ one Space wrapping the mirror.
@@ -25,7 +26,8 @@ import Observation
     private(set) var store: SpaceStore
 
     init(load: @escaping () -> Data?, save: @escaping (Data) -> Void,
-         legacyLayout: @escaping () -> SidebarLayout, writeLayout: @escaping (SidebarLayout) -> Void) {
+         legacyLayout: @escaping () -> SidebarLayout, writeLayout: @escaping (SidebarLayout) -> Void,
+         hasLegacyLayout: () -> Bool = { false }) {
         self.loadData = load
         self.saveData = save
         self.legacyLayout = legacyLayout
@@ -33,11 +35,13 @@ import Observation
         let stored: Data? = load()
         let mirror: SidebarLayout = legacyLayout()
         var decoded: SpaceStore = SpaceStore.decode(stored, fallbackLayout: mirror)
-        if decoded.active.sidebar != mirror {
+        let mirrorExists = hasLegacyLayout()
+        if mirrorExists && decoded.active.sidebar != mirror {
             decoded.updateActiveSidebar { $0 = mirror }
         }
         self.store = decoded
         persistIfDiffers(from: stored)
+        if !mirrorExists { mirrorActive() }
     }
 
     // MARK: - Reading
@@ -124,6 +128,8 @@ import Observation
     /// Saves only when the stored bytes are not already this store (first launch, repaired or reconciled data), so a
     /// clean launch writes nothing.
     private func persistIfDiffers(from stored: Data?) {
+        // Whitespace/key ordering (and Set iteration order) do not mean the user's configuration changed.
+        if let stored, let previous = try? JSONDecoder().decode(SpaceStore.self, from: stored), previous == store { return }
         let encoded: Data = store.encoded()
         guard stored != encoded else { return }
         saveData(encoded)

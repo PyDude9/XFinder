@@ -92,8 +92,6 @@ enum XFinderTokens {
         static let pagerDotGap: CGFloat = 6
         static let pagerDotInactive: Color = Color.primary.opacity(0.25)
         static let pagerDotActive: Color = Color.primary.opacity(0.75)
-        /// More Spaces than this ⇒ the pager shows "3 / 12" instead of dots (dots would push ⊕ / + off the strip).
-        static let pagerMaxDots: Int = 12
         static let sheetWidth: CGFloat = 300
     }
 

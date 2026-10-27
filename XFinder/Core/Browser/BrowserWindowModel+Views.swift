@@ -277,6 +277,7 @@ extension BrowserWindowModel {
         var layout = BrowserSettings.sidebarLayout
         for path in folders { layout.addItem(path: path, toGroup: nil) }
         BrowserSettings.sidebarLayout = layout
+        SpaceController.shared.sidebarDidChange(layout)
     }
 
     // MARK: - Share
