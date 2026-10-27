@@ -381,6 +381,7 @@
 		7F1A0521 /* Browser/RecentFolders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0520 /* Browser/RecentFolders.swift */; };
 		7F1A051F /* Browser/SidebarSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A051E /* Browser/SidebarSections.swift */; };
 		7F1A0B11 /* Browser/BrowserLearnProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0B10 /* Browser/BrowserLearnProgress.swift */; };
+		7F1A0C11 /* Browser/InspectorPreviewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0C10 /* Browser/InspectorPreviewRules.swift */; };
 		7F1A051D /* Browser/FinderTags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A051C /* Browser/FinderTags.swift */; };
 		7F1A051B /* Browser/FolderViewOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A051A /* Browser/FolderViewOptions.swift */; };
 		7F1A0519 /* Browser/SearchCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0518 /* Browser/SearchCoordinator.swift */; };
@@ -759,6 +760,7 @@
 		7F1A0520 /* Browser/RecentFolders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/RecentFolders.swift; sourceTree = "<group>"; };
 		7F1A051E /* Browser/SidebarSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SidebarSections.swift; sourceTree = "<group>"; };
 		7F1A0B10 /* Browser/BrowserLearnProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserLearnProgress.swift; sourceTree = "<group>"; };
+		7F1A0C10 /* Browser/InspectorPreviewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/InspectorPreviewRules.swift; sourceTree = "<group>"; };
 		7F1A051C /* Browser/FinderTags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FinderTags.swift; sourceTree = "<group>"; };
 		7F1A051A /* Browser/FolderViewOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FolderViewOptions.swift; sourceTree = "<group>"; };
 		7F1A0518 /* Browser/SearchCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SearchCoordinator.swift; sourceTree = "<group>"; };
@@ -1145,6 +1147,7 @@
 				7F1A0520 /* Browser/RecentFolders.swift */,
 				7F1A051E /* Browser/SidebarSections.swift */,
 				7F1A0B10 /* Browser/BrowserLearnProgress.swift */,
+				7F1A0C10 /* Browser/InspectorPreviewRules.swift */,
 				7F1A051C /* Browser/FinderTags.swift */,
 				7F1A051A /* Browser/FolderViewOptions.swift */,
 				7F1A0518 /* Browser/SearchCoordinator.swift */,
@@ -1865,6 +1868,7 @@
 				7F1A0521 /* Browser/RecentFolders.swift in Sources */,
 				7F1A051F /* Browser/SidebarSections.swift in Sources */,
 				7F1A0B11 /* Browser/BrowserLearnProgress.swift in Sources */,
+				7F1A0C11 /* Browser/InspectorPreviewRules.swift in Sources */,
 				7F1A051D /* Browser/FinderTags.swift in Sources */,
 				7F1A051B /* Browser/FolderViewOptions.swift in Sources */,
 				7F1A0519 /* Browser/SearchCoordinator.swift in Sources */,

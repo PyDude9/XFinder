@@ -1,3 +1,9 @@
+## 2026-10-27 — Codex XF-T32 W4 step 1: preview content and refresh
+
+Direct owner instruction to continue all work. Branch agent/codex-T32-W4; spec docs/specs/XF-T32-w4-inspector-contract.md written before code. Added Info/Preview, Open/Reveal/Path/Share, capped UTF-8 text, Markdown and lexical code color. Existing pane.listingRevision drives refresh (no extra model revision needed). Stat cache now includes inode/size/nanosecond mtime/ctime. Thumbnail callback cannot assign after cancellation; failed thumbnail explains rather than spins forever; media view identity resets on source change; AVPlayer pauses/detaches on teardown. Dataless files excluded before reading bytes, nonregular nodes excluded from content decoding. Empty/unreadable text has explanation.
+
+Build: /tmp/xfinder-t32-inspector-build, app build/check PASS, new rules file compiled, plutil and diff check PASS. Tests: 3 new rules tests PASS; intentional boundary mutation caused 1 failure, restored -> all 3 PASS. Full gate and live deferred to integrated step 2; no live behavior claimed here. Pending: image child/action integration and installed-app smoke. No push.
+
 
 ## 2026-10-27 — Codex: XF-T32 Learn, direct owner request
 

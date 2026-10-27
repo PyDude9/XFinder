@@ -14414,6 +14414,26 @@
     "Chọn một tệp rồi nhấn ⇧⌘P để bật hoặc tắt ngăn xem trước. Dùng menu ngữ cảnh để thêm mục vào Shelf, nơi giữ các tệp bạn muốn dùng lại.": {
       "en": "Select a file and press ⇧⌘P to toggle the preview pane. Use the context menu to add items to Shelf, which holds files you want to use again.",
       "scope": "sentence"
+    },
+    "Nội dung Inspector": {
+      "en": "Inspector content",
+      "scope": "sentence"
+    },
+    "Tệp văn bản quá lớn để xem trước (tối đa 256 KiB).": {
+      "en": "Text file is too large to preview (256 KiB maximum).",
+      "scope": "sentence"
+    },
+    "Chỉ xem trước văn bản UTF-8 không chứa dữ liệu nhị phân.": {
+      "en": "Only UTF-8 text without binary data can be previewed.",
+      "scope": "sentence"
+    },
+    "Không đọc được nội dung tệp.": {
+      "en": "Unable to read file contents.",
+      "scope": "sentence"
+    },
+    "Tệp văn bản trống.": {
+      "en": "Text file is empty.",
+      "scope": "sentence"
     }
   }
 }

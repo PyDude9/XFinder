@@ -4,6 +4,7 @@ import AVKit
 import UniformTypeIdentifiers
 import ImageIO
 import CoreGraphics
+import QuickLookThumbnailing
 
 /// XF-T30 W7 — the Preview pane (⇧⌘P) at the right of each pane: Information + Tags, Show More / Show Less, image
 /// thumbnail out of process, video poster with Play, never downloads cloud bytes. W7 builder (preview). Contract
@@ -20,9 +21,10 @@ struct PreviewPaneView: View {
     let model: BrowserWindowModel
 
     @State private var previewModel = FilePreviewPaneModel()
+    @State private var showingInfo = false
     @AppStorage("fileBrowser.previewShowMore") private var showMore = false
 
-    private static let width: CGFloat = 220
+    private static let width: CGFloat = 280
 
     var body: some View {
         ScrollView {
@@ -30,19 +32,35 @@ struct PreviewPaneView: View {
                 switch previewModel.content {
                 case .empty:
                     emptyState
+                case .unavailable:
+                    Text(L10n.t("Không đọc được nội dung tệp.")).font(XFinderTokens.Font.caption)
                 case .loading:
                     ProgressView().frame(maxWidth: .infinity).padding(.top, XFinderTokens.Space.section)
                 case .loaded(let item):
-                    PreviewMediaView(item: item)
-                    PreviewInformationSection(item: item, showMore: showMore) { showMore.toggle() }
-                    PreviewTagsSection(item: item)
+                    Picker(L10n.t("Nội dung Inspector"), selection: $showingInfo) {
+                        Text(L10n.t("Xem trước")).tag(false)
+                        Text(L10n.t("Thông tin")).tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    InspectorFileActions(item: item)
+                    if showingInfo {
+                        PreviewInformationSection(item: item, showMore: showMore) { showMore.toggle() }
+                        PreviewTagsSection(item: item)
+                    } else {
+                        if let text = item.text {
+                            InspectorTextView(text: text, kind: InspectorPreviewRules.kind(extension: (item.path as NSString).pathExtension) ?? .plain).id(item.identity)
+                        } else {
+                            PreviewMediaView(item: item).id(item.identity)
+                        }
+                        if let message = item.textMessage { Text(L10n.t(message)).font(XFinderTokens.Font.caption).foregroundStyle(.secondary) }
+                    }
                 }
             }
             .padding(XFinderTokens.Space.page)
         }
         .frame(width: Self.width)
         .background(XFinderTokens.Fill.window)
-        .task(id: PreviewSelectionKey(paths: pane.selectedEntries.map(\.path))) {
+        .task(id: PreviewSelectionKey(paths: pane.selectedEntries.map(\.path), revision: pane.listingRevision)) {
             await previewModel.load(selection: pane.selectedEntries)
         }
     }
@@ -66,6 +84,7 @@ struct PreviewPaneView: View {
 /// at the call site than a bare array literal and keeps the comparison to just the paths (not selection order).
 private struct PreviewSelectionKey: Equatable {
     let paths: [String]
+    let revision: Int
 }
 
 // MARK: - Model
@@ -82,6 +101,9 @@ struct FilePreviewItem: Equatable {
         case unsupported
     }
 
+    let identity: String
+    let text: String?
+    let textMessage: String?
     let path: String
     let name: String
     let kind: String
@@ -93,13 +115,14 @@ struct FilePreviewItem: Equatable {
     let tags: [String]
 
     static func == (lhs: FilePreviewItem, rhs: FilePreviewItem) -> Bool {
-        lhs.path == rhs.path && lhs.facts == rhs.facts && lhs.media == rhs.media && lhs.tags == rhs.tags
+        lhs.identity == rhs.identity && lhs.path == rhs.path && lhs.facts == rhs.facts && lhs.media == rhs.media && lhs.tags == rhs.tags
     }
 }
 
 enum FilePreviewContent: Equatable {
     case empty
     case loading
+    case unavailable
     case loaded(FilePreviewItem)
 }
 
@@ -132,8 +155,8 @@ enum FilePreviewContent: Equatable {
             guard let self else { return }
             self.store(key: key, item: item)
         }
-        guard myGeneration == generation else { return }   // the selection moved on while this was reading
-        content = item.map(FilePreviewContent.loaded) ?? .empty
+        guard !Task.isCancelled, myGeneration == generation else { return }   // the selection moved on while this was reading
+        content = item.map(FilePreviewContent.loaded) ?? .unavailable
     }
 
     private func store(key: String, item: FilePreviewItem) {
@@ -154,8 +177,7 @@ enum FilePreviewContent: Equatable {
     ) async -> FilePreviewItem? {
         var statInfo = stat()
         guard lstat(path, &statInfo) == 0 else { return nil }
-        let mtime = statInfo.st_mtimespec.tv_sec
-        let key = "\(path)@\(mtime)"
+        let key = "\(path)@\(statInfo.st_dev):\(statInfo.st_ino):\(statInfo.st_size):\(statInfo.st_mtimespec.tv_sec):\(statInfo.st_mtimespec.tv_nsec):\(statInfo.st_ctimespec.tv_sec):\(statInfo.st_ctimespec.tv_nsec)"
         if let cached = cache[key] {
             // Tags (Finder/Get Info `tagNamesKey`) can change without touching `mtime` — Get Info's `setTags`
             // writes `kMDItemUserTags` only. Re-reading just the tag list (one cheap resourceValues call, no
@@ -163,6 +185,7 @@ enum FilePreviewContent: Equatable {
             // still-open Get Info window, without paying for a full re-read of everything else.
             let freshTags = currentTags(path: path) ?? cached.tags
             return freshTags == cached.tags ? cached : FilePreviewItem(
+                identity: cached.identity, text: cached.text, textMessage: cached.textMessage,
                 path: cached.path, name: cached.name, kind: cached.kind, media: cached.media, facts: cached.facts,
                 pixelSize: cached.pixelSize, pdfPageCount: cached.pdfPageCount,
                 mediaDuration: cached.mediaDuration, tags: freshTags
@@ -177,7 +200,7 @@ enum FilePreviewContent: Equatable {
 
         if cloudOnly {
             media = .cloudOnly
-        } else if !facts.isFolder {
+        } else if (statInfo.st_mode & S_IFMT) == S_IFREG {
             let ext = (path as NSString).pathExtension.lowercased()
             if let type = UTType(filenameExtension: ext) {
                 if type.conforms(to: .image) {
@@ -192,7 +215,21 @@ enum FilePreviewContent: Equatable {
             }
         }
 
+        var text: String?
+        var textMessage: String?
+        if !cloudOnly, (statInfo.st_mode & S_IFMT) == S_IFREG, InspectorPreviewRules.kind(extension: (path as NSString).pathExtension) != nil {
+            do {
+                let handle = try FileHandle(forReadingFrom: URL(fileURLWithPath: path))
+                defer { try? handle.close() }
+                switch InspectorPreviewRules.decode(try handle.read(upToCount: InspectorPreviewRules.byteLimit + 1) ?? Data()) {
+                case .text(let value): text = value
+                case .tooLarge: textMessage = "Tệp văn bản quá lớn để xem trước (tối đa 256 KiB)."
+                case .binary: textMessage = "Chỉ xem trước văn bản UTF-8 không chứa dữ liệu nhị phân."
+                }
+            } catch { textMessage = "Không đọc được nội dung tệp." }
+        }
         let item = FilePreviewItem(
+            identity: key, text: text, textMessage: textMessage,
             path: path, name: facts.name, kind: facts.kind, media: media, facts: facts,
             pixelSize: pixelSize, pdfPageCount: pdfPageCount,
             // Duration is loaded asynchronously by `PreviewMediaView` once AVFoundation has it (same reason
@@ -245,6 +282,8 @@ enum FilePreviewContent: Equatable {
     /// Same check as `GetInfoModel.isLikelyNotDownloaded`/`CloudRules`: a not-yet-downloaded cloud item never gets
     /// opened to read pixel size, page count or duration — the preview pane shows the cloud-only state instead.
     nonisolated private static func isCloudOnly(path: String) -> Bool {
+        var info = stat()
+        if lstat(path, &info) == 0, info.st_flags & UInt32(SF_DATALESS) != 0 { return true }
         guard let values = try? URL(fileURLWithPath: path)
             .resourceValues(forKeys: [.ubiquitousItemDownloadingStatusKey]) else { return false }
         return values.ubiquitousItemDownloadingStatus == .notDownloaded
@@ -270,6 +309,7 @@ private struct PreviewMediaView: View {
 
     @State private var thumbnail: NSImage?
     @State private var isPlaying = false
+    @State private var thumbnailFinished = false
 
     private static let side: CGFloat = 180
 
@@ -280,8 +320,9 @@ private struct PreviewMediaView: View {
             content
         }
         .frame(height: Self.side)
-        .task(id: item.path) {
+        .task(id: item.identity) {
             isPlaying = false
+            thumbnailFinished = false
             thumbnail = nil
             guard item.media == .image else { return }
             await loadThumbnail()
@@ -297,6 +338,8 @@ private struct PreviewMediaView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .padding(XFinderTokens.Space.tight)
+            } else if thumbnailFinished {
+                unsupported(systemImage: "photo", explanationKey: "Không xem trước được loại tệp này.")
             } else {
                 ProgressView()
             }
@@ -356,13 +399,17 @@ private struct PreviewMediaView: View {
     }
 
     private func loadThumbnail() async {
-        await withCheckedContinuation { continuation in
-            FileIconCache.shared.thumbnail(forPath: item.path, side: Self.side, scale: 2) { image in
-                thumbnail = image
-                continuation.resume()
+        let image: NSImage? = await withCheckedContinuation { continuation in
+            let request = QLThumbnailGenerator.Request(fileAt: URL(fileURLWithPath: item.path), size: CGSize(width: Self.side, height: Self.side), scale: 2, representationTypes: .thumbnail)
+            QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { representation, _ in
+                continuation.resume(returning: representation?.nsImage)
             }
         }
+        guard !Task.isCancelled else { return }
+        thumbnail = image
+        thumbnailFinished = true
     }
+
 }
 
 /// `AVPlayerView` wrapped for SwiftUI — created (and so, only started) the moment the contract's Play button is
@@ -376,6 +423,11 @@ private struct AVPlayerViewRepresentable: NSViewRepresentable {
         view.player = AVPlayer(url: url)
         view.player?.play()
         return view
+    }
+
+    static func dismantleNSView(_ nsView: AVPlayerView, coordinator: ()) {
+        nsView.player?.pause()
+        nsView.player = nil
     }
 
     func updateNSView(_ nsView: AVPlayerView, context: Context) {
@@ -529,6 +581,62 @@ private struct FlowLayout: Layout {
             subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
             x += size.width + spacing
             rowHeight = max(rowHeight, size.height)
+        }
+    }
+}
+
+// MARK: - Inspector actions and bounded text
+
+private struct InspectorFileActions: View {
+    let item: FilePreviewItem
+    var body: some View {
+        HStack {
+            Button { NSWorkspace.shared.open(URL(fileURLWithPath: item.path)) } label: {
+                Image(systemName: "arrow.up.forward.app")
+            }.help(L10n.t("Mở")).accessibilityLabel(L10n.t("Mở"))
+            Button { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: item.path)]) } label: {
+                Image(systemName: "folder")
+            }.help(L10n.t("Hiện trong Finder")).accessibilityLabel(L10n.t("Hiện trong Finder"))
+            Button {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(item.path, forType: .string)
+            } label: { Image(systemName: "link") }
+            .help(L10n.t("Sao chép đường dẫn")).accessibilityLabel(L10n.t("Sao chép đường dẫn"))
+            ShareLink(item: URL(fileURLWithPath: item.path)) { Image(systemName: "square.and.arrow.up") }
+                .help(L10n.t("Chia sẻ")).accessibilityLabel(L10n.t("Chia sẻ"))
+        }
+        .buttonStyle(.borderless)
+    }
+}
+
+private struct InspectorTextView: View {
+    let text: String
+    let kind: InspectorPreviewRules.Kind
+    @State private var rendered: AttributedString?
+
+    var body: some View {
+        Group {
+            if let rendered {
+                Text(text.isEmpty ? AttributedString(L10n.t("Tệp văn bản trống.")) : rendered)
+                    .font(kind == .code ? .system(.caption, design: .monospaced) : XFinderTokens.Font.row)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else { ProgressView() }
+        }
+        .task(id: text) {
+            let result = await Task.detached(priority: .userInitiated) {
+                if kind == .markdown, let markdown = try? AttributedString(markdown: text) { return markdown }
+                let value = NSMutableAttributedString(string: text)
+                if kind == .code {
+                    for span in InspectorPreviewRules.spans(in: text) {
+                        let color: NSColor = span.style == .comment ? .secondaryLabelColor : (span.style == .string ? .systemRed : .systemPurple)
+                        value.addAttribute(.foregroundColor, value: color, range: span.range)
+                    }
+                }
+                return AttributedString(value)
+            }.value
+            guard !Task.isCancelled else { return }
+            rendered = result
         }
     }
 }
