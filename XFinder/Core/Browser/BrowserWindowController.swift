@@ -500,7 +500,10 @@ final class BrowserWindow: NSWindow {
     /// Never steals from a text field (location bar, filter, rename editor) and does nothing when focus is already
     /// inside `view`.
     func focusFileView(_ view: NSView, paneIsActive: Bool) {
-        guard paneIsActive, view.window === self, !(firstResponder.map(isTextEditing) ?? false) else { return }
+        // SwiftUI mounts the palette's field during the same update as the file view.
+        // Keep the outline from reclaiming focus before that field starts editing.
+        guard modelForThisWindow()?.palette == nil,
+              paneIsActive, view.window === self, !(firstResponder.map(isTextEditing) ?? false) else { return }
         if let responder = firstResponder as? NSView, responder === view || responder.isDescendant(of: view) { return }
         makeFirstResponder(view)
     }

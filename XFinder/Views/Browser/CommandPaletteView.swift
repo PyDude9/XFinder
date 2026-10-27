@@ -37,7 +37,7 @@ struct CommandPaletteView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color.black.opacity(0.001).onTapGesture { model.palette = nil })
-        .onAppear { query = mode == .commands ? ">" : ""; focused = true }
+        .onAppear { query = mode == .commands ? ">" : "" }
         .onDisappear { activation = UUID() }
         .onChange(of: mode) { _, value in
             moveSources = []
@@ -95,6 +95,12 @@ struct CommandPaletteView: View {
                 TextField(L10n.t("Tìm thư mục, biệt danh hoặc lệnh…"), text: $query)
                     .textFieldStyle(.plain).font(XFinderTokens.Font.sectionTitle)
                     .focused($focused)
+                    .task {
+                        // Wait until AppKit has attached the field before requesting its editor.
+                        await Task.yield()
+                        guard !Task.isCancelled else { return }
+                        focused = true
+                    }
                     .onKeyPress(.downArrow) { move(1); return .handled }
                     .onKeyPress(.upArrow) { move(-1); return .handled }
                     .onKeyPress(keys: [.return], phases: .down) { press in commit(modifiers: press.modifiers); return .handled }
