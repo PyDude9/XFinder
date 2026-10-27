@@ -328,3 +328,31 @@ GATE: RED
 Other checks: `plutil -lint XFinder.xcodeproj/project.pbxproj` → `OK`; `git diff --check` clean; add-only script AST parses (not executed). Build logs: `/tmp/xfinder-sol-b2-build.stdout`, `/tmp/xfinder-sol-b2-build/build.log`, `/tmp/xfinder-sol-b2-incremental.log`.
 
 **Chưa kiểm live:** tree/table column switching, inline rename during watcher/pin changes, pinned-card rendering with expanded folders, narrow-window chip layout, selection/drag/drop/spring-load, hover-menu behavior after B3, keyboard/VoiceOver, scrolling performance and memory. The requested screenshot sheets were absent; read-only `orca computer get-app-state --app com.blazegreenhalgh.FileExplorer` returned `window_not_found` (“Tilde has no on-screen window”). No app was opened or restored and no input was sent. Visual match is based on the contract, not a claimed screenshot comparison. Existing pure tests do not exercise this AppKit view. B3 onward remains for separate sessions.
+
+## XF-T32 B1/B2 integration — owner-requested, 2026-10-27
+
+The owner explicitly requested “tích hợp luôn đi”, authorizing integration rather than leaving these units for Claude. Integration branch: `agent/codex-T32-integration`, based on `main 7e479fd`. Preserved the complete B1 and B2 branch histories; the sole merge conflict was the appended report section in this file, resolved by retaining both reports. Included completed worker branch `xf-t32-w23-menus` (`54b61ab`) as B2's required RowActionsMenu/property-editor dependency. Other W2/W3 worker branches were not integrated. Final wiring/translation commit: `6218ccc`. The earlier B1/B2 “Awaiting Claude” and pending-localization reports above are historical; their code and translations are now combined and validated here.
+
+Integration changes: shared selection and background context menus expose metadata/property actions, including the synthetic self-pin menu; property grouping updates when metadata changes, with a dedicated section revision and structural changes deferred during rename; successful queue rename/move/trash, merge moves and move undo/redo notify BrowserMetadata without changing filesystem operations or their decisions. Memory-pressure relief now reaches the metadata cache. Added 29 L10n keys via the add-only tree/integration scripts, including dynamically referenced property/color labels; neither script rewrites an existing translation. Changed the sheet callback to an explicit main-actor task. Existing clipboard/agent/privacy/release code and other worktrees' uncommitted changes were left alone.
+
+Build: `XF_ROOT=<this checkout> XF_OUT=/tmp/xfinder-t32-integration-final-build sh scripts/build-and-check.sh` (through gate-all) succeeded for arm64; compile-list checks passed. The built bundle's L10n JSON was read from `/tmp/xfinder-t32-integration-final-build/out/XFinder.app/Contents/Resources/L10n.strings.json` and compared with the source: equal. This is a build/resource check, not installed-app runtime verification.
+
+Full `gate-all.sh` stdout, detached outside the Codex process ancestry (verbatim):
+
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2800 tests, with 0 failures (0 unexpected) in 23.778 (23.980) seconds
+check-l10n-coverage                TOTAL 0 problems across 3563 entries (3563 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3563 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1320 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             9
+GATE: green
+```
+
+`plutil -lint XFinder.xcodeproj/project.pbxproj`: OK. `git diff --check`: clean. No new Swift files, project registrations or test symlinks. Existing B1 regression tests run in the full 2800-test suite (the AppKit views and queue wiring are validated by the app build, not exercised by those pure tests). Earlier B1 emoji mutant evidence remains recorded above; no mutation harness was rerun during integration.
+
+**Chưa kiểm live:** installed-app clicks, menus/popovers, VoiceOver, narrow layouts, metadata during real file moves/trash/conflict replacement/undo/redo, scrolling performance and idle/memory behavior. External filesystem changes are not newly instrumented by this integration. No installation, app launch, synthetic input, signing/release action or push. Main is updated only by fast-forward to the validated integration branch, with all commits created on `agent/codex-T32-integration` (no commit created on main).
