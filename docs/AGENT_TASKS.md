@@ -258,3 +258,34 @@ xuống mục 6 kèm các bước.
 ## XF-T32 W2/W3 (Sol)
 
 Jobs: `docs/specs/XF-T32-w23-handoff-sol.md` (B1 metadata, B2 tree, B3 menus, B4 chrome, S1 spaces fix, V1/V2 verify). One line per finished job below.
+
+- 2026-10-27 · **B2 tree — CHỜ REVIEW / L10n integration pending** · `agent/sol-T32-B2` · `101527e` · build: `** BUILD SUCCEEDED **` (arm64, `/tmp/xfinder-sol-b2-build`; FileListView in compile list; final incremental compile also succeeded) · tests: `Executed 2793 tests, with 0 failures (0 unexpected) in 574.421 (574.620) seconds` (detached from Codex; this is test wall time, not a UI-performance measurement). Gate RED only for one deliberately pending L10n key, detailed below. Source files: FileListView.swift only; add-only script `scripts/add-xft32-tree-l10n-entries.py` prepared, NOT RUN. No edits to pbxproj, symlinks, FeatureCatalog, L10n store or other units. Based independently on `main 7e479fd`; Claude must integrate B1 (`5f7c4e3`) and B3 before metadata/hover menus can work end to end. Contract/handoff blobs unchanged (`9ef263b` / `14d15d4`). No install, XFinder launch, events/keys to other apps, push or merge.
+
+B2 contract §E / design §3b mapping:
+- Name-only, non-search List uses the existing 31-point token, no table header or alternating backgrounds; multi-column/search keeps the existing table. Column chooser logic is retained. Per-cell content remains inside the outline, with no hit-testing overlay or ancestor tap recognizer.
+- `PinRules.split` creates a distinct, unselectable pinned header and moves pinned entries out of the regular sections; stale pins are ignored without toggling/deleting them. A self pin uses a synthetic entry + localized “Thư mục này”; its placeholder timestamps/size are never displayed. Self pins do not expand/start a second watcher on the current pane. Pinned row backgrounds use the existing 10-point radius token, first/last corners, zero inter-row gaps and the dynamic gray fill token. Remaining groups continue through the original section path.
+- Tree Name cell keeps an editable, middle-truncating name; shows folder emoji or cached icon, secondary nickname, colored property chips using PropertyTint, hover ellipsis wired to RowActionsMenu, folder chevron. Cloud badges, Finder tag dot and cut fade are retained. Passive chip content does not receive mouse hits.
+- Reads metadata revision during representable update; metadata-only changes reload visible rows and exclude the field editor/renaming path. Pin structural changes defer until rename ends. ListingDiff remains for regular entry rows plus the unique pinned header; group headers retain the full-reload path. Existing rename, drag/drop, spring-load, PaneActivating and watcher teardown remain. Expanded children request their folder metadata.
+
+Failure cases addressed in code: empty listing or all entries pinned; missing/stale pins; root/self folder pin; similarly named real group header; changed pins while renaming; metadata changes while scrolling/editing; switching tree/table/search; many or long property/nickname labels (name uses middle truncation and lower compression priority); collapsed/gone child folders release watchers. Missing metadata produces the existing icon/name; no fabricated values or dead new toggles. These are code-path checks, NOT live verification.
+
+New L10n key: `còn gọi là ` → `aka `, scope `fragment` (trailing space retained). The handoff explicitly assigns the store to Claude and says not to run the add-only script. Therefore the untranslated-key gate is intentionally reported RED, not waived or represented as green. Next integration action: run `python3 scripts/add-xft32-tree-l10n-entries.py`, rebuild, and rerun gate-all after combining the units.
+
+Final detached `gate-all.sh --no-build` stdout (verbatim; build ran separately):
+
+```text
+tests                              Executed 2793 tests, with 0 failures (0 unexpected) in 574.421 (574.620) seconds
+check-l10n-coverage                TOTAL 0 problems across 3534 entries (3534 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3534 unique keys
+audit-l10n-literals                TOTAL 1 wrapped-but-untranslated, 1320 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             1
+GATE: RED
+```
+
+Other checks: `plutil -lint XFinder.xcodeproj/project.pbxproj` → `OK`; `git diff --check` clean; add-only script AST parses (not executed). Build logs: `/tmp/xfinder-sol-b2-build.stdout`, `/tmp/xfinder-sol-b2-build/build.log`, `/tmp/xfinder-sol-b2-incremental.log`.
+
+**Chưa kiểm live:** tree/table column switching, inline rename during watcher/pin changes, pinned-card rendering with expanded folders, narrow-window chip layout, selection/drag/drop/spring-load, hover-menu behavior after B3, keyboard/VoiceOver, scrolling performance and memory. The requested screenshot sheets were absent; read-only `orca computer get-app-state --app com.blazegreenhalgh.FileExplorer` returned `window_not_found` (“Tilde has no on-screen window”). No app was opened or restored and no input was sent. Visual match is based on the contract, not a claimed screenshot comparison. Existing pure tests do not exercise this AppKit view. B3 onward remains for separate sessions.
