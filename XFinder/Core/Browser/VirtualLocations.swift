@@ -14,6 +14,8 @@ enum VirtualLocations {
 
     static func list(_ location: VirtualLocation) async -> Result<[DirectoryEntry], DirectoryReadError> {
         switch location {
+        case .learn:
+            return .success([])
         case .recents:
             let home = FileManager.default.homeDirectoryForCurrentUser
             let query = "kMDItemLastUsedDate >= $time.today(-30)"

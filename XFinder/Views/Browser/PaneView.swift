@@ -54,39 +54,43 @@ struct PaneView: View {
             PaneTabStripView(paneID: pane.id, model: model, isActive: isActive)
             Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
 
-            if showLocationBar {
-                LocationBarView(pane: pane, model: model)
-                    .padding(.horizontal, XFinderTokens.Space.tight)
-                    .padding(.top, XFinderTokens.Space.tight)
-            }
-
-            RelatedItemsStrip(pane: pane, model: model, metadata: BrowserMetadata.shared)
-
-            if pane.search != nil || !pane.filterText.isEmpty || model.filterFocusRequest == pane.id {
-                SearchBarView(pane: pane, model: model)
-                    .padding(.horizontal, XFinderTokens.Space.tight)
-                    .padding(.top, 2)
-            }
-
-            Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
-
-            HStack(spacing: 0) {
-                content
-                if showPreview {
-                    Rectangle().fill(XFinderTokens.Fill.hairline).frame(width: 1)
-                    PreviewPaneView(pane: pane, model: model)
+            if VirtualLocation.parse(pane.path) == .learn {
+                BrowserLearnView()
+            } else {
+                if showLocationBar {
+                    LocationBarView(pane: pane, model: model)
+                        .padding(.horizontal, XFinderTokens.Space.tight)
+                        .padding(.top, XFinderTokens.Space.tight)
                 }
-            }
 
-            if showStatusBar {
-                Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
-                StatusBarView(pane: pane)
-            }
+                RelatedItemsStrip(pane: pane, model: model, metadata: BrowserMetadata.shared)
 
-            // Tilde keeps the breadcrumb as the last line of the pane, under everything else.
-            if showPathBar {
+                if pane.search != nil || !pane.filterText.isEmpty || model.filterFocusRequest == pane.id {
+                    SearchBarView(pane: pane, model: model)
+                        .padding(.horizontal, XFinderTokens.Space.tight)
+                        .padding(.top, 2)
+                }
+
                 Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
-                PathBarView(pane: pane, model: model)
+
+                HStack(spacing: 0) {
+                    content
+                    if showPreview {
+                        Rectangle().fill(XFinderTokens.Fill.hairline).frame(width: 1)
+                        PreviewPaneView(pane: pane, model: model)
+                    }
+                }
+
+                if showStatusBar {
+                    Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
+                    StatusBarView(pane: pane)
+                }
+
+                // Tilde keeps the breadcrumb as the last line of the pane, under everything else.
+                if showPathBar {
+                    Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
+                    PathBarView(pane: pane, model: model)
+                }
             }
         }
 

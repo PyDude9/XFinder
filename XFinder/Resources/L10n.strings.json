@@ -14350,6 +14350,70 @@
     "Hiện nhóm trong thanh bên": {
       "en": "Show group in sidebar",
       "scope": "sentence"
+    },
+    "Học sử dụng": {
+      "en": "Learn",
+      "scope": "sentence"
+    },
+    "Đi đến thư mục": {
+      "en": "Navigate folders",
+      "scope": "sentence"
+    },
+    "Làm việc với tab": {
+      "en": "Work with tabs",
+      "scope": "sentence"
+    },
+    "Đặt các thư mục cạnh nhau": {
+      "en": "Place folders side by side",
+      "scope": "sentence"
+    },
+    "Sắp xếp bằng thông tin riêng": {
+      "en": "Organize with metadata",
+      "scope": "sentence"
+    },
+    "Tách công việc bằng Space": {
+      "en": "Separate work with Spaces",
+      "scope": "sentence"
+    },
+    "Xem trước và dùng Shelf": {
+      "en": "Preview and use Shelf",
+      "scope": "sentence"
+    },
+    "Sáu bài hướng dẫn ngắn. Tự đánh dấu khi bạn đã thực hành; tiến độ được lưu trên máy này.": {
+      "en": "Six short lessons. Mark each one after practicing; progress stays on this Mac.",
+      "scope": "sentence"
+    },
+    "Tiến độ học": {
+      "en": "Learning progress",
+      "scope": "sentence"
+    },
+    "Đã thực hành": {
+      "en": "Practiced",
+      "scope": "sentence"
+    },
+    "Chọn một thư mục ở thanh bên. Nhấp đúp thư mục để mở; dùng nút Quay lại và Tiến tới để đi qua lịch sử. Thanh đường dẫn ở đáy giúp quay về thư mục cha.": {
+      "en": "Choose a folder in the sidebar. Double-click folders to open them; use Back and Forward to navigate history. The path bar at the bottom lets you return to parent folders.",
+      "scope": "sentence"
+    },
+    "Dùng nút cộng trên thanh tab để mở tab mới trong ngăn. Chọn tab để chuyển thư mục; nút đóng nằm trên tab đang chọn. Đóng tab Học sử dụng để trở lại công việc.": {
+      "en": "Use the plus button on the tab bar to open a tab in the pane. Select tabs to switch folders; the selected tab has a close button. Close the Learn tab to return to work.",
+      "scope": "sentence"
+    },
+    "Dùng nút chia ngăn bên phải thanh tab để xem hai thư mục cùng lúc. Nhấp vào một ngăn để chọn ngăn nhận lệnh. Số ngăn có thể tạo phụ thuộc gói sử dụng.": {
+      "en": "Use the split buttons to the right of the tab bar to see two folders at once. Click a pane to direct commands to it. The number of panes you can create depends on your plan.",
+      "scope": "sentence"
+    },
+    "Nhấp phải một mục để ghim trong thư mục, đặt biệt danh hoặc thêm thuộc tính. Với thư mục, bạn còn có thể đặt emoji. Biệt danh không đổi tên tệp trên đĩa.": {
+      "en": "Right-click an item to pin it in the folder, set a nickname, or add a property. Folders can also have an emoji. Nicknames do not rename files on disk.",
+      "scope": "sentence"
+    },
+    "Mở menu Space ở đầu thanh bên để tạo hoặc chuyển Space. Mỗi Space giữ danh sách mục ưa thích riêng. Dùng các chấm ở đáy thanh bên để chuyển nhanh giữa các Space.": {
+      "en": "Open the Space menu at the top of the sidebar to create or switch Spaces. Each Space keeps its own favorites. Use the dots at the bottom of the sidebar to switch quickly.",
+      "scope": "sentence"
+    },
+    "Chọn một tệp rồi nhấn ⇧⌘P để bật hoặc tắt ngăn xem trước. Dùng menu ngữ cảnh để thêm mục vào Shelf, nơi giữ các tệp bạn muốn dùng lại.": {
+      "en": "Select a file and press ⇧⌘P to toggle the preview pane. Use the context menu to add items to Shelf, which holds files you want to use again.",
+      "scope": "sentence"
     }
   }
 }

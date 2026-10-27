@@ -40,6 +40,27 @@ struct BrowserRootView: View {
             }
         }
         .frame(minWidth: Self.minimumSize.width, minHeight: Self.minimumSize.height)
+        .overlay(alignment: .bottomTrailing) {
+            if VirtualLocation.parse(model.active.path) != .learn {
+                Button {
+                    if let existing = model.tabs(of: model.activePane).first(where: { VirtualLocation.parse($0.path) == .learn }) {
+                        model.selectTab(existing.tabID)
+                    } else {
+                        model.newTab(in: model.activePane, path: VirtualLocation.learn.path)
+                    }
+                } label: {
+                    Image(systemName: "book.closed")
+                        .font(XFinderTokens.Font.sectionTitle)
+                        .padding(XFinderTokens.Space.row)
+                        .background(.regularMaterial, in: Circle())
+                        .overlay(Circle().stroke(XFinderTokens.Fill.hairline))
+                }
+                .buttonStyle(.plain)
+                .help(L10n.t("Học sử dụng"))
+                .accessibilityLabel(L10n.t("Học sử dụng"))
+                .padding(XFinderTokens.Space.section)
+            }
+        }
         .overlay(alignment: .top) {
             if let banner = model.banner {
                 bannerView(banner)

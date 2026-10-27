@@ -435,3 +435,5 @@ audit-ui-tokens                    TOTAL 0 problems across 0 files
 modified tracked files             2
 GATE: green
 ```
+
+Follow-up live verification (2026-10-27): after closing the obstructing XFinder dashboard and foregrounding the browser, an actual click selected item-05.txt in 54 ms. Name-only mode had 31 pt file rows, a visible Pinned header and one 1304 pt column in the 1324 pt row viewport. Three consecutive multi-column/tree transitions retained 24 rows (23 items + pin header), column counts 4 → 1 → 4, with no crash. Unpinned the owned item via UI and deleted only XF Live 20261027 via UI. Read-only SQLite confirms no owned pins; preferences contain only the baseline Personal Space and five original favorites. This supersedes the earlier pending column checks/cleanup; inline rename and other noted live checks remain unverified.

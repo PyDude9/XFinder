@@ -14,6 +14,7 @@ enum SidebarCategory: String, Codable, CaseIterable, Sendable {
 /// path that parses as one of these through `VirtualLocations.list` instead of `DirectoryReader`).
 enum VirtualLocation: Equatable, Hashable, Sendable {
     case recents
+    case learn
     case tag(String)
     case allTags
 
@@ -26,6 +27,7 @@ enum VirtualLocation: Equatable, Hashable, Sendable {
     /// (a tag can be any string the person typed into Finder) never reads back as an extra path component.
     var path: String {
         switch self {
+        case .learn: return Self.scheme + "learn"
         case .recents:
             return Self.scheme + "recents"
         case .tag(let name):
@@ -41,6 +43,7 @@ enum VirtualLocation: Equatable, Hashable, Sendable {
     static func parse(_ path: String) -> VirtualLocation? {
         guard path.hasPrefix(scheme) else { return nil }
         let rest = String(path.dropFirst(scheme.count))
+        if rest == "learn" { return .learn }
         if rest == "recents" { return .recents }
         if rest == allTagsComponent { return .allTags }
         if rest.hasPrefix(tagPrefix) {

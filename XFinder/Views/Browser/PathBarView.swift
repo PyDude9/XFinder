@@ -92,6 +92,7 @@ private struct PathBarVirtualLabel: View {
 
     private var title: String {
         switch location {
+        case .learn: return L10n.t("Học sử dụng")
         case .recents: return L10n.t("Gần đây")
         case .tag(let name): return name
         case .allTags: return L10n.t("Thẻ")

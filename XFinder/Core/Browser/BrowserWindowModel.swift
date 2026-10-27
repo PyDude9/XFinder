@@ -819,6 +819,15 @@ enum BrowserSheet: String, Identifiable {
     }
 
     func canPerform(_ command: BrowserCommand) -> Bool {
+        if VirtualLocation.parse(active.path) == .learn {
+            switch command {
+            case .newFolder, .paste, .pasteMove, .newFolderWithSelection, .getInfo, .filter, .find,
+                 .viewIcons, .viewList, .viewColumns, .viewGallery, .showViewOptions, .togglePreview,
+                 .useGroups, .toggleHidden, .selectAll, .openEnclosing:
+                return false
+            default: break
+            }
+        }
         switch command {
         case .splitRight, .splitLeft, .splitDown, .splitUp:
             // XF-T29: false at the Free pane limit, same as at the hard 16-pane ceiling — a layout already bigger

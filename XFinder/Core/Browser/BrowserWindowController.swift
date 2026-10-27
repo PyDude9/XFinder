@@ -143,7 +143,7 @@ import os
         window.controller = self
         window.contentMinSize = Self.minimumContentSize
         window.isReleasedWhenClosed = false
-        window.title = (model.active.path as NSString).lastPathComponent
+        window.title = VirtualLocation.parse(model.active.path) == .learn ? L10n.t("Học sử dụng") : (model.active.path as NSString).lastPathComponent
         window.tabbingMode = .preferred
         window.tabbingIdentifier = Self.tabbingIdentifier
         window.toolbarStyle = .unified
@@ -223,7 +223,7 @@ import os
         } onChange: { [weak self, weak window, weak model] in
             Task { @MainActor in
                 guard let window, let model else { return }
-                window.title = (model.active.path as NSString).lastPathComponent
+                window.title = VirtualLocation.parse(model.active.path) == .learn ? L10n.t("Học sử dụng") : (model.active.path as NSString).lastPathComponent
                 self?.observeTitle(of: model, window: window)
             }
         }

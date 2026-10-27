@@ -221,9 +221,14 @@ private struct TabChip: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(nsImage: FileIconCache.shared.icon(forPath: tab.path))
-                .resizable()
-                .frame(width: 14, height: 14)
+            if VirtualLocation.parse(tab.path) == .learn {
+                Image(systemName: "book.closed")
+                    .frame(width: 14, height: 14)
+            } else {
+                Image(nsImage: FileIconCache.shared.icon(forPath: tab.path))
+                    .resizable()
+                    .frame(width: 14, height: 14)
+            }
             Text(tabTitle)
                 .font(XFinderTokens.Font.caption)
                 .lineLimit(1)
@@ -249,6 +254,7 @@ private struct TabChip: View {
     }
 
     private var tabTitle: String {
+        if VirtualLocation.parse(tab.path) == .learn { return L10n.t("Học sử dụng") }
         if case .failed = tab.loadState {
             return (tab.path as NSString).lastPathComponent.isEmpty ? tab.path : (tab.path as NSString).lastPathComponent
         }

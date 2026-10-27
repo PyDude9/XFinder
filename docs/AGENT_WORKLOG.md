@@ -1,3 +1,27 @@
+
+## 2026-10-27 — Codex: XF-T32 Learn, direct owner request
+
+Branch `agent/codex-T32-Learn`, based on live crash fix `511f82a`. Spec: `docs/specs/XF-T32-learn-contract.md`. Added bottom-right book button, reuses Learn tab in active pane, six localized lessons, explicit per-lesson completion persisted in `fileBrowser.learn.completed`. Virtual location survives tab/session encoding; no directory watcher/Spotlight request for Learn. Folder controls are hidden and relevant dispatcher commands disabled. New Swift files have four pbx entries each and pure progress source is symlinked into test package.
+
+Build: clean full app build passed, both new files compiled; final incremental build after localized window title/book tab icon passed; plutil/diff checks passed. Installed app dylib matches final build SHA-256 `1ad274946da22c47f2fc10980cdd4e4ea2d5b9e4324e51ff32d922da3135fb1b`; stable signing requirement retained. Runtime English L10n TOTAL 0.
+
+Tests: four new progress/path tests cover corrupt/empty data, completion/uncheck, preserving unknown IDs, bounded count and virtual-path round trip. Injected broken uncheck behavior: one test RED; restored source: GREEN. Initial full gate had one existing AgentCodexTests failure because its assumption of no codex ancestor is false under this runner. Detached run (no Codex ancestor) passed all 2823 tests. No unrelated hook/test code changed. Detached gate stdout (verbatim):
+
+```text
+tests                              Executed 2823 tests, with 0 failures (0 unexpected) in 24.040 (24.248) seconds
+check-l10n-coverage                TOTAL 0 problems across 3603 entries (3603 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3603 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1332 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             9
+GATE: green
+```
+
+Live in installed app: book button opens real Learn tab; six checkboxes and progress indicator exposed to AX; checking first lesson changes progress to 1/6; completion retained after closing/recreating tab and after app reinstall/relaunch. Uncheck works. Final localized window title is Learn; inspected screenshot `/tmp/xfinder-live-20261027/learn-final.png`. The browser window was no longer present when the final tab-close command ran, so that command did not execute; button presence was verified before opening Learn. Owned test lesson is unchecked. Full VoiceOver speech, keyboard-only traversal, all locales, simultaneous multi-window edits and session restoration of a Learn tab not live verified. W4 Inspector and remaining W6 features are outside this change. No push.
+
 # Agent worklog
 
 Every agent other than the main Claude Code session appends here (newest first): what it changed, the result of each
