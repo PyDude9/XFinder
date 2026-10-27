@@ -258,3 +258,42 @@ xuống mục 6 kèm các bước.
 ## XF-T32 W2/W3 (Sol)
 
 Jobs: `docs/specs/XF-T32-w23-handoff-sol.md` (B1 metadata, B2 tree, B3 menus, B4 chrome, S1 spaces fix, V1/V2 verify). One line per finished job below.
+
+- 2026-10-26 · B1 metadata · `agent/sol-T32-B1` (Codex, base `7e479fd`) · **BLOCKED before implementation: contract/API mismatch**. Contract §A requires loading emoji for child folders represented in the emoji table, including emoji-only children; `MetadataStore.swift:171–189` exposes only `emoji(for:)`/`setEmoji`, and repo search found no enumeration API or extension. A persisted emoji at `/parent/child` with no nickname cannot be discovered by `load(folder: "/parent")` using the available store API. Fix requires an integrator-owned API such as `emoji(in:)` (or an explicit contract revision); B1 owns only BrowserMetadata + its tests. Next action: Claude supplies the enumeration API and releases B1 again. Contract blob `9ef263b`; handoff blob `14d15d4`. Notion Blocked/Doing/Ready views read successfully but contain no XF-T32 task, so no unrelated task was claimed or changed; reporting here as the handoff explicitly directs. Build: NOT RUN; tests: NOT RUN; gates/mutation: NOT RUN; live: NOT VERIFIED. No source edits, install, launch, push, or merge.
+
+- 2026-10-26 · **B1 metadata — CHỜ REVIEW** · `agent/sol-T32-B1` · source commit `5f7c4e3` · build: `** BUILD SUCCEEDED **` (arm64, own `/tmp/xfinder-sol-b1-build`; BrowserMetadata + MetadataStore present in compile list) · tests: `Executed 2800 tests, with 0 failures (0 unexpected) in 24.154 (24.351) seconds` · 7 B1 tests green; emoji-cache mutant RED by assertion, source restored byte-for-byte and 7/7 green again. Previous blocker resolved by the owner's “tiếp tục đi”: added only the missing read-only `MetadataStore.emoji(in:)` API, no schema changes. Changed BrowserMetadata.swift, MetadataStore.swift, BrowserMetadataTests.swift; this report is the handoff-requested reporting file. No new L10n keys or UI changes. Contract/handoff blobs unchanged (`9ef263b` / `14d15d4`). Notion views have no XF-T32 task to update. Live NOT VERIFIED; no install, app launch, push or merge. B2 onward left for separate sessions per the one-job rule.
+
+B1 failure cases checked: empty/missing metadata and invalid emoji clear safely; Unicode NFD/NFC and literal SQL wildcard characters agree; duplicate in-flight folder loads are dropped and unchanged data does not bump revision; queued writes preserve order and stale loads retry after edits; bootstrap-time edits preserve existing catalog/pins/relations; move/removal rewrites descendants but leaves similarly named siblings alone; memory pressure retains the last eight loaded folders. Permission/disk failures still follow MetadataStore's existing fallback behavior (no new success UI); write-failure injection was NOT tested. No new switch or OS API. All measurements above are tests/builds from terminal processes, not measurements in the installed app.
+
+Initial `gate-all.sh` stdout (verbatim; hook test assumes no `codex` ancestor, contradicted by this session's real process ancestry):
+
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2800 tests, with 1 failure (0 unexpected) in 25.810 (26.026) seconds
+check-l10n-coverage                TOTAL 0 problems across 3534 entries (3534 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3534 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1320 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             3
+GATE: RED
+```
+
+Re-run `gate-all.sh --no-build` in a detached process, reparented outside Codex, same restored source (verbatim; build above was not repeated):
+
+```text
+tests                              Executed 2800 tests, with 0 failures (0 unexpected) in 24.154 (24.351) seconds
+check-l10n-coverage                TOTAL 0 problems across 3534 entries (3534 checked, 31 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3534 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1320 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             3
+GATE: green
+```
+
+Additional checks: `plutil -lint XFinder.xcodeproj/project.pbxproj` → `OK`; `git diff --check` clean; `verify-l10n-runtime.py` → `TOTAL 0 leaks in the resolved English UI` (existing installed bundle, not a B1 live test). Mutation logs: `/tmp/xfinder-sol-b1-mutant.log` (discarding the loaded emoji dictionary causes the emoji-only child test to fail), `/tmp/xfinder-sol-b1-restored.log` (7 tests / 0 failures).
