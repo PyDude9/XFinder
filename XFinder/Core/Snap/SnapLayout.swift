@@ -214,6 +214,35 @@ enum SnapLayout {
         return .edge(edgeTarget(at: point, screen: screen, margin: edgeMargin))
     }
 
+    /// Snap owns exactly Control+Option. Extra Command/Shift belongs to browser splits or launchers.
+    static func acceptsHotkey(control: Bool, option: Bool, command: Bool, shift: Bool) -> Bool {
+        control && option && !command && !shift
+    }
+
+    static func hotkeyTarget(keyCode: Int64) -> Target? {
+        let target: Target?
+        switch keyCode {
+        case 123: target = .leftHalf     // ←
+        case 124: target = .rightHalf    // →
+        case 126: target = .maximize     // ↑
+        case 125: target = .bottomHalf   // ↓
+        case 36:  target = .center       // Return
+        case 2:   target = .leftThird    // D
+        case 3:   target = .centerThird  // F
+        case 5:   target = .rightThird   // G
+        default:  target = nil
+        }
+        return target
+    }
+
+    /// Native windows keep their minimum size; small zones may overlap rather than shrink unusably.
+    static func constrainedFrame(_ target: CGRect, minimum: CGSize, visibleFrame: CGRect) -> CGRect {
+        let size = CGSize(width: max(target.width, minimum.width), height: max(target.height, minimum.height))
+        return CGRect(x: max(visibleFrame.minX, min(target.minX, visibleFrame.maxX - size.width)),
+                      y: max(visibleFrame.minY, min(target.minY, visibleFrame.maxY - size.height)),
+                      width: size.width, height: size.height)
+    }
+
     // MARK: - Is this press a WINDOW drag? (2026-10-14)
 
     /// The owner reported drag-to-edge dead while the keyboard snaps still worked. Measured cause: the press was

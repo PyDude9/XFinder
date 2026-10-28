@@ -451,6 +451,19 @@ enum WindowManager {
 
     @discardableResult @MainActor
     static func snapFrontmost(to target: SnapTarget) -> Bool {
+        // Our own Browser windows need native AppKit writes; AX targets another process.
+        if NSWorkspace.shared.frontmostApplication?.processIdentifier == ProcessInfo.processInfo.processIdentifier,
+           let browser = NSApp.keyWindow as? BrowserWindow {
+            guard !browser.styleMask.contains(.fullScreen) else { return false }
+            let screen = screenUnderPointer()
+            let targetFrame = axRectToAppKit(target.rect(in: axVisibleFrame(for: screen)))
+            let contentMinimum = browser.frameRect(forContentRect: CGRect(origin: .zero, size: browser.contentMinSize)).size
+            let minimum = CGSize(width: max(browser.minSize.width, contentMinimum.width),
+                                 height: max(browser.minSize.height, contentMinimum.height))
+            browser.setFrame(SnapLayout.constrainedFrame(targetFrame, minimum: minimum, visibleFrame: screen.visibleFrame),
+                             display: true)
+            return true
+        }
         guard isTrusted, let app = frontmostOtherApp() else { return false }
         let screen = screenUnderPointer()
         let rect = target.rect(in: axVisibleFrame(for: screen))

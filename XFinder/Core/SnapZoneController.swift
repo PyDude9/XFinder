@@ -21,6 +21,7 @@ final class SnapZoneController {
     var lastOutcome: String?
 
     private var dragMonitor: Any?
+    private var localDragMonitor: Any?
     private var overlay: NSWindow?
     private var activeZone: WindowManager.SnapTarget?
     private var wasDragging = false
@@ -86,14 +87,7 @@ final class SnapZoneController {
 
     // MARK: Drag-to-edge
 
-    /// Event-driven, not a constant poll. A global mouse monitor wakes the
-    /// controller only while a drag is actually in flight; the old 0.06 s timer
-    /// ran ~17×/s forever and was measurably the app's largest idle CPU cost.
-    /// Deliberately global-ONLY — the documented exception to the "always pair
-    /// a global monitor with a local one" rule in CLAUDE.md Part 3c.
-    /// Snapping targets `frontmostOtherApp()`, which excludes XFinder by
-    /// construction, so a drag of our own window has nothing to snap. Adding a
-    /// local monitor here would only burn CPU on drags we must ignore.
+    /// Event-driven; local events cover XFinder's Browser windows, global events cover other apps.
     private func startDragWatch() {
         guard dragMonitor == nil else { return }
         dragMonitor = NSEvent.addGlobalMonitorForEvents(
@@ -101,17 +95,30 @@ final class SnapZoneController {
         ) { [weak self] _ in
             Task { @MainActor in self?.dragTick() }
         }
+        localDragMonitor = NSEvent.addLocalMonitorForEvents(
+            matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp]
+        ) { [weak self] event in
+            Task { @MainActor in self?.dragTick() }
+            return event
+        }
     }
 
     private func stopDragWatch() {
         if let dragMonitor { NSEvent.removeMonitor(dragMonitor) }
         dragMonitor = nil
+        if let localDragMonitor { NSEvent.removeMonitor(localDragMonitor) }
+        localDragMonitor = nil
+        dragIsWindowMove = false
+        qualifier = nil
+        pressedWindow = nil
+        activeZone = nil
         hideOverlay()
         hideRow()
         wasDragging = false
     }
 
     private func dragTick() {
+        guard featureEnabled, dragEnabled else { return }
         let buttonDown = NSEvent.pressedMouseButtons & 1 == 1
         let mouse = NSEvent.mouseLocation
 
@@ -194,7 +201,7 @@ final class SnapZoneController {
     }
 
     /// The normal (layer-0) window under the pointer at press, from WindowServer: its number and its top-left origin.
-    /// nil for a press on the menu bar / Dock strip, on XFinder's own window, or on nothing. No Accessibility walk —
+    /// nil for a press on the menu bar / Dock strip, on an XFinder panel/settings window, or on nothing. No Accessibility walk —
     /// see `SnapLayout.DragQualifier` for why the old one never qualified a drag on macOS 27.
     private func windowUnderPointer(at point: CGPoint) -> (id: CGWindowID, origin: CGPoint)? {
         // Nhấn trong dải menu bar (wifi / ngày giờ…) hay Dock KHÔNG phải kéo cửa sổ.
@@ -218,7 +225,10 @@ final class SnapZoneController {
             // (password managers, banking apps) also report.
             let owner = w[kCGWindowOwnerName as String] as? String
             if owner == "WindowManager" || owner == "Window Server" { continue }
-            if (w[kCGWindowOwnerPID as String] as? Int32) == me { return nil }   // our own window: nothing to snap
+            if (w[kCGWindowOwnerPID as String] as? Int32) == me {
+                guard let browser = NSApp.windows.first(where: { $0.windowNumber == num }) as? BrowserWindow,
+                      !browser.styleMask.contains(.fullScreen) else { return nil }
+            }
             return (CGWindowID(num), rect.origin)
         }
         return nil
@@ -320,6 +330,25 @@ final class SnapZoneController {
         runLoopSource = nil
     }
 
+    /// Own Browser windows also handle their keys locally, independent of global tap delivery.
+    func performLocalShortcut(_ event: NSEvent) -> Bool {
+        let flags = event.modifierFlags
+        guard featureEnabled, hotkeysEnabled, WindowManager.isTrusted, event.window is BrowserWindow,
+              SnapLayout.acceptsHotkey(control: flags.contains(.control), option: flags.contains(.option),
+                                      command: flags.contains(.command), shift: flags.contains(.shift)),
+              let target = SnapLayout.hotkeyTarget(keyCode: Int64(event.keyCode)) else { return false }
+        performSnap(to: target)
+        return true
+    }
+
+    private func performSnap(to target: WindowManager.SnapTarget) {
+        guard featureEnabled, hotkeysEnabled else { return }
+        let ok = WindowManager.snapFrontmost(to: target)
+        lastOutcome = ok
+            ? "\(L10n.t("Đã đưa cửa sổ vào “"))\(target.titleVI)”."
+            : L10n.t("Không di chuyển được — ứng dụng không cho phép.")
+    }
+
     private nonisolated func handleKey(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             if type == .tapDisabledByTimeout { DiagnosticsLog.record("eventTap", "timeout.snapKeys") }
@@ -331,29 +360,14 @@ final class SnapZoneController {
             return Unmanaged.passUnretained(event)
         }
         let flags = event.flags
-        guard flags.contains(.maskControl), flags.contains(.maskAlternate) else {
+        guard SnapLayout.acceptsHotkey(control: flags.contains(.maskControl), option: flags.contains(.maskAlternate),
+                                      command: flags.contains(.maskCommand), shift: flags.contains(.maskShift)) else {
             return Unmanaged.passUnretained(event)
         }
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-        let target: WindowManager.SnapTarget?
-        switch keyCode {
-        case 123: target = .leftHalf     // ←
-        case 124: target = .rightHalf    // →
-        case 126: target = .maximize     // ↑
-        case 125: target = .bottomHalf   // ↓
-        case 36:  target = .center       // Return
-        case 2:   target = .leftThird    // D
-        case 3:   target = .centerThird  // F
-        case 5:   target = .rightThird   // G
-        default:  target = nil
-        }
+        let target = SnapLayout.hotkeyTarget(keyCode: keyCode)
         guard let target else { return Unmanaged.passUnretained(event) }
-        Task { @MainActor in
-            let ok = WindowManager.snapFrontmost(to: target)
-            self.lastOutcome = ok
-                ? "\(L10n.t("Đã đưa cửa sổ vào “"))\(target.titleVI)”."
-                : L10n.t("Không di chuyển được — ứng dụng không cho phép.")
-        }
+        Task { @MainActor in self.performSnap(to: target) }
         return nil // consume
     }
 }

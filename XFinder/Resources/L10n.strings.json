@@ -14634,6 +14634,18 @@
     "Mọi lệnh cũng có trong bảng lệnh: ⌃⇧⌘P, hoặc gõ > trong ⌃⌘P. Chọn nhóm Bàn phím trên trang này để đổi phím.": {
       "en": "All commands are also in the command palette: ⌃⇧⌘P, or type > in ⌃⌘P. Choose the Keyboard category on this page to change shortcuts.",
       "scope": "sentence"
+    },
+    "Phím tắt mở trình duyệt": {
+      "en": "File Browser shortcut",
+      "scope": "sentence"
+    },
+    "Đưa cửa sổ trình duyệt hiện có lên trước, hoặc mở nếu chưa có.": {
+      "en": "Bring an existing browser window forward, or open one if none exists.",
+      "scope": "sentence"
+    },
+    "Tổ hợp mở trình duyệt": {
+      "en": "Browser shortcut keys",
+      "scope": "sentence"
     }
   }
 }

@@ -5,6 +5,7 @@ import AppKit
 struct FileBrowserDetailView: View {
     @AppStorage("fileBrowser.enabled") private var enabled = true
     @AppStorage("fileBrowser.globalHotkey") private var globalHotkey = false
+    @AppStorage("fileBrowser.launcherShortcut") private var launcherShortcut = "controlOptionCommandF"
     @State private var settings = BrowserSettings.shared
 
     var body: some View {
@@ -36,14 +37,22 @@ struct FileBrowserDetailView: View {
                         .settingsRow()
                         .onChange(of: enabled) { _, _ in FeatureHub.apply(.fileBrowser) }
                     SettingsDivider()
-                    ToggleRow(title: L10n.t("Phím tắt toàn cục ⌃⌥⌘F"),
+                    ToggleRow(title: L10n.t("Phím tắt mở trình duyệt"),
                               subtitle: globalHotkey && enabled && !settings.hotkeyRegistered
-                                  ? L10n.t("Một ứng dụng khác đang giữ ⌃⌥⌘F — phím tắt chưa hoạt động.")
-                                  : L10n.t("Mở trình duyệt từ mọi ứng dụng. Tắt sẵn vì nó chiếm phím này của mọi ứng dụng khác."),
+                                  ? L10n.t("Không đăng ký được phím tắt. Một ứng dụng khác có thể đang dùng tổ hợp này.")
+                                  : L10n.t("Đưa cửa sổ trình duyệt hiện có lên trước, hoặc mở nếu chưa có."),
                               isOn: $globalHotkey)
                         .settingsRow()
                         .disabled(!enabled)
                         .onChange(of: globalHotkey) { _, _ in BrowserSettings.shared.applySettings() }
+                    SettingsDivider()
+                    PickerRow(title: L10n.t("Tổ hợp mở trình duyệt"), selection: $launcherShortcut, width: 180) {
+                        Text("⌃⌥⌘F").tag("controlOptionCommandF")
+                        Text("⌃⇧⌘F").tag("controlShiftCommandF")
+                    }
+                    .settingsRow()
+                    .disabled(!enabled)
+                    .onChange(of: launcherShortcut) { _, _ in BrowserSettings.shared.applySettings() }
                 }
 
                 BrowserSettingsContentView()

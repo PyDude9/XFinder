@@ -64,6 +64,18 @@ import os
 
     // MARK: - Opening
 
+    /// The global launcher brings an existing browser back instead of accumulating duplicate windows.
+    func showBrowser() {
+        guard BrowserSettings.isEnabled else { return }
+        let existing = NSApp.orderedWindows.compactMap { $0 as? BrowserWindow }.first {
+            windows.contains($0)
+        } ?? windows.last
+        guard let existing else { openWindow(path: nil); return }
+        if existing.isMiniaturized { existing.deminiaturize(nil) }
+        NSApp.activate(ignoringOtherApps: true)
+        existing.makeKeyAndOrderFront(nil)
+    }
+
     /// ⌘N, menu bar item, deep link `xfinder://browser?path=`. `path` nil ⇒ `BrowserSettings.newWindowTarget`.
     /// `startSearch`: the AI Search page's "Mở thanh tìm" link — opens the window then starts ⌥⌘F (an empty,
     /// editable search) in its active pane, same as pressing the chord by hand right after the window appears.
@@ -533,6 +545,7 @@ final class BrowserWindow: NSWindow {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if SnapZoneController.shared.performLocalShortcut(event) { return true }
         let model = modelForThisWindow()
         if let model, let chord = Self.chord(from: event) {
             if model.palette != nil, chord.key == "return" { return super.performKeyEquivalent(with: event) }
