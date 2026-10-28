@@ -104,6 +104,8 @@ final class BrowserSettings {
 
     /// XF-T32 W3 — the ONE reader of `fileBrowser.paneFocusStyle`: `"dim"` (inactive panes faded, Tilde default) or
     /// `"outline"` (accent line on the active pane).
+    static var downloadsHotkeyEnabled: Bool { UserDefaults.standard.object(forKey: "fileBrowser.downloadsHotkey") as? Bool ?? false }
+
     static var showLearnButton: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showLearnButton") as? Bool ?? true }
 
     static var paneFocusStyle: String { UserDefaults.standard.string(forKey: "fileBrowser.paneFocusStyle") ?? "dim" }
@@ -129,6 +131,7 @@ final class BrowserSettings {
 
     /// FeatureHub + launch + didBecomeActive.
     func applySettings() {
+        BrowserDownloadsController.shared.applySettings()
         if Self.isEnabled && Self.globalHotkeyEnabled {
             installCarbonHandlerIfNeeded()
             guard hotKeyRef == nil else { return }

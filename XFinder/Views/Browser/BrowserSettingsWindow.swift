@@ -141,6 +141,7 @@ private struct GeneralSettingsTab: View {
     @AppStorage("fileBrowser.newWindowCustomPath") private var newWindowCustomPath = ""
     @AppStorage("fileBrowser.reopenWindows") private var reopenWindows = true
     @AppStorage("fileBrowser.returnOpens") private var returnOpens = false
+    @AppStorage("fileBrowser.downloadsHotkey") private var downloadsHotkey = false
     @AppStorage("fileBrowser.cutWithCmdX") private var cutWithCmdX = false
 
     var body: some View {
@@ -194,6 +195,18 @@ private struct GeneralSettingsTab: View {
                       subtitle: L10n.t("Kiểu Windows: ⌘X đánh dấu cắt, ⌘V nơi khác sẽ chuyển thay vì chép."),
                       isOn: $cutWithCmdX)
                 .settingsRow()
+        }
+
+        SettingsSection(title: L10n.t("Khay Tải về")) {
+            ToggleRow(title: L10n.t("Mở khay Tải về bằng ⌃⌥⌘D"), isOn: $downloadsHotkey)
+                .settingsRow()
+                .onChange(of: downloadsHotkey) { _, _ in BrowserDownloadsController.shared.applySettings() }
+            if downloadsHotkey && !BrowserDownloadsController.shared.hotkeyRegistered {
+                Text(L10n.t("Không đăng ký được phím tắt. Một ứng dụng khác có thể đang dùng tổ hợp này."))
+                    .font(XFinderTokens.Font.caption).foregroundStyle(.secondary).settingsRow()
+            }
+            SettingsDivider()
+            Button(L10n.t("Mở khay Tải về")) { BrowserDownloadsController.shared.togglePanel() }.settingsRow()
         }
 
         SettingsSection(title: L10n.t("Cập nhật phần mềm")) {

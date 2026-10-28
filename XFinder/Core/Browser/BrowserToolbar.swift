@@ -25,6 +25,7 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
         static let goToFolder = NSToolbarItem.Identifier("com.xfinder.browser.goToFolder")
         static let workspaces = NSToolbarItem.Identifier("com.xfinder.browser.workspaces")
         static let shelf = NSToolbarItem.Identifier("com.xfinder.browser.shelf")
+        static let downloads = NSToolbarItem.Identifier("com.xfinder.browser.downloads")
         static let operations = NSToolbarItem.Identifier("com.xfinder.browser.operations")
     }
 
@@ -68,6 +69,12 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
         toolbar.autosavesConfiguration = true
         self.toolbar = toolbar
         window?.toolbar = toolbar
+        if !UserDefaults.standard.bool(forKey: "fileBrowser.downloadsToolbarAdded") {
+            if !toolbar.items.contains(where: { $0.itemIdentifier == ID.downloads }) {
+                toolbar.insertItem(withItemIdentifier: ID.downloads, at: max(0, toolbar.items.count - 1))
+            }
+            UserDefaults.standard.set(true, forKey: "fileBrowser.downloadsToolbarAdded")
+        }
         window?.toolbarStyle = .unified
         observeBackForward()
         observePaneLayoutIcon()
@@ -91,7 +98,7 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
     // MARK: - NSToolbarDelegate
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [ID.backForward, ID.view, ID.group, ID.paneLayout, .flexibleSpace, ID.share, ID.action, ID.search]
+        [ID.backForward, ID.view, ID.group, ID.paneLayout, .flexibleSpace, ID.downloads, ID.share, ID.action, ID.search]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -111,6 +118,15 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
         case ID.share: return makeShareItem()
         case ID.action: return makeActionItem()
         case ID.search: return makeSearchItem()
+        case ID.downloads:
+            let item = NSToolbarItem(itemIdentifier: ID.downloads)
+            let button = NSButton(image: NSImage(systemSymbolName: "arrow.down.circle", accessibilityDescription: L10n.t("Khay Tải về"))!, target: self, action: #selector(showDownloads(_:)))
+            button.bezelStyle = .texturedRounded
+            button.toolTip = L10n.t("Khay Tải về")
+            button.setAccessibilityLabel(L10n.t("Khay Tải về"))
+            item.view = button
+            item.label = L10n.t("Khay Tải về")
+            return item
         case ID.enclosingFolder: return makeButtonItem(ID.enclosingFolder, command: .openEnclosing, symbol: "arrow.up.square")
         case ID.goToFolder: return makeButtonItem(ID.goToFolder, command: .goToFolder, symbol: "arrow.right.doc.on.clipboard")
         case ID.workspaces: return makeWorkspacesItem()
@@ -119,6 +135,8 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
         default: return nil
         }
     }
+
+    @objc private func showDownloads(_ sender: NSButton) { BrowserDownloadsController.shared.show(relativeTo: sender) }
 
     // MARK: - Back / Forward
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 STORE = Path(__file__).resolve().parent.parent / "XFinder/Resources/L10n.strings.json"
 S, F = "sentence", "fragment"
-ENTRIES: dict[str, tuple[str, str]] = {'Hiện nút Học sử dụng': ('Show Learn button', 'sentence')}
+ENTRIES: dict[str, tuple[str, str]] = {'Hiện nút Học sử dụng': ('Show Learn button', 'sentence'), 'Khay Tải về': ('Downloads Tray', 'sentence'), '20 mục mới nhất theo ngày sửa đổi': ('20 most recent items by modification date', 'sentence'), 'Chưa có mục nào trong thư mục Tải về.': ('No items in the Downloads folder yet.', 'sentence'), 'Mở thư mục Tải về': ('Open Downloads Folder', 'sentence'), 'Mở khay Tải về': ('Open Downloads Tray', 'sentence'), 'Mở khay Tải về bằng ⌃⌥⌘D': ('Open Downloads Tray with ⌃⌥⌘D', 'sentence'), 'Không đăng ký được phím tắt. Một ứng dụng khác có thể đang dùng tổ hợp này.': ('Could not register the shortcut. Another app may be using this key combination.', 'sentence')}
 
 def main() -> int:
     data = json.loads(STORE.read_text(encoding="utf-8"))

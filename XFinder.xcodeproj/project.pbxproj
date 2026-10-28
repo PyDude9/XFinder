@@ -383,6 +383,8 @@
 		7F1A051F /* Browser/SidebarSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A051E /* Browser/SidebarSections.swift */; };
 		7F1A0B11 /* Browser/BrowserLearnProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0B10 /* Browser/BrowserLearnProgress.swift */; };
 		7F1A0D11 /* Browser/BrowserPaletteRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D10 /* Browser/BrowserPaletteRules.swift */; };
+		7F1A0D23 /* Browser/BrowserDownloadsController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D22 /* Browser/BrowserDownloadsController.swift */; };
+		7F1A0D21 /* Browser/BrowserDownloadsRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D20 /* Browser/BrowserDownloadsRules.swift */; };
 		7F1A0C11 /* Browser/InspectorPreviewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0C10 /* Browser/InspectorPreviewRules.swift */; };
 		7F1A0C15 /* Browser/InspectorImageChild.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0C14 /* Browser/InspectorImageChild.swift */; };
 		7F1A0C13 /* Browser/InspectorImageRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0C12 /* Browser/InspectorImageRules.swift */; };
@@ -766,6 +768,8 @@
 		7F1A051E /* Browser/SidebarSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SidebarSections.swift; sourceTree = "<group>"; };
 		7F1A0B10 /* Browser/BrowserLearnProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserLearnProgress.swift; sourceTree = "<group>"; };
 		7F1A0D10 /* Browser/BrowserPaletteRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserPaletteRules.swift; sourceTree = "<group>"; };
+		7F1A0D22 /* Browser/BrowserDownloadsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserDownloadsController.swift; sourceTree = "<group>"; };
+		7F1A0D20 /* Browser/BrowserDownloadsRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserDownloadsRules.swift; sourceTree = "<group>"; };
 		7F1A0C10 /* Browser/InspectorPreviewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/InspectorPreviewRules.swift; sourceTree = "<group>"; };
 		7F1A0C14 /* Browser/InspectorImageChild.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/InspectorImageChild.swift; sourceTree = "<group>"; };
 		7F1A0C12 /* Browser/InspectorImageRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/InspectorImageRules.swift; sourceTree = "<group>"; };
@@ -1156,6 +1160,8 @@
 				7F1A051E /* Browser/SidebarSections.swift */,
 				7F1A0B10 /* Browser/BrowserLearnProgress.swift */,
 				7F1A0D10 /* Browser/BrowserPaletteRules.swift */,
+				7F1A0D22 /* Browser/BrowserDownloadsController.swift */,
+				7F1A0D20 /* Browser/BrowserDownloadsRules.swift */,
 				7F1A0C10 /* Browser/InspectorPreviewRules.swift */,
 				7F1A0C14 /* Browser/InspectorImageChild.swift */,
 				7F1A0C12 /* Browser/InspectorImageRules.swift */,
@@ -1882,6 +1888,8 @@
 				7F1A051F /* Browser/SidebarSections.swift in Sources */,
 				7F1A0B11 /* Browser/BrowserLearnProgress.swift in Sources */,
 				7F1A0D11 /* Browser/BrowserPaletteRules.swift in Sources */,
+				7F1A0D23 /* Browser/BrowserDownloadsController.swift in Sources */,
+				7F1A0D21 /* Browser/BrowserDownloadsRules.swift in Sources */,
 				7F1A0C11 /* Browser/InspectorPreviewRules.swift in Sources */,
 				7F1A0C15 /* Browser/InspectorImageChild.swift in Sources */,
 				7F1A0C13 /* Browser/InspectorImageRules.swift in Sources */,

@@ -225,6 +225,7 @@ final class ShortcutCatalogTests: XCTestCase {
             "finderKeyboard.deleteToTrash": ("XFinder/Core/FinderKeyboardController.swift", "false"),
             "finderKeyboard.returnOpens": ("XFinder/Core/FinderKeyboardController.swift", "false"),
             "notes.globalHotkey": ("XFinder/Core/EdgeNotesController.swift", "false"),     // XF-T24
+            "fileBrowser.downloadsHotkey": ("XFinder/Core/Browser/BrowserSettings.swift", "false"),
             "fileBrowser.globalHotkey": ("XFinder/Core/Browser/BrowserSettings.swift", "false"),   // XF-T28
         ]
         var checked = 0

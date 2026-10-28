@@ -15,6 +15,8 @@ struct ShortcutsDetailView: View {
 
     // Fixed-shortcut gate keys, read here ONLY to show on/off state and to build the conflict check's
     // `isActive` closure — every one of these keys is still bound with @AppStorage on its OWNING page.
+    @AppStorage("fileBrowser.enabled") private var browserEnabled = true
+    @AppStorage("fileBrowser.downloadsHotkey") private var downloadsHotkey = false
     @AppStorage("clipboard.globalHotkey") private var clipboardGlobalHotkey = true
     @AppStorage("clipboard.shelfHotkey") private var clipboardShelfHotkey = false
     @AppStorage("translate.hotkeyEnabled") private var translateEnabled = false
@@ -75,6 +77,7 @@ struct ShortcutsDetailView: View {
     /// already bind, plus the two master switches, so an inactive owner never counts as a real clash.
     private func isActive(_ id: String) -> Bool {
         switch id {
+        case "browser.downloads": return browserEnabled && downloadsHotkey
         case "clipboard.shelf": return clipboardGlobalHotkey
         // ⌘⌥C rides the same tap as ⌘⇧V: `clipboard.globalHotkey` gates the whole tap, `shelfHotkey` only this chord.
         case "clipboard.shelfAlt": return clipboardGlobalHotkey && clipboardShelfHotkey

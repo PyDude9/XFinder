@@ -16,7 +16,7 @@ Add a toolbar popover showing up to 20 newest non-hidden entries in the user's D
 
 Add an opt-in global Carbon shortcut with a catalog entry, default OFF; report registration conflict in Settings instead of claiming success. Global invocation opens a small Downloads panel, reusing the same content/controller; never show two Downloads surfaces simultaneously. Closing either surface cancels listing delivery and prevents stale updates. Default chord must be checked against ShortcutCatalog. No polling timers.
 
-Files: new BrowserDownloadsRules.swift + BrowserDownloadsController.swift (+ four project entries each, pure rules test symlink/tests), BrowserToolbar.swift, BrowserSettingsWindow.swift, BrowserSettings.swift, ShortcutCatalog.swift, app startup wiring, L10n script/store. Existing filesystem-operation engines/signing scripts are unchanged.
+Files: new BrowserDownloadsRules.swift + BrowserDownloadsController.swift (+ four project entries each, pure rules test symlink/tests), BrowserToolbar.swift, BrowserSettingsWindow.swift, BrowserSettings.swift, ShortcutCatalog.swift, ShortcutsDetailView.swift and catalog/default tests, startup wiring through BrowserSettings.applySettings, L10n script/store. Existing filesystem-operation engines/signing scripts are unchanged.
 
 Failure cases: Downloads missing/denied/unmounted; empty directory; rapid open/close/reopen; files deleted after listing; cloud-only file (no bytes read by tray); hidden entries and more than 20; conflicting global key; shortcut OFF unregisters immediately; background-app invocation; multi-window toolbar invocation; no watcher while hidden.
 

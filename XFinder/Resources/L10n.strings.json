@@ -14582,6 +14582,34 @@
     "Hiện nút Học sử dụng": {
       "en": "Show Learn button",
       "scope": "sentence"
+    },
+    "Khay Tải về": {
+      "en": "Downloads Tray",
+      "scope": "sentence"
+    },
+    "20 mục mới nhất theo ngày sửa đổi": {
+      "en": "20 most recent items by modification date",
+      "scope": "sentence"
+    },
+    "Chưa có mục nào trong thư mục Tải về.": {
+      "en": "No items in the Downloads folder yet.",
+      "scope": "sentence"
+    },
+    "Mở thư mục Tải về": {
+      "en": "Open Downloads Folder",
+      "scope": "sentence"
+    },
+    "Mở khay Tải về": {
+      "en": "Open Downloads Tray",
+      "scope": "sentence"
+    },
+    "Mở khay Tải về bằng ⌃⌥⌘D": {
+      "en": "Open Downloads Tray with ⌃⌥⌘D",
+      "scope": "sentence"
+    },
+    "Không đăng ký được phím tắt. Một ứng dụng khác có thể đang dùng tổ hợp này.": {
+      "en": "Could not register the shortcut. Another app may be using this key combination.",
+      "scope": "sentence"
     }
   }
 }

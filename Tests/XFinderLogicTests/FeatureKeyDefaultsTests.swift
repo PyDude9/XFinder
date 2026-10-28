@@ -131,6 +131,8 @@ final class FeatureKeyDefaultsTests: XCTestCase {
                reader: "XFinder/Core/Browser/BrowserSettings.swift"),
         Switch(key: "fileBrowser.showPathBar", views: ["XFinder/Views/Browser/PaneView.swift", "XFinder/Views/Browser/BrowserSettingsWindow.swift"],
                reader: "XFinder/Core/Browser/BrowserSettings.swift"),
+        Switch(key: "fileBrowser.downloadsHotkey", views: ["XFinder/Views/Browser/BrowserSettingsWindow.swift", "XFinder/Views/Detail/ShortcutsDetailView.swift"],
+               reader: "XFinder/Core/Browser/BrowserSettings.swift"),
         Switch(key: "fileBrowser.showLearnButton", views: ["XFinder/Views/Browser/BrowserRootView.swift", "XFinder/Views/Browser/BrowserSettingsWindow.swift"],
                reader: "XFinder/Core/Browser/BrowserSettings.swift"),
         Switch(key: "fileBrowser.paneFocusStyle", views: ["XFinder/Views/Browser/PaneView.swift", "XFinder/Views/Browser/BrowserSettingsWindow.swift"],

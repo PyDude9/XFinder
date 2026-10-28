@@ -124,6 +124,10 @@ enum ShortcutCatalog {
     /// one chord group each).
     static var fixedEntries: [Entry] {
         [
+            Entry(id: "browser.downloads", titleKey: "Mở khay Tải về",
+                  chord: Chord(keyCode: 2, modifiers: [.control, .option, .command]),
+                  scope: .global, ownerPage: SidebarDestination.fileBrowser.rawValue,
+                  gateKey: "fileBrowser.downloadsHotkey", gateDefault: false),
             // Clipboard shelf — ClipboardShelfController.swift
             Entry(id: "clipboard.shelf", titleKey: "Mở Clipboard ở notch hoặc khay nổi (theo Cài đặt Clipboard)",
                   chord: Chord(keyCode: 9, modifiers: [.command, .shift]), // V
