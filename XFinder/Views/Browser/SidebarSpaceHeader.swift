@@ -154,6 +154,7 @@ struct SidebarSpaceNameSheet: View {
         .padding(XFinderTokens.Space.page)
         .frame(width: XFinderTokens.BrowserSidebar.sheetWidth)
         .onAppear(perform: prefill)
+        .task { await Task.yield(); fieldFocused = true }
     }
 
     private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }

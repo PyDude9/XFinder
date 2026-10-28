@@ -16,6 +16,151 @@ struct Space: Codable, Equatable, Identifiable, Sendable {
     var liveGroups: [LiveGroupRef]
     /// Points into the existing `WorkspaceStore`.
     var workspaceIDs: [UUID]
+    /// Source-folder groups are additive; property-backed `liveGroups` remain untouched.
+    var folderLiveGroups: [FolderLiveGroup] = []
+}
+
+/// A saved, nonrecursive view over one folder. It stores criteria, never file contents or copied items.
+struct FolderLiveGroup: Codable, Equatable, Identifiable, Sendable {
+    enum Field: String, Codable, CaseIterable, Sendable { case name, fileExtension, kind }
+    enum MatchOperator: String, Codable, CaseIterable, Sendable { case contains, equals, beginsWith, endsWith }
+    enum Sort: String, Codable, CaseIterable, Sendable { case nameAscending, nameDescending, modifiedNewest, modifiedOldest }
+
+    struct Filter: Codable, Equatable, Identifiable, Sendable {
+        var id: UUID = UUID()
+        var field: Field
+        var operation: MatchOperator
+        var value: String
+
+        var isValid: Bool {
+            let value = normalizedValue
+            guard !value.isEmpty else { return false }
+            return field != .kind || (operation == .equals && ["folder", "file"].contains(value))
+        }
+
+        fileprivate var normalizedValue: String {
+            var value = FolderLiveGroup.folded(value.trimmingCharacters(in: .whitespacesAndNewlines))
+            if field == .fileExtension { value = String(value.drop(while: { $0 == "." })) }
+            return value
+        }
+    }
+
+    struct Candidate: Equatable, Sendable {
+        var path: String
+        var name: String
+        var isDirectory: Bool
+        var modifiedDate: Date? = nil
+    }
+
+    var id: UUID = UUID()
+    var name: String
+    var sourcePath: String
+    var filters: [Filter]
+    var sort: Sort = .nameAscending
+
+    var isValid: Bool { normalized != nil }
+
+    /// No invalid criterion is silently removed: doing so would broaden the saved view unexpectedly.
+    var normalized: FolderLiveGroup? {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, sourcePath.hasPrefix("/"), !sourcePath.contains("\0"),
+              !filters.isEmpty, filters.allSatisfy(\.isValid) else { return nil }
+        var result = self
+        result.name = trimmedName
+        result.sourcePath = (sourcePath as NSString).standardizingPath
+        result.filters = filters.map { filter in
+            var result = filter
+            result.value = filter.value.trimmingCharacters(in: .whitespacesAndNewlines)
+            return result
+        }
+        return result
+    }
+
+    func matches(name: String, isDirectory: Bool, modifiedDate: Date? = nil) -> Bool {
+        guard isValid else { return false }
+        return filters.allSatisfy { filter in
+            let subject: String
+            switch filter.field {
+            case .name: subject = Self.folded(name)
+            case .fileExtension: subject = isDirectory ? "" : Self.folded((name as NSString).pathExtension)
+            case .kind: subject = isDirectory ? "folder" : "file"
+            }
+            let value = filter.normalizedValue
+            switch filter.operation {
+            case .contains: return subject.contains(value)
+            case .equals: return subject == value
+            case .beginsWith: return subject.hasPrefix(value)
+            case .endsWith: return subject.hasSuffix(value)
+            }
+        }
+    }
+
+    func matching(_ candidates: [Candidate]) -> [Candidate] {
+        candidates.filter { matches(name: $0.name, isDirectory: $0.isDirectory, modifiedDate: $0.modifiedDate) }
+            .sorted { lhs, rhs in
+                switch sort {
+                case .nameAscending, .nameDescending:
+                    let compared = lhs.name.compare(rhs.name, options: [.caseInsensitive, .diacriticInsensitive, .numeric],
+                                                    locale: Locale(identifier: "en_US_POSIX"))
+                    if compared != .orderedSame {
+                        return sort == .nameAscending ? compared == .orderedAscending : compared == .orderedDescending
+                    }
+                case .modifiedNewest, .modifiedOldest:
+                    switch (lhs.modifiedDate, rhs.modifiedDate) {
+                    case (.some(let left), .some(let right)) where left != right:
+                        return sort == .modifiedNewest ? left > right : left < right
+                    case (.some, .none): return true
+                    case (.none, .some): return false
+                    default: break
+                    }
+                }
+                return lhs.path < rhs.path
+            }
+    }
+
+    fileprivate static func folded(_ value: String) -> String {
+        value.precomposedStringWithCanonicalMapping.folding(options: [.caseInsensitive, .diacriticInsensitive],
+                                                           locale: Locale(identifier: "en_US_POSIX"))
+    }
+}
+
+extension FolderLiveGroup {
+    private enum CodingKeys: String, CodingKey { case id, name, sourcePath, filters, sort }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(UUID.self, forKey: .id)
+        name = try values.decode(String.self, forKey: .name)
+        sourcePath = try values.decode(String.self, forKey: .sourcePath)
+        filters = try values.decode([Filter].self, forKey: .filters)
+        sort = try values.decodeIfPresent(Sort.self, forKey: .sort) ?? .nameAscending
+        guard let normalized else {
+            throw DecodingError.dataCorruptedError(forKey: .filters, in: values, debugDescription: "Invalid folder group criteria")
+        }
+        self = normalized
+    }
+}
+
+extension Space {
+    private enum CodingKeys: String, CodingKey { case id, name, symbol, sidebar, liveGroups, workspaceIDs, folderLiveGroups }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        id = try values.decode(UUID.self, forKey: .id)
+        name = try values.decode(String.self, forKey: .name)
+        symbol = try values.decodeIfPresent(String.self, forKey: .symbol)
+        sidebar = try values.decode(SidebarLayout.self, forKey: .sidebar)
+        liveGroups = try values.decode([LiveGroupRef].self, forKey: .liveGroups)
+        workspaceIDs = try values.decode([UUID].self, forKey: .workspaceIDs)
+        let groups = try values.decodeIfPresent([LossyFolderLiveGroup].self, forKey: .folderLiveGroups) ?? []
+        var seen: Set<UUID> = []
+        folderLiveGroups = groups.compactMap(\.value).filter { seen.insert($0.id).inserted }
+    }
+}
+
+private struct LossyFolderLiveGroup: Decodable {
+    let value: FolderLiveGroup?
+    init(from decoder: Decoder) throws { value = try? FolderLiveGroup(from: decoder) }
 }
 
 struct SpaceStore: Codable, Equatable, Sendable {
@@ -154,6 +299,26 @@ struct SpaceStore: Codable, Equatable, Sendable {
         }
     }
 
+    /// Edits are scoped to the editor's captured Space, not whichever Space is active on save.
+    @discardableResult
+    mutating func saveFolderLiveGroup(_ group: FolderLiveGroup, in spaceID: UUID) -> Bool {
+        guard let target = index(of: spaceID), let valid = group.normalized else { return false }
+        if let existing = spaces[target].folderLiveGroups.firstIndex(where: { $0.id == valid.id }) {
+            spaces[target].folderLiveGroups[existing] = valid
+        } else {
+            spaces[target].folderLiveGroups.append(valid)
+        }
+        return true
+    }
+
+    @discardableResult
+    mutating func removeFolderLiveGroup(_ id: UUID, from spaceID: UUID) -> Bool {
+        guard let target = index(of: spaceID),
+              let existing = spaces[target].folderLiveGroups.firstIndex(where: { $0.id == id }) else { return false }
+        spaces[target].folderLiveGroups.remove(at: existing)
+        return true
+    }
+
     // MARK: - Persistence
 
     func encoded() -> Data {
@@ -264,7 +429,8 @@ private enum SpaceDecoder {
         let name: String = trimmed.isEmpty ? SpaceStore.defaultNewSpaceName : trimmed
         let sidebar: SidebarLayout = sidebar(dict["sidebar"]) ?? SidebarLayout()
         return Space(id: id, name: name, symbol: dict["symbol"] as? String, sidebar: sidebar,
-                     liveGroups: liveGroups(dict["liveGroups"]), workspaceIDs: uuids(dict["workspaceIDs"]))
+                     liveGroups: liveGroups(dict["liveGroups"]), workspaceIDs: uuids(dict["workspaceIDs"]),
+                     folderLiveGroups: folderLiveGroups(dict["folderLiveGroups"]))
     }
 
     private static func sidebar(_ raw: Any?) -> SidebarLayout? {
@@ -287,6 +453,18 @@ private enum SpaceDecoder {
             if !result.contains(ref) { result.append(ref) }
         }
         return result
+    }
+
+    private static func folderLiveGroups(_ raw: Any?) -> [FolderLiveGroup] {
+        guard let array = raw as? [Any] else { return [] }
+        var seen: Set<UUID> = []
+        return array.compactMap { entry in
+            guard JSONSerialization.isValidJSONObject(entry),
+                  let data = try? JSONSerialization.data(withJSONObject: entry),
+                  let group = try? JSONDecoder().decode(FolderLiveGroup.self, from: data),
+                  seen.insert(group.id).inserted else { return nil }
+            return group
+        }
     }
 
     private static func uuids(_ raw: Any?) -> [UUID] {

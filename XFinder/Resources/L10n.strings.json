@@ -14646,6 +14646,102 @@
     "Tổ hợp mở trình duyệt": {
       "en": "Browser shortcut keys",
       "scope": "sentence"
+    },
+    "Kéo thư mục vào đây hoặc ghim từ menu của thư mục.": {
+      "en": "Drag folders here or pin from folder menu.",
+      "scope": "sentence"
+    },
+    "Đã có nhóm tên này.": {
+      "en": "A group with this name already exists.",
+      "scope": "sentence"
+    },
+    "Live Group mới…": {
+      "en": "New Live Group…",
+      "scope": "sentence"
+    },
+    "Thêm nhóm hoặc Space": {
+      "en": "Add group or Space",
+      "scope": "sentence"
+    },
+    "Live Group": {
+      "en": "Live Group",
+      "scope": "sentence"
+    },
+    "Live Group mới": {
+      "en": "New Live Group",
+      "scope": "sentence"
+    },
+    "Chỉnh sửa Live Group": {
+      "en": "Edit Live Group",
+      "scope": "sentence"
+    },
+    "Chỉnh sửa Live Group…": {
+      "en": "Edit Live Group…",
+      "scope": "sentence"
+    },
+    "Live Group tự động đồng bộ với thư mục nguồn, chỉ hiển thị các mục khớp với bộ lọc của bạn.": {
+      "en": "A Live Group stays in sync with its source folder, showing only the items that match your filters.",
+      "scope": "sentence"
+    },
+    "Thư mục nguồn": {
+      "en": "Source folder",
+      "scope": "sentence"
+    },
+    "Đường dẫn thư mục": {
+      "en": "Folder path",
+      "scope": "sentence"
+    },
+    "Phần mở rộng": {
+      "en": "Extension",
+      "scope": "sentence"
+    },
+    "Chứa": {
+      "en": "Contains",
+      "scope": "sentence"
+    },
+    "Bắt đầu bằng": {
+      "en": "Begins with",
+      "scope": "sentence"
+    },
+    "Kết thúc bằng": {
+      "en": "Ends with",
+      "scope": "sentence"
+    },
+    "Là": {
+      "en": "Is",
+      "scope": "sentence"
+    },
+    "Tệp": {
+      "en": "File",
+      "scope": "sentence"
+    },
+    "Thêm bộ lọc": {
+      "en": "Add filter",
+      "scope": "sentence"
+    },
+    "Xoá bộ lọc": {
+      "en": "Delete filters",
+      "scope": "sentence"
+    },
+    "Tên (A đến Z)": {
+      "en": "Name (A to Z)",
+      "scope": "sentence"
+    },
+    "Tên (Z đến A)": {
+      "en": "Name (Z to A)",
+      "scope": "sentence"
+    },
+    "Không có mục nào khớp bộ lọc.": {
+      "en": "No items match your filters.",
+      "scope": "sentence"
+    },
+    "Thêm ít nhất một bộ lọc để lưu Live Group này.": {
+      "en": "Add at least one filter to save this Live Group.",
+      "scope": "sentence"
+    },
+    "Thư mục nguồn không hợp lệ.": {
+      "en": "Invalid source folder.",
+      "scope": "sentence"
     }
   }
 }

@@ -111,6 +111,22 @@ import Observation
         persist()
     }
 
+    /// Saves to the Space captured when the editor opened, including after the user switches Space.
+    @discardableResult
+    func saveFolderLiveGroup(_ group: FolderLiveGroup, in spaceID: UUID) -> Bool {
+        let before = store
+        guard store.saveFolderLiveGroup(group, in: spaceID) else { return false }
+        if store != before { persist() }
+        return true
+    }
+
+    @discardableResult
+    func removeFolderLiveGroup(_ id: UUID, from spaceID: UUID) -> Bool {
+        guard store.removeFolderLiveGroup(id, from: spaceID) else { return false }
+        persist()
+        return true
+    }
+
     // MARK: - Private
 
     private func changeActive(_ step: (inout SpaceStore) -> Void) {

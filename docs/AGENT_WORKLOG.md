@@ -1,3 +1,38 @@
+## 2026-10-28 — Codex & Antigravity: Spaces and folder Live Groups repair
+
+Branch agent/codex-spaces-live-groups, follows fde3c51. Spec: docs/specs/XF-spaces-live-groups-repair-contract.md. Researched Tilde 1.0.2 build 14 Spaces, Live Groups, and sidebar organization from seven owner screenshots (Desktop 19.28.42–19.32.29).
+
+Defects resolved:
+1. Footer ⊕ button previously opened an inline unfocused textfield under Favorites that was invisible when scrolled down or when Favorites was toggled OFF. Replaced with an explicit bottom menu offering "Nhóm mới…" (focused sheet modal with duplicate validation and empty-state guidance), "Live Group mới…" (dedicated folder Live Group creator), and "Space mới…" (Space creation sheet).
+2. Space paging dots given full 28-pt hit targets while preserving visual 6-pt size, matching footer button targets.
+3. Added FolderLiveGroup model with source path, filters (name, fileExtension, kind) supporting operators (contains, equals, beginsWith, endsWith), and natural/modified date sorting with stable path ties. Additive decoding ensures legacy property-backed Live Groups and workspaces remain intact.
+4. Added FolderLiveGroupEditor with live responsive preview matching criteria, NSOpenPanel directory picker, filter add/clear, and validation footer.
+5. Added FolderLiveGroupSidebarBlock rendering each Space's folder Live Groups in the sidebar with live DirectoryLoadCoordinator subscription and background matching.
+6. Custom manual groups remain visible and operable independently of the Favorites visibility toggle.
+
+Tests: 11 tests in SpaceModelTests and SpaceControllerTests covering backward-compatible JSON decoding, tolerant malformed data isolation, filter matching, case/diacritic insensitivity, stable sorting, and space-scoped upsert/removal. Intentional mutation in matching logic failed testNameOperatorsAndExtensionEdgeCases RED (20 failures), restored -> GREEN. Total test suite: 2864/0.
+
+Build & Gates: Add-only script scripts/add-xf-spaces-live-groups-l10n-entries.py added missing strings; L10n.allowlist.json updated for "Live Group". Full gate gate-all.sh verified GREEN:
+
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2864 tests, with 0 failures (0 unexpected) in 24.581 (24.801) seconds
+check-l10n-coverage                TOTAL 0 problems across 3685 entries (3685 checked, 32 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3685 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1372 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             11
+GATE: green
+```
+
+Live in installed app: Installed binary verified (arm64, valid Designated Requirement); launched via `open -a XFinder` / `open "xfinder://browser"`.
+Not live verified: External volume eject events during open Live Group editor, deeply nested symlink loops inside chosen source folders.
+
+CHỜ REVIEW (nhánh agent/codex-spaces-live-groups)
+
 ## 2026-10-27 — Codex & Antigravity: XF-T32 W5 unified palette
 
 Branch agent/codex-T32-W5, follows 7e614d8. Spec: docs/specs/XF-T32-w5-palette-contract.md. Unified command palette and Quick Open into a single responsive in-window palette card (width adapts up to 800 pt). Added BrowserPaletteRules.swift with pure frequency ranking persisted in palette.usage (capped at 512 entries, bounded to 1,000,000 counts), stable fuzzy ranking with BrowserCommands.score off-main, and mode filtering. Relevant title match outranks usage; usage breaks equal relevance ties.

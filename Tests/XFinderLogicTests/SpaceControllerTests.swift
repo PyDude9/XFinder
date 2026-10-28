@@ -272,4 +272,53 @@ import XCTest
         XCTAssertEqual(harness.saves, before)
     }
 
+
+    func testFolderLiveGroupSaveRemainsInCapturedSpaceAfterSwitchAndPersists() {
+        let harness = Harness()
+        let controller = harness.make()
+        let first = controller.active.id
+        let legacy = LiveGroupRef(propertyID: UUID(), optionID: UUID())
+        controller.toggleLiveGroup(legacy)
+        let second = controller.add(name: "B").id
+        var group = FolderLiveGroup(name: "  Reports  ", sourcePath: "/tmp",
+                                    filters: [.init(field: .fileExtension, operation: .equals, value: "pdf")])
+        let writes = harness.writes.count
+        XCTAssertTrue(controller.saveFolderLiveGroup(group, in: first))
+        XCTAssertEqual(controller.active.id, second)
+        XCTAssertTrue(controller.active.folderLiveGroups.isEmpty)
+        XCTAssertEqual(harness.persisted.spaces[0].folderLiveGroups.first?.name, "Reports")
+        XCTAssertEqual(harness.persisted.spaces[0].liveGroups, [legacy])
+        group.name = "Edited"
+        XCTAssertTrue(controller.saveFolderLiveGroup(group, in: first))
+        XCTAssertEqual(harness.persisted.spaces[0].folderLiveGroups, [group])
+        XCTAssertEqual(harness.writes.count, writes, "group edits do not rewrite sidebar mirrors")
+        let saves = harness.saves
+        XCTAssertTrue(controller.saveFolderLiveGroup(group, in: first))
+        XCTAssertEqual(harness.saves, saves, "unchanged save succeeds without writing")
+        let relaunched = harness.make()
+        XCTAssertEqual(relaunched.store, controller.store)
+    }
+
+    func testFolderLiveGroupInvalidOrDeletedTargetDoesNotSaveOrLeakIntoActiveSpace() {
+        let harness = Harness()
+        let controller = harness.make()
+        let first = controller.active.id
+        let second = controller.add(name: "B").id
+        var group = FolderLiveGroup(name: "Reports", sourcePath: "/tmp",
+                                    filters: [.init(field: .name, operation: .contains, value: "report")])
+        XCTAssertTrue(controller.saveFolderLiveGroup(group, in: first))
+        XCTAssertFalse(controller.removeFolderLiveGroup(group.id, from: second))
+        XCTAssertTrue(controller.removeFolderLiveGroup(group.id, from: first))
+        XCTAssertTrue(controller.store.spaces[0].folderLiveGroups.isEmpty)
+        XCTAssertTrue(controller.delete(first))
+        let before = controller.store
+        let saves = harness.saves
+        XCTAssertFalse(controller.saveFolderLiveGroup(group, in: first))
+        XCTAssertFalse(controller.removeFolderLiveGroup(group.id, from: first))
+        group.filters[0].value = " "
+        XCTAssertFalse(controller.saveFolderLiveGroup(group, in: second))
+        XCTAssertEqual(controller.store, before)
+        XCTAssertEqual(harness.saves, saves)
+    }
+
 }
