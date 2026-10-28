@@ -14578,6 +14578,10 @@
     "Các lệnh": {
       "en": "Commands",
       "scope": "sentence"
+    },
+    "Hiện nút Học sử dụng": {
+      "en": "Show Learn button",
+      "scope": "sentence"
     }
   }
 }

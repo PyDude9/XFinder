@@ -9,12 +9,13 @@ final class BrowserSettingsWindowController: NSObject, NSWindowDelegate {
     static let shared = BrowserSettingsWindowController()
 
     enum Tab: String, CaseIterable, Identifiable {
-        case general, sidebar, cloud, advanced, keyboard, search, privacy
+        case general, appearance, sidebar, cloud, advanced, keyboard, search, privacy
         var id: String { rawValue }
 
         var titleKey: String {
             switch self {
             case .general: return "Chung"
+            case .appearance: return "Giao diện"
             case .sidebar: return "Sidebar"
             case .cloud: return "Đám mây"
             case .advanced: return "Nâng cao"
@@ -27,6 +28,7 @@ final class BrowserSettingsWindowController: NSObject, NSWindowDelegate {
         var symbol: String {
             switch self {
             case .general: return "gearshape"
+            case .appearance: return "paintpalette"
             case .sidebar: return "sidebar.left"
             case .cloud: return "cloud"
             case .advanced: return "slider.horizontal.3"
@@ -37,10 +39,9 @@ final class BrowserSettingsWindowController: NSObject, NSWindowDelegate {
         }
     }
 
-    private static let contentSize = NSSize(width: 560, height: 460)
+    private static let contentSize = NSSize(width: 800, height: 560)
 
     private var window: NSWindow?
-    private var toolbar: NSToolbar?
     private let state = BrowserSettingsState()
 
     private override init() { super.init() }
@@ -49,7 +50,6 @@ final class BrowserSettingsWindowController: NSObject, NSWindowDelegate {
     func show(tab: Tab? = nil) {
         if let tab { state.selected = tab }
         if let window {
-            selectToolbarItem(state.selected)
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
@@ -60,26 +60,17 @@ final class BrowserSettingsWindowController: NSObject, NSWindowDelegate {
     private func presentWindow() {
         let panel = NSWindow(
             contentRect: NSRect(origin: .zero, size: Self.contentSize),
-            styleMask: [.titled, .closable, .miniaturizable],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         panel.isReleasedWhenClosed = false
         panel.title = L10n.t("Cài đặt trình duyệt")
         panel.delegate = self
-        panel.toolbarStyle = .preference
         let hosting = NSHostingView(rootView: BrowserSettingsRootView(state: state))
         hosting.sizingOptions = []
         panel.contentView = hosting
         panel.contentMinSize = Self.contentSize
-
-        let toolbar = NSToolbar(identifier: "XFinderBrowserSettingsToolbar.v1")
-        toolbar.delegate = self
-        toolbar.allowsUserCustomization = false
-        toolbar.displayMode = .iconAndLabel
-        panel.toolbar = toolbar
-        self.toolbar = toolbar
-        selectToolbarItem(state.selected)
 
         panel.center()
         window = panel
@@ -87,44 +78,10 @@ final class BrowserSettingsWindowController: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    private func selectToolbarItem(_ tab: Tab) {
-        toolbar?.selectedItemIdentifier = NSToolbarItem.Identifier(tab.rawValue)
-    }
-
-    @objc private func toolbarItemClicked(_ sender: NSToolbarItem) {
-        guard let tab = Tab(rawValue: sender.itemIdentifier.rawValue) else { return }
-        state.selected = tab
-    }
-
     nonisolated func windowWillClose(_ notification: Notification) {
         runOnMainActor { [weak self] in
             self?.window = nil
-            self?.toolbar = nil
         }
-    }
-}
-
-extension BrowserSettingsWindowController: NSToolbarDelegate {
-    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        Tab.allCases.map { NSToolbarItem.Identifier($0.rawValue) }
-    }
-    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        toolbarAllowedItemIdentifiers(toolbar)
-    }
-    func toolbarSelectableItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        toolbarAllowedItemIdentifiers(toolbar)
-    }
-
-    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier identifier: NSToolbarItem.Identifier,
-                 willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
-        guard let tab = Tab(rawValue: identifier.rawValue) else { return nil }
-        let item = NSToolbarItem(itemIdentifier: identifier)
-        item.label = L10n.t(tab.titleKey)
-        item.paletteLabel = item.label
-        item.image = NSImage(systemSymbolName: tab.symbol, accessibilityDescription: item.label)
-        item.target = self
-        item.action = #selector(toolbarItemClicked(_:))
-        return item
     }
 }
 
@@ -139,23 +96,41 @@ private struct BrowserSettingsRootView: View {
     let state: BrowserSettingsState
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                switch state.selected {
-                case .general: GeneralSettingsTab()
-                case .sidebar: SidebarSettingsTab()
-                case .cloud: CloudSettingsTab()
-                case .advanced: AdvancedSettingsTab()
-                case .keyboard: KeyboardSettingsTab()
-                case .search: SearchSettingsTab()
-                case .privacy: PrivacySettingsTab()
+        HStack(spacing: 0) {
+            List(BrowserSettingsWindowController.Tab.allCases, selection: Binding<BrowserSettingsWindowController.Tab?>(
+                get: { state.selected }, set: { if let tab = $0 { state.selected = tab } }
+            )) { tab in
+                Label(L10n.t(tab.titleKey), systemImage: tab.symbol).tag(tab)
+            }
+            .listStyle(.sidebar)
+            .frame(width: XFinderTokens.Settings.sidebarWidth)
+            Divider()
+            VStack(alignment: .leading, spacing: 0) {
+                Text(L10n.t(state.selected.titleKey))
+                    .font(XFinderTokens.Settings.headerTitle)
+                    .padding(XFinderTokens.Space.page)
+                SettingsDivider()
+                ScrollView {
+                    VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                        switch state.selected {
+                        case .general: GeneralSettingsTab()
+                        case .appearance: AppearanceSettingsTab()
+                        case .sidebar: SidebarSettingsTab()
+                        case .cloud: CloudSettingsTab()
+                        case .advanced: AdvancedSettingsTab()
+                        case .keyboard: KeyboardSettingsTab()
+                        case .search: SearchSettingsTab()
+                        case .privacy: PrivacySettingsTab()
+                        }
+                    }
+                    .padding(XFinderTokens.Space.page)
+                    .padding(.bottom, XFinderTokens.Space.section)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 }
             }
-            .padding(XFinderTokens.Space.page)
-            .padding(.bottom, XFinderTokens.Space.section)
-            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .background(XFinderTokens.Settings.contentBackground)
         }
-        .background(XFinderTokens.Settings.contentBackground)
     }
 }
 
@@ -164,14 +139,9 @@ private struct BrowserSettingsRootView: View {
 private struct GeneralSettingsTab: View {
     @AppStorage("fileBrowser.newWindowTarget") private var newWindowTarget = "home"
     @AppStorage("fileBrowser.newWindowCustomPath") private var newWindowCustomPath = ""
-    @AppStorage("fileBrowser.showLocationBar") private var showLocationBar = true
-    @AppStorage("fileBrowser.showPathBar") private var showPathBar = true
-    @AppStorage("fileBrowser.showStatusBar") private var showStatusBar = true
     @AppStorage("fileBrowser.reopenWindows") private var reopenWindows = true
     @AppStorage("fileBrowser.returnOpens") private var returnOpens = false
     @AppStorage("fileBrowser.cutWithCmdX") private var cutWithCmdX = false
-    /// XF-T32 W3 — same key/default as `BrowserSettings.paneFocusStyle`.
-    @AppStorage("fileBrowser.paneFocusStyle") private var paneFocusStyle = "dim"
 
     var body: some View {
         SettingsSection(title: L10n.t("Cửa sổ mới hiện")) {
@@ -205,20 +175,6 @@ private struct GeneralSettingsTab: View {
                 }
                 .settingsRow()
             }
-        }
-
-        SettingsSection(title: L10n.t("Hiện trong cửa sổ")) {
-            ToggleRow(title: L10n.t("Location Bar"), isOn: $showLocationBar).settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("Path Bar"), isOn: $showPathBar).settingsRow()
-            SettingsDivider()
-            ToggleRow(title: L10n.t("Status Bar"), isOn: $showStatusBar).settingsRow()
-            SettingsDivider()
-            PickerRow(title: L10n.t("Làm nổi ngăn đang dùng"), selection: $paneFocusStyle, width: XFinderTokens.PaneChrome.focusPickerWidth) {
-                Text(L10n.t("Làm mờ ngăn khác")).tag("dim")
-                Text(L10n.t("Viền ngăn đang dùng")).tag("outline")
-            }
-            .settingsRow()
         }
 
         SettingsSection(title: L10n.t("Khi mở")) {
@@ -257,6 +213,36 @@ private struct GeneralSettingsTab: View {
         panel.message = L10n.t("Chọn thư mục cửa sổ mới sẽ mở.")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         newWindowCustomPath = url.path
+    }
+}
+
+// MARK: - Appearance
+
+private struct AppearanceSettingsTab: View {
+    @AppStorage("fileBrowser.showLocationBar") private var showLocationBar = true
+    @AppStorage("fileBrowser.showPathBar") private var showPathBar = true
+    @AppStorage("fileBrowser.showStatusBar") private var showStatusBar = true
+    /// XF-T32 W3 — same key/default as `BrowserSettings.paneFocusStyle`.
+    @AppStorage("fileBrowser.paneFocusStyle") private var paneFocusStyle = "dim"
+    @AppStorage("fileBrowser.showLearnButton") private var showLearnButton = true
+
+    var body: some View {
+        SettingsSection(title: L10n.t("Hiện trong cửa sổ")) {
+            ToggleRow(title: L10n.t("Location Bar"), isOn: $showLocationBar).settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Path Bar"), isOn: $showPathBar).settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Status Bar"), isOn: $showStatusBar).settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Hiện nút Học sử dụng"), isOn: $showLearnButton).settingsRow()
+            SettingsDivider()
+            PickerRow(title: L10n.t("Làm nổi ngăn đang dùng"), selection: $paneFocusStyle, width: XFinderTokens.PaneChrome.focusPickerWidth) {
+                Text(L10n.t("Làm mờ ngăn khác")).tag("dim")
+                Text(L10n.t("Viền ngăn đang dùng")).tag("outline")
+            }
+            .settingsRow()
+        }
+
     }
 }
 

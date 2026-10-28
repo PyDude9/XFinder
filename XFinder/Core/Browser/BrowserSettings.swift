@@ -104,6 +104,8 @@ final class BrowserSettings {
 
     /// XF-T32 W3 — the ONE reader of `fileBrowser.paneFocusStyle`: `"dim"` (inactive panes faded, Tilde default) or
     /// `"outline"` (accent line on the active pane).
+    static var showLearnButton: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showLearnButton") as? Bool ?? true }
+
     static var paneFocusStyle: String { UserDefaults.standard.string(forKey: "fileBrowser.paneFocusStyle") ?? "dim" }
 
     /// The ONE reader+writer of `fileBrowser.sidebarLayout` (XF-T28 Wave 4 §B) — JSON `SidebarLayout`, not a toggle,

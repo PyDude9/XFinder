@@ -16,6 +16,7 @@ struct BrowserRootView: View {
     @State private var workspaceName = ""
     @State private var bannerWorkItem: DispatchWorkItem?
     @State private var isSyncing = false
+    @AppStorage("fileBrowser.showLearnButton") private var showLearnButton = true
     @AppStorage("fileBrowser.showSidebar") private var showSidebar = true
 
     var body: some View {
@@ -41,7 +42,7 @@ struct BrowserRootView: View {
         }
         .frame(minWidth: Self.minimumSize.width, minHeight: Self.minimumSize.height)
         .overlay(alignment: .bottomTrailing) {
-            if VirtualLocation.parse(model.active.path) != .learn {
+            if showLearnButton, VirtualLocation.parse(model.active.path) != .learn {
                 Button {
                     if let existing = model.tabs(of: model.activePane).first(where: { VirtualLocation.parse($0.path) == .learn }) {
                         model.selectTab(existing.tabID)
