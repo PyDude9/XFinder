@@ -14610,6 +14610,30 @@
     "Không đăng ký được phím tắt. Một ứng dụng khác có thể đang dùng tổ hợp này.": {
       "en": "Could not register the shortcut. Another app may be using this key combination.",
       "scope": "sentence"
+    },
+    "Ngăn thông tin": {
+      "en": "Inspector",
+      "scope": "sentence"
+    },
+    "Hiện ngăn xem trước": {
+      "en": "Show preview pane",
+      "scope": "sentence"
+    },
+    "Hiện thêm thông tin": {
+      "en": "Show additional information",
+      "scope": "sentence"
+    },
+    "Áp dụng trong thẻ Thông tin của ngăn xem trước.": {
+      "en": "Applies to the Information tab of the preview pane.",
+      "scope": "sentence"
+    },
+    "Nhóm cài đặt": {
+      "en": "Settings category",
+      "scope": "sentence"
+    },
+    "Mọi lệnh cũng có trong bảng lệnh: ⌃⇧⌘P, hoặc gõ > trong ⌃⌘P. Chọn nhóm Bàn phím trên trang này để đổi phím.": {
+      "en": "All commands are also in the command palette: ⌃⇧⌘P, or type > in ⌃⌘P. Choose the Keyboard category on this page to change shortcuts.",
+      "scope": "sentence"
     }
   }
 }

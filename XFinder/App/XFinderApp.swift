@@ -28,8 +28,12 @@ struct XFinderApp: App {
             }
 
             CommandGroup(replacing: .appSettings) {
-                Button("Settings") {
-                    AppState.shared.navigate(to: .features)
+                Button(L10n.t("Cài đặt…")) {
+                    if NSApp.keyWindow is BrowserWindow {
+                        BrowserSettingsWindowController.shared.show()
+                    } else {
+                        AppState.shared.navigate(to: .features)
+                    }
                 }
                 .keyboardShortcut(",", modifiers: .command)
             }

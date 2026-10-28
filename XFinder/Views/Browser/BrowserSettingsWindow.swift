@@ -2,14 +2,15 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
-/// XF-T30 W4 — the file browser's own Settings window (⌘, while a browser window is key): General, Sidebar, Cloud,
-/// Advanced, Keyboard, Search, Privacy. Contract docs/specs/XF-T30-w4-contract.md §3. W4 builder (settings).
+/// Compatibility entry point: browser commands now navigate to the unified XFinder settings page.
 @MainActor
-final class BrowserSettingsWindowController: NSObject, NSWindowDelegate {
+final class BrowserSettingsWindowController {
     static let shared = BrowserSettingsWindowController()
+    fileprivate let state = BrowserSettingsState()
+    private init() {}
 
     enum Tab: String, CaseIterable, Identifiable {
-        case general, appearance, sidebar, cloud, advanced, keyboard, search, privacy
+        case general, appearance, sidebar, cloud, advanced, keyboard, inspector, search, privacy
         var id: String { rawValue }
 
         var titleKey: String {
@@ -20,6 +21,7 @@ final class BrowserSettingsWindowController: NSObject, NSWindowDelegate {
             case .cloud: return "Đám mây"
             case .advanced: return "Nâng cao"
             case .keyboard: return "Bàn phím"
+            case .inspector: return "Ngăn thông tin"
             case .search: return "Tìm kiếm"
             case .privacy: return "Quyền riêng tư"
             }
@@ -33,103 +35,51 @@ final class BrowserSettingsWindowController: NSObject, NSWindowDelegate {
             case .cloud: return "cloud"
             case .advanced: return "slider.horizontal.3"
             case .keyboard: return "keyboard"
+            case .inspector: return "sidebar.right"
             case .search: return "magnifyingglass"
             case .privacy: return "hand.raised"
             }
         }
     }
 
-    private static let contentSize = NSSize(width: 800, height: 560)
-
-    private var window: NSWindow?
-    private let state = BrowserSettingsState()
-
-    private override init() { super.init() }
-
-    /// `nil` tab = keep whichever tab was last showing (General the first time).
     func show(tab: Tab? = nil) {
         if let tab { state.selected = tab }
-        if let window {
-            window.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-            return
-        }
-        presentWindow()
-    }
-
-    private func presentWindow() {
-        let panel = NSWindow(
-            contentRect: NSRect(origin: .zero, size: Self.contentSize),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        panel.isReleasedWhenClosed = false
-        panel.title = L10n.t("Cài đặt trình duyệt")
-        panel.delegate = self
-        let hosting = NSHostingView(rootView: BrowserSettingsRootView(state: state))
-        hosting.sizingOptions = []
-        panel.contentView = hosting
-        panel.contentMinSize = Self.contentSize
-
-        panel.center()
-        window = panel
-        panel.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-
-    nonisolated func windowWillClose(_ notification: Notification) {
-        runOnMainActor { [weak self] in
-            self?.window = nil
-        }
+        AppState.shared.navigate(to: .fileBrowser)
     }
 }
 
-/// The window's own tiny piece of state — which tab shows. A plain `@Observable` (not `BrowserSettings.shared`,
-/// which has no notion of "which tab is selected") so `BrowserSettingsRootView` redraws when the toolbar changes it.
 @MainActor @Observable
-private final class BrowserSettingsState {
+fileprivate final class BrowserSettingsState {
     var selected: BrowserSettingsWindowController.Tab = .general
 }
 
-private struct BrowserSettingsRootView: View {
-    let state: BrowserSettingsState
+/// Embedded in the File Browser page; no nested sidebar or independently managed window.
+struct BrowserSettingsContentView: View {
+    private let state = BrowserSettingsWindowController.shared.state
 
     var body: some View {
-        HStack(spacing: 0) {
-            List(BrowserSettingsWindowController.Tab.allCases, selection: Binding<BrowserSettingsWindowController.Tab?>(
-                get: { state.selected }, set: { if let tab = $0 { state.selected = tab } }
-            )) { tab in
-                Label(L10n.t(tab.titleKey), systemImage: tab.symbol).tag(tab)
-            }
-            .listStyle(.sidebar)
-            .frame(width: XFinderTokens.Settings.sidebarWidth)
-            Divider()
-            VStack(alignment: .leading, spacing: 0) {
-                Text(L10n.t(state.selected.titleKey))
-                    .font(XFinderTokens.Settings.headerTitle)
-                    .padding(XFinderTokens.Space.page)
-                SettingsDivider()
-                ScrollView {
-                    VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                        switch state.selected {
-                        case .general: GeneralSettingsTab()
-                        case .appearance: AppearanceSettingsTab()
-                        case .sidebar: SidebarSettingsTab()
-                        case .cloud: CloudSettingsTab()
-                        case .advanced: AdvancedSettingsTab()
-                        case .keyboard: KeyboardSettingsTab()
-                        case .search: SearchSettingsTab()
-                        case .privacy: PrivacySettingsTab()
-                        }
-                    }
-                    .padding(XFinderTokens.Space.page)
-                    .padding(.bottom, XFinderTokens.Space.section)
-                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+            Picker(L10n.t("Nhóm cài đặt"), selection: Binding(
+                get: { state.selected }, set: { state.selected = $0 }
+            )) {
+                ForEach(BrowserSettingsWindowController.Tab.allCases) { tab in
+                    Label(L10n.t(tab.titleKey), systemImage: tab.symbol).tag(tab)
                 }
             }
-            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(XFinderTokens.Settings.contentBackground)
+            .pickerStyle(.menu)
+            .font(XFinderTokens.Font.row)
+            .padding(.horizontal, XFinderTokens.Space.page)
+            switch state.selected {
+            case .general: GeneralSettingsTab()
+            case .appearance: AppearanceSettingsTab()
+            case .sidebar: SidebarSettingsTab()
+            case .cloud: CloudSettingsTab()
+            case .advanced: AdvancedSettingsTab()
+            case .keyboard: KeyboardSettingsTab()
+            case .inspector: InspectorSettingsTab()
+            case .search: SearchSettingsTab()
+            case .privacy: PrivacySettingsTab()
+            }
         }
     }
 }
@@ -256,6 +206,26 @@ private struct AppearanceSettingsTab: View {
             .settingsRow()
         }
 
+    }
+}
+
+// MARK: - Inspector
+
+private struct InspectorSettingsTab: View {
+    @AppStorage("fileBrowser.showPreview") private var inspectorVisible = false
+    @AppStorage("fileBrowser.previewShowMore") private var inspectorShowMore = false
+
+    var body: some View {
+        SettingsSection(title: L10n.t("Ngăn thông tin")) {
+            ToggleRow(title: L10n.t("Hiện ngăn xem trước"), isOn: $inspectorVisible)
+                .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Hiện thêm thông tin"),
+                      subtitle: L10n.t("Áp dụng trong thẻ Thông tin của ngăn xem trước."),
+                      isOn: $inspectorShowMore)
+                .disabled(!inspectorVisible)
+                .settingsRow()
+        }
     }
 }
 
