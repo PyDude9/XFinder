@@ -7,7 +7,11 @@ import Translation
 /// handed it back. Nothing leaves the Mac: the Translation framework is on-device after its language pack download.
 struct TranslateSelectionView: View {
     var model: TranslateSelectionModel
-    @State private var presented = false
+    @State private var presentingRequest: Int?
+    private func presentation(for request: Int) -> Binding<Bool> {
+        Binding(get: { request == model.requestPresentation && model.nativePresented },
+                set: { if request == model.requestPresentation { model.nativePresented = $0 } })
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
@@ -36,17 +40,36 @@ struct TranslateSelectionView: View {
         }
         .padding(XFinderTokens.Space.inline + 4)
         .frame(width: 520, height: 300)
-        .onChange(of: model.requestPresentation) { presented = !model.text.isEmpty }
+        .background(XFinderTokens.Fill.surface, in: RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile))
+        .overlay(RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile).stroke(XFinderTokens.Fill.hairline))
+        .task(id: model.requestPresentation) {
+            let request = model.requestPresentation
+            await Task.yield()
+            guard !Task.isCancelled, model.isActive, model.messageKey == nil, !model.text.isEmpty,
+                  request == model.requestPresentation else { return }
+            presentingRequest = request
+            model.nativePresented = true
+        }
+        .onChange(of: model.nativePresented) { wasPresented, isPresented in
+            guard wasPresented, !isPresented, let request = presentingRequest else { return }
+            TranslateSelectionController.shared.nativePresentationDidEnd(request: request)
+        }
     }
 
     @ViewBuilder private var translationArea: some View {
         if #available(macOS 15.0, *) {
+            let request = model.requestPresentation
             VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
                 HStack {
-                    Button(L10n.t("Dịch")) { presented = true }.buttonStyle(.borderedProminent).controlSize(.small)
-                        .translationPresentation(isPresented: $presented, text: model.text) { translated in
+                    Button(L10n.t("Dịch")) {
+                        presentingRequest = request
+                        model.nativePresented = true
+                    }.buttonStyle(.borderedProminent).controlSize(.small)
+                        .translationPresentation(isPresented: presentation(for: request), text: model.text) { translated in
+                            guard request == model.requestPresentation, model.isActive else { return }
                             model.translated = translated
                         }
+                        .id(request)
                     if model.translated != nil {
                         Button(L10n.t("Sao chép bản dịch")) { TranslateSelectionController.shared.copyTranslation() }.controlSize(.small)
                     }

@@ -19,7 +19,7 @@ final class TranslateSelectionController {
     var isEnabled: Bool { UserDefaults.standard.object(forKey: "translate.hotkeyEnabled") as? Bool ?? false }
 
     func applySettings() {
-        if isEnabled { registerHotkey() } else { unregisterHotkey(); panel?.hide() }
+        if isEnabled { registerHotkey() } else { unregisterHotkey(); dismiss() }
     }
 
     // MARK: Hotkey (Carbon, like QuickSearchPanelController)
@@ -74,13 +74,15 @@ final class TranslateSelectionController {
     /// Smart Selection's panel hands over the text it already read (the badge works whether or not ⇧⌘G is on).
     func translate(text: String?, sourceApp: String?) {
         let verdict = TranslateSelectionRules.verdict(for: text)
+        model.requestPresentation += 1
+        model.isActive = true
+        model.nativePresented = false
         model.sourceApp = sourceApp
         model.translated = nil
         switch verdict {
         case .translate(let text):
             model.text = text
             model.messageKey = nil
-            model.requestPresentation += 1
         default:
             model.text = ""
             model.messageKey = TranslateSelectionRules.messageKey(for: verdict)
@@ -91,10 +93,30 @@ final class TranslateSelectionController {
             panel = p
         }
         panel?.show(anchor: .spotlight)
-        panel?.installClickOutside { [weak self] in self?.panel?.hide() }
+        panel?.installClickOutside { [weak self] in
+            guard let self, !self.model.nativePresented else { return }
+            // The native popover owns outside-click dismissal while open; its close callback hides the host.
+            self.dismiss()
+        }
     }
 
-    func dismiss() { panel?.hide() }
+    func dismiss() {
+        model.isActive = false
+        model.nativePresented = false
+        panel?.hide()
+    }
+
+    func nativePresentationDidEnd(request: Int) {
+        Task { @MainActor [weak self] in
+            // The native replacement callback can finish in the same update as the binding becoming false.
+            await Task.yield()
+            guard let self, !self.model.nativePresented,
+                  TranslateSelectionRules.shouldDismissHost(endedRequest: request,
+                      currentRequest: self.model.requestPresentation,
+                      hasTranslation: self.model.translated != nil, isActive: self.model.isActive) else { return }
+            self.dismiss()
+        }
+    }
 
     func copyTranslation() {
         guard let t = model.translated, !t.isEmpty else { return }
@@ -113,4 +135,6 @@ final class TranslateSelectionModel {
     var messageKey: String?
     var translated: String?
     var requestPresentation = 0
+    var nativePresented = false
+    var isActive = false
 }

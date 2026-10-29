@@ -5,6 +5,13 @@ import Foundation
 final class TranslateSelectionRulesTests: XCTestCase {
     typealias R = TranslateSelectionRules
 
+    func testNativeDismissalClosesOnlyCurrentUnfinishedSession() {
+        XCTAssertTrue(R.shouldDismissHost(endedRequest: 2, currentRequest: 2, hasTranslation: false, isActive: true))
+        XCTAssertFalse(R.shouldDismissHost(endedRequest: 1, currentRequest: 2, hasTranslation: false, isActive: true), "An old popover must not close a newer selection")
+        XCTAssertFalse(R.shouldDismissHost(endedRequest: 2, currentRequest: 2, hasTranslation: true, isActive: true), "Replace leaves the result available for Copy")
+        XCTAssertFalse(R.shouldDismissHost(endedRequest: 2, currentRequest: 2, hasTranslation: false, isActive: false), "Explicit dismissal must stay idempotent")
+    }
+
     func testVerdicts() {
         XCTAssertEqual(R.verdict(for: nil), .nothingSelected)
         XCTAssertEqual(R.verdict(for: "   "), .nothingSelected)
