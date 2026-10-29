@@ -209,14 +209,19 @@ final class TranslateSelectionController {
                 model.localSenses = parsed.senses
             }
 
+            // Always initialize assistant with the term
+            assistant.receive(text: resolved, meaning: "")
+
             // Check if term is already saved in wordbook
             let store = VocabularyStore.shared
-            if !store.isLoaded { Task { await store.load() } }
-            if let existing = store.library.cards.first(where: {
-                $0.term.localizedCaseInsensitiveCompare(resolved) == .orderedSame
-            }) {
-                model.savedToWordbook = true
-                model.savedCard = existing
+            Task {
+                if !store.isLoaded { await store.load() }
+                if let existing = store.library.cards.first(where: {
+                    $0.term.localizedCaseInsensitiveCompare(resolved) == .orderedSame
+                }) {
+                    self.model.savedToWordbook = true
+                    self.model.savedCard = existing
+                }
             }
 
             // Start Google Translation (fast ~200 ms)
@@ -412,8 +417,26 @@ final class TranslateSelectionController {
         assistant.speak(text, language: language)
     }
 
+    func toggleSave() {
+        let store = VocabularyStore.shared
+        if model.savedToWordbook, let existing = model.savedCard {
+            Task {
+                if !store.isLoaded { await store.load() }
+                if await store.removeCard(id: existing.id) {
+                    self.model.savedToWordbook = false
+                    self.model.savedCard = nil
+                }
+            }
+        } else {
+            saveToWordbook()
+        }
+    }
+
     func saveToWordbook() {
         let store = VocabularyStore.shared
+        let term = model.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !term.isEmpty else { return }
+
         var meaning = ""
         if model.engine == .google && !model.googleTranslation.isEmpty {
             meaning = model.googleTranslation
@@ -426,25 +449,48 @@ final class TranslateSelectionController {
         } else if let snippet = model.localSnippet {
             meaning = snippet
         }
-        guard !meaning.isEmpty || !model.text.isEmpty else { return }
+        if meaning.isEmpty {
+            meaning = term
+        }
 
-        var card = assistant.card(wordbook: VocabularyLibrary.defaultWordbookID)
-        if card.meaning.isEmpty {
-            card.meaning = meaning
+        let recognizer = NLLanguageRecognizer()
+        recognizer.processString(term)
+        let isVietnamese = (recognizer.dominantLanguage == .vietnamese)
+        let sourceLang = isVietnamese ? "vi" : "en"
+        let targetLang = isVietnamese ? "en" : "vi"
+
+        var definitions: [VocabularyDefinition] = []
+        if let aiDefs = assistant.definition?.definitions, !aiDefs.isEmpty {
+            definitions = aiDefs
+        } else if !model.localSenses.isEmpty {
+            definitions = model.localSenses.map {
+                VocabularyDefinition(pos: $0.pos, meaningVi: $0.meaning)
+            }
         }
-        if card.phoneticUS == nil || card.phoneticUS?.isEmpty == true {
-            card.phoneticUS = model.localPhonetic
-        }
-        if card.syllables == nil || card.syllables?.isEmpty == true {
-            card.syllables = model.localSyllables
-        }
+
+        let card = VocabularyCard(
+            term: term,
+            language: sourceLang,
+            targetLanguage: targetLang,
+            meaning: meaning,
+            context: "",
+            syllables: model.localSyllables ?? assistant.definition?.syllables,
+            phoneticUS: model.localPhonetic ?? assistant.definition?.phoneticUS,
+            phoneticUK: assistant.definition?.phoneticUK,
+            definitions: definitions,
+            synonyms: assistant.definition?.synonyms ?? [],
+            etymology: assistant.definition?.etymology,
+            cefr: assistant.definition?.cefr,
+            provenance: model.engine == .google ? "Google Translate" : (model.engine == .ai ? "AI" : "Dictionary"),
+            wordbookID: VocabularyLibrary.defaultWordbookID
+        )
 
         Task {
             if !store.isLoaded { await store.load() }
             let saved = await store.saveCard(card)
             if let saved {
-                model.savedToWordbook = true
-                model.savedCard = saved
+                self.model.savedToWordbook = true
+                self.model.savedCard = saved
             }
         }
     }

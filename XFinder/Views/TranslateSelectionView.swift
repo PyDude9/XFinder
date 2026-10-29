@@ -44,7 +44,7 @@ struct TranslateSelectionView: View {
             }
 
             Button {
-                TranslateSelectionController.shared.saveToWordbook()
+                TranslateSelectionController.shared.toggleSave()
             } label: {
                 Image(systemName: model.savedToWordbook ? "heart.fill" : "heart")
                     .font(.system(size: 15))

@@ -1,3 +1,29 @@
+## 2026-10-29 — Gemini & Antigravity: Fix Heart button 1-tap save to Wordbook & toggle state
+
+Branch `PyDude9/xfinder-translate-gemini`.
+
+Defects resolved:
+1. **Heart button save failure in Google Translate mode**:
+   - Diagnosed root cause: `saveToWordbook()` constructed its card via `assistant.card(wordbook:)`. Because Google Translate mode is the default and does not run AI analysis, `assistant.receive(text: ...)` was never called on Google Translate selections. Consequently, `assistant.text` remained empty (`""`), which caused `card.term` to be empty and language to default to `"und"`, failing `VocabularyLibrary.validateCard` (`ValidationError.invalidText`).
+   - Fixed `saveToWordbook()` to directly construct `VocabularyCard(term: ...)` from `model.text`, `model.googleTranslation`, `model.localPhonetic`, and `model.localSenses` without relying on `assistant` state.
+   - Initialized `assistant.receive(text: resolved, meaning: "")` unconditionally so `assistant` always has valid text and language tags.
+   - Added asynchronous `VocabularyStore.load()` callback in `translate(...)` so that previously saved cards are correctly detected even if the Wordbook window was never opened.
+   - Added `toggleSave()`: Clicking the heart on an unsaved card saves it (heart fills red, checkmark lights up, review count badge `↺ 0` appears); clicking again removes it from Wordbook cleanly.
+
+Gate check:
+- `build (arm64, compile list)`: OK
+- `tests`: Executed 2,895 tests, with 0 failures (0 unexpected)
+- `check-l10n-coverage`: TOTAL 0 problems across 3,767 entries
+- `check-l10n-duplicates`: TOTAL 0 duplicates across 3,767 unique keys
+- `audit-l10n-literals`: TOTAL 0 wrapped-but-untranslated
+- `check-sidebar-groups-l10n`: TOTAL 0 problems
+- `audit-gesture-vocabulary-l10n`: TOTAL 0 unresolved
+- `audit-l10n-interpolations`: TOTAL 0 interpolated
+- `audit-ui-tokens`: TOTAL 0 problems
+- `GATE: green`
+
+Live verification: Installed `/Applications/XFinder.app` PID 87421 (arm64, signed).
+
 ## 2026-10-29 — Gemini & Antigravity: Strictly Single Unified Popup & Google Free Translate Engine Integration
 
 Branch `PyDude9/xfinder-translate-gemini`.
