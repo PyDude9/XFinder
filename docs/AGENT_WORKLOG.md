@@ -1,3 +1,40 @@
+## 2026-10-29 — Gemini & Antigravity: Strictly Single Unified Popup & Google Free Translate Engine Integration
+
+Branch `PyDude9/xfinder-translate-gemini`.
+
+Defects resolved:
+1. **Strictly Single Popup (No secondary popup or intermediate menu)**:
+   - Diagnosed root cause of the 2-popup experience:
+     1. Previously, clicking the Smart Selection badge opened `SmartSelectPanelView` with "Định nghĩa" and "Dịch vùng chọn [Dịch]", which when clicked opened a second window `TranslateSelectionView`.
+     2. Additionally, `SelectionWatcher` could show a selection badge while `TranslateSelectionController` was active, causing two floating elements on screen.
+   - Fixed `SmartSelectBadgeView`: When text (words or sentences) is selected without conversions (unit, currency, calendar, arithmetic), clicking the badge opens the Translate Card **directly**, bypassing the intermediate menu completely.
+   - Updated `TranslateSelectionController.translate`: Directly calls `SmartSelectionBadge.shared.hideAll()` and `SelectionWatcher.shared.dismiss()` on presentation.
+   - Updated `SelectionWatcher.showBadge`: Guards `!TranslateSelectionController.shared.model.isActive`, guaranteeing no badge ever spawns while the translate card is open.
+
+2. **Google Free Translate & Multi-Engine Selector**:
+   - Integrated `GoogleTranslateService` using the official free Google client endpoint (`clients5.google.com/translate_a/t?client=dict-chrome-ex`), delivering bidirectional translations (English <-> Vietnamese) in **~200 ms** with zero API key requirement.
+   - Added `TranslationEngine` with 3 selectable options in the card:
+     1. `Google Dịch` (Google Free Translate — fast ~200ms, free).
+     2. `Dịch AI` (Configured AI provider like DeepSeek for deep nuance & synonyms).
+     3. `Từ điển` (On-device macOS Dictionary for grammatical POS breakdown).
+   - Instant 1-click engine switching with user preference persisted to `UserDefaults` (`translate.preferredEngine`).
+   - For single words, Google translation and on-device dictionary phonetics / POS badges (`[n.]`, `[v.]`) display together seamlessly.
+   - Added L10n entries for `"Google Dịch"` and `"Dịch AI"`.
+
+Gate check:
+- `build (arm64, compile list)`: OK
+- `tests`: Executed 2,895 tests, with 0 failures (0 unexpected)
+- `check-l10n-coverage`: TOTAL 0 problems across 3,767 entries
+- `check-l10n-duplicates`: TOTAL 0 duplicates across 3,767 unique keys
+- `audit-l10n-literals`: TOTAL 0 wrapped-but-untranslated
+- `check-sidebar-groups-l10n`: TOTAL 0 problems
+- `audit-gesture-vocabulary-l10n`: TOTAL 0 unresolved
+- `audit-l10n-interpolations`: TOTAL 0 interpolated
+- `audit-ui-tokens`: TOTAL 0 problems
+- `GATE: green`
+
+Live verification: Installed `/Applications/XFinder.app` PID 86315 (arm64, signed).
+
 ## 2026-10-29 — Gemini & Antigravity: Unified Minimalist Trancy Air UI/UX Translate Card & Simplified Workbook
 
 Branch `PyDude9/xfinder-translate-gemini`.

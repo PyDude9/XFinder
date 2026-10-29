@@ -5,7 +5,21 @@ struct SmartSelectBadgeView: View {
     var model: SmartSelectionModel
 
     var body: some View {
-        Button { SmartSelectionBadge.shared.openPanel() } label: {
+        Button {
+            let hasConversions = model.actions.contains { action in
+                switch action {
+                case .unit, .currency, .time, .arithmetic, .calendar:
+                    return true
+                default:
+                    return false
+                }
+            }
+            if hasConversions {
+                SmartSelectionBadge.shared.openPanel()
+            } else {
+                SmartSelectionBadge.shared.translate()
+            }
+        } label: {
             Image(systemName: "wand.and.stars")
                 .font(XFinderTokens.Font.row)
                 .foregroundColor(.white)

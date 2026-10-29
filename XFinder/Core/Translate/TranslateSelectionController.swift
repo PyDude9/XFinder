@@ -1,5 +1,6 @@
 import AppKit
 import Carbon
+import NaturalLanguage
 import SwiftUI
 
 /// Structured sense for displaying dictionary definitions with Part of Speech badges.
@@ -7,6 +8,77 @@ struct ParsedSense: Identifiable, Sendable, Equatable {
     var id: String { pos + ":" + meaning }
     var pos: String
     var meaning: String
+}
+
+/// Available translation engines: Google Free Translate, AI (DeepSeek/Custom), and on-device macOS Dictionary.
+enum TranslationEngine: String, CaseIterable, Identifiable, Sendable {
+    case google = "google"
+    case ai = "ai"
+    case dictionary = "dictionary"
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .google: return L10n.t("Google Dịch")
+        case .ai: return L10n.t("Dịch AI")
+        case .dictionary: return L10n.t("Từ điển")
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .google: return "globe.asia.australia.fill"
+        case .ai: return "sparkles"
+        case .dictionary: return "character.book.closed"
+        }
+    }
+}
+
+/// Fast on-demand Google Translate service (official free endpoint, ~200 ms latency, no API key required).
+enum GoogleTranslateService {
+    static func translate(text: String) async throws -> (translated: String, source: String, target: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return ("", "auto", "vi") }
+
+        let recognizer = NLLanguageRecognizer()
+        recognizer.processString(trimmed)
+        let isVietnamese = (recognizer.dominantLanguage == .vietnamese)
+        let target = isVietnamese ? "en" : "vi"
+
+        var components = URLComponents(string: "https://clients5.google.com/translate_a/t")!
+        components.queryItems = [
+            URLQueryItem(name: "client", value: "dict-chrome-ex"),
+            URLQueryItem(name: "sl", value: "auto"),
+            URLQueryItem(name: "tl", value: target),
+            URLQueryItem(name: "q", value: trimmed)
+        ]
+        guard let url = components.url else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 6.0
+        request.setValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", forHTTPHeaderField: "User-Agent")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+        let json = try JSONSerialization.jsonObject(with: data)
+        let parsed = parseGoogleResponse(json)
+        return (parsed, isVietnamese ? "vi" : "en", target)
+    }
+
+    private static func parseGoogleResponse(_ json: Any) -> String {
+        if let strings = json as? [String] {
+            return strings.joined(separator: " ")
+        }
+        if let arrays = json as? [[Any]] {
+            return arrays.compactMap { $0.first as? String }.joined(separator: " ")
+        }
+        if let string = json as? String {
+            return string
+        }
+        return ""
+    }
 }
 
 /// N5a — the live half of "Dịch vùng chọn": a Carbon hotkey (⇧⌘G, the same mechanism as ⌘K), the Accessibility read
@@ -20,6 +92,7 @@ final class TranslateSelectionController {
     private var carbonHandler: EventHandlerRef?
     private var panel: SurfacePanel?
     private var workspaceObserver: (any NSObjectProtocol)?
+    private var googleTask: Task<Void, Never>?
     let model = TranslateSelectionModel()
 
     /// Dedicated assistant; does not share state with VocabularyWorkspace.
@@ -28,6 +101,16 @@ final class TranslateSelectionController {
     private init() {}
 
     var isEnabled: Bool { UserDefaults.standard.object(forKey: "translate.hotkeyEnabled") as? Bool ?? false }
+
+    var preferredEngine: TranslationEngine {
+        get {
+            let raw = UserDefaults.standard.string(forKey: "translate.preferredEngine") ?? "google"
+            return TranslationEngine(rawValue: raw) ?? .google
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: "translate.preferredEngine")
+        }
+    }
 
     func applySettings() {
         if isEnabled { registerHotkey() } else { unregisterHotkey(); dismiss() }
@@ -84,6 +167,10 @@ final class TranslateSelectionController {
 
     /// Smart Selection's panel hands over the text it already read (the badge works whether or not ⇧⌘G is on).
     func translate(text: String?, sourceApp: String?, anchorRect: CGRect? = nil) {
+        // Guarantee only ONE popup exists: hide any Smart Selection badge or panel immediately.
+        SmartSelectionBadge.shared.hideAll()
+        SelectionWatcher.shared.dismiss()
+
         let verdict = TranslateSelectionRules.verdict(for: text)
         model.requestPresentation += 1
         model.isActive = true
@@ -99,6 +186,10 @@ final class TranslateSelectionController {
         model.localSnippet = nil
         model.localSenses = []
         model.isSentence = false
+        model.engine = preferredEngine
+        model.googleTranslation = ""
+        model.googleError = nil
+        model.isGoogleLoading = false
 
         switch verdict {
         case .translate(let resolved):
@@ -128,7 +219,13 @@ final class TranslateSelectionController {
                 model.savedCard = existing
             }
 
-            startAITranslation(text: resolved)
+            // Start Google Translation (fast ~200 ms)
+            fetchGoogleTranslation(text: resolved)
+
+            // If user preferred AI, also kick off AI translation
+            if preferredEngine == .ai {
+                startAITranslation(text: resolved)
+            }
         default:
             model.text = ""
             model.messageKey = TranslateSelectionRules.messageKey(for: verdict)
@@ -139,7 +236,7 @@ final class TranslateSelectionController {
 
     private func showPanel(at anchorRect: CGRect? = nil) {
         registerWorkspaceObserver()
-        let cardSize = CGSize(width: 400, height: 250)
+        let cardSize = CGSize(width: 410, height: 260)
         if panel == nil {
             let p = SurfacePanel(kind: .interactive, size: cardSize)
             p.host(TranslateSelectionView(model: model))
@@ -166,6 +263,38 @@ final class TranslateSelectionController {
         panel?.installClickOutside { [weak self] in
             guard let self else { return }
             self.dismiss()
+        }
+    }
+
+    func switchEngine(to engine: TranslationEngine) {
+        model.engine = engine
+        preferredEngine = engine
+        if engine == .google && model.googleTranslation.isEmpty && !model.isGoogleLoading {
+            fetchGoogleTranslation(text: model.text)
+        } else if engine == .ai && (model.assistant?.meaning.isEmpty ?? true) && !(model.assistant?.busy ?? false) {
+            startAITranslation(text: model.text)
+        }
+    }
+
+    func fetchGoogleTranslation(text: String) {
+        googleTask?.cancel()
+        model.isGoogleLoading = true
+        model.googleError = nil
+        model.googleTranslation = ""
+        googleTask = Task { @MainActor in
+            do {
+                let res = try await GoogleTranslateService.translate(text: text)
+                guard !Task.isCancelled else { return }
+                self.model.googleTranslation = res.translated
+                self.model.isGoogleLoading = false
+                if self.model.translationMeaning.isEmpty {
+                    self.model.translationMeaning = res.translated
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                self.model.isGoogleLoading = false
+                self.model.googleError = error.localizedDescription
+            }
         }
     }
 
@@ -285,13 +414,17 @@ final class TranslateSelectionController {
 
     func saveToWordbook() {
         let store = VocabularyStore.shared
-        var meaning = assistant.meaning
-        if meaning.isEmpty {
-            if !model.localSenses.isEmpty {
-                meaning = model.localSenses.map { "\($0.pos) \($0.meaning)" }.joined(separator: "\n")
-            } else if let snippet = model.localSnippet {
-                meaning = snippet
-            }
+        var meaning = ""
+        if model.engine == .google && !model.googleTranslation.isEmpty {
+            meaning = model.googleTranslation
+        } else if let aiMeaning = assistant.meaning as String?, !aiMeaning.isEmpty {
+            meaning = aiMeaning
+        } else if !model.localSenses.isEmpty {
+            meaning = model.localSenses.map { "\($0.pos) \($0.meaning)" }.joined(separator: "\n")
+        } else if !model.googleTranslation.isEmpty {
+            meaning = model.googleTranslation
+        } else if let snippet = model.localSnippet {
+            meaning = snippet
         }
         guard !meaning.isEmpty || !model.text.isEmpty else { return }
 
@@ -332,6 +465,7 @@ final class TranslateSelectionController {
     func dismiss() {
         unregisterWorkspaceObserver()
         assistant.invalidate()
+        googleTask?.cancel()
         model.isActive = false
         model.isTranslating = false
         panel?.hide()
@@ -370,12 +504,18 @@ final class TranslateSelectionController {
     }
 
     func copyTranslation() {
-        var t = model.translationMeaning
-        if t.isEmpty, !assistant.meaning.isEmpty { t = assistant.meaning }
-        if t.isEmpty {
+        var t = ""
+        if model.engine == .google && !model.googleTranslation.isEmpty {
+            t = model.googleTranslation
+        } else if !assistant.meaning.isEmpty {
+            t = assistant.meaning
+        } else if !model.localSenses.isEmpty {
             t = model.localSenses.map { "\($0.pos) \($0.meaning)" }.joined(separator: "\n")
+        } else if !model.googleTranslation.isEmpty {
+            t = model.googleTranslation
+        } else if let snip = model.localSnippet {
+            t = snip
         }
-        if t.isEmpty, let snip = model.localSnippet { t = snip }
         guard !t.isEmpty else { return }
         let pb = NSPasteboard.general
         pb.clearContents(); pb.setString(t, forType: .string)
@@ -397,6 +537,11 @@ final class TranslateSelectionModel {
     var localSnippet: String?
     var localSenses: [ParsedSense] = []
     var isSentence = false
+    /// Selected engine
+    var engine: TranslationEngine = .google
+    var googleTranslation = ""
+    var isGoogleLoading = false
+    var googleError: String?
     /// AI translation state
     var isTranslating = false
     var translationMeaning = ""

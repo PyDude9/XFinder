@@ -202,6 +202,7 @@ final class SelectionWatcher {
     }
 
     private func showBadge(mouseUp: CGPoint) {
+        guard !TranslateSelectionController.shared.model.isActive else { watch.shown = false; return }
         let front = NSWorkspace.shared.frontmostApplication
         guard SmartSelectionRules.shouldConsider(text: currentText, minLength: minLength,
                                                  frontBundleID: front?.bundleIdentifier, frontAppName: front?.localizedName,
