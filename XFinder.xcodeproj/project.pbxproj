@@ -471,6 +471,8 @@
 		96F26CAC /* QuickSearch/AppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95421592 /* QuickSearch/AppLauncher.swift */; };
 		D066FCC9 /* QuickSearch/QuickSearchResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88AD9932 /* QuickSearch/QuickSearchResult.swift */; };
 		FEDF1419 /* QuickSearch/FileSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F2B7B75 /* QuickSearch/FileSearch.swift */; };
+		34CC6C9FE536442E822AB626 /* Translate/VocabularyLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA41D03C76DC4D949DE5ADF7 /* Translate/VocabularyLibrary.swift */; };
+		36C3E7837BBC43278FFCB6FC /* Translate/VocabularyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CF83672C0BD4C118E343546 /* Translate/VocabularyStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -966,6 +968,8 @@
 		7F1A018C /* MenuBar/Native/NativeVisibilityBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/Native/NativeVisibilityBridge.swift; sourceTree = "<group>"; };
 		7F1A018E /* MenuBar/Layout/AccessibilityMenuBarInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/Layout/AccessibilityMenuBarInventory.swift; sourceTree = "<group>"; };
 		7F1A0190 /* XFinder/XFinder-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XFinder/XFinder-Bridging-Header.h"; sourceTree = SOURCE_ROOT; };
+		AA41D03C76DC4D949DE5ADF7 /* Translate/VocabularyLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/VocabularyLibrary.swift; sourceTree = "<group>"; };
+		7CF83672C0BD4C118E343546 /* Translate/VocabularyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/VocabularyStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -1096,6 +1100,8 @@
 				7F1A0269 /* Notch/NotchHoverOpen.swift */,
 				7F1A0279 /* Translate/TranslateSelectionController.swift */,
 				7F1A0277 /* Translate/TranslateSelectionRules.swift */,
+				7CF83672C0BD4C118E343546 /* Translate/VocabularyStore.swift */,
+				AA41D03C76DC4D949DE5ADF7 /* Translate/VocabularyLibrary.swift */,
 				7F1A0273 /* Onboarding/WhatsNewRules.swift */,
 				7F1A0271 /* Calendar/CalendarGlanceMonitor.swift */,
 				7F1A026F /* Calendar/GlanceRules.swift */,
@@ -1753,6 +1759,8 @@
 				7F1A0268 /* Notch/NotchHoverOpen.swift in Sources */,
 				7F1A0278 /* Translate/TranslateSelectionController.swift in Sources */,
 				7F1A0276 /* Translate/TranslateSelectionRules.swift in Sources */,
+				36C3E7837BBC43278FFCB6FC /* Translate/VocabularyStore.swift in Sources */,
+				34CC6C9FE536442E822AB626 /* Translate/VocabularyLibrary.swift in Sources */,
 				7F1A0272 /* Onboarding/WhatsNewRules.swift in Sources */,
 				7F1A0270 /* Calendar/CalendarGlanceMonitor.swift in Sources */,
 				7F1A026E /* Calendar/GlanceRules.swift in Sources */,
