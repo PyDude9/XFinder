@@ -14,13 +14,13 @@ struct TranslateSelectionView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            HStack {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            HStack(spacing: 6) {
                 Text(L10n.t("Dịch vùng chọn")).font(XFinderTokens.Font.row).bold()
                 if let app = model.sourceApp {
                     Text("· \(app)").font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 }
-                Spacer()
+                Spacer(minLength: 4)
                 Text(TranslateSelectionRules.hotkeyLabel).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                 Button { TranslateSelectionController.shared.dismiss() } label: { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.plain).foregroundColor(.secondary).help(L10n.t("Đóng")).keyboardShortcut(.cancelAction)
@@ -28,23 +28,35 @@ struct TranslateSelectionView: View {
             if let k = model.messageKey {
                 Text(L10n.t(k)).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-            } else {
-                ScrollView {
-                    Text(model.text).font(XFinderTokens.Font.row).textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                HStack {
+                    Spacer(minLength: 0)
+                    Button(L10n.t("Tra từ & lưu vào sổ")) {
+                        let text = model.text, meaning = model.translated ?? ""
+                        TranslateSelectionController.shared.dismiss()
+                        VocabularyWorkspaceController.shared.show(text: text, meaning: meaning)
+                    }.controlSize(.small)
                 }
-                .frame(maxHeight: 110)
-                translationArea
+            } else {
+                Text(model.text)
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack {
+                    Button(L10n.t("Tra từ & lưu vào sổ")) {
+                        let text = model.text, meaning = model.translated ?? ""
+                        TranslateSelectionController.shared.dismiss()
+                        VocabularyWorkspaceController.shared.show(text: text, meaning: meaning)
+                    }.controlSize(.small)
+                    Spacer(minLength: 0)
+                    translationAnchor
+                }
             }
-            Button(L10n.t("Tra từ & lưu vào sổ")) {
-                let text = model.text, meaning = model.translated ?? ""
-                TranslateSelectionController.shared.dismiss()
-                VocabularyWorkspaceController.shared.show(text: text, meaning: meaning)
-            }.controlSize(.small)
-            Spacer(minLength: 0)
         }
         .padding(XFinderTokens.Space.inline + 4)
-        .frame(width: 520, height: 300)
+        .frame(width: 460, height: 105)
         .background(XFinderTokens.Fill.surface, in: RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile))
         .overlay(RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile).stroke(XFinderTokens.Fill.hairline))
         .task(id: model.requestPresentation) {
@@ -61,34 +73,20 @@ struct TranslateSelectionView: View {
         }
     }
 
-    @ViewBuilder private var translationArea: some View {
+    @ViewBuilder private var translationAnchor: some View {
         if #available(macOS 15.0, *) {
             let request = model.requestPresentation
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                HStack {
-                    Button(L10n.t("Dịch")) {
-                        presentingRequest = request
-                        model.nativePresented = true
-                    }.buttonStyle(.borderedProminent).controlSize(.small)
-                        .translationPresentation(isPresented: presentation(for: request), text: model.text) { translated in
-                            guard request == model.requestPresentation, model.isActive else { return }
-                            model.translated = translated
-                        }
-                        .id(request)
-                    if model.translated != nil {
-                        Button(L10n.t("Sao chép bản dịch")) { TranslateSelectionController.shared.copyTranslation() }.controlSize(.small)
-                    }
+            Color.clear
+                .frame(width: 1, height: 1)
+                .translationPresentation(isPresented: presentation(for: request), text: model.text) { translated in
+                    guard request == model.requestPresentation, model.isActive else { return }
+                    model.translated = translated
+                    let pb = NSPasteboard.general
+                    pb.clearContents()
+                    pb.setString(translated, forType: .string)
+                    ClipboardSounds.playCopy()
                 }
-                if let t = model.translated {
-                    ScrollView {
-                        Text(t).font(XFinderTokens.Font.row).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .frame(maxHeight: 90)
-                } else {
-                    Text(L10n.t("Bản dịch của Apple chạy trên máy; lần đầu mỗi cặp ngôn ngữ macOS sẽ hỏi tải gói ngôn ngữ. Bấm \"Thay thế\" trong hộp dịch để nhận bản dịch về đây."))
-                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary).fixedSize(horizontal: false, vertical: true)
-                }
-            }
+                .id(request)
         } else {
             Text(L10n.t("Dịch tại chỗ cần macOS 15 trở lên (Translation framework của Apple)."))
                 .font(XFinderTokens.Font.caption).foregroundColor(.secondary)

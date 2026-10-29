@@ -26,9 +26,9 @@ enum TranslateSelectionRules {
         return .translate(s)
     }
 
-    /// A native close belongs to one request. Replace hands back a result that remains available for Copy.
+    /// A native close belongs to one request. Dismiss the host whenever the native session ends.
     static func shouldDismissHost(endedRequest: Int, currentRequest: Int, hasTranslation: Bool, isActive: Bool) -> Bool {
-        endedRequest == currentRequest && isActive && !hasTranslation
+        endedRequest == currentRequest && isActive
     }
 
     /// Store keys for the panel's one-line states (the view wraps them in `L10n.t`).

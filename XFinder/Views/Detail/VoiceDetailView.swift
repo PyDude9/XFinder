@@ -337,6 +337,7 @@ struct VoiceDetailView: View {
                     .settingsRow()
             }
         }
+        .onChange(of: tierRaw) { _, _ in reloadLocalState() }
     }
 
     private var appleTierBody: some View {
@@ -403,7 +404,17 @@ struct VoiceDetailView: View {
             }
 
             if provider == .custom {
-                labeledField(title: L10n.t("Địa chỉ API"), text: $apiBaseURL, placeholder: "https://…/v1")
+                HStack(spacing: 8) {
+                    Text(L10n.t("Địa chỉ API"))
+                        .font(XFinderTokens.Font.row)
+                        .frame(width: 110, alignment: .leading)
+                    TextField("https://…/v1", text: $apiBaseURL)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit {
+                            UserDefaults.standard.set(apiBaseURL, forKey: VoiceSettingsKey.apiBaseURL)
+                        }
+                    Spacer(minLength: 0)
+                }
             }
 
             HStack(spacing: 8) {
@@ -424,9 +435,10 @@ struct VoiceDetailView: View {
                 Text(L10n.t("Mô hình"))
                     .font(XFinderTokens.Font.row)
                     .frame(width: 110, alignment: .leading)
-                TextField(provider.defaultModel, text: $apiModel)
+                TextField(provider.defaultModel.isEmpty ? L10n.t("ví dụ: qwen2.5:7b") : provider.defaultModel, text: $apiModel)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 260)
+                    .onSubmit { persistAPIModel() }
                 if !provider.suggestedModels.isEmpty {
                     Menu(L10n.t("Gợi ý")) {
                         ForEach(provider.suggestedModels, id: \.self) { name in
@@ -452,7 +464,14 @@ struct VoiceDetailView: View {
 
             testButton
         }
-        .onChange(of: apiModel) { _, _ in persistAPIModel() }
+        .onChange(of: apiBaseURL) { _, _ in
+            UserDefaults.standard.set(apiBaseURL, forKey: VoiceSettingsKey.apiBaseURL)
+            connectionResult = nil
+        }
+        .onChange(of: apiModel) { _, _ in
+            persistAPIModel()
+            connectionResult = nil
+        }
         .onChange(of: providerRaw) { _, _ in reloadLocalState() }
     }
 
@@ -799,6 +818,11 @@ struct VoiceDetailView: View {
     private func testConnection() {
         isTestingConnection = true
         connectionResult = nil
+        UserDefaults.standard.set(apiBaseURL, forKey: VoiceSettingsKey.apiBaseURL)
+        persistAPIModel()
+        if storedKeyMask == nil, !apiKeyInput.isEmpty, VoiceConfig.looksLikeAPIKey(apiKeyInput) {
+            saveAPIKey()
+        }
         let snapshot = VoiceSettingsSnapshot.read()
 
         Task {

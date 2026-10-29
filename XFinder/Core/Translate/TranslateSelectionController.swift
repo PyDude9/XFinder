@@ -12,6 +12,7 @@ final class TranslateSelectionController {
     private var hotKeyRef: EventHotKeyRef?
     private var carbonHandler: EventHandlerRef?
     private var panel: SurfacePanel?
+    private var workspaceObserver: (any NSObjectProtocol)?
     let model = TranslateSelectionModel()
 
     private init() {}
@@ -87,23 +88,46 @@ final class TranslateSelectionController {
             model.text = ""
             model.messageKey = TranslateSelectionRules.messageKey(for: verdict)
         }
+        registerWorkspaceObserver()
         if panel == nil {
-            let p = SurfacePanel(kind: .interactive, size: CGSize(width: 520, height: 300))
+            let p = SurfacePanel(kind: .interactive, size: CGSize(width: 460, height: 105))
             p.host(TranslateSelectionView(model: model))
             panel = p
         }
         panel?.show(anchor: .spotlight)
         panel?.installClickOutside { [weak self] in
-            guard let self, !self.model.nativePresented else { return }
-            // The native popover owns outside-click dismissal while open; its close callback hides the host.
+            guard let self else { return }
             self.dismiss()
         }
     }
 
     func dismiss() {
+        unregisterWorkspaceObserver()
         model.isActive = false
         model.nativePresented = false
         panel?.hide()
+    }
+
+    private func registerWorkspaceObserver() {
+        guard workspaceObserver == nil else { return }
+        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil, queue: .main
+        ) { [weak self] note in
+            guard let self, self.model.isActive else { return }
+            if let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+               app.bundleIdentifier != Bundle.main.bundleIdentifier,
+               app.bundleIdentifier != "com.apple.Translation.TranslationViewService" {
+                self.dismiss()
+            }
+        }
+    }
+
+    private func unregisterWorkspaceObserver() {
+        if let workspaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
+            self.workspaceObserver = nil
+        }
     }
 
     func nativePresentationDidEnd(request: Int) {
