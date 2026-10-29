@@ -177,7 +177,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// XF-T28: a copy/move still running is asked about (wait / stop and quit) instead of being cut off mid-file.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        BrowserWindowController.shared.confirmQuit() ? .terminateNow : .terminateCancel
+        guard BrowserWindowController.shared.confirmQuit() else { return .terminateCancel }
+        guard VocabularyStore.shared.isSaving else { return .terminateNow }
+        Task { @MainActor in
+            await VocabularyStore.shared.flush()
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
     }
 
     /// D4: a Quick Look temp copy of an unlocked clip must not survive the process.

@@ -36,6 +36,11 @@ struct TranslateSelectionView: View {
                 .frame(maxHeight: 110)
                 translationArea
             }
+            Button(L10n.t("Tra từ & lưu vào sổ")) {
+                let text = model.text, meaning = model.translated ?? ""
+                TranslateSelectionController.shared.dismiss()
+                VocabularyWorkspaceController.shared.show(text: text, meaning: meaning)
+            }.controlSize(.small)
             Spacer(minLength: 0)
         }
         .padding(XFinderTokens.Space.inline + 4)

@@ -474,6 +474,8 @@
 		34CC6C9FE536442E822AB626 /* Translate/VocabularyLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA41D03C76DC4D949DE5ADF7 /* Translate/VocabularyLibrary.swift */; };
 		36C3E7837BBC43278FFCB6FC /* Translate/VocabularyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CF83672C0BD4C118E343546 /* Translate/VocabularyStore.swift */; };
 		2C21F8CF0F4D460FB4AF21A2 /* Translate/TranslationBlueprints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DAFEC770C924B49A50B4195 /* Translate/TranslationBlueprints.swift */; };
+		931CEAF8435242E98452FD2E /* Translate/TranslateAssistant.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0A1AB04DD9F4F51A5A65EFF /* Translate/TranslateAssistant.swift */; };
+		30876914D7F049939633A632 /* VocabularyWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1657D13EA8C44082AAA9443E /* VocabularyWorkspaceView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -972,6 +974,8 @@
 		AA41D03C76DC4D949DE5ADF7 /* Translate/VocabularyLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/VocabularyLibrary.swift; sourceTree = "<group>"; };
 		7CF83672C0BD4C118E343546 /* Translate/VocabularyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/VocabularyStore.swift; sourceTree = "<group>"; };
 		8DAFEC770C924B49A50B4195 /* Translate/TranslationBlueprints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/TranslationBlueprints.swift; sourceTree = "<group>"; };
+		F0A1AB04DD9F4F51A5A65EFF /* Translate/TranslateAssistant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/TranslateAssistant.swift; sourceTree = "<group>"; };
+		1657D13EA8C44082AAA9443E /* VocabularyWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VocabularyWorkspaceView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -1104,6 +1108,7 @@
 				7F1A0277 /* Translate/TranslateSelectionRules.swift */,
 				7CF83672C0BD4C118E343546 /* Translate/VocabularyStore.swift */,
 				8DAFEC770C924B49A50B4195 /* Translate/TranslationBlueprints.swift */,
+				F0A1AB04DD9F4F51A5A65EFF /* Translate/TranslateAssistant.swift */,
 				AA41D03C76DC4D949DE5ADF7 /* Translate/VocabularyLibrary.swift */,
 				7F1A0273 /* Onboarding/WhatsNewRules.swift */,
 				7F1A0271 /* Calendar/CalendarGlanceMonitor.swift */,
@@ -1418,6 +1423,7 @@
 				7F1A0056 /* Detail/StorageDetailView.swift */,
 				7F1A0057 /* Detail/SystemControlsPanel.swift */,
 				7F1A020B /* NotchSurfaceView.swift */,
+				1657D13EA8C44082AAA9443E /* VocabularyWorkspaceView.swift */,
 				7F1A027B /* TranslateSelectionView.swift */,
 				7F1A0275 /* WhatsNewWindow.swift */,
 				7F1A022B /* NotchClipboardView.swift */,
@@ -1708,6 +1714,7 @@
 				7F1A005D /* Detail/StorageDetailView.swift in Sources */,
 				7F1A005E /* Detail/SystemControlsPanel.swift in Sources */,
 				7F1A020C /* NotchSurfaceView.swift in Sources */,
+				30876914D7F049939633A632 /* VocabularyWorkspaceView.swift in Sources */,
 				7F1A027A /* TranslateSelectionView.swift in Sources */,
 				7F1A0274 /* WhatsNewWindow.swift in Sources */,
 				7F1A022C /* NotchClipboardView.swift in Sources */,
@@ -1764,6 +1771,7 @@
 				7F1A0276 /* Translate/TranslateSelectionRules.swift in Sources */,
 				36C3E7837BBC43278FFCB6FC /* Translate/VocabularyStore.swift in Sources */,
 				2C21F8CF0F4D460FB4AF21A2 /* Translate/TranslationBlueprints.swift in Sources */,
+				931CEAF8435242E98452FD2E /* Translate/TranslateAssistant.swift in Sources */,
 				34CC6C9FE536442E822AB626 /* Translate/VocabularyLibrary.swift in Sources */,
 				7F1A0272 /* Onboarding/WhatsNewRules.swift in Sources */,
 				7F1A0270 /* Calendar/CalendarGlanceMonitor.swift in Sources */,
