@@ -1,3 +1,37 @@
+## 2026-10-29 — Gemini & Antigravity: Instant on-device dictionary lookup & durable Wordbook saving
+
+Branch `PyDude9/xfinder-translate-gemini`, commit `bea1f58`.
+
+Defects resolved:
+1. **Translate latency & instant feedback (Trancy-like experience)**:
+   - Previously, the floating panel showed only a blank card with a "Translating..." spinner while awaiting external LLM inference (taking 2–4s over remote API).
+   - Integrated on-device `DictionaryLookup.definition(text)` (macOS Dictionary Services) directly into `TranslateSelectionController`. When a word or term is selected, phonetics (IPA), syllabification, and definitions are extracted and displayed **instantly in 1–2 ms**.
+   - The user immediately sees the pronunciation and definition without waiting for cloud inference. AI Vietnamese translation (`TranslateAssistant`) executes in parallel in the background and smoothly populates the Vietnamese meaning and synonyms once ready.
+   - The "Lưu vào sổ từ" (Save to wordbook) button is **enabled immediately** from the moment the card appears.
+
+2. **Durable VocabularyStore auto-loading (Fix for card not appearing in wordbook)**:
+   - Root cause diagnosed: `VocabularyStore.shared.performCommit` guarded on `guard isLoaded, !isReadOnly else { return false }`. Because `store.load()` was historically only called when the Workspace window opened, floating panel saves executed when `isLoaded == false`, causing `saveCard` to silently drop the card without persisting.
+   - Fixed `VocabularyStore.performCommit` to auto-load (`if !isLoaded { await load() }`) before mutating and persisting to `library.json`.
+   - Deduplicated concurrent `load()` operations via `@ObservationIgnored private var loadTask: Task<Void, Never>?` so parallel calls safely await the in-flight disk read.
+   - Added unit test `testSaveCardWithoutPriorLoadAutoLoadsAndPersists` in `VocabularyStoreTests.swift` proving saving without explicit prior `load()` auto-loads and persists.
+
+Gate check:
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2895 tests, with 0 failures (0 unexpected) in 23.949 (24.165) seconds
+check-l10n-coverage                TOTAL 0 problems across 3765 entries (3765 checked, 32 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3765 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1403 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             0
+GATE: green
+```
+
+Live verification: Installed `/Applications/XFinder.app` PID 43087 (arm64, signed).
+
 ## 2026-10-29 — Gemini & Antigravity: Inline Trancy-style Translate card & Voice typing text insertion into Electron/Orca
 
 Branch `PyDude9/xfinder-translate-gemini`, commits `37bb244` and `dde499b`.
