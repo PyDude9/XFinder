@@ -1,3 +1,41 @@
+## 2026-10-29 — Gemini & Antigravity: Inline Trancy-style Translate card & Voice typing text insertion into Electron/Orca
+
+Branch `PyDude9/xfinder-translate-gemini`, commits `37bb244` and `dde499b`.
+
+Defects resolved:
+1. **Translate UX overhaul (Trancy-style inline lookup & save)**:
+   - Eliminated the flaky Apple `translationPresentation` popover which previously overlapped the floating host and dismissed prematurely during translations.
+   - `TranslateSelectionController` now directly invokes `TranslateAssistant` for on-device AI translations upon selection.
+   - `TranslateSelectionView` displays an inline card showing progress indicator, word/term, phonetic transcription, meaning, and synonyms pills.
+   - Added immediate "Lưu vào sổ từ" (`saveToWordbook()`) button directly in the floating card that saves the card to the default wordbook and auto-dismisses upon completion, as well as a fallback "Mở tra từ" shortcut.
+   - Sizing and click-outside dismissal behavior verified.
+
+2. **Voice-to-text text insertion into Orca chat and Electron/web inputs**:
+   - Diagnosed root cause: `TypingSink.insertViaAccessibility` wrote to `kAXSelectedTextAttribute`. In Chromium/Electron (Orca, VS Code, Slack) and web browsers, Chromium's AX implementation reported success without dispatching DOM `input`/`beforeinput` events, leaving React/editor state un-updated while prematurely reporting success so pasteboard fallback never ran. Furthermore, the 180 ms restore delay was too short for Electron's IPC clipboard reads.
+   - Added `shouldSkipAccessibility` to route Electron apps (`com.stablyai.orca`, etc.), web browsers, and terminals directly to `insertViaPasteboard`.
+   - Updated `insertViaPasteboard` to use clean `keyboardEventSource: nil` and extended clipboard restoration delay to 650 ms to ensure asynchronous web/Electron consumers finish reading.
+
+3. **L10n entries and gate compliance**:
+   - Fixed new localization keys (`Đang dịch…`, `Đã lưu vào sổ từ`, `Mở tra từ`, `Cấu hình AI để dịch`, `Mở cài đặt Giọng nói`, `Lỗi AI:`) to be nested under `entries` with appropriate `"scope"` (`sentence` / `fragment`).
+   - All 7 L10n and UI token audits print `TOTAL 0`.
+
+Gate check:
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2894 tests, with 0 failures (0 unexpected) in 23.806 (24.023) seconds
+check-l10n-coverage                TOTAL 0 problems across 3765 entries (3765 checked, 32 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3765 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1403 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             0
+GATE: green
+```
+
+Live verification: Installed `/Applications/XFinder.app` PID 30423 (arm64, signed). Hotkey enabled, defaults preserved.
+
 ## 2026-10-28 — Codex & Antigravity: Spaces and folder Live Groups repair
 
 Branch agent/codex-spaces-live-groups, follows fde3c51. Spec: docs/specs/XF-spaces-live-groups-repair-contract.md. Researched Tilde 1.0.2 build 14 Spaces, Live Groups, and sidebar organization from seven owner screenshots (Desktop 19.28.42–19.32.29).
