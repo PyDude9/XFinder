@@ -14742,6 +14742,10 @@
     "Thư mục nguồn không hợp lệ.": {
       "en": "Invalid source folder.",
       "scope": "sentence"
+    },
+    "Không lưu được nhóm. Space có thể đã bị xoá.": {
+      "en": "Could not save the group. Its Space may have been removed.",
+      "scope": "sentence"
     }
   }
 }

@@ -7,6 +7,7 @@ from pathlib import Path
 STORE = Path(__file__).resolve().parent.parent / "XFinder/Resources/L10n.strings.json"
 
 ENTRIES = {
+    "Không lưu được nhóm. Space có thể đã bị xoá.": ("Could not save the group. Its Space may have been removed.", "sentence"),
     "Kéo thư mục vào đây hoặc ghim từ menu của thư mục.": ("Drag folders here or pin from folder menu.", "sentence"),
     "Đã có nhóm tên này.": ("A group with this name already exists.", "sentence"),
     "Live Group mới…": ("New Live Group…", "sentence"),

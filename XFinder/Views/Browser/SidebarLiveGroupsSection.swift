@@ -177,6 +177,8 @@ struct FolderLiveGroupSidebarBlock: View {
     @State private var loading: Bool = true
     @State private var subscription: ListingSubscription?
     @State private var projectionID: Int = 0
+    @State private var subscriptionID: UUID?
+    @State private var sourceErrorKey: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -188,6 +190,11 @@ struct FolderLiveGroupSidebarBlock: View {
                     .padding(.horizontal, XFinderTokens.Space.row)
                     .frame(maxWidth: .infinity, minHeight: XFinderTokens.BrowserSidebar.rowHeight,
                            maxHeight: XFinderTokens.BrowserSidebar.rowHeight, alignment: .leading)
+            } else if let sourceErrorKey {
+                Text(L10n.t(sourceErrorKey))
+                    .font(XFinderTokens.BrowserSidebar.row)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, XFinderTokens.Space.row)
             } else if entries.isEmpty {
                 Text(L10n.t("Trống"))
                     .font(XFinderTokens.BrowserSidebar.row)
@@ -207,6 +214,8 @@ struct FolderLiveGroupSidebarBlock: View {
             subscribe()
         }
         .onDisappear {
+            subscriptionID = nil
+            projectionID += 1
             subscription?.cancel()
             subscription = nil
         }
@@ -241,14 +250,20 @@ struct FolderLiveGroupSidebarBlock: View {
         subscription?.cancel()
         loading = true
         projectionID += 1
-        let currentProjectionID = projectionID
+        let token = UUID()
+        subscriptionID = token
+        sourceErrorKey = nil
         let currentGroup = group
 
         subscription = DirectoryLoadCoordinator.shared.subscribe(
             path: group.sourcePath,
             onListing: { result in
+                guard self.subscriptionID == token else { return }
+                self.projectionID += 1
+                let currentProjectionID = self.projectionID
                 switch result {
                 case .success(let delivery):
+                    self.sourceErrorKey = nil
                     Task.detached(priority: .userInitiated) {
                         let candidates = delivery.entries.map {
                             FolderLiveGroup.Candidate(path: $0.path, name: $0.name, isDirectory: $0.isFolderLike, modifiedDate: $0.modified)
@@ -265,12 +280,16 @@ struct FolderLiveGroupSidebarBlock: View {
                             self.loading = false
                         }
                     }
-                case .failure:
+                case .failure(let error):
+                    self.sourceErrorKey = error.messageKey
                     self.entries = []
                     self.loading = false
                 }
             },
             onGone: {
+                guard self.subscriptionID == token else { return }
+                self.projectionID += 1
+                self.sourceErrorKey = "Thư mục không còn tồn tại"
                 self.entries = []
                 self.loading = false
             }
@@ -294,6 +313,10 @@ struct FolderLiveGroupEditor: View {
     @State private var previewLoading: Bool = false
     @State private var subscription: ListingSubscription?
     @State private var projectionID: Int = 0
+    @State private var subscriptionID: UUID?
+    @State private var sourceErrorKey: String?
+    @State private var validatedSourcePath: String?
+    @State private var saveFailed = false
     @FocusState private var nameFocused: Bool
 
     init(group: FolderLiveGroup, onSave: @escaping (FolderLiveGroup) -> Bool, onClose: @escaping () -> Void) {
@@ -318,12 +341,11 @@ struct FolderLiveGroupEditor: View {
     }
 
     private var isSourcePathValid: Bool {
-        let path = expandedSourcePath
-        return path.hasPrefix("/") && FileManager.default.fileExists(atPath: path)
+        validatedSourcePath == expandedSourcePath && sourceErrorKey == nil
     }
 
     private var canSave: Bool {
-        candidateGroup != nil && isSourcePathValid
+        candidateGroup != nil && isSourcePathValid && !previewLoading
     }
 
     var body: some View {
@@ -347,15 +369,30 @@ struct FolderLiveGroupEditor: View {
         .task {
             await Task.yield()
             nameFocused = true
+        }
+        .task(id: expandedSourcePath) {
+            do { try await Task.sleep(for: .milliseconds(250)) } catch { return }
+            guard !Task.isCancelled else { return }
             subscribeToSource()
         }
         .onDisappear {
+            subscriptionID = nil
+            projectionID += 1
             subscription?.cancel()
             subscription = nil
         }
         .onChange(of: sourcePath) { _, _ in
-            subscribeToSource()
+            subscriptionID = nil
+            projectionID += 1
+            subscription?.cancel()
+            subscription = nil
+            validatedSourcePath = nil
+            sourceErrorKey = nil
+            sourceEntries = []
+            previewEntries = []
+            previewLoading = true
         }
+        .onChange(of: name) { _, _ in updatePreview(entries: sourceEntries) }
         .onChange(of: sort) { _, _ in
             updatePreview(entries: sourceEntries)
         }
@@ -571,6 +608,11 @@ struct FolderLiveGroupEditor: View {
                             .font(XFinderTokens.Font.caption)
                             .foregroundColor(.secondary)
                             .padding()
+                    } else if let sourceErrorKey {
+                        Text(L10n.t(sourceErrorKey))
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
+                            .padding()
                     } else if previewEntries.isEmpty {
                         Text(L10n.t("Không có mục nào khớp bộ lọc."))
                             .font(XFinderTokens.Font.caption)
@@ -605,10 +647,18 @@ struct FolderLiveGroupEditor: View {
                 Text(L10n.t("Thêm ít nhất một bộ lọc để lưu Live Group này."))
                     .font(XFinderTokens.Font.caption)
                     .foregroundColor(.secondary)
-            } else if !isSourcePathValid {
+            } else if let sourceErrorKey {
+                Text(L10n.t(sourceErrorKey))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.red)
+            } else if !isSourcePathValid && !previewLoading {
                 Text(L10n.t("Thư mục nguồn không hợp lệ."))
                     .font(XFinderTokens.Font.caption)
                     .foregroundColor(.red)
+            }
+            if saveFailed {
+                Text(L10n.t("Không lưu được nhóm. Space có thể đã bị xoá."))
+                    .font(XFinderTokens.Font.caption).foregroundColor(.red)
             }
             Spacer()
             Button(L10n.t("Huỷ")) {
@@ -641,16 +691,23 @@ struct FolderLiveGroupEditor: View {
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = false
         panel.prompt = L10n.t("Chọn")
-        if panel.runModal() == .OK, let url = panel.url {
-            sourcePath = url.path
+        panel.begin { response in
+            guard response == .OK, let path = panel.url?.path else { return }
+            Task { @MainActor in sourcePath = path }
         }
     }
 
     private func subscribeToSource() {
         subscription?.cancel()
         subscription = nil
+        projectionID += 1
+        let token = UUID()
+        subscriptionID = token
+        validatedSourcePath = nil
+        sourceErrorKey = nil
         let path = expandedSourcePath
-        guard path.hasPrefix("/"), FileManager.default.fileExists(atPath: path) else {
+        guard path.hasPrefix("/"), !path.contains("\0") else {
+            sourceErrorKey = "Thư mục nguồn không hợp lệ."
             sourceEntries = []
             previewEntries = []
             previewLoading = false
@@ -661,17 +718,27 @@ struct FolderLiveGroupEditor: View {
         subscription = DirectoryLoadCoordinator.shared.subscribe(
             path: path,
             onListing: { result in
+                guard self.subscriptionID == token else { return }
                 switch result {
                 case .success(let delivery):
+                    self.sourceErrorKey = nil
+                    self.validatedSourcePath = delivery.isFinal ? path : nil
                     self.sourceEntries = delivery.entries
                     self.updatePreview(entries: delivery.entries)
-                case .failure:
+                case .failure(let error):
+                    self.projectionID += 1
+                    self.validatedSourcePath = nil
+                    self.sourceErrorKey = error.messageKey
                     self.sourceEntries = []
                     self.previewEntries = []
                     self.previewLoading = false
                 }
             },
             onGone: {
+                guard self.subscriptionID == token else { return }
+                self.projectionID += 1
+                self.validatedSourcePath = nil
+                self.sourceErrorKey = "Thư mục không còn tồn tại"
                 self.sourceEntries = []
                 self.previewEntries = []
                 self.previewLoading = false
@@ -711,6 +778,8 @@ struct FolderLiveGroupEditor: View {
         guard let valid = candidateGroup else { return }
         if onSave(valid) {
             onClose()
+        } else {
+            saveFailed = true
         }
     }
 }
