@@ -15039,5 +15039,30 @@
       "en": "Delete this word?",
       "scope": "sentence"
     }
+  },
+  "Đang dịch…": {
+    "vi": "Đang dịch…",
+    "en": "Translating…"
+  },
+  "Đã lưu vào sổ từ": {
+    "vi": "Đã lưu vào sổ từ",
+    "en": "Saved to wordbook"
+  },
+  "Mở tra từ": {
+    "vi": "Mở tra từ",
+    "en": "Open lookup"
+  },
+  "Cấu hình AI để dịch": {
+    "vi": "Cấu hình AI để dịch",
+    "en": "Configure AI to translate"
+  },
+  "Lỗi AI:": {
+    "vi": "Lỗi AI:",
+    "en": "AI error:",
+    "scope": "fragment"
+  },
+  "Mở cài đặt Giọng nói": {
+    "vi": "Mở cài đặt Giọng nói",
+    "en": "Open Voice settings"
   }
 }

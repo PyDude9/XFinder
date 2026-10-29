@@ -4,7 +4,7 @@ import SwiftUI
 
 /// N5a — the live half of "Dịch vùng chọn": a Carbon hotkey (⇧⌘G, the same mechanism as ⌘K), the Accessibility read
 /// of the focused element's selection (the Voice module's helper), and a floating panel at the Spotlight position
-/// hosting Apple's translation popover. ONE reader of `translate.hotkeyEnabled`. Off ⇒ no hotkey, no panel.
+/// hosting an inline AI-translation card. ONE reader of `translate.hotkeyEnabled`. Off ⇒ no hotkey, no panel.
 @MainActor
 final class TranslateSelectionController {
     static let shared = TranslateSelectionController()
@@ -14,6 +14,9 @@ final class TranslateSelectionController {
     private var panel: SurfacePanel?
     private var workspaceObserver: (any NSObjectProtocol)?
     let model = TranslateSelectionModel()
+
+    /// Dedicated assistant; does not share state with VocabularyWorkspace.
+    private let assistant = TranslateAssistant()
 
     private init() {}
 
@@ -77,22 +80,30 @@ final class TranslateSelectionController {
         let verdict = TranslateSelectionRules.verdict(for: text)
         model.requestPresentation += 1
         model.isActive = true
-        model.nativePresented = false
         model.sourceApp = sourceApp
-        model.translated = nil
+        model.isTranslating = false
+        model.translationMeaning = ""
+        model.translationError = nil
+        model.savedToWordbook = false
+        model.savedCard = nil
+
         switch verdict {
-        case .translate(let text):
-            model.text = text
+        case .translate(let resolved):
+            model.text = resolved
             model.messageKey = nil
+            startAITranslation(text: resolved)
         default:
             model.text = ""
             model.messageKey = TranslateSelectionRules.messageKey(for: verdict)
         }
+
         registerWorkspaceObserver()
         if panel == nil {
-            let p = SurfacePanel(kind: .interactive, size: CGSize(width: 460, height: 105))
+            let p = SurfacePanel(kind: .interactive, size: CGSize(width: 460, height: 200))
             p.host(TranslateSelectionView(model: model))
             panel = p
+        } else {
+            panel?.setContentSize(NSSize(width: 460, height: 200))
         }
         panel?.show(anchor: .spotlight)
         panel?.installClickOutside { [weak self] in
@@ -101,10 +112,52 @@ final class TranslateSelectionController {
         }
     }
 
+    private func startAITranslation(text: String) {
+        model.isTranslating = true
+        model.translationError = nil
+        model.translationMeaning = ""
+        assistant.receive(text: text, meaning: "")
+        let store = VocabularyStore.shared
+        let blueprints = store.isLoaded ? store.library.blueprints : [:]
+        assistant.analyze(module: .definition, overrides: blueprints)
+        // Poll assistant state via observation — the view directly reads `assistant` via a wrapper
+        // We bridge the assistant state into model properties so view stays simple.
+        model.assistant = assistant
+    }
+
+    func saveToWordbook() {
+        guard !assistant.meaning.isEmpty else { return }
+        let card = assistant.card(wordbook: VocabularyLibrary.defaultWordbookID)
+        Task {
+            let saved = await VocabularyStore.shared.saveCard(card)
+            if saved != nil {
+                model.savedToWordbook = true
+                model.savedCard = saved
+                // Auto-dismiss after a brief moment
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
+                if model.savedToWordbook { dismiss() }
+            }
+        }
+    }
+
+    func openWorkspace() {
+        let text = model.text
+        let meaning = model.translationMeaning
+        dismiss()
+        VocabularyWorkspaceController.shared.show(text: text, meaning: meaning)
+    }
+
+    func openVoiceSettings() {
+        dismiss()
+        AppState.shared.navigate(to: .voiceTyping)
+        AppState.shared.bringMainWindowFront()
+    }
+
     func dismiss() {
         unregisterWorkspaceObserver()
+        assistant.invalidate()
         model.isActive = false
-        model.nativePresented = false
+        model.isTranslating = false
         panel?.hide()
     }
 
@@ -116,8 +169,7 @@ final class TranslateSelectionController {
         ) { [weak self] note in
             guard let self, self.model.isActive else { return }
             if let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-               app.bundleIdentifier != Bundle.main.bundleIdentifier,
-               app.bundleIdentifier != "com.apple.Translation.TranslationViewService" {
+               app.bundleIdentifier != Bundle.main.bundleIdentifier {
                 self.dismiss()
             }
         }
@@ -130,35 +182,42 @@ final class TranslateSelectionController {
         }
     }
 
+    // MARK: Legacy – kept for any remaining test references; no longer used by the view.
     func nativePresentationDidEnd(request: Int) {
         Task { @MainActor [weak self] in
-            // The native replacement callback can finish in the same update as the binding becoming false.
             await Task.yield()
-            guard let self, !self.model.nativePresented,
-                  TranslateSelectionRules.shouldDismissHost(endedRequest: request,
-                      currentRequest: self.model.requestPresentation,
-                      hasTranslation: self.model.translated != nil, isActive: self.model.isActive) else { return }
+            guard let self, TranslateSelectionRules.shouldDismissHost(endedRequest: request,
+                  currentRequest: self.model.requestPresentation,
+                  hasTranslation: !self.model.translationMeaning.isEmpty, isActive: self.model.isActive) else { return }
             self.dismiss()
         }
     }
 
     func copyTranslation() {
-        guard let t = model.translated, !t.isEmpty else { return }
+        let t = model.translationMeaning
+        guard !t.isEmpty else { return }
         let pb = NSPasteboard.general
         pb.clearContents(); pb.setString(t, forType: .string)
         ClipboardSounds.playCopy()
     }
 }
 
-/// What the panel shows. Mutated by the controller; `requestPresentation` ticks to re-open Apple's popover.
+/// What the panel shows. Mutated by the controller; `requestPresentation` ticks when a new selection arrives.
 @MainActor
 @Observable
 final class TranslateSelectionModel {
     var text = ""
     var sourceApp: String?
     var messageKey: String?
-    var translated: String?
+    /// AI translation state
+    var isTranslating = false
+    var translationMeaning = ""
+    var translationError: String?
+    var savedToWordbook = false
+    var savedCard: VocabularyCard?
+    /// Bridged assistant — view reads busy/messageKey/definition from it via withObservationTracking
+    var assistant: TranslateAssistant?
+    /// Ticks each time a new selection arrives so the view can reset state.
     var requestPresentation = 0
-    var nativePresented = false
     var isActive = false
 }
