@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// N5a — the floating selection card: shows the selected text and its AI translation inline,
-/// with a one-tap "Save to wordbook" button. Replaces the old Apple translationPresentation popup.
+/// with instant on-device dictionary lookup while AI translates and a one-tap "Save to wordbook" button.
 struct TranslateSelectionView: View {
     var model: TranslateSelectionModel
 
@@ -11,17 +11,16 @@ struct TranslateSelectionView: View {
             if let k = model.messageKey {
                 errorMessageRow(key: k)
             } else {
-                wordRow
-                translationBody
+                wordAndPhoneticRow
+                contentSection
+                Divider()
+                actionRow
             }
         }
         .padding(14)
         .frame(width: 460)
         .background(XFinderTokens.Fill.surface, in: RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile))
         .overlay(RoundedRectangle(cornerRadius: XFinderTokens.Radius.tile).stroke(XFinderTokens.Fill.hairline))
-        .onChange(of: model.requestPresentation) { _, _ in
-            // State resets are driven by the controller; view is purely reactive.
-        }
     }
 
     // MARK: Header
@@ -47,48 +46,138 @@ struct TranslateSelectionView: View {
         }
     }
 
-    // MARK: Word row (the selected text)
+    // MARK: Word row (the selected text + phonetic & syllables)
 
-    private var wordRow: some View {
-        Text(model.text)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundColor(.primary)
-            .lineLimit(2)
-            .truncationMode(.tail)
-            .textSelection(.enabled)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
+    private var wordAndPhoneticRow: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(model.text)
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .textSelection(.enabled)
 
-    // MARK: Translation body — three states driven by assistant
-
-    @ViewBuilder private var translationBody: some View {
-        if let assistant = model.assistant {
-            if assistant.busy || (model.isTranslating && assistant.messageKey == nil && assistant.meaning.isEmpty) {
-                loadingState
-            } else if let errKey = assistant.messageKey {
-                aiErrorState(key: errKey)
-            } else if !assistant.meaning.isEmpty {
-                successState(assistant: assistant)
-            } else {
-                // Fallback while assistant hasn't produced output yet
-                loadingState
+            let phonetic = resolvedPhonetic
+            if !phonetic.isEmpty {
+                Text("/\(phonetic)/")
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
             }
-        } else if model.isTranslating {
-            loadingState
-        } else {
-            // No assistant set yet (shouldn't happen in normal flow)
-            loadingState
+
+            if let syllables = resolvedSyllables, !syllables.isEmpty, syllables != model.text {
+                Text("· \(syllables)")
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 
-    private var loadingState: some View {
-        HStack(spacing: 6) {
-            ProgressView().controlSize(.small)
-            Text(L10n.t("Đang dịch…"))
+    private var resolvedPhonetic: String {
+        if let us = model.assistant?.definition?.phoneticUS, !us.isEmpty { return us }
+        if let uk = model.assistant?.definition?.phoneticUK, !uk.isEmpty { return uk }
+        return model.localPhonetic ?? ""
+    }
+
+    private var resolvedSyllables: String? {
+        if let syl = model.assistant?.definition?.syllables, !syl.isEmpty { return syl }
+        return model.localSyllables
+    }
+
+    // MARK: Content Section — Instant Local Definition + AI Translation
+
+    @ViewBuilder private var contentSection: some View {
+        let hasAiMeaning = !(model.assistant?.meaning ?? "").isEmpty
+        let isBusy = (model.assistant?.busy ?? false) || (model.isTranslating && !hasAiMeaning)
+        let errorKey = model.assistant?.messageKey
+
+        if hasAiMeaning, let assistant = model.assistant {
+            // Full AI Translation Ready
+            VStack(alignment: .leading, spacing: 6) {
+                Text(assistant.meaning)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+
+                if let def = assistant.definition, !def.synonyms.isEmpty {
+                    synonymsPills(Array(def.synonyms.prefix(4)))
+                }
+
+                if let snippet = model.localSnippet {
+                    Text(snippet)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                        .truncationMode(.tail)
+                        .textSelection(.enabled)
+                }
+            }
+        } else if let snippet = model.localSnippet {
+            // Instant Local Dictionary Definition (available in ~1 ms while AI works)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(snippet)
+                    .font(.system(size: 12))
+                    .foregroundColor(.primary)
+                    .lineLimit(3)
+                    .truncationMode(.tail)
+                    .textSelection(.enabled)
+
+                if isBusy {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text(L10n.t("Đang dịch…"))
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } else if let err = errorKey {
+                    aiErrorNotice(key: err)
+                }
+            }
+        } else if isBusy {
+            // Waiting for AI without local dictionary
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text(L10n.t("Đang dịch…"))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 4)
+        } else if let err = errorKey {
+            aiErrorState(key: err)
+        } else {
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text(L10n.t("Đang dịch…"))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func synonymsPills(_ synonyms: [String]) -> some View {
+        HStack(spacing: 4) {
+            ForEach(synonyms, id: \.self) { syn in
+                Text(syn)
+                    .font(XFinderTokens.Font.caption)
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
+                    .foregroundColor(.accentColor)
+            }
+        }
+    }
+
+    private func aiErrorNotice(key: String) -> some View {
+        HStack(spacing: 4) {
+            Text(L10n.t("Lỗi AI:"))
+                .font(XFinderTokens.Font.caption).bold()
+                .foregroundColor(.orange)
+            Text(L10n.t(key))
                 .font(XFinderTokens.Font.caption)
                 .foregroundColor(.secondary)
+                .lineLimit(1)
         }
-        .padding(.vertical, 4)
     }
 
     private func aiErrorState(key: String) -> some View {
@@ -114,69 +203,35 @@ struct TranslateSelectionView: View {
         .padding(.vertical, 4)
     }
 
-    private func successState(assistant: TranslateAssistant) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Meaning
-            Text(assistant.meaning)
-                .font(.system(size: 13))
-                .foregroundColor(.primary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .textSelection(.enabled)
+    // MARK: Action Row
 
-            // Phonetics (if word has them)
-            if let def = assistant.definition,
-               !(def.phoneticUS ?? "").isEmpty || !(def.phoneticUK ?? "").isEmpty {
-                HStack(spacing: 8) {
-                    if let us = def.phoneticUS, !us.isEmpty {
-                        Text("/\(us)/")
-                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                    }
-                    if let uk = def.phoneticUK, !uk.isEmpty {
-                        Text("/\(uk)/")
-                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                    }
+    private var actionRow: some View {
+        HStack(spacing: 8) {
+            if model.savedToWordbook {
+                Label(L10n.t("Đã lưu vào sổ từ"), systemImage: "checkmark.circle.fill")
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.green)
+            } else {
+                Button {
+                    TranslateSelectionController.shared.saveToWordbook()
+                } label: {
+                    Label(L10n.t("Lưu vào sổ từ"), systemImage: "square.and.arrow.down")
                 }
+                .controlSize(.small)
+                .buttonStyle(.borderedProminent)
+                .disabled(saveButtonDisabled)
             }
-
-            // Synonyms pill row (first 4)
-            if let def = assistant.definition, !def.synonyms.isEmpty {
-                let shown = Array(def.synonyms.prefix(4))
-                HStack(spacing: 4) {
-                    ForEach(shown, id: \.self) { syn in
-                        Text(syn)
-                            .font(XFinderTokens.Font.caption)
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
-                            .foregroundColor(.accentColor)
-                    }
-                }
-            }
-
-            Divider()
-
-            // Action row
-            HStack(spacing: 8) {
-                if model.savedToWordbook {
-                    Label(L10n.t("Đã lưu vào sổ từ"), systemImage: "checkmark.circle.fill")
-                        .font(XFinderTokens.Font.caption)
-                        .foregroundColor(.green)
-                } else {
-                    Button {
-                        TranslateSelectionController.shared.saveToWordbook()
-                    } label: {
-                        Label(L10n.t("Lưu vào sổ từ"), systemImage: "square.and.arrow.down")
-                    }
-                    .controlSize(.small)
-                    .buttonStyle(.borderedProminent)
-                }
-                Spacer(minLength: 0)
-                Button(L10n.t("Mở tra từ")) {
-                    TranslateSelectionController.shared.openWorkspace()
-                }.controlSize(.small)
-            }
+            Spacer(minLength: 0)
+            Button(L10n.t("Mở tra từ")) {
+                TranslateSelectionController.shared.openWorkspace()
+            }.controlSize(.small)
         }
-        .padding(.top, 2)
+    }
+
+    private var saveButtonDisabled: Bool {
+        let hasMeaning = !(model.assistant?.meaning ?? "").isEmpty
+        let hasLocal = (model.localSnippet != nil)
+        return (!hasMeaning && !hasLocal) || model.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     // MARK: Error state (no selection / too short / too long)

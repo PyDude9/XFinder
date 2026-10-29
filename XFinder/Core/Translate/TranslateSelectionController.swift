@@ -86,11 +86,25 @@ final class TranslateSelectionController {
         model.translationError = nil
         model.savedToWordbook = false
         model.savedCard = nil
+        model.localDefinition = nil
+        model.localSyllables = nil
+        model.localPhonetic = nil
+        model.localSnippet = nil
 
         switch verdict {
         case .translate(let resolved):
             model.text = resolved
             model.messageKey = nil
+
+            // Instant on-device local dictionary lookup (1-2 ms)
+            if let rawDef = DictionaryLookup.definition(resolved) {
+                model.localDefinition = rawDef
+                let parsed = Self.parseLocalDictionary(rawDef)
+                model.localSyllables = parsed.syllables
+                model.localPhonetic = parsed.phonetic
+                model.localSnippet = parsed.snippet
+            }
+
             startAITranslation(text: resolved)
         default:
             model.text = ""
@@ -99,11 +113,11 @@ final class TranslateSelectionController {
 
         registerWorkspaceObserver()
         if panel == nil {
-            let p = SurfacePanel(kind: .interactive, size: CGSize(width: 460, height: 200))
+            let p = SurfacePanel(kind: .interactive, size: CGSize(width: 460, height: 215))
             p.host(TranslateSelectionView(model: model))
             panel = p
         } else {
-            panel?.setContentSize(NSSize(width: 460, height: 200))
+            panel?.setContentSize(NSSize(width: 460, height: 215))
         }
         panel?.show(anchor: .spotlight)
         panel?.installClickOutside { [weak self] in
@@ -118,22 +132,58 @@ final class TranslateSelectionController {
         model.translationMeaning = ""
         assistant.receive(text: text, meaning: "")
         let store = VocabularyStore.shared
+        Task { if !store.isLoaded { await store.load() } }
         let blueprints = store.isLoaded ? store.library.blueprints : [:]
         assistant.analyze(module: .definition, overrides: blueprints)
-        // Poll assistant state via observation — the view directly reads `assistant` via a wrapper
-        // We bridge the assistant state into model properties so view stays simple.
         model.assistant = assistant
     }
 
+    static func parseLocalDictionary(_ raw: String) -> (syllables: String?, phonetic: String?, snippet: String) {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        var syllables: String?
+        var phonetic: String?
+        var snippet = trimmed
+        let pipeParts = trimmed.components(separatedBy: "|")
+        if pipeParts.count >= 2 {
+            let beforeFirstPipe = pipeParts[0].trimmingCharacters(in: .whitespaces)
+            let wordsBefore = beforeFirstPipe.split(separator: " ").map(String.init)
+            if wordsBefore.count >= 2 {
+                syllables = wordsBefore.dropFirst().joined(separator: " ")
+            }
+            let ipaPart = pipeParts[1].trimmingCharacters(in: .whitespaces)
+            if !ipaPart.isEmpty { phonetic = ipaPart }
+            if pipeParts.count >= 3 {
+                snippet = pipeParts.dropFirst(2).joined(separator: "|").trimmingCharacters(in: .whitespaces)
+            }
+        }
+        return (syllables, phonetic, snippet)
+    }
+
     func saveToWordbook() {
-        guard !assistant.meaning.isEmpty else { return }
-        let card = assistant.card(wordbook: VocabularyLibrary.defaultWordbookID)
+        let store = VocabularyStore.shared
+        var meaning = assistant.meaning
+        if meaning.isEmpty, let snippet = model.localSnippet {
+            meaning = snippet
+        }
+        guard !meaning.isEmpty || !model.text.isEmpty else { return }
+
+        var card = assistant.card(wordbook: VocabularyLibrary.defaultWordbookID)
+        if card.meaning.isEmpty {
+            card.meaning = meaning
+        }
+        if card.phoneticUS == nil || card.phoneticUS?.isEmpty == true {
+            card.phoneticUS = model.localPhonetic
+        }
+        if card.syllables == nil || card.syllables?.isEmpty == true {
+            card.syllables = model.localSyllables
+        }
+
         Task {
-            let saved = await VocabularyStore.shared.saveCard(card)
+            if !store.isLoaded { await store.load() }
+            let saved = await store.saveCard(card)
             if saved != nil {
                 model.savedToWordbook = true
                 model.savedCard = saved
-                // Auto-dismiss after a brief moment
                 try? await Task.sleep(nanoseconds: 1_200_000_000)
                 if model.savedToWordbook { dismiss() }
             }
@@ -209,6 +259,11 @@ final class TranslateSelectionModel {
     var text = ""
     var sourceApp: String?
     var messageKey: String?
+    /// Instant on-device local dictionary result (1-2 ms)
+    var localDefinition: String?
+    var localSyllables: String?
+    var localPhonetic: String?
+    var localSnippet: String?
     /// AI translation state
     var isTranslating = false
     var translationMeaning = ""
