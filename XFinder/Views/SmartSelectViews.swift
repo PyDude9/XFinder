@@ -116,14 +116,10 @@ struct SmartSelectPanelView: View {
         case .translate:
             HStack(spacing: XFinderTokens.Space.tight) {
                 Image(systemName: "character.bubble").frame(width: 18)
-                Text(L10n.t("Dịch bằng bản dịch của Apple, ngay trên máy")).font(XFinderTokens.Font.caption)
+                Text(L10n.t("Dịch vùng chọn")).font(XFinderTokens.Font.caption)
                     .foregroundColor(.secondary).lineLimit(2)
                 Spacer()
-                if #available(macOS 15.0, *) {
-                    Button(L10n.t("Dịch…")) { SmartSelectionBadge.shared.translate() }.controlSize(.small)
-                } else {
-                    Text(L10n.t("Cần macOS 15")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                }
+                Button(L10n.t("Dịch")) { SmartSelectionBadge.shared.translate() }.controlSize(.small)
             }
         }
     }

@@ -2,9 +2,16 @@ import AppKit
 import Carbon
 import SwiftUI
 
+/// Structured sense for displaying dictionary definitions with Part of Speech badges.
+struct ParsedSense: Identifiable, Sendable, Equatable {
+    var id: String { pos + ":" + meaning }
+    var pos: String
+    var meaning: String
+}
+
 /// N5a — the live half of "Dịch vùng chọn": a Carbon hotkey (⇧⌘G, the same mechanism as ⌘K), the Accessibility read
-/// of the focused element's selection (the Voice module's helper), and a floating panel at the Spotlight position
-/// hosting an inline AI-translation card. ONE reader of `translate.hotkeyEnabled`. Off ⇒ no hotkey, no panel.
+/// of the focused element's selection (the Voice module's helper), and a floating panel positioned near the selection
+/// hosting an inline AI-translation and dictionary card. ONE reader of `translate.hotkeyEnabled`. Off ⇒ no hotkey, no panel.
 @MainActor
 final class TranslateSelectionController {
     static let shared = TranslateSelectionController()
@@ -76,7 +83,7 @@ final class TranslateSelectionController {
     }
 
     /// Smart Selection's panel hands over the text it already read (the badge works whether or not ⇧⌘G is on).
-    func translate(text: String?, sourceApp: String?) {
+    func translate(text: String?, sourceApp: String?, anchorRect: CGRect? = nil) {
         let verdict = TranslateSelectionRules.verdict(for: text)
         model.requestPresentation += 1
         model.isActive = true
@@ -90,11 +97,16 @@ final class TranslateSelectionController {
         model.localSyllables = nil
         model.localPhonetic = nil
         model.localSnippet = nil
+        model.localSenses = []
+        model.isSentence = false
 
         switch verdict {
         case .translate(let resolved):
             model.text = resolved
             model.messageKey = nil
+
+            let words = resolved.split(separator: " ")
+            model.isSentence = (words.count > 3 || resolved.count > 40)
 
             // Instant on-device local dictionary lookup (1-2 ms)
             if let rawDef = DictionaryLookup.definition(resolved) {
@@ -103,6 +115,17 @@ final class TranslateSelectionController {
                 model.localSyllables = parsed.syllables
                 model.localPhonetic = parsed.phonetic
                 model.localSnippet = parsed.snippet
+                model.localSenses = parsed.senses
+            }
+
+            // Check if term is already saved in wordbook
+            let store = VocabularyStore.shared
+            if !store.isLoaded { Task { await store.load() } }
+            if let existing = store.library.cards.first(where: {
+                $0.term.localizedCaseInsensitiveCompare(resolved) == .orderedSame
+            }) {
+                model.savedToWordbook = true
+                model.savedCard = existing
             }
 
             startAITranslation(text: resolved)
@@ -111,15 +134,35 @@ final class TranslateSelectionController {
             model.messageKey = TranslateSelectionRules.messageKey(for: verdict)
         }
 
+        showPanel(at: anchorRect)
+    }
+
+    private func showPanel(at anchorRect: CGRect? = nil) {
         registerWorkspaceObserver()
+        let cardSize = CGSize(width: 400, height: 250)
         if panel == nil {
-            let p = SurfacePanel(kind: .interactive, size: CGSize(width: 460, height: 215))
+            let p = SurfacePanel(kind: .interactive, size: cardSize)
             p.host(TranslateSelectionView(model: model))
             panel = p
         } else {
-            panel?.setContentSize(NSSize(width: 460, height: 215))
+            panel?.setContentSize(NSSize(width: cardSize.width, height: cardSize.height))
         }
-        panel?.show(anchor: .spotlight)
+
+        let pointer = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first { $0.frame.contains(pointer) } ?? NSScreen.main
+        let visible = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+
+        var origin: CGPoint
+        if let anchorRect {
+            origin = CGPoint(x: anchorRect.minX, y: anchorRect.minY - cardSize.height - 6)
+            if origin.y < visible.minY { origin.y = anchorRect.maxY + 6 }
+        } else {
+            origin = CGPoint(x: pointer.x - cardSize.width / 2, y: pointer.y - cardSize.height - 12)
+            if origin.y < visible.minY { origin.y = pointer.y + 12 }
+        }
+        let clamped = SurfaceGeometry.clamp(CGRect(origin: origin, size: cardSize), into: visible)
+        panel?.setFrame(clamped, display: true)
+        panel?.makeKeyAndOrderFront(nil)
         panel?.installClickOutside { [weak self] in
             guard let self else { return }
             self.dismiss()
@@ -138,11 +181,13 @@ final class TranslateSelectionController {
         model.assistant = assistant
     }
 
-    static func parseLocalDictionary(_ raw: String) -> (syllables: String?, phonetic: String?, snippet: String) {
+    static func parseLocalDictionary(_ raw: String) -> (syllables: String?, phonetic: String?, snippet: String, senses: [ParsedSense]) {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         var syllables: String?
         var phonetic: String?
         var snippet = trimmed
+        var senses: [ParsedSense] = []
+
         let pipeParts = trimmed.components(separatedBy: "|")
         if pipeParts.count >= 2 {
             let beforeFirstPipe = pipeParts[0].trimmingCharacters(in: .whitespaces)
@@ -156,14 +201,97 @@ final class TranslateSelectionController {
                 snippet = pipeParts.dropFirst(2).joined(separator: "|").trimmingCharacters(in: .whitespaces)
             }
         }
-        return (syllables, phonetic, snippet)
+
+        let body = pipeParts.count >= 3 ? pipeParts.dropFirst(2).joined(separator: "|") : trimmed
+        let posPatterns: [(regex: String, badge: String)] = [
+            ("danh từ", "n."),
+            ("ngoại động từ", "v."),
+            ("nội động từ", "v."),
+            ("động từ", "v."),
+            ("tính từ", "adj."),
+            ("phó từ|trạng từ", "adv."),
+            ("giới từ", "prep."),
+            ("liên từ", "conj."),
+            ("thán từ", "interj."),
+            ("\\bnoun\\b", "n."),
+            ("\\btransitive verb\\b|\\bintransitive verb\\b|\\bverb\\b", "v."),
+            ("\\badjective\\b", "adj."),
+            ("\\badverb\\b", "adv.")
+        ]
+
+        var markers: [(badge: String, range: Range<String.Index>)] = []
+        for pattern in posPatterns {
+            if let regex = try? NSRegularExpression(pattern: pattern.regex, options: .caseInsensitive) {
+                let nsRange = NSRange(body.startIndex..<body.endIndex, in: body)
+                let matches = regex.matches(in: body, options: [], range: nsRange)
+                for m in matches {
+                    if let r = Range(m.range, in: body) {
+                        markers.append((pattern.badge, r))
+                    }
+                }
+            }
+        }
+
+        markers.sort { $0.range.lowerBound < $1.range.lowerBound }
+        var filteredMarkers: [(badge: String, range: Range<String.Index>)] = []
+        for m in markers {
+            if let last = filteredMarkers.last, m.range.lowerBound < last.range.upperBound {
+                continue
+            }
+            filteredMarkers.append(m)
+        }
+
+        if filteredMarkers.isEmpty && !snippet.isEmpty {
+            senses.append(ParsedSense(pos: "def.", meaning: snippet))
+        } else {
+            for i in 0..<filteredMarkers.count {
+                let current = filteredMarkers[i]
+                let nextStart = (i + 1 < filteredMarkers.count) ? filteredMarkers[i + 1].range.lowerBound : body.endIndex
+                let sectionText = String(body[current.range.upperBound..<nextStart])
+
+                var defs: [String] = []
+                let rawItems = sectionText.components(separatedBy: CharacterSet(charactersIn: "0123456789"))
+                for item in rawItems {
+                    var cleaned = item
+                    if let exampleIndex = cleaned.range(of: "▸") {
+                        cleaned = String(cleaned[..<exampleIndex.lowerBound])
+                    }
+                    if let synIndex = cleaned.range(of: "từ đồng nghĩa") {
+                        cleaned = String(cleaned[..<synIndex.lowerBound])
+                    }
+                    if let antIndex = cleaned.range(of: "từ trái nghĩa") {
+                        cleaned = String(cleaned[..<antIndex.lowerBound])
+                    }
+                    cleaned = cleaned.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+                                     .trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ";,.")))
+                    if !cleaned.isEmpty && cleaned.count > 2 && !defs.contains(cleaned) {
+                        defs.append(cleaned)
+                        if defs.count >= 3 { break }
+                    }
+                }
+                let meaning = defs.joined(separator: "; ")
+                if !meaning.isEmpty {
+                    senses.append(ParsedSense(pos: current.badge, meaning: meaning))
+                }
+            }
+        }
+
+        return (syllables, phonetic, snippet, senses)
+    }
+
+    func speak(text: String, language: String = "en-US") {
+        assistant.speak(text, language: language)
     }
 
     func saveToWordbook() {
         let store = VocabularyStore.shared
         var meaning = assistant.meaning
-        if meaning.isEmpty, let snippet = model.localSnippet {
-            meaning = snippet
+        if meaning.isEmpty {
+            if !model.localSenses.isEmpty {
+                meaning = model.localSenses.map { "\($0.pos) \($0.meaning)" }.joined(separator: "\n")
+            } else if let snippet = model.localSnippet {
+                meaning = snippet
+            }
         }
         guard !meaning.isEmpty || !model.text.isEmpty else { return }
 
@@ -181,11 +309,9 @@ final class TranslateSelectionController {
         Task {
             if !store.isLoaded { await store.load() }
             let saved = await store.saveCard(card)
-            if saved != nil {
+            if let saved {
                 model.savedToWordbook = true
                 model.savedCard = saved
-                try? await Task.sleep(nanoseconds: 1_200_000_000)
-                if model.savedToWordbook { dismiss() }
             }
         }
     }
@@ -244,7 +370,12 @@ final class TranslateSelectionController {
     }
 
     func copyTranslation() {
-        let t = model.translationMeaning
+        var t = model.translationMeaning
+        if t.isEmpty, !assistant.meaning.isEmpty { t = assistant.meaning }
+        if t.isEmpty {
+            t = model.localSenses.map { "\($0.pos) \($0.meaning)" }.joined(separator: "\n")
+        }
+        if t.isEmpty, let snip = model.localSnippet { t = snip }
         guard !t.isEmpty else { return }
         let pb = NSPasteboard.general
         pb.clearContents(); pb.setString(t, forType: .string)
@@ -264,6 +395,8 @@ final class TranslateSelectionModel {
     var localSyllables: String?
     var localPhonetic: String?
     var localSnippet: String?
+    var localSenses: [ParsedSense] = []
+    var isSentence = false
     /// AI translation state
     var isTranslating = false
     var translationMeaning = ""

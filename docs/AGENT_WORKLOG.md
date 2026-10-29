@@ -1,3 +1,41 @@
+## 2026-10-29 — Gemini & Antigravity: Unified Minimalist Trancy Air UI/UX Translate Card & Simplified Workbook
+
+Branch `PyDude9/xfinder-translate-gemini`.
+
+Defects & Questions resolved:
+1. **Unified, Minimalist Translate Card (Trancy Air UI/UX reference)**:
+   - Redesigned `TranslateSelectionView.swift` to match Trancy Air's word card layout:
+     - Prominent bold word header with instant checkmark (saved state indicator), 1-tap Heart button for immediate background save/toggle into default Wordbook, and minimal close button.
+     - Sub-header with `US` dialect badge, IPA phonetic `/.../`, and clickable native audio pronunciation button (`speaker.wave.2`) via `AVSpeechSynthesizer`.
+     - Structured senses section with lavender Part of Speech badges (`[n.]`, `[v.]`, `[adj.]`, `[adv.]`) and clean semicolon-separated definitions.
+     - Footer bar with review count pill (`↺ \(repetition)`), quick copy button (`doc.on.doc`), open Wordbook button (`book.pages`), and settings gear (`gearshape`).
+   - Senses parsed locally from macOS Dictionary Services (`parseLocalDictionary`) in ~1 ms, enriched with AI translation results in parallel.
+   - For sentences/paragraphs, displays clean source and bold translated text with audio pronunciation and copy shortcut.
+
+2. **Single Unified Popup & In-Place Selection Anchoring**:
+   - Resolved the 2-step jumping popup sequence between Smart Selection and Translate:
+     - `SmartSelectionBadge.translate()` now passes the current panel frame to `TranslateSelectionController.shared.translate(text:sourceApp:anchorRect:)`. The translate card seamlessly appears right at the exact position of the badge/panel, eliminating the jarring jump across the screen to `.spotlight`.
+     - When invoked via shortcut `⇧⌘G`, the panel automatically anchors directly near the cursor / selection (`NSEvent.mouseLocation`), clamped into visible screen bounds.
+     - Simplified `SmartSelectViews.swift` translate action from verbose Apple branding to clean "Dịch vùng chọn" with a direct "Dịch" button.
+
+3. **Workbook Workspace Simplification & Clarifications**:
+   - Hidden the unused "Bản thiết kế prompt" (Prompt Blueprints) tab from `VocabularyWorkspaceView.swift` segmented picker, leaving only the 2 primary workflows: "Tra từ" (Lookup & saved words) and "Ôn tập" (Flashcard review).
+   - Clarified that the "Ôn tập" (Review) tab IS XFinder's built-in Anki spaced repetition engine (implementing the SM-2 algorithm with intervals, ease factor, and Again/Hard/Good/Easy rating buttons), and highlighted the Anki TSV export option for syncing to standalone Anki apps.
+
+Gate check:
+- `build (arm64, compile list)`: OK
+- `tests`: Executed 2,895 tests, with 0 failures (0 unexpected)
+- `check-l10n-coverage`: TOTAL 0 problems across 3,765 entries
+- `check-l10n-duplicates`: TOTAL 0 duplicates across 3,765 unique keys
+- `audit-l10n-literals`: TOTAL 0 wrapped-but-untranslated
+- `check-sidebar-groups-l10n`: TOTAL 0 problems
+- `audit-gesture-vocabulary-l10n`: TOTAL 0 unresolved
+- `audit-l10n-interpolations`: TOTAL 0 interpolated
+- `audit-ui-tokens`: TOTAL 0 problems
+- `GATE: green`
+
+Live verification: Installed `/Applications/XFinder.app` PID 73587 (arm64, signed).
+
 ## 2026-10-29 — Gemini & Antigravity: Instant on-device dictionary lookup & durable Wordbook saving
 
 Branch `PyDude9/xfinder-translate-gemini`, commit `bea1f58`.

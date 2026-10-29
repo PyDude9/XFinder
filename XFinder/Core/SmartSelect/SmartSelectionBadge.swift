@@ -107,8 +107,9 @@ final class SmartSelectionBadge {
 
     func translate() {
         let text = model.text, app = model.sourceApp
+        let frame = panel?.frame
         closePanel()
-        TranslateSelectionController.shared.translate(text: text, sourceApp: app)
+        TranslateSelectionController.shared.translate(text: text, sourceApp: app, anchorRect: frame)
     }
 
     /// One event in the default calendar. Asked from the panel's button only; the button shows the title and the
