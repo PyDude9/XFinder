@@ -929,6 +929,10 @@
       "en" : "AI understood",
       "scope" : "sentence"
     },
+    "AI LLM (OpenAI \/ DeepSeek \/ Tùy chỉnh)" : {
+      "en" : "AI LLM (OpenAI \/ DeepSeek \/ Custom)",
+      "scope" : "sentence"
+    },
     "AI trả về dữ liệu không đúng cấu trúc. Chưa lưu kết quả." : {
       "en" : "AI returned an invalid structure. The result was not saved.",
       "scope" : "sentence"
@@ -2149,6 +2153,10 @@
       "en" : "Settings point at another command",
       "scope" : "sentence"
     },
+    "Cài đặt Dịch & AI" : {
+      "en" : "Translate & AI Settings",
+      "scope" : "sentence"
+    },
     "Cài đặt gọn lại" : {
       "en" : "Settings, tidied",
       "scope" : "sentence"
@@ -2491,6 +2499,10 @@
     },
     "Cấu hình menu" : {
       "en" : "Menu configuration",
+      "scope" : "sentence"
+    },
+    "Cấu hình nhà cung cấp AI trong trang Giọng nói" : {
+      "en" : "Configure AI providers in the Voice page",
       "scope" : "sentence"
     },
     "Câu lệnh" : {
@@ -5443,6 +5455,10 @@
       "en" : "Contextual translation",
       "scope" : "sentence"
     },
+    "Dịch vụ dịch mặc định" : {
+      "en" : "Default translation service",
+      "scope" : "sentence"
+    },
     "Dịch vùng chọn" : {
       "en" : "Translate selection",
       "scope" : "sentence"
@@ -6667,6 +6683,10 @@
       "en" : "Google Translate",
       "scope" : "sentence"
     },
+    "Google Dịch (Nhanh, miễn phí)" : {
+      "en" : "Google Translate (Fast, free)",
+      "scope" : "sentence"
+    },
     "Google Gemini" : {
       "en" : "Google Gemini",
       "scope" : "sentence"
@@ -6741,6 +6761,10 @@
     },
     "Gửi tin" : {
       "en" : "Send",
+      "scope" : "sentence"
+    },
+    "Gửi văn bản tới AI để phân tích ngữ cảnh và tìm từ đồng nghĩa. Cần cấu hình trong trang Giọng nói." : {
+      "en" : "Send text to AI to analyze context and find synonyms. Requires configuration in the Voice page.",
       "scope" : "sentence"
     },
     "Gửi vào kitty" : {
@@ -7131,20 +7155,16 @@
       "en" : "Supports AirPods, Bluetooth & HID mouse\/keyboard",
       "scope" : "sentence"
     },
-    "Hoặc thả một thư mục vào đây" : {
-      "en" : "Or drop a folder here",
-      "scope" : "sentence"
-    },
-    "Hoãn 5 phút" : {
-      "en" : "Snooze 5 min",
-      "scope" : "sentence"
-    },
     "Hỗ trợ đa phương tiện" : {
       "en" : "Media support",
       "scope" : "sentence"
     },
     "hoặc" : {
       "en" : "or",
+      "scope" : "sentence"
+    },
+    "Hoãn 5 phút" : {
+      "en" : "Snooze 5 min",
       "scope" : "sentence"
     },
     "Hoàn tác" : {
@@ -7171,20 +7191,12 @@
       "en" : "Undo Compress",
       "scope" : "fragment"
     },
-    "Hoàn tác Nhân bản" : {
-      "en" : "Undo Duplicate",
-      "scope" : "fragment"
-    },
     "Hoàn tác Sao chép" : {
       "en" : "Undo Copy",
       "scope" : "fragment"
     },
     "Hoàn tác Sửa thông tin" : {
       "en" : "Undo Info Change",
-      "scope" : "fragment"
-    },
-    "Hoàn tác Tạo thư mục mới" : {
-      "en" : "Undo New Folder",
       "scope" : "fragment"
     },
     "Hoàn tác: khôi phục " : {
@@ -7198,6 +7210,18 @@
     "Hồ sơ phím tắt" : {
       "en" : "Shortcut profile",
       "scope" : "sentence"
+    },
+    "Hoặc thả một thư mục vào đây" : {
+      "en" : "Or drop a folder here",
+      "scope" : "sentence"
+    },
+    "Hoàn tác Nhân bản" : {
+      "en" : "Undo Duplicate",
+      "scope" : "fragment"
+    },
+    "Hoàn tác Tạo thư mục mới" : {
+      "en" : "Undo New Folder",
+      "scope" : "fragment"
     },
     "Hoạt động gần nhất" : {
       "en" : "Most recent activity",
@@ -14036,7 +14060,11 @@
       "scope" : "sentence"
     },
     "Từ điển trên máy" : {
-      "en" : "Local dictionary",
+      "en" : "On-device Dictionary",
+      "scope" : "sentence"
+    },
+    "Từ điển trên máy (Offline)" : {
+      "en" : "On-device Dictionary (Offline)",
       "scope" : "sentence"
     },
     "Tự động ẩn các biểu tượng ngay khi XFinder khởi động." : {
@@ -14067,6 +14095,10 @@
       "en" : "Automatically ignore 13-19 digit card numbers matching Luhn algorithm",
       "scope" : "sentence"
     },
+    "Tự động phân tích sâu bằng AI" : {
+      "en" : "Automatically analyze deeply with AI",
+      "scope" : "sentence"
+    },
     "Tự đóng sau khi rời chuột" : {
       "en" : "Auto-close after the pointer leaves",
       "scope" : "sentence"
@@ -14091,16 +14123,24 @@
       "en" : "Back up automatically every day",
       "scope" : "sentence"
     },
-    "Tự xóa clipboard" : {
-      "en" : "Auto-clear clipboard",
-      "scope" : "sentence"
-    },
     "Tự xóa sau " : {
       "en" : "Auto-delete after ",
       "scope" : "fragment"
     },
-    "Tua, xáo trộn, lặp lại" : {
-      "en" : "Seek, shuffle, repeat",
+    "Tuần này" : {
+      "en" : "This week",
+      "scope" : "sentence"
+    },
+    "Tuỳ biến thanh công cụ…" : {
+      "en" : "Customize Toolbar…",
+      "scope" : "sentence"
+    },
+    "Từ khóa" : {
+      "en" : "Keyword",
+      "scope" : "sentence"
+    },
+    "Tự xóa clipboard" : {
+      "en" : "Auto-clear clipboard",
       "scope" : "sentence"
     },
     "tuần" : {
@@ -14111,24 +14151,12 @@
       "en" : "Last week",
       "scope" : "sentence"
     },
-    "Tút lại & xóa từ thừa" : {
-      "en" : "Clean up",
-      "scope" : "sentence"
-    },
-    "Tuỳ biến thanh công cụ…" : {
-      "en" : "Customize Toolbar…",
-      "scope" : "sentence"
-    },
-    "Tuỳ chỉnh" : {
-      "en" : "Custom",
+    "Tương thích media" : {
+      "en" : "Media Compatibility",
       "scope" : "sentence"
     },
     "Tùy chỉnh phím tắt và cách hoạt động của bàn phím trong Finder." : {
       "en" : "Customize Finder's keyboard shortcuts and behavior.",
-      "scope" : "sentence"
-    },
-    "Tuỳ chọn" : {
-      "en" : "Options",
       "scope" : "sentence"
     },
     "Tùy chọn đồng bộ" : {
@@ -14143,28 +14171,32 @@
       "en" : "Folder options",
       "scope" : "sentence"
     },
-    "Từ khóa" : {
-      "en" : "Keyword",
+    "Tuỳ chọn xem" : {
+      "en" : "View Options",
       "scope" : "sentence"
     },
     "Từ notch: " : {
       "en" : "From the notch: ",
       "scope" : "fragment"
     },
-    "Tuần này" : {
-      "en" : "This week",
+    "Tua, xáo trộn, lặp lại" : {
+      "en" : "Seek, shuffle, repeat",
       "scope" : "sentence"
     },
-    "Tương thích media" : {
-      "en" : "Media Compatibility",
+    "Tút lại & xóa từ thừa" : {
+      "en" : "Clean up",
       "scope" : "sentence"
     },
     "Tùy biến" : {
       "en" : "Custom",
       "scope" : "sentence"
     },
-    "Tuỳ chọn xem" : {
-      "en" : "View Options",
+    "Tuỳ chỉnh" : {
+      "en" : "Custom",
+      "scope" : "sentence"
+    },
+    "Tuỳ chọn" : {
+      "en" : "Options",
       "scope" : "sentence"
     },
     "Tùy chọn…" : {

@@ -9,6 +9,7 @@ struct SmartSelectDetailView: View {
     @AppStorage("smartSelect.excludedApps") private var excludedRaw = ""
     // N5a — one key, one control: the switch moved here from the Voice page (same reader, TranslateSelectionController).
     @AppStorage("translate.hotkeyEnabled") private var translateEnabled = false
+    @AppStorage("translate.autoAI") private var autoAI = false
     @State private var trusted = WindowManager.isTrusted
     // E6 — ONE reader: CurrencyRateStore.
     @AppStorage("smartSelect.currency") private var currencyEnabled = false
@@ -169,6 +170,13 @@ struct SmartSelectDetailView: View {
                 .onChange(of: translateEnabled) { TranslateSelectionController.shared.applySettings() }
                 .settingsRow()
             if translateEnabled {
+                SettingsDivider()
+                ToggleRow(title: L10n.t("Tự động phân tích sâu bằng AI"),
+                          subtitle: L10n.t("Gửi văn bản tới AI để phân tích ngữ cảnh và tìm từ đồng nghĩa. Cần cấu hình trong trang Giọng nói."),
+                          isOn: $autoAI)
+                    .settingsRow()
+                SettingsDivider()
+                SettingsLinkRow(title: L10n.t("Cấu hình nhà cung cấp AI trong trang Giọng nói"), destination: .voiceTyping)
                 SettingsDivider()
                 InlineNote(kind: .warning,
                            text: L10n.t("Khi bật, ⇧⌘G sẽ thay thế \"Find Next\" (tìm tiếp) trong mọi ứng dụng khác trên máy."))

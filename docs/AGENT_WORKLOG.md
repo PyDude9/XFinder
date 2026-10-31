@@ -1,3 +1,43 @@
+## 2026-10-31 — Gemini & Antigravity: Vertical Stacked Translation Card & Translate Settings Separation
+
+Branch `PyDude9/xfinder-translate-gemini`.
+
+Defects & Enhancements resolved:
+1. **Vertical Stacked Translation Layout (Clean, uncluttered, no horizontal switcher buttons)**:
+   - Removed the cramped horizontal engine switcher pills (`[Google Tr...]`, `[AI Transl...]`, `[Dictionary]`) from the card header in `TranslateSelectionView.swift`.
+   - Stacked all translation outputs vertically in one clean, unified view:
+     - **Header**: Word term, one-tap Heart save/toggle button, Close button.
+     - **Phonetics Row**: `US` dialect badge, IPA transcription `/\(phonetic)/`, native audio pronunciation button (`speaker.wave.2`), and an on-demand `✨ Phân tích AI` pill if deep analysis is requested.
+     - **Primary Translation (Google Translate)**: Prominent, bold Vietnamese translation in ~200ms.
+     - **Dictionary Senses (POS Breakdown)**: Vertically stacked parts of speech badges (`[n.]`, `[v.]`, `[adj.]`) with definitions from macOS Dictionary Services.
+     - **AI Nuance & Synonyms**: Contextual meaning and synonyms pills rendered cleanly below when analyzed.
+     - **Footer Bar**: Spaced repetition review counter `↺ \(repetition)`, copy translation button, open wordbook button, and gear button opening Translate settings.
+
+2. **Preventing Keychain Access Prompt**:
+   - Diagnosed root cause: `startAITranslation` invoked `VoiceSettingsSnapshot.read()`, which accessed Keychain `com.xfinder.app.voice`. When the app binary was rebuilt across sessions, macOS prompted for the keychain password on every lookup.
+   - Decoupled standard lookups: Google Translate (free, fast, ~200ms) runs by default with **zero** Keychain access or LLM delay.
+   - AI translation only runs if explicitly triggered via `✨ Phân tích AI` or if "Tự động phân tích sâu bằng AI" (`translate.autoAI`) is enabled in Settings.
+
+3. **Dedicated Translate & AI Settings in Smart Selection Settings**:
+   - Updated `SmartSelectDetailView.swift` to house Translate configuration:
+     - Toggle: "Tự động phân tích sâu bằng AI" (`translate.autoAI`).
+     - Direct settings link to configure AI providers (OpenAI, DeepSeek, custom templates, API keys) in the Voice & AI settings page.
+   - Gear icon in floating card footer routes directly to `.smartSelect`.
+
+Gate check:
+- `build (arm64, compile list)`: OK
+- `tests`: Executed 2,895 tests, with 0 failures (0 unexpected)
+- `check-l10n-coverage`: TOTAL 0 problems across 3,775 entries
+- `check-l10n-duplicates`: TOTAL 0 duplicates across 3,775 unique keys
+- `audit-l10n-literals`: TOTAL 0 wrapped-but-untranslated
+- `check-sidebar-groups-l10n`: TOTAL 0 problems
+- `audit-gesture-vocabulary-l10n`: TOTAL 0 unresolved
+- `audit-l10n-interpolations`: TOTAL 0 interpolated
+- `audit-ui-tokens`: TOTAL 0 problems
+- `GATE: green`
+
+Live verification: Installed `/Applications/XFinder.app` PID 19001 (arm64, signed).
+
 ## 2026-10-29 — Gemini & Antigravity: Fix Heart button 1-tap save to Wordbook & toggle state
 
 Branch `PyDude9/xfinder-translate-gemini`.

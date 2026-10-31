@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// N5a — the floating selection card: shows the selected text, instant Google / AI / on-device dictionary translations,
-/// with audio pronunciation, engine switching, and a one-tap save button.
+/// N5a — the floating selection card: shows the selected text, instant Google Translate and dictionary definitions
+/// stacked cleanly vertically, with audio pronunciation, on-demand AI analysis, and a one-tap save button.
 struct TranslateSelectionView: View {
     var model: TranslateSelectionModel
 
@@ -11,7 +11,7 @@ struct TranslateSelectionView: View {
                 errorMessageRow(key: k)
             } else {
                 headerRow
-                phoneticAndEngineRow
+                phoneticsRow
                 contentSection
                 Divider()
                 footerRow
@@ -66,9 +66,9 @@ struct TranslateSelectionView: View {
         }
     }
 
-    // MARK: Phonetics & Engine Row
+    // MARK: Phonetics Row & On-demand AI Trigger
 
-    private var phoneticAndEngineRow: some View {
+    private var phoneticsRow: some View {
         HStack(alignment: .center, spacing: 8) {
             if !model.isSentence {
                 Text("US")
@@ -98,26 +98,22 @@ struct TranslateSelectionView: View {
 
             Spacer(minLength: 4)
 
-            // Engine Switcher
-            HStack(spacing: 4) {
-                ForEach(TranslationEngine.allCases) { eng in
-                    Button {
-                        TranslateSelectionController.shared.switchEngine(to: eng)
-                    } label: {
-                        HStack(spacing: 3) {
-                            Image(systemName: eng.icon).font(.system(size: 10))
-                            Text(eng.title).font(.system(size: 11, weight: model.engine == eng ? .bold : .regular))
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            model.engine == eng ? Color.accentColor.opacity(0.18) : Color.secondary.opacity(0.08),
-                            in: RoundedRectangle(cornerRadius: 5)
-                        )
-                        .foregroundColor(model.engine == eng ? Color.accentColor : Color.secondary)
+            // On-demand AI button: discreet, only shown if AI hasn't been run yet
+            if (model.assistant?.meaning.isEmpty ?? true) && !(model.assistant?.busy ?? false) && !model.isTranslating {
+                Button {
+                    TranslateSelectionController.shared.analyzeWithAI()
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "sparkles").font(.system(size: 10))
+                        Text(L10n.t("Phân tích AI")).font(.system(size: 11, weight: .medium))
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(Color.purple.opacity(0.10), in: RoundedRectangle(cornerRadius: 5))
+                    .foregroundColor(Color.purple)
                 }
+                .buttonStyle(.plain)
+                .help(L10n.t("Phân tích AI"))
             }
         }
     }
@@ -128,130 +124,106 @@ struct TranslateSelectionView: View {
         return model.localPhonetic ?? ""
     }
 
-    // MARK: Content Section (Google / AI / Dictionary)
+    // MARK: Stacked Vertical Content (Google -> Dictionary -> AI)
 
     @ViewBuilder private var contentSection: some View {
-        switch model.engine {
-        case .google:
-            googleContent
-        case .ai:
-            aiContent
-        case .dictionary:
-            dictionaryContent
+        VStack(alignment: .leading, spacing: 8) {
+            // 1. Google Translate (Fast ~200ms default)
+            googleTranslationSection
+
+            // 2. Dictionary Senses (Parts of speech breakdown)
+            if !model.localSenses.isEmpty && !model.isSentence {
+                dictionarySensesSection
+            } else if let snippet = model.localSnippet, !model.isSentence, model.localSenses.isEmpty {
+                Text(snippet)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .lineLimit(3)
+                    .textSelection(.enabled)
+            }
+
+            // 3. AI Analysis & Synonyms (shown if triggered)
+            if let assistant = model.assistant {
+                if assistant.busy || model.isTranslating {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.small)
+                        Text(L10n.t("Đang dịch…")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 2)
+                } else if !assistant.meaning.isEmpty {
+                    aiDetailsSection(assistant: assistant)
+                }
+            }
         }
     }
 
-    // MARK: Google Translate Content
+    // MARK: Google Translation Section
 
-    @ViewBuilder private var googleContent: some View {
+    @ViewBuilder private var googleTranslationSection: some View {
+        if model.isGoogleLoading && model.googleTranslation.isEmpty {
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text(L10n.t("Đang dịch…")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+            }
+            .padding(.vertical, 2)
+        } else if !model.googleTranslation.isEmpty {
+            Text(model.googleTranslation)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+        } else if let err = model.googleError {
+            Text(err).font(XFinderTokens.Font.caption).foregroundColor(.orange)
+        }
+    }
+
+    // MARK: Dictionary Senses Section
+
+    private var dictionarySensesSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if model.isGoogleLoading && model.googleTranslation.isEmpty {
-                HStack(spacing: 6) {
-                    ProgressView().controlSize(.small)
-                    Text(L10n.t("Đang dịch…")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+            ForEach(Array(model.localSenses.prefix(3))) { sense in
+                HStack(alignment: .top, spacing: 8) {
+                    Text(sense.pos)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(Color.purple)
+                        .frame(width: 28, height: 20)
+                        .background(Color.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
+
+                    Text(sense.meaning)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
                 }
-                .padding(.vertical, 4)
-            } else if !model.googleTranslation.isEmpty {
-                Text(model.googleTranslation)
-                    .font(.system(size: 15, weight: .semibold))
+            }
+        }
+    }
+
+    // MARK: AI Details Section
+
+    private func aiDetailsSection(assistant: TranslateAssistant) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if assistant.meaning != model.googleTranslation && !assistant.meaning.isEmpty {
+                Text(assistant.meaning)
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.primary)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
-
-                // Optional dictionary senses underneath for single words
-                if !model.localSenses.isEmpty && !model.isSentence {
-                    ForEach(Array(model.localSenses.prefix(2))) { sense in
-                        HStack(alignment: .top, spacing: 8) {
-                            Text(sense.pos)
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(Color.purple)
-                                .frame(width: 28, height: 20)
-                                .background(Color.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
-
-                            Text(sense.meaning)
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                                .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-                }
-            } else if let err = model.googleError {
-                Text(err).font(XFinderTokens.Font.caption).foregroundColor(.orange)
-            } else {
-                Text(model.localSnippet ?? "").font(.system(size: 13)).foregroundColor(.secondary)
             }
-        }
-    }
 
-    // MARK: AI Content
-
-    @ViewBuilder private var aiContent: some View {
-        let isBusy = (model.assistant?.busy ?? false) || model.isTranslating
-        let meaning = model.assistant?.meaning ?? ""
-        VStack(alignment: .leading, spacing: 6) {
-            if !meaning.isEmpty {
-                Text(meaning)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .textSelection(.enabled)
-
-                if let def = model.assistant?.definition, !def.synonyms.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(Array(def.synonyms.prefix(4)), id: \.self) { syn in
-                            Text(syn)
-                                .font(.system(size: 11))
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
-                                .foregroundColor(.accentColor)
-                        }
-                    }
-                }
-            } else if isBusy {
-                HStack(spacing: 6) {
-                    ProgressView().controlSize(.small)
-                    Text(L10n.t("Đang dịch…")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                }
-                .padding(.vertical, 4)
-            } else if let key = model.assistant?.messageKey {
-                Text(L10n.t(key)).font(XFinderTokens.Font.caption).foregroundColor(.orange)
-            } else {
-                Text(model.localSnippet ?? "").font(.system(size: 13)).foregroundColor(.secondary)
-            }
-        }
-    }
-
-    // MARK: Dictionary Content
-
-    @ViewBuilder private var dictionaryContent: some View {
-        let senses = model.localSenses
-        if !senses.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(Array(senses.prefix(3))) { sense in
-                    HStack(alignment: .top, spacing: 8) {
-                        Text(sense.pos)
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(Color.purple)
-                            .frame(width: 28, height: 20)
-                            .background(Color.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
-
-                        Text(sense.meaning)
-                            .font(.system(size: 13))
-                            .foregroundColor(.primary)
-                            .lineLimit(2)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .textSelection(.enabled)
+            if let def = assistant.definition, !def.synonyms.isEmpty {
+                HStack(spacing: 4) {
+                    ForEach(Array(def.synonyms.prefix(4)), id: \.self) { syn in
+                        Text(syn)
+                            .font(.system(size: 11))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
+                            .foregroundColor(.accentColor)
                     }
                 }
             }
-        } else if let snippet = model.localSnippet {
-            Text(snippet).font(.system(size: 13)).foregroundColor(.primary)
-        } else {
-            Text(model.googleTranslation.isEmpty ? model.text : model.googleTranslation)
-                .font(.system(size: 14)).foregroundColor(.secondary)
         }
     }
 
@@ -304,7 +276,7 @@ struct TranslateSelectionView: View {
             .help(L10n.t("Sổ từ vựng"))
 
             Button {
-                TranslateSelectionController.shared.openVoiceSettings()
+                TranslateSelectionController.shared.openTranslateSettings()
             } label: {
                 Image(systemName: "gearshape")
                     .font(.system(size: 12))

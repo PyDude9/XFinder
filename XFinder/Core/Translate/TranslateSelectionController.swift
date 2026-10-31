@@ -112,6 +112,10 @@ final class TranslateSelectionController {
         }
     }
 
+    var isAutoAIEnabled: Bool {
+        UserDefaults.standard.bool(forKey: "translate.autoAI")
+    }
+
     func applySettings() {
         if isEnabled { registerHotkey() } else { unregisterHotkey(); dismiss() }
     }
@@ -224,11 +228,11 @@ final class TranslateSelectionController {
                 }
             }
 
-            // Start Google Translation (fast ~200 ms)
+            // Start Google Translation (fast ~200 ms, default)
             fetchGoogleTranslation(text: resolved)
 
-            // If user preferred AI, also kick off AI translation
-            if preferredEngine == .ai {
+            // ONLY run AI translation if explicitly enabled in Settings to avoid unnecessary Keychain/API calls
+            if isAutoAIEnabled {
                 startAITranslation(text: resolved)
             }
         default:
@@ -241,7 +245,7 @@ final class TranslateSelectionController {
 
     private func showPanel(at anchorRect: CGRect? = nil) {
         registerWorkspaceObserver()
-        let cardSize = CGSize(width: 410, height: 260)
+        let cardSize = CGSize(width: 410, height: 270)
         if panel == nil {
             let p = SurfacePanel(kind: .interactive, size: cardSize)
             p.host(TranslateSelectionView(model: model))
@@ -279,6 +283,11 @@ final class TranslateSelectionController {
         } else if engine == .ai && (model.assistant?.meaning.isEmpty ?? true) && !(model.assistant?.busy ?? false) {
             startAITranslation(text: model.text)
         }
+    }
+
+    func analyzeWithAI() {
+        guard !model.text.isEmpty else { return }
+        startAITranslation(text: model.text)
     }
 
     func fetchGoogleTranslation(text: String) {
@@ -438,14 +447,12 @@ final class TranslateSelectionController {
         guard !term.isEmpty else { return }
 
         var meaning = ""
-        if model.engine == .google && !model.googleTranslation.isEmpty {
+        if !model.googleTranslation.isEmpty {
             meaning = model.googleTranslation
         } else if let aiMeaning = assistant.meaning as String?, !aiMeaning.isEmpty {
             meaning = aiMeaning
         } else if !model.localSenses.isEmpty {
             meaning = model.localSenses.map { "\($0.pos) \($0.meaning)" }.joined(separator: "\n")
-        } else if !model.googleTranslation.isEmpty {
-            meaning = model.googleTranslation
         } else if let snippet = model.localSnippet {
             meaning = snippet
         }
@@ -481,7 +488,7 @@ final class TranslateSelectionController {
             synonyms: assistant.definition?.synonyms ?? [],
             etymology: assistant.definition?.etymology,
             cefr: assistant.definition?.cefr,
-            provenance: model.engine == .google ? "Google Translate" : (model.engine == .ai ? "AI" : "Dictionary"),
+            provenance: "Google Translate",
             wordbookID: VocabularyLibrary.defaultWordbookID
         )
 
@@ -500,6 +507,12 @@ final class TranslateSelectionController {
         let meaning = model.translationMeaning
         dismiss()
         VocabularyWorkspaceController.shared.show(text: text, meaning: meaning)
+    }
+
+    func openTranslateSettings() {
+        dismiss()
+        AppState.shared.navigate(to: .smartSelect)
+        AppState.shared.bringMainWindowFront()
     }
 
     func openVoiceSettings() {
@@ -551,14 +564,12 @@ final class TranslateSelectionController {
 
     func copyTranslation() {
         var t = ""
-        if model.engine == .google && !model.googleTranslation.isEmpty {
+        if !model.googleTranslation.isEmpty {
             t = model.googleTranslation
         } else if !assistant.meaning.isEmpty {
             t = assistant.meaning
         } else if !model.localSenses.isEmpty {
             t = model.localSenses.map { "\($0.pos) \($0.meaning)" }.joined(separator: "\n")
-        } else if !model.googleTranslation.isEmpty {
-            t = model.googleTranslation
         } else if let snip = model.localSnippet {
             t = snip
         }
