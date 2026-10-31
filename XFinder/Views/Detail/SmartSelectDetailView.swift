@@ -9,11 +9,25 @@ struct SmartSelectDetailView: View {
     @AppStorage("smartSelect.excludedApps") private var excludedRaw = ""
     // N5a — one key, one control: the switch moved here from the Voice page (same reader, TranslateSelectionController).
     @AppStorage("translate.hotkeyEnabled") private var translateEnabled = false
-    @AppStorage("translate.autoAI") private var autoAI = false
+    @AppStorage("translate.showGoogle") private var showGoogle = true
+    @AppStorage("translate.showDictionary") private var showDictionary = true
+    @AppStorage("translate.showAI") private var showAI = false
     @State private var trusted = WindowManager.isTrusted
     // E6 — ONE reader: CurrencyRateStore.
     @AppStorage("smartSelect.currency") private var currencyEnabled = false
     private var rates: CurrencyRateStore { CurrencyRateStore.shared }
+
+    // AI Provider configuration (unified with Voice keys)
+    @AppStorage(VoiceSettingsKey.apiProvider) private var providerRaw = VoiceSettingsSnapshot.defaults.provider.rawValue
+    @AppStorage(VoiceSettingsKey.apiBaseURL) private var apiBaseURL = VoiceSettingsSnapshot.defaults.apiBaseURL
+    @State private var apiModel = ""
+    @State private var apiKeyInput = ""
+    @State private var storedKeyMask: String?
+    @State private var keySaveStatus: String?
+
+    private var provider: APIProviderKind {
+        APIProviderKind(rawValue: providerRaw) ?? .openai
+    }
 
     private var excluded: [String] { SmartSelectionRules.parseExcluded(excludedRaw).sorted() }
 
@@ -33,7 +47,10 @@ struct SmartSelectDetailView: View {
             .pageWidthSafe()
         }
         .background(XFinderTokens.Settings.contentBackground)
-        .onAppear { trusted = WindowManager.isTrusted }
+        .onAppear {
+            trusted = WindowManager.isTrusted
+            if showAI { reloadAIState() }
+        }
     }
 
     private var badgeSection: some View {
@@ -163,7 +180,7 @@ struct SmartSelectDetailView: View {
     /// N5a — moved from the Voice page.
     private var hotkeySection: some View {
         SettingsSection(title: L10n.t("Dịch vùng chọn (⇧⌘G)"),
-                        footer: L10n.t("Bôi đen chữ ở app bất kỳ, bấm ⇧⌘G: bản dịch của Apple ngay trên máy, không mạng.")) {
+                        footer: L10n.t("Bôi đen chữ ở app bất kỳ, bấm ⇧⌘G hoặc bấm nút Dịch trên vùng chọn để xem các bản dịch đồng thời.")) {
             ToggleRow(title: L10n.t("Bật phím ⇧⌘G dịch vùng chọn"),
                       subtitle: L10n.t("Đọc chữ đang bôi đen qua Trợ năng rồi mở hộp dịch của Apple (macOS 15+). Không gửi gì đi; gói ngôn ngữ tải một lần theo cặp. App nào không cho Trợ năng đọc vùng chọn thì panel nói rõ."),
                       isOn: $translateEnabled)
@@ -171,12 +188,34 @@ struct SmartSelectDetailView: View {
                 .settingsRow()
             if translateEnabled {
                 SettingsDivider()
-                ToggleRow(title: L10n.t("Tự động phân tích sâu bằng AI"),
-                          subtitle: L10n.t("Gửi văn bản tới AI để phân tích ngữ cảnh và tìm từ đồng nghĩa. Cần cấu hình trong trang Giọng nói."),
-                          isOn: $autoAI)
+                Text(L10n.t("Dịch vụ hiển thị khi dịch"))
+                    .font(XFinderTokens.Font.row)
+                    .bold()
+                    .settingsRow()
+                ToggleRow(title: L10n.t("Google Dịch (Miễn phí, nhanh)"),
+                          subtitle: L10n.t("Dịch trực tiếp qua endpoint Google, phản hồi trong ~200ms, không cần khoá API."),
+                          isOn: $showGoogle)
                     .settingsRow()
                 SettingsDivider()
-                SettingsLinkRow(title: L10n.t("Cấu hình nhà cung cấp AI trong trang Giọng nói"), destination: .voiceTyping)
+                ToggleRow(title: L10n.t("Từ điển macOS (Nhanh trên máy, tra từ loại)"),
+                          subtitle: L10n.t("Tra cứu từ điển tích hợp sẵn trên macOS, hiển thị phân loại danh từ, động từ, tính từ."),
+                          isOn: $showDictionary)
+                    .settingsRow()
+                SettingsDivider()
+                ToggleRow(title: L10n.t("Dịch bằng AI (Mô hình ngôn ngữ lớn)"),
+                          subtitle: L10n.t("Dịch ngữ cảnh, phân tích sâu và gợi ý từ đồng nghĩa bằng OpenAI, Claude, DeepSeek hoặc Bedrock."),
+                          isOn: $showAI)
+                    .onChange(of: showAI) {
+                        if showAI {
+                            reloadAIState()
+                            UserDefaults.standard.set(VoiceRefinerTier.customAPI.rawValue, forKey: VoiceSettingsKey.refinerTier)
+                        }
+                    }
+                    .settingsRow()
+                if showAI {
+                    SettingsDivider()
+                    aiConfigSection
+                }
                 SettingsDivider()
                 InlineNote(kind: .warning,
                            text: L10n.t("Khi bật, ⇧⌘G sẽ thay thế \"Find Next\" (tìm tiếp) trong mọi ứng dụng khác trên máy."))
@@ -185,6 +224,130 @@ struct SmartSelectDetailView: View {
             SettingsDivider()
             SettingsLinkRow(title: L10n.t("Xem trong Phím tắt"), destination: .shortcuts)
         }
+    }
+
+    private var aiConfigSection: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            HStack(spacing: 8) {
+                Text(L10n.t("Nhà cung cấp"))
+                    .font(XFinderTokens.Font.row)
+                    .frame(width: 110, alignment: .leading)
+                Picker("", selection: $providerRaw) {
+                    ForEach(APIProviderKind.allCases) { Text(L10n.t($0.labelKey)).tag($0.rawValue) }
+                }
+                .labelsHidden()
+                .frame(width: 280)
+                .onChange(of: providerRaw) {
+                    reloadAIState()
+                    UserDefaults.standard.set(VoiceRefinerTier.customAPI.rawValue, forKey: VoiceSettingsKey.refinerTier)
+                }
+                Spacer(minLength: 0)
+            }
+
+            if provider == .custom {
+                HStack(spacing: 8) {
+                    Text(L10n.t("Địa chỉ API"))
+                        .font(XFinderTokens.Font.row)
+                        .frame(width: 110, alignment: .leading)
+                    TextField("https://…/v1", text: $apiBaseURL)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit {
+                            UserDefaults.standard.set(apiBaseURL, forKey: VoiceSettingsKey.apiBaseURL)
+                        }
+                        .onChange(of: apiBaseURL) {
+                            UserDefaults.standard.set(apiBaseURL, forKey: VoiceSettingsKey.apiBaseURL)
+                        }
+                    Spacer(minLength: 0)
+                }
+            }
+
+            HStack(spacing: 8) {
+                Text(L10n.t("Khoá API"))
+                    .font(XFinderTokens.Font.row)
+                    .frame(width: 110, alignment: .leading)
+                SecureField(storedKeyMask ?? L10n.t("Dán khoá API"), text: $apiKeyInput)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { saveAPIKey() }
+                Button(L10n.t("Lưu")) { saveAPIKey() }
+                    .disabled(apiKeyInput.trimmingCharacters(in: .whitespaces).isEmpty)
+                if storedKeyMask != nil {
+                    Button(L10n.t("Xóa")) { clearAPIKey() }
+                }
+            }
+
+            if let status = keySaveStatus {
+                Text(status)
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.accentColor)
+                    .padding(.leading, 118)
+            }
+
+            HStack(spacing: 8) {
+                Text(L10n.t("Mô hình"))
+                    .font(XFinderTokens.Font.row)
+                    .frame(width: 110, alignment: .leading)
+                TextField(provider.defaultModel.isEmpty ? L10n.t("ví dụ: qwen2.5:7b") : provider.defaultModel, text: $apiModel)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 260)
+                    .onSubmit { persistAPIModel() }
+                    .onChange(of: apiModel) { persistAPIModel() }
+                if !provider.suggestedModels.isEmpty {
+                    Menu(L10n.t("Gợi ý")) {
+                        ForEach(provider.suggestedModels, id: \.self) { name in
+                            Button(name) { apiModel = name; persistAPIModel() }
+                        }
+                    }
+                    .frame(width: 90)
+                }
+                Spacer(minLength: 0)
+            }
+
+            HStack(spacing: 6) {
+                Image(systemName: "lock.fill").font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                Text(L10n.t("Khoá được lưu trong Keychain của macOS, không nằm trong tệp cấu hình."))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.secondary)
+                if !provider.consoleURL.isEmpty, let url = URL(string: provider.consoleURL) {
+                    Button(L10n.t("Lấy khoá")) { NSWorkspace.shared.open(url) }
+                        .buttonStyle(.link)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+        .settingsRow()
+    }
+
+    private func reloadAIState() {
+        apiModel = UserDefaults.standard.string(forKey: VoiceSettingsKey.apiModel(for: provider)) ?? ""
+        storedKeyMask = VoiceKeychain.maskedKey(for: provider)
+        apiKeyInput = ""
+        keySaveStatus = nil
+    }
+
+    private func persistAPIModel() {
+        UserDefaults.standard.set(apiModel, forKey: VoiceSettingsKey.apiModel(for: provider))
+    }
+
+    private func saveAPIKey() {
+        let trimmed = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard VoiceConfig.looksLikeAPIKey(trimmed) else {
+            keySaveStatus = L10n.t("Chuỗi vừa dán không giống một khoá API.")
+            return
+        }
+        if VoiceKeychain.setAPIKey(trimmed, for: provider) {
+            apiKeyInput = ""
+            storedKeyMask = VoiceKeychain.maskedKey(for: provider)
+            keySaveStatus = L10n.t("Đã lưu khoá API vào Keychain.")
+            UserDefaults.standard.set(VoiceRefinerTier.customAPI.rawValue, forKey: VoiceSettingsKey.refinerTier)
+        } else {
+            keySaveStatus = L10n.t("Không ghi được vào Keychain.")
+        }
+    }
+
+    private func clearAPIKey() {
+        VoiceKeychain.deleteAPIKey(for: provider)
+        storedKeyMask = nil
+        keySaveStatus = L10n.t("Đã xóa khoá API.")
     }
 
     // MARK: Excluded list

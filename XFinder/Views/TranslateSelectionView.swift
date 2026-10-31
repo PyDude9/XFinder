@@ -97,24 +97,6 @@ struct TranslateSelectionView: View {
             }
 
             Spacer(minLength: 4)
-
-            // On-demand AI button: discreet, only shown if AI hasn't been run yet
-            if (model.assistant?.meaning.isEmpty ?? true) && !(model.assistant?.busy ?? false) && !model.isTranslating {
-                Button {
-                    TranslateSelectionController.shared.analyzeWithAI()
-                } label: {
-                    HStack(spacing: 3) {
-                        Image(systemName: "sparkles").font(.system(size: 10))
-                        Text(L10n.t("Phân tích AI")).font(.system(size: 11, weight: .medium))
-                    }
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 2)
-                    .background(Color.purple.opacity(0.10), in: RoundedRectangle(cornerRadius: 5))
-                    .foregroundColor(Color.purple)
-                }
-                .buttonStyle(.plain)
-                .help(L10n.t("Phân tích AI"))
-            }
         }
     }
 
@@ -128,31 +110,39 @@ struct TranslateSelectionView: View {
 
     @ViewBuilder private var contentSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // 1. Google Translate (Fast ~200ms default)
-            googleTranslationSection
-
-            // 2. Dictionary Senses (Parts of speech breakdown)
-            if !model.localSenses.isEmpty && !model.isSentence {
-                dictionarySensesSection
-            } else if let snippet = model.localSnippet, !model.isSentence, model.localSenses.isEmpty {
-                Text(snippet)
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                    .lineLimit(3)
-                    .textSelection(.enabled)
+            if !model.showGoogle && !model.showDictionary && !model.showAI {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L10n.t("Chưa bật dịch vụ dịch nào trong Cài đặt."))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                    Button(L10n.t("Mở Cài đặt")) {
+                        TranslateSelectionController.shared.openTranslateSettings()
+                    }
+                    .controlSize(.small)
+                }
             }
 
-            // 3. AI Analysis & Synonyms (shown if triggered)
-            if let assistant = model.assistant {
-                if assistant.busy || model.isTranslating {
-                    HStack(spacing: 6) {
-                        ProgressView().controlSize(.small)
-                        Text(L10n.t("Đang dịch…")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                    }
-                    .padding(.vertical, 2)
-                } else if !assistant.meaning.isEmpty {
-                    aiDetailsSection(assistant: assistant)
+            // 1. Google Translate (Fast ~200ms default)
+            if model.showGoogle {
+                googleTranslationSection
+            }
+
+            // 2. Dictionary Senses (Parts of speech breakdown)
+            if model.showDictionary {
+                if !model.localSenses.isEmpty && !model.isSentence {
+                    dictionarySensesSection
+                } else if let snippet = model.localSnippet, !model.isSentence, model.localSenses.isEmpty {
+                    Text(snippet)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .lineLimit(3)
+                        .textSelection(.enabled)
                 }
+            }
+
+            // 3. AI Analysis & Synonyms (shown if enabled)
+            if model.showAI {
+                aiSection
             }
         }
     }
@@ -202,6 +192,22 @@ struct TranslateSelectionView: View {
     }
 
     // MARK: AI Details Section
+
+    @ViewBuilder private var aiSection: some View {
+        if let assistant = model.assistant {
+            if assistant.busy || model.isTranslating {
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.small)
+                    Text(L10n.t("Đang dịch AI…")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                }
+                .padding(.vertical, 2)
+            } else if !assistant.meaning.isEmpty {
+                aiDetailsSection(assistant: assistant)
+            } else if let k = assistant.messageKey {
+                Text(L10n.t(k)).font(XFinderTokens.Font.caption).foregroundColor(.orange)
+            }
+        }
+    }
 
     private func aiDetailsSection(assistant: TranslateAssistant) -> some View {
         VStack(alignment: .leading, spacing: 4) {

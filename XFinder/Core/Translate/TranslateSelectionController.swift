@@ -102,6 +102,18 @@ final class TranslateSelectionController {
 
     var isEnabled: Bool { UserDefaults.standard.object(forKey: "translate.hotkeyEnabled") as? Bool ?? false }
 
+    var showGoogle: Bool {
+        UserDefaults.standard.object(forKey: "translate.showGoogle") as? Bool ?? true
+    }
+
+    var showDictionary: Bool {
+        UserDefaults.standard.object(forKey: "translate.showDictionary") as? Bool ?? true
+    }
+
+    var showAI: Bool {
+        UserDefaults.standard.object(forKey: "translate.showAI") as? Bool ?? false
+    }
+
     var preferredEngine: TranslationEngine {
         get {
             let raw = UserDefaults.standard.string(forKey: "translate.preferredEngine") ?? "google"
@@ -190,10 +202,16 @@ final class TranslateSelectionController {
         model.localSnippet = nil
         model.localSenses = []
         model.isSentence = false
-        model.engine = preferredEngine
         model.googleTranslation = ""
         model.googleError = nil
         model.isGoogleLoading = false
+
+        let sg = showGoogle
+        let sd = showDictionary
+        let sa = showAI
+        model.showGoogle = sg
+        model.showDictionary = sd
+        model.showAI = sa
 
         switch verdict {
         case .translate(let resolved):
@@ -203,8 +221,8 @@ final class TranslateSelectionController {
             let words = resolved.split(separator: " ")
             model.isSentence = (words.count > 3 || resolved.count > 40)
 
-            // Instant on-device local dictionary lookup (1-2 ms)
-            if let rawDef = DictionaryLookup.definition(resolved) {
+            // 1. Instant on-device local dictionary lookup (1-2 ms), only if showDictionary is true
+            if sd, let rawDef = DictionaryLookup.definition(resolved) {
                 model.localDefinition = rawDef
                 let parsed = Self.parseLocalDictionary(rawDef)
                 model.localSyllables = parsed.syllables
@@ -228,11 +246,13 @@ final class TranslateSelectionController {
                 }
             }
 
-            // Start Google Translation (fast ~200 ms, default)
-            fetchGoogleTranslation(text: resolved)
+            // 2. Start Google Translation (fast ~200 ms), only if showGoogle is true
+            if sg {
+                fetchGoogleTranslation(text: resolved)
+            }
 
-            // ONLY run AI translation if explicitly enabled in Settings to avoid unnecessary Keychain/API calls
-            if isAutoAIEnabled {
+            // 3. ONLY run AI translation if explicitly enabled in Settings to avoid unnecessary Keychain/API calls
+            if sa {
                 startAITranslation(text: resolved)
             }
         default:
@@ -245,7 +265,21 @@ final class TranslateSelectionController {
 
     private func showPanel(at anchorRect: CGRect? = nil) {
         registerWorkspaceObserver()
-        let cardSize = CGSize(width: 410, height: 270)
+        var cardHeight: CGFloat = 110
+        if model.showGoogle { cardHeight += 40 }
+        if model.showDictionary {
+            if !model.localSenses.isEmpty {
+                cardHeight += CGFloat(min(model.localSenses.count, 3) * 26 + 8)
+            } else if model.localSnippet != nil {
+                cardHeight += 36
+            }
+        }
+        if model.showAI { cardHeight += 50 }
+        if !model.showGoogle && !model.showDictionary && !model.showAI {
+            cardHeight += 50
+        }
+        let clampedHeight = max(160, min(cardHeight, 370))
+        let cardSize = CGSize(width: 410, height: clampedHeight)
         if panel == nil {
             let p = SurfacePanel(kind: .interactive, size: cardSize)
             p.host(TranslateSelectionView(model: model))
@@ -594,7 +628,10 @@ final class TranslateSelectionModel {
     var localSnippet: String?
     var localSenses: [ParsedSense] = []
     var isSentence = false
-    /// Selected engine
+    /// Selected engines / flags
+    var showGoogle = true
+    var showDictionary = true
+    var showAI = false
     var engine: TranslationEngine = .google
     var googleTranslation = ""
     var isGoogleLoading = false

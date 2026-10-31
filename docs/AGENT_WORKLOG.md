@@ -1,3 +1,52 @@
+## 2026-10-31 — Gemini & Antigravity: Multi-Service Translation Settings & Automatic Vertical Display
+
+Branch `PyDude9/xfinder-translate-gemini`.
+
+Defects & Enhancements resolved:
+1. **Full Translation Service Configuration in Smart Selection Settings**:
+   - Replaced card-level mode switching with centralized service toggles in `SmartSelectDetailView.swift` under "Dịch vùng chọn (⇧⌘G)":
+     - `Google Dịch (Miễn phí, nhanh)` (`translate.showGoogle`, default `true`).
+     - `Từ điển macOS (Nhanh trên máy, tra từ loại)` (`translate.showDictionary`, default `true`).
+     - `Dịch bằng AI (Mô hình ngôn ngữ lớn)` (`translate.showAI`, default `false`).
+   - Integrated full AI provider configuration directly in `SmartSelectDetailView.swift` when AI is enabled:
+     - AI Provider picker (`APIProviderKind.allCases`): OpenAI (ChatGPT), Anthropic (Claude), Google Gemini, DeepSeek, Groq, OpenRouter, and Địa chỉ riêng (OpenAI format - Bedrock template).
+     - Base URL field (`voice.apiBaseURL`, e.g. `https://bedrock.viber.vn/v1`) with instant persistence on submit and change.
+     - Model name field (`voice.apiModel.<provider>`, e.g. `deepseek-v4.1-flash`) with suggested models menu and dual persistence.
+     - API Key field with Keychain storage status, `Lưu` and `Xóa` buttons using `VoiceKeychain`.
+     - Direct link to provider console to acquire API keys.
+
+2. **Simultaneous Automatic Vertical Stacking on Floating Translation Card**:
+   - Removed all switcher buttons and manual triggers (`✨ Phân tích AI`) from `TranslateSelectionView.swift`.
+   - The card automatically runs and displays all services enabled in Settings stacked vertically:
+     - **Header**: Word term, Wordbook save status, Heart button (1-click save/toggle), Close button.
+     - **Phonetics Row**: Dialect badge (`US`), IPA transcription `/\(phonetic)/`, audio pronunciation button.
+     - **Google Translate Section**: Instant primary translation text in bold.
+     - **Dictionary Senses Section**: Parts of speech tags (`[n.]`, `[v.]`, `[adj.]`) and grammatical definitions from macOS Dictionary Services.
+     - **AI Nuance & Synonyms Section**: Inline spinner while loading (`Đang dịch AI…`), followed by contextual nuances and synonyms pills.
+     - **Footer Bar**: Spaced repetition review counter `↺ \(repetition)`, copy translation button, open Wordbook button, and gear button opening Smart Selection settings.
+
+3. **Keychain Access Security & Performance**:
+   - When AI translation is disabled in Settings, XFinder completely bypasses all LLM calls and **never** queries macOS Keychain (`com.xfinder.app.voice`), preventing unwanted Keychain authorization prompts on lookup.
+   - When AI is enabled, it automatically uses the configured provider (including Bedrock/OpenAI custom templates) without needing repeated user intervention.
+   - Dynamic card sizing adjusts height (160–370pt) based on enabled services.
+
+Gate check:
+- `build (arm64, compile list)`: OK
+- `tests`: Executed 2,895 tests, with 0 failures (0 unexpected)
+- `check-l10n-coverage`: TOTAL 0 problems across 3,790 entries (3,790 checked, 32 allowlisted)
+- `check-l10n-duplicates`: TOTAL 0 duplicates across 3,790 unique keys
+- `audit-l10n-literals`: TOTAL 0 wrapped-but-untranslated
+- `check-sidebar-groups-l10n`: TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+- `audit-gesture-vocabulary-l10n`: TOTAL 0 unresolved gesture strings
+- `audit-l10n-interpolations`: TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+- `audit-ui-tokens`: TOTAL 0 problems across 0 files
+- `GATE: green`
+
+Live verification: Installed `/Applications/XFinder.app` PID 95656 (arm64, signed).
+- Verified Google Translate, Dictionary, and AI settings toggles in Smart Selection settings.
+- Verified automatic vertical stacking without modal switcher.
+- What could not be verified: Actual live LLM inference requires a valid reachable network endpoint and authorized Keychain access in the user's specific session.
+
 ## 2026-10-31 — Gemini & Antigravity: Vertical Stacked Translation Card & Translate Settings Separation
 
 Branch `PyDude9/xfinder-translate-gemini`.
