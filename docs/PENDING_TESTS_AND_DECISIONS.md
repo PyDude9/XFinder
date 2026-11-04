@@ -3,13 +3,39 @@
 Một chỗ duy nhất cho mọi thứ còn phân vân. Mỗi mục có **mã** (ví dụ `Q-F4-2`, `T-B6`) để bạn nói lại cho nhanh
 ("Q-F4-2 chọn b", "T-B6 hỏng: …"). Khi một mục xong, xoá nó khỏi file này trong cùng commit.
 
-Cập nhật: 2026-10-21.
+Cập nhật: 2026-11-04.
 
 ---
 
 ## Phần 1 — Cần bạn chọn (Q)
 
 Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả lời thì giữ mặc định.
+
+### 2026-11-04 · Dọn Orca + review gộp (Boss)
+
+Đã gộp vào `main`: 29 commit Codex vốn commit thẳng lên `main` (review MERGE-OK) và chồng Codex `7e614d8..db9d3b6`
+(W5/W6, cài đặt trình duyệt, snap, Live Groups, sổ từ; MERGE-OK). **Không gộp**: nhánh dịch Gemini và `snap-memory`.
+
+| Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
+|:--|:--|:--|:--|
+| Q-TRANSLATE-G1 | Nhánh dịch Gemini (`agent/antigravity-XF-translate`, `d175224`) gửi chữ bôi đen tới endpoint **không chính thức** `clients5.google.com/translate_a/t` (giả User-Agent Chrome), **bật sẵn**; trang cài đặt vẫn ghi "Không gửi gì đi"; bật "Dịch bằng AI" tự ghi `voice.refinerTier = customAPI` (mọi lần đọc chính tả sau đó đi lên LLM); dán qua pasteboard không đánh dấu `OwnWriteMark` (lịch sử clipboard nhận chữ đọc chính tả). | (a) Builder sửa F1/F2/F3/F5 theo spec rồi Boss review lại · (b) bỏ hẳn nhánh | **(a)**, nhánh giữ nguyên; app đã cài lại từ `main` (dịch về on-device của Apple) |
+| Q-TRANSLATE-G2 | Trên máy hiện có `voice.refinerTier = customAPI`, `voice.apiProvider = custom`. Anh tự bật ở trang Giọng nói, hay do nhánh Gemini ghi? | giữ · trả về mặc định | **giữ** — tôi không đổi defaults của anh |
+| Q-SNAP-UNSNAP | `snap-memory` 8bbd883 (chép 1Piece): kéo cửa sổ đã snap ra thì trả kích thước cũ, ⌃⌥⌫/⌃⌥R khôi phục. Không spec; 2 lỗi cao (khung cũ không kiểm lại, thay `DragQualifier` giữa lúc kéo), `rememberFrames` gắn observer cho MỌI app (trái SNAPMEM). | (a) viết spec, Builder làm lại phần unsnap · (b) bỏ | **(a)**, ref giữ ở `refs/archive/2026-11-04/agent/antigravity-snap-memory` |
+| Q-ORCA-JUNK | Gốc repo còn chưa track: `docs/FEATURE_KEYS_2026-10.md`, `docs/UI_REDESIGN_PROMPT_PLAN.md`, `docs/UPGRADE_PLAN_2026-10.md` (9–10/10), `.agents/`, `skills-lock.json`, `xfinder-crew.zsh` | commit · chuyển ra ngoài | **để nguyên**; 21 file rác khác đã chuyển sang `~/orca/xfinder-root-junk-2026-11-04/` |
+
+Việc theo sau (review tìm ra, chưa sửa — mỗi dòng nên thành spec nhỏ cho Builder):
+- **M1 (bộ nhớ)** `PreviewPaneView` cache 64 mục × tới 256 KiB văn bản, khoá theo stat ⇒ một file log đang ghi giữ ~16 MB bản cũ; không có trong `MemoryPressureRelief`.
+- Ôn tập: `.keyboardShortcut(.space)` lật thẻ khi đang gõ tên sổ mới (`VocabularyWorkspaceView.swift:238`).
+- Sửa prompt ghi lại cả thư viện + backup mỗi phím (`persistPrompt`).
+- ⌘K chuyển từ "Kết nối máy chủ" sang bảng lệnh, không báo người dùng.
+- Snap cửa sổ trình duyệt của chính XFinder đòi quyền Trợ năng không cần thiết; snap nhắm `keyWindow` thay vì cửa sổ đang kéo.
+- Xem trước: symlink tới ảnh/PDF không còn xem được (`S_IFREG` trên `lstat`); tô màu cú pháp bậc hai với `/*` không đóng; `BrowserMetadata.load` đọc lại toàn bộ SQLite mỗi lần làm mới ngăn.
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-MERGE-1104-1 | Mở trình duyệt tệp, ⌘K | Bảng lệnh hiện; gõ tên thư mục ⇒ có kết quả; chế độ Move chuyển được tệp |
+| T-MERGE-1104-2 | Bôi đen chữ ở Safari ⇒ Dịch | Hộp dịch của Apple (on-device), **không** có thẻ kiểu Trancy, không mạng |
+| T-MERGE-1104-3 | Mở Sổ từ ⇒ Ôn tập, thêm sổ mới tên "Tiếng Anh" | Tên giữ dấu cách (nếu thẻ lật ⇒ lỗi đã biết ở trên) |
 
 ### F4 · Chụp & chú thích ("làm y OneNotch trước")
 

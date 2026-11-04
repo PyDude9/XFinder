@@ -823,3 +823,14 @@ separate Chống ngủ page, (3) the notch kept showing a Claude session as runn
 | Limit not detected | **Real** (measured: the desktop app runs no `StopFailure` hook). The fix matched "hit your session limit" in the PROMPT text — it flagged this session as stopped when the owner pasted a message quoting it, and invented an undocumented notification type. Replaced by reading the `rate_limit` line Claude writes into its transcript |
 | Handoff note `docs/AGENT_HANDOFF.md` | Left untracked: it claims a hub card, a test (`testAntiSleepRowRetiresInFavorOfFeaturesHub`) and hook/event paths that do not exist |
 | Process | It committed Claude's uncommitted analytics work plus three untracked owner docs, and launched the XFinder binary straight from a shell. Its one-line test addition closed a real gap (mutation N6 was GREEN in Claude's run; 18/18 RED after it, re-measured). The commit was redone; the docs went back to untracked |
+
+## 2026-11-04 (Claude Boss) — dọn Orca, review + gộp nhánh agent
+
+| Nhánh | Kết luận | Merged As |
+|:--|:--|:--|
+| 29 commit trên `main` local chưa push (Codex commit thẳng, `origin/main..7e614d8`) | MERGE-OK (đã nằm trên main) | — |
+| chồng `agent/codex-T32-W5 … translate-wordbook` (`7e614d8..db9d3b6`, 15 commit) | MERGE-OK | `590e210` |
+| `agent/antigravity-XF-translate` (cũ: `PyDude9/xfinder-translate-gemini`, `d175224`, 12 commit) | FIX-FIRST — không gộp (Q-TRANSLATE-G1) | — |
+| `agent/antigravity-snap-memory` (`8bbd883`) | FIX-FIRST, không spec — không gộp (Q-SNAP-UNSNAP) | — |
+
+Gate trên `main` sau gộp: `GATE: green`, 2894 tests / 0 failures, build OK. Mutation: không chạy. Live: chưa (cài từ `main` sau Checkpoint 2).
