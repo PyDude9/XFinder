@@ -107,8 +107,11 @@ final class SmartSelectionBadge {
 
     func translate() {
         let text = model.text, app = model.sourceApp
-        let frame = panel?.frame
-        closePanel()
+        let frame = panel?.frame ?? badge?.frame
+        // Hide both badge and panel immediately (orderOut is synchronous) before the translate panel appears.
+        badge?.orderOut(nil)
+        panel?.orderOut(nil)
+        SelectionWatcher.shared.dismiss()
         TranslateSelectionController.shared.translate(text: text, sourceApp: app, anchorRect: frame)
     }
 
