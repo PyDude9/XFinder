@@ -1,3 +1,5 @@
+Builders (every Orca worktree): read BUILDER.md first.
+
 # XFinder — agents read this first
 
 Native macOS 14+ utility (Swift 6, SwiftUI + AppKit, arm64 only). Claude Code is the main agent; other agents (OpenCode,
