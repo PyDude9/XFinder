@@ -62,6 +62,35 @@ Every agent other than the main Claude Code session appends here (newest first):
 gate it ran, and what it could NOT verify. Claude reviews these entries before merging anything. See
 `docs/AGENT_QUICKSTART.md` for the rules.
 
+## 2026-10-26 (Zed) — rà soát tài liệu, phát hiện checkout thay đổi trong phiên; không tiếp tục T14d cũ
+
+**Lệnh của chủ:** tiếp tục việc dang dở, đọc lại các tài liệu Markdown để chuẩn bị bàn giao cho Claude. Không có Notion tool trong phiên; ghi đường dự phòng tại đây.
+
+| Việc | File đã sửa | Nghiệm thu riêng của việc | Chưa kiểm live |
+|:--|:--|:--|:--|
+| Rà soát tài liệu/quy trình và xác định đúng điểm tiếp tục | `docs/AGENT_WORKLOG.md` (chỉ mục này) | Đọc lại quickstart, tasks, Notion fallback, worklog mới nhất, pending và handoff hiện tại; hai reviewer chỉ đọc tổng hợp nhóm đặc tả và tài liệu tổng quan. Không sửa mã nguồn, không đổi nhánh, không stage/commit/push/merge | Toàn bộ hành vi app, VoiceOver, quyền, thao tác chuột; chưa chạy lại build/test/gates |
+
+### Kết quả lệnh thực chạy (terminal, không phải app)
+
+1. `git --no-pager branch --show-current && git --no-pager log -1 --oneline && git --no-optional-locks status --short`: nhánh `agent/antigravity-XF-T32-w23`, HEAD `85dfaaa` (`XF-T32 W4+W5: Inspector Info/Preview, Image Actions & unified ⌘K Command Palette`); không có thay đổi tracked, có nhiều file untracked của chủ — giữ nguyên.
+2. Lần kiểm sau: `git --no-pager branch --show-current && git --no-pager log -3 --oneline && git --no-optional-locks status --short && /bin/ls docs/specs && /bin/ls -l Claude.md docs/AGENT_WORKLOG.md`: cùng tên nhánh nhưng HEAD thành `7e479fd` (cũng là `main`), sau đó `d683879`, `d459b39`. Không có thay đổi tracked ở thời điểm kiểm. `XF-T32-w45-contract.md` không còn trong danh sách; có `XF-T32-w23-handoff-sol.md`. **Không lệnh nào của Zed đổi HEAD**; checkout đã được cập nhật song song, vì vậy không an toàn lấy snapshot đầu phiên làm nền sửa code.
+3. `/usr/bin/grep` bằng file tool, tìm heading/W2/W3/build22 trong `Claude.md`: không có match tại thời điểm truy vấn; không dùng kết quả đó làm bằng chứng trạng thái.
+4. File discovery ban đầu trả 108 Markdown paths (có tài liệu skill). Các file lịch sử lớn chỉ tra mục/đoạn theo quy tắc dự án; không tuyên bố đã đọc mọi dòng của mọi Markdown, các checkout lồng nhau, hay toàn bộ skill phụ trợ.
+
+5. Kiểm cuối `git --no-pager diff --check && git --no-pager diff --stat && git --no-pager log -1 --oneline && git --no-pager branch --show-current`: diff-check thành công (không lỗi whitespace); tại lúc đo chỉ `docs/AGENT_WORKLOG.md` thay đổi, 27 dòng thêm; HEAD vẫn `7e479fd`, nhánh vẫn `agent/antigravity-XF-T32-w23`. Dòng ghi kết quả này được thêm sau phép đo.
+
+### Điểm bàn giao từ snapshot mới
+
+- `docs/AGENT_TASKS.md` §5/§6 vẫn ghi kế tiếp T14d, nhưng worklog có T14d/T14f và mục Claude ngày 15/10 xác nhận mâu thuẫn T14d đã được sửa. Không lặp lại T14d theo hội thoại cũ; không tự sửa chỉ mục do Claude quản lý.
+- Handoff hiện có: `docs/specs/XF-T32-w23-handoff-sol.md` (HEAD `7e479fd`), hợp đồng `XF-T32-w23-contract.md`. Thứ tự được ghi rõ **B1 metadata trước**, sau đó B2 tree, B3 menus, B4 chrome; có S1 sửa Space mirror và V1/V2 review sidebar. Phải kiểm nhánh/tệp/spec revision/claim trước phiên triển khai mới.
+- Không lấy log W4/W5 ở snapshot `85dfaaa` làm bằng chứng tính năng hiện diện ở snapshot `7e479fd`. Cần Claude đối chiếu lịch sử/nhánh trước khi tích hợp lại.
+- Các rủi ro tài liệu reviewer nêu để Claude xác minh: ⌘K Connect to Server cũ so với palette mới; mục tiêu cache 100k so với giới hạn cache 20k; WebP encoder cần probe; tài liệu build cũ nói macOS 12/no tests trái quickstart hiện tại. Đây là **điểm cần đối chiếu**, không phải lỗi runtime đã tái hiện.
+- Handoff W23 giao pbxproj/symlink/L10n store/FeatureCatalog cho Claude; Builder chỉ chuẩn bị script chuỗi, **không chạy**. Không áp dụng máy móc quy trình T14 cũ sang task mới.
+
+**Build:** chưa chạy. **Tests:** chưa chạy. **Gate-all/mutation:** chưa chạy (không dán output cũ như kết quả phiên này). **Live:** chưa kiểm; không mở/cài app, không gửi sự kiện, không sửa dữ liệu người dùng. Chưa đo các mục latency/hitch/footprint 8 giờ; số liệu lịch sử không thay cho nghiệm thu mới.
+
+**DỪNG triển khai:** checkout thay đổi trong khi đọc; không nhận task mới từ snapshot cũ hoặc sửa trên nhánh của agent khác. Phần rà soát/bàn giao hoàn thành; cần phiên triển khai riêng, claim đúng việc và checkout/worktree ổn định.
+
 ## 2026-10-25 (Antigravity) — T14f: Soát chuỗi lần cuối, 6 cổng L10n + 3 harness mutation
 
 **Lệnh của chủ:** Thực hiện nghiệm thu cuối cùng cho chuỗi T14 (`docs/specs/T14-mouse-gestures-B.md` §T14f) trên nhánh `agent/zed-T14`: soát toàn bộ diff chuỗi, chạy tuần tự 6 cổng L10n và 3 harness mutation, dán kết quả nguyên văn vào worklog.
