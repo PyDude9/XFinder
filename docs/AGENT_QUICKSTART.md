@@ -3,7 +3,7 @@
 Read this first. **If the owner sent you here to do a task: the queue, the claim handshake and your Run live in Notion
 (`docs/AGENT_NOTION.md`); the rubric, the forbidden files and the exact procedure are in `docs/AGENT_TASKS.md` — follow
 both.** This one is short on purpose; the full
-history lives in `CLAUDE.md` (local, git-ignored, ~460 KB — grep it by section title, never load it whole) and in
+history lives in `CLAUDE.md` (local, git-ignored, ~67 KB of rules and owner habits; full history in `docs/CLAUDE_HISTORY_2026-10-18.md` — grep it by section title, never load it whole) and in
 `docs/PROJECT_NOTES_2026-10-13.md` (a tracked snapshot, older than this file; grep it, do not load it whole).
 
 **You have tools.** Two sessions this week opened by claiming they had no file or shell access and refused the task three
@@ -21,9 +21,9 @@ mouse gestures, local diagnostics. Vietnamese is the source language of every UI
 |:--|:--|:--|
 | **Everything, one summary** | `sh scripts/gate-all.sh` | build + all tests + the 7 string/UI gates, one line each, ends `GATE: green` or `GATE: RED`. **Paste its output verbatim into the worklog** — Claude re-runs the same command. `--no-build` for a docs/tests-only change. Refuses to run while a mutation harness runs |
 | Build + check | `sh scripts/build-and-check.sh` | builds to `/tmp/xfinder-clean-build/out`, checks named files really compiled, bundled resources, arm64. **Does not install.** |
-| Unit tests | `swift test --package-path /Users/wolong/github/XFinder/Tests` | ~1190 tests, ~7 s. A Swift package that symlinks pure source files — a new pure file needs its symlink in `Tests/XFinderLogicTests/` |
-| Second checkout | `XF_OUT=/tmp/<you>-build sh scripts/build-and-check.sh` · `XF_SRC=/tmp/<you>-build/out/XFinder.app sh scripts/install-mouse-rebuild.sh` | in a git worktree, build into your OWN output: the default `/tmp/xfinder-clean-build` is shared, and two sessions building there overwrite each other mid-flight. build-and-check builds the checkout it lives in |
-| Install | `sh scripts/install-mouse-rebuild.sh` | installs the LAST build-and-check output, signs, relaunches XFinder. Run build-and-check first; compare the installed dylib hash with the build |
+| Unit tests | `swift test --package-path "$(git rev-parse --show-toplevel)"/Tests` | ~1190 tests, ~7 s. A Swift package that symlinks pure source files — a new pure file needs its symlink in `Tests/XFinderLogicTests/` |
+| Second checkout (**Boss only**) | `XF_OUT=/tmp/<you>-build sh scripts/build-and-check.sh` · `XF_SRC=/tmp/<you>-build/out/XFinder.app sh scripts/install-mouse-rebuild.sh` | in a git worktree, build into your OWN output: the default `/tmp/xfinder-clean-build` is shared, and two sessions building there overwrite each other mid-flight. build-and-check builds the checkout it lives in |
+| Install (**Boss only** — Builders never install, see `BUILDER.md`) | `sh scripts/install-mouse-rebuild.sh` | installs the LAST build-and-check output, signs, relaunches XFinder. Run build-and-check first; compare the installed dylib hash with the build |
 | L10n gates | `python3 scripts/check-l10n-coverage.py` · `check-l10n-duplicates.py` · `audit-l10n-literals.py` · `audit-l10n-interpolations.py` · `check-sidebar-groups-l10n.py` · `verify-l10n-runtime.py` | every one must print `TOTAL 0` |
 | UI tokens | `python3 scripts/audit-ui-tokens.py` | `TOTAL 0` |
 | Mutation harnesses | `scripts/mutation-check-*.sh` (18) | inject known bugs; every mutation must go RED. Run detached (`nohup sh … > log 2>&1 &`), **one at a time**, and never edit a source file while one runs (it restores from a backup taken at its start) |
