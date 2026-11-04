@@ -1,5 +1,22 @@
 import Foundation
 
+/// Keep file content usable when a split pane cannot fit the side Inspector.
+enum InspectorLayoutRules {
+    static let sidebarWidth: Double = 280
+    static let minimumContentWidth: Double = 280
+    static let dividerWidth: Double = 1
+
+    static func stacksInspector(availableWidth: Double) -> Bool {
+        !availableWidth.isFinite || availableWidth < sidebarWidth + dividerWidth + minimumContentWidth
+    }
+
+    static func stackedInspectorHeight(availableHeight: Double) -> Double {
+        guard availableHeight.isFinite else { return 0 }
+        let usable = max(0, availableHeight - dividerWidth)
+        return min(sidebarWidth, usable * 0.4)
+    }
+}
+
 /// Bounded content classification and syntax ranges; no file I/O or AppKit.
 enum InspectorPreviewRules {
     static let byteLimit = 256 * 1024

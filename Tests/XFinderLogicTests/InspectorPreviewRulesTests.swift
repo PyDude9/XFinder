@@ -1,6 +1,32 @@
 import XCTest
 
 final class InspectorPreviewRulesTests: XCTestCase {
+    func testNarrowSplitCannotLoseItsListingToFixedInspector() {
+        // 720-point window minus a 200-point sidebar, divided into two panes.
+        XCTAssertTrue(InspectorLayoutRules.stacksInspector(availableWidth: 260))
+        XCTAssertTrue(InspectorLayoutRules.stacksInspector(availableWidth: 560))
+        XCTAssertFalse(InspectorLayoutRules.stacksInspector(availableWidth: 561))
+        XCTAssertFalse(InspectorLayoutRules.stacksInspector(availableWidth: 1000))
+    }
+    func testStackedInspectorLeavesAtLeastSixtyPercentForFiles() {
+        for height in [0.0, 0.5, 1, 40, 160, 300, 700, 2000] {
+            let preview = InspectorLayoutRules.stackedInspectorHeight(availableHeight: height)
+            let usable = max(0, height - InspectorLayoutRules.dividerWidth)
+            XCTAssertGreaterThanOrEqual(preview, 0)
+            XCTAssertLessThanOrEqual(preview, 280)
+            XCTAssertGreaterThanOrEqual(usable - preview + 0.0001, usable * 0.6)
+        }
+        XCTAssertEqual(InspectorLayoutRules.stackedInspectorHeight(availableHeight: 301), 120)
+        XCTAssertEqual(InspectorLayoutRules.stackedInspectorHeight(availableHeight: 2000), 280)
+    }
+    func testInvalidGeometryDoesNotProduceInvalidFrames() {
+        for width in [-1.0, .nan, .infinity, -.infinity] {
+            XCTAssertTrue(InspectorLayoutRules.stacksInspector(availableWidth: width))
+        }
+        for height in [-1.0, .nan, .infinity, -.infinity] {
+            XCTAssertEqual(InspectorLayoutRules.stackedInspectorHeight(availableHeight: height), 0)
+        }
+    }
     func testBoundariesAndBinary() {
         XCTAssertEqual(InspectorPreviewRules.decode(Data()), .text(""))
         XCTAssertEqual(InspectorPreviewRules.decode(Data(repeating: 65, count: InspectorPreviewRules.byteLimit)), .text(String(repeating: "A", count: InspectorPreviewRules.byteLimit)))

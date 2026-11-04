@@ -21,6 +21,8 @@ struct SmartSelectDetailView: View {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
                 PageHeader(title: L10n.t("Chọn văn bản thông minh"),
                            subtitle: L10n.t("Bôi đen chữ ở app khác: một nút nhỏ hiện cạnh đó để đổi đơn vị, đổi múi giờ, tính, thêm vào Lịch hoặc dịch."))
+                Button(L10n.t("Mở Dịch & Sổ từ vựng")) { VocabularyWorkspaceController.shared.show() }
+                    .buttonStyle(.borderedProminent)
                 badgeSection
                 excludedSection
                 actionsSection

@@ -104,6 +104,10 @@ final class BrowserSettings {
 
     /// XF-T32 W3 — the ONE reader of `fileBrowser.paneFocusStyle`: `"dim"` (inactive panes faded, Tilde default) or
     /// `"outline"` (accent line on the active pane).
+    static var downloadsHotkeyEnabled: Bool { UserDefaults.standard.object(forKey: "fileBrowser.downloadsHotkey") as? Bool ?? false }
+
+    static var showLearnButton: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showLearnButton") as? Bool ?? true }
+
     static var paneFocusStyle: String { UserDefaults.standard.string(forKey: "fileBrowser.paneFocusStyle") ?? "dim" }
 
     /// The ONE reader+writer of `fileBrowser.sidebarLayout` (XF-T28 Wave 4 §B) — JSON `SidebarLayout`, not a toggle,
@@ -115,8 +119,11 @@ final class BrowserSettings {
 
     // MARK: Global hotkey ⌃⌥⌘F (Carbon, no permission) — ShortcutCatalog `fileBrowser.open`
 
-    /// F, and ⌃⌥⌘ — ⌃⌥F already belongs to another entry (ShortcutCatalog), ⌃⌥⌘F to nothing.
-    static let hotkeyKeyCode: UInt32 = 3
+    /// Keep the original chord by default; the alternate is explicit and shared with the catalog.
+    static var launcherShortcut: String {
+        UserDefaults.standard.string(forKey: "fileBrowser.launcherShortcut") ?? "controlOptionCommandF"
+    }
+    private var registeredLauncherChord: ShortcutCatalog.Chord?
     /// 'XFbr' — this feature's own signature, so the other Carbon handlers (⌘K, notes, ⇧⌘G) ignore its events.
     private static let hotkeySignature: OSType = 0x58466272
     private static let hotkeyID: UInt32 = 1
@@ -127,19 +134,29 @@ final class BrowserSettings {
 
     /// FeatureHub + launch + didBecomeActive.
     func applySettings() {
+        BrowserDownloadsController.shared.applySettings()
         if Self.isEnabled && Self.globalHotkeyEnabled {
             installCarbonHandlerIfNeeded()
+            let chord = ShortcutCatalog.browserLauncherChord(setting: Self.launcherShortcut)
+            if registeredLauncherChord != chord {
+                if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
+                hotKeyRef = nil
+                hotkeyRegistered = false
+            }
             guard hotKeyRef == nil else { return }
+            let modifiers = UInt32(controlKey | cmdKey) | (chord.modifiers.contains(.shift) ? UInt32(shiftKey) : UInt32(optionKey))
             var ref: EventHotKeyRef?
-            let status = RegisterEventHotKey(Self.hotkeyKeyCode, UInt32(controlKey | optionKey | cmdKey),
+            let status = RegisterEventHotKey(UInt32(chord.keyCode), modifiers,
                                              EventHotKeyID(signature: Self.hotkeySignature, id: Self.hotkeyID),
                                              GetApplicationEventTarget(), 0, &ref)
             hotKeyRef = status == noErr ? ref : nil
             hotkeyRegistered = hotKeyRef != nil
+            registeredLauncherChord = hotKeyRef == nil ? nil : chord
         } else {
             if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
             hotKeyRef = nil
             hotkeyRegistered = false
+            registeredLauncherChord = nil
         }
     }
 
@@ -163,7 +180,7 @@ final class BrowserSettings {
     private nonisolated func hotkeyFired() {
         Task { @MainActor in
             guard BrowserSettings.isEnabled else { return }
-            BrowserWindowController.shared.openWindow(path: nil)
+            BrowserWindowController.shared.showBrowser()
         }
     }
 }

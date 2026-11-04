@@ -19,12 +19,11 @@ import QuickLookThumbnailing
 struct PreviewPaneView: View {
     let pane: PaneState
     let model: BrowserWindowModel
+    var usesFlexibleWidth = false
 
     @State private var previewModel = FilePreviewPaneModel()
     @State private var showingInfo = false
     @AppStorage("fileBrowser.previewShowMore") private var showMore = false
-
-    private static let width: CGFloat = 280
 
     var body: some View {
         ScrollView {
@@ -42,6 +41,7 @@ struct PreviewPaneView: View {
                         Text(L10n.t("Thông tin")).tag(true)
                     }
                     .pickerStyle(.segmented)
+                    .labelsHidden()
                     InspectorFileActions(item: item)
                     if showingInfo {
                         PreviewInformationSection(item: item, showMore: showMore) { showMore.toggle() }
@@ -61,7 +61,8 @@ struct PreviewPaneView: View {
             }
             .padding(XFinderTokens.Space.page)
         }
-        .frame(width: Self.width)
+        .frame(width: usesFlexibleWidth ? nil : InspectorLayoutRules.sidebarWidth)
+        .frame(maxWidth: usesFlexibleWidth ? .infinity : nil)
         .background(XFinderTokens.Fill.window)
         .onDisappear { previewModel.stop() }
         .task(id: PreviewSelectionKey(paths: pane.selectedEntries.map(\.path), revision: pane.listingRevision)) {

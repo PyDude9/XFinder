@@ -145,8 +145,30 @@ final class ShortcutCatalogTests: XCTestCase {
         try XCTUnwrap(ShortcutCatalog.fixedEntries.first { $0.id == id }, "catalog entry \(id) is missing")
     }
 
+    func testBrowserLauncherAlternateAndCorruptPreferenceResolveConsistently() throws {
+        let launcher = try entry("fileBrowser.open")
+        let alternate = ShortcutCatalog.browserLauncherChord(setting: "controlShiftCommandF")
+        XCTAssertEqual(alternate.keyCode, 3)
+        XCTAssertEqual(alternate.modifiers, [.control, .shift, .command])
+        XCTAssertEqual(ShortcutCatalog.liveChord(of: launcher, switcherSetting: "commandTab",
+                                               browserLauncherSetting: "controlShiftCommandF"), alternate)
+        XCTAssertEqual(ShortcutCatalog.browserLauncherChord(setting: "corrupt"), launcher.chord)
+        let reader = try source("XFinder/Core/Browser/BrowserSettings.swift")
+        XCTAssertTrue(reader.contains("ShortcutCatalog.browserLauncherChord(setting: Self.launcherShortcut)"))
+    }
+
+    func testBrowserLauncherMatchesRegisteredChordAndDoesNotConflictWithSnap() throws {
+        let launcher = try entry("fileBrowser.open")
+        XCTAssertEqual(launcher.chord.keyCode, 3)
+        XCTAssertEqual(launcher.chord.modifiers, [.control, .option, .command])
+        XCTAssertEqual(launcher.gateKey, "fileBrowser.globalHotkey")
+        XCTAssertEqual(ShortcutCatalog.fixedEntries.filter { $0.gateKey == "fileBrowser.globalHotkey" }.count, 1)
+        let snaps = Dictionary(uniqueKeysWithValues: ShortcutCatalog.fixedEntries.filter { $0.id.hasPrefix("snap.") }.map { ($0.id, $0.chord) })
+        XCTAssertTrue(ShortcutCatalog.conflicts(for: launcher.chord, owner: launcher.id, recorded: snaps, isActive: { _ in true }).owners.isEmpty)
+    }
+
     func testEverySnapChordInTheCatalogIsTheEnginesChordForThatTarget() throws {
-        let text = try source("XFinder/Core/SnapZoneController.swift")
+        let text = try source("XFinder/Core/Snap/SnapLayout.swift")
         // `case 2:   target = .leftThird` → [2: "leftThird"]
         let rx = try NSRegularExpression(pattern: #"case\s+(\d+):\s*target\s*=\s*\.(\w+)"#)
         var engine: [UInt16: String] = [:]
@@ -225,6 +247,7 @@ final class ShortcutCatalogTests: XCTestCase {
             "finderKeyboard.deleteToTrash": ("XFinder/Core/FinderKeyboardController.swift", "false"),
             "finderKeyboard.returnOpens": ("XFinder/Core/FinderKeyboardController.swift", "false"),
             "notes.globalHotkey": ("XFinder/Core/EdgeNotesController.swift", "false"),     // XF-T24
+            "fileBrowser.downloadsHotkey": ("XFinder/Core/Browser/BrowserSettings.swift", "false"),
             "fileBrowser.globalHotkey": ("XFinder/Core/Browser/BrowserSettings.swift", "false"),   // XF-T28
         ]
         var checked = 0

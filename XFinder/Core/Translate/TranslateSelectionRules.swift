@@ -26,6 +26,11 @@ enum TranslateSelectionRules {
         return .translate(s)
     }
 
+    /// A native close belongs to one request. Replace hands back a result that remains available for Copy.
+    static func shouldDismissHost(endedRequest: Int, currentRequest: Int, hasTranslation: Bool, isActive: Bool) -> Bool {
+        endedRequest == currentRequest && isActive && !hasTranslation
+    }
+
     /// Store keys for the panel's one-line states (the view wraps them in `L10n.t`).
     static func messageKey(for v: Verdict) -> String? {
         switch v {

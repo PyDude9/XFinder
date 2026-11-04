@@ -100,7 +100,17 @@ final class QuickSearchPanelController {
     }
 
     private nonisolated func hotkeyFired() {
-        Task { @MainActor in self.toggle() }
+        Task { @MainActor in
+            // The global Quick Search default also owns Cmd-K. While a browser is key,
+            // let its configured palette binding own that chord; other apps retain Quick Search.
+            let stored = Self.storedChordRaw()
+            let flags = NSEvent.ModifierFlags(rawValue: UInt(stored.nsModifiers))
+            let chord = KeyChord("k", command: flags.contains(.command), shift: flags.contains(.shift),
+                                 option: flags.contains(.option), control: flags.contains(.control))
+            if stored.keyCode == 40, let command = BrowserSettings.keyBindings.command(for: chord),
+               BrowserWindowController.shared.performShortcutInKeyWindow(command) { return }
+            self.toggle()
+        }
     }
 
     /// Đọc phím đã lưu (NSEvent keycode + NSEvent.ModifierFlags raw) — mặc định

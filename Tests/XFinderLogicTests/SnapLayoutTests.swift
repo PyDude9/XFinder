@@ -9,6 +9,37 @@ final class SnapLayoutTests: XCTestCase {
     let screen = CGRect(x: 0, y: 0, width: 1728, height: 1117)      // AppKit
     let notch = CGRect(x: 771.5, y: 1085, width: 185, height: 32)   // measured on this MacBook Pro
 
+    func testSnapKeyTargetsAndUnknownKeys() {
+        XCTAssertEqual(L.hotkeyTarget(keyCode: 123), .leftHalf)
+        XCTAssertEqual(L.hotkeyTarget(keyCode: 124), .rightHalf)
+        XCTAssertEqual(L.hotkeyTarget(keyCode: 126), .maximize)
+        XCTAssertEqual(L.hotkeyTarget(keyCode: 3), .centerThird)
+        XCTAssertNil(L.hotkeyTarget(keyCode: 40))
+    }
+
+    func testSnapModifierFamilyDoesNotStealBrowserOrShiftShortcuts() {
+        for mask in 0..<16 {
+            XCTAssertEqual(L.acceptsHotkey(control: mask & 1 != 0, option: mask & 2 != 0,
+                                          command: mask & 4 != 0, shift: mask & 8 != 0), mask == 3,
+                           "Only exact Control+Option belongs to Snap; mask \(mask)")
+        }
+    }
+
+    func testNativeMinimumSizeStaysOnDisplayForSmallRightBottomZone() {
+        let visible = CGRect(x: -1512, y: 30, width: 1512, height: 900)
+        let target = CGRect(x: -504, y: 30, width: 504, height: 450)
+        let frame = L.constrainedFrame(target, minimum: CGSize(width: 720, height: 500), visibleFrame: visible)
+        XCTAssertEqual(frame, CGRect(x: -720, y: 30, width: 720, height: 500))
+        XCTAssertTrue(visible.contains(frame))
+        XCTAssertEqual(L.constrainedFrame(visible, minimum: CGSize(width: 720, height: 500), visibleFrame: visible), visible)
+    }
+
+    func testNativeMinimumLargerThanDisplayRemainsAnchoredAndUsable() {
+        let visible = CGRect(x: 50, y: 20, width: 600, height: 400)
+        let frame = L.constrainedFrame(visible, minimum: CGSize(width: 720, height: 500), visibleFrame: visible)
+        XCTAssertEqual(frame, CGRect(x: 50, y: 20, width: 720, height: 500))
+    }
+
     // MARK: Target rects
 
     /// The reported bug: dragging to the bottom-left highlighted the top-left. In TOP-LEFT space
@@ -159,7 +190,7 @@ final class SnapLayoutTests: XCTestCase {
         XCTAssertEqual(sel.observe(pointer: CGPoint(x: 545, y: 800), windowOriginNow: CGPoint(x: 100, y: 50)), .notWindowMove)
         XCTAssertEqual(sel.observe(pointer: CGPoint(x: 560, y: 800), windowOriginNow: CGPoint(x: 300, y: 50)), .notWindowMove,
                        "a later move does not turn a rejected press into a window drag")
-        // No normal window under the pointer (menu bar, Dock, XFinder's own window): rejected at once.
+        // No normal window under the pointer (menu bar, Dock, XFinder panel): rejected at once.
         XCTAssertEqual(Q(pressPoint: press, windowOrigin: nil).verdict, .notWindowMove)
         // A window that cannot be read this time keeps the press pending until the travel limit.
         var blind = Q(pressPoint: press, windowOrigin: CGPoint(x: 0, y: 0))

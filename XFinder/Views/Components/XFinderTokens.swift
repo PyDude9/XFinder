@@ -93,6 +93,9 @@ enum XFinderTokens {
         static let pagerDotInactive: Color = Color.primary.opacity(0.25)
         static let pagerDotActive: Color = Color.primary.opacity(0.75)
         static let sheetWidth: CGFloat = 300
+        static let liveGroupSheetWidth: CGFloat = 780
+        static let liveGroupSheetHeight: CGFloat = 560
+        static let liveGroupPreviewWidth: CGFloat = 280
     }
 
     /// XF-T32 W2/W3 — custom-property colours (Tilde's 7: Gray Red Orange Yellow Green Blue Purple, system tints so

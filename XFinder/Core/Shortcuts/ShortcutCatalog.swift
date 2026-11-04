@@ -124,6 +124,10 @@ enum ShortcutCatalog {
     /// one chord group each).
     static var fixedEntries: [Entry] {
         [
+            Entry(id: "browser.downloads", titleKey: "Mở khay Tải về",
+                  chord: Chord(keyCode: 2, modifiers: [.control, .option, .command]),
+                  scope: .global, ownerPage: SidebarDestination.fileBrowser.rawValue,
+                  gateKey: "fileBrowser.downloadsHotkey", gateDefault: false),
             // Clipboard shelf — ClipboardShelfController.swift
             Entry(id: "clipboard.shelf", titleKey: "Mở Clipboard ở notch hoặc khay nổi (theo Cài đặt Clipboard)",
                   chord: Chord(keyCode: 9, modifiers: [.command, .shift]), // V
@@ -220,10 +224,17 @@ enum ShortcutCatalog {
         ]
     }
 
-    /// The chord an entry fires TODAY. Only the switcher varies: it follows `windowPreview.switcherHotkey`
+    /// The chord an entry fires TODAY. Browser launcher and switcher follow their settings.
+    /// The switcher follows `windowPreview.switcherHotkey`
     /// ("commandTab" / "optionTab" — CommandTabController reads it), and the page used to print ⌘Tab whatever the
     /// user had picked (P3 review).
-    static func liveChord(of entry: Entry, switcherSetting: String) -> Chord {
+    static func browserLauncherChord(setting: String) -> Chord {
+        Chord(keyCode: 3, modifiers: setting == "controlShiftCommandF" ? [.control, .shift, .command] : [.control, .option, .command])
+    }
+
+    static func liveChord(of entry: Entry, switcherSetting: String,
+                          browserLauncherSetting: String = "controlOptionCommandF") -> Chord {
+        if entry.id == "fileBrowser.open" { return browserLauncherChord(setting: browserLauncherSetting) }
         guard entry.id == "switcher.commandTab", switcherSetting == "optionTab" else { return entry.chord }
         return Chord(keyCode: entry.chord.keyCode, modifiers: [.option])
     }

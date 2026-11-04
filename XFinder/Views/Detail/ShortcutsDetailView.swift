@@ -15,9 +15,14 @@ struct ShortcutsDetailView: View {
 
     // Fixed-shortcut gate keys, read here ONLY to show on/off state and to build the conflict check's
     // `isActive` closure — every one of these keys is still bound with @AppStorage on its OWNING page.
+    @AppStorage("fileBrowser.enabled") private var browserEnabled = true
+    @AppStorage("fileBrowser.launcherShortcut") private var browserLauncherShortcut = "controlOptionCommandF"
+    @AppStorage("fileBrowser.globalHotkey") private var browserHotkey = false
+    @AppStorage("fileBrowser.downloadsHotkey") private var downloadsHotkey = false
     @AppStorage("clipboard.globalHotkey") private var clipboardGlobalHotkey = true
     @AppStorage("clipboard.shelfHotkey") private var clipboardShelfHotkey = false
     @AppStorage("translate.hotkeyEnabled") private var translateEnabled = false
+    @AppStorage("snapzones.enabled") private var snapEnabled = true
     @AppStorage("snapzones.hotkeysEnabled") private var snapHotkeysEnabled = true
     @AppStorage("quitProtection.enabled") private var quitHoldEnabled = false
     @AppStorage("windowPreview.commandTabEnabled") private var commandTabEnabled = false
@@ -53,7 +58,7 @@ struct ShortcutsDetailView: View {
             }
         }
         for entry in ShortcutCatalog.fixedEntries {
-            map[entry.id] = ShortcutCatalog.liveChord(of: entry, switcherSetting: switcherHotkey)
+            map[entry.id] = ShortcutCatalog.liveChord(of: entry, switcherSetting: switcherHotkey, browserLauncherSetting: browserLauncherShortcut)
         }
         // ⌘K, through the palette's own reader (QuickSearchPanelController.storedChordRaw — one read of its keys).
         let raw = QuickSearchPanelController.storedChordRaw()
@@ -75,6 +80,8 @@ struct ShortcutsDetailView: View {
     /// already bind, plus the two master switches, so an inactive owner never counts as a real clash.
     private func isActive(_ id: String) -> Bool {
         switch id {
+        case "fileBrowser.open": return browserEnabled && browserHotkey
+        case "browser.downloads": return browserEnabled && downloadsHotkey
         case "clipboard.shelf": return clipboardGlobalHotkey
         // ⌘⌥C rides the same tap as ⌘⇧V: `clipboard.globalHotkey` gates the whole tap, `shelfHotkey` only this chord.
         case "clipboard.shelfAlt": return clipboardGlobalHotkey && clipboardShelfHotkey
@@ -87,7 +94,7 @@ struct ShortcutsDetailView: View {
         case "finderKeyboard.deleteToTrash": return finderDeleteToTrash
         case "finderKeyboard.returnOpens": return finderReturnOpens
         case "notes.new", "notes.library", "notes.pin": return true
-        case let s where s.hasPrefix("snap."): return snapHotkeysEnabled
+        case let s where s.hasPrefix("snap."): return snapEnabled && snapHotkeysEnabled
         case let s where s.hasPrefix("capture."): return captureEnabled
         default: return true
         }
@@ -300,7 +307,7 @@ struct ShortcutsDetailView: View {
     @ViewBuilder
     private func fixedEntryRow(_ entry: ShortcutCatalog.Entry) -> some View {
         let active = isActive(entry.id)
-        let chord = ShortcutCatalog.liveChord(of: entry, switcherSetting: switcherHotkey)
+        let chord = ShortcutCatalog.liveChord(of: entry, switcherSetting: switcherHotkey, browserLauncherSetting: browserLauncherShortcut)
         let result = conflicts(for: chord, owner: entry.id)
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: XFinderTokens.Space.inline) {

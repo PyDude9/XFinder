@@ -73,13 +73,7 @@ struct PaneView: View {
 
                 Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
 
-                HStack(spacing: 0) {
-                    content
-                    if showPreview {
-                        Rectangle().fill(XFinderTokens.Fill.hairline).frame(width: 1)
-                        PreviewPaneView(pane: pane, model: model)
-                    }
-                }
+                contentWithInspector
 
                 if showStatusBar {
                     Rectangle().fill(XFinderTokens.Fill.hairline).frame(height: 1)
@@ -94,6 +88,24 @@ struct PaneView: View {
             }
         }
 
+    }
+
+    private var contentWithInspector: some View {
+        GeometryReader { geometry in
+            let stacked = showPreview && InspectorLayoutRules.stacksInspector(availableWidth: geometry.size.width)
+            // Keep view identity (selection, scrolling, preview tasks) across layout changes.
+            let layout = stacked ? AnyLayout(VStackLayout(spacing: 0)) : AnyLayout(HStackLayout(spacing: 0))
+            layout {
+                content.frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                if showPreview {
+                    Rectangle().fill(XFinderTokens.Fill.hairline)
+                        .frame(width: stacked ? nil : InspectorLayoutRules.dividerWidth,
+                               height: stacked ? InspectorLayoutRules.dividerWidth : nil)
+                    PreviewPaneView(pane: pane, model: model, usesFlexibleWidth: stacked)
+                        .frame(height: stacked ? InspectorLayoutRules.stackedInspectorHeight(availableHeight: geometry.size.height) : nil)
+                }
+            }
+        }
     }
 
     /// `"outline"` style only (XF-T32 §G: the dim style has no accent line). Skipped entirely with a single pane

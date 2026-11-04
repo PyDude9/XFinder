@@ -14530,6 +14530,514 @@
     "Xem trước": {
       "en": "Preview",
       "scope": "sentence"
+    },
+    "Chọn thư mục đích để di chuyển": {
+      "en": "Choose a destination folder to move to",
+      "scope": "sentence"
+    },
+    "Tìm thư mục, biệt danh hoặc lệnh…": {
+      "en": "Find folders, nicknames, or commands…",
+      "scope": "sentence"
+    },
+    "Không có kết quả phù hợp.": {
+      "en": "No matching results.",
+      "scope": "sentence"
+    },
+    "↵ Mở · ⌘↵ Tab mới · ⌥↵ Chia ngăn": {
+      "en": "↵ Open · ⌘↵ New Tab · ⌥↵ Split",
+      "scope": "sentence"
+    },
+    "↵ Di chuyển vào thư mục đã chọn": {
+      "en": "↵ Move to selected folder",
+      "scope": "sentence"
+    },
+    "⌘K Lệnh · esc Đóng": {
+      "en": "⌘K Actions · esc Close",
+      "scope": "sentence"
+    },
+    "Di chuyển đến…": {
+      "en": "Move to…",
+      "scope": "sentence"
+    },
+    "Chọn thư mục đích": {
+      "en": "Choose destination folder",
+      "scope": "sentence"
+    },
+    "Không mở được mục này. Tệp có thể đã bị xoá hoặc thiếu quyền truy cập.": {
+      "en": "Cannot open this item. It may have been deleted or access is denied.",
+      "scope": "sentence"
+    },
+    "Hãy chọn một thư mục thật làm đích di chuyển.": {
+      "en": "Choose a real folder as the move destination.",
+      "scope": "sentence"
+    },
+    "Không thể tạo thêm ngăn trong bố cục hoặc gói hiện tại.": {
+      "en": "Cannot create another pane with the current layout or plan.",
+      "scope": "sentence"
+    },
+    "Các lệnh": {
+      "en": "Commands",
+      "scope": "sentence"
+    },
+    "Hiện nút Học sử dụng": {
+      "en": "Show Learn button",
+      "scope": "sentence"
+    },
+    "Khay Tải về": {
+      "en": "Downloads Tray",
+      "scope": "sentence"
+    },
+    "20 mục mới nhất theo ngày sửa đổi": {
+      "en": "20 most recent items by modification date",
+      "scope": "sentence"
+    },
+    "Chưa có mục nào trong thư mục Tải về.": {
+      "en": "No items in the Downloads folder yet.",
+      "scope": "sentence"
+    },
+    "Mở thư mục Tải về": {
+      "en": "Open Downloads Folder",
+      "scope": "sentence"
+    },
+    "Mở khay Tải về": {
+      "en": "Open Downloads Tray",
+      "scope": "sentence"
+    },
+    "Mở khay Tải về bằng ⌃⌥⌘D": {
+      "en": "Open Downloads Tray with ⌃⌥⌘D",
+      "scope": "sentence"
+    },
+    "Không đăng ký được phím tắt. Một ứng dụng khác có thể đang dùng tổ hợp này.": {
+      "en": "Could not register the shortcut. Another app may be using this key combination.",
+      "scope": "sentence"
+    },
+    "Ngăn thông tin": {
+      "en": "Inspector",
+      "scope": "sentence"
+    },
+    "Hiện ngăn xem trước": {
+      "en": "Show preview pane",
+      "scope": "sentence"
+    },
+    "Hiện thêm thông tin": {
+      "en": "Show additional information",
+      "scope": "sentence"
+    },
+    "Áp dụng trong thẻ Thông tin của ngăn xem trước.": {
+      "en": "Applies to the Information tab of the preview pane.",
+      "scope": "sentence"
+    },
+    "Nhóm cài đặt": {
+      "en": "Settings category",
+      "scope": "sentence"
+    },
+    "Mọi lệnh cũng có trong bảng lệnh: ⌃⇧⌘P, hoặc gõ > trong ⌃⌘P. Chọn nhóm Bàn phím trên trang này để đổi phím.": {
+      "en": "All commands are also in the command palette: ⌃⇧⌘P, or type > in ⌃⌘P. Choose the Keyboard category on this page to change shortcuts.",
+      "scope": "sentence"
+    },
+    "Phím tắt mở trình duyệt": {
+      "en": "File Browser shortcut",
+      "scope": "sentence"
+    },
+    "Đưa cửa sổ trình duyệt hiện có lên trước, hoặc mở nếu chưa có.": {
+      "en": "Bring an existing browser window forward, or open one if none exists.",
+      "scope": "sentence"
+    },
+    "Tổ hợp mở trình duyệt": {
+      "en": "Browser shortcut keys",
+      "scope": "sentence"
+    },
+    "Kéo thư mục vào đây hoặc ghim từ menu của thư mục.": {
+      "en": "Drag folders here or pin from folder menu.",
+      "scope": "sentence"
+    },
+    "Đã có nhóm tên này.": {
+      "en": "A group with this name already exists.",
+      "scope": "sentence"
+    },
+    "Live Group mới…": {
+      "en": "New Live Group…",
+      "scope": "sentence"
+    },
+    "Thêm nhóm hoặc Space": {
+      "en": "Add group or Space",
+      "scope": "sentence"
+    },
+    "Live Group": {
+      "en": "Live Group",
+      "scope": "sentence"
+    },
+    "Live Group mới": {
+      "en": "New Live Group",
+      "scope": "sentence"
+    },
+    "Chỉnh sửa Live Group": {
+      "en": "Edit Live Group",
+      "scope": "sentence"
+    },
+    "Chỉnh sửa Live Group…": {
+      "en": "Edit Live Group…",
+      "scope": "sentence"
+    },
+    "Live Group tự động đồng bộ với thư mục nguồn, chỉ hiển thị các mục khớp với bộ lọc của bạn.": {
+      "en": "A Live Group stays in sync with its source folder, showing only the items that match your filters.",
+      "scope": "sentence"
+    },
+    "Thư mục nguồn": {
+      "en": "Source folder",
+      "scope": "sentence"
+    },
+    "Đường dẫn thư mục": {
+      "en": "Folder path",
+      "scope": "sentence"
+    },
+    "Phần mở rộng": {
+      "en": "Extension",
+      "scope": "sentence"
+    },
+    "Chứa": {
+      "en": "Contains",
+      "scope": "sentence"
+    },
+    "Bắt đầu bằng": {
+      "en": "Begins with",
+      "scope": "sentence"
+    },
+    "Kết thúc bằng": {
+      "en": "Ends with",
+      "scope": "sentence"
+    },
+    "Là": {
+      "en": "Is",
+      "scope": "sentence"
+    },
+    "Tệp": {
+      "en": "File",
+      "scope": "sentence"
+    },
+    "Thêm bộ lọc": {
+      "en": "Add filter",
+      "scope": "sentence"
+    },
+    "Xoá bộ lọc": {
+      "en": "Delete filters",
+      "scope": "sentence"
+    },
+    "Tên (A đến Z)": {
+      "en": "Name (A to Z)",
+      "scope": "sentence"
+    },
+    "Tên (Z đến A)": {
+      "en": "Name (Z to A)",
+      "scope": "sentence"
+    },
+    "Không có mục nào khớp bộ lọc.": {
+      "en": "No items match your filters.",
+      "scope": "sentence"
+    },
+    "Thêm ít nhất một bộ lọc để lưu Live Group này.": {
+      "en": "Add at least one filter to save this Live Group.",
+      "scope": "sentence"
+    },
+    "Thư mục nguồn không hợp lệ.": {
+      "en": "Invalid source folder.",
+      "scope": "sentence"
+    },
+    "Không lưu được nhóm. Space có thể đã bị xoá.": {
+      "en": "Could not save the group. Its Space may have been removed.",
+      "scope": "sentence"
+    },
+    "Dịch & Sổ từ vựng": {
+      "en": "Translate & Wordbook",
+      "scope": "sentence"
+    },
+    "Không gian": {
+      "en": "Workspace",
+      "scope": "sentence"
+    },
+    "Tra từ": {
+      "en": "Lookup",
+      "scope": "sentence"
+    },
+    "Ôn tập": {
+      "en": "Review",
+      "scope": "sentence"
+    },
+    "Đã lưu trên máy": {
+      "en": "Saved on this Mac",
+      "scope": "sentence"
+    },
+    "Lưu trên máy": {
+      "en": "Stored on this Mac",
+      "scope": "sentence"
+    },
+    "Nhập / Xuất": {
+      "en": "Import / Export",
+      "scope": "sentence"
+    },
+    "Nhập bản sao lưu JSON": {
+      "en": "Import JSON backup",
+      "scope": "sentence"
+    },
+    "Xuất bản sao lưu JSON": {
+      "en": "Export JSON backup",
+      "scope": "sentence"
+    },
+    "Xuất thẻ Anki TSV": {
+      "en": "Export Anki notes TSV",
+      "scope": "sentence"
+    },
+    "Xuất Prompt Markdown": {
+      "en": "Export prompts as Markdown",
+      "scope": "sentence"
+    },
+    "Xuất Prompt JSON": {
+      "en": "Export prompts as JSON",
+      "scope": "sentence"
+    },
+    "Đã phục hồi bản sao lưu. File chính chỉ được thay khi bạn lưu thay đổi.": {
+      "en": "Recovered the backup. The primary file will only be replaced when you save a change.",
+      "scope": "sentence"
+    },
+    "Dữ liệu nằm trên máy. JSON giữ lịch ôn; TSV chỉ nhập nội dung thẻ vào Anki. Chưa cấu hình đồng bộ đám mây.": {
+      "en": "Data stays on this Mac. JSON preserves review schedules; TSV imports note content into Anki. Cloud sync is not configured.",
+      "scope": "sentence"
+    },
+    "Sổ từ vựng": {
+      "en": "Wordbook",
+      "scope": "sentence"
+    },
+    "Từ đã lưu": {
+      "en": "Saved words",
+      "scope": "sentence"
+    },
+    "Tên sổ mới": {
+      "en": "New wordbook name",
+      "scope": "sentence"
+    },
+    "Tạo sổ": {
+      "en": "Create wordbook",
+      "scope": "sentence"
+    },
+    "Cấu hình AI": {
+      "en": "Configure AI",
+      "scope": "sentence"
+    },
+    "Chỉ gửi văn bản và ngữ cảnh bạn nhập khi bấm Phân tích AI. Dùng nhà cung cấp ở trang Giọng nói.": {
+      "en": "Only the text and context you enter are sent when you click Analyze with AI. Uses the provider from Voice settings.",
+      "scope": "sentence"
+    },
+    "Tìm từ đã lưu": {
+      "en": "Search saved words",
+      "scope": "sentence"
+    },
+    "Chưa có từ trong sổ này.": {
+      "en": "No words in this wordbook yet.",
+      "scope": "sentence"
+    },
+    "Tra từ mới": {
+      "en": "New lookup",
+      "scope": "sentence"
+    },
+    "Tra từ theo ngữ cảnh": {
+      "en": "Contextual definition",
+      "scope": "sentence"
+    },
+    "Từ hoặc cụm từ": {
+      "en": "Word or phrase",
+      "scope": "sentence"
+    },
+    "Đích": {
+      "en": "Target",
+      "scope": "sentence"
+    },
+    "Ngữ cảnh (không bắt buộc)": {
+      "en": "Context (optional)",
+      "scope": "sentence"
+    },
+    "Phân tích AI": {
+      "en": "Analyze with AI",
+      "scope": "sentence"
+    },
+    "Từ điển trên máy": {
+      "en": "Local dictionary",
+      "scope": "sentence"
+    },
+    "Nghĩa / bản dịch": {
+      "en": "Meaning / translation",
+      "scope": "sentence"
+    },
+    "Lưu vào sổ từ": {
+      "en": "Save to wordbook",
+      "scope": "sentence"
+    },
+    "Lần ôn tiếp theo": {
+      "en": "Next review",
+      "scope": "sentence"
+    },
+    "Xóa từ": {
+      "en": "Delete word",
+      "scope": "sentence"
+    },
+    "Đến hạn ôn": {
+      "en": "Due for review",
+      "scope": "sentence"
+    },
+    "Lại · 10 phút": {
+      "en": "Again · 10 minutes",
+      "scope": "sentence"
+    },
+    "Khó": {
+      "en": "Hard",
+      "scope": "sentence"
+    },
+    "Nhớ": {
+      "en": "Good",
+      "scope": "sentence"
+    },
+    "Dễ": {
+      "en": "Easy",
+      "scope": "sentence"
+    },
+    "Hiện đáp án": {
+      "en": "Show answer",
+      "scope": "sentence"
+    },
+    "Không có thẻ đến hạn trong sổ này.": {
+      "en": "No cards due in this wordbook.",
+      "scope": "sentence"
+    },
+    "SM-2 với Lại sau 10 phút. Lịch này độc lập với bộ lập lịch của Anki.": {
+      "en": "SM-2 with a 10-minute Again step. This schedule is independent of Anki's scheduler.",
+      "scope": "sentence"
+    },
+    "Mô-đun": {
+      "en": "Module",
+      "scope": "sentence"
+    },
+    "Lưu prompt": {
+      "en": "Save prompt",
+      "scope": "sentence"
+    },
+    "Đã lưu prompt trên máy.": {
+      "en": "Prompt saved on this Mac.",
+      "scope": "sentence"
+    },
+    "Không lưu được dữ liệu. Hãy xuất bản sao lưu và thử lại.": {
+      "en": "Unable to save data. Export a backup and try again.",
+      "scope": "sentence"
+    },
+    "Khôi phục prompt gốc": {
+      "en": "Reset original prompt",
+      "scope": "sentence"
+    },
+    "Thử prompt với dữ liệu thật": {
+      "en": "Test prompt with real input",
+      "scope": "sentence"
+    },
+    "Chạy bản nháp": {
+      "en": "Run draft",
+      "scope": "sentence"
+    },
+    "Bản nháp chỉ được giữ vĩnh viễn khi bấm Lưu prompt. Làm sạch lời nói xử lý văn bản, không tự bật micro.": {
+      "en": "Drafts are only persisted when you click Save prompt. Dictation cleanup processes text and does not turn on the microphone.",
+      "scope": "sentence"
+    },
+    "Đã nhập dữ liệu; giữ nguyên từ và lịch ôn đã có.": {
+      "en": "Imported data; existing words and review schedules were preserved.",
+      "scope": "sentence"
+    },
+    "File nhập không hợp lệ. Dữ liệu hiện tại được giữ nguyên.": {
+      "en": "Invalid import file. Current data was preserved.",
+      "scope": "sentence"
+    },
+    "Không xuất được file. Hãy chọn vị trí có quyền ghi.": {
+      "en": "Unable to export. Choose a writable location.",
+      "scope": "sentence"
+    },
+    "Không đọc được sổ từ. File gốc được giữ nguyên; hãy kiểm tra thư mục Wordbook.": {
+      "en": "Unable to read the wordbook. Original files were preserved; check the Wordbook folder.",
+      "scope": "sentence"
+    },
+    "Dữ liệu được tạo bởi phiên bản mới hơn. Không ghi đè file này.": {
+      "en": "Data was created by a newer version. This file will not be overwritten.",
+      "scope": "sentence"
+    },
+    "Đã lưu file chính nhưng chưa tạo được bản sao lưu. Hãy xuất JSON.": {
+      "en": "Primary file saved, but backup creation failed. Export JSON.",
+      "scope": "sentence"
+    },
+    "Dữ liệu không hợp lệ. Chưa lưu thay đổi.": {
+      "en": "Invalid data. Changes were not saved.",
+      "scope": "sentence"
+    },
+    "Mở Dịch & Sổ từ vựng": {
+      "en": "Open Translate & Wordbook",
+      "scope": "sentence"
+    },
+    "Tra từ & lưu vào sổ": {
+      "en": "Look up & save word",
+      "scope": "sentence"
+    },
+    "Nội dung quá dài hoặc ngôn ngữ chưa được hỗ trợ.": {
+      "en": "Input is too long or the language is not supported.",
+      "scope": "sentence"
+    },
+    "Hãy cấu hình AI trong trang Giọng nói trước khi phân tích.": {
+      "en": "Configure AI in Voice settings before analyzing.",
+      "scope": "sentence"
+    },
+    "Prompt không hợp lệ.": {
+      "en": "Invalid prompt.",
+      "scope": "sentence"
+    },
+    "AI trả về dữ liệu không đúng cấu trúc. Chưa lưu kết quả.": {
+      "en": "AI returned an invalid structure. The result was not saved.",
+      "scope": "sentence"
+    },
+    "Dịch theo ngữ cảnh": {
+      "en": "Contextual translation",
+      "scope": "sentence"
+    },
+    "Làm sạch lời nói": {
+      "en": "Dictation cleanup",
+      "scope": "sentence"
+    },
+    "Phân tích câu": {
+      "en": "Sentence analysis",
+      "scope": "sentence"
+    },
+    "Tạo thẻ Anki": {
+      "en": "Anki card generator",
+      "scope": "sentence"
+    },
+    "Bản thiết kế prompt": {
+      "en": "Prompt Blueprints",
+      "scope": "sentence"
+    },
+    "Chỉ dẫn hệ thống": {
+      "en": "System Prompt",
+      "scope": "sentence"
+    },
+    "Mẫu đầu vào": {
+      "en": "User Template",
+      "scope": "sentence"
+    },
+    "Lược đồ JSON": {
+      "en": "JSON Schema",
+      "scope": "sentence"
+    },
+    "Prompt tự lưu trên máy. Làm sạch lời nói xử lý văn bản, không tự bật micro.": {
+      "en": "Prompts save automatically on this Mac. Dictation cleanup processes text and does not turn on the microphone.",
+      "scope": "sentence"
+    },
+    "Chỉnh sửa từ": {
+      "en": "Edit word",
+      "scope": "sentence"
+    },
+    "Xóa từ này?": {
+      "en": "Delete this word?",
+      "scope": "sentence"
     }
   }
 }

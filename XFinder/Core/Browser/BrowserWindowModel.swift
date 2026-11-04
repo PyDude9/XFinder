@@ -675,7 +675,8 @@ enum BrowserSheet: String, Identifiable {
         case .goToFolder:
             editingLocation = activePane
         case .quickOpen:
-            palette = .quickOpen
+            if palette != nil { palette = palette == .commands ? .quickOpen : .commands }
+            else { palette = .quickOpen }
         case .commandPalette:
             palette = .commands
         case .splitRight:

@@ -5,16 +5,30 @@ import SwiftUI
 struct SidebarSpacePager: View {
     let spaces: SpaceController
     let onNewGroup: () -> Void
+    let onNewLiveGroup: () -> Void
 
     @State private var nameSheet: SidebarSpaceNameSheet.Mode?
 
     var body: some View {
         HStack(spacing: XFinderTokens.Space.tight) {
-            iconButton(systemImage: "plus.circle", help: L10n.t("Nhóm mới…"), action: onNewGroup)
+            Color.clear.frame(width: XFinderTokens.BrowserSidebar.pagerHeight, height: XFinderTokens.BrowserSidebar.pagerHeight)
+                .accessibilityHidden(true)
             Spacer(minLength: 0)
             pageIndicator
             Spacer(minLength: 0)
-            iconButton(systemImage: "plus", help: L10n.t("Space mới…")) { nameSheet = .create }
+            Menu {
+                Button(L10n.t("Nhóm mới…"), systemImage: "folder.badge.plus", action: onNewGroup)
+                Button(L10n.t("Live Group mới…"), systemImage: "folder.badge.gearshape", action: onNewLiveGroup)
+                Button(L10n.t("Space mới…"), systemImage: "square.3.layers.3d") { nameSheet = .create }
+            } label: {
+                Image(systemName: "plus")
+                    .frame(width: XFinderTokens.BrowserSidebar.pagerHeight, height: XFinderTokens.BrowserSidebar.pagerHeight)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help(L10n.t("Thêm nhóm hoặc Space"))
+            .accessibilityLabel(L10n.t("Thêm nhóm hoặc Space"))
         }
         .padding(.horizontal, XFinderTokens.Space.row)
         .frame(height: XFinderTokens.BrowserSidebar.pagerHeight)
@@ -47,7 +61,7 @@ struct SidebarSpacePager: View {
             Circle()
                 .fill(active ? XFinderTokens.BrowserSidebar.pagerDotActive : XFinderTokens.BrowserSidebar.pagerDotInactive)
                 .frame(width: XFinderTokens.BrowserSidebar.pagerDot, height: XFinderTokens.BrowserSidebar.pagerDot)
-                .padding(XFinderTokens.Space.hairline)
+                .frame(width: XFinderTokens.BrowserSidebar.pagerHeight, height: XFinderTokens.BrowserSidebar.pagerHeight)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

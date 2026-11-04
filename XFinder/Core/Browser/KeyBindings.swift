@@ -115,6 +115,13 @@ struct KeyBindings: Codable, Equatable, Sendable {
             }
             return profileBinding
         }
+        if command == .quickOpen {
+            let primary = BrowserCommands.chord(for: command)
+            let extra = KeyChord("p", command: true, control: true)
+            let explicitlyClaimed = overrides.filter { $0.key != command.rawValue }.values
+            return KeyBinding(primary: explicitlyClaimed.contains { $0.primary == primary || $0.extra == primary } ? nil : primary,
+                              extra: explicitlyClaimed.contains { $0.primary == extra || $0.extra == extra } ? nil : extra)
+        }
         if command == .open {
             return KeyBinding(primary: BrowserCommands.chord(for: command), extra: Self.openExtra)
         }

@@ -410,4 +410,169 @@ final class SpaceModelTests: XCTestCase {
         let object: [String: Any]? = (try? JSONSerialization.jsonObject(with: store.encoded())) as? [String: Any]
         XCTAssertEqual(object?["schemaVersion"] as? Int, SpaceStore.currentSchemaVersion)
     }
+
+    // MARK: - Source-folder Live Groups
+
+    private func folderGroup(name: String = "Documents", source: String = "/tmp/source") -> FolderLiveGroup {
+        FolderLiveGroup(name: name, sourcePath: source,
+                        filters: [.init(field: .fileExtension, operation: .equals, value: "pdf")])
+    }
+
+    func testLegacySpacePayloadWithoutFolderGroupsDecodesWithoutLosingExistingData() throws {
+        var original = store(names: ["A", "B"])
+        original.toggleLiveGroup(LiveGroupRef(propertyID: UUID(), optionID: UUID()))
+        original.spaces[0].workspaceIDs = [UUID()]
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: original.encoded()) as? [String: Any])
+        var spaces = try XCTUnwrap(object["spaces"] as? [[String: Any]])
+        for index in spaces.indices { spaces[index].removeValue(forKey: "folderLiveGroups") }
+        object["spaces"] = spaces
+        let old = try JSONSerialization.data(withJSONObject: object)
+        let tolerant = SpaceStore.decode(old, fallbackLayout: SidebarLayout())
+        XCTAssertEqual(tolerant, original)
+        XCTAssertEqual(try JSONDecoder().decode(SpaceStore.self, from: old), original)
+        XCTAssertTrue(tolerant.spaces.allSatisfy { $0.folderLiveGroups.isEmpty })
+    }
+
+    func testFolderGroupRoundTripPreservesLegacyGroupsSidebarsAndWorkspaceIDs() {
+        var original = store(names: ["A", "B"])
+        let ref = LiveGroupRef(propertyID: UUID(), optionID: UUID())
+        original.toggleLiveGroup(ref)
+        original.spaces[0].workspaceIDs = [UUID()]
+        var group = folderGroup(name: "  Résumés  ", source: "/tmp/source/../documents")
+        group.sort = .modifiedNewest
+        XCTAssertTrue(original.saveFolderLiveGroup(group, in: original.activeID))
+        let decoded = SpaceStore.decode(original.encoded(), fallbackLayout: SidebarLayout())
+        XCTAssertEqual(decoded, original)
+        XCTAssertEqual(decoded.active.folderLiveGroups.first?.name, "Résumés")
+        XCTAssertEqual(decoded.active.folderLiveGroups.first?.sourcePath, "/tmp/documents")
+        XCTAssertEqual(decoded.active.liveGroups, [ref])
+        XCTAssertEqual(decoded.spaces[1].sidebar, original.spaces[1].sidebar)
+        XCTAssertTrue(decoded.spaces[1].folderLiveGroups.isEmpty)
+    }
+
+    func testDamagedFolderGroupElementsAreDroppedWithoutDroppingSpaceOrOtherGroups() throws {
+        var original = store(names: ["A"])
+        original.toggleLiveGroup(LiveGroupRef(propertyID: UUID(), optionID: UUID()))
+        let group = folderGroup()
+        let payload = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(group)) as? [String: Any])
+        var relative = payload; relative["id"] = UUID().uuidString; relative["sourcePath"] = "relative/path"
+        var emptyFilters = payload; emptyFilters["id"] = UUID().uuidString; emptyFilters["filters"] = []
+        var unknownSort = payload; unknownSort["id"] = UUID().uuidString; unknownSort["sort"] = "future-sort"
+        var badFilter = payload; badFilter["id"] = UUID().uuidString
+        badFilter["filters"] = [["id": UUID().uuidString, "field": "unknown", "operation": "equals", "value": "pdf"]]
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: original.encoded()) as? [String: Any])
+        var spaces = try XCTUnwrap(object["spaces"] as? [[String: Any]])
+        spaces[0]["folderLiveGroups"] = [relative, payload, 42, emptyFilters, unknownSort, badFilter, payload]
+        object["spaces"] = spaces
+        let data = try JSONSerialization.data(withJSONObject: object)
+        let decoded = SpaceStore.decode(data, fallbackLayout: SidebarLayout())
+        XCTAssertEqual(decoded.spaces.count, 1)
+        XCTAssertEqual(decoded.active.id, original.activeID)
+        XCTAssertEqual(decoded.active.liveGroups, original.active.liveGroups)
+        XCTAssertEqual(decoded.active.sidebar, original.active.sidebar)
+        XCTAssertEqual(decoded.active.folderLiveGroups, [group])
+        XCTAssertEqual(try JSONDecoder().decode(SpaceStore.self, from: data).active.folderLiveGroups, [group])
+    }
+
+    func testFolderGroupValidationDoesNotBroadenAnInvalidOrEmptyFilter() {
+        var group = folderGroup()
+        XCTAssertTrue(group.isValid)
+        group.filters = []
+        XCTAssertFalse(group.isValid)
+        XCTAssertFalse(group.matches(name: "a.pdf", isDirectory: false))
+        group = folderGroup(); group.filters[0].value = " . "
+        XCTAssertFalse(group.isValid)
+        group = folderGroup(); group.filters.append(.init(field: .name, operation: .contains, value: " \n"))
+        XCTAssertFalse(group.isValid, "a blank second criterion must not silently broaden an existing group")
+        group = folderGroup(); group.name = " \n"
+        XCTAssertFalse(group.isValid)
+        group = folderGroup(source: "~/Documents")
+        XCTAssertFalse(group.isValid)
+        group = folderGroup(source: "/tmp/invalid\0path")
+        XCTAssertFalse(group.isValid)
+        group = folderGroup(); group.filters = [.init(field: .kind, operation: .contains, value: "file")]
+        XCTAssertFalse(group.isValid)
+        group.filters = [.init(field: .kind, operation: .equals, value: "anything")]
+        XCTAssertFalse(group.isValid)
+    }
+
+    func testFolderGroupFiltersCombineWithAndAndIgnoreCaseDiacriticsAndLeadingExtensionDot() {
+        let group = FolderLiveGroup(name: "PDF reports", sourcePath: "/tmp",
+                                    filters: [.init(field: .name, operation: .contains, value: "cafe"),
+                                              .init(field: .fileExtension, operation: .equals, value: ".PDF"),
+                                              .init(field: .kind, operation: .equals, value: "FILE")])
+        XCTAssertTrue(group.matches(name: "Café REPORT.PdF", isDirectory: false))
+        XCTAssertTrue(group.matches(name: "Café REPORT.PdF".decomposedStringWithCanonicalMapping, isDirectory: false))
+        XCTAssertFalse(group.matches(name: "Café REPORT.txt", isDirectory: false))
+        XCTAssertFalse(group.matches(name: "Other.pdf", isDirectory: false))
+        XCTAssertFalse(group.matches(name: "Café REPORT.pdf", isDirectory: true))
+    }
+
+    func testNameOperatorsAndExtensionEdgeCases() {
+        let cases: [(FolderLiveGroup.MatchOperator, String, Bool)] = [
+            (.contains, "port", true), (.equals, "rÉport.md", true),
+            (.beginsWith, "rép", true), (.endsWith, ".MD", true), (.equals, "report", false),
+        ]
+        for (operation, value, expected) in cases {
+            let group = FolderLiveGroup(name: "Test", sourcePath: "/tmp",
+                                        filters: [.init(field: .name, operation: operation, value: value)])
+            XCTAssertEqual(group.matches(name: "Report.md", isDirectory: false), expected)
+        }
+        var group = folderGroup()
+        group.filters[0].value = "md"
+        XCTAssertTrue(group.matches(name: "README.md", isDirectory: false))
+        group.filters[0].value = "gitignore"
+        XCTAssertFalse(group.matches(name: ".gitignore", isDirectory: false))
+        group.filters[0].value = "gz"
+        XCTAssertTrue(group.matches(name: "archive.tar.gz", isDirectory: false))
+        XCTAssertFalse(group.matches(name: "archive.tar.gz", isDirectory: true))
+        group.filters = [.init(field: .kind, operation: .equals, value: "folder")]
+        XCTAssertTrue(group.matches(name: "folder", isDirectory: true))
+        XCTAssertFalse(group.matches(name: "folder", isDirectory: false))
+    }
+
+    func testFolderGroupSortsNaturallyAndUsesStablePathTies() {
+        var group = folderGroup()
+        let candidates: [FolderLiveGroup.Candidate] = [
+            .init(path: "/z", name: "Café.pdf", isDirectory: false),
+            .init(path: "/10", name: "item10.pdf", isDirectory: false),
+            .init(path: "/2", name: "item2.pdf", isDirectory: false),
+            .init(path: "/a", name: "CAFE.pdf", isDirectory: false),
+            .init(path: "/excluded", name: "item1.txt", isDirectory: false),
+        ]
+        XCTAssertEqual(group.matching(candidates).map(\.path), ["/a", "/z", "/2", "/10"])
+        group.sort = .nameDescending
+        XCTAssertEqual(group.matching(Array(candidates.reversed())).map(\.path), ["/10", "/2", "/a", "/z"])
+    }
+
+    func testFolderGroupModifiedSortKeepsUnknownDatesLastAndTiesByPath() {
+        var group = folderGroup()
+        let candidates: [FolderLiveGroup.Candidate] = [
+            .init(path: "/missing", name: "m.pdf", isDirectory: false),
+            .init(path: "/new-z", name: "z.pdf", isDirectory: false, modifiedDate: Date(timeIntervalSince1970: 20)),
+            .init(path: "/old", name: "o.pdf", isDirectory: false, modifiedDate: Date(timeIntervalSince1970: 10)),
+            .init(path: "/new-a", name: "a.pdf", isDirectory: false, modifiedDate: Date(timeIntervalSince1970: 20)),
+        ]
+        group.sort = .modifiedNewest
+        XCTAssertEqual(group.matching(candidates).map(\.path), ["/new-a", "/new-z", "/old", "/missing"])
+        group.sort = .modifiedOldest
+        XCTAssertEqual(group.matching(Array(candidates.reversed())).map(\.path), ["/old", "/new-a", "/new-z", "/missing"])
+    }
+
+    func testFolderGroupUpsertAndRemovalAreExplicitlyScopedToSpace() {
+        var original = store(names: ["A", "B"])
+        let first = original.spaces[0].id, second = original.spaces[1].id
+        var group = folderGroup()
+        original.activate(second)
+        XCTAssertTrue(original.saveFolderLiveGroup(group, in: first))
+        XCTAssertTrue(original.active.folderLiveGroups.isEmpty)
+        group.name = "Renamed"
+        XCTAssertTrue(original.saveFolderLiveGroup(group, in: first))
+        XCTAssertEqual(original.spaces[0].folderLiveGroups, [group])
+        XCTAssertFalse(original.removeFolderLiveGroup(group.id, from: second))
+        XCTAssertFalse(original.saveFolderLiveGroup(group, in: UUID()))
+        XCTAssertTrue(original.removeFolderLiveGroup(group.id, from: first))
+        XCTAssertTrue(original.spaces[0].folderLiveGroups.isEmpty)
+    }
+
 }

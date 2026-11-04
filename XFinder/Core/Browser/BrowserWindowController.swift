@@ -64,6 +64,18 @@ import os
 
     // MARK: - Opening
 
+    /// The global launcher brings an existing browser back instead of accumulating duplicate windows.
+    func showBrowser() {
+        guard BrowserSettings.isEnabled else { return }
+        let existing = NSApp.orderedWindows.compactMap { $0 as? BrowserWindow }.first {
+            windows.contains($0)
+        } ?? windows.last
+        guard let existing else { openWindow(path: nil); return }
+        if existing.isMiniaturized { existing.deminiaturize(nil) }
+        NSApp.activate(ignoringOtherApps: true)
+        existing.makeKeyAndOrderFront(nil)
+    }
+
     /// ⌘N, menu bar item, deep link `xfinder://browser?path=`. `path` nil ⇒ `BrowserSettings.newWindowTarget`.
     /// `startSearch`: the AI Search page's "Mở thanh tìm" link — opens the window then starts ⌥⌘F (an empty,
     /// editable search) in its active pane, same as pressing the chord by hand right after the window appears.
@@ -120,6 +132,16 @@ import os
     /// XF-T30 W1 — ⌘T / the native tab bar's +: a new browser window added as a native tab of `model`'s window.
     /// Opens `BrowserSettings.newWindowTarget` (XF-T30 W4 — W1's own comment here used to say "Home, until W4 has
     /// 'New windows show'"), then slots it into the SAME `NSWindowTabGroup` as `model`'s own window, right after it.
+    /// Resolves the existing global Cmd-K collision without exposing window/model internals.
+    @discardableResult
+    func performShortcutInKeyWindow(_ command: BrowserCommand) -> Bool {
+        guard NSWorkspace.shared.frontmostApplication?.bundleIdentifier == Bundle.main.bundleIdentifier,
+              let window = NSApp.keyWindow as? BrowserWindow,
+              let model = modelsByWindow[ObjectIdentifier(window)] else { return false }
+        _ = model.perform(command)
+        return true
+    }
+
     func openWindowTab(besideWindowOf model: BrowserWindowModel) {
         guard let existingWindow = windows.first(where: { modelsByWindow[ObjectIdentifier($0)] === model }) else {
             openWindow(path: nil)
@@ -490,7 +512,10 @@ final class BrowserWindow: NSWindow {
     /// Never steals from a text field (location bar, filter, rename editor) and does nothing when focus is already
     /// inside `view`.
     func focusFileView(_ view: NSView, paneIsActive: Bool) {
-        guard paneIsActive, view.window === self, !(firstResponder.map(isTextEditing) ?? false) else { return }
+        // SwiftUI mounts the palette's field during the same update as the file view.
+        // Keep the outline from reclaiming focus before that field starts editing.
+        guard modelForThisWindow()?.palette == nil,
+              paneIsActive, view.window === self, !(firstResponder.map(isTextEditing) ?? false) else { return }
         if let responder = firstResponder as? NSView, responder === view || responder.isDescendant(of: view) { return }
         makeFirstResponder(view)
     }
@@ -520,7 +545,15 @@ final class BrowserWindow: NSWindow {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if SnapZoneController.shared.performLocalShortcut(event) { return true }
         let model = modelForThisWindow()
+        if let model, let chord = Self.chord(from: event) {
+            if model.palette != nil, chord.key == "return" { return super.performKeyEquivalent(with: event) }
+            if BrowserSettings.keyBindings.command(for: chord) == .quickOpen,
+               model.palette != nil || chord == KeyChord("k", command: true) || chord == KeyChord("p", command: true, control: true) {
+                return model.perform(.quickOpen)
+            }
+        }
         // A text field (the location bar, filter/search fields, rename editor, palette) keeps its own editing
         // keys; only command-chords that are not text editing are still dispatched through the browser table —
         // e.g. ⌘C/⌘V in a text field must behave like normal copy/paste, not the browser's file copy/paste.

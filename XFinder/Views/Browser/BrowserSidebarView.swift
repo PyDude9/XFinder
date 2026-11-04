@@ -43,6 +43,10 @@ struct BrowserSidebarView: View {
     @State private var renamingItem: RenameTarget?
     @State private var renameText = ""
     @State private var creatingGroup = false
+    @State private var groupNameError = false
+    @FocusState private var newGroupFocused: Bool
+    @State private var editingFolderGroup: FolderLiveGroup?
+    @State private var folderGroupSpaceID: UUID?
     @State private var newGroupName = ""
     @State private var isTargeted = false
     /// XF-T30 W5b — snapshot of `BrowserSettings.savedSearches`, reloaded on `.onAppear` and after every mutation
@@ -106,7 +110,12 @@ struct BrowserSidebarView: View {
                     .padding(.vertical, XFinderTokens.Space.tight)
             }
             // Pinned at the bottom, outside the scroll view (Tilde: ⊕ · page dots · +).
-            SidebarSpacePager(spaces: spaces, onNewGroup: beginNewGroup)
+            SidebarSpacePager(spaces: spaces, onNewGroup: beginNewGroup, onNewLiveGroup: {
+                folderGroupSpaceID = spaces.active.id
+                editingFolderGroup = FolderLiveGroup(name: L10n.t("Live Group"),
+                    sourcePath: model.active.path.hasPrefix("/") ? model.active.path : NSHomeDirectory(),
+                    filters: [.init(field: .name, operation: .contains, value: "")])
+            })
         }
         .background(SidebarVibrancyBackground())
         .onAppear(perform: reload)
@@ -130,6 +139,13 @@ struct BrowserSidebarView: View {
                              isEjectable: true)
             beginEject(row, force: false)
         }
+        .sheet(isPresented: $creatingGroup) { newGroupRow }
+        .sheet(item: $editingFolderGroup) { group in
+            FolderLiveGroupEditor(group: group) { updated in
+                guard let id = folderGroupSpaceID else { return false }
+                return spaces.saveFolderLiveGroup(updated, in: id)
+            } onClose: { editingFolderGroup = nil }
+        }
         .sheet(item: $renamingItem) { target in
             renameSheet(target)
         }
@@ -149,10 +165,12 @@ struct BrowserSidebarView: View {
     private var sectionStack: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.inline) {
             favoritesSection
-            if creatingGroup {
-                newGroupRow
-            }
             SidebarLiveGroupsSection(spaces: spaces, metadata: metadata, onOpen: openFolder, isSelected: isCurrentPath)
+            ForEach(spaces.active.folderLiveGroups) { group in
+                FolderLiveGroupSidebarBlock(group: group, isSelected: isCurrentPath, onOpen: openLiveGroupItem,
+                    onEdit: { folderGroupSpaceID = spaces.active.id; editingFolderGroup = group },
+                    onRemove: { _ = spaces.removeFolderLiveGroup(group.id, from: spaces.active.id) })
+            }
             if BrowserSettings.sidebarRecents {
                 recentsSection
             }
@@ -187,7 +205,15 @@ struct BrowserSidebarView: View {
     private func beginNewGroup() {
         pendingMoveItemID = nil
         newGroupName = ""
+        groupNameError = false
         creatingGroup = true
+    }
+
+    private func openLiveGroupItem(_ entry: DirectoryEntry) {
+        if entry.isFolderLike { openFolder(entry.path) }
+        else if !NSWorkspace.shared.open(URL(fileURLWithPath: entry.path)) {
+            model.banner = L10n.t("Không mở được mục này. Tệp có thể đã bị xoá hoặc thiếu quyền truy cập.")
+        }
     }
 
     /// Navigates the active pane and records the folder in Recents — the one path every sidebar row click takes.
@@ -200,6 +226,8 @@ struct BrowserSidebarView: View {
     /// item ids of the previous Space's layout, so they are dropped instead of being applied to the wrong Space.
     private func cancelPendingEdits() {
         renamingItem = nil
+        editingFolderGroup = nil
+        folderGroupSpaceID = nil
         pendingMoveItemID = nil
         creatingGroup = false
         newGroupName = ""
@@ -338,8 +366,14 @@ struct BrowserSidebarView: View {
                     return true
                 }
 
-                ForEach(layout.groups) { group in
+            }
+            ForEach(layout.groups) { group in
                     section(title: group.name) {
+                        if group.items.isEmpty {
+                            Text(L10n.t("Kéo thư mục vào đây hoặc ghim từ menu của thư mục."))
+                                .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                                .padding(.horizontal, XFinderTokens.Space.row)
+                        }
                         ForEach(group.items) { item in
                             favoriteRow(item, groupID: group.id)
                         }
@@ -350,7 +384,6 @@ struct BrowserSidebarView: View {
                         return true
                     }
                 }
-            }
         }
     }
 
@@ -490,25 +523,33 @@ struct BrowserSidebarView: View {
     /// The inline "new group" field, shown under Favorites while `creatingGroup` — opened by the pager's ⊕, a
     /// volume's "Nhóm mới…", or an item's "Tạo nhóm và chuyển vào đây" (Tilde has no separate bottom button).
     private var newGroupRow: some View {
-        HStack(spacing: XFinderTokens.Space.tight) {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            Text(L10n.t("Nhóm mới…")).font(XFinderTokens.Font.sectionTitle)
             TextField(L10n.t("Tên nhóm"), text: $newGroupName)
                 .textFieldStyle(.roundedBorder)
-                .font(XFinderTokens.Font.caption)
+                .focused($newGroupFocused)
                 .onSubmit(commitNewGroup)
-            Button(L10n.t("Tạo")) { commitNewGroup() }
-                .buttonStyle(.borderless)
-            Button(L10n.t("Huỷ")) {
-                pendingMoveItemID = nil
-                creatingGroup = false
+                .onChange(of: newGroupName) { _, _ in groupNameError = false }
+            if groupNameError {
+                Text(L10n.t("Đã có nhóm tên này.")).font(XFinderTokens.Font.caption).foregroundColor(.red)
             }
-            .buttonStyle(.borderless)
+            HStack {
+                Spacer()
+                Button(L10n.t("Huỷ")) { pendingMoveItemID = nil; creatingGroup = false }
+                    .keyboardShortcut(.cancelAction)
+                Button(L10n.t("Tạo"), action: commitNewGroup)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(newGroupName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
         }
-        .padding(.horizontal, XFinderTokens.Space.inline)
+        .padding(XFinderTokens.Space.page)
+        .frame(width: XFinderTokens.BrowserSidebar.sheetWidth)
+        .task { await Task.yield(); newGroupFocused = true }
     }
 
     private func commitNewGroup() {
         guard !newGroupName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        guard let group = layout.addGroup(named: newGroupName) else { return }
+        guard let group = layout.addGroup(named: newGroupName) else { groupNameError = true; return }
         if let movingID = pendingMoveItemID {
             layout.moveItem(movingID, toGroup: group.id, index: group.items.count)
         }
