@@ -83,7 +83,7 @@ hiện ở view *Blocked* — đó là cách duy nhất bạn biết một agent
    Đọc docs/AGENT_QUICKSTART.md và mục 1–3 của docs/AGENT_TASKS.md trước khi làm gì. Làm trên nhánh mới
    agent/<công-cụ>-<việc>, commit trên nhánh đó; không push, không commit lên main, chỉ stage đúng file mình sửa
    (không git add -u / -A).
-   Việc: <mô tả>. Xong chạy sh scripts/build-and-check.sh và swift test --package-path /Users/wolong/github/XFinder/Tests,
+   Việc: <mô tả>. Xong chạy sh scripts/build-and-check.sh và swift test --package-path "$(git rev-parse --show-toplevel)"/Tests,
    rồi ghi vào docs/AGENT_WORKLOG.md: đã làm gì, kết quả từng lệnh, và điều gì CHƯA kiểm được.
    ```
 5. **Chuyển hẳn một phiên dở dang** (việc lớn đang làm mà Claude bị dừng giữa chừng): notch ▸ Agent ▸ phiên Claude ▸
