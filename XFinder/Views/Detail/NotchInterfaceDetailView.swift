@@ -13,6 +13,7 @@ struct NotchInterfaceDetailView: View {
     @AppStorage("dropTray.hoverEnabled") private var hoverEnabled = true
     @AppStorage("notch.hoverOpens") private var hoverOpens = "peek"   // N2 (replaces notch.clipboardOnHover)
     @AppStorage("notch.hoverSpeed") private var hoverSpeed = "medium"
+    @AppStorage("notch.clickOpens") private var clickOpens = "files"
 
     // B7 notch behaviour. Readers: NotchSurfaceController (defaults must match — FeatureKeyDefaultsTests).
     @AppStorage("notch.pillOnPlainScreens") private var pillOnPlainScreens = true
@@ -40,6 +41,8 @@ struct NotchInterfaceDetailView: View {
 
                 hoverSection
                     .disabled(!notchEnabled)
+                clickSection
+                    .disabled(!notchEnabled)
                 shapeSection
                     .disabled(!notchEnabled)
                 pagesSection
@@ -49,6 +52,27 @@ struct NotchInterfaceDetailView: View {
             .pageWidthSafe()
         }
         .background(XFinderTokens.Settings.contentBackground)
+    }
+
+    private var clickSection: some View {
+        SettingsSection(title: L10n.t("Bấm mở notch"),
+                        footer: L10n.t("Áp dụng khi bấm huy hiệu hoặc dải xem nhanh. Lối mở trang cụ thể vẫn giữ đúng trang đích.")) {
+            HStack(alignment: .firstTextBaseline, spacing: XFinderTokens.Space.inline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.t("Bấm mở notch vào trang")).font(XFinderTokens.Font.row)
+                    Text(L10n.t("Chọn một trang cố định, trang dùng lần cuối hoặc trang phù hợp hoạt động hiện tại."))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                }
+                Spacer()
+                Picker("", selection: $clickOpens) {
+                    ForEach(NotchClickOpen.allCases, id: \.rawValue) { rule in
+                        Text(L10n.t(rule.labelKey)).tag(rule.rawValue)
+                    }
+                }
+                .labelsHidden().pickerStyle(.menu).frame(width: 170)
+            }
+            .settingsRow()
+        }
     }
 
     /// The user comes here to decide what resting the pointer on the notch does.

@@ -296,6 +296,9 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "notch.hoverOpens",
                views: ["XFinder/Views/Detail/NotchInterfaceDetailView.swift"],
                reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
+        Switch(key: "notch.clickOpens",
+               views: ["XFinder/Views/Detail/NotchInterfaceDetailView.swift"],
+               reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
         // Notch surface (B1). These two were DEAD keys for a year — stored, never read. Now the
         // machine gates on them, and the page binds them.
         // P3: the notch master. It switches the WHOLE notch surface off, so its switch lives on Giao diện notch; Khay

@@ -75,6 +75,8 @@ final class NotchSurfaceController {
     /// N2 — the ONE reader of `notch.hoverOpens` (what a dwelt hover opens). The D1 Bool it replaces is migrated
     /// once in `applySettings()`.
     private var hoverOpensRaw: String { UserDefaults.standard.string(forKey: "notch.hoverOpens") ?? "peek" }
+    /// Deliberate opens use their own preference; explicit page intents continue to bypass it.
+    private var clickOpensRaw: String { UserDefaults.standard.string(forKey: "notch.clickOpens") ?? "files" }
     /// The hub page that was open last, for `NotchHoverOpen.lastPage`.
     private var lastHubPage: NotchSurfaceMachine.Page?
     /// B7: keep the surface out of screenshots, recordings and screen sharing (`NSWindow.sharingType = .none`;
@@ -221,10 +223,16 @@ final class NotchSurfaceController {
 
     // MARK: Public intents
 
-    /// Deliberate open: badge / peek click, or the Finder-extension URL. `page` lands on that page.
-    func reveal(page: NotchSurfaceMachine.Page = .files) {
+    /// Deliberate open: an explicit destination wins; otherwise use the configured click rule.
+    func reveal(page: NotchSurfaceMachine.Page? = nil) {
         if !state.isOpen { surfaceScreen = WindowManager.screenUnderPointer() }
-        dispatch(.activateOn(NotchPages.resolve(page, shown: model.pages)))   // ONE transition — see the machine's note on activateOn
+        let activity = NotchHoverOpen.Activity(itemCount: machine.itemCount,
+                                              trackPlaying: NowPlayingMonitor.shared.hasTrack,
+                                              agentNeedsYou: model.agentsNeedingYou > 0,
+                                              lastPage: lastHubPage)
+        let target = NotchClickOpen.resolve(explicitPage: page, rule: NotchClickOpen.parse(clickOpensRaw),
+                                            activity: activity, shown: model.pages)
+        dispatch(.activateOn(target))   // ONE transition — see the machine's note on activateOn
     }
 
     /// A tab in the open hub (B5). A hidden page (D1 #44) resolves to the first shown one.

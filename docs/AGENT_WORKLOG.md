@@ -1,3 +1,23 @@
+## 2026-11-06 — Codex — XF-T36 notch opening behavior (direct owner request)
+
+Branch: `agent/codex-XF-T36`, based on `a48e274`. Spec: `docs/specs/XF-T36-notch-opening-page.md`. Notion search found no XF-T36 task; this is recorded as a direct-request handoff, not as a claimed Queue task.
+
+Implemented a separate deliberate-open rule (`notch.clickOpens`) in addition to the existing hover rule. Users can choose any visible fixed page, last-used page, or current activity; unknown settings and hidden pages fall back safely. Activity priority is waiting agent → playing track → held files → Clipboard. Explicit page routes still take precedence. Default is Files, preserving existing XFinder behavior. Added a Settings picker and 4 L10n entries. Updated the 28-group Notch/Dynamic Island comparison and roadmap.
+
+| Check | Result |
+|:--|:--|
+| `swift test --package-path Tests --filter 'NotchHoverOpenTests|FeatureKeyDefaultsTests'` | 17 tests, 0 failures (includes final explicit-destination test) |
+| `XF_OUT=/tmp/xfinder-t36-notch-build sh scripts/build-and-check.sh` | `** BUILD SUCCEEDED **`, arm64; isolated output, not installed |
+| `plutil -lint XFinder.xcodeproj/project.pbxproj` | OK (no project file added) |
+| L10n coverage / duplicates / literal / sidebar / gesture / interpolation / UI token audits | All zero problems; coverage 3785 entries |
+| `git diff --check` | OK |
+| `sh scripts/gate-all.sh` | RED only because `AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput` expects no ancestor named `codex`; same environment-sensitive failure seen in the preceding gate attempt. Build passed; 2909 tests, 1 failure. Do not repeat a third time. Full stdout: `/var/folders/xq/xzqwntyx0yx4stl6d6x3t7h00000gp/T/xfinder-gate.MwtW7w` |
+| Live behavior | NOT VERIFIED; no install or launch |
+
+Remaining core notch gaps for Claude to review: display-target policy, fullscreen visibility policy, gesture-zone preview, robust return-to-origin/child-popover focus and activity priority/history. The 28-group coverage file records other feature-family gaps. Build/gate review and any live UI validation remain with Claude.
+
+CHỜ REVIEW (nhánh `agent/codex-XF-T36`).
+
 ## 2026-10-28 — Codex & Antigravity: Spaces and folder Live Groups repair
 
 Branch agent/codex-spaces-live-groups, follows fde3c51. Spec: docs/specs/XF-spaces-live-groups-repair-contract.md. Researched Tilde 1.0.2 build 14 Spaces, Live Groups, and sidebar organization from seven owner screenshots (Desktop 19.28.42–19.32.29).
