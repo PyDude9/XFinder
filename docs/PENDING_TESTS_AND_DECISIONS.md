@@ -13,8 +13,9 @@ Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả l�
 
 ### 2026-11-06 · XF-T35 Phân tích thư mục (Lưu trữ)
 
-Gộp `1182b3c` + sửa `768dc83`. Việc theo sau (review, chưa sửa): mỗi tệp gọi thêm `lstat` + `resourceValues(isUbiquitousItem)`
-(chi phí trên thư mục 100 000 tệp chưa đo); hard link được cộng hai lần (byte logic, đúng nhãn nhưng lệch "dung lượng thật");
+Gộp `1182b3c` + sửa `768dc83` (symlink ⇒ "chưa đầy đủ") + `ef669cb` (review độc lập đo chậm 8,2× so với FileWalk trần —
+nguyên nhân đo được là `resourceValues` mỗi tệp, không phải `lstat`; giờ chỉ dùng `SF_DATALESS`, khớp 1 932/1 932 tệp iCloud chỉ-trên-mây).
+Việc theo sau (chưa sửa): hard link được cộng hai lần (byte logic, đúng nhãn nhưng lệch "dung lượng thật");
 chưa có harness mutation riêng cho `StorageScanRules` (7 test thuần).
 
 | Mã | Làm gì | Mong đợi |

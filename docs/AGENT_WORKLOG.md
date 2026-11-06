@@ -847,5 +847,7 @@ Review: engine chạy ngoài main actor, huỷ hợp tác qua `Task.isCancelled`
 bão hoà, run id chặn tiến độ trễ. **Lỗi sửa** (`768dc83`): mọi symlink đi qua `FileWalk.onOther` ⇒ bị đếm "bỏ qua" ⇒ thư mục nào có
 link cũng báo "Kết quả chưa đầy đủ"; `FileWalk` thêm `onLink` tuỳ chọn (Junk Cleanup giữ hành vi cũ), test `FileWalkLinkTests`,
 harness cleanup J10 (**10/10 RED**). Gate nhánh builder: green 2901/0. Gate `main` sau gộp + sửa: green, **2903/0**, L10n 0, token 0.
-Live: chưa (cài chờ idle).
+Review độc lập (Claude, Notion Run): cùng phát hiện symlink; đo **8,2×** chậm hơn FileWalk trần (81 210 mục: 7,95 s vs 0,97 s). Probe
+Boss: `lstat` ≈ 0, `resourceValues` là toàn bộ chi phí (0,74 vs 0,12 s / 17 238 mục; 2,73 vs 0,12 s / 2 340 mục iCloud) ⇒ `ef669cb`
+chỉ `SF_DATALESS` (0 lệch trên 1 932 tệp chỉ-trên-mây). Gate main sau `ef669cb`: green 2903/0. Live: chưa (cài chờ idle).
 
