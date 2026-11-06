@@ -15126,6 +15126,22 @@
     "Thư mục chỉ có trên đám mây. Hãy tải về trước khi quét.": {
       "en": "This folder is cloud-only. Download it before scanning.",
       "scope": "sentence"
+    },
+    "Bấm mở notch": {
+      "en": "Click to open notch",
+      "scope": "sentence"
+    },
+    "Bấm mở notch vào trang": {
+      "en": "Clicking the notch opens",
+      "scope": "sentence"
+    },
+    "Chọn một trang cố định, trang dùng lần cuối hoặc trang phù hợp hoạt động hiện tại.": {
+      "en": "Choose a fixed page, the last-used page, or the page that best fits current activity.",
+      "scope": "sentence"
+    },
+    "Áp dụng khi bấm huy hiệu hoặc dải xem nhanh. Lối mở trang cụ thể vẫn giữ đúng trang đích.": {
+      "en": "Applies when clicking the badge or peek strip. Actions targeting a specific page still open that page.",
+      "scope": "sentence"
     }
   }
 }

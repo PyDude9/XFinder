@@ -80,3 +80,51 @@ enum NotchHoverOpen: String, CaseIterable, Equatable {
         }
     }
 }
+
+/// Where an intentional click/shortcut open should land. Kept separate from hover behavior so a
+/// brief pointer pause can remain a peek while an explicit open still lands on a useful page.
+enum NotchClickOpen: String, CaseIterable, Equatable {
+    case files, clipboard, nowPlaying, agents, calendar, timer, aiUsage
+    case lastPage
+    case activity
+
+    static let defaultRaw = "files"
+
+    static func parse(_ raw: String?) -> NotchClickOpen {
+        raw.flatMap(NotchClickOpen.init(rawValue:)) ?? .files
+    }
+
+    static func resolve(explicitPage: NotchSurfaceMachine.Page?, rule: NotchClickOpen,
+                        activity: NotchHoverOpen.Activity, shown: [NotchSurfaceMachine.Page]) -> NotchSurfaceMachine.Page {
+        if let explicitPage { return NotchPages.resolve(explicitPage, shown: shown) }
+        return rule.page(for: activity, shown: shown)
+    }
+
+    func page(for activity: NotchHoverOpen.Activity, shown: [NotchSurfaceMachine.Page]) -> NotchSurfaceMachine.Page {
+        func visible(_ page: NotchSurfaceMachine.Page) -> NotchSurfaceMachine.Page? {
+            shown.contains(page) ? page : nil
+        }
+        switch self {
+        case .files, .clipboard, .nowPlaying, .agents, .calendar, .timer, .aiUsage:
+            let target = NotchSurfaceMachine.Page(rawValue: rawValue) ?? .files
+            return visible(target) ?? shown.first ?? NotchPages.defaultOrder[0]
+        case .lastPage:
+            return activity.lastPage.flatMap(visible) ?? shown.first ?? NotchPages.defaultOrder[0]
+        case .activity:
+            if activity.agentNeedsYou, let page = visible(.agents) { return page }
+            if activity.trackPlaying, let page = visible(.nowPlaying) { return page }
+            if activity.itemCount > 0, let page = visible(.files) { return page }
+            if let page = visible(.clipboard) { return page }
+            return shown.first ?? NotchPages.defaultOrder[0]
+        }
+    }
+
+    var labelKey: String {
+        switch self {
+        case .lastPage: return "Trang mở lần cuối"
+        case .activity: return "Theo hoạt động"
+        default:
+            return NotchSurfaceMachine.Page(rawValue: rawValue).map(NotchPages.titleKey) ?? NotchPages.titleKey(.files)
+        }
+    }
+}

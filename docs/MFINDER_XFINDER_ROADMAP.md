@@ -2,7 +2,7 @@
 
 **Purpose:** Turn the supplied MFinder feature prompts into a truthful, staged XFinder plan. MFinder is a reference for user outcomes, not an API or implementation authority. XFinder remains a native macOS utility; this plan does not commit the app to reproducing MFinder's cloud services, 7-Zip bundle, semantic model, or proprietary behaviors.
 
-**Baseline inspected:** `a24bcb21c7ea03e3394b18604f9a3a09f1169889` (`main`); code and tests are unchanged since baseline `590e210` (the later commits are documentation-only). The current `StorageDetailView` uses `DiskManager` for volume capacity, I/O rates, and SMART status. This is a different responsibility from recursively analyzing a user-selected folder.
+**Baseline inspected:** `a48e274b887e719828e1c214f8b68e7a09ed69a9` (`main`, 2026-11-06). XF-T35 adds a read-only, cancellable scan of one user-selected folder; this remains separate from `DiskManager`, which owns volume capacity, I/O rates, and SMART status. See [Notch / Dynamic Island coverage](MFINDER_XFINDER_NOTCH_COVERAGE.md) for a 28-group source comparison against the supplied OneNotch-derived product specification.
 
 ## Product map
 
@@ -30,7 +30,7 @@ The shared layer should own scoped file access, progress/cancellation convention
 
 | MFinder capability | XFinder starting point | Gap / overlap | Direction |
 |---|---|---|---|
-| Disk Storage Analyzer | `DiskManager`, `StorageDetailView` show volume capacity and device I/O | No user-selected directory scan, size tree, or largest-items report. Volume bytes are not folder bytes. | Start with a cancellable, read-only folder scan. Add charts only after result semantics and performance are proven. |
+| Disk Storage Analyzer | `DiskManager`, `StorageDetailView`, `StorageScanEngine`, `StorageScanRules` | v0.1 scans one user-selected folder read-only, reports logical bytes/top 50 and skipped items. No treemap/sunburst; per-entry metadata overhead and hard-link accounting remain follow-ups. | Keep charts separate from scanning; optimize traversal only with measured, tested semantics. See `docs/specs/XF-T35-storage-analyzer-v01.md`. |
 | Duplicate Finder | No dedicated duplicate finder found | New feature; overlaps with storage traversal and safe Trash operations. | Reuse only a small traversal contract after it proves stable; exact byte comparison follows size/hash shortlist. |
 | Archive Manager | `ArchiveEngine`, `ArchiveRunner` and archive UI; current implementation uses system tools such as `ditto`, `zip`, `tar` | Do not add a bundled 7zz binary without license, provenance, notarization, and update plan. Verify each format's extraction behavior. | Audit safety and coverage first; preserve no-overwrite and traversal protections. |
 | Find in Files / AI search | `FileSearchEngine`, Quick Search and Spotlight-backed query paths | Natural-language parsing exists; no verified embedding/vector search API or semantic index. | Describe current behavior as parsed local Spotlight search. Do not claim AI semantic retrieval without a supported local engine and evidence. |
@@ -43,6 +43,10 @@ The shared layer should own scoped file access, progress/cancellation convention
 | Window snapping | `SnapZoneController`, `SnapLayout`, memory/restore work | Feature exists and has prior user feedback. | Fix movement/restore and keyboard ergonomics in its own scoped task. |
 | Keyboard Clean Mode | `CleaningModeController` and event-tap behavior | Feature exists. Sensitive input, permission and timeout edges matter. | Regression audit only; preserve the secure-input refusal and bounded auto-unlock. |
 
+## Notch / Dynamic Island as the productivity entry point
+
+XFinder already has a seven-page notch hub, file staging, clipboard, Now Playing, agent sessions/usage, Calendar, timer, and live activity surfaces. The supplied 28-group specification describes the wider product around that hub; it does not imply every editor or system feature belongs inside the compact notch. The source comparison, current partial coverage, and next verification/update sequence are documented in [MFINDER_XFINDER_NOTCH_COVERAGE.md](MFINDER_XFINDER_NOTCH_COVERAGE.md).
+
 Related existing work that must remain distinct: image/PDF safe-operation tasks, Translate settings/dismiss behavior, and the XF-T34 AppSwitcher shortcuts. Check their task state before claiming overlapping files; do not absorb their unfinished changes into the Storage Analyzer task.
 
 ## Recommended sequence
@@ -50,12 +54,13 @@ Related existing work that must remain distinct: image/PDF safe-operation tasks,
 | Stage | Outcome | Why this order |
 |---|---|---|
 | 0. Reconcile active work | Keep PDF/image, Translate, AppSwitcher and Browser work on their own branches/tasks; record current decisions and evidence. | Prevents parallel edits and avoids reopening known safety findings as if they were new. |
-| 1. Storage Analyzer v0.1 | User picks one folder; cancellable scan; logical byte totals, top 50 largest files, visible errors/partial status. Read-only. | Small standalone user-facing increment. Exercises background traversal, progress and cancellation without destructive actions. |
-| 2. Storage visualization | Treemap first, drill-down and selection; add Sunburst only if chart navigation earns its complexity. | Charts are presentation over cached scan data and should not change scan semantics. |
-| 3. Duplicate Finder | Exact duplicates only: size groups → streaming cryptographic digest → byte-compare before confirmation; Trash only after explicit user action and revalidation. | Reuses proven scan principles while keeping destructive operations isolated. Similar-image matching is a later experiment. |
-| 4. File operation safety | Audit archive extraction and Folder Sync preview/deletion behavior. | These can overwrite or delete user data; prove safety before broad format or two-way support. |
-| 5. Existing feature polish | Translate popover dismissal and model-config entry; AppSwitcher ergonomics; OCR first-use; screenshot guides; RAW-trash preference; snap movement. | Direct user feedback and existing active task scopes. |
-| 6. Deferred high-risk ideas | Semantic embeddings, bundled 7zz, cross-device tray, custom encrypted vault, full-disk scan. | Need supported APIs, supply-chain or security decisions before implementation. |
+| 1. Storage Analyzer v0.1 | **Source implementation is on main**: user-picked read-only scan, cancellation, logical-byte total, top 50, and partial/error reporting. Installed-app checks remain open. | A bounded scan foundation exists; confirm the picker, cancel, cloud-only and view-disappear paths before adding visualization. |
+| 2. Notch/Dynamic Island contract | Specify and verify the missing display-target and fullscreen policies; test existing open/close, page, hover, drag, activity and return-to-origin journeys. | The notch is already a shared entry point. Display/focus/visibility rules affect every page and active operation. See the 28-group source comparison. |
+| 3. Storage visualization | Treemap first, drill-down and selection; add Sunburst only if chart navigation earns its complexity. | Charts are presentation over cached scan data and should not change scan semantics. |
+| 4. Duplicate Finder | Exact duplicates only: size groups → streaming cryptographic digest → byte-compare before confirmation; Trash only after explicit user action and revalidation. | Reuses proven scan principles while keeping destructive operations isolated. Similar-image matching is a later experiment. |
+| 5. File operation safety | Audit archive extraction and Folder Sync preview/deletion behavior. | These can overwrite or delete user data; prove safety before broad format or two-way support. |
+| 6. Existing feature polish | Translate popover dismissal and model-config entry; AppSwitcher ergonomics; OCR first-use; screenshot guides; RAW-trash preference; snap movement. | Direct user feedback and existing active task scopes. |
+| 7. Deferred high-risk ideas | Semantic embeddings, bundled 7zz, cross-device tray, custom encrypted vault, full-disk scan. | Need supported APIs, supply-chain or security decisions before implementation. |
 
 ## Engineering contracts to keep simple
 
