@@ -74,4 +74,28 @@ final class StorageScanRulesTests: XCTestCase {
         XCTAssertEqual(result.skippedCount, 1)
         XCTAssertEqual(result.status, .partial)
     }
+
+    func testSecondPathToAHardLinkedFileIsVisitedButNotCountedAgain() {
+        var accumulator = StorageScanAccumulator()
+        let id = StorageScanAccumulator.HardLinkID(device: 1, inode: 42)
+        accumulator.include(file("a/big.bin", 100), hardLink: id)
+        accumulator.include(file("b/big.bin", 100), hardLink: id)
+        accumulator.include(file("c/other.bin", 7), hardLink: .init(device: 2, inode: 42))
+        accumulator.include(file("d/plain.bin", 3), hardLink: nil)
+        let result = accumulator.result(status: .completed)
+        XCTAssertEqual(result.visitedEntries, 4)
+        XCTAssertEqual(result.fileCount, 3)
+        XCTAssertEqual(result.logicalBytes, 110)
+        XCTAssertEqual(result.skippedCount, 0)
+        XCTAssertEqual(result.status, .completed)
+        XCTAssertEqual(result.largestFiles.map(\.relativePath), ["a/big.bin", "c/other.bin", "d/plain.bin"])
+    }
+
+    func testAscendingInputKeepsOnlyTheLargestFiles() {
+        var top: [StorageScanFile] = []
+        for index in 0..<120 { StorageScanRules.insert(file("f\(index)", Int64(index)), into: &top, limit: 50) }
+        XCTAssertEqual(top.count, 50)
+        XCTAssertEqual(top.first?.logicalSize, 119)
+        XCTAssertEqual(top.last?.logicalSize, 70)
+    }
 }
