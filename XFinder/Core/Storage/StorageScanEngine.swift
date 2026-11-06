@@ -85,7 +85,8 @@ enum StorageScanEngine {
                     name: url.lastPathComponent,
                     relativePath: currentPath,
                     logicalSize: byteSize
-                ))
+                ), hardLink: itemStat.st_nlink > 1
+                    ? .init(device: UInt64(UInt32(bitPattern: itemStat.st_dev)), inode: UInt64(itemStat.st_ino)) : nil)
             }
 
             if accumulator.visitedEntries.isMultiple(of: 128) {

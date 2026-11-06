@@ -61,6 +61,23 @@ struct StorageScanAccumulator: Sendable, Equatable {
         if skippedCount < Int.max { skippedCount += 1 }
     }
 
+    /// Inode identity of a file with more than one hard link (`st_nlink > 1`). Only such files are remembered, so
+    /// ordinary folders keep O(1) extra memory.
+    struct HardLinkID: Hashable, Sendable {
+        let device: UInt64
+        let inode: UInt64
+    }
+    private(set) var seenHardLinks: Set<HardLinkID> = []
+
+    /// A second path to an already-counted hard-linked file is a visited entry, not a new file: its bytes exist once.
+    mutating func include(_ file: StorageScanFile, hardLink: HardLinkID?, limit: Int = 50) {
+        if let hardLink, !seenHardLinks.insert(hardLink).inserted {
+            visitEntry()
+            return
+        }
+        include(file, limit: limit)
+    }
+
     mutating func include(_ file: StorageScanFile, limit: Int = 50) {
         visitEntry()
         guard file.logicalSize >= 0 else {
