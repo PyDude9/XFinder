@@ -850,4 +850,7 @@ harness cleanup J10 (**10/10 RED**). Gate nhánh builder: green 2901/0. Gate `ma
 Review độc lập (Claude, Notion Run): cùng phát hiện symlink; đo **8,2×** chậm hơn FileWalk trần (81 210 mục: 7,95 s vs 0,97 s). Probe
 Boss: `lstat` ≈ 0, `resourceValues` là toàn bộ chi phí (0,74 vs 0,12 s / 17 238 mục; 2,73 vs 0,12 s / 2 340 mục iCloud) ⇒ `ef669cb`
 chỉ `SF_DATALESS` (0 lệch trên 1 932 tệp chỉ-trên-mây). Gate main sau `ef669cb`: green 2903/0. Live: chưa (cài chờ idle).
+Tiếp (Boss): `74fb3c7` hard link một lần; `8cbfc2f` harness storage 9/9 RED (S3 xanh với test cũ — test nạp tệp lớn trước nên
+không bao giờ cắt danh sách ⇒ thêm test nạp tăng dần). Gate main `8cbfc2f`: green **2905/0**. Cài `ef669cb` 21:26 (dylib 6e245832 ==
+build, appex `+`, L10n 0); `8cbfc2f` chờ idle.
 

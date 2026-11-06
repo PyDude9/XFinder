@@ -15,8 +15,8 @@ Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả l�
 
 Gộp `1182b3c` + sửa `768dc83` (symlink ⇒ "chưa đầy đủ") + `ef669cb` (review độc lập đo chậm 8,2× so với FileWalk trần —
 nguyên nhân đo được là `resourceValues` mỗi tệp, không phải `lstat`; giờ chỉ dùng `SF_DATALESS`, khớp 1 932/1 932 tệp iCloud chỉ-trên-mây).
-Việc theo sau (chưa sửa): hard link được cộng hai lần (byte logic, đúng nhãn nhưng lệch "dung lượng thật");
-chưa có harness mutation riêng cho `StorageScanRules` (7 test thuần).
+Sau đó `74fb3c7` hard link chỉ cộng một lần (nhớ (thiết bị, inode) khi `st_nlink > 1`) và `8cbfc2f` harness
+`scripts/mutation-check-storage.sh` **9/9 RED**. Bản `ef669cb` đã cài 06/11 21:26 (dylib 6e245832 == build); bản có `74fb3c7` chờ idle.
 
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
