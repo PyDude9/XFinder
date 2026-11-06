@@ -16,7 +16,7 @@ Implemented a separate deliberate-open rule (`notch.clickOpens`) in addition to 
 
 Remaining core notch gaps for Claude to review: display-target policy, fullscreen visibility policy, gesture-zone preview, robust return-to-origin/child-popover focus and activity priority/history. The 28-group coverage file records other feature-family gaps. Build/gate review and any live UI validation remain with Claude.
 
-CHỜ REVIEW (nhánh `agent/codex-XF-T36`).
+Boss review 2026-11-06: MERGED (`39d95d1`) + fix `0709dc9` — `xfinder://droptray-add` called `reveal()` without a page, so after T36 it followed `notch.clickOpens` (e.g. Calendar) instead of showing the tray the file just landed in; now `reveal(page: .files)` (spec: explicit URL routes keep their destination). Other `reveal()` callers checked: badge and peek strip use the rule as specified; agent/media wings and `xfinder://notch` pass a page. Gate on merged main: build OK, 2910 tests / 0 failures (the AgentCodexTests failure was the Codex-ancestor environment, as reported), all L10n/UI gates 0. Ad-hoc mutants on `NotchClickOpen` (default, explicit precedence, activity order) 3/3 killed by assertions, restore byte-identical; not yet in a mutation harness. Live: NOT VERIFIED (not installed).
 
 ## 2026-10-28 — Codex & Antigravity: Spaces and folder Live Groups repair
 
