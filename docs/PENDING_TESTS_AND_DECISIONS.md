@@ -3,13 +3,26 @@
 Một chỗ duy nhất cho mọi thứ còn phân vân. Mỗi mục có **mã** (ví dụ `Q-F4-2`, `T-B6`) để bạn nói lại cho nhanh
 ("Q-F4-2 chọn b", "T-B6 hỏng: …"). Khi một mục xong, xoá nó khỏi file này trong cùng commit.
 
-Cập nhật: 2026-11-04.
+Cập nhật: 2026-11-06.
 
 ---
 
 ## Phần 1 — Cần bạn chọn (Q)
 
 Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả lời thì giữ mặc định.
+
+### 2026-11-06 · XF-T35 Phân tích thư mục (Lưu trữ)
+
+Gộp `1182b3c` + sửa `768dc83`. Việc theo sau (review, chưa sửa): mỗi tệp gọi thêm `lstat` + `resourceValues(isUbiquitousItem)`
+(chi phí trên thư mục 100 000 tệp chưa đo); hard link được cộng hai lần (byte logic, đúng nhãn nhưng lệch "dung lượng thật");
+chưa có harness mutation riêng cho `StorageScanRules` (7 test thuần).
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-T35-1 | Hệ thống ▸ tab Ổ đĩa ▸ mục "Phân tích thư mục" ▸ chọn `~/Downloads` | Tiến độ chạy, "Quét hoàn tất", tổng dung lượng logic + 50 tệp lớn nhất, đường dẫn tương đối |
+| T-T35-2 | Chọn thư mục rất lớn (vd. `~/Library`) rồi bấm "Huỷ quét" | Dừng ngay, nhãn "Đã huỷ. Đây là kết quả một phần."; app không đơ lúc quét |
+| T-T35-3 | Chọn thư mục iCloud Drive có tệp chỉ trên mây | Không tải tệp nào về; số "Đã bỏ qua" > 0, kết quả ghi chưa đầy đủ |
+| T-T35-4 | Đang quét thì rời tab Ổ đĩa | Quét dừng (Activity Monitor: CPU XFinder về ~0) |
 
 ### 2026-11-04 · Dọn Orca + review gộp (Boss)
 

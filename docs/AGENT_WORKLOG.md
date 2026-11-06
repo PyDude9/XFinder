@@ -834,3 +834,18 @@ separate Chống ngủ page, (3) the notch kept showing a Claude session as runn
 | `agent/antigravity-snap-memory` (`8bbd883`) | FIX-FIRST, không spec — không gộp (Q-SNAP-UNSNAP) | — |
 
 Gate trên `main` sau gộp: `GATE: green`, 2894 tests / 0 failures, build OK. Mutation: không chạy. Live: chưa (cài từ `main` sau Checkpoint 2).
+
+## 2026-11-06 (Claude Boss) — XF-T35 Storage Analyzer v0.1 (GPT-Minion / Codex)
+
+| Nhánh | Kết luận | Merged As |
+|:--|:--|:--|
+| `agent/codex-XF-T35` (`11c0e31..1c92dc5`: spec, review độc lập, roadmap MFinder, code) | MERGE-OK + 1 sửa của Boss | `1182b3c` + `768dc83` |
+| `agent/codex-XF-MFinder-plan`, `agent/antigravity-XF-T35-review` | đã nằm trọn trong `1182b3c` | `1182b3c` |
+| `agent/antigravity-XF-T35-review-gemini` (`6e96aa9`) | cùng nội dung spec với `9f0a5cd` (diff rỗng) — không cần gộp | — |
+
+Review: engine chạy ngoài main actor, huỷ hợp tác qua `Task.isCancelled` trong `fts`, top-50 có giới hạn + thứ tự xác định, cộng byte
+bão hoà, run id chặn tiến độ trễ. **Lỗi sửa** (`768dc83`): mọi symlink đi qua `FileWalk.onOther` ⇒ bị đếm "bỏ qua" ⇒ thư mục nào có
+link cũng báo "Kết quả chưa đầy đủ"; `FileWalk` thêm `onLink` tuỳ chọn (Junk Cleanup giữ hành vi cũ), test `FileWalkLinkTests`,
+harness cleanup J10 (**10/10 RED**). Gate nhánh builder: green 2901/0. Gate `main` sau gộp + sửa: green, **2903/0**, L10n 0, token 0.
+Live: chưa (cài chờ idle).
+
