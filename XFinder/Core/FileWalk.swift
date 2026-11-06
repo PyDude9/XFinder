@@ -12,7 +12,10 @@ enum FileWalk {
 
     /// `FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV`: never follows a link, never crosses into another volume. The root itself
     /// is not visited. Links, unreadable folders and stat errors are never handed to `body`; `onOther` hears about them.
+    /// `onLink`, when given, hears about symbolic links instead of `onOther` — for callers where a link that is
+    /// deliberately not followed is not a gap in the result (Storage Analyzer). Without it links go to `onOther`.
     static func walk(_ root: URL, limit: Int, isCancelled: () -> Bool = { false }, onOther: () -> Void = {},
+                     onLink: (() -> Void)? = nil,
                      _ body: (_ url: URL, _ isDirectory: Bool, _ size: Int64) -> Visit)
         -> (entries: Int, truncated: Bool, cancelled: Bool) {
         var argv: [UnsafeMutablePointer<CChar>?] = [strdup(root.path), nil]
@@ -26,6 +29,7 @@ enum FileWalk {
             if isCancelled() { return (entries, false, true) }
             entries += 1
             if entries > limit { return (entries, true, false) }
+            if info == FTS_SL || info == FTS_SLNONE, let onLink { onLink(); continue }
             guard info == FTS_D || info == FTS_F, let cpath = ent.pointee.fts_path else { onOther(); continue }
             let isDir = info == FTS_D
             let size = isDir ? 0 : Int64(ent.pointee.fts_statp?.pointee.st_size ?? 0)

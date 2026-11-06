@@ -12,7 +12,7 @@ trap 'restore' EXIT
 # A signal must END the run: with INT/TERM in the restore trap, sh restored the files and carried on — a killed harness
 # kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
 trap 'exit 143' INT TERM
-FILTER='JunkCleanup'
+FILTER='JunkCleanup|FileWalkLinkTests'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} /[Ff]atal error|[Ee]xited with (unexpected )?signal/ {crash=1} END {print (crash ? "CRASH" : (f==""?"NORESULT":f))}'
@@ -56,6 +56,8 @@ run "J8  the entry limit is ignored" $W \
   "'            if entries > limit { return (entries, true, false) }'" "'            if entries < 0 { return (entries, true, false) }'"
 run "J9  FileManager listing (hides every ._ name) instead of fts" $J \
   "'        guard rootValues?.isDirectory == true, rootValues?.isSymbolicLink != true else { return report }'" "'        guard rootValues?.isDirectory == true, rootValues?.isSymbolicLink != true else { return report }\n        for n in (try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? [] where n.hasPrefix(\"._\") { report.items.append(Item(url: root.appendingPathComponent(n), kind: .appleDouble, bytes: 0)) }\n        if true { return report }'"
+run "J10 links still go to onOther when onLink is given" $W \
+  "'            if info == FTS_SL || info == FTS_SLNONE, let onLink { onLink(); continue }'" "'            _ = onLink'"
 echo "RESULT: $red/$total mutations RED"
 restore
 after=$(fails); echo "after restore failures: $after"

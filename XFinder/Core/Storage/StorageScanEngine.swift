@@ -53,7 +53,9 @@ enum StorageScanEngine {
             root,
             limit: Int.max,
             isCancelled: { Task.isCancelled },
-            onOther: { accumulator.skipEntry() }
+            onOther: { accumulator.skipEntry() },
+            // A link is deliberately not followed; that is not a gap, so it must not make the result "partial".
+            onLink: { accumulator.visitEntry() }
         ) { url, isDirectory, byteSize in
             guard !Task.isCancelled else { return .skip }
             currentPath = relativePath(of: url, under: root)
