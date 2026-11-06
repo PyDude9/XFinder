@@ -231,7 +231,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if let path {
                 Task { @MainActor in
                     DropTrayStore.shared.add(urls: [URL(fileURLWithPath: path)])
-                    NotchSurfaceController.shared.reveal()
+                    // XF-T36: an explicit destination — the file just landed in the tray, so show the tray
+                    // whatever `notch.clickOpens` says (that rule is for badge / peek clicks only).
+                    NotchSurfaceController.shared.reveal(page: .files)
                 }
             }
         case "settings":
