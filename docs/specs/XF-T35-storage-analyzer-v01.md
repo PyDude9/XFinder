@@ -97,3 +97,28 @@ Explain in the Run in plain language: (a) why volume-used bytes differ from summ
 ## Independent review notes
 
 The cross-tool reviewer should check that scan scope, logical-size wording, Swift 6 actor boundaries, cancellation ownership, permission semantics, and test-file/project registration agree with current code. Record any blocking issue here before implementation. If a real architectural mismatch requires an unlisted file, stop and return the proposed scope change.
+
+## Independent review
+
+- **Status**: No blocking gaps found.
+- **Review date**: 2026-11-06.
+- **Baseline verified**: `main` commit `a24bcb21c7ea03e3394b18604f9a3a09f1169889` (gate baseline green, 2894 tests passing).
+
+### Checklist verification
+
+1. **Scope**: Focused v0.1 folder scan in `StorageDetailView` (read-only, local, cancellable, logical bytes, top-50 largest files). No scope creep into charts, disk-wide sweeps, delete/cleanup, or persistent bookmarks.
+2. **File list**: Allowed files (`StorageDetailView.swift`, `StorageScanEngine.swift`, optional `StorageScanRules.swift`, tests/symlink, `L10n.strings.json`, and `project.pbxproj`) are complete and do not touch any forbidden areas (`Info.plist`, entitlements, `DatabaseService`, `ArchiveRunner`, `JunkCleanup`, etc.).
+3. **Picker permission semantics**: Aligns with macOS App Sandbox (`ENABLE_APP_SANDBOX = YES`, `ENABLE_USER_SELECTED_FILES = readonly`). User-initiated folder selection via `NSOpenPanel` grants in-session access without requesting Full Disk Access or requiring persistent security-scoped bookmarks.
+4. **Cancellation and lifecycle**: Cooperative cancellation points (every 128 entries and directory batches), task cancellation on view disappearance (`onDisappear`) or new scan start, and explicit dropping of late progress updates post-terminal state (`cancelled`/`completed`/`failed`) prevent background stalls or UI races.
+5. **File-provider placeholders**: Skipping dataless/cloud-only files (`ubiquitousItemDownloadingStatus == .notDownloaded` or `SF_DATALESS`) without opening file handles prevents unintended network downloads.
+6. **Symlink and size semantics**: Explicitly disallows following symlinks; counts regular files once; sums logical bytes via `fileSizeKey` rather than physical/APFS-allocated blocks; uses checked/saturating addition (`addingReportingOverflow`) to protect against `Int64` overflow.
+7. **Bounded memory**: Ingesting entries into a bounded top-50 structure during traversal guarantees $O(1)$ result memory overhead even across millions of files; stable sort with relative path tie-break ensures determinism.
+8. **Test architecture & project registration**: Separating pure algorithms into `StorageScanRules.swift` matches repository conventions (`Tests/Package.swift` + symlink in `Tests/XFinderLogicTests/`). App files require four entries in `project.pbxproj` and pass `plutil -lint`; test files remain outside `project.pbxproj`.
+9. **Acceptance commands**: Verification commands (`swift test --package-path Tests --filter ...`, `plutil -lint`, `sh scripts/gate-all.sh`) are executable and verified against the current tree.
+
+### Non-blocking recommendations for implementation
+
+- **Picker-to-scan transition**: In `StorageDetailView`, clarify if selecting a folder immediately triggers the scan (`choosing` → `scanning`), or if selecting sets a picked folder with a dedicated "Quét" (Scan) button. Immediate scan upon picker confirmation is recommended to avoid unnecessary intermediate states.
+- **Defensive security scoping**: Although `NSOpenPanel` grants session access in App Sandbox, wrap traversal root access in `rootURL.startAccessingSecurityScopedResource()` with a paired `defer { rootURL.stopAccessingSecurityScopedResource() }` for defensive consistency across execution contexts.
+- **Ubiquity key check cost**: Querying ubiquity metadata on large local folders can introduce IPC overhead; check `isUbiquitousItem` before reading `ubiquitousItemDownloadingStatus`, or prefetch keys via directory enumerator properties.
+- **Package traversal**: Ensure `FileManager.DirectoryEnumerationOptions` explicitly defines package behavior (e.g., whether `.app` bundles are traversed into constituent files or skipped as packages). Default traversal into regular files satisfies the "count regular files once" rule.
