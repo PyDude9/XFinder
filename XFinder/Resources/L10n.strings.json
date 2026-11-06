@@ -15038,6 +15038,94 @@
     "Xóa từ này?": {
       "en": "Delete this word?",
       "scope": "sentence"
+    },
+    "Phân tích thư mục": {
+      "en": "Analyze Folder",
+      "scope": "sentence"
+    },
+    "Quét một thư mục bạn chọn và hiển thị dung lượng logic của các tệp. XFinder không thay đổi tệp.": {
+      "en": "Scan a folder you choose and show the logical size of its files. XFinder does not change files.",
+      "scope": "sentence"
+    },
+    "Chọn thư mục để phân tích": {
+      "en": "Choose Folder to Scan",
+      "scope": "sentence"
+    },
+    "Huỷ quét": {
+      "en": "Cancel Scan",
+      "scope": "sentence"
+    },
+    "Đã quét ": {
+      "en": "Scanned ",
+      "scope": "fragment"
+    },
+    " · ": {
+      "en": " · ",
+      "scope": "fragment"
+    },
+    " tệp": {
+      "en": " files",
+      "scope": "fragment"
+    },
+    "Kết quả chưa đầy đủ": {
+      "en": "Partial Results",
+      "scope": "sentence"
+    },
+    "Tổng dung lượng logic: ": {
+      "en": "Total Logical Size: ",
+      "scope": "fragment"
+    },
+    "Đã bỏ qua ": {
+      "en": "Skipped ",
+      "scope": "fragment"
+    },
+    " mục; kết quả có thể chưa đầy đủ.": {
+      "en": " items; results may be incomplete.",
+      "scope": "fragment"
+    },
+    "Đã huỷ. Đây là kết quả một phần.": {
+      "en": "Cancelled. These are partial results.",
+      "scope": "sentence"
+    },
+    "Tệp lớn nhất": {
+      "en": "Largest Files",
+      "scope": "sentence"
+    },
+    "Không có tệp nào để hiển thị": {
+      "en": "No files to show",
+      "scope": "sentence"
+    },
+    "Quét hoàn tất": {
+      "en": "Scan Complete",
+      "scope": "sentence"
+    },
+    "Đã huỷ quét": {
+      "en": "Scan Cancelled",
+      "scope": "sentence"
+    },
+    "Không thể quét thư mục": {
+      "en": "Unable to Scan Folder",
+      "scope": "sentence"
+    },
+    "Không thể truy cập thư mục đã chọn.": {
+      "en": "The selected folder is unavailable.",
+      "scope": "sentence"
+    },
+    "Mục đã chọn không phải là thư mục.": {
+      "en": "The selected item is not a folder.",
+      "scope": "sentence"
+    },
+    "Không có quyền đọc thư mục đã chọn.": {
+      "en": "XFinder cannot read the selected folder.",
+      "scope": "sentence"
+    },
+    "Tổng dung lượng vượt giới hạn tính toán an toàn.": {
+      "en": "The total exceeds the safe calculation limit.",
+      "scope": "sentence"
+    },
+    "Thư mục chỉ có trên đám mây. Hãy tải về trước khi quét.": {
+      "en": "This folder is cloud-only. Download it before scanning.",
+      "scope": "sentence"
     }
   }
 }
