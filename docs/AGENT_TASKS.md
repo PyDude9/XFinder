@@ -180,6 +180,8 @@ bằng `git log --oneline -5` và `sh scripts/gate-all.sh`.
 
 ## 6. Chỉ mục đặc tả (hàng đợi sống ở Notion — `docs/AGENT_NOTION.md`; mục này là ảnh chụp và chỉ mục)
 
+- `docs/specs/XF-T35-storage-analyzer-v01.md` — Storage Analyzer v0.1: quét thư mục do người dùng chọn, chỉ đọc, có thể huỷ; chờ review đặc tả và baseline trước khi Ready.
+- `docs/MFINDER_XFINDER_ROADMAP.md` — Đối chiếu 12 nhóm tính năng MFinder với hiện trạng XFinder và lộ trình theo mức rủi ro.
 - `docs/specs/SNAPMEM-window-layout-memory.md` — Nhớ bố cục cửa sổ theo bộ màn hình (Claude dựng 2026-10-18; chờ test tay T-SNAPMEM-1…5).
 - `docs/specs/XF-T21-connect-catalog.md` — Chia sẻ nhanh + Kết nối từ xa vào FeatureCatalog (Builder; Ready sau khi chủ dự án gật).
 - `docs/specs/XF-T23-crew-v2.md` — Crew v2 Lead Architect: worktree/nhánh mỗi builder, schema TASK/CRITERIA/BRANCH, rào Approved→merge, hook luôn-hỏi (v2a thuần Claude đã dựng; v2b/v2c theo Q-CREW-1).
