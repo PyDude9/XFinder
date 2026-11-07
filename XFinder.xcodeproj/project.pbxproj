@@ -161,6 +161,7 @@
 		7F1A0710 /* DuplicateScanEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0711 /* DuplicateScanEngine.swift */; };
 		7F1A0720 /* DuplicateTrash.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0721 /* DuplicateTrash.swift */; };
 		7F1A0730 /* DuplicateFinderDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0731 /* DuplicateFinderDetailView.swift */; };
+		7F1A0740 /* ArchiveSafetyRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0741 /* ArchiveSafetyRules.swift */; };
 		7F1A0610 /* Storage/StorageTreeRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0611 /* Storage/StorageTreeRules.swift */; };
 		7F1A0601 /* Storage/StorageScanRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0603 /* Storage/StorageScanRules.swift */; };
 		7F1A0082 /* BatchRenameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0068 /* BatchRenameEngine.swift */; };
@@ -667,6 +668,7 @@
 		7F1A0711 /* DuplicateScanEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Duplicates/DuplicateScanEngine.swift; sourceTree = "<group>"; };
 		7F1A0721 /* DuplicateTrash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Duplicates/DuplicateTrash.swift; sourceTree = "<group>"; };
 		7F1A0731 /* DuplicateFinderDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XFinder/Views/Detail/DuplicateFinderDetailView.swift; sourceTree = SOURCE_ROOT; };
+		7F1A0741 /* ArchiveSafetyRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Archive/ArchiveSafetyRules.swift; sourceTree = "<group>"; };
 		7F1A0611 /* Storage/StorageTreeRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Storage/StorageTreeRules.swift; sourceTree = "<group>"; };
 		7F1A0603 /* Storage/StorageScanRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Storage/StorageScanRules.swift; sourceTree = "<group>"; };
 		7F1A0068 /* BatchRenameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchRenameEngine.swift; sourceTree = "<group>"; };
@@ -1081,6 +1083,7 @@
 				7F1A0711 /* DuplicateScanEngine.swift */,
 				7F1A0721 /* DuplicateTrash.swift */,
 				7F1A0731 /* DuplicateFinderDetailView.swift */,
+				7F1A0741 /* ArchiveSafetyRules.swift */,
 				7F1A0611 /* Storage/StorageTreeRules.swift */,
 				7F1A0068 /* BatchRenameEngine.swift */,
 				7F1A0069 /* FileSearchEngine.swift */,
@@ -1819,6 +1822,7 @@
 				7F1A0710 /* DuplicateScanEngine.swift in Sources */,
 				7F1A0720 /* DuplicateTrash.swift in Sources */,
 				7F1A0730 /* DuplicateFinderDetailView.swift in Sources */,
+				7F1A0740 /* ArchiveSafetyRules.swift in Sources */,
 				7F1A0610 /* Storage/StorageTreeRules.swift in Sources */,
 				7F1A0082 /* BatchRenameEngine.swift in Sources */,
 				7F1A0083 /* FileSearchEngine.swift in Sources */,
