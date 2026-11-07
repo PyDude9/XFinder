@@ -1,3 +1,32 @@
+## 2026-11-07 — Antigravity: Restore Trancy AI Translation Behavior, Clean Single-Popup Flow & POS Color Badges
+
+Branch `agent/antigravity-XF-translate`.
+
+### Context & Root Cause Diagnosis
+1. **Reversion via External Agent Merge**:
+   - On Nov 7, an external agent (Codex/main) rebuilt `/Applications/XFinder.app` from `main` (commit `e55da25`).
+   - Because `main` previously merged an older wordbook stack (`590e210`) retaining the legacy Apple translation presentation popover (`.translationPresentation`), the installed binary reverted to the old multi-window Apple translation popover with overlapping surfaces.
+2. **Trancy-Style Translation Flow Re-verified & Re-installed**:
+   - Re-audited and compiled the complete unified single-popup Trancy translation card from branch `agent/antigravity-XF-translate`.
+   - Enhanced `SmartSelectionBadge.swift`: ensures `hideAll()` and `translate()` invoke `panel?.orderOut(nil)` and `badge?.orderOut(nil)` synchronously to completely eliminate frame residue or ghost popups.
+   - Enhanced `TranslateSelectionView.swift`: added Trancy-style part-of-speech color badges matching reference UI:
+     - `adj.` (pink `#FF2D55`)
+     - `n.` (purple `#AF52DE`)
+     - `v.` (blue `#007AFF`)
+     - `adv.` (orange `#FF9500`)
+   - 1-tap Heart button (`♡` / `♥`) reliably toggles cards into `VocabularyStore` with durable disk persistence and loaded state check.
+   - Built and freshly installed to `/Applications/XFinder.app` (`Nov 7 12:35:18`).
+
+### Evidence
+- **Build**: arm64 clean build OK via `scripts/build-and-check.sh` (`/tmp/antigravity-build/out/XFinder.app`).
+- **Tests**: `swift test --package-path /Users/wolong/github/XFinder/Tests` executed 2,917 tests, 0 failures. `gate-all.sh` executed 2,895 tests, 0 failures, `GATE: green`.
+- **Audits**:
+  - `check-l10n-coverage`: 0 problems across 3,790 entries.
+  - `check-l10n-duplicates`: 0 duplicates across 3,790 unique keys.
+  - `audit-l10n-literals`: 0 wrapped-but-untranslated.
+  - `audit-ui-tokens`: 0 problems.
+- **Install & Live Verification**: Signed with designated requirement and installed into `/Applications/XFinder.app` via `scripts/install-mouse-rebuild.sh`.
+
 ## 2026-10-31 — Gemini & Antigravity: Multi-Service Translation Settings & Automatic Vertical Display
 
 Branch `PyDude9/xfinder-translate-gemini`.
