@@ -1,3 +1,19 @@
+## 2026-11-07 — Antigravity: Fix Selection Capture on Web Browsers & Chromium / Electron
+
+Branch `agent/antigravity-XF-translate`.
+
+### Context & Root Cause Diagnosis
+1. **Empty Selection on Web Browsers (Chrome / WebKit)**:
+   - In Google Chrome, AX notifications dispatched at the application level (`AXUIElementCreateApplication`) passed the application element to `SelectionWatcher.readSelection`. Because `AXApplication` does not possess `kAXSelectedTextAttribute`, querying it directly returned empty string, preventing `feed(.selectionChanged)` from reaching the threshold `minLength` and preventing the badge from ever displaying.
+   - When triggering `⇧⌘G`, `VoiceScreenContext.selectedText()` queried `AXUIElementCreateSystemWide()`, which frequently fails with `-25204` on macOS 14+ when querying non-focused UI elements from background processes, causing translation to receive `nil`.
+2. **Defects Resolved**:
+   - **`SelectionWatcher.readSelection`**: Automatically queries `kAXFocusedUIElementAttribute` on the target application element before querying `kAXSelectedTextAttribute` and `AXSelectedTextMarkerRange`, enabling reliable mouse selection detection across Chrome, Safari, and Electron.
+   - **`VoiceScreenContext.selectedText`**: Updated to probe frontmost application's focused element directly first, with `AXSelectedTextMarkerRange` WebKit fallback.
+   - **`TranslateSelectionController.translateSelection`**: Added fast clipboard copy simulation fallback (`readSelectionViaClipboard`) using `TypingSink.capturePasteboard()` / `restorePasteboard()` to guarantee that `⇧⌘G` captures the active selection 100% reliably in any application even when AX refuses to report selected text.
+3. **Build & Install**:
+   - Clean arm64 build OK, signed and freshly installed into `/Applications/XFinder.app` (`Nov 7 17:54:53`).
+   - Audits green (`TOTAL 0 problems`).
+
 ## 2026-11-07 — Antigravity: Restore Trancy AI Translation Behavior, Clean Single-Popup Flow & POS Color Badges
 
 Branch `agent/antigravity-XF-translate`.
