@@ -41,6 +41,25 @@ final class NotchFullscreenRulesTests: XCTestCase {
                                                    mediaPlaying: true)))
     }
 
+    /// Frames measured 2026-11-07 on the notched 1728×1117 built-in display (safe-area top 32).
+    func testNotchedDisplayFullscreenSitsBelowTheHousingAndNeedsTheAXFlag() {
+        let display = CGRect(x: 0, y: 0, width: 1728, height: 1117)
+        let nativeFullscreen = CGRect(x: 0, y: 33, width: 1728, height: 1084)
+        let zoomedDockShown = CGRect(x: 0, y: 33, width: 1728, height: 1022)
+        let wholeDisplay = CGRect(x: 0, y: 0, width: 1728, height: 1117)
+        XCTAssertFalse(R.matchesDisplayFrame(nativeFullscreen, display), "the old rule never fired on the notched screen")
+        XCTAssertTrue(R.isFullscreenFrame(nativeFullscreen, display: display, topInset: 32, axFullScreen: true))
+        XCTAssertFalse(R.isFullscreenFrame(nativeFullscreen, display: display, topInset: 32, axFullScreen: false),
+                       "a Fill window with the Dock hidden has this frame but AXFullScreen false")
+        XCTAssertFalse(R.isFullscreenFrame(nativeFullscreen, display: display, topInset: 32, axFullScreen: nil),
+                       "no Accessibility answer ⇒ show")
+        XCTAssertFalse(R.isFullscreenFrame(zoomedDockShown, display: display, topInset: 32, axFullScreen: true))
+        XCTAssertTrue(R.isFullscreenFrame(wholeDisplay, display: display, topInset: 32, axFullScreen: nil),
+                      "a whole-display frame needs no flag: zoomed windows never cover the menu bar")
+        XCTAssertFalse(R.isFullscreenFrame(nativeFullscreen, display: display, topInset: 0, axFullScreen: true),
+                       "a display without a housing has no below-housing frame")
+    }
+
     func testDeliberateOpenAndActionableWorkMustRemainVisible() {
         func keep(expanded: Bool = false, task: Bool = false, agents: Int = 0, reply: Bool = false,
                   composer: Bool = false, buttons: Bool = false) -> Bool {

@@ -52,6 +52,21 @@ enum NotchFullscreenRules {
             && abs(window.height - display.height) <= tolerance
     }
 
+    /// Is `window` a fullscreen window of `display`? Measured 2026-11-07 on a notched 1728×1117 built-in
+    /// display (safe-area top 32): a native fullscreen window sits BELOW the camera housing at
+    /// (0, 33, 1728, 1084), so a whole-display match alone never fires on the notched screen. That
+    /// below-housing frame is also what a Fill/zoomed window gets when the Dock is hidden, so it counts
+    /// only with `AXFullScreen == true` (measured: false windowed, false zoomed, true fullscreen).
+    /// A whole-display frame needs no flag: a zoomed window never covers the menu bar.
+    static func isFullscreenFrame(_ window: CGRect, display: CGRect, topInset: CGFloat, axFullScreen: Bool?,
+                                  tolerance: CGFloat = displayFrameTolerance) -> Bool {
+        if matchesDisplayFrame(window, display, tolerance: tolerance) { return true }
+        guard topInset > 0, topInset < display.height, axFullScreen == true else { return false }
+        let belowHousing = CGRect(x: display.minX, y: display.minY + topInset,
+                                  width: display.width, height: display.height - topInset)
+        return matchesDisplayFrame(window, belowHousing, tolerance: tolerance)
+    }
+
     static func shouldHide(_ policy: NotchFullscreenVisibility, context: Context) -> Bool {
         guard !context.mustRemainVisible,
               let owner = context.fullscreenOwnerPID,

@@ -1209,7 +1209,8 @@ final class NotchSurfaceController {
         if let cached = fullscreenInspections[displayID], cached.frontmostPID == frontmostPID {
             inspection = cached
         } else {
-            inspection = inspectFullscreenWindow(on: displayID, frontmostPID: frontmostPID)
+            inspection = inspectFullscreenWindow(on: displayID, topInset: screen.safeAreaInsets.top,
+                                                 frontmostPID: frontmostPID)
             fullscreenInspections[displayID] = inspection
         }
         let snapshot = NowPlayingMonitor.shared.liveSnapshot
@@ -1222,7 +1223,23 @@ final class NotchSurfaceController {
         ))
     }
 
-    private func inspectFullscreenWindow(on displayID: UInt32, frontmostPID: Int32?) -> FullscreenInspection {
+    /// `AXFullScreen` of the frontmost app's focused window; nil when Accessibility is not granted or the app
+    /// does not answer within 0.25 s (a hung app must not stall the notch). Read at most once per inspection.
+    private func frontmostAXFullScreen(pid: Int32) -> Bool? {
+        guard AXIsProcessTrusted() else { return nil }
+        let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, 0.25)
+        var window: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(app, kAXFocusedWindowAttribute as CFString, &window) == .success,
+              let window, CFGetTypeID(window) == AXUIElementGetTypeID() else { return nil }
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(window as! AXUIElement, "AXFullScreen" as CFString, &value) == .success else {
+            return nil
+        }
+        return value as? Bool
+    }
+
+    private func inspectFullscreenWindow(on displayID: UInt32, topInset: CGFloat, frontmostPID: Int32?) -> FullscreenInspection {
         guard let frontmostPID,
               let displayWindows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]
         else { return FullscreenInspection(frontmostPID: frontmostPID, fullscreenOwnerPID: nil) }
@@ -1231,14 +1248,23 @@ final class NotchSurfaceController {
         guard displayBounds.width > 0, displayBounds.height > 0 else {
             return FullscreenInspection(frontmostPID: frontmostPID, fullscreenOwnerPID: nil)
         }
+        var axFullScreen: Bool??   // read lazily: only a below-housing candidate needs it
         for window in displayWindows {
             guard let pid = window[kCGWindowOwnerPID as String] as? Int32, pid == frontmostPID,
                   (window[kCGWindowLayer as String] as? NSNumber)?.intValue == 0,
                   (window[kCGWindowIsOnscreen as String] as? NSNumber)?.boolValue == true,
                   let bounds = window[kCGWindowBounds as String] as? NSDictionary,
-                  let frame = CGRect(dictionaryRepresentation: bounds),
-                  NotchFullscreenRules.matchesDisplayFrame(frame, displayBounds) else { continue }
-            return FullscreenInspection(frontmostPID: frontmostPID, fullscreenOwnerPID: pid)
+                  let frame = CGRect(dictionaryRepresentation: bounds) else { continue }
+            if NotchFullscreenRules.matchesDisplayFrame(frame, displayBounds) {
+                return FullscreenInspection(frontmostPID: frontmostPID, fullscreenOwnerPID: pid)
+            }
+            guard NotchFullscreenRules.isFullscreenFrame(frame, display: displayBounds, topInset: topInset,
+                                                         axFullScreen: true) else { continue }
+            if axFullScreen == nil { axFullScreen = .some(frontmostAXFullScreen(pid: pid)) }
+            if NotchFullscreenRules.isFullscreenFrame(frame, display: displayBounds, topInset: topInset,
+                                                      axFullScreen: axFullScreen ?? nil) {
+                return FullscreenInspection(frontmostPID: frontmostPID, fullscreenOwnerPID: pid)
+            }
         }
         return FullscreenInspection(frontmostPID: frontmostPID, fullscreenOwnerPID: nil)
     }
