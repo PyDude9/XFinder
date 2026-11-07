@@ -171,3 +171,31 @@ After approval: run focused pure + real temporary-fixture tests, project lint an
 ## Approval points (proposed, not yet accepted)
 
 Boss review must confirm: recursive Merge keeps conflicting leaves as numbered copies; the proposed safety limits; the system-reader/runtime availability approach; and the named destructive-runner/replacement scope. Exact original MFinder defaults are not inferred. No implementation starts from this draft.
+
+## Boss approval (2026-11-07, after reviewing stage 03A)
+
+Stage 03A was built before this approval; Boss reviewed it as code (gate green 3010/0 outside the builder, mutation 16/20 RED with
+four measured-equivalent guards) and merged it unrouted. Decisions for 03B/03C:
+
+1. **Merge semantics — approved.** Directories combine; colliding leaves and file/directory type collisions get numbered names
+   (compound extensions kept). Label "Gộp thư mục, giữ cả hai file trùng". Ask = Keep Both / Merge / Cancel, default Cancel.
+2. **Limits — approved as proposed** (§5 table). They are XFinder safety choices, not MFinder defaults; keep them in
+   `ArchiveSafetyRules.Limits` only.
+3. **Reader — approved:** system libarchive through `dlopen`, zip + tar with gzip/bzip2/xz/none only, fail closed. In-process
+   parsing of hostile headers is accepted (same system library Archive Utility uses); no helper target. One required change in 03B:
+   `BlockLedger` for an entry must be limited by the **remaining** batch budget (`maxDecodedBytes - decoded`), not the whole
+   budget, so one entry cannot decode a second full budget before the cumulative check. The 10-minute deadline must be checked in
+   the same block loop (monotonic clock, injected for tests).
+4. **Destructive scope — approved for exactly these paths:** `ArchiveRunner.swift`, `ArchiveEngine.swift`, the Trash/replace
+   branches of `CompressDetailView.swift`, new `ArchiveJob.swift`/`ArchiveRecoveryStore.swift`, `ClipTransfer.swift` failure
+   mapping only. Nothing else.
+5. **Creation Replace:** build + verify the candidate first; then `trashItem(old, resultingItemURL:)`; then `renamex_np(candidate,
+   target, RENAME_EXCL)`. If that rename fails, move the trashed original back from `resultingItemURL` and report; never `rm`.
+6. **"Xóa file nén gốc" (decision point 2) — keep, fix in 03C:** only for archives whose extraction completed in this run; a
+   confirmation alert listing the names (default button Cancel); Trash only; per-file failures shown (today `try?` hides them and
+   the button trashes every selected source even after a failed run).
+7. **Password ZIP:** label the current backend honestly ("mật khẩu ZIP chuẩn cũ", no AES-256 claim). AES/Touch ID is a separate
+   task, not part of 03.
+
+Order: 03B (shared inspection + staging + identity + cancellation + owned cleanup, routed through `extractToStaging` so
+clipboard import gets it too) → Boss review/merge → 03C (placement, recovery, page UX, source-delete fix, mutation matrix).
