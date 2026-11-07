@@ -1,3 +1,57 @@
+## 2026-11-07 — Codex — XF-MFGAP-02 Exact Duplicate Finder
+
+TASK: XF-MFGAP-02   BRANCH: agent/codex-XF-SETTINGS   COMMITS: 2d77c09
+BUILD: ** BUILD SUCCEEDED ** (arm64; all four new app sources have 4 build-log matches)
+TESTS: DuplicateRulesTests + SidebarDestinationTests 18 tests / 0 failures; full gate 2932 tests / 1 failure
+GATE: RED — only AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput, the known `codex` ancestor assumption at AgentCodexTests.swift:156. No unrelated source/test was changed.
+MUTATION: 5/5 RED; restored tests 0 failures; all three backed-up source files restored byte-identical
+LIVE: NOT VERIFIED (Builder does not install)
+QUESTIONS: none; Boss review of DuplicateTrash.swift and installed-app verification remain required by the approved spec.
+
+Rebased onto main `354a62e` under Boss's direct instruction. Approved spec blob `934c39f` was unchanged at delivery. Boss approval explicitly authorizes only the new CÔNG CỤ → Tìm tệp trùng page and the destructive boundary in `XFinder/Core/Duplicates/DuplicateTrash.swift`; installed non-sandbox write access is Boss's measurement, not this terminal test's measurement.
+
+Before coding, read the spec's failure table and recorded in commentary: changed file/keeper, forced equal hashes with different bytes, all copies selected, denied/revoked access and cancellation between moves. Implementation responds to those cases with fingerprint checks, streaming byte verification, a protected unselected keeper, explicit confirmation and per-file outcomes.
+
+Implemented size grouping, canonical hard-link deduplication, four bounded hashing workers with 1 MiB chunks, SHA-256 candidates and byte-for-byte confirmation. Scan cap is 500,000 eligible files; reaching it yields incomplete results and disables Trash. Symlinks, aliases, app bundles and dataless/cloud-only entries are excluded; inaccessible/changed entries make results incomplete. Grouping, hashing and comparisons publish throttled progress. No persistent index, idle scan or network upload exists in this feature.
+
+The page offers root choice/scan/cancel, grouped metadata, empty initial selection, suggested keepers, logical selected bytes, Reveal in Finder, and a Cancel-default confirmation. Preflight rejects the entire affected group when one selected member/keeper no longer verifies. After confirmation, each selected target and its unselected keeper are revalidated by fingerprint + hash + byte comparison, with both path fingerprints checked again immediately before one synchronous `trashItem`. No `removeItem` or permanent-delete fallback exists in production. Cancellation stops future moves and reports the completed subset. A session-owned coordinator retains actual outcomes across page navigation; queued scan progress is invalidated before verification/moving. A path-based Trash API still has a residual TOCTOU boundary; no atomic batch or hostile-filesystem guarantee is claimed.
+
+Files changed:
+- `XFinder/Core/Duplicates/DuplicateRules.swift`, `DuplicateScanEngine.swift`, `DuplicateTrash.swift`.
+- `XFinder/Views/Detail/DuplicateFinderDetailView.swift`, `XFinder/Views/RootView.swift`, `XFinder/Models/SidebarDestination.swift` (exactly one added page).
+- `XFinder.xcodeproj/project.pbxproj` (four entries per new app source), `XFinder/Resources/L10n.strings.json` (31 add-only entries).
+- Three test symlinks, `Tests/XFinderLogicTests/DuplicateRulesTests.swift`, `scripts/mutation-check-duplicates.sh`.
+- This worklog and `docs/MFINDER_CHANGELOG.md` for reporting.
+
+Verification:
+- Focused tests: 10 DuplicateRulesTests + 8 SidebarDestinationTests = 18/0. Tests perform real hash/byte reads only in freshly created temporary fixtures; Trash is injected, not invoked on real files. Cases include forced hash equality, changed fingerprints, empty/all-copy selections, hard links/symlinks, root-link rejection, >1 MiB reads, empty files/known empty SHA-256, cancellation after first move, keeper mutation, group preflight rejection and denied Trash preserving files.
+- Strengthened mutation scenarios test observable plan/executor outcomes (not only predicate truth tables): forced hash bypass, fingerprint bypass, selected-keeper guards bypassed, empty selection yielding an enabled plan, cancellation bypassed across all move boundaries. Final log `/tmp/xf-duplicates-mutation-final.log`: 5/5 RED, restored GREEN. Compared backups against all three restored sources byte-for-byte.
+- Metadata-only optimized terminal probe: 500,000 synthetic file records → 250,000 size-pair groups retaining all 500,000 records; whole-process maximum RSS **414,744,576 bytes (~395.5 MiB)**, wall 2.06s. `/tmp/xf-duplicates-memory/result.log`. This is not full scan/UI memory or real-disk throughput; no user files were read by that probe.
+- Project lint and staged whitespace check passed. First full gate found missing `Quét` localization; it was added. Final gate has zero L10n/UI problems. Follow-up builds/gates followed UI lifecycle and canonical hard-link fixes; the unrelated Codex ancestor failure was not edited or disguised.
+- Final logs: `/tmp/xf-duplicates-gate-delivery.log`; full gate directory `/var/folders/xq/xzqwntyx0yx4stl6d6x3t7h00000gp/T/xfinder-gate.GjiEJC`; build output `/tmp/xf-GPT-Minion-duplicates/out/XFinder.app` (not installed).
+
+Gate stdout (verbatim):
+
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2932 tests, with 1 failure (0 unexpected) in 26.103 (26.314) seconds
+check-l10n-coverage                TOTAL 0 problems across 3832 entries (3832 checked, 32 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3832 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1432 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             13
+GATE: RED
+```
+
+Teaching checkpoint: nhóm theo cỡ giống như chia các gói hàng theo cân nặng trước khi mở ra kiểm tra — cỡ khác thì không thể giống byte. Hash là bộ lọc nhanh; so byte mới xác nhận nội dung, còn fingerprint giúp biết đường dẫn có còn trỏ tới tệp đã quét hay đã bị thay. Bộ đệm 1 MiB giới hạn lượng dữ liệu của mỗi lần đọc, nên file lớn không cần nằm trọn trong RAM. Bốn worker giới hạn số lượt đọc đồng thời để giao diện vẫn xử lý sự kiện.
+
+NOT VERIFIED: installed-app permissions/TCC, real Trash on internal/external volumes, keyboard/VoiceOver/layout, sleep/page-close interactions and a real 500,000-file scan/UI stress run. No push, merge, install or launch. Direct Boss assignment is reported in this fallback worklog; no Notion Run is claimed.
+
+**CHỜ REVIEW (nhánh agent/codex-XF-SETTINGS)**
+
 ## 2026-11-07 — Codex — XF-MFGAP-01 bounded storage charts + XF-MFGAP-02 draft
 
 TASK: XF-MFGAP-01   BRANCH: agent/codex-XF-SETTINGS   COMMITS: 07257ae
