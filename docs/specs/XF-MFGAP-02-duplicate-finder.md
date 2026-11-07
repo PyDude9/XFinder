@@ -1,4 +1,4 @@
-# XF-MFGAP-02 — Exact Duplicate Finder (DRAFT — Boss review required)
+# XF-MFGAP-02 — Exact Duplicate Finder (APPROVED by Boss 2026-11-07)
 
 ## Goal and authorization
 
@@ -109,3 +109,17 @@ Boss-owned/reviewed step: Trash service and app write-access verification. No `F
 - Given keyboard/VoiceOver use, then choose root, inspect groups, select copies, reveal, confirm/cancel and rescan are all reachable.
 
 Verification after approval: focused pure and temporary-fixture I/O tests, mutation RED cases for collision/changed fingerprint/last-copy/selection/cancellation, project lint/compile-list, `sh scripts/gate-all.sh` in an isolated output directory; live permissions and Trash only by Boss in installed XFinder. Never install, push or merge from the Builder.
+
+## Boss approval (2026-11-07) — build it
+
+- Spec approved as written. Proposed limits accepted: **4 hashing workers**, **500 000 eligible files**, 1 MiB chunks.
+- **Write access measured:** the installed app's signature carries **no** `com.apple.security.app-sandbox` entitlement
+  (`codesign -d --entitlements - /Applications/XFinder.app` → 0 matches), so Trash works on user-chosen folders exactly like the
+  file browser and `ActionHistoryStore` already do. No entitlement change.
+- **Trash step scope amended:** the Builder implements it in `XFinder/Core/Duplicates/DuplicateTrash.swift` — revalidate (fingerprint
+  + hash + byte compare, keeper included) immediately before each `FileManager.default.trashItem(at:resultingItemURL:)`, one item at a
+  time, await the result, never `removeItem`/`rm`. This one file is reviewed line by line by Boss before merge (exception to
+  `AGENT_TASKS.md` §2 for this task only).
+- Mutation harness `scripts/mutation-check-duplicates.sh` must cover: forced equal hash rejected by byte compare, changed fingerprint,
+  last copy never trashed, empty selection disables, cancellation stops further moves.
+
