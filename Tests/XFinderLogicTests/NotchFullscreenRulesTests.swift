@@ -41,6 +41,21 @@ final class NotchFullscreenRulesTests: XCTestCase {
                                                    mediaPlaying: true)))
     }
 
+    func testDeliberateOpenAndActionableWorkMustRemainVisible() {
+        func keep(expanded: Bool = false, task: Bool = false, agents: Int = 0, reply: Bool = false,
+                  composer: Bool = false, buttons: Bool = false) -> Bool {
+            R.mustRemainVisible(expanded: expanded, taskRunning: task, agentsNeedingYou: agents,
+                                replyPending: reply, composerOpen: composer, activityHasButtons: buttons)
+        }
+        XCTAssertFalse(keep(), "an idle badge or hover peek may hide over a fullscreen app")
+        XCTAssertTrue(keep(expanded: true), "a surface opened by click, hotkey or URL must not vanish at once")
+        XCTAssertTrue(keep(task: true))
+        XCTAssertTrue(keep(agents: 1))
+        XCTAssertTrue(keep(reply: true))
+        XCTAssertTrue(keep(composer: true))
+        XCTAssertTrue(keep(buttons: true))
+    }
+
     func testActionableWorkKeepsNotchVisibleRegardlessOfPolicy() {
         let context = R.Context(fullscreenOwnerPID: 101, frontmostPID: 101,
                                 mediaPID: 101, mediaPlaying: true, mustRemainVisible: true)

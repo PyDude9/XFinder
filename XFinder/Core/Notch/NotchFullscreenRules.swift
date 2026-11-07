@@ -30,6 +30,14 @@ enum NotchFullscreenRules {
         var mustRemainVisible = false
     }
 
+    /// What keeps the notch on screen whatever the fullscreen policy says. A surface the user opened on
+    /// purpose (click, hotkey, URL — `expanded`) counts: hiding it the moment it opens would make those
+    /// intents silently do nothing over a fullscreen app. A hover peek and the idle badge may still hide.
+    static func mustRemainVisible(expanded: Bool, taskRunning: Bool, agentsNeedingYou: Int,
+                                  replyPending: Bool, composerOpen: Bool, activityHasButtons: Bool) -> Bool {
+        expanded || taskRunning || agentsNeedingYou > 0 || replyPending || composerOpen || activityHasButtons
+    }
+
     /// Window-server and display bounds can differ by a few points due to scale/rounding. This is a
     /// geometry tolerance, not a claim that macOS exposes an authoritative fullscreen flag here.
     static let displayFrameTolerance: CGFloat = 8

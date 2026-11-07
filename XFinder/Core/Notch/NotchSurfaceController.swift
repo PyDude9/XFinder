@@ -1194,9 +1194,11 @@ final class NotchSurfaceController {
     private func shouldHideForFullscreen(on screen: NSScreen) -> Bool {
         let policy = NotchFullscreenVisibility.parse(fullscreenVisibilityRaw)
         guard policy != .show else { return false }
-        let mustRemainVisible = machine.taskRunning || model.agentsNeedingYou > 0
-            || model.agentReplyTarget != nil || model.newWindowlessOpen
-            || !(model.activity?.buttons.isEmpty ?? true)
+        let expanded: Bool = { if case .expanded = machine.state { return true }; return false }()
+        let mustRemainVisible = NotchFullscreenRules.mustRemainVisible(
+            expanded: expanded, taskRunning: machine.taskRunning, agentsNeedingYou: model.agentsNeedingYou,
+            replyPending: model.agentReplyTarget != nil, composerOpen: model.newWindowlessOpen,
+            activityHasButtons: !(model.activity?.buttons.isEmpty ?? true))
         guard !mustRemainVisible else { return false }
         let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         guard let displayNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
