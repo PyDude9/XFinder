@@ -1,3 +1,178 @@
+## 2026-11-07 — OpenCode — XF-MFGAP-03 stage 03A system archive reader
+
+TASK: XF-MFGAP-03 stage 03A, second half (spec §9)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: 80522af
+BUILD: `** BUILD SUCCEEDED **` (arm64; `SystemArchiveReader.swift` appears 4 times in the compile log)
+TESTS: SystemArchiveReaderTests 34 / 0; ArchiveSafetyRulesTests 43 / 0; focused 77 / 0; full suite 3010 / 0
+GATE: green — 3010 tests / 0 failures, all 7 string/UI gates TOTAL 0, `modified tracked files 3`
+MUTATION: 20 mutants, **16 RED**, 4 survivors (see below); source restored byte-identical and RESTORED GREEN (`cmp` verified)
+LIVE: NOT VERIFIED (Builder does not install; nothing routes a user through the reader yet)
+FILES CHANGED: XFinder/Core/Archive/SystemArchiveReader.swift (new); Tests/XFinderLogicTests/SystemArchiveReader.swift
+(symlink), SystemArchiveReaderTests.swift (new); ArchiveSafetyRules.swift + its tests (root-entry fix);
+XFinder.xcodeproj/project.pbxproj (+4 lines, `plutil -lint` OK); this worklog
+NOT VERIFIED: macOS 14 reader matrix; real-world archives beyond the fixtures; low-disk and cross-volume behaviour;
+extraction of any kind (that is 03B). No app was launched and no archive was extracted.
+QUESTIONS: Boss approval for 03B/03C. Decision point 2 (`Xóa file nén gốc`) is still unanswered.
+
+The reader walks headers and returns `[ArchiveManifestEntry]` + file identity. It writes nothing, deletes nothing,
+renames nothing and spawns nothing — it exists to feed `ArchiveSafetyRules.validate` and nothing else.
+
+New measurements this session (macOS 27.2, libarchive 3.7.4, synthetic fixtures only):
+- `archive_read_open_fd` does **not** take ownership of the descriptor: after `archive_read_free` the fd is still open
+  (verified with `fstat`). The caller must close it exactly once. A double `archive_read_free` aborts the process with
+  `PROGRAMMER ERROR`, so `defer` + a single `free` is mandatory.
+- Only `zip` + `tar` with `gzip`/`bzip2`/`xz`/`none` are registered, never `format_all`/`filter_all`: a 7z signature and
+  4096 random bytes then fail closed at open with `Unrecognized archive format`.
+- `archive_entry_pathname_utf8` returns **nil** exactly for invalid UTF-8, while `pathname` returns a lossy U+FFFD string —
+  that is the encoding gate. It is non-nil for ASCII, NFC and NFD Vietnamese in zip and tar (measured), so it does not
+  refuse legitimate names.
+- Encryption is visible at **header** time (`archive_entry_is_encrypted == 1`) before any data call; a ZipCrypto entry then
+  fails with `Passphrase required for this entry`.
+- **Sparse is the trap.** A tar holding a 200 MiB hole-only file reports `sparse_count = 2`, `declared = 209715200`, and
+  then `archive_read_data`/`read_data_block` yield **0 bytes with no error at all**, while `tar -x` faithfully recreates a
+  209715200-byte file. Sparse entries are therefore refused, not counted.
+- Walking headers is **not free** for streamed formats: finding entry N+1 requires inflating entry N. 64 MiB of
+  compressible data cost ~12 ms to walk with no bytes requested; a full run with the sparse guard removed took **283 s**.
+- `tar -cf out.tar .` emits a `./` root entry, which the rules previously mapped to `emptyPath` and so refused *every*
+  archive built that way — a real false positive found by testing, fixed here.
+
+Bug found by mutation, not by reading: `cursor = offset + size` was an unchecked add on attacker-controlled metadata and
+**traps** on maximal values (`EXIT=133`). A trap is a crash, not a refusal; it now uses `addingReportingOverflow`. The
+end-offset check is provably unreachable today (documented in the source as a trap guard, not tested behaviour).
+
+Byte accounting (`BlockLedger`) and the declared-vs-decoded comparison (`verifyDeclaredSize`) were extracted as pure units
+after mutation showed no fixture could exercise them: libarchive refuses a lying archive itself (zip `ZIP uncompressed data
+is wrong size`, tar `Truncated tar archive`), so the reader's own comparison is a second layer. It is now tested directly.
+
+Survivors, stated honestly: R2 `O_NOFOLLOW`, R3 `O_NONBLOCK`, R4 the `fstat`-vs-`lstat` identity comparison and R5 the
+`SF_DATALESS` check. Each is a **redundant layer measured to catch the case alone** — `lstat` refuses a symlink first, and
+`open` without `O_NONBLOCK` blocks >3 s on a FIFO (verified in a child process) — so removing any one is an equivalent
+mutant, not a test gap. They are **not** claimed as coverage.
+
+**CHỜ BOSS DUYỆT SPEC cho 03B/03C — 03A đã xong và xanh; không push/merge/cài/launch.**
+
+## 2026-11-07 — OpenCode — XF-MFGAP-03 stage 03A pure manifest safety rules
+
+TASK: XF-MFGAP-03 stage 03A (spec §9)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: d092bae
+BUILD: `** BUILD SUCCEEDED **` (arm64; `ArchiveSafetyRules.swift` appears 4 times in the compile log, so it really compiled)
+TESTS: ArchiveSafetyRulesTests 39 / 0; full suite 2972 / 0
+GATE: green — 2972 tests / 0 failures, all 7 string/UI gates TOTAL 0
+MUTATION: **15/15 RED**, source restored byte-identical and GREEN afterwards (`cmp` verified)
+LIVE: NOT VERIFIED (Builder does not install; no reader is wired in, so nothing is user-reachable)
+FILES CHANGED: XFinder/Core/Archive/ArchiveSafetyRules.swift (new); Tests/XFinderLogicTests/ArchiveSafetyRules.swift (symlink),
+Tests/XFinderLogicTests/ArchiveSafetyRulesTests.swift (new); XFinder.xcodeproj/project.pbxproj (+4 lines); this worklog
+NOT VERIFIED: macOS 14 reader matrix; hostile/oversized archives; low disk; cross-volume EXDEV for the commit primitives;
+runtime decoded-byte enforcement (that is stage 03B, not 03A)
+QUESTIONS: Boss approval still required for the whole spec, and specifically for findings 1 and 3 of the review
+
+Why this ran before approval: stage 03A touches **no** destructive engine — no `ArchiveRunner`, no Trash, no UI, no
+UserDefaults, no L10n. It is pure rules plus tests, exactly the first row of the spec's §9 table, and it is what the
+review's findings 1–2 needed to be decidable. `ArchiveRunner`/`CompressDetailView` remain untouched and still await
+Boss approval under `AGENT_TASKS.md` §2.
+
+New measurements this session (macOS 27.2 / 26B123, terminal probes, synthetic fixtures only):
+- `dlopen("/usr/lib/libarchive.2.dylib")` succeeds from a plain Swift binary although **no such file exists on disk** (it is
+  in the dyld shared cache), and `archive_version_string` reports `libarchive 3.7.4`. The SDK ships `libarchive.tbd` but **no
+  `archive.h`**, so a header-less runtime binding is the only option — which is what the spec proposed.
+- **`archive_read_support_format_all` + `archive_read_support_filter_all` are mandatory.** Without them every open fails
+  with `No formats registered`, which reads like a corrupt archive. This is the single easiest way to ship a dead reader;
+  it is noted here so 03B does not rediscover it.
+- With them registered, the reader returns the hostile shapes **before** extraction: `../escaped.txt`, a raw absolute path,
+  a `jump -> /tmp` symlink, a `../tar-escaped.txt` entry inside a TAR, and both `same.txt` entries of a duplicate-name ZIP.
+  Declared sizes were readable for all of them. An ordinary ZIP still read cleanly.
+- Duplicate raw names come back as two entries with the same path; a `Report.txt`/`report.txt` pair comes back as two
+  distinct paths that APFS would still collapse. Both are now rejected by different rules (duplicate vs alias).
+
+The 15 mutants cover: `..` accepted, absolute path stripped, duplicate allowed, case alias ignored, unknown capacity as
+infinite, insufficient space allowed, absolute symlink allowed, escaping symlink allowed, links ordered before content,
+file-as-parent allowed, undeclared size assumed small, per-file ceiling removed, hard link outside accepted, cycle
+detection disabled, unsupported entries accepted. Every one went RED; none stayed green.
+
+**CHỜ BOSS DUYỆT SPEC cho 03B/03C — 03A đã xong và xanh; không push/merge/cài/launch.**
+
+## 2026-11-07 — OpenCode — XF-MFGAP-03 pre-approval gap review (cross-tool)
+
+TASK: XF-MFGAP-03 (review only, `AGENT_TASKS.md` §3c step 2)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: (this commit)
+BUILD: NOT RUN (no app source change)   TESTS: archive filter 35 tests / 0 failures (includes 2 unrelated archive-named tests; the two archive suites are 18+15 = 33)
+GATE: green — `sh scripts/gate-all.sh --no-build`: 2933 tests / 0 failures, all 7 string/UI gates TOTAL 0, `modified tracked files 0`
+MUTATION: not run (no code change)   LIVE: NOT VERIFIED (Builder does not install)
+FILES CHANGED: docs/reviews/XF-MFGAP-03-archive-safety-review.md; docs/AGENT_WORKLOG.md
+NOT VERIFIED: cross-volume EXDEV behavior of RENAME_EXCL/RENAME_SWAP; installed-app/TCC/external-volume behavior; hostile, oversized and low-disk archives; the system-libarchive reader claim (not re-probed)
+QUESTIONS: Boss decision on findings 1 (name the no-replace/exchange primitive) and 3 (`Xóa file nén gốc` scope) before approval
+
+Task statement: the Codex session hit its usage limit immediately after committing the XF-MFGAP-03 draft (`bb0e613`) and its
+worklog entry (`55ea5bc`), so the handoff to Gemini carried an unapproved spec. No Boss approval of XF-MFGAP-03 exists on
+`main` (`1143525`), so no implementation may start. The permitted next step is the independent read in §3c step 2, which a
+different tool performs — hence this review rather than code.
+
+Reproduced the spec's core claims against the unchanged `ArchiveEngine`/`ArchiveRunner`, then probed four things the spec
+asserts without measuring. No spec file was edited (it is the artifact Boss approves) and no app source changed.
+
+Findings, in order of consequence:
+- **High:** §7's "no-replace / replace-exchange primitive" is never named, and the natural substitute is a trap. Measured:
+  `renamex_np` + `RENAME_EXCL` is the real no-replace commit (free path → `ret=0`; occupied path → `errno=17`, both files
+  intact), `RENAME_SWAP` is the real exchange, and both compile from `Darwin` with no hand-written declaration. But
+  `FileManager.replaceItemAt(backupItemName:)` returns success and creates **no** backup on this volume — so the spec's
+  "retain a recoverable old version" would ship a false promise via the current creation-Replace path.
+- **High:** `ArchiveEngine.numbered()` always splits at the last dot, so dotted **folders** are mangled: `Photos.2024` →
+  `Photos 2.2024`, `v1.2.3` → `v1.2 2.3`. The spec's recursive Merge numbers colliding directories and would inherit it.
+- **High:** `Xóa file nén gốc` (`CompressDetailView.swift:263–273`) trashes **every** input with **no confirmation**, is
+  offered after a **partial** batch (`resultURL` set by any success, log `Đã giải 1/2`), then clears `sources`. A reachable
+  sequence destroys the corrupt archive that produced no output. The spec downgrades this to "or defer until reviewed".
+- **Medium:** `ArchiveRunner.place(policy: .ask)` returns `.success([])` and deletes staging when unresolved — a latent
+  data-loss shape for the shared API §5 wants to centralize. Not reachable from `CompressDetailView` today.
+- **Low:** the false Merge copy at `CompressDetailView.swift:222` ("thư mục đích không bị đụng tới") is contradicted by the
+  spec's own probe, and no stage 03C bullet schedules its removal.
+- **Verified already correct:** in-batch case/Unicode reservation works (`README.md`+`readme.md` → `readme 2.md`; NFC/NFD
+  Vietnamese forms resolve to one APFS file), and staging is already `0o700` on the destination volume even when the
+  destination folder does not exist yet. Free space is still genuinely unchecked (`grep volumeAvailableCapacity|freeSpace`
+  over the archive path returns nothing).
+
+**CHỜ BOSS DUYỆT SPEC + trả lời findings 1 và 3 — chưa code app; không push/merge/cài/launch.** Spec left byte-identical
+at `bb0e613`.
+
+## 2026-11-07 — Codex — XF-MFGAP-03 measured archive safety specification
+
+TASK: XF-MFGAP-03 (spec only)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: bb0e613
+BUILD: NOT RUN (no app source change; gate --no-build)
+TESTS: existing ArchiveEngineTests/ArchiveRunnerTests 33 tests / 0 failures; full docs gate 2933 / 1
+GATE: RED — known AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput ancestor-`codex` failure at line 156; all L10n/UI gates zero
+MUTATION: not run (spec only)   LIVE: NOT VERIFIED (Builder does not install)
+FILES CHANGED: docs/specs/XF-MFGAP-03-archive-safety.md; docs/AGENT_WORKLOG.md
+NOT VERIFIED: installed-app permissions/UI, macOS 14 reader compatibility, low-disk volume, large/hostile archive limits and future rollback/publication implementation
+QUESTIONS: Boss approval of this draft's Merge semantics, limits, system-reader approach and named destructive-engine scope before code
+
+Rebased onto main `1143525` as directly instructed. Read `8092dd0`: expensive alias metadata is now queried only in same-size candidate groups. The new spec applies that lesson to archive metadata/volume queries. App source, tests and scripts remain unchanged.
+
+Measured unchanged ArchiveEngine/ArchiveRunner with separately compiled terminal probes on macOS 27.2 / 26B123. Every archive, sentinel and mutation target was synthetic in the private probe area; no installed XFinder interaction, user archives or real Trash action. Main findings (details and exact numbers in the spec):
+- Existing destination directory symlink + Merge writes to the outside probe target.
+- Same-folder Merge can replace the selected source archive with an entry bearing the same filename.
+- Duplicate ZIP entry paths silently keep the last data; a later placement failure leaves an earlier new file in destination and removes staging.
+- A deliberate direct-runner unused-output-precondition violation overwrites/removes an old regular output, and failure cleanup removes an old nonempty output directory; these show why an output path must be exclusively owned/revalidated at publication, including races.
+- Existing absolute-link check rejects the measured fixture. ditto normalizes raw ZIP traversal/absolute names; tar rejects the measured `..` path. Do not generalize either tool result to all formats.
+- Bounded benign expansion: 8,273-byte ZIP yields 8,388,608 bytes (~1014x); no current quota. No disk-filling bomb test was run.
+- System libarchive 3.7.4 exposes structured raw paths/sizes/link targets; SDK tbd exists but the checked SDK archive.h path is absent. Python ctypes was a probe only. The native reader proposal has a runtime/opaque-header resource feasibility gate before use.
+
+The draft keeps current destination/policy defaults, proposes recursive Merge that numbers colliding leaf files, requires preflight + runtime budgets/free-space checks, protects all inputs, forbids existing-target-link traversal, and specifies owned cleanup/partial-result recovery. No 7zz, cloud upload or application implementation was added. ArchiveRunner/creation replacement scope still needs Boss's specific approval under AGENT_TASKS §2.
+
+Archive tests: 33/0 in 0.610s. `git diff --check` and staged docs check passed. Full docs-only gate stdout:
+
+```text
+tests                              Executed 2933 tests, with 1 failure (0 unexpected) in 26.704 (26.928) seconds
+check-l10n-coverage                TOTAL 0 problems across 3832 entries (3832 checked, 32 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3832 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1432 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             0
+GATE: RED
+```
+
+Logs: `/tmp/xf-archive-safety-probe/`; full gate `/var/folders/xq/xzqwntyx0yx4stl6d6x3t7h00000gp/T/xfinder-gate.ZfSsDK`. Probe executables/source and synthetic fixtures were removed after recording the measurements; compact result logs remain. This is the local reporting fallback for the direct Boss assignment; no Notion Run is claimed.
+
+**CHỜ BOSS DUYỆT SPEC — chưa code app; không push/merge/cài/launch.**
+
 ## 2026-11-07 — Codex — XF-MFGAP-02 Exact Duplicate Finder
 
 TASK: XF-MFGAP-02   BRANCH: agent/codex-XF-SETTINGS   COMMITS: 2d77c09
