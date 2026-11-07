@@ -127,4 +127,19 @@ final class DuplicateRulesTests: XCTestCase {
         XCTAssertEqual(rejected.status, .failed)
     }
 
+
+    /// Two identical Finder alias files are skipped (checked only for same-size candidates), while two identical regular
+    /// files in the same folder still form a group.
+    func testIdenticalAliasFilesAreSkippedButRegularDuplicatesStillGroup() async throws {
+        let (root, files) = try fixture(["same", "same"])
+        defer { try? FileManager.default.removeItem(at: root) }
+        let bookmark = try files[0].url.bookmarkData(options: .suitableForBookmarkFile)
+        try URL.writeBookmarkData(bookmark, to: root.appendingPathComponent("alias-a"))
+        try URL.writeBookmarkData(bookmark, to: root.appendingPathComponent("alias-b"))
+        XCTAssertEqual(try root.appendingPathComponent("alias-a").resourceValues(forKeys: [.isAliasFileKey]).isAliasFile, true)
+        let result = await DuplicateScanEngine.scan(root: root) { _ in }
+        XCTAssertEqual(result.groups.count, 1)
+        XCTAssertEqual(Set(result.groups[0].files.map(\.name)), ["file-0", "file-1"])
+        XCTAssertEqual(result.skipped, 2)
+    }
 }

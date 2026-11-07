@@ -118,7 +118,6 @@ enum DuplicateScanEngine {
                 return .descend
             }
             do {
-                if try url.resourceValues(forKeys: [.isAliasFileKey]).isAliasFile == true { skipped += 1; return .descend }
                 let fp = try fingerprint(url)
                 let candidate = DuplicateFile(url: url, relativePath: String(url.path.dropFirst(prefix.count)), fingerprint: fp)
                 if let index = identities[fp.identity] {
@@ -137,7 +136,15 @@ enum DuplicateScanEngine {
             return .descend
         }
         if Task.isCancelled { return .init(groups: [], status: .cancelled, scanned: files.count, skipped: skipped) }
-        let candidates = DuplicateRules.sizeCandidates(files).flatMap { $0 }
+        // Alias check only for same-size candidates: a per-file `resourceValues` lookup during the walk made the
+        // storage scan 6–23× slower (measured 2026-11-06, XF-T35 `ef669cb`); most files never reach this point.
+        var kept: [DuplicateFile] = []
+        for group in DuplicateRules.sizeCandidates(files) {
+            let regular = group.filter { (try? $0.url.resourceValues(forKeys: [.isAliasFileKey]).isAliasFile) != true }
+            skipped += group.count - regular.count
+            if regular.count > 1 { kept.append(contentsOf: regular) }
+        }
+        let candidates = kept  // immutable: captured by the hashing task group
         let counter = DuplicateHashProgress(progress: progress, skipped: skipped)
         progress(.init(phase: .hashing, processed: 0, skipped: skipped))
         let hashed = await withTaskGroup(of: [(DuplicateFile, String?)].self, returning: [(DuplicateFile, String?)].self) { group in
