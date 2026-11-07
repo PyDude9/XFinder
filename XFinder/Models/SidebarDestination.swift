@@ -47,6 +47,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case compress
     case pdfTools
     case folderLock
+    case duplicateFinder
     case quickLookPage
     case mediaCompat
     case finderUtils
@@ -149,6 +150,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .dropTray: return "Khay thả"
         case .compress: return "Nén & Giải nén"
         case .pdfTools: return "Công cụ PDF"
+        case .duplicateFinder: return "Tìm tệp trùng"
         case .folderLock: return "Khóa thư mục"
         case .quickLookPage: return "Quick Look"
         case .mediaCompat: return "Tương thích media"
@@ -205,6 +207,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .dropTray: return "tray.and.arrow.down.fill"
         case .compress: return "archivebox.fill"
         case .pdfTools: return "doc.richtext.fill"
+        case .duplicateFinder: return "doc.on.doc"
         case .folderLock: return "lock.fill"
         case .quickLookPage: return "eye.fill"
         case .mediaCompat: return "play.rectangle.fill"
@@ -234,7 +237,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     var tile: SidebarTile {
         switch self {
         case .dashboard, .storage, .menuIcons, .finderKeyboard, .actionHistory, .folderLock, .finderUtils, .about: return .gray
-        case .features, .snapZones: return .indigo
+        case .features, .snapZones, .duplicateFinder: return .indigo
         case .shortcuts, .finderSearch, .quickShare, .quickLookPage, .fileBrowser: return .cyan
         case .antiSleep, .aiSearch, .smartSelect, .aiAgents: return .purple
         case .system, .notchInterface, .windowPreview, .finderActions, .remoteConnect: return .blue
@@ -265,7 +268,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
             ("CỬA SỔ", [.windowPreview, .snapZones, .appQuit, .mouseGestures, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.fileBrowser, .finderKeyboard, .finderActions, .finderSearch,
                                    .batchRename, .junkCleanup, .actionHistory]),
-            ("CÔNG CỤ", [.voiceTyping, .smartSelect, .capture, .clipboard, .settingsClipboard, .notes, .compress, .pdfTools, .folderLock]),
+            ("CÔNG CỤ", [.voiceTyping, .smartSelect, .capture, .clipboard, .settingsClipboard, .notes, .compress, .pdfTools, .folderLock, .duplicateFinder]),
             ("KẾT NỐI", [.sync, .remoteConnect, .quickShare, .ports]),
             ("TIỆN ÍCH", [.finderUtils, .quickLookPage, .uninstaller]),
         ]
