@@ -23,9 +23,15 @@ Builder: GPT-Minion (Codex). Rules: `BUILDER.md` (commit on your `agent/codex-<I
 
 ## 1. Deliverables, in order (one commit each)
 
-1. **Originals into the repo, verbatim.** Save both owner files unchanged as `docs/reference/MFINDER_SPEC_1.md` and
-   `docs/reference/MFINDER_SPEC_2.md` (keep the original title in the first line). If you no longer have the exact text,
-   **stop and say so** — do not reconstruct it from memory.
+1. **Originals — done by Boss.** The owner re-sent them: `docs/reference/MFINDER_PROMPT_SYSTEM.md` (12 features + global
+   privacy rules; byte-identical copy of `~/Documents/Craft Anything/mfinder/app/PROMPT_SYSTEM.md`) and
+   `docs/reference/MFINDER_PROMPT_TEACHING.md` (8 teaching topics — engineering background, not requirements). The spec has **no
+   separate Settings chapter**: "Settings" = the per-feature options and keys it names (`storage.chartStyle`, `storage.chartFraction`,
+   `settings.aiSearch.*`, `settings.dropTray.shake*`, archive `newFolderNextToArchive`/`sameFolder`, sync schedule/conflict policy,
+   capture format/shortcuts, snap custom zones, clean-mode timer…). Audit every one of them.
+   Items that contradict measured XFinder rules (e.g. `CGWindowListCreateImage` is unavailable on 27, "Full Disk Access
+   entitlement", bundled `7zz`, cloud upload, ⌘⇧3/4 interception) are **Rejected** or **Partial** with the measured reason — never
+   copied blindly.
 2. **Gap table** `docs/MFINDER_GAP_AUDIT_2026-11-07.md`: one row per requirement (every heading / bullet that states a behavior or a
    setting), columns `Spec ref (file § line)` · `Requirement (short)` · `Status` · `Evidence` · `Next task ID`.
    Status values only: **Done** (file:line on `main` + commit) · **Partial** (what exists, what is missing) · **Missing** ·
