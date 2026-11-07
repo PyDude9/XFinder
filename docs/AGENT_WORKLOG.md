@@ -1,3 +1,21 @@
+## 2026-11-07 — Antigravity: Remove Self-Dismissing Workspace Observer & Match Trancy Badge Style
+
+Branch `agent/antigravity-XF-translate`.
+
+### Context & Root Cause Diagnosis
+1. **Self-Dismissing Workspace Observer in `TranslateSelectionController`**:
+   - `TranslateSelectionController.swift` previously had an active `registerWorkspaceObserver()` listening for `NSWorkspace.didActivateApplicationNotification`. Because Chrome remained frontmost while the floating panel was ordered front, the notification delivered `app = com.google.Chrome` (which was `!= Bundle.main.bundleIdentifier`) and instantly called `self.dismiss()`, destroying the panel before it could be rendered on screen.
+   - Removed `workspaceObserver` entirely. Dismissal is now properly handled by `installClickOutside`, Escape key, and the header close button.
+   - Added `panel?.orderFrontRegardless()` to guarantee z-order above frontmost web windows.
+2. **Chromium Accessibility Tree Activation (`AXEnhancedUserInterface`)**:
+   - When attaching to Chrome, Edge, Brave, and Electron, `SelectionWatcher` now sets `AXEnhancedUserInterface = true`, which prompts Chromium to construct and maintain accessibility trees for web contents.
+3. **Trancy Badge Appearance Matching Reference**:
+   - `SmartSelectBadgeView` updated to match Trancy reference screenshots: purple rounded square (`#6338F1`, corner radius 7) with a clean white icon (`character.book.closed.fill`).
+   - Added deep link router `xfinder://translate?text=...` in `XFinderApp.swift`.
+4. **Build & Install**:
+   - Clean arm64 build OK, signed and freshly installed into `/Applications/XFinder.app` (`Nov 7 13:38:31`).
+   - Audits green (`TOTAL 0 problems`).
+
 ## 2026-11-07 — Antigravity: Fix Selection Capture on Web Browsers & Chromium / Electron
 
 Branch `agent/antigravity-XF-translate`.
