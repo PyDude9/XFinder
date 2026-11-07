@@ -175,9 +175,9 @@ struct TranslateSelectionView: View {
                 HStack(alignment: .top, spacing: 8) {
                     Text(sense.pos)
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(Color.purple)
+                        .foregroundColor(posColor(for: sense.pos))
                         .frame(width: 28, height: 20)
-                        .background(Color.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
+                        .background(posColor(for: sense.pos).opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
 
                     Text(sense.meaning)
                         .font(.system(size: 12))
@@ -189,6 +189,15 @@ struct TranslateSelectionView: View {
                 }
             }
         }
+    }
+
+    private func posColor(for pos: String) -> Color {
+        let clean = pos.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if clean.contains("adj") { return Color.pink }
+        if clean.contains("noun") || clean == "n." || clean == "n" { return Color.purple }
+        if clean.contains("verb") || clean == "v." || clean == "v" { return Color.blue }
+        if clean.contains("adv") { return Color.orange }
+        return Color.accentColor
     }
 
     // MARK: AI Details Section

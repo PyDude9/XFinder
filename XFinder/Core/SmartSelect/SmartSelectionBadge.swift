@@ -44,7 +44,7 @@ final class SmartSelectionBadge {
 
     func hideAll() {
         badge?.orderOut(nil)
-        panel?.hide()
+        panel?.orderOut(nil)
     }
 
     // MARK: Panel
