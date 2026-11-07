@@ -37,6 +37,7 @@ struct StorageScanResult: Sendable, Equatable {
     let logicalBytes: Int64
     let didOverflow: Bool
     let largestFiles: [StorageScanFile]
+    var tree: StorageTree? = nil
 }
 
 /// Pure aggregation rules shared by the app scanner and logic tests.

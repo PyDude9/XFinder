@@ -4,7 +4,7 @@ import Darwin
 /// Scans one user-selected folder off the main actor. `FileWalk` is used so
 /// the scan sees AppleDouble files that Foundation's directory enumerator can
 /// hide, never follows symlinks, and preserves XFinder's measured traversal
-/// behavior. Results contain only bounded top-file metadata.
+/// behavior. Results retain bounded top-file metadata and a bounded chart hierarchy.
 enum StorageScanEngine {
     static func scan(
         rootURL: URL,
@@ -46,6 +46,7 @@ enum StorageScanEngine {
         }
 
         var accumulator = StorageScanAccumulator()
+        var tree = StorageTreeBuilder(name: root.lastPathComponent)
         var currentPath = ""
         var lastPublishedAt: TimeInterval = 0
 
@@ -53,7 +54,7 @@ enum StorageScanEngine {
             root,
             limit: Int.max,
             isCancelled: { Task.isCancelled },
-            onOther: { accumulator.skipEntry() },
+            onOther: { accumulator.skipEntry(); tree.recordSkippedEntry() },
             // A link is deliberately not followed; that is not a gap, so it must not make the result "partial".
             onLink: { accumulator.visitEntry() }
         ) { url, isDirectory, byteSize in
@@ -63,10 +64,12 @@ enum StorageScanEngine {
             var itemStat = stat()
             guard lstat(url.path, &itemStat) == 0 else {
                 accumulator.skipEntry()
+                tree.recordSkippedEntry()
                 return isDirectory ? .skip : .descend
             }
 
             if isDirectory {
+                tree.directory(currentPath, skipped: itemStat.st_dev != rootStat.st_dev || isCloudOnly(url, stat: itemStat))
                 accumulator.visitEntry()
                 // FileWalk does not descend through mount points. Count that
                 // boundary as skipped so the UI labels the result partial.
@@ -80,13 +83,18 @@ enum StorageScanEngine {
                 }
             } else if isCloudOnly(url, stat: itemStat) {
                 accumulator.skipEntry()
+                tree.recordSkippedEntry()
             } else {
+                let previousCount = accumulator.fileCount
                 accumulator.include(StorageScanFile(
                     name: url.lastPathComponent,
                     relativePath: currentPath,
                     logicalSize: byteSize
                 ), hardLink: itemStat.st_nlink > 1
                     ? .init(device: UInt64(UInt32(bitPattern: itemStat.st_dev)), inode: UInt64(itemStat.st_ino)) : nil)
+                if accumulator.fileCount > previousCount {
+                    tree.file(.init(name: url.lastPathComponent, relativePath: currentPath, logicalSize: byteSize))
+                }
             }
 
             if accumulator.visitedEntries.isMultiple(of: 128) {
@@ -112,7 +120,9 @@ enum StorageScanEngine {
         }
 
         onProgress(progress(from: accumulator, path: currentPath))
-        return accumulator.result(status: .completed)
+        var result = accumulator.result(status: .completed)
+        result.tree = tree.finish()
+        return result
     }
 
     private static func progress(from accumulator: StorageScanAccumulator, path: String) -> StorageScanProgress {
