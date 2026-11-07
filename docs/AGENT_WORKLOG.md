@@ -1,3 +1,24 @@
+## 2026-11-07 — Codex — XF-MFINDER-GAP-AUDIT
+
+Branch `agent/codex-XF-SETTINGS` rebased onto owner-provided originals at `main` `9788415`. The read-only audit is against that source baseline. `docs/reference/MFINDER_PROMPT_SYSTEM.md` is the requirements source (12 features); `MFINDER_PROMPT_TEACHING.md` is engineering education only.
+
+Commit `d166af4` adds:
+
+- `docs/MFINDER_GAP_AUDIT_2026-11-07.md`: settings/options crosswalk first (38 rows), feature-by-feature coverage for all 12 groups, cross-feature privacy requirements, status evidence and ordered follow-up tasks. Unsupported/conflicting mechanisms are marked Rejected or Partial with the measured XFinder reason (Full Disk Access “entitlement”, `CGWindowListCreateImage`, bundled 7zz, vendor cloud uploads, and default ⌘⇧3/4 interception).
+- `docs/MFINDER_SETTINGS_INVENTORY_2026-11-07.md`: current sidebar/settings routes, all 234 View `@AppStorage` declarations, 199 unique key expressions, direct `UserDefaults` literals, session-only controls and repeated key call-sites. It does not change defaults or controls.
+- `docs/specs/XF-MFGAP-01-storage-charts.md`: failure cases and acceptance for the first per-feature settings task.
+
+**Stopped before source implementation under the spec's explicit stop condition:** `StorageScanResult` currently retains aggregate counts and `largestFiles`, not the directory tree needed for cached treemap/sunburst rendering. Q-MFGAP-11 asks for an approved scope/spec update for hierarchy retention. No UI control is added without its real chart. Q-MFGAP-PAGES lists the exact proposed move of the nine File Browser settings categories into the existing Settings window; no move was made pending owner approval.
+
+| Check | Result |
+|:--|:--|
+| `git diff --check` | OK for tracked diff; staged docs also passed `git diff --cached --check` before commit. |
+| Build / tests / gate-all | NOT RUN — source work stopped at the documented spec scope gate; no application code changed. |
+| Live behavior | NOT VERIFIED; no install or launch. |
+| Notion | Not recorded: this connection exposed only limited `query_data_sources` access, not task search/fetch or a known task page. This local worklog is the fallback. |
+
+**CHỜ REVIEW (nhánh `agent/codex-XF-SETTINGS`)**
+
 ## 2026-11-07 — Codex — XF-T36B fullscreen visibility policy (direct owner request)
 
 Boss review 2026-11-07: MERGED (`d6ec920`) + fixes `9e31196` (a surface the user opened stays visible under any hide policy — before, a hotkey/URL/click open over a fullscreen app was hidden at once) and `022ee0d` (measured: on the notched display a native fullscreen window is (0, 33, 1728, 1084), below the housing, so the whole-display match never fired; now the below-housing frame counts with `AXFullScreen == true`, measured false windowed/zoomed and true fullscreen). Gate main green 2917/0; ad-hoc mutants F1–F3 killed by assertions, restore byte-identical. Details in the spec's "Boss review" section. Live: installed build pending idle; real fullscreen apps still to be checked by hand.
