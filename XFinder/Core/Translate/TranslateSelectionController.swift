@@ -91,7 +91,6 @@ final class TranslateSelectionController {
     private var hotKeyRef: EventHotKeyRef?
     private var carbonHandler: EventHandlerRef?
     private var panel: SurfacePanel?
-    private var workspaceObserver: (any NSObjectProtocol)?
     private var googleTask: Task<Void, Never>?
     let model = TranslateSelectionModel()
 
@@ -312,7 +311,6 @@ final class TranslateSelectionController {
     }
 
     private func showPanel(at anchorRect: CGRect? = nil) {
-        registerWorkspaceObserver()
         var cardHeight: CGFloat = 110
         if model.showGoogle { cardHeight += 40 }
         if model.showDictionary {
@@ -351,6 +349,7 @@ final class TranslateSelectionController {
         let clamped = SurfaceGeometry.clamp(CGRect(origin: origin, size: cardSize), into: visible)
         panel?.setFrame(clamped, display: true)
         panel?.makeKeyAndOrderFront(nil)
+        panel?.orderFrontRegardless()
         panel?.installClickOutside { [weak self] in
             guard let self else { return }
             self.dismiss()
@@ -604,33 +603,11 @@ final class TranslateSelectionController {
     }
 
     func dismiss() {
-        unregisterWorkspaceObserver()
         assistant.invalidate()
         googleTask?.cancel()
         model.isActive = false
         model.isTranslating = false
         panel?.hide()
-    }
-
-    private func registerWorkspaceObserver() {
-        guard workspaceObserver == nil else { return }
-        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification,
-            object: nil, queue: .main
-        ) { [weak self] note in
-            guard let self, self.model.isActive else { return }
-            if let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-               app.bundleIdentifier != Bundle.main.bundleIdentifier {
-                self.dismiss()
-            }
-        }
-    }
-
-    private func unregisterWorkspaceObserver() {
-        if let workspaceObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
-            self.workspaceObserver = nil
-        }
     }
 
     // MARK: Legacy – kept for any remaining test references; no longer used by the view.

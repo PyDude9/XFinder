@@ -107,6 +107,10 @@ final class SelectionWatcher {
         guard AXObserverCreate(pid, callback, &obs) == .success, let o = obs else { return }
         let appElement = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(appElement, 0.5)   // short: this runs on the main thread; -25204 is retried
+        if let bid = app.bundleIdentifier?.lowercased(),
+           bid.contains("chrome") || bid.contains("edge") || bid.contains("brave") || bid.contains("electron") {
+            AXUIElementSetAttributeValue(appElement, "AXEnhancedUserInterface" as CFString, kCFBooleanTrue)
+        }
         let sel = AXObserverAddNotification(o, appElement, kAXSelectedTextChangedNotification as CFString, nil)
         let foc = AXObserverAddNotification(o, appElement, kAXFocusedUIElementChangedNotification as CFString, nil)
         log.info("observing \(app.bundleIdentifier ?? "?", privacy: .public) selection=\(sel.rawValue) focus=\(foc.rawValue) attempt=\(attempt)")
