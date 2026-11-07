@@ -98,6 +98,9 @@ enum ArchiveSafetyRules {
         case fileUsedAsParent(String)
         case duplicateAfterNormalisation(String, String)
         case unsupportedEntry(String)
+        /// A path that normalises to the archive root — "." or "./" — but is not a directory. The root
+        /// denotes the staging directory the caller already owns, so only a directory may claim it.
+        case rootEntryIsNotADirectory(String)
         case tooManyEntries(count: Int, limit: Int)
         case fileTooLarge(String, declared: Int64, limit: Int64)
         case payloadTooLarge(declared: Int64, limit: Int64)
@@ -138,6 +141,16 @@ enum ArchiveSafetyRules {
 
         for entry in manifest {
             guard let components = components(of: entry.rawPath, limits: limits, into: &reasons) else { continue }
+
+            // An empty component list means the path denoted the archive root itself: "." or "./".
+            // `tar -cf out.tar .` is an ordinary command and emits exactly this, so it must not be
+            // refused — but it also must not be allowed to turn the caller's staging root into a
+            // file or a link. Only a directory may name the root, and it names something that is
+            // already there.
+            if components.isEmpty {
+                if entry.kind != .directory { reasons.append(.rootEntryIsNotADirectory(entry.rawPath)) }
+                continue
+            }
 
             if entry.rawPath.utf8.count > limits.maxPathBytes {
                 reasons.append(.pathTooLong(entry.rawPath, bytes: entry.rawPath.utf8.count))
@@ -217,7 +230,13 @@ enum ArchiveSafetyRules {
         }
 
         guard reasons.isEmpty else { return .rejected(dedupe(reasons)) }
-        return .accepted(ArchivePlan(orderedEntries: dependencyOrder(manifest),
+        // The root entry ("./") names the staging directory the caller already owns. It is legitimate
+        // input but there is nothing to create for it, so it never reaches the ordered plan.
+        let ordered = manifest.filter { entry in
+            var scratch: [Reason] = []
+            return components(of: entry.rawPath, limits: limits, into: &scratch).map { !$0.isEmpty } ?? false
+        }
+        return .accepted(ArchivePlan(orderedEntries: dependencyOrder(ordered),
                                      declaredPayloadBytes: declared,
                                      peakBytes: peak,
                                      expansionRatio: ratio))
@@ -266,7 +285,10 @@ enum ArchiveSafetyRules {
             out.append(String(part))
         }
 
-        guard !out.isEmpty else { reasons.append(.emptyPath); return nil }
+        // An empty list is a legitimate answer for a path that denotes the archive root (".", "./",
+        // "a/.." already refused above). The caller decides whether the root may be claimed: only a
+        // directory may, and it must not overwrite anything. An entry whose *name* is empty is still
+        // an error, and was caught above.
         if out.count > limits.maxPathComponents {
             reasons.append(.tooManyComponents(raw, count: out.count))
             return nil

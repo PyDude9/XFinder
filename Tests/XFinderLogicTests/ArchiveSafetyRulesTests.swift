@@ -280,4 +280,35 @@ final class ArchiveSafetyRulesTests: XCTestCase {
     func testEmptyManifestIsRejected() {
         XCTAssertEqual(ArchiveSafetyRules.validate(manifest: [], availableBytes: 1_000).reasons, [.emptyPath])
     }
+
+    // MARK: Root entry — `tar -cf out.tar .` emits "./"
+
+    func testDotRootDirectoryIsAcceptedAndExcludedFromThePlan() {
+        // Measured: `tar -cf out.tar .` produces "./" plus "./sub/..." paths. Refusing the root entry
+        // would refuse every archive built that way, so a directory root is accepted and dropped.
+        let manifest = [dir("./"), file("./a.txt"), dir("./sub/"), file("./sub/b.txt")]
+        guard case .accepted(let plan) = ArchiveSafetyRules.validate(manifest: manifest,
+                                                                    availableBytes: 1_000_000_000) else {
+            return XCTFail("`tar -cf … .` must be accepted: \(reasons(manifest))")
+        }
+        XCTAssertFalse(plan.orderedEntries.contains { $0.rawPath == "./" },
+                       "the root already exists; the caller must not be told to create it")
+        XCTAssertEqual(plan.orderedEntries.count, 3)
+    }
+
+    func testBareDotRootDirectoryIsAccepted() {
+        XCTAssertTrue(reasons([dir(".")]).isEmpty, "a lone '.' root must be accepted: \(reasons([dir(".")]))")
+    }
+
+    func testRootClaimedByAFileIsRejected() {
+        // A file or link naming the root would overwrite the caller's staging directory itself.
+        XCTAssertEqual(reasons([file(".")]), [.rootEntryIsNotADirectory(".")])
+        XCTAssertEqual(reasons([file("./")]), [.rootEntryIsNotADirectory("./")])
+        XCTAssertEqual(reasons([symlink(".", to: "x")]), [.rootEntryIsNotADirectory(".")])
+    }
+
+    func testTrulyEmptyNameIsStillRejected() {
+        // An entry with no name at all is not the root; it is broken input.
+        XCTAssertEqual(reasons([file("")]), [.emptyPath])
+    }
 }
