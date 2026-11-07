@@ -1,3 +1,42 @@
+## 2026-11-07 — OpenCode — XF-MFGAP-03 stage 03A pure manifest safety rules
+
+TASK: XF-MFGAP-03 stage 03A (spec §9)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: d092bae
+BUILD: `** BUILD SUCCEEDED **` (arm64; `ArchiveSafetyRules.swift` appears 4 times in the compile log, so it really compiled)
+TESTS: ArchiveSafetyRulesTests 39 / 0; full suite 2972 / 0
+GATE: green — 2972 tests / 0 failures, all 7 string/UI gates TOTAL 0
+MUTATION: **15/15 RED**, source restored byte-identical and GREEN afterwards (`cmp` verified)
+LIVE: NOT VERIFIED (Builder does not install; no reader is wired in, so nothing is user-reachable)
+FILES CHANGED: XFinder/Core/Archive/ArchiveSafetyRules.swift (new); Tests/XFinderLogicTests/ArchiveSafetyRules.swift (symlink),
+Tests/XFinderLogicTests/ArchiveSafetyRulesTests.swift (new); XFinder.xcodeproj/project.pbxproj (+4 lines); this worklog
+NOT VERIFIED: macOS 14 reader matrix; hostile/oversized archives; low disk; cross-volume EXDEV for the commit primitives;
+runtime decoded-byte enforcement (that is stage 03B, not 03A)
+QUESTIONS: Boss approval still required for the whole spec, and specifically for findings 1 and 3 of the review
+
+Why this ran before approval: stage 03A touches **no** destructive engine — no `ArchiveRunner`, no Trash, no UI, no
+UserDefaults, no L10n. It is pure rules plus tests, exactly the first row of the spec's §9 table, and it is what the
+review's findings 1–2 needed to be decidable. `ArchiveRunner`/`CompressDetailView` remain untouched and still await
+Boss approval under `AGENT_TASKS.md` §2.
+
+New measurements this session (macOS 27.2 / 26B123, terminal probes, synthetic fixtures only):
+- `dlopen("/usr/lib/libarchive.2.dylib")` succeeds from a plain Swift binary although **no such file exists on disk** (it is
+  in the dyld shared cache), and `archive_version_string` reports `libarchive 3.7.4`. The SDK ships `libarchive.tbd` but **no
+  `archive.h`**, so a header-less runtime binding is the only option — which is what the spec proposed.
+- **`archive_read_support_format_all` + `archive_read_support_filter_all` are mandatory.** Without them every open fails
+  with `No formats registered`, which reads like a corrupt archive. This is the single easiest way to ship a dead reader;
+  it is noted here so 03B does not rediscover it.
+- With them registered, the reader returns the hostile shapes **before** extraction: `../escaped.txt`, a raw absolute path,
+  a `jump -> /tmp` symlink, a `../tar-escaped.txt` entry inside a TAR, and both `same.txt` entries of a duplicate-name ZIP.
+  Declared sizes were readable for all of them. An ordinary ZIP still read cleanly.
+- Duplicate raw names come back as two entries with the same path; a `Report.txt`/`report.txt` pair comes back as two
+  distinct paths that APFS would still collapse. Both are now rejected by different rules (duplicate vs alias).
+
+The 15 mutants cover: `..` accepted, absolute path stripped, duplicate allowed, case alias ignored, unknown capacity as
+infinite, insufficient space allowed, absolute symlink allowed, escaping symlink allowed, links ordered before content,
+file-as-parent allowed, undeclared size assumed small, per-file ceiling removed, hard link outside accepted, cycle
+detection disabled, unsupported entries accepted. Every one went RED; none stayed green.
+
+**CHỜ BOSS DUYỆT SPEC cho 03B/03C — 03A đã xong và xanh; không push/merge/cài/launch.**
+
 ## 2026-11-07 — OpenCode — XF-MFGAP-03 pre-approval gap review (cross-tool)
 
 TASK: XF-MFGAP-03 (review only, `AGENT_TASKS.md` §3c step 2)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: (this commit)
