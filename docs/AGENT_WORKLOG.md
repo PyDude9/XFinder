@@ -1,3 +1,44 @@
+## 2026-11-07 — OpenCode — XF-MFGAP-03 pre-approval gap review (cross-tool)
+
+TASK: XF-MFGAP-03 (review only, `AGENT_TASKS.md` §3c step 2)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: (this commit)
+BUILD: NOT RUN (no app source change)   TESTS: archive filter 35 tests / 0 failures (includes 2 unrelated archive-named tests; the two archive suites are 18+15 = 33)
+GATE: green — `sh scripts/gate-all.sh --no-build`: 2933 tests / 0 failures, all 7 string/UI gates TOTAL 0, `modified tracked files 0`
+MUTATION: not run (no code change)   LIVE: NOT VERIFIED (Builder does not install)
+FILES CHANGED: docs/reviews/XF-MFGAP-03-archive-safety-review.md; docs/AGENT_WORKLOG.md
+NOT VERIFIED: cross-volume EXDEV behavior of RENAME_EXCL/RENAME_SWAP; installed-app/TCC/external-volume behavior; hostile, oversized and low-disk archives; the system-libarchive reader claim (not re-probed)
+QUESTIONS: Boss decision on findings 1 (name the no-replace/exchange primitive) and 3 (`Xóa file nén gốc` scope) before approval
+
+Task statement: the Codex session hit its usage limit immediately after committing the XF-MFGAP-03 draft (`bb0e613`) and its
+worklog entry (`55ea5bc`), so the handoff to Gemini carried an unapproved spec. No Boss approval of XF-MFGAP-03 exists on
+`main` (`1143525`), so no implementation may start. The permitted next step is the independent read in §3c step 2, which a
+different tool performs — hence this review rather than code.
+
+Reproduced the spec's core claims against the unchanged `ArchiveEngine`/`ArchiveRunner`, then probed four things the spec
+asserts without measuring. No spec file was edited (it is the artifact Boss approves) and no app source changed.
+
+Findings, in order of consequence:
+- **High:** §7's "no-replace / replace-exchange primitive" is never named, and the natural substitute is a trap. Measured:
+  `renamex_np` + `RENAME_EXCL` is the real no-replace commit (free path → `ret=0`; occupied path → `errno=17`, both files
+  intact), `RENAME_SWAP` is the real exchange, and both compile from `Darwin` with no hand-written declaration. But
+  `FileManager.replaceItemAt(backupItemName:)` returns success and creates **no** backup on this volume — so the spec's
+  "retain a recoverable old version" would ship a false promise via the current creation-Replace path.
+- **High:** `ArchiveEngine.numbered()` always splits at the last dot, so dotted **folders** are mangled: `Photos.2024` →
+  `Photos 2.2024`, `v1.2.3` → `v1.2 2.3`. The spec's recursive Merge numbers colliding directories and would inherit it.
+- **High:** `Xóa file nén gốc` (`CompressDetailView.swift:263–273`) trashes **every** input with **no confirmation**, is
+  offered after a **partial** batch (`resultURL` set by any success, log `Đã giải 1/2`), then clears `sources`. A reachable
+  sequence destroys the corrupt archive that produced no output. The spec downgrades this to "or defer until reviewed".
+- **Medium:** `ArchiveRunner.place(policy: .ask)` returns `.success([])` and deletes staging when unresolved — a latent
+  data-loss shape for the shared API §5 wants to centralize. Not reachable from `CompressDetailView` today.
+- **Low:** the false Merge copy at `CompressDetailView.swift:222` ("thư mục đích không bị đụng tới") is contradicted by the
+  spec's own probe, and no stage 03C bullet schedules its removal.
+- **Verified already correct:** in-batch case/Unicode reservation works (`README.md`+`readme.md` → `readme 2.md`; NFC/NFD
+  Vietnamese forms resolve to one APFS file), and staging is already `0o700` on the destination volume even when the
+  destination folder does not exist yet. Free space is still genuinely unchecked (`grep volumeAvailableCapacity|freeSpace`
+  over the archive path returns nothing).
+
+**CHỜ BOSS DUYỆT SPEC + trả lời findings 1 và 3 — chưa code app; không push/merge/cài/launch.** Spec left byte-identical
+at `bb0e613`.
+
 ## 2026-11-07 — Codex — XF-MFGAP-03 measured archive safety specification
 
 TASK: XF-MFGAP-03 (spec only)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: bb0e613
