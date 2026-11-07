@@ -11,6 +11,18 @@ import Foundation
 /// no declaration means the anchor rotted, and "found nothing" must never read as green.
 final class FeatureKeyDefaultsTests: XCTestCase {
 
+    func testStorageChartDefaultsMatchView() throws {
+        let view = try String(contentsOf: Self.repoRoot.appendingPathComponent("XFinder/Views/Detail/StorageDetailView.swift"), encoding: .utf8)
+        XCTAssertTrue(view.contains("@AppStorage(\"storage.chartStyle\") private var style = \"treemap\""))
+        XCTAssertTrue(view.contains("@AppStorage(\"storage.chartFraction\") private var fraction = 0.6"))
+        XCTAssertEqual(StorageChartPreferences.defaultStyle, "treemap")
+        XCTAssertEqual(StorageChartPreferences.defaultFraction, 0.6)
+        XCTAssertEqual(StorageChartPreferences.style("unknown"), "treemap")
+        XCTAssertEqual(StorageChartPreferences.fraction(.nan), 0.6)
+        XCTAssertEqual(StorageChartPreferences.fraction(9), 0.7)
+        XCTAssertEqual(StorageChartPreferences.fraction(-1), 0.3)
+    }
+
     /// One feature switch: the key, the view files that bind it, the ONE Core file that reads it.
     struct Switch {
         let key: String

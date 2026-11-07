@@ -15170,6 +15170,42 @@
     "Chế độ chỉ ẩn theo media cần ứng dụng phát nhạc/video cung cấp trạng thái Now Playing đang chạy.": {
       "en": "Media-only hiding requires a playing Now Playing status from the app playing the audio or video.",
       "scope": "sentence"
+    },
+    "%d tệp khác": {
+      "en": "%d other files",
+      "scope": "sentence"
+    },
+    "Kiểu biểu đồ": {
+      "en": "Chart style",
+      "scope": "sentence"
+    },
+    "Bản đồ cây": {
+      "en": "Treemap",
+      "scope": "sentence"
+    },
+    "Biểu đồ vòng": {
+      "en": "Sunburst",
+      "scope": "sentence"
+    },
+    "Tỷ lệ vùng biểu đồ": {
+      "en": "Chart area fraction",
+      "scope": "sentence"
+    },
+    "Biểu đồ đã được giản lược; tổng dung lượng vẫn được giữ.": {
+      "en": "The chart is simplified; total bytes are preserved.",
+      "scope": "sentence"
+    },
+    "Về thư mục gốc": {
+      "en": "Back to scan root",
+      "scope": "sentence"
+    },
+    "Dung lượng logic theo thư mục": {
+      "en": "Logical bytes by folder",
+      "scope": "sentence"
+    },
+    "Mở trong biểu đồ": {
+      "en": "Open in chart",
+      "scope": "sentence"
     }
   }
 }

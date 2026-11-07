@@ -157,6 +157,7 @@
 		7F1A0329 /* FinderSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0328 /* FinderSelection.swift */; };
 		7F1A032D /* FileWalk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A032C /* FileWalk.swift */; };
 		7F1A0600 /* Storage/StorageScanEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0602 /* Storage/StorageScanEngine.swift */; };
+		7F1A0610 /* Storage/StorageTreeRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0611 /* Storage/StorageTreeRules.swift */; };
 		7F1A0601 /* Storage/StorageScanRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0603 /* Storage/StorageScanRules.swift */; };
 		7F1A0082 /* BatchRenameEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0068 /* BatchRenameEngine.swift */; };
 		7F1A0083 /* FileSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0069 /* FileSearchEngine.swift */; };
@@ -658,6 +659,7 @@
 		7F1A0328 /* FinderSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderSelection.swift; sourceTree = "<group>"; };
 		7F1A032C /* FileWalk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileWalk.swift; sourceTree = "<group>"; };
 		7F1A0602 /* Storage/StorageScanEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Storage/StorageScanEngine.swift; sourceTree = "<group>"; };
+		7F1A0611 /* Storage/StorageTreeRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Storage/StorageTreeRules.swift; sourceTree = "<group>"; };
 		7F1A0603 /* Storage/StorageScanRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Storage/StorageScanRules.swift; sourceTree = "<group>"; };
 		7F1A0068 /* BatchRenameEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchRenameEngine.swift; sourceTree = "<group>"; };
 		7F1A0069 /* FileSearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchEngine.swift; sourceTree = "<group>"; };
@@ -1067,6 +1069,7 @@
 				7F1A032C /* FileWalk.swift */,
 				7F1A0602 /* Storage/StorageScanEngine.swift */,
 				7F1A0603 /* Storage/StorageScanRules.swift */,
+				7F1A0611 /* Storage/StorageTreeRules.swift */,
 				7F1A0068 /* BatchRenameEngine.swift */,
 				7F1A0069 /* FileSearchEngine.swift */,
 				7F1A0016 /* NulRecords.swift */,
@@ -1800,6 +1803,7 @@
 				7F1A032D /* FileWalk.swift in Sources */,
 				7F1A0600 /* Storage/StorageScanEngine.swift in Sources */,
 				7F1A0601 /* Storage/StorageScanRules.swift in Sources */,
+				7F1A0610 /* Storage/StorageTreeRules.swift in Sources */,
 				7F1A0082 /* BatchRenameEngine.swift in Sources */,
 				7F1A0083 /* FileSearchEngine.swift in Sources */,
 				7F1A0017 /* NulRecords.swift in Sources */,
