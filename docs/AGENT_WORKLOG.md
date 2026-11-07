@@ -1,5 +1,7 @@
 ## 2026-11-06 — Codex — XF-T36 notch opening behavior (direct owner request)
 
+Correction on 2026-11-07: the first draft of the preceding commit accidentally duplicated this report at the top of the spec file. Removed the duplicate; the report remains here. Source behavior was unchanged.
+
 Branch: `agent/codex-XF-T36`, based on `a48e274`. Spec: `docs/specs/XF-T36-notch-opening-page.md`. Notion search found no XF-T36 task; this is recorded as a direct-request handoff, not as a claimed Queue task.
 
 Implemented a separate deliberate-open rule (`notch.clickOpens`) in addition to the existing hover rule. Users can choose any visible fixed page, last-used page, or current activity; unknown settings and hidden pages fall back safely. Activity priority is waiting agent → playing track → held files → Clipboard. Explicit page routes still take precedence. Default is Files, preserving existing XFinder behavior. Added a Settings picker and 4 L10n entries. Updated the 28-group Notch/Dynamic Island comparison and roadmap.
