@@ -1,3 +1,46 @@
+## 2026-11-07 — Codex — XF-MFGAP-03 measured archive safety specification
+
+TASK: XF-MFGAP-03 (spec only)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: bb0e613
+BUILD: NOT RUN (no app source change; gate --no-build)
+TESTS: existing ArchiveEngineTests/ArchiveRunnerTests 33 tests / 0 failures; full docs gate 2933 / 1
+GATE: RED — known AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput ancestor-`codex` failure at line 156; all L10n/UI gates zero
+MUTATION: not run (spec only)   LIVE: NOT VERIFIED (Builder does not install)
+FILES CHANGED: docs/specs/XF-MFGAP-03-archive-safety.md; docs/AGENT_WORKLOG.md
+NOT VERIFIED: installed-app permissions/UI, macOS 14 reader compatibility, low-disk volume, large/hostile archive limits and future rollback/publication implementation
+QUESTIONS: Boss approval of this draft's Merge semantics, limits, system-reader approach and named destructive-engine scope before code
+
+Rebased onto main `1143525` as directly instructed. Read `8092dd0`: expensive alias metadata is now queried only in same-size candidate groups. The new spec applies that lesson to archive metadata/volume queries. App source, tests and scripts remain unchanged.
+
+Measured unchanged ArchiveEngine/ArchiveRunner with separately compiled terminal probes on macOS 27.2 / 26B123. Every archive, sentinel and mutation target was synthetic in the private probe area; no installed XFinder interaction, user archives or real Trash action. Main findings (details and exact numbers in the spec):
+- Existing destination directory symlink + Merge writes to the outside probe target.
+- Same-folder Merge can replace the selected source archive with an entry bearing the same filename.
+- Duplicate ZIP entry paths silently keep the last data; a later placement failure leaves an earlier new file in destination and removes staging.
+- A deliberate direct-runner unused-output-precondition violation overwrites/removes an old regular output, and failure cleanup removes an old nonempty output directory; these show why an output path must be exclusively owned/revalidated at publication, including races.
+- Existing absolute-link check rejects the measured fixture. ditto normalizes raw ZIP traversal/absolute names; tar rejects the measured `..` path. Do not generalize either tool result to all formats.
+- Bounded benign expansion: 8,273-byte ZIP yields 8,388,608 bytes (~1014x); no current quota. No disk-filling bomb test was run.
+- System libarchive 3.7.4 exposes structured raw paths/sizes/link targets; SDK tbd exists but the checked SDK archive.h path is absent. Python ctypes was a probe only. The native reader proposal has a runtime/opaque-header resource feasibility gate before use.
+
+The draft keeps current destination/policy defaults, proposes recursive Merge that numbers colliding leaf files, requires preflight + runtime budgets/free-space checks, protects all inputs, forbids existing-target-link traversal, and specifies owned cleanup/partial-result recovery. No 7zz, cloud upload or application implementation was added. ArchiveRunner/creation replacement scope still needs Boss's specific approval under AGENT_TASKS §2.
+
+Archive tests: 33/0 in 0.610s. `git diff --check` and staged docs check passed. Full docs-only gate stdout:
+
+```text
+tests                              Executed 2933 tests, with 1 failure (0 unexpected) in 26.704 (26.928) seconds
+check-l10n-coverage                TOTAL 0 problems across 3832 entries (3832 checked, 32 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3832 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1432 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             0
+GATE: RED
+```
+
+Logs: `/tmp/xf-archive-safety-probe/`; full gate `/var/folders/xq/xzqwntyx0yx4stl6d6x3t7h00000gp/T/xfinder-gate.ZfSsDK`. Probe executables/source and synthetic fixtures were removed after recording the measurements; compact result logs remain. This is the local reporting fallback for the direct Boss assignment; no Notion Run is claimed.
+
+**CHỜ BOSS DUYỆT SPEC — chưa code app; không push/merge/cài/launch.**
+
 ## 2026-11-07 — Codex — XF-MFGAP-02 Exact Duplicate Finder
 
 TASK: XF-MFGAP-02   BRANCH: agent/codex-XF-SETTINGS   COMMITS: 2d77c09
