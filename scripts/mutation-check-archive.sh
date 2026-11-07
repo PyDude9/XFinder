@@ -11,7 +11,7 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-archive.XXXXXX)
-FILES="XFinder/Core/Archive/ArchiveEngine.swift XFinder/Core/Archive/ArchiveRunner.swift"
+FILES="XFinder/Core/Archive/ArchiveEngine.swift XFinder/Core/Archive/ArchiveRunner.swift XFinder/Core/Archive/SystemArchiveReader.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
@@ -19,7 +19,7 @@ trap 'restore' EXIT
 # kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
 trap 'exit 143' INT TERM
 
-FILTER='ArchiveEngine|ArchiveRunner'
+FILTER='ArchiveEngine|ArchiveRunner|SystemArchiveReader'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} /[Ff]atal error|[Ee]xited with (unexpected )?signal/ {crash=1} END {print (crash ? "CRASH" : (f==""?"NORESULT":f))}'
@@ -68,12 +68,54 @@ run "A7 tar stores the staging symlinks" XFinder/Core/Archive/ArchiveEngine.swif
   "'arguments: [\"-czhf\", output.path] + names,'" "'arguments: [\"-czf\", output.path] + names,'"
 
 run "A8 escaping links inside an archive are accepted" XFinder/Core/Archive/ArchiveRunner.swift \
-  "'        guard escaping.isEmpty else { try? fm.removeItem(at: dir); return .failure(.unsafeLinks(escaping.sorted())) }\n'" "''"
+  "'        guard escaping.isEmpty else { owned.removeIfOwned(); return .failure(.unsafeLinks(escaping.sorted())) }\n'" "''"
 
 # A9: a link walk that cannot see "._" names (as every FileManager listing is for regular ._ files — F1). bsdtar
 # creates "._x" symlinks from a foreign tar, so the guard must still see them.
 run "A9 the link check is blind to links named ._…" XFinder/Core/Archive/ArchiveRunner.swift \
   "'            while let rel = walker.nextObject() as? String {\n'" "'            while let rel = walker.nextObject() as? String {\n                if (rel as NSString).lastPathComponent.hasPrefix(\"._\") { continue }\n'"
+
+# ---- stage 03B: bounded inspection, ownership, cancellation, destination containment ----
+
+# B1: the per-entry ledger goes back to the WHOLE batch budget (Boss approval point 3, the measured trap).
+run "B1 per-entry ledger uses the whole budget again" XFinder/Core/Archive/SystemArchiveReader.swift \
+  "'            let entryBudget = remainingOverflowed ? 0 : max(0, remaining)'" \
+  "'            let entryBudget = bounds.maxDecodedBytes'"
+
+# B2: the deadline is only checked between entries, never inside the payload loop.
+run "B2 deadline leaves the block loop" XFinder/Core/Archive/SystemArchiveReader.swift \
+  "'                try checkDeadline()\n                var block: UnsafeRawPointer?\n'" \
+  "'                var block: UnsafeRawPointer?\n'"
+
+# B3: the deadline is dropped entirely.
+run "B3 deadline check removed" XFinder/Core/Archive/SystemArchiveReader.swift \
+  "'            if elapsed >= budget { throw Failure.timedOut(after: elapsed) }'" "'            _ = elapsed'"
+
+# B4: cancellation that lands before the pid is published is ignored again (the measured race).
+run "B4 early cancel no longer kills the child" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'                if cancelledEarly.withLock({ \$0 }) || Task.isCancelled {'" \
+  "'                if Task.isCancelled {'"
+
+# B5: failure cleanup deletes an output path the job never created.
+run "B5 failed compression deletes a pre-existing output" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            guard !outputPreexisted, fm.fileExists(atPath: output.path) else { return }'" \
+  "'            guard fm.fileExists(atPath: output.path) else { return }'"
+
+# B6: cleanup deletes by path without proving the job still owns the inode.
+run "B6 ownership check dropped on cleanup" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            guard isStillOwned else { return false }'" "'            _ = isStillOwned'"
+
+# B7: a destination symlink is followed again (measured: Merge wrote outside the chosen folder).
+# B7: a destination symlink is followed again (measured: Merge wrote outside the chosen folder).
+# One mutant for both call sites: the detector itself is what has to keep working.
+run "B7 destination symlink detector disabled" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            if (info.st_mode & S_IFMT) == S_IFLNK { return current }'" \
+  "'            if false { return current }'"
+
+# B8: the staging root is not required to be private.
+run "B8 staging permission check removed" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        return permissions?.intValue == 0o700'" "'        return permissions != nil'"
+
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)

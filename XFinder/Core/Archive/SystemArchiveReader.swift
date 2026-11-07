@@ -40,6 +40,24 @@ import Darwin
 /// `[ArchiveManifestEntry]` for `ArchiveSafetyRules.validate` and nothing else.
 struct SystemArchiveReader {
 
+    // MARK: - Clock
+
+    /// Monotonic seconds, not wall time: a clock jump or a timezone change must not be able to extend
+    /// or cancel a processing budget.
+    static let monotonicNow: @Sendable () -> TimeInterval = {
+        var now = timespec()
+        guard clock_gettime(CLOCK_MONOTONIC, &now) == 0 else { return 0 }
+        return TimeInterval(now.tv_sec) + TimeInterval(now.tv_nsec) / 1_000_000_000
+    }
+
+    /// Injected so a deadline test does not have to wait ten minutes, and so the check can be proven
+    /// to live inside the payload loop rather than only between entries.
+    let clock: @Sendable () -> TimeInterval
+
+    init(clock: @Sendable @escaping () -> TimeInterval = SystemArchiveReader.monotonicNow) {
+        self.clock = clock
+    }
+
     // MARK: - Results
 
     /// Identity of the file that was actually read, captured from the open descriptor.
@@ -96,12 +114,23 @@ struct SystemArchiveReader {
         /// Device, FIFO, socket, sparse flag or any type this reader cannot classify.
         case unsupportedEntry(String, filetype: UInt32)
         case tooManyEntries(count: Int, limit: Int)
-        case byteBudgetExceeded(limit: Int64)
+        /// One entry alone went past what was left of the batch budget. `entry` is the name the
+        /// decoder was reading, so a test can prove the refusal happened *inside* that entry.
+        case byteBudgetExceeded(limit: Int64, entry: String)
+        /// The running total passed the batch budget after an entry finished. The per-entry remaining
+        /// budget is supposed to make this unreachable — it is kept as a second lock on the same
+        /// door, and a test asserts the reachable path reports `byteBudgetExceeded` instead.
+        case cumulativeBudgetExceeded(limit: Int64, decoded: Int64)
         /// The decoder produced fewer logical bytes than the header declared, or more.
         case sizeMismatch(String, declared: Int64, decoded: Int64)
         case sizeOverflow(String)
         /// A decoder error mid-walk: bad CRC, truncation, damaged stream.
         case damaged(String)
+        /// The monotonic processing deadline for this archive ran out. Checked in the same loop
+        /// that drains payload, because walking a streamed format inflates data to reach the next
+        /// header: an entry count and a byte budget alone cannot bound the time a hostile archive
+        /// may spend before the next decision point.
+        case timedOut(after: TimeInterval)
     }
 
     // MARK: - Bounds
@@ -113,6 +142,9 @@ struct SystemArchiveReader {
         var maxDecodedBytes: Int64
         /// Read buffer handed to libarchive. The spec caps a stream at 1 MiB.
         var blockSize: Int
+        /// Active processing budget for the whole archive, monotonic. Zero means "no deadline",
+        /// which only tests use: the app must always pass a real budget.
+        var maxSeconds: TimeInterval = 600
 
         static let proposed = Bounds(maxEntries: 100_000,
                                      maxDecodedBytes: 16 * 1024 * 1024 * 1024,
@@ -202,8 +234,20 @@ struct SystemArchiveReader {
 
         var manifest: [ArchiveManifestEntry] = []
         var decoded: Int64 = 0
+        let started = clock()
+        // A zero budget means "no deadline" and is only reachable from tests; the app always passes
+        // `Bounds.proposed`. Elapsed time is measured from `started`, captured once, so an injected
+        // clock cannot move the origin.
+        let budget = bounds.maxSeconds
+
+        func checkDeadline() throws {
+            guard budget > 0 else { return }
+            let elapsed = clock() - started
+            if elapsed >= budget { throw Failure.timedOut(after: elapsed) }
+        }
 
         while true {
+            try checkDeadline()
             var entry: OpaquePointer?
             let status = tables.nextHeader(archive, &entry)
             if status == Tables.eof { break }
@@ -246,8 +290,19 @@ struct SystemArchiveReader {
 
             // Drain every entry, links and directories included, so the stream advances and so a
             // hostile payload cannot hide behind a header this walk decided not to read.
-            var ledger = BlockLedger(limit: bounds.maxDecodedBytes)
+            //
+            // The ledger is bounded by what is LEFT of the batch budget, not by the whole budget.
+            // Measured trap (Boss approval point 3): a per-entry ledger of `maxDecodedBytes` lets one
+            // entry decode a full budget, and only afterwards does the cumulative check notice — so
+            // two entries could each consume 16 GiB before the second refusal, and a single entry
+            // could write a file larger than the batch allows.
+            let (remaining, remainingOverflowed) = bounds.maxDecodedBytes.subtractingReportingOverflow(decoded)
+            let entryBudget = remainingOverflowed ? 0 : max(0, remaining)
+            var ledger = BlockLedger(limit: entryBudget)
             while true {
+                // Inside the block loop on purpose: a streamed payload is decoded here, so a deadline
+                // checked only between entries would never fire for one enormous compressed entry.
+                try checkDeadline()
                 var block: UnsafeRawPointer?
                 var size = 0
                 var offset: Int64 = 0
@@ -269,8 +324,12 @@ struct SystemArchiveReader {
                 let (total, overflowed) = decoded.addingReportingOverflow(ledger.logical)
                 if overflowed { throw Failure.sizeOverflow(rawName) }
                 decoded = total
+                // Second lock, not the primary guard: `entryBudget` above already refuses an entry
+                // that would cross the batch budget, so this only fires if that arithmetic is ever
+                // changed. Kept separate so the two paths are distinguishable in a test instead of
+                // one silently masking the other.
                 if decoded > bounds.maxDecodedBytes {
-                    throw Failure.byteBudgetExceeded(limit: bounds.maxDecodedBytes)
+                    throw Failure.cumulativeBudgetExceeded(limit: bounds.maxDecodedBytes, decoded: decoded)
                 }
             }
         }
@@ -352,7 +411,7 @@ struct SystemArchiveReader {
                                 limit: Int64) -> Failure {
         switch error {
         case .negativeExtent: return .damaged("negative block extent")
-        case .budgetExceeded: return .byteBudgetExceeded(limit: limit)
+        case .budgetExceeded: return .byteBudgetExceeded(limit: limit, entry: entry)
         case .overflow: return .sizeOverflow(entry)
         }
     }
