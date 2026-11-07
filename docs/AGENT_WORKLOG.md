@@ -1,3 +1,55 @@
+## 2026-11-07 — OpenCode — XF-MFGAP-03 stage 03A system archive reader
+
+TASK: XF-MFGAP-03 stage 03A, second half (spec §9)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: 80522af
+BUILD: `** BUILD SUCCEEDED **` (arm64; `SystemArchiveReader.swift` appears 4 times in the compile log)
+TESTS: SystemArchiveReaderTests 34 / 0; ArchiveSafetyRulesTests 43 / 0; focused 77 / 0; full suite 3010 / 0
+GATE: green — 3010 tests / 0 failures, all 7 string/UI gates TOTAL 0, `modified tracked files 3`
+MUTATION: 20 mutants, **16 RED**, 4 survivors (see below); source restored byte-identical and RESTORED GREEN (`cmp` verified)
+LIVE: NOT VERIFIED (Builder does not install; nothing routes a user through the reader yet)
+FILES CHANGED: XFinder/Core/Archive/SystemArchiveReader.swift (new); Tests/XFinderLogicTests/SystemArchiveReader.swift
+(symlink), SystemArchiveReaderTests.swift (new); ArchiveSafetyRules.swift + its tests (root-entry fix);
+XFinder.xcodeproj/project.pbxproj (+4 lines, `plutil -lint` OK); this worklog
+NOT VERIFIED: macOS 14 reader matrix; real-world archives beyond the fixtures; low-disk and cross-volume behaviour;
+extraction of any kind (that is 03B). No app was launched and no archive was extracted.
+QUESTIONS: Boss approval for 03B/03C. Decision point 2 (`Xóa file nén gốc`) is still unanswered.
+
+The reader walks headers and returns `[ArchiveManifestEntry]` + file identity. It writes nothing, deletes nothing,
+renames nothing and spawns nothing — it exists to feed `ArchiveSafetyRules.validate` and nothing else.
+
+New measurements this session (macOS 27.2, libarchive 3.7.4, synthetic fixtures only):
+- `archive_read_open_fd` does **not** take ownership of the descriptor: after `archive_read_free` the fd is still open
+  (verified with `fstat`). The caller must close it exactly once. A double `archive_read_free` aborts the process with
+  `PROGRAMMER ERROR`, so `defer` + a single `free` is mandatory.
+- Only `zip` + `tar` with `gzip`/`bzip2`/`xz`/`none` are registered, never `format_all`/`filter_all`: a 7z signature and
+  4096 random bytes then fail closed at open with `Unrecognized archive format`.
+- `archive_entry_pathname_utf8` returns **nil** exactly for invalid UTF-8, while `pathname` returns a lossy U+FFFD string —
+  that is the encoding gate. It is non-nil for ASCII, NFC and NFD Vietnamese in zip and tar (measured), so it does not
+  refuse legitimate names.
+- Encryption is visible at **header** time (`archive_entry_is_encrypted == 1`) before any data call; a ZipCrypto entry then
+  fails with `Passphrase required for this entry`.
+- **Sparse is the trap.** A tar holding a 200 MiB hole-only file reports `sparse_count = 2`, `declared = 209715200`, and
+  then `archive_read_data`/`read_data_block` yield **0 bytes with no error at all**, while `tar -x` faithfully recreates a
+  209715200-byte file. Sparse entries are therefore refused, not counted.
+- Walking headers is **not free** for streamed formats: finding entry N+1 requires inflating entry N. 64 MiB of
+  compressible data cost ~12 ms to walk with no bytes requested; a full run with the sparse guard removed took **283 s**.
+- `tar -cf out.tar .` emits a `./` root entry, which the rules previously mapped to `emptyPath` and so refused *every*
+  archive built that way — a real false positive found by testing, fixed here.
+
+Bug found by mutation, not by reading: `cursor = offset + size` was an unchecked add on attacker-controlled metadata and
+**traps** on maximal values (`EXIT=133`). A trap is a crash, not a refusal; it now uses `addingReportingOverflow`. The
+end-offset check is provably unreachable today (documented in the source as a trap guard, not tested behaviour).
+
+Byte accounting (`BlockLedger`) and the declared-vs-decoded comparison (`verifyDeclaredSize`) were extracted as pure units
+after mutation showed no fixture could exercise them: libarchive refuses a lying archive itself (zip `ZIP uncompressed data
+is wrong size`, tar `Truncated tar archive`), so the reader's own comparison is a second layer. It is now tested directly.
+
+Survivors, stated honestly: R2 `O_NOFOLLOW`, R3 `O_NONBLOCK`, R4 the `fstat`-vs-`lstat` identity comparison and R5 the
+`SF_DATALESS` check. Each is a **redundant layer measured to catch the case alone** — `lstat` refuses a symlink first, and
+`open` without `O_NONBLOCK` blocks >3 s on a FIFO (verified in a child process) — so removing any one is an equivalent
+mutant, not a test gap. They are **not** claimed as coverage.
+
+**CHỜ BOSS DUYỆT SPEC cho 03B/03C — 03A đã xong và xanh; không push/merge/cài/launch.**
+
 ## 2026-11-07 — OpenCode — XF-MFGAP-03 stage 03A pure manifest safety rules
 
 TASK: XF-MFGAP-03 stage 03A (spec §9)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: d092bae

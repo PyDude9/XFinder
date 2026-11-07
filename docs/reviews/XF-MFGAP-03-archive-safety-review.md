@@ -144,12 +144,43 @@ The spec's free-space requirement remains genuinely missing from source: `grep` 
 `volumeAvailableCapacity|freeSpace|capacity` across `Core/Archive/`, `CompressDetailView.swift` and `ClipTransfer.swift`
 returns **nothing**, confirming §1's "no free-space preflight" row.
 
+## Reader measurements (stage 03A, added after the review)
+
+The review above judged the spec from the outside. Stage 03A then built the reader and measured it against the system
+libarchive (macOS 27.2, 26B123, libarchive 3.7.4). These are the facts that change or confirm spec text:
+
+1. **§3 item 5 is confirmed mechanically.** `dlopen("/usr/lib/libarchive.2.dylib")` succeeds although no such file exists
+   on disk (dyld shared cache), and the SDK ships `libarchive.tbd` with **no `archive.h`**. Runtime binding via
+   `dlsym` is therefore the only buildable option, exactly as the spec proposed.
+2. **`archive_read_support_format_all`/`_filter_all` are mandatory, but must not be used.** Without any registration every
+   open fails with `No formats registered`, which is indistinguishable from a corrupt archive. With `zip`+`tar` and
+   `gzip`/`bzip2`/`xz`/`none` only, a 7z signature and random bytes are refused at open with `Unrecognized archive
+   format`, so an untested decoder can never see them. The spec's approved-container list is enforceable at the decoder.
+3. **Sparse entries cannot be bounded, and the decoder silently under-reports them.** A tar holding a 200 MiB hole-only
+   file reports `declared = 209715200`, `sparse_count = 2`, and then `archive_read_data` yields **0 bytes with no error**,
+   while `tar -x` recreates the full 209715200-byte file. This is the one case where "count decoded bytes" is a false
+   guarantee: the spec's "sparse/unknown-size features the reader cannot bound" clause is not optional, it is load-bearing.
+   Stage 03A refuses such entries outright.
+4. **Inspection is not free for streamed formats.** Finding entry N+1 requires inflating entry N: 64 MiB of compressible
+   data cost ~12 ms to walk with no bytes requested, and a run with the sparse guard removed took **283 s**. The spec's
+   decoded-byte budget must therefore apply during inspection too, not only during extraction.
+5. **`archive_read_open_fd` does not own the descriptor.** `archive_read_free` leaves it open (verified by `fstat`), so the
+   caller closes it exactly once; a double `archive_read_free` aborts the process with `PROGRAMMER ERROR`.
+6. **Encoding and encryption are detectable before any write.** `archive_entry_pathname_utf8` is nil exactly for names
+   that are not valid UTF-8 (`pathname` returns a lossy U+FFFD string instead), and it stays non-nil for ASCII, NFC and NFD
+   Vietnamese in both zip and tar. Encryption is visible at header time, before the data call that would fail.
+7. **An ordinary `tar -cf out.tar .` emits a `./` root entry.** Mapping that to "empty path" refused every archive built
+   that way — a false positive the rules now handle by accepting the root only as a directory and dropping it from the plan.
+8. **The declared size is a claim, but the decoder usually polices it.** A zip with a wrong uncompressed size fails with
+   `ZIP uncompressed data is wrong size`; a tar declaring more than it carries fails with `Truncated tar archive`. The
+   reader's own comparison is a second layer and is kept, but it is not the only one.
+
 ## What this review does not cover
 
 - No installed-app or live run; permission, TCC, external-volume and UI behavior stay Boss-only.
 - No hostile/large archive, low-disk or expansion-bomb test; the spec already scopes those to stage 03A gates.
-- The libarchive/system-reader feasibility claim (§3 item 5) was not re-probed; it stands on the author's measurements
-  and its own runtime gate.
+- The libarchive feasibility claim (§3 item 5) was probed in stage 03A and holds (see the section above); the **macOS 14**
+  reader matrix was not measured, only the current OS.
 - `renamex_np` probes ran on the boot volume only. Cross-volume behavior of `RENAME_EXCL`/`RENAME_SWAP` (EXDEV) was not
   measured — the spec's "same-volume rename" assumption still needs that check in 03B.
 
