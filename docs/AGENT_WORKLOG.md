@@ -1,3 +1,21 @@
+## 2026-11-07 — Codex — XF-T36B fullscreen visibility policy (direct owner request)
+
+Branch: `agent/codex-XF-T36B`, based on `4ef9900`. Spec: `docs/specs/XF-T36-fullscreen-visibility.md`. This continues the user's request to reconcile notch behavior with the supplied 28-group Notch/Dynamic Island specification. Notion was not used for this direct request; no Queue task or Run is claimed.
+
+Added a Settings choice for always show, hide in a detected fullscreen app, or hide only for a detected fullscreen media app. Detection is explicitly best-effort: it checks whether the frontmost app owns an on-screen layer-0 window whose bounds match the notch display within 8 points. Unknown/mismatched data fails open (shows the notch). Active tasks, approval requests, composers and actionable activities keep the notch visible. Visibility refreshes on app activation, active Space/display changes, Now Playing updates, and normal surface rendering; no polling timer was added. This changes notch visibility only, not capture privacy. Updated the notch coverage map and roadmap.
+
+| Check | Result |
+|:--|:--|
+| `swift test --package-path Tests --filter 'NotchFullscreenRulesTests|FeatureKeyDefaultsTests'` | 7 tests, 0 failures (re-run after project registration fix) |
+| `XF_OUT=/tmp/xfinder-t36b-build sh scripts/build-and-check.sh` | `** BUILD SUCCEEDED **`, arm64; build log confirms `NotchFullscreenRules.swift`, `NotchInterfaceDetailView.swift`, and `NotchSurfaceController.swift` compile; isolated output, not installed |
+| `plutil -lint XFinder.xcodeproj/project.pbxproj` | OK |
+| L10n coverage / duplicates / literal / sidebar / gesture / interpolation / UI token audits | All 0 problems; coverage 3792 entries |
+| `git diff --check` | OK |
+| `sh scripts/gate-all.sh` | RED: build OK; 2915 tests, 1 failure in unrelated `AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput`, because the hook sees a `codex` ancestor and the test expects no Codex ancestor. The same environment-sensitive failure is already documented in the prior XF-T36 worklog; did not alter the test or retry a third full gate. Log: `/var/folders/xq/xzqwntyx0yx4stl6d6x3t7h00000gp/T/xfinder-gate.w2lBZ6` |
+| Live fullscreen / multi-display behavior | NOT VERIFIED; no install or launch |
+
+Claude review remains needed for native fullscreen behavior across Spaces/displays and the remaining display-target policy (`preferred` / `all` / `active` / `pointer-only`). Geometry matching is intentionally described as best-effort, not authoritative.
+
 ## 2026-11-06 — Codex — XF-T36 notch opening behavior (direct owner request)
 
 Correction on 2026-11-07: the first draft of the preceding commit accidentally duplicated this report at the top of the spec file. Removed the duplicate; the report remains here. Source behavior was unchanged.

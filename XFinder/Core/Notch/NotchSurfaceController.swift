@@ -35,6 +35,13 @@ final class NotchSurfaceController {
     private var panel: SurfacePanel?
     private var detailPanel: NSPanel?
     private var monitors: [Any] = []
+    private var workspaceObservers: [NSObjectProtocol] = []
+    private var screenObserver: NSObjectProtocol?
+    private struct FullscreenInspection {
+        var frontmostPID: Int32?
+        var fullscreenOwnerPID: Int32?
+    }
+    private var fullscreenInspections: [UInt32: FullscreenInspection] = [:]
     /// The screen the open surface is on; set when it opens, kept until it collapses.
     private var surfaceScreen: NSScreen?
     /// Where the pointer was when a shake opened the tray (the pointer anchor's reference point).
@@ -93,6 +100,10 @@ final class NotchSurfaceController {
     private var hoverSpeed: String {
         UserDefaults.standard.string(forKey: "notch.hoverSpeed") ?? "medium"
     }
+    /// Fullscreen policy is best-effort and defaults to the existing always-visible behavior.
+    private var fullscreenVisibilityRaw: String {
+        UserDefaults.standard.string(forKey: "notch.fullscreenVisibility") ?? "show"
+    }
     /// Shaking a file drag opens the hub at the pointer.
     private var shakeEnabled: Bool {
         UserDefaults.standard.object(forKey: "dropTray.shakeEnabled") as? Bool ?? true
@@ -132,6 +143,7 @@ final class NotchSurfaceController {
     var showsClipboardPage: Bool { model.pages.contains(.clipboard) }
 
     func applySettings() {
+        fullscreenInspections.removeAll()
         // N2 migration: a D1 user who turned "hover opens the clipboard" on keeps that behaviour under the new key.
         let d = UserDefaults.standard
         if d.string(forKey: NotchHoverOpen.key) == nil, d.object(forKey: NotchHoverOpen.legacyKey) as? Bool == true {
@@ -188,12 +200,37 @@ final class NotchSurfaceController {
             }
             dragSession = NotchDragSession(currentChangeCount: NSPasteboard(name: .drag).changeCount)
         }
+        installFullscreenObserversIfNeeded()
         render()   // a tray that already holds files shows its badge right away
+    }
+
+    private func installFullscreenObserversIfNeeded() {
+        guard workspaceObservers.isEmpty else { return }
+        let workspaceCenter = NSWorkspace.shared.notificationCenter
+        for name in [NSWorkspace.didActivateApplicationNotification, NSWorkspace.activeSpaceDidChangeNotification] {
+            workspaceObservers.append(workspaceCenter.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                runOnMainActor { self?.refreshFullscreenVisibility() }
+            })
+        }
+        screenObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            runOnMainActor { self?.refreshFullscreenVisibility() }
+        }
+    }
+
+    private func refreshFullscreenVisibility() {
+        fullscreenInspections.removeAll()
+        render()
     }
 
     func stop() {
         for m in monitors { NSEvent.removeMonitor(m) }
         monitors.removeAll()
+        for observer in workspaceObservers { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
+        workspaceObservers.removeAll()
+        if let screenObserver { NotificationCenter.default.removeObserver(screenObserver); self.screenObserver = nil }
+        fullscreenInspections.removeAll()
         cancelWork()
         if let m = clipboardKeyMonitor { NSEvent.removeMonitor(m); clipboardKeyMonitor = nil }
         if let m = swipeMonitor { NSEvent.removeMonitor(m); swipeMonitor = nil }
@@ -1092,6 +1129,11 @@ final class NotchSurfaceController {
         guard enabled else { panel.hide(); drawnSize = nil; return }
         var screen = surfaceScreen ?? WindowManager.screenUnderPointer()
         if machine.state == .collapsed, let notched = Self.notchedScreen { screen = notched }
+        if shouldHideForFullscreen(on: screen) {
+            panel.hide()
+            drawnSize = nil
+            return
+        }
         let notch = Self.notch(on: screen)
 
         guard let target = NotchSurfaceLayout.frame(for: machine.state, anchor: machine.anchor,
@@ -1147,6 +1189,56 @@ final class NotchSurfaceController {
             return
         }
         applyModel(notch: notch)
+    }
+
+    private func shouldHideForFullscreen(on screen: NSScreen) -> Bool {
+        let policy = NotchFullscreenVisibility.parse(fullscreenVisibilityRaw)
+        guard policy != .show else { return false }
+        let mustRemainVisible = machine.taskRunning || model.agentsNeedingYou > 0
+            || model.agentReplyTarget != nil || model.newWindowlessOpen
+            || !(model.activity?.buttons.isEmpty ?? true)
+        guard !mustRemainVisible else { return false }
+        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        guard let displayNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
+            return false
+        }
+        let displayID = displayNumber.uint32Value
+        let inspection: FullscreenInspection
+        if let cached = fullscreenInspections[displayID], cached.frontmostPID == frontmostPID {
+            inspection = cached
+        } else {
+            inspection = inspectFullscreenWindow(on: displayID, frontmostPID: frontmostPID)
+            fullscreenInspections[displayID] = inspection
+        }
+        let snapshot = NowPlayingMonitor.shared.liveSnapshot
+        return NotchFullscreenRules.shouldHide(policy, context: .init(
+            fullscreenOwnerPID: inspection.fullscreenOwnerPID,
+            frontmostPID: inspection.frontmostPID,
+            mediaPID: snapshot?.pid,
+            mediaPlaying: snapshot?.playing == true,
+            mustRemainVisible: mustRemainVisible
+        ))
+    }
+
+    private func inspectFullscreenWindow(on displayID: UInt32, frontmostPID: Int32?) -> FullscreenInspection {
+        guard let frontmostPID,
+              let displayWindows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]
+        else { return FullscreenInspection(frontmostPID: frontmostPID, fullscreenOwnerPID: nil) }
+
+        let displayBounds = CGDisplayBounds(displayID)
+        guard displayBounds.width > 0, displayBounds.height > 0 else {
+            return FullscreenInspection(frontmostPID: frontmostPID, fullscreenOwnerPID: nil)
+        }
+        for window in displayWindows {
+            guard let pid = window[kCGWindowOwnerPID as String] as? Int32, pid == frontmostPID,
+                  (window[kCGWindowLayer as String] as? NSNumber)?.intValue == 0,
+                  (window[kCGWindowIsOnscreen as String] as? NSNumber)?.boolValue == true,
+                  let bounds = window[kCGWindowBounds as String] as? NSDictionary,
+                  let frame = CGRect(dictionaryRepresentation: bounds),
+                  NotchFullscreenRules.matchesDisplayFrame(frame, displayBounds) else { continue }
+            return FullscreenInspection(frontmostPID: frontmostPID, fullscreenOwnerPID: pid)
+        }
+        return FullscreenInspection(frontmostPID: frontmostPID, fullscreenOwnerPID: nil)
     }
 
     private func applyModel(notch: CGRect) {
