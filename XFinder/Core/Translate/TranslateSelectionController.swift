@@ -178,7 +178,55 @@ final class TranslateSelectionController {
 
     /// Read the selection NOW (before any panel takes focus), decide, show.
     func translateSelection() {
-        translate(text: VoiceScreenContext.selectedText(), sourceApp: NSWorkspace.shared.frontmostApplication?.localizedName)
+        var text = VoiceScreenContext.selectedText()
+        if text == nil || text?.isEmpty == true {
+            let captured = SelectionWatcher.shared.currentSelectionText
+            if !captured.isEmpty {
+                text = captured
+            }
+        }
+        if text == nil || text?.isEmpty == true {
+            text = readSelectionViaClipboard()
+        }
+        translate(text: text, sourceApp: NSWorkspace.shared.frontmostApplication?.localizedName)
+    }
+
+    private func readSelectionViaClipboard() -> String? {
+        let pb = NSPasteboard.general
+        let oldChangeCount = pb.changeCount
+        let backup = TypingSink.capturePasteboard()
+
+        let src = CGEventSource(stateID: .hidSystemState)
+        guard let keyDown = CGEvent(keyboardEventSource: src, virtualKey: 0x08, keyDown: true),
+              let keyUp = CGEvent(keyboardEventSource: src, virtualKey: 0x08, keyDown: false) else { return nil }
+        keyDown.flags = .maskCommand
+        keyUp.flags = .maskCommand
+        keyDown.post(tap: .cghidEventTap)
+        keyUp.post(tap: .cghidEventTap)
+
+        // Poll briefly for pasteboard update (up to 120ms)
+        let start = DispatchTime.now()
+        var resultText: String?
+        while DispatchTime.now().uptimeNanoseconds - start.uptimeNanoseconds < 120_000_000 {
+            if pb.changeCount != oldChangeCount {
+                if let str = pb.string(forType: .string) {
+                    let trimmed = str.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if trimmed.count >= 2 {
+                        resultText = trimmed
+                        break
+                    }
+                }
+            }
+            usleep(10_000)
+        }
+
+        // Restore pasteboard after a short delay so the target app has completed its copy
+        if !backup.isEmpty {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                TypingSink.restorePasteboard(backup)
+            }
+        }
+        return resultText
     }
 
     /// Smart Selection's panel hands over the text it already read (the badge works whether or not ⇧⌘G is on).

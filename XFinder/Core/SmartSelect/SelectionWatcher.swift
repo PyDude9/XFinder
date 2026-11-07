@@ -32,6 +32,7 @@ final class SelectionWatcher {
     /// The current selection, kept only until the next change. Never persisted.
     private var currentText = ""
     private var currentBounds: CGRect?
+    var currentSelectionText: String { currentText }
     private(set) var isRunning = false
     /// Diagnostics: lengths, kinds and bundle ids only — never the selected text.
     private let log = Logger(subsystem: "com.xfinder.app", category: "SmartSelect")
@@ -148,12 +149,34 @@ final class SelectionWatcher {
     /// text-marker attributes when `AXSelectedText` is empty (Safari reported changes with an empty value in the probe).
     nonisolated static func readSelection(_ element: AXUIElement) -> (text: String, bounds: CGRect?) {
         AXUIElementSetMessagingTimeout(element, 0.5)   // a hung app must not freeze the thread that reads it
+
+        var targetElement = element
+        var focusedRef: CFTypeRef?
+        if AXUIElementCopyAttributeValue(element, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
+           let f = focusedRef, CFGetTypeID(f) == AXUIElementGetTypeID() {
+            targetElement = f as! AXUIElement
+            AXUIElementSetMessagingTimeout(targetElement, 0.5)
+        }
+
         var value: CFTypeRef?
         var text = ""
-        if AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &value) == .success, let s = value as? String {
+        if AXUIElementCopyAttributeValue(targetElement, kAXSelectedTextAttribute as CFString, &value) == .success, let s = value as? String {
             text = s
         }
+        if text.isEmpty, targetElement !== element {
+            if AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &value) == .success, let s = value as? String {
+                text = s
+            }
+        }
         if text.isEmpty {
+            var range: CFTypeRef?, out: CFTypeRef?
+            if AXUIElementCopyAttributeValue(targetElement, "AXSelectedTextMarkerRange" as CFString, &range) == .success, let r = range,
+               AXUIElementCopyParameterizedAttributeValue(targetElement, "AXStringForTextMarkerRange" as CFString, r, &out) == .success,
+               let s = out as? String {
+                text = s
+            }
+        }
+        if text.isEmpty, targetElement !== element {
             var range: CFTypeRef?, out: CFTypeRef?
             if AXUIElementCopyAttributeValue(element, "AXSelectedTextMarkerRange" as CFString, &range) == .success, let r = range,
                AXUIElementCopyParameterizedAttributeValue(element, "AXStringForTextMarkerRange" as CFString, r, &out) == .success,
@@ -163,13 +186,24 @@ final class SelectionWatcher {
         }
         var bounds: CGRect?
         var rangeValue: CFTypeRef?
-        if AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &rangeValue) == .success,
+        if AXUIElementCopyAttributeValue(targetElement, kAXSelectedTextRangeAttribute as CFString, &rangeValue) == .success,
            let rv = rangeValue, CFGetTypeID(rv) == AXValueGetTypeID() {
             var b: CFTypeRef?
-            if AXUIElementCopyParameterizedAttributeValue(element, kAXBoundsForRangeParameterizedAttribute as CFString, rv, &b) == .success,
+            if AXUIElementCopyParameterizedAttributeValue(targetElement, kAXBoundsForRangeParameterizedAttribute as CFString, rv, &b) == .success,
                let bv = b, CFGetTypeID(bv) == AXValueGetTypeID() {
                 var rect = CGRect.zero
                 if AXValueGetValue(bv as! AXValue, .cgRect, &rect) { bounds = rect }
+            }
+        }
+        if bounds == nil, targetElement !== element {
+            if AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &rangeValue) == .success,
+               let rv = rangeValue, CFGetTypeID(rv) == AXValueGetTypeID() {
+                var b: CFTypeRef?
+                if AXUIElementCopyParameterizedAttributeValue(element, kAXBoundsForRangeParameterizedAttribute as CFString, rv, &b) == .success,
+                   let bv = b, CFGetTypeID(bv) == AXValueGetTypeID() {
+                    var rect = CGRect.zero
+                    if AXValueGetValue(bv as! AXValue, .cgRect, &rect) { bounds = rect }
+                }
             }
         }
         return (String(text.prefix(SmartSelectionRules.maxLength + 1)), bounds)

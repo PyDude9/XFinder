@@ -20,8 +20,8 @@ public final class TypingSink: @unchecked Sendable, TypingSinkProtocol {
     public static let shared = TypingSink()
 
     /// One captured pasteboard item: every type it carried, with its bytes.
-    private struct CapturedItem {
-        let types: [(NSPasteboard.PasteboardType, Data)]
+    public struct CapturedItem: Sendable {
+        public let types: [(NSPasteboard.PasteboardType, Data)]
     }
 
     private let lock = NSLock()
@@ -160,7 +160,7 @@ public final class TypingSink: @unchecked Sendable, TypingSinkProtocol {
 
     // MARK: - Pasteboard capture / restore
 
-    private static func capturePasteboard() -> [CapturedItem] {
+    public static func capturePasteboard() -> [CapturedItem] {
         guard let items = NSPasteboard.general.pasteboardItems else { return [] }
         return items.compactMap { item in
             let types = item.types.compactMap { type -> (NSPasteboard.PasteboardType, Data)? in
@@ -171,7 +171,7 @@ public final class TypingSink: @unchecked Sendable, TypingSinkProtocol {
         }
     }
 
-    private static func restorePasteboard(_ items: [CapturedItem]) {
+    public static func restorePasteboard(_ items: [CapturedItem]) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         let restored = items.map { captured -> NSPasteboardItem in
