@@ -138,6 +138,7 @@
 		7F1A034D /* Agents/AgentUsage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A034C /* Agents/AgentUsage.swift */; };
 		7F1A034F /* Agents/AgentUsageMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A034E /* Agents/AgentUsageMonitor.swift */; };
 		7F1A0268 /* Notch/NotchHoverOpen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0269 /* Notch/NotchHoverOpen.swift */; };
+		7F1A0604 /* Notch/NotchFullscreenRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0605 /* Notch/NotchFullscreenRules.swift */; };
 		7F1A0278 /* Translate/TranslateSelectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0279 /* Translate/TranslateSelectionController.swift */; };
 		7F1A0276 /* Translate/TranslateSelectionRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0277 /* Translate/TranslateSelectionRules.swift */; };
 		7F1A0272 /* Onboarding/WhatsNewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0273 /* Onboarding/WhatsNewRules.swift */; };
@@ -638,6 +639,7 @@
 		7F1A034C /* Agents/AgentUsage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentUsage.swift; sourceTree = "<group>"; };
 		7F1A034E /* Agents/AgentUsageMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentUsageMonitor.swift; sourceTree = "<group>"; };
 		7F1A0269 /* Notch/NotchHoverOpen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchHoverOpen.swift; sourceTree = "<group>"; };
+		7F1A0605 /* Notch/NotchFullscreenRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchFullscreenRules.swift; sourceTree = "<group>"; };
 		7F1A0279 /* Translate/TranslateSelectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/TranslateSelectionController.swift; sourceTree = "<group>"; };
 		7F1A0277 /* Translate/TranslateSelectionRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/TranslateSelectionRules.swift; sourceTree = "<group>"; };
 		7F1A0273 /* Onboarding/WhatsNewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding/WhatsNewRules.swift; sourceTree = "<group>"; };
@@ -1110,6 +1112,7 @@
 				7F1A034C /* Agents/AgentUsage.swift */,
 				7F1A034E /* Agents/AgentUsageMonitor.swift */,
 				7F1A0269 /* Notch/NotchHoverOpen.swift */,
+				7F1A0605 /* Notch/NotchFullscreenRules.swift */,
 				7F1A0279 /* Translate/TranslateSelectionController.swift */,
 				7F1A0277 /* Translate/TranslateSelectionRules.swift */,
 				7CF83672C0BD4C118E343546 /* Translate/VocabularyStore.swift */,
@@ -1773,6 +1776,7 @@
 				7F1A034D /* Agents/AgentUsage.swift in Sources */,
 				7F1A034F /* Agents/AgentUsageMonitor.swift in Sources */,
 				7F1A0268 /* Notch/NotchHoverOpen.swift in Sources */,
+				7F1A0604 /* Notch/NotchFullscreenRules.swift in Sources */,
 				7F1A0278 /* Translate/TranslateSelectionController.swift in Sources */,
 				7F1A0276 /* Translate/TranslateSelectionRules.swift in Sources */,
 				36C3E7837BBC43278FFCB6FC /* Translate/VocabularyStore.swift in Sources */,

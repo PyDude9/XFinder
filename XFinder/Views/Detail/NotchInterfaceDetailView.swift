@@ -18,6 +18,7 @@ struct NotchInterfaceDetailView: View {
     // B7 notch behaviour. Readers: NotchSurfaceController (defaults must match — FeatureKeyDefaultsTests).
     @AppStorage("notch.pillOnPlainScreens") private var pillOnPlainScreens = true
     @AppStorage("notch.hideFromCapture") private var hideFromCapture = false
+    @AppStorage("notch.fullscreenVisibility") private var fullscreenVisibility = "show"
 
     /// D1 #44 — page order + visibility; one reader: `NotchSurfaceController.pageOrderRaw`.
     @AppStorage("notch.pages") private var pagesRaw = "files,clipboard,nowPlaying,agents,calendar,timer,aiUsage"
@@ -42,6 +43,8 @@ struct NotchInterfaceDetailView: View {
                 hoverSection
                     .disabled(!notchEnabled)
                 clickSection
+                    .disabled(!notchEnabled)
+                fullscreenSection
                     .disabled(!notchEnabled)
                 shapeSection
                     .disabled(!notchEnabled)
@@ -70,6 +73,28 @@ struct NotchInterfaceDetailView: View {
                     }
                 }
                 .labelsHidden().pickerStyle(.menu).frame(width: 170)
+            }
+            .settingsRow()
+        }
+    }
+
+    private var fullscreenSection: some View {
+        SettingsSection(title: L10n.t("Notch khi ứng dụng toàn màn hình"),
+                        footer: L10n.t("XFinder chỉ ẩn notch khi nhận diện được cửa sổ phủ khớp màn hình. Nếu không xác định chắc chắn, notch vẫn hiện. Thao tác đang chạy, yêu cầu duyệt và khung nhập luôn được giữ trên màn hình.")) {
+            HStack(alignment: .firstTextBaseline, spacing: XFinderTokens.Space.inline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.t("Hiển thị notch trong ứng dụng toàn màn hình")).font(XFinderTokens.Font.row)
+                    Text(L10n.t("Chế độ chỉ ẩn theo media cần ứng dụng phát nhạc/video cung cấp trạng thái Now Playing đang chạy."))
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                }
+                Spacer()
+                Picker("", selection: $fullscreenVisibility) {
+                    ForEach(NotchFullscreenVisibility.allCases, id: \.rawValue) { policy in
+                        Text(L10n.t(policy.labelKey)).tag(policy.rawValue)
+                    }
+                }
+                .labelsHidden().pickerStyle(.menu).frame(width: 220)
+                .onChange(of: fullscreenVisibility) { NotchSurfaceController.shared.applySettings() }
             }
             .settingsRow()
         }

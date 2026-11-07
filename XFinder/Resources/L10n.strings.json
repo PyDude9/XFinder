@@ -15142,6 +15142,34 @@
     "Áp dụng khi bấm huy hiệu hoặc dải xem nhanh. Lối mở trang cụ thể vẫn giữ đúng trang đích.": {
       "en": "Applies when clicking the badge or peek strip. Actions targeting a specific page still open that page.",
       "scope": "sentence"
+    },
+    "Luôn hiện notch": {
+      "en": "Always show notch",
+      "scope": "sentence"
+    },
+    "Ẩn trong ứng dụng toàn màn hình": {
+      "en": "Hide in fullscreen apps",
+      "scope": "sentence"
+    },
+    "Chỉ ẩn khi xem media toàn màn hình": {
+      "en": "Hide only for fullscreen media",
+      "scope": "sentence"
+    },
+    "Notch khi ứng dụng toàn màn hình": {
+      "en": "Notch in fullscreen apps",
+      "scope": "sentence"
+    },
+    "XFinder chỉ ẩn notch khi nhận diện được cửa sổ phủ khớp màn hình. Nếu không xác định chắc chắn, notch vẫn hiện. Thao tác đang chạy, yêu cầu duyệt và khung nhập luôn được giữ trên màn hình.": {
+      "en": "XFinder hides the notch only when it identifies a window matching the display. If uncertain, the notch stays visible. Running tasks, approval requests, and composers remain visible.",
+      "scope": "sentence"
+    },
+    "Hiển thị notch trong ứng dụng toàn màn hình": {
+      "en": "Show notch in fullscreen apps",
+      "scope": "sentence"
+    },
+    "Chế độ chỉ ẩn theo media cần ứng dụng phát nhạc/video cung cấp trạng thái Now Playing đang chạy.": {
+      "en": "Media-only hiding requires a playing Now Playing status from the app playing the audio or video.",
+      "scope": "sentence"
     }
   }
 }
