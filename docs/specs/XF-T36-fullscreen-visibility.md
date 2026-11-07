@@ -37,3 +37,17 @@ Add the fullscreen visibility choice requested by the notch specification while 
 - Feature-key test confirms Settings and controller defaults agree.
 - Add-only localization, build, targeted tests, full gate, and `plutil -lint` pass.
 - Live fullscreen transitions across displays and VoiceOver are explicitly unverified until checked in the installed app.
+
+## Boss review 2026-11-07 (measured)
+- Probe on the notched 1728×1117 built-in display (safe-area top 32), own window via `CGWindowListCopyWindowInfo`:
+  windowed (218, 585, 400, 332); zoomed to `visibleFrame` (0, 33, 1728, 1022); native fullscreen (0, 33, 1728, 1084).
+  A native fullscreen window sits **below the camera housing**, so the original whole-display match never fired on the
+  notched screen — the only screen where the notch shows.
+- The menu-bar window (`Window Server:Menubar`, layer 24) stays in the on-screen list in fullscreen: not a discriminator.
+- `AXFullScreen` on the window: false windowed, false zoomed, true fullscreen (`AXIsProcessTrusted` = true in the probe).
+- Rule now (`NotchFullscreenRules.isFullscreenFrame`): whole-display frame ⇒ fullscreen (zoomed windows never cover the
+  menu bar); below-housing frame ⇒ fullscreen only with `AXFullScreen == true` (a Fill window with the Dock hidden has
+  that frame); no AX answer (not trusted, or no reply within 0.25 s) ⇒ show.
+- Also fixed: a surface the user opened (`expanded`: click, hotkey, URL) stays visible under any hide policy.
+- Unverified: third-party fullscreen video (browser HTML5 fullscreen, players that opt into the housing area), external
+  displays, Stage Manager.
