@@ -1,3 +1,42 @@
+## 2026-11-07 — Codex — XF-MFGAP-01 bounded storage charts + XF-MFGAP-02 draft
+
+TASK: XF-MFGAP-01   BRANCH: agent/codex-XF-SETTINGS   COMMITS: 07257ae
+BUILD: ** BUILD SUCCEEDED ** (arm64; StorageTreeRules.swift has 4 build-log matches)
+TESTS: targeted 16 tests / 0 failures; full gate 2922 tests / 1 unrelated failure
+GATE: RED — AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput expects no ancestor named codex, but this session has one; same known environment failure as prior Runs. No unrelated test/source changed.
+MUTATION: 13/13 RED; restored suite 0 failures
+LIVE: NOT VERIFIED (Builder does not install)
+
+Rebased onto main `4e73910` as directly instructed by Boss. Q-MFGAP-11 is resolved in the Boss decision; no extra approval was requested. Failure cases from that spec were read before source edits. The same FileWalk now builds a capped flat hierarchy: directory nodes plus top 20 file leaves per directory and a folded remainder. Overflow saturates; hard-link counting follows the unchanged accumulator. Aggregate counts/top 50/status still come from StorageScanAccumulator. The cached hierarchy feeds nested treemap and sunburst drawing, selection/details/drill-in/root return, style picker and chart-fraction slider on the existing Storage tab. Rendering is bounded to 4 visible levels/1500 regions, with deeper folders accessible by the inspector; the inspector uses lazy rows. Style changes never start a filesystem walk. Invalid saved style/fraction falls back/clamps safely.
+
+Checks: project lint OK; staged whitespace check OK; 9 add-only L10n entries; targeted storage/default tests 16/0. Initial synthetic large test exposed repeated scans of directory children during file insertion; changed it to a bounded per-directory file-index list and the 100k test finishes in ~0.3s. The first detached harness process ended before restoration; manually restored its saved originals, then reran with a retained waiting shell: final 13/13 mutants RED, restored GREEN. No source edits occurred while that final harness ran.
+
+Terminal-only optimized synthetic probe (`swiftc -O`, `/usr/bin/time -l`): **50,000 directories + 50,000 files = 100,000 input items**, retained **100,000 nodes**, 50,000 files, **51,200,000 logical bytes**, simplified=true; **45,711,360 bytes maximum resident set size (~43.6 MiB)** for the entire probe process; 0.54s wall time. This is not an installed-app measurement or a claim about all filesystem shapes. Probe and logs: `/tmp/xf-storage-memory/`; gate logs: `/var/folders/xq/xzqwntyx0yx4stl6d6x3t7h00000gp/T/xfinder-gate.gIcoEj`.
+
+Gate stdout (verbatim):
+
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2922 tests, with 1 failure (0 unexpected) in 25.769 (25.987) seconds
+check-l10n-coverage                TOTAL 0 problems across 3801 entries (3801 checked, 32 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3801 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1416 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             7
+GATE: RED
+```
+
+Teaching checkpoint: nếu một nhánh chứa 25% byte của thư mục cha, nó nhận 25% diện tích ô hoặc 25% góc vòng của cha. Cây đã nằm trong RAM nên đổi kiểu vẽ chỉ đổi hình học, không đọc đĩa lần nữa. Byte logic là chiều dài file; hai APFS clone có thể cùng chia sẻ block vật lý, nên tổng logic không phải dung lượng chắc chắn giải phóng được.
+
+Not verified: real folder permission/revocation, graphical layout/interaction, VoiceOver, deep-folder UI and device-specific memory in installed XFinder. No push, merge, install or launch. Notion Run not claimed for this direct Boss task; fallback log here.
+
+After the storage code commit, wrote **DRAFT** `docs/specs/XF-MFGAP-02-duplicate-finder.md` per Boss's new instruction. Q-MFGAP-PAGES on main `f5c7c6c` approves only the new CÔNG CỤ → Tìm tệp trùng page. No duplicate-finder code was written. The draft names the read-only sandbox/write-grant and Boss-only destructive-service boundaries that must be reviewed before enabling Trash.
+
+**CHỜ REVIEW (nhánh agent/codex-XF-SETTINGS)** — XF-MFGAP-01 source ready for review; full gate remains RED for the known unrelated Codex ancestor test. XF-MFGAP-02 spec awaits Boss approval before coding.
+
 ## 2026-11-07 — Codex — XF-MFINDER-GAP-AUDIT
 
 Branch `agent/codex-XF-SETTINGS` rebased onto owner-provided originals at `main` `9788415`. The read-only audit is against that source baseline. `docs/reference/MFINDER_PROMPT_SYSTEM.md` is the requirements source (12 features); `MFINDER_PROMPT_TEACHING.md` is engineering education only.
