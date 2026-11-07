@@ -15206,6 +15206,130 @@
     "Mở trong biểu đồ": {
       "en": "Open in chart",
       "scope": "sentence"
+    },
+    "Tìm tệp trùng": {
+      "en": "Duplicate Finder",
+      "scope": "sentence"
+    },
+    "Quét trên máy; tệp chỉ thay đổi khi bạn xác nhận chuyển vào Thùng rác.": {
+      "en": "Scans locally; files change only after you confirm moving them to Trash.",
+      "scope": "sentence"
+    },
+    "Đã xử lý %d tệp; bỏ qua %d mục.": {
+      "en": "Processed %d files; skipped %d items.",
+      "scope": "sentence"
+    },
+    "%d nhóm trùng; đã quét %d tệp; bỏ qua %d mục.": {
+      "en": "%d duplicate groups; scanned %d files; skipped %d items.",
+      "scope": "sentence"
+    },
+    "Dung lượng logic đã chọn: ": {
+      "en": "Selected logical bytes: ",
+      "scope": "fragment"
+    },
+    "Chuyển các bản đã chọn vào Thùng rác…": {
+      "en": "Move selected copies to Trash…",
+      "scope": "sentence"
+    },
+    "Chọn bản cần bỏ và giữ ít nhất một bản trong mỗi nhóm. Chỉ kết quả quét đầy đủ mới cho phép chuyển vào Thùng rác.": {
+      "en": "Select copies to discard and keep at least one in every group. Only complete scan results allow moving files to Trash.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy tệp trùng y hệt.": {
+      "en": "No exact duplicates found.",
+      "scope": "sentence"
+    },
+    "Gợi ý giữ lại": {
+      "en": "Suggested keeper",
+      "scope": "sentence"
+    },
+    "Chuyển vào Thùng rác?": {
+      "en": "Move to Trash?",
+      "scope": "sentence"
+    },
+    "Chỉ chuyển %d bản đã chọn trong thư mục này vào Thùng rác. Mỗi tệp và bản giữ lại sẽ được kiểm tra lại ngay trước khi chuyển.": {
+      "en": "Move only %d selected copies in this folder to Trash. Each file and its keeper will be checked again immediately before moving.",
+      "scope": "sentence"
+    },
+    "Đang nhóm theo kích thước…": {
+      "en": "Grouping by size…",
+      "scope": "sentence"
+    },
+    "Đang tính checksum…": {
+      "en": "Computing checksums…",
+      "scope": "sentence"
+    },
+    "Đang so sánh nội dung…": {
+      "en": "Comparing contents…",
+      "scope": "sentence"
+    },
+    "Đang kiểm tra lại các bản đã chọn…": {
+      "en": "Rechecking selected copies…",
+      "scope": "sentence"
+    },
+    "Đang chuyển vào Thùng rác…": {
+      "en": "Moving to Trash…",
+      "scope": "sentence"
+    },
+    "Đã quét đầy đủ. Kích thước là byte logic, không phải dung lượng vật lý chắc chắn giải phóng.": {
+      "en": "Scan complete. Sizes are logical bytes, not guaranteed physical space savings.",
+      "scope": "sentence"
+    },
+    "Kết quả chưa đầy đủ hoặc đã chạm giới hạn 500.000 tệp. Hãy chọn phạm vi nhỏ hơn và quét lại.": {
+      "en": "Results are incomplete or the 500,000-file limit was reached. Choose a smaller scope and scan again.",
+      "scope": "sentence"
+    },
+    "Đã huỷ quét; không thể chuyển tệp từ kết quả này vào Thùng rác.": {
+      "en": "Scan cancelled; these results cannot authorize moving files to Trash.",
+      "scope": "sentence"
+    },
+    "Không đọc được thư mục. Hãy chọn lại thư mục và kiểm tra quyền truy cập.": {
+      "en": "Cannot read the folder. Choose it again and check access permissions.",
+      "scope": "sentence"
+    },
+    "Đã huỷ kiểm tra.": {
+      "en": "Verification cancelled.",
+      "scope": "sentence"
+    },
+    "Đã kiểm tra: %d bản hợp lệ; %d bản thay đổi hoặc không đọc được đã bị loại.": {
+      "en": "Verified: %d eligible copies; %d changed or unreadable copies excluded.",
+      "scope": "sentence"
+    },
+    "Đã chuyển %d tệp; lỗi %d; bỏ qua %d. Hãy quét lại để cập nhật kết quả.": {
+      "en": "Moved %d files; %d failed; %d skipped. Scan again to refresh results.",
+      "scope": "sentence"
+    },
+    " Đã dừng các lần chuyển tiếp theo; các tệp đã chuyển vẫn ở Thùng rác.": {
+      "en": " Further moves stopped; files already moved remain in Trash.",
+      "scope": "fragment"
+    },
+    "Không có quyền ghi vào thư mục. Bạn vẫn có thể xem kết quả và hiện tệp trong Finder.": {
+      "en": "No write access to the folder. You can still inspect results and reveal files in Finder.",
+      "scope": "sentence"
+    },
+    "Nhóm thay đổi hoặc không đọc được: ": {
+      "en": "Changed or unreadable group: ",
+      "scope": "fragment"
+    },
+    "Không thể chuyển: ": {
+      "en": "Could not move: ",
+      "scope": "fragment"
+    },
+    "Bỏ qua: ": {
+      "en": "Skipped: ",
+      "scope": "fragment"
+    },
+    "Liên kết, gói ứng dụng và tệp chưa tải về được bỏ qua; các đường dẫn tới cùng một tệp chỉ được tính một lần.": {
+      "en": "Links, application bundles and files not downloaded are skipped; multiple paths to the same file are counted once.",
+      "scope": "sentence"
+    },
+    "Quét": {
+      "en": "Scan",
+      "scope": "sentence"
+    },
+    "Đã kiểm tra: %d bản hợp lệ; loại %d bản do nhóm thay đổi hoặc không đọc được.": {
+      "en": "Verified: %d eligible copies; %d copies excluded because a group changed or could not be read.",
+      "scope": "sentence"
     }
   }
 }

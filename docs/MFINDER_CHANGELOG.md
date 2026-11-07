@@ -2,8 +2,9 @@
 
 Newest first. “Merged” means the change is present on `main`; it does not mean the current installed app was updated or hand-tested.
 
-| Task | What the user sees / where to go | Main commit(s) | Status |
+| Task | What the user sees / where to go | Commit(s) | Status |
 |---|---|---|---|
+| XF-MFGAP-02 | CÔNG CỤ → Tìm tệp trùng: chosen-folder exact duplicates, size grouping → streaming SHA-256 → byte comparison; explicit selection/keeper, fresh preflight and per-file revalidation before Trash, cancel and per-item outcomes. | `2d77c09` | Builder branch, awaiting Boss review (including DuplicateTrash.swift). arm64 build OK; targeted 18/0; mutation 5/5 RED. Full gate RED only for known Codex-ancestor AgentCodexTests failure (2932/1); L10n/UI gates 0. Not installed/live-tested. |
 | XF-MFGAP-01 | Hệ thống → Ổ đĩa → Phân tích thư mục: cached bounded tree, treemap/sunburst, selected-item inspector and folder drill-in; chart style and chart fraction persist. | `07257ae`, merge `430e261` | **Merged + installed 2026-11-07 14:03** (dylib 7995d81c == build, appex `+`, L10n 0). Boss gate green 2922/0; mutation storage 13/13 RED. Hand test: T-MFGAP-01 (scan a folder ⇒ chart; switch Bản đồ cây/Biểu đồ vòng without rescanning; click a folder ⇒ "Mở trong biểu đồ"; "Về thư mục gốc"; relaunch keeps style + slider). Follow-up: treemap is slice-and-dice (thin strips), not squarified; sunburst has no labels. |
 | XF-T35 | Hệ thống → Ổ đĩa → Phân tích thư mục: choose one folder, scan read-only with progress/cancel, view logical bytes and up to 50 largest files. | `1c92dc5`, `768dc83`, `ef669cb`, `74fb3c7`, `8cbfc2f` | Merged on main; installed/live behavior not verified by this Builder. |
 | XF-T36 | Notch → Cách mở: choose fixed page, last used page, or current activity when clicking the notch. | `3ea38e4`, `0709dc9` | Merged on main; live behavior not verified by this Builder. |
