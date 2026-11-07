@@ -226,3 +226,13 @@ Separate pending request from the owner (“gộp cái browser settings này và
 | 11. Window Snapping | 2 | 4 | Partial / Rejected | Not performed |
 | 12. Keyboard Clean Mode | 2 | 3 | Partial / Rejected | Not performed |
 | Global privacy rules | 1 | 4 | Partial | Not performed |
+
+## Boss review (2026-11-07)
+
+- Accepted as the working gap list (source/UI reachability only; 0 rows live-verified).
+- **Correction — "Move to Trash from chart" is Missing (deferred), not Rejected:** it is a later task after charts and revalidation
+  exist, not a platform impossibility. Same item appears twice (Full-disk-scan rows) — read them as one.
+- **Confirmed by Boss:** Cleaning Mode has **no** Secure Input check in source (grep `SecureEventInput` = 0), so XF-MFGAP-12 is a
+  real gap; the roadmap sentence "preserve the secure-input refusal" was wrong. Folder lock is an AES-256 sparse bundle via `hdiutil`.
+- **Q-MFGAP-11 resolved:** bounded hierarchy retention is in scope — see the Boss decision in `docs/specs/XF-MFGAP-01-storage-charts.md`.
+

@@ -49,13 +49,27 @@ Extend the existing read-only, user-picked-folder Storage Analyzer with a retain
 ## Files allowed
 
 - `XFinder/Views/Detail/StorageDetailView.swift`
-- `XFinder/Core/Storage/StorageScanEngine.swift` and/or one focused chart/layout rules file under `XFinder/Core/Storage/`
+- `XFinder/Core/Storage/StorageScanEngine.swift`, `StorageScanRules.swift`, new `StorageTreeRules.swift` (pure) and one chart layout rules file under `XFinder/Core/Storage/`
+- `scripts/mutation-check-storage.sh` (add mutants for the new pure rules)
 - Focused storage rules tests and their `Tests/XFinderLogicTests/` symlink if pure rules are added
 - `XFinder/Resources/L10n.strings.json` via the add-only localization script
 - `XFinder.xcodeproj/project.pbxproj` only for required source registration
 - `Tests/XFinderLogicTests/FeatureKeyDefaultsTests.swift` only for new key/default parity
 
-If the current tree result does not retain enough hierarchy to draw both charts without rescanning, stop and report the smallest required spec/scope adjustment before changing unrelated files.
+**Boss decision 2026-11-07 (resolves Q-MFGAP-11 — hierarchy retention IS in scope):** the scan engine keeps a bounded tree, built
+during the same single walk (no second pass, no rescan on style change):
+
+- **Directory nodes** for every visited directory: name, relative path, parent, logical bytes of the subtree (saturating), file count,
+  skipped flag. Children sorted by size desc, then path asc.
+- **File leaves**: per directory only its **20 largest files**; the rest become one aggregate leaf "N tệp khác" (count + bytes).
+- **Global cap 100 000 nodes.** When reached, deeper directories are folded into their nearest kept ancestor as an aggregate leaf
+  and the result says the chart is simplified (not "partial" — totals stay exact). Measure resident memory on a 100 000-entry tree
+  and report it.
+- Top-50 list, totals and status semantics from XF-T35 stay unchanged and keep coming from `StorageScanAccumulator`.
+- Tree building/aggregation/folding rules live in a pure `StorageTreeRules.swift` (symlinked tests) with a mutation harness entry
+  in `scripts/mutation-check-storage.sh`.
+
+Still stop and report if anything outside "Files allowed" must change.
 
 ## Acceptance
 
