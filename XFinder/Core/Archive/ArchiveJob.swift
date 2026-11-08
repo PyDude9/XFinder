@@ -73,6 +73,25 @@ enum ArchiveJob {
                       keepsBothRenames: keepsBothRenames, refusals: refusals)
     }
 
+    // MARK: Review preview names
+
+    /// The names "Kiểm tra" checks for collisions in the destination.
+    ///
+    /// "New folder beside the archive" puts everything under one folder, so that folder's name is the only one that
+    /// can collide. Every other destination receives the archive's own top-level entries — not the archive's file
+    /// name: the page passed `a.zip` for all four modes, so "same folder" always previewed the archive itself as a
+    /// conflict and never the real ones (Boss review of 03C, 2026-11-08). Names go through the component rules
+    /// extraction is gated by: `./a/b` is `a`, a bare `dir/` record is `dir` (it used to vanish — the other Boss
+    /// session's review), the root entry names nothing, and a refused path previews nothing.
+    static func previewNames(manifest: [ArchiveManifestEntry], newFolderName: String?) -> [String] {
+        if let newFolderName { return [newFolderName] }
+        var ignored: [ArchiveSafetyRules.Reason] = []
+        let names = manifest.compactMap { entry in
+            ArchiveSafetyRules.components(of: entry.rawPath, limits: ArchiveSafetyRules.Limits(), into: &ignored)?.first
+        }
+        return Array(Set(names)).sorted()
+    }
+
     // MARK: Destination choice
 
     /// A destination the page must refuse rather than guess.

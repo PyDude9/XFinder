@@ -447,6 +447,43 @@ final class ArchivePlacementTests: XCTestCase {
         XCTAssertEqual(try? String(contentsOf: recovered.appendingPathComponent("b.txt"), encoding: .utf8), "B")
     }
 
+    // MARK: - Review preview names (Boss review of 03C)
+
+    private func entry(_ raw: String, _ kind: ArchiveManifestEntry.Kind = .regular) -> ArchiveManifestEntry {
+        ArchiveManifestEntry(rawPath: raw, declaredSize: 1, sizeIsSet: true, kind: kind, linkTarget: nil)
+    }
+
+    func testPreviewNamesAreTheArchivesOwnTopLevelEntries() {
+        let manifest = [entry("./a/b.txt"), entry("dir/", .directory), entry("c.txt"), entry("a/x"), entry(".", .directory),
+                        entry("../evil")]
+        XCTAssertEqual(ArchiveJob.previewNames(manifest: manifest, newFolderName: nil), ["a", "c.txt", "dir"],
+                       "./ is not a name, a bare dir/ record is, the root and a refused path preview nothing")
+        XCTAssertEqual(ArchiveJob.previewNames(manifest: manifest, newFolderName: "Photos"), ["Photos"],
+                       "a new folder beside the archive can only collide by its own name")
+    }
+
+    /// The archive in its own folder ("same folder"): the review must name the entries that collide — a file, an
+    /// empty top-level folder record, a dangling link — and never the archive itself.
+    func testReviewInTheArchivesOwnFolderNamesRealCollisionsNotTheArchive() async throws {
+        try write("src/Report.pdf", "new")
+        try fm.createDirectory(at: url("src/dir"), withIntermediateDirectories: true)
+        try write("src/ghost", "g")
+        let archive = url("here/a.zip")
+        try fm.createDirectory(at: url("here"), withIntermediateDirectories: true)
+        let zip = Process()
+        zip.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
+        zip.currentDirectoryURL = url("src")
+        zip.arguments = ["-qr", archive.path, "Report.pdf", "dir", "ghost"]
+        try zip.run(); zip.waitUntilExit()
+        XCTAssertEqual(zip.terminationStatus, 0)
+        try write("here/Report.pdf", "old")
+        try fm.createDirectory(at: url("here/dir"), withIntermediateDirectories: true)
+        try fm.createSymbolicLink(atPath: url("here/ghost").path, withDestinationPath: "nowhere")
+        let r = await ArchiveRunner.inspect(archive: archive, near: url("here"), topLevelName: nil)
+        guard case .success(let review) = r else { return XCTFail("\(r)") }
+        XCTAssertEqual(review.conflicts, ["Report.pdf", "dir", "ghost"])
+    }
+
     /// Decoder debris (`__MACOSX`, a top-level `.DS_Store`) is not user content: Merge must not plant it in the
     /// user's folder (the old walk started at the staging root and did), and leaving it behind must not make the
     /// batch read as partial.

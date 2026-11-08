@@ -499,19 +499,9 @@ enum ArchiveRunner {
         case .accepted(let plan): peak = plan.peakBytes
         case .rejected: peak = payload
         }
-        let fm = FileManager.default
-        let conflicts: [String]
-        if let topLevelName {
-            // "new folder beside the archive": the conflict is that one folder name.
-            conflicts = fm.fileExists(atPath: destination.appendingPathComponent(topLevelName).path)
-                ? [topLevelName] : []
-        } else {
-            let top = Set(inspection.manifest.compactMap { entry -> String? in
-                let parts = entry.rawPath.split(separator: "/", omittingEmptySubsequences: true)
-                return parts.count > 1 ? String(parts[0]) : nil
-            } + inspection.manifest.filter { !$0.rawPath.contains("/") }.map(\.rawPath))
-            conflicts = top.sorted().filter { fm.fileExists(atPath: destination.appendingPathComponent($0).path) }
-        }
+        // lstat, like placement: a link (even a dangling one) at a name is occupied there, so it is previewed too.
+        let conflicts = ArchiveJob.previewNames(manifest: inspection.manifest, newFolderName: topLevelName)
+            .filter { existingItem(at: destination.appendingPathComponent($0)) != nil }
         let renames = Self.conflictPolicyPreview(conflicts: conflicts)
         return .success(ArchiveJob.review(archive: archive, destination: destination,
                                           manifest: inspection.manifest, declaredBytes: payload,

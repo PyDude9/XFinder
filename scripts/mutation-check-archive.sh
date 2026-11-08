@@ -293,6 +293,17 @@ run "Y5 Merge walks from the staging root again (plants __MACOSX in the user's f
   "'        for name in batch.items { visit(name) }'" \
   "'        for name in stagedEntries(of: batch.staging) { visit(name) }'"
 
+# X1–X3 (Boss review of 03C): the names "Kiểm tra" previews as collisions.
+run "X1 the preview names leaves instead of top-level entries" XFinder/Core/Archive/ArchiveJob.swift \
+  "'            ArchiveSafetyRules.components(of: entry.rawPath, limits: ArchiveSafetyRules.Limits(), into: &ignored)?.first'" \
+  "'            ArchiveSafetyRules.components(of: entry.rawPath, limits: ArchiveSafetyRules.Limits(), into: &ignored)?.last'"
+run "X2 the preview checks existence through links (a dangling link is not a collision)" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            .filter { existingItem(at: destination.appendingPathComponent(\$0)) != nil }'" \
+  "'            .filter { FileManager.default.fileExists(atPath: destination.appendingPathComponent(\$0).path) }'"
+run "X3 a new folder beside the archive previews the archive's entries instead of the folder" XFinder/Core/Archive/ArchiveJob.swift \
+  "'        if let newFolderName { return [newFolderName] }'" \
+  "'        if let newFolderName, newFolderName.isEmpty { return [newFolderName] }'"
+
 restore
 
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done

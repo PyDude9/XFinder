@@ -556,8 +556,7 @@ struct CompressDetailView: View {
         }
         for src in sources {
             guard let dest = resolvedDestDir(for: src) else { continue }
-            let (base, _) = destinationFor(src)
-            let plan = await ArchiveRunner.inspect(archive: src, near: dest, topLevelName: base)
+            let plan = await ArchiveRunner.inspect(archive: src, near: dest, topLevelName: newFolderName(for: src))
             switch plan {
             case .failure(let f):
                 reviews.append(ArchiveJob.ArchiveReview(
@@ -582,19 +581,12 @@ struct CompressDetailView: View {
         return [.unsupportedEntry(L10n.t(f.messageKey))]
     }
 
-    /// Where this archive lands, and the top-level name the plan is checked against.
-    private func destinationFor(_ src: URL) -> (name: String, folder: URL?) {
-        let parent = resolvedDestDir(for: src)
-        switch extractionDestination {
-        case .newFolderBesideArchive:
-            return (ArchiveEngine.folderName(forArchive: src), parent)
-        case .sameFolder, .downloads:
-            return (src.lastPathComponent, nil)
-        case .custom:
-            // `resolvedDestDir` refuses an unchosen custom folder (spec §4.2), so this only runs with a
-            // real folder and the conflict check compares the archive's own top-level names.
-            return (src.lastPathComponent, nil)
-        }
+    /// The one name the review checks when everything lands in a new folder beside the archive; nil for every
+    /// other destination, where the review checks the archive's own top-level entries (`ArchiveJob.previewNames`).
+    /// This used to return the ARCHIVE's file name for the other three modes, so "same folder" always previewed the
+    /// archive itself as a conflict and never the entries that really collide.
+    private func newFolderName(for src: URL) -> String? {
+        extractionDestination == .newFolderBesideArchive ? ArchiveEngine.folderName(forArchive: src) : nil
     }
 
     private var destinationProblem: ArchiveJob.DestinationProblem? {
