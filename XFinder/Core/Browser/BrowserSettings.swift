@@ -71,8 +71,8 @@ final class BrowserSettings {
     static var newWindowCustomPath: String { UserDefaults.standard.string(forKey: "fileBrowser.newWindowCustomPath") ?? "" }
     static var returnOpens: Bool { UserDefaults.standard.object(forKey: "fileBrowser.returnOpens") as? Bool ?? false }
     static var cutWithCmdX: Bool { UserDefaults.standard.object(forKey: "fileBrowser.cutWithCmdX") as? Bool ?? false }
-    /// XF-T37 L5 / Q-T37-1 — default ON: ⌘Q in a browser window quits all of XFinder, not just the window.
-    static var warnBeforeQuitting: Bool { UserDefaults.standard.object(forKey: "fileBrowser.warnBeforeQuitting") as? Bool ?? true }
+    /// XF-T37 L5 / Q-T37-1 — default OFF (owner, 2026-11-08: "tắt"); when on, ⌘Q in a browser window warns first.
+    static var warnBeforeQuitting: Bool { UserDefaults.standard.object(forKey: "fileBrowser.warnBeforeQuitting") as? Bool ?? false }
     static var showAllExtensions: Bool { UserDefaults.standard.object(forKey: "fileBrowser.showAllExtensions") as? Bool ?? false }
     /// The ONE reader+writer of `fileBrowser.onboardingGrants`: folders the Welcome window saw granted (a list, not
     /// a toggle ⇒ no FeatureKeyDefaults row).

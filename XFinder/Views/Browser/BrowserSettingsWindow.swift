@@ -93,7 +93,7 @@ private struct GeneralSettingsTab: View {
     @AppStorage("fileBrowser.returnOpens") private var returnOpens = false
     @AppStorage("fileBrowser.downloadsHotkey") private var downloadsHotkey = false
     @AppStorage("fileBrowser.cutWithCmdX") private var cutWithCmdX = false
-    @AppStorage("fileBrowser.warnBeforeQuitting") private var warnBeforeQuitting = true
+    @AppStorage("fileBrowser.warnBeforeQuitting") private var warnBeforeQuitting = false
 
     var body: some View {
         SettingsSection(title: L10n.t("Cửa sổ mới hiện")) {
