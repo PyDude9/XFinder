@@ -37,7 +37,9 @@ final class TranslateAssistant {
         do { input = try module.userInput(text: text, context: context, sourceLanguage: source, targetLanguage: target, template: overrides[module.rawValue + ".user"]) }
         catch { messageKey = "Nội dung quá dài hoặc ngôn ngữ chưa được hỗ trợ."; return }
         let config = VoiceSettingsSnapshot.read()
-        guard let refiner = VoiceRefinerFactory.make(tier: config.tier, provider: config.provider,
+        // Translate always uses the API provider configured on the Smart Selection page. It must not depend on, or
+        // rewrite, the dictation refiner tier (voice.refinerTier) — that is the Voice page's setting.
+        guard let refiner = VoiceRefinerFactory.make(tier: .customAPI, provider: config.provider,
             apiBaseURL: config.apiBaseURL, apiModel: config.apiModel,
             ollamaBaseURL: config.ollamaBaseURL, ollamaModel: config.ollamaModel) else {
             messageKey = "Hãy cấu hình AI trong trang Giọng nói trước khi phân tích."; return
@@ -57,7 +59,7 @@ final class TranslateAssistant {
                     definition = result; meaning = result.meaning
                 }
                 output = String(decoding: validated, as: UTF8.self)
-                provenance = "AI: " + (config.tier == .customAPI ? config.provider.rawValue : config.tier.rawValue)
+                provenance = "AI: " + config.provider.rawValue
                 busy = false
             } catch {
                 guard generation == token, !Task.isCancelled else { return }

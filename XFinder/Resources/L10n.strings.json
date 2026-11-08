@@ -15582,6 +15582,14 @@
     "Google Dịch, Từ điển máy và AI": {
       "en": "Google Translate, macOS Dictionary, and AI",
       "scope": "sentence"
+    },
+    "Đọc chữ đang bôi đen qua Trợ năng rồi mở thẻ dịch. Từ điển macOS chạy trên máy; Google Dịch và Dịch AI, khi bật, gửi chữ bạn chọn tới dịch vụ đó. App nào không cho Trợ năng đọc vùng chọn thì panel nói rõ.": {
+      "en": "Reads the highlighted text through Accessibility and opens the translate card. The macOS dictionary runs on this Mac; Google Translate and AI translation, when on, send the text you selected to that service. Apps that do not let Accessibility read the selection are named in the panel.",
+      "scope": "sentence"
+    },
+    "Gửi chữ bạn bôi đen tới Google qua một địa chỉ không chính thức (không cần khoá API, ~200 ms). Google có thể chặn hay đổi địa chỉ này bất cứ lúc nào; tắt nếu chữ bạn chọn không được rời máy.": {
+      "en": "Sends the text you highlight to Google through an unofficial address (no API key, ~200 ms). Google can block or change it at any time; turn it off if your selection must not leave this Mac.",
+      "scope": "sentence"
     }
   }
 }

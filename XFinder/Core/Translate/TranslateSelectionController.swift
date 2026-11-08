@@ -35,7 +35,9 @@ enum TranslationEngine: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-/// Fast on-demand Google Translate service (official free endpoint, ~200 ms latency, no API key required).
+/// Google Translate through the UNOFFICIAL `clients5.google.com/translate_a/t` endpoint (no API key, ~200 ms).
+/// Not a documented API: it can be blocked or changed at any time. Sends the selected text to Google; the
+/// Settings copy says so and the engine can be switched off (`translate.showGoogle`).
 enum GoogleTranslateService {
     static func translate(text: String) async throws -> (translated: String, source: String, target: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)

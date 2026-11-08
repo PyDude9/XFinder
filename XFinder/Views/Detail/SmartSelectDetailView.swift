@@ -182,7 +182,7 @@ struct SmartSelectDetailView: View {
         SettingsSection(title: L10n.t("Dịch vùng chọn (⇧⌘G)"),
                         footer: L10n.t("Bôi đen chữ ở app bất kỳ, bấm ⇧⌘G hoặc bấm nút Dịch trên vùng chọn để xem các bản dịch đồng thời.")) {
             ToggleRow(title: L10n.t("Bật phím ⇧⌘G dịch vùng chọn"),
-                      subtitle: L10n.t("Đọc chữ đang bôi đen qua Trợ năng rồi mở hộp dịch của Apple (macOS 15+). Không gửi gì đi; gói ngôn ngữ tải một lần theo cặp. App nào không cho Trợ năng đọc vùng chọn thì panel nói rõ."),
+                      subtitle: L10n.t("Đọc chữ đang bôi đen qua Trợ năng rồi mở thẻ dịch. Từ điển macOS chạy trên máy; Google Dịch và Dịch AI, khi bật, gửi chữ bạn chọn tới dịch vụ đó. App nào không cho Trợ năng đọc vùng chọn thì panel nói rõ."),
                       isOn: $translateEnabled)
                 .onChange(of: translateEnabled) { TranslateSelectionController.shared.applySettings() }
                 .settingsRow()
@@ -193,7 +193,7 @@ struct SmartSelectDetailView: View {
                     .bold()
                     .settingsRow()
                 ToggleRow(title: L10n.t("Google Dịch (Miễn phí, nhanh)"),
-                          subtitle: L10n.t("Dịch trực tiếp qua endpoint Google, phản hồi trong ~200ms, không cần khoá API."),
+                          subtitle: L10n.t("Gửi chữ bạn bôi đen tới Google qua một địa chỉ không chính thức (không cần khoá API, ~200 ms). Google có thể chặn hay đổi địa chỉ này bất cứ lúc nào; tắt nếu chữ bạn chọn không được rời máy."),
                           isOn: $showGoogle)
                     .settingsRow()
                 SettingsDivider()
@@ -208,7 +208,6 @@ struct SmartSelectDetailView: View {
                     .onChange(of: showAI) {
                         if showAI {
                             reloadAIState()
-                            UserDefaults.standard.set(VoiceRefinerTier.customAPI.rawValue, forKey: VoiceSettingsKey.refinerTier)
                         }
                     }
                     .settingsRow()
@@ -239,7 +238,6 @@ struct SmartSelectDetailView: View {
                 .frame(width: 280)
                 .onChange(of: providerRaw) {
                     reloadAIState()
-                    UserDefaults.standard.set(VoiceRefinerTier.customAPI.rawValue, forKey: VoiceSettingsKey.refinerTier)
                 }
                 Spacer(minLength: 0)
             }
@@ -338,7 +336,6 @@ struct SmartSelectDetailView: View {
             apiKeyInput = ""
             storedKeyMask = VoiceKeychain.maskedKey(for: provider)
             keySaveStatus = L10n.t("Đã lưu khoá API vào Keychain.")
-            UserDefaults.standard.set(VoiceRefinerTier.customAPI.rawValue, forKey: VoiceSettingsKey.refinerTier)
         } else {
             keySaveStatus = L10n.t("Không ghi được vào Keychain.")
         }
