@@ -261,6 +261,7 @@ final class TranslateSelectionController {
         model.googleTranslation = ""
         model.googleError = nil
         model.isGoogleLoading = false
+        model.aiRequested = false
 
         let sg = showGoogle
         let sd = showDictionary
@@ -377,7 +378,34 @@ final class TranslateSelectionController {
 
     func analyzeWithAI() {
         guard !model.text.isEmpty else { return }
+        model.aiRequested = true
         startAITranslation(text: model.text)
+        updatePanelSize()
+    }
+
+    func updatePanelSize() {
+        guard let panel, panel.isVisible else { return }
+        var cardHeight: CGFloat = 110
+        if model.showGoogle { cardHeight += 40 }
+        if model.showDictionary {
+            if !model.localSenses.isEmpty {
+                cardHeight += CGFloat(min(model.localSenses.count, 3) * 26 + 8)
+            } else if model.localSnippet != nil {
+                cardHeight += 36
+            }
+        }
+        if model.showAI || model.aiRequested { cardHeight += 70 }
+        if !model.showGoogle && !model.showDictionary && !model.showAI && !model.aiRequested {
+            cardHeight += 50
+        }
+        let clampedHeight = max(160, min(cardHeight, 420))
+        var currentFrame = panel.frame
+        let diff = clampedHeight - currentFrame.height
+        if abs(diff) > 1 {
+            currentFrame.origin.y -= diff
+            currentFrame.size.height = clampedHeight
+            panel.setFrame(currentFrame, display: true, animate: true)
+        }
     }
 
     func fetchGoogleTranslation(text: String) {
@@ -410,8 +438,21 @@ final class TranslateSelectionController {
         let store = VocabularyStore.shared
         Task { if !store.isLoaded { await store.load() } }
         let blueprints = store.isLoaded ? store.library.blueprints : [:]
-        assistant.analyze(module: .definition, overrides: blueprints)
+        let mod: TranslationBlueprintModule = model.isSentence ? .silentTranslate : .definition
+        assistant.analyze(module: mod, overrides: blueprints)
         model.assistant = assistant
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            while self.assistant.busy {
+                try? await Task.sleep(nanoseconds: 80_000_000)
+            }
+            self.model.isTranslating = false
+            if !self.assistant.meaning.isEmpty {
+                self.model.translationMeaning = self.assistant.meaning
+            }
+            self.updatePanelSize()
+        }
     }
 
     static func parseLocalDictionary(_ raw: String) -> (syllables: String?, phonetic: String?, snippet: String, senses: [ParsedSense]) {
@@ -674,6 +715,7 @@ final class TranslateSelectionModel {
     var isTranslating = false
     var translationMeaning = ""
     var translationError: String?
+    var aiRequested = false
     var savedToWordbook = false
     var savedCard: VocabularyCard?
     /// Bridged assistant — view reads busy/messageKey/definition from it via withObservationTracking

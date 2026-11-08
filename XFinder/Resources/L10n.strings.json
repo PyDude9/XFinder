@@ -15606,6 +15606,14 @@
     "Không kiểm tra được tệp nén trên máy này nên đã từ chối, chưa giải nén gì.": {
       "en": "This archive cannot be checked on this Mac, so it was refused and nothing was extracted.",
       "scope": "sentence"
+    },
+    "Dịch bằng AI": {
+      "en": "Translate with AI",
+      "scope": "sentence"
+    },
+    "Hãy cấu hình AI trong Chọn thông minh ▸ Dịch trước khi phân tích.": {
+      "en": "Configure AI in Smart Selection ▸ Translate before analyzing.",
+      "scope": "sentence"
     }
   }
 }
