@@ -89,6 +89,27 @@ final class ImageEngineTests: XCTestCase {
         }
     }
 
+    /// A CMYK JPEG (print / scanner output) must still resize and convert. CGBitmapContext has no
+    /// premultiplied-alpha CMYK format (measured 2026-11-08: context creation returns nil), so this
+    /// only works because ImageIO's upright decode hands `render` an RGB image. Guards that path: a
+    /// future change that renders from the source CGImage directly would fail CMYK files.
+    func testCMYKJpegStillResizesAndConverts() {
+        let cmyk = CGColorSpace(name: CGColorSpace.genericCMYK)!
+        let ctx = CGContext(data: nil, width: 200, height: 100, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: cmyk, bitmapInfo: CGImageAlphaInfo.none.rawValue)!
+        ctx.setFillColor(CGColor(colorSpace: cmyk, components: [0.1, 0.7, 0.9, 0.0, 1])!)
+        ctx.fill(CGRect(x: 0, y: 0, width: 200, height: 100))
+        let src = dir.appendingPathComponent("print.jpg")
+        let d = CGImageDestinationCreateWithURL(src as CFURL, "public.jpeg" as CFString, 1, nil)!
+        CGImageDestinationAddImage(d, ctx.makeImage()!, nil)
+        XCTAssertTrue(CGImageDestinationFinalize(d))
+        XCTAssertEqual(props(src)[kCGImagePropertyColorModel] as? String, "CMYK", "fixture must really be CMYK")
+        guard case .success(let small) = ImageRunner.resize(src, maxPixels: 50) else { return XCTFail("CMYK resize failed") }
+        XCTAssertEqual(props(small)[kCGImagePropertyPixelWidth] as? Int, 50)
+        guard case .success(let png) = ImageRunner.convert(src, to: .png) else { return XCTFail("CMYK convert failed") }
+        XCTAssertEqual(props(png)[kCGImagePropertyPixelWidth] as? Int, 200)
+    }
+
     func testResizeBakesTheOrientationAndShrinksTheLongEdge() {
         let src = makeImage("photo.jpg", type: "public.jpeg", orientation: 6)
         guard case .success(let out) = ImageRunner.resize(src, maxPixels: 400) else { return XCTFail() }
