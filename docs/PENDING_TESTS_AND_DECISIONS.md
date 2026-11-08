@@ -24,12 +24,18 @@ nút **Sidebar** và **Thẻ** (+ Thư mục mới, Xem nhanh trong Tuỳ biến
 | Q-T38-1 | "Navigation Bar" là gì | thanh công cụ · thanh vị trí từng ngăn · khác | **Thanh công cụ** (theo ảnh cửa sổ chính); thanh vị trí từng ngăn giữ như hiện có |
 | Q-T38-2 | Phím khác FileOctopus: Mở nhanh ⌘K (FileOctopus ⌃⌘P), Đóng ngăn ⌃⌥⌘W (⌘W), Sidebar ⌥⌘S (⌃⌘S) | đổi theo FileOctopus · giữ | **Giữ phím XFinder** (⌘K theo Tilde); menu hiện phím thật |
 | Q-T38-3 | In ⌘P, Đổ Thùng rác ⇧⌘⌫ | làm · không | **Chưa làm**: in cần Apple Event tới app khác (quyền Automation); đổ Thùng rác là xoá vĩnh viễn |
+| Q-T38-4 | Khi "Hiện icon trên Dock" tắt, macOS không cho XFinder có thanh menu (app phụ). Trình duyệt có thanh menu riêng thì phải là app thường | icon Dock hiện trong lúc có cửa sổ trình duyệt · giữ ẩn và không có thanh menu | **Hiện trong lúc có cửa sổ trình duyệt** (đóng cửa sổ cuối ⇒ ẩn lại như anh cài; đã đo trong Atlas) |
+| Q-T39-1 | Mở nhanh (⌘K) có liệt kê workspace như FileOctopus ("Folders, tabs and workspaces")? | làm · không | Chưa làm |
 
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
 | T-T38-1 | Mở trình duyệt (⌃⌥⌘F hoặc từ notch) ▸ nhìn thanh menu ▸ mở Tệp, View, Đi, Window | Có Tệp và Đi; mỗi menu đủ mục như ảnh FileOctopus, phím tắt đúng; mục không áp dụng thì xám (đã đo trong Atlas) |
 | T-T38-2 | Chọn vài tệp ▸ Tệp ▸ Mở bằng ▸ / Thẻ ▸ ; View ▸ Sắp theo ▸ Ngày sửa ; Window ▸ Lưu Workspace rồi Mở workspace ▸ | Danh sách app đúng loại tệp; gắn thẻ được; dấu ✓ chuyển sang Ngày sửa; workspace vừa lưu có trong danh sách |
 | T-T38-3 | Thanh công cụ: bấm nút Sidebar (đầu thanh) và nút Thẻ (cạnh "…") | Sidebar ẩn/hiện; menu Thẻ gắn/bỏ thẻ cho mục đang chọn |
+| T-T38-4 | (Icon Dock đang ẩn) mở trình duyệt; ⌘W đóng từng cửa sổ | Có thanh menu XFinder + icon Dock; ⌘W đóng được (trước đây không); đóng cửa sổ cuối ⇒ icon Dock ẩn lại |
+| T-T39-1 | Mở 2 cửa sổ trình duyệt ▸ Window ▸ Lưu Workspace ▸ tên "A"; lưu lần nữa cùng tên "a" | Lần hai hỏi "Thay thế workspace “a”?"; Huỷ không ghi gì |
+| T-T39-2 | Đóng bớt cửa sổ ▸ Window ▸ Mở workspace ▸ A | Cửa sổ đang mở còn nguyên, thêm đủ 2 cửa sổ của A (trước đây: thay bố cục cửa sổ hiện tại) |
+| T-T39-3 | Window ▸ Xem các workspace đã lưu… ▸ Xuất các workspace… | Mỗi dòng ghi số cửa sổ, số tab, ngày lưu, các thư mục; tệp xuất có tên, bố cục, thư mục — không có lịch sử Lùi/Tiến |
 
 ### 2026-11-08 khuya · XF-T37 Luật logic trình duyệt theo FileOctopus 1.0.10 (bản đặc tả anh gửi)
 
