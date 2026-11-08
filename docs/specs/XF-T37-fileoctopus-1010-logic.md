@@ -109,12 +109,12 @@ Build xanh; toàn bộ test 0 lỗi (bảng L1, L2, L4; test hai pha trên thư 
 + so hash dylib; runtime L10n 0; chạy thật trong Atlas: đổi tên hoa/thường + ⌘Z, đổi tên hàng loạt hoán đổi, gõ
 `modified:<7d` thấy chip, `foo:bar` thấy cảnh báo, ⌘Q một lần không thoát. Test tay: T-T37-1…5.
 
-## 5. Quyết định (mặc định đang theo)
+## 5. Quyết định — chủ dự án đã trả lời (2026-11-08)
 
-| Mã | Câu hỏi | Mặc định |
-|:--|:--|:--|
-| Q-T37-1 | "Cảnh báo trước khi thoát (⌘Q)" mặc định bật hay tắt? | **Bật** — ⌘Q trong trình duyệt tắt cả notch, clipboard, agent… của XFinder, không chỉ cửa sổ |
-| Q-T37-2 | Giới hạn ô tìm (FileOctopus có, chưa đọc được số) | 512 ký tự, 32 từ |
-| Q-T37-3 | "Tên và ngày": ngày nào? | Ngày sửa của từng mục (ngày hiện tại cho mọi mục ⇒ trùng tên cả lô) |
-| Q-T37-4 | Đợt sau: làm tính năng mới nào trước? | So sánh & đồng bộ thư mục → Tìm tệp trùng → Máy chủ từ xa → Menu chuột phải → Clipboard |
-| Q-T37-5 | Trang "Đổi tên hàng loạt" cũ (sidebar) | Giữ kiểu cũ, chỉ sửa lỗi hoa/thường + luật tên L1 (gộp/đổi trang phải hỏi trước — memory) |
+| Mã | Câu hỏi | Trả lời | Làm |
+|:--|:--|:--|:--|
+| Q-T37-1 | "Cảnh báo trước khi thoát (⌘Q)" mặc định | "tắt" | mặc định **tắt** (`cc3e0df`) |
+| Q-T37-2 | Giới hạn ô tìm | "lấy con số được thống kê an toàn nhanh theo thói quen kiểu quickfind" | **256 ký tự / 16 từ**: câu tìm trên máy cá nhân trung bình 1,6 từ (Dumais, Stuff I've Seen), ~90 % câu tìm web ≤ 4 từ (Bendersky & Croft); đo `mdfind` trên máy: sau ~8 từ mỗi từ thêm tốn ~75 ms (16 từ 2,1 s; 32 từ 3,6 s; 64 từ 6,0 s), phân tích chỉ vài chục µs (`6eca99b`) |
+| Q-T37-3 | "Tên và ngày" lấy ngày nào | "trải nghiệm người dùng đơn giản nhất với toán học xác suất thống kê dễ sắp xếp" | Đo thư mục thật: trùng giây theo ngày sửa 1,5–16,7 %, theo ngày tạo 6–22 %, mili giây vẫn 14,4 % ⇒ ngày **sửa** tới giây + số `-1, -2…` (đệm số 0 theo cỡ nhóm) theo thời gian thật; không bao giờ chặn, sắp theo tên = theo thời gian (`d877059`) |
+| Q-T37-4 | Tính năng 1.0.10 XFinder chưa có | "XFinder có hết rồi" | Không làm đợt mới; menu bar (XF-T38) trỏ tới trang sẵn có |
+| Q-T37-5 | Trang Đổi tên hàng loạt cũ | "sửa lỗi, cập nhật tính năng là đủ" | Giữ trang + kiểu cũ, thêm Định dạng; cùng luật kiểm, cột trạng thái, đổi hai pha; Lịch sử thao tác hoàn tác đổi tên một lượt (`5e4e4ac`) |
