@@ -1,14 +1,14 @@
 #!/bin/sh
-# XF-T33 Step 1 — geometry, no-upscale and keep-both regression mutations.
+# XF-T33 — image geometry and safe PDF pipeline regression mutations.
 set -u
 cd "$(dirname "$0")/.."
-BK=$(mktemp -d /tmp/xf-mut-image.XXXXXX)
-FILES="XFinder/Core/Image/ImageTransformRules.swift XFinder/Core/Image/ImageRunner.swift"
+BK=$(mktemp -d /tmp/xf-mut-image-pdf.XXXXXX)
+FILES="XFinder/Core/Image/ImageTransformRules.swift XFinder/Core/Image/ImageRunner.swift XFinder/Core/Image/PDFAssembler.swift XFinder/Core/Pdf/PdfEngine.swift XFinder/Core/Pdf/PdfRunner.swift XFinder/Core/Pdf/PdfStructureInspector.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
 trap 'exit 143' INT TERM
-FILTER='ImageTransformRulesTests|ImageEngineTests'
+FILTER='ImageTransformRulesTests|ImageEngineTests|FileActionTests|PdfEngineTests'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} /[Ff]atal error|[Ee]xited with (unexpected )?signal/ {crash=1} END {print (crash ? "CRASH" : (f==""?"NORESULT":f))}'
@@ -42,10 +42,35 @@ run "crop is applied before target scale" "$R" \
 run "no-upscale default is enforced" "$R" \
   "'let skipped = !allowUpscale && desiredScale > 1 ? SkipReason.wouldUpscale : nil'" \
   "'let skipped: SkipReason? = nil'"
-P=XFinder/Core/Image/ImageRunner.swift
-run "existing outputs and source are never overwritten" "$P" \
+I=XFinder/Core/Image/ImageRunner.swift
+run "previewed source identity is rechecked" "$I" \
+  "'expectedIdentity == nil || expectedIdentity == beforeIdentity'" \
+  "'expectedIdentity == nil || true'"
+run "image outputs never overwrite source or prior outputs" "$I" \
   "'renamex_np(staging.path, candidate.path, UInt32(RENAME_EXCL)) == 0'" \
   "'rename(staging.path, candidate.path) == 0'"
+A=XFinder/Core/Image/PDFAssembler.swift
+run "multi-frame images are rejected by PDF assembly" "$A" \
+  "'CGImageSourceGetCount(source) == 1'" \
+  "'CGImageSourceGetCount(source) > 0'"
+E=XFinder/Core/Pdf/PdfEngine.swift
+run "requested PDF page order is preserved" "$E" \
+  "'return ordered.map { \$0 - 1 }'" \
+  "'return ordered.sorted().map { \$0 - 1 }'"
+P=XFinder/Core/Pdf/PdfRunner.swift
+run "PDF late-collision publish is exclusive" "$P" \
+  "'renamex_np(staged.path, target.path, UInt32(RENAME_EXCL)) == 0'" \
+  "'true'"
+run "PDF structural evidence is validated before publish" "$P" \
+  "'guard actual.pages == expected.pages else { return .failure(.validationFailed(stage.lastPathComponent)) }'" \
+  "'guard true else { return .failure(.validationFailed(stage.lastPathComponent)) }'"
+S=XFinder/Core/Pdf/PdfStructureInspector.swift
+run "signature structures are refused" "$S" \
+  "'if state.hasSignature { throw Problem.signature }'" \
+  "'if false { throw Problem.signature }'"
+run "unknown catalog features are refused" "$S" \
+  "'guard state.rootKeys.isSubset(of: rootKeys) else {'" \
+  "'guard true else {'"
 echo "RESULT: $red/$total mutations RED"
 restore
 after=$(fails); echo "after restore failures: $after"

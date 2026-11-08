@@ -7,13 +7,14 @@ import UniformTypeIdentifiers
 /// merge multiple PDFs, extract a page range, rotate pages.
 struct PdfToolsDetailView: View {
     enum Tool: String, CaseIterable, Identifiable {
-        case merge, extract, rotate
+        case merge, extract, rotate, reorder
         var id: String { rawValue }
         var titleVI: String {
             switch self {
             case .merge: return L10n.t("Gộp PDF")
             case .extract: return L10n.t("Tách trang")
             case .rotate: return L10n.t("Xoay trang")
+            case .reorder: return L10n.t("Sắp xếp trang")
             }
         }
     }
@@ -24,7 +25,9 @@ struct PdfToolsDetailView: View {
     // Extract / rotate options
     @State private var pageRangeText: String = "1-3"
     @State private var angle: Int = 90
+    @State private var pageOrderText = ""
     @State private var isRunning = false
+    @State private var runningOperation: Task<Result<PdfRunner.Output, PdfRunner.Failure>, Never>?
     @State private var resultMessage: String? = nil
     @State private var isError = false
 
@@ -98,6 +101,21 @@ struct PdfToolsDetailView: View {
                     }
                 }
 
+                if tool == .reorder {
+                    SettingsSection(title: L10n.t("Thứ tự trang mới"), footer: L10n.t("Liệt kê đủ mỗi trang đúng một lần; ví dụ: 3,1,2")) {
+                        TextField(L10n.t("Thứ tự trang"), text: $pageOrderText)
+                            .textFieldStyle(.roundedBorder)
+                            .font(XFinderTokens.Font.mono)
+                            .settingsRow()
+                        if inspectedPageCount > 0 {
+                            Text("\(L10n.t("Tổng số trang cần liệt kê: "))\(inspectedPageCount)")
+                                .font(XFinderTokens.Font.caption)
+                                .foregroundColor(.secondary)
+                                .settingsRow()
+                        }
+                    }
+                }
+
                 if tool == .rotate {
                     SettingsSection(title: L10n.t("Góc xoay & trang")) {
                         Picker(L10n.t("Góc"), selection: $angle) {
@@ -148,6 +166,12 @@ struct PdfToolsDetailView: View {
                 .disabled(!canRun || isRunning)
                 .padding(.horizontal, XFinderTokens.Space.page)
 
+                if isRunning {
+                    Button(L10n.t("Hủy thao tác PDF")) { runningOperation?.cancel() }
+                        .disabled(runningOperation == nil)
+                        .settingsRow()
+                }
+
                 if let msg = resultMessage {
                     SettingsSection(title: isError ? L10n.t("Lỗi") : L10n.t("Kết quả")) {
                         Text(msg)
@@ -166,7 +190,7 @@ struct PdfToolsDetailView: View {
     private var canRun: Bool {
         switch tool {
         case .merge: return sources.count >= 2
-        case .extract, .rotate: return sources.count == 1
+        case .extract, .rotate, .reorder: return sources.count == 1
         }
     }
 
@@ -195,29 +219,38 @@ struct PdfToolsDetailView: View {
 
     private func run() async {
         await MainActor.run { isRunning = true; resultMessage = nil }
-        let tool = self.tool, sources = self.sources, range = pageRangeText, angle = self.angle
+        let tool = self.tool, sources = self.sources, range = pageRangeText, angle = self.angle, order = pageOrderText
         let folder = outputFolder ?? sources.first?.deletingLastPathComponent() ?? FileManager.default.temporaryDirectory
-        let outcome: Result<PdfRunner.Output, PdfRunner.Failure> = await Task.detached(priority: .userInitiated) {
+        let operation = Task.detached(priority: .userInitiated) {
             switch tool {
             case .merge: return PdfRunner.merge(sources, into: folder)
             case .extract: return PdfRunner.extract(sources[0], range: range, into: folder)
             case .rotate: return PdfRunner.rotate(sources[0], range: range, degrees: angle, into: folder)
+            case .reorder: return PdfRunner.reorder(sources[0], order: order, into: folder)
             }
-        }.value
+        }
+        await MainActor.run { runningOperation = operation }
+        let outcome = await operation.value
         await MainActor.run {
+            runningOperation = nil
             isRunning = false
             switch outcome {
             case .failure(let f):
                 finish(error: "\(L10n.t(f.messageKey))\(f.detail)")
             case .success(let o):
                 let name = o.url.lastPathComponent
+                let recoveryNote = o.rewrittenAfterRecoveryWarning
+                    ? " " + L10n.t("Đã viết lại bản sao sau khi xác minh cảnh báo cấu trúc PDF có thể phục hồi.")
+                    : ""
                 switch tool {
                 case .merge:
-                    finish(error: nil, message: "\(L10n.t("Đã gộp "))\(sources.count)\(L10n.t(" tập tin ("))\(o.pages)\(L10n.t(" trang) → "))\(name)")
+                    finish(error: nil, message: "\(L10n.t("Đã gộp "))\(sources.count)\(L10n.t(" tập tin ("))\(o.pages)\(L10n.t(" trang) → "))\(name)\(recoveryNote)")
                 case .extract:
-                    finish(error: nil, message: "\(L10n.t("Đã tách "))\(o.pages)\(L10n.t(" trang → "))\(name)")
+                    finish(error: nil, message: "\(L10n.t("Đã tách "))\(o.pages)\(L10n.t(" trang → "))\(name)\(recoveryNote)")
                 case .rotate:
-                    finish(error: nil, message: "\(L10n.t("Đã xoay "))\(o.pages)\(L10n.t(" trang "))\(angle)° → \(name)")
+                    finish(error: nil, message: "\(L10n.t("Đã xoay "))\(o.pages)\(L10n.t(" trang "))\(angle)° → \(name)\(recoveryNote)")
+                case .reorder:
+                    finish(error: nil, message: "\(L10n.t("Đã sắp xếp lại "))\(o.pages)\(L10n.t(" trang → "))\(name)\(recoveryNote)")
                 }
             }
         }
