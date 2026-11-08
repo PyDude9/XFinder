@@ -16178,6 +16178,70 @@
     "Bấm ⌘Q lần nữa hoặc giữ ⌘Q để thoát.": {
       "en": "Press ⌘Q again or hold it to quit.",
       "scope": "sentence"
+    },
+    "XFinder": {
+      "en": "XFinder",
+      "scope": "sentence"
+    },
+    "Shelf": {
+      "en": "Shelf",
+      "scope": "sentence"
+    },
+    "Ngăn": {
+      "en": "Panes",
+      "scope": "sentence"
+    },
+    "Mở workspace": {
+      "en": "Open Workspace",
+      "scope": "sentence"
+    },
+    "Đổi tên workspace": {
+      "en": "Rename Workspace",
+      "scope": "sentence"
+    },
+    "Nhân bản workspace": {
+      "en": "Duplicate Workspace",
+      "scope": "sentence"
+    },
+    "Xoá workspace": {
+      "en": "Delete Workspace",
+      "scope": "sentence"
+    },
+    "So sánh thư mục…": {
+      "en": "Compare Folders…",
+      "scope": "sentence"
+    },
+    "Tìm tệp trùng…": {
+      "en": "Find Duplicates…",
+      "scope": "sentence"
+    },
+    "Kết nối máy chủ từ xa…": {
+      "en": "Connect to Remote Server…",
+      "scope": "sentence"
+    },
+    "Xuất các workspace…": {
+      "en": "Export Saved Workspaces…",
+      "scope": "sentence"
+    },
+    "Chưa có workspace đã lưu": {
+      "en": "No Saved Workspaces",
+      "scope": "sentence"
+    },
+    "Không xuất được các workspace": {
+      "en": "Couldn’t export the workspaces",
+      "scope": "sentence"
+    },
+    "Xoá workspace “": {
+      "en": "Delete the workspace “",
+      "scope": "fragment"
+    },
+    "Chỉ xoá bản lưu của workspace. Tệp và thư mục của bạn không đổi.": {
+      "en": "Only the saved workspace is deleted. Your files and folders aren’t changed.",
+      "scope": "sentence"
+    },
+    "Trình duyệt": {
+      "en": "Browser",
+      "scope": "sentence"
     }
   }
 }
