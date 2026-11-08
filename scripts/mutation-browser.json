@@ -1909,5 +1909,47 @@
     "file": "XFinder/Core/Browser/BrowserMenuLayout.swift",
     "anchor": "        showDockIcon || browserWindowsOpen\n",
     "replacement": "        showDockIcon\n"
+  },
+  {
+    "id": "T39-01",
+    "name": "a taken name is silently overwritten",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "            guard replacing == workspaces[existing].id else { return .nameTaken(workspaces[existing].id) }\n",
+    "replacement": ""
+  },
+  {
+    "id": "T39-02",
+    "name": "an empty name is saved",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "        guard !trimmed.isEmpty else { return .needsName }\n        guard !windows.isEmpty else { return .noWindows }",
+    "replacement": "        guard !windows.isEmpty else { return .noWindows }"
+  },
+  {
+    "id": "T39-03",
+    "name": "replace forgets the new date",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "            workspaces[existing].savedAt = now\n",
+    "replacement": ""
+  },
+  {
+    "id": "T39-04",
+    "name": "rename allows a taken name",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "        guard !workspaces.contains(where: { $0.id != id && $0.name.lowercased() == trimmed.lowercased() }) else { return .nameTaken }\n",
+    "replacement": ""
+  },
+  {
+    "id": "T39-05",
+    "name": "export carries the Back/Forward history",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "        struct ExportTab: Codable { var folder: String; var view: String }",
+    "replacement": "        struct ExportTab: Codable { var folder: String; var view: String; var history: [String] = [\"history\"] }"
+  },
+  {
+    "id": "T39-06",
+    "name": "summaries count panes from the pane list",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "Summary.WindowSummary(paneCount: max(1, window.tree.panes.count),",
+    "replacement": "Summary.WindowSummary(paneCount: 1,"
   }
 ]
