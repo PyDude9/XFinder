@@ -607,6 +607,11 @@ enum ArchiveRunner {
             }
         }
 
+        if outcome.failure != nil {
+            // What did not land is exactly what is still staged: the object that failed AND every one the loop never
+            // reached. Listing only the failing step (and nothing on the link-refusal path) under-reported the rest.
+            outcome.failed = unplacedLeaves(in: batch.staging)
+        }
         if outcome.isComplete {
             // Belt and braces: a file or link still in staging was never placed. Deleting the staging folder now
             // would delete it with it, so the batch is reported incomplete and the copy goes to recovery instead.

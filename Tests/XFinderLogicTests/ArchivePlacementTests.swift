@@ -447,6 +447,23 @@ final class ArchivePlacementTests: XCTestCase {
         XCTAssertEqual(try? String(contentsOf: recovered.appendingPathComponent("b.txt"), encoding: .utf8), "B")
     }
 
+    /// After the first failure the loop stops, so later objects are never attempted. The report must name all of them,
+    /// not just the one that failed — otherwise "Chưa đặt được" under-reports what is missing.
+    func testAFailureReportsEveryObjectThatDidNotLand() async throws {
+        let batch = try handBatch(["two/a.txt": "a", "two/b.txt": "b"], top: ["two"])
+        try fm.createDirectory(at: url("dest/two"), withIntermediateDirectories: true)
+        try fm.setAttributes([.posixPermissions: 0o500], ofItemAtPath: url("dest/two").path)
+        defer { try? fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: url("dest/two").path) }
+        let r = await ArchiveRunner.place(batch, into: url("dest"), policy: .merge, recoveryRoot: url("recovery"))
+        guard case .success(let outcome) = r else { return XCTFail("\(r)") }
+        XCTAssertFalse(outcome.isComplete)
+        XCTAssertEqual(outcome.failed, ["two/a.txt", "two/b.txt"])
+        let recovered = try XCTUnwrap(outcome.recoveryRoot)
+        for name in ["two/a.txt", "two/b.txt"] {
+            XCTAssertTrue(fm.fileExists(atPath: recovered.appendingPathComponent(name).path), name)
+        }
+    }
+
     // MARK: - Review preview names (Boss review of 03C)
 
     private func entry(_ raw: String, _ kind: ArchiveManifestEntry.Kind = .regular) -> ArchiveManifestEntry {

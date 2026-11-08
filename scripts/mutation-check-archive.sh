@@ -304,6 +304,12 @@ run "X3 a new folder beside the archive previews the archive's entries instead o
   "'        if let newFolderName { return [newFolderName] }'" \
   "'        if let newFolderName, newFolderName.isEmpty { return [newFolderName] }'"
 
+# W1 (Boss review of 03C, and the other Boss session's note on the link-refusal path): a failure names only the
+# failing object, not the ones the loop never reached.
+run "W1 a partial placement names only the failing object" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            outcome.failed = unplacedLeaves(in: batch.staging)'" \
+  "'            _ = batch'"
+
 restore
 
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
