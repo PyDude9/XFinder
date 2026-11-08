@@ -149,7 +149,7 @@ public final class VoiceManager {
             micAllowed = await AVAudioApplication.requestRecordPermission()
         } else {
             micAllowed = await withCheckedContinuation { continuation in
-                AVCaptureDevice.requestAccess(for: .audio) { granted in
+                AVCaptureDevice.requestAccess(for: .audio) { @Sendable granted in
                     continuation.resume(returning: granted)
                 }
             }
@@ -157,7 +157,9 @@ public final class VoiceManager {
         guard micAllowed else { return false }
 
         let speechStatus = await withCheckedContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { status in
+            // `@Sendable` is load-bearing: formed here, on the main actor, the closure would inherit MainActor isolation
+            // and Swift 6 traps when Speech calls it on its own queue (`PermissionCallbackIsolationTests`).
+            SFSpeechRecognizer.requestAuthorization { @Sendable status in
                 continuation.resume(returning: status)
             }
         }
