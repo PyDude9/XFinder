@@ -27,6 +27,12 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
         static let shelf = NSToolbarItem.Identifier("com.xfinder.browser.shelf")
         static let downloads = NSToolbarItem.Identifier("com.xfinder.browser.downloads")
         static let operations = NSToolbarItem.Identifier("com.xfinder.browser.operations")
+        // XF-T38 — FileOctopus 1.0.10's toolbar has these (toggleSidebar, toolbar.editTags, toolbar.newFolder,
+        // toolbar.quickLook in its binary; the sidebar button and Tags show in the owner's screenshot).
+        static let sidebar = NSToolbarItem.Identifier("com.xfinder.browser.sidebar")
+        static let tags = NSToolbarItem.Identifier("com.xfinder.browser.tags")
+        static let newFolder = NSToolbarItem.Identifier("com.xfinder.browser.newFolder")
+        static let quickLook = NSToolbarItem.Identifier("com.xfinder.browser.quickLook")
     }
 
     let model: BrowserWindowModel
@@ -75,6 +81,17 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
             }
             UserDefaults.standard.set(true, forKey: "fileBrowser.downloadsToolbarAdded")
         }
+        // XF-T38: a saved configuration predates the Sidebar and Tags buttons — insert them once where FileOctopus has
+        // them (Sidebar first, Tags before the Action menu); later customizations stick.
+        if !UserDefaults.standard.bool(forKey: "fileBrowser.toolbarT38Added") {
+            let current = toolbar.items.map(\.itemIdentifier.rawValue)
+            let wanted: [(id: String, before: String?)] = [(ID.sidebar.rawValue, ID.backForward.rawValue),
+                                                           (ID.tags.rawValue, ID.action.rawValue)]
+            for (id, index) in BrowserMenuLayout.toolbarInsertions(current: current, add: wanted) {
+                toolbar.insertItem(withItemIdentifier: NSToolbarItem.Identifier(id), at: index)
+            }
+            UserDefaults.standard.set(true, forKey: "fileBrowser.toolbarT38Added")
+        }
         window?.toolbarStyle = .unified
         observeBackForward()
         observePaneLayoutIcon()
@@ -98,12 +115,13 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
     // MARK: - NSToolbarDelegate
 
     func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        [ID.backForward, ID.view, ID.group, ID.paneLayout, .flexibleSpace, ID.downloads, ID.share, ID.action, ID.search]
+        [ID.sidebar, ID.backForward, ID.view, ID.group, ID.paneLayout, .flexibleSpace, ID.downloads, ID.share, ID.tags, ID.action,
+         ID.search]
     }
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         toolbarDefaultItemIdentifiers(toolbar) + [
-            ID.enclosingFolder, ID.goToFolder, ID.workspaces, ID.shelf, ID.operations,
+            ID.enclosingFolder, ID.goToFolder, ID.workspaces, ID.shelf, ID.operations, ID.newFolder, ID.quickLook,
             .flexibleSpace, .space,
         ]
     }
@@ -112,6 +130,10 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
                  willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
         switch identifier {
         case ID.backForward: return makeBackForwardItem()
+        case ID.sidebar: return makeCommandButton(ID.sidebar, symbol: "sidebar.left", command: .toggleSidebar)
+        case ID.newFolder: return makeCommandButton(ID.newFolder, symbol: "folder.badge.plus", command: .newFolder)
+        case ID.quickLook: return makeCommandButton(ID.quickLook, symbol: "eye", command: .quickLook)
+        case ID.tags: return makeTagsItem()
         case ID.view: return makeViewItem()
         case ID.group: return makeGroupItem()
         case ID.paneLayout: return makePaneLayoutItem()
@@ -630,6 +652,62 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
     }
 
     /// Operations button badge = active + queued job count, same source `BrowserRootView`'s own button used.
+    /// XF-T38: a plain button that runs one browser command (Sidebar, New Folder, Quick Look).
+    private func makeCommandButton(_ identifier: NSToolbarItem.Identifier, symbol: String, command: BrowserCommand) -> NSToolbarItem {
+        let title = L10n.t(BrowserCommands.titleKey(command))
+        let item = NSToolbarItem(itemIdentifier: identifier)
+        item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: title)
+        item.label = title
+        item.paletteLabel = title
+        item.toolTip = title
+        item.target = self
+        item.action = #selector(commandButtonClicked(_:))
+        item.tag = Self.commandButtonTags[command] ?? 0
+        return item
+    }
+
+    private static let commandButtonTags: [BrowserCommand: Int] = [.toggleSidebar: 9101, .newFolder: 9102, .quickLook: 9103]
+
+    @objc private func commandButtonClicked(_ sender: NSToolbarItem) {
+        guard let command = Self.commandButtonTags.first(where: { $0.value == sender.tag })?.key else { return }
+        _ = model.perform(command)
+    }
+
+    /// XF-T38: Tags — the same tag menu as the context menu (FileOctopus `toolbar.editTags`), rebuilt each time it opens
+    /// so it always shows the current selection's tags.
+    private func makeTagsItem() -> NSToolbarItem {
+        let title = L10n.t("Thẻ")
+        let item = NSMenuToolbarItem(itemIdentifier: ID.tags)
+        item.image = NSImage(systemSymbolName: "tag", accessibilityDescription: title)
+        item.label = title
+        item.paletteLabel = title
+        item.toolTip = title
+        item.showsIndicator = false
+        let menu = NSMenu(title: title)
+        menu.delegate = tagsMenuDelegate
+        item.menu = menu
+        return item
+    }
+
+    private lazy var tagsMenuDelegate = TagsMenuDelegate(owner: self)
+
+    private final class TagsMenuDelegate: NSObject, NSMenuDelegate {
+        private weak var owner: BrowserToolbarController?
+        init(owner: BrowserToolbarController) { self.owner = owner }
+
+        func menuNeedsUpdate(_ menu: NSMenu) {
+            MainActor.assumeIsolated {   // AppKit calls menu delegates on the main thread
+                guard let owner else { return }
+                menu.removeAllItems()
+                let built = BrowserContextMenu.tagsItem(model: owner.model, pane: owner.model.active)
+                for child in built.submenu?.items ?? [] {
+                    built.submenu?.removeItem(child)
+                    menu.addItem(child)
+                }
+            }
+        }
+    }
+
     private func makeOperationsItem() -> NSToolbarItem {
         let title = L10n.t("Hàng đợi thao tác")
         let button = NSButton(image: NSImage(systemSymbolName: "arrow.left.arrow.right.circle", accessibilityDescription: title)!,
