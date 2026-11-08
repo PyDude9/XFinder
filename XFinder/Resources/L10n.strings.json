@@ -15706,6 +15706,14 @@
     "Mục không đủ điều kiện hoặc bị lỗi: ": {
       "en": "Items skipped or failed: ",
       "scope": "fragment"
+    },
+    "Dịch bằng AI": {
+      "en": "Translate with AI",
+      "scope": "sentence"
+    },
+    "Hãy cấu hình AI trong Chọn thông minh ▸ Dịch trước khi phân tích.": {
+      "en": "Configure AI in Smart Selection ▸ Translate before analyzing.",
+      "scope": "sentence"
     }
   }
 }

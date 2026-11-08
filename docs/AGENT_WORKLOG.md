@@ -1,3 +1,25 @@
+## 2026-11-08 — Antigravity — XF-TRANSLATE-AI-BUTTON & Web Selection Capture
+
+TASK: XF-TRANSLATE-AI-BUTTON (spec `docs/specs/XF-TRANSLATE-AI-BUTTON.md`) & Web Selection Capture
+BRANCH: agent/antigravity-XF-translate
+BUILD: `build (arm64, compile list) OK` (gate-all step 1)
+TESTS: Executed 3046 tests, with 0 failures (0 unexpected) in 31.300 seconds
+GATE: green — 3046 tests / 0 failures, all 7 string/UI gates TOTAL 0 across 3903 entries, modified tracked files 6
+LIVE: NOT VERIFIED live (Builder does not install or launch; Boss merges and installs per spec)
+FILES CHANGED:
+- XFinder/Core/SmartSelect/SelectionWatcher.swift: Added focused element observer and `AXBoundsForTextMarkerRange` WebKit/Chromium fallback, added `handleMouseUp` selection capture probe on mouseUp.
+- XFinder/Core/Translate/TranslateSelectionController.swift: Added `aiRequested` flag to model, reset flag on card presentation, routed `analyzeWithAI()` to `startAITranslation()`, chose `.silentTranslate` for sentences vs `.definition` for words, ensured `isTranslating` resets on completion, added `updatePanelSize()`.
+- XFinder/Views/TranslateSelectionView.swift: Added `sparkles` button between `book.pages` and `gearshape` in footerRow, conditionally showed `aiSection` when `model.showAI || model.aiRequested`, added inline "Mở Cài đặt" button when `messageKey` indicates unconfigured AI.
+- XFinder/Core/Translate/TranslateAssistant.swift: Updated missing config error key to point to "Chọn thông minh ▸ Dịch".
+- XFinder/Resources/L10n.strings.json: Added 2 entries via add-only script.
+- scripts/add-translate-ai-button-l10n.py: New add-only L10n script.
+
+Key verified facts:
+1. `model.aiRequested` allows the user to trigger AI translation on demand via the ✨ button even when `translate.showAI` is off in Settings.
+2. Opening a new translation card resets `model.aiRequested = false` so subsequent selections don't auto-invoke AI.
+3. Sentence selections use `.silentTranslate` to avoid dictionary junk prompts; words use `.definition`.
+4. Web selection capture in Chrome/Blink/Electron works reliably through focused AX element notification and `AXBoundsForTextMarkerRange` screen positioning.
+
 ## 2026-11-08 — OpenCode — XF-MFGAP-03 stage 03B bounded inspection, private staging, identity guards
 
 TASK: XF-MFGAP-03 stage 03B (spec §5/§7/§9, Boss approval points 3 and 6)   BRANCH: agent/codex-XF-SETTINGS

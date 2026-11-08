@@ -122,26 +122,57 @@ struct TranslateSelectionView: View {
                 }
             }
 
-            // 1. Google Translate (Fast ~200ms default)
-            if model.showGoogle {
-                googleTranslationSection
-            }
+            // 1. Google Translate for sentence, or Dictionary + Web senses for words
+            if model.isSentence {
+                if model.showGoogle {
+                    googleTranslationSection
+                }
+            } else {
+                // Dictionary Senses (Parts of speech breakdown)
+                if model.showDictionary {
+                    if !model.localSenses.isEmpty {
+                        dictionarySensesSection
+                    } else if let snippet = model.localSnippet, model.localSenses.isEmpty {
+                        Text(snippet)
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                            .lineLimit(3)
+                            .textSelection(.enabled)
+                    }
+                }
 
-            // 2. Dictionary Senses (Parts of speech breakdown)
-            if model.showDictionary {
-                if !model.localSenses.isEmpty && !model.isSentence {
-                    dictionarySensesSection
-                } else if let snippet = model.localSnippet, !model.isSentence, model.localSenses.isEmpty {
-                    Text(snippet)
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
-                        .lineLimit(3)
-                        .textSelection(.enabled)
+                // Web / Google sense
+                if model.showGoogle {
+                    if model.isGoogleLoading && model.googleTranslation.isEmpty {
+                        HStack(spacing: 6) {
+                            ProgressView().controlSize(.small)
+                            Text(L10n.t("Đang dịch…")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                        }
+                        .padding(.vertical, 2)
+                    } else if !model.googleTranslation.isEmpty {
+                        HStack(alignment: .top, spacing: 8) {
+                            Text("web.")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(posColor(for: "web."))
+                                .frame(width: 38, height: 20)
+                                .background(posColor(for: "web.").opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
+
+                            Text(model.googleTranslation)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundColor(.primary)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .textSelection(.enabled)
+                        }
+                    } else if let err = model.googleError {
+                        Text(err).font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                    }
                 }
             }
 
-            // 3. AI Analysis & Synonyms (shown if enabled)
-            if model.showAI {
+            // 3. AI Analysis & Synonyms (shown if enabled or requested via ✨ button)
+            if model.showAI || model.aiRequested {
                 aiSection
             }
         }
@@ -197,6 +228,7 @@ struct TranslateSelectionView: View {
         if clean.contains("noun") || clean == "n." || clean == "n" { return Color.purple }
         if clean.contains("verb") || clean == "v." || clean == "v" { return Color.blue }
         if clean.contains("adv") { return Color.orange }
+        if clean.contains("web") { return Color(red: 0.55, green: 0.25, blue: 0.95) }
         return Color.accentColor
     }
 
@@ -213,7 +245,15 @@ struct TranslateSelectionView: View {
             } else if !assistant.meaning.isEmpty {
                 aiDetailsSection(assistant: assistant)
             } else if let k = assistant.messageKey {
-                Text(L10n.t(k)).font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.t(k)).font(XFinderTokens.Font.caption).foregroundColor(.orange)
+                    if k.contains("Chọn thông minh") || k.contains("Cài đặt") || k.contains("cấu hình") {
+                        Button(L10n.t("Mở Cài đặt")) {
+                            TranslateSelectionController.shared.openTranslateSettings()
+                        }
+                        .controlSize(.small)
+                    }
+                }
             }
         }
     }
@@ -242,31 +282,20 @@ struct TranslateSelectionView: View {
         }
     }
 
-    // MARK: Footer Row (Review count badge, copy button, wordbook, settings)
+    // MARK: Footer Row (Review count badge, copy button, wordbook, sparkles AI, settings)
 
     private var footerRow: some View {
         HStack(spacing: 8) {
-            if let card = model.savedCard {
-                HStack(spacing: 4) {
-                    Image(systemName: "clock.arrow.circlepath")
-                    Text("\(card.review.repetition)")
-                }
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(Color.purple)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Color.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
-            } else if model.savedToWordbook {
-                HStack(spacing: 4) {
-                    Image(systemName: "clock.arrow.circlepath")
-                    Text("0")
-                }
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(Color.purple)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Color.purple.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+            let repetition = model.savedCard?.review.repetition ?? 1
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.counterclockwise")
+                Text("\(repetition)")
             }
+            .font(.system(size: 11, weight: .bold))
+            .foregroundColor(Color(red: 0.45, green: 0.25, blue: 0.95))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(Color(red: 0.45, green: 0.25, blue: 0.95).opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
 
             Spacer(minLength: 0)
 
@@ -289,6 +318,18 @@ struct TranslateSelectionView: View {
             }
             .buttonStyle(.plain)
             .help(L10n.t("Sổ từ vựng"))
+
+            Button {
+                guard !(model.assistant?.busy == true || model.isTranslating) else { return }
+                TranslateSelectionController.shared.analyzeWithAI()
+            } label: {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12))
+                    .foregroundColor((model.showAI || model.aiRequested) && model.assistant?.meaning.isEmpty == false ? .accentColor : .secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(model.assistant?.busy == true || model.isTranslating)
+            .help(L10n.t("Dịch bằng AI"))
 
             Button {
                 TranslateSelectionController.shared.openTranslateSettings()

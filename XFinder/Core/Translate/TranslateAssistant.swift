@@ -42,7 +42,7 @@ final class TranslateAssistant {
         guard let refiner = VoiceRefinerFactory.make(tier: .customAPI, provider: config.provider,
             apiBaseURL: config.apiBaseURL, apiModel: config.apiModel,
             ollamaBaseURL: config.ollamaBaseURL, ollamaModel: config.ollamaModel) else {
-            messageKey = "Hãy cấu hình AI trong trang Giọng nói trước khi phân tích."; return
+            messageKey = "Hãy cấu hình AI trong Chọn thông minh ▸ Dịch trước khi phân tích."; return
         }
         let system = overrides[module.rawValue] ?? module.systemInstruction
         guard system.utf8.count <= 50_000, !system.contains("\0") else { messageKey = "Prompt không hợp lệ."; return }

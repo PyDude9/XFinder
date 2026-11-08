@@ -23,6 +23,7 @@ final class SelectionWatcher {
 
     private var observer: AXObserver?
     private var observedPID: pid_t = 0
+    private var observedFocused: AXUIElement?
     private var activationToken: NSObjectProtocol?
     private var mouseUpGlobal: Any?
     private var mouseUpLocal: Any?
@@ -59,11 +60,11 @@ final class SelectionWatcher {
         // excluded by the gate, but a click in them must still reach `.mouseUp` so a stale point is replaced.
         mouseUpGlobal = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { _ in
             let p = NSEvent.mouseLocation
-            runOnMainActor { SelectionWatcher.shared.feed(.mouseUp(p, at: ProcessInfo.processInfo.systemUptime)) }
+            runOnMainActor { SelectionWatcher.shared.handleMouseUp(p, at: ProcessInfo.processInfo.systemUptime) }
         }
         mouseUpLocal = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { event in
             let p = NSEvent.mouseLocation
-            MainActor.assumeIsolated { SelectionWatcher.shared.feed(.mouseUp(p, at: ProcessInfo.processInfo.systemUptime)) }
+            MainActor.assumeIsolated { SelectionWatcher.shared.handleMouseUp(p, at: ProcessInfo.processInfo.systemUptime) }
             return event
         }
     }
@@ -113,6 +114,16 @@ final class SelectionWatcher {
         }
         let sel = AXObserverAddNotification(o, appElement, kAXSelectedTextChangedNotification as CFString, nil)
         let foc = AXObserverAddNotification(o, appElement, kAXFocusedUIElementChangedNotification as CFString, nil)
+
+        // Chromium and WebKit post selection changes on the focused element, not on AXApplication
+        var focRef: CFTypeRef?
+        if AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &focRef) == .success,
+           let f = focRef, CFGetTypeID(f) == AXUIElementGetTypeID() {
+            let focused = f as! AXUIElement
+            AXObserverAddNotification(o, focused, kAXSelectedTextChangedNotification as CFString, nil)
+            observedFocused = focused
+        }
+
         log.info("observing \(app.bundleIdentifier ?? "?", privacy: .public) selection=\(sel.rawValue) focus=\(foc.rawValue) attempt=\(attempt)")
         guard sel == .success else {
             // Not attached: do NOT remember the pid, or the app stays silent until the next app switch.
@@ -134,14 +145,37 @@ final class SelectionWatcher {
 
     private func detach() {
         attachRetry?.cancel(); attachRetry = nil
-        if let o = observer { CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(o), .defaultMode) }
+        if let o = observer {
+            if let f = observedFocused {
+                AXObserverRemoveNotification(o, f, kAXSelectedTextChangedNotification as CFString)
+            }
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(o), .defaultMode)
+        }
+        observedFocused = nil
         observer = nil
         observedPID = 0
     }
 
     private func axNotification(_ name: String, text: String, bounds: CGRect?) {
         guard isRunning else { return }
-        if name == (kAXFocusedUIElementChangedNotification as String) { dismiss(); return }
+        if name == (kAXFocusedUIElementChangedNotification as String) {
+            if let o = observer, observedPID != 0 {
+                if let old = observedFocused {
+                    AXObserverRemoveNotification(o, old, kAXSelectedTextChangedNotification as CFString)
+                }
+                observedFocused = nil
+                let appElement = AXUIElementCreateApplication(observedPID)
+                var focRef: CFTypeRef?
+                if AXUIElementCopyAttributeValue(appElement, kAXFocusedUIElementAttribute as CFString, &focRef) == .success,
+                   let f = focRef, CFGetTypeID(f) == AXUIElementGetTypeID() {
+                    let focused = f as! AXUIElement
+                    AXObserverAddNotification(o, focused, kAXSelectedTextChangedNotification as CFString, nil)
+                    observedFocused = focused
+                }
+            }
+            dismiss()
+            return
+        }
         guard name == (kAXSelectedTextChangedNotification as String) else { return }
         currentText = text
         currentBounds = bounds
@@ -172,17 +206,18 @@ final class SelectionWatcher {
                 text = s
             }
         }
+        var markerRange: CFTypeRef?
         if text.isEmpty {
-            var range: CFTypeRef?, out: CFTypeRef?
-            if AXUIElementCopyAttributeValue(targetElement, "AXSelectedTextMarkerRange" as CFString, &range) == .success, let r = range,
+            var out: CFTypeRef?
+            if AXUIElementCopyAttributeValue(targetElement, "AXSelectedTextMarkerRange" as CFString, &markerRange) == .success, let r = markerRange,
                AXUIElementCopyParameterizedAttributeValue(targetElement, "AXStringForTextMarkerRange" as CFString, r, &out) == .success,
                let s = out as? String {
                 text = s
             }
         }
         if text.isEmpty, targetElement !== element {
-            var range: CFTypeRef?, out: CFTypeRef?
-            if AXUIElementCopyAttributeValue(element, "AXSelectedTextMarkerRange" as CFString, &range) == .success, let r = range,
+            var out: CFTypeRef?
+            if AXUIElementCopyAttributeValue(element, "AXSelectedTextMarkerRange" as CFString, &markerRange) == .success, let r = markerRange,
                AXUIElementCopyParameterizedAttributeValue(element, "AXStringForTextMarkerRange" as CFString, r, &out) == .success,
                let s = out as? String {
                 text = s
@@ -210,10 +245,54 @@ final class SelectionWatcher {
                 }
             }
         }
+        // Marker range bounds fallback for WebKit and Chromium (AXBoundsForTextMarkerRange)
+        if bounds == nil {
+            var mr = markerRange
+            if mr == nil {
+                var mrRef: CFTypeRef?
+                if AXUIElementCopyAttributeValue(targetElement, "AXSelectedTextMarkerRange" as CFString, &mrRef) == .success {
+                    mr = mrRef
+                } else if targetElement !== element, AXUIElementCopyAttributeValue(element, "AXSelectedTextMarkerRange" as CFString, &mrRef) == .success {
+                    mr = mrRef
+                }
+            }
+            if let r = mr {
+                var b: CFTypeRef?
+                if AXUIElementCopyParameterizedAttributeValue(targetElement, "AXBoundsForTextMarkerRange" as CFString, r, &b) == .success,
+                   let bv = b, CFGetTypeID(bv) == AXValueGetTypeID() {
+                    var rect = CGRect.zero
+                    if AXValueGetValue(bv as! AXValue, .cgRect, &rect) { bounds = rect }
+                } else if targetElement !== element,
+                          AXUIElementCopyParameterizedAttributeValue(element, "AXBoundsForTextMarkerRange" as CFString, r, &b) == .success,
+                          let bv = b, CFGetTypeID(bv) == AXValueGetTypeID() {
+                    var rect = CGRect.zero
+                    if AXValueGetValue(bv as! AXValue, .cgRect, &rect) { bounds = rect }
+                }
+            }
+        }
         return (String(text.prefix(SmartSelectionRules.maxLength + 1)), bounds)
     }
 
     // MARK: The machine
+
+    func handleMouseUp(_ point: CGPoint, at uptime: TimeInterval) {
+        guard isRunning else { return }
+        if let front = NSWorkspace.shared.frontmostApplication,
+           front.bundleIdentifier != Bundle.main.bundleIdentifier {
+            let appElement = AXUIElementCreateApplication(front.processIdentifier)
+            let read = SelectionWatcher.readSelection(appElement)
+            let clean = read.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if clean.count >= max(1, minLength) {
+                currentText = clean
+                currentBounds = read.bounds
+                feed(.selectionChanged(length: clean.count, at: uptime))
+            } else if clean.isEmpty && (watch.shown || watch.length > 0) {
+                feed(.dismiss)
+                return
+            }
+        }
+        feed(.mouseUp(point, at: uptime))
+    }
 
     func feed(_ event: SmartSelectionRules.Event) {
         guard isRunning else { return }
