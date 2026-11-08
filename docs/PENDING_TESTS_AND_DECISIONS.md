@@ -3,13 +3,39 @@
 Một chỗ duy nhất cho mọi thứ còn phân vân. Mỗi mục có **mã** (ví dụ `Q-F4-2`, `T-B6`) để bạn nói lại cho nhanh
 ("Q-F4-2 chọn b", "T-B6 hỏng: …"). Khi một mục xong, xoá nó khỏi file này trong cùng commit.
 
-Cập nhật: 2026-11-06.
+Cập nhật: 2026-11-08.
 
 ---
 
 ## Phần 1 — Cần bạn chọn (Q)
 
 Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả lời thì giữ mặc định.
+
+### 2026-11-08 khuya · XF-T37 Luật logic trình duyệt theo FileOctopus 1.0.10 (bản đặc tả anh gửi)
+
+Kiểm bản đặc tả trên binary 1.0.10 (đúng sha `940882b4…`): phần lớn luật đã khớp; **hai điều trong bảng sai** — tối đa
+**16** ngăn (chuỗi "More panes, up to 16 per window", không phải 4) và giới hạn tên trên APFS là **255 đơn vị UTF-16 sau
+khi tách dấu** (đo: `a×254+ả` bị từ chối dù chỉ 255 ký tự; không phải "255 byte"). Đã sửa: đổi tên **chỉ hoa/thường** bị
+từ chối ở đổi tên tại chỗ, Lấy thông tin, đổi tên hàng loạt (cả trang cũ) + ⌘Z của nó luôn "không thể hoàn tác"; đổi tên
+hàng loạt theo 3 kiểu Finder/FileOctopus, một lỗi chặn cả lô, đổi qua tên tạm (hoán đổi được), một bước ⌘Z; ô tìm hiểu
+`<7d >2w 2026-10-01 A..B =0 tags: from:gmail` và **hiện** cảnh báo từng loại (trước đây không hiện gì); "Cảnh báo trước
+khi thoát (⌘Q)". Spec `docs/specs/XF-T37-fileoctopus-1010-logic.md`.
+
+| Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
+|:--|:--|:--|:--|
+| Q-T37-1 | "Cảnh báo trước khi thoát (⌘Q)" của trình duyệt mặc định | bật · tắt | **Bật** — ⌘Q trong cửa sổ trình duyệt tắt cả XFinder (notch, clipboard, agent…) |
+| Q-T37-2 | Giới hạn ô tìm (FileOctopus có nhưng số nằm trong cấu hình, không đọc được) | số khác | 512 ký tự, 32 từ |
+| Q-T37-3 | Đổi tên hàng loạt ▸ "Tên và ngày" lấy ngày nào | ngày hiện tại (mọi mục trùng tên) · ngày sửa từng mục · ngày tạo | **Ngày sửa từng mục** |
+| Q-T37-4 | Tính năng FileOctopus 1.0.10 có mà XFinder chưa có — làm cái nào trước | So sánh & đồng bộ thư mục · Tìm tệp trùng · Máy chủ từ xa (SFTP/WebDAV/S3/FTPS) · Cài đặt ▸ Menu chuột phải · cửa sổ Clipboard | Theo thứ tự đó, mỗi cái một đợt có spec; **chưa bắt đầu** |
+| Q-T37-5 | Trang "Đổi tên hàng loạt" cũ ở sidebar (kiểu tiền tố/hậu tố/đánh số/HOA/thường) | giữ · đổi sang 3 kiểu mới | **Giữ** (đổi trang phải hỏi trước), chỉ sửa lỗi hoa/thường + luật tên |
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-T37-1 | Trình duyệt ▸ chọn một tệp ▸ Return ▸ đổi chỉ chữ hoa/thường (`report.txt` → `Report.txt`) ▸ Return, rồi ⌘Z | Đổi được (trước đây: "Đã có mục khác tên này"); ⌘Z trả lại `report.txt` (đã chạy thật trong Atlas) |
+| T-T37-2 | Chọn `1.txt` và `2.txt` ▸ ⌃⌘R ▸ Định dạng, Tên tuỳ chỉnh rỗng, Bắt đầu từ 1, thứ tự chọn 2 rồi 1 | Hoán đổi được hai tên, cột Trạng thái "Sẵn sàng"; ⌘Z trả lại; một dòng lỗi (vd. "a/b") làm nút Đổi tên tắt cho cả lô |
+| T-T37-3 | Ô tìm (⌘F) gõ `modified:<7d`, rồi `foo:bar`, rồi `"abc` | Chip "Trong 7 ngày qua"; dòng cam "“foo:” không phải bộ lọc…"; dòng "Thiếu dấu ngoặc kép đóng…" |
+| T-T37-4 | Cửa sổ trình duyệt ▸ ⌘Q một lần, rồi ⌘Q hai lần liền (hoặc giữ ⌘Q) | Lần một: không thoát, HUD "XFinder vẫn đang chạy." (đã chạy thật trong Atlas); lần hai: thoát; Thoát từ menu bar: thoát ngay |
+| T-T37-5 | Trang Đổi tên hàng loạt (sidebar) ▸ chế độ "Chữ HOA" trên vài tệp | Đổi được (trước đây mọi dòng đỏ "trùng") |
 
 ### 2026-11-08 tối · XF-MFGAP-03C gộp + sửa của Boss (mọi việc XFinder đang mở đã giao về một phiên)
 
