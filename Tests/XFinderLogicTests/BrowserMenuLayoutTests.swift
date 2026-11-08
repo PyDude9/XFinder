@@ -53,7 +53,8 @@ final class BrowserMenuLayoutTests: XCTestCase {
     func testWindowMenuHasTheWorkspaceBlock() {
         let window = BrowserMenuLayout.entries(.window)
         for entry: BrowserMenuLayout.Entry in [.command(.saveWorkspace), .submenu(.openWorkspace), .submenu(.renameWorkspace),
-                                               .submenu(.duplicateWorkspace), .submenu(.deleteWorkspace), .action(.exportWorkspaces)] {
+                                               .submenu(.duplicateWorkspace), .submenu(.deleteWorkspace),
+                                               .action(.inspectWorkspaces), .action(.exportWorkspaces)] {
             XCTAssertTrue(window.contains(entry), "Window lacks \(entry)")
         }
     }

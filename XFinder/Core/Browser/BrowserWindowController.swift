@@ -337,6 +337,39 @@ import os
         guard let data = try? Data(contentsOf: Self.sessionURL),
               let snapshots = try? JSONDecoder().decode([WindowSnapshot].self, from: data), !snapshots.isEmpty
         else { return false }
+        let missingFolders = openSnapshots(snapshots)
+        if !missingFolders.isEmpty, let lastWindow = windows.last, let model = modelsByWindow[ObjectIdentifier(lastWindow)] {
+            model.banner = "Một số thư mục đã phiên trước mở không còn tồn tại"
+        }
+        return true
+    }
+
+    /// XF-T39 — Window ▸ Mở workspace: FileOctopus "Opening it later adds these windows" — the workspace's windows open
+    /// next to the ones already open (with their native tab groups), nothing is closed or replaced.
+    func openWorkspaceWindows(_ snapshots: [WindowSnapshot]) {
+        let missing = openSnapshots(snapshots)
+        if !missing.isEmpty, let lastWindow = windows.last, let model = modelsByWindow[ObjectIdentifier(lastWindow)] {
+            model.banner = "Một số thư mục của Workspace này không còn tồn tại"
+        }
+    }
+
+    /// Every open browser window as a snapshot — the session file and Save Workspace… both use it.
+    func allWindowSnapshots() -> [WindowSnapshot] {
+        let groupNumbers = Self.assignGroupNumbers(to: windows)
+        return windows.compactMap { window -> WindowSnapshot? in
+            guard let model = modelsByWindow[ObjectIdentifier(window)] else { return nil }
+            var snapshot = model.snapshot(frame: window.frame)
+            if let tabGroup = window.tabGroup, let groupMembers = tabGroup.windows as [NSWindow]?, groupMembers.count > 1 {
+                snapshot.tabGroup = groupNumbers[ObjectIdentifier(tabGroup)]
+                snapshot.tabIndex = groupMembers.firstIndex(where: { $0 === window })
+                snapshot.selectedInGroup = (tabGroup.selectedWindow === window)
+            }
+            return snapshot
+        }
+    }
+
+    /// Opens `snapshots` as windows, regrouping native tabs; returns the folders that no longer exist.
+    private func openSnapshots(_ snapshots: [WindowSnapshot]) -> [String] {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         var missingFolders: [String] = []
         /// Most-recently-opened window per `tabGroup` number — `addTabbedWindow(_:ordered:)` inserts relative to
@@ -365,10 +398,7 @@ import os
         for window in selectedInGroupWindow.values {
             window.tabGroup?.selectedWindow = window
         }
-        if !missingFolders.isEmpty, let lastWindow = windows.last, let model = modelsByWindow[ObjectIdentifier(lastWindow)] {
-            model.banner = "Một số thư mục đã phiên trước mở không còn tồn tại"
-        }
-        return true
+        return missingFolders
     }
 
     /// Called on window close and app quit (contract): every open window's layout goes to `session.json`.
@@ -377,17 +407,7 @@ import os
     /// bar the user hid) — such a window still gets a snapshot, just with `tabGroup`/`tabIndex`/`selectedInGroup`
     /// all nil, same as a v1 (XF-T28) snapshot would have no such fields at all.
     func saveSession() {
-        let groupNumbers = Self.assignGroupNumbers(to: windows)
-        let snapshots = windows.compactMap { window -> WindowSnapshot? in
-            guard let model = modelsByWindow[ObjectIdentifier(window)] else { return nil }
-            var snapshot = model.snapshot(frame: window.frame)
-            if let tabGroup = window.tabGroup, let groupMembers = tabGroup.windows as [NSWindow]?, groupMembers.count > 1 {
-                snapshot.tabGroup = groupNumbers[ObjectIdentifier(tabGroup)]
-                snapshot.tabIndex = groupMembers.firstIndex(where: { $0 === window })
-                snapshot.selectedInGroup = (tabGroup.selectedWindow === window)
-            }
-            return snapshot
-        }
+        let snapshots = allWindowSnapshots()
         guard let data = try? Self.encoder().encode(snapshots) else { return }
         let url = Self.sessionURL
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)

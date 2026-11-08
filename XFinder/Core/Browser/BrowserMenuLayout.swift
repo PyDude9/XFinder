@@ -31,7 +31,7 @@ enum BrowserMenuLayout {
     }
 
     /// Menu actions that are not palette commands (they need a panel only the menu presents).
-    enum Action: String, CaseIterable, Sendable { case exportWorkspaces }
+    enum Action: String, CaseIterable, Sendable { case inspectWorkspaces, exportWorkspaces }
 
     enum Entry: Equatable, Sendable {
         case command(BrowserCommand)
@@ -80,6 +80,7 @@ enum BrowserMenuLayout {
 
     static func titleKey(_ action: Action) -> String {
         switch action {
+        case .inspectWorkspaces: return "Xem các workspace đã lưu…"
         case .exportWorkspaces: return "Xuất các workspace…"
         }
     }
@@ -131,7 +132,8 @@ enum BrowserMenuLayout {
                 .command(.operations), .separator,
                 .command(.previousPaneTab), .command(.nextPaneTab), .command(.moveTabToWindow), .separator,
                 .command(.saveWorkspace), .submenu(.openWorkspace), .submenu(.renameWorkspace),
-                .submenu(.duplicateWorkspace), .submenu(.deleteWorkspace), .action(.exportWorkspaces),
+                .submenu(.duplicateWorkspace), .submenu(.deleteWorkspace), .action(.inspectWorkspaces),
+                .action(.exportWorkspaces),
             ]
         }
     }

@@ -248,9 +248,11 @@ final class BrowserMainMenu {
     func run(_ action: BrowserMenuLayout.Action) {
         guard let model = activeModel else { return }
         switch action {
+        case .inspectWorkspaces:
+            model.sheet = .manageWorkspaces   // what each saved workspace holds; rename / duplicate / delete / export
         case .exportWorkspaces:
             let panel = NSSavePanel()
-            panel.nameFieldStringValue = "XFinder Workspaces.json"
+            panel.nameFieldStringValue = "XFinder Saved Workspaces.json"
             panel.allowedContentTypes = [.json]
             guard panel.runModal() == .OK, let url = panel.url else { return }
             do {

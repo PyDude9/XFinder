@@ -14,6 +14,7 @@ struct BrowserRootView: View {
     let model: BrowserWindowModel
 
     @State private var workspaceName = ""
+    @State private var workspaceError: String?
     @State private var bannerWorkItem: DispatchWorkItem?
     @State private var isSyncing = false
     @AppStorage("fileBrowser.showLearnButton") private var showLearnButton = true
@@ -117,7 +118,7 @@ struct BrowserRootView: View {
         }
     }
 
-    /// Names the current window's layout and persists it via `model.saveWorkspace(named:)` (Pro-gated: Free gets a
+    /// Names EVERY open browser window's layout (XF-T39) and persists it via `model.saveWorkspace(named:)` (Pro-gated: Free gets a
     /// banner from the model itself and no workspace is written). `workspaceName` is `BrowserRootView`'s own
     /// long-lived `@State` (the window stays open across many save attempts), so it must be reset to empty every
     /// time this sheet appears, not just once when the window itself first appears (CLAUDE.md rule 9: "store
@@ -127,9 +128,18 @@ struct BrowserRootView: View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             Text(L10n.t("Lưu Workspace"))
                 .font(XFinderTokens.Font.sectionTitle)
+            Text(L10n.t("Lưu mọi cửa sổ đang mở, cùng tab, ngăn, thư mục và kiểu xem. Mở lại sau sẽ thêm các cửa sổ này; không tệp nào bị đổi."))
+                .font(XFinderTokens.Font.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             TextField(L10n.t("Tên Workspace"), text: $workspaceName)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit { commitSaveWorkspace() }
+            if let workspaceError {
+                Text(L10n.t(workspaceError))
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.red)
+            }
             HStack {
                 Spacer()
                 Button(L10n.t("Dừng")) { model.sheet = nil }
@@ -145,15 +155,35 @@ struct BrowserRootView: View {
         .frame(width: 320)
         .onAppear {
             workspaceName = ""
+            workspaceError = nil
         }
     }
 
+    /// XF-T39 — FileOctopus's Save Workspace… rules: a name is required; a taken name asks "Replace the workspace?"
+    /// (the saved layout is replaced by the open windows) instead of becoming "Name 2" behind the person's back.
     private func commitSaveWorkspace() {
-        _ = model.saveWorkspace(named: workspaceName)
-        model.sheet = nil
+        switch model.saveWorkspace(named: workspaceName) {
+        case .saved, nil:
+            model.sheet = nil
+        case .needsName:
+            workspaceError = "Workspace cần có tên."
+        case .noWindows:
+            workspaceError = "Không có cửa sổ trình duyệt nào để lưu."
+        case .nameTaken(let id):
+            let alert = NSAlert()
+            let name = workspaceName.trimmingCharacters(in: .whitespacesAndNewlines)
+            alert.messageText = "\(L10n.t("Thay thế workspace “"))\(name)\(L10n.t("”?"))"
+            alert.informativeText = L10n.t("Bố cục đã lưu của nó sẽ được thay bằng các cửa sổ đang mở.")
+            alert.addButton(withTitle: L10n.t("Huỷ"))
+            alert.addButton(withTitle: L10n.t("Thay thế"))
+            guard alert.runModal() == .alertSecondButtonReturn else { return }
+            _ = model.saveWorkspace(named: workspaceName, replacing: id)
+            model.sheet = nil
+        }
     }
 
-    /// Picks one of `model.workspaces` to replace this window's layout with (`model.openWorkspace(_:)`).
+    /// Picks one of `model.workspaces` to open (`model.openWorkspace(_:)` — XF-T39: its windows are ADDED, nothing open
+    /// is replaced, as in FileOctopus).
     private var openWorkspaceSheet: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             Text(L10n.t("Mở Workspace"))
@@ -276,8 +306,11 @@ private struct ManageWorkspacesSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            Text(L10n.t("Quản lý Workspace"))
+            Text(L10n.t("Các workspace đã lưu"))
                 .font(XFinderTokens.Font.sectionTitle)
+            Text(L10n.t("Mỗi workspace chứa gì. Xem hay xuất không mở workspace và không đổi tệp nào."))
+                .font(XFinderTokens.Font.caption)
+                .foregroundStyle(.secondary)
 
             if model.workspaces.isEmpty {
                 Text(L10n.t("Chưa có Workspace nào"))
@@ -291,7 +324,7 @@ private struct ManageWorkspacesSheet: View {
             }
 
             HStack {
-                Button(L10n.t("Xuất JSON…")) {
+                Button(L10n.t("Xuất các workspace…")) {
                     exportToFile()
                 }
                 .disabled(model.workspaces.isEmpty)
@@ -325,8 +358,19 @@ private struct ManageWorkspacesSheet: View {
                 Button(L10n.t("Xong")) { commitRename(workspace.id) }
                 Button(L10n.t("Dừng")) { renamingID = nil }
             } else {
-                Text(workspace.name)
-                    .font(XFinderTokens.Font.rowValue)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(workspace.name)
+                        .font(XFinderTokens.Font.rowValue)
+                    if let summary = model.workspaceSummaries.first(where: { $0.id == workspace.id }) {
+                        Text(Self.describe(summary))
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(3)
+                            .truncationMode(.middle)
+                            .help(summary.windows.flatMap(\.folders).joined(separator: "\n"))
+                    }
+                }
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                 Spacer()
                 Button(L10n.t("Đổi tên")) {
                     renameText = workspace.name
@@ -353,10 +397,13 @@ private struct ManageWorkspacesSheet: View {
     }
 
     private func exportToFile() {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.json]
-        panel.nameFieldStringValue = "workspaces.json"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        try? model.exportWorkspaces().write(to: url, options: .atomic)
+        BrowserMainMenu.shared.run(.exportWorkspaces)   // one export path (names, layouts, folder paths), XF-T39
+    }
+
+    /// "2 cửa sổ · 3 tab · lưu 08/11/2026 21:40 — atlas, xf-t37, Documents"
+    static func describe(_ summary: WorkspaceStore.Summary) -> String {
+        let date = summary.savedAt.formatted(date: .numeric, time: .shortened)
+        let folders = summary.windows.flatMap(\.folders).map { ($0 as NSString).lastPathComponent }
+        return "\(summary.windows.count)\(L10n.t(" cửa sổ · "))\(summary.tabCount)\(L10n.t(" tab · lưu "))\(date) — \(folders.joined(separator: ", "))"
     }
 }

@@ -1323,82 +1323,92 @@ extension BrowserWindowModel {
         WorkspaceStore.decode(WorkspaceStore.load()).store.workspaces
     }
 
-    /// Pro (`.browserWorkspaces`; XF-T29 — rename/delete/export stay free, only save/open are gated). Free ⇒ banner
-    /// + nil, nothing written.
+    /// XF-T39 — Save Workspace… as FileOctopus 1.0.10 does it: EVERY open browser window (tabs, panes, folders, views),
+    /// an empty name or a taken name is not silently fixed — `.nameTaken` lets the sheet ask whether to replace it.
+    /// Pro (`.browserWorkspaces`; XF-T29): Free ⇒ banner + nil, nothing written. nil also when the store file could not
+    /// be read and could not be moved aside (it is never overwritten).
     @discardableResult
-    func saveWorkspace(named name: String) -> Workspace? {
+    func saveWorkspace(named name: String, replacing: UUID? = nil) -> WorkspaceStore.SaveResult? {
         guard LicenseManager.shared.allows(.browserWorkspaces) else {
             banner = "Cần XFinder Pro để lưu Workspace"
             return nil
         }
-        var (store, _) = WorkspaceStore.decode(WorkspaceStore.load())
-        let saved = store.save(name: name, windows: [snapshot(frame: nil)], now: Date())
-        store.persist()
-        return saved
+        let windows = BrowserWindowController.shared.allWindowSnapshots()
+        var result: WorkspaceStore.SaveResult?
+        let written = changeWorkspaces { store in
+            result = store.save(name: name, windows: windows, now: Date(), replacing: replacing)
+            if case .saved = result { return true }
+            return false
+        }
+        return written == nil ? nil : result
     }
 
-    /// Pro (`.browserWorkspaces`). Replaces THIS window's layout with the workspace's first window; any further
-    /// windows the workspace remembers open as new windows (one window can only show one layout at a time).
+    /// XF-T39 — FileOctopus: "Opening it later adds these windows" — nothing open is closed or replaced. Pro
+    /// (`.browserWorkspaces`).
     func openWorkspace(_ id: UUID) {
         guard LicenseManager.shared.allows(.browserWorkspaces) else {
             banner = "Cần XFinder Pro để mở Workspace"
             return
         }
-        guard let workspace = workspaces.first(where: { $0.id == id }), let first = workspace.windows.first else { return }
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let (restored, missing) = SessionRestore.restored(first, exists: { FileManager.default.fileExists(atPath: $0) }, home: home)
-        replaceLayout(with: restored)
-        if !missing.isEmpty {
-            banner = "Một số thư mục của Workspace này không còn tồn tại"
+        guard let workspace = workspaces.first(where: { $0.id == id }), !workspace.windows.isEmpty else {
+            banner = "Workspace này không còn nữa."
+            return
         }
-        for extra in workspace.windows.dropFirst() {
-            let (restoredExtra, _) = SessionRestore.restored(extra, exists: { FileManager.default.fileExists(atPath: $0) }, home: home)
-            BrowserWindowController.shared.openRestoredWindow(restoredExtra)
-        }
-    }
-
-    /// Replaces this window's own pane tree/layout in place (used by `openWorkspace` — stays free to read, the
-    /// gate is on reaching this method at all).
-    private func replaceLayout(with snapshot: WindowSnapshot) {
-        for state in tabStates.values { state.stopWatching() }
-        tabLists = [:]
-        tabStates = [:]
-        tree = snapshot.tree
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        for paneSnapshot in snapshot.panes {
-            installPane(paneSnapshot.id, tabs: paneSnapshot.allTabs, selectedIndex: paneSnapshot.selectedTabIndex)
-        }
-        for id in snapshot.tree.panes where tabLists[id] == nil {
-            installPane(id, tabs: [defaultTabSnapshot(home: home)], selectedIndex: 0)
-        }
-        shelfVisible = snapshot.shelfVisible
-        activePane = snapshot.tree.panes.contains(snapshot.activePane) ? snapshot.activePane : (snapshot.tree.panes.first ?? activePane)
-        activeSyncPairStorage = nil
+        BrowserWindowController.shared.openWorkspaceWindows(workspace.windows)
     }
 
     /// Rename/delete/export stay free (spec XF-T29 §2): only saving/opening a workspace needs Pro.
     @discardableResult
     func renameWorkspace(_ id: UUID, to name: String) -> Bool {
-        var (store, _) = WorkspaceStore.decode(WorkspaceStore.load())
-        guard store.rename(id, to: name) else { return false }
-        store.persist()
-        return true
+        var outcome: WorkspaceStore.RenameResult = .missing
+        _ = changeWorkspaces { store in
+            outcome = store.renameChecked(id, to: name)
+            return outcome == .renamed
+        }
+        switch outcome {
+        case .renamed: return true
+        case .needsName: banner = "Workspace cần có tên."
+        case .nameTaken: banner = "Đã có workspace tên này. Chọn tên khác."
+        case .missing: banner = "Workspace này không còn nữa."
+        }
+        return false
     }
 
     func duplicateWorkspace(_ id: UUID) {
-        var (store, _) = WorkspaceStore.decode(WorkspaceStore.load())
-        guard store.duplicate(id, now: Date()) != nil else { return }
-        store.persist()
+        _ = changeWorkspaces { store in store.duplicate(id, now: Date()) != nil }
     }
 
     func deleteWorkspace(_ id: UUID) {
-        var (store, _) = WorkspaceStore.decode(WorkspaceStore.load())
-        store.delete(id)
-        store.persist()
+        _ = changeWorkspaces { store in
+            guard store.workspaces.contains(where: { $0.id == id }) else { return false }
+            store.delete(id)
+            return true
+        }
     }
 
     func exportWorkspaces() -> Data {
         WorkspaceStore.decode(WorkspaceStore.load()).store.exportJSON()
+    }
+
+    /// "Xem các workspace đã lưu…": what each one holds, read-only.
+    var workspaceSummaries: [WorkspaceStore.Summary] {
+        WorkspaceStore.decode(WorkspaceStore.load()).store.summaries()
+    }
+
+    /// One read-change-write of `workspaces.json`. `change` returns whether it changed anything worth writing. A file
+    /// that could not be fully read is NEVER written over (FileOctopus: "The saved workspaces file couldn't be read, so
+    /// it isn't changed"): it is moved aside first, and when even that fails nothing is written. Returns nil when the
+    /// write was refused, otherwise whether something was written.
+    private func changeWorkspaces(_ change: (inout WorkspaceStore) -> Bool) -> Bool? {
+        let (decoded, skipped) = WorkspaceStore.decode(WorkspaceStore.load())
+        var store = decoded
+        guard change(&store) else { return false }
+        if skipped > 0, !WorkspaceStore.moveUnreadableFileAside(now: Date()) {
+            banner = "Không đọc được tệp workspace đã lưu nên không ghi đè."
+            return nil
+        }
+        store.persist()
+        return true
     }
 
     // MARK: - Sync pair
