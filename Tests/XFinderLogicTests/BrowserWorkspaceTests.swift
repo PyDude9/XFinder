@@ -50,23 +50,23 @@ final class BrowserWorkspaceTests: XCTestCase {
         XCTAssertNil(store.duplicate(a.id, now: now))
     }
 
-    func testExportRoundTripsEveryField() {
+    func testStorageRoundTripsEveryField() {
         var store = WorkspaceStore()
         var w = window(["/Users/me", "/Volumes/Disk/Photos"])
         w.panes[1].viewMode = .gallery
         w.panes[1].sort = SortOrder(key: .size, ascending: false)
         w.panes[1].history.visit("/Volumes/Disk/Photos/2026")
         _ = store.save(name: "Two panes", windows: [w], now: now)
-        let decoded = WorkspaceStore.decode(store.exportJSON())
+        let decoded = WorkspaceStore.decode(store.storageJSON())
         XCTAssertEqual(decoded.skipped, 0)
         XCTAssertEqual(decoded.store, store)
-        XCTAssertTrue(String(decoding: store.exportJSON(), as: UTF8.self).contains("\"name\" : \"Two panes\""))
+        XCTAssertTrue(String(decoding: store.storageJSON(), as: UTF8.self).contains("\"name\" : \"Two panes\""))
     }
 
     func testOneDamagedWorkspaceCostsOnlyItself() throws {
         var store = WorkspaceStore()
         _ = store.save(name: "Good", windows: [window(["/a"])], now: now)
-        var array = try XCTUnwrap(JSONSerialization.jsonObject(with: store.exportJSON()) as? [Any])
+        var array = try XCTUnwrap(JSONSerialization.jsonObject(with: store.storageJSON()) as? [Any])
         array.append(["id": "not-a-uuid", "name": 3])
         let data = try JSONSerialization.data(withJSONObject: array)
         let decoded = WorkspaceStore.decode(data)
@@ -259,5 +259,66 @@ final class BrowserWorkspaceTests: XCTestCase {
         let r2 = SessionRestore.restored(w, exists: { _ in true }, home: "/home")
         XCTAssertEqual(r1.window, r2.window)
         XCTAssertEqual(r1.missing, r2.missing)
+    }
+
+    // MARK: - XF-T39: FileOctopus 1.0.10's workspace rules
+
+    func testSaveRefusesAnEmptyNameAndNoWindows() {
+        var store = WorkspaceStore()
+        XCTAssertEqual(store.save(name: "  ", windows: [window(["/a"])], now: now, replacing: nil), .needsName)
+        XCTAssertEqual(store.save(name: "Work", windows: [], now: now, replacing: nil), .noWindows)
+        XCTAssertTrue(store.workspaces.isEmpty)
+    }
+
+    func testATakenNameAsksAndReplaceKeepsTheID() {
+        var store = WorkspaceStore()
+        guard case .saved(let first) = store.save(name: "Work", windows: [window(["/a"])], now: now, replacing: nil) else {
+            return XCTFail("first save")
+        }
+        XCTAssertEqual(store.save(name: "work ", windows: [window(["/b"])], now: now, replacing: nil), .nameTaken(first.id),
+                       "no silent \"Work 2\" — the person decides")
+        XCTAssertEqual(store.workspaces.count, 1)
+        let later = now.addingTimeInterval(60)
+        guard case .saved(let replaced) = store.save(name: "Work", windows: [window(["/b"]), window(["/c"])], now: later,
+                                                     replacing: first.id) else { return XCTFail("replace") }
+        XCTAssertEqual(replaced.id, first.id)
+        XCTAssertEqual(replaced.windows.count, 2, "every open window is saved")
+        XCTAssertEqual(replaced.savedAt, later)
+        XCTAssertEqual(store.workspaces.count, 1)
+    }
+
+    func testRenameSaysWhyItRefuses() {
+        var store = WorkspaceStore()
+        guard case .saved(let a) = store.save(name: "A", windows: [window(["/a"])], now: now, replacing: nil),
+              case .saved = store.save(name: "B", windows: [window(["/b"])], now: now, replacing: nil) else { return XCTFail("setup") }
+        XCTAssertEqual(store.renameChecked(a.id, to: ""), .needsName)
+        XCTAssertEqual(store.renameChecked(a.id, to: "b"), .nameTaken)
+        XCTAssertEqual(store.renameChecked(UUID(), to: "C"), .missing)
+        XCTAssertEqual(store.renameChecked(a.id, to: " C "), .renamed)
+        XCTAssertEqual(store.workspaces.first?.name, "C")
+    }
+
+    func testExportHoldsNamesLayoutsAndFoldersOnly() throws {
+        var store = WorkspaceStore()
+        var w = window(["/Users/me", "/Volumes/Disk/Photos"])
+        w.panes[1].history.visit("/Volumes/Disk/Photos/2026")
+        _ = store.save(name: "Two panes", windows: [w], now: now, replacing: nil)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: store.exportJSON()) as? [String: Any])
+        XCTAssertEqual(json["format"] as? String, WorkspaceStore.exportFormat)
+        let text = String(decoding: store.exportJSON(), as: UTF8.self)
+        XCTAssertTrue(text.contains("/Volumes/Disk/Photos"))
+        XCTAssertTrue(text.contains("Two panes"))
+        XCTAssertFalse(text.contains("history"), "Back/Forward history is not part of the export")
+        XCTAssertFalse(text.contains("selectedNames"))
+    }
+
+    func testSummariesDescribeWithoutOpening() {
+        var store = WorkspaceStore()
+        _ = store.save(name: "Two", windows: [window(["/a", "/b"]), window(["/c"])], now: now, replacing: nil)
+        let summary = try? XCTUnwrap(store.summaries().first)
+        XCTAssertEqual(summary?.name, "Two")
+        XCTAssertEqual(summary?.windows.map(\.paneCount), [2, 1])
+        XCTAssertEqual(summary?.windows.flatMap(\.folders), ["/a", "/b", "/c"])
+        XCTAssertEqual(summary?.tabCount, 3)
     }
 }

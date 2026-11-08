@@ -1524,7 +1524,17 @@ extension WorkspaceStore {
     func persist() {
         let url = Self.fileURL
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try? exportJSON().write(to: url, options: .atomic)
+        try? storageJSON().write(to: url, options: .atomic)
+    }
+
+    /// XF-T39: keeps a damaged or newer-format `workspaces.json` next to the new one ("workspaces-unreadable-<time>.json")
+    /// instead of letting the next save drop what this build could not read. false = could not move it.
+    static func moveUnreadableFileAside(now: Date) -> Bool {
+        let url = fileURL
+        guard FileManager.default.fileExists(atPath: url.path) else { return true }
+        let stamp = Int(now.timeIntervalSince1970)
+        let aside = url.deletingLastPathComponent().appendingPathComponent("workspaces-unreadable-\(stamp).json")
+        return (try? FileManager.default.moveItem(at: url, to: aside)) != nil
     }
 }
 

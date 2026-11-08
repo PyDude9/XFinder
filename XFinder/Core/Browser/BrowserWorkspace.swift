@@ -106,6 +106,49 @@ struct WorkspaceStore: Codable, Equatable, Sendable {
         return ws
     }
 
+    // MARK: - XF-T39: FileOctopus 1.0.10's Save Workspace… rules
+
+    enum SaveResult: Equatable, Sendable {
+        case saved(Workspace)
+        /// "A workspace needs a name."
+        case needsName
+        /// "There are no browser windows to save."
+        case noWindows
+        /// "A workspace named “X” already exists" — the caller asks whether to replace it (FileOctopus: "Replace the
+        /// workspace “X”? Its saved layout will be replaced by the open windows.").
+        case nameTaken(UUID)
+    }
+
+    /// Saves every open browser window under `name`. A name another workspace has (case-insensitive) is not silently
+    /// renumbered: the caller decides, and `replacing` that workspace's id replaces its saved layout (its id stays, so
+    /// nothing that points at it breaks).
+    mutating func save(name: String, windows: [WindowSnapshot], now: Date, replacing: UUID?) -> SaveResult {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return .needsName }
+        guard !windows.isEmpty else { return .noWindows }
+        if let existing = workspaces.firstIndex(where: { $0.name.lowercased() == trimmed.lowercased() }) {
+            guard replacing == workspaces[existing].id else { return .nameTaken(workspaces[existing].id) }
+            workspaces[existing].windows = windows
+            workspaces[existing].savedAt = now
+            return .saved(workspaces[existing])
+        }
+        let ws = Workspace(id: UUID(), name: trimmed, windows: windows, savedAt: now)
+        workspaces.append(ws)
+        return .saved(ws)
+    }
+
+    enum RenameResult: Equatable, Sendable { case renamed, needsName, nameTaken, missing }
+
+    /// Rename with the reason when it is refused, so the prompt can say it.
+    mutating func renameChecked(_ id: UUID, to name: String) -> RenameResult {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let i = workspaces.firstIndex(where: { $0.id == id }) else { return .missing }
+        guard !trimmed.isEmpty else { return .needsName }
+        guard !workspaces.contains(where: { $0.id != id && $0.name.lowercased() == trimmed.lowercased() }) else { return .nameTaken }
+        workspaces[i].name = trimmed
+        return .renamed
+    }
+
     /// Empty names and a name another workspace already has are refused (nothing changes).
     @discardableResult
     mutating func rename(_ id: UUID, to name: String) -> Bool {
@@ -129,14 +172,58 @@ struct WorkspaceStore: Codable, Equatable, Sendable {
 
     private static func encoder() -> JSONEncoder {
         let e = JSONEncoder()
-        e.outputFormatting = [.sortedKeys, .prettyPrinted]
+        e.outputFormatting = [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes]   // readable paths: /a/b, not \/a\/b
         e.dateEncodingStrategy = .iso8601
         return e
     }
 
-    /// "Export Saved Workspaces…": readable, stable JSON (sorted keys) — a view of the layouts, never file contents.
-    func exportJSON() -> Data {
+    /// The file the browser keeps (`workspaces.json`): every field, so a reopened workspace is exactly what was saved.
+    func storageJSON() -> Data {
         (try? Self.encoder().encode(workspaces)) ?? Data("[]".utf8)
+    }
+
+    /// XF-T39 — "Export Saved Workspaces…" as FileOctopus 1.0.10 words it: "the names, layouts and folder paths of your
+    /// saved workspaces. No file contents are included." So: each workspace's name and date, and per window its pane
+    /// layout and each tab's folder and view — not the Back/Forward history or the names of selected files.
+    func exportJSON() -> Data {
+        struct ExportTab: Codable { var folder: String; var view: String }
+        struct ExportPane: Codable { var id: Int; var tabs: [ExportTab]; var selectedTab: Int }
+        struct ExportWindow: Codable { var layout: PaneTree; var panes: [ExportPane] }
+        struct ExportWorkspace: Codable { var name: String; var savedAt: Date; var windows: [ExportWindow] }
+        struct ExportFile: Codable { var format: String; var workspaces: [ExportWorkspace] }
+        let file = ExportFile(format: Self.exportFormat, workspaces: workspaces.map { ws in
+            ExportWorkspace(name: ws.name, savedAt: ws.savedAt, windows: ws.windows.map { window in
+                ExportWindow(layout: window.tree, panes: window.panes.map { pane in
+                    ExportPane(id: pane.id.raw,
+                               tabs: pane.allTabs.map { ExportTab(folder: $0.path, view: $0.viewMode.rawValue) },
+                               selectedTab: pane.selectedTabIndex)
+                })
+            })
+        })
+        return (try? Self.encoder().encode(file)) ?? Data("{}".utf8)
+    }
+
+    static let exportFormat = "XFinder.SavedWorkspaces.v1"
+
+    /// XF-T39 — "Inspect Saved Workspaces…": what each saved workspace holds, as plain values for the view (no
+    /// workspace is opened, no file is touched — FileOctopus: "Inspecting or exporting doesn't open a workspace or
+    /// change any file").
+    struct Summary: Equatable, Sendable, Identifiable {
+        struct WindowSummary: Equatable, Sendable { var paneCount: Int; var folders: [String] }
+        var id: UUID
+        var name: String
+        var savedAt: Date
+        var windows: [WindowSummary]
+        var tabCount: Int { windows.reduce(0) { $0 + $1.folders.count } }
+    }
+
+    func summaries() -> [Summary] {
+        workspaces.map { ws in
+            Summary(id: ws.id, name: ws.name, savedAt: ws.savedAt, windows: ws.windows.map { window in
+                Summary.WindowSummary(paneCount: max(1, window.tree.panes.count),
+                                      folders: window.panes.flatMap { $0.allTabs.map(\.path) })
+            })
+        }
     }
 
     /// Each workspace is decoded on its own: one damaged entry (a hand-edited file, a field from a newer build) costs only
