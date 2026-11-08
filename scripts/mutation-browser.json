@@ -1,1577 +1,1822 @@
 [
- {
-  "id": "PaneTree-01",
-  "name": "M1-split-dir-side-swap",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "let newIsSecond = (dir == .right || dir == .down)",
-  "replacement": "let newIsSecond = (dir == .left || dir == .up)"
- },
- {
-  "id": "PaneTree-02",
-  "name": "M2-close-boundary-drop",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "guard count > 1, contains(pane) else { return nil }",
-  "replacement": "guard count >= 1, contains(pane) else { return nil }"
- },
- {
-  "id": "PaneTree-03",
-  "name": "M3-minFraction-wrong-unit",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "static let minFraction = 0.08",
-  "replacement": "static let minFraction = 0.8"
- },
- {
-  "id": "PaneTree-04",
-  "name": "M4-maxPanes-off-by-one",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "static let maxPanes = 16",
-  "replacement": "static let maxPanes = 17"
- },
- {
-  "id": "PaneTree-05",
-  "name": "M5-setFraction-no-clamp",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "let clamped = min(max(fraction, Self.minFraction), 1 - Self.minFraction)",
-  "replacement": "let clamped = fraction"
- },
- {
-  "id": "PaneTree-06",
-  "name": "M6-next-no-wrap",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "return all[(i + 1) % all.count]",
-  "replacement": "return all[i + 1 == all.count ? i : i + 1]"
- },
- {
-  "id": "PaneTree-07",
-  "name": "M7-previous-no-wrap",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "return all[(i - 1 + all.count) % all.count]",
-  "replacement": "return all[i == 0 ? 0 : i - 1]"
- },
- {
-  "id": "PaneTree-08",
-  "name": "M8-other-boundary-swap",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "if all.count == 2 {",
-  "replacement": "if all.count == 3 {"
- },
- {
-  "id": "PaneTree-09",
-  "name": "M9-equalize-flat-half",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "let fraction = total > 0 ? Double(firstCount) / Double(total) : 0.5",
-  "replacement": "let fraction = 0.5"
- },
- {
-  "id": "PaneTree-10",
-  "name": "M10-frames-drop-divider-horizontal",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "let firstWidth = max(0, (rect.width - divider) * CGFloat(fraction))",
-  "replacement": "let firstWidth = max(0, rect.width * CGFloat(fraction))"
- },
- {
-  "id": "PaneTree-11",
-  "name": "M11-frames-second-width-ignores-divider",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "let secondWidth = max(0, rect.width - divider - firstWidth)",
-  "replacement": "let secondWidth = max(0, rect.width - firstWidth)"
- },
- {
-  "id": "PaneTree-12",
-  "name": "M12-frames-drop-divider-vertical",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "let firstHeight = max(0, (rect.height - divider) * CGFloat(fraction))",
-  "replacement": "let firstHeight = max(0, rect.height * CGFloat(fraction))"
- },
- {
-  "id": "PaneTree-13",
-  "name": "M13-pane-at-point-no-containment-check",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "for (id, frame) in laid where frame.contains(point) {",
-  "replacement": "for (id, frame) in laid {\n            _ = frame"
- },
- {
-  "id": "PaneTree-14",
-  "name": "M14-split-drop-canSplit-guard",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "guard canSplit, contains(pane) else { return nil }",
-  "replacement": "guard contains(pane) else { return nil }"
- },
- {
-  "id": "PaneTree-15",
-  "name": "M15-leaves-order-swap",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "return leaves(of: first) + leaves(of: second)",
-  "replacement": "return leaves(of: second) + leaves(of: first)"
- },
- {
-  "id": "PaneTree-16",
-  "name": "M16-setFraction-nan-guard-dropped",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "guard !fraction.isNaN else { return }",
-  "replacement": "// guard removed"
- },
- {
-  "id": "PaneTree-17",
-  "name": "M17-close-selected-reverts-to-whole-tree-first-leaf",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "return (rebuilt, promotedFirstLeaf)",
-  "replacement": "return (rebuilt, leaves(of: rebuilt)[0])"
- },
- {
-  "id": "PaneHistory-01",
-  "name": "M1-visit-no-op-check-inverted",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "guard path != current else { return }",
-  "replacement": "guard path == current else { return }"
- },
- {
-  "id": "PaneHistory-03",
-  "name": "M3-visit-trim-off-by-one",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "back.removeFirst(back.count - Self.limit)",
-  "replacement": "back.removeFirst(back.count - Self.limit - 1)"
- },
- {
-  "id": "PaneHistory-07",
-  "name": "M7-goForward-wrong-stack-popped",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "guard let destination = forward.popLast() else { return nil }",
-  "replacement": "guard let destination = back.popLast() else { return nil }"
- },
- {
-  "id": "PaneHistory-09",
-  "name": "M9-noteLeaving-eviction-off-by-one",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "let dropCount = rememberedOrder.count - Self.rememberLimit",
-  "replacement": "let dropCount = rememberedOrder.count - Self.rememberLimit - 1"
- },
- {
-  "id": "PaneHistory-10",
-  "name": "M10-noteLeaving-evicts-newest-not-oldest",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "for key in rememberedOrder.prefix(dropCount) {",
-  "replacement": "for key in rememberedOrder.suffix(dropCount) {"
- },
- {
-  "id": "PaneHistory-11",
-  "name": "M11-removeMissing-skip-forward-filter",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "forward.removeAll { !exists($0) }",
-  "replacement": "_ = exists"
- },
- {
-  "id": "PaneHistory-12",
-  "name": "M12-removeMissing-current-check-inverted",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "if !exists(current) {",
-  "replacement": "if exists(current) {"
- },
- {
-  "id": "BrowserPath-01",
-  "name": "M1-volumes-index-off-by-one",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "parts[0] == \"Volumes\"",
-  "replacement": "parts[1] == \"Volumes\""
- },
- {
-  "id": "BrowserPath-02",
-  "name": "M2-volumes-guard-wrong-threshold",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "parts.count >= 2",
-  "replacement": "parts.count >= 3"
- },
- {
-  "id": "BrowserPath-03",
-  "name": "M3-volumes-dropfirst-wrong-count",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "for part in parts.dropFirst(2) {",
-  "replacement": "for part in parts.dropFirst(1) {"
- },
- {
-  "id": "BrowserPath-04",
-  "name": "M4-collapse-min-visible-dropped",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "let visible = max(maxVisible, 3)",
-  "replacement": "let visible = maxVisible"
- },
- {
-  "id": "BrowserPath-05",
-  "name": "M5-collapse-tailcount-wrong-unit",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "let tailCount = visible - 2",
-  "replacement": "let tailCount = visible - 1"
- },
- {
-  "id": "BrowserPath-06",
-  "name": "M6-dotdot-guard-dropped",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "if !stack.isEmpty { stack.removeLast() }",
-  "replacement": "stack.removeLast()"
- },
- {
-  "id": "BrowserPath-07",
-  "name": "M7-dotdot-check-swapped-to-dot",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "if part == \"..\" {",
-  "replacement": "if part == \".\" {"
- },
- {
-  "id": "BrowserPath-08",
-  "name": "M8-completions-sort-order-flipped",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "children.sorted { $0.localizedStandardCompare($1) == .orderedAscending }",
-  "replacement": "children.sorted { $0.localizedStandardCompare($1) == .orderedDescending }"
- },
- {
-  "id": "BrowserPath-09",
-  "name": "M9-completions-filter-dropped",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": ".filter { fold($0).hasPrefix(foldedPrefix) }",
-  "replacement": ".filter { _ in true }"
- },
- {
-  "id": "BrowserPath-10",
-  "name": "M10-commonprefix-single-name-guard-dropped",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "guard names.count > 1 else { return first }",
-  "replacement": "guard names.count > 100 else { return first }"
- },
- {
-  "id": "BrowserPath-11",
-  "name": "M11-commonprefix-length-not-advanced",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "length += 1",
-  "replacement": "length += 0"
- },
- {
-  "id": "BrowserPath-12",
-  "name": "M12-tilde-slash-check-dropped",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "if trimmed.hasPrefix(\"~/\") {",
-  "replacement": "if false {"
- },
- {
-  "id": "BrowserPath-13",
-  "name": "M13-commonprefix-fold-dropped-on-other",
-  "file": "XFinder/Core/Browser/BrowserPath.swift",
-  "anchor": "fold(String(other[length])) == c",
-  "replacement": "String(other[length]) == c"
- },
- {
-  "id": "DirectoryEntry-06",
-  "name": "M6-visible-ternary-inverted",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "showHidden ? entries : entries.filter { !$0.isHidden }",
-  "replacement": "!showHidden ? entries : entries.filter { !$0.isHidden }"
- },
- {
-  "id": "DirectoryEntry-07",
-  "name": "M7-substring-scan-loop-bound-off-by-one",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "while i <= limit {",
-  "replacement": "while i < limit {"
- },
- {
-  "id": "DirectoryEntry-08",
-  "name": "M8-typeselect-timeout-boundary-wrong",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "if let last, now.timeIntervalSince(last) > Self.timeout {",
-  "replacement": "if let last, now.timeIntervalSince(last) >= Self.timeout {"
- },
- {
-  "id": "DirectoryEntry-09",
-  "name": "M9-ext-dropped-leading-dot-guard",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "guard let dot, dot != name.startIndex else { return \"\" }",
-  "replacement": "guard let dot else { return \"\" }"
- },
- {
-  "id": "DirectoryEntry-10",
-  "name": "M10-isFolderLike-and-to-or",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "var isFolderLike: Bool { kind == .directory && !isPackage }",
-  "replacement": "var isFolderLike: Bool { kind == .directory || !isPackage }"
- },
- {
-  "id": "DirectoryEntry-12",
-  "name": "M12-typeselect-match-last-fallback-wrong-index",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "return names.count - 1",
-  "replacement": "return 0"
- },
- {
-  "id": "SearchQuery-01",
-  "name": "M1_gb_multiplier_wrong",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "\"gb\", \"gib\": multiplier = 1024 * 1024 * 1024",
-  "replacement": "\"gb\", \"gib\": multiplier = 1024 * 1024"
- },
- {
-  "id": "SearchQuery-02",
-  "name": "M2 a kilobyte counts as 1000 bytes",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "case \"kb\", \"kib\": multiplier = 1024",
-  "replacement": "case \"kb\", \"kib\": multiplier = 1000"
- },
- {
-  "id": "SearchQuery-03",
-  "name": "M3_size_ge_boundary_dropped",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "if s.hasPrefix(\">=\") { op = .greaterOrEqual; s.removeFirst(2) }",
-  "replacement": "if false { op = .greaterOrEqual; s.removeFirst(2) }"
- },
- {
-  "id": "SearchQuery-04",
-  "name": "M4_month_boundary_off_by_one",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "let year = month <= currentMonth ? currentYear : currentYear - 1",
-  "replacement": "let year = month < currentMonth ? currentYear : currentYear - 1"
- },
- {
-  "id": "SearchQuery-05",
-  "name": "M5 created and modified dates are swapped",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "let key = chip.field == .created ? \"kMDItemFSCreationDate\" : \"kMDItemFSContentChangeDate\"",
-  "replacement": "let key = chip.field != .created ? \"kMDItemFSCreationDate\" : \"kMDItemFSContentChangeDate\""
- },
- {
-  "id": "SearchQuery-07",
-  "name": "M7_and_join_becomes_or",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "return clauses.joined(separator: \" && \")",
-  "replacement": "return clauses.joined(separator: \" || \")"
- },
- {
-  "id": "SearchQuery-08",
-  "name": "M8_ext_dot_strip_dropped",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "let cleaned = value.hasPrefix(\".\") ? String(value.dropFirst()) : value",
-  "replacement": "let cleaned = value"
- },
- {
-  "id": "SearchQuery-09",
-  "name": "M9_vietnamese_phrase_shortest_first",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "for len in stride(from: maxLen, through: 1, by: -1) {",
-  "replacement": "for len in stride(from: 1, through: maxLen, by: 1) {"
- },
- {
-  "id": "SearchQuery-10",
-  "name": "M10_fold_not_case_insensitive",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "s.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: \"en_US_POSIX\"))",
-  "replacement": "s.folding(options: [.diacriticInsensitive], locale: Locale(identifier: \"en_US_POSIX\"))"
- },
- {
-  "id": "SearchQuery-11",
-  "name": "M11_screenshot_uses_png_contenttype",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "return \"kMDItemIsScreenCapture = 1\"",
-  "replacement": "return \"kMDItemContentTypeTree == \\\"public.png\\\"cd\""
- },
- {
-  "id": "SearchQuery-12",
-  "name": "M12_edited_not_aliased_to_modified",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "case \"modified\", \"edited\":",
-  "replacement": "case \"modified\":"
- },
- {
-  "id": "FileOperationRules-01",
-  "name": "M1-pause-wrong-state-guard",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "jobs[index].state == .running else { return false }",
-  "replacement": "jobs[index].state == .waiting else { return false }"
- },
- {
-  "id": "FileOperationRules-02",
-  "name": "M2-isNewer-wrong-comparison",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "return a.timeIntervalSince(b) >= tolerance",
-  "replacement": "return a.timeIntervalSince(b) > tolerance"
- },
- {
-  "id": "FileOperationRules-03",
-  "name": "M3-replaceAllowed-dropped-guard",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "!sourceIsFolder && !destinationIsFolder",
-  "replacement": "!sourceIsFolder || !destinationIsFolder"
- },
- {
-  "id": "FileOperationRules-04",
-  "name": "M4-canPause-wrong-state",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "static func canPause(_ state: JobState) -> Bool {\n        state == .running\n    }",
-  "replacement": "static func canPause(_ state: JobState) -> Bool {\n        state == .verifying\n    }"
- },
- {
-  "id": "FileOperationRules-05",
-  "name": "M5-smoothedSpeed-wrong-alpha",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "let alpha = 0.2",
-  "replacement": "let alpha = 0.8"
- },
- {
-  "id": "FileOperationRules-06",
-  "name": "M6-eta-dropped-speed-guard",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "guard bytesPerSecond > 0 else { return nil }",
-  "replacement": "guard bytesPerSecond >= 0 else { return nil }"
- },
- {
-  "id": "FileOperationRules-07",
-  "name": "M7-eta-dropped-remaining-guard",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "guard remaining > 0 else { return nil }",
-  "replacement": "guard remaining >= 0 else { return nil }"
- },
- {
-  "id": "FileOperationRules-08",
-  "name": "M8-setPhase-dropped-pausing-guard",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "if state == .verifying, jobs[index].state == .pausing { return false }",
-  "replacement": "if false, jobs[index].state == .pausing { return false }"
- },
- {
-  "id": "FileOperationRules-09",
-  "name": "M9-startNextIfIdle-dropped-active-guard",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "guard active == nil else { return nil }",
-  "replacement": "guard true else { return nil }"
- },
- {
-  "id": "FileOperationRules-10",
-  "name": "M10-isInside-wrong-boundary",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "guard ancestorParts.count < pathParts.count else { return false }",
-  "replacement": "guard ancestorParts.count <= pathParts.count else { return false }"
- },
- {
-  "id": "FileOperationRules-11",
-  "name": "M11-numberedName-wrong-bare-start",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "} else {\n            stem = base\n            startNumber = 2\n        }",
-  "replacement": "} else {\n            stem = base\n            startNumber = 1\n        }"
- },
- {
-  "id": "FileOperationRules-12",
-  "name": "M12-moveDown-off-by-one",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "position < waitingIndices.count - 1 else { return false }",
-  "replacement": "position < waitingIndices.count else { return false }"
- },
- {
-  "id": "FileOperationRules-13",
-  "name": "M13-numberedName-no-continue-count",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "startNumber = existingNumber + 1",
-  "replacement": "startNumber = 2"
- },
- {
-  "id": "FileOperationRules-14",
-  "name": "M14-eta-no-overflow-protection",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "let remaining = bytesTotal &- bytesDone",
-  "replacement": "let remaining = bytesTotal - bytesDone"
- },
- {
-  "id": "BrowserCommands-01",
-  "name": "M1-newFolder-drops-shift",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": ".newFolder: KeyChord(\"n\", command: true, shift: true),",
-  "replacement": ".newFolder: KeyChord(\"n\", command: true, shift: false),"
- },
- {
-  "id": "BrowserCommands-02",
-  "name": "M2-openSecondary-wrong-command",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": "if chord == openSecondary { return .open }",
-  "replacement": "if chord == openSecondary { return .newWindow }"
- },
- {
-  "id": "BrowserCommands-03",
-  "name": "M3-prefix-bonus-removed",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": "points += 6   // prefix of the whole title",
-  "replacement": "points += 0   // prefix of the whole title"
- },
- {
-  "id": "BrowserCommands-04",
-  "name": "M4-consecutive-bonus-removed",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": "points += 8   // consecutive run",
-  "replacement": "points += 0   // consecutive run"
- },
- {
-  "id": "BrowserCommands-05",
-  "name": "M5-display-order-swapped-control-option",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": "if chord.control { s += \"⌃\" }",
-  "replacement": "if chord.control { s += \"⌥\" }"
- },
- {
-  "id": "BrowserCommands-06",
-  "name": "M6-display-command-glyph-wrong",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": "if chord.command { s += \"⌘\" }",
-  "replacement": "if chord.command { s += \"⌃\" }"
- },
- {
-  "id": "BrowserCommands-07",
-  "name": "M7-commandMode-wrong-comparison",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": "guard trimmedLeading.first == \">\" else { return (false, query) }",
-  "replacement": "guard trimmedLeading.first == \"<\" else { return (false, query) }"
- },
- {
-  "id": "BrowserCommands-08",
-  "name": "M8-rank-limit-boundary-off-by-one",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": "return limit >= 0 ? Array(ranked.prefix(limit)) : ranked",
-  "replacement": "return limit >= 0 ? Array(ranked.prefix(limit + 1)) : ranked"
- },
- {
-  "id": "BrowserCommands-09",
-  "name": "M9-rank-sort-order-reversed",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": "if lhs.element.score != rhs.element.score { return lhs.element.score > rhs.element.score }",
-  "replacement": "if lhs.element.score != rhs.element.score { return lhs.element.score < rhs.element.score }"
- },
- {
-  "id": "BrowserCommands-10",
-  "name": "M10-score-guard-dropped-partial-match-passes",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": "guard qi == q.count else { return nil }",
-  "replacement": "guard qi >= 0 else { return nil }"
- },
- {
-  "id": "BrowserCommands-11",
-  "name": "M11-word-start-bonus-wrong-char",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": "} else if t[ti - 1] == \" \" {",
-  "replacement": "} else if t[ti - 1] == \"x\" {"
- },
- {
-  "id": "BrowserCommands-12",
-  "name": "M12-moveToTrash-wrong-key",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": ".moveToTrash: KeyChord(\"delete\", command: true),",
-  "replacement": ".moveToTrash: KeyChord(\"backspace\", command: true),"
- },
- {
-  "id": "BrowserCommands-13",
-  "name": "M13-diacritic-fold-drops-dd-flattening",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": "s.replacingOccurrences(of: \"đ\", with: \"d\").replacingOccurrences(of: \"Đ\", with: \"D\")",
-  "replacement": "s.replacingOccurrences(of: \"đ\", with: \"đ\").replacingOccurrences(of: \"Đ\", with: \"Đ\")"
- },
- {
-  "id": "CloudBadge-01",
-  "name": "M1-drop-downloadError-guard",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "if facts.hasDownloadError { return .downloadFailed }",
-  "replacement": "if false { return .downloadFailed }"
- },
- {
-  "id": "CloudBadge-02",
-  "name": "M2-swap-error-priority-order",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "if facts.hasDownloadError { return .downloadFailed }\n        if facts.hasUploadError { return .uploadFailed }",
-  "replacement": "if facts.hasUploadError { return .uploadFailed }\n        if facts.hasDownloadError { return .downloadFailed }"
- },
- {
-  "id": "CloudBadge-03",
-  "name": "M3-invert-localFile-guard",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "if facts.isUbiquitous != true && facts.downloadingStatus == nil {",
-  "replacement": "if facts.isUbiquitous == true && facts.downloadingStatus == nil {"
- },
- {
-  "id": "CloudBadge-04",
-  "name": "M4-reorder-downloading-vs-cloudOnly",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "if facts.isDownloading == true { return .downloading }\n        if facts.isUploading == true { return .uploading }\n        if facts.downloadingStatus == notDownloadedStatus { return .cloudOnly }",
-  "replacement": "if facts.downloadingStatus == notDownloadedStatus { return .cloudOnly }\n        if facts.isDownloading == true { return .downloading }\n        if facts.isUploading == true { return .uploading }"
- },
- {
-  "id": "CloudBadge-05",
-  "name": "M5-canDownload-drop-inFlight-guard",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "facts.downloadingStatus == notDownloadedStatus && facts.isDownloading != true",
-  "replacement": "facts.downloadingStatus == notDownloadedStatus"
- },
- {
-  "id": "CloudBadge-06",
-  "name": "M6-canDownload-invert-inFlight-guard",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "facts.downloadingStatus == notDownloadedStatus && facts.isDownloading != true",
-  "replacement": "facts.downloadingStatus == notDownloadedStatus && facts.isDownloading == true"
- },
- {
-  "id": "CloudBadge-07",
-  "name": "M7-canEvict-drop-isUploaded-requirement",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "return downloaded && facts.isUploaded == true && facts.isUploading != true",
-  "replacement": "return downloaded && facts.isUploading != true"
- },
- {
-  "id": "CloudBadge-08",
-  "name": "M8-canEvict-drop-Downloaded-alternative",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "let downloaded = facts.downloadingStatus == currentStatus || facts.downloadingStatus == downloadedStatus",
-  "replacement": "let downloaded = facts.downloadingStatus == currentStatus"
- },
- {
-  "id": "CloudBadge-09",
-  "name": "M9-wrong-notDownloaded-constant",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "private static let notDownloadedStatus = \"NSURLUbiquitousItemDownloadingStatusNotDownloaded\"",
-  "replacement": "private static let notDownloadedStatus = \"NSURLUbiquitousItemDownloadingStatusDownloaded\""
- },
- {
-  "id": "CloudBadge-10",
-  "name": "M10-canEvict-drop-isUploading-guard",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "return downloaded && facts.isUploaded == true && facts.isUploading != true",
-  "replacement": "return downloaded && facts.isUploaded == true"
- },
- {
-  "id": "CloudBadge-11",
-  "name": "M11-drop-uploadError-guard",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "if facts.hasUploadError { return .uploadFailed }",
-  "replacement": "if false { return .uploadFailed }"
- },
- {
-  "id": "CloudBadge-12",
-  "name": "M12-drop-isUploading-guard-in-badge",
-  "file": "XFinder/Core/Browser/CloudBadge.swift",
-  "anchor": "if facts.isUploading == true { return .uploading }",
-  "replacement": "if false { return .uploading }"
- },
- {
-  "id": "ShelfModel-01",
-  "name": "M1-drop-dedup-guard",
-  "file": "XFinder/Core/Browser/ShelfModel.swift",
-  "anchor": "guard !seen.contains(key) else { continue }\n            seen.insert(key)",
-  "replacement": "seen.insert(key)"
- },
- {
-  "id": "ShelfModel-02",
-  "name": "M2-dont-register-seen",
-  "file": "XFinder/Core/Browser/ShelfModel.swift",
-  "anchor": "guard !seen.contains(key) else { continue }\n            seen.insert(key)\n            items.append",
-  "replacement": "guard !seen.contains(key) else { continue }\n            items.append"
- },
- {
-  "id": "ShelfModel-03",
-  "name": "M3-counter-never-increments",
-  "file": "XFinder/Core/Browser/ShelfModel.swift",
-  "anchor": "added += 1",
-  "replacement": "added += 0"
- },
- {
-  "id": "ShelfModel-04",
-  "name": "M4-remove-predicate-inverted",
-  "file": "XFinder/Core/Browser/ShelfModel.swift",
-  "anchor": "items.removeAll { keys.contains(Self.normalize($0.path)) }",
-  "replacement": "items.removeAll { !keys.contains(Self.normalize($0.path)) }"
- },
- {
-  "id": "ShelfModel-05",
-  "name": "M5-missing-flag-inverted",
-  "file": "XFinder/Core/Browser/ShelfModel.swift",
-  "anchor": "items[index].missing = !exists(items[index].path)",
-  "replacement": "items[index].missing = exists(items[index].path)"
- },
- {
-  "id": "ShelfModel-06",
-  "name": "M6-totalBytes-counts-missing",
-  "file": "XFinder/Core/Browser/ShelfModel.swift",
-  "anchor": "guard !item.missing, let size = item.size else { return }",
-  "replacement": "guard let size = item.size else { return }"
- },
- {
-  "id": "ShelfModel-07",
-  "name": "M7-totalBytes-never-sums",
-  "file": "XFinder/Core/Browser/ShelfModel.swift",
-  "anchor": "total += size",
-  "replacement": "total += 0"
- },
- {
-  "id": "ShelfModel-08",
-  "name": "M8-targets-selected-filter-inverted",
-  "file": "XFinder/Core/Browser/ShelfModel.swift",
-  "anchor": "let selected = items.filter { selectedKeys.contains(Self.normalize($0.path)) }",
-  "replacement": "let selected = items.filter { !selectedKeys.contains(Self.normalize($0.path)) }"
- },
- {
-  "id": "ShelfModel-09",
-  "name": "M9-targets-fallback-ternary-swapped",
-  "file": "XFinder/Core/Browser/ShelfModel.swift",
-  "anchor": "let base = selected.isEmpty ? items : selected",
-  "replacement": "let base = selected.isEmpty ? selected : items"
- },
- {
-  "id": "ShelfModel-10",
-  "name": "M10-normalize-becomes-noop",
-  "file": "XFinder/Core/Browser/ShelfModel.swift",
-  "anchor": "(path as NSString).standardizingPath",
-  "replacement": "path"
- },
- {
-  "id": "ShelfModel-11",
-  "name": "M11-size-lookup-dropped",
-  "file": "XFinder/Core/Browser/ShelfModel.swift",
-  "anchor": "size: sizes[path]",
-  "replacement": "size: nil"
- },
- {
-  "id": "BrowserWorkspace-W1",
-  "name": "W1 a taken name is reused instead of numbered",
-  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "        guard taken.contains(base.lowercased()) else { return base }",
-  "replacement": "        return base"
- },
- {
-  "id": "BrowserWorkspace-W2",
-  "name": "W2 rename accepts a name another workspace has",
-  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "              !workspaces.contains(where: { $0.id != id && $0.name.lowercased() == trimmed.lowercased() }) else { return false }",
-  "replacement": "              true else { return false }"
- },
- {
-  "id": "BrowserWorkspace-W3",
-  "name": "W3 one damaged workspace loses all of them",
-  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "                  let ws = try? decoder.decode(Workspace.self, from: itemData) else { skipped += 1; continue }",
-  "replacement": "                  let ws = try? decoder.decode(Workspace.self, from: itemData) else { return (WorkspaceStore(), skipped + 1) }"
- },
- {
-  "id": "BrowserWorkspace-W4",
-  "name": "W4 a missing folder is not reported (v2: dead tab still listed as missing)",
-  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "                if !exists(tabs[t].path) {",
-  "replacement": "                if false {"
- },
- {
-  "id": "BrowserWorkspace-W5",
-  "name": "W5 Shift at launch still restores",
-  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "        reopenEnabled && !shiftHeld",
-  "replacement": "        reopenEnabled"
- },
- {
-  "id": "BrowserWorkspace-W6",
-  "name": "W6 a pane outside the tree survives restore",
-  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "        w.panes.removeAll { !treePanes.contains($0.id) }",
-  "replacement": "        _ = treePanes"
- },
- {
-  "id": "BrowserWorkspace-W7",
-  "name": "W7 history keeps folders that are gone",
-  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "                tabs[t].history.removeMissing(exists: exists, fallback: tabs[t].path)",
-  "replacement": "                _ = exists"
- },
- {
-  "id": "PaneHistory-R2",
-  "name": "M2 back grows past 50",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "            back.removeFirst(back.count - Self.limit)\n",
-  "replacement": "            _ = 0\n"
- },
- {
-  "id": "PaneHistory-R4",
-  "name": "M4 a fresh visit keeps the Forward stack",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "        forward.removeAll()\n        current = path",
-  "replacement": "        current = path"
- },
- {
-  "id": "PaneHistory-R5",
-  "name": "M5 Back pops the wrong end of the stack",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "        guard let destination = back.popLast() else { return nil }",
-  "replacement": "        guard let destination = back.first.map({ _ in back.removeFirst() }) else { return nil }"
- },
- {
-  "id": "PaneHistory-R6",
-  "name": "M6 Back forgets to make Forward possible",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "        forward.append(current)\n        current = destination",
-  "replacement": "        current = destination"
- },
- {
-  "id": "PaneHistory-R8",
-  "name": "M8 re-leaving a remembered folder evicts it as if new",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "        if remembered[parent] == nil {\n            rememberedOrder.append(parent)\n        }",
-  "replacement": "        rememberedOrder.append(parent)"
- },
- {
-  "id": "PaneHistory-R13",
-  "name": "M13 restore keeps a gone current folder",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "        if !exists(current) {\n            current = fallback\n        }",
-  "replacement": "        _ = fallback"
- },
- {
-  "id": "PaneHistory-R14",
-  "name": "M14 remembering keeps more than 200 folders",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "        if rememberedOrder.count > Self.rememberLimit {",
-  "replacement": "        if rememberedOrder.count > Self.rememberLimit * 10 {"
- },
- {
-  "id": "SearchQuery-R6",
-  "name": "M6 excluded words are ignored",
-  "file": "XFinder/Core/Browser/SearchQuery.swift",
-  "anchor": "        for word in search.excluded {",
-  "replacement": "        for word in [String]() where !search.excluded.isEmpty {"
- },
- {
-  "id": "DirectoryEntry-N1",
-  "name": "N1 the ASCII fast path does not lowercase",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "            out.append(b >= 65 && b <= 90 ? b + 32 : b)\n        }\n        if ascii { return out }",
-  "replacement": "            out.append(b)\n        }\n        if ascii { return out }"
- },
- {
-  "id": "DirectoryEntry-N2",
-  "name": "N2 \"đ\" is not folded to \"d\"",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "        table[0x0111] = Array(\"d\".utf8)   // đ",
-  "replacement": "        table[0x0111] = Array(\"đ\".utf8)   // đ"
- },
- {
-  "id": "DirectoryEntry-N3",
-  "name": "N3 a longer number sorts before a shorter one",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "                if la != lb { return la < lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if a[si + k]",
-  "replacement": "                if la != lb { return la > lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if a[si + k]"
- },
- {
-  "id": "DirectoryEntry-N4",
-  "name": "N4 the sort hot path ignores digit values",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "                if la != lb { return la < lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if buf[si + k]",
-  "replacement": "                if false && la != lb { return la < lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if buf[si + k]"
- },
- {
-  "id": "DirectoryEntry-N5",
-  "name": "N5 descending is ignored",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "                    if c != 0 { return order.ascending ? c < 0 : c > 0 }",
-  "replacement": "                    if c != 0 { return c < 0 }"
- },
- {
-  "id": "DirectoryEntry-N6",
-  "name": "N6 folders-first is inverted",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "                    if foldersFirst, order.key == .name, folders[x] != folders[y] { return folders[x] }",
-  "replacement": "                    if foldersFirst, order.key == .name, folders[x] != folders[y] { return folders[y] }"
- },
- {
-  "id": "DirectoryEntry-N7",
-  "name": "N7 directories sort after files by size",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "                        if xDir != yDir { return xDir ? -1 : 1 }",
-  "replacement": "                        if xDir != yDir { return xDir ? 1 : -1 }"
- },
- {
-  "id": "DirectoryEntry-N8",
-  "name": "N8 the filter needs only one of the words",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "            for word in words where !containsASCIIBytes(entry.nameKey, word) { return false }\n            return true",
-  "replacement": "            for word in words where containsASCIIBytes(entry.nameKey, word) { return true }\n            return false"
- },
- {
-  "id": "DirectoryEntry-N9",
-  "name": "N9 equal names are not broken by path",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "                    return paths[x] < paths[y]",
-  "replacement": "                    return false"
- },
- {
-  "id": "DirectoryEntry-N10",
-  "name": "N10 type-select fallback compares the wrong way",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "            for (index, name) in names.enumerated() where naturalCompare(prefixKey, foldBytes(name)) < 0 {",
-  "replacement": "            for (index, name) in names.enumerated() where naturalCompare(prefixKey, foldBytes(name)) > 0 {"
- },
- {
-  "id": "SidebarLayout-1",
-  "name": "S1 deleting a group loses its items",
-  "file": "XFinder/Core/Browser/SidebarLayout.swift",
-  "anchor": "        for item in returning where !seenPaths.contains(item.path) {",
-  "replacement": "        for item in returning where false && !seenPaths.contains(item.path) {"
- },
- {
-  "id": "SidebarLayout-2",
-  "name": "S2 a group may take a taken name",
-  "file": "XFinder/Core/Browser/SidebarLayout.swift",
-  "anchor": "        guard !trimmed.isEmpty, !groups.contains(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame })",
-  "replacement": "        guard !trimmed.isEmpty, true || !groups.contains(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame })"
- },
- {
-  "id": "SidebarLayout-3",
-  "name": "S3 an empty display name is stored instead of reset",
-  "file": "XFinder/Core/Browser/SidebarLayout.swift",
-  "anchor": "        let resolved = (trimmed?.isEmpty ?? true) ? nil : trimmed",
-  "replacement": "        let resolved = trimmed"
- },
- {
-  "id": "SidebarLayout-4",
-  "name": "S4 a hidden disk is never reported hidden",
-  "file": "XFinder/Core/Browser/SidebarLayout.swift",
-  "anchor": "        hiddenVolumeUUIDs.contains(uuid)",
-  "replacement": "        hiddenVolumeUUIDs.contains(uuid) && false"
- },
- {
-  "id": "FileInfoRules-1",
-  "name": "F1 read and write bits swapped",
-  "file": "XFinder/Core/Browser/FileInfoRules.swift",
-  "anchor": "        let r = (mode >> (shift + 2)) & 1 == 1",
-  "replacement": "        let r = (mode >> (shift + 1)) & 1 == 1"
- },
- {
-  "id": "FileInfoRules-2",
-  "name": "F2 read-only keeps the write bit",
-  "file": "XFinder/Core/Browser/FileInfoRules.swift",
-  "anchor": "            result |= rBit; result &= ~wBit",
-  "replacement": "            result |= rBit"
- },
- {
-  "id": "FileInfoRules-3",
-  "name": "F3 a colon is accepted in a name",
-  "file": "XFinder/Core/Browser/FileInfoRules.swift",
-  "anchor": "        if trimmed.contains(\"/\") || trimmed.contains(\":\") {",
-  "replacement": "        if trimmed.contains(\"/\") {"
- },
- {
-  "id": "FileInfoRules-4",
-  "name": "F4 mixed kinds read as one kind",
-  "file": "XFinder/Core/Browser/FileInfoRules.swift",
-  "anchor": "        let kindSummary = distinctKinds.count == 1 ? (distinctKinds.first ?? \"\") : \"Nhiều loại\"",
-  "replacement": "        let kindSummary = distinctKinds.first ?? \"\""
- },
- {
-  "id": "W1-01",
-  "name": "add-at-end",
-  "file": "XFinder/Core/Browser/PaneTabs.swift",
-  "anchor": "let insertAt = selected + 1",
-  "replacement": "let insertAt = tabs.count"
- },
- {
-  "id": "W1-02",
-  "name": "remove-last-tab",
-  "file": "XFinder/Core/Browser/PaneTabs.swift",
-  "anchor": "guard tabs.count > 1, let i = tabs.firstIndex(of: tab) else { return false }",
-  "replacement": "guard tabs.count > 0, let i = tabs.firstIndex(of: tab) else { return false }"
- },
- {
-  "id": "W1-03",
-  "name": "remove-selects-left",
-  "file": "XFinder/Core/Browser/PaneTabs.swift",
-  "anchor": "selected = min(i, tabs.count - 1)",
-  "replacement": "selected = max(i - 1, 0)"
- },
- {
-  "id": "W1-04",
-  "name": "previous-not-cyclic",
-  "file": "XFinder/Core/Browser/PaneTabs.swift",
-  "anchor": "selected = (selected - 1 + tabs.count) % tabs.count",
-  "replacement": "selected = max(selected - 1, 0)"
- },
- {
-  "id": "W1-05",
-  "name": "insert-duplicates",
-  "file": "XFinder/Core/Browser/PaneTabs.swift",
-  "anchor": "        if let existing = tabs.firstIndex(of: tab) {\n            tabs.remove(at: existing)\n        }\n        let clamped = min(max(index, 0), tabs.count)\n        tabs.insert(tab, at: clamped)\n        if select {",
-  "replacement": "        let clamped = min(max(index, 0), tabs.count)\n        tabs.insert(tab, at: clamped)\n        if select {"
- },
- {
-  "id": "W1-06",
-  "name": "move-duplicates",
-  "file": "XFinder/Core/Browser/PaneTabs.swift",
-  "anchor": "        tabs.remove(at: from)",
-  "replacement": "        _ = from"
- },
- {
-  "id": "W1-07",
-  "name": "strip-index-flipped",
-  "file": "XFinder/Core/Browser/PaneTabs.swift",
-  "anchor": "if point.x < midX {",
-  "replacement": "if point.x > midX {"
- },
- {
-  "id": "W1-08",
-  "name": "edge-zone-uncapped",
-  "file": "XFinder/Core/Browser/PaneTabs.swift",
-  "anchor": "let edgeZone = min(edgeZoneMax, edgeZoneFraction * min(paneRect.width, paneRect.height))",
-  "replacement": "let edgeZone = edgeZoneFraction * max(paneRect.width, paneRect.height)"
- },
- {
-  "id": "W1-09",
-  "name": "corner-farther-edge",
-  "file": "XFinder/Core/Browser/PaneTabs.swift",
-  "anchor": "guard let nearest = candidates.min(by: { $0.1 < $1.1 }) else { return .center }",
-  "replacement": "guard let nearest = candidates.max(by: { $0.1 < $1.1 }) else { return .center }"
- },
- {
-  "id": "W1-11",
-  "name": "neighbor-tie-farther-column",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "|| (abs(overlap - current.overlap) <= eps && gap < current.gap - eps)",
-  "replacement": "|| (abs(overlap - current.overlap) <= eps && gap > current.gap + eps)"
- },
- {
-  "id": "W1-12",
-  "name": "resize-inverted",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "let delta = (isFirst == grow) ? step : -step",
-  "replacement": "let delta = (isFirst != grow) ? step : -step"
- },
- {
-  "id": "W1-14",
-  "name": "preset-ignores-fraction",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "guard case .split(let axis, let fraction, let first, let second) = root, fraction == 0.5 else { return nil }",
-  "replacement": "guard case .split(let axis, _, let first, let second) = root else { return nil }"
- },
- {
-  "id": "W1-15",
-  "name": "preset-axis-swapped",
-  "file": "XFinder/Core/Browser/PaneTree.swift",
-  "anchor": "            case .horizontal: return .sideBySide",
-  "replacement": "            case .horizontal: return .stacked"
- },
- {
-  "id": "W1-16",
-  "name": "history-steps-partial",
-  "file": "XFinder/Core/Browser/PaneHistory.swift",
-  "anchor": "guard steps >= 1, back.count >= steps else { return nil }",
-  "replacement": "guard steps >= 1 else { return nil }"
- },
- {
-  "id": "W1-17",
-  "name": "restore-dead-tab-to-home",
-  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "                    missing.append(tabs[t].path)",
-  "replacement": "                    missing.append(tabs[t].path); tabs[t].path = home"
- },
- {
-  "id": "W1-18",
-  "name": "restore-selected-unclamped",
-  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "let selected = min(max(w.panes[i].selectedTab ?? w.panes[i].selectedTabIndex, 0), max(tabs.count - 1, 0))",
-  "replacement": "let selected = w.panes[i].selectedTab ?? 0"
- },
- {
-  "id": "W1-19",
-  "name": "alltabs-ignores-v2",
-  "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
-  "anchor": "        guard let tabs, !tabs.isEmpty else {",
-  "replacement": "        guard let tabs, tabs.isEmpty else {"
- },
- {
-  "id": "W1-20",
-  "name": "find-back-to-option",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": ".find: KeyChord(\"f\", command: true),",
-  "replacement": ".find: KeyChord(\"f\", command: true, option: true),"
- },
- {
-  "id": "W1-21",
-  "name": "next-pane-tab-collides",
-  "file": "XFinder/Core/Browser/BrowserCommands.swift",
-  "anchor": ".nextPaneTab: KeyChord(\"]\", command: true, option: true),",
-  "replacement": ".nextPaneTab: KeyChord(\"]\", command: true, control: true),"
- },
- {
-  "id": "W27-01",
-  "name": "lru-no-eviction",
-  "file": "XFinder/Core/Browser/FolderViewOptions.swift",
-  "anchor": "        while order.count > Self.limit {",
-  "replacement": "        while order.count > Self.limit + 1_000_000 {"
- },
- {
-  "id": "W27-02",
-  "name": "lru-evicts-newest",
-  "file": "XFinder/Core/Browser/FolderViewOptions.swift",
-  "anchor": "            let oldest = order.removeFirst()",
-  "replacement": "            let oldest = order.removeLast()"
- },
- {
-  "id": "W27-03",
-  "name": "today-bucket-lost",
-  "file": "XFinder/Core/Browser/GroupBy.swift",
-  "anchor": "            if day >= today {",
-  "replacement": "            if day > today {"
- },
- {
-  "id": "W27-04",
-  "name": "yesterday-into-week",
-  "file": "XFinder/Core/Browser/GroupBy.swift",
-  "anchor": "            } else if day >= yesterdayStart {",
-  "replacement": "            } else if day > yesterdayStart.addingTimeInterval(86_400 * 2) {"
- },
- {
-  "id": "W27-05",
-  "name": "letter-digits-not-hash",
-  "file": "XFinder/Core/Browser/GroupBy.swift",
-  "anchor": "        guard let first = folded.first, first >= 0x61, first <= 0x7A else { return \"#\" }",
-  "replacement": "        guard let first = folded.first else { return \"#\" }"
- },
- {
-  "id": "W27-06",
-  "name": "zero-bytes-in-small",
-  "file": "XFinder/Core/Browser/GroupBy.swift",
-  "anchor": "            } else if entry.size == 0 {",
-  "replacement": "            } else if entry.size == -2 {"
- },
- {
-  "id": "W27-07",
-  "name": "colour-suffix-kept-in-name",
-  "file": "XFinder/Core/Browser/FinderTags.swift",
-  "anchor": "        return FinderTag(name: String(raw[raw.startIndex..<lastNewline]), color: color)",
-  "replacement": "        return FinderTag(name: raw, color: color)"
- },
- {
-  "id": "W27-08",
-  "name": "virtual-any-scheme",
-  "file": "XFinder/Core/Browser/SidebarSections.swift",
-  "anchor": "        guard path.hasPrefix(scheme) else { return nil }",
-  "replacement": "        guard !path.isEmpty else { return nil }"
- },
- {
-  "id": "W27-09",
-  "name": "group-by-type-ignored",
-  "file": "XFinder/Core/Browser/SidebarSections.swift",
-  "anchor": "            if groupLocationsByType {",
-  "replacement": "            if false, groupLocationsByType {"
- },
- {
-  "id": "W27-10",
-  "name": "virtual-recorded",
-  "file": "XFinder/Core/Browser/RecentFolders.swift",
-  "anchor": "        guard !path.isEmpty, VirtualLocation.parse(path) == nil else { return }",
-  "replacement": "        guard !path.isEmpty else { return }"
- },
- {
-  "id": "W27-11",
-  "name": "no-cap",
-  "file": "XFinder/Core/Browser/RecentFolders.swift",
-  "anchor": "        if paths.count > Self.limit {",
-  "replacement": "        if paths.count > Self.limit * 100 {"
- },
- {
-  "id": "W27-12",
-  "name": "system-chords-allowed",
-  "file": "XFinder/Core/Browser/KeyBindings.swift",
-  "anchor": "        if Self.systemReserved.contains(chord) { return .reservedBySystem }",
-  "replacement": "        if false, Self.systemReserved.contains(chord) { return .reservedBySystem }"
- },
- {
-  "id": "W27-13",
-  "name": "plain-letters-allowed",
-  "file": "XFinder/Core/Browser/KeyBindings.swift",
-  "anchor": "        if !chord.command && !chord.control && !isFunctionKey {",
-  "replacement": "        if false && !chord.command && !chord.control && !isFunctionKey {"
- },
- {
-  "id": "W27-14",
-  "name": "extra-key-ignored",
-  "file": "XFinder/Core/Browser/KeyBindings.swift",
-  "anchor": "            if b.primary == chord || b.extra == chord { return command }",
-  "replacement": "            if b.primary == chord { return command }"
- },
- {
-  "id": "W27-15",
-  "name": "same-folder-allowed",
-  "file": "XFinder/Core/Browser/FolderMerge.swift",
-  "anchor": "        if sourceStandard == destinationStandard { return .sameFolder }",
-  "replacement": "        if false { return .sameFolder }"
- },
- {
-  "id": "W27-16",
-  "name": "nested-allowed",
-  "file": "XFinder/Core/Browser/FolderMerge.swift",
-  "anchor": "        if FileOperationRules.isInside(destinationStandard, ancestor: sourceStandard) { return .nested }",
-  "replacement": "        if false { return .nested }"
- },
- {
-  "id": "W27-17",
-  "name": "keep-newer-always-replaces",
-  "file": "XFinder/Core/Browser/FolderMerge.swift",
-  "anchor": "                if FileOperationRules.isNewer(node.modified, than: existing.modified, coarseTimestamps: fat) {",
-  "replacement": "                if true {"
- },
- {
-  "id": "W27-18",
-  "name": "packages-merged-inside",
-  "file": "XFinder/Core/Browser/FolderMerge.swift",
-  "anchor": "        if source.isPackage || destination.isPackage { return \"Gói ứng dụng — không gộp bên trong\" }",
-  "replacement": "        if false { return \"Gói ứng dụng — không gộp bên trong\" }"
- },
- {
-  "id": "W27-19",
-  "name": "retry-after-write",
-  "file": "XFinder/Core/Browser/ProblemsList.swift",
-  "anchor": "        !items.isEmpty && items.allSatisfy { $0.beforeWrite && $0.reason.isRetryable }",
-  "replacement": "        !items.isEmpty && items.allSatisfy { $0.reason.isRetryable }"
- },
- {
-  "id": "W27-20",
-  "name": "enospc-not-disk-full",
-  "file": "XFinder/Core/Browser/ProblemsList.swift",
-  "anchor": "        case ENOSPC, EDQUOT: return .diskFull",
-  "replacement": "        case EDQUOT: return .diskFull"
- },
- {
-  "id": "W27-21",
-  "name": "no-limit",
-  "file": "XFinder/Core/Browser/UndoJournal.swift",
-  "anchor": "        if undo.count > Self.limit {",
-  "replacement": "        if undo.count > Self.limit * 100 {"
- },
- {
-  "id": "W27-22",
-  "name": "identity-unchecked",
-  "file": "XFinder/Core/Browser/UndoJournal.swift",
-  "anchor": "            guard currentIdentity.inode == recordedInode, currentIdentity.size == recordedSize,",
-  "replacement": "            guard true || currentIdentity.inode == recordedInode, currentIdentity.size == recordedSize || true,"
- },
- {
-  "id": "W27-23",
-  "name": "disk-missing-ignored",
-  "file": "XFinder/Core/Browser/UndoJournal.swift",
-  "anchor": "            guard volumeMounted(item.to), volumeMounted(item.from) else { return .diskMissing }",
-  "replacement": "            guard true else { return .diskMissing }"
- },
- {
-  "id": "W27-24",
-  "name": "stale-cut-pastes",
-  "file": "XFinder/Core/Browser/CutBoard.swift",
-  "anchor": "        guard changeCount != -1, currentChangeCount == changeCount, !paths.isEmpty else { return [] }",
-  "replacement": "        guard changeCount != -1, !paths.isEmpty else { return [] }"
- },
- {
-  "id": "W27-25",
-  "name": "same-folder-moves",
-  "file": "XFinder/Core/Browser/CutBoard.swift",
-  "anchor": "            return parentStandard != destinationStandard",
-  "replacement": "            return true"
- },
- {
-  "id": "W27-26",
-  "name": "folders-first-for-every-sort",
-  "file": "XFinder/Core/Browser/DirectoryEntry.swift",
-  "anchor": "                    if foldersFirst, order.key == .name, folders[x] != folders[y] { return folders[x] }",
-  "replacement": "                    if foldersFirst, folders[x] != folders[y] { return folders[x] }"
- },
- {
-  "id": "W27-27",
-  "name": "merge-cross-volume-renames",
-  "file": "XFinder/Core/Browser/FileOperationRules.swift",
-  "anchor": "        case .move, .merge:\n            return sameVolume ? .rename : .copyVerifyTrash",
-  "replacement": "        case .move:\n            return sameVolume ? .rename : .copyVerifyTrash\n        case .merge:\n            return .rename"
- },
- {
-  "id": "CloudCache-01",
-  "name": "item-read-without-folder-gate",
-  "file": "XFinder/Core/Browser/CloudFactsCache.swift",
-  "anchor": "let facts: CloudFacts = inCloudFolder ? readItem(path) : CloudFacts()",
-  "replacement": "let facts: CloudFacts = readItem(path)"
- },
- {
-  "id": "CloudCache-02",
-  "name": "folder-probe-not-memoised",
-  "file": "XFinder/Core/Browser/CloudFactsCache.swift",
-  "anchor": "            folderIsCloud[parent] = inCloudFolder\n",
-  "replacement": "\n"
- },
- {
-  "id": "CloudCache-03",
-  "name": "item-facts-not-cached",
-  "file": "XFinder/Core/Browser/CloudFactsCache.swift",
-  "anchor": "        factsByPath[path] = facts\n",
-  "replacement": "\n"
- },
- {
-  "id": "CloudCache-04",
-  "name": "removeAll-keeps-folders",
-  "file": "XFinder/Core/Browser/CloudFactsCache.swift",
-  "anchor": "        folderIsCloud.removeAll()\n",
-  "replacement": "\n"
- },
- {
-  "id": "CloudCache-05",
-  "name": "root-is-its-own-parent",
-  "file": "XFinder/Core/Browser/CloudFactsCache.swift",
-  "anchor": "!parent.isEmpty && parent != path && probeFolder(parent)",
-  "replacement": "probeFolder(parent)"
- },
- {
-  "id": "LoadRules-01",
-  "name": "refresh-ignores-loaded-state",
-  "file": "XFinder/Core/Browser/LoadRules.swift",
-  "anchor": "guard isLoaded, let loadedPath, !path.isEmpty else { return false }",
-  "replacement": "guard let loadedPath, !path.isEmpty else { return false }"
- },
- {
-  "id": "LoadRules-02",
-  "name": "no-path-normalisation",
-  "file": "XFinder/Core/Browser/LoadRules.swift",
-  "anchor": "return (path as NSString).standardizingPath == (loadedPath as NSString).standardizingPath",
-  "replacement": "return path == loadedPath"
- },
- {
-  "id": "LoadRules-03",
-  "name": "any-folder-is-a-refresh",
-  "file": "XFinder/Core/Browser/LoadRules.swift",
-  "anchor": "return (path as NSString).standardizingPath == (loadedPath as NSString).standardizingPath",
-  "replacement": "return !loadedPath.isEmpty"
- },
- {
-  "id": "ListingDiff-01",
-  "name": "reorder-is-patched",
-  "file": "XFinder/Core/Browser/ListingDiff.swift",
-  "anchor": "guard keptOld == keptNew else { return .reload }",
-  "replacement": "guard keptOld.count == keptNew.count else { return .reload }"
- },
- {
-  "id": "ListingDiff-02",
-  "name": "duplicates-not-detected",
-  "file": "XFinder/Core/Browser/ListingDiff.swift",
-  "anchor": "guard oldSet.count == old.count, newSet.count == new.count else { return .reload }",
-  "replacement": "guard oldSet.count <= old.count, newSet.count <= new.count else { return .reload }"
- },
- {
-  "id": "ListingDiff-03",
-  "name": "inserted-indices-from-old",
-  "file": "XFinder/Core/Browser/ListingDiff.swift",
-  "anchor": "            if oldSet.contains(id) { keptNew.append(id) } else { inserted.insert(i) }",
-  "replacement": "            if oldSet.contains(id) { keptNew.append(id) } else { inserted.insert(max(0, i - removed.count)) }"
- },
- {
-  "id": "ListingDiff-04",
-  "name": "patch-cap-ignored",
-  "file": "XFinder/Core/Browser/ListingDiff.swift",
-  "anchor": "return removed.count + inserted.count <= maxPatchedRows",
-  "replacement": "return true"
- },
- {
-  "id": "W0-01",
-  "name": "fresh-ignores-nil",
-  "file": "XFinder/Core/Browser/ListingCacheRules.swift",
-  "anchor": "        guard let current: ListingToken = current else { return false }",
-  "replacement": "        guard let current: ListingToken = current else { return true }"
- },
- {
-  "id": "W0-02",
-  "name": "store-negative",
-  "file": "XFinder/Core/Browser/ListingCacheRules.swift",
-  "anchor": "        entryCount >= 0 && entryCount <= maxCachedEntries",
-  "replacement": "        entryCount <= maxCachedEntries"
- },
- {
-  "id": "W0-03",
-  "name": "evict-newest-first",
-  "file": "XFinder/Core/Browser/ListingCacheRules.swift",
-  "anchor": "if lhs.updatedAt != rhs.updatedAt { return lhs.updatedAt < rhs.updatedAt }",
-  "replacement": "if lhs.updatedAt != rhs.updatedAt { return lhs.updatedAt > rhs.updatedAt }"
- },
- {
-  "id": "W0-04",
-  "name": "evict-one-extra",
-  "file": "XFinder/Core/Browser/ListingCacheRules.swift",
-  "anchor": "            if remaining <= budgetBytes { break }",
-  "replacement": "            if remaining < 0 { break }"
- },
- {
-  "id": "W0-05",
-  "name": "plan-match-skips-disk",
-  "file": "XFinder/Core/Browser/LoadCoordinatorRules.swift",
-  "anchor": "        return [.deliverCache(final: true), .readDisk]",
-  "replacement": "        return [.deliverCache(final: true)]"
- },
- {
-  "id": "W0-06",
-  "name": "lexical-dotdot-ignored",
-  "file": "XFinder/Core/Browser/LoadCoordinatorRules.swift",
-  "anchor": "                if let last: Substring = parts.last, last != \"..\" { parts.removeLast() }",
-  "replacement": "                if let last: Substring = parts.last, last != \"..\" { _ = last }"
- },
- {
-  "id": "W0-07",
-  "name": "book-never-closes",
-  "file": "XFinder/Core/Browser/LoadCoordinatorRules.swift",
-  "anchor": "            if ids.isEmpty {",
-  "replacement": "            if ids.isEmpty && false {"
- },
- {
-  "id": "W0-08",
-  "name": "hitch-threshold-exclusive",
-  "file": "XFinder/Core/Browser/HitchRules.swift",
-  "anchor": "        return latency >= threshold && latency <= sleepWakeCutoff",
-  "replacement": "        return latency >= threshold"
- },
- {
-  "id": "W0-09",
-  "name": "sample-cap-off-by-one",
-  "file": "XFinder/Core/Browser/HitchRules.swift",
-  "anchor": "        return recentCount < maxSamplesPerHour",
-  "replacement": "        return recentCount <= maxSamplesPerHour"
- },
- {
-  "id": "W0-10",
-  "name": "pressure-critical-as-warning",
-  "file": "XFinder/Core/Browser/PressureRules.swift",
-  "anchor": "        if raw & DispatchBit.critical != 0 { return .critical }",
-  "replacement": "        if raw & DispatchBit.critical != 0 { return .warning }"
- },
- {
-  "id": "W0-11",
-  "name": "schema-no-auto-vacuum",
-  "file": "XFinder/Core/Browser/ListingDiskCache.swift",
-  "anchor": "        try db.execute(\"PRAGMA auto_vacuum=INCREMENTAL\")\n        try db.execute(\"PRAGMA journal_mode=WAL\")",
-  "replacement": "        try db.execute(\"PRAGMA journal_mode=WAL\")"
- },
- {
-  "id": "W0-12",
-  "name": "token-lstat",
-  "file": "XFinder/Core/Browser/ListingDiskCache.swift",
-  "anchor": "        guard stat(folderPath, &info) == 0 else { return nil }",
-  "replacement": "        guard lstat(folderPath, &info) == 0 else { return nil }"
- },
- {
-  "id": "W0-13",
-  "name": "old-file-not-vacuumed",
-  "file": "XFinder/Core/Browser/ListingDiskCache.swift",
-  "anchor": "            if vacuumMode != 2 { try db.execute(\"VACUUM\") }\n            // Same version",
-  "replacement": "            // Same version"
- },
- {
-  "id": "W0-14",
-  "name": "coordinator-key-standardizing",
-  "file": "XFinder/Core/Browser/DirectoryLoadCoordinator.swift",
-  "anchor": "        LoadCoordinatorRules.lexicalPath((path as NSString).expandingTildeInPath)",
-  "replacement": "        (path as NSString).standardizingPath"
- },
- {
-  "id": "W0-15",
-  "name": "coordinator-cache-only",
-  "file": "XFinder/Core/Browser/DirectoryLoadCoordinator.swift",
-  "anchor": "            case .readDisk:\n                needsDisk = true",
-  "replacement": "            case .readDisk:\n                needsDisk = false"
- },
- {
-  "id": "W0-16",
-  "name": "limiter-unbounded",
-  "file": "XFinder/Core/Browser/DirectoryWorkLimiter.swift",
-  "anchor": "        if running < maxConcurrent && waiters.isEmpty {",
-  "replacement": "        if true {"
- },
- {
-  "id": "W0-17",
-  "name": "relief-replace-appends",
-  "file": "XFinder/Core/Browser/MemoryPressureRelief.swift",
-  "anchor": "        if let index: Int = relievers.firstIndex(where: { $0.name == name }) {",
-  "replacement": "        if let index: Int = relievers.firstIndex(where: { _ in false }) {"
- },
- {
-  "id": "T32W1-01",
-  "name": "property-name-case-sensitive",
-  "file": "XFinder/Core/Browser/PropertySchema.swift",
-  "anchor": "        Array(name.precomposedStringWithCanonicalMapping.lowercased().utf8)",
-  "replacement": "        Array(name.precomposedStringWithCanonicalMapping.utf8)"
- },
- {
-  "id": "T32W1-02",
-  "name": "property-name-nfd-apart",
-  "file": "XFinder/Core/Browser/PropertySchema.swift",
-  "anchor": "        Array(name.precomposedStringWithCanonicalMapping.lowercased().utf8)",
-  "replacement": "        Array(name.lowercased().utf8)"
- },
- {
-  "id": "T32W1-03",
-  "name": "sections-empty-kept",
-  "file": "XFinder/Core/Browser/PropertyRules.swift",
-  "anchor": "        for slot in 0..<optionCount where !buckets[slot].isEmpty {",
-  "replacement": "        for slot in 0..<optionCount {"
- },
- {
-  "id": "T32W1-04",
-  "name": "sections-unset-first",
-  "file": "XFinder/Core/Browser/PropertyRules.swift",
-  "anchor": "            let slot: Int = selections[entry.path].flatMap { slotByOption[$0] } ?? optionCount",
-  "replacement": "            let slot: Int = selections[entry.path].flatMap { slotByOption[$0] } ?? 0"
- },
- {
-  "id": "T32W1-05",
-  "name": "rewrite-not-component-wise",
-  "file": "XFinder/Core/Browser/FolderAnnotations.swift",
-  "anchor": "        let prefix: String = ancestor == \"/\" ? \"/\" : ancestor + \"/\"",
-  "replacement": "        let prefix: String = ancestor"
- },
- {
-  "id": "T32W1-06",
-  "name": "pin-cap-off",
-  "file": "XFinder/Core/Browser/FolderAnnotations.swift",
-  "anchor": "        guard distinctCount < maxPinsPerFolder else { return pins }",
-  "replacement": "        guard distinctCount <= maxPinsPerFolder else { return pins }"
- },
- {
-  "id": "T32W1-07",
-  "name": "nickname-nfd-kept",
-  "file": "XFinder/Core/Browser/FolderAnnotations.swift",
-  "anchor": "        for character in raw.precomposedStringWithCanonicalMapping {",
-  "replacement": "        for character in raw {"
- },
- {
-  "id": "T32W1-08",
-  "name": "searchkey-newline",
-  "file": "XFinder/Core/Browser/FolderAnnotations.swift",
-  "anchor": "        key.append(0x00)",
-  "replacement": "        key.append(0x0A)"
- },
- {
-  "id": "T32W1-09",
-  "name": "store-key-nfd",
-  "file": "XFinder/Core/Browser/MetadataStore.swift",
-  "anchor": "        for character in path.precomposedStringWithCanonicalMapping {",
-  "replacement": "        for character in path {"
- },
- {
-  "id": "T32W1-10",
-  "name": "store-purges-kept-options",
-  "file": "XFinder/Core/Browser/MetadataStore.swift",
-  "anchor": "                for option in oldOptions.subtracting(newOptions) {",
-  "replacement": "                for option in oldOptions.union(newOptions) {"
- },
- {
-  "id": "T32W1-11",
-  "name": "store-emoji-raw",
-  "file": "XFinder/Core/Browser/MetadataStore.swift",
-  "anchor": "        guard let raw: String = emoji, let emoji: String = EmojiRules.normalized(raw) else {",
-  "replacement": "        guard let emoji: String = emoji, !emoji.isEmpty else {"
- },
- {
-  "id": "T32W1-12",
-  "name": "space-bad-sidebar-dropped",
-  "file": "XFinder/Core/Browser/SpaceModel.swift",
-  "anchor": "        let sidebar: SidebarLayout = sidebar(dict[\"sidebar\"]) ?? SidebarLayout()",
-  "replacement": "        guard let sidebar: SidebarLayout = sidebar(dict[\"sidebar\"]) else { return nil }"
- },
- {
-  "id": "T32W1-13",
-  "name": "space-cycle-no-wrap",
-  "file": "XFinder/Core/Browser/SpaceModel.swift",
-  "anchor": "        let next: Int = ((current + delta) % count + count) % count",
-  "replacement": "        let next: Int = max(0, min(current + delta, count - 1))"
- }
+  {
+    "id": "PaneTree-01",
+    "name": "M1-split-dir-side-swap",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "let newIsSecond = (dir == .right || dir == .down)",
+    "replacement": "let newIsSecond = (dir == .left || dir == .up)"
+  },
+  {
+    "id": "PaneTree-02",
+    "name": "M2-close-boundary-drop",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "guard count > 1, contains(pane) else { return nil }",
+    "replacement": "guard count >= 1, contains(pane) else { return nil }"
+  },
+  {
+    "id": "PaneTree-03",
+    "name": "M3-minFraction-wrong-unit",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "static let minFraction = 0.08",
+    "replacement": "static let minFraction = 0.8"
+  },
+  {
+    "id": "PaneTree-04",
+    "name": "M4-maxPanes-off-by-one",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "static let maxPanes = 16",
+    "replacement": "static let maxPanes = 17"
+  },
+  {
+    "id": "PaneTree-05",
+    "name": "M5-setFraction-no-clamp",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "let clamped = min(max(fraction, Self.minFraction), 1 - Self.minFraction)",
+    "replacement": "let clamped = fraction"
+  },
+  {
+    "id": "PaneTree-06",
+    "name": "M6-next-no-wrap",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "return all[(i + 1) % all.count]",
+    "replacement": "return all[i + 1 == all.count ? i : i + 1]"
+  },
+  {
+    "id": "PaneTree-07",
+    "name": "M7-previous-no-wrap",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "return all[(i - 1 + all.count) % all.count]",
+    "replacement": "return all[i == 0 ? 0 : i - 1]"
+  },
+  {
+    "id": "PaneTree-08",
+    "name": "M8-other-boundary-swap",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "if all.count == 2 {",
+    "replacement": "if all.count == 3 {"
+  },
+  {
+    "id": "PaneTree-09",
+    "name": "M9-equalize-flat-half",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "let fraction = total > 0 ? Double(firstCount) / Double(total) : 0.5",
+    "replacement": "let fraction = 0.5"
+  },
+  {
+    "id": "PaneTree-10",
+    "name": "M10-frames-drop-divider-horizontal",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "let firstWidth = max(0, (rect.width - divider) * CGFloat(fraction))",
+    "replacement": "let firstWidth = max(0, rect.width * CGFloat(fraction))"
+  },
+  {
+    "id": "PaneTree-11",
+    "name": "M11-frames-second-width-ignores-divider",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "let secondWidth = max(0, rect.width - divider - firstWidth)",
+    "replacement": "let secondWidth = max(0, rect.width - firstWidth)"
+  },
+  {
+    "id": "PaneTree-12",
+    "name": "M12-frames-drop-divider-vertical",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "let firstHeight = max(0, (rect.height - divider) * CGFloat(fraction))",
+    "replacement": "let firstHeight = max(0, rect.height * CGFloat(fraction))"
+  },
+  {
+    "id": "PaneTree-13",
+    "name": "M13-pane-at-point-no-containment-check",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "for (id, frame) in laid where frame.contains(point) {",
+    "replacement": "for (id, frame) in laid {\n            _ = frame"
+  },
+  {
+    "id": "PaneTree-14",
+    "name": "M14-split-drop-canSplit-guard",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "guard canSplit, contains(pane) else { return nil }",
+    "replacement": "guard contains(pane) else { return nil }"
+  },
+  {
+    "id": "PaneTree-15",
+    "name": "M15-leaves-order-swap",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "return leaves(of: first) + leaves(of: second)",
+    "replacement": "return leaves(of: second) + leaves(of: first)"
+  },
+  {
+    "id": "PaneTree-16",
+    "name": "M16-setFraction-nan-guard-dropped",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "guard !fraction.isNaN else { return }",
+    "replacement": "// guard removed"
+  },
+  {
+    "id": "PaneTree-17",
+    "name": "M17-close-selected-reverts-to-whole-tree-first-leaf",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "return (rebuilt, promotedFirstLeaf)",
+    "replacement": "return (rebuilt, leaves(of: rebuilt)[0])"
+  },
+  {
+    "id": "PaneHistory-01",
+    "name": "M1-visit-no-op-check-inverted",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "guard path != current else { return }",
+    "replacement": "guard path == current else { return }"
+  },
+  {
+    "id": "PaneHistory-03",
+    "name": "M3-visit-trim-off-by-one",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "back.removeFirst(back.count - Self.limit)",
+    "replacement": "back.removeFirst(back.count - Self.limit - 1)"
+  },
+  {
+    "id": "PaneHistory-07",
+    "name": "M7-goForward-wrong-stack-popped",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "guard let destination = forward.popLast() else { return nil }",
+    "replacement": "guard let destination = back.popLast() else { return nil }"
+  },
+  {
+    "id": "PaneHistory-09",
+    "name": "M9-noteLeaving-eviction-off-by-one",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "let dropCount = rememberedOrder.count - Self.rememberLimit",
+    "replacement": "let dropCount = rememberedOrder.count - Self.rememberLimit - 1"
+  },
+  {
+    "id": "PaneHistory-10",
+    "name": "M10-noteLeaving-evicts-newest-not-oldest",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "for key in rememberedOrder.prefix(dropCount) {",
+    "replacement": "for key in rememberedOrder.suffix(dropCount) {"
+  },
+  {
+    "id": "PaneHistory-11",
+    "name": "M11-removeMissing-skip-forward-filter",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "forward.removeAll { !exists($0) }",
+    "replacement": "_ = exists"
+  },
+  {
+    "id": "PaneHistory-12",
+    "name": "M12-removeMissing-current-check-inverted",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "if !exists(current) {",
+    "replacement": "if exists(current) {"
+  },
+  {
+    "id": "BrowserPath-01",
+    "name": "M1-volumes-index-off-by-one",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "parts[0] == \"Volumes\"",
+    "replacement": "parts[1] == \"Volumes\""
+  },
+  {
+    "id": "BrowserPath-02",
+    "name": "M2-volumes-guard-wrong-threshold",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "parts.count >= 2",
+    "replacement": "parts.count >= 3"
+  },
+  {
+    "id": "BrowserPath-03",
+    "name": "M3-volumes-dropfirst-wrong-count",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "for part in parts.dropFirst(2) {",
+    "replacement": "for part in parts.dropFirst(1) {"
+  },
+  {
+    "id": "BrowserPath-04",
+    "name": "M4-collapse-min-visible-dropped",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "let visible = max(maxVisible, 3)",
+    "replacement": "let visible = maxVisible"
+  },
+  {
+    "id": "BrowserPath-05",
+    "name": "M5-collapse-tailcount-wrong-unit",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "let tailCount = visible - 2",
+    "replacement": "let tailCount = visible - 1"
+  },
+  {
+    "id": "BrowserPath-06",
+    "name": "M6-dotdot-guard-dropped",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "if !stack.isEmpty { stack.removeLast() }",
+    "replacement": "stack.removeLast()"
+  },
+  {
+    "id": "BrowserPath-07",
+    "name": "M7-dotdot-check-swapped-to-dot",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "if part == \"..\" {",
+    "replacement": "if part == \".\" {"
+  },
+  {
+    "id": "BrowserPath-08",
+    "name": "M8-completions-sort-order-flipped",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "children.sorted { $0.localizedStandardCompare($1) == .orderedAscending }",
+    "replacement": "children.sorted { $0.localizedStandardCompare($1) == .orderedDescending }"
+  },
+  {
+    "id": "BrowserPath-09",
+    "name": "M9-completions-filter-dropped",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": ".filter { fold($0).hasPrefix(foldedPrefix) }",
+    "replacement": ".filter { _ in true }"
+  },
+  {
+    "id": "BrowserPath-10",
+    "name": "M10-commonprefix-single-name-guard-dropped",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "guard names.count > 1 else { return first }",
+    "replacement": "guard names.count > 100 else { return first }"
+  },
+  {
+    "id": "BrowserPath-11",
+    "name": "M11-commonprefix-length-not-advanced",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "length += 1",
+    "replacement": "length += 0"
+  },
+  {
+    "id": "BrowserPath-12",
+    "name": "M12-tilde-slash-check-dropped",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "if trimmed.hasPrefix(\"~/\") {",
+    "replacement": "if false {"
+  },
+  {
+    "id": "BrowserPath-13",
+    "name": "M13-commonprefix-fold-dropped-on-other",
+    "file": "XFinder/Core/Browser/BrowserPath.swift",
+    "anchor": "fold(String(other[length])) == c",
+    "replacement": "String(other[length]) == c"
+  },
+  {
+    "id": "DirectoryEntry-06",
+    "name": "M6-visible-ternary-inverted",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "showHidden ? entries : entries.filter { !$0.isHidden }",
+    "replacement": "!showHidden ? entries : entries.filter { !$0.isHidden }"
+  },
+  {
+    "id": "DirectoryEntry-07",
+    "name": "M7-substring-scan-loop-bound-off-by-one",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "while i <= limit {",
+    "replacement": "while i < limit {"
+  },
+  {
+    "id": "DirectoryEntry-08",
+    "name": "M8-typeselect-timeout-boundary-wrong",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "if let last, now.timeIntervalSince(last) > Self.timeout {",
+    "replacement": "if let last, now.timeIntervalSince(last) >= Self.timeout {"
+  },
+  {
+    "id": "DirectoryEntry-09",
+    "name": "M9-ext-dropped-leading-dot-guard",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "guard let dot, dot != name.startIndex else { return \"\" }",
+    "replacement": "guard let dot else { return \"\" }"
+  },
+  {
+    "id": "DirectoryEntry-10",
+    "name": "M10-isFolderLike-and-to-or",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "var isFolderLike: Bool { kind == .directory && !isPackage }",
+    "replacement": "var isFolderLike: Bool { kind == .directory || !isPackage }"
+  },
+  {
+    "id": "DirectoryEntry-12",
+    "name": "M12-typeselect-match-last-fallback-wrong-index",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "return names.count - 1",
+    "replacement": "return 0"
+  },
+  {
+    "id": "SearchQuery-01",
+    "name": "M1_gb_multiplier_wrong",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "\"gb\", \"gib\": multiplier = 1024 * 1024 * 1024",
+    "replacement": "\"gb\", \"gib\": multiplier = 1024 * 1024"
+  },
+  {
+    "id": "SearchQuery-02",
+    "name": "M2 a kilobyte counts as 1000 bytes",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "case \"kb\", \"kib\": multiplier = 1024",
+    "replacement": "case \"kb\", \"kib\": multiplier = 1000"
+  },
+  {
+    "id": "SearchQuery-03",
+    "name": "M3_size_ge_boundary_dropped",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "if s.hasPrefix(\">=\") { op = .greaterOrEqual; s.removeFirst(2) }",
+    "replacement": "if false { op = .greaterOrEqual; s.removeFirst(2) }"
+  },
+  {
+    "id": "SearchQuery-04",
+    "name": "M4_month_boundary_off_by_one",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "let year = month <= currentMonth ? currentYear : currentYear - 1",
+    "replacement": "let year = month < currentMonth ? currentYear : currentYear - 1"
+  },
+  {
+    "id": "SearchQuery-05",
+    "name": "M5 created and modified dates are swapped",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "let key = chip.field == .created ? \"kMDItemFSCreationDate\" : \"kMDItemFSContentChangeDate\"",
+    "replacement": "let key = chip.field != .created ? \"kMDItemFSCreationDate\" : \"kMDItemFSContentChangeDate\""
+  },
+  {
+    "id": "SearchQuery-07",
+    "name": "M7_and_join_becomes_or",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "return clauses.joined(separator: \" && \")",
+    "replacement": "return clauses.joined(separator: \" || \")"
+  },
+  {
+    "id": "SearchQuery-08",
+    "name": "M8_ext_dot_strip_dropped",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "let cleaned = value.hasPrefix(\".\") ? String(value.dropFirst()) : value",
+    "replacement": "let cleaned = value"
+  },
+  {
+    "id": "SearchQuery-09",
+    "name": "M9_vietnamese_phrase_shortest_first",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "for len in stride(from: maxLen, through: 1, by: -1) {",
+    "replacement": "for len in stride(from: 1, through: maxLen, by: 1) {"
+  },
+  {
+    "id": "SearchQuery-10",
+    "name": "M10_fold_not_case_insensitive",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "s.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: \"en_US_POSIX\"))",
+    "replacement": "s.folding(options: [.diacriticInsensitive], locale: Locale(identifier: \"en_US_POSIX\"))"
+  },
+  {
+    "id": "SearchQuery-11",
+    "name": "M11_screenshot_uses_png_contenttype",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "return \"kMDItemIsScreenCapture = 1\"",
+    "replacement": "return \"kMDItemContentTypeTree == \\\"public.png\\\"cd\""
+  },
+  {
+    "id": "SearchQuery-12",
+    "name": "M12_edited_not_aliased_to_modified",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "case \"modified\", \"edited\":",
+    "replacement": "case \"modified\":"
+  },
+  {
+    "id": "FileOperationRules-01",
+    "name": "M1-pause-wrong-state-guard",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "jobs[index].state == .running else { return false }",
+    "replacement": "jobs[index].state == .waiting else { return false }"
+  },
+  {
+    "id": "FileOperationRules-02",
+    "name": "M2-isNewer-wrong-comparison",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "return a.timeIntervalSince(b) >= tolerance",
+    "replacement": "return a.timeIntervalSince(b) > tolerance"
+  },
+  {
+    "id": "FileOperationRules-03",
+    "name": "M3-replaceAllowed-dropped-guard",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "!sourceIsFolder && !destinationIsFolder",
+    "replacement": "!sourceIsFolder || !destinationIsFolder"
+  },
+  {
+    "id": "FileOperationRules-04",
+    "name": "M4-canPause-wrong-state",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "static func canPause(_ state: JobState) -> Bool {\n        state == .running\n    }",
+    "replacement": "static func canPause(_ state: JobState) -> Bool {\n        state == .verifying\n    }"
+  },
+  {
+    "id": "FileOperationRules-05",
+    "name": "M5-smoothedSpeed-wrong-alpha",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "let alpha = 0.2",
+    "replacement": "let alpha = 0.8"
+  },
+  {
+    "id": "FileOperationRules-06",
+    "name": "M6-eta-dropped-speed-guard",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "guard bytesPerSecond > 0 else { return nil }",
+    "replacement": "guard bytesPerSecond >= 0 else { return nil }"
+  },
+  {
+    "id": "FileOperationRules-07",
+    "name": "M7-eta-dropped-remaining-guard",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "guard remaining > 0 else { return nil }",
+    "replacement": "guard remaining >= 0 else { return nil }"
+  },
+  {
+    "id": "FileOperationRules-08",
+    "name": "M8-setPhase-dropped-pausing-guard",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "if state == .verifying, jobs[index].state == .pausing { return false }",
+    "replacement": "if false, jobs[index].state == .pausing { return false }"
+  },
+  {
+    "id": "FileOperationRules-09",
+    "name": "M9-startNextIfIdle-dropped-active-guard",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "guard active == nil else { return nil }",
+    "replacement": "guard true else { return nil }"
+  },
+  {
+    "id": "FileOperationRules-10",
+    "name": "M10-isInside-wrong-boundary",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "guard ancestorParts.count < pathParts.count else { return false }",
+    "replacement": "guard ancestorParts.count <= pathParts.count else { return false }"
+  },
+  {
+    "id": "FileOperationRules-11",
+    "name": "M11-numberedName-wrong-bare-start",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "} else {\n            stem = base\n            startNumber = 2\n        }",
+    "replacement": "} else {\n            stem = base\n            startNumber = 1\n        }"
+  },
+  {
+    "id": "FileOperationRules-12",
+    "name": "M12-moveDown-off-by-one",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "position < waitingIndices.count - 1 else { return false }",
+    "replacement": "position < waitingIndices.count else { return false }"
+  },
+  {
+    "id": "FileOperationRules-13",
+    "name": "M13-numberedName-no-continue-count",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "startNumber = existingNumber + 1",
+    "replacement": "startNumber = 2"
+  },
+  {
+    "id": "FileOperationRules-14",
+    "name": "M14-eta-no-overflow-protection",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "let remaining = bytesTotal &- bytesDone",
+    "replacement": "let remaining = bytesTotal - bytesDone"
+  },
+  {
+    "id": "BrowserCommands-01",
+    "name": "M1-newFolder-drops-shift",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": ".newFolder: KeyChord(\"n\", command: true, shift: true),",
+    "replacement": ".newFolder: KeyChord(\"n\", command: true, shift: false),"
+  },
+  {
+    "id": "BrowserCommands-02",
+    "name": "M2-openSecondary-wrong-command",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": "if chord == openSecondary { return .open }",
+    "replacement": "if chord == openSecondary { return .newWindow }"
+  },
+  {
+    "id": "BrowserCommands-03",
+    "name": "M3-prefix-bonus-removed",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": "points += 6   // prefix of the whole title",
+    "replacement": "points += 0   // prefix of the whole title"
+  },
+  {
+    "id": "BrowserCommands-04",
+    "name": "M4-consecutive-bonus-removed",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": "points += 8   // consecutive run",
+    "replacement": "points += 0   // consecutive run"
+  },
+  {
+    "id": "BrowserCommands-05",
+    "name": "M5-display-order-swapped-control-option",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": "if chord.control { s += \"⌃\" }",
+    "replacement": "if chord.control { s += \"⌥\" }"
+  },
+  {
+    "id": "BrowserCommands-06",
+    "name": "M6-display-command-glyph-wrong",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": "if chord.command { s += \"⌘\" }",
+    "replacement": "if chord.command { s += \"⌃\" }"
+  },
+  {
+    "id": "BrowserCommands-07",
+    "name": "M7-commandMode-wrong-comparison",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": "guard trimmedLeading.first == \">\" else { return (false, query) }",
+    "replacement": "guard trimmedLeading.first == \"<\" else { return (false, query) }"
+  },
+  {
+    "id": "BrowserCommands-08",
+    "name": "M8-rank-limit-boundary-off-by-one",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": "return limit >= 0 ? Array(ranked.prefix(limit)) : ranked",
+    "replacement": "return limit >= 0 ? Array(ranked.prefix(limit + 1)) : ranked"
+  },
+  {
+    "id": "BrowserCommands-09",
+    "name": "M9-rank-sort-order-reversed",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": "if lhs.element.score != rhs.element.score { return lhs.element.score > rhs.element.score }",
+    "replacement": "if lhs.element.score != rhs.element.score { return lhs.element.score < rhs.element.score }"
+  },
+  {
+    "id": "BrowserCommands-10",
+    "name": "M10-score-guard-dropped-partial-match-passes",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": "guard qi == q.count else { return nil }",
+    "replacement": "guard qi >= 0 else { return nil }"
+  },
+  {
+    "id": "BrowserCommands-11",
+    "name": "M11-word-start-bonus-wrong-char",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": "} else if t[ti - 1] == \" \" {",
+    "replacement": "} else if t[ti - 1] == \"x\" {"
+  },
+  {
+    "id": "BrowserCommands-12",
+    "name": "M12-moveToTrash-wrong-key",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": ".moveToTrash: KeyChord(\"delete\", command: true),",
+    "replacement": ".moveToTrash: KeyChord(\"backspace\", command: true),"
+  },
+  {
+    "id": "BrowserCommands-13",
+    "name": "M13-diacritic-fold-drops-dd-flattening",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": "s.replacingOccurrences(of: \"đ\", with: \"d\").replacingOccurrences(of: \"Đ\", with: \"D\")",
+    "replacement": "s.replacingOccurrences(of: \"đ\", with: \"đ\").replacingOccurrences(of: \"Đ\", with: \"Đ\")"
+  },
+  {
+    "id": "CloudBadge-01",
+    "name": "M1-drop-downloadError-guard",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "if facts.hasDownloadError { return .downloadFailed }",
+    "replacement": "if false { return .downloadFailed }"
+  },
+  {
+    "id": "CloudBadge-02",
+    "name": "M2-swap-error-priority-order",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "if facts.hasDownloadError { return .downloadFailed }\n        if facts.hasUploadError { return .uploadFailed }",
+    "replacement": "if facts.hasUploadError { return .uploadFailed }\n        if facts.hasDownloadError { return .downloadFailed }"
+  },
+  {
+    "id": "CloudBadge-03",
+    "name": "M3-invert-localFile-guard",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "if facts.isUbiquitous != true && facts.downloadingStatus == nil {",
+    "replacement": "if facts.isUbiquitous == true && facts.downloadingStatus == nil {"
+  },
+  {
+    "id": "CloudBadge-04",
+    "name": "M4-reorder-downloading-vs-cloudOnly",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "if facts.isDownloading == true { return .downloading }\n        if facts.isUploading == true { return .uploading }\n        if facts.downloadingStatus == notDownloadedStatus { return .cloudOnly }",
+    "replacement": "if facts.downloadingStatus == notDownloadedStatus { return .cloudOnly }\n        if facts.isDownloading == true { return .downloading }\n        if facts.isUploading == true { return .uploading }"
+  },
+  {
+    "id": "CloudBadge-05",
+    "name": "M5-canDownload-drop-inFlight-guard",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "facts.downloadingStatus == notDownloadedStatus && facts.isDownloading != true",
+    "replacement": "facts.downloadingStatus == notDownloadedStatus"
+  },
+  {
+    "id": "CloudBadge-06",
+    "name": "M6-canDownload-invert-inFlight-guard",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "facts.downloadingStatus == notDownloadedStatus && facts.isDownloading != true",
+    "replacement": "facts.downloadingStatus == notDownloadedStatus && facts.isDownloading == true"
+  },
+  {
+    "id": "CloudBadge-07",
+    "name": "M7-canEvict-drop-isUploaded-requirement",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "return downloaded && facts.isUploaded == true && facts.isUploading != true",
+    "replacement": "return downloaded && facts.isUploading != true"
+  },
+  {
+    "id": "CloudBadge-08",
+    "name": "M8-canEvict-drop-Downloaded-alternative",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "let downloaded = facts.downloadingStatus == currentStatus || facts.downloadingStatus == downloadedStatus",
+    "replacement": "let downloaded = facts.downloadingStatus == currentStatus"
+  },
+  {
+    "id": "CloudBadge-09",
+    "name": "M9-wrong-notDownloaded-constant",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "private static let notDownloadedStatus = \"NSURLUbiquitousItemDownloadingStatusNotDownloaded\"",
+    "replacement": "private static let notDownloadedStatus = \"NSURLUbiquitousItemDownloadingStatusDownloaded\""
+  },
+  {
+    "id": "CloudBadge-10",
+    "name": "M10-canEvict-drop-isUploading-guard",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "return downloaded && facts.isUploaded == true && facts.isUploading != true",
+    "replacement": "return downloaded && facts.isUploaded == true"
+  },
+  {
+    "id": "CloudBadge-11",
+    "name": "M11-drop-uploadError-guard",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "if facts.hasUploadError { return .uploadFailed }",
+    "replacement": "if false { return .uploadFailed }"
+  },
+  {
+    "id": "CloudBadge-12",
+    "name": "M12-drop-isUploading-guard-in-badge",
+    "file": "XFinder/Core/Browser/CloudBadge.swift",
+    "anchor": "if facts.isUploading == true { return .uploading }",
+    "replacement": "if false { return .uploading }"
+  },
+  {
+    "id": "ShelfModel-01",
+    "name": "M1-drop-dedup-guard",
+    "file": "XFinder/Core/Browser/ShelfModel.swift",
+    "anchor": "guard !seen.contains(key) else { continue }\n            seen.insert(key)",
+    "replacement": "seen.insert(key)"
+  },
+  {
+    "id": "ShelfModel-02",
+    "name": "M2-dont-register-seen",
+    "file": "XFinder/Core/Browser/ShelfModel.swift",
+    "anchor": "guard !seen.contains(key) else { continue }\n            seen.insert(key)\n            items.append",
+    "replacement": "guard !seen.contains(key) else { continue }\n            items.append"
+  },
+  {
+    "id": "ShelfModel-03",
+    "name": "M3-counter-never-increments",
+    "file": "XFinder/Core/Browser/ShelfModel.swift",
+    "anchor": "added += 1",
+    "replacement": "added += 0"
+  },
+  {
+    "id": "ShelfModel-04",
+    "name": "M4-remove-predicate-inverted",
+    "file": "XFinder/Core/Browser/ShelfModel.swift",
+    "anchor": "items.removeAll { keys.contains(Self.normalize($0.path)) }",
+    "replacement": "items.removeAll { !keys.contains(Self.normalize($0.path)) }"
+  },
+  {
+    "id": "ShelfModel-05",
+    "name": "M5-missing-flag-inverted",
+    "file": "XFinder/Core/Browser/ShelfModel.swift",
+    "anchor": "items[index].missing = !exists(items[index].path)",
+    "replacement": "items[index].missing = exists(items[index].path)"
+  },
+  {
+    "id": "ShelfModel-06",
+    "name": "M6-totalBytes-counts-missing",
+    "file": "XFinder/Core/Browser/ShelfModel.swift",
+    "anchor": "guard !item.missing, let size = item.size else { return }",
+    "replacement": "guard let size = item.size else { return }"
+  },
+  {
+    "id": "ShelfModel-07",
+    "name": "M7-totalBytes-never-sums",
+    "file": "XFinder/Core/Browser/ShelfModel.swift",
+    "anchor": "total += size",
+    "replacement": "total += 0"
+  },
+  {
+    "id": "ShelfModel-08",
+    "name": "M8-targets-selected-filter-inverted",
+    "file": "XFinder/Core/Browser/ShelfModel.swift",
+    "anchor": "let selected = items.filter { selectedKeys.contains(Self.normalize($0.path)) }",
+    "replacement": "let selected = items.filter { !selectedKeys.contains(Self.normalize($0.path)) }"
+  },
+  {
+    "id": "ShelfModel-09",
+    "name": "M9-targets-fallback-ternary-swapped",
+    "file": "XFinder/Core/Browser/ShelfModel.swift",
+    "anchor": "let base = selected.isEmpty ? items : selected",
+    "replacement": "let base = selected.isEmpty ? selected : items"
+  },
+  {
+    "id": "ShelfModel-10",
+    "name": "M10-normalize-becomes-noop",
+    "file": "XFinder/Core/Browser/ShelfModel.swift",
+    "anchor": "(path as NSString).standardizingPath",
+    "replacement": "path"
+  },
+  {
+    "id": "ShelfModel-11",
+    "name": "M11-size-lookup-dropped",
+    "file": "XFinder/Core/Browser/ShelfModel.swift",
+    "anchor": "size: sizes[path]",
+    "replacement": "size: nil"
+  },
+  {
+    "id": "BrowserWorkspace-W1",
+    "name": "W1 a taken name is reused instead of numbered",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "        guard taken.contains(base.lowercased()) else { return base }",
+    "replacement": "        return base"
+  },
+  {
+    "id": "BrowserWorkspace-W2",
+    "name": "W2 rename accepts a name another workspace has",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "              !workspaces.contains(where: { $0.id != id && $0.name.lowercased() == trimmed.lowercased() }) else { return false }",
+    "replacement": "              true else { return false }"
+  },
+  {
+    "id": "BrowserWorkspace-W3",
+    "name": "W3 one damaged workspace loses all of them",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "                  let ws = try? decoder.decode(Workspace.self, from: itemData) else { skipped += 1; continue }",
+    "replacement": "                  let ws = try? decoder.decode(Workspace.self, from: itemData) else { return (WorkspaceStore(), skipped + 1) }"
+  },
+  {
+    "id": "BrowserWorkspace-W4",
+    "name": "W4 a missing folder is not reported (v2: dead tab still listed as missing)",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "                if !exists(tabs[t].path) {",
+    "replacement": "                if false {"
+  },
+  {
+    "id": "BrowserWorkspace-W5",
+    "name": "W5 Shift at launch still restores",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "        reopenEnabled && !shiftHeld",
+    "replacement": "        reopenEnabled"
+  },
+  {
+    "id": "BrowserWorkspace-W6",
+    "name": "W6 a pane outside the tree survives restore",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "        w.panes.removeAll { !treePanes.contains($0.id) }",
+    "replacement": "        _ = treePanes"
+  },
+  {
+    "id": "BrowserWorkspace-W7",
+    "name": "W7 history keeps folders that are gone",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "                tabs[t].history.removeMissing(exists: exists, fallback: tabs[t].path)",
+    "replacement": "                _ = exists"
+  },
+  {
+    "id": "PaneHistory-R2",
+    "name": "M2 back grows past 50",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "            back.removeFirst(back.count - Self.limit)\n",
+    "replacement": "            _ = 0\n"
+  },
+  {
+    "id": "PaneHistory-R4",
+    "name": "M4 a fresh visit keeps the Forward stack",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "        forward.removeAll()\n        current = path",
+    "replacement": "        current = path"
+  },
+  {
+    "id": "PaneHistory-R5",
+    "name": "M5 Back pops the wrong end of the stack",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "        guard let destination = back.popLast() else { return nil }",
+    "replacement": "        guard let destination = back.first.map({ _ in back.removeFirst() }) else { return nil }"
+  },
+  {
+    "id": "PaneHistory-R6",
+    "name": "M6 Back forgets to make Forward possible",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "        forward.append(current)\n        current = destination",
+    "replacement": "        current = destination"
+  },
+  {
+    "id": "PaneHistory-R8",
+    "name": "M8 re-leaving a remembered folder evicts it as if new",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "        if remembered[parent] == nil {\n            rememberedOrder.append(parent)\n        }",
+    "replacement": "        rememberedOrder.append(parent)"
+  },
+  {
+    "id": "PaneHistory-R13",
+    "name": "M13 restore keeps a gone current folder",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "        if !exists(current) {\n            current = fallback\n        }",
+    "replacement": "        _ = fallback"
+  },
+  {
+    "id": "PaneHistory-R14",
+    "name": "M14 remembering keeps more than 200 folders",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "        if rememberedOrder.count > Self.rememberLimit {",
+    "replacement": "        if rememberedOrder.count > Self.rememberLimit * 10 {"
+  },
+  {
+    "id": "SearchQuery-R6",
+    "name": "M6 excluded words are ignored",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "        for word in search.excluded {",
+    "replacement": "        for word in [String]() where !search.excluded.isEmpty {"
+  },
+  {
+    "id": "DirectoryEntry-N1",
+    "name": "N1 the ASCII fast path does not lowercase",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "            out.append(b >= 65 && b <= 90 ? b + 32 : b)\n        }\n        if ascii { return out }",
+    "replacement": "            out.append(b)\n        }\n        if ascii { return out }"
+  },
+  {
+    "id": "DirectoryEntry-N2",
+    "name": "N2 \"đ\" is not folded to \"d\"",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "        table[0x0111] = Array(\"d\".utf8)   // đ",
+    "replacement": "        table[0x0111] = Array(\"đ\".utf8)   // đ"
+  },
+  {
+    "id": "DirectoryEntry-N3",
+    "name": "N3 a longer number sorts before a shorter one",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "                if la != lb { return la < lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if a[si + k]",
+    "replacement": "                if la != lb { return la > lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if a[si + k]"
+  },
+  {
+    "id": "DirectoryEntry-N4",
+    "name": "N4 the sort hot path ignores digit values",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "                if la != lb { return la < lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if buf[si + k]",
+    "replacement": "                if false && la != lb { return la < lb ? -1 : 1 }\n                var k = 0\n                while k < la {\n                    if buf[si + k]"
+  },
+  {
+    "id": "DirectoryEntry-N5",
+    "name": "N5 descending is ignored",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "                    if c != 0 { return order.ascending ? c < 0 : c > 0 }",
+    "replacement": "                    if c != 0 { return c < 0 }"
+  },
+  {
+    "id": "DirectoryEntry-N6",
+    "name": "N6 folders-first is inverted",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "                    if foldersFirst, order.key == .name, folders[x] != folders[y] { return folders[x] }",
+    "replacement": "                    if foldersFirst, order.key == .name, folders[x] != folders[y] { return folders[y] }"
+  },
+  {
+    "id": "DirectoryEntry-N7",
+    "name": "N7 directories sort after files by size",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "                        if xDir != yDir { return xDir ? -1 : 1 }",
+    "replacement": "                        if xDir != yDir { return xDir ? 1 : -1 }"
+  },
+  {
+    "id": "DirectoryEntry-N8",
+    "name": "N8 the filter needs only one of the words",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "            for word in words where !containsASCIIBytes(entry.nameKey, word) { return false }\n            return true",
+    "replacement": "            for word in words where containsASCIIBytes(entry.nameKey, word) { return true }\n            return false"
+  },
+  {
+    "id": "DirectoryEntry-N9",
+    "name": "N9 equal names are not broken by path",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "                    return paths[x] < paths[y]",
+    "replacement": "                    return false"
+  },
+  {
+    "id": "DirectoryEntry-N10",
+    "name": "N10 type-select fallback compares the wrong way",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "            for (index, name) in names.enumerated() where naturalCompare(prefixKey, foldBytes(name)) < 0 {",
+    "replacement": "            for (index, name) in names.enumerated() where naturalCompare(prefixKey, foldBytes(name)) > 0 {"
+  },
+  {
+    "id": "SidebarLayout-1",
+    "name": "S1 deleting a group loses its items",
+    "file": "XFinder/Core/Browser/SidebarLayout.swift",
+    "anchor": "        for item in returning where !seenPaths.contains(item.path) {",
+    "replacement": "        for item in returning where false && !seenPaths.contains(item.path) {"
+  },
+  {
+    "id": "SidebarLayout-2",
+    "name": "S2 a group may take a taken name",
+    "file": "XFinder/Core/Browser/SidebarLayout.swift",
+    "anchor": "        guard !trimmed.isEmpty, !groups.contains(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame })",
+    "replacement": "        guard !trimmed.isEmpty, true || !groups.contains(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame })"
+  },
+  {
+    "id": "SidebarLayout-3",
+    "name": "S3 an empty display name is stored instead of reset",
+    "file": "XFinder/Core/Browser/SidebarLayout.swift",
+    "anchor": "        let resolved = (trimmed?.isEmpty ?? true) ? nil : trimmed",
+    "replacement": "        let resolved = trimmed"
+  },
+  {
+    "id": "SidebarLayout-4",
+    "name": "S4 a hidden disk is never reported hidden",
+    "file": "XFinder/Core/Browser/SidebarLayout.swift",
+    "anchor": "        hiddenVolumeUUIDs.contains(uuid)",
+    "replacement": "        hiddenVolumeUUIDs.contains(uuid) && false"
+  },
+  {
+    "id": "FileInfoRules-1",
+    "name": "F1 read and write bits swapped",
+    "file": "XFinder/Core/Browser/FileInfoRules.swift",
+    "anchor": "        let r = (mode >> (shift + 2)) & 1 == 1",
+    "replacement": "        let r = (mode >> (shift + 1)) & 1 == 1"
+  },
+  {
+    "id": "FileInfoRules-2",
+    "name": "F2 read-only keeps the write bit",
+    "file": "XFinder/Core/Browser/FileInfoRules.swift",
+    "anchor": "            result |= rBit; result &= ~wBit",
+    "replacement": "            result |= rBit"
+  },
+  {
+    "id": "FileInfoRules-3",
+    "name": "F3 a colon is accepted in a name",
+    "file": "XFinder/Core/Browser/RenameRules.swift",
+    "anchor": "if name.contains(\"/\") || name.contains(\":\") { return .separator }",
+    "replacement": "if name.contains(\"/\") { return .separator }"
+  },
+  {
+    "id": "FileInfoRules-4",
+    "name": "F4 mixed kinds read as one kind",
+    "file": "XFinder/Core/Browser/FileInfoRules.swift",
+    "anchor": "        let kindSummary = distinctKinds.count == 1 ? (distinctKinds.first ?? \"\") : \"Nhiều loại\"",
+    "replacement": "        let kindSummary = distinctKinds.first ?? \"\""
+  },
+  {
+    "id": "W1-01",
+    "name": "add-at-end",
+    "file": "XFinder/Core/Browser/PaneTabs.swift",
+    "anchor": "let insertAt = selected + 1",
+    "replacement": "let insertAt = tabs.count"
+  },
+  {
+    "id": "W1-02",
+    "name": "remove-last-tab",
+    "file": "XFinder/Core/Browser/PaneTabs.swift",
+    "anchor": "guard tabs.count > 1, let i = tabs.firstIndex(of: tab) else { return false }",
+    "replacement": "guard tabs.count > 0, let i = tabs.firstIndex(of: tab) else { return false }"
+  },
+  {
+    "id": "W1-03",
+    "name": "remove-selects-left",
+    "file": "XFinder/Core/Browser/PaneTabs.swift",
+    "anchor": "selected = min(i, tabs.count - 1)",
+    "replacement": "selected = max(i - 1, 0)"
+  },
+  {
+    "id": "W1-04",
+    "name": "previous-not-cyclic",
+    "file": "XFinder/Core/Browser/PaneTabs.swift",
+    "anchor": "selected = (selected - 1 + tabs.count) % tabs.count",
+    "replacement": "selected = max(selected - 1, 0)"
+  },
+  {
+    "id": "W1-05",
+    "name": "insert-duplicates",
+    "file": "XFinder/Core/Browser/PaneTabs.swift",
+    "anchor": "        if let existing = tabs.firstIndex(of: tab) {\n            tabs.remove(at: existing)\n        }\n        let clamped = min(max(index, 0), tabs.count)\n        tabs.insert(tab, at: clamped)\n        if select {",
+    "replacement": "        let clamped = min(max(index, 0), tabs.count)\n        tabs.insert(tab, at: clamped)\n        if select {"
+  },
+  {
+    "id": "W1-06",
+    "name": "move-duplicates",
+    "file": "XFinder/Core/Browser/PaneTabs.swift",
+    "anchor": "        tabs.remove(at: from)",
+    "replacement": "        _ = from"
+  },
+  {
+    "id": "W1-07",
+    "name": "strip-index-flipped",
+    "file": "XFinder/Core/Browser/PaneTabs.swift",
+    "anchor": "if point.x < midX {",
+    "replacement": "if point.x > midX {"
+  },
+  {
+    "id": "W1-08",
+    "name": "edge-zone-uncapped",
+    "file": "XFinder/Core/Browser/PaneTabs.swift",
+    "anchor": "let edgeZone = min(edgeZoneMax, edgeZoneFraction * min(paneRect.width, paneRect.height))",
+    "replacement": "let edgeZone = edgeZoneFraction * max(paneRect.width, paneRect.height)"
+  },
+  {
+    "id": "W1-09",
+    "name": "corner-farther-edge",
+    "file": "XFinder/Core/Browser/PaneTabs.swift",
+    "anchor": "guard let nearest = candidates.min(by: { $0.1 < $1.1 }) else { return .center }",
+    "replacement": "guard let nearest = candidates.max(by: { $0.1 < $1.1 }) else { return .center }"
+  },
+  {
+    "id": "W1-11",
+    "name": "neighbor-tie-farther-column",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "|| (abs(overlap - current.overlap) <= eps && gap < current.gap - eps)",
+    "replacement": "|| (abs(overlap - current.overlap) <= eps && gap > current.gap + eps)"
+  },
+  {
+    "id": "W1-12",
+    "name": "resize-inverted",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "let delta = (isFirst == grow) ? step : -step",
+    "replacement": "let delta = (isFirst != grow) ? step : -step"
+  },
+  {
+    "id": "W1-14",
+    "name": "preset-ignores-fraction",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "guard case .split(let axis, let fraction, let first, let second) = root, fraction == 0.5 else { return nil }",
+    "replacement": "guard case .split(let axis, _, let first, let second) = root else { return nil }"
+  },
+  {
+    "id": "W1-15",
+    "name": "preset-axis-swapped",
+    "file": "XFinder/Core/Browser/PaneTree.swift",
+    "anchor": "            case .horizontal: return .sideBySide",
+    "replacement": "            case .horizontal: return .stacked"
+  },
+  {
+    "id": "W1-16",
+    "name": "history-steps-partial",
+    "file": "XFinder/Core/Browser/PaneHistory.swift",
+    "anchor": "guard steps >= 1, back.count >= steps else { return nil }",
+    "replacement": "guard steps >= 1 else { return nil }"
+  },
+  {
+    "id": "W1-17",
+    "name": "restore-dead-tab-to-home",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "                    missing.append(tabs[t].path)",
+    "replacement": "                    missing.append(tabs[t].path); tabs[t].path = home"
+  },
+  {
+    "id": "W1-18",
+    "name": "restore-selected-unclamped",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "let selected = min(max(w.panes[i].selectedTab ?? w.panes[i].selectedTabIndex, 0), max(tabs.count - 1, 0))",
+    "replacement": "let selected = w.panes[i].selectedTab ?? 0"
+  },
+  {
+    "id": "W1-19",
+    "name": "alltabs-ignores-v2",
+    "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
+    "anchor": "        guard let tabs, !tabs.isEmpty else {",
+    "replacement": "        guard let tabs, tabs.isEmpty else {"
+  },
+  {
+    "id": "W1-20",
+    "name": "find-back-to-option",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": ".find: KeyChord(\"f\", command: true),",
+    "replacement": ".find: KeyChord(\"f\", command: true, option: true),"
+  },
+  {
+    "id": "W1-21",
+    "name": "next-pane-tab-collides",
+    "file": "XFinder/Core/Browser/BrowserCommands.swift",
+    "anchor": ".nextPaneTab: KeyChord(\"]\", command: true, option: true),",
+    "replacement": ".nextPaneTab: KeyChord(\"]\", command: true, control: true),"
+  },
+  {
+    "id": "W27-01",
+    "name": "lru-no-eviction",
+    "file": "XFinder/Core/Browser/FolderViewOptions.swift",
+    "anchor": "        while order.count > Self.limit {",
+    "replacement": "        while order.count > Self.limit + 1_000_000 {"
+  },
+  {
+    "id": "W27-02",
+    "name": "lru-evicts-newest",
+    "file": "XFinder/Core/Browser/FolderViewOptions.swift",
+    "anchor": "            let oldest = order.removeFirst()",
+    "replacement": "            let oldest = order.removeLast()"
+  },
+  {
+    "id": "W27-03",
+    "name": "today-bucket-lost",
+    "file": "XFinder/Core/Browser/GroupBy.swift",
+    "anchor": "            if day >= today {",
+    "replacement": "            if day > today {"
+  },
+  {
+    "id": "W27-04",
+    "name": "yesterday-into-week",
+    "file": "XFinder/Core/Browser/GroupBy.swift",
+    "anchor": "            } else if day >= yesterdayStart {",
+    "replacement": "            } else if day > yesterdayStart.addingTimeInterval(86_400 * 2) {"
+  },
+  {
+    "id": "W27-05",
+    "name": "letter-digits-not-hash",
+    "file": "XFinder/Core/Browser/GroupBy.swift",
+    "anchor": "        guard let first = folded.first, first >= 0x61, first <= 0x7A else { return \"#\" }",
+    "replacement": "        guard let first = folded.first else { return \"#\" }"
+  },
+  {
+    "id": "W27-06",
+    "name": "zero-bytes-in-small",
+    "file": "XFinder/Core/Browser/GroupBy.swift",
+    "anchor": "            } else if entry.size == 0 {",
+    "replacement": "            } else if entry.size == -2 {"
+  },
+  {
+    "id": "W27-07",
+    "name": "colour-suffix-kept-in-name",
+    "file": "XFinder/Core/Browser/FinderTags.swift",
+    "anchor": "        return FinderTag(name: String(raw[raw.startIndex..<lastNewline]), color: color)",
+    "replacement": "        return FinderTag(name: raw, color: color)"
+  },
+  {
+    "id": "W27-08",
+    "name": "virtual-any-scheme",
+    "file": "XFinder/Core/Browser/SidebarSections.swift",
+    "anchor": "        guard path.hasPrefix(scheme) else { return nil }",
+    "replacement": "        guard !path.isEmpty else { return nil }"
+  },
+  {
+    "id": "W27-09",
+    "name": "group-by-type-ignored",
+    "file": "XFinder/Core/Browser/SidebarSections.swift",
+    "anchor": "            if groupLocationsByType {",
+    "replacement": "            if false, groupLocationsByType {"
+  },
+  {
+    "id": "W27-10",
+    "name": "virtual-recorded",
+    "file": "XFinder/Core/Browser/RecentFolders.swift",
+    "anchor": "        guard !path.isEmpty, VirtualLocation.parse(path) == nil else { return }",
+    "replacement": "        guard !path.isEmpty else { return }"
+  },
+  {
+    "id": "W27-11",
+    "name": "no-cap",
+    "file": "XFinder/Core/Browser/RecentFolders.swift",
+    "anchor": "        if paths.count > Self.limit {",
+    "replacement": "        if paths.count > Self.limit * 100 {"
+  },
+  {
+    "id": "W27-12",
+    "name": "system-chords-allowed",
+    "file": "XFinder/Core/Browser/KeyBindings.swift",
+    "anchor": "        if Self.systemReserved.contains(chord) { return .reservedBySystem }",
+    "replacement": "        if false, Self.systemReserved.contains(chord) { return .reservedBySystem }"
+  },
+  {
+    "id": "W27-13",
+    "name": "plain-letters-allowed",
+    "file": "XFinder/Core/Browser/KeyBindings.swift",
+    "anchor": "        if !chord.command && !chord.control && !isFunctionKey {",
+    "replacement": "        if false && !chord.command && !chord.control && !isFunctionKey {"
+  },
+  {
+    "id": "W27-14",
+    "name": "extra-key-ignored",
+    "file": "XFinder/Core/Browser/KeyBindings.swift",
+    "anchor": "            if b.primary == chord || b.extra == chord { return command }",
+    "replacement": "            if b.primary == chord { return command }"
+  },
+  {
+    "id": "W27-15",
+    "name": "same-folder-allowed",
+    "file": "XFinder/Core/Browser/FolderMerge.swift",
+    "anchor": "        if sourceStandard == destinationStandard { return .sameFolder }",
+    "replacement": "        if false { return .sameFolder }"
+  },
+  {
+    "id": "W27-16",
+    "name": "nested-allowed",
+    "file": "XFinder/Core/Browser/FolderMerge.swift",
+    "anchor": "        if FileOperationRules.isInside(destinationStandard, ancestor: sourceStandard) { return .nested }",
+    "replacement": "        if false { return .nested }"
+  },
+  {
+    "id": "W27-17",
+    "name": "keep-newer-always-replaces",
+    "file": "XFinder/Core/Browser/FolderMerge.swift",
+    "anchor": "                if FileOperationRules.isNewer(node.modified, than: existing.modified, coarseTimestamps: fat) {",
+    "replacement": "                if true {"
+  },
+  {
+    "id": "W27-18",
+    "name": "packages-merged-inside",
+    "file": "XFinder/Core/Browser/FolderMerge.swift",
+    "anchor": "        if source.isPackage || destination.isPackage { return \"Gói ứng dụng — không gộp bên trong\" }",
+    "replacement": "        if false { return \"Gói ứng dụng — không gộp bên trong\" }"
+  },
+  {
+    "id": "W27-19",
+    "name": "retry-after-write",
+    "file": "XFinder/Core/Browser/ProblemsList.swift",
+    "anchor": "        !items.isEmpty && items.allSatisfy { $0.beforeWrite && $0.reason.isRetryable }",
+    "replacement": "        !items.isEmpty && items.allSatisfy { $0.reason.isRetryable }"
+  },
+  {
+    "id": "W27-20",
+    "name": "enospc-not-disk-full",
+    "file": "XFinder/Core/Browser/ProblemsList.swift",
+    "anchor": "        case ENOSPC, EDQUOT: return .diskFull",
+    "replacement": "        case EDQUOT: return .diskFull"
+  },
+  {
+    "id": "W27-21",
+    "name": "no-limit",
+    "file": "XFinder/Core/Browser/UndoJournal.swift",
+    "anchor": "        if undo.count > Self.limit {",
+    "replacement": "        if undo.count > Self.limit * 100 {"
+  },
+  {
+    "id": "W27-22",
+    "name": "identity-unchecked",
+    "file": "XFinder/Core/Browser/UndoJournal.swift",
+    "anchor": "            guard currentIdentity.inode == recordedInode, currentIdentity.size == recordedSize,",
+    "replacement": "            guard true || currentIdentity.inode == recordedInode, currentIdentity.size == recordedSize || true,"
+  },
+  {
+    "id": "W27-23",
+    "name": "disk-missing-ignored",
+    "file": "XFinder/Core/Browser/UndoJournal.swift",
+    "anchor": "            guard volumeMounted(item.to), volumeMounted(item.from) else { return .diskMissing }",
+    "replacement": "            guard true else { return .diskMissing }"
+  },
+  {
+    "id": "W27-24",
+    "name": "stale-cut-pastes",
+    "file": "XFinder/Core/Browser/CutBoard.swift",
+    "anchor": "        guard changeCount != -1, currentChangeCount == changeCount, !paths.isEmpty else { return [] }",
+    "replacement": "        guard changeCount != -1, !paths.isEmpty else { return [] }"
+  },
+  {
+    "id": "W27-25",
+    "name": "same-folder-moves",
+    "file": "XFinder/Core/Browser/CutBoard.swift",
+    "anchor": "            return parentStandard != destinationStandard",
+    "replacement": "            return true"
+  },
+  {
+    "id": "W27-26",
+    "name": "folders-first-for-every-sort",
+    "file": "XFinder/Core/Browser/DirectoryEntry.swift",
+    "anchor": "                    if foldersFirst, order.key == .name, folders[x] != folders[y] { return folders[x] }",
+    "replacement": "                    if foldersFirst, folders[x] != folders[y] { return folders[x] }"
+  },
+  {
+    "id": "W27-27",
+    "name": "merge-cross-volume-renames",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "        case .move, .merge:\n            return sameVolume ? .rename : .copyVerifyTrash",
+    "replacement": "        case .move:\n            return sameVolume ? .rename : .copyVerifyTrash\n        case .merge:\n            return .rename"
+  },
+  {
+    "id": "CloudCache-01",
+    "name": "item-read-without-folder-gate",
+    "file": "XFinder/Core/Browser/CloudFactsCache.swift",
+    "anchor": "let facts: CloudFacts = inCloudFolder ? readItem(path) : CloudFacts()",
+    "replacement": "let facts: CloudFacts = readItem(path)"
+  },
+  {
+    "id": "CloudCache-02",
+    "name": "folder-probe-not-memoised",
+    "file": "XFinder/Core/Browser/CloudFactsCache.swift",
+    "anchor": "            folderIsCloud[parent] = inCloudFolder\n",
+    "replacement": "\n"
+  },
+  {
+    "id": "CloudCache-03",
+    "name": "item-facts-not-cached",
+    "file": "XFinder/Core/Browser/CloudFactsCache.swift",
+    "anchor": "        factsByPath[path] = facts\n",
+    "replacement": "\n"
+  },
+  {
+    "id": "CloudCache-04",
+    "name": "removeAll-keeps-folders",
+    "file": "XFinder/Core/Browser/CloudFactsCache.swift",
+    "anchor": "        folderIsCloud.removeAll()\n",
+    "replacement": "\n"
+  },
+  {
+    "id": "CloudCache-05",
+    "name": "root-is-its-own-parent",
+    "file": "XFinder/Core/Browser/CloudFactsCache.swift",
+    "anchor": "!parent.isEmpty && parent != path && probeFolder(parent)",
+    "replacement": "probeFolder(parent)"
+  },
+  {
+    "id": "LoadRules-01",
+    "name": "refresh-ignores-loaded-state",
+    "file": "XFinder/Core/Browser/LoadRules.swift",
+    "anchor": "guard isLoaded, let loadedPath, !path.isEmpty else { return false }",
+    "replacement": "guard let loadedPath, !path.isEmpty else { return false }"
+  },
+  {
+    "id": "LoadRules-02",
+    "name": "no-path-normalisation",
+    "file": "XFinder/Core/Browser/LoadRules.swift",
+    "anchor": "return (path as NSString).standardizingPath == (loadedPath as NSString).standardizingPath",
+    "replacement": "return path == loadedPath"
+  },
+  {
+    "id": "LoadRules-03",
+    "name": "any-folder-is-a-refresh",
+    "file": "XFinder/Core/Browser/LoadRules.swift",
+    "anchor": "return (path as NSString).standardizingPath == (loadedPath as NSString).standardizingPath",
+    "replacement": "return !loadedPath.isEmpty"
+  },
+  {
+    "id": "ListingDiff-01",
+    "name": "reorder-is-patched",
+    "file": "XFinder/Core/Browser/ListingDiff.swift",
+    "anchor": "guard keptOld == keptNew else { return .reload }",
+    "replacement": "guard keptOld.count == keptNew.count else { return .reload }"
+  },
+  {
+    "id": "ListingDiff-02",
+    "name": "duplicates-not-detected",
+    "file": "XFinder/Core/Browser/ListingDiff.swift",
+    "anchor": "guard oldSet.count == old.count, newSet.count == new.count else { return .reload }",
+    "replacement": "guard oldSet.count <= old.count, newSet.count <= new.count else { return .reload }"
+  },
+  {
+    "id": "ListingDiff-03",
+    "name": "inserted-indices-from-old",
+    "file": "XFinder/Core/Browser/ListingDiff.swift",
+    "anchor": "            if oldSet.contains(id) { keptNew.append(id) } else { inserted.insert(i) }",
+    "replacement": "            if oldSet.contains(id) { keptNew.append(id) } else { inserted.insert(max(0, i - removed.count)) }"
+  },
+  {
+    "id": "ListingDiff-04",
+    "name": "patch-cap-ignored",
+    "file": "XFinder/Core/Browser/ListingDiff.swift",
+    "anchor": "return removed.count + inserted.count <= maxPatchedRows",
+    "replacement": "return true"
+  },
+  {
+    "id": "W0-01",
+    "name": "fresh-ignores-nil",
+    "file": "XFinder/Core/Browser/ListingCacheRules.swift",
+    "anchor": "        guard let current: ListingToken = current else { return false }",
+    "replacement": "        guard let current: ListingToken = current else { return true }"
+  },
+  {
+    "id": "W0-02",
+    "name": "store-negative",
+    "file": "XFinder/Core/Browser/ListingCacheRules.swift",
+    "anchor": "        entryCount >= 0 && entryCount <= maxCachedEntries",
+    "replacement": "        entryCount <= maxCachedEntries"
+  },
+  {
+    "id": "W0-03",
+    "name": "evict-newest-first",
+    "file": "XFinder/Core/Browser/ListingCacheRules.swift",
+    "anchor": "if lhs.updatedAt != rhs.updatedAt { return lhs.updatedAt < rhs.updatedAt }",
+    "replacement": "if lhs.updatedAt != rhs.updatedAt { return lhs.updatedAt > rhs.updatedAt }"
+  },
+  {
+    "id": "W0-04",
+    "name": "evict-one-extra",
+    "file": "XFinder/Core/Browser/ListingCacheRules.swift",
+    "anchor": "            if remaining <= budgetBytes { break }",
+    "replacement": "            if remaining < 0 { break }"
+  },
+  {
+    "id": "W0-05",
+    "name": "plan-match-skips-disk",
+    "file": "XFinder/Core/Browser/LoadCoordinatorRules.swift",
+    "anchor": "        return [.deliverCache(final: true), .readDisk]",
+    "replacement": "        return [.deliverCache(final: true)]"
+  },
+  {
+    "id": "W0-06",
+    "name": "lexical-dotdot-ignored",
+    "file": "XFinder/Core/Browser/LoadCoordinatorRules.swift",
+    "anchor": "                if let last: Substring = parts.last, last != \"..\" { parts.removeLast() }",
+    "replacement": "                if let last: Substring = parts.last, last != \"..\" { _ = last }"
+  },
+  {
+    "id": "W0-07",
+    "name": "book-never-closes",
+    "file": "XFinder/Core/Browser/LoadCoordinatorRules.swift",
+    "anchor": "            if ids.isEmpty {",
+    "replacement": "            if ids.isEmpty && false {"
+  },
+  {
+    "id": "W0-08",
+    "name": "hitch-threshold-exclusive",
+    "file": "XFinder/Core/Browser/HitchRules.swift",
+    "anchor": "        return latency >= threshold && latency <= sleepWakeCutoff",
+    "replacement": "        return latency >= threshold"
+  },
+  {
+    "id": "W0-09",
+    "name": "sample-cap-off-by-one",
+    "file": "XFinder/Core/Browser/HitchRules.swift",
+    "anchor": "        return recentCount < maxSamplesPerHour",
+    "replacement": "        return recentCount <= maxSamplesPerHour"
+  },
+  {
+    "id": "W0-10",
+    "name": "pressure-critical-as-warning",
+    "file": "XFinder/Core/Browser/PressureRules.swift",
+    "anchor": "        if raw & DispatchBit.critical != 0 { return .critical }",
+    "replacement": "        if raw & DispatchBit.critical != 0 { return .warning }"
+  },
+  {
+    "id": "W0-11",
+    "name": "schema-no-auto-vacuum",
+    "file": "XFinder/Core/Browser/ListingDiskCache.swift",
+    "anchor": "        try db.execute(\"PRAGMA auto_vacuum=INCREMENTAL\")\n        try db.execute(\"PRAGMA journal_mode=WAL\")",
+    "replacement": "        try db.execute(\"PRAGMA journal_mode=WAL\")"
+  },
+  {
+    "id": "W0-12",
+    "name": "token-lstat",
+    "file": "XFinder/Core/Browser/ListingDiskCache.swift",
+    "anchor": "        guard stat(folderPath, &info) == 0 else { return nil }",
+    "replacement": "        guard lstat(folderPath, &info) == 0 else { return nil }"
+  },
+  {
+    "id": "W0-13",
+    "name": "old-file-not-vacuumed",
+    "file": "XFinder/Core/Browser/ListingDiskCache.swift",
+    "anchor": "            if vacuumMode != 2 { try db.execute(\"VACUUM\") }\n            // Same version",
+    "replacement": "            // Same version"
+  },
+  {
+    "id": "W0-14",
+    "name": "coordinator-key-standardizing",
+    "file": "XFinder/Core/Browser/DirectoryLoadCoordinator.swift",
+    "anchor": "        LoadCoordinatorRules.lexicalPath((path as NSString).expandingTildeInPath)",
+    "replacement": "        (path as NSString).standardizingPath"
+  },
+  {
+    "id": "W0-15",
+    "name": "coordinator-cache-only",
+    "file": "XFinder/Core/Browser/DirectoryLoadCoordinator.swift",
+    "anchor": "            case .readDisk:\n                needsDisk = true",
+    "replacement": "            case .readDisk:\n                needsDisk = false"
+  },
+  {
+    "id": "W0-16",
+    "name": "limiter-unbounded",
+    "file": "XFinder/Core/Browser/DirectoryWorkLimiter.swift",
+    "anchor": "        if running < maxConcurrent && waiters.isEmpty {",
+    "replacement": "        if true {"
+  },
+  {
+    "id": "W0-17",
+    "name": "relief-replace-appends",
+    "file": "XFinder/Core/Browser/MemoryPressureRelief.swift",
+    "anchor": "        if let index: Int = relievers.firstIndex(where: { $0.name == name }) {",
+    "replacement": "        if let index: Int = relievers.firstIndex(where: { _ in false }) {"
+  },
+  {
+    "id": "T32W1-01",
+    "name": "property-name-case-sensitive",
+    "file": "XFinder/Core/Browser/PropertySchema.swift",
+    "anchor": "        Array(name.precomposedStringWithCanonicalMapping.lowercased().utf8)",
+    "replacement": "        Array(name.precomposedStringWithCanonicalMapping.utf8)"
+  },
+  {
+    "id": "T32W1-02",
+    "name": "property-name-nfd-apart",
+    "file": "XFinder/Core/Browser/PropertySchema.swift",
+    "anchor": "        Array(name.precomposedStringWithCanonicalMapping.lowercased().utf8)",
+    "replacement": "        Array(name.lowercased().utf8)"
+  },
+  {
+    "id": "T32W1-03",
+    "name": "sections-empty-kept",
+    "file": "XFinder/Core/Browser/PropertyRules.swift",
+    "anchor": "        for slot in 0..<optionCount where !buckets[slot].isEmpty {",
+    "replacement": "        for slot in 0..<optionCount {"
+  },
+  {
+    "id": "T32W1-04",
+    "name": "sections-unset-first",
+    "file": "XFinder/Core/Browser/PropertyRules.swift",
+    "anchor": "            let slot: Int = selections[entry.path].flatMap { slotByOption[$0] } ?? optionCount",
+    "replacement": "            let slot: Int = selections[entry.path].flatMap { slotByOption[$0] } ?? 0"
+  },
+  {
+    "id": "T32W1-05",
+    "name": "rewrite-not-component-wise",
+    "file": "XFinder/Core/Browser/FolderAnnotations.swift",
+    "anchor": "        let prefix: String = ancestor == \"/\" ? \"/\" : ancestor + \"/\"",
+    "replacement": "        let prefix: String = ancestor"
+  },
+  {
+    "id": "T32W1-06",
+    "name": "pin-cap-off",
+    "file": "XFinder/Core/Browser/FolderAnnotations.swift",
+    "anchor": "        guard distinctCount < maxPinsPerFolder else { return pins }",
+    "replacement": "        guard distinctCount <= maxPinsPerFolder else { return pins }"
+  },
+  {
+    "id": "T32W1-07",
+    "name": "nickname-nfd-kept",
+    "file": "XFinder/Core/Browser/FolderAnnotations.swift",
+    "anchor": "        for character in raw.precomposedStringWithCanonicalMapping {",
+    "replacement": "        for character in raw {"
+  },
+  {
+    "id": "T32W1-08",
+    "name": "searchkey-newline",
+    "file": "XFinder/Core/Browser/FolderAnnotations.swift",
+    "anchor": "        key.append(0x00)",
+    "replacement": "        key.append(0x0A)"
+  },
+  {
+    "id": "T32W1-09",
+    "name": "store-key-nfd",
+    "file": "XFinder/Core/Browser/MetadataStore.swift",
+    "anchor": "        for character in path.precomposedStringWithCanonicalMapping {",
+    "replacement": "        for character in path {"
+  },
+  {
+    "id": "T32W1-10",
+    "name": "store-purges-kept-options",
+    "file": "XFinder/Core/Browser/MetadataStore.swift",
+    "anchor": "                for option in oldOptions.subtracting(newOptions) {",
+    "replacement": "                for option in oldOptions.union(newOptions) {"
+  },
+  {
+    "id": "T32W1-11",
+    "name": "store-emoji-raw",
+    "file": "XFinder/Core/Browser/MetadataStore.swift",
+    "anchor": "        guard let raw: String = emoji, let emoji: String = EmojiRules.normalized(raw) else {",
+    "replacement": "        guard let emoji: String = emoji, !emoji.isEmpty else {"
+  },
+  {
+    "id": "T32W1-12",
+    "name": "space-bad-sidebar-dropped",
+    "file": "XFinder/Core/Browser/SpaceModel.swift",
+    "anchor": "        let sidebar: SidebarLayout = sidebar(dict[\"sidebar\"]) ?? SidebarLayout()",
+    "replacement": "        guard let sidebar: SidebarLayout = sidebar(dict[\"sidebar\"]) else { return nil }"
+  },
+  {
+    "id": "T32W1-13",
+    "name": "space-cycle-no-wrap",
+    "file": "XFinder/Core/Browser/SpaceModel.swift",
+    "anchor": "        let next: Int = ((current + delta) % count + count) % count",
+    "replacement": "        let next: Int = max(0, min(current + delta, count - 1))"
+  },
+  {
+    "id": "T37-01",
+    "name": "length counted on NFC, not NFD",
+    "file": "XFinder/Core/Browser/RenameRules.swift",
+    "anchor": "if name.decomposedStringWithCanonicalMapping.utf16.count > maxNameUnits { return .tooLong }",
+    "replacement": "if name.utf16.count > maxNameUnits { return .tooLong }"
+  },
+  {
+    "id": "T37-02",
+    "name": "control characters allowed",
+    "file": "XFinder/Core/Browser/RenameRules.swift",
+    "anchor": "        if name.unicodeScalars.contains(where: { $0.properties.generalCategory == .control }) { return .control }\n",
+    "replacement": ""
+  },
+  {
+    "id": "T37-03",
+    "name": "only . is reserved",
+    "file": "XFinder/Core/Browser/RenameRules.swift",
+    "anchor": "if name == \".\" || name == \"..\" || name.hasPrefix(reservedPrefix) { return .reserved }",
+    "replacement": "if name == \".\" { return .reserved }"
+  },
+  {
+    "id": "T37-04",
+    "name": "name key is case-sensitive",
+    "file": "XFinder/Core/Browser/RenameRules.swift",
+    "anchor": "name.decomposedStringWithCanonicalMapping.folding(options: [.caseInsensitive], locale: nil)",
+    "replacement": "name.decomposedStringWithCanonicalMapping"
+  },
+  {
+    "id": "T37-05",
+    "name": "no case-only note",
+    "file": "XFinder/Core/Browser/RenameRules.swift",
+    "anchor": "        if isSameName(old, new) { notes.append(.caseOnly) }\n",
+    "replacement": ""
+  },
+  {
+    "id": "T37-06",
+    "name": "extension case counts as a new extension",
+    "file": "XFinder/Core/Browser/RenameRules.swift",
+    "anchor": "} else if !oldExt.isEmpty, !isSameName(oldExt, newExt) {",
+    "replacement": "} else if !oldExt.isEmpty, oldExt != newExt {"
+  },
+  {
+    "id": "T37-07",
+    "name": "renamed-away names stay occupied",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "            occupiedByFolder[folder]?.remove(RenameRules.nameKey(row.oldName))\n",
+    "replacement": ""
+  },
+  {
+    "id": "T37-08",
+    "name": "errors do not block the batch",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "var canRename: Bool { errorCount == 0 && renameCount > 0 }",
+    "replacement": "var canRename: Bool { renameCount > 0 }"
+  },
+  {
+    "id": "T37-09",
+    "name": "duplicates need three rows",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "if (newNameCount[folder + \"\\u{0}\" + key] ?? 0) > 1 {",
+    "replacement": "if (newNameCount[folder + \"\\u{0}\" + key] ?? 0) > 2 {"
+  },
+  {
+    "id": "T37-10",
+    "name": "inside-renamed check never fires",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "            if changing.contains(parent) { return true }",
+    "replacement": "            if changing.contains(parent) { return false }"
+  },
+  {
+    "id": "T37-11",
+    "name": "phase 2 failure leaves items moved",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "                for j in (0..<i).reversed() where rename(pairs[j].to, temps[j]) != 0 { stranded.append(pairs[j].to) }\n",
+    "replacement": ""
+  },
+  {
+    "id": "T37-12",
+    "name": "rename without RENAME_EXCL",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "renamex_np(from, to, UInt32(RENAME_EXCL)) == 0 ? 0 : errno",
+    "replacement": "rename(from, to) == 0 ? 0 : errno"
+  },
+  {
+    "id": "T37-13",
+    "name": "counter has four digits",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "case .nameAndCounter: token = String(format: \"%05d\", number)",
+    "replacement": "case .nameAndCounter: token = String(format: \"%04d\", number)"
+  },
+  {
+    "id": "T37-14",
+    "name": "format position swapped",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "let stemOut = options.formatPosition == .after ? options.customName + token : token + options.customName",
+    "replacement": "let stemOut = options.formatPosition == .before ? options.customName + token : token + options.customName"
+  },
+  {
+    "id": "T37-15",
+    "name": "include extension ignored",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "let wholeName = options.includeExtension || item.isFolder",
+    "replacement": "let wholeName = item.isFolder"
+  },
+  {
+    "id": "T37-16",
+    "name": "negative start not clamped",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "let number = max(0, options.startNumber) + index",
+    "replacement": "let number = options.startNumber + index"
+  },
+  {
+    "id": "T37-17",
+    "name": "listing keeps . and ..",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "if name != \".\", name != \"..\" { names.insert(name) }",
+    "replacement": "names.insert(name)"
+  },
+  {
+    "id": "T37-18",
+    "name": "typed name not trimmed",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "let name = typedName.trimmingCharacters(in: .whitespacesAndNewlines)",
+    "replacement": "let name = typedName"
+  },
+  {
+    "id": "T37-19",
+    "name": "confirm window exclusive",
+    "file": "XFinder/Core/Browser/QuitGuardRules.swift",
+    "anchor": "if elapsed >= 0, elapsed <= confirmWindow { return .quit }",
+    "replacement": "if elapsed >= 0, elapsed < confirmWindow { return .quit }"
+  },
+  {
+    "id": "T37-20",
+    "name": "any key window is guarded",
+    "file": "XFinder/Core/Browser/QuitGuardRules.swift",
+    "anchor": "guard enabled, typedCommandQ, browserWindowIsKey else { return .quit }",
+    "replacement": "guard enabled, typedCommandQ else { return .quit }"
+  },
+  {
+    "id": "T37-21",
+    "name": "clock step back confirms",
+    "file": "XFinder/Core/Browser/QuitGuardRules.swift",
+    "anchor": "if elapsed >= 0, elapsed <= confirmWindow { return .quit }",
+    "replacement": "if elapsed <= confirmWindow { return .quit }"
+  },
+  {
+    "id": "T37-22",
+    "name": "< and > swapped",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "return chip(first == \"<\" ? .within(count, unit) : .olderThan(count, unit))",
+    "replacement": "return chip(first == \">\" ? .within(count, unit) : .olderThan(count, unit))"
+  },
+  {
+    "id": "T37-23",
+    "name": "span bounds not ordered",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "return chip(.span(min(a, b), max(a, b)))",
+    "replacement": "return chip(.span(a, b))"
+  },
+  {
+    "id": "T37-24",
+    "name": "span excludes its last day",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "            let e = addDays(1, to: startOfDay(dayDate(b) ?? now))",
+    "replacement": "            let e = startOfDay(dayDate(b) ?? now)"
+  },
+  {
+    "id": "T37-25",
+    "name": "impossible day accepted",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "        guard back.year == year, back.month == month, back.day == day else { return nil }\n",
+    "replacement": ""
+  },
+  {
+    "id": "T37-26",
+    "name": "size = prefix not read",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "        else if s.hasPrefix(\"=\") { op = .equal; s.removeFirst(1) }\n",
+    "replacement": ""
+  },
+  {
+    "id": "T37-27",
+    "name": "tags: alias missing",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "        case \"tag\", \"tags\":",
+    "replacement": "        case \"tag\":"
+  },
+  {
+    "id": "T37-28",
+    "name": "empty known filter kept as text",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "                    warnings.append(SearchWarning(kind: .emptyValue, subject: field))",
+    "replacement": "                    terms.append(field + \":\")"
+  },
+  {
+    "id": "T37-29",
+    "name": "length cap too loose",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "        if input.count > maxQueryLength {",
+    "replacement": "        if input.count > maxQueryLength + 100 {"
+  },
+  {
+    "id": "T37-30",
+    "name": "term cap off by one",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "            tokens = Array(tokens.prefix(maxTerms))",
+    "replacement": "            tokens = Array(tokens.prefix(maxTerms + 1))"
+  },
+  {
+    "id": "T37-31",
+    "name": "unclosed phrase not reported",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "                if i < chars.count { i += 1 } else { unclosedQuote = true } // closing quote",
+    "replacement": "                if i < chars.count { i += 1 } // closing quote"
+  },
+  {
+    "id": "T37-32",
+    "name": "source aliases unused in Spotlight",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "let alternatives = sourcePatterns(for: value).map",
+    "replacement": "let alternatives = [value].map"
+  },
+  {
+    "id": "T37-33",
+    "name": "<7d counted from midnight",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "            return (calendar.date(byAdding: unit.component, value: -n, to: now), nil)",
+    "replacement": "            return (calendar.date(byAdding: unit.component, value: -n, to: startOfDay(now)), nil)"
+  },
+  {
+    "id": "T37-34",
+    "name": "bad date reported as bad size",
+    "file": "XFinder/Core/Browser/SearchQuery.swift",
+    "anchor": "guard let chip = parseDateToken(value, field: .modified, now: now, calendar: calendar) else { return .invalid(.badDate) }",
+    "replacement": "guard let chip = parseDateToken(value, field: .modified, now: now, calendar: calendar) else { return .invalid(.badSize) }"
+  },
+  {
+    "id": "T37-35",
+    "name": "Get Info keeps the old two-character rule",
+    "file": "XFinder/Core/Browser/FileInfoRules.swift",
+    "anchor": "RenameRules.problem(for: name.trimmingCharacters(in: .whitespacesAndNewlines))?.key",
+    "replacement": "name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? \"Tên không được để trống.\" : nil"
+  }
 ]
