@@ -11,6 +11,25 @@ Cập nhật: 2026-11-06.
 
 Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả lời thì giữ mặc định.
 
+### 2026-11-08 · XF-VOICE-PERMISSIONS Quyền nhập bằng giọng nói (Boss tự làm, không chờ agent)
+
+Nửa giọng nói của bản nháp Codex `XF-SETTINGS-VOICE-PERMISSIONS` (nằm 31 giờ trong worktree `xf-settings-voice`, chưa từng
+được build). Phím kích hoạt không còn xin lại quyền đã bị từ chối và báo **đúng quyền nào** thiếu; trang Nhập bằng giọng
+nói ▸ Quyền & thử nghiệm: mỗi hàng chỉ xin quyền của nó, đã từ chối ⇒ nút "Mở Cài đặt hệ thống" mở đúng ô. Kèm sửa một
+**crash có sẵn**: trả lời hộp thoại Nhận dạng giọng nói (từ Tính năng & Quyền hoặc trang Giọng nói) làm XFinder trap —
+callback bị Swift 6 gán MainActor rồi bị Speech gọi từ queue riêng (probe cùng dạng: SIGTRAP, exit 133; đối chứng `@Sendable`
+sống). Harness `scripts/mutation-check-voice.sh` 11/11 RED.
+
+| Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
+|:--|:--|:--|:--|
+| Q-SETTINGS-LANDING | Bản nháp Codex còn đề xuất một trang "Cài đặt" gom **liên kết** tới 10 nhóm trang (Chung & giao diện · Notch · Clipboard & agent · Dịch & chọn chữ · Chụp & ghi · Tệp & nén · Lịch · Tập trung & hệ thống · Cửa sổ & phím tắt · Quyền & thông tin), có ô tìm | làm · không làm | **không làm** — audit MFinder (`docs/MFINDER_GAP_AUDIT_2026-11-07.md`) kết luận spec không có chương Settings riêng, tuỳ chọn đã vào đúng trang của từng tính năng; sidebar đã có ô "Tìm trang"; `settingsGeneral` từng bị gỡ vì trang gom chung chỉ lặp lại trang khác |
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-VOICE-PERM-1 | Cài đặt hệ thống ▸ Quyền riêng tư & Bảo mật ▸ Micro: tắt XFinder. Bật Nhập bằng giọng nói, bấm phím kích hoạt 3 lần | Mỗi lần chỉ một dòng "Micro đang bị từ chối cho XFinder"; **không** hộp thoại xin quyền nào |
+| T-VOICE-PERM-2 | Trang Nhập bằng giọng nói ▸ Quyền & thử nghiệm ▸ hàng Micro (đang "Đã từ chối") ▸ "Mở Cài đặt hệ thống" | Mở đúng ô Micro; bật lại rồi quay về XFinder: hàng thành "Đã cấp" mà không cần mở lại trang |
+| T-VOICE-PERM-3 | Terminal: `tccutil reset SpeechRecognition com.xfinder.app` (Micro vẫn cấp), bấm phím kích hoạt, chọn **Cho phép** | Chỉ một hộp thoại Nhận dạng giọng nói; XFinder **không thoát**; HUD "Đã cấp quyền — nhấn phím lần nữa để nói" |
+
 ### 2026-11-06 · XF-T35 Phân tích thư mục (Lưu trữ)
 
 Gộp `1182b3c` + sửa `768dc83` (symlink ⇒ "chưa đầy đủ") + `ef669cb` (review độc lập đo chậm 8,2× so với FileWalk trần —
