@@ -172,7 +172,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func applySavedAppearance() {
         let defaults = UserDefaults.standard
         AppearanceController.apply(defaults.string(forKey: "AppTheme") ?? "System")
-        DockController.apply(defaults.object(forKey: "ShowDockIcon") as? Bool ?? true)
+        DockController.apply(DockController.showDockIcon)
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

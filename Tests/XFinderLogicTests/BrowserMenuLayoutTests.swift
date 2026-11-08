@@ -92,4 +92,12 @@ final class BrowserMenuLayoutTests: XCTestCase {
         XCTAssertEqual(BrowserMenuLayout.toolbarInsertions(current: ["a"], add: [("tags", "missing")]).map(\.index), [1],
                        "an anchor the user removed puts the item at the end")
     }
+
+    /// macOS gives the menu bar only to a regular app: with the Dock icon hidden, the browser had no menu bar (measured).
+    func testTheBrowserMakesTheAppRegularWhileItIsOpen() {
+        XCTAssertTrue(BrowserMenuLayout.needsRegularApp(showDockIcon: true, browserWindowsOpen: false))
+        XCTAssertTrue(BrowserMenuLayout.needsRegularApp(showDockIcon: true, browserWindowsOpen: true))
+        XCTAssertTrue(BrowserMenuLayout.needsRegularApp(showDockIcon: false, browserWindowsOpen: true))
+        XCTAssertFalse(BrowserMenuLayout.needsRegularApp(showDockIcon: false, browserWindowsOpen: false), "the user's hidden Dock icon holds")
+    }
 }

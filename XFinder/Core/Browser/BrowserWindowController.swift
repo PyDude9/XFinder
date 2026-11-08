@@ -180,6 +180,7 @@ import os
         }
         let isFirstWindow = windows.isEmpty
         windows.append(window)
+        DockController.browserWindows(open: true)   // XF-T38: the browser owns the menu bar while it is open
         // XF-T32 W0: hitch probe (Debug builds only) runs while a browser window is open — 10 wakeups/s would
         // break the 0 s idle budget if it ran for the app's whole life.
         MainThreadHitchProbe.shared.start()
@@ -274,6 +275,7 @@ import os
         windows.remove(at: index)
         if !closingLast && !terminating { saveSession() }
         if windows.isEmpty {
+            DockController.browserWindows(open: false)   // back to the user's "Hiện icon trên Dock" choice
             FileIconCache.shared.purge()
             MainThreadHitchProbe.shared.stop()
             indexLifecycleAllWindowsClosed()

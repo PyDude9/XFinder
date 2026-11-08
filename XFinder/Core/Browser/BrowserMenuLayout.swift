@@ -174,6 +174,14 @@ enum BrowserMenuLayout {
         [Menu.file, .edit, .view, .go, .window, .app].first { commands(in: $0).contains(command) }
     }
 
+    // MARK: - Menu bar ownership
+
+    /// macOS shows a menu bar only for a regular app (one with a Dock icon). The browser needs its menu bar, so XFinder
+    /// is regular while a browser window is open even when the user hid the Dock icon; otherwise the user's choice holds.
+    static func needsRegularApp(showDockIcon: Bool, browserWindowsOpen: Bool) -> Bool {
+        showDockIcon || browserWindowsOpen
+    }
+
     // MARK: - Toolbar ("Navigation Bar")
 
     /// Where to insert toolbar items a saved configuration does not have yet: each `(id, before)` goes right before

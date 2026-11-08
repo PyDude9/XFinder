@@ -544,8 +544,31 @@ enum AppearanceController {
 
 @MainActor
 enum DockController {
+    /// "Hiện icon trên Dock" (Tổng quan; the page's `@AppStorage("ShowDockIcon")` default is the same `true`).
+    static var showDockIcon: Bool { UserDefaults.standard.object(forKey: "ShowDockIcon") as? Bool ?? true }
+
+    /// Whether at least one file browser window is open (XF-T38).
+    private static var browserWindowsOpen = false
+
     static func apply(_ show: Bool) {
-        NSApp.setActivationPolicy(show ? .regular : .accessory)
+        setRegular(BrowserMenuLayout.needsRegularApp(showDockIcon: show, browserWindowsOpen: browserWindowsOpen))
+    }
+
+    /// XF-T38 — macOS gives the menu bar only to a regular app (one with a Dock icon); with "Hiện icon trên Dock" off,
+    /// XFinder runs as an accessory and the browser had no menu bar at all (measured in the Atlas helper: the bar still
+    /// showed Finder's menus with the browser window in front). Like FileOctopus, the browser is a regular app while one
+    /// of its windows is open; closing the last one restores the user's choice.
+    static func browserWindows(open: Bool) {
+        guard open != browserWindowsOpen else { return }
+        browserWindowsOpen = open
+        setRegular(BrowserMenuLayout.needsRegularApp(showDockIcon: showDockIcon, browserWindowsOpen: open))
+    }
+
+    private static func setRegular(_ regular: Bool) {
+        let policy: NSApplication.ActivationPolicy = regular ? .regular : .accessory
+        guard NSApp.activationPolicy() != policy else { return }
+        NSApp.setActivationPolicy(policy)
+        if regular { NSApp.activate() }   // the menu bar belongs to the active regular app
     }
 }
 
