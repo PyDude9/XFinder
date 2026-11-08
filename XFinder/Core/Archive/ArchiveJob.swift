@@ -11,24 +11,17 @@ enum ArchiveJob {
 
     /// One archive's path through the batch. `completed` means **fully** placed — the only state that
     /// may authorize deleting the source archive (Boss approval point 6).
+    ///
+    /// There is deliberately no "staged" case: the review is a separate value (`ArchiveReview`) held by
+    /// the page, and a case nothing can produce or read is a claim the code does not make.
     enum Outcome: Equatable {
         /// Not started yet, or stopped before placing anything.
         case untouched
         case cancelledBeforePlacement
-        /// Extraction happened; placement is not done yet (the review step stands here).
-        case staged(items: Int, review: ArchiveReview)
         case completed(outputs: [URL], renamed: [String])
         /// Some outputs exist and others do not: never reported as success.
         case partial(placed: [URL], failed: [String], recoveryRoot: URL?)
         case rejected(ArchiveRunner.Failure)
-
-        var placedCount: Int {
-            switch self {
-            case .completed(let outputs, _): return outputs.count
-            case .partial(let placed, _, _): return placed.count
-            default: return 0
-            }
-        }
 
         var isCompleted: Bool { if case .completed = self { return true }; return false }
     }

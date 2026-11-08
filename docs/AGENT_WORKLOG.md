@@ -1,3 +1,73 @@
+## 2026-11-08 — OpenCode — XF-MFGAP-03 stage 03C merge keeps both, review before extract, transactional replace
+
+TASK: XF-MFGAP-03 stage 03C (spec §4.2/§4.4/§4.5/§5/§7, Boss approval points 1/5/6/7)   BRANCH: agent/codex-XF-SETTINGS
+COMMITS: eb1c2e6 (1/1 build), this worklog (2/2 docs). Branch base fc9e2dd (main).
+BUILD: `build (arm64, compile list) OK` (gate-all step 1)
+TESTS: ArchivePlacementTests **27 / 0** (new file), full suite **3073 / 0**
+GATE: green — 3073 tests / 0 failures, all 7 string/UI gates TOTAL 0 across 3934 entries (32 allowlisted), `modified tracked files 10`
+MUTATION: **40/41 RED**, 1 survivor (C8, declared equivalent); sources restored byte-identical, suite after restore 0 failures
+LIVE: NOT VERIFIED (Builder does not install or launch; no UI click was performed)
+FILES CHANGED: ArchiveEngine.swift, ArchiveRunner.swift, ArchiveJob.swift (new), ArchiveRecoveryStore.swift (new),
+CompressDetailView.swift, DiagnosticsCenter.swift (1-line exhaustive mapping), ClipTransfer.swift (1-line exhaustive
+mapping), L10n.strings.json (+33, add-only), project.pbxproj, scripts/mutation-check-archive.sh,
+scripts/add-archive-placement-l10n-entries.py (new, add-only), tests: ArchivePlacementTests.swift (new),
+ArchiveEngineTests.swift, ArchiveRunnerTests.swift, two test symlinks; this worklog
+NOT VERIFIED: anything the eye or the mouse can see (layout, truncation, alert button order rendered by AppKit);
+macOS 14; a real full disk; a real cross-volume destination; a real ~1 GB archive through the page (only measured
+through the engine); Notion Run not written (Builder could not reach Notion in this session).
+QUESTIONS (Q-2): 33 new sentences are my wording — Boss should read them, especially the merge label and the
+partial/recovery sentences. (`ArchiveJob.Outcome.staged` and `placedCount` were declared but nothing could produce or
+read them; removed rather than left as a claim the code does not make.)
+
+Merge is now a **combining** operation, planned once in `ArchiveEngine.mergePlan` and shared by Keep Both, so the two
+policies cannot drift apart. Folders join, colliding leaves are numbered with compound extensions kept
+(`backup.tar.gz` → `backup 2.tar.gz`), a name the batch already claimed counts as taken, and after 10 000 collisions
+planning falls back to a unique suffix instead of spinning. Every step is recorded with two flags: `renamed` (its
+*path* changed, possibly because a parent did) and `renamedHere` (its **own** name changed). The result line reads
+`renamedHere`, so a child of `Photos 2` is not reported as "renamed" — that would name a change the user never sees.
+
+Publication is `renamex_np(…, RENAME_EXCL)`, measured here: flags 0 returns 0 and **replaces** the target; `RENAME_EXCL`
+returns -1/`EEXIST` and leaves the target byte-identical. `moveItem` survives only as a fallback for a provably free
+target. A partial batch is now a `PlacementOutcome` (placed / failed / renamed / recoveryRoot) with the unplaced staging
+moved to `~/Library/Application Support/XFinder/ArchiveRecovery/batch-<uuid>` instead of being deleted; the store
+refuses to remove anything outside its own root.
+
+"Kiểm tra" is a real review step: inspect, validate, count what the archive really declares, list conflicts and the
+names a merge would produce, show required vs available bytes. The extract button is gated on a plan for the **exact**
+selection + destination + policy, keyed by a fingerprint; a rules refusal is still a review (it says why) and there is
+no bypass. Two spec points the page previously missed are now enforced and tested: an unchosen custom destination
+blocks instead of silently extracting beside the archive (§4.2), and unknown free space gets its own sentence rather
+than `outOfSpace(0,0)`.
+
+"Thay thế" for compression is the approved transaction: build and verify the candidate first, `trashItem(old,
+resultingItemURL:)`, `renamex_np(candidate, target, RENAME_EXCL)`, and on publish failure move the trashed original
+back. Never `rm`. "Xóa file nén gốc" is limited to archives that completed in this run, confirms with the names and
+**Cancel as default**, uses Trash only, and lists per-file failures which stay on screen.
+
+Findings I had to fix rather than paper over:
+- The mutation harness stopped at **D4** with "no test result": my anchor produced a mutant that did not compile. A
+  mutation that cannot be injected is a broken gate, so the anchor was replaced with `RENAME_EXCL` → `0`, the measured
+  replacement.
+- **D3** stayed GREEN and the mutation was itself equivalent (`.link` → `.file` are both "taken, not a directory").
+  The real mutation is `.link` → `.directory` — the measured escape — and it needed a test that did not exist.
+- **D13/D14/D15/D16** survived the first clean run. D16 was genuinely equivalent under a double guard, and the second
+  guard was *wrong* (it would hide a leaf genuinely renumbered inside a renamed folder), so it was removed and the
+  single mechanism mutated instead. D13 (recovery of the unplaced remainder), D14 (protected identities, including the
+  folder-shaped case `existingItem` cannot catch) and D15 (`AskChoice.buttonOrder`, which nothing read) each got the
+  test that pins them; all three now go RED.
+- I twice edited sources while the harness was running. The harness restores `FILES` from its own backup after every
+  mutant, so those edits were silently reverted, and one concurrent `swift test` shared `Tests/.build` and made a
+  mutant read as "no test result". Redone alone; the run above is the clean one.
+
+Measured cost of the double decode (Boss note b), ~1 GiB payload on this machine, medians of 5 runs:
+| archive | `inspect` (walk + decode) | `ditto -x` to disk | overhead |
+|---|---|---|---|
+| 1 GiB text, deflate, 3.0 MB archive | 0.111 s | 0.314 s | 35% |
+| 1 GiB random, deflate, 1.0 GB archive | 0.175 s | 0.363 s | 48% |
+| 10 000 tiny entries, 1.9 MB archive | 0.05 s | not measured | — |
+The absolute cost is small (≈0.1–0.2 s per GiB) but the *ratio* is large because `inspect` decodes the whole payload
+without writing; on an already-decompressed-friendly disk the decode is most of the work. No change made, as instructed.
+
 ## 2026-11-08 — OpenCode — XF-MFGAP-03 stage 03B bounded inspection, private staging, identity guards
 
 TASK: XF-MFGAP-03 stage 03B (spec §5/§7/§9, Boss approval points 3 and 6)   BRANCH: agent/codex-XF-SETTINGS
