@@ -3,6 +3,7 @@ import AVFoundation
 import LocalAuthentication
 import NaturalLanguage
 import SwiftUI
+import ImageIO
 
 /// The Notch surface — one floating surface that lives at the notch (or the top centre of a screen
 /// without one). Phase B1 hosts the file shelf (Khay thả); later phases add pages to it.
@@ -1497,18 +1498,76 @@ final class NotchSurfaceController {
 
     /// Runs one action on the held files. One job at a time; progress is counted in files done.
     func run(_ action: NotchActions.Action) {
-        guard model.task?.isRunning != true else { return }
+        guard model.task?.isRunning != true, model.task?.isAwaitingReview != true else { return }
         let items = DropTrayStore.shared.items.filter { !$0.isMissing }.map { URL(fileURLWithPath: $0.path) }
         model.notice = nil
         if action == .airDrop { shareViaAirDrop(items); return }
         let inputs = NotchActions.inputs(for: action, from: items)
         guard !inputs.isEmpty else { return }
+        if case .convert = action { prepareImageReview(action, inputs: inputs); return }
+        if case .resize = action { prepareImageReview(action, inputs: inputs); return }
         model.task = NotchTask(action: action, total: NotchActions.stepCount(for: action, inputs: inputs.count))
         model.ocrSummary = nil
         dispatch(.taskStarted)
         job = Task { [weak self] in
             await self?.execute(action, inputs: inputs)
             self?.finishJob()
+        }
+    }
+
+    private func prepareImageReview(_ action: NotchActions.Action, inputs: [URL]) {
+        model.task = NotchTask(action: action, total: inputs.count, awaitingImageReview: true)
+        model.ocrSummary = nil
+        dispatch(.taskStarted)
+        job = Task { [weak self] in
+            let rows = await Task.detached(priority: .utility) { () -> [NotchTask.ImageReviewRow] in
+                inputs.map { url in
+                    let options: ImageRunner.TransformOptions
+                    switch action {
+                    case .convert(let target): options = .init(format: target, outputOperation: .convert(target))
+                    case .resize(let pixels):
+                        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                              let uti = CGImageSourceGetType(source) as String?,
+                              let format = ImageEngine.Target.allCases.first(where: { $0.uti == uti }) else {
+                            return .init(url: url, preview: nil, options: nil, failure: .noEncoder(url.pathExtension.uppercased()))
+                        }
+                        options = .init(target: .longestEdge(pixels), format: format, outputOperation: .resize(maxPixels: pixels))
+                    default:
+                        return .init(url: url, preview: nil, options: nil, failure: .invalidTransform(url.lastPathComponent))
+                    }
+                    switch ImageRunner.preview(url, options: options) {
+                    case .success(let preview): return .init(url: url, preview: preview, options: options, failure: nil)
+                    case .failure(let failure): return .init(url: url, preview: nil, options: options, failure: failure)
+                    }
+                }
+            }.value
+            guard let self, !Task.isCancelled, self.model.task?.isAwaitingReview == true else { return }
+            self.model.task?.setReviewRows(rows)
+            self.job = nil
+        }
+    }
+
+    func confirmImageReview() {
+        guard let rows = model.task?.imageReviewRows, model.task?.isAwaitingReview == true else { return }
+        model.task?.beginReviewedWork()
+        job = Task { [weak self] in
+            guard let self else { return }
+            for row in rows {
+                if Task.isCancelled || self.model.task?.isRunning != true { break }
+                guard let preview = row.preview, let options = row.options, !preview.willSkip else {
+                    let failure = row.failure ?? .invalidTransform("Ảnh nhỏ hơn kích thước đích; sẽ bỏ qua nếu không bật phóng lớn.")
+                    self.model.task?.stepFailed(key: failure.messageKey, detail: failure.detail)
+                    continue
+                }
+                let result = await Task.detached(priority: .userInitiated) {
+                    ImageRunner.transform(row.url, options: options, expectedIdentity: preview.identity)
+                }.value
+                switch result {
+                case .success(let output): self.model.task?.stepSucceeded(output: output)
+                case .failure(let failure): self.model.task?.stepFailed(key: failure.messageKey, detail: failure.detail)
+                }
+            }
+            self.finishJob()
         }
     }
 

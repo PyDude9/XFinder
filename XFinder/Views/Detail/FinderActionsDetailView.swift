@@ -1,5 +1,48 @@
 import SwiftUI
 import AppKit
+import ImageIO
+
+private struct PendingImageRow: Identifiable, Sendable {
+    let url: URL
+    let preview: ImageRunner.TransformPreview?
+    let failureKey: String?
+    var id: String { url.path }
+    var dimensionSummary: String? {
+        guard let p = preview?.plan else { return nil }
+        return "\(p.uprightWidth)\(L10n.t(" × "))\(p.uprightHeight)\(L10n.t(" → "))\(p.outputWidth)\(L10n.t(" × "))\(p.outputHeight)\(L10n.t(" px"))"
+    }
+}
+
+private struct PendingImageBatch: Sendable {
+    let operation: ImageEngine.Operation
+    let options: ImageRunner.TransformOptions
+    let rows: [PendingImageRow]
+}
+
+private struct ImageTransformReviewPanel: View {
+    let batch: PendingImageBatch
+    let busy: Bool
+    let onSave: () -> Void
+    let onCancel: () -> Void
+    var body: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+            Text(L10n.t("Xem trước xử lý ảnh")).font(XFinderTokens.Font.rowValue)
+            ForEach(batch.rows) { row in
+                HStack(alignment: .top) {
+                    Text(row.url.lastPathComponent).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                    Text(row.dimensionSummary ?? row.failureKey ?? "")
+                        .foregroundStyle(row.preview?.willSkip == true || row.preview == nil ? .orange : .secondary)
+                }
+                .font(XFinderTokens.Font.caption)
+            }
+            HStack {
+                Button(L10n.t("Tạo bản mới"), action: onSave)
+                    .buttonStyle(.borderedProminent).disabled(busy || batch.rows.allSatisfy { $0.preview == nil })
+                Button(L10n.t("Hủy"), action: onCancel).disabled(busy)
+            }
+        }
+    }
+}
 
 /// Thao tác Finder — run XFinder's file tools on the files currently selected
 /// in Finder, and reach the system panes that install them as Quick Actions.
@@ -18,6 +61,7 @@ struct FinderActionsDetailView: View {
     @State private var selection: [URL] = []
     @State private var status: String?
     @State private var busy = false
+    @State private var imageBatch: PendingImageBatch?
 
     var body: some View {
         ScrollView {
@@ -154,6 +198,12 @@ struct FinderActionsDetailView: View {
             }
             .disabled(busy)
             .settingsRow()
+            if let imageBatch {
+                SettingsDivider()
+                ImageTransformReviewPanel(batch: imageBatch, busy: busy,
+                    onSave: { saveImageBatch() }, onCancel: { self.imageBatch = nil })
+                    .settingsRow()
+            }
         }
     }
 
@@ -163,23 +213,73 @@ struct FinderActionsDetailView: View {
             return true
         }
         guard !files.isEmpty else { status = L10n.t("Các ảnh đã ở định dạng này."); return }
+        if case .removeBackground = op { processImageFiles(files, operation: op); return }
+        let options: ImageRunner.TransformOptions
+        switch op {
+        case .convert(let target): options = .init(format: target, outputOperation: op)
+        case .resize(let pixels):
+            options = .init(target: .longestEdge(pixels), format: .png, outputOperation: op)
+        case .removeBackground: return
+        }
         busy = true
-        status = L10n.t("Đang xử lý…")
+        status = L10n.t("Đang xem trước ảnh…")
         Task {
-            let results: [Result<URL, ImageRunner.Failure>] = await Task.detached(priority: .userInitiated) {
-                files.map { url in
-                    switch op {
-                    case .convert(let t): return ImageRunner.convert(url, to: t)
-                    case .resize(let px): return ImageRunner.resize(url, maxPixels: px)
-                    case .removeBackground: return ImageRunner.removeBackground(url)
+            let rows = await Task.detached(priority: .utility) {
+                files.map { url -> PendingImageRow in
+                    switch ImageRunner.preview(url, options: options) {
+                    case .success(let preview): return .init(url: url, preview: preview, failureKey: nil)
+                    case .failure(let failure): return .init(url: url, preview: nil,
+                        failureKey: "\(L10n.t(failure.messageKey))\(failure.detail)")
                     }
                 }
             }.value
             busy = false
-            let made = results.compactMap { if case .success(let u) = $0 { return u } else { return nil } }
-            let firstFailure = results.lazy.compactMap { r -> ImageRunner.Failure? in if case .failure(let f) = r { return f } else { return nil } }.first
-            var line = "\(L10n.t("Đã tạo "))\(made.count)/\(files.count)\(L10n.t(" ảnh."))"
-            if let f = firstFailure { line += " \(L10n.t(f.messageKey))\(f.detail)" }
+            imageBatch = .init(operation: op, options: options, rows: rows)
+            status = nil
+        }
+    }
+
+    private func saveImageBatch() {
+        guard let batch = imageBatch else { return }
+        imageBatch = nil
+        processImageFiles(batch.rows.compactMap { row in
+            guard let preview = row.preview, !preview.willSkip else { return nil }
+            return (row.url, preview.identity)
+        }, operation: batch.operation, options: batch.options)
+    }
+
+    private func processImageFiles(_ files: [URL], operation: ImageEngine.Operation) {
+        processImageFiles(files.map { ($0, Optional<String>.none) }, operation: operation, options: nil)
+    }
+
+    private func processImageFiles(_ files: [(URL, String?)], operation: ImageEngine.Operation,
+                                   options: ImageRunner.TransformOptions?) {
+        guard !files.isEmpty else { status = L10n.t("Không có ảnh nào đủ điều kiện xuất."); return }
+        busy = true
+        status = L10n.t("Đang xử lý…")
+        Task {
+            let results: [Result<URL, ImageRunner.Failure>] = await Task.detached(priority: .userInitiated) {
+                files.map { url, identity in
+                    if var options {
+                        if case .resize = operation {
+                            guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+                                  let uti = CGImageSourceGetType(source) as String?,
+                                  let sourceFormat = ImageEngine.Target.allCases.first(where: { $0.uti == uti }) else {
+                                return .failure(.noEncoder(url.pathExtension.uppercased()))
+                            }
+                            options.format = sourceFormat
+                        }
+                        return ImageRunner.transform(url, options: options, expectedIdentity: identity)
+                    }
+                    if case .removeBackground = operation { return ImageRunner.removeBackground(url) }
+                    return .failure(.invalidTransform(url.lastPathComponent))
+                }
+            }.value
+            busy = false
+            let made = results.compactMap { if case .success(let url) = $0 { return url } else { return nil } }
+            let failedCount = results.count - made.count
+            let line = "\(L10n.t("Đã tạo "))\(made.count)/\(files.count)\(L10n.t(" ảnh."))" +
+                (failedCount > 0 ? " \(L10n.t("Mục không đủ điều kiện hoặc bị lỗi: "))\(failedCount)" : "")
             status = line
             if !made.isEmpty {
                 ActionHistoryStore.shared.record(kind: "image", summary: line, detail: made.map(\.path).joined(separator: "\n"))

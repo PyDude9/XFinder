@@ -11,22 +11,24 @@ enum PDFAssembler {
     enum Failure: Error, Equatable {
         case noInputs
         case unreadable(String)
+        case animatedUnsupported(String)
         case writeFailed(String)
 
         var messageKey: String {
             switch self {
             case .noInputs: return "Không có ảnh hay PDF nào để ghép."
             case .unreadable: return "Không đọc được: "
+            case .animatedUnsupported: return "Ảnh động nhiều khung hình chưa được hỗ trợ; tệp gốc được giữ nguyên: "
             case .writeFailed: return "Không ghi được PDF: "
             }
         }
         var detail: String {
             switch self {
             case .noInputs: return ""
-            case .unreadable(let s), .writeFailed(let s): return s
+            case .unreadable(let s), .animatedUnsupported(let s), .writeFailed(let s): return s
             }
         }
-        static let examples: [Failure] = [.noInputs, .unreadable("a"), .writeFailed("a")]
+        static let examples: [Failure] = [.noInputs, .unreadable("a"), .animatedUnsupported("a"), .writeFailed("a")]
     }
 
     static func isPDF(_ url: URL) -> Bool { url.pathExtension.lowercased() == "pdf" }
@@ -57,6 +59,12 @@ enum PDFAssembler {
                     if let page = src.page(at: i) { doc.insert(page, at: doc.pageCount) }
                 }
             } else {
+                guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else {
+                    return .failure(.unreadable(url.lastPathComponent))
+                }
+                guard CGImageSourceGetCount(source) == 1 else {
+                    return .failure(.animatedUnsupported(url.lastPathComponent))
+                }
                 guard let cg = orientedImage(at: url) else { return .failure(.unreadable(url.lastPathComponent)) }
                 let image = NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
                 guard let page = PDFPage(image: image) else { return .failure(.unreadable(url.lastPathComponent)) }
@@ -70,7 +78,7 @@ enum PDFAssembler {
 
     /// Full-resolution decode with the EXIF orientation applied (the thumbnail API at the image's own size).
     static func orientedImage(at url: URL) -> CGImage? {
-        guard let src = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        guard let src = CGImageSourceCreateWithURL(url as CFURL, nil), CGImageSourceGetCount(src) == 1 else { return nil }
         let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any]
         let w = props?[kCGImagePropertyPixelWidth] as? Int ?? 0
         let h = props?[kCGImagePropertyPixelHeight] as? Int ?? 0

@@ -53,6 +53,20 @@ final class FileActionTests: XCTestCase {
         XCTAssertEqual(Int(result.page(at: 3)!.bounds(for: .mediaBox).width), 200)
     }
 
+    func testAnimatedImageIsRejectedForImageToPDFWithoutCreatingAStillPage() throws {
+        let a = try png("frame-a.png", w: 30, h: 20)
+        let b = try png("frame-b.png", w: 20, h: 30)
+        let first = CGImageSourceCreateImageAtIndex(CGImageSourceCreateWithURL(a as CFURL, nil)!, 0, nil)!
+        let second = CGImageSourceCreateImageAtIndex(CGImageSourceCreateWithURL(b as CFURL, nil)!, 0, nil)!
+        let animation = dir.appendingPathComponent("animated.gif")
+        let destination = CGImageDestinationCreateWithURL(animation as CFURL, "com.compuserve.gif" as CFString, 2, nil)!
+        CGImageDestinationAddImage(destination, first, nil)
+        CGImageDestinationAddImage(destination, second, nil)
+        XCTAssertTrue(CGImageDestinationFinalize(destination))
+        XCTAssertEqual(PDFAssembler.assemble([animation]), .failure(.animatedUnsupported("animated.gif")))
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasSuffix(".pdf") }.count, 0)
+    }
+
     func testToPDFNeverOverwritesAndRefusesNothing() throws {
         let a = try png("a.png")
         let first = try PDFAssembler.assemble([a]).get()

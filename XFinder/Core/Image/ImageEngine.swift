@@ -9,20 +9,22 @@ import Foundation
 /// list and never offers a format the machine cannot write.
 enum ImageEngine {
 
-    enum Target: String, CaseIterable {
-        case jpeg, png, heic, avif
+    enum Target: String, CaseIterable, Sendable, Codable {
+        case jpeg, png, heic, avif, gif, tiff
         var uti: String {
             switch self {
             case .jpeg: return "public.jpeg"
             case .png: return "public.png"
             case .heic: return "public.heic"
             case .avif: return "public.avif"
+            case .gif: return "com.compuserve.gif"
+            case .tiff: return "public.tiff"
             }
         }
         var fileExtension: String { self == .jpeg ? "jpg" : rawValue }
         var label: String { self == .jpeg ? "JPEG" : rawValue.uppercased() }
         /// Lossy formats take a quality setting; PNG ignores it.
-        var isLossy: Bool { self != .png }
+        var isLossy: Bool { self == .jpeg || self == .heic || self == .avif }
     }
 
     /// Targets this machine can actually encode, in display order.
@@ -43,11 +45,12 @@ enum ImageEngine {
         switch target {
         case .jpeg: return ext == "jpg" || ext == "jpeg"
         case .heic: return ext == "heic" || ext == "heif"
+        case .tiff: return ext == "tif" || ext == "tiff"
         default: return ext == target.fileExtension
         }
     }
 
-    enum Operation: Equatable {
+    enum Operation: Equatable, Sendable {
         case convert(Target)
         case resize(maxPixels: Int)
         case removeBackground

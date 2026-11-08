@@ -57,33 +57,54 @@ enum InspectorImageChild {
         guard fstat(fd, &after) == 0, InspectorImageRules.identity(path: request.source, info: after) == request.expectedIdentity else {
             return failure("Tệp nguồn đã thay đổi. Hãy chọn lại tệp rồi thử lại.")
         }
-        let type: String = request.operation == .jpeg ? "public.jpeg" : (request.operation == .webp ? "org.webmproject.webp" : "public.png")
+        guard CGImageSourceGetCount(source) == 1 else {
+            return failure("Ảnh động nhiều khung hình chưa được hỗ trợ; tệp gốc được giữ nguyên.")
+        }
+        let type = request.format?.uti ?? (request.operation == .jpeg ? "public.jpeg" : (request.operation == .webp ? "org.webmproject.webp" : "public.png"))
         guard (CGImageDestinationCopyTypeIdentifiers() as? [String] ?? []).contains(type) else { return failure("ImageIO trên máy này không có bộ ghi cho định dạng đã chọn.") }
+        let orientation = props[kCGImagePropertyOrientation] as? Int ?? 1
+        let target: ImageTransformRules.Target? = request.target ?? (request.operation == .resize
+            ? .longestEdge(request.maxPixels ?? 0) : nil)
+        let plan: ImageTransformRules.Plan
+        do {
+            plan = try ImageTransformRules.calculate(sourceWidth: width, sourceHeight: height,
+                orientation: orientation, crop: request.crop, target: target, allowUpscale: request.allowUpscale)
+        } catch { return failure("Yêu cầu thao tác ảnh không hợp lệ.") }
+        guard plan.skipReason == nil else { return failure("Kích thước đích sẽ phóng lớn ảnh nhỏ; hãy bật Phóng lớn ảnh nhỏ.") }
+        guard let upright = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: max(plan.uprightWidth, plan.uprightHeight),
+            kCGImageSourceShouldCacheImmediately: true,
+        ] as CFDictionary) else { return failure("Không thực hiện được thao tác ảnh.") }
+        let crop = plan.cropPixels
+        let cropRect = CGRect(x: crop.x, y: upright.height - crop.y - crop.height,
+                              width: crop.width, height: crop.height)
+        guard let cropped = upright.cropping(to: cropRect),
+              let rendered = render(cropped, width: plan.outputWidth, height: plan.outputHeight) else {
+            return failure("Không thực hiện được thao tác ảnh.")
+        }
+        let result: CGImage
+        if request.operation == .flipHorizontal || request.operation == .flipVertical {
+            let ci = CIImage(cgImage: rendered)
+            let transform = request.operation == .flipHorizontal
+                ? CGAffineTransform(translationX: ci.extent.width, y: 0).scaledBy(x: -1, y: 1)
+                : CGAffineTransform(translationX: 0, y: ci.extent.height).scaledBy(x: 1, y: -1)
+            guard let flipped = CIContext().createCGImage(ci.transformed(by: transform), from: ci.extent) else {
+                return failure("Không thực hiện được thao tác ảnh.")
+            }
+            result = flipped
+        } else { result = rendered }
         let encoded = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(encoded, type as CFString, 1, nil) else { return failure("Không thực hiện được thao tác ảnh.") }
-        if request.operation == .png || request.operation == .jpeg || request.operation == .webp {
-            CGImageDestinationAddImageFromSource(destination, source, 0, [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary)
-        } else {
-            let maxSide = max(width, height)
-            let bound = request.operation == .resize ? min(maxSide, request.maxPixels ?? maxSide) : maxSide
-            guard request.operation != .resize || bound < maxSide else { return failure("Kích thước mới phải nhỏ hơn ảnh nguồn.") }
-            guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
-                kCGImageSourceCreateThumbnailFromImageAlways: true,
-                kCGImageSourceCreateThumbnailWithTransform: true,
-                kCGImageSourceThumbnailMaxPixelSize: bound,
-                kCGImageSourceShouldCacheImmediately: true,
-            ] as CFDictionary) else { return failure("Không thực hiện được thao tác ảnh.") }
-            let result: CGImage
-            if request.operation == .flipHorizontal || request.operation == .flipVertical {
-                let ci = CIImage(cgImage: image)
-                let transform = request.operation == .flipHorizontal
-                    ? CGAffineTransform(translationX: ci.extent.width, y: 0).scaledBy(x: -1, y: 1)
-                    : CGAffineTransform(translationX: 0, y: ci.extent.height).scaledBy(x: 1, y: -1)
-                guard let flipped = CIContext().createCGImage(ci.transformed(by: transform), from: ci.extent) else { return failure("Không thực hiện được thao tác ảnh.") }
-                result = flipped
-            } else { result = image }
-            CGImageDestinationAddImage(destination, result, [kCGImagePropertyOrientation: 1] as CFDictionary)
+        var outputProps = props
+        outputProps[kCGImagePropertyOrientation] = 1
+        outputProps[kCGImagePropertyPixelWidth] = plan.outputWidth
+        outputProps[kCGImagePropertyPixelHeight] = plan.outputHeight
+        if request.format?.isLossy ?? (request.operation == .jpeg || request.operation == .webp) {
+            outputProps[kCGImageDestinationLossyCompressionQuality] = min(1, max(0, request.quality))
         }
+        CGImageDestinationAddImage(destination, result, outputProps as CFDictionary)
         guard CGImageDestinationFinalize(destination) else { return failure("Không thực hiện được thao tác ảnh.") }
         var finalSource = stat()
         guard lstat(request.source, &finalSource) == 0, InspectorImageRules.identity(path: request.source, info: finalSource) == request.expectedIdentity else {
@@ -96,7 +117,7 @@ enum InspectorImageChild {
         catch { return failure("Không ghi được bản ảnh mới. Kiểm tra quyền ghi của thư mục.") }
         defer { try? FileManager.default.removeItem(at: staging) }
         for attempt in 0..<1000 {
-            let output = sourceURL.deletingLastPathComponent().appendingPathComponent(InspectorImageRules.outputName(source: sourceURL, operation: request.operation, maxPixels: request.maxPixels, attempt: attempt))
+            let output = sourceURL.deletingLastPathComponent().appendingPathComponent(InspectorImageRules.outputName(source: sourceURL, operation: request.operation, maxPixels: request.maxPixels, format: request.format, attempt: attempt))
             if output.path == sourceURL.path { continue }
             if renamex_np(staging.path, output.path, UInt32(RENAME_EXCL)) == 0 {
                 return .init(output: output.path, errorKey: nil)
@@ -105,5 +126,14 @@ enum InspectorImageChild {
             return failure("Không ghi được bản ảnh mới. Kiểm tra quyền ghi của thư mục.")
         }
         return failure("Có quá nhiều tệp trùng tên trong thư mục.")
+    }
+
+    private static func render(_ image: CGImage, width: Int, height: Int) -> CGImage? {
+        guard let colorSpace = image.colorSpace ?? CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8,
+                  bytesPerRow: 0, space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return context.makeImage()
     }
 }

@@ -443,6 +443,7 @@
 		7F1A0214 /* Pdf/PdfEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0213 /* Pdf/PdfEngine.swift */; };
 		7F1A0216 /* Pdf/PdfRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0215 /* Pdf/PdfRunner.swift */; };
 		7F1A0218 /* Image/ImageEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0217 /* Image/ImageEngine.swift */; };
+		7F1A0C01 /* Image/ImageTransformRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0C02 /* Image/ImageTransformRules.swift */; };
 		7F1A021A /* Image/ImageRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0219 /* Image/ImageRunner.swift */; };
 		7F1A026C /* Image/ImageTextOCR.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A026D /* Image/ImageTextOCR.swift */; };
 		7F1A0255 /* Image/VisionChild.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0254 /* Image/VisionChild.swift */; };
@@ -844,6 +845,7 @@
 		7F1A0213 /* Pdf/PdfEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pdf/PdfEngine.swift; sourceTree = "<group>"; };
 		7F1A0215 /* Pdf/PdfRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pdf/PdfRunner.swift; sourceTree = "<group>"; };
 		7F1A0217 /* Image/ImageEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image/ImageEngine.swift; sourceTree = "<group>"; };
+		7F1A0C02 /* Image/ImageTransformRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image/ImageTransformRules.swift; sourceTree = "<group>"; };
 		7F1A0219 /* Image/ImageRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image/ImageRunner.swift; sourceTree = "<group>"; };
 		7F1A026D /* Image/ImageTextOCR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image/ImageTextOCR.swift; sourceTree = "<group>"; };
 		7F1A0254 /* Image/VisionChild.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image/VisionChild.swift; sourceTree = "<group>"; };
@@ -1256,6 +1258,7 @@
 				7F1A0213 /* Pdf/PdfEngine.swift */,
 				7F1A0215 /* Pdf/PdfRunner.swift */,
 				7F1A0217 /* Image/ImageEngine.swift */,
+				7F1A0C02 /* Image/ImageTransformRules.swift */,
 				7F1A0219 /* Image/ImageRunner.swift */,
 				7F1A026D /* Image/ImageTextOCR.swift */,
 				7F1A0254 /* Image/VisionChild.swift */,
@@ -2001,6 +2004,7 @@
 				7F1A0214 /* Pdf/PdfEngine.swift in Sources */,
 				7F1A0216 /* Pdf/PdfRunner.swift in Sources */,
 				7F1A0218 /* Image/ImageEngine.swift in Sources */,
+				7F1A0C01 /* Image/ImageTransformRules.swift in Sources */,
 				7F1A021A /* Image/ImageRunner.swift in Sources */,
 				7F1A026C /* Image/ImageTextOCR.swift in Sources */,
 				7F1A0255 /* Image/VisionChild.swift in Sources */,

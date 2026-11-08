@@ -6,13 +6,64 @@ import Darwin
 struct InspectorImageActions: View {
     let item: FilePreviewItem
     @State private var job = InspectorImageJob()
+    @State private var cropWidth = 1.0
+    @State private var cropHeight = 1.0
+    @State private var outputFormat: ImageEngine.Target = .png
+    @State private var targetEdge = 0
+    @State private var quality = 0.85
+    @State private var allowUpscale = false
+    @State private var previewText: String?
     private var encoders: Set<String> { Set(CGImageDestinationCopyTypeIdentifiers() as? [String] ?? []) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
             Text(L10n.t("Thao tác ảnh")).font(XFinderTokens.Font.sectionTitle)
-            Text(L10n.t("Tạo bản mới, chỉ xử lý khung hình đầu tiên. Lật và thu nhỏ xuất PNG."))
+            Text(L10n.t("Tạo bản mới; ảnh động nhiều khung hình được giữ nguyên và không xử lý."))
                 .font(XFinderTokens.Font.caption).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.inline) {
+                Text(L10n.t("Xuất bản ảnh mới")).font(XFinderTokens.Font.rowValue)
+                HStack {
+                    Picker(L10n.t("Định dạng xuất"), selection: $outputFormat) {
+                        ForEach(ImageEngine.availableTargets(encodable: ImageRunner.encodableTypes), id: \.self) { target in
+                            Text(target.label).tag(target)
+                        }
+                    }
+                    .labelsHidden().frame(maxWidth: 150)
+                    Picker(L10n.t("Cạnh dài đích"), selection: $targetEdge) {
+                        Text(L10n.t("Giữ kích thước")).tag(0)
+                        ForEach(ImageEngine.resizePresets, id: \.self) { value in Text("\(value) px").tag(value) }
+                    }
+                    .labelsHidden().frame(maxWidth: 150)
+                }
+                Text(L10n.t("Vùng cắt — chiều rộng")).font(XFinderTokens.Font.caption)
+                Slider(value: $cropWidth, in: 0.1...1)
+                Text(L10n.t("Vùng cắt — chiều cao")).font(XFinderTokens.Font.caption)
+                Slider(value: $cropHeight, in: 0.1...1)
+                if outputFormat.isLossy {
+                    Text("\(L10n.t("Chất lượng")): \(Int(quality * 100))%")
+                        .font(XFinderTokens.Font.caption)
+                    Slider(value: $quality, in: 0.1...1)
+                }
+                Toggle(L10n.t("Phóng lớn ảnh nhỏ"), isOn: $allowUpscale)
+                HStack {
+                    Button(L10n.t("Xem trước kích thước")) { previewTransform() }
+                    Button(L10n.t("Tạo bản mới")) {
+                        let operation: InspectorImageRules.Operation
+                        if targetEdge > 0 { operation = .resize }
+                        else {
+                            switch outputFormat {
+                            case .jpeg: operation = .jpeg
+                            default: operation = .png
+                            }
+                        }
+                        start(operation, pixels: targetEdge == 0 ? nil : targetEdge, format: outputFormat)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!encoders.contains(outputFormat.uti))
+                }
+                if let previewText { Text(previewText).font(XFinderTokens.Font.caption).foregroundStyle(.secondary) }
+            }
+            .disabled(job.running)
             HStack {
                 Menu(L10n.t("Chuyển đổi")) {
                     if encoders.contains("public.png") { Button("PNG") { start(.png) } }
@@ -50,9 +101,35 @@ struct InspectorImageActions: View {
         }
         .onDisappear { job.cancel() }
         .onChange(of: item.identity) { _, _ in job.cancel() }
+        .onChange(of: cropWidth) { _, _ in previewText = nil }
+        .onChange(of: cropHeight) { _, _ in previewText = nil }
+        .onChange(of: targetEdge) { _, _ in previewText = nil }
+        .onChange(of: outputFormat) { _, _ in previewText = nil }
+        .onChange(of: allowUpscale) { _, _ in previewText = nil }
+        .onChange(of: quality) { _, _ in previewText = nil }
     }
-    private func start(_ operation: InspectorImageRules.Operation, pixels: Int? = nil) {
-        job.start(.init(source: item.path, expectedIdentity: item.identity, operation: operation, maxPixels: pixels))
+    private var crop: ImageTransformRules.NormalizedCrop {
+        .init(x: (1 - cropWidth) / 2, y: (1 - cropHeight) / 2, width: cropWidth, height: cropHeight)
+    }
+    private func start(_ operation: InspectorImageRules.Operation, pixels: Int? = nil, format: ImageEngine.Target? = nil) {
+        job.start(.init(source: item.path, expectedIdentity: item.identity, operation: operation, maxPixels: pixels,
+                        crop: crop, quality: quality, allowUpscale: allowUpscale,
+                        target: pixels.map { .longestEdge($0) }, format: format))
+    }
+    private func previewTransform() {
+        let target = targetEdge == 0 ? nil : ImageTransformRules.Target.longestEdge(targetEdge)
+        let options = ImageRunner.TransformOptions(crop: crop, target: target, allowUpscale: allowUpscale,
+                                                   format: outputFormat, quality: quality)
+        Task {
+            let result = await Task.detached(priority: .utility) { ImageRunner.preview(URL(fileURLWithPath: item.path), options: options) }.value
+            switch result {
+            case .success(let preview):
+                let p = preview.plan
+                previewText = "\(p.uprightWidth)\(L10n.t(" × "))\(p.uprightHeight)\(L10n.t(" → "))\(p.outputWidth)\(L10n.t(" × "))\(p.outputHeight)\(L10n.t(" px"))"
+                if preview.willSkip { previewText = "\(previewText ?? "") — \(L10n.t("Ảnh nhỏ hơn kích thước đích; sẽ bỏ qua nếu không bật phóng lớn."))" }
+            case .failure(let failure): previewText = "\(failure.messageKey)\(failure.detail)"
+            }
+        }
     }
 }
 

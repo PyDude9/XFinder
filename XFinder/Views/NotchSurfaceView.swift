@@ -867,7 +867,30 @@ struct NotchSurfaceView: View {
     }
 
     @ViewBuilder private var actionArea: some View {
-        if let t = model.task, t.isRunning {
+        if let t = model.task, t.isAwaitingReview {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                Text(L10n.t("Xem trước xử lý ảnh")).font(XFinderTokens.Font.caption)
+                ForEach(t.imageReviewRows, id: \.url) { row in
+                    HStack {
+                        Text(row.url.lastPathComponent).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
+                        if let p = row.preview?.plan {
+                            Text("\(p.uprightWidth)\(L10n.t(" × "))\(p.uprightHeight)\(L10n.t(" → "))\(p.outputWidth)\(L10n.t(" × "))\(p.outputHeight)\(L10n.t(" px"))")
+                                .foregroundStyle(row.preview?.willSkip == true ? .orange : .secondary)
+                        } else if let failure = row.failure {
+                            Text("\(L10n.t(failure.messageKey))\(failure.detail)").foregroundStyle(.orange).lineLimit(1)
+                        }
+                    }
+                    .font(XFinderTokens.Font.caption)
+                }
+                HStack {
+                    Button(L10n.t("Tạo bản mới")) { NotchSurfaceController.shared.confirmImageReview() }
+                        .buttonStyle(.borderedProminent).controlSize(.mini)
+                        .disabled(t.imageReviewRows.isEmpty)
+                    Button(L10n.t("Hủy")) { NotchSurfaceController.shared.cancelTask() }
+                        .buttonStyle(.bordered).controlSize(.mini)
+                }
+            }
+        } else if let t = model.task, t.isRunning {
             HStack(spacing: XFinderTokens.Space.tight + 2) {
                 ProgressView(value: t.fraction).progressViewStyle(.linear).tint(.white)
                 Text("\(t.done + t.failed)/\(t.total)").font(XFinderTokens.Font.caption).monospacedDigit()
