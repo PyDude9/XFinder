@@ -147,6 +147,16 @@ enum ArchiveRunner {
     /// output path that already existed when the call started is never deleted because a tool
     /// failed on it (measured before 03B: a failing compression into an existing directory removed
     /// the directory and its contents).
+    /// What the first source is, read with `lstat` — `fileExists(isDirectory:)` would follow a link, and a linked
+    /// source must not reach `ditto` (it archives the link's TARGET under the target's name).
+    static func singleSourceKind(_ url: URL) -> ArchiveEngine.SingleSource {
+        switch existingItem(at: url) {
+        case .link: return .link
+        case .directory: return .directory
+        case .file, nil: return .file
+        }
+    }
+
     static func compress(sources: [URL], format: ArchiveEngine.Format, level: Int = ArchiveEngine.defaultLevel,
                          password: String? = nil, output: URL) async -> Result<URL, Failure> {
         guard !sources.isEmpty else { return .failure(.nothingToDo) }
@@ -163,8 +173,9 @@ enum ArchiveRunner {
             guard !outputPreexisted, fm.fileExists(atPath: output.path) else { return }
             try? fm.removeItem(at: output)
         }
+        let single = Self.singleSourceKind(sources[0])
         if ArchiveEngine.needsStaging(sourceCount: sources.count, format: format, level: level,
-                                      hasPassword: !(password ?? "").isEmpty) {
+                                      hasPassword: !(password ?? "").isEmpty, single: single) {
             do {
                 let dir = try fm.url(for: .itemReplacementDirectory, in: .userDomainMask,
                                      appropriateFor: output.deletingLastPathComponent(), create: true)
@@ -175,7 +186,8 @@ enum ArchiveRunner {
             } catch { return .failure(.staging("\(error)")) }
         }
         let command = ArchiveEngine.compressCommand(sources: sources, format: format, level: level,
-                                                    password: password, output: output, stagingDir: staging?.url)
+                                                    password: password, output: output, stagingDir: staging?.url,
+                                                    single: single)
         let result = await run(command)
         if Task.isCancelled { removeOutputIfCreatedHere(); return .failure(.cancelled) }
         if result.status != 0 { removeOutputIfCreatedHere(); return .failure(.tool(status: result.status, stderr: result.stderr)) }

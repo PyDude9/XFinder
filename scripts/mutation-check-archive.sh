@@ -73,8 +73,8 @@ run() {   # run <name> <file> <old> <new>
 }
 
 run "A1 two sources go to ditto again" XFinder/Core/Archive/ArchiveEngine.swift \
-  "'        !(format == .zip && sourceCount == 1 && level == defaultLevel && !hasPassword)'" \
-  "'        !(format == .zip && level == defaultLevel && !hasPassword)'"
+  "'        !(format == .zip && sourceCount == 1 && level == defaultLevel && !hasPassword && single != .link)'" \
+  "'        !(format == .zip && level == defaultLevel && !hasPassword && single != .link)'"
 run "A2 same-name sources collide" XFinder/Core/Archive/ArchiveEngine.swift \
   "'            while used.contains(candidate.lowercased()) { candidate = numbered(base, n); n += 1 }\n'" "''"
 run "A3 password back in argv" XFinder/Core/Archive/ArchiveEngine.swift \
@@ -264,6 +264,17 @@ run "D15 Ask defaults to writing instead of Cancel" XFinder/Core/Archive/Archive
 run "D16 result line names an inherited leaf rename" XFinder/Core/Archive/ArchiveEngine.swift \
   "'        steps.filter(\.renamedHere).map { \$0.target.lastPathComponent }'" \
   "'        steps.filter { \$0.renamed }.map { \$0.target.lastPathComponent }'"
+
+# Z1–Z3 (Boss, 2026-11-08): the single-source ZIP shape that failed on every entry point since 0a184ba.
+run "Z1 one file is zipped with --keepParent again (parent/one.txt, read-back fails)" XFinder/Core/Archive/ArchiveEngine.swift \
+  "'            let keepParent = single == .directory ? [\"--keepParent\"] : []'" \
+  "'            let keepParent = [\"--keepParent\"]'"
+run "Z2 a linked single source goes to ditto (archived under the target's name)" XFinder/Core/Archive/ArchiveEngine.swift \
+  "'        !(format == .zip && sourceCount == 1 && level == defaultLevel && !hasPassword && single != .link)'" \
+  "'        !(format == .zip && sourceCount == 1 && level == defaultLevel && !hasPassword)'"
+run "Z3 the source kind follows links (a link counts as its target)" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        case .link: return .link\n        case .directory: return .directory\n        case .file, nil: return .file'" \
+  "'        case .link: return .file\n        case .directory: return .directory\n        case .file, nil: return .file'"
 
 restore
 

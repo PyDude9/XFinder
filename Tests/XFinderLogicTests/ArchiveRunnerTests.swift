@@ -29,6 +29,39 @@ final class ArchiveRunnerTests: XCTestCase {
     }
     func zipEntries(_ u: URL) -> [String] { sh("/usr/bin/unzip", ["-Z1", u.path]).1.split(separator: "\n").map(String.init).sorted() }
 
+    /// The most common compression there is — ONE file, ZIP, default level, no password — failed on every entry
+    /// point since `0a184ba` (measured 2026-11-08 by OpenCode and Boss independently): `ditto --keepParent` on a
+    /// single FILE stores it under its parent folder's name (`a/one.txt`), the read-back looked for `one.txt`,
+    /// and `compress` reported `.missingData` and deleted a ZIP it had just written. Every other compress test
+    /// uses two sources, which is why nothing caught it.
+    func testOneFileZipsWithTheFileAtTheTopLevel() async throws {
+        let out = url("out/one.zip")
+        let r = await ArchiveRunner.compress(sources: [url("a/one.txt")], format: .zip, output: out)
+        XCTAssertEqual(r, .success(out), "one file, default ZIP must succeed")
+        let entries = zipEntries(out).filter { !$0.hasPrefix("__MACOSX") }
+        XCTAssertEqual(entries, ["one.txt"], "the file must be at the top level, not inside its parent folder's name")
+    }
+
+    /// A single symlinked source: `ditto` would follow it and name the entry after the TARGET (measured), so the read
+    /// back missed the link's name the same way. It is staged like a multi-source entry and keeps its own name.
+    func testOneLinkedFileZipsUnderTheLinksOwnName() async throws {
+        let link = url("a/link.txt")
+        try fm.createSymbolicLink(atPath: link.path, withDestinationPath: "one.txt")
+        let out = url("out/link.zip")
+        let r = await ArchiveRunner.compress(sources: [link], format: .zip, output: out)
+        XCTAssertEqual(r, .success(out))
+        XCTAssertEqual(zipEntries(out).filter { !$0.hasPrefix("__MACOSX") }, ["link.txt"])
+    }
+
+    /// Control for the fix above: ONE folder keeps `--keepParent`, so the folder itself is the top-level entry.
+    func testOneFolderZipsAsItsOwnTopLevelFolder() async throws {
+        let out = url("out/folder.zip")
+        let r = await ArchiveRunner.compress(sources: [url("a/folder")], format: .zip, output: out)
+        XCTAssertEqual(r, .success(out))
+        let entries = zipEntries(out).filter { !$0.hasPrefix("__MACOSX") }
+        XCTAssertEqual(entries, ["folder/", "folder/deep.txt"])
+    }
+
     /// The default path of all three call sites used to be `ditto` with N sources — exit 1 for N ≥ 2.
     func testTwoFilesFromTwoFoldersZipWithBothInside() async throws {
         let out = url("out/two.zip")

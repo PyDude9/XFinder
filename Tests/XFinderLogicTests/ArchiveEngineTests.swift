@@ -58,17 +58,33 @@ final class ArchiveEngineTests: XCTestCase {
 
     func testOneSourceDefaultZipUsesDittoAndKeepsTheParent() {
         let c = E.compressCommand(sources: [URL(fileURLWithPath: "/a/Folder")], format: .zip, level: 6, password: nil,
-                                  output: URL(fileURLWithPath: "/a/Folder.zip"), stagingDir: nil)
+                                  output: URL(fileURLWithPath: "/a/Folder.zip"), stagingDir: nil, single: .directory)
         XCTAssertEqual(c.executable, "/usr/bin/ditto")
         XCTAssertEqual(c.arguments, ["-c", "-k", "--sequesterRsrc", "--keepParent", "/a/Folder", "/a/Folder.zip"])
     }
 
+    /// Measured 2026-11-08: `--keepParent` on a single FILE stores `parent/one.txt`; without it, `one.txt`.
+    func testOneFileDefaultZipUsesDittoWithoutTheParent() {
+        let c = E.compressCommand(sources: [URL(fileURLWithPath: "/a/one.txt")], format: .zip, level: 6, password: nil,
+                                  output: URL(fileURLWithPath: "/a/one.zip"), stagingDir: nil, single: .file)
+        XCTAssertEqual(c.executable, "/usr/bin/ditto")
+        XCTAssertEqual(c.arguments, ["-c", "-k", "--sequesterRsrc", "/a/one.txt", "/a/one.zip"])
+    }
+
+    /// Measured: `ditto` follows a symlinked source and names the entry after the TARGET; staging names it after
+    /// the link, like every multi-source entry.
+    func testALinkedSingleSourceIsStagedNotHandedToDitto() {
+        XCTAssertTrue(E.needsStaging(sourceCount: 1, format: .zip, level: 6, hasPassword: false, single: .link))
+        XCTAssertFalse(E.needsStaging(sourceCount: 1, format: .zip, level: 6, hasPassword: false, single: .file))
+        XCTAssertFalse(E.needsStaging(sourceCount: 1, format: .zip, level: 6, hasPassword: false, single: .directory))
+    }
+
     /// Measured: ditto refuses more than one source. Two or more items must never reach it.
     func testTwoSourcesNeverGoToDitto() {
-        XCTAssertTrue(E.needsStaging(sourceCount: 2, format: .zip, level: 6, hasPassword: false))
+        XCTAssertTrue(E.needsStaging(sourceCount: 2, format: .zip, level: 6, hasPassword: false, single: .file))
         let c = E.compressCommand(sources: [URL(fileURLWithPath: "/a/x"), URL(fileURLWithPath: "/b/x")], format: .zip,
                                   level: 6, password: nil, output: URL(fileURLWithPath: "/o.zip"),
-                                  stagingDir: URL(fileURLWithPath: "/stage"))
+                                  stagingDir: URL(fileURLWithPath: "/stage"), single: .file)
         XCTAssertEqual(c.executable, "/usr/bin/zip")
         XCTAssertEqual(c.currentDirectory?.path, "/stage", "zip must run from the staging folder, not the first source's folder")
         XCTAssertEqual(Array(c.arguments.suffix(2)), ["x", "x 2"])
@@ -77,7 +93,7 @@ final class ArchiveEngineTests: XCTestCase {
     func testThePasswordNeverAppearsInTheArguments() {
         let pw = "S3cret pass"
         let c = E.compressCommand(sources: [URL(fileURLWithPath: "/a/x")], format: .zip, level: 6, password: pw,
-                                  output: URL(fileURLWithPath: "/o.zip"), stagingDir: URL(fileURLWithPath: "/stage"))
+                                  output: URL(fileURLWithPath: "/o.zip"), stagingDir: URL(fileURLWithPath: "/stage"), single: .file)
         XCTAssertFalse(c.arguments.joined(separator: " ").contains("S3cret"), "argv is world-readable via ps")
         XCTAssertFalse(c.arguments.contains("-P"))
         XCTAssertEqual(c.environment["ZIPOPT"], "-P \"S3cret pass\"")
@@ -89,7 +105,7 @@ final class ArchiveEngineTests: XCTestCase {
 
     func testTarFollowsTheStagingLinks() {
         let c = E.compressCommand(sources: [URL(fileURLWithPath: "/a/x")], format: .tarGz, level: 6, password: nil,
-                                  output: URL(fileURLWithPath: "/o.tar.gz"), stagingDir: URL(fileURLWithPath: "/stage"))
+                                  output: URL(fileURLWithPath: "/o.tar.gz"), stagingDir: URL(fileURLWithPath: "/stage"), single: .file)
         XCTAssertEqual(c.arguments.first, "-czhf", "without -h tar would store the symlinks, not the files")
     }
 

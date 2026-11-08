@@ -105,11 +105,18 @@ enum ArchiveEngine {
         return expected.filter { !present.contains($0.lowercased()) }
     }
 
-    /// One source, ZIP, default level, no password ⇒ `ditto`, which keeps macOS metadata (resource
-    /// forks, extended attributes). Everything else is presented through a staging folder of
-    /// symlinks named by `entryNames` and archived from there — zip and tar follow the links.
-    static func needsStaging(sourceCount: Int, format: Format, level: Int, hasPassword: Bool) -> Bool {
-        !(format == .zip && sourceCount == 1 && level == defaultLevel && !hasPassword)
+    /// What the one source of a single-source ZIP is. It decides how `ditto` is called, because `ditto` treats the
+    /// three differently (measured 2026-11-08): `--keepParent` stores a FOLDER as `folder/…` (wanted) but a FILE
+    /// under its parent folder's name (`parent/one.txt` — the read-back then missed `one.txt` and every one-file ZIP
+    /// "failed" since `0a184ba`), and a symlinked source is followed and stored under the TARGET's name.
+    enum SingleSource: Equatable { case file, directory, link }
+
+    /// One source (not a link), ZIP, default level, no password ⇒ `ditto`, which keeps macOS metadata (resource
+    /// forks, extended attributes). Everything else is presented through a staging folder of symlinks named by
+    /// `entryNames` and archived from there — zip and tar follow the links, so a linked source keeps its own name.
+    static func needsStaging(sourceCount: Int, format: Format, level: Int, hasPassword: Bool,
+                             single: SingleSource) -> Bool {
+        !(format == .zip && sourceCount == 1 && level == defaultLevel && !hasPassword && single != .link)
     }
 
     /// The ZIP password goes in `ZIPOPT`, not argv: on macOS every user can read any process's
@@ -121,12 +128,15 @@ enum ArchiveEngine {
     }
 
     static func compressCommand(sources: [URL], format: Format, level: Int, password: String?,
-                                output: URL, stagingDir: URL?) -> Command {
+                                output: URL, stagingDir: URL?, single: SingleSource) -> Command {
         let hasPassword = !(password ?? "").isEmpty
-        if !needsStaging(sourceCount: sources.count, format: format, level: level, hasPassword: hasPassword),
+        if !needsStaging(sourceCount: sources.count, format: format, level: level, hasPassword: hasPassword,
+                         single: single),
            let only = sources.first {
+            // A folder keeps its own name as the top level only with `--keepParent`; a file keeps it only without.
+            let keepParent = single == .directory ? ["--keepParent"] : []
             return Command(executable: "/usr/bin/ditto",
-                           arguments: ["-c", "-k", "--sequesterRsrc", "--keepParent", only.path, output.path],
+                           arguments: ["-c", "-k", "--sequesterRsrc"] + keepParent + [only.path, output.path],
                            currentDirectory: nil)
         }
         let names = entryNames(for: sources)
