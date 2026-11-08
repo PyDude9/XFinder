@@ -222,7 +222,10 @@ import XCTest
         subA.cancel()
         let second: Recorder = Recorder()
         let subB: ListingSubscription = subscribe(folder, second)
-        await waitUntil("second") { !second.results.isEmpty }
+        // Wait for what is asserted below: the first session wrote the SQLite listing cache, so the second
+        // subscriber can receive a cache delivery before its disk read lands — waiting on any result let the
+        // disk-count assertion race the read on a loaded machine (reported flaky by the other Boss session).
+        await waitUntil("second from disk") { !second.diskDeliveries.isEmpty }
         XCTAssertEqual(spy.created, 2)
         XCTAssertEqual(second.diskDeliveries.count, 1)
         subB.cancel()
