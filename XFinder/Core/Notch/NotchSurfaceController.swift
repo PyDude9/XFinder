@@ -44,6 +44,14 @@ final class NotchSurfaceController {
     private var fullscreenInspections: [UInt32: FullscreenInspection] = [:]
     /// The screen the open surface is on; set when it opens, kept until it collapses.
     private var surfaceScreen: NSScreen?
+    /// User-selected owner for the single notch surface. Unknown values are treated as automatic.
+    private var displayTargetRaw: String { UserDefaults.standard.string(forKey: "notch.displayTarget") ?? "automatic" }
+    /// A CGDirectDisplayID persisted as an integer; zero means no explicit screen has been selected.
+    private var selectedDisplayID: UInt32? {
+        let value = UserDefaults.standard.integer(forKey: "notch.displayTargetID")
+        guard value > 0, let displayID = UInt32(exactly: value) else { return nil }
+        return displayID
+    }
     /// Where the pointer was when a shake opened the tray (the pointer anchor's reference point).
     private var shakePoint: CGPoint = .zero
     /// The anchor the panel is currently drawn at; an anchor change jumps instead of animating.
@@ -262,7 +270,10 @@ final class NotchSurfaceController {
 
     /// Deliberate open: an explicit destination wins; otherwise use the configured click rule.
     func reveal(page: NotchSurfaceMachine.Page? = nil) {
-        if !state.isOpen { surfaceScreen = WindowManager.screenUnderPointer() }
+        if !state.isOpen {
+            let pointerScreen = WindowManager.screenUnderPointer()
+            surfaceScreen = resolveSurfaceScreen(pointerScreen: pointerScreen, busy: false) ?? pointerScreen
+        }
         let activity = NotchHoverOpen.Activity(itemCount: machine.itemCount,
                                               trackPlaying: NowPlayingMonitor.shared.hasTrack,
                                               agentNeedsYou: model.agentsNeedingYou > 0,
@@ -314,15 +325,17 @@ final class NotchSurfaceController {
             let pb = NSPasteboard(name: .drag)
             guard dragSession.carriesFiles(now: now, changeCount: { pb.changeCount },
                                            types: { (pb.types ?? []).map(\.rawValue) }) else { return }
+            guard pointerScreenCanOpenSurface(screen) else { return }
             samples.append((point, now))
             let cutoff = now.addingTimeInterval(-0.6)          // keep ~0.6 s of movement for the shake
             samples.removeAll { $0.time < cutoff }
-            if !state.isOpen { surfaceScreen = screen }
             if NotchSurfaceLayout.dragZone(notch: notch, screen: screen.frame).contains(point) {
+                if !state.isOpen { surfaceScreen = resolveSurfaceScreen(pointerScreen: screen, busy: false) ?? screen }
                 dispatch(.fileDragInZone)
             } else if detectShake() {        // the machine ignores a shake while already expanded
                 samples.removeAll()
                 shakePoint = point
+                if !state.isOpen { surfaceScreen = resolveSurfaceScreen(pointerScreen: screen, busy: false) ?? screen }
                 dispatch(.shake)
             }
             return
@@ -337,16 +350,17 @@ final class NotchSurfaceController {
                                                  nowPlayingActive: NowPlayingMonitor.shared.hasTrack, agentActive: model.agentActive,
                                                  agentBusy: model.agentBusy, agentCount: model.agentCount)
         pointerOnAgentEdge = NotchSurfaceLayout.agentEdgeRect(notch: notch, left: wings.left, right: wings.right)?.contains(point) ?? false
-        if zone.contains(point) {
+        if zone.contains(point), pointerScreenCanOpenSurface(screen) {
             leftAt = nil; graceWork?.cancel(); graceWork = nil
             if zoneEnteredAt == nil {
                 zoneEnteredAt = now
                 armRetick(after: settings.hoverDwell, slot: \.dwellWork)
             }
-            if !state.isOpen { surfaceScreen = screen }
+            if !state.isOpen { surfaceScreen = resolveSurfaceScreen(pointerScreen: screen, busy: false) ?? screen }
             dispatch(.hoverInZone(since: zoneEnteredAt ?? now))
             return
         }
+        if zone.contains(point), !state.isOpen { return }
         zoneEnteredAt = nil; dwellWork?.cancel(); dwellWork = nil
 
         if onSurface {
@@ -401,6 +415,46 @@ final class NotchSurfaceController {
     /// The badge prefers a screen that HAS a notch: on a notch-less screen there is nothing to hang it from.
     private static var notchedScreen: NSScreen? {
         NSScreen.screens.first { $0.auxiliaryTopLeftArea != nil && $0.auxiliaryTopRightArea != nil }
+    }
+
+    private static func displayID(for screen: NSScreen) -> UInt32? {
+        (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
+    }
+
+    private var surfaceIsBusy: Bool {
+        machine.state != .collapsed || machine.taskRunning || model.agentReplyTarget != nil || model.newWindowlessOpen
+    }
+
+    private func resolveSurfaceScreen(pointerScreen: NSScreen? = nil, busy: Bool) -> NSScreen? {
+        let screens = NSScreen.screens
+        let displays = screens.compactMap { screen -> NotchDisplayTargetRules.Display? in
+            guard let id = Self.displayID(for: screen) else { return nil }
+            return NotchDisplayTargetRules.Display(
+                id: id,
+                isMain: screen == NSScreen.screens.first,
+                hasPhysicalNotch: screen.auxiliaryTopLeftArea != nil && screen.auxiliaryTopRightArea != nil
+            )
+        }
+        let activeID = surfaceScreen.flatMap(Self.displayID(for:))
+        let resolution = NotchDisplayTargetRules.resolve(
+            target: NotchDisplayTargetRules.Target.parse(displayTargetRaw),
+            selectedDisplayID: selectedDisplayID,
+            displays: displays,
+            pointerDisplayID: pointerScreen.flatMap(Self.displayID(for:)),
+            activeDisplayID: busy ? activeID : nil,
+            busy: busy
+        )
+        guard let id = resolution?.displayID else { return nil }
+        return screens.first { Self.displayID(for: $0) == id }
+    }
+
+    /// A fixed display policy only accepts hover/drag triggers on its resolved target. Automatic mode
+    /// continues to follow the pointer, while an open surface keeps its current display until it closes.
+    private func pointerScreenCanOpenSurface(_ pointerScreen: NSScreen) -> Bool {
+        guard let target = resolveSurfaceScreen(pointerScreen: pointerScreen, busy: surfaceIsBusy),
+              let pointerID = Self.displayID(for: pointerScreen),
+              let targetID = Self.displayID(for: target) else { return false }
+        return pointerID == targetID
     }
 
     // MARK: Machine → screen
@@ -1127,8 +1181,14 @@ final class NotchSurfaceController {
     private func render() {
         guard let panel else { return }
         guard enabled else { panel.hide(); drawnSize = nil; return }
-        var screen = surfaceScreen ?? WindowManager.screenUnderPointer()
-        if machine.state == .collapsed, let notched = Self.notchedScreen { screen = notched }
+        guard let screen = resolveSurfaceScreen(busy: surfaceIsBusy) else {
+            panel.hide()
+            drawnSize = nil
+            return
+        }
+        // Keep a live NSScreen reference for the open session. If it disconnects, the resolver
+        // returns a connected fallback and this reference is refreshed without discarding page/task state.
+        surfaceScreen = screen
         if shouldHideForFullscreen(on: screen) {
             panel.hide()
             drawnSize = nil
