@@ -1185,3 +1185,27 @@ Tiếp (Boss): `74fb3c7` hard link một lần; `8cbfc2f` harness storage 9/9 RE
 không bao giờ cắt danh sách ⇒ thêm test nạp tăng dần). Gate main `8cbfc2f`: green **2905/0**. Cài `ef669cb` 21:26 (dylib 6e245832 ==
 build, appex `+`, L10n 0); `8cbfc2f` chờ idle.
 
+# Notch refresh — scope split (2026-11-08)
+
+| Task | Files | Verification | Live |
+|:--|:--|:--|:--|
+| XF-NOTCH-01 display targeting (Codex structural work) | `docs/specs/XF-NOTCH-01-display-targeting.md` | Drafted pure resolver contract, fallbacks, failure cases, and tests | NOT VERIFIED |
+| XF-NOTCH-02 Notch Settings hierarchy (OpenCode UI task) | `docs/specs/XF-NOTCH-02-interface-settings-layout.md` | Drafted UI-only scope; preserves existing keys/defaults and corrects capture wording | NOT VERIFIED |
+
+No XFinder source was changed. The Droppy dimensions/timings remain comparison data; XFinder's existing geometry and defaults are explicitly preserved. Simultaneous panels on all displays are deferred because the current controller owns one surface. `sh scripts/gate-all.sh --no-build`:
+
+```text
+tests                              Executed 3010 tests, with 1 failure (0 unexpected) in 26.856 (27.087) seconds
+check-l10n-coverage                TOTAL 0 problems across 3832 entries (3832 checked, 32 allowlisted)
+check-l10n-duplicates             TOTAL 0 duplicates across 3832 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1432 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             0
+GATE: RED
+```
+
+Only failure: `AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput` at `Tests/XFinderLogicTests/AgentCodexTests.swift:156` (`no ancestor named codex ⇒ no pid, never the shell's`), an environment/ancestor assumption also seen in earlier Codex worktrees. No build or live UI/display verification was run. Specs are ready for separate implementation worktrees; no agent was launched from this branch.
+
