@@ -1189,6 +1189,7 @@ build, appex `+`, L10n 0); `8cbfc2f` chờ idle.
 
 | Task | Files | Verification | Live |
 |:--|:--|:--|:--|
+| XF-NOTCH-01 core display resolver | `NotchDisplayTargetRules.swift`, `NotchSurfaceController.swift`, project file, pure tests/symlink | targeted 7/0; `plutil` OK; build arm64 OK and new source compiled; mutation 68/68 RED; full gate below has one environment failure | NOT VERIFIED |
 | XF-NOTCH-01 display targeting (Codex structural work) | `docs/specs/XF-NOTCH-01-display-targeting.md` | Drafted pure resolver contract, fallbacks, failure cases, and tests | NOT VERIFIED |
 | XF-NOTCH-02 Notch Settings hierarchy + display target (OpenCode UI task) | `docs/specs/XF-NOTCH-02-interface-settings-layout.md` | Drafted Settings grouping and selector for XF-NOTCH-01; preserves existing keys/defaults and corrects capture wording | NOT VERIFIED |
 
@@ -1208,4 +1209,22 @@ GATE: RED
 ```
 
 Only failure: `AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput` at `Tests/XFinderLogicTests/AgentCodexTests.swift:156` (`no ancestor named codex ⇒ no pid, never the shell's`), an environment/ancestor assumption also seen in earlier Codex worktrees. No build or live UI/display verification was run. The first OC launch was paused before edits after a mismatch was found about which task owned the display-target selector; the specs now agree, and a fresh worktree will be launched from the corrected base.
+
+Core implementation validation `XF_OUT=/tmp/xf-xfnotch-core sh scripts/gate-all.sh`:
+
+```text
+build (arm64, compile list)        OK
+tests                              Executed 3017 tests, with 1 failure (0 unexpected) in 29.795 (30.053) seconds
+check-l10n-coverage                TOTAL 0 problems across 3832 entries (3832 checked, 32 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3832 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1432 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             2
+GATE: RED
+```
+
+`NotchDisplayTargetRulesTests`: 7/0. `sh scripts/mutation-check-notch.sh`: `RESULT: 68/68 mutations RED`, restored suite 0 failures. Build log contains four references to `NotchDisplayTargetRules.swift`. Only gate failure is the same `AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput` environment/ancestor assumption at line 156. No installed-app, multi-display unplug/reconnect, fullscreen, or focus behavior was verified live.
 
