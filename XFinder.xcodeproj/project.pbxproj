@@ -335,6 +335,7 @@
 		7F1A01FE /* Surface/SurfaceGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01FD /* Surface/SurfaceGeometry.swift */; };
 		7F1A0206 /* Notch/NotchSurfaceMachine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0205 /* Notch/NotchSurfaceMachine.swift */; };
 		7F1A0208 /* Notch/NotchSurfaceLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0207 /* Notch/NotchSurfaceLayout.swift */; };
+		7F1A0A01 /* Notch/NotchDisplayTargetRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0A02 /* Notch/NotchDisplayTargetRules.swift */; };
 		7F1A020A /* Notch/NotchSurfaceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0209 /* Notch/NotchSurfaceController.swift */; };
 		7F1A020E /* Notch/NotchDragSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A020D /* Notch/NotchDragSession.swift */; };
 		7F1A0230 /* Notch/NowPlaying.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A022F /* Notch/NowPlaying.swift */; };
@@ -735,6 +736,7 @@
 		7F1A01FD /* Surface/SurfaceGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Surface/SurfaceGeometry.swift; sourceTree = "<group>"; };
 		7F1A0205 /* Notch/NotchSurfaceMachine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchSurfaceMachine.swift; sourceTree = "<group>"; };
 		7F1A0207 /* Notch/NotchSurfaceLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchSurfaceLayout.swift; sourceTree = "<group>"; };
+		7F1A0A02 /* Notch/NotchDisplayTargetRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchDisplayTargetRules.swift; sourceTree = "<group>"; };
 		7F1A0209 /* Notch/NotchSurfaceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchSurfaceController.swift; sourceTree = "<group>"; };
 		7F1A020D /* Notch/NotchDragSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchDragSession.swift; sourceTree = "<group>"; };
 		7F1A022F /* Notch/NowPlaying.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NowPlaying.swift; sourceTree = "<group>"; };
@@ -1097,6 +1099,7 @@
 				7F1A01FD /* Surface/SurfaceGeometry.swift */,
 				7F1A0205 /* Notch/NotchSurfaceMachine.swift */,
 				7F1A0207 /* Notch/NotchSurfaceLayout.swift */,
+				7F1A0A02 /* Notch/NotchDisplayTargetRules.swift */,
 				7F1A023B /* Notch/NotchPages.swift */,
 				7F1A023D /* MCP/MCPProtocol.swift */,
 				7F1A023F /* MCP/MCPServer.swift */,
@@ -1890,6 +1893,7 @@
 				7F1A01FE /* Surface/SurfaceGeometry.swift in Sources */,
 				7F1A0206 /* Notch/NotchSurfaceMachine.swift in Sources */,
 				7F1A0208 /* Notch/NotchSurfaceLayout.swift in Sources */,
+				7F1A0A01 /* Notch/NotchDisplayTargetRules.swift in Sources */,
 				7F1A020A /* Notch/NotchSurfaceController.swift in Sources */,
 				7F1A020E /* Notch/NotchDragSession.swift in Sources */,
 				7F1A0230 /* Notch/NowPlaying.swift in Sources */,
