@@ -32,7 +32,7 @@ Sau đó `74fb3c7` hard link chỉ cộng một lần (nhớ (thiết bị, inod
 
 | Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
 |:--|:--|:--|:--|
-| Q-TRANSLATE-G1 | Nhánh dịch Gemini (`agent/antigravity-XF-translate`, `d175224`) gửi chữ bôi đen tới endpoint **không chính thức** `clients5.google.com/translate_a/t` (giả User-Agent Chrome), **bật sẵn**; trang cài đặt vẫn ghi "Không gửi gì đi"; bật "Dịch bằng AI" tự ghi `voice.refinerTier = customAPI` (mọi lần đọc chính tả sau đó đi lên LLM); dán qua pasteboard không đánh dấu `OwnWriteMark` (lịch sử clipboard nhận chữ đọc chính tả). | (a) Builder sửa F1/F2/F3/F5 theo spec rồi Boss review lại · (b) bỏ hẳn nhánh | **(a)**, nhánh giữ nguyên; app đã cài lại từ `main` (dịch về on-device của Apple) |
+| Q-TRANSLATE-G1 | Nhánh dịch Gemini (`agent/antigravity-XF-translate`, `d175224`) gửi chữ bôi đen tới endpoint **không chính thức** `clients5.google.com/translate_a/t` (giả User-Agent Chrome), **bật sẵn**; trang cài đặt vẫn ghi "Không gửi gì đi"; bật "Dịch bằng AI" tự ghi `voice.refinerTier = customAPI` (mọi lần đọc chính tả sau đó đi lên LLM); dán qua pasteboard không đánh dấu `OwnWriteMark` (lịch sử clipboard nhận chữ đọc chính tả). | (a) Builder sửa F1/F2/F3/F5 theo spec rồi Boss review lại · (b) bỏ hẳn nhánh | **(a) — xong 2026-11-08**: Boss gộp nhánh (`d99f2b8`) + sửa `6dacc0b` (câu chữ trung thực, không ghi `voice.refinerTier`) `0daed47` (⌘C dự phòng không vào lịch sử clipboard). Google Dịch vẫn mặc định bật *bên trong* tính năng dịch (tính năng mặc định tắt) — câu chữ nói rõ gửi chữ đi; muốn mặc định tắt thì nói. |, nhánh giữ nguyên; app đã cài lại từ `main` (dịch về on-device của Apple) |
 | Q-TRANSLATE-G2 | Trên máy hiện có `voice.refinerTier = customAPI`, `voice.apiProvider = custom`. Anh tự bật ở trang Giọng nói, hay do nhánh Gemini ghi? | giữ · trả về mặc định | **giữ** — tôi không đổi defaults của anh |
 | Q-SNAP-UNSNAP | `snap-memory` 8bbd883 (chép 1Piece): kéo cửa sổ đã snap ra thì trả kích thước cũ, ⌃⌥⌫/⌃⌥R khôi phục. Không spec; 2 lỗi cao (khung cũ không kiểm lại, thay `DragQualifier` giữa lúc kéo), `rememberFrames` gắn observer cho MỌI app (trái SNAPMEM). | (a) viết spec, Builder làm lại phần unsnap · (b) bỏ | **(a)**, ref giữ ở `refs/archive/2026-11-04/agent/antigravity-snap-memory` |
 | Q-ORCA-JUNK | Gốc repo còn chưa track: `docs/FEATURE_KEYS_2026-10.md`, `docs/UI_REDESIGN_PROMPT_PLAN.md`, `docs/UPGRADE_PLAN_2026-10.md` (9–10/10), `.agents/`, `skills-lock.json`, `xfinder-crew.zsh` | commit · chuyển ra ngoài | **để nguyên**; 21 file rác khác đã chuyển sang `~/orca/xfinder-root-junk-2026-11-04/` |
@@ -47,6 +47,9 @@ Việc theo sau (review tìm ra, chưa sửa — mỗi dòng nên thành spec nh
 
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
+| T-MFGAP-03B | Nén & Giải nén ▸ Giải nén một file .zip bình thường | Giải ra như trước. Một zip có mục `../x` (hoặc hai mục trùng tên) ⇒ báo "Tệp nén không an toàn…", không ghi gì |
+| T-NOTCH-01 | Giao diện notch ▸ Màn hình đích ▸ "Màn hình chính" khi cắm màn ngoài làm màn chính | Notch hiện ở màn có thanh menu, không nhảy theo cửa sổ vừa bấm; rút màn đã chọn ⇒ trang báo đang tạm dùng màn khác, giữ lựa chọn |
+| T-TRANSLATE-1108 | Chọn thông minh ▸ Dịch: bật Dịch AI rồi dùng Nhập giọng nói | Đọc chính tả KHÔNG tự chuyển sang gọi API (trước đây bật Dịch AI ghi `voice.refinerTier`) ; dịch chữ trong Chrome bằng ⇧⌘G ⇒ lịch sử clipboard không có thêm mục mới |
 | T-MERGE-1104-1 | Mở trình duyệt tệp, ⌘K | Bảng lệnh hiện; gõ tên thư mục ⇒ có kết quả; chế độ Move chuyển được tệp |
 | T-MERGE-1104-2 | Bôi đen chữ ở Safari ⇒ Dịch | Hộp dịch của Apple (on-device), **không** có thẻ kiểu Trancy, không mạng |
 | T-MERGE-1104-3 | Mở Sổ từ ⇒ Ôn tập, thêm sổ mới tên "Tiếng Anh" | Tên giữ dấu cách (nếu thẻ lật ⇒ lỗi đã biết ở trên) |
