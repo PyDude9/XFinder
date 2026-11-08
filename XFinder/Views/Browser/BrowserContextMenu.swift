@@ -101,7 +101,7 @@ enum BrowserContextMenu {
     /// contract: "khi menu mở off the main thread if needed") since LaunchServices resolution for several selected
     /// documents can take a few ms each; the submenu's own `NSMenuDelegate.menuNeedsUpdate` kicks the async refill off
     /// only when the user actually opens it, not on every context-menu build.
-    private static func openWithItem(model: BrowserWindowModel, pane: PaneState) -> NSMenuItem {
+    static func openWithItem(model: BrowserWindowModel, pane: PaneState) -> NSMenuItem {
         let title = L10n.t("Mở bằng")
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         let submenu = NSMenu(title: title)
@@ -137,7 +137,7 @@ enum BrowserContextMenu {
 
     // MARK: - Tags ▸
 
-    private static func tagsItem(model: BrowserWindowModel, pane: PaneState) -> NSMenuItem {
+    static func tagsItem(model: BrowserWindowModel, pane: PaneState) -> NSMenuItem {
         let title = L10n.t("Thẻ")
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         let submenu = NSMenu(title: title)
@@ -211,7 +211,7 @@ enum BrowserContextMenu {
         return item
     }
 
-    private static func sortBySubmenu(model: BrowserWindowModel, pane: PaneState) -> NSMenuItem {
+    static func sortBySubmenu(model: BrowserWindowModel, pane: PaneState) -> NSMenuItem {
         let title = L10n.t("Sắp theo")
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         let submenu = NSMenu(title: title)
@@ -226,7 +226,7 @@ enum BrowserContextMenu {
         return item
     }
 
-    private static func sortKeyTitleKey(_ key: SortKey) -> String {
+    static func sortKeyTitleKey(_ key: SortKey) -> String {
         switch key {
         case .name: return "Tên"
         case .modified: return "Ngày sửa"
@@ -238,7 +238,7 @@ enum BrowserContextMenu {
         }
     }
 
-    private static func groupBySubmenu(model: BrowserWindowModel, pane: PaneState) -> NSMenuItem {
+    static func groupBySubmenu(model: BrowserWindowModel, pane: PaneState) -> NSMenuItem {
         let title = L10n.t("Nhóm theo")
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         let submenu = NSMenu(title: title)

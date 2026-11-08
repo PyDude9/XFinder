@@ -41,6 +41,12 @@ struct SearchBarView: View {
         .onChange(of: pane.search?.text) { _, newValue in
             if let newValue { searchText = newValue }
         }
+        .onChange(of: model.saveSearchRequest) { _, request in
+            // XF-T38: File ▸ Save Search… — the same popover as this bar's own save button.
+            guard request == pane.id else { return }
+            model.saveSearchRequest = nil
+            showSaveSearch = true
+        }
         .onChange(of: model.filterFocusRequest) { _, newValue in
             guard newValue == pane.id else { return }
             filterFieldFocused = true

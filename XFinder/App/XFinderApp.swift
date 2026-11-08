@@ -44,6 +44,10 @@ struct XFinderApp: App {
                 }
                 .keyboardShortcut("q", modifiers: .command)
             }
+
+            // XF-T38 — the file browser's blocks in Edit / View / Window / the app menu, shown while a browser window
+            // is key (its own Tệp and Đi menus are AppKit menus `BrowserMainMenu` inserts).
+            BrowserMenuCommands()
         }
     }
 }

@@ -194,7 +194,7 @@ struct CommandPaletteView: View {
         }
         for command in BrowserCommand.allCases where command != .quickOpen && command != .commandPalette && model.canPerform(command) {
             let titleKey = BrowserCommands.titleKey(command)
-            items.append(.init(id: "command:" + command.rawValue, title: L10n.t(titleKey), subtitle: "", target: command.rawValue, kind: .command, aliases: [command.rawValue, L10n.english(titleKey)]))
+            items.append(.init(id: "command:" + command.rawValue, title: L10n.t(titleKey), subtitle: Self.menuName(of: command), target: command.rawValue, kind: .command, aliases: [command.rawValue, L10n.english(titleKey)]))
         }
         return items
     }
@@ -260,5 +260,13 @@ struct CommandPaletteView: View {
             record(item.id)
             model.palette = nil
         }
+    }
+}
+
+extension CommandPaletteView {
+    /// XF-T38: the menu a command lives in, under its title — "Tệp", "Xem", … — as FileOctopus's palette shows it.
+    static func menuName(of command: BrowserCommand) -> String {
+        guard let menu = BrowserMenuLayout.menu(containing: command) else { return L10n.t("Trình duyệt") }
+        return L10n.t(BrowserMenuLayout.titleKey(menu))
     }
 }

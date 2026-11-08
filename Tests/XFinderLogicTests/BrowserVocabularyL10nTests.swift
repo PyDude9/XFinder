@@ -32,6 +32,11 @@ final class BrowserVocabularyL10nTests: XCTestCase {
                  .extensionAdded("b")].map(\.key)
         keys += [BatchRenameRules.Issue.duplicateInBatch, .existsInFolder, .insideRenamedItem, .missing, .locked,
                  .noPermission].map(\.key)
+        // XF-T38: every menu, submenu, link and action title of the menu bar.
+        keys += BrowserMenuLayout.Menu.allCases.map { BrowserMenuLayout.titleKey($0) }
+        keys += BrowserMenuLayout.Submenu.allCases.map { BrowserMenuLayout.titleKey($0) }
+        keys += BrowserMenuLayout.Link.allCases.map { BrowserMenuLayout.titleKey($0) }
+        keys += BrowserMenuLayout.Action.allCases.map { BrowserMenuLayout.titleKey($0) }
         keys += Access.allCases.map(\.titleKey)                                       // Get Info permissions
         keys += ["", "a/b", "a:b"].compactMap { FileInfoRules.renameRejectionKey(for: $0) }
         keys += GroupBy.allCases.map(\.titleKey)                                      // XF-T30 W1: toolbar Group menu

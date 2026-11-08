@@ -497,6 +497,8 @@ enum BrowserSheet: String, Identifiable {
     /// XF-T30 W1: "Lọc thư mục hiện tại" (no chord since ⌘F became Find, Q-T30-2) asks this pane's filter field to show
     /// and take focus; the search bar clears it once focused.
     var filterFocusRequest: PaneID?
+    /// XF-T38: File ▸ Save Search… asks this pane's search bar to show its Save Search popover (cleared by the bar).
+    var saveSearchRequest: PaneID?
 
     var tree: PaneTree
     /// XF-T30 W1 (contract §1/§3) — the tabs of every pane, and every tab's own state. A `PaneState` is one TAB: its
@@ -808,6 +810,14 @@ enum BrowserSheet: String, Identifiable {
             return performFileOpsCommand(command)
         case .togglePreview, .slideshow:
             return performPreviewCommand(command)
+        case .refresh:
+            active.reload()
+            return true
+        case .saveSearch:
+            // The pane's own search bar shows its Save Search popover (same UI as its bookmark button).
+            guard active.search != nil else { return false }
+            saveSearchRequest = activePane
+            return true
         }
         return true
     }
@@ -907,6 +917,10 @@ enum BrowserSheet: String, Identifiable {
             return canPerformFileOpsCommand(command)
         case .togglePreview, .slideshow:
             return canPerformPreviewCommand(command)
+        case .refresh:
+            return active.search == nil
+        case .saveSearch:
+            return active.search != nil
         }
     }
 
