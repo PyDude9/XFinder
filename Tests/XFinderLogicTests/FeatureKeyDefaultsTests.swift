@@ -398,6 +398,10 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "notch.accent",
                views: ["XFinder/Views/Detail/NotchInterfaceDetailView.swift"],
                reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
+        // XF-NOTCH-02: which display owns the single notch surface (reader: XF-NOTCH-01's controller).
+        Switch(key: "notch.displayTarget",
+               views: ["XFinder/Views/Detail/NotchInterfaceDetailView.swift"],
+               reader: "XFinder/Core/Notch/NotchSurfaceController.swift"),
         // D: the ⌘⌥C shelf hotkey (off by default, user) and the MCP server (off by default).
         Switch(key: "clipboard.shelfHotkey",
                views: ["XFinder/Views/Detail/SettingsDetailView.swift", "XFinder/Views/Detail/ShortcutsDetailView.swift"],
@@ -503,6 +507,24 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         XCTAssertEqual(Self.viewDefaults(forKey: "n.neg", in: intView), ["-1"])
         let intReader = "let k = UserDefaults.standard.object(forKey: \"n.k\") as? Int ?? 30"
         XCTAssertEqual(Self.readerDefaults(forKey: "n.k", in: intReader), ["30"])
+    }
+
+    // MARK: - XF-NOTCH-02: the display-target pair
+
+    /// `notch.displayTarget` is gated by the Switch table above (its reader is the canonical form). Its
+    /// companion `notch.displayTargetID` deliberately has NO selected-display default (XF-NOTCH-01): the
+    /// reader asks `integer(forKey:)`, which is 0 for an absent key, and the view's `@AppStorage` literal
+    /// must therefore be 0 too — otherwise opening Settings would pin a screen nobody chose.
+    func testDisplayTargetIDDefaultsToNoSelectionInViewAndReader() throws {
+        let view = try String(contentsOf: Self.repoRoot.appendingPathComponent("XFinder/Views/Detail/NotchInterfaceDetailView.swift"), encoding: .utf8)
+        XCTAssertEqual(Self.viewDefaults(forKey: "notch.displayTarget", in: view), ["\"automatic\""])
+        XCTAssertEqual(Self.viewDefaults(forKey: "notch.displayTargetID", in: view), ["0"])
+
+        let reader = try String(contentsOf: Self.repoRoot.appendingPathComponent("XFinder/Core/Notch/NotchSurfaceController.swift"), encoding: .utf8)
+        XCTAssertTrue(reader.contains("integer(forKey: \"notch.displayTargetID\")"),
+                      "the ID's reader changed shape — 0-means-none and the view's 0 default must be re-checked")
+        XCTAssertTrue(reader.contains("guard value > 0, let displayID = UInt32(exactly: value) else { return nil }"),
+                      "a non-positive or out-of-range stored ID must read as no selection, never trap")
     }
 
     // MARK: - Dead switches stay dead

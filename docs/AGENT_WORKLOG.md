@@ -1,4 +1,72 @@
-## 2026-11-07 — OpenCode — XF-MFGAP-03 stage 03A system archive reader
+## 2026-11-08 — OpenCode — XF-NOTCH-02 Notch Settings page (five groups + display target)
+
+TASK: XF-NOTCH-02   BRANCH: agent/opencode-XF-NOTCH-02   SPEC: `docs/specs/XF-NOTCH-02-interface-settings-layout.md`
+(paired with `docs/specs/XF-NOTCH-01-display-targeting.md`)
+BUILD: `** BUILD SUCCEEDED **` (arm64, own `XF_OUT=/tmp/xfinder-opencode-notch02-*`; `NotchInterfaceDetailView.swift` in the
+SwiftCompile list, 0 `error:` lines)
+TESTS: targeted `FeatureKeyDefaultsTests|NotchDisplayTargetRulesTests|NotchSurface*|NotchFullscreenRules` 66 / 0;
+`FeatureKeyDefaultsTests` alone 4 / 0; full suite 3018 / 0
+GATE: green — pasted verbatim below
+MUTATION: `sh scripts/mutation-check-notch.sh` on this tree — `RESULT: 68/68 mutations RED`, `suite after restore: 0
+failure(s)`; my three source files were byte-compared against pre-run copies afterwards (`diff` showed no drift, the
+harness restores from its own backup).
+LIVE: NOT VERIFIED (Builder: no install, no launch, no synthetic input)
+FILES CHANGED: `XFinder/Views/Detail/NotchInterfaceDetailView.swift` (rewritten), `XFinder/Resources/L10n.strings.json`
+(+32 add-only entries), `scripts/add-notch-settings-copy-l10n.py` (new, add-only), `Tests/XFinderLogicTests/
+FeatureKeyDefaultsTests.swift` (+1 switch row, +1 test, existing rows untouched), this worklog
+NOT VERIFIED: real hover/click behaviour, VoiceOver reading order, keyboard traversal of the new picker, a real
+plug/unplug/reconnect of the selected display, physical-notch-absent fallback on real external-only hardware, visual
+density of the five groups at the minimum window size, English rendering of the 32 new strings in the running app.
+
+What changed, in reading order (group titles are the spec's five):
+
+1. **Bật/tắt** — master switch `dropTray.notchEnabled` moved into its own group with a sentence naming what stays
+   working when it is off. Turning it off shows an in-card note saying the other groups are locked and no value was reset.
+2. **Cách mở** — `dropTray.hoverEnabled`, `notch.hoverOpens`, `notch.hoverSpeed` and `notch.clickOpens` together; the
+   footer states hover and click are independent and that explicit deep links/hotkeys keep their page.
+3. **Màn hình đích** — new. `notch.displayTarget` picker (automatic/builtIn/main/specific) + `notch.displayTargetID`
+   picker over `NSScreen.screens`, each row showing the localized screen name **and** the numeric display ID. The
+   disconnected saved ID stays in the menu as "Đã lưu — ID n — không kết nối", and the resolver's own fallback is
+   printed as a warning note. A "Màn hình notch dùng khi rảnh" row shows the resolved display. The list is re-read on
+   `NSApplication.didChangeScreenParametersNotification` (event-driven; no timer).
+4. **Hiển thị và quyền riêng tư** — pill on plain screens, fullscreen visibility, capture visibility. The capture copy was
+   corrected: "sharingType = none / measured kCGWindowSharingState = 0" plus an explicit caveat that this is the notch
+   window's own sharing state, not a guarantee against other capture tools, OS versions or sharing methods.
+5. **Trang và màu** — unchanged page visibility/order, restore-defaults and accent controls, moved into one group.
+
+Preserved: every existing key, its default and its `NotchSurfaceController.shared.applySettings()` call; page
+toggle/order rules (the last visible page can still not be switched off); restore-defaults still touches only
+`notch.pages`. No core/engine file was edited, and the resolver is only *read* here — `NotchDisplayTargetRules.resolve`
+with no pointer/active surface answers "where does the notch sit when idle". An unknown stored `notch.displayTarget` is
+shown as its own menu item and never rewritten by opening the page.
+
+Spec mismatch worth flagging (not a stop condition): XF-NOTCH-02 §"Allowed files" lists
+`scripts/add-notch-settings-copy-l10n.py`, while XF-NOTCH-01 §"Scope" lists `scripts/add-notch-display-target-l10n.py`
+for the same UI task. I followed XF-NOTCH-02, the task actually being executed, and created only that one script.
+
+Gate output, verbatim (`XF_ROOT=$PWD XF_OUT=/tmp/xfinder-opencode-notch02-final sh scripts/gate-all.sh`):
+
+```text
+build (arm64, compile list)        OK
+tests                              Executed 3018 tests, with 0 failures (0 unexpected) in 58.393 (59.136) seconds
+check-l10n-coverage                TOTAL 0 problems across 3864 entries (3864 checked, 32 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3864 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1432 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             4
+GATE: green
+```
+
+The `AgentCodexTests` ancestor failure recorded in the XF-NOTCH-01 notes did **not** reproduce here: this session's
+process tree has no `codex` ancestor assumption to break, so the whole suite was green (3018 / 0) in both the
+`--no-build` and the full run. Mutation log: `/tmp/xfinder-notch02-mutation.log`.
+
+**CHỜ REVIEW (nhánh agent/opencode-XF-NOTCH-02).** No push, no merge, no install, no launch.
+
+
 
 TASK: XF-MFGAP-03 stage 03A, second half (spec §9)   BRANCH: agent/codex-XF-SETTINGS   COMMITS: 80522af
 BUILD: `** BUILD SUCCEEDED **` (arm64; `SystemArchiveReader.swift` appears 4 times in the compile log)
