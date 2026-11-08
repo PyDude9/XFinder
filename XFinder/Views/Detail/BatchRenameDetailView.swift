@@ -1,26 +1,29 @@
 import SwiftUI
 import AppKit
 
-/// Đổi tên hàng loạt — pick files, choose a rename mode, see the live
-/// before→after preview, then apply. Applies via FileManager only (no shell),
-/// refuses to touch colliding targets, and logs to ActionHistoryStore with
-/// one-click undo.
+/// Đổi tên hàng loạt — pick files, choose a rename mode, see the live before→after preview with a status per row,
+/// then apply. XF-T37 (Q-T37-5): the page keeps its modes and gains Format; names are checked by the same rules as the
+/// file browser's batch rename (`BatchRenameRules` — case-only renames allowed, one error blocks the batch), disk facts
+/// are read once off the main thread, the rename runs in two phases (swaps work, a failure puts everything back), and
+/// it is logged to ActionHistoryStore with one-click undo.
 struct BatchRenameDetailView: View {
     @State private var files: [URL] = []
-    @State private var options = BatchRenameEngine.Options()
+    @State private var options = BatchRenameRules.PageOptions()
+    @State private var items: [BatchRenameRules.Item] = []
+    @State private var siblings: [String: Set<String>] = [:]
+    @State private var isLoading = false
+    @State private var isRunning = false
     @State private var outcome: String? = nil
     @State private var isError = false
     @State private var history = ActionHistoryStore.shared
 
-    private var plans: [BatchRenameEngine.Plan] {
-        BatchRenameEngine.plan(files: files, options: options)
+    private var plan: BatchRenameRules.Plan {
+        BatchRenameRules.pagePlan(items: items, options: options, siblings: { siblings[$0] }, calendar: .current,
+                                  dateConnector: L10n.t(" lúc "))
     }
-    private var runnable: [BatchRenameEngine.Plan] {
-        plans.filter { !$0.collides && $0.source != $0.proposed }
-    }
-    private var blocked: Int { plans.count - runnable.count }
 
     var body: some View {
+        let plan = plan
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
                 PageHeader(title: L10n.t("Đổi tên hàng loạt"),
@@ -31,14 +34,14 @@ struct BatchRenameDetailView: View {
                     HStack {
                         Button(L10n.t("Chọn tập tin…")) { pickFiles() }
                         if !files.isEmpty {
-                            Button(L10n.t("Xóa hết")) { files = [] }
+                            Button(L10n.t("Xóa hết")) { files = []; items = []; siblings = [:]; outcome = nil }
                                 .font(XFinderTokens.Font.rowValue).foregroundColor(.red)
                         }
                     }
                     .settingsRow()
-                    if blocked > 0 {
+                    if plan.errorCount > 0 {
                         SettingsDivider()
-                        Text("\(blocked)\(L10n.t(" mục bị chặn (trùng tên hoặc trùng đích)."))")
+                        Text("\(plan.errorCount)\(L10n.t(" mục có lỗi — sửa hết mới đổi được."))")
                             .font(XFinderTokens.Font.caption).foregroundColor(.orange)
                             .settingsRow()
                     }
@@ -59,8 +62,8 @@ struct BatchRenameDetailView: View {
                     // A menu picker has a small fixed ideal width, so the
                     // page can finally shrink to the window.
                     PickerRow(title: L10n.t("Kiểu"), selection: $options.mode, width: 200) {
-                        ForEach(BatchRenameEngine.Mode.allCases) { m in
-                            Text(m.titleVI).tag(m)
+                        ForEach(BatchRenameRules.PageMode.allCases, id: \.self) { m in
+                            Text(BatchRenameEngine.title(m)).tag(m)
                         }
                     }
                     .settingsRow()
@@ -94,20 +97,23 @@ struct BatchRenameDetailView: View {
                                 .frame(maxWidth: 140)
                         case .lowercase, .uppercase:
                             EmptyView()
+                        case .format:
+                            formatControls
                         }
                     }
                     .settingsRow()
-                    SettingsDivider()
-
-                    ToggleRow(title: L10n.t("Giữ phần mở rộng (.pdf, .jpg…)"),
-                              isOn: $options.keepExtension)
-                        .settingsRow()
+                    if options.mode != .format {
+                        SettingsDivider()
+                        ToggleRow(title: L10n.t("Giữ phần mở rộng (.pdf, .jpg…)"),
+                                  isOn: $options.keepExtension)
+                            .settingsRow()
+                    }
                 }
 
                 if !files.isEmpty {
-                    SettingsSection(title: "\(L10n.t("Xem trước ("))\(runnable.count)\(L10n.t(" sẽ đổi)"))") {
-                        ForEach(Array(plans.prefix(12).enumerated()), id: \.element.id) { entry in
-                            let plan = entry.element
+                    SettingsSection(title: "\(L10n.t("Xem trước ("))\(plan.renameCount)\(L10n.t(" sẽ đổi)"))") {
+                        ForEach(Array(plan.rows.prefix(12).enumerated()), id: \.element.id) { entry in
+                            let row = entry.element
                             if entry.offset > 0 { SettingsDivider() }
                             HStack {
                                 // `minWidth: 0` lets long file names actually
@@ -119,25 +125,25 @@ struct BatchRenameDetailView: View {
                                 // what pushes the window. `maxWidth:
                                 // .infinity` makes each name claim a share
                                 // of the available width instead.
-                                Text(plan.source.lastPathComponent)
+                                Text(row.oldName)
                                     .font(XFinderTokens.Font.caption)
                                     .fileNameRowSafe()
                                 Text("→").font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                                     .layoutPriority(1)
-                                Text(plan.proposed.lastPathComponent)
+                                Text(row.newName)
                                     .font(XFinderTokens.Font.caption)
                                     .fileNameRowSafe()
-                                    .foregroundColor(plan.collides ? .red : .primary)
-                                if plan.collides {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundColor(.red).font(XFinderTokens.Font.caption)
-                                }
+                                    .foregroundColor(row.issues.isEmpty ? .primary : .red)
+                                Text(status(row))
+                                    .font(XFinderTokens.Font.caption)
+                                    .foregroundColor(row.issues.isEmpty ? .secondary : .red)
+                                    .fileNameRowSafe()
                             }
                             .settingsRow()
                         }
-                        if plans.count > 12 {
+                        if plan.rows.count > 12 {
                             SettingsDivider()
-                            Text("\(L10n.t("…và "))\(plans.count - 12)\(L10n.t(" mục nữa"))")
+                            Text("\(L10n.t("…và "))\(plan.rows.count - 12)\(L10n.t(" mục nữa"))")
                                 .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
                                 .settingsRow()
                         }
@@ -145,13 +151,13 @@ struct BatchRenameDetailView: View {
                 }
 
                 Button {
-                    apply()
+                    apply(plan)
                 } label: {
-                    Text(runnable.isEmpty ? L10n.t("Chưa có gì để đổi") : "\(L10n.t("Đổi "))\(runnable.count)\(L10n.t(" mục"))")
+                    Text(plan.renameCount == 0 ? L10n.t("Chưa có gì để đổi") : "\(L10n.t("Đổi "))\(plan.renameCount)\(L10n.t(" mục"))")
                         .fontWeight(.semibold).frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(runnable.isEmpty)
+                .disabled(!plan.canRename || isLoading || isRunning)
                 .padding(.horizontal, XFinderTokens.Space.page)
 
                 if let msg = outcome {
@@ -166,6 +172,49 @@ struct BatchRenameDetailView: View {
             .pageWidthSafe()
         }
         .background(XFinderTokens.Settings.contentBackground)
+        .onAppear {
+            // Finder's default custom format is "File " — shown in the UI language (the space is the user's separator).
+            if options.format.customName == BatchRenameRules.Options().customName { options.format.customName = L10n.t("Tệp ") }
+        }
+    }
+
+    /// Format mode's fields — the same three styles as Finder and the file browser (Name and Index / Counter / Date).
+    private var formatControls: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            HStack {
+                Picker(L10n.t("Kiểu tên"), selection: $options.format.formatStyle) {
+                    Text(L10n.t("Tên và chỉ số")).tag(BatchRenameRules.FormatStyle.nameAndIndex)
+                    Text(L10n.t("Tên và bộ đếm")).tag(BatchRenameRules.FormatStyle.nameAndCounter)
+                    Text(L10n.t("Tên và ngày")).tag(BatchRenameRules.FormatStyle.nameAndDate)
+                }
+                .pickerStyle(.menu)
+                .fixedSize()
+                Picker(L10n.t("Đặt ở"), selection: $options.format.formatPosition) {
+                    Text(L10n.t("Sau tên")).tag(BatchRenameRules.Position.after)
+                    Text(L10n.t("Trước tên")).tag(BatchRenameRules.Position.before)
+                }
+                .pickerStyle(.menu)
+                .fixedSize()
+            }
+            HStack {
+                TextField(L10n.t("Tên tuỳ chỉnh"), text: $options.format.customName)
+                    .textFieldStyle(.roundedBorder).font(XFinderTokens.Font.rowValue)
+                if options.format.formatStyle != .nameAndDate {
+                    Stepper("\(L10n.t("Bắt đầu từ "))\(options.format.startNumber)", value: $options.format.startNumber, in: 0...99_999)
+                        .font(XFinderTokens.Font.rowValue)
+                        .fixedSize()
+                }
+            }
+        }
+    }
+
+    private func status(_ row: BatchRenameRules.Row) -> String {
+        if !row.issues.isEmpty { return row.issues.map { L10n.t($0.key) }.joined(separator: " ") }
+        if row.isUnchanged { return L10n.t("Không đổi") }
+        if row.notes.isEmpty { return L10n.t("Sẵn sàng") }
+        return row.notes.map { note in
+            note.detail.isEmpty ? L10n.t(note.key) : "\(L10n.t(note.key)) \(note.detail)"
+        }.joined(separator: " ")
     }
 
     private func pickFiles() {
@@ -173,22 +222,52 @@ struct BatchRenameDetailView: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = true
-        if panel.runModal() == .OK { files = panel.urls.sorted { $0.path < $1.path } }
+        if panel.runModal() == .OK {
+            files = panel.urls.sorted { $0.path < $1.path }
+            loadFacts()
+        }
     }
 
-    private func apply() {
-        let (moved, failed) = BatchRenameEngine.execute(runnable)
-        if !moved.isEmpty { history.recordRenames(pairs: moved) }
-        if moved.isEmpty, failed > 0 {
-            isError = true
-            outcome = "\(L10n.t("Không đổi được mục nào ("))\(failed)\(L10n.t(" thất bại)."))"
-        } else {
+    /// Disk facts for the plan, read once off the main thread (never in `body`).
+    private func loadFacts() {
+        let paths = files.map(\.path)
+        isLoading = true
+        Task { @MainActor in
+            let facts = await Task.detached(priority: .userInitiated) { BatchRenameRules.readFacts(paths) }.value
+            items = facts.items
+            siblings = facts.siblings
+            isLoading = false
+        }
+    }
+
+    private func apply(_ plan: BatchRenameRules.Plan) {
+        guard plan.canRename else { return }
+        let pairs = plan.pairs
+        isRunning = true
+        Task { @MainActor in
+            let result = await Task.detached(priority: .userInitiated) { BatchRenameRules.execute(pairs) }.value
+            isRunning = false
+            guard result.succeeded else {
+                isError = true
+                let failedName = result.failedPath.map { ($0 as NSString).lastPathComponent } ?? ""
+                let reason = result.failedErrno.map { String(cString: strerror($0)) } ?? ""
+                var text = "\(L10n.t("Không đổi tên được: "))\(failedName) (\(reason))."
+                if result.stranded.isEmpty {
+                    text += " \(L10n.t("Mọi mục đã trở về tên cũ."))"
+                } else {
+                    let names = result.stranded.map { ($0 as NSString).lastPathComponent }.joined(separator: ", ")
+                    text += " \(result.stranded.count)\(L10n.t(" mục chưa trả về được tên cũ: "))\(names)"
+                }
+                outcome = text
+                loadFacts()
+                return
+            }
+            let moved = pairs.map { (old: URL(fileURLWithPath: $0.from), new: URL(fileURLWithPath: $0.to)) }
+            history.recordRenames(pairs: moved)
             isError = false
-            outcome = failed == 0
-                ? "\(L10n.t("Đã đổi tên "))\(moved.count)\(L10n.t(" mục. Xem Lịch sử thao tác để hoàn tác."))"
-                : "\(L10n.t("Đã đổi "))\(moved.count)\(L10n.t(" mục, "))\(failed)\(L10n.t(" mục thất bại."))"
-            files = files.filter { url in !moved.contains { $0.old == url } }
-                .map { url in moved.first { $0.old == url }?.new ?? url }
+            outcome = "\(L10n.t("Đã đổi tên "))\(moved.count)\(L10n.t(" mục. Xem Lịch sử thao tác để hoàn tác."))"
+            files = files.map { url in moved.first { $0.old == url }?.new ?? url }
+            loadFacts()
         }
     }
 }

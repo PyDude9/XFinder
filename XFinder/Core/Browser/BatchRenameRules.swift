@@ -316,6 +316,86 @@ enum BatchRenameRules {
                        stranded: [])
     }
 
+    // MARK: - The old Batch Rename page (Q-T37-5: "fix the bugs, update the features")
+
+    /// The page keeps its own modes (prefix, suffix, replace, numbering with separator and digits, case changes) and
+    /// gains Format; names are then validated, executed and undone exactly like the browser sheet's.
+    enum PageMode: String, CaseIterable, Sendable { case prefix, suffix, replace, sequence, lowercase, uppercase, format }
+
+    struct PageOptions: Equatable, Sendable {
+        var mode: PageMode = .prefix
+        var affix: String = ""
+        var find: String = ""
+        var replaceWith: String = ""
+        var sequenceStart: Int = 1
+        var sequenceDigits: Int = 2
+        var sequenceSeparator: String = "_"
+        var keepExtension: Bool = true
+        /// Format mode's fields (style, position, custom name, start number).
+        var format: Options = Options(mode: .format)
+    }
+
+    static func pageName(for item: Item, index: Int, options: PageOptions, calendar: Calendar, dateConnector: String) -> String {
+        if options.mode == .format {
+            return newName(for: item, index: index, options: options.format, calendar: calendar, dateConnector: dateConnector)
+        }
+        let name = (item.path as NSString).lastPathComponent
+        let (stemPart, ext) = RenameRules.splitExtension(name, isFolder: item.isFolder)
+        var stem = stemPart
+        switch options.mode {
+        case .prefix: stem = options.affix + stem
+        case .suffix: stem += options.affix
+        case .replace:
+            if !options.find.isEmpty { stem = stem.replacingOccurrences(of: options.find, with: options.replaceWith) }
+        case .sequence:
+            let number = String(max(0, options.sequenceStart) + index)
+            let width = min(max(1, options.sequenceDigits), 9)
+            stem += options.sequenceSeparator + String(repeating: "0", count: max(0, width - number.count)) + number
+        case .lowercase: stem = stem.lowercased()
+        case .uppercase: stem = stem.uppercased()
+        case .format: break
+        }
+        // "Giữ phần mở rộng" off drops the extension, as the page always did.
+        return (options.keepExtension && !ext.isEmpty) ? "\(stem).\(ext)" : stem
+    }
+
+    static func pagePlan(items: [Item], options: PageOptions, siblings: (String) -> Set<String>?, calendar: Calendar,
+                         dateConnector: String) -> Plan {
+        if options.mode == .format {
+            return plan(items: items, options: options.format, siblings: siblings, calendar: calendar, dateConnector: dateConnector)
+        }
+        let names = items.indices.map { pageName(for: items[$0], index: $0, options: options, calendar: calendar, dateConnector: dateConnector) }
+        return validate(items: items, newNames: names, siblings: siblings)
+    }
+
+    // MARK: - Disk facts (read once, off the main thread)
+
+    /// Existence, folder-vs-file (a package counts as a file — "MyApp.app" has an extension), modification date, the
+    /// user-immutable flag, whether the parent is writable, and each parent's names straight from `readdir`.
+    static func readFacts(_ paths: [String]) -> (items: [Item], siblings: [String: Set<String>]) {
+        var loaded: [Item] = []
+        var names: [String: Set<String>] = [:]
+        for path in paths {
+            let url = URL(fileURLWithPath: path)
+            let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey, .contentModificationDateKey,
+                                                           .isUserImmutableKey])
+            var info = stat()
+            let exists = lstat(path, &info) == 0
+            let parent = (path as NSString).deletingLastPathComponent
+            if names[parent] == nil { names[parent] = directoryNames(parent) ?? [] }
+            let seconds = TimeInterval(info.st_mtimespec.tv_sec) + TimeInterval(info.st_mtimespec.tv_nsec) / 1e9
+            loaded.append(Item(
+                path: path,
+                isFolder: (values?.isDirectory ?? false) && !(values?.isPackage ?? false),
+                modified: values?.contentModificationDate ?? Date(timeIntervalSince1970: seconds),
+                exists: exists,
+                isLocked: values?.isUserImmutable ?? false,
+                parentWritable: access(parent, W_OK) == 0
+            ))
+        }
+        return (loaded, names)
+    }
+
     // MARK: - One item (inline rename, Get Info, New Folder)
 
     enum SingleResult: Equatable, Sendable {

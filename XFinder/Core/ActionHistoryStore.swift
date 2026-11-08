@@ -92,6 +92,18 @@ final class ActionHistoryStore {
         guard payload.from.count == payload.to.count else {
             return L10n.t("Không thể hoàn tác thao tác này.")
         }
+        if entry.kind == "rename" {
+            // XF-T37: a rename batch goes back in one two-phase pass (`BatchRenameRules.execute`). The item-by-item
+            // move below skips a target that "exists" — and on the default case-insensitive volume a case-only rename's
+            // old name always exists (it IS the item), as does every name in a swap; a partial undo is refused instead.
+            let outcome = BatchRenameRules.execute(Array(zip(payload.from, payload.to)).map { (from: $0.0, to: $0.1) })
+            guard outcome.succeeded else { return L10n.t("Không thể hoàn tác thao tác này.") }
+            if let i = entries.firstIndex(where: { $0.id == entry.id }) {
+                entries.remove(at: i)
+                record(kind: "other", summary: "\(L10n.t("Hoàn tác: khôi phục "))\(outcome.renamed.count)\(L10n.t(" mục."))", reversible: false)
+            }
+            return "\(L10n.t("Đã hoàn tác "))\(outcome.renamed.count)\(L10n.t(" mục."))"
+        }
         var restored = 0, failed = 0
         let fm = FileManager.default
         for (fromPath, toPath) in zip(payload.from, payload.to) {

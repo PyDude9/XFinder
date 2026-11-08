@@ -179,34 +179,11 @@ struct BrowserBatchRenameSheet: View {
         isLoading = true
         let paths = sources
         Task { @MainActor in
-            let facts = await Task.detached(priority: .userInitiated) { Self.readFacts(paths) }.value
+            let facts = await Task.detached(priority: .userInitiated) { BatchRenameRules.readFacts(paths) }.value
             items = facts.items
             siblings = facts.siblings
             isLoading = false
         }
-    }
-
-    nonisolated private static func readFacts(_ paths: [String]) -> (items: [BatchRenameRules.Item], siblings: [String: Set<String>]) {
-        var loaded: [BatchRenameRules.Item] = []
-        var names: [String: Set<String>] = [:]
-        for path in paths {
-            let url = URL(fileURLWithPath: path)
-            let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey, .contentModificationDateKey,
-                                                           .isUserImmutableKey])
-            var info = stat()
-            let exists = lstat(path, &info) == 0
-            let parent = (path as NSString).deletingLastPathComponent
-            if names[parent] == nil { names[parent] = BatchRenameRules.directoryNames(parent) ?? [] }
-            loaded.append(BatchRenameRules.Item(
-                path: path,
-                isFolder: (values?.isDirectory ?? false) && !(values?.isPackage ?? false),
-                modified: values?.contentModificationDate ?? Date(timeIntervalSince1970: TimeInterval(info.st_mtimespec.tv_sec)),
-                exists: exists,
-                isLocked: values?.isUserImmutable ?? false,
-                parentWritable: access(parent, W_OK) == 0
-            ))
-        }
-        return (loaded, names)
     }
 
     private func apply(_ plan: BatchRenameRules.Plan) {
