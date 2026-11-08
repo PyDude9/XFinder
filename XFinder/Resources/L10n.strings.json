@@ -16242,6 +16242,62 @@
     "Trình duyệt": {
       "en": "Browser",
       "scope": "sentence"
+    },
+    "Xem các workspace đã lưu…": {
+      "en": "Inspect Saved Workspaces…",
+      "scope": "sentence"
+    },
+    "Lưu mọi cửa sổ đang mở, cùng tab, ngăn, thư mục và kiểu xem. Mở lại sau sẽ thêm các cửa sổ này; không tệp nào bị đổi.": {
+      "en": "Saves the open windows, their tabs and panes, folders and views. Opening it later adds these windows; no files are changed.",
+      "scope": "sentence"
+    },
+    "Workspace cần có tên.": {
+      "en": "A workspace needs a name.",
+      "scope": "sentence"
+    },
+    "Không có cửa sổ trình duyệt nào để lưu.": {
+      "en": "There are no browser windows to save.",
+      "scope": "sentence"
+    },
+    "Thay thế workspace “": {
+      "en": "Replace the workspace “",
+      "scope": "fragment"
+    },
+    "Bố cục đã lưu của nó sẽ được thay bằng các cửa sổ đang mở.": {
+      "en": "Its saved layout will be replaced by the open windows.",
+      "scope": "sentence"
+    },
+    "Các workspace đã lưu": {
+      "en": "Saved Workspaces",
+      "scope": "sentence"
+    },
+    "Mỗi workspace chứa gì. Xem hay xuất không mở workspace và không đổi tệp nào.": {
+      "en": "What each saved workspace holds. Inspecting or exporting doesn’t open a workspace or change any file.",
+      "scope": "sentence"
+    },
+    " cửa sổ · ": {
+      "en": " windows · ",
+      "scope": "fragment"
+    },
+    " tab · lưu ": {
+      "en": " tabs · saved ",
+      "scope": "fragment"
+    },
+    "Workspace này không còn nữa.": {
+      "en": "That workspace no longer exists.",
+      "scope": "sentence"
+    },
+    "Đã có workspace tên này. Chọn tên khác.": {
+      "en": "A workspace with this name already exists. Choose a different name.",
+      "scope": "sentence"
+    },
+    "Không đọc được tệp workspace đã lưu nên không ghi đè.": {
+      "en": "The saved workspaces file couldn’t be read, so it isn’t changed.",
+      "scope": "sentence"
+    },
+    "Một số thư mục của Workspace này không còn tồn tại": {
+      "en": "Some folders of this workspace no longer exist",
+      "scope": "sentence"
     }
   }
 }
