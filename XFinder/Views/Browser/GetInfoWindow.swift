@@ -350,24 +350,20 @@ import os
 
     // MARK: Edits
 
-    /// Renames the item on disk, reusing the same rejection rule the in-pane inline rename uses. Records the
-    /// change in `ActionHistoryStore` so ⌘Z in the browser window can undo it.
+    /// Renames the item on disk through the same `BatchRenameRules.renameOne` the in-pane inline rename uses (XF-T37 L1:
+    /// a case-only change is allowed, another item is never replaced). Records the change in `ActionHistoryStore` and
+    /// in the browser's undo journal so ⌘Z in the browser window can undo it.
     @discardableResult func rename(to newName: String) -> Bool {
         guard let path = singlePath, !readOnly else { return false }
-        if let rejection = FileInfoRules.renameRejectionKey(for: newName) {
-            message = InlineMessage(kind: .rename, key: rejection, detail: nil)
+        switch BatchRenameRules.renameOne(path, to: newName) {
+        case .unchanged:
+            message = nil
+            return true
+        case .rejected(let key):
+            message = InlineMessage(kind: .rename, key: key, detail: nil)
             return false
-        }
-        message = nil
-        let directory = (path as NSString).deletingLastPathComponent
-        let destination = (directory as NSString).appendingPathComponent(newName.trimmingCharacters(in: .whitespacesAndNewlines))
-        guard destination != path else { return true }
-        guard !FileManager.default.fileExists(atPath: destination) else {
-            message = InlineMessage(kind: .rename, key: "Đã có mục khác tên này", detail: nil)
-            return false
-        }
-        do {
-            try FileManager.default.moveItem(atPath: path, toPath: destination)
+        case .renamed(let destination):
+            message = nil
             ActionHistoryStore.shared.recordRenames(pairs: [(old: URL(fileURLWithPath: path), new: URL(fileURLWithPath: destination))])
             FileOperationQueue.shared.recordRename(from: path, to: destination)   // ⌘Z in the browser undoes it
             loadSingle(destination)
@@ -378,9 +374,6 @@ import os
                 onGone: { [weak self] in self?.isGone = true }
             )
             return true
-        } catch {
-            message = InlineMessage(kind: .rename, key: "Không đổi được tên — ", detail: error.localizedDescription)
-            return false
         }
     }
 

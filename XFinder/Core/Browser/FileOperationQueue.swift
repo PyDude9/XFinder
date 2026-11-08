@@ -328,12 +328,31 @@ final class FileOperationQueue {
     /// A rename done outside the queue (inline rename, Get Info) joins the same persistent undo history, so ⌘Z in the
     /// browser undoes it (it went to ActionHistoryStore, which the browser's ⌘Z never reads).
     func recordRename(from oldPath: String, to newPath: String) {
-        BrowserMetadata.shared.itemMoved(from: oldPath, to: newPath)
-        let identity: (inode: UInt64, size: Int64, modified: Date)? = Self.fileIdentity(newPath)
-        let item: UndoItem = UndoItem(from: newPath, to: oldPath, inode: identity?.inode, size: identity?.size,
-                                      modified: identity?.modified)
-        undoJournal.record(UndoStep(id: UUID(), kind: .rename, items: [item], date: Date()), now: Date())
+        recordRenames([(from: oldPath, to: newPath)])
+    }
+
+    /// XF-T37 L2: a whole batch rename is ONE undo step (⌘Z puts every item back, through the same two-phase rename
+    /// so a swap a↔b undoes cleanly).
+    func recordRenames(_ pairs: [(from: String, to: String)]) {
+        guard !pairs.isEmpty else { return }
+        let items: [UndoItem] = pairs.map { pair in
+            BrowserMetadata.shared.itemMoved(from: pair.from, to: pair.to)
+            let identity: (inode: UInt64, size: Int64, modified: Date)? = Self.fileIdentity(pair.to)
+            return UndoItem(from: pair.to, to: pair.from, inode: identity?.inode, size: identity?.size,
+                            modified: identity?.modified)
+        }
+        undoJournal.record(UndoStep(id: UUID(), kind: .rename, items: items, date: Date()), now: Date())
         Self.saveUndoJournal(undoJournal)
+    }
+
+    /// Undo/redo of a rename step: every item in one two-phase pass (`BatchRenameRules.execute`), because the item-by-
+    /// item move below skips any item whose old name "exists" — and on the default case-insensitive volume a case-only
+    /// rename's old name always exists (it IS the item), as does every name in a swap (XF-T37 L3).
+    private func runRenameStep(_ pairs: [(from: String, to: String)]) -> Bool {
+        let outcome = BatchRenameRules.execute(pairs)
+        guard outcome.succeeded else { return false }
+        for pair in outcome.renamed { BrowserMetadata.shared.itemMoved(from: pair.from, to: pair.to) }
+        return true
     }
     var redoTitleKey: String? { undoJournal.redo.last?.titleKey }
 
@@ -362,6 +381,14 @@ final class FileOperationQueue {
             return Self.unavailableMessage(availability)
         }
         let fm = FileManager.default
+        if step.kind == .rename {
+            guard runRenameStep(step.items.map { (from: $0.from, to: $0.to) }) else {
+                return L10n.t("Không thể hoàn tác thao tác này.")
+            }
+            _ = undoJournal.popUndo()
+            Self.saveUndoJournal(undoJournal)
+            return "\(L10n.t("Đã hoàn tác "))\(step.items.count)\(L10n.t(" mục"))"
+        }
         var ok = 0
         for item in step.items {
             do {
@@ -410,6 +437,14 @@ final class FileOperationQueue {
             return Self.unavailableMessage(availability)
         }
         let fm = FileManager.default
+        if step.kind == .rename {
+            guard runRenameStep(step.items.map { (from: $0.to, to: $0.from) }) else {
+                return L10n.t("Không thể hoàn tác thao tác này.")
+            }
+            _ = undoJournal.popRedo()
+            Self.saveUndoJournal(undoJournal)
+            return "\(L10n.t("Đã làm lại "))\(step.items.count)\(L10n.t(" mục"))"
+        }
         var redone = 0
         for item in step.items {
             do {

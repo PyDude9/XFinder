@@ -1078,36 +1078,24 @@ enum BrowserSheet: String, Identifiable {
         _ = FileOperationQueue.shared.enqueue(.trash, sources: paths, destination: nil)
     }
 
-    /// `commitRename` is the only path that actually renames a file (⌘⇧N also routes through it after the new
-    /// folder is created and `renaming` is set). Rejects the empty name and the two characters Finder itself
-    /// rejects (":" is HFS+'s path separator under the hood, "/" is everyone's).
+    /// `commitRename` is the only path that actually renames a file in a pane (⌘⇧N also routes through it after the
+    /// new folder is created and `renaming` is set). The name rule and the rename itself are `BatchRenameRules.renameOne`
+    /// (XF-T37 L1): a case-only change ("report.txt" → "Report.txt") is a real rename, not "another item has this name".
     func commitRename(_ path: String, to newName: String) -> Bool {
-        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !trimmed.contains(":"), !trimmed.contains("/") else {
-            banner = "Tên không được để trống hoặc chứa \":\" \"/\""
-            return false
-        }
-        let directory = (path as NSString).deletingLastPathComponent
-        let destination = (directory as NSString).appendingPathComponent(trimmed)
-        guard destination != path else {
+        switch BatchRenameRules.renameOne(path, to: newName) {
+        case .unchanged:
             renaming = nil
             return true
-        }
-        guard !FileManager.default.fileExists(atPath: destination) else {
-            banner = "Đã có mục khác tên này"
+        case .rejected(let key):
+            banner = key   // `BrowserRootView.bannerView` wraps the key in `L10n.t`
             return false
-        }
-        do {
-            try FileManager.default.moveItem(atPath: path, toPath: destination)
+        case .renamed(let destination):
             ActionHistoryStore.shared.recordRenames(pairs: [(old: URL(fileURLWithPath: path), new: URL(fileURLWithPath: destination))])
             FileOperationQueue.shared.recordRename(from: path, to: destination)   // ⌘Z in the browser undoes it
             renaming = nil
             active.selection = [destination]
             active.reload()
             return true
-        } catch {
-            banner = "Không đổi được tên"
-            return false
         }
     }
 

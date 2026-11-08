@@ -64,9 +64,14 @@ enum BatchRenameEngine {
             }
             let newName = (options.keepExtension && !ext.isEmpty) ? "\(stem).\(ext)" : stem
             let proposed = url.deletingLastPathComponent().appendingPathComponent(newName)
-            // Collision = target exists on disk OR already claimed by an earlier row.
-            let key = proposed.path.lowercased()
-            let collides = FileManager.default.fileExists(atPath: proposed.path) || seen.contains(key)
+            // Blocked = an invalid name (XF-T37 L1), a target that exists on disk and is NOT this same item (the default
+            // volume ignores case, so "report.txt" → "REPORT.txt" finds itself — measured 2026-11-08; that is a legal
+            // case-only rename, not a collision), or a name already claimed by an earlier row (same case-folded key).
+            let key = url.deletingLastPathComponent().path + "/" + RenameRules.nameKey(newName)
+            let invalid = RenameRules.problem(for: newName) != nil
+            let takenOnDisk = FileManager.default.fileExists(atPath: proposed.path)
+                && !RenameRules.isSameName(newName, url.lastPathComponent)
+            let collides = invalid || takenOnDisk || seen.contains(key)
             seen.insert(key)
             return Plan(source: url, proposed: proposed, collides: collides)
         }

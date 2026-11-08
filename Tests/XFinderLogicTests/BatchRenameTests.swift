@@ -54,8 +54,12 @@ final class BatchRenameTests: XCTestCase {
             }
             let newName = (options.keepExtension && !ext.isEmpty) ? "\(stem).\(ext)" : stem
             let proposed = url.deletingLastPathComponent().appendingPathComponent(newName)
-            let key = proposed.path.lowercased()
-            let collides = existsOnDisk(proposed.path) || seen.contains(key)
+            // XF-T37: mirrors the engine's new rule — an invalid name blocks, and a target that exists on disk only
+            // blocks when it is NOT this same item (case-only renames find themselves on a case-insensitive volume).
+            let key = url.deletingLastPathComponent().path + "/" + RenameRules.nameKey(newName)
+            let invalid = RenameRules.problem(for: newName) != nil
+            let takenOnDisk = existsOnDisk(proposed.path) && !RenameRules.isSameName(newName, url.lastPathComponent)
+            let collides = invalid || takenOnDisk || seen.contains(key)
             seen.insert(key)
             return Plan(source: url, proposed: proposed, collides: collides)
         }
@@ -156,4 +160,29 @@ final class BatchRenameTests: XCTestCase {
         XCTAssertEqual(p[0].proposed.deletingLastPathComponent(),
                        p[0].source.deletingLastPathComponent())
     }
+
+    // MARK: XF-T37 — case-only renames and invalid names
+
+    /// The default volume ignores case: `fileExists("REPORT.TXT")` is true when only "report.txt" exists (measured
+    /// 2026-11-08), so the uppercase mode used to mark every row as a collision and rename nothing.
+    func testUppercaseModeIsNotBlockedByTheItemItself() {
+        let onDisk: Set<String> = ["/tmp/xf/report.txt"]
+        let p = plan(urls(["report.txt"]), Options(mode: .uppercase),
+                     existsOnDisk: { path in onDisk.contains { $0.compare(path, options: .caseInsensitive) == .orderedSame } })
+        XCTAssertEqual(p[0].proposed.lastPathComponent, "REPORT.txt")
+        XCTAssertFalse(p[0].collides)
+    }
+
+    func testAnotherItemWithTheNameStillBlocks() {
+        let onDisk: Set<String> = ["/tmp/xf/a.txt", "/tmp/xf/x_a.txt"]
+        let p = plan(urls(["a.txt"]), Options(mode: .prefix, affix: "X_"),
+                     existsOnDisk: { path in onDisk.contains { $0.compare(path, options: .caseInsensitive) == .orderedSame } })
+        XCTAssertTrue(p[0].collides)
+    }
+
+    func testInvalidNameBlocks() {
+        let p = plan(urls(["a.txt"]), Options(mode: .prefix, affix: "x/"))
+        XCTAssertTrue(p[0].collides)
+    }
 }
+

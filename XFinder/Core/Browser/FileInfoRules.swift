@@ -218,12 +218,9 @@ enum FileInfoRules {
     /// screen, so typing either is refused rather than silently rewritten. Returns the L10n key for the refusal
     /// reason, or nil when `name` is valid.
     static func renameRejectionKey(for name: String) -> String? {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { return "Tên không được để trống." }
-        if trimmed.contains("/") || trimmed.contains(":") {
-            return "Tên không được chứa dấu hai chấm hoặc dấu gạch chéo."   // no quote characters inside an L10n key (rule 8)
-        }
-        return nil
+        // XF-T37 L1: one name rule for every rename path — empty, ":" or "/", "." / "..", the app's own temporary
+        // prefix, control characters, and the measured APFS length limit (255 NFD UTF-16 units).
+        RenameRules.problem(for: name.trimmingCharacters(in: .whitespacesAndNewlines))?.key
     }
 
     /// Splits a file name into the part the rename field should select (stem) and the extension to leave alone —
