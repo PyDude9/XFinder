@@ -52,6 +52,7 @@ Việc theo sau (review tìm ra, chưa sửa — mỗi dòng nên thành spec nh
 | T-TRANSLATE-1108 | Chọn thông minh ▸ Dịch: bật Dịch AI rồi dùng Nhập giọng nói | Đọc chính tả KHÔNG tự chuyển sang gọi API (trước đây bật Dịch AI ghi `voice.refinerTier`) ; dịch chữ trong Chrome bằng ⇧⌘G ⇒ lịch sử clipboard không có thêm mục mới |
 | T-T33-1 | Thao tác Finder ▸ Đổi cỡ ảnh một ảnh dọc chụp bằng iPhone (EXIF 6) + một ảnh nhỏ hơn cỡ đích | Xem trước ghi đúng kích thước; ảnh ra đứng đúng chiều; ảnh nhỏ bị bỏ qua có lý do; ảnh gốc không đổi; tên mới kiểu "tên-1600px.jpg" / "(2)" khi trùng |
 | T-TRANSLATE-AI-BTN | Tắt "Dịch bằng AI" trong Cài đặt → bôi đen "offers" → ⇧⌘G → bấm ✨ | Bản dịch AI hiện dưới từ điển; bôi đen từ khác ⇒ thẻ mới không tự gọi AI; chưa có khoá API ⇒ dòng báo + nút Mở Cài đặt |
+| T-T33-2 | Công cụ PDF ▸ Sắp xếp trang một PDF 3 trang theo "3,1,2"; rồi Gộp 2 PDF | Bản mới có thứ tự 3-1-2, tệp gốc không đổi; bản gộp có đủ trang; PDF có mật khẩu ⇒ báo từ chối, không tạo tệp |
 | T-MERGE-1104-1 | Mở trình duyệt tệp, ⌘K | Bảng lệnh hiện; gõ tên thư mục ⇒ có kết quả; chế độ Move chuyển được tệp |
 | T-MERGE-1104-2 | Bôi đen chữ ở Safari ⇒ Dịch | Hộp dịch của Apple (on-device), **không** có thẻ kiểu Trancy, không mạng |
 | T-MERGE-1104-3 | Mở Sổ từ ⇒ Ôn tập, thêm sổ mới tên "Tiếng Anh" | Tên giữ dấu cách (nếu thẻ lật ⇒ lỗi đã biết ở trên) |
