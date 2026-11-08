@@ -100,19 +100,32 @@ enum ImageRunner {
         if preview.willSkip { return .failure(.invalidTransform("Kích thước đích sẽ phóng lớn ảnh nhỏ; hãy bật Phóng lớn ảnh nhỏ.")) }
 
         let p = preview.plan
+        // No crop: let ImageIO decode straight at the output's long edge (JPEG/HEIC decode at reduced
+        // scale). Decoding the full frame first cost 558 MiB peak for one 48 MP -> 12 MP resize
+        // (measured 2026-11-08); the old resize path never decoded at full size either.
+        let crop = p.cropPixels
+        let wholeFrame = crop.x == 0 && crop.y == 0 && crop.width == p.uprightWidth && crop.height == p.uprightHeight
+        let decodeEdge = wholeFrame ? max(p.outputWidth, p.outputHeight) : max(p.uprightWidth, p.uprightHeight)
         guard let upright = CGImageSourceCreateThumbnailAtIndex(src, 0, [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: max(p.uprightWidth, p.uprightHeight),
+            kCGImageSourceThumbnailMaxPixelSize: decodeEdge,
             kCGImageSourceShouldCacheImmediately: true,
-        ] as CFDictionary), upright.width == p.uprightWidth, upright.height == p.uprightHeight else {
+        ] as CFDictionary) else {
             return .failure(.unreadable(source.lastPathComponent))
         }
-        let crop = p.cropPixels
-        let cgRect = CGRect(x: crop.x, y: upright.height - crop.y - crop.height,
-                            width: crop.width, height: crop.height)
-        guard let cropped = upright.cropping(to: cgRect),
-              let rendered = render(cropped, width: p.outputWidth, height: p.outputHeight) else {
+        let cropped: CGImage?
+        if wholeFrame {
+            // Already upright and at (or within a rounding pixel of) the output size; render() fixes the exact size.
+            cropped = upright
+        } else {
+            guard upright.width == p.uprightWidth, upright.height == p.uprightHeight else {
+                return .failure(.unreadable(source.lastPathComponent))
+            }
+            cropped = upright.cropping(to: CGRect(x: crop.x, y: upright.height - crop.y - crop.height,
+                                                  width: crop.width, height: crop.height))
+        }
+        guard let cropped, let rendered = render(cropped, width: p.outputWidth, height: p.outputHeight) else {
             return .failure(.invalidTransform(source.lastPathComponent))
         }
         guard (CGImageDestinationCopyTypeIdentifiers() as? [String] ?? []).contains(options.format.uti) else {
