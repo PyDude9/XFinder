@@ -30,7 +30,7 @@ fi
 swift test --package-path Tests > "$LOG/tests.txt" 2>&1
 summary=$(grep -E 'Executed [0-9]+ tests' "$LOG/tests.txt" | tail -1 | sed 's/^[[:space:]]*//')
 case "$summary" in
-  *"with 0 failures"*) line "tests" "$summary" ;;
+  *"with 0 failures"*|*"skipped and 0 failures"*) line "tests" "$summary" ;;   # XCTSkip adds "N test(s) skipped and"
   "") line "tests" "DID NOT RUN (compile error?) — see $LOG/tests.txt"; fail=1 ;;
   *) line "tests" "$summary"; fail=1 ;;
 esac
