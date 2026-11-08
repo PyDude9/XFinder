@@ -42,6 +42,9 @@ enum ArchiveRunner {
         case unsafeArchive(reasons: [ArchiveSafetyRules.Reason], diagnostic: String?)
         /// Not enough free space for the reviewed plan; nothing was written.
         case outOfSpace(required: Int64, available: Int64)
+        /// The destination volume's free space could not be read. Its own case because it is not a
+        /// shortage: telling the user "not enough space: 0 / 0" was a lie the page printed.
+        case spaceUnknown
         /// The archive changed between inspection and extraction, so the plan no longer describes the
         /// bytes on disk. Nothing was placed.
         case archiveChanged(String)
@@ -361,7 +364,7 @@ enum ArchiveRunner {
         for reason in reasons {
             switch reason {
             case .insufficientSpace(let required, let available): return .outOfSpace(required: required, available: available)
-            case .spaceUnknown: return .outOfSpace(required: 0, available: 0)
+            case .spaceUnknown: return .spaceUnknown
             default: continue
             }
         }
@@ -439,52 +442,305 @@ enum ArchiveRunner {
         return nil
     }
 
-    /// Step 2: move the items into `destination`. `.keepBoth` renames, `.merge` replaces files and
-    /// merges folders. `.ask` must be resolved by the caller first — passing it places nothing that
-    /// conflicts. The staging folder is removed afterwards, and only if it is still this job's.
-    static func place(_ batch: ExtractedBatch, into destination: URL,
-                      policy: ArchiveEngine.ConflictPolicy) async -> Result<[URL], Failure> {
+    /// What `place` actually did. Reported instead of a bare `[URL]` so a partly-placed batch can say
+    /// exactly which outputs exist: "nothing was changed" is a claim this app must never make loosely
+    /// (spec §7 — measured: first file placed, second failed, failure reported as if nothing happened).
+    struct PlacementOutcome: Equatable {
+        var placed: [URL] = []
+        /// Staged objects that could not be placed. Their staging copies are still inside the
+        /// recovered folder when `recoveryRoot` is set.
+        var failed: [String] = []
+        /// Names that were numbered because the name was taken (the "kept both" part of a merge).
+        var renamed: [String] = []
+        /// Where unplaced staged data was kept, when anything failed.
+        var recoveryRoot: URL?
+        var failure: Failure?
+
+        var isComplete: Bool { failure == nil && failed.isEmpty }
+    }
+
+    /// The review step (spec §4.4–4.5): inspect the archive, validate it and count what it really
+    /// holds, without writing anything.
+    ///
+    /// A refusal is still a review — it comes back as `success` with `refusals` filled in, so the page
+    /// can show *why* this archive is blocked instead of a bare error line. Only a reader failure that
+    /// leaves nothing to describe (unavailable library, unreadable file) is a `failure`.
+    static func inspect(archive: URL, near destination: URL,
+                        topLevelName: String? = nil) async -> Result<ArchiveJob.ArchiveReview, Failure> {
+        guard SystemArchiveReader.isAvailable else { return .failure(.readerUnavailable) }
+        let inspection: SystemArchiveReader.Inspection
+        do {
+            inspection = try SystemArchiveReader().inspect(at: archive)
+        } catch let failure as SystemArchiveReader.Failure {
+            return .failure(Self.map(failure))
+        } catch {
+            return .failure(.staging("\(error)"))
+        }
+        let available = availableBytes(for: destination)
+        let verdict = ArchiveSafetyRules.validate(manifest: inspection.manifest,
+                                                  compressedSize: inspection.archiveBytes,
+                                                  availableBytes: available)
+        let payload = inspection.manifest.reduce(into: Int64(0)) { total, entry in
+            if entry.kind == .regular, entry.declaredSize > 0 { total &+= entry.declaredSize }
+        }
+        let peak: Int64
+        switch verdict {
+        case .accepted(let plan): peak = plan.peakBytes
+        case .rejected: peak = payload
+        }
         let fm = FileManager.default
-        defer { batch.owned.removeIfOwned() }
+        let conflicts: [String]
+        if let topLevelName {
+            // "new folder beside the archive": the conflict is that one folder name.
+            conflicts = fm.fileExists(atPath: destination.appendingPathComponent(topLevelName).path)
+                ? [topLevelName] : []
+        } else {
+            let top = Set(inspection.manifest.compactMap { entry -> String? in
+                let parts = entry.rawPath.split(separator: "/", omittingEmptySubsequences: true)
+                return parts.count > 1 ? String(parts[0]) : nil
+            } + inspection.manifest.filter { !$0.rawPath.contains("/") }.map(\.rawPath))
+            conflicts = top.sorted().filter { fm.fileExists(atPath: destination.appendingPathComponent($0).path) }
+        }
+        let renames = Self.conflictPolicyPreview(conflicts: conflicts)
+        return .success(ArchiveJob.review(archive: archive, destination: destination,
+                                          manifest: inspection.manifest, declaredBytes: payload,
+                                          availableBytes: available, requiredBytes: peak,
+                                          conflicts: conflicts, keepsBothRenames: renames,
+                                          refusals: verdict.reasons))
+    }
+
+    /// Names a Keep Both merge would produce, so the review can print them before anything runs.
+    static func conflictPolicyPreview(conflicts: [String]) -> [String] {
+        conflicts.map { ArchiveEngine.numbered($0, 2) }
+    }
+
+    /// Step 2: move the staged items into `destination`.
+    ///
+    /// `.keepBoth` numbers the incoming top-level item. `.merge` **combines** folders and numbers
+    /// colliding leaves instead of replacing them (Boss decision 1; the old behaviour replaced the
+    /// user's file with the archive's — measured in spec §2). `.ask` must be resolved by the caller;
+    /// it places nothing that conflicts.
+    ///
+    /// Publication is exclusive: a move that would land on an existing path fails rather than
+    /// replacing it (`renamex_np` + `RENAME_EXCL`, measured to return `EEXIST` and leave the target
+    /// byte-identical). That makes the plan race-safe against a file appearing after it was computed.
+    ///
+    /// A failure no longer discards the batch silently: placed outputs and the still-staged remainder
+    /// are both reported, and the remainder is kept in the app-owned recovery root.
+    static func place(_ batch: ExtractedBatch, into destination: URL,
+                      policy: ArchiveEngine.ConflictPolicy,
+                      protected: Set<URL> = [],
+                      recoveryRoot: URL? = ArchiveRecoveryStore.root) async -> Result<PlacementOutcome, Failure> {
+        let fm = FileManager.default
         // A symlinked destination (or a symlinked component of it) is refused outright: writing
         // through it would put the user's data somewhere they never chose, and Merge would follow it
         // silently — that exact case was measured writing outside the chosen folder.
         if let link = symlinkedComponent(of: destination, under: destination.deletingLastPathComponent()) {
+            discard(batch)
             return .failure(.placement("destination path component is a symbolic link: \(link.path)"))
         }
         do { try fm.createDirectory(at: destination, withIntermediateDirectories: true) }
-        catch { return .failure(.placement("\(error)")) }
-        var placed: [URL] = []
-        let plan = ArchiveEngine.placements(items: batch.items, into: destination, policy: policy,
-                                            exists: { fm.fileExists(atPath: $0.path) })
-        for (name, d) in plan {
-            guard case .write(let target) = d else { continue }       // an unresolved .ask conflict
-            let src = batch.staging.appendingPathComponent(name)
-            // Re-checked per target: the plan was computed from snapshots, and a link appearing at a
-            // target's own path between the plan and the write must not be followed either.
-            if let link = symlinkedComponent(of: target, under: destination) {
-                return .failure(.placement("destination path component is a symbolic link: \(link.path)"))
-            }
-            var isDir: ObjCBool = false
-            if fm.fileExists(atPath: target.path, isDirectory: &isDir) {
-                // Only reachable under .merge: folders merge (ditto copies into the existing tree,
-                // replacing same-named files); a file replaces the file.
-                if isDir.boolValue {
-                    let r = await run(ArchiveEngine.Command(executable: "/usr/bin/ditto", arguments: [src.path, target.path], currentDirectory: nil))
-                    guard r.status == 0 else { return .failure(.placement(r.stderr)) }
-                } else {
-                    do { _ = try fm.replaceItemAt(target, withItemAt: src) } catch { return .failure(.placement("\(error)")) }
+        catch {
+            discard(batch)
+            return .failure(.placement("\(error)"))
+        }
+
+        var outcome = PlacementOutcome()
+        // Protected identities are the archives (and selected sources) this batch must never overwrite:
+        // measured in §2, a ZIP holding a leaf named like its own source replaced that source.
+        let protectedPaths = Set(protected.map { $0.standardizedFileURL.path })
+
+        switch policy {
+        case .ask:
+            // Should not be reached: the caller resolves Ask first. Never guess a write.
+            discard(batch)
+            return .success(outcome)
+
+        case .keepBoth, .merge:
+            let steps: [ArchiveEngine.MergeStep]
+            if policy == .merge {
+                steps = ArchiveEngine.mergePlan(items: stagedTree(of: batch), into: destination) { url in
+                    if protectedPaths.contains(url.standardizedFileURL.path) { return .file }
+                    return existingItem(at: url)
                 }
             } else {
-                do { try fm.moveItem(at: src, to: target) } catch { return .failure(.placement("\(error)")) }
+                // Keep Both numbers the whole incoming top-level item; a folder is never combined with
+                // what is already there, so it is planned as a non-combining leaf.
+                let topLevel = batch.items.map { ArchiveEngine.StagedItem(path: $0, isDirectory: false) }
+                steps = ArchiveEngine.mergePlan(items: topLevel, into: destination) { url in
+                    if protectedPaths.contains(url.standardizedFileURL.path) { return .file }
+                    return existingItem(at: url)
+                }
             }
-            placed.append(target)
+            // Report the topmost renamed object only: a numbered folder is what the user will see, and
+            // listing every inherited leaf inside it would describe renames that did not happen.
+            outcome.renamed = ArchiveEngine.renamedLeafNames(steps)
+            for step in steps {
+                let src = batch.staging.appendingPathComponent(step.source)
+                // Re-checked per target: the plan was computed from snapshots, and a link that appeared
+                // where the archive wants to write since then must be refused, not quietly numbered.
+                // Measured in spec §2: with `dest/folder` a symlink, Merge followed it and wrote outside
+                // the folder the user chose. (The incoming side needs no check here: `stagedTree` never
+                // lists a link, and moving a link never follows it.)
+                if let link = symlinkedComponent(of: step.target, under: destination) {
+                    outcome.failure = .placement("destination path component is a symbolic link: \(link.path)")
+                    break
+                }
+                if step.isDirectory {
+                    // Combining folders is the whole point of Merge; creating one that exists is a no-op.
+                    if (try? fm.createDirectory(at: step.target, withIntermediateDirectories: true)) == nil {
+                        outcome.failed.append(step.source)
+                        outcome.failure = .placement("could not create \(step.target.lastPathComponent)")
+                        break
+                    }
+                    continue
+                }
+                do {
+                    try publishExclusively(from: src, to: step.target)
+                    outcome.placed.append(step.target)
+                } catch {
+                    outcome.failed.append(step.source)
+                    outcome.failure = .placement("\(error)")
+                    break
+                }
+            }
         }
-        return .success(placed)
+
+        if outcome.isComplete {
+            batch.owned.removeIfOwned()
+            return .success(outcome)
+        }
+        // Keep whatever is still staged instead of deleting it: the user can recover the items that
+        // never landed, and the report names them (spec §7 — never claim all-or-nothing).
+        outcome.recoveryRoot = recoverStagingRemainder(batch, root: recoveryRoot)
+        return .success(outcome)
+    }
+
+    /// Publish one staged object at `target` without ever replacing what is already there.
+    ///
+    /// `renamex_np(…, RENAME_EXCL)` is the platform primitive for this: measured to return `EEXIST`
+    /// and leave the existing file byte-identical. `moveItem` is the fallback (same volume ⇒ still a
+    /// rename) but it *replaces*, so the caller's existence check has to hold — hence the explicit
+    /// re-check before falling back.
+    static func publishExclusively(from source: URL, to target: URL) throws {
+        if renamex_np(source.path, target.path, UInt32(RENAME_EXCL)) == 0 { return }
+        if errno == EEXIST { throw PlacementError.alreadyExists(target) }
+        // A cross-volume parent or a filesystem without renamex support: only then copy-move, and only
+        // when the destination really is free.
+        if FileManager.default.fileExists(atPath: target.path) { throw PlacementError.alreadyExists(target) }
+        try FileManager.default.moveItem(at: source, to: target)
+    }
+
+    enum PlacementError: Error, CustomStringConvertible {
+        case alreadyExists(URL)
+        /// The system trashed the file but did not tell us where it went, so it cannot be restored.
+        case originalNotRecoverable(URL)
+
+        var description: String {
+            switch self {
+            case .alreadyExists(let url):
+                return "something appeared at \(url.lastPathComponent) while placing; it was not replaced"
+            case .originalNotRecoverable(let url):
+                return "the old file was trashed but its Trash location is unknown: \(url.lastPathComponent)"
+            }
+        }
+    }
+
+    /// What is at `url` right now, without following a link at the final component.
+    static func existingItem(at url: URL) -> ArchiveEngine.ExistingItem? {
+        var info = stat()
+        guard lstat(url.path, &info) == 0 else { return nil }
+        switch info.st_mode & S_IFMT {
+        case S_IFLNK: return .link
+        case S_IFDIR: return .directory
+        default: return .file
+        }
+    }
+
+    /// Every staged object, depth included, in the shape `ArchiveEngine.mergePlan` plans from.
+    static func stagedTree(of batch: ExtractedBatch) -> [ArchiveEngine.StagedItem] {
+        let fm = FileManager.default
+        var items: [ArchiveEngine.StagedItem] = []
+        for name in batch.items {
+            let url = batch.staging.appendingPathComponent(name)
+            var info = stat()
+            let isDir = lstat(url.path, &info) == 0 && (info.st_mode & S_IFMT) == S_IFDIR
+            items.append(ArchiveEngine.StagedItem(path: name, isDirectory: isDir))
+        }
+        guard let walker = fm.enumerator(atPath: batch.staging.path) else { return items }
+        var seen = Set(items.map(\.path))
+        while let rel = walker.nextObject() as? String {
+            guard !seen.contains(rel) else { continue }
+            let url = batch.staging.appendingPathComponent(rel)
+            var info = stat()
+            guard lstat(url.path, &info) == 0 else { continue }
+            if (info.st_mode & S_IFMT) == S_IFLNK { continue }   // links were judged by the manifest
+            seen.insert(rel)
+            items.append(ArchiveEngine.StagedItem(path: rel, isDirectory: (info.st_mode & S_IFMT) == S_IFDIR))
+        }
+        return items
+    }
+
+    /// Move whatever is still staged into the app-owned recovery root and return where it went.
+    /// Only objects this job still owns are touched; the staging root itself is then removed.
+    static func recoverStagingRemainder(_ batch: ExtractedBatch, root: URL? = ArchiveRecoveryStore.root) -> URL? {
+        let fm = FileManager.default
+        guard batch.owned.isStillOwned, let root else { return nil }
+        do { try fm.createDirectory(at: root, withIntermediateDirectories: true) } catch { return nil }
+        let dest = root.appendingPathComponent("batch-\(UUID().uuidString)")
+        do { try fm.moveItem(at: batch.staging, to: dest) } catch { return nil }
+        return dest
     }
 
     static func discard(_ batch: ExtractedBatch) {
         batch.owned.removeIfOwned()
+    }
+
+    // MARK: Creation Replace (Boss approval point 5)
+
+    /// Replace an existing file by a verified candidate, in an order that cannot lose the original.
+    ///
+    /// The old code trashed the existing archive *first* and then built the new one (spec §1), so a
+    /// failed compression left the user with neither. Boss's transaction, implemented literally:
+    ///
+    /// 1. the candidate already exists and has been verified by `compress` (it is a value here, so
+    ///    this function cannot run before that);
+    /// 2. `trashItem(old, resultingItemURL:)` — the original goes to the Trash and we keep the URL the
+    ///    system actually gave it, measured to be `~/.Trash/name`;
+    /// 3. `renamex_np(candidate, target, RENAME_EXCL)` publishes only into a free name;
+    /// 4. if (3) fails, the trashed original is moved **back** from `resultingItemURL` and the failure
+    ///    is reported. Never `rm`, never a silent loss.
+    ///
+    /// `trash` and `publish` are injected so both failure branches are testable without touching the
+    /// owner's Trash or racing the filesystem.
+    static func replace(existing: URL, with candidate: URL,
+                        trash: (URL) throws -> URL = { source in
+                            var resulting: NSURL?
+                            try FileManager.default.trashItem(at: source, resultingItemURL: &resulting)
+                            guard let resulting = resulting as URL? else {
+                                throw PlacementError.originalNotRecoverable(source)
+                            }
+                            return resulting
+                        },
+                        publish: (URL, URL) throws -> Void = { try publishExclusively(from: $0, to: $1) }) -> Result<URL, Failure>
+    {
+        let trashed: URL
+        do { trashed = try trash(existing) }
+        catch { return .failure(.placement("could not move the old file to the Trash: \(error)")) }
+
+        do {
+            try publish(candidate, existing)
+            return .success(existing)
+        } catch {
+            // Put the original back where the user expects it, then report. A failed restore is named
+            // in the message together with where the original still is.
+            do {
+                try FileManager.default.moveItem(at: trashed, to: existing)
+                return .failure(.placement("could not publish the new file, so the old one was put back: \(error)"))
+            } catch {
+                return .failure(.placement("could not publish the new file; the old one is in the Trash at \(trashed.path) (\(error))"))
+            }
+        }
     }
 }
 
@@ -504,6 +760,7 @@ extension ArchiveRunner.Failure {
         case .unsafeLinks: return "Tệp nén chứa liên kết trỏ ra ngoài nên đã bị từ chối, không giải nén gì: "
         case .unsafeArchive: return "Tệp nén không an toàn nên đã bị từ chối, chưa ghi gì: "
         case .outOfSpace: return "Không đủ dung lượng để giải nén tệp này."
+        case .spaceUnknown: return "Chưa kiểm tra được dung lượng trống của thư mục đích nên chưa giải nén gì."
         case .archiveChanged: return "Tệp nén đã thay đổi trong lúc kiểm tra nên đã dừng, chưa đặt gì."
         case .readerUnavailable: return "Không kiểm tra được tệp nén trên máy này nên đã từ chối, chưa giải nén gì."
         }
@@ -521,7 +778,7 @@ extension ArchiveRunner.Failure {
             return text.isEmpty ? diagnostic : "\(text) — \(diagnostic)"
         case .outOfSpace(let required, let available):
             return "\(Self.bytes(required)) / \(Self.bytes(available))"
-        case .nothingToDo, .cancelled, .readerUnavailable: return nil
+        case .nothingToDo, .cancelled, .readerUnavailable, .spaceUnknown: return nil
         }
     }
 
@@ -530,7 +787,7 @@ extension ArchiveRunner.Failure {
         .nothingToDo, .missingSource(["a"]), .staging("x"), .tool(status: 1, stderr: "x"),
         .missingData(stderr: "x"), .cancelled, .placement("x"), .unsafeLinks(["a"]),
         .unsafeArchive(reasons: [.escapesRoot("../x")], diagnostic: nil), .outOfSpace(required: 1, available: 0),
-        .archiveChanged("x"), .readerUnavailable,
+        .spaceUnknown, .archiveChanged("x"), .readerUnavailable,
     ]
 
     /// Human-readable name of one refused path, for the detail line under the sentence.

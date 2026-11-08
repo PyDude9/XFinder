@@ -108,13 +108,22 @@ final class ArchiveRunnerTests: XCTestCase {
         XCTAssertFalse(fm.fileExists(atPath: batch.staging.path), "staging folder leaked")
     }
 
-    func testMergeReplacesOnlyWhenTheUserChoseIt() async throws {
+    /// Merge no longer replaces (Boss decision 1). Same-named files both survive, numbered, so the
+    /// user's file is intact and the archive's copy is reachable next to it.
+    func testMergeKeepsBothLeafFilesInsteadOfReplacingThem() async throws {
         let archive = url("out/m.zip")
         _ = await ArchiveRunner.compress(sources: [url("a/one.txt"), url("b/two.txt")], format: .zip, output: archive)
         try "MINE".write(to: url("dest/one.txt"), atomically: true, encoding: .utf8)
         guard case .success(let batch) = await ArchiveRunner.extractToStaging(archive: archive, near: url("dest")) else { return XCTFail() }
-        _ = await ArchiveRunner.place(batch, into: url("dest"), policy: .merge)
-        XCTAssertEqual(try String(contentsOf: url("dest/one.txt"), encoding: .utf8), "one")
+        guard case .success(let outcome) = await ArchiveRunner.place(batch, into: url("dest"), policy: .merge) else {
+            return XCTFail("merge failed")
+        }
+        XCTAssertTrue(outcome.isComplete)
+        XCTAssertEqual(try String(contentsOf: url("dest/one.txt"), encoding: .utf8), "MINE",
+                       "the user's file must not be replaced")
+        XCTAssertEqual(try String(contentsOf: url("dest/one 2.txt"), encoding: .utf8), "one",
+                       "the archive's copy must still be placed, numbered")
+        XCTAssertEqual(outcome.renamed, ["one 2.txt"])
     }
 
     func testPlainTarAndTarBz2Extract() async throws {
@@ -261,12 +270,17 @@ final class ArchiveRunnerTests: XCTestCase {
         guard case .success(let batch) = await ArchiveRunner.extractToStaging(archive: archive, near: url("dest")) else {
             return XCTFail()
         }
-        let r = await ArchiveRunner.place(batch, into: url("dest"), policy: .merge)
+        let r = await ArchiveRunner.place(batch, into: url("dest"), policy: .merge,
+                                          recoveryRoot: url("recovery"))
 
-        guard case .failure(.placement(let detail)) = r else {
-            return XCTFail("expected a refusal, got \(r)")
-        }
-        XCTAssertTrue(detail.contains("symbolic link"), detail)
+        // Spec §5 allows either refusing or preserving the incoming object under an explicitly safe
+        // numbered name; this app numbers it, and the whole point is that the payload does NOT land in
+        // `outside/`. Nothing may be written through the link, and the rename is reported.
+        guard case .success(let outcome) = r else { return XCTFail("expected a placement result, got \(r)") }
+        XCTAssertTrue(outcome.isComplete, "\(outcome)")
+        XCTAssertEqual(outcome.renamed, ["folder 2"], "\(outcome.renamed)")
+        XCTAssertTrue(fm.fileExists(atPath: url("dest/folder 2/deep.txt").path),
+                      "the payload must land under a numbered folder beside the link")
         XCTAssertEqual(try String(contentsOf: outside.appendingPathComponent("deep.txt"), encoding: .utf8), "ORIGINAL",
                        "the archive was written through the destination symlink")
     }
@@ -541,8 +555,9 @@ final class ArchiveRunnerTests: XCTestCase {
     func testSpaceRejectionsBecomeTheirOwnFailure() {
         XCTAssertEqual(ArchiveRunner.spaceFailure(from: [.insufficientSpace(required: 900, available: 100)]),
                        .outOfSpace(required: 900, available: 100))
-        XCTAssertEqual(ArchiveRunner.spaceFailure(from: [.spaceUnknown]),
-                       .outOfSpace(required: 0, available: 0))
+        // Unknown capacity is its own case: it used to be reported as "0 / 0", which the page printed
+        // as "Không đủ dung lượng" next to "Zero KB / Zero KB" — a shortage the user does not have.
+        XCTAssertEqual(ArchiveRunner.spaceFailure(from: [.spaceUnknown]), .spaceUnknown)
         XCTAssertNil(ArchiveRunner.spaceFailure(from: [.duplicatePath("a"), .escapesRoot("../b")]),
                      "an ordinary rules rejection is not a space problem")
     }
