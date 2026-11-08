@@ -1818,5 +1818,47 @@
     "file": "XFinder/Core/Browser/FileInfoRules.swift",
     "anchor": "RenameRules.problem(for: name.trimmingCharacters(in: .whitespacesAndNewlines))?.key",
     "replacement": "name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? \"Tên không được để trống.\" : nil"
+  },
+  {
+    "id": "T37-36",
+    "name": "date ties ordered by old name only",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "items[$0].modified != items[$1].modified ? items[$0].modified < items[$1].modified : oldName($0) < oldName($1)",
+    "replacement": "oldName($0) < oldName($1)"
+  },
+  {
+    "id": "T37-37",
+    "name": "tie numbers not zero-padded",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "let width = String(ordered.count).count",
+    "replacement": "let width = 1"
+  },
+  {
+    "id": "T37-38",
+    "name": "a name already in the folder is not numbered around",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "if members.count == 1, taken[dir]?.contains(RenameRules.nameKey(names[first])) != true { continue }",
+    "replacement": "if members.count == 1 { continue }"
+  },
+  {
+    "id": "T37-39",
+    "name": "time dots read as a new extension",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "                plan.rows[i].notes.removeAll { if case .extensionAdded = $0 { return true }; return false }\n",
+    "replacement": ""
+  },
+  {
+    "id": "T37-40",
+    "name": "tie number after the extension",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "return \"\\(name.dropLast(ext.count + 1))-\\(padded).\\(ext)\"",
+    "replacement": "return \"\\(name)-\\(padded)\""
+  },
+  {
+    "id": "T37-41",
+    "name": "page case change touches the extension",
+    "file": "XFinder/Core/Browser/BatchRenameRules.swift",
+    "anchor": "case .uppercase: stem = stem.uppercased()",
+    "replacement": "case .uppercase: stem = stem.uppercased() + (ext.isEmpty ? \"\" : \".\" + ext.uppercased())"
   }
 ]
