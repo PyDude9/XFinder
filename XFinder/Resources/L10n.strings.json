@@ -15942,6 +15942,10 @@
     "Đã huỷ.": {
       "en": "Cancelled.",
       "scope": "sentence"
+    },
+    "Gộp thư mục, giữ cả hai file trùng: thư mục được gộp vào nhau, file trùng tên được đánh số (“Report 2.pdf”) nên không file nào bị thay. Khi nén: không ghi thêm vào tệp nén cũ — tệp nén mới được đánh số.": {
+      "en": "Merge folders, keep both copies of same-named files: folders combine and same-named files are numbered (“Report 2.pdf”), so nothing is replaced. When compressing: the old archive is never appended to — the new archive gets a numbered name.",
+      "scope": "sentence"
     }
   }
 }

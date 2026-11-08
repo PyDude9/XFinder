@@ -246,7 +246,7 @@ struct CompressDetailView: View {
                     .settingsRow()
                     SettingsDivider()
                     InlineNote(text: conflictPolicy == .keepBoth ? L10n.t("Giữ cả hai lưu một bản sao riêng (\"Report 2\").")
-                         : conflictPolicy == .merge ? L10n.t("Gộp thư mục, giữ cả hai file trùng: thư mục được gộp vào nhau, file trùng tên được đánh số (\"Report 2.pdf\") nên không file nào bị thay. Khi nén: tệp nén cũ không bao giờ bị ghi thêm, bản mới được giữ cả hai.")
+                         : conflictPolicy == .merge ? L10n.t("Gộp thư mục, giữ cả hai file trùng: thư mục được gộp vào nhau, file trùng tên được đánh số (“Report 2.pdf”) nên không file nào bị thay. Khi nén: không ghi thêm vào tệp nén cũ — tệp nén mới được đánh số.")
                          : L10n.t("Hiện hộp thoại trước khi ghi: giữ cả hai, gộp thư mục hoặc huỷ. Mặc định là Huỷ."))
                         .settingsRow()
                 }
