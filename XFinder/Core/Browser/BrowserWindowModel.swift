@@ -742,7 +742,9 @@ enum BrowserSheet: String, Identifiable {
             guard !urls.isEmpty else { return false }
             NSWorkspace.shared.activateFileViewerSelecting(urls)
         case .closeWindow:
-            break   // view-only: the owning NSWindow closes itself.
+            // XF-T38 (found testing the menus in the Atlas helper): this used to `break` and still report success, so
+            // ⌘W was eaten by the window's key handler and File ▸ Close / the palette did nothing — the window stayed.
+            BrowserWindowController.shared.closeWindow(of: self)
         case .getInfo:
             let paths = getInfoTargetPaths()
             guard !paths.isEmpty else { return false }

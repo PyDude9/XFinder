@@ -282,6 +282,13 @@ import os
         }
     }
 
+    /// ⌘W / File ▸ Đóng cửa sổ / the palette: close this model's window (with native tabs: its tab), like the window's
+    /// own close button — `windowWillClose` then does the usual teardown.
+    func closeWindow(of model: BrowserWindowModel) {
+        guard let window = windows.first(where: { modelsByWindow[ObjectIdentifier($0)] === model }) else { return }
+        window.performClose(nil)
+    }
+
     // MARK: - Main menu (Q-T30-13)
 
     /// `window` became key: ask `BrowserMainMenu` to show the browser's own menu items for it.
