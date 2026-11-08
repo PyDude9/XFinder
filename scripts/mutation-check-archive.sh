@@ -11,7 +11,7 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-archive.XXXXXX)
-FILES="XFinder/Core/Archive/ArchiveEngine.swift XFinder/Core/Archive/ArchiveRunner.swift XFinder/Core/Archive/SystemArchiveReader.swift XFinder/Core/Archive/ArchiveSafetyRules.swift"
+FILES="XFinder/Core/Archive/ArchiveEngine.swift XFinder/Core/Archive/ArchiveRunner.swift XFinder/Core/Archive/SystemArchiveReader.swift XFinder/Core/Archive/ArchiveSafetyRules.swift XFinder/Core/Archive/ArchiveJob.swift XFinder/Core/Archive/ArchiveRecoveryStore.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
@@ -19,7 +19,7 @@ trap 'restore' EXIT
 # kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
 trap 'exit 143' INT TERM
 
-FILTER='ArchiveEngine|ArchiveRunner|SystemArchiveReader'
+FILTER='ArchiveEngine|ArchiveRunner|SystemArchiveReader|ArchivePlacement'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} /[Ff]atal error|[Ee]xited with (unexpected )?signal/ {crash=1} END {print (crash ? "CRASH" : (f==""?"NORESULT":f))}'
@@ -85,7 +85,8 @@ run "A4 ask decides for the user" XFinder/Core/Archive/ArchiveEngine.swift \
 run "A5 no up-front missing-source check" XFinder/Core/Archive/ArchiveRunner.swift \
   "'        guard missing.isEmpty else { return .failure(.missingSource(missing)) }\n'" "''"
 run "A6 placements reuse a name within one batch" XFinder/Core/Archive/ArchiveEngine.swift \
-  "'            if case .write(let url) = d { reserved.insert(url.lastPathComponent.lowercased()) }\n'" "''"
+  "'                let taken = existing(target) != nil || claimed.contains(target.path.lowercased())'" \
+  "'                let taken = existing(target) != nil'"
 run "A7 tar stores the staging symlinks" XFinder/Core/Archive/ArchiveEngine.swift \
   "'arguments: [\"-czhf\", output.path] + names,'" "'arguments: [\"-czf\", output.path] + names,'"
 
@@ -169,13 +170,103 @@ run "C7 space rejection no longer recognised" XFinder/Core/Archive/ArchiveRunner
 
 # C8: an unreadable/unsupported format is extracted anyway.
 run "C8 unsupported format extracted unverified" XFinder/Core/Archive/ArchiveRunner.swift \
-  "'        guard SystemArchiveReader.isAvailable else { return .failure(.readerUnavailable) }'" "''"
+  "'    static func extractToStaging(archive: URL, near destination: URL) async -> Result<ExtractedBatch, Failure> {\n        guard SystemArchiveReader.isAvailable else { return .failure(.readerUnavailable) }\n'" \
+  "'    static func extractToStaging(archive: URL, near destination: URL) async -> Result<ExtractedBatch, Failure> {\n'"
 
 # B8: the staging root is not required to be private.
 run "B8 staging permission check removed" XFinder/Core/Archive/ArchiveRunner.swift \
   "'        return permissions?.intValue == 0o700'" "'        return permissions != nil'"
 
+# ---- stage 03C: reviewed placement, exclusive publication, replacement transaction, source deletion ----
+
+# D1: Merge replaces colliding leaves again (the destructive behaviour measured in spec §2).
+run "D1 merge replaces colliding leaves again" XFinder/Core/Archive/ArchiveEngine.swift \
+  "'                if !taken || combines { break }'" \
+  "'                if true { break }'"
+
+# D2: folders stop combining, so every incoming folder is numbered beside the existing one.
+run "D2 folders no longer combine in merge" XFinder/Core/Archive/ArchiveEngine.swift \
+  "'                let combines = item.isDirectory && existing(target) == .directory'" \
+  "'                let combines = false'"
+
+# D3: a destination symlink stops being treated as an occupied name.
+# D3: a destination link is treated as a FOLDER to merge into. This is the measured escape (spec §2):
+# `dest/folder` was a symlink to another directory, Merge wrote `outside/same.txt`. A link must be an
+# occupied name, never something to combine with. (`.link` → `.file` would be equivalent and is not
+# mutated: both values mean "taken, not a directory", so no behaviour depends on telling them apart.)
+run "D3 destination link is merged into as a folder" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        case S_IFLNK: return .link'" \
+  "'        case S_IFLNK: return .directory'"
+
+# D4: publication loses RENAME_EXCL, so it replaces again. Measured: `renamex_np(a, b, 0)` returns 0
+# and `b` becomes `a`'s content — the exact silent overwrite every no-replace claim rests on.
+run "D4 exclusive publication replaces the existing file" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        if renamex_np(source.path, target.path, UInt32(RENAME_EXCL)) == 0 { return }'" \
+  "'        if renamex_np(source.path, target.path, 0) == 0 { return }'"
+
+# D5: the replacement transaction trashes the original and never puts it back.
+run "D5 failed replace loses the original" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'                try FileManager.default.moveItem(at: trashed, to: existing)'" \
+  "'                _ = trashed'"
+
+# D6: the source-delete action ignores whether the archive completed (Boss decision 6).
+run "D6 deletion ignores completion" XFinder/Core/Archive/ArchiveJob.swift \
+  "'        outcomes.filter { \$0.outcome.isCompleted }.map(\.archive)'" \
+  "'        outcomes.map(\.archive)'"
+
+# D7: a partial placement is reported as deletable.
+run "D7 partial placement counts as completed" XFinder/Core/Archive/ArchiveJob.swift \
+  "'        var isCompleted: Bool { if case .completed = self { return true }; return false }'" \
+  "'        var isCompleted: Bool { if case .completed = self { return true }; if case .partial = self { return true }; return false }'"
+
+# D8: the delete confirmation defaults to the destructive button again.
+run "D8 delete confirmation defaults to the destructive button" XFinder/Core/Archive/ArchiveJob.swift \
+  "'                defaultsToCancel: true)'" \
+  "'                defaultsToCancel: false)'"
+
+# D9: per-file Trash failures are swallowed again (the `try?` this stage removes).
+run "D9 per-file Trash failures are swallowed" XFinder/Core/Archive/ArchiveJob.swift \
+  "'            } catch {\n                report.failed.append((source, \"\\(error)\"))\n            }'" \
+  "'            } catch { _ = error }'"
+
+# D10: unknown capacity is reported as a shortage again (the "Zero KB / Zero KB" lie).
+run "D10 unknown capacity reported as a shortage" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            case .spaceUnknown: return .spaceUnknown'" \
+  "'            case .spaceUnknown: return .outOfSpace(required: 0, available: 0)'"
+
+# D11: a refusal no longer blocks the reviewed plan.
+run "D11 refusals do not block extraction" XFinder/Core/Archive/ArchiveJob.swift \
+  "'        var isExtractable: Bool { refusals.isEmpty }'" \
+  "'        var isExtractable: Bool { true }'"
+
+# D12: the recovery root deletes anything it is handed.
+run "D12 recovery store deletes outside its root" XFinder/Core/Archive/ArchiveRecoveryStore.swift \
+  "'        guard targetPath.hasPrefix(rootPath + \"/\") else {\n            throw Failure.outsideRoot(targetPath)\n        }'" \
+  "'        _ = rootPath'"
+
+# D13: the staged remainder is deleted instead of kept for recovery.
+run "D13 unplaced remainder is discarded" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        outcome.recoveryRoot = recoverStagingRemainder(batch, root: recoveryRoot)'" \
+  "'        discard(batch); _ = recoveryRoot'"
+
+# D14: source archives stop being protected identities.
+run "D14 source archives are overwritable" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            if policy == .merge {\n                steps = ArchiveEngine.mergePlan(items: stagedTree(of: batch), into: destination) { url in\n                    if protectedPaths.contains(url.standardizedFileURL.path) { return .file }' " \
+  "'            if policy == .merge {\n                steps = ArchiveEngine.mergePlan(items: stagedTree(of: batch), into: destination) { url in' "
+
+# D15: the Ask choices default to a write again.
+run "D15 Ask defaults to writing instead of Cancel" XFinder/Core/Archive/ArchiveEngine.swift \
+  "'        static let defaultChoice: AskChoice = .cancel'" \
+  "'        static let defaultChoice: AskChoice = .keepBoth'"
+
+# D16: the result line reports a leaf whose name was inherited from a renamed parent folder — so the
+# message names a rename the user never got (`deep.txt`) instead of the folder (`folder 2`).
+run "D16 result line names an inherited leaf rename" XFinder/Core/Archive/ArchiveEngine.swift \
+  "'        steps.filter(\.renamedHere).map { \$0.target.lastPathComponent }'" \
+  "'        steps.filter { \$0.renamed }.map { \$0.target.lastPathComponent }'"
+
 restore
+
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)
 echo "suite after restore: $after failure(s)"

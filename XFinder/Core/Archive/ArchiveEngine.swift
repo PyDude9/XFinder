@@ -166,18 +166,17 @@ enum ArchiveEngine {
         return (name as NSString).deletingPathExtension
     }
 
-    /// Where each extracted top-level item goes. `ditto -x` and `tar -x` both overwrite same-named
-    /// files silently, so extraction lands in a private staging folder first and is placed from
-    /// here. Names chosen earlier in the same batch count as taken (so "a" and "a 2" from one
-    /// archive cannot both be renamed onto "a 2").
+    /// Where each extracted top-level item goes under **Keep Both**: names chosen earlier in the same
+    /// batch count as taken (so "a" and "a 2" from one archive cannot both be renamed onto "a 2").
+    ///
+    /// Kept as the Keep Both shape of the same plan `mergePlan` produces, so there is exactly one
+    /// collision decision in the app rather than two that can drift.
     static func placements(items: [String], into dir: URL, policy: ConflictPolicy,
                            exists: (URL) -> Bool) -> [(name: String, destination: Destination)] {
-        var reserved = Set<String>()
-        return items.map { name in
-            let taken: (URL) -> Bool = { exists($0) || reserved.contains($0.lastPathComponent.lowercased()) }
-            let d = destination(base: dir.appendingPathComponent(name), policy: policy, exists: taken)
-            if case .write(let url) = d { reserved.insert(url.lastPathComponent.lowercased()) }
-            return (name, d)
+        mergePlan(items: items.map { StagedItem(path: $0, isDirectory: false) }, into: dir) { url in
+            exists(url) ? .file : nil
+        }.map { step in
+            (name: step.source, destination: .write(step.target))
         }
     }
 
@@ -195,6 +194,128 @@ enum ArchiveEngine {
                 else if part != "." { depth += 1 }
             }
             return nil
+        }
+    }
+
+    // MARK: Recursive merge (stage 03C)
+
+    /// What is already at a candidate destination path.
+    enum ExistingItem: Equatable {
+        case file
+        /// A symbolic link is never merged into and never replaced: it is treated as an ordinary
+        /// occupied name, so the incoming item gets a numbered name instead (spec §5).
+        case link
+        case directory
+    }
+
+    /// One object inside the staging folder, as the plan needs to see it.
+    struct StagedItem: Equatable {
+        var path: String
+        var isDirectory: Bool
+    }
+
+    /// Where one staged object goes.
+    ///
+    /// `renamed` is true when this object — or any folder above it in the same batch — received a
+    /// numbered name, i.e. its *path* is not the one the archive declared. `renamedHere` is true only
+    /// when this object's **own** name changed. The result line uses `renamedHere` (a child that
+    /// inherited a renamed folder did not itself get renamed, and saying so would describe something
+    /// the user never sees); `renamed` describes the path and is kept for callers that need it.
+    struct MergeStep: Equatable {
+        var source: String
+        var target: URL
+        var isDirectory: Bool
+        var renamed: Bool
+        var renamedHere: Bool
+    }
+
+    /// Plan a **combining** merge: folders join, colliding leaves are numbered instead of replaced.
+    ///
+    /// This is the approved semantic change (Boss decision 1). The old Merge replaced every
+    /// same-named leaf — measured in the spec (§2: `folder/same.txt` `OLD` → `NEW`), which is data
+    /// loss the user never confirmed. Numbering keeps both, and "Report 2.pdf" preserves the
+    /// extension because `numbered` already handles compound ones.
+    ///
+    /// Pure on purpose: `existing` answers "what is at this path" and nothing here touches the disk,
+    /// so every collision shape (file/file, file/folder, folder/file, link) is unit-testable.
+    /// `items` must be the staged tree; parents are planned before their children.
+    static func mergePlan(items: [StagedItem], into destination: URL,
+                          existing: (URL) -> ExistingItem?) -> [MergeStep] {
+        let ordered = items.sorted { lhs, rhs in
+            let ld = lhs.path.split(separator: "/").count, rd = rhs.path.split(separator: "/").count
+            return ld == rd ? lhs.path < rhs.path : ld < rd
+        }
+        var mappedFolder: [String: String] = [:]          // incoming folder → folder actually used
+        var claimed = Set<String>()                       // lowercased absolute paths this batch took
+        var steps: [MergeStep] = []
+
+        for item in ordered {
+            let components = item.path.split(separator: "/").map(String.init)
+            guard !components.isEmpty else { continue }
+            let parentPath = components.dropLast().joined(separator: "/")
+            let parent = parentPath.isEmpty ? nil : (mappedFolder[parentPath] ?? parentPath)
+            let name = components.last!
+            let baseName = parent.map { "\($0)/\(name)" } ?? name
+            var relative = baseName
+            var inheritedRename = parent != nil && mappedFolder[parentPath] != parentPath
+            var renamedHere = false
+            var target = destination.appendingPathComponent(relative)
+
+            // Decide what happens at this name. A folder over a folder combines; anything else that is
+            // already taken — including a link, and including a name this batch already claimed —
+            // moves the incoming object to a numbered name.
+            var n = 2
+            while true {
+                let taken = existing(target) != nil || claimed.contains(target.path.lowercased())
+                let combines = item.isDirectory && existing(target) == .directory
+                if !taken || combines { break }
+                let numberedName = numbered(name, n)
+                relative = parent.map { "\($0)/\(numberedName)" } ?? numberedName
+                target = destination.appendingPathComponent(relative)
+                renamedHere = true
+                n += 1
+                // A hostile/exhausted volume must not make planning spin forever, and after this many
+                // collisions the numbered names are not a promise worth keeping — a unique suffix is,
+                // and exclusive publication still refuses to replace anything.
+                if n > 10_000 {
+                    let unique = "\(name) \(UUID().uuidString.prefix(8))"
+                    relative = parent.map { "\($0)/\(unique)" } ?? unique
+                    target = destination.appendingPathComponent(relative)
+                    renamedHere = true
+                    break
+                }
+            }
+            claimed.insert(target.path.lowercased())
+            if item.isDirectory { mappedFolder[item.path] = relative }
+            steps.append(MergeStep(source: item.path, target: target, isDirectory: item.isDirectory,
+                                   renamed: inheritedRename || renamedHere, renamedHere: renamedHere))
+        }
+        return steps
+    }
+
+    /// The result line names what was actually renamed, so "merge" never reads as "replaced".
+    ///
+    /// Reports an object only when its **own** name changed. A child of a renamed folder inherits that
+    /// folder's name and did not itself get renamed, so listing it would describe something the user
+    /// never sees (`Photos 2/a.txt` is not "a.txt was renamed"). An object that was numbered inside a
+    /// renamed folder *was* renamed and is listed — both names are true there.
+    static func renamedLeafNames(_ steps: [MergeStep]) -> [String] {
+        steps.filter(\.renamedHere).map { $0.target.lastPathComponent }
+    }
+
+    /// The Ask dialog's choices and its default. Default **Cancel** is a Boss decision (approval
+    /// point 1): a collision prompt that defaults to a write is a write the user did not choose.
+    enum AskChoice: String, CaseIterable {
+        case keepBoth, merge, cancel
+
+        static let all: [AskChoice] = [.keepBoth, .merge, .cancel]
+        static let defaultChoice: AskChoice = .cancel
+
+        /// The order the alert shows its buttons: the approved default first, then the rest in their
+        /// usual order. The page builds its buttons from this, so the default is defined once here
+        /// instead of being restated by whoever writes the alert code.
+        static var buttonOrder: [AskChoice] {
+            [defaultChoice] + all.filter { $0 != defaultChoice }
         }
     }
 

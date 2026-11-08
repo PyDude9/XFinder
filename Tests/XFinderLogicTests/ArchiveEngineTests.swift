@@ -126,7 +126,7 @@ extension ArchiveEngineTests {
     /// Every failure sentence the runner can produce reaches the English UI translated.
     func testEveryFailureMessageKeyIsInTheStore() throws {
         let store = try L10nFixture.load()
-        XCTAssertEqual(ArchiveRunner.Failure.examples.count, 12, "a case was added without an example")
+        XCTAssertEqual(ArchiveRunner.Failure.examples.count, 13, "a case was added without an example")
         for f in ArchiveRunner.Failure.examples {
             let entry = store.entries[f.messageKey]
             XCTAssertNotNil(entry, "\(f.messageKey) is not in L10n.strings.json")

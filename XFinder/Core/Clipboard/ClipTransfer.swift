@@ -135,6 +135,7 @@ enum ClipTransfer {
         case .unsafeLinks(let links): return "unsafe links: \(links.joined(separator: ", "))"
         case .unsafeArchive(_, let diagnostic): return diagnostic ?? "refused by the archive safety rules"
         case .outOfSpace(let required, let available): return "needs \(required) bytes, \(available) available"
+        case .spaceUnknown: return "free space on the destination volume could not be read"
         case .readerUnavailable: return "the system archive reader is unavailable"
         }
     }

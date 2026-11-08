@@ -183,6 +183,7 @@ extension ArchiveRunner.Failure {
         case .unsafeLinks: return "unsafeLinks"
         case .unsafeArchive: return "unsafeArchive"
         case .outOfSpace: return "outOfSpace"
+        case .spaceUnknown: return "spaceUnknown"
         case .archiveChanged: return "archiveChanged"
         case .readerUnavailable: return "readerUnavailable"
         }
