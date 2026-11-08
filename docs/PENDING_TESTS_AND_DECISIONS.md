@@ -50,6 +50,7 @@ Việc theo sau (review tìm ra, chưa sửa — mỗi dòng nên thành spec nh
 | T-MFGAP-03B | Nén & Giải nén ▸ Giải nén một file .zip bình thường | Giải ra như trước. Một zip có mục `../x` (hoặc hai mục trùng tên) ⇒ báo "Tệp nén không an toàn…", không ghi gì |
 | T-NOTCH-01 | Giao diện notch ▸ Màn hình đích ▸ "Màn hình chính" khi cắm màn ngoài làm màn chính | Notch hiện ở màn có thanh menu, không nhảy theo cửa sổ vừa bấm; rút màn đã chọn ⇒ trang báo đang tạm dùng màn khác, giữ lựa chọn |
 | T-TRANSLATE-1108 | Chọn thông minh ▸ Dịch: bật Dịch AI rồi dùng Nhập giọng nói | Đọc chính tả KHÔNG tự chuyển sang gọi API (trước đây bật Dịch AI ghi `voice.refinerTier`) ; dịch chữ trong Chrome bằng ⇧⌘G ⇒ lịch sử clipboard không có thêm mục mới |
+| T-T33-1 | Thao tác Finder ▸ Đổi cỡ ảnh một ảnh dọc chụp bằng iPhone (EXIF 6) + một ảnh nhỏ hơn cỡ đích | Xem trước ghi đúng kích thước; ảnh ra đứng đúng chiều; ảnh nhỏ bị bỏ qua có lý do; ảnh gốc không đổi; tên mới kiểu "tên-1600px.jpg" / "(2)" khi trùng |
 | T-MERGE-1104-1 | Mở trình duyệt tệp, ⌘K | Bảng lệnh hiện; gõ tên thư mục ⇒ có kết quả; chế độ Move chuyển được tệp |
 | T-MERGE-1104-2 | Bôi đen chữ ở Safari ⇒ Dịch | Hộp dịch của Apple (on-device), **không** có thẻ kiểu Trancy, không mạng |
 | T-MERGE-1104-3 | Mở Sổ từ ⇒ Ôn tập, thêm sổ mới tên "Tiếng Anh" | Tên giữ dấu cách (nếu thẻ lật ⇒ lỗi đã biết ở trên) |
