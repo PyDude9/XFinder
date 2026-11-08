@@ -11,6 +11,35 @@ Cập nhật: 2026-11-06.
 
 Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả lời thì giữ mặc định.
 
+### 2026-11-08 tối · XF-MFGAP-03C gộp + sửa của Boss (mọi việc XFinder đang mở đã giao về một phiên)
+
+Gộp 03C của OpenCode (`88bce81`) + 6 sửa của Boss: **nén một tệp** (ZIP mặc định) báo "Thất bại khi nén" và xoá ZIP vừa
+tạo ở **mọi** lối vào từ `0a184ba` — đã sửa (`b5bf67e`); **Gộp làm rơi symlink** nằm trong thư mục của một ZIP thật (đo) và
+đặt rác `__MACOSX` vào thư mục người dùng — đã sửa (`c03686d`); "Kiểm tra" xem trước **tên file nén** thay vì các mục bên
+trong (chế độ "Cùng thư mục" luôn báo xung đột giả) — đã sửa (`b786a15`); báo cáo khi giải được một phần nay liệt kê mọi
+mục chưa đặt (`8053860`); lô khôi phục xoá bằng Thùng rác, thư mục khôi phục 0700 (`8cfd548`); một câu trợ giúp viết lại
+(`2fe6621`). Gate 3122/0; harness archive **54/55 RED** (C8 tương đương, đã khai báo từ 03C; 14 mutant mới của Boss đều RED). Chạy thật trong Atlas **không làm được**
+cho 7 luồng: hộp thoại Open là lối duy nhất chọn tệp, và Atlas từ chối mọi thao tác khi sheet "Go to Folder" đè lên (đo).
+Fixture sẵn trong tài khoản Atlas: `/Users/atlas/xf-live` (report.zip + merge-dest, unsafe.zip, link.zip + link-dest) —
+anh có thể chạy các luồng dưới đây bằng "Take Control" trong Atlas mà không đụng tệp thật.
+
+| Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
+|:--|:--|:--|:--|
+| Q-T33-3 | T33 bước 3 (giảm dung lượng PDF, watermark, đánh số trang, PDF tìm được chữ) bị chặn: Codex đo PDFKit `saveImagesAsJPEG`/`optimizeImagesForScreen` **không** làm nhỏ một PDF ảnh 24,4 MB, `saveTextFromOCROption` không thêm chữ (bằng chứng ở Run Notion của XF-T33) | (a) cho dùng OCR Vision làm đường dự phòng (chạy trong tiến trình con `--vision`) + kiểm vector hẹp · (b) chỉ PDFKit, từ chối trung thực khi không làm nhỏ/không thêm chữ được | **(b)** — không thêm Vision trong app (luật Vision giữ +21…54 MB); chưa làm bước 3 cho tới khi anh chọn |
+| Q-T34 | Spec `XF-T34-appswitcher-ergonomics.md` (⌘` xoay cửa sổ cùng app, ⌘Tab nhanh, đo độ trễ ảnh thu nhỏ) ghi "chờ chủ dự án duyệt"; một bản WIP Claude (`refs/archive/2026-11-08/agent/claude-XF-T34`, `8d47d62`) đã viết trước khi duyệt và chưa build | duyệt spec ⇒ làm tiếp từ WIP · sửa spec · bỏ | **chưa làm**, WIP giữ nguyên ở ref archive |
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-MFGAP-03C-1 | Nén & Giải nén ▸ Giải nén ▸ Chọn… `report.zip` (có `Report.pdf`, `Photos/a.jpg`, `Photos/b.jpg`) ▸ đích "Tự chọn" = thư mục đã có `Report.pdf` và `Photos/a.jpg` ▸ Kiểm tra | Bản xem trước ghi **Report.pdf** và **Photos** trùng tên (không ghi tên file nén) |
+| T-MFGAP-03C-2 | Tiếp T-1, chọn "Gộp thư mục" ▸ Giải nén | `Report.pdf` của anh **không đổi**, bản trong file nén thành `Report 2.pdf`; `Photos` gộp lại: `a.jpg` của anh giữ nguyên, thêm `a 2.jpg` và `b.jpg`; dòng kết quả nêu tên đã đánh số |
+| T-MFGAP-03C-3 | Kiểm tra `unsafe.zip` (có mục `../evil.txt`) | Câu từ chối màu đỏ, nút Giải nén tắt, không có cách vượt |
+| T-MFGAP-03C-4 | Kiểm tra xong rồi đổi thư mục đích | Bản xem trước ghi đã cũ, Giải nén tắt cho tới khi Kiểm tra lại |
+| T-MFGAP-03C-5 | Giải nén `link.zip` (có `folder/x.txt`) vào thư mục mà `folder` là **symlink** | Không ghi gì qua symlink; thư mục giải ra thành `folder 2` |
+| T-MFGAP-03C-6 | Nén một mục ra đúng tên một file nén đã có ▸ chọn "Thay thế (bản cũ vào Thùng rác)" | Bản cũ vào Thùng rác, bản mới đúng chỗ |
+| T-MFGAP-03C-7 | Giải nén xong ▸ "Xóa file nén gốc" | Hộp xác nhận liệt kê tên, **Huỷ là mặc định** (Return = Huỷ); file nén giải lỗi không được đề nghị xoá |
+| T-MFGAP-03C-8 | Thao tác Finder (hoặc Khay thả, notch, trình duyệt) ▸ nén **một** tệp thành ZIP mặc định | Thành công; mở ZIP thấy đúng tên tệp ở cấp trên cùng (trước đây: "Thất bại khi nén") |
+| T-TRANSLATE-AI-BTN-2 | Bôi đen một câu dài ⇒ ⇧⌘G ⇒ ✨ | Thẻ cao vừa đủ nội dung (không cắt, không thừa khoảng trống); trong lúc chờ AI, Activity Monitor không thấy XFinder thức dậy đều đặn |
+
 ### 2026-11-08 · XF-VOICE-PERMISSIONS Quyền nhập bằng giọng nói (Boss tự làm, không chờ agent)
 
 Nửa giọng nói của bản nháp Codex `XF-SETTINGS-VOICE-PERMISSIONS` (nằm 31 giờ trong worktree `xf-settings-voice`, chưa từng
