@@ -144,4 +144,20 @@ final class OwnWriteMark: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         return counts.contains(changeCount)
     }
+
+    /// Pasteboard states XFinder created only to READ something (the translate fallback sends ⌘C to
+    /// the front app, then puts the user's clipboard back). They are not the user's copies, so
+    /// clipboard history must not ingest them. Separate from `counts`: those still ingest.
+    private var transient: [Int] = []
+
+    func recordTransient(_ changeCount: Int) {
+        lock.lock(); defer { lock.unlock() }
+        transient.append(changeCount)
+        if transient.count > 8 { transient.removeFirst(transient.count - 8) }
+    }
+
+    func isTransient(_ changeCount: Int) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return transient.contains(changeCount)
+    }
 }

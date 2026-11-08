@@ -221,11 +221,18 @@ final class TranslateSelectionController {
             usleep(10_000)
         }
 
-        // Restore pasteboard after a short delay so the target app has completed its copy
-        if !backup.isEmpty {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                TypingSink.restorePasteboard(backup)
-            }
+        // Nothing was copied (no selection, or the app ignored ⌘C): the user's clipboard is untouched,
+        // so there is nothing to restore — writing it back would only add a duplicate history entry.
+        let copiedCount = pb.changeCount
+        guard copiedCount != oldChangeCount else { return resultText }
+        // This runs on the main thread, so the clipboard monitor cannot have ingested the copy yet.
+        OwnWriteMark.shared.recordTransient(copiedCount)
+        // Restore after a short delay so the target app has finished its copy. Restore only if nobody
+        // copied anything since (a newer count is the user's), and an empty backup means "was empty".
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            guard pb.changeCount == copiedCount else { return }
+            if backup.isEmpty { pb.clearContents() } else { TypingSink.restorePasteboard(backup) }
+            OwnWriteMark.shared.recordTransient(pb.changeCount)
         }
         return resultText
     }

@@ -172,6 +172,8 @@ final class ClipboardManager {
         let now = pb.changeCount
         guard now != lastChangeCount else { return false }
         lastChangeCount = now
+        // A copy XFinder triggered only to read a selection (translate fallback) is not the user's.
+        if OwnWriteMark.shared.isTransient(now) { return true }
         if !isPaused { captureClipboardContent() }
         // After capture, not before: cleaning may have rewritten the pasteboard (new count), and
         // a copy that was NOT ingested (concealed / password-manager) still needs its timer —
