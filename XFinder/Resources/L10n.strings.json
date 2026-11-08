@@ -15714,6 +15714,74 @@
     "Hãy cấu hình AI trong Chọn thông minh ▸ Dịch trước khi phân tích.": {
       "en": "Configure AI in Smart Selection ▸ Translate before analyzing.",
       "scope": "sentence"
+    },
+    "Hủy thao tác PDF": {
+      "en": "Cancel PDF operation",
+      "scope": "sentence"
+    },
+    "Đã hủy thao tác PDF; tệp nguồn vẫn được giữ nguyên.": {
+      "en": "PDF operation cancelled; source files were left unchanged.",
+      "scope": "sentence"
+    },
+    "Tệp PDF vượt giới hạn kiểm tra an toàn: ": {
+      "en": "The PDF exceeds the safety inspection limit: ",
+      "scope": "fragment"
+    },
+    "PDF được mã hóa hoặc khóa; chưa tạo bản mới: ": {
+      "en": "The PDF is encrypted or locked; no copy was created: ",
+      "scope": "fragment"
+    },
+    "Quyền của PDF không cho phép thay đổi trang: ": {
+      "en": "The PDF permissions do not allow page changes: ",
+      "scope": "fragment"
+    },
+    "PDF có chữ ký hoặc chính sách chứng nhận; không thể viết lại an toàn: ": {
+      "en": "The PDF has a signature or certification policy and cannot be safely rewritten: ",
+      "scope": "fragment"
+    },
+    "PDF có cấu trúc chưa được kiểm tra; chưa tạo bản mới: ": {
+      "en": "The PDF contains an uninspected structure; no copy was created: ",
+      "scope": "fragment"
+    },
+    "Không thể xác minh cấu trúc PDF bị lỗi để phục hồi an toàn: ": {
+      "en": "The damaged PDF structure could not be verified for safe recovery: ",
+      "scope": "fragment"
+    },
+    "Bản PDF mới không vượt qua kiểm tra cấu trúc; tệp gốc được giữ nguyên: ": {
+      "en": "The new PDF did not pass structural validation; the original was left unchanged: ",
+      "scope": "fragment"
+    },
+    "PDF nguồn đã thay đổi trong lúc xử lý; chưa công bố bản mới: ": {
+      "en": "The source PDF changed during processing; no new copy was published: ",
+      "scope": "fragment"
+    },
+    "Đã viết lại bản sao sau khi xác minh cảnh báo cấu trúc PDF có thể phục hồi.": {
+      "en": "A copy was rewritten after a recoverable PDF structure warning was verified.",
+      "scope": "sentence"
+    },
+    "Sắp xếp trang": {
+      "en": "Reorder pages",
+      "scope": "sentence"
+    },
+    "Thứ tự trang mới": {
+      "en": "New page order",
+      "scope": "sentence"
+    },
+    "Liệt kê đủ mỗi trang đúng một lần; ví dụ: 3,1,2": {
+      "en": "List every page exactly once; example: 3,1,2",
+      "scope": "sentence"
+    },
+    "Thứ tự trang": {
+      "en": "Page order",
+      "scope": "sentence"
+    },
+    "Tổng số trang cần liệt kê: ": {
+      "en": "Pages to list: ",
+      "scope": "fragment"
+    },
+    "Đã sắp xếp lại ": {
+      "en": "Reordered ",
+      "scope": "fragment"
     }
   }
 }
