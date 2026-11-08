@@ -1902,5 +1902,12 @@
     "file": "XFinder/Core/Browser/BrowserMenuLayout.swift",
     "anchor": "return (entries(submenu) ?? []).compactMap { if case .command(let c) = $0 { return c }; return nil }",
     "replacement": "return []"
+  },
+  {
+    "id": "T38-07",
+    "name": "the browser does not claim the menu bar when the Dock icon is hidden",
+    "file": "XFinder/Core/Browser/BrowserMenuLayout.swift",
+    "anchor": "        showDockIcon || browserWindowsOpen\n",
+    "replacement": "        showDockIcon\n"
   }
 ]
