@@ -849,5 +849,10 @@ final class SearchQueryTests: XCTestCase {
             .map { SearchChip(field: .modified, value: .date($0), uncertain: false).id })
         XCTAssertEqual(ids.count, 6)
     }
-}
 
+    /// Q-T37-2 (owner: statistically safe and fast for quick-find habits) — 16 terms / 256 characters; see SearchQuery.
+    func test_t37_capsAreTheMeasuredValues() {
+        XCTAssertEqual(SearchQuery.maxTerms, 16)
+        XCTAssertEqual(SearchQuery.maxQueryLength, 256)
+    }
+}

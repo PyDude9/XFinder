@@ -217,11 +217,14 @@ enum SearchQuery {
 
     // MARK: - parse
 
-    /// XF-T37 L4 / Q-T37-2 — FileOctopus caps both (its "The search is longer than N characters; the rest was ignored."
-    /// and "N search terms are used."); its numbers live in a configuration value that was not readable from the binary,
-    /// so these two are XFinder's own: far above any typed search, low enough that a pasted page cannot stall `mdfind`.
-    static let maxQueryLength: Int = 512
-    static let maxTerms: Int = 32
+    /// XF-T37 L4 / Q-T37-2 (owner: "the number statistics show is safe and fast, for quick-find habits"). Statistics:
+    /// personal/desktop search queries average 1.6 words (Dumais, Stuff I've Seen), and ~90 % of web queries have ≤ 4
+    /// words (MSN log, Bendersky & Croft) — 16 terms is 10× the desktop mean and 4× the web 90th percentile. Measured on
+    /// this Mac (2026-11-08, `mdfind -onlyin ~`, one wildcard name clause per term): past ~8 terms every extra clause
+    /// costs ~75 ms (16 terms 2.1 s, 32 terms 3.6 s, 64 terms 6.0 s), while parsing stays in microseconds (16 terms
+    /// 74 µs). 16 terms of ~16 characters ⇒ 256 characters. FileOctopus caps both too; its numbers were not readable.
+    static let maxQueryLength: Int = 256
+    static let maxTerms: Int = 16
 
     /// Field names `field:value` understands (anything else is "not a search filter, searched as text").
     static let knownFields: Set<String> = ["kind", "ext", "tag", "tags", "from", "source", "content", "in", "trong",
