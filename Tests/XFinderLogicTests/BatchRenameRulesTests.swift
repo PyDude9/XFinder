@@ -85,11 +85,73 @@ final class BatchRenameRulesTests: XCTestCase {
     }
 
     func testDuplicateInsideTheBatch() {
-        var o = BatchRenameRules.Options()
-        o.mode = .format; o.formatStyle = .nameAndDate; o.customName = "Scan "
-        let p = plan([item("/d/1.pdf"), item("/d/2.pdf")], o, siblings: ["/d": ["1.pdf", "2.pdf"]])
+        let items = [item("/d/1.txt"), item("/d/2.txt")]
+        let p = BatchRenameRules.validate(items: items, newNames: ["same.txt", "SAME.txt"], siblings: { _ in ["1.txt", "2.txt"] })
         XCTAssertEqual(p.rows.map(\.issues), [[.duplicateInBatch], [.duplicateInBatch]])
         XCTAssertFalse(p.canRename)
+    }
+
+    // MARK: - Name and Date ties (Q-T37-3)
+
+    private func dated(_ path: String, _ seconds: TimeInterval, folder: Bool = false) -> BatchRenameRules.Item {
+        BatchRenameRules.Item(path: path, isFolder: folder, modified: Date(timeIntervalSince1970: seconds))
+    }
+
+    private var dateOptions: BatchRenameRules.Options {
+        var o = BatchRenameRules.Options()
+        o.mode = .format; o.formatStyle = .nameAndDate; o.customName = "Scan "
+        return o
+    }
+
+    func testSameSecondItemsAreNumberedInTimeOrder() {
+        let base = 1_793_000_000.0
+        // Same second, different sub-second times; the list order is not the time order.
+        let items = [dated("/d/b.pdf", base + 0.5), dated("/d/c.pdf", base + 0.9), dated("/d/a.pdf", base + 0.2),
+                     dated("/d/z.pdf", base + 7)]
+        let p = plan(items, dateOptions, siblings: ["/d": ["a.pdf", "b.pdf", "c.pdf", "z.pdf"]])
+        XCTAssertEqual(p.rows.map(\.newName), ["Scan 2026-10-26 at 07.33.20-2.pdf", "Scan 2026-10-26 at 07.33.20-3.pdf",
+                                               "Scan 2026-10-26 at 07.33.20-1.pdf", "Scan 2026-10-26 at 07.33.27.pdf"])
+        XCTAssertEqual(p.rows.map(\.issues), [[], [], [], []], "a tie never blocks the batch")
+        XCTAssertTrue(p.canRename)
+        // Sorting the new names puts them in true time order.
+        let byName = p.rows.sorted { $0.newName < $1.newName }.map(\.oldName)
+        XCTAssertEqual(byName, ["a.pdf", "b.pdf", "c.pdf", "z.pdf"])
+    }
+
+    func testTieNumbersArePaddedToTheGroupSize() {
+        let items = (1...12).map { dated("/d/\($0).jpg", 1_793_000_000 + Double($0) / 100) }
+        let p = plan(items, dateOptions, siblings: ["/d": Set((1...12).map { "\($0).jpg" })])
+        XCTAssertEqual(p.rows.first?.newName, "Scan 2026-10-26 at 07.33.20-01.jpg")
+        XCTAssertEqual(p.rows.last?.newName, "Scan 2026-10-26 at 07.33.20-12.jpg")
+        XCTAssertEqual(p.rows.map(\.newName), p.rows.map(\.newName).sorted(), "zero-padding keeps byte order = time order")
+    }
+
+    func testANameAlreadyInTheFolderIsNumberedAround() {
+        let items = [dated("/d/a.pdf", 1_793_000_000)]
+        let taken: Set<String> = ["a.pdf", "Scan 2026-10-26 at 07.33.20.pdf", "Scan 2026-10-26 at 07.33.20-1.pdf"]
+        let p = plan(items, dateOptions, siblings: ["/d": taken])
+        XCTAssertEqual(p.rows[0].newName, "Scan 2026-10-26 at 07.33.20-2.pdf")
+        XCTAssertEqual(p.rows[0].issues, [])
+    }
+
+    func testTiesWithoutAnExtensionAndFolders() {
+        let items = [dated("/d/notes", 1_793_000_000), dated("/d/Photos", 1_793_000_000.4, folder: true)]
+        let p = plan(items, dateOptions, siblings: ["/d": ["notes", "Photos"]])
+        XCTAssertEqual(p.rows.map(\.newName), ["Scan 2026-10-26 at 07.33.20-1", "Scan 2026-10-26 at 07.33.20-2"])
+        XCTAssertEqual(p.rows.map(\.notes), [[], []], "the time's dots are not a new extension")
+    }
+
+    func testTieName() {
+        XCTAssertEqual(BatchRenameRules.tieName("X 07.33.20.jpg", number: 3, width: 2, originalExtension: "jpg"), "X 07.33.20-03.jpg")
+        XCTAssertEqual(BatchRenameRules.tieName("X 07.33.20", number: 1, width: 1, originalExtension: ""), "X 07.33.20-1")
+        XCTAssertEqual(BatchRenameRules.tieName("X 07.33.20", number: 12, width: 1, originalExtension: ""), "X 07.33.20-12")
+    }
+
+    func testIndexModeIsNotRenumbered() {
+        var o = BatchRenameRules.Options()
+        o.mode = .format; o.formatStyle = .nameAndIndex; o.customName = "A"; o.startNumber = 1
+        let p = plan([item("/d/x.txt"), item("/d/y.txt")], o, siblings: ["/d": ["x.txt", "y.txt", "A1.txt"]])
+        XCTAssertEqual(p.rows[0].issues, [.existsInFolder], "only Name and Date numbers around clashes")
     }
 
     func testChainAndSwapAreAllowed() {

@@ -124,11 +124,94 @@ enum BatchRenameRules {
     /// `siblings(folder)` = names currently in `folder` (read once by the caller); nil = unreadable, treated as empty.
     static func plan(items: [Item], options: Options, siblings: (String) -> Set<String>?, calendar: Calendar,
                      dateConnector: String) -> Plan {
-        var rows: [Row] = items.enumerated().map { index, item in
-            let oldName = (item.path as NSString).lastPathComponent
-            let newName = newName(for: item, index: index, options: options, calendar: calendar, dateConnector: dateConnector)
-            return Row(source: item.path, oldName: oldName, newName: newName, issues: [],
-                       notes: RenameRules.notes(old: oldName, new: newName, isFolder: item.isFolder))
+        var names: [String] = items.enumerated().map { index, item in
+            newName(for: item, index: index, options: options, calendar: calendar, dateConnector: dateConnector)
+        }
+        let isFormat = options.mode == .format
+        if isFormat, options.formatStyle == .nameAndDate {
+            names = numberDateTies(items: items, names: names, siblings: siblings)
+        }
+        var plan = validate(items: items, newNames: names, siblings: siblings)
+        if isFormat {
+            // Format keeps the original extension; a name without one gets none, even though the time "07.33.20" has
+            // dots a naive split would read as an extension ".20".
+            for i in plan.rows.indices where RenameRules.splitExtension(plan.rows[i].oldName, isFolder: items[i].isFolder).ext.isEmpty {
+                plan.rows[i].notes.removeAll { if case .extensionAdded = $0 { return true }; return false }
+            }
+        }
+        return plan
+    }
+
+    /// XF-T37 Q-T37-3 (owner: "the simplest experience, with probability/statistics, easy to sort"). Measured on this
+    /// Mac's real folders (2026-11-08): items sharing a modification second — 1.5 % (Downloads) to 16.7 % (Documents);
+    /// by creation date it is worse (6–22 %), and even milliseconds leave 14.4 % of Documents tied. So Name and Date uses
+    /// the modification date to the second (a clean, sortable "yyyy-MM-dd at HH.mm.ss"), and every name that would
+    /// still clash — inside the batch or with an item already in the folder — gets "-1", "-2"… zero-padded to the
+    /// group's size, in true time order (full-precision date, then the old name). The batch is never blocked by a tie,
+    /// and sorting by name stays chronological.
+    static func numberDateTies(items: [Item], names: [String], siblings: (String) -> Set<String>?) -> [String] {
+        var result = names
+        func folder(_ i: Int) -> String { (items[i].path as NSString).deletingLastPathComponent }
+        func oldName(_ i: Int) -> String { (items[i].path as NSString).lastPathComponent }
+        let changing = items.indices.filter { names[$0] != oldName($0) }
+
+        // Names that stay taken: what is in the folder now, minus the batch's own items that are renamed away.
+        var taken: [String: Set<String>] = [:]
+        for i in changing where taken[folder(i)] == nil {
+            taken[folder(i)] = Set((siblings(folder(i)) ?? []).map { RenameRules.nameKey($0) })
+        }
+        for i in changing { taken[folder(i)]?.remove(RenameRules.nameKey(oldName(i))) }
+
+        var groups: [String: [Int]] = [:]
+        var order: [String] = []
+        for i in changing {
+            let key = folder(i) + "\u{0}" + RenameRules.nameKey(names[i])
+            if groups[key] == nil { order.append(key) }
+            groups[key, default: []].append(i)
+        }
+        var used: [String: Set<String>] = [:]
+        for key in order {
+            guard let members = groups[key], let first = members.first else { continue }
+            let dir = folder(first)
+            if members.count == 1, taken[dir]?.contains(RenameRules.nameKey(names[first])) != true { continue }
+            let ordered = members.sorted {
+                items[$0].modified != items[$1].modified ? items[$0].modified < items[$1].modified : oldName($0) < oldName($1)
+            }
+            let width = String(ordered.count).count
+            var number = 1
+            for i in ordered {
+                let ext = RenameRules.splitExtension(oldName(i), isFolder: items[i].isFolder).ext
+                var candidate = tieName(names[i], number: number, width: width, originalExtension: ext)
+                while taken[dir]?.contains(RenameRules.nameKey(candidate)) == true
+                        || used[dir]?.contains(RenameRules.nameKey(candidate)) == true {
+                    number += 1
+                    candidate = tieName(names[i], number: number, width: width, originalExtension: ext)
+                }
+                used[dir, default: []].insert(RenameRules.nameKey(candidate))
+                result[i] = candidate
+                number += 1
+            }
+        }
+        return result
+    }
+
+    /// "Trip 2026-10-26 at 07.33.20.jpg" → "Trip 2026-10-26 at 07.33.20-2.jpg": the number goes before the item's own
+    /// extension (never re-split the new name — its time has dots).
+    static func tieName(_ name: String, number: Int, width: Int, originalExtension ext: String) -> String {
+        let digits = String(number)
+        let padded = String(repeating: "0", count: max(0, width - digits.count)) + digits
+        guard !ext.isEmpty, name.hasSuffix("." + ext) else { return "\(name)-\(padded)" }
+        return "\(name.dropLast(ext.count + 1))-\(padded).\(ext)"
+    }
+
+    /// Validation of proposed names — shared by the browser sheet and the old Batch Rename page (Q-T37-5): every name
+    /// rule, duplicates inside the batch, names already taken in the folder (the batch's own renamed-away names do not
+    /// count), items inside another renamed item, and the disk facts.
+    static func validate(items: [Item], newNames: [String], siblings: (String) -> Set<String>?) -> Plan {
+        var rows: [Row] = items.indices.map { i in
+            let oldName = (items[i].path as NSString).lastPathComponent
+            return Row(source: items[i].path, oldName: oldName, newName: newNames[i], issues: [],
+                       notes: RenameRules.notes(old: oldName, new: newNames[i], isFolder: items[i].isFolder))
         }
 
         // Paths of the items that will actually move — an item inside one of them would be renamed under a parent
