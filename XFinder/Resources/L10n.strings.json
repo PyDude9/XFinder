@@ -15458,6 +15458,22 @@
     "Trang và màu": {
       "en": "Pages and colour",
       "scope": "sentence"
+    },
+    "Tệp nén không an toàn nên đã bị từ chối, chưa ghi gì: ": {
+      "en": "This archive is not safe, so it was refused and nothing was written: ",
+      "scope": "fragment"
+    },
+    "Không đủ dung lượng để giải nén tệp này.": {
+      "en": "There is not enough free space to extract this archive.",
+      "scope": "sentence"
+    },
+    "Tệp nén đã thay đổi trong lúc kiểm tra nên đã dừng, chưa đặt gì.": {
+      "en": "The archive changed while it was being checked, so it stopped and nothing was placed.",
+      "scope": "sentence"
+    },
+    "Không kiểm tra được tệp nén trên máy này nên đã từ chối, chưa giải nén gì.": {
+      "en": "This archive cannot be checked on this Mac, so it was refused and nothing was extracted.",
+      "scope": "sentence"
     }
   }
 }

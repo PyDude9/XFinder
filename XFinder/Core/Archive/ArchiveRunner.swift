@@ -35,6 +35,19 @@ enum ArchiveRunner {
         case placement(String)
         /// The archive holds symlinks that point outside it; nothing was placed.
         case unsafeLinks([String])
+        /// The archive itself was refused before anything was written (hostile entry path, duplicate
+        /// or aliased name, unsupported entry, link graph problem, safety limit, unreadable format).
+        /// `reasons` are the rules' verdicts; `diagnostic` is the reader's technical text, shown on
+        /// the detail line and never as the sentence.
+        case unsafeArchive(reasons: [ArchiveSafetyRules.Reason], diagnostic: String?)
+        /// Not enough free space for the reviewed plan; nothing was written.
+        case outOfSpace(required: Int64, available: Int64)
+        /// The archive changed between inspection and extraction, so the plan no longer describes the
+        /// bytes on disk. Nothing was placed.
+        case archiveChanged(String)
+        /// The system reader is not usable here (missing libarchive symbols or an unregistered format),
+        /// so the archive cannot be checked and is refused rather than extracted unverified.
+        case readerUnavailable
     }
 
     // MARK: Process
@@ -214,10 +227,47 @@ enum ArchiveRunner {
 
     /// Step 1: extract into a staging folder on `destination`'s volume (so placing is a rename).
     ///
-    /// The staging root is created private (0700) and its identity is captured, so a later cleanup
-    /// can prove it is removing the folder this job created and not something that took its place.
+    /// The archive is **inspected and validated before anything is written**: the system reader walks
+    /// the raw entry table (no extraction), the pure rules accept or refuse the whole manifest, and
+    /// only then does a decoder run. Measured before 03B: `ditto` silently normalised `../escaped.txt`
+    /// and a leading `/`, and two entries named `same.txt` overwrote one another inside staging, so
+    /// validating after materialisation could not refuse what had already happened.
     static func extractToStaging(archive: URL, near destination: URL) async -> Result<ExtractedBatch, Failure> {
+        guard SystemArchiveReader.isAvailable else { return .failure(.readerUnavailable) }
+        let inspection: SystemArchiveReader.Inspection
+        do {
+            inspection = try SystemArchiveReader().inspect(at: archive)
+        } catch let failure as SystemArchiveReader.Failure {
+            return .failure(Self.map(failure))
+        } catch {
+            return .failure(.staging("\(error)"))
+        }
+        return await extractVerified(archive: archive, inspection: inspection, near: destination)
+    }
+
+    /// The half of `extractToStaging` that runs after inspection, split out so the identity guards can
+    /// be exercised deterministically: a test can inspect, replace the file, and hand the now-stale
+    /// inspection to this function. Without the split the swap window would be microseconds wide and
+    /// the guard could not be proven to be wired at all.
+    static func extractVerified(archive: URL,
+                                inspection: SystemArchiveReader.Inspection,
+                                near destination: URL) async -> Result<ExtractedBatch, Failure> {
         let fm = FileManager.default
+
+        let verdict = ArchiveSafetyRules.validate(manifest: inspection.manifest,
+                                                  compressedSize: inspection.archiveBytes,
+                                                  availableBytes: Self.availableBytes(for: destination))
+        switch verdict {
+        case .rejected(let reasons):
+            // Space problems get their own sentence: "the archive is unsafe" would mis-describe a
+            // perfectly ordinary archive on a full disk, and the remedy is different.
+            if let space = Self.spaceFailure(from: reasons) { return .failure(space) }
+            return .failure(.unsafeArchive(reasons: reasons, diagnostic: nil))
+        case .accepted:
+            break
+        }
+
+        // Only now create the staging root and let a decoder write into it.
         let dir: URL
         do {
             dir = try fm.url(for: .itemReplacementDirectory, in: .userDomainMask, appropriateFor: destination, create: true)
@@ -230,14 +280,54 @@ enum ArchiveRunner {
             owned.removeIfOwned()
             return .failure(.staging("staging directory is not private (0700)"))
         }
+        // (3) The bytes must still be the ones the manifest describes. The reader bound identity from
+        // the descriptor it read; a swap between inspection and extraction would make the validated
+        // manifest describe a different archive, so extraction refuses instead of proceeding.
+        guard Self.identityStillMatches(inspection.identity, at: archive) else {
+            owned.removeIfOwned()
+            return .failure(.archiveChanged("the archive changed after it was inspected"))
+        }
         let result = await run(ArchiveEngine.extractCommand(archive: archive, into: dir))
+        return Self.finishExtraction(archive: archive, inspection: inspection, dir: dir, owned: owned, result: result)
+    }
+
+    /// Everything after the decoder ran, split out for the same reason as `extractVerified`: the window
+    /// "the tool ran, then the archive changed" is microseconds wide in a real run, so a test that wants
+    /// to prove the second identity check is wired has to be able to stand exactly there.
+    static func finishExtraction(archive: URL,
+                                 inspection: SystemArchiveReader.Inspection,
+                                 dir: URL,
+                                 owned: OwnedDirectory,
+                                 result: ProcessResult) -> Result<ExtractedBatch, Failure> {
+        let fm = FileManager.default
         if Task.isCancelled { owned.removeIfOwned(); return .failure(.cancelled) }
         guard result.status == 0 else {
             owned.removeIfOwned(); return .failure(.tool(status: result.status, stderr: result.stderr))
         }
+        // (4) Revalidate once more: a tool that ran for a while is exactly when a swap would pay off.
+        guard Self.identityStillMatches(inspection.identity, at: archive) else {
+            owned.removeIfOwned()
+            return .failure(.archiveChanged("the archive changed while it was being extracted"))
+        }
         // ditto -x -k leaves a __MACOSX folder only for archives made elsewhere; it is resource-fork
         // debris, never user content.
-        // Refuse the whole archive if any link inside it escapes — before a single item is placed.
+        // Second layer, kept from 03A: whatever the decoder actually produced must not contain a link
+        // that escapes. The manifest check above already refuses these before writing; this catches a
+        // decoder that materialises a link the manifest did not describe.
+        let escaping = Self.escapingLinks(in: dir)
+        guard escaping.isEmpty else { owned.removeIfOwned(); return .failure(.unsafeLinks(escaping)) }
+        let items = ((try? fm.contentsOfDirectory(atPath: dir.path)) ?? []).filter { $0 != "__MACOSX" && $0 != ".DS_Store" }.sorted()
+        return .success(ExtractedBatch(staging: dir, items: items, owned: owned))
+    }
+
+    /// Every link inside `dir` whose target leaves it, sorted — the stage 03A second layer, split out
+    /// so it can be tested against a staging folder built by hand.
+    ///
+    /// The walk must see names starting with `._`: `FileManager` hides ordinary AppleDouble *files* from
+    /// listings and `bsdtar` writes `._x` as a **symlink** when unpacking a foreign tar, so a walk that
+    /// skipped that prefix would be blind to exactly the entries a hostile archive plants (F1).
+    static func escapingLinks(in dir: URL) -> [String] {
+        let fm = FileManager.default
         var links: [(path: String, target: String)] = []
         if let walker = fm.enumerator(atPath: dir.path) {
             while let rel = walker.nextObject() as? String {
@@ -246,10 +336,77 @@ enum ArchiveRunner {
                 }
             }
         }
-        let escaping = ArchiveEngine.escapingLinks(links)
-        guard escaping.isEmpty else { owned.removeIfOwned(); return .failure(.unsafeLinks(escaping.sorted())) }
-        let items = ((try? fm.contentsOfDirectory(atPath: dir.path)) ?? []).filter { $0 != "__MACOSX" && $0 != ".DS_Store" }.sorted()
-        return .success(ExtractedBatch(staging: dir, items: items, owned: owned))
+        return ArchiveEngine.escapingLinks(links).sorted()
+    }
+
+    /// Free capacity of the volume `destination` will live on, or nil when it cannot be queried.
+    ///
+    /// Queried once per operation, never per entry (the Boss fix `8092dd0` rule: one volume query, not
+    /// one per item). nil is passed through honestly: `ArchiveSafetyRules` refuses unknown capacity
+    /// rather than treating it as infinite.
+    static func availableBytes(for destination: URL) -> Int64? {
+        // A destination that does not exist yet still has a volume: ask its nearest existing parent.
+        var probe = destination
+        let fm = FileManager.default
+        while !fm.fileExists(atPath: probe.path), probe.pathComponents.count > 1 {
+            probe.deleteLastPathComponent()
+        }
+        guard let values = try? probe.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey]),
+              let capacity = values.volumeAvailableCapacityForImportantUsage else { return nil }
+        return Int64(capacity)
+    }
+
+    /// Split the space reasons out of a rejection, so they get their own sentence.
+    static func spaceFailure(from reasons: [ArchiveSafetyRules.Reason]) -> Failure? {
+        for reason in reasons {
+            switch reason {
+            case .insufficientSpace(let required, let available): return .outOfSpace(required: required, available: available)
+            case .spaceUnknown: return .outOfSpace(required: 0, available: 0)
+            default: continue
+            }
+        }
+        return nil
+    }
+
+    /// Is the file at `url` still the very inode the reader inspected?
+    ///
+    /// `lstat`, not `stat`: a path swapped for a symlink must compare as "changed", not silently
+    /// resolve to whatever it points at.
+    static func identityStillMatches(_ identity: SystemArchiveReader.Identity, at url: URL) -> Bool {
+        var info = stat()
+        guard lstat(url.path, &info) == 0, (info.st_mode & S_IFMT) == S_IFREG else { return false }
+        return UInt64(info.st_dev) == identity.device
+            && UInt64(info.st_ino) == identity.inode
+            && Int64(info.st_size) == identity.size
+            && Int64(info.st_mtimespec.tv_sec) == identity.modifiedSeconds
+            && Int64(info.st_mtimespec.tv_nsec) == identity.modifiedNanos
+            && Int64(info.st_ctimespec.tv_sec) == identity.changedSeconds
+            && Int64(info.st_ctimespec.tv_nsec) == identity.changedNanos
+    }
+
+    /// Map the reader's technical refusal to a user-facing one.
+    ///
+    /// The reader's associated strings are English diagnostics from libarchive and are kept for the
+    /// log only; they are never shown as UI copy. "Unsupported on this system" stays distinguishable
+    /// from "this archive is bad", because the remedy is different.
+    static func map(_ failure: SystemArchiveReader.Failure) -> Failure {
+        switch failure {
+        case .libraryUnavailable, .formatRegistrationFailed:
+            return .readerUnavailable
+        case .unsupportedFormat, .encrypted, .invalidEncoding, .sparse, .unsupportedEntry:
+            // Refused by policy or by the approved format set — the archive is not something this app
+            // will extract, and saying "unavailable" would suggest retrying.
+            return .unsafeArchive(reasons: [], diagnostic: "\(failure)")
+        case .notRegularFile, .notMaterialised, .changedWhileOpening:
+            return .archiveChanged("\(failure)")
+        case .openFailed(let code):
+            return .archiveChanged("open failed (errno \(code))")
+        case .damaged(let detail):
+            return .unsafeArchive(reasons: [], diagnostic: detail)
+        case .tooManyEntries, .byteBudgetExceeded, .cumulativeBudgetExceeded, .sizeMismatch,
+             .sizeOverflow, .timedOut:
+            return .unsafeArchive(reasons: [], diagnostic: "\(failure)")
+        }
     }
 
     /// Names in the batch that already exist in `destination` — what an `.ask` prompt must list.
@@ -345,15 +502,26 @@ extension ArchiveRunner.Failure {
         case .cancelled: return "Đã hủy."
         case .placement: return "Không đặt được tệp đã giải nén vào thư mục đích."
         case .unsafeLinks: return "Tệp nén chứa liên kết trỏ ra ngoài nên đã bị từ chối, không giải nén gì: "
+        case .unsafeArchive: return "Tệp nén không an toàn nên đã bị từ chối, chưa ghi gì: "
+        case .outOfSpace: return "Không đủ dung lượng để giải nén tệp này."
+        case .archiveChanged: return "Tệp nén đã thay đổi trong lúc kiểm tra nên đã dừng, chưa đặt gì."
+        case .readerUnavailable: return "Không kiểm tra được tệp nén trên máy này nên đã từ chối, chưa giải nén gì."
         }
     }
 
     var detail: String? {
         switch self {
         case .missingSource(let names), .unsafeLinks(let names): return names.joined(separator: ", ")
-        case .staging(let s), .placement(let s): return s
+        case .staging(let s), .placement(let s), .archiveChanged(let s): return s
         case .tool(_, let stderr), .missingData(let stderr): return stderr.trimmingCharacters(in: .whitespacesAndNewlines)
-        case .nothingToDo, .cancelled: return nil
+        case .unsafeArchive(let reasons, let diagnostic):
+            let parts = reasons.map(Self.describe).filter { !$0.isEmpty }
+            let text = parts.joined(separator: "; ")
+            guard let diagnostic, !diagnostic.isEmpty else { return text.isEmpty ? nil : text }
+            return text.isEmpty ? diagnostic : "\(text) — \(diagnostic)"
+        case .outOfSpace(let required, let available):
+            return "\(Self.bytes(required)) / \(Self.bytes(available))"
+        case .nothingToDo, .cancelled, .readerUnavailable: return nil
         }
     }
 
@@ -361,5 +529,48 @@ extension ArchiveRunner.Failure {
     static let examples: [ArchiveRunner.Failure] = [
         .nothingToDo, .missingSource(["a"]), .staging("x"), .tool(status: 1, stderr: "x"),
         .missingData(stderr: "x"), .cancelled, .placement("x"), .unsafeLinks(["a"]),
+        .unsafeArchive(reasons: [.escapesRoot("../x")], diagnostic: nil), .outOfSpace(required: 1, available: 0),
+        .archiveChanged("x"), .readerUnavailable,
     ]
+
+    /// Human-readable name of one refused path, for the detail line under the sentence.
+    ///
+    /// These are file names and path fragments only — the *reason* itself is already carried by
+    /// `messageKey`, so no reason needs a translated sentence of its own here.
+    static func describe(_ reason: ArchiveSafetyRules.Reason) -> String {
+        switch reason {
+        case .absolutePath(let p): return p
+        case .driveOrUNCPath(let p): return p
+        case .escapesRoot(let p): return p
+        case .emptyPath: return "."
+        case .controlCharacter(let p): return p
+        case .ambiguousSeparator(let p): return p
+        case .pathTooLong(let p, let bytes): return "\(p) (\(bytes) bytes)"
+        case .tooManyComponents(let p, let count): return "\(p) (\(count))"
+        case .duplicatePath(let p): return p
+        case .aliasedPath(let a, let b): return "\(a) / \(b)"
+        case .fileUsedAsParent(let p): return p
+        case .duplicateAfterNormalisation(let a, let b): return "\(a) / \(b)"
+        case .unsupportedEntry(let p): return p
+        case .rootEntryIsNotADirectory(let p): return p
+        case .tooManyEntries(let count, let limit): return "\(count)/\(limit)"
+        case .fileTooLarge(let p, let declared, let limit): return "\(p) \(bytes(declared))/\(bytes(limit))"
+        case .payloadTooLarge(let declared, let limit): return "\(bytes(declared))/\(bytes(limit))"
+        case .sizeOverflow: return ""
+        case .undeclaredSize(let p): return p
+        case .expansionRatioTooHigh(let ratio, let limit): return String(format: "%.0f×/%.0f×", ratio, limit)
+        case .absoluteLink(let p, let target): return "\(p) → \(target)"
+        case .escapingLink(let p, let target): return "\(p) → \(target)"
+        case .linkCycle(let paths): return paths.joined(separator: " → ")
+        case .linkTargetMissing(let p, let target): return "\(p) → \(target)"
+        case .hardLinkOutside(let p, let target): return "\(p) → \(target)"
+        case .insufficientSpace(let required, let available): return "\(bytes(required))/\(bytes(available))"
+        case .spaceUnknown: return ""
+        }
+    }
+
+    /// Byte counts for the detail line: binary units, matching Finder's own wording.
+    static func bytes(_ value: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: value, countStyle: .file)
+    }
 }

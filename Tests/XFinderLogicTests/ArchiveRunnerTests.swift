@@ -304,7 +304,10 @@ final class ArchiveRunnerTests: XCTestCase {
         try fm.createDirectory(at: url("dest/Project/config"), withIntermediateDirectories: true)
         try "ORIGINAL".write(to: url("dest/Project/config/settings.json"), atomically: true, encoding: .utf8)
         let r = await ArchiveRunner.extractToStaging(archive: url("out/evil.zip"), near: url("dest"))
-        XCTAssertEqual(r, .failure(.unsafeLinks(["Project/config/settings.json"])))
+        // Stage 03B refuses this from the manifest, before any decoder runs: an absolute link target
+        // is a rules verdict, not something discovered after materialisation.
+        guard case .failure(.unsafeArchive(let reasons, _)) = r else { return XCTFail("\(r)") }
+        XCTAssertEqual(reasons, [.absoluteLink("Project/config/settings.json", target: secret.path)])
         XCTAssertEqual(try String(contentsOf: url("dest/Project/config/settings.json"), encoding: .utf8), "ORIGINAL")
         XCTAssertEqual(try String(contentsOf: secret, encoding: .utf8), "SECRET")
     }
@@ -325,8 +328,255 @@ final class ArchiveRunnerTests: XCTestCase {
         XCTAssertTrue(sh("/usr/bin/tar", ["-tf", url("out/evil.tar.gz").path]).1.contains("Project/config/._settings.json"),
                       "the fixture must actually carry the ._ link, or this test proves nothing")
         let r = await ArchiveRunner.extractToStaging(archive: url("out/evil.tar.gz"), near: url("dest"))
-        XCTAssertEqual(r, .failure(.unsafeLinks(["Project/config/._settings.json"])))
+        guard case .failure(.unsafeArchive(let reasons, _)) = r else { return XCTFail("\(r)") }
+        XCTAssertEqual(reasons, [.absoluteLink("Project/config/._settings.json", target: secret.path)])
         XCTAssertFalse(fm.fileExists(atPath: url("dest/Project").path), "nothing placed")
+    }
+
+    /// The second identity check covers a different instant from the first: the decoder has already
+    /// run, so the validated manifest describes a file that no longer exists on disk. Driven through
+    /// `finishExtraction` because the real window is microseconds wide; both checks use the same
+    /// comparison, so removing either leaves the other refusing the obvious case, but only this one
+    /// covers a swap *during* extraction.
+    func testAnArchiveSwappedWhileTheDecoderRunsIsRefusedAfterwards() throws {
+        let archive = url("out/during.zip")
+        writeHostileZip(archive, names: ["ok.txt"])
+        let inspection = try SystemArchiveReader().inspect(at: archive)
+        let dir = try fm.url(for: .itemReplacementDirectory, in: .userDomainMask,
+                             appropriateFor: url("dest"), create: true)
+        guard let owned = ArchiveRunner.OwnedDirectory.adopt(dir) else { return XCTFail("no ownership") }
+        try fm.removeItem(at: archive)   // the swap lands while the decoder is "running"
+
+        let r = ArchiveRunner.finishExtraction(archive: archive, inspection: inspection, dir: dir,
+                                               owned: owned, result: .init(status: 0, stderr: ""))
+
+        guard case .failure(.archiveChanged) = r else { return XCTFail("a swap during extraction must be refused: \(r)") }
+        XCTAssertFalse(fm.fileExists(atPath: dir.path), "the staging folder must be cleaned up on refusal")
+    }
+
+    /// The stage 03A second layer, tested directly. It runs *after* a decoder has written into staging,
+    /// so its input is whatever is on disk — including a `._`-prefixed link, which `bsdtar` creates when
+    /// unpacking a foreign tar and which any listing that applies AppleDouble conventions would skip.
+    /// The manifest check above refuses hostile links before writing; this walk is what catches a
+    /// decoder materialising a link the manifest did not describe, so it must see every name.
+    func testThePostExtractionLinkWalkSeesEveryEscapingLink() throws {
+        let dir = url("staging")
+        try fm.createDirectory(at: dir.appendingPathComponent("Project/config"), withIntermediateDirectories: true)
+        try "x".write(to: dir.appendingPathComponent("Project/plain.txt"), atomically: true, encoding: .utf8)
+        try fm.createSymbolicLink(atPath: dir.appendingPathComponent("Project/config/._settings.json").path,
+                                  withDestinationPath: "/etc/passwd")
+        try fm.createSymbolicLink(atPath: dir.appendingPathComponent("up").path,
+                                  withDestinationPath: "../../etc/passwd")
+        try fm.createSymbolicLink(atPath: dir.appendingPathComponent("Project/inside.txt").path,
+                                  withDestinationPath: "plain.txt")
+
+        XCTAssertEqual(ArchiveRunner.escapingLinks(in: dir),
+                       ["Project/config/._settings.json", "up"],
+                       "a link that stays inside the folder is fine; every escaping one must be named")
+    }
+
+    /// The pre-extraction identity guard must refuse **before a decoder runs**. With the inspected file
+    /// deleted, a guard that fires reports "the archive changed"; a missing guard lets `ditto` notice
+    /// instead and the user is told the tool failed — a different failure, and one that leaves no doubt
+    /// that the validated manifest was never checked against the bytes.
+    func testAMissingArchiveIsRefusedByTheIdentityGuardBeforeTheDecoderRuns() async throws {
+        let archive = url("out/gone.zip")
+        _ = await ArchiveRunner.compress(sources: [url("a/one.txt"), url("b/two.txt")], format: .zip, output: archive)
+        let inspection = try SystemArchiveReader().inspect(at: archive)
+        try fm.removeItem(at: archive)
+
+        let r = await ArchiveRunner.extractVerified(archive: archive, inspection: inspection, near: url("dest"))
+
+        guard case .failure(.archiveChanged) = r else {
+            return XCTFail("the decoder must never be the one to notice a stale manifest: \(r)")
+        }
+    }
+
+    // MARK: - Shared pre-flight (stage 03B)
+
+    /// Builds a ZIP whose entry names are hostile, without any tool normalising them first.
+    ///
+    /// `zip` and `ditto` both rewrite `../` and a leading `/` (measured, spec §2), so a fixture for
+    /// "the app refuses this" has to be written byte by byte. Only stored (uncompressed) entries are
+    /// produced, which is enough: the reader and the rules never look at compression.
+    func writeHostileZip(_ path: URL, names: [String], payload: String = "x") {
+        func le16(_ v: UInt16) -> Data { withUnsafeBytes(of: v.littleEndian) { Data($0) } }
+        func le32(_ v: UInt32) -> Data { withUnsafeBytes(of: v.littleEndian) { Data($0) } }
+        func crc32(_ data: Data) -> UInt32 {
+            var table = [UInt32](repeating: 0, count: 256)
+            for i in 0..<256 {
+                var value = UInt32(i)
+                for _ in 0..<8 { value = (value & 1) != 0 ? (0xEDB8_8320 ^ (value >> 1)) : (value >> 1) }
+                table[i] = value
+            }
+            var crc: UInt32 = 0xFFFF_FFFF
+            for byte in data { crc = table[Int((crc ^ UInt32(byte)) & 0xFF)] ^ (crc >> 8) }
+            return crc ^ 0xFFFF_FFFF
+        }
+        let bytes = Data(payload.utf8)
+        var out = Data(), central = Data()
+        for name in names {
+            let nameBytes = Data(name.utf8)
+            let offset = UInt32(out.count)
+            out.append(le32(0x0403_4b50)); out.append(le16(20)); out.append(le16(0))
+            out.append(le16(0)); out.append(le16(0)); out.append(le16(0))
+            out.append(le32(crc32(bytes))); out.append(le32(UInt32(bytes.count))); out.append(le32(UInt32(bytes.count)))
+            out.append(le16(UInt16(nameBytes.count))); out.append(le16(0)); out.append(nameBytes); out.append(bytes)
+
+            central.append(le32(0x0201_4b50)); central.append(le16(0x0314)); central.append(le16(20))
+            central.append(le16(0)); central.append(le16(0)); central.append(le16(0)); central.append(le16(0))
+            central.append(le32(crc32(bytes))); central.append(le32(UInt32(bytes.count))); central.append(le32(UInt32(bytes.count)))
+            central.append(le16(UInt16(nameBytes.count))); central.append(le16(0)); central.append(le16(0))
+            central.append(le16(0)); central.append(le16(0)); central.append(le32(0o100644 << 16))
+            central.append(le32(offset)); central.append(nameBytes)
+        }
+        let centralOffset = UInt32(out.count)
+        out.append(central)
+        out.append(le32(0x0605_4b50)); out.append(le16(0)); out.append(le16(0))
+        out.append(le16(UInt16(names.count))); out.append(le16(UInt16(names.count)))
+        out.append(le32(UInt32(central.count))); out.append(le32(centralOffset)); out.append(le16(0))
+        try? out.write(to: path)
+    }
+
+    /// Measured before 03B: two ZIP entries named `same.txt` both existed in the archive, `ditto`
+    /// silently kept the LAST one, and the runner reported success — so a user lost the first entry
+    /// with no message. The whole archive must now be refused before anything is written.
+    func testDuplicateEntryNamesRejectTheWholeArchiveBeforeAnythingIsWritten() async throws {
+        let archive = url("out/dup.zip")
+        writeHostileZip(archive, names: ["same.txt", "same.txt"])
+        XCTAssertEqual(sh("/usr/bin/unzip", ["-Z1", archive.path]).1.split(separator: "\n").count, 2,
+                       "the fixture must really carry two entries")
+
+        let before = try fm.contentsOfDirectory(atPath: url("dest").path).sorted()
+        let r = await ArchiveRunner.extractToStaging(archive: archive, near: url("dest"))
+
+        guard case .failure(.unsafeArchive(let reasons, _)) = r else { return XCTFail("\(r)") }
+        XCTAssertTrue(reasons.contains(.duplicatePath("same.txt")), "\(reasons)")
+        XCTAssertEqual(try fm.contentsOfDirectory(atPath: url("dest").path).sorted(), before,
+                       "a refused archive must not write into the destination")
+    }
+
+    /// Measured before 03B: `ditto -x` normalised `../escaped.txt` to `escaped.txt` inside the
+    /// extraction root and stripped a leading `/` from an absolute entry — exit 0 both times. That is
+    /// a tool accident, not a policy: the app must refuse the raw names.
+    func testDotDotAndAbsoluteEntryNamesRejectTheWholeArchive() async throws {
+        for (name, expected) in [("../escaped.txt", ArchiveSafetyRules.Reason.escapesRoot("../escaped.txt")),
+                                 ("/tmp/absolute.txt", .absolutePath("/tmp/absolute.txt"))] {
+            let archive = url("out/hostile-\(UUID().uuidString).zip")
+            writeHostileZip(archive, names: [name])
+            let outsideMarker = url("escaped.txt")
+
+            let r = await ArchiveRunner.extractToStaging(archive: archive, near: url("dest"))
+
+            guard case .failure(.unsafeArchive(let reasons, _)) = r else { return XCTFail("\(name): \(r)") }
+            XCTAssertTrue(reasons.contains(expected), "\(name): \(reasons)")
+            XCTAssertFalse(fm.fileExists(atPath: outsideMarker.path), "\(name) escaped into the parent")
+        }
+    }
+
+    /// The archive is inspected, then the file is replaced before extraction: the validated manifest no
+    /// longer describes the bytes on disk, so extraction must refuse rather than extract something the
+    /// rules never saw. Driven through the split API because the real window is microseconds wide.
+    func testAnArchiveSwappedAfterInspectionIsRefusedBeforeExtraction() async throws {
+        let archive = url("out/swap.zip")
+        _ = await ArchiveRunner.compress(sources: [url("a/one.txt"), url("b/two.txt")], format: .zip, output: archive)
+        let inspection = try SystemArchiveReader().inspect(at: archive)
+
+        // Same path, different inode: write a new file over it.
+        try fm.removeItem(at: archive)
+        _ = await ArchiveRunner.compress(sources: [url("a/same.txt"), url("b/same.txt")], format: .zip, output: archive)
+
+        let r = await ArchiveRunner.extractVerified(archive: archive, inspection: inspection, near: url("dest"))
+
+        guard case .failure(.archiveChanged(let detail)) = r else { return XCTFail("\(r)") }
+        XCTAssertFalse(detail.isEmpty)
+        XCTAssertEqual(try fm.contentsOfDirectory(atPath: url("dest").path), [], "nothing may be extracted")
+    }
+
+    /// An archive that is not one of the approved formats is refused by the reader, and the app says
+    /// "cannot be checked here" rather than extracting it unverified through `tar`/`ditto`.
+    func testAnUnsupportedFormatIsRefusedRatherThanExtractedUnverified() async throws {
+        let archive = url("out/random.zip")
+        try Data((0..<4096).map { _ in UInt8.random(in: 0...255) }).write(to: archive)
+
+        let r = await ArchiveRunner.extractToStaging(archive: archive, near: url("dest"))
+
+        guard case .failure(.unsafeArchive(let reasons, let diagnostic)) = r else { return XCTFail("\(r)") }
+        XCTAssertTrue(reasons.isEmpty, "a format refusal is not a path-rule verdict: \(reasons)")
+        XCTAssertNotNil(diagnostic, "the refusal must keep the reader's diagnostic for the log")
+    }
+
+    /// The reader's missing-symbol path must read as "cannot check here", not as "your archive is bad".
+    func testReaderUnavailabilityIsMappedToItsOwnFailure() {
+        XCTAssertEqual(ArchiveRunner.map(.libraryUnavailable), .readerUnavailable)
+        XCTAssertEqual(ArchiveRunner.map(.formatRegistrationFailed(symbol: "x")), .readerUnavailable)
+        guard case .archiveChanged = ArchiveRunner.map(.notMaterialised) else {
+            return XCTFail("a cloud placeholder is a change of state, not a hostile archive")
+        }
+    }
+
+    /// Free-space planning must refuse honestly. An ordinary archive into a temporary folder has
+    /// capacity, so this pins that the query really is wired (a missing query would surface as
+    /// `.spaceUnknown`, which is itself a refusal — so assert success here).
+    func testTheCapacityQueryIsWiredForAnOrdinaryDestination() async throws {
+        let archive = url("out/cap.zip")
+        _ = await ArchiveRunner.compress(sources: [url("a/one.txt"), url("b/two.txt")], format: .zip, output: archive)
+        XCTAssertNotNil(ArchiveRunner.availableBytes(for: url("dest")),
+                        "the volume query must return a number, or every extraction is refused")
+        let staged = await ArchiveRunner.extractToStaging(archive: archive, near: url("dest"))
+        guard case .success(let batch) = staged else { return XCTFail("\(staged)") }
+        ArchiveRunner.discard(batch)
+    }
+
+    /// The capacity query must find a volume for a destination that does not exist yet: the callers
+    /// pass "the folder I am about to create", not an existing path.
+    func testTheCapacityQueryWorksForADestinationThatDoesNotExistYet() {
+        XCTAssertNotNil(ArchiveRunner.availableBytes(for: url("not-created-yet/new-folder")))
+    }
+
+    /// A rejection that says "not enough space" must reach the caller as its own sentence, not as
+    /// "this archive is unsafe": on a full disk the archive is perfectly ordinary and the remedy is
+    /// different. Split out because a temporary folder always has room, so the real path cannot
+    /// produce this refusal here.
+    func testSpaceRejectionsBecomeTheirOwnFailure() {
+        XCTAssertEqual(ArchiveRunner.spaceFailure(from: [.insufficientSpace(required: 900, available: 100)]),
+                       .outOfSpace(required: 900, available: 100))
+        XCTAssertEqual(ArchiveRunner.spaceFailure(from: [.spaceUnknown]),
+                       .outOfSpace(required: 0, available: 0))
+        XCTAssertNil(ArchiveRunner.spaceFailure(from: [.duplicatePath("a"), .escapesRoot("../b")]),
+                     "an ordinary rules rejection is not a space problem")
+    }
+
+    /// The identity comparison itself. It is called at two points (before and after extraction) and
+    /// each call on its own is enough to refuse a swap, which is why removing either one leaves every
+    /// other test green — the guard is pinned here so the comparison itself cannot rot.
+    func testIdentityComparisonDetectsEveryKindOfChange() async throws {
+        let archive = url("out/id.zip")
+        _ = await ArchiveRunner.compress(sources: [url("a/one.txt"), url("b/two.txt")], format: .zip, output: archive)
+        let inspection = try SystemArchiveReader().inspect(at: archive)
+        XCTAssertTrue(ArchiveRunner.identityStillMatches(inspection.identity, at: archive))
+
+        // Same path, different inode.
+        try fm.removeItem(at: archive)
+        _ = await ArchiveRunner.compress(sources: [url("a/one.txt"), url("b/two.txt")], format: .zip, output: archive)
+        XCTAssertFalse(ArchiveRunner.identityStillMatches(inspection.identity, at: archive))
+
+        // A symlink where the file was is not the file, even if it points at an identical copy.
+        try fm.removeItem(at: archive)
+        let copy = url("out/id-copy.zip")
+        _ = await ArchiveRunner.compress(sources: [url("a/one.txt"), url("b/two.txt")], format: .zip, output: copy)
+        try fm.createSymbolicLink(atPath: archive.path, withDestinationPath: copy.path)
+        XCTAssertFalse(ArchiveRunner.identityStillMatches(inspection.identity, at: archive))
+
+        // Nothing there at all.
+        XCTAssertFalse(ArchiveRunner.identityStillMatches(inspection.identity, at: url("out/gone.zip")))
+    }
+
+    /// A reader that cannot run must read as "cannot check here", which the mapping already produces
+    /// from `inspect` throwing. The explicit availability check in `extractToStaging` is a fast path
+    /// on top of that, not a separate guarantee.
+    func testReaderUnavailabilityMappingCoversTheInspectPath() {
+        XCTAssertEqual(ArchiveRunner.map(.libraryUnavailable), .readerUnavailable)
     }
 }
 

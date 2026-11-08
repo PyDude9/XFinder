@@ -128,11 +128,14 @@ enum ClipTransfer {
         switch f {
         case .nothingToDo: return "nothing to archive"
         case .missingSource(let names): return "missing: \(names.joined(separator: ", "))"
-        case .staging(let s), .placement(let s): return s
+        case .staging(let s), .placement(let s), .archiveChanged(let s): return s
         case .tool(let status, let stderr): return stderr.isEmpty ? "exit \(status)" : stderr
         case .missingData(let stderr): return stderr
         case .cancelled: return "cancelled"
         case .unsafeLinks(let links): return "unsafe links: \(links.joined(separator: ", "))"
+        case .unsafeArchive(_, let diagnostic): return diagnostic ?? "refused by the archive safety rules"
+        case .outOfSpace(let required, let available): return "needs \(required) bytes, \(available) available"
+        case .readerUnavailable: return "the system archive reader is unavailable"
         }
     }
 }
