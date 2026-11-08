@@ -17,6 +17,67 @@ enum KindFilter: String, Codable, CaseIterable, Sendable {
 enum DateRange: Hashable, Codable, Sendable {
     case today, yesterday, thisWeek, lastWeek, thisMonth, lastMonth, thisYear, lastYear
     case pastDays(Int), olderThanDays(Int), month(year: Int, month: Int)
+    /// XF-T37 L4 — FileOctopus 1.0.10's forms: `<7d` (changed within the last 7 days, counted from now), `>2w` (more
+    /// than 2 weeks ago), an exact day `2026-10-01`, and an inclusive span `2026-10-01..2026-10-10`.
+    case within(Int, DateUnit), olderThan(Int, DateUnit), day(CalendarDay), span(CalendarDay, CalendarDay)
+}
+
+enum DateUnit: String, Codable, CaseIterable, Sendable {
+    case day, week, month, year
+    var component: Calendar.Component {
+        switch self {
+        case .day: return .day
+        case .week: return .weekOfYear
+        case .month: return .month
+        case .year: return .year
+        }
+    }
+}
+
+/// A calendar day as typed (`2026-10-01`), resolved against the user's calendar only when the interval is built.
+struct CalendarDay: Hashable, Codable, Sendable, Comparable {
+    var year: Int
+    var month: Int
+    var day: Int
+    static func < (a: CalendarDay, b: CalendarDay) -> Bool { (a.year, a.month, a.day) < (b.year, b.month, b.day) }
+    var text: String { String(format: "%04d-%02d-%02d", year, month, day) }
+}
+
+/// XF-T37 L4 — why part of a search was not used as typed. FileOctopus 1.0.10 tells the user each of these (its parser
+/// kinds: unknownOperator, invalidValue, inputTooLong, tooManyTerms, unterminatedQuote, emptyOperand); XFinder used to
+/// fold them all into one key that no view showed.
+struct SearchWarning: Hashable, Sendable {
+    enum Kind: String, CaseIterable, Sendable {
+        case unknownFilter, badDate, badSize, badKind, badExtension, emptyValue, unclosedQuote, tooLong, tooManyTerms
+    }
+    var kind: Kind
+    /// The token, field name or limit the message is about (shown verbatim, never translated).
+    var subject: String
+
+    /// L10n key of the message. Kinds with a `subject` show it first, in curly quotes; the two limits show the number
+    /// between `messageKey` and `trailingKey`.
+    var messageKey: String {
+        switch kind {
+        case .unknownFilter: return "không phải bộ lọc, được tìm như chữ."
+        case .badDate: return "không phải ngày. Dùng <7d, >2w, <3m, <1y, today, yesterday, 2026-10-01 hoặc 2026-10-01..2026-10-10."
+        case .badSize: return "không phải cỡ tệp. Dùng dạng >5MB, <=200KB hoặc =0."
+        case .badKind: return "không phải loại đã biết. Thử pdf, image, video, audio, archive, document, code hoặc folder."
+        case .badExtension: return "không phải đuôi tệp."
+        case .emptyValue: return "cần một giá trị."
+        case .unclosedQuote: return "Thiếu dấu ngoặc kép đóng; phần còn lại được tìm như một cụm."
+        case .tooLong: return "Ô tìm dài quá — chỉ dùng "
+        case .tooManyTerms: return "Quá nhiều từ — chỉ dùng "
+        }
+    }
+    var trailingKey: String? {
+        switch kind {
+        case .tooLong: return " ký tự đầu."
+        case .tooManyTerms: return " từ đầu."
+        default: return nil
+        }
+    }
+    /// Whether `subject` is quoted in front of the message (vs. a sentence of its own or a number inside it).
+    var quotesSubject: Bool { kind != .unclosedQuote && kind != .tooLong && kind != .tooManyTerms }
 }
 
 enum SizeOp: String, Codable, Sendable { case greater, less, greaterOrEqual, lessOrEqual, equal }
@@ -50,8 +111,8 @@ struct ParsedSearch: Equatable, Sendable {
     var phrases: [String]
     /// -word or !word — filename words that must NOT appear.
     var excluded: [String]
-    /// L10n keys, e.g. an unrecognized operator kept as plain text.
-    var warnings: [String]
+    /// What was not used as typed (shown under the search field; the view composes the sentence from the keys).
+    var warnings: [SearchWarning]
     var isEmpty: Bool { chips.isEmpty && terms.isEmpty && phrases.isEmpty && excluded.isEmpty }
 }
 
@@ -147,19 +208,45 @@ enum SearchQuery {
         case .pastDays(let n): return "pastDays:\(n)"
         case .olderThanDays(let n): return "olderThanDays:\(n)"
         case .month(let y, let m): return "month:\(y):\(m)"
+        case .within(let n, let unit): return "within:\(n):\(unit.rawValue)"
+        case .olderThan(let n, let unit): return "olderThan:\(n):\(unit.rawValue)"
+        case .day(let d): return "day:\(d.text)"
+        case .span(let a, let b): return "span:\(a.text):\(b.text)"
         }
     }
 
     // MARK: - parse
+
+    /// XF-T37 L4 / Q-T37-2 — FileOctopus caps both (its "The search is longer than N characters; the rest was ignored."
+    /// and "N search terms are used."); its numbers live in a configuration value that was not readable from the binary,
+    /// so these two are XFinder's own: far above any typed search, low enough that a pasted page cannot stall `mdfind`.
+    static let maxQueryLength: Int = 512
+    static let maxTerms: Int = 32
+
+    /// Field names `field:value` understands (anything else is "not a search filter, searched as text").
+    static let knownFields: Set<String> = ["kind", "ext", "tag", "tags", "from", "source", "content", "in", "trong",
+                                           "size", "modified", "edited", "created"]
 
     static func parse(_ text: String, now: Date, calendar: Calendar) -> ParsedSearch {
         var chips: [SearchChip] = []
         var terms: [String] = []
         var phrases: [String] = []
         var excluded: [String] = []
-        var warnings: [String] = []
+        var warnings: [SearchWarning] = []
 
-        for rawToken in tokenize(text) {
+        var input = text
+        if input.count > maxQueryLength {
+            input = String(input.prefix(maxQueryLength))
+            warnings.append(SearchWarning(kind: .tooLong, subject: String(maxQueryLength)))
+        }
+        var (tokens, unclosedQuote) = tokenize(input)
+        if unclosedQuote { warnings.append(SearchWarning(kind: .unclosedQuote, subject: "")) }
+        if tokens.count > maxTerms {
+            tokens = Array(tokens.prefix(maxTerms))
+            warnings.append(SearchWarning(kind: .tooManyTerms, subject: String(maxTerms)))
+        }
+
+        for rawToken in tokens {
             switch rawToken {
             case .phrase(let p):
                 phrases.append(p)
@@ -167,14 +254,27 @@ enum SearchQuery {
             case .excluded(let w):
                 excluded.append(w)
 
-            case .fieldValue(let field, let value):
-                if let chip = parseFieldValue(field: field, value: value, now: now, calendar: calendar) {
-                    chips.append(chip)
+            case .emptyField(let field):
+                // `kind:` with nothing after it: a known filter with no value is dropped (searching for the literal
+                // "kind:" finds nothing useful); an unknown one is just a word that ends in a colon ("Re:").
+                if knownFields.contains(field.lowercased()) {
+                    warnings.append(SearchWarning(kind: .emptyValue, subject: field))
                 } else {
-                    // Unknown field or unparsable value stays as a plain filename word, with a warning (contract:
-                    // "Toán tử lạ ⇒ giữ là từ + warning").
+                    terms.append(field + ":")
+                }
+
+            case .fieldValue(let field, let value):
+                switch parseFieldValue(field: field, value: value, now: now, calendar: calendar) {
+                case .chip(let chip):
+                    chips.append(chip)
+                case .invalid(let kind):
+                    // A known filter with a value it cannot read: kept as a filename word (contract: "Toán tử lạ ⇒
+                    // giữ là từ + warning"), and the warning now says which form was expected.
                     terms.append("\(field):\(value)")
-                    warnings.append("Toán tử không rõ: giữ là chữ")
+                    warnings.append(SearchWarning(kind: kind, subject: value))
+                case .unknownField:
+                    terms.append("\(field):\(value)")
+                    warnings.append(SearchWarning(kind: .unknownFilter, subject: field))
                 }
 
             case .word(let w):
@@ -200,12 +300,14 @@ enum SearchQuery {
         case phrase(String)
         case excluded(String)
         case fieldValue(field: String, value: String)
+        case emptyField(String)
     }
 
     /// Splits on whitespace while keeping `"quoted phrases"` together and recognizing `field:value` (value may
     /// itself be quoted, e.g. `tag:"work in progress"`).
-    private static func tokenize(_ text: String) -> [RawToken] {
+    private static func tokenize(_ text: String) -> (tokens: [RawToken], unclosedQuote: Bool) {
         var tokens: [RawToken] = []
+        var unclosedQuote = false
         let chars = Array(text)
         var i = 0
         func isSpace(_ c: Character) -> Bool { c == " " || c == "\t" || c == "\n" }
@@ -218,7 +320,7 @@ enum SearchQuery {
                 i += 1
                 var s = ""
                 while i < chars.count, chars[i] != "\"" { s.append(chars[i]); i += 1 }
-                if i < chars.count { i += 1 } // closing quote
+                if i < chars.count { i += 1 } else { unclosedQuote = true } // closing quote
                 if !s.isEmpty { tokens.append(.phrase(s)) }
                 continue
             }
@@ -241,7 +343,10 @@ enum SearchQuery {
             var word = ""
             while i < chars.count, !isSpace(chars[i]) { word.append(chars[i]); i += 1 }
 
-            if let colon = word.firstIndex(of: ":"), colon != word.startIndex, colon != word.index(before: word.endIndex) {
+            if let colon = word.firstIndex(of: ":"), colon != word.startIndex, colon == word.index(before: word.endIndex),
+               word.firstIndex(of: ":") == colon {
+                tokens.append(.emptyField(String(word[word.startIndex..<colon])))
+            } else if let colon = word.firstIndex(of: ":"), colon != word.startIndex, colon != word.index(before: word.endIndex) {
                 let field = String(word[word.startIndex..<colon])
                 var value = String(word[word.index(after: colon)...])
                 // `tag:"work in progress"` — the colon token ends right at the opening quote; absorb the quoted run.
@@ -249,7 +354,7 @@ enum SearchQuery {
                     value.removeFirst()
                     var s = value
                     while i < chars.count, chars[i] != "\"" { s.append(chars[i]); i += 1 }
-                    if i < chars.count { i += 1 }
+                    if i < chars.count { i += 1 } else { unclosedQuote = true }
                     value = s
                 }
                 tokens.append(.fieldValue(field: field.lowercased(), value: value))
@@ -257,7 +362,7 @@ enum SearchQuery {
                 tokens.append(.word(word))
             }
         }
-        return tokens
+        return (tokens, unclosedQuote)
     }
 
     /// Longest-match-first over the whole Vietnamese kind-word table, so a 3-word phrase like "ảnh chụp màn hình"
@@ -433,28 +538,36 @@ enum SearchQuery {
 
     // MARK: - field:value chip parsing
 
-    private static func parseFieldValue(field: String, value: String, now: Date, calendar: Calendar) -> SearchChip? {
+    private enum FieldResult {
+        case chip(SearchChip)
+        case invalid(SearchWarning.Kind)
+        case unknownField
+    }
+
+    private static func parseFieldValue(field: String, value: String, now: Date, calendar: Calendar) -> FieldResult {
         switch field {
         case "kind":
-            guard let kind = kindTokenAliases[value.lowercased()] else { return nil }
-            return SearchChip(field: .kind, value: .kind(kind), uncertain: false)
+            guard let kind = kindTokenAliases[value.lowercased()] else { return .invalid(.badKind) }
+            return .chip(SearchChip(field: .kind, value: .kind(kind), uncertain: false))
 
         case "ext":
-            guard !value.isEmpty else { return nil }
             let cleaned = value.hasPrefix(".") ? String(value.dropFirst()) : value
-            return SearchChip(field: .ext, value: .text(cleaned.lowercased()), uncertain: false)
+            // An extension is one name part: no separator, no space, no wildcard, not empty after the dot.
+            guard !cleaned.isEmpty, !cleaned.contains(where: { $0 == "/" || $0 == ":" || $0 == "*" || $0.isWhitespace })
+            else { return .invalid(.badExtension) }
+            return .chip(SearchChip(field: .ext, value: .text(cleaned.lowercased()), uncertain: false))
 
-        case "tag":
-            guard !value.isEmpty else { return nil }
-            return SearchChip(field: .tag, value: .text(value), uncertain: false)
+        case "tag", "tags":
+            guard !value.isEmpty else { return .invalid(.emptyValue) }
+            return .chip(SearchChip(field: .tag, value: .text(value), uncertain: false))
 
         case "from", "source":
-            guard !value.isEmpty else { return nil }
-            return SearchChip(field: .source, value: .text(value), uncertain: false)
+            guard !value.isEmpty else { return .invalid(.emptyValue) }
+            return .chip(SearchChip(field: .source, value: .text(value), uncertain: false))
 
         case "content":
-            guard !value.isEmpty else { return nil }
-            return SearchChip(field: .content, value: .text(value), uncertain: false)
+            guard !value.isEmpty else { return .invalid(.emptyValue) }
+            return .chip(SearchChip(field: .content, value: .text(value), uncertain: false))
 
         case "in", "trong":
             // `in:<folder>` / Vietnamese `trong:<thư mục>` — a path-prefix constraint INSIDE whatever scope is
@@ -462,52 +575,98 @@ enum SearchQuery {
             // giờ mở rộng" — this file only records the folder name as text; the actual narrowing-not-widening
             // guarantee lives in `SearchCoordinator.rootsInScope`/`chipsAllow`, which intersect this chip's path
             // with the caller's scope rather than ever searching outside it.
-            guard !value.isEmpty else { return nil }
-            return SearchChip(field: .folder, value: .text(value), uncertain: false)
+            guard !value.isEmpty else { return .invalid(.emptyValue) }
+            return .chip(SearchChip(field: .folder, value: .text(value), uncertain: false))
 
         case "size":
-            return parseSizeToken(value, defaultField: .size)
+            guard let chip = parseSizeToken(value, defaultField: .size) else { return .invalid(.badSize) }
+            return .chip(chip)
 
         case "modified", "edited":
             // Contract vocabulary: "created/edited/modified" chọn field created/modified — "edited" is a synonym
             // for "modified", not a third field.
-            return parseDateToken(value, field: .modified, now: now, calendar: calendar)
+            guard let chip = parseDateToken(value, field: .modified, now: now, calendar: calendar) else { return .invalid(.badDate) }
+            return .chip(chip)
 
         case "created":
-            return parseDateToken(value, field: .created, now: now, calendar: calendar)
+            guard let chip = parseDateToken(value, field: .created, now: now, calendar: calendar) else { return .invalid(.badDate) }
+            return .chip(chip)
 
         default:
-            return nil
+            return .unknownField
         }
     }
 
-    /// `size:>1GB`, `size:>=500KB`, `size:<10MB`, `size:1GB` (bare = equal); contract: "`size:` không đơn vị = byte".
+    /// `size:>1GB`, `size:>=500KB`, `size:<10MB`, `size:=0`, `size:1GB` (bare = equal); contract: "`size:` không đơn vị
+    /// = byte". FileOctopus 1.0.10's own examples: `>5MB`, `<=200KB`, `=0`.
     private static func parseSizeToken(_ raw: String, defaultField: SearchChip.Field) -> SearchChip? {
         var s = raw
         var op: SizeOp = .equal
         if s.hasPrefix(">=") { op = .greaterOrEqual; s.removeFirst(2) }
         else if s.hasPrefix("<=") { op = .lessOrEqual; s.removeFirst(2) }
+        else if s.hasPrefix("==") { op = .equal; s.removeFirst(2) }
         else if s.hasPrefix(">") { op = .greater; s.removeFirst(1) }
         else if s.hasPrefix("<") { op = .less; s.removeFirst(1) }
+        else if s.hasPrefix("=") { op = .equal; s.removeFirst(1) }
 
         guard let bytes = parseByteCount(raw: s) else { return nil }
         return SearchChip(field: defaultField, value: .size(op, bytes), uncertain: false)
     }
 
-    /// `modified:2026-03-01..2026-03-31` style is out of scope for Wave 1 chips (not in the contract's vocabulary
-    /// list); only the relative-keyword vocabulary is recognized here, same words as the plain-sentence parser.
+    /// The relative keywords (same words as the plain-sentence parser) plus FileOctopus 1.0.10's forms: `<7d` / `>2w` /
+    /// `<3m` / `<1y` (d, w, m, y; `<=`/`>=` read the same), an exact day `2026-10-01`, and `2026-10-01..2026-10-10`.
     private static func parseDateToken(_ raw: String, field: SearchChip.Field, now: Date, calendar: Calendar) -> SearchChip? {
-        switch raw.lowercased() {
-        case "today": return SearchChip(field: field, value: .date(.today), uncertain: false)
-        case "yesterday": return SearchChip(field: field, value: .date(.yesterday), uncertain: false)
-        case "thisweek": return SearchChip(field: field, value: .date(.thisWeek), uncertain: false)
-        case "lastweek": return SearchChip(field: field, value: .date(.lastWeek), uncertain: false)
-        case "thismonth": return SearchChip(field: field, value: .date(.thisMonth), uncertain: false)
-        case "lastmonth": return SearchChip(field: field, value: .date(.lastMonth), uncertain: false)
-        case "thisyear": return SearchChip(field: field, value: .date(.thisYear), uncertain: false)
-        case "lastyear": return SearchChip(field: field, value: .date(.lastYear), uncertain: false)
-        default: return nil
+        let lower = raw.lowercased()
+        func chip(_ range: DateRange) -> SearchChip { SearchChip(field: field, value: .date(range), uncertain: false) }
+        switch lower {
+        case "today": return chip(.today)
+        case "yesterday": return chip(.yesterday)
+        case "thisweek": return chip(.thisWeek)
+        case "lastweek": return chip(.lastWeek)
+        case "thismonth": return chip(.thisMonth)
+        case "lastmonth": return chip(.lastMonth)
+        case "thisyear": return chip(.thisYear)
+        case "lastyear": return chip(.lastYear)
+        default: break
         }
+        if let first = lower.first, first == "<" || first == ">" {
+            var body = Substring(lower.dropFirst())
+            if body.hasPrefix("=") { body = body.dropFirst() }
+            guard let unitChar = body.last, let count = Int(body.dropLast()), (1...9999).contains(count) else { return nil }
+            let unit: DateUnit
+            switch unitChar {
+            case "d": unit = .day
+            case "w": unit = .week
+            case "m": unit = .month
+            case "y": unit = .year
+            default: return nil
+            }
+            return chip(first == "<" ? .within(count, unit) : .olderThan(count, unit))
+        }
+        let parts = lower.components(separatedBy: "..")
+        if parts.count == 2 {
+            guard let a = calendarDay(parts[0], calendar: calendar), let b = calendarDay(parts[1], calendar: calendar) else { return nil }
+            return chip(.span(min(a, b), max(a, b)))
+        }
+        if parts.count == 1, let day = calendarDay(lower, calendar: calendar) { return chip(.day(day)) }
+        return nil
+    }
+
+    /// `YYYY-MM-DD` that exists on the calendar ("2026-02-30" does not: building it would roll over to March 2).
+    static func calendarDay(_ text: String, calendar: Calendar) -> CalendarDay? {
+        let fields = text.split(separator: "-", omittingEmptySubsequences: false)
+        guard fields.count == 3, fields[0].count == 4, fields[1].count == 2, fields[2].count == 2,
+              fields.allSatisfy({ $0.allSatisfy(\.isASCII) && $0.allSatisfy(\.isNumber) }),
+              let year = Int(fields[0]), let month = Int(fields[1]), let day = Int(fields[2]),
+              year >= 1, (1...12).contains(month), (1...31).contains(day) else { return nil }
+        var comps = DateComponents()
+        comps.year = year
+        comps.month = month
+        comps.day = day
+        guard let date = calendar.date(from: comps) else { return nil }
+        let back = calendar.dateComponents([.year, .month, .day], from: date)
+        guard back.year == year, back.month == month, back.day == day else { return nil }
+        return CalendarDay(year: year, month: month, day: day)
     }
 
     /// "1", "GB" -> bytes. Decimal values allowed ("1.5GB"). KiB/MiB/GiB/TiB treated the same as their decimal
@@ -578,6 +737,13 @@ enum SearchQuery {
             let comps = calendar.dateComponents([.year], from: d)
             return calendar.date(from: comps) ?? startOfDay(d)
         }
+        func dayDate(_ d: CalendarDay) -> Date? {
+            var comps = DateComponents()
+            comps.year = d.year
+            comps.month = d.month
+            comps.day = d.day
+            return calendar.date(from: comps)
+        }
 
         switch range {
         case .today:
@@ -622,6 +788,19 @@ enum SearchQuery {
             comps.day = 1
             let s = calendar.date(from: comps) ?? startOfDay(now)
             let e = calendar.date(byAdding: .month, value: 1, to: s) ?? s
+            return (s, e)
+        case .within(let n, let unit):
+            // "<7d": changed less than 7 days ago, counted from this moment (not from midnight) — open-ended at the top.
+            return (calendar.date(byAdding: unit.component, value: -n, to: now), nil)
+        case .olderThan(let n, let unit):
+            return (nil, calendar.date(byAdding: unit.component, value: -n, to: now))
+        case .day(let d):
+            let s = startOfDay(dayDate(d) ?? now)
+            return (s, addDays(1, to: s))
+        case .span(let a, let b):
+            // Inclusive of the last day: 2026-10-01..2026-10-10 ends at the start of 2026-10-11.
+            let s = startOfDay(dayDate(a) ?? now)
+            let e = addDays(1, to: startOfDay(dayDate(b) ?? now))
             return (s, e)
         }
     }
@@ -686,7 +865,8 @@ enum SearchQuery {
         case .text(let value):
             switch chip.field {
             case .source:
-                return "kMDItemWhereFroms == \"*\(escapeForMDQuery(value))*\"cd"
+                let alternatives = sourcePatterns(for: value).map { "kMDItemWhereFroms == \"*\(escapeForMDQuery($0))*\"cd" }
+                return alternatives.count == 1 ? alternatives[0] : "(" + alternatives.joined(separator: " || ") + ")"
             case .content:
                 return "kMDItemTextContent == \"*\(escapeForMDQuery(value))*\"cd"
             case .tag:
@@ -710,6 +890,28 @@ enum SearchQuery {
                 return "kMDItemFSName == \"*\(escapeForMDQuery(value))*\"cd"
             }
         }
+    }
+
+    /// XF-T37 L4 — `from:gmail` must find a Gmail attachment, whose "where from" is a Google host that does not contain
+    /// the word "gmail". FileOctopus 1.0.10 carries the attachment hosts below (read from its binary); the site hosts
+    /// next to them are the services' own. The typed value always stays one of the alternatives.
+    static let sourceAliases: [String: [String]] = [
+        "gmail": ["mail.google.com", "mail-attachment.googleusercontent.com"],
+        "github": ["github.com", "githubusercontent.com"],
+        "dropbox": ["dropbox.com", "dropboxusercontent.com"],
+        "drive": ["drive.google.com", "drive.usercontent.google.com"],
+        "googledrive": ["drive.google.com", "drive.usercontent.google.com"],
+        "onedrive": ["onedrive.live.com", "1drv.ms"],
+        "outlook": ["outlook.office.com", "outlook.office365.com", "outlook.live.com", "attachments.office.net"],
+        "notion": ["notion.so", "notion-static.com"],
+        "chatgpt": ["chatgpt.com", "oaiusercontent.com"],
+        "openai": ["openai.com", "oaiusercontent.com"],
+    ]
+
+    /// Substrings any of which may appear in a file's "where from" list for `from:<value>` to match.
+    static func sourcePatterns(for value: String) -> [String] {
+        let key = value.lowercased()
+        return [value] + (sourceAliases[key] ?? []).filter { !$0.localizedCaseInsensitiveContains(key) }
     }
 
     private static func contentType(for kind: KindFilter) -> String {

@@ -21,7 +21,17 @@ final class BrowserVocabularyL10nTests: XCTestCase {
             let entry = JournalEntry(job: job, kind: .move, source: "/src/\(i)", destination: "/dst/\(i)", phase: phase, at: at)
             keys += FileOperationRules.recoveryReport([entry]).map(\.messageKey)
         }
-        keys += SearchQuery.parse("bogus:thing", now: at, calendar: Calendar(identifier: .gregorian)).warnings
+        // XF-T37: every search warning (message + the limits' trailing fragment), name rule, batch-rename issue and note.
+        for kind in SearchWarning.Kind.allCases {
+            let warning = SearchWarning(kind: kind, subject: "x")
+            keys.append(warning.messageKey)
+            if let trailing = warning.trailingKey { keys.append(trailing) }
+        }
+        keys += RenameRules.Problem.allCases.map(\.key)
+        keys += [RenameRules.Note.caseOnly, .hidden, .extensionChanged(from: "a", to: "b"), .extensionRemoved("a"),
+                 .extensionAdded("b")].map(\.key)
+        keys += [BatchRenameRules.Issue.duplicateInBatch, .existsInFolder, .insideRenamedItem, .missing, .locked,
+                 .noPermission].map(\.key)
         keys += Access.allCases.map(\.titleKey)                                       // Get Info permissions
         keys += ["", "a/b", "a:b"].compactMap { FileInfoRules.renameRejectionKey(for: $0) }
         keys += GroupBy.allCases.map(\.titleKey)                                      // XF-T30 W1: toolbar Group menu

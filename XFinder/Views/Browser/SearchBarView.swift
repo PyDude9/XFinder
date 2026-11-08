@@ -21,6 +21,9 @@ struct SearchBarView: View {
                 if let search = pane.search, !search.parsed.chips.isEmpty {
                     chipsRow(search.parsed)
                 }
+                if let search = pane.search, !search.parsed.warnings.isEmpty {
+                    warningsRow(search.parsed.warnings)
+                }
                 if indexing {
                     Text(L10n.t("Đang cập nhật chỉ mục…"))
                         .font(XFinderTokens.Font.caption)
@@ -181,6 +184,32 @@ struct SearchBarView: View {
         return true
     }
 
+    // MARK: - Warnings (XF-T37 L4)
+
+    /// One line per thing that was not used as typed — FileOctopus 1.0.10 says each of these; before XF-T37 XFinder
+    /// computed one generic key and showed nothing, so a typo looked exactly like "no results".
+    private func warningsRow(_ warnings: [SearchWarning]) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(Array(warnings.enumerated()), id: \.offset) { _, warning in
+                Label(warningText(warning), systemImage: "exclamationmark.triangle")
+                    .font(XFinderTokens.Font.caption)
+                    .foregroundColor(.orange)
+                    .lineLimit(2)
+            }
+        }
+    }
+
+    private func warningText(_ warning: SearchWarning) -> String {
+        if let trailing = warning.trailingKey {
+            return "\(L10n.t(warning.messageKey))\(warning.subject)\(L10n.t(trailing))"
+        }
+        if warning.quotesSubject {
+            let subject = warning.kind == .unknownFilter || warning.kind == .emptyValue ? warning.subject + ":" : warning.subject
+            return "“\(subject)” \(L10n.t(warning.messageKey))"
+        }
+        return L10n.t(warning.messageKey)
+    }
+
     // MARK: - Chips
 
     private func chipsRow(_ parsed: ParsedSearch) -> some View {
@@ -274,6 +303,30 @@ struct SearchBarView: View {
         case .pastDays(let n): return "\(n)\(L10n.t(" ngày qua"))"
         case .olderThanDays(let n): return "\(L10n.t("Cũ hơn "))\(n)\(L10n.t(" ngày"))"
         case .month(let year, let month): return "\(month)/\(year)"
+        case .within(let n, let unit): return "\(L10n.t("Trong "))\(n)\(withinUnit(unit))"
+        case .olderThan(let n, let unit): return "\(L10n.t("Cũ hơn "))\(n)\(plainUnit(unit))"
+        case .day(let d): return d.text
+        case .span(let a, let b): return "\(a.text) – \(b.text)"
+        }
+    }
+
+    /// " ngày qua" … — "Trong 7 ngày qua" / "In the last 7 days".
+    private func withinUnit(_ unit: DateUnit) -> String {
+        switch unit {
+        case .day: return L10n.t(" ngày qua")
+        case .week: return L10n.t(" tuần qua")
+        case .month: return L10n.t(" tháng qua")
+        case .year: return L10n.t(" năm qua")
+        }
+    }
+
+    /// " ngày" … — "Cũ hơn 2 tuần" / "Older than 2 weeks".
+    private func plainUnit(_ unit: DateUnit) -> String {
+        switch unit {
+        case .day: return L10n.t(" ngày")
+        case .week: return L10n.t(" tuần")
+        case .month: return L10n.t(" tháng")
+        case .year: return L10n.t(" năm")
         }
     }
 

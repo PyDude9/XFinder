@@ -322,7 +322,11 @@ final class SearchCoordinator {
                     if !tags.contains(where: { $0.localizedCaseInsensitiveCompare(value) == .orderedSame }) { matchesAll = false }
                 case .source:
                     guard let sources = MDItemCopyAttribute(item, kMDItemWhereFroms) as? [String] else { matchesAll = false; break }
-                    if !sources.contains(where: { $0.localizedCaseInsensitiveContains(value) }) { matchesAll = false }
+                    // XF-T37 L4: the same alternatives the Spotlight clause uses (`from:gmail` ⇒ Google's mail hosts).
+                    let patterns = SearchQuery.sourcePatterns(for: value)
+                    if !sources.contains(where: { source in patterns.contains { source.localizedCaseInsensitiveContains($0) } }) {
+                        matchesAll = false
+                    }
                 case .content:
                     guard let text = MDItemCopyAttribute(item, textContentKey) as? String else { matchesAll = false; break }
                     if !text.localizedCaseInsensitiveContains(value) { matchesAll = false }

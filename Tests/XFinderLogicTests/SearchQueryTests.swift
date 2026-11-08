@@ -389,12 +389,13 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(p.chips, [SearchChip(field: .folder, value: .text("BaoCao"), uncertain: false)])
     }
 
-    /// A trailing bare colon with nothing after it ("in:") never reaches `fieldValue` tokenization at all (same
-    /// rule as every other `field:` operator in this tokenizer) — it stays a single plain filename word.
-    func test_inSyntaxEmptyValueStaysPlainWord() {
+    /// XF-T37 L4 (FileOctopus 1.0.10 "“in:” needs a value."): a known filter with nothing after it is dropped with a
+    /// warning — searching for the literal text "in:" matched nothing anyway. Before XF-T37 it silently stayed a word.
+    func test_inSyntaxEmptyValueIsDroppedWithAWarning() {
         let p = parse("in:")
         XCTAssertTrue(p.chips.isEmpty)
-        XCTAssertEqual(p.terms, ["in:"])
+        XCTAssertEqual(p.terms, [])
+        XCTAssertEqual(p.warnings, [SearchWarning(kind: .emptyValue, subject: "in")])
     }
 
     func test_inSyntaxCombinesWithOtherChipsAnded() {
@@ -422,13 +423,13 @@ final class SearchQueryTests: XCTestCase {
     func test_unknownFieldSyntaxBecomesTermWithWarning() {
         let p = parse("bogus:value")
         XCTAssertEqual(p.terms, ["bogus:value"])
-        XCTAssertEqual(p.warnings, ["Toán tử không rõ: giữ là chữ"])
+        XCTAssertEqual(p.warnings, [SearchWarning(kind: .unknownFilter, subject: "bogus")])
     }
 
     func test_unknownKindTokenBecomesTermWithWarning() {
         let p = parse("kind:nonsense")
         XCTAssertEqual(p.terms, ["kind:nonsense"])
-        XCTAssertFalse(p.warnings.isEmpty)
+        XCTAssertEqual(p.warnings, [SearchWarning(kind: .badKind, subject: "nonsense")])
     }
 
     // MARK: - combined / mixed sentence
@@ -744,4 +745,109 @@ final class SearchQueryTests: XCTestCase {
         let p = parse("size:1GB")
         XCTAssertEqual(p.chips, [SearchChip(field: .size, value: .size(.equal, 1_073_741_824), uncertain: false)])
     }
+
+    // MARK: - XF-T37 L4 — FileOctopus 1.0.10 filter forms and warnings
+
+    private func day(_ y: Int, _ m: Int, _ d: Int) -> Date {
+        var c = DateComponents(); c.year = y; c.month = m; c.day = d
+        return calendar.date(from: c)!
+    }
+
+    func test_t37_relativeDateForms() {
+        XCTAssertEqual(parse("modified:<7d").chips, [SearchChip(field: .modified, value: .date(.within(7, .day)), uncertain: false)])
+        XCTAssertEqual(parse("created:>2w").chips, [SearchChip(field: .created, value: .date(.olderThan(2, .week)), uncertain: false)])
+        XCTAssertEqual(parse("modified:<3m").chips.first?.value, .date(.within(3, .month)))
+        XCTAssertEqual(parse("modified:<1y").chips.first?.value, .date(.within(1, .year)))
+        XCTAssertEqual(parse("modified:<=7d").chips.first?.value, .date(.within(7, .day)))
+        XCTAssertEqual(parse("modified:>=7D").chips.first?.value, .date(.olderThan(7, .day)))
+        let within = SearchQuery.interval(of: .within(7, .day), now: now, calendar: calendar)
+        XCTAssertEqual(within.start, now.addingTimeInterval(-7 * 86_400))
+        XCTAssertNil(within.end)
+        let older = SearchQuery.interval(of: .olderThan(2, .week), now: now, calendar: calendar)
+        XCTAssertNil(older.start)
+        XCTAssertEqual(older.end, now.addingTimeInterval(-14 * 86_400))
+        XCTAssertEqual(expr("modified:<7d"), "kMDItemFSContentChangeDate >= $time.iso(2026-10-14T12:00:00Z)")
+    }
+
+    func test_t37_exactDayAndSpan() {
+        XCTAssertEqual(parse("modified:2026-10-01").chips.first?.value, .date(.day(CalendarDay(year: 2026, month: 10, day: 1))))
+        let d = SearchQuery.interval(of: .day(CalendarDay(year: 2026, month: 10, day: 1)), now: now, calendar: calendar)
+        XCTAssertEqual(d.start, day(2026, 10, 1))
+        XCTAssertEqual(d.end, day(2026, 10, 2))
+        // Reversed bounds are put in order; the last day is included.
+        let parsed = parse("modified:2026-10-10..2026-10-01").chips.first?.value
+        XCTAssertEqual(parsed, .date(.span(CalendarDay(year: 2026, month: 10, day: 1), CalendarDay(year: 2026, month: 10, day: 10))))
+        let span = SearchQuery.interval(of: .span(CalendarDay(year: 2026, month: 10, day: 1), CalendarDay(year: 2026, month: 10, day: 10)),
+                                        now: now, calendar: calendar)
+        XCTAssertEqual(span.start, day(2026, 10, 1))
+        XCTAssertEqual(span.end, day(2026, 10, 11))
+    }
+
+    func test_t37_badDatesWarnWithTheExpectedForms() {
+        for bad in ["2026-02-30", "<0d", "<7x", "2026-1-01", "yesterdayy", "2026-10-01..soon"] {
+            let p = parse("modified:\(bad)")
+            XCTAssertTrue(p.chips.isEmpty, bad)
+            XCTAssertEqual(p.terms, ["modified:\(bad)"], bad)
+            XCTAssertEqual(p.warnings, [SearchWarning(kind: .badDate, subject: bad)], bad)
+        }
+        XCTAssertNotNil(SearchQuery.calendarDay("2024-02-29", calendar: calendar), "a real leap day")
+        XCTAssertNil(SearchQuery.calendarDay("2025-02-29", calendar: calendar))
+    }
+
+    func test_t37_sizeEqualsForm() {
+        XCTAssertEqual(parse("size:=0").chips, [SearchChip(field: .size, value: .size(.equal, 0), uncertain: false)])
+        XCTAssertEqual(parse("size:==5KB").chips.first?.value, .size(.equal, 5 * 1024))
+        XCTAssertEqual(parse("size:<=200KB").chips.first?.value, .size(.lessOrEqual, 200 * 1024))
+        XCTAssertEqual(parse("size:=abc").warnings, [SearchWarning(kind: .badSize, subject: "=abc")])
+    }
+
+    func test_t37_tagsAliasExtensionAndEmptyValues() {
+        XCTAssertEqual(parse("tags:work").chips, [SearchChip(field: .tag, value: .text("work"), uncertain: false)])
+        XCTAssertEqual(parse("ext:.PDF").chips, [SearchChip(field: .ext, value: .text("pdf"), uncertain: false)])
+        XCTAssertEqual(parse("ext:a/b").warnings, [SearchWarning(kind: .badExtension, subject: "a/b")])
+        let empty = parse("kind: report")
+        XCTAssertEqual(empty.terms, ["report"], "a known filter with no value is dropped, not searched as text")
+        XCTAssertEqual(empty.warnings, [SearchWarning(kind: .emptyValue, subject: "kind")])
+        let re = parse("Re: invoice")
+        XCTAssertEqual(re.terms, ["Re:", "invoice"])
+        XCTAssertEqual(re.warnings, [])
+    }
+
+    func test_t37_unclosedQuoteAndLimits() {
+        let q = parse("\"annual report")
+        XCTAssertEqual(q.phrases, ["annual report"])
+        XCTAssertEqual(q.warnings, [SearchWarning(kind: .unclosedQuote, subject: "")])
+        let closed = parse("\"annual report\"")
+        XCTAssertEqual(closed.warnings, [])
+
+        let long = String(repeating: "a", count: SearchQuery.maxQueryLength + 50)
+        let l = parse(long)
+        XCTAssertEqual(l.terms, [String(repeating: "a", count: SearchQuery.maxQueryLength)])
+        XCTAssertEqual(l.warnings, [SearchWarning(kind: .tooLong, subject: String(SearchQuery.maxQueryLength))])
+
+        let many = (1...(SearchQuery.maxTerms + 8)).map { "w\($0)" }.joined(separator: " ")
+        let m = parse(many)
+        XCTAssertEqual(m.terms.count, SearchQuery.maxTerms)
+        XCTAssertEqual(m.terms.last, "w\(SearchQuery.maxTerms)")
+        XCTAssertEqual(m.warnings, [SearchWarning(kind: .tooManyTerms, subject: String(SearchQuery.maxTerms))])
+    }
+
+    func test_t37_sourceAliases() {
+        XCTAssertEqual(SearchQuery.sourcePatterns(for: "gmail"), ["gmail", "mail.google.com", "mail-attachment.googleusercontent.com"])
+        XCTAssertEqual(SearchQuery.sourcePatterns(for: "github"), ["github"], "hosts that already contain the word add nothing")
+        XCTAssertEqual(SearchQuery.sourcePatterns(for: "example.org"), ["example.org"])
+        XCTAssertEqual(expr("from:gmail"),
+                       "(kMDItemWhereFroms == \"*gmail*\"cd || kMDItemWhereFroms == \"*mail.google.com*\"cd || "
+                       + "kMDItemWhereFroms == \"*mail-attachment.googleusercontent.com*\"cd)")
+        XCTAssertEqual(expr("from:github"), "kMDItemWhereFroms == \"*github*\"cd")
+    }
+
+    func test_t37_chipIdsAreDistinct() {
+        let ids = Set([DateRange.within(7, .day), .olderThan(7, .day), .within(7, .week), .pastDays(7),
+                       .day(CalendarDay(year: 2026, month: 10, day: 1)),
+                       .span(CalendarDay(year: 2026, month: 10, day: 1), CalendarDay(year: 2026, month: 10, day: 1))]
+            .map { SearchChip(field: .modified, value: .date($0), uncertain: false).id })
+        XCTAssertEqual(ids.count, 6)
+    }
 }
+
