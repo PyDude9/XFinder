@@ -158,11 +158,11 @@ final class FeatureHub {
             if !CGPreflightScreenCaptureAccess() { _ = CGRequestScreenCaptureAccess() }
             openSettings(for: p)
         // Speech's block carries no Sendable annotation, so a closure written here (a main-actor class) inherits MainActor
-        // isolation and Swift 6 inserts an executor check (SIL 2026-11-08) that traps if the block is ever run off the
-        // main thread (a probe of that shape: SIGTRAP, exit 133). Which queue Speech uses was NOT measured — a request
-        // from the old code in a fresh account completed without a crash — so `@Sendable` removes a latent risk, not an
-        // observed crash. AVFoundation's block is already Sendable in the SDK (SIL: nonisolated); both are marked so
-        // neither depends on SDK annotations (`PermissionCallbackIsolationTests`). Only the Task hops to the main actor.
+        // isolation and Swift 6 inserts an executor check (SIL 2026-11-08) — and Speech runs the block off the main
+        // thread. Reproduced on the old code (build bd95a1f) in an Atlas helper account: when tccd answered, XFinder
+        // logged "BUG IN CLIENT OF LIBDISPATCH: … Block was expected to execute on queue [com.apple.main-thread]" and
+        // exited on SIGTRAP; this code survived the same request. AVFoundation's block is already Sendable in the SDK
+        // (SIL: nonisolated); both are marked so neither depends on SDK annotations (`PermissionCallbackIsolationTests`).
         case .microphone:
             if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
                 AVCaptureDevice.requestAccess(for: .audio) { @Sendable _ in Task { @MainActor in self.revision += 1 } }

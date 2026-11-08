@@ -182,9 +182,9 @@ public final class VoiceManager {
                 granted = await AVCaptureDevice.requestAccess(for: .audio)
             case .speechRecognition:
                 granted = await withCheckedContinuation { continuation in
-                    // `@Sendable`: formed here, on the main actor, the closure would inherit MainActor isolation and a
-                    // Swift 6 executor check that traps if Speech runs it off the main thread (probe of that shape:
-                    // SIGTRAP, exit 133; Speech's own queue not measured — `PermissionCallbackIsolationTests`).
+                    // `@Sendable` is load-bearing: formed here, on the main actor, the closure would inherit MainActor
+                    // isolation, and Speech runs it off the main thread — the old code trapped (SIGTRAP, reproduced in an
+                    // Atlas helper account 2026-11-08; `PermissionCallbackIsolationTests`).
                     SFSpeechRecognizer.requestAuthorization { @Sendable status in
                         continuation.resume(returning: status == .authorized)
                     }

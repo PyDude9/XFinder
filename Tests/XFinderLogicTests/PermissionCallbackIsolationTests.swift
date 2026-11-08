@@ -2,9 +2,10 @@ import XCTest
 
 /// XF-VOICE-PERMISSIONS (2026-11-08) — a permission callback formed inside a main-actor type inherits MainActor
 /// isolation when the framework's block is not annotated Sendable; if the framework then runs it on another queue, the
-/// executor check Swift 6 inserts traps. NOT measured: which queue Speech actually uses — a request from the old code in
-/// a fresh account (Atlas helper) completed without a crash, so this guards a latent risk, not a reproduced crash.
-/// Measured three ways:
+/// executor check Swift 6 inserts traps. Reproduced on the real old build (bd95a1f) in an Atlas helper account: when tccd
+/// answered its Speech Recognition request, XFinder logged "BUG IN CLIENT OF LIBDISPATCH: Assertion failed: Block was
+/// expected to execute on queue [com.apple.main-thread]" and exited on SIGTRAP; the fixed build survived the same request.
+/// Measured three more ways:
 /// - a probe of that shape (closure formed in a `@MainActor` method, passed to an un-annotated ObjC block that runs it on
 ///   a global queue): **SIGTRAP, exit 133**; the same closure written `{ @Sendable … }` survived (exit 0);
 /// - SIL of `SFSpeechRecognizer.requestAuthorization { _ in … }` inside a `@MainActor` class: isolation MainActor with
