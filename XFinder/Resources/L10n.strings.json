@@ -15946,6 +15946,238 @@
     "Gộp thư mục, giữ cả hai file trùng: thư mục được gộp vào nhau, file trùng tên được đánh số (“Report 2.pdf”) nên không file nào bị thay. Khi nén: không ghi thêm vào tệp nén cũ — tệp nén mới được đánh số.": {
       "en": "Merge folders, keep both copies of same-named files: folders combine and same-named files are numbered (“Report 2.pdf”), so nothing is replaced. When compressing: the old archive is never appended to — the new archive gets a numbered name.",
       "scope": "sentence"
+    },
+    "Tên này được dành riêng.": {
+      "en": "This name is reserved.",
+      "scope": "sentence"
+    },
+    "Tên không được chứa ký tự điều khiển.": {
+      "en": "The name can’t contain control characters.",
+      "scope": "sentence"
+    },
+    "Tên quá dài: tối đa 255 ký tự, mỗi dấu (sắc, huyền, mũ…) tính thêm một.": {
+      "en": "The name is too long: up to 255 characters, and each accent mark counts as one more.",
+      "scope": "sentence"
+    },
+    "Chỉ đổi chữ hoa/thường.": {
+      "en": "Only the capitalization changes.",
+      "scope": "sentence"
+    },
+    "Tên bắt đầu bằng dấu chấm sẽ bị ẩn.": {
+      "en": "Names beginning with a dot are hidden.",
+      "scope": "sentence"
+    },
+    "Đổi đuôi:": {
+      "en": "Changes the extension:",
+      "scope": "fragment"
+    },
+    "Bỏ đuôi:": {
+      "en": "Removes the extension:",
+      "scope": "fragment"
+    },
+    "Thêm đuôi:": {
+      "en": "Adds the extension:",
+      "scope": "fragment"
+    },
+    "Không đổi được tên": {
+      "en": "Couldn’t rename",
+      "scope": "sentence"
+    },
+    "Một mục khác trong lô cũng ra tên này.": {
+      "en": "Another item would get the same name.",
+      "scope": "sentence"
+    },
+    "Đã có mục khác cùng tên trong thư mục này.": {
+      "en": "An item with this name already exists in this folder.",
+      "scope": "sentence"
+    },
+    "Nằm trong một mục khác cũng đang đổi tên.": {
+      "en": "It’s inside another item being renamed.",
+      "scope": "sentence"
+    },
+    "Mục không còn ở chỗ cũ.": {
+      "en": "The item is no longer there.",
+      "scope": "sentence"
+    },
+    "Mục đang bị khoá.": {
+      "en": "The item is locked.",
+      "scope": "sentence"
+    },
+    "Không có quyền đổi tên trong thư mục này.": {
+      "en": "You don’t have permission to rename items in this folder.",
+      "scope": "sentence"
+    },
+    "Thay chữ": {
+      "en": "Replace Text",
+      "scope": "sentence"
+    },
+    "Thêm chữ": {
+      "en": "Add Text",
+      "scope": "sentence"
+    },
+    "Chữ thêm vào": {
+      "en": "Text to add",
+      "scope": "sentence"
+    },
+    "Kiểu tên": {
+      "en": "Name Format",
+      "scope": "sentence"
+    },
+    "Tên và chỉ số": {
+      "en": "Name and Index",
+      "scope": "sentence"
+    },
+    "Tên và bộ đếm": {
+      "en": "Name and Counter",
+      "scope": "sentence"
+    },
+    "Tên và ngày": {
+      "en": "Name and Date",
+      "scope": "sentence"
+    },
+    "Tên tuỳ chỉnh": {
+      "en": "Custom Format",
+      "scope": "sentence"
+    },
+    "Gồm cả đuôi tệp": {
+      "en": "Include extension",
+      "scope": "sentence"
+    },
+    "Đặt ở": {
+      "en": "Where",
+      "scope": "sentence"
+    },
+    "Sau tên": {
+      "en": "after name",
+      "scope": "sentence"
+    },
+    "Trước tên": {
+      "en": "before name",
+      "scope": "sentence"
+    },
+    "Không đổi": {
+      "en": "Unchanged",
+      "scope": "sentence"
+    },
+    " mục sẽ được đổi tên.": {
+      "en": " items will be renamed.",
+      "scope": "fragment"
+    },
+    " mục có lỗi — sửa hết mới đổi được.": {
+      "en": " items can’t be used — fix them all to rename.",
+      "scope": "fragment"
+    },
+    "Không đổi tên được: ": {
+      "en": "Couldn’t rename: ",
+      "scope": "fragment"
+    },
+    "Mọi mục đã trở về tên cũ.": {
+      "en": "Every item is back at its old name.",
+      "scope": "sentence"
+    },
+    " mục chưa trả về được tên cũ: ": {
+      "en": " items couldn’t be put back: ",
+      "scope": "fragment"
+    },
+    "Tệp ": {
+      "en": "File ",
+      "scope": "fragment"
+    },
+    "không phải bộ lọc, được tìm như chữ.": {
+      "en": "isn’t a search filter, so it is searched as text.",
+      "scope": "fragment"
+    },
+    "không phải ngày. Dùng <7d, >2w, <3m, <1y, today, yesterday, 2026-10-01 hoặc 2026-10-01..2026-10-10.": {
+      "en": "isn’t a date. Use <7d, >2w, <3m, <1y, today, yesterday, 2026-10-01 or 2026-10-01..2026-10-10.",
+      "scope": "fragment"
+    },
+    "không phải cỡ tệp. Dùng dạng >5MB, <=200KB hoặc =0.": {
+      "en": "isn’t a size. Use a form like >5MB, <=200KB or =0.",
+      "scope": "fragment"
+    },
+    "không phải loại đã biết. Thử pdf, image, video, audio, archive, document, code hoặc folder.": {
+      "en": "isn’t a known kind. Try pdf, image, video, audio, archive, document, code or folder.",
+      "scope": "fragment"
+    },
+    "không phải đuôi tệp.": {
+      "en": "isn’t a file extension.",
+      "scope": "fragment"
+    },
+    "cần một giá trị.": {
+      "en": "needs a value.",
+      "scope": "fragment"
+    },
+    "Thiếu dấu ngoặc kép đóng; phần còn lại được tìm như một cụm.": {
+      "en": "Missing closing quote; the rest of the search is treated as one phrase.",
+      "scope": "sentence"
+    },
+    "Ô tìm dài quá — chỉ dùng ": {
+      "en": "The search is too long — only the first ",
+      "scope": "fragment"
+    },
+    " ký tự đầu.": {
+      "en": " characters are used.",
+      "scope": "fragment"
+    },
+    "Quá nhiều từ — chỉ dùng ": {
+      "en": "Too many terms — only the first ",
+      "scope": "fragment"
+    },
+    " từ đầu.": {
+      "en": " terms are used.",
+      "scope": "fragment"
+    },
+    "Trong ": {
+      "en": "In the last ",
+      "scope": "fragment"
+    },
+    " ngày qua": {
+      "en": " days",
+      "scope": "fragment"
+    },
+    " tuần qua": {
+      "en": " weeks",
+      "scope": "fragment"
+    },
+    " tháng qua": {
+      "en": " months",
+      "scope": "fragment"
+    },
+    " năm qua": {
+      "en": " years",
+      "scope": "fragment"
+    },
+    "Cũ hơn ": {
+      "en": "Older than ",
+      "scope": "fragment"
+    },
+    " tuần": {
+      "en": " weeks",
+      "scope": "fragment"
+    },
+    " tháng": {
+      "en": " months",
+      "scope": "fragment"
+    },
+    " năm": {
+      "en": " years",
+      "scope": "fragment"
+    },
+    "Cảnh báo trước khi thoát (⌘Q)": {
+      "en": "Warn before quitting (⌘Q)",
+      "scope": "sentence"
+    },
+    "Bật: trong cửa sổ trình duyệt, bấm ⌘Q hai lần hoặc giữ ⌘Q mới thoát — ⌘Q tắt cả XFinder (notch, clipboard, agent…), không chỉ cửa sổ. Đóng cửa sổ cuối không bao giờ thoát.": {
+      "en": "When on, in a browser window press ⌘Q twice or hold it to quit — ⌘Q quits all of XFinder (notch, clipboard, agents…), not just the window. Closing the last window never quits.",
+      "scope": "sentence"
+    },
+    "XFinder vẫn đang chạy.": {
+      "en": "XFinder is still running.",
+      "scope": "sentence"
+    },
+    "Bấm ⌘Q lần nữa hoặc giữ ⌘Q để thoát.": {
+      "en": "Press ⌘Q again or hold it to quit.",
+      "scope": "sentence"
     }
   }
 }
