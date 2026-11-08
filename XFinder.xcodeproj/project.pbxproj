@@ -438,6 +438,7 @@
 		7F1A002D /* Browser/SearchQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A002C /* Browser/SearchQuery.swift */; };
 		7F1A016B /* Browser/RenameRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016A /* Browser/RenameRules.swift */; };
 		7F1A016F /* Browser/BatchRenameRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016E /* Browser/BatchRenameRules.swift */; };
+		7F1A0175 /* Browser/QuitGuardRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0174 /* Browser/QuitGuardRules.swift */; };
 		7F1A002B /* Browser/DirectoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A002A /* Browser/DirectoryEntry.swift */; };
 		7F1A0029 /* Browser/BrowserPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0026 /* Browser/BrowserPath.swift */; };
 		7F1A0021 /* Browser/PaneHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A001A /* Browser/PaneHistory.swift */; };
@@ -845,6 +846,7 @@
 		7F1A002C /* Browser/SearchQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SearchQuery.swift; sourceTree = "<group>"; };
 		7F1A016A /* Browser/RenameRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/RenameRules.swift; sourceTree = "<group>"; };
 		7F1A016E /* Browser/BatchRenameRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BatchRenameRules.swift; sourceTree = "<group>"; };
+		7F1A0174 /* Browser/QuitGuardRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/QuitGuardRules.swift; sourceTree = "<group>"; };
 		7F1A002A /* Browser/DirectoryEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/DirectoryEntry.swift; sourceTree = "<group>"; };
 		7F1A0026 /* Browser/BrowserPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserPath.swift; sourceTree = "<group>"; };
 		7F1A001A /* Browser/PaneHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PaneHistory.swift; sourceTree = "<group>"; };
@@ -1264,6 +1266,7 @@
 				7F1A002C /* Browser/SearchQuery.swift */,
 				7F1A016A /* Browser/RenameRules.swift */,
 				7F1A016E /* Browser/BatchRenameRules.swift */,
+				7F1A0174 /* Browser/QuitGuardRules.swift */,
 				7F1A002A /* Browser/DirectoryEntry.swift */,
 				7F1A0026 /* Browser/BrowserPath.swift */,
 				7F1A001A /* Browser/PaneHistory.swift */,
@@ -2016,6 +2019,7 @@
 				7F1A002D /* Browser/SearchQuery.swift in Sources */,
 				7F1A016B /* Browser/RenameRules.swift in Sources */,
 				7F1A016F /* Browser/BatchRenameRules.swift in Sources */,
+				7F1A0175 /* Browser/QuitGuardRules.swift in Sources */,
 				7F1A002B /* Browser/DirectoryEntry.swift in Sources */,
 				7F1A0029 /* Browser/BrowserPath.swift in Sources */,
 				7F1A0021 /* Browser/PaneHistory.swift in Sources */,

@@ -131,6 +131,8 @@ final class FeatureKeyDefaultsTests: XCTestCase {
                reader: "XFinder/Core/Browser/BrowserSettings.swift"),
         Switch(key: "fileBrowser.reopenWindows", views: ["XFinder/Views/Browser/BrowserSettingsWindow.swift"],
                reader: "XFinder/Core/Browser/BrowserSettings.swift"),
+        Switch(key: "fileBrowser.warnBeforeQuitting", views: ["XFinder/Views/Browser/BrowserSettingsWindow.swift"],
+               reader: "XFinder/Core/Browser/BrowserSettings.swift"),
         Switch(key: "fileBrowser.showHidden", views: ["XFinder/Views/Browser/BrowserSettingsWindow.swift"],
                reader: "XFinder/Core/Browser/BrowserSettings.swift"),
         Switch(key: "fileBrowser.foldersFirst", views: ["XFinder/Views/Browser/BrowserSettingsWindow.swift"],

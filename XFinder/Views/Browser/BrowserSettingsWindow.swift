@@ -93,6 +93,7 @@ private struct GeneralSettingsTab: View {
     @AppStorage("fileBrowser.returnOpens") private var returnOpens = false
     @AppStorage("fileBrowser.downloadsHotkey") private var downloadsHotkey = false
     @AppStorage("fileBrowser.cutWithCmdX") private var cutWithCmdX = false
+    @AppStorage("fileBrowser.warnBeforeQuitting") private var warnBeforeQuitting = true
 
     var body: some View {
         SettingsSection(title: L10n.t("Cửa sổ mới hiện")) {
@@ -132,6 +133,11 @@ private struct GeneralSettingsTab: View {
             ToggleRow(title: L10n.t("Mở lại cửa sổ…"),
                       subtitle: L10n.t("Cửa sổ, tab, ngăn và lịch sử Lùi/Tiến quay lại khi XFinder mở. Giữ Shift khi mở để bỏ qua lần đó."),
                       isOn: $reopenWindows)
+                .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Cảnh báo trước khi thoát (⌘Q)"),
+                      subtitle: L10n.t("Bật: trong cửa sổ trình duyệt, bấm ⌘Q hai lần hoặc giữ ⌘Q mới thoát — ⌘Q tắt cả XFinder (notch, clipboard, agent…), không chỉ cửa sổ. Đóng cửa sổ cuối không bao giờ thoát."),
+                      isOn: $warnBeforeQuitting)
                 .settingsRow()
         }
 

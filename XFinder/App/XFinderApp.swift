@@ -177,6 +177,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// XF-T28: a copy/move still running is asked about (wait / stop and quit) instead of being cut off mid-file.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard BrowserWindowController.shared.allowQuit() else { return .terminateCancel }   // XF-T37 L5
         guard BrowserWindowController.shared.confirmQuit() else { return .terminateCancel }
         guard VocabularyStore.shared.isSaving else { return .terminateNow }
         Task { @MainActor in

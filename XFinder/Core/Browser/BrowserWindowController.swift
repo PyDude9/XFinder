@@ -25,6 +25,9 @@ import os
     /// made in Settings ▸ Search reaches the running `FilenameIndex`/`ContentIndex` without a relaunch.
     private var indexRootsObserver: NSObjectProtocol?
     private var lastKnownIndexRoots: [IndexRoot] = []
+    /// XF-T37 L5 — when the "press ⌘Q again" warning was last shown (nil = no warning pending).
+    private var lastQuitWarning: Date?
+    private let quitGuardHUD = BrowserQuitGuardHUD()
 
     private override init() {
         super.init()
@@ -426,6 +429,30 @@ import os
         indexLifecycleAllWindowsClosed()
     }
 
+    /// XF-T37 L5 — `applicationShouldTerminate`, before anything else: the first ⌘Q typed in a browser window does not
+    /// quit; a HUD says how to (⌘Q again within 1.5 s, or hold it). Quit from the menu bar, the Dock or logout passes.
+    func allowQuit() -> Bool {
+        let event = NSApp.currentEvent
+        let isKeyDown = event?.type == .keyDown
+        // `charactersIgnoringModifiers` raises on a non-key event — read it only for a keyDown.
+        let characters = isKeyDown ? event?.charactersIgnoringModifiers : nil
+        let typed = QuitGuardRules.isCommandQ(isKeyDown: isKeyDown, charactersIgnoringModifiers: characters,
+                                              hasCommand: event?.modifierFlags.contains(.command) ?? false)
+        let decision = QuitGuardRules.decide(enabled: BrowserSettings.warnBeforeQuitting, typedCommandQ: typed,
+                                             browserWindowIsKey: NSApp.keyWindow is BrowserWindow,
+                                             lastWarning: lastQuitWarning, now: Date())
+        switch decision {
+        case .quit:
+            lastQuitWarning = nil
+            quitGuardHUD.hide()
+            return true
+        case .warn:
+            lastQuitWarning = Date()
+            quitGuardHUD.flash(for: QuitGuardRules.confirmWindow)
+            return false
+        }
+    }
+
     /// `applicationShouldTerminate`: a copy/move still running is asked about instead of being cut off mid-file.
     /// Returns `false` to stay open (NSAlert runs modally, so the caller gets a definitive answer before quitting).
     func confirmQuit() -> Bool {
@@ -736,5 +763,51 @@ private final class BrowserQuickLookController: NSObject, QLPreviewPanelDataSour
     func previewPanel(_ panel: QLPreviewPanel!, previewItemAt index: Int) -> QLPreviewItem! {
         guard items.indices.contains(index) else { return nil }
         return items[index] as QLPreviewItem
+    }
+}
+
+/// XF-T37 L5 — "XFinder is still running. Press ⌘Q again or hold ⌘Q to quit." A passive, mouse-transparent panel
+/// (never takes focus from the browser), built on first use and reused; it hides itself after the confirm window.
+@MainActor
+final class BrowserQuitGuardHUD {
+    private var panel: SurfacePanel?
+    private var hideWork: DispatchWorkItem?
+
+    func flash(for duration: TimeInterval) {
+        if panel == nil {
+            let p = SurfacePanel(kind: .passive, size: NSSize(width: 380, height: 64))
+            p.host(BrowserQuitGuardHUDView())
+            p.contentViewController?.view.layoutSubtreeIfNeeded()
+            panel = p
+        }
+        panel?.show(anchor: .topCenter(inset: 72))
+        hideWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.hide() }
+        hideWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration, execute: work)
+    }
+
+    func hide() {
+        hideWork?.cancel()
+        hideWork = nil
+        panel?.hide()
+    }
+}
+
+struct BrowserQuitGuardHUDView: View {
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(L10n.t("XFinder vẫn đang chạy."))
+                .font(XFinderTokens.Font.sectionTitle)
+                .lineLimit(1)
+            Text(L10n.t("Bấm ⌘Q lần nữa hoặc giữ ⌘Q để thoát."))
+                .font(XFinderTokens.Font.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, XFinderTokens.Space.section)
+        .padding(.vertical, XFinderTokens.Space.row)
+        .frame(width: 380, height: 64)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: XFinderTokens.Radius.surface, style: .continuous))
     }
 }
