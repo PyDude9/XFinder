@@ -56,8 +56,7 @@ struct VocabularyWorkspaceView: View {
                 Picker(L10n.t("Không gian"), selection: $page) {
                     Text(L10n.t("Tra từ")).tag(0)
                     Text(L10n.t("Ôn tập")).tag(1)
-                    Text(L10n.t("Bản thiết kế prompt")).tag(2)
-                }.pickerStyle(.segmented).frame(maxWidth: 430)
+                }.pickerStyle(.segmented).frame(maxWidth: 240)
                 Spacer()
                 if store.isSaving { ProgressView().controlSize(.small) }
                 Text(L10n.t(store.hasPersistedData ? "Đã lưu trên máy" : "Lưu trên máy")).font(.caption).foregroundStyle(.secondary)
@@ -80,8 +79,7 @@ struct VocabularyWorkspaceView: View {
                 Divider()
                 Group {
                     if page == 0 { words }
-                    else if page == 1 { review }
-                    else { blueprints }
+                    else { review }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             Divider()

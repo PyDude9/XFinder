@@ -50,18 +50,47 @@ public enum VoiceScreenContext {
     /// sent to the provider the user configured.
     public static func selectedText() -> String? {
         guard AXIsProcessTrusted() else { return nil }
+
+        // 1. Try frontmost application focused element (more reliable on macOS 14+ than systemWide)
+        if let front = NSWorkspace.shared.frontmostApplication {
+            let appEl = AXUIElementCreateApplication(front.processIdentifier)
+            var focusedRef: CFTypeRef?
+            if AXUIElementCopyAttributeValue(appEl, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
+               let focused = focusedRef, CFGetTypeID(focused) == AXUIElementGetTypeID() {
+                if let text = extractSelectedText(from: focused as! AXUIElement) {
+                    return text
+                }
+            }
+        }
+
+        // 2. Fallback to systemWide
         let systemWide = AXUIElementCreateSystemWide()
         var focusedRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
-              let focused = focusedRef else { return nil }
+        if AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
+           let focused = focusedRef, CFGetTypeID(focused) == AXUIElementGetTypeID() {
+            if let text = extractSelectedText(from: focused as! AXUIElement) {
+                return text
+            }
+        }
 
+        return nil
+    }
+
+    private static func extractSelectedText(from element: AXUIElement) -> String? {
         var selectionRef: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(focused as! AXUIElement, kAXSelectedTextAttribute as CFString, &selectionRef) == .success,
-              let selection = selectionRef as? String else { return nil }
-
-        let trimmed = selection.trimmingCharacters(in: .whitespacesAndNewlines)
-        // A single character of selection is almost always the cursor's own artifact.
-        return trimmed.count > 1 ? trimmed : nil
+        if AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &selectionRef) == .success,
+           let selection = selectionRef as? String {
+            let trimmed = selection.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.count > 1 { return trimmed }
+        }
+        var range: CFTypeRef?, out: CFTypeRef?
+        if AXUIElementCopyAttributeValue(element, "AXSelectedTextMarkerRange" as CFString, &range) == .success, let r = range,
+           AXUIElementCopyParameterizedAttributeValue(element, "AXStringForTextMarkerRange" as CFString, r, &out) == .success,
+           let s = out as? String {
+            let trimmed = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.count > 1 { return trimmed }
+        }
+        return nil
     }
 
     /// Assemble the context according to the user's switches.

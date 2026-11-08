@@ -5,12 +5,38 @@ struct SmartSelectBadgeView: View {
     var model: SmartSelectionModel
 
     var body: some View {
-        Button { SmartSelectionBadge.shared.openPanel() } label: {
-            Image(systemName: "wand.and.stars")
-                .font(XFinderTokens.Font.row)
+        Button {
+            let hasConversions = model.actions.contains { action in
+                switch action {
+                case .unit, .currency, .time, .arithmetic, .calendar:
+                    return true
+                default:
+                    return false
+                }
+            }
+            if hasConversions {
+                SmartSelectionBadge.shared.openPanel()
+            } else {
+                SmartSelectionBadge.shared.translate()
+            }
+        } label: {
+            let hasConversions = model.actions.contains { action in
+                switch action {
+                case .unit, .currency, .time, .arithmetic, .calendar:
+                    return true
+                default:
+                    return false
+                }
+            }
+            Image(systemName: hasConversions ? "wand.and.stars" : "character.book.closed.fill")
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Capsule().fill(Color.accentColor))
+                .background(
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(Color(red: 0.38, green: 0.22, blue: 0.95))
+                        .shadow(color: Color.black.opacity(0.25), radius: 3, x: 0, y: 1.5)
+                )
         }
         .buttonStyle(.plain)
         .help(L10n.t("Việc XFinder làm được với vùng chọn này"))
@@ -116,14 +142,10 @@ struct SmartSelectPanelView: View {
         case .translate:
             HStack(spacing: XFinderTokens.Space.tight) {
                 Image(systemName: "character.bubble").frame(width: 18)
-                Text(L10n.t("Dịch bằng bản dịch của Apple, ngay trên máy")).font(XFinderTokens.Font.caption)
+                Text(L10n.t("Dịch vùng chọn")).font(XFinderTokens.Font.caption)
                     .foregroundColor(.secondary).lineLimit(2)
                 Spacer()
-                if #available(macOS 15.0, *) {
-                    Button(L10n.t("Dịch…")) { SmartSelectionBadge.shared.translate() }.controlSize(.small)
-                } else {
-                    Text(L10n.t("Cần macOS 15")).font(XFinderTokens.Font.caption).foregroundColor(.secondary)
-                }
+                Button(L10n.t("Dịch")) { SmartSelectionBadge.shared.translate() }.controlSize(.small)
             }
         }
     }

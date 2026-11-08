@@ -32,6 +32,7 @@ final class SelectionWatcher {
     /// The current selection, kept only until the next change. Never persisted.
     private var currentText = ""
     private var currentBounds: CGRect?
+    var currentSelectionText: String { currentText }
     private(set) var isRunning = false
     /// Diagnostics: lengths, kinds and bundle ids only — never the selected text.
     private let log = Logger(subsystem: "com.xfinder.app", category: "SmartSelect")
@@ -106,6 +107,10 @@ final class SelectionWatcher {
         guard AXObserverCreate(pid, callback, &obs) == .success, let o = obs else { return }
         let appElement = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(appElement, 0.5)   // short: this runs on the main thread; -25204 is retried
+        if let bid = app.bundleIdentifier?.lowercased(),
+           bid.contains("chrome") || bid.contains("edge") || bid.contains("brave") || bid.contains("electron") {
+            AXUIElementSetAttributeValue(appElement, "AXEnhancedUserInterface" as CFString, kCFBooleanTrue)
+        }
         let sel = AXObserverAddNotification(o, appElement, kAXSelectedTextChangedNotification as CFString, nil)
         let foc = AXObserverAddNotification(o, appElement, kAXFocusedUIElementChangedNotification as CFString, nil)
         log.info("observing \(app.bundleIdentifier ?? "?", privacy: .public) selection=\(sel.rawValue) focus=\(foc.rawValue) attempt=\(attempt)")
@@ -148,12 +153,34 @@ final class SelectionWatcher {
     /// text-marker attributes when `AXSelectedText` is empty (Safari reported changes with an empty value in the probe).
     nonisolated static func readSelection(_ element: AXUIElement) -> (text: String, bounds: CGRect?) {
         AXUIElementSetMessagingTimeout(element, 0.5)   // a hung app must not freeze the thread that reads it
+
+        var targetElement = element
+        var focusedRef: CFTypeRef?
+        if AXUIElementCopyAttributeValue(element, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
+           let f = focusedRef, CFGetTypeID(f) == AXUIElementGetTypeID() {
+            targetElement = f as! AXUIElement
+            AXUIElementSetMessagingTimeout(targetElement, 0.5)
+        }
+
         var value: CFTypeRef?
         var text = ""
-        if AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &value) == .success, let s = value as? String {
+        if AXUIElementCopyAttributeValue(targetElement, kAXSelectedTextAttribute as CFString, &value) == .success, let s = value as? String {
             text = s
         }
+        if text.isEmpty, targetElement !== element {
+            if AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &value) == .success, let s = value as? String {
+                text = s
+            }
+        }
         if text.isEmpty {
+            var range: CFTypeRef?, out: CFTypeRef?
+            if AXUIElementCopyAttributeValue(targetElement, "AXSelectedTextMarkerRange" as CFString, &range) == .success, let r = range,
+               AXUIElementCopyParameterizedAttributeValue(targetElement, "AXStringForTextMarkerRange" as CFString, r, &out) == .success,
+               let s = out as? String {
+                text = s
+            }
+        }
+        if text.isEmpty, targetElement !== element {
             var range: CFTypeRef?, out: CFTypeRef?
             if AXUIElementCopyAttributeValue(element, "AXSelectedTextMarkerRange" as CFString, &range) == .success, let r = range,
                AXUIElementCopyParameterizedAttributeValue(element, "AXStringForTextMarkerRange" as CFString, r, &out) == .success,
@@ -163,13 +190,24 @@ final class SelectionWatcher {
         }
         var bounds: CGRect?
         var rangeValue: CFTypeRef?
-        if AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &rangeValue) == .success,
+        if AXUIElementCopyAttributeValue(targetElement, kAXSelectedTextRangeAttribute as CFString, &rangeValue) == .success,
            let rv = rangeValue, CFGetTypeID(rv) == AXValueGetTypeID() {
             var b: CFTypeRef?
-            if AXUIElementCopyParameterizedAttributeValue(element, kAXBoundsForRangeParameterizedAttribute as CFString, rv, &b) == .success,
+            if AXUIElementCopyParameterizedAttributeValue(targetElement, kAXBoundsForRangeParameterizedAttribute as CFString, rv, &b) == .success,
                let bv = b, CFGetTypeID(bv) == AXValueGetTypeID() {
                 var rect = CGRect.zero
                 if AXValueGetValue(bv as! AXValue, .cgRect, &rect) { bounds = rect }
+            }
+        }
+        if bounds == nil, targetElement !== element {
+            if AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &rangeValue) == .success,
+               let rv = rangeValue, CFGetTypeID(rv) == AXValueGetTypeID() {
+                var b: CFTypeRef?
+                if AXUIElementCopyParameterizedAttributeValue(element, kAXBoundsForRangeParameterizedAttribute as CFString, rv, &b) == .success,
+                   let bv = b, CFGetTypeID(bv) == AXValueGetTypeID() {
+                    var rect = CGRect.zero
+                    if AXValueGetValue(bv as! AXValue, .cgRect, &rect) { bounds = rect }
+                }
             }
         }
         return (String(text.prefix(SmartSelectionRules.maxLength + 1)), bounds)
@@ -202,6 +240,7 @@ final class SelectionWatcher {
     }
 
     private func showBadge(mouseUp: CGPoint) {
+        guard !TranslateSelectionController.shared.model.isActive else { watch.shown = false; return }
         let front = NSWorkspace.shared.frontmostApplication
         guard SmartSelectionRules.shouldConsider(text: currentText, minLength: minLength,
                                                  frontBundleID: front?.bundleIdentifier, frontAppName: front?.localizedName,

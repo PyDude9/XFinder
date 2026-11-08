@@ -242,6 +242,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     .flatMap { SidebarDestination(rawValue: $0) } ?? .features
                 AppState.shared.navigate(to: dest)
             }
+        case "translate":
+            let text = comps.queryItems?.first(where: { $0.name == "text" })?.value
+            Task { @MainActor in
+                if let text, !text.isEmpty {
+                    TranslateSelectionController.shared.translate(text: text, sourceApp: nil)
+                } else {
+                    TranslateSelectionController.shared.translateSelection()
+                }
+            }
         case "clipboard":
             // D0: `xfinder://clipboard` = the ⌘⇧V hotkey (Shortcuts, scripts, probes) — the same router,
             // so it honours `clipboard.hotkeySurface` and the notch surface's master switch.

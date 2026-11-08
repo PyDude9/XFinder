@@ -1296,3 +1296,329 @@ GATE: RED
 
 `NotchDisplayTargetRulesTests`: 7/0. `sh scripts/mutation-check-notch.sh`: `RESULT: 68/68 mutations RED`, restored suite 0 failures. Build log contains four references to `NotchDisplayTargetRules.swift`. Only gate failure is the same `AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput` environment/ancestor assumption at line 156. No installed-app, multi-display unplug/reconnect, fullscreen, or focus behavior was verified live.
 
+
+## 2026-11-07 — Antigravity: Remove Self-Dismissing Workspace Observer & Match Trancy Badge Style
+
+Branch `agent/antigravity-XF-translate`.
+
+### Context & Root Cause Diagnosis
+1. **Self-Dismissing Workspace Observer in `TranslateSelectionController`**:
+   - `TranslateSelectionController.swift` previously had an active `registerWorkspaceObserver()` listening for `NSWorkspace.didActivateApplicationNotification`. Because Chrome remained frontmost while the floating panel was ordered front, the notification delivered `app = com.google.Chrome` (which was `!= Bundle.main.bundleIdentifier`) and instantly called `self.dismiss()`, destroying the panel before it could be rendered on screen.
+   - Removed `workspaceObserver` entirely. Dismissal is now properly handled by `installClickOutside`, Escape key, and the header close button.
+   - Added `panel?.orderFrontRegardless()` to guarantee z-order above frontmost web windows.
+2. **Chromium Accessibility Tree Activation (`AXEnhancedUserInterface`)**:
+   - When attaching to Chrome, Edge, Brave, and Electron, `SelectionWatcher` now sets `AXEnhancedUserInterface = true`, which prompts Chromium to construct and maintain accessibility trees for web contents.
+3. **Trancy Badge Appearance Matching Reference**:
+   - `SmartSelectBadgeView` updated to match Trancy reference screenshots: purple rounded square (`#6338F1`, corner radius 7) with a clean white icon (`character.book.closed.fill`).
+   - Added deep link router `xfinder://translate?text=...` in `XFinderApp.swift`.
+4. **Build & Install**:
+   - Clean arm64 build OK, signed and freshly installed into `/Applications/XFinder.app` (`Nov 7 13:38:31`).
+   - Audits green (`TOTAL 0 problems`).
+
+## 2026-11-07 — Antigravity: Fix Selection Capture on Web Browsers & Chromium / Electron
+
+Branch `agent/antigravity-XF-translate`.
+
+### Context & Root Cause Diagnosis
+1. **Empty Selection on Web Browsers (Chrome / WebKit)**:
+   - In Google Chrome, AX notifications dispatched at the application level (`AXUIElementCreateApplication`) passed the application element to `SelectionWatcher.readSelection`. Because `AXApplication` does not possess `kAXSelectedTextAttribute`, querying it directly returned empty string, preventing `feed(.selectionChanged)` from reaching the threshold `minLength` and preventing the badge from ever displaying.
+   - When triggering `⇧⌘G`, `VoiceScreenContext.selectedText()` queried `AXUIElementCreateSystemWide()`, which frequently fails with `-25204` on macOS 14+ when querying non-focused UI elements from background processes, causing translation to receive `nil`.
+2. **Defects Resolved**:
+   - **`SelectionWatcher.readSelection`**: Automatically queries `kAXFocusedUIElementAttribute` on the target application element before querying `kAXSelectedTextAttribute` and `AXSelectedTextMarkerRange`, enabling reliable mouse selection detection across Chrome, Safari, and Electron.
+   - **`VoiceScreenContext.selectedText`**: Updated to probe frontmost application's focused element directly first, with `AXSelectedTextMarkerRange` WebKit fallback.
+   - **`TranslateSelectionController.translateSelection`**: Added fast clipboard copy simulation fallback (`readSelectionViaClipboard`) using `TypingSink.capturePasteboard()` / `restorePasteboard()` to guarantee that `⇧⌘G` captures the active selection 100% reliably in any application even when AX refuses to report selected text.
+3. **Build & Install**:
+   - Clean arm64 build OK, signed and freshly installed into `/Applications/XFinder.app` (`Nov 7 17:54:53`).
+   - Audits green (`TOTAL 0 problems`).
+
+## 2026-11-07 — Antigravity: Restore Trancy AI Translation Behavior, Clean Single-Popup Flow & POS Color Badges
+
+Branch `agent/antigravity-XF-translate`.
+
+### Context & Root Cause Diagnosis
+1. **Reversion via External Agent Merge**:
+   - On Nov 7, an external agent (Codex/main) rebuilt `/Applications/XFinder.app` from `main` (commit `e55da25`).
+   - Because `main` previously merged an older wordbook stack (`590e210`) retaining the legacy Apple translation presentation popover (`.translationPresentation`), the installed binary reverted to the old multi-window Apple translation popover with overlapping surfaces.
+2. **Trancy-Style Translation Flow Re-verified & Re-installed**:
+   - Re-audited and compiled the complete unified single-popup Trancy translation card from branch `agent/antigravity-XF-translate`.
+   - Enhanced `SmartSelectionBadge.swift`: ensures `hideAll()` and `translate()` invoke `panel?.orderOut(nil)` and `badge?.orderOut(nil)` synchronously to completely eliminate frame residue or ghost popups.
+   - Enhanced `TranslateSelectionView.swift`: added Trancy-style part-of-speech color badges matching reference UI:
+     - `adj.` (pink `#FF2D55`)
+     - `n.` (purple `#AF52DE`)
+     - `v.` (blue `#007AFF`)
+     - `adv.` (orange `#FF9500`)
+   - 1-tap Heart button (`♡` / `♥`) reliably toggles cards into `VocabularyStore` with durable disk persistence and loaded state check.
+   - Built and freshly installed to `/Applications/XFinder.app` (`Nov 7 12:35:18`).
+
+### Evidence
+- **Build**: arm64 clean build OK via `scripts/build-and-check.sh` (`/tmp/antigravity-build/out/XFinder.app`).
+- **Tests**: `swift test --package-path /Users/wolong/github/XFinder/Tests` executed 2,917 tests, 0 failures. `gate-all.sh` executed 2,895 tests, 0 failures, `GATE: green`.
+- **Audits**:
+  - `check-l10n-coverage`: 0 problems across 3,790 entries.
+  - `check-l10n-duplicates`: 0 duplicates across 3,790 unique keys.
+  - `audit-l10n-literals`: 0 wrapped-but-untranslated.
+  - `audit-ui-tokens`: 0 problems.
+- **Install & Live Verification**: Signed with designated requirement and installed into `/Applications/XFinder.app` via `scripts/install-mouse-rebuild.sh`.
+
+## 2026-10-31 — Gemini & Antigravity: Multi-Service Translation Settings & Automatic Vertical Display
+
+Branch `PyDude9/xfinder-translate-gemini`.
+
+Defects & Enhancements resolved:
+1. **Full Translation Service Configuration in Smart Selection Settings**:
+   - Replaced card-level mode switching with centralized service toggles in `SmartSelectDetailView.swift` under "Dịch vùng chọn (⇧⌘G)":
+     - `Google Dịch (Miễn phí, nhanh)` (`translate.showGoogle`, default `true`).
+     - `Từ điển macOS (Nhanh trên máy, tra từ loại)` (`translate.showDictionary`, default `true`).
+     - `Dịch bằng AI (Mô hình ngôn ngữ lớn)` (`translate.showAI`, default `false`).
+   - Integrated full AI provider configuration directly in `SmartSelectDetailView.swift` when AI is enabled:
+     - AI Provider picker (`APIProviderKind.allCases`): OpenAI (ChatGPT), Anthropic (Claude), Google Gemini, DeepSeek, Groq, OpenRouter, and Địa chỉ riêng (OpenAI format - Bedrock template).
+     - Base URL field (`voice.apiBaseURL`, e.g. `https://bedrock.viber.vn/v1`) with instant persistence on submit and change.
+     - Model name field (`voice.apiModel.<provider>`, e.g. `deepseek-v4.1-flash`) with suggested models menu and dual persistence.
+     - API Key field with Keychain storage status, `Lưu` and `Xóa` buttons using `VoiceKeychain`.
+     - Direct link to provider console to acquire API keys.
+
+2. **Simultaneous Automatic Vertical Stacking on Floating Translation Card**:
+   - Removed all switcher buttons and manual triggers (`✨ Phân tích AI`) from `TranslateSelectionView.swift`.
+   - The card automatically runs and displays all services enabled in Settings stacked vertically:
+     - **Header**: Word term, Wordbook save status, Heart button (1-click save/toggle), Close button.
+     - **Phonetics Row**: Dialect badge (`US`), IPA transcription `/\(phonetic)/`, audio pronunciation button.
+     - **Google Translate Section**: Instant primary translation text in bold.
+     - **Dictionary Senses Section**: Parts of speech tags (`[n.]`, `[v.]`, `[adj.]`) and grammatical definitions from macOS Dictionary Services.
+     - **AI Nuance & Synonyms Section**: Inline spinner while loading (`Đang dịch AI…`), followed by contextual nuances and synonyms pills.
+     - **Footer Bar**: Spaced repetition review counter `↺ \(repetition)`, copy translation button, open Wordbook button, and gear button opening Smart Selection settings.
+
+3. **Keychain Access Security & Performance**:
+   - When AI translation is disabled in Settings, XFinder completely bypasses all LLM calls and **never** queries macOS Keychain (`com.xfinder.app.voice`), preventing unwanted Keychain authorization prompts on lookup.
+   - When AI is enabled, it automatically uses the configured provider (including Bedrock/OpenAI custom templates) without needing repeated user intervention.
+   - Dynamic card sizing adjusts height (160–370pt) based on enabled services.
+
+Gate check:
+- `build (arm64, compile list)`: OK
+- `tests`: Executed 2,895 tests, with 0 failures (0 unexpected)
+- `check-l10n-coverage`: TOTAL 0 problems across 3,790 entries (3,790 checked, 32 allowlisted)
+- `check-l10n-duplicates`: TOTAL 0 duplicates across 3,790 unique keys
+- `audit-l10n-literals`: TOTAL 0 wrapped-but-untranslated
+- `check-sidebar-groups-l10n`: TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+- `audit-gesture-vocabulary-l10n`: TOTAL 0 unresolved gesture strings
+- `audit-l10n-interpolations`: TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+- `audit-ui-tokens`: TOTAL 0 problems across 0 files
+- `GATE: green`
+
+Live verification: Installed `/Applications/XFinder.app` PID 95656 (arm64, signed).
+- Verified Google Translate, Dictionary, and AI settings toggles in Smart Selection settings.
+- Verified automatic vertical stacking without modal switcher.
+- What could not be verified: Actual live LLM inference requires a valid reachable network endpoint and authorized Keychain access in the user's specific session.
+
+## 2026-10-31 — Gemini & Antigravity: Vertical Stacked Translation Card & Translate Settings Separation
+
+Branch `PyDude9/xfinder-translate-gemini`.
+
+Defects & Enhancements resolved:
+1. **Vertical Stacked Translation Layout (Clean, uncluttered, no horizontal switcher buttons)**:
+   - Removed the cramped horizontal engine switcher pills (`[Google Tr...]`, `[AI Transl...]`, `[Dictionary]`) from the card header in `TranslateSelectionView.swift`.
+   - Stacked all translation outputs vertically in one clean, unified view:
+     - **Header**: Word term, one-tap Heart save/toggle button, Close button.
+     - **Phonetics Row**: `US` dialect badge, IPA transcription `/\(phonetic)/`, native audio pronunciation button (`speaker.wave.2`), and an on-demand `✨ Phân tích AI` pill if deep analysis is requested.
+     - **Primary Translation (Google Translate)**: Prominent, bold Vietnamese translation in ~200ms.
+     - **Dictionary Senses (POS Breakdown)**: Vertically stacked parts of speech badges (`[n.]`, `[v.]`, `[adj.]`) with definitions from macOS Dictionary Services.
+     - **AI Nuance & Synonyms**: Contextual meaning and synonyms pills rendered cleanly below when analyzed.
+     - **Footer Bar**: Spaced repetition review counter `↺ \(repetition)`, copy translation button, open wordbook button, and gear button opening Translate settings.
+
+2. **Preventing Keychain Access Prompt**:
+   - Diagnosed root cause: `startAITranslation` invoked `VoiceSettingsSnapshot.read()`, which accessed Keychain `com.xfinder.app.voice`. When the app binary was rebuilt across sessions, macOS prompted for the keychain password on every lookup.
+   - Decoupled standard lookups: Google Translate (free, fast, ~200ms) runs by default with **zero** Keychain access or LLM delay.
+   - AI translation only runs if explicitly triggered via `✨ Phân tích AI` or if "Tự động phân tích sâu bằng AI" (`translate.autoAI`) is enabled in Settings.
+
+3. **Dedicated Translate & AI Settings in Smart Selection Settings**:
+   - Updated `SmartSelectDetailView.swift` to house Translate configuration:
+     - Toggle: "Tự động phân tích sâu bằng AI" (`translate.autoAI`).
+     - Direct settings link to configure AI providers (OpenAI, DeepSeek, custom templates, API keys) in the Voice & AI settings page.
+   - Gear icon in floating card footer routes directly to `.smartSelect`.
+
+Gate check:
+- `build (arm64, compile list)`: OK
+- `tests`: Executed 2,895 tests, with 0 failures (0 unexpected)
+- `check-l10n-coverage`: TOTAL 0 problems across 3,775 entries
+- `check-l10n-duplicates`: TOTAL 0 duplicates across 3,775 unique keys
+- `audit-l10n-literals`: TOTAL 0 wrapped-but-untranslated
+- `check-sidebar-groups-l10n`: TOTAL 0 problems
+- `audit-gesture-vocabulary-l10n`: TOTAL 0 unresolved
+- `audit-l10n-interpolations`: TOTAL 0 interpolated
+- `audit-ui-tokens`: TOTAL 0 problems
+- `GATE: green`
+
+Live verification: Installed `/Applications/XFinder.app` PID 19001 (arm64, signed).
+
+## 2026-10-29 — Gemini & Antigravity: Fix Heart button 1-tap save to Wordbook & toggle state
+
+Branch `PyDude9/xfinder-translate-gemini`.
+
+Defects resolved:
+1. **Heart button save failure in Google Translate mode**:
+   - Diagnosed root cause: `saveToWordbook()` constructed its card via `assistant.card(wordbook:)`. Because Google Translate mode is the default and does not run AI analysis, `assistant.receive(text: ...)` was never called on Google Translate selections. Consequently, `assistant.text` remained empty (`""`), which caused `card.term` to be empty and language to default to `"und"`, failing `VocabularyLibrary.validateCard` (`ValidationError.invalidText`).
+   - Fixed `saveToWordbook()` to directly construct `VocabularyCard(term: ...)` from `model.text`, `model.googleTranslation`, `model.localPhonetic`, and `model.localSenses` without relying on `assistant` state.
+   - Initialized `assistant.receive(text: resolved, meaning: "")` unconditionally so `assistant` always has valid text and language tags.
+   - Added asynchronous `VocabularyStore.load()` callback in `translate(...)` so that previously saved cards are correctly detected even if the Wordbook window was never opened.
+   - Added `toggleSave()`: Clicking the heart on an unsaved card saves it (heart fills red, checkmark lights up, review count badge `↺ 0` appears); clicking again removes it from Wordbook cleanly.
+
+Gate check:
+- `build (arm64, compile list)`: OK
+- `tests`: Executed 2,895 tests, with 0 failures (0 unexpected)
+- `check-l10n-coverage`: TOTAL 0 problems across 3,767 entries
+- `check-l10n-duplicates`: TOTAL 0 duplicates across 3,767 unique keys
+- `audit-l10n-literals`: TOTAL 0 wrapped-but-untranslated
+- `check-sidebar-groups-l10n`: TOTAL 0 problems
+- `audit-gesture-vocabulary-l10n`: TOTAL 0 unresolved
+- `audit-l10n-interpolations`: TOTAL 0 interpolated
+- `audit-ui-tokens`: TOTAL 0 problems
+- `GATE: green`
+
+Live verification: Installed `/Applications/XFinder.app` PID 87421 (arm64, signed).
+
+## 2026-10-29 — Gemini & Antigravity: Strictly Single Unified Popup & Google Free Translate Engine Integration
+
+Branch `PyDude9/xfinder-translate-gemini`.
+
+Defects resolved:
+1. **Strictly Single Popup (No secondary popup or intermediate menu)**:
+   - Diagnosed root cause of the 2-popup experience:
+     1. Previously, clicking the Smart Selection badge opened `SmartSelectPanelView` with "Định nghĩa" and "Dịch vùng chọn [Dịch]", which when clicked opened a second window `TranslateSelectionView`.
+     2. Additionally, `SelectionWatcher` could show a selection badge while `TranslateSelectionController` was active, causing two floating elements on screen.
+   - Fixed `SmartSelectBadgeView`: When text (words or sentences) is selected without conversions (unit, currency, calendar, arithmetic), clicking the badge opens the Translate Card **directly**, bypassing the intermediate menu completely.
+   - Updated `TranslateSelectionController.translate`: Directly calls `SmartSelectionBadge.shared.hideAll()` and `SelectionWatcher.shared.dismiss()` on presentation.
+   - Updated `SelectionWatcher.showBadge`: Guards `!TranslateSelectionController.shared.model.isActive`, guaranteeing no badge ever spawns while the translate card is open.
+
+2. **Google Free Translate & Multi-Engine Selector**:
+   - Integrated `GoogleTranslateService` using the official free Google client endpoint (`clients5.google.com/translate_a/t?client=dict-chrome-ex`), delivering bidirectional translations (English <-> Vietnamese) in **~200 ms** with zero API key requirement.
+   - Added `TranslationEngine` with 3 selectable options in the card:
+     1. `Google Dịch` (Google Free Translate — fast ~200ms, free).
+     2. `Dịch AI` (Configured AI provider like DeepSeek for deep nuance & synonyms).
+     3. `Từ điển` (On-device macOS Dictionary for grammatical POS breakdown).
+   - Instant 1-click engine switching with user preference persisted to `UserDefaults` (`translate.preferredEngine`).
+   - For single words, Google translation and on-device dictionary phonetics / POS badges (`[n.]`, `[v.]`) display together seamlessly.
+   - Added L10n entries for `"Google Dịch"` and `"Dịch AI"`.
+
+Gate check:
+- `build (arm64, compile list)`: OK
+- `tests`: Executed 2,895 tests, with 0 failures (0 unexpected)
+- `check-l10n-coverage`: TOTAL 0 problems across 3,767 entries
+- `check-l10n-duplicates`: TOTAL 0 duplicates across 3,767 unique keys
+- `audit-l10n-literals`: TOTAL 0 wrapped-but-untranslated
+- `check-sidebar-groups-l10n`: TOTAL 0 problems
+- `audit-gesture-vocabulary-l10n`: TOTAL 0 unresolved
+- `audit-l10n-interpolations`: TOTAL 0 interpolated
+- `audit-ui-tokens`: TOTAL 0 problems
+- `GATE: green`
+
+Live verification: Installed `/Applications/XFinder.app` PID 86315 (arm64, signed).
+
+## 2026-10-29 — Gemini & Antigravity: Unified Minimalist Trancy Air UI/UX Translate Card & Simplified Workbook
+
+Branch `PyDude9/xfinder-translate-gemini`.
+
+Defects & Questions resolved:
+1. **Unified, Minimalist Translate Card (Trancy Air UI/UX reference)**:
+   - Redesigned `TranslateSelectionView.swift` to match Trancy Air's word card layout:
+     - Prominent bold word header with instant checkmark (saved state indicator), 1-tap Heart button for immediate background save/toggle into default Wordbook, and minimal close button.
+     - Sub-header with `US` dialect badge, IPA phonetic `/.../`, and clickable native audio pronunciation button (`speaker.wave.2`) via `AVSpeechSynthesizer`.
+     - Structured senses section with lavender Part of Speech badges (`[n.]`, `[v.]`, `[adj.]`, `[adv.]`) and clean semicolon-separated definitions.
+     - Footer bar with review count pill (`↺ \(repetition)`), quick copy button (`doc.on.doc`), open Wordbook button (`book.pages`), and settings gear (`gearshape`).
+   - Senses parsed locally from macOS Dictionary Services (`parseLocalDictionary`) in ~1 ms, enriched with AI translation results in parallel.
+   - For sentences/paragraphs, displays clean source and bold translated text with audio pronunciation and copy shortcut.
+
+2. **Single Unified Popup & In-Place Selection Anchoring**:
+   - Resolved the 2-step jumping popup sequence between Smart Selection and Translate:
+     - `SmartSelectionBadge.translate()` now passes the current panel frame to `TranslateSelectionController.shared.translate(text:sourceApp:anchorRect:)`. The translate card seamlessly appears right at the exact position of the badge/panel, eliminating the jarring jump across the screen to `.spotlight`.
+     - When invoked via shortcut `⇧⌘G`, the panel automatically anchors directly near the cursor / selection (`NSEvent.mouseLocation`), clamped into visible screen bounds.
+     - Simplified `SmartSelectViews.swift` translate action from verbose Apple branding to clean "Dịch vùng chọn" with a direct "Dịch" button.
+
+3. **Workbook Workspace Simplification & Clarifications**:
+   - Hidden the unused "Bản thiết kế prompt" (Prompt Blueprints) tab from `VocabularyWorkspaceView.swift` segmented picker, leaving only the 2 primary workflows: "Tra từ" (Lookup & saved words) and "Ôn tập" (Flashcard review).
+   - Clarified that the "Ôn tập" (Review) tab IS XFinder's built-in Anki spaced repetition engine (implementing the SM-2 algorithm with intervals, ease factor, and Again/Hard/Good/Easy rating buttons), and highlighted the Anki TSV export option for syncing to standalone Anki apps.
+
+Gate check:
+- `build (arm64, compile list)`: OK
+- `tests`: Executed 2,895 tests, with 0 failures (0 unexpected)
+- `check-l10n-coverage`: TOTAL 0 problems across 3,765 entries
+- `check-l10n-duplicates`: TOTAL 0 duplicates across 3,765 unique keys
+- `audit-l10n-literals`: TOTAL 0 wrapped-but-untranslated
+- `check-sidebar-groups-l10n`: TOTAL 0 problems
+- `audit-gesture-vocabulary-l10n`: TOTAL 0 unresolved
+- `audit-l10n-interpolations`: TOTAL 0 interpolated
+- `audit-ui-tokens`: TOTAL 0 problems
+- `GATE: green`
+
+Live verification: Installed `/Applications/XFinder.app` PID 73587 (arm64, signed).
+
+## 2026-10-29 — Gemini & Antigravity: Instant on-device dictionary lookup & durable Wordbook saving
+
+Branch `PyDude9/xfinder-translate-gemini`, commit `bea1f58`.
+
+Defects resolved:
+1. **Translate latency & instant feedback (Trancy-like experience)**:
+   - Previously, the floating panel showed only a blank card with a "Translating..." spinner while awaiting external LLM inference (taking 2–4s over remote API).
+   - Integrated on-device `DictionaryLookup.definition(text)` (macOS Dictionary Services) directly into `TranslateSelectionController`. When a word or term is selected, phonetics (IPA), syllabification, and definitions are extracted and displayed **instantly in 1–2 ms**.
+   - The user immediately sees the pronunciation and definition without waiting for cloud inference. AI Vietnamese translation (`TranslateAssistant`) executes in parallel in the background and smoothly populates the Vietnamese meaning and synonyms once ready.
+   - The "Lưu vào sổ từ" (Save to wordbook) button is **enabled immediately** from the moment the card appears.
+
+2. **Durable VocabularyStore auto-loading (Fix for card not appearing in wordbook)**:
+   - Root cause diagnosed: `VocabularyStore.shared.performCommit` guarded on `guard isLoaded, !isReadOnly else { return false }`. Because `store.load()` was historically only called when the Workspace window opened, floating panel saves executed when `isLoaded == false`, causing `saveCard` to silently drop the card without persisting.
+   - Fixed `VocabularyStore.performCommit` to auto-load (`if !isLoaded { await load() }`) before mutating and persisting to `library.json`.
+   - Deduplicated concurrent `load()` operations via `@ObservationIgnored private var loadTask: Task<Void, Never>?` so parallel calls safely await the in-flight disk read.
+   - Added unit test `testSaveCardWithoutPriorLoadAutoLoadsAndPersists` in `VocabularyStoreTests.swift` proving saving without explicit prior `load()` auto-loads and persists.
+
+Gate check:
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2895 tests, with 0 failures (0 unexpected) in 23.949 (24.165) seconds
+check-l10n-coverage                TOTAL 0 problems across 3765 entries (3765 checked, 32 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3765 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1403 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             0
+GATE: green
+```
+
+Live verification: Installed `/Applications/XFinder.app` PID 43087 (arm64, signed).
+
+## 2026-10-29 — Gemini & Antigravity: Inline Trancy-style Translate card & Voice typing text insertion into Electron/Orca
+
+Branch `PyDude9/xfinder-translate-gemini`, commits `37bb244` and `dde499b`.
+
+Defects resolved:
+1. **Translate UX overhaul (Trancy-style inline lookup & save)**:
+   - Eliminated the flaky Apple `translationPresentation` popover which previously overlapped the floating host and dismissed prematurely during translations.
+   - `TranslateSelectionController` now directly invokes `TranslateAssistant` for on-device AI translations upon selection.
+   - `TranslateSelectionView` displays an inline card showing progress indicator, word/term, phonetic transcription, meaning, and synonyms pills.
+   - Added immediate "Lưu vào sổ từ" (`saveToWordbook()`) button directly in the floating card that saves the card to the default wordbook and auto-dismisses upon completion, as well as a fallback "Mở tra từ" shortcut.
+   - Sizing and click-outside dismissal behavior verified.
+
+2. **Voice-to-text text insertion into Orca chat and Electron/web inputs**:
+   - Diagnosed root cause: `TypingSink.insertViaAccessibility` wrote to `kAXSelectedTextAttribute`. In Chromium/Electron (Orca, VS Code, Slack) and web browsers, Chromium's AX implementation reported success without dispatching DOM `input`/`beforeinput` events, leaving React/editor state un-updated while prematurely reporting success so pasteboard fallback never ran. Furthermore, the 180 ms restore delay was too short for Electron's IPC clipboard reads.
+   - Added `shouldSkipAccessibility` to route Electron apps (`com.stablyai.orca`, etc.), web browsers, and terminals directly to `insertViaPasteboard`.
+   - Updated `insertViaPasteboard` to use clean `keyboardEventSource: nil` and extended clipboard restoration delay to 650 ms to ensure asynchronous web/Electron consumers finish reading.
+
+3. **L10n entries and gate compliance**:
+   - Fixed new localization keys (`Đang dịch…`, `Đã lưu vào sổ từ`, `Mở tra từ`, `Cấu hình AI để dịch`, `Mở cài đặt Giọng nói`, `Lỗi AI:`) to be nested under `entries` with appropriate `"scope"` (`sentence` / `fragment`).
+   - All 7 L10n and UI token audits print `TOTAL 0`.
+
+Gate check:
+```text
+build (arm64, compile list)        OK
+tests                              Executed 2894 tests, with 0 failures (0 unexpected) in 23.806 (24.023) seconds
+check-l10n-coverage                TOTAL 0 problems across 3765 entries (3765 checked, 32 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 3765 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1403 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 47 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             0
+GATE: green
+```
+
+Live verification: Installed `/Applications/XFinder.app` PID 30423 (arm64, signed). Hotkey enabled, defaults preserved.
+

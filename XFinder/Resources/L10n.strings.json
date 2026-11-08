@@ -14860,7 +14860,7 @@
       "scope": "sentence"
     },
     "Từ điển trên máy": {
-      "en": "Local dictionary",
+      "en": "On-device Dictionary",
       "scope": "sentence"
     },
     "Nghĩa / bản dịch": {
@@ -15457,6 +15457,130 @@
     },
     "Trang và màu": {
       "en": "Pages and colour",
+      "scope": "sentence"
+    },
+    "AI LLM (OpenAI / DeepSeek / Tùy chỉnh)": {
+      "en": "AI LLM (OpenAI / DeepSeek / Custom)",
+      "scope": "sentence"
+    },
+    "Cài đặt Dịch & AI": {
+      "en": "Translate & AI Settings",
+      "scope": "sentence"
+    },
+    "Cấu hình AI để dịch": {
+      "en": "Configure AI to translate",
+      "scope": "sentence"
+    },
+    "Cấu hình nhà cung cấp AI trong trang Giọng nói": {
+      "en": "Configure AI providers in the Voice page",
+      "scope": "sentence"
+    },
+    "Đã lưu vào sổ từ": {
+      "en": "Saved to wordbook",
+      "scope": "sentence"
+    },
+    "Đang dịch…": {
+      "en": "Translating…",
+      "scope": "sentence"
+    },
+    "Dịch AI": {
+      "en": "AI Translate",
+      "scope": "sentence"
+    },
+    "Dịch vụ dịch mặc định": {
+      "en": "Default translation service",
+      "scope": "sentence"
+    },
+    "Google Dịch": {
+      "en": "Google Translate",
+      "scope": "sentence"
+    },
+    "Google Dịch (Nhanh, miễn phí)": {
+      "en": "Google Translate (Fast, free)",
+      "scope": "sentence"
+    },
+    "Gửi văn bản tới AI để phân tích ngữ cảnh và tìm từ đồng nghĩa. Cần cấu hình trong trang Giọng nói.": {
+      "en": "Send text to AI to analyze context and find synonyms. Requires configuration in the Voice page.",
+      "scope": "sentence"
+    },
+    "Lỗi AI:": {
+      "en": "AI error:",
+      "scope": "fragment"
+    },
+    "Mở cài đặt Giọng nói": {
+      "en": "Open Voice settings",
+      "scope": "sentence"
+    },
+    "Mở tra từ": {
+      "en": "Open lookup",
+      "scope": "sentence"
+    },
+    "Từ điển trên máy (Offline)": {
+      "en": "On-device Dictionary (Offline)",
+      "scope": "sentence"
+    },
+    "Tự động phân tích sâu bằng AI": {
+      "en": "Automatically analyze deeply with AI",
+      "scope": "sentence"
+    },
+    "Bôi đen chữ ở app bất kỳ, bấm ⇧⌘G hoặc bấm nút Dịch trên vùng chọn để xem các bản dịch đồng thời.": {
+      "en": "Select text in any app, press ⇧⌘G or click Translate on selection to see all translations simultaneously.",
+      "scope": "sentence"
+    },
+    "Dịch vụ hiển thị khi dịch": {
+      "en": "Translation services",
+      "scope": "sentence"
+    },
+    "Tất cả các dịch vụ được bật sẽ hiển thị đồng thời khi tra cứu.": {
+      "en": "All enabled services will be displayed simultaneously during lookup.",
+      "scope": "sentence"
+    },
+    "Google Dịch (Miễn phí, nhanh)": {
+      "en": "Google Translate (Free, fast)",
+      "scope": "sentence"
+    },
+    "Dịch trực tiếp qua endpoint Google, phản hồi trong ~200ms, không cần khoá API.": {
+      "en": "Direct translation via Google endpoint, ~200ms response time, no API key required.",
+      "scope": "sentence"
+    },
+    "Từ điển macOS (Nhanh trên máy, tra từ loại)": {
+      "en": "macOS Dictionary (Fast on-device, parts of speech)",
+      "scope": "sentence"
+    },
+    "Tra cứu từ điển tích hợp sẵn trên macOS, hiển thị phân loại danh từ, động từ, tính từ.": {
+      "en": "Look up from macOS built-in dictionary, showing noun, verb, and adjective senses.",
+      "scope": "sentence"
+    },
+    "Dịch bằng AI (Mô hình ngôn ngữ lớn)": {
+      "en": "AI Translation (Large language models)",
+      "scope": "sentence"
+    },
+    "Dịch ngữ cảnh, phân tích sâu và gợi ý từ đồng nghĩa bằng OpenAI, Claude, DeepSeek hoặc Bedrock.": {
+      "en": "Contextual translation, deep nuance, and synonyms with OpenAI, Claude, DeepSeek, or Bedrock.",
+      "scope": "sentence"
+    },
+    "Đang dịch AI…": {
+      "en": "Translating with AI…",
+      "scope": "sentence"
+    },
+    "Đã lưu khoá API vào Keychain.": {
+      "en": "API key saved to Keychain.",
+      "scope": "sentence"
+    },
+    "Đã xóa khoá API.": {
+      "en": "API key removed.",
+      "scope": "sentence"
+    },
+    "Chưa bật dịch vụ dịch nào trong Cài đặt.": {
+      "en": "No translation service is enabled in Settings.",
+      "scope": "sentence"
+    },
+    "Bản dịch AI": {
+      "en": "AI Translation",
+      "scope": "sentence"
+    },
+    "Google Dịch, Từ điển máy và AI": {
+      "en": "Google Translate, macOS Dictionary, and AI",
       "scope": "sentence"
     }
   }

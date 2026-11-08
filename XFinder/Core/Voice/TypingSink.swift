@@ -20,8 +20,8 @@ public final class TypingSink: @unchecked Sendable, TypingSinkProtocol {
     public static let shared = TypingSink()
 
     /// One captured pasteboard item: every type it carried, with its bytes.
-    private struct CapturedItem {
-        let types: [(NSPasteboard.PasteboardType, Data)]
+    public struct CapturedItem: Sendable {
+        public let types: [(NSPasteboard.PasteboardType, Data)]
     }
 
     private let lock = NSLock()
@@ -70,17 +70,64 @@ public final class TypingSink: @unchecked Sendable, TypingSinkProtocol {
     private func insertViaAccessibility(text: String) -> Bool {
         guard AXIsProcessTrusted() else { return false }
 
+        // Web browsers, Electron apps (like Orca, VS Code, Slack), and terminals do not
+        // reliably dispatch DOM input events when text is mutated through AXSelectedTextAttribute.
+        // For those, always prefer Pasteboard + ⌘V so the web framework receives the paste event.
+        if shouldSkipAccessibility(for: NSWorkspace.shared.frontmostApplication) {
+            return false
+        }
+
         let systemWide = AXUIElementCreateSystemWide()
         var focusedRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
               let focused = focusedRef else { return false }
 
         let element = focused as! AXUIElement
+        if isWebOrNonNativeElement(element) {
+            return false
+        }
+
         var settable: DarwinBoolean = false
         guard AXUIElementIsAttributeSettable(element, kAXSelectedTextAttribute as CFString, &settable) == .success,
               settable.boolValue else { return false }
 
         return AXUIElementSetAttributeValue(element, kAXSelectedTextAttribute as CFString, text as CFTypeRef) == .success
+    }
+
+    private func shouldSkipAccessibility(for app: NSRunningApplication?) -> Bool {
+        guard let app else { return false }
+        if let bundleID = app.bundleIdentifier?.lowercased() {
+            let patterns = [
+                "orca", "electron", "chrome", "safari", "firefox", "brave", "edge",
+                "slack", "discord", "vscode", "code", "cursor", "obsidian",
+                "terminal", "iterm", "ghostty", "kitty", "alacritty", "warp"
+            ]
+            if patterns.contains(where: { bundleID.contains($0) }) {
+                return true
+            }
+        }
+        if let bundleURL = app.bundleURL {
+            let frameworksURL = bundleURL.appendingPathComponent("Contents/Frameworks")
+            if FileManager.default.fileExists(atPath: frameworksURL.appendingPathComponent("Electron Framework.framework").path) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private func isWebOrNonNativeElement(_ element: AXUIElement) -> Bool {
+        var roleRef: CFTypeRef?
+        if AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleRef) == .success,
+           let role = roleRef as? String {
+            if role == "AXWebArea" || role == "AXLink" || role == "AXGroup" {
+                return true
+            }
+        }
+        var domRef: CFTypeRef?
+        if AXUIElementCopyAttributeValue(element, "AXDOMIdentifier" as CFString, &domRef) == .success {
+            return true
+        }
+        return false
     }
 
     // MARK: - Tier 2: Pasteboard + ⌘V
@@ -94,10 +141,9 @@ public final class TypingSink: @unchecked Sendable, TypingSinkProtocol {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
 
-        let source = CGEventSource(stateID: .combinedSessionState)
         let vKeyCode: CGKeyCode = 9
-        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true),
-              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: false) else {
+        guard let keyDown = CGEvent(keyboardEventSource: nil, virtualKey: vKeyCode, keyDown: true),
+              let keyUp = CGEvent(keyboardEventSource: nil, virtualKey: vKeyCode, keyDown: false) else {
             return
         }
         keyDown.flags = .maskCommand
@@ -106,14 +152,15 @@ public final class TypingSink: @unchecked Sendable, TypingSinkProtocol {
         keyUp.post(tap: .cghidEventTap)
 
         guard restoresClipboard, !restore.isEmpty else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+        // 650 ms gives Electron and WebKit renderers sufficient time to read the pasteboard over IPC
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
             TypingSink.restorePasteboard(restore)
         }
     }
 
     // MARK: - Pasteboard capture / restore
 
-    private static func capturePasteboard() -> [CapturedItem] {
+    public static func capturePasteboard() -> [CapturedItem] {
         guard let items = NSPasteboard.general.pasteboardItems else { return [] }
         return items.compactMap { item in
             let types = item.types.compactMap { type -> (NSPasteboard.PasteboardType, Data)? in
@@ -124,7 +171,7 @@ public final class TypingSink: @unchecked Sendable, TypingSinkProtocol {
         }
     }
 
-    private static func restorePasteboard(_ items: [CapturedItem]) {
+    public static func restorePasteboard(_ items: [CapturedItem]) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         let restored = items.map { captured -> NSPasteboardItem in

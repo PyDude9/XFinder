@@ -23,17 +23,28 @@ final class VocabularyStore {
 
     init(directory: URL) { self.directory = directory; disk = VocabularyDisk(directory: directory) }
 
+    @ObservationIgnored private var loadTask: Task<Void, Never>?
+
     func load() async {
-        guard !isLoaded, !isLoading else { return }
-        isLoading = true
-        let result = await disk.load()
-        library = result.library
-        issue = result.issue
-        recoveredBackup = result.recovered
-        isReadOnly = result.blocked
-        hasPersistedData = result.persisted
-        isLoaded = true
-        isLoading = false
+        if isLoaded { return }
+        if let existing = loadTask {
+            await existing.value
+            return
+        }
+        let task = Task { @MainActor in
+            isLoading = true
+            let result = await disk.load()
+            library = result.library
+            issue = result.issue
+            recoveredBackup = result.recovered
+            isReadOnly = result.blocked
+            hasPersistedData = result.persisted
+            isLoaded = true
+            isLoading = false
+            loadTask = nil
+        }
+        loadTask = task
+        await task.value
     }
 
     @discardableResult
@@ -100,6 +111,7 @@ final class VocabularyStore {
     }
 
     private func performCommit(_ mutation: (inout VocabularyLibrary) throws -> Void) async -> Bool {
+        if !isLoaded { await load() }
         guard isLoaded, !isReadOnly else { return false }
         var next = library
         do { try mutation(&next); try next.validate() } catch { issue = .invalidImport; return false }

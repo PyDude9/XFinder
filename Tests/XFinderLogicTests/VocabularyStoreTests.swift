@@ -108,4 +108,21 @@ final class VocabularyStoreTests: XCTestCase {
         XCTAssertEqual(store.issue, .writeFailed)
         XCTAssertEqual(try Data(contentsOf: blocked), original)
     }
+
+    func testSaveCardWithoutPriorLoadAutoLoadsAndPersists() async throws {
+        let folder = try fixture()
+        let store = VocabularyStore(directory: folder)
+        // Notice: do NOT call await store.load() first.
+        let now = Date(timeIntervalSince1970: 1_800_000_100)
+        let card = VocabularyCard(term: "obstacle", meaning: "chướng ngại vật", createdAt: now, updatedAt: now)
+        let saved = await store.saveCard(card, now: now)
+        XCTAssertNotNil(saved)
+        XCTAssertTrue(store.isLoaded)
+
+        let reloaded = VocabularyStore(directory: folder)
+        await reloaded.load()
+        XCTAssertEqual(reloaded.library.cards.count, 1)
+        XCTAssertEqual(reloaded.library.cards.first?.term, "obstacle")
+        XCTAssertEqual(reloaded.library.cards.first?.meaning, "chướng ngại vật")
+    }
 }

@@ -44,7 +44,7 @@ final class SmartSelectionBadge {
 
     func hideAll() {
         badge?.orderOut(nil)
-        panel?.hide()
+        panel?.orderOut(nil)
     }
 
     // MARK: Panel
@@ -107,8 +107,12 @@ final class SmartSelectionBadge {
 
     func translate() {
         let text = model.text, app = model.sourceApp
-        closePanel()
-        TranslateSelectionController.shared.translate(text: text, sourceApp: app)
+        let frame = panel?.frame ?? badge?.frame
+        // Hide both badge and panel immediately (orderOut is synchronous) before the translate panel appears.
+        badge?.orderOut(nil)
+        panel?.orderOut(nil)
+        SelectionWatcher.shared.dismiss()
+        TranslateSelectionController.shared.translate(text: text, sourceApp: app, anchorRect: frame)
     }
 
     /// One event in the default calendar. Asked from the panel's button only; the button shows the title and the

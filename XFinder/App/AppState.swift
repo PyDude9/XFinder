@@ -41,6 +41,7 @@ final class MainWindowController: NSObject, NSWindowDelegate {
     private(set) var window: NSWindow?
 
     func showWindow(destination: SidebarDestination? = nil) {
+        TranslateSelectionController.shared.dismiss()
         if let destination {
             AppState.shared.selection = destination
         }
@@ -93,6 +94,7 @@ final class MainWindowController: NSObject, NSWindowDelegate {
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         // D4: hiding the window does not remove the Library view from the hierarchy, so its
         // .onDisappear never fires — relock here or decrypted clips outlive "leaving the page".
+        TranslateSelectionController.shared.dismiss()
         ClipboardLibraryStore.shared.relockAll()
         sender.orderOut(nil)
         return false
@@ -125,6 +127,7 @@ final class AppState {
     }
 
     func navigate(to destination: SidebarDestination) {
+        TranslateSelectionController.shared.dismiss()
         select(destination)
         bringMainWindowFront()
     }
