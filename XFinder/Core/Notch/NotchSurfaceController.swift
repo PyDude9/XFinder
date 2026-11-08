@@ -431,7 +431,7 @@ final class NotchSurfaceController {
             guard let id = Self.displayID(for: screen) else { return nil }
             return NotchDisplayTargetRules.Display(
                 id: id,
-                isMain: screen == NSScreen.main,
+                isMain: screen == NSScreen.screens.first,
                 hasPhysicalNotch: screen.auxiliaryTopLeftArea != nil && screen.auxiliaryTopRightArea != nil
             )
         }

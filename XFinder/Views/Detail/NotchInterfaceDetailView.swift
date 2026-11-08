@@ -19,7 +19,7 @@ private func notchConnectedDisplays() -> [NotchDisplayChoice] {
         guard seen.insert(id).inserted else { return nil }   // mirrored screens report the same display twice
         return NotchDisplayChoice(id: id,
                                   name: screen.localizedName,
-                                  isMain: screen == NSScreen.main,
+                                  isMain: screen == NSScreen.screens.first,
                                   hasPhysicalNotch: screen.auxiliaryTopLeftArea != nil && screen.auxiliaryTopRightArea != nil)
     }
 }
