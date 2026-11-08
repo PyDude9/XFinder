@@ -15590,6 +15590,106 @@
     "Gửi chữ bạn bôi đen tới Google qua một địa chỉ không chính thức (không cần khoá API, ~200 ms). Google có thể chặn hay đổi địa chỉ này bất cứ lúc nào; tắt nếu chữ bạn chọn không được rời máy.": {
       "en": "Sends the text you highlight to Google through an unofficial address (no API key, ~200 ms). Google can block or change it at any time; turn it off if your selection must not leave this Mac.",
       "scope": "sentence"
+    },
+    "Ảnh động nhiều khung hình chưa được hỗ trợ; tệp gốc được giữ nguyên: ": {
+      "en": "Animated images are not supported; the original file was left unchanged: ",
+      "scope": "fragment"
+    },
+    "Ảnh đã thay đổi sau khi xem trước; chưa tạo bản mới: ": {
+      "en": "The image changed after preview; no new copy was created: ",
+      "scope": "fragment"
+    },
+    "Không thể áp dụng thông số ảnh: ": {
+      "en": "The image settings could not be applied: ",
+      "scope": "fragment"
+    },
+    "Tạo bản mới; ảnh động nhiều khung hình được giữ nguyên và không xử lý.": {
+      "en": "Create a new copy; animated images with multiple frames are left unchanged.",
+      "scope": "sentence"
+    },
+    "Xuất bản ảnh mới": {
+      "en": "Export a new image",
+      "scope": "sentence"
+    },
+    "Định dạng xuất": {
+      "en": "Output format",
+      "scope": "sentence"
+    },
+    "Cạnh dài đích": {
+      "en": "Long edge",
+      "scope": "sentence"
+    },
+    "Giữ kích thước": {
+      "en": "Keep original size",
+      "scope": "sentence"
+    },
+    "Vùng cắt — chiều rộng": {
+      "en": "Crop width",
+      "scope": "sentence"
+    },
+    "Vùng cắt — chiều cao": {
+      "en": "Crop height",
+      "scope": "sentence"
+    },
+    "Chất lượng": {
+      "en": "Quality",
+      "scope": "sentence"
+    },
+    "Phóng lớn ảnh nhỏ": {
+      "en": "Enlarge small images",
+      "scope": "sentence"
+    },
+    "Xem trước kích thước": {
+      "en": "Preview dimensions",
+      "scope": "sentence"
+    },
+    "Tạo bản mới": {
+      "en": "Create copy",
+      "scope": "sentence"
+    },
+    " × ": {
+      "en": " × ",
+      "scope": "fragment"
+    },
+    " → ": {
+      "en": " → ",
+      "scope": "fragment"
+    },
+    " px": {
+      "en": " px",
+      "scope": "fragment"
+    },
+    "Ảnh nhỏ hơn kích thước đích; sẽ bỏ qua nếu không bật phóng lớn.": {
+      "en": "The image is smaller than the target; it will be skipped unless enlargement is enabled.",
+      "scope": "sentence"
+    },
+    "Ảnh động nhiều khung hình chưa được hỗ trợ; tệp gốc được giữ nguyên.": {
+      "en": "Animated images are not supported; the original file was left unchanged.",
+      "scope": "sentence"
+    },
+    "Kích thước đích sẽ phóng lớn ảnh nhỏ; hãy bật Phóng lớn ảnh nhỏ.": {
+      "en": "The target would enlarge this small image; enable Enlarge small images to continue.",
+      "scope": "sentence"
+    },
+    "Xem trước xử lý ảnh": {
+      "en": "Image transform preview",
+      "scope": "sentence"
+    },
+    "Đang xem trước ảnh…": {
+      "en": "Previewing images…",
+      "scope": "sentence"
+    },
+    "Không có bộ ghi phù hợp để tạo bản ảnh.": {
+      "en": "No compatible image encoder is available.",
+      "scope": "sentence"
+    },
+    "Không có ảnh nào đủ điều kiện xuất.": {
+      "en": "No images are eligible for export.",
+      "scope": "sentence"
+    },
+    "Mục không đủ điều kiện hoặc bị lỗi: ": {
+      "en": "Items skipped or failed: ",
+      "scope": "fragment"
     }
   }
 }

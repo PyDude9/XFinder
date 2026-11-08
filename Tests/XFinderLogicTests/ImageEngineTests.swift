@@ -67,12 +67,26 @@ final class ImageEngineTests: XCTestCase {
         CGImageSourceCreateWithURL(u as CFURL, nil).flatMap { CGImageSourceCopyPropertiesAtIndex($0, 0, nil) as? [CFString: Any] } ?? [:]
     }
 
-    func testHeicToJpegKeepsOrientationAndProfile() {
+    func testHeicToJpegBakesOrientationAndKeepsProfile() {
         let src = makeImage("photo.heic", type: "public.heic", orientation: 6)
         guard case .success(let out) = ImageRunner.convert(src, to: .jpeg) else { return XCTFail() }
         XCTAssertEqual(out.lastPathComponent, "photo.jpg")
-        XCTAssertEqual(props(out)[kCGImagePropertyOrientation] as? Int, 6)
+        XCTAssertEqual(props(out)[kCGImagePropertyOrientation] as? Int ?? 1, 1)
         XCTAssertNotNil(props(out)[kCGImagePropertyProfileName])
+    }
+
+    func testEXIF1_6_8AreBakedIntoOutputDimensionsExactlyOnce() {
+        for orientation in [1, 6, 8] {
+            let src = makeImage("orientation-\(orientation).png", type: "public.png", orientation: orientation)
+            guard case .success(let out) = ImageRunner.transform(src, options: .init(format: .png)) else {
+                return XCTFail("orientation \(orientation)")
+            }
+            let p = props(out)
+            let shouldSwap = orientation == 6 || orientation == 8
+            XCTAssertEqual(p[kCGImagePropertyPixelWidth] as? Int, shouldSwap ? 600 : 800)
+            XCTAssertEqual(p[kCGImagePropertyPixelHeight] as? Int, shouldSwap ? 800 : 600)
+            XCTAssertEqual(p[kCGImagePropertyOrientation] as? Int ?? 1, 1)
+        }
     }
 
     func testResizeBakesTheOrientationAndShrinksTheLongEdge() {
@@ -82,6 +96,70 @@ final class ImageEngineTests: XCTestCase {
         XCTAssertEqual(p[kCGImagePropertyPixelWidth] as? Int, 300, "rotated 90°: 800×600 → 300×400")
         XCTAssertEqual(p[kCGImagePropertyPixelHeight] as? Int, 400)
         XCTAssertEqual(p[kCGImagePropertyOrientation] as? Int ?? 1, 1, "orientation must be reset after baking it in")
+    }
+
+    func testPreviewAndSaveUseSameUprightCropThenResizePlan() throws {
+        let src = makeImage("crop.jpg", type: "public.jpeg", orientation: 6)
+        let options = ImageRunner.TransformOptions(crop: .init(x: 0.25, y: 0.125, width: 0.5, height: 0.5),
+                                                   target: .width(150), format: .png)
+        guard case .success(let preview) = ImageRunner.preview(src, options: options) else { return XCTFail("preview") }
+        XCTAssertEqual(preview.plan.cropPixels.width, 300)
+        XCTAssertEqual(preview.plan.cropPixels.height, 400)
+        XCTAssertEqual(preview.plan.outputWidth, 150)
+        XCTAssertEqual(preview.plan.outputHeight, 200)
+        let sourceBefore = try Data(contentsOf: src)
+        guard case .success(let out) = ImageRunner.transform(src, options: options, expectedIdentity: preview.identity) else {
+            return XCTFail("save")
+        }
+        XCTAssertEqual(props(out)[kCGImagePropertyPixelWidth] as? Int, 150)
+        XCTAssertEqual(props(out)[kCGImagePropertyPixelHeight] as? Int, 200)
+        XCTAssertEqual(props(out)[kCGImagePropertyOrientation] as? Int ?? 1, 1)
+        XCTAssertEqual(try Data(contentsOf: src), sourceBefore, "source bytes must remain unchanged")
+    }
+
+    func testPublishingKeepsExistingCopiesAndNeverChangesTheInput() throws {
+        let src = makeImage("kept.jpg", type: "public.jpeg")
+        let original = try Data(contentsOf: src)
+        let options = ImageRunner.TransformOptions(format: .png)
+        guard case .success(let first) = ImageRunner.transform(src, options: options),
+              case .success(let second) = ImageRunner.transform(src, options: options) else { return XCTFail("save copies") }
+        XCTAssertNotEqual(first, second)
+        XCTAssertEqual(try Data(contentsOf: src), original)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: first.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: second.path))
+    }
+
+    func testPreviewIdentityRejectsChangedSourceAndNoUpscaleCreatesNothing() throws {
+        let src = makeImage("stable.png", type: "public.png")
+        let sourceBefore = try Data(contentsOf: src)
+        let options = ImageRunner.TransformOptions(target: .longestEdge(2048), format: .png)
+        guard case .success(let preview) = ImageRunner.preview(src, options: options) else { return XCTFail("preview") }
+        XCTAssertTrue(preview.willSkip)
+        XCTAssertEqual(ImageRunner.transform(src, options: options, expectedIdentity: preview.identity),
+                       .failure(.invalidTransform("Kích thước đích sẽ phóng lớn ảnh nhỏ; hãy bật Phóng lớn ảnh nhỏ.")))
+        XCTAssertEqual(try Data(contentsOf: src), sourceBefore)
+
+        try Data("changed".utf8).write(to: src)
+        XCTAssertEqual(ImageRunner.transform(src, options: options, expectedIdentity: preview.identity),
+                       .failure(.staleSource("stable.png")))
+    }
+
+    func testAnimatedGIFIsRejectedWithoutWritingAStillCopy() {
+        let first = makeImage("frame1.png", type: "public.png")
+        let second = makeImage("frame2.png", type: "public.png", orientation: 1)
+        let animated = dir.appendingPathComponent("moving.gif")
+        guard let d = CGImageDestinationCreateWithURL(animated as CFURL, "com.compuserve.gif" as CFString, 2, nil),
+              let a = CGImageSourceCreateWithURL(first as CFURL, nil).flatMap({ CGImageSourceCreateImageAtIndex($0, 0, nil) }),
+              let b = CGImageSourceCreateWithURL(second as CFURL, nil).flatMap({ CGImageSourceCreateImageAtIndex($0, 0, nil) }) else {
+            return XCTFail("Could not build GIF fixture")
+        }
+        CGImageDestinationAddImage(d, a, [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFDelayTime: 0.1]] as CFDictionary)
+        CGImageDestinationAddImage(d, b, [kCGImagePropertyGIFDictionary: [kCGImagePropertyGIFDelayTime: 0.1]] as CFDictionary)
+        XCTAssertTrue(CGImageDestinationFinalize(d))
+        let original = try! Data(contentsOf: animated)
+        XCTAssertEqual(ImageRunner.convert(animated, to: .png), .failure(.animatedUnsupported("moving.gif")))
+        XCTAssertEqual(try! Data(contentsOf: animated), original)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasPrefix("moving") }, ["moving.gif"])
     }
 
     func testBackgroundRemovalLeavesATransparentBackgroundAndAnOpaqueSubject() throws {

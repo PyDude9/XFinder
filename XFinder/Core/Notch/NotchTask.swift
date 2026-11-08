@@ -66,7 +66,7 @@ enum NotchActions {
 
 /// One running (or finished) hub job.
 struct NotchTask: Equatable {
-    enum Phase: Equatable { case running, finished, cancelled }
+    enum Phase: Equatable { case review, running, finished, cancelled }
 
     let action: NotchActions.Action
     let total: Int
@@ -76,15 +76,28 @@ struct NotchTask: Equatable {
     /// First failure's store key + detail — enough for one honest line.
     private(set) var firstFailure: (key: String, detail: String)?
     private(set) var phase: Phase = .running
+    private(set) var imageReviewRows: [ImageReviewRow] = []
 
-    init(action: NotchActions.Action, total: Int) {
+    struct ImageReviewRow: Sendable {
+        let url: URL
+        let preview: ImageRunner.TransformPreview?
+        let options: ImageRunner.TransformOptions?
+        let failure: ImageRunner.Failure?
+    }
+
+    init(action: NotchActions.Action, total: Int, awaitingImageReview: Bool = false) {
         self.action = action
         self.total = max(total, 0)
-        if self.total == 0 { phase = .finished }
+        if awaitingImageReview { phase = .review }
+        else if self.total == 0 { phase = .finished }
     }
 
     var fraction: Double { total == 0 ? 1 : Double(done + failed) / Double(total) }
     var isRunning: Bool { phase == .running }
+    var isAwaitingReview: Bool { phase == .review }
+
+    mutating func setReviewRows(_ rows: [ImageReviewRow]) { imageReviewRows = rows }
+    mutating func beginReviewedWork() { if isAwaitingReview { phase = .running } }
 
     /// A finished step. Ignored once the task is no longer running (a late callback after cancel).
     mutating func stepSucceeded(output: URL?) {
@@ -101,7 +114,7 @@ struct NotchTask: Equatable {
         if done + failed >= total { phase = .finished }
     }
 
-    mutating func cancel() { if isRunning { phase = .cancelled } }
+    mutating func cancel() { if isRunning || isAwaitingReview { phase = .cancelled } }
 
     static func == (a: NotchTask, b: NotchTask) -> Bool {
         a.action == b.action && a.total == b.total && a.done == b.done && a.failed == b.failed

@@ -18,9 +18,12 @@ final class InspectorImageChildTests: XCTestCase {
         XCTAssertTrue(CGImageDestinationFinalize(dest))
         return (dir, url)
     }
-    private func request(_ url: URL, _ op: InspectorImageRules.Operation, pixels: Int? = nil) -> InspectorImageRules.Request {
+    private func request(_ url: URL, _ op: InspectorImageRules.Operation, pixels: Int? = nil,
+                         crop: ImageTransformRules.NormalizedCrop = .full,
+                         target: ImageTransformRules.Target? = nil) -> InspectorImageRules.Request {
         var info = stat(); XCTAssertEqual(lstat(url.path, &info), 0)
-        return .init(source: url.path, expectedIdentity: InspectorImageRules.identity(path: url.path, info: info), operation: op, maxPixels: pixels)
+        return .init(source: url.path, expectedIdentity: InspectorImageRules.identity(path: url.path, info: info),
+                     operation: op, maxPixels: pixels, crop: crop, target: target)
     }
     private func dimensions(_ path: String) throws -> [CFString: Any] {
         let source = try XCTUnwrap(CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil))
@@ -37,7 +40,8 @@ final class InspectorImageChildTests: XCTestCase {
         let props = try dimensions(small)
         XCTAssertEqual(props[kCGImagePropertyPixelWidth] as? Int, 1)
         XCTAssertEqual(props[kCGImagePropertyPixelHeight] as? Int, 1)
-        XCTAssertNil(InspectorImageChild.process(request(input, .resize, pixels: 2)).output)
+        let sameSize = try XCTUnwrap(InspectorImageChild.process(request(input, .resize, pixels: 2)).output)
+        XCTAssertEqual(try dimensions(sameSize)[kCGImagePropertyPixelWidth] as? Int, 2)
     }
     func testRejectsStaleSourceAndCorruptImage() throws {
         let (dir, input) = try fixture(); defer { try? FileManager.default.removeItem(at: dir) }
@@ -68,5 +72,15 @@ final class InspectorImageChildTests: XCTestCase {
             XCTAssertEqual(try rgba(URL(fileURLWithPath: path)), expected)
         }
         XCTAssertEqual(try Data(contentsOf: input), original)
+    }
+    func testInspectorCropIsAppliedBeforeFitResizeAndBakesOrientation() throws {
+        let (dir, input) = try fixture(); defer { try? FileManager.default.removeItem(at: dir) }
+        let crop = ImageTransformRules.NormalizedCrop(x: 0.5, y: 0, width: 0.5, height: 1)
+        let path = try XCTUnwrap(InspectorImageChild.process(request(input, .png, crop: crop,
+            target: .fitInside(width: 1, height: 2))).output)
+        let props = try dimensions(path)
+        XCTAssertEqual(props[kCGImagePropertyPixelWidth] as? Int, 1)
+        XCTAssertEqual(props[kCGImagePropertyPixelHeight] as? Int, 2)
+        XCTAssertEqual(props[kCGImagePropertyOrientation] as? Int ?? 1, 1)
     }
 }
