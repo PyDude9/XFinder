@@ -15,10 +15,14 @@ Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả l�
 
 Nửa giọng nói của bản nháp Codex `XF-SETTINGS-VOICE-PERMISSIONS` (nằm 31 giờ trong worktree `xf-settings-voice`, chưa từng
 được build). Phím kích hoạt không còn xin lại quyền đã bị từ chối và báo **đúng quyền nào** thiếu; trang Nhập bằng giọng
-nói ▸ Quyền & thử nghiệm: mỗi hàng chỉ xin quyền của nó, đã từ chối ⇒ nút "Mở Cài đặt hệ thống" mở đúng ô. Kèm sửa một
-**crash có sẵn**: trả lời hộp thoại Nhận dạng giọng nói (từ Tính năng & Quyền hoặc trang Giọng nói) làm XFinder trap —
-callback bị Swift 6 gán MainActor rồi bị Speech gọi từ queue riêng (probe cùng dạng: SIGTRAP, exit 133; đối chứng `@Sendable`
-sống). Harness `scripts/mutation-check-voice.sh` 11/11 RED.
+nói ▸ Quyền & thử nghiệm: mỗi hàng chỉ xin quyền của nó, đã từ chối ⇒ nút "Mở Cài đặt hệ thống" mở đúng ô. Kèm gỡ một
+**rủi ro crash tiềm ẩn**: callback xin quyền Nhận dạng giọng nói bị Swift 6 gán MainActor kèm bước kiểm executor (SIL), trap
+nếu Speech gọi nó ngoài main thread (probe cùng dạng: SIGTRAP, exit 133). **Đính chính** `a877063`: commit đó viết "sẽ làm
+XFinder crash" — chưa đo được Speech dùng queue nào, và bản cũ xin quyền thật trong tài khoản Atlas mới **không** crash; đây
+là rủi ro, chưa phải lỗi đã tái hiện. Harness `scripts/mutation-check-voice.sh` 11/11 RED. **Chạy thật (Atlas, TCC mới tinh,
+build `ed0accf`)**: trang hiện Micro/Nhận dạng "Cần cấp quyền" + "Yêu cầu"; bấm "Yêu cầu" hàng Micro ⇒ hàng tự thành "Đã từ
+chối" + "Mở Cài đặt hệ thống" (phiên ẩn tự từ chối, không hộp thoại), hàng Nhận dạng **không đổi** (xin Micro không kéo Speech);
+xin Speech ⇒ app sống. Chưa chạy thật: phím kích hoạt (cần Trợ năng + event tap) — T-VOICE-PERM-1/3.
 
 | Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
 |:--|:--|:--|:--|

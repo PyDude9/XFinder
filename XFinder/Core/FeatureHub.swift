@@ -157,11 +157,12 @@ final class FeatureHub {
         case .screenRecording:
             if !CGPreflightScreenCaptureAccess() { _ = CGRequestScreenCaptureAccess() }
             openSettings(for: p)
-        // Both callbacks run on a framework queue. Speech's block carries no Sendable annotation, so without the explicit
-        // `@Sendable` the closure, formed in this main-actor class, inherits MainActor isolation and Swift 6 traps on
-        // entry (SIL 2026-11-08: MainActor + `_checkExpectedExecutor`; a probe of that shape: SIGTRAP, exit 133).
-        // AVFoundation's block is already Sendable in the SDK (SIL: nonisolated); it is marked too so neither depends on
-        // how an SDK annotates it (`PermissionCallbackIsolationTests`). Only the Task hops back to the main actor.
+        // Speech's block carries no Sendable annotation, so a closure written here (a main-actor class) inherits MainActor
+        // isolation and Swift 6 inserts an executor check (SIL 2026-11-08) that traps if the block is ever run off the
+        // main thread (a probe of that shape: SIGTRAP, exit 133). Which queue Speech uses was NOT measured — a request
+        // from the old code in a fresh account completed without a crash — so `@Sendable` removes a latent risk, not an
+        // observed crash. AVFoundation's block is already Sendable in the SDK (SIL: nonisolated); both are marked so
+        // neither depends on SDK annotations (`PermissionCallbackIsolationTests`). Only the Task hops to the main actor.
         case .microphone:
             if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
                 AVCaptureDevice.requestAccess(for: .audio) { @Sendable _ in Task { @MainActor in self.revision += 1 } }
