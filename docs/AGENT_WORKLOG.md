@@ -1190,7 +1190,7 @@ build, appex `+`, L10n 0); `8cbfc2f` chờ idle.
 | Task | Files | Verification | Live |
 |:--|:--|:--|:--|
 | XF-NOTCH-01 display targeting (Codex structural work) | `docs/specs/XF-NOTCH-01-display-targeting.md` | Drafted pure resolver contract, fallbacks, failure cases, and tests | NOT VERIFIED |
-| XF-NOTCH-02 Notch Settings hierarchy (OpenCode UI task) | `docs/specs/XF-NOTCH-02-interface-settings-layout.md` | Drafted UI-only scope; preserves existing keys/defaults and corrects capture wording | NOT VERIFIED |
+| XF-NOTCH-02 Notch Settings hierarchy + display target (OpenCode UI task) | `docs/specs/XF-NOTCH-02-interface-settings-layout.md` | Drafted Settings grouping and selector for XF-NOTCH-01; preserves existing keys/defaults and corrects capture wording | NOT VERIFIED |
 
 No XFinder source was changed. The Droppy dimensions/timings remain comparison data; XFinder's existing geometry and defaults are explicitly preserved. Simultaneous panels on all displays are deferred because the current controller owns one surface. `sh scripts/gate-all.sh --no-build`:
 
@@ -1207,5 +1207,5 @@ modified tracked files             0
 GATE: RED
 ```
 
-Only failure: `AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput` at `Tests/XFinderLogicTests/AgentCodexTests.swift:156` (`no ancestor named codex ⇒ no pid, never the shell's`), an environment/ancestor assumption also seen in earlier Codex worktrees. No build or live UI/display verification was run. Specs are ready for separate implementation worktrees; no agent was launched from this branch.
+Only failure: `AgentCodexTests.testTheShippedHookTagsCodexAndDropsAnswersAndToolOutput` at `Tests/XFinderLogicTests/AgentCodexTests.swift:156` (`no ancestor named codex ⇒ no pid, never the shell's`), an environment/ancestor assumption also seen in earlier Codex worktrees. No build or live UI/display verification was run. The first OC launch was paused before edits after a mismatch was found about which task owned the display-target selector; the specs now agree, and a fresh worktree will be launched from the corrected base.
 

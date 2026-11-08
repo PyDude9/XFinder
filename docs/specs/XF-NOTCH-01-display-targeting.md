@@ -38,7 +38,6 @@ Core task owner may change only:
 - `XFinder.xcodeproj/project.pbxproj`
 - `Tests/XFinderLogicTests/NotchDisplayTargetRulesTests.swift` (new)
 - `Tests/XFinderLogicTests/NotchDisplayTargetRules.swift` (new package symlink)
-- `Tests/XFinderLogicTests/FeatureKeyDefaultsTests.swift`
 - `docs/AGENT_WORKLOG.md`
 
 Paired Settings UI task may change only:
@@ -46,10 +45,9 @@ Paired Settings UI task may change only:
 - `XFinder/Views/Detail/NotchInterfaceDetailView.swift`
 - `XFinder/Resources/L10n.strings.json` (add-only)
 - `scripts/add-notch-display-target-l10n.py` (add-only helper)
-- `Tests/XFinderLogicTests/FeatureKeyDefaultsTests.swift` only if needed to assert the view default; coordinate ownership before editing this shared file.
 - `docs/AGENT_WORKLOG.md`
 
-The UI must use a new key `notch.displayTarget` with the canonical reader default `automatic`. A selected screen is stored separately as `notch.displayTargetID` (UInt32 display ID). Do not store screen names as identity. Do not add a control for “All displays” in this task.
+The UI must use a new key `notch.displayTarget` with the canonical reader default `automatic`. Supported raw values are `automatic`, `builtIn`, `main`, and `specific`. A selected screen is stored separately as `notch.displayTargetID` (UInt32-compatible integer). Do not store screen names as identity. Do not add a control for “All displays” in this task. The paired UI task owns the feature-default test row.
 
 No other source, settings, archive, permissions, window class, app identity, or distribution files may change.
 
@@ -86,7 +84,7 @@ Resolution rules:
 - Existing hover, click, file drag, shake, explicit page routing, and one-panel lifecycle remain unchanged under `automatic`.
 - The Settings choice changes only the target display and does not alter pill dimensions, page dimensions, display geometry, or fullscreen policy.
 - Reconnecting a selected display returns the surface there without requiring the user to choose it again.
-- Add an explicit test row for `notch.displayTarget` reader/view default agreement; the display ID has no default selection.
+- Pure tests verify missing/unknown target values fall back to `automatic`; XF-NOTCH-02 owns the single reader/view default agreement row for `notch.displayTarget`. The display ID has no selected-display default.
 - Run `sh scripts/mutation-check-notch.sh`, `plutil -lint XFinder.xcodeproj/project.pbxproj`, and `sh scripts/gate-all.sh` in the task worktree. For new files, verify each appears in the build log.
 - Report build, tests, mutation and live behavior separately. Builder must report live display/fullscreen behavior as NOT VERIFIED unless tested in the installed app by the owner.
 
