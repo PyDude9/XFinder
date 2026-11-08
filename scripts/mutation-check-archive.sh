@@ -11,7 +11,7 @@
 set -u
 cd "$(dirname "$0")/.."
 BK=$(mktemp -d /tmp/xf-mut-archive.XXXXXX)
-FILES="XFinder/Core/Archive/ArchiveEngine.swift XFinder/Core/Archive/ArchiveRunner.swift"
+FILES="XFinder/Core/Archive/ArchiveEngine.swift XFinder/Core/Archive/ArchiveRunner.swift XFinder/Core/Archive/SystemArchiveReader.swift XFinder/Core/Archive/ArchiveSafetyRules.swift"
 for f in $FILES; do mkdir -p "$BK/$(dirname "$f")"; cp "$f" "$BK/$f"; done
 restore() { for f in $FILES; do cp "$BK/$f" "$f"; done; }
 trap 'restore' EXIT
@@ -19,7 +19,7 @@ trap 'restore' EXIT
 # kept mutating, and a second copy started meanwhile read the first one's mutants as baseline failures (2026-10-14).
 trap 'exit 143' INT TERM
 
-FILTER='ArchiveEngine|ArchiveRunner'
+FILTER='ArchiveEngine|ArchiveRunner|SystemArchiveReader'
 fails() {
   swift test --package-path Tests --filter "$FILTER" 2>&1 \
     | awk '/Executed [0-9]+ tests, with [0-9]+ failure/ {for(i=1;i<=NF;i++) if($i=="with") f=$(i+1)} /[Ff]atal error|[Ee]xited with (unexpected )?signal/ {crash=1} END {print (crash ? "CRASH" : (f==""?"NORESULT":f))}'
@@ -39,15 +39,37 @@ PY
 base=$(fails); echo "baseline failures: $base"
 [ "$base" = "0" ] || { echo "FAIL: baseline is not green"; exit 1; }
 
-red=0; total=0
+# Guards that another layer already covers. A mutation here MUST stay GREEN — that is the claim, and it
+# is a claim about redundancy, not about coverage. Listed by name so a new survivor cannot hide among
+# them: anything not on this list that stays green is a finding.
+#
+# C8 (availability fast path): the reader itself throws `libraryUnavailable`, which maps to the same
+# failure, so removing the explicit check changes no observable behaviour. Measured: the mutant stays
+# green. The explicit check is kept so the message does not depend on how the reader fails.
+#
+# A8/A9/C5/C6 were listed here in an earlier run and are NOT any more: they were missing tests, not
+# equivalence. Each now has a test that drives the guard directly (`testThePostExtractionLinkWalkSees…`,
+# `testAMissingArchiveIsRefusedByTheIdentityGuard…`, `testAnArchiveSwappedWhileTheDecoderRuns…`), and all
+# four go RED. That is the difference between a redundant layer and an unguarded one.
+EQUIVALENT="C8"
+
+red=0; total=0; equivalent_seen=""
 run() {   # run <name> <file> <old> <new>
   total=$((total+1)); mutate "$2" "$3" "$4" || exit 2
   n=$(fails); restore
   # No "Executed … with N failures" line means the mutant did not compile or the runner died.
   # That proves nothing about the tests — it is a broken mutation, never a pass.
   if [ "$n" = "NORESULT" ]; then echo "HARNESS ERROR: $1 produced no test result (mutant did not compile?)"; exit 2; fi
-  if [ "$n" != "0" ]; then red=$((red+1)); echo "RED   $1 ($n failing)"
-  else echo "GREEN $1 (0) <-- the tests do not guard this"; fi
+  id=$(printf '%s' "$1" | cut -d' ' -f1)
+  if [ "$n" != "0" ]; then
+    red=$((red+1)); echo "RED   $1 ($n failing)"
+    case " $EQUIVALENT " in *" $id "*) echo "HARNESS ERROR: $id is listed as equivalent but the suite went RED — the list is stale"; exit 2 ;; esac
+  else
+    case " $EQUIVALENT " in
+      *" $id "*) equivalent_seen="$equivalent_seen $id"; echo "GREEN $1 (0) -- expected: covered by a redundant layer" ;;
+      *) echo "GREEN $1 (0) <-- the tests do not guard this" ;;
+    esac
+  fi
 }
 
 run "A1 two sources go to ditto again" XFinder/Core/Archive/ArchiveEngine.swift \
@@ -68,15 +90,97 @@ run "A7 tar stores the staging symlinks" XFinder/Core/Archive/ArchiveEngine.swif
   "'arguments: [\"-czhf\", output.path] + names,'" "'arguments: [\"-czf\", output.path] + names,'"
 
 run "A8 escaping links inside an archive are accepted" XFinder/Core/Archive/ArchiveRunner.swift \
-  "'        guard escaping.isEmpty else { try? fm.removeItem(at: dir); return .failure(.unsafeLinks(escaping.sorted())) }\n'" "''"
+  "'        return ArchiveEngine.escapingLinks(links).sorted()'" \
+  "'        return []'"
 
 # A9: a link walk that cannot see "._" names (as every FileManager listing is for regular ._ files — F1). bsdtar
 # creates "._x" symlinks from a foreign tar, so the guard must still see them.
 run "A9 the link check is blind to links named ._…" XFinder/Core/Archive/ArchiveRunner.swift \
   "'            while let rel = walker.nextObject() as? String {\n'" "'            while let rel = walker.nextObject() as? String {\n                if (rel as NSString).lastPathComponent.hasPrefix(\"._\") { continue }\n'"
+
+# ---- stage 03B: bounded inspection, ownership, cancellation, destination containment ----
+
+# B1: the per-entry ledger goes back to the WHOLE batch budget (Boss approval point 3, the measured trap).
+run "B1 per-entry ledger uses the whole budget again" XFinder/Core/Archive/SystemArchiveReader.swift \
+  "'            let entryBudget = remainingOverflowed ? 0 : max(0, remaining)'" \
+  "'            let entryBudget = bounds.maxDecodedBytes'"
+
+# B2: the deadline is only checked between entries, never inside the payload loop.
+run "B2 deadline leaves the block loop" XFinder/Core/Archive/SystemArchiveReader.swift \
+  "'                try checkDeadline()\n                var block: UnsafeRawPointer?\n'" \
+  "'                var block: UnsafeRawPointer?\n'"
+
+# B3: the deadline is dropped entirely.
+run "B3 deadline check removed" XFinder/Core/Archive/SystemArchiveReader.swift \
+  "'            if elapsed >= budget { throw Failure.timedOut(after: elapsed) }'" "'            _ = elapsed'"
+
+# B4: cancellation that lands before the pid is published is ignored again (the measured race).
+run "B4 early cancel no longer kills the child" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'                if cancelledEarly.withLock({ \$0 }) || Task.isCancelled {'" \
+  "'                if Task.isCancelled {'"
+
+# B5: failure cleanup deletes an output path the job never created.
+run "B5 failed compression deletes a pre-existing output" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            guard !outputPreexisted, fm.fileExists(atPath: output.path) else { return }'" \
+  "'            guard fm.fileExists(atPath: output.path) else { return }'"
+
+# B6: cleanup deletes by path without proving the job still owns the inode.
+run "B6 ownership check dropped on cleanup" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            guard isStillOwned else { return false }'" "'            _ = isStillOwned'"
+
+# B7: a destination symlink is followed again (measured: Merge wrote outside the chosen folder).
+# B7: a destination symlink is followed again (measured: Merge wrote outside the chosen folder).
+# One mutant for both call sites: the detector itself is what has to keep working.
+run "B7 destination symlink detector disabled" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            if (info.st_mode & S_IFMT) == S_IFLNK { return current }'" \
+  "'            if false { return current }'"
+
+# C1: the manifest is validated AFTER extraction instead of before (the whole 03B point).
+run "C1 pre-flight validation disabled" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        switch verdict {\n        case .rejected(let reasons):'" \
+  "'        switch ArchiveSafetyVerdict.accepted(ArchivePlan(orderedEntries: [], declaredPayloadBytes: 0, peakBytes: 0, expansionRatio: nil)) {\n        case .rejected(let reasons):'"
+
+# C2: duplicate/aliased entry names are not refused.
+run "C2 duplicate entry names accepted" XFinder/Core/Archive/ArchiveSafetyRules.swift \
+  "'                if existing.rawPath.utf8.elementsEqual(entry.rawPath.utf8) { reasons.append(.duplicatePath(key)) }'" \
+  "'                if existing.rawPath.utf8.elementsEqual(entry.rawPath.utf8) { _ = key }'"
+
+# C3: '..' entries are normalised away instead of refused.
+run "C3 dot-dot entries accepted" XFinder/Core/Archive/ArchiveSafetyRules.swift \
+  "'                reasons.append(.escapesRoot(raw))\n                return nil'" \
+  "'                continue'"
+
+# C4: absolute entries are accepted (ditto would strip the slash).
+run "C4 absolute entries accepted" XFinder/Core/Archive/ArchiveSafetyRules.swift \
+  "'        if raw.hasPrefix(\"/\") { reasons.append(.absolutePath(raw)); return nil }'" "''"
+
+# C5: the archive identity is never revalidated before extraction.
+run "C5 identity guard before extraction removed" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        guard Self.identityStillMatches(inspection.identity, at: archive) else {\n            owned.removeIfOwned()\n            return .failure(.archiveChanged(\"the archive changed after it was inspected\"))\n        }\n'" "''"
+
+# C6: the archive identity is never revalidated after extraction.
+run "C6 identity guard after extraction removed" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        guard Self.identityStillMatches(inspection.identity, at: archive) else {\n            owned.removeIfOwned()\n            return .failure(.archiveChanged(\"the archive changed while it was being extracted\"))\n        }\n'" "''"
+
+# C7: a space rejection stops being recognised, so a full disk reports "unsafe archive" instead.
+run "C7 space rejection no longer recognised" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            case .insufficientSpace(let required, let available): return .outOfSpace(required: required, available: available)'" \
+  "'            case .insufficientSpace: return nil'"
+
+# C8: an unreadable/unsupported format is extracted anyway.
+run "C8 unsupported format extracted unverified" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        guard SystemArchiveReader.isAvailable else { return .failure(.readerUnavailable) }'" "''"
+
+# B8: the staging root is not required to be private.
+run "B8 staging permission check removed" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        return permissions?.intValue == 0o700'" "'        return permissions != nil'"
+
 restore
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
 after=$(fails)
 echo "suite after restore: $after failure(s)"
-echo "RESULT: $red/$total mutations RED"
-[ "$after" = "0" ] && [ "$red" = "$total" ] || exit 1
+echo "RESULT: $red/$total mutations RED, expected-equivalent survivors:$equivalent_seen"
+for id in $EQUIVALENT; do
+  case " $equivalent_seen " in *" $id "*) ;; *) echo "HARNESS ERROR: $id is listed as equivalent but was not observed as a survivor"; exit 2 ;; esac
+done
+[ "$after" = "0" ] && [ "$((red + $(echo $EQUIVALENT | wc -w)))" = "$total" ] || exit 1

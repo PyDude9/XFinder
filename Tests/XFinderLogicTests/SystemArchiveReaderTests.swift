@@ -492,6 +492,100 @@ final class SystemArchiveReaderTests: XCTestCase {
         }
     }
 
+    /// Boss approval point 3, the measured trap: a ledger limited by the *whole* budget lets an entry
+    /// decode a full budget and only the cumulative check afterwards notices. With 2 entries of 2 KiB
+    /// each and a 3 KiB budget, the first entry must be refused — inside that entry — rather than the
+    /// first being allowed to finish and the second refused later. Without the fix the reported entry
+    /// would be `b.txt` (or the failure would not name an entry at all).
+    func testOneEntryCannotSpendMoreThanWhatIsLeftOfTheBatchBudget() throws {
+        let big = String(repeating: "x", count: 2048)
+        let url = try zip(["a.txt": big, "b.txt": big])
+        var bounds = SystemArchiveReader.Bounds.proposed
+        bounds.maxDecodedBytes = 3072
+        guard let failure = refusal(url, bounds: bounds) else { return }
+        guard case .byteBudgetExceeded(let limit, let entry) = failure else {
+            return XCTFail("expected a per-entry byteBudgetExceeded, got \(failure)")
+        }
+        XCTAssertEqual(limit, 3072)
+        XCTAssertEqual(entry, "a.txt",
+                       "the FIRST entry must be refused on its own: a per-entry ledger of the whole "
+                       + "budget would let it decode 2048 bytes and blame the second entry instead")
+    }
+
+    /// Two entries that fit together must still pass: the remaining-budget arithmetic must not
+    /// become "one entry may use at most half".
+    func testEntriesThatFitTheRemainingBudgetAreAccepted() throws {
+        let payload = String(repeating: "x", count: 1024)
+        let url = try zip(["a.txt": payload, "b.txt": payload])
+        var bounds = SystemArchiveReader.Bounds.proposed
+        bounds.maxDecodedBytes = 4096
+        let inspection = try reader.inspect(at: url, bounds: bounds)
+        XCTAssertEqual(inspection.decodedBytes, 2048)
+    }
+
+    /// The deadline must be consulted **inside** the payload loop, not only between entries: for a
+    /// streamed format, inflating payload is how the walk reaches the next header, so one entry can
+    /// occupy the whole budget with no header boundary to check at.
+    ///
+    /// The observable property is the number of clock consultations. A walk that only checks between
+    /// entries reads the clock exactly `origin + entries + 1` times (one check per header, plus the
+    /// final one that reads EOF). Any check inside the block loop adds at least one more per entry,
+    /// so the threshold is `entries + 2`. The clock never expires here — this test is about *where*
+    /// the check lives; `testTheDeadlineRefusesWhenTheBudgetRunsOut` pins the refusal itself.
+    func testTheDeadlineIsConsultedInsideThePayloadLoop() throws {
+        var ticks = 0
+        let clock: @Sendable () -> TimeInterval = {
+            ticks += 1
+            return 0
+        }
+        let recording = SystemArchiveReader(clock: clock)
+        let payload = String(repeating: "x", count: 1024)
+        let url = try zip(["a.txt": payload, "b.txt": payload])
+        let inspection = try recording.inspect(at: url)
+        let entries = inspection.manifest.count
+        XCTAssertEqual(entries, 2)
+        XCTAssertGreaterThan(ticks, entries + 2,
+                             "the clock was only consulted once per header (\(ticks) reads), so the "
+                             + "deadline is not checked while payload is drained")
+    }
+
+    /// The refusal itself: when the injected clock reports the budget is spent, inspection stops with
+    /// `timedOut` rather than returning a manifest it never finished verifying.
+    func testTheDeadlineRefusesWhenTheBudgetRunsOut() throws {
+        var ticks = 0
+        let clock: @Sendable () -> TimeInterval = {
+            ticks += 1
+            return ticks <= 1 ? 0 : 5
+        }
+        let recording = SystemArchiveReader(clock: clock)
+        let url = try zip(["a.txt": String(repeating: "x", count: 4096)])
+        var bounds = SystemArchiveReader.Bounds.proposed
+        bounds.maxSeconds = 1
+        do {
+            _ = try recording.inspect(at: url, bounds: bounds)
+            XCTFail("expected timedOut")
+        } catch let failure as SystemArchiveReader.Failure {
+            guard case .timedOut(let after) = failure else { return XCTFail("got \(failure)") }
+            XCTAssertGreaterThanOrEqual(after, 1)
+        }
+    }
+
+    /// A real, uninjected run must not trip the deadline: this pins that the default clock is
+    /// monotonic and starts at inspection, not at process launch.
+    func testTheDefaultBoundsDoNotExpireOnAnOrdinaryArchive() throws {
+        let url = try zip(["a.txt": "hello"])
+        XCTAssertNoThrow(try reader.inspect(at: url, bounds: .proposed))
+    }
+
+    /// A zero budget is the explicit "no deadline" used by pure arithmetic tests; it must not be read
+    /// as "expired immediately".
+    func testAZeroTimeBudgetMeansNoDeadline() throws {
+        let url = try zip(["a.txt": "hello"])
+        var bounds = SystemArchiveReader.Bounds.proposed
+        bounds.maxSeconds = 0
+        XCTAssertNoThrow(try reader.inspect(at: url, bounds: bounds))
+    }
+
     // MARK: - Identity
 
     func testIdentityMatchesTheFileOnDisk() throws {

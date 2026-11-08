@@ -1,3 +1,65 @@
+## 2026-11-08 — OpenCode — XF-MFGAP-03 stage 03B bounded inspection, private staging, identity guards
+
+TASK: XF-MFGAP-03 stage 03B (spec §5/§7/§9, Boss approval points 3 and 6)   BRANCH: agent/codex-XF-SETTINGS
+COMMITS: f8aadfd (1/2), c523c50 (2/2), merge 7ebf8d8 (main 61e6e64)
+BUILD: `build (arm64, compile list) OK` (gate-all step 1)
+TESTS: ArchiveRunnerTests 36 / 0; full suite **3045 / 0**
+GATE: green — 3045 tests / 0 failures, all 7 string/UI gates TOTAL 0 across 3868 entries, `modified tracked files 7`
+MUTATION: **24/25 RED**, 1 survivor (C8, measured equivalent); source restored byte-identical, suite after restore 0 failures
+LIVE: NOT VERIFIED (Builder does not install; nothing places a file yet — placement is 03C)
+FILES CHANGED: ArchiveRunner.swift, DiagnosticsCenter.swift (4-line exhaustive mapping), ClipTransfer.swift,
+L10n.strings.json (+4), scripts/add-archive-safety-l10n-entries.py (new, add-only), scripts/mutation-check-archive.sh,
+Tests/XFinderLogicTests/ArchiveRunnerTests.swift, ArchiveEngineTests.swift; this worklog
+NOT VERIFIED: macOS 14 matrix; real hostile archives beyond the fixtures; a real low-disk volume; cross-volume
+extraction; any UI (nothing routes through the refusal sentences yet). No app was launched, nothing installed.
+QUESTIONS (Q-1): the four new sentences need a Vietnamese read-through by Boss — they are my wording, not copy.
+
+Inspection is now mandatory before a decoder runs. `extractToStaging` checks `SystemArchiveReader.isAvailable`,
+inspects and validates with a real capacity query, and refuses **before anything is written**; only then does
+`extractVerified` create a 0700 staging root, revalidate the archive identity, run the decoder, revalidate again,
+and walk the result for escaping links.
+
+Measured facts from this stage, not assumed:
+- **`ditto -x -k` normalises hostile names.** A ZIP carrying `../escaped.txt` was extracted as `escaped.txt` inside
+  the root and a leading `/` was stripped — both exit 0. That is why validation runs on the manifest, before the
+  tool, and why a fixture for the refusal had to be written byte by byte (`writeHostileZip`).
+- **Duplicate names silently lose data.** Two entries named `same.txt` both exist in the archive, `ditto` keeps the
+  last one, and the tool reports success. Refused now, whole archive, nothing written.
+- **`bsdtar` DOES create `._x` as a symlink** when unpacking a foreign tar, and `FileManager` **does** list it
+  (verified: a hand-built staging folder with `._evil -> /etc/passwd` appears in the walk). The 03A link walk is
+  therefore not blind to the AppleDouble prefix — this was a suspicion, measured false, now pinned by a test.
+- **`archive_read_open_fd` does not own the fd** (03A finding, unchanged): the caller closes it once.
+
+Mutation survivors, stated honestly: only **C8**. Removing the `SystemArchiveReader.isAvailable` fast path leaves
+the suite green because `inspect` itself throws `libraryUnavailable` and maps to the same `.readerUnavailable`.
+It is a redundant layer, measured — not a missing test. The explicit check is kept so the sentence does not depend
+on how the reader happens to fail.
+
+A8, A9, C5 and C6 were survivors in the previous run and were **missing tests, not equivalence**. I rejected my own
+`EQUIVALENT` claim after measuring it: the walk really does see `._` links, so A9 had no excuse. Each now has a test
+that drives the guard directly (`testThePostExtractionLinkWalkSeesEveryEscapingLink`,
+`testAMissingArchiveIsRefusedByTheIdentityGuardBeforeTheDecoderRuns`,
+`testAnArchiveSwappedWhileTheDecoderRunsIsRefusedAfterwards`) and all four went RED. To make that possible the tail
+of extraction was split into `finishExtraction(archive:inspection:dir:owned:result:)` — a guard whose window is
+microseconds wide in production cannot be called "tested" without a seam that a test can stand in.
+
+Forcing functions now in the harness: a mutant anchored on text that no longer exists aborts the run; a listed
+equivalent that goes RED aborts the run (a stale list is a broken gate); a listed equivalent never observed as a
+survivor aborts the run. Two of those fired for real today — C7 became RED once
+`testSpaceRejectionsBecomeTheirOwnFailure` landed, and A8/A9/C5/C6 became RED once their tests landed — which is
+exactly what a stale-list guard is for.
+
+**Pre-existing bug found, NOT introduced and NOT fixed here (out of 03B scope, belongs to 03C):** single-source
+default compression calls `ditto --keepParent`, which stores `dir/one.txt`, while the read-back compares against
+`one.txt`. So `compress` returns `.missingData` and deletes a perfectly good archive. Verified by compiling `main`'s
+`ArchiveRunner.swift` + `ArchiveEngine.swift` on their own. Tests here use two sources to avoid walking through it;
+that is a workaround, not a fix. Boss decides whether this belongs to 03C.
+
+Harness hygiene incident (worth recording): a run hung for over an hour because two copies had been started and a
+stale orphaned `xctest` held `Tests/.build`. Never run two at once, never edit sources while one runs, and after any
+run check `git status` for an unexpected diff in a file the harness mutates — C2/C3/C4 target `ArchiveSafetyRules.swift`,
+which was once missing from `FILES` and left mutated.
+
 ## 2026-11-08 — OpenCode — XF-NOTCH-02 Notch Settings page (five groups + display target)
 
 TASK: XF-NOTCH-02   BRANCH: agent/opencode-XF-NOTCH-02   SPEC: `docs/specs/XF-NOTCH-02-interface-settings-layout.md`
