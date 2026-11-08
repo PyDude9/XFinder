@@ -733,7 +733,12 @@ enum ArchiveRunner {
     static func recoverStagingRemainder(_ batch: ExtractedBatch, root: URL? = ArchiveRecoveryStore.root) -> URL? {
         let fm = FileManager.default
         guard batch.owned.isStillOwned, let root else { return nil }
-        do { try fm.createDirectory(at: root, withIntermediateDirectories: true) } catch { return nil }
+        // 0700, as `ArchiveRecoveryStore.root` promises: a recovered batch is as private as the archive it came from.
+        // `createDirectory` leaves an existing folder's mode alone, so an existing root is tightened too.
+        do {
+            try fm.createDirectory(at: root, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+            try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: root.path)
+        } catch { return nil }
         let dest = root.appendingPathComponent("batch-\(UUID().uuidString)")
         do { try fm.moveItem(at: batch.staging, to: dest) } catch { return nil }
         return dest

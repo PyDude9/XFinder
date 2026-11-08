@@ -267,7 +267,7 @@ enum ArchiveEngine {
             let name = components.last!
             let baseName = parent.map { "\($0)/\(name)" } ?? name
             var relative = baseName
-            var inheritedRename = parent != nil && mappedFolder[parentPath] != parentPath
+            let inheritedRename = parent != nil && mappedFolder[parentPath] != parentPath
             var renamedHere = false
             var target = destination.appendingPathComponent(relative)
 

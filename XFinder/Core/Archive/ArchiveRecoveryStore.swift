@@ -4,7 +4,7 @@ import Foundation
 ///
 /// The rule this exists for (spec §7): a batch that placed three of five items must not delete the
 /// other two and must not claim "nothing changed". The staged remainder moves here instead of being
-/// removed, and the page offers Reveal for it. Nothing in this store is ever deleted automatically —
+/// removed, and the page prints where it went. Nothing in this store is ever deleted automatically —
 /// not on launch, not on cancel (spec §7: no automatic destructive replay), only when the user asks
 /// through the page.
 ///
@@ -41,15 +41,18 @@ enum ArchiveRecoveryStore {
         (try? FileManager.default.contentsOfDirectory(atPath: batch.path))?.count ?? 0
     }
 
-    /// Delete one recovered batch **at the user's explicit request only**. Returning the error rather
-    /// than swallowing it is what lets the page say which batch could not be removed.
-    static func remove(_ batch: URL) throws {
+    /// Move one recovered batch to the Trash, **at the user's explicit request only**. Trash, never `removeItem`
+    /// (CLAUDE.md rule 9): a recovered batch is the archive's payload, i.e. the user's data. Returning the error rather
+    /// than swallowing it is what lets the page say which batch could not be removed. `trash` is injected so a test
+    /// never touches the real Trash.
+    static func remove(_ batch: URL,
+                       trash: (URL) throws -> Void = { try FileManager.default.trashItem(at: $0, resultingItemURL: nil) }) throws {
         let rootPath = root.standardizedFileURL.path
         let targetPath = batch.standardizedFileURL.path
         guard targetPath.hasPrefix(rootPath + "/") else {
             throw Failure.outsideRoot(targetPath)
         }
-        try FileManager.default.removeItem(at: batch)
+        try trash(batch)
     }
 
     enum Failure: Error, CustomStringConvertible {

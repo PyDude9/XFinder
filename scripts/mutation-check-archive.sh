@@ -310,6 +310,14 @@ run "W1 a partial placement names only the failing object" XFinder/Core/Archive/
   "'            outcome.failed = unplacedLeaves(in: batch.staging)'" \
   "'            _ = batch'"
 
+# U1–U2 (Boss review of 03C): the recovery store keeps its promises.
+run "U1 an existing recovery root keeps a loose mode (not 0700)" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            try fm.setAttributes([.posixPermissions: 0o700], ofItemAtPath: root.path)'" \
+  "'            _ = root'"
+run "U2 removing a recovered batch deletes it instead of using the Trash" XFinder/Core/Archive/ArchiveRecoveryStore.swift \
+  "'        try trash(batch)'" \
+  "'        try FileManager.default.removeItem(at: batch)'"
+
 restore
 
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done

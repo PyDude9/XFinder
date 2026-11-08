@@ -464,6 +464,24 @@ final class ArchivePlacementTests: XCTestCase {
         }
     }
 
+    /// The recovery root holds the archive's payload: created 0700, as `ArchiveRecoveryStore.root` promises.
+    func testTheRecoveryRootIsPrivate() throws {
+        let batch = try handBatch(["x.txt": "x"], top: ["x.txt"])
+        let recovered = try XCTUnwrap(ArchiveRunner.recoverStagingRemainder(batch, root: url("recovery")))
+        let mode = try fm.attributesOfItem(atPath: url("recovery").path)[.posixPermissions] as? Int
+        XCTAssertEqual(mode, 0o700)
+        XCTAssertTrue(fm.fileExists(atPath: recovered.appendingPathComponent("x.txt").path))
+    }
+
+    /// Removing a recovered batch goes through the Trash (rule 9), and only inside the root. The path is checked
+    /// by prefix before anything touches the disk, so this test never reaches the real Trash.
+    func testRemovingARecoveredBatchTrashesItInsteadOfDeleting() throws {
+        let inside = ArchiveRecoveryStore.root.appendingPathComponent("batch-test-\(UUID().uuidString)")
+        var trashed: [URL] = []
+        try ArchiveRecoveryStore.remove(inside, trash: { trashed.append($0) })
+        XCTAssertEqual(trashed, [inside])
+    }
+
     // MARK: - Review preview names (Boss review of 03C)
 
     private func entry(_ raw: String, _ kind: ArchiveManifestEntry.Kind = .regular) -> ArchiveManifestEntry {
