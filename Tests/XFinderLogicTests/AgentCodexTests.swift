@@ -122,13 +122,39 @@ final class AgentCodexTests: XCTestCase {
             .appendingPathComponent("XFinder/Resources/Agents/xfinder-agent-hook.zsh")
     }
 
-    private func runHook(_ args: [String], stdin: String, dir: URL, extraEnv: [String: String] = [:]) throws {
+    private func runHook(_ args: [String], stdin: String, dir: URL, extraEnv: [String: String] = [:],
+                         isolateCodexHost: Bool = false) throws {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/bin/zsh")
-        p.arguments = [scriptURL.path] + args
-        var env = ProcessInfo.processInfo.environment
+        var env = isolateCodexHost
+            ? ["PATH": "/usr/bin:/bin", "HOME": dir.path,
+               "CODEX_HOME": dir.appendingPathComponent("codex-home").path,
+               "CODEX_SESSION_ID": "fixture-session", "CODEX_THREAD_ID": "fixture-thread"]
+            : ProcessInfo.processInfo.environment
         env["XFINDER_AGENT_DIR"] = dir.path
         for (k, v) in extraEnv { env[k] = v }
+        if isolateCodexHost {
+            // The real shell's parent chain is controlled by the test runner (and can contain Codex itself).
+            // Give the shipped hook a deterministic `ps` view so this assertion tests its Codex handling, not
+            // whichever GUI app happened to launch `swift test`.
+            let ps = dir.appendingPathComponent("fixture-ps")
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            try """
+            #!/bin/sh
+            case "$*" in
+              *"-o ppid=,tty=,comm="*) printf '1 ?? /usr/bin/fixture-runner\\n' ;;
+              *"-o tty="*) printf '??\\n' ;;
+            esac
+            """.write(to: ps, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: ps.path)
+            let isolatedScript = dir.appendingPathComponent("xfinder-agent-hook.zsh")
+            let source = try String(contentsOf: scriptURL, encoding: .utf8)
+            try source.replacingOccurrences(of: "/bin/ps", with: ps.path)
+                .write(to: isolatedScript, atomically: true, encoding: .utf8)
+            p.arguments = [isolatedScript.path] + args
+        } else {
+            p.arguments = [scriptURL.path] + args
+        }
         p.environment = env
         let input = Pipe()
         p.standardInput = input
@@ -144,8 +170,8 @@ final class AgentCodexTests: XCTestCase {
         guard FileManager.default.isExecutableFile(atPath: "/usr/bin/jq") else { throw XCTSkip("no /usr/bin/jq on this Mac") }
         let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("xf-hook-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: tmp) }
-        try runHook(["codex"], stdin: #"{"hook_event_name":"Stop","session_id":"s1","last_assistant_message":"THE ANSWER"}"#, dir: tmp)
-        try runHook(["codex"], stdin: #"{"hook_event_name":"PostToolUse","session_id":"s1","tool_name":"Bash","tool_response":"OUTPUT"}"#, dir: tmp)
+        try runHook(["codex"], stdin: #"{"hook_event_name":"Stop","session_id":"s1","last_assistant_message":"THE ANSWER"}"#, dir: tmp, isolateCodexHost: true)
+        try runHook(["codex"], stdin: #"{"hook_event_name":"PostToolUse","session_id":"s1","tool_name":"Bash","tool_response":"OUTPUT"}"#, dir: tmp, isolateCodexHost: true)
         let files = try FileManager.default.contentsOfDirectory(at: tmp.appendingPathComponent("events"), includingPropertiesForKeys: nil)
         let text = try files.map { try String(contentsOf: $0, encoding: .utf8) }.joined()
         let events = AgentEvents.parse(jsonl: text)
