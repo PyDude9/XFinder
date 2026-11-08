@@ -314,7 +314,6 @@ enum ArchiveRunner {
                                  dir: URL,
                                  owned: OwnedDirectory,
                                  result: ProcessResult) -> Result<ExtractedBatch, Failure> {
-        let fm = FileManager.default
         if Task.isCancelled { owned.removeIfOwned(); return .failure(.cancelled) }
         guard result.status == 0 else {
             owned.removeIfOwned(); return .failure(.tool(status: result.status, stderr: result.stderr))
@@ -331,7 +330,7 @@ enum ArchiveRunner {
         // decoder that materialises a link the manifest did not describe.
         let escaping = Self.escapingLinks(in: dir)
         guard escaping.isEmpty else { owned.removeIfOwned(); return .failure(.unsafeLinks(escaping)) }
-        let items = ((try? fm.contentsOfDirectory(atPath: dir.path)) ?? []).filter { $0 != "__MACOSX" && $0 != ".DS_Store" }.sorted()
+        let items = stagedEntries(of: dir).filter { !stagingDebris.contains($0) }.sorted()
         return .success(ExtractedBatch(staging: dir, items: items, owned: owned))
     }
 
@@ -619,6 +618,15 @@ enum ArchiveRunner {
         }
 
         if outcome.isComplete {
+            // Belt and braces: a file or link still in staging was never placed. Deleting the staging folder now
+            // would delete it with it, so the batch is reported incomplete and the copy goes to recovery instead.
+            let leftover = unplacedLeaves(in: batch.staging)
+            if !leftover.isEmpty {
+                outcome.failed.append(contentsOf: leftover)
+                outcome.failure = .placement("not placed: \(leftover.prefix(4).joined(separator: ", "))")
+            }
+        }
+        if outcome.isComplete {
             batch.owned.removeIfOwned()
             return .success(outcome)
         }
@@ -669,28 +677,60 @@ enum ArchiveRunner {
         }
     }
 
+    /// Every name directly inside `dir`, as `readdir` returns it — files, folders and links alike.
+    ///
+    /// Not `FileManager`: measured on macOS 27, all of its listings hide REGULAR files named "._…" (`FileWalk`).
+    /// Today's extraction tools do not leave such a file in a successful staging (ditto absorbs it as AppleDouble,
+    /// bsdtar exits 1), but a listing that silently skips names is how a later tool change would lose data.
+    static func stagedEntries(of dir: URL) -> [String] {
+        guard let handle = opendir(dir.path) else { return [] }
+        defer { closedir(handle) }
+        var names: [String] = []
+        while let entry = readdir(handle) {
+            let name = withUnsafeBytes(of: entry.pointee.d_name) { raw in
+                String(decoding: raw.prefix(Int(entry.pointee.d_namlen)), as: UTF8.self)
+            }
+            if name != "." && name != ".." { names.append(name) }
+        }
+        return names
+    }
+
     /// Every staged object, depth included, in the shape `ArchiveEngine.mergePlan` plans from.
     static func stagedTree(of batch: ExtractedBatch) -> [ArchiveEngine.StagedItem] {
-        let fm = FileManager.default
+        // Rooted at `batch.items`, not at the staging folder: the walk used to start at the root and so planned the
+        // debris the item list leaves out (`__MACOSX`, `.DS_Store`) into the user's folder. It used FileManager,
+        // which hides "._…" files, and it skipped nested links — measured: Merge silently dropped a link a real ZIP
+        // holds. A link is a leaf: it passed the manifest and decoder checks, and moving it never follows it.
         var items: [ArchiveEngine.StagedItem] = []
-        for name in batch.items {
-            let url = batch.staging.appendingPathComponent(name)
-            var info = stat()
-            let isDir = lstat(url.path, &info) == 0 && (info.st_mode & S_IFMT) == S_IFDIR
-            items.append(ArchiveEngine.StagedItem(path: name, isDirectory: isDir))
-        }
-        guard let walker = fm.enumerator(atPath: batch.staging.path) else { return items }
-        var seen = Set(items.map(\.path))
-        while let rel = walker.nextObject() as? String {
-            guard !seen.contains(rel) else { continue }
+        func visit(_ rel: String) {
             let url = batch.staging.appendingPathComponent(rel)
             var info = stat()
-            guard lstat(url.path, &info) == 0 else { continue }
-            if (info.st_mode & S_IFMT) == S_IFLNK { continue }   // links were judged by the manifest
-            seen.insert(rel)
-            items.append(ArchiveEngine.StagedItem(path: rel, isDirectory: (info.st_mode & S_IFMT) == S_IFDIR))
+            guard lstat(url.path, &info) == 0 else { return }
+            let isDir = (info.st_mode & S_IFMT) == S_IFDIR
+            items.append(ArchiveEngine.StagedItem(path: rel, isDirectory: isDir))
+            guard isDir else { return }
+            for name in stagedEntries(of: url).sorted() { visit(rel + "/" + name) }
         }
+        for name in batch.items { visit(name) }
         return items
+    }
+
+    /// Names at the top of a staging folder that are decoder debris, never user content: resource-fork data
+    /// `ditto -x -k` leaves for archives made elsewhere, and Finder's folder settings.
+    static let stagingDebris: Set<String> = ["__MACOSX", ".DS_Store"]
+
+    /// Files and links still anywhere in `dir` (folders are only containers), skipping top-level debris.
+    static func unplacedLeaves(in dir: URL, under prefix: String = "") -> [String] {
+        var found: [String] = []
+        for name in stagedEntries(of: dir).sorted() where !(prefix.isEmpty && stagingDebris.contains(name)) {
+            let url = dir.appendingPathComponent(name)
+            let rel = prefix.isEmpty ? name : prefix + "/" + name
+            var info = stat()
+            guard lstat(url.path, &info) == 0 else { continue }
+            if (info.st_mode & S_IFMT) == S_IFDIR { found += unplacedLeaves(in: url, under: rel) }
+            else { found.append(rel) }
+        }
+        return found
     }
 
     /// Move whatever is still staged into the app-owned recovery root and return where it went.

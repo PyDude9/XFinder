@@ -397,4 +397,98 @@ final class ArchivePlacementTests: XCTestCase {
         XCTAssertThrowsError(try ArchiveRecoveryStore.remove(url("recovery/not-a-batch")))
         XCTAssertTrue(fm.fileExists(atPath: url("recovery/not-a-batch").path))
     }
+
+
+    // MARK: - Names FileManager hides (Boss review of 03C, 2026-11-08)
+
+    /// A batch built by hand: `stagingName/…` under `root`, adopted the way extraction adopts its folder.
+    private func handBatch(_ files: [String: String], links: [String: String] = [:], top: [String]) throws -> ArchiveRunner.ExtractedBatch {
+        let staging = url("staging")
+        for (path, text) in files { try write("staging/" + path, text) }
+        for (path, target) in links {
+            try fm.createSymbolicLink(atPath: staging.appendingPathComponent(path).path, withDestinationPath: target)
+        }
+        let owned = try XCTUnwrap(ArchiveRunner.OwnedDirectory.adopt(staging))
+        return ArchiveRunner.ExtractedBatch(staging: staging, items: top, owned: owned)
+    }
+
+    /// Measured on macOS 27: every FileManager listing hides REGULAR files named "._…" (`FileWalk`), and a foreign
+    /// tar leaves such a file in staging. Merge planned from that listing, so the file was never placed and was
+    /// deleted with the staging folder — silently.
+    func testMergeCarriesFilesNamedLikeAppleDoubleInsideFolders() async throws {
+        let batch = try handBatch(["folder/normal.txt": "n", "folder/._real": "REAL"], top: ["folder"])
+        let r = await ArchiveRunner.place(batch, into: url("dest"), policy: .merge, recoveryRoot: url("recovery"))
+        guard case .success(let outcome) = r else { return XCTFail("\(r)") }
+        XCTAssertTrue(outcome.isComplete, "\(outcome)")
+        XCTAssertEqual(read("dest/folder/._real"), "REAL", "the ._ file was dropped")
+        XCTAssertEqual(read("dest/folder/normal.txt"), "n")
+    }
+
+    /// The same listing skipped links nested in folders, so Merge dropped them while Keep Both (which moves the
+    /// whole folder) kept them. A link is placed as a leaf: renamed, never followed.
+    func testMergeCarriesLinksNestedInFolders() async throws {
+        let batch = try handBatch(["folder/target.txt": "t"], links: ["folder/alias": "target.txt"], top: ["folder"])
+        let r = await ArchiveRunner.place(batch, into: url("dest"), policy: .merge, recoveryRoot: url("recovery"))
+        guard case .success(let outcome) = r else { return XCTFail("\(r)") }
+        XCTAssertTrue(outcome.isComplete, "\(outcome)")
+        XCTAssertEqual(try? fm.destinationOfSymbolicLink(atPath: url("dest/folder/alias").path), "target.txt")
+    }
+
+    /// Belt and braces: whatever is still a file in staging after placement was never placed, so the batch is
+    /// not complete and the staging copy goes to recovery instead of being deleted.
+    func testAnythingLeftInStagingIsRecoveredNotDeleted() async throws {
+        // `top` lists only `a.txt`, so Keep Both places it and nothing else — `b.txt` is the leftover.
+        let batch = try handBatch(["a.txt": "a", "b.txt": "B"], top: ["a.txt"])
+        let r = await ArchiveRunner.place(batch, into: url("dest"), policy: .keepBoth, recoveryRoot: url("recovery"))
+        guard case .success(let outcome) = r else { return XCTFail("\(r)") }
+        XCTAssertFalse(outcome.isComplete, "an unplaced staged file must not read as success")
+        XCTAssertEqual(outcome.failed, ["b.txt"])
+        let recovered = try XCTUnwrap(outcome.recoveryRoot)
+        XCTAssertEqual(try? String(contentsOf: recovered.appendingPathComponent("b.txt"), encoding: .utf8), "B")
+    }
+
+    /// Decoder debris (`__MACOSX`, a top-level `.DS_Store`) is not user content: Merge must not plant it in the
+    /// user's folder (the old walk started at the staging root and did), and leaving it behind must not make the
+    /// batch read as partial.
+    func testMergeNeverPlacesDecoderDebrisAndStillCompletes() async throws {
+        let batch = try handBatch(["folder/a.txt": "a", "__MACOSX/folder/._a.txt": "rsrc", ".DS_Store": "x"],
+                                  top: ["folder"])
+        let r = await ArchiveRunner.place(batch, into: url("dest"), policy: .merge, recoveryRoot: url("recovery"))
+        guard case .success(let outcome) = r else { return XCTFail("\(r)") }
+        XCTAssertTrue(outcome.isComplete, "debris left in staging is not an unplaced item: \(outcome)")
+        XCTAssertFalse(fm.fileExists(atPath: url("dest/__MACOSX").path), "decoder debris was placed")
+        XCTAssertFalse(fm.fileExists(atPath: url("dest/.DS_Store").path))
+        XCTAssertEqual(read("dest/folder/a.txt"), "a")
+    }
+
+    /// The listing helpers must see "._…" names: FileManager hides them (measured, `FileWalk`). Today's tools do not
+    /// leave such a file in a successful staging (ditto absorbs it as AppleDouble, bsdtar exits 1), so this guards
+    /// the listing itself rather than an extraction that is known to produce one.
+    func testStagingListingSeesFilesNamedLikeAppleDouble() throws {
+        try write("listing/._toplevel", "TOP")
+        try write("listing/plain.txt", "p")
+        XCTAssertEqual(ArchiveRunner.stagedEntries(of: url("listing")).sorted(), ["._toplevel", "plain.txt"])
+    }
+
+    /// Reachability check for the nested-link case with a REAL archive: `zip -y` stores the link, `ditto -x` restores
+    /// it in staging, and Merge must place it.
+    func testMergeCarriesALinkFromARealZip() async throws {
+        try write("src/folder/target.txt", "t")
+        try fm.createSymbolicLink(atPath: url("src/folder/alias").path, withDestinationPath: "target.txt")
+        let archive = url("out/links.zip")
+        let zip = Process()
+        zip.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
+        zip.currentDirectoryURL = url("src")
+        zip.arguments = ["-qry", archive.path, "folder"]
+        try zip.run(); zip.waitUntilExit()
+        XCTAssertEqual(zip.terminationStatus, 0)
+        guard case .success(let batch) = await ArchiveRunner.extractToStaging(archive: archive, near: url("dest")) else {
+            return XCTFail("staging failed")
+        }
+        let r = await ArchiveRunner.place(batch, into: url("dest"), policy: .merge, recoveryRoot: url("recovery"))
+        guard case .success(let outcome) = r else { return XCTFail("\(r)") }
+        XCTAssertTrue(outcome.isComplete, "\(outcome)")
+        XCTAssertEqual(try? fm.destinationOfSymbolicLink(atPath: url("dest/folder/alias").path), "target.txt",
+                       "Merge dropped a link the archive holds")
+    }
 }

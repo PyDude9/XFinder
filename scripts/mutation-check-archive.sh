@@ -276,6 +276,23 @@ run "Z3 the source kind follows links (a link counts as its target)" XFinder/Cor
   "'        case .link: return .link\n        case .directory: return .directory\n        case .file, nil: return .file'" \
   "'        case .link: return .file\n        case .directory: return .directory\n        case .file, nil: return .file'"
 
+# Y1–Y5 (Boss review of 03C, 2026-11-08): Merge's staged walk and the staging listings.
+run "Y1 Merge skips links nested in folders again (a real ZIP's link is dropped)" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            let isDir = (info.st_mode & S_IFMT) == S_IFDIR\n            items.append(ArchiveEngine.StagedItem(path: rel, isDirectory: isDir))'" \
+  "'            if (info.st_mode & S_IFMT) == S_IFLNK { return }\n            let isDir = (info.st_mode & S_IFMT) == S_IFDIR\n            items.append(ArchiveEngine.StagedItem(path: rel, isDirectory: isDir))'"
+run "Y2 staging listings go back to FileManager (hides ._ files)" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        guard let handle = opendir(dir.path) else { return [] }'" \
+  "'        if true { return (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? [] }\n        guard let handle = opendir(dir.path) else { return [] }'"
+run "Y3 a file left in staging is deleted with it (no leftover check)" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'            let leftover = unplacedLeaves(in: batch.staging)'" \
+  "'            let leftover: [String] = []'"
+run "Y4 decoder debris counts as an unplaced item (every foreign ZIP reads as partial)" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        for name in stagedEntries(of: dir).sorted() where !(prefix.isEmpty && stagingDebris.contains(name)) {'" \
+  "'        for name in stagedEntries(of: dir).sorted() {'"
+run "Y5 Merge walks from the staging root again (plants __MACOSX in the user's folder)" XFinder/Core/Archive/ArchiveRunner.swift \
+  "'        for name in batch.items { visit(name) }'" \
+  "'        for name in stagedEntries(of: batch.staging) { visit(name) }'"
+
 restore
 
 for f in $FILES; do cmp -s "$BK/$f" "$f" || { echo "FAIL: $f not restored byte-identical"; exit 1; }; done
