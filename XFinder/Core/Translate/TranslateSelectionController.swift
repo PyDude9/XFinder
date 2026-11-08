@@ -321,20 +321,7 @@ final class TranslateSelectionController {
     }
 
     private func showPanel(at anchorRect: CGRect? = nil) {
-        var cardHeight: CGFloat = 110
-        if model.showGoogle { cardHeight += 40 }
-        if model.showDictionary {
-            if !model.localSenses.isEmpty {
-                cardHeight += CGFloat(min(model.localSenses.count, 3) * 26 + 8)
-            } else if model.localSnippet != nil {
-                cardHeight += 36
-            }
-        }
-        if model.showAI { cardHeight += 50 }
-        if !model.showGoogle && !model.showDictionary && !model.showAI {
-            cardHeight += 50
-        }
-        let clampedHeight = max(160, min(cardHeight, 370))
+        let clampedHeight = measuredCardHeight(maxHeight: 370)
         let cardSize = CGSize(width: 410, height: clampedHeight)
         if panel == nil {
             let p = SurfacePanel(kind: .interactive, size: cardSize)
@@ -383,22 +370,18 @@ final class TranslateSelectionController {
         updatePanelSize()
     }
 
+    /// The card's real height, measured with the same view the panel hosts — not estimated from constants. The
+    /// estimate (110 + 40 per engine + 26 per sense…) drifted from what SwiftUI draws (CLAUDE.md: SwiftUI's line
+    /// height is not what arithmetic assumes; `NSHostingView.fittingSize` of the real view costs ~4 ms).
+    private func measuredCardHeight(maxHeight: CGFloat) -> CGFloat {
+        let measured = NSHostingView(rootView: TranslateSelectionView(model: model)).fittingSize.height
+        guard measured.isFinite, measured > 0 else { return 160 }
+        return max(160, min(measured, maxHeight))
+    }
+
     func updatePanelSize() {
         guard let panel, panel.isVisible else { return }
-        var cardHeight: CGFloat = 110
-        if model.showGoogle { cardHeight += 40 }
-        if model.showDictionary {
-            if !model.localSenses.isEmpty {
-                cardHeight += CGFloat(min(model.localSenses.count, 3) * 26 + 8)
-            } else if model.localSnippet != nil {
-                cardHeight += 36
-            }
-        }
-        if model.showAI || model.aiRequested { cardHeight += 70 }
-        if !model.showGoogle && !model.showDictionary && !model.showAI && !model.aiRequested {
-            cardHeight += 50
-        }
-        let clampedHeight = max(160, min(cardHeight, 420))
+        let clampedHeight = measuredCardHeight(maxHeight: 420)
         var currentFrame = panel.frame
         let diff = clampedHeight - currentFrame.height
         if abs(diff) > 1 {
@@ -444,9 +427,8 @@ final class TranslateSelectionController {
 
         Task { @MainActor [weak self] in
             guard let self else { return }
-            while self.assistant.busy {
-                try? await Task.sleep(nanoseconds: 80_000_000)
-            }
+            // Awaits the analysis itself; this used to wake every 80 ms on the main actor to read `busy`.
+            await self.assistant.waitUntilIdle()
             self.model.isTranslating = false
             if !self.assistant.meaning.isEmpty {
                 self.model.translationMeaning = self.assistant.meaning

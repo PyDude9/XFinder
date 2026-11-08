@@ -30,6 +30,17 @@ final class TranslateAssistant {
         source = ["en", "vi", "zh", "ja", "ko"].contains(detected) ? detected : "und"
         target = source == "vi" ? "en" : "vi"
     }
+    /// Suspends until no analysis is running (returns at once when none is). Replaces an 80 ms polling loop on the
+    /// main actor in `TranslateSelectionController`: every suspension here ends when a task completes. A newer
+    /// analysis that replaced the awaited one is awaited on the next pass; a task that ended without clearing `busy`
+    /// ends the wait instead of spinning.
+    func waitUntilIdle() async {
+        while busy, let running = work {
+            await running.value
+            if busy, work == running { break }
+        }
+    }
+
     func analyze(module: TranslationBlueprintModule, overrides: [String: String]) {
         invalidate()
         let token = generation
