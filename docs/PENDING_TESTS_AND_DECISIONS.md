@@ -11,6 +11,26 @@ Cập nhật: 2026-11-08.
 
 Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả lời thì giữ mặc định.
 
+### 2026-11-08 khuya · XF-T38 Menu bar + thanh điều hướng của trình duyệt (theo 7 ảnh FileOctopus anh gửi)
+
+Thanh menu khi cửa sổ trình duyệt ở trước: **Tệp · Edit · View · Đi · Window** theo đúng thứ tự trong ảnh (trước đây
+không có menu Tệp — XFinder không có File menu nên mọi mục chèn vào "File" không bao giờ hiện; mục chèn vào View/Window bị
+SwiftUI xoá). "So sánh thư mục…", "Tìm tệp trùng…", "Kết nối máy chủ từ xa…" mở trang XFinder sẵn có. Thanh công cụ có
+nút **Sidebar** và **Thẻ** (+ Thư mục mới, Xem nhanh trong Tuỳ biến). Bảng lệnh ">" ghi tên menu dưới mỗi lệnh. Spec
+`docs/specs/XF-T38-browser-menubar-navbar.md`.
+
+| Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
+|:--|:--|:--|:--|
+| Q-T38-1 | "Navigation Bar" là gì | thanh công cụ · thanh vị trí từng ngăn · khác | **Thanh công cụ** (theo ảnh cửa sổ chính); thanh vị trí từng ngăn giữ như hiện có |
+| Q-T38-2 | Phím khác FileOctopus: Mở nhanh ⌘K (FileOctopus ⌃⌘P), Đóng ngăn ⌃⌥⌘W (⌘W), Sidebar ⌥⌘S (⌃⌘S) | đổi theo FileOctopus · giữ | **Giữ phím XFinder** (⌘K theo Tilde); menu hiện phím thật |
+| Q-T38-3 | In ⌘P, Đổ Thùng rác ⇧⌘⌫ | làm · không | **Chưa làm**: in cần Apple Event tới app khác (quyền Automation); đổ Thùng rác là xoá vĩnh viễn |
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-T38-1 | Mở trình duyệt (⌃⌥⌘F hoặc từ notch) ▸ nhìn thanh menu ▸ mở Tệp, View, Đi, Window | Có Tệp và Đi; mỗi menu đủ mục như ảnh FileOctopus, phím tắt đúng; mục không áp dụng thì xám (đã đo trong Atlas) |
+| T-T38-2 | Chọn vài tệp ▸ Tệp ▸ Mở bằng ▸ / Thẻ ▸ ; View ▸ Sắp theo ▸ Ngày sửa ; Window ▸ Lưu Workspace rồi Mở workspace ▸ | Danh sách app đúng loại tệp; gắn thẻ được; dấu ✓ chuyển sang Ngày sửa; workspace vừa lưu có trong danh sách |
+| T-T38-3 | Thanh công cụ: bấm nút Sidebar (đầu thanh) và nút Thẻ (cạnh "…") | Sidebar ẩn/hiện; menu Thẻ gắn/bỏ thẻ cho mục đang chọn |
+
 ### 2026-11-08 khuya · XF-T37 Luật logic trình duyệt theo FileOctopus 1.0.10 (bản đặc tả anh gửi)
 
 Kiểm bản đặc tả trên binary 1.0.10 (đúng sha `940882b4…`): phần lớn luật đã khớp; **hai điều trong bảng sai** — tối đa
