@@ -15782,6 +15782,34 @@
     "Đã sắp xếp lại ": {
       "en": "Reordered ",
       "scope": "fragment"
+    },
+    "Micro đang bị từ chối cho XFinder": {
+      "en": "Microphone access is denied for XFinder",
+      "scope": "sentence"
+    },
+    "Nhận dạng giọng nói đang bị từ chối cho XFinder": {
+      "en": "Speech Recognition is denied for XFinder",
+      "scope": "sentence"
+    },
+    "Micro bị giới hạn trên máy này": {
+      "en": "Microphone is restricted on this Mac",
+      "scope": "sentence"
+    },
+    "Nhận dạng giọng nói bị giới hạn trên máy này": {
+      "en": "Speech Recognition is restricted on this Mac",
+      "scope": "sentence"
+    },
+    "Đã cấp quyền — nhấn phím lần nữa để nói": {
+      "en": "Permission granted — press the key again to talk",
+      "scope": "sentence"
+    },
+    "Đã từ chối": {
+      "en": "Denied",
+      "scope": "sentence"
+    },
+    "Bị giới hạn": {
+      "en": "Restricted",
+      "scope": "sentence"
     }
   }
 }

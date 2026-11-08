@@ -140,53 +140,83 @@ public final class VoiceManager {
     public var isEventTapInstalled: Bool { hotkeyManager.isTapInstalled }
 
     // MARK: - Permissions
+    //
+    // XF-VOICE-PERMISSIONS: what a press does about Microphone and Speech Recognition is decided by
+    // `VoicePermissionRules.decide` — a refused permission is never asked again, the two are never asked together by
+    // the Voice page, and a press asks the undecided ones one at a time. The page's rows go through
+    // `FeatureHub.request(_:)`, the one place XFinder asks macOS for a permission.
 
-    public func checkAndRequestPermissions() async -> Bool {
-        guard AXIsProcessTrusted() else { return false }
+    /// A TCC status the rules understand. An unknown future value is treated as undecided: asking is then harmless (macOS
+    /// answers without a dialog if it has an answer), while "refused" would block dictation for good.
+    static func microphoneStatus() -> VoicePermissionStatus {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized: return .authorized
+        case .notDetermined: return .notDetermined
+        case .denied: return .denied
+        case .restricted: return .restricted
+        @unknown default: return .notDetermined
+        }
+    }
 
-        var micAllowed = false
-        if #available(macOS 14.0, *) {
-            micAllowed = await AVAudioApplication.requestRecordPermission()
-        } else {
-            micAllowed = await withCheckedContinuation { continuation in
-                AVCaptureDevice.requestAccess(for: .audio) { @Sendable granted in
-                    continuation.resume(returning: granted)
+    static func speechStatus() -> VoicePermissionStatus {
+        switch SFSpeechRecognizer.authorizationStatus() {
+        case .authorized: return .authorized
+        case .notDetermined: return .notDetermined
+        case .denied: return .denied
+        case .restricted: return .restricted
+        @unknown default: return .notDetermined
+        }
+    }
+
+    /// True while a press is waiting on a permission dialog: another press must not stack a second request.
+    private var isAskingPermission = false
+
+    /// Ask for each undecided permission in order; stop at the first refusal. The press that asked does not start a
+    /// session — the trigger was released while the dialog was up — so success says "press again".
+    private func askPermissions(_ kinds: [VoicePermissionKind]) async {
+        defer { isAskingPermission = false }
+        for kind in kinds {
+            let granted: Bool
+            switch kind {
+            case .microphone:
+                granted = await AVCaptureDevice.requestAccess(for: .audio)
+            case .speechRecognition:
+                granted = await withCheckedContinuation { continuation in
+                    // `@Sendable` is load-bearing: formed here, on the main actor, the closure would inherit MainActor
+                    // isolation and Swift 6 traps when Speech calls it on its own queue (measured: SIGTRAP, exit 133;
+                    // the explicit `@Sendable` control survives — `PermissionCallbackIsolationTests`).
+                    SFSpeechRecognizer.requestAuthorization { @Sendable status in
+                        continuation.resume(returning: status == .authorized)
+                    }
                 }
             }
-        }
-        guard micAllowed else { return false }
-
-        let speechStatus = await withCheckedContinuation { continuation in
-            // `@Sendable` is load-bearing: formed here, on the main actor, the closure would inherit MainActor isolation
-            // and Swift 6 traps when Speech calls it on its own queue (`PermissionCallbackIsolationTests`).
-            SFSpeechRecognizer.requestAuthorization { @Sendable status in
-                continuation.resume(returning: status)
+            // The Voice page and the Features hub show these rows; let them re-read.
+            FeatureHub.shared.refresh()
+            guard granted else {
+                showError(L10n.t(VoicePermissionRules.blockedMessageKey(kind, restricted: false)))
+                return
             }
         }
-        return speechStatus == .authorized
-    }
-
-    public var hasMicrophonePermission: Bool {
-        AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
-    }
-
-    public var hasSpeechPermission: Bool {
-        SFSpeechRecognizer.authorizationStatus() == .authorized
+        showTransientNotice(L10n.t(VoicePermissionRules.grantedNoticeKey))
     }
 
     // MARK: - Session
 
     private func handleStart() {
         let snapshot = VoiceSettingsSnapshot.read()
-        guard snapshot.enabled else { return }
+        guard snapshot.enabled, !isAskingPermission else { return }
 
-        guard hasSpeechPermission, hasMicrophonePermission else {
-            Task {
-                let ok = await self.checkAndRequestPermissions()
-                if !ok {
-                    self.showError(L10n.t("Chưa cấp quyền Micro hoặc Nhận dạng giọng nói"))
-                }
-            }
+        switch VoicePermissionRules.decide(microphone: Self.microphoneStatus(), speech: Self.speechStatus()) {
+        case .start:
+            break
+        case .blocked(let kind, let restricted):
+            // No request API here: macOS would answer "denied" without a dialog, every press.
+            showError(L10n.t(VoicePermissionRules.blockedMessageKey(kind, restricted: restricted)))
+            return
+        case .ask(let kinds):
+            // Set before the Task runs: a second press in between must already see it.
+            isAskingPermission = true
+            Task { await self.askPermissions(kinds) }
             return
         }
 

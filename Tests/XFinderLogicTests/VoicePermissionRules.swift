@@ -1,0 +1,1 @@
+../../XFinder/Core/Voice/VoicePermissionRules.swift

@@ -304,6 +304,7 @@
 		7F1A0167 /* Voice/Providers/AppleSpeechProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0166 /* Voice/Providers/AppleSpeechProvider.swift */; };
 		7F1A016D /* Voice/TypingSink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016C /* Voice/TypingSink.swift */; };
 		7F1A0171 /* Voice/VoiceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0170 /* Voice/VoiceManager.swift */; };
+		7F1A0169 /* Voice/VoicePermissionRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0168 /* Voice/VoicePermissionRules.swift */; };
 		7F1A0173 /* Detail/VoiceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0172 /* Detail/VoiceDetailView.swift */; };
 		7F1A0321 /* Detail/SmartSelectDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0320 /* Detail/SmartSelectDetailView.swift */; };
 		7F1A0195 /* Voice/DictationMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0196 /* Voice/DictationMode.swift */; };
@@ -965,6 +966,7 @@
 		7F1A0166 /* Voice/Providers/AppleSpeechProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/Providers/AppleSpeechProvider.swift; sourceTree = "<group>"; };
 		7F1A016C /* Voice/TypingSink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/TypingSink.swift; sourceTree = "<group>"; };
 		7F1A0170 /* Voice/VoiceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoiceManager.swift; sourceTree = "<group>"; };
+		7F1A0168 /* Voice/VoicePermissionRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/VoicePermissionRules.swift; sourceTree = "<group>"; };
 		7F1A0172 /* Detail/VoiceDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/VoiceDetailView.swift; sourceTree = "<group>"; };
 		7F1A0320 /* Detail/SmartSelectDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/SmartSelectDetailView.swift; sourceTree = "<group>"; };
 		7F1A0196 /* Voice/DictationMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Voice/DictationMode.swift; sourceTree = "<group>"; };
@@ -1382,6 +1384,7 @@
 				7F1A0166 /* Voice/Providers/AppleSpeechProvider.swift */,
 				7F1A016C /* Voice/TypingSink.swift */,
 				7F1A0170 /* Voice/VoiceManager.swift */,
+				7F1A0168 /* Voice/VoicePermissionRules.swift */,
 				7F1A0196 /* Voice/DictationMode.swift */,
 				7F1A0198 /* Voice/RefinePrompt.swift */,
 				7F1A019A /* Voice/RefinerTypes.swift */,
@@ -2148,6 +2151,7 @@
 				7F1A0167 /* Voice/Providers/AppleSpeechProvider.swift in Sources */,
 				7F1A016D /* Voice/TypingSink.swift in Sources */,
 				7F1A0171 /* Voice/VoiceManager.swift in Sources */,
+				7F1A0169 /* Voice/VoicePermissionRules.swift in Sources */,
 				7F1A0173 /* Detail/VoiceDetailView.swift in Sources */,
 				7F1A0321 /* Detail/SmartSelectDetailView.swift in Sources */,
 				7F1A0195 /* Voice/DictationMode.swift in Sources */,

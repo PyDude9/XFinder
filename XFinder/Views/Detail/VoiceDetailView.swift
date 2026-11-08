@@ -17,6 +17,9 @@ import AppKit
 /// `VoiceSettingsSnapshot.read` consumes, and the engine is re-armed on every change.
 struct VoiceDetailView: View {
     @State private var voiceManager = VoiceManager.shared
+    /// The permission rows read through the hub: its `revision` is bumped after a request and when XFinder becomes
+    /// active again (back from System Settings), so the rows refresh without reopening the page.
+    @State private var hub = FeatureHub.shared
 
     // Activation
     // Default off since 2026-10-18 (Q-PRUNE-5) — must equal VoiceManager's reader and VoiceSettingsSnapshot.defaults.
@@ -96,8 +99,12 @@ struct VoiceDetailView: View {
             .pageWidthSafe()
         }
         .background(XFinderTokens.Settings.contentBackground)
-        .onAppear { reloadLocalState() }
+        .onAppear {
+            hub.retain()
+            reloadLocalState()
+        }
         .onDisappear {
+            hub.release()
             if isTestingMic { stopMicTest() }
         }
     }
@@ -628,6 +635,28 @@ struct VoiceDetailView: View {
 
     // MARK: - 6. Permissions & live test
 
+    /// Reading `hub.revision` here makes the row re-read TCC whenever the hub bumps it.
+    private var microphoneStatus: VoicePermissionStatus {
+        _ = hub.revision
+        return VoiceManager.microphoneStatus()
+    }
+
+    private var speechStatus: VoicePermissionStatus {
+        _ = hub.revision
+        return VoiceManager.speechStatus()
+    }
+
+    private func permissionRow(_ permission: AppPermission, status: VoicePermissionStatus, title: String) -> some View {
+        StatusChecklistRow(
+            state: status == .authorized ? .ok : .warning,
+            title: title,
+            status: L10n.t(VoicePermissionRules.rowStatusKey(status)),
+            actionTitle: VoicePermissionRules.rowActionKey(status).map { L10n.t($0) },
+            action: { hub.request(permission) }
+        )
+        .settingsRow()
+    }
+
     private var permissionsSection: some View {
         SettingsSection(
             title: L10n.t("Quyền & thử nghiệm"),
@@ -642,25 +671,14 @@ struct VoiceDetailView: View {
             )
             .settingsRow()
 
+            // XF-VOICE-PERMISSIONS: each row asks for ITS permission only, through the one place XFinder asks macOS
+            // (`FeatureHub.request`: a dialog while undecided, the Privacy pane once decided). The old button asked for
+            // both and, once refused, did nothing visible.
             SettingsDivider()
-            StatusChecklistRow(
-                state: voiceManager.hasMicrophonePermission ? .ok : .warning,
-                title: L10n.t("Quyền Micro (Microphone)"),
-                status: voiceManager.hasMicrophonePermission ? L10n.t("Đã cấp") : L10n.t("Cần cấp quyền"),
-                actionTitle: voiceManager.hasMicrophonePermission ? nil : L10n.t("Yêu cầu"),
-                action: { Task { _ = await voiceManager.checkAndRequestPermissions() } }
-            )
-            .settingsRow()
+            permissionRow(.microphone, status: microphoneStatus, title: L10n.t("Quyền Micro (Microphone)"))
 
             SettingsDivider()
-            StatusChecklistRow(
-                state: voiceManager.hasSpeechPermission ? .ok : .warning,
-                title: L10n.t("Quyền Nhận dạng giọng nói"),
-                status: voiceManager.hasSpeechPermission ? L10n.t("Đã cấp") : L10n.t("Cần cấp quyền"),
-                actionTitle: voiceManager.hasSpeechPermission ? nil : L10n.t("Yêu cầu"),
-                action: { Task { _ = await voiceManager.checkAndRequestPermissions() } }
-            )
-            .settingsRow()
+            permissionRow(.speechRecognition, status: speechStatus, title: L10n.t("Quyền Nhận dạng giọng nói"))
 
             SettingsDivider()
             VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
