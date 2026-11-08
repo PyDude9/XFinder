@@ -1860,5 +1860,47 @@
     "file": "XFinder/Core/Browser/BatchRenameRules.swift",
     "anchor": "case .uppercase: stem = stem.uppercased()",
     "replacement": "case .uppercase: stem = stem.uppercased() + (ext.isEmpty ? \"\" : \".\" + ext.uppercased())"
+  },
+  {
+    "id": "T38-01",
+    "name": "palette subtitle searches View first",
+    "file": "XFinder/Core/Browser/BrowserMenuLayout.swift",
+    "anchor": "[Menu.file, .edit, .view, .go, .window, .app].first",
+    "replacement": "[Menu.view, .file, .edit, .go, .window, .app].first"
+  },
+  {
+    "id": "T38-02",
+    "name": "toolbar insertion ignores its anchor",
+    "file": "XFinder/Core/Browser/BrowserMenuLayout.swift",
+    "anchor": "let index = before.flatMap { items.firstIndex(of: $0) } ?? items.count",
+    "replacement": "let index = items.count"
+  },
+  {
+    "id": "T38-03",
+    "name": "toolbar insertion re-adds present items",
+    "file": "XFinder/Core/Browser/BrowserMenuLayout.swift",
+    "anchor": "for (id, before) in add where !items.contains(id) {",
+    "replacement": "for (id, before) in add {"
+  },
+  {
+    "id": "T38-04",
+    "name": "Go menu loses Back",
+    "file": "XFinder/Core/Browser/BrowserMenuLayout.swift",
+    "anchor": "                .command(.back), .command(.forward), .command(.openEnclosing), .separator,",
+    "replacement": "                .command(.forward), .command(.openEnclosing), .separator,"
+  },
+  {
+    "id": "T38-05",
+    "name": "Find Duplicates opens the Sync page",
+    "file": "XFinder/Core/Browser/BrowserMenuLayout.swift",
+    "anchor": "case .findDuplicates: return .duplicateFinder",
+    "replacement": "case .findDuplicates: return .sync"
+  },
+  {
+    "id": "T38-06",
+    "name": "static submenus not counted in a menu",
+    "file": "XFinder/Core/Browser/BrowserMenuLayout.swift",
+    "anchor": "return (entries(submenu) ?? []).compactMap { if case .command(let c) = $0 { return c }; return nil }",
+    "replacement": "return []"
   }
 ]
