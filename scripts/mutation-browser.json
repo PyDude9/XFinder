@@ -1958,5 +1958,12 @@
     "file": "XFinder/Core/Browser/BrowserPaletteRules.swift",
     "anchor": "            if mode.isCommand && (item.kind == .location || item.kind == .workspace) { return nil }",
     "replacement": "            if mode.isCommand && item.kind == .location { return nil }"
+  },
+  {
+    "id": "T40-01",
+    "name": "File menu loses New File",
+    "file": "XFinder/Core/Browser/BrowserMenuLayout.swift",
+    "anchor": "                .command(.newWindow), .command(.newFolder), .command(.newFolderWithSelection), .command(.newFile),\n",
+    "replacement": "                .command(.newWindow), .command(.newFolder), .command(.newFolderWithSelection),\n"
   }
 ]
