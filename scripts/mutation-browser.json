@@ -1965,5 +1965,12 @@
     "file": "XFinder/Core/Browser/BrowserMenuLayout.swift",
     "anchor": "                .command(.newWindow), .command(.newFolder), .command(.newFolderWithSelection), .command(.newFile),\n",
     "replacement": "                .command(.newWindow), .command(.newFolder), .command(.newFolderWithSelection),\n"
+  },
+  {
+    "id": "T40-02",
+    "name": "a fresh name is always numbered",
+    "file": "XFinder/Core/Browser/FileOperationRules.swift",
+    "anchor": "        existing.contains(name) ? keepBothName(for: name, existing: existing) : name",
+    "replacement": "        keepBothName(for: name, existing: existing)"
   }
 ]
