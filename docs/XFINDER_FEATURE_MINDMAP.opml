@@ -1,0 +1,501 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+<head><title>XFinder — mind map chức năng</title><dateCreated>2026-11-09</dateCreated></head>
+<body>
+<outline text="XFinder 1.4.0 — mind map chức năng (2026-11-09)" _note="macOS 14+ · Swift 6 · arm64 · mọi tính năng mở trong bản Debug cài trên máy">
+  <outline text="Trang trong cửa sổ chính (sidebar)" _note="Mỗi trang một việc; nhóm theo ý định người dùng">
+    <outline text="CHUNG">
+      <outline text="Tổng quan (Overview)" _note="SidebarDestination.dashboard"/>
+      <outline text="Tính năng &amp; Quyền (Features &amp; Permissions)" _note="SidebarDestination.features"/>
+      <outline text="Phím tắt (Shortcuts)" _note="SidebarDestination.shortcuts"/>
+      <outline text="Theo dõi hệ thống (System Monitor)" _note="SidebarDestination.system">
+        <outline text="Tab: Mạng (Network)" _note="SidebarDestination.network"/>
+        <outline text="Tab: Ổ đĩa (Storage)" _note="SidebarDestination.storage"/>
+        <outline text="Tab: Pin (Battery)" _note="SidebarDestination.pin"/>
+      </outline>
+      <outline text="Cảnh báo (Alerts)" _note="SidebarDestination.alerts"/>
+    </outline>
+    <outline text="NOTCH">
+      <outline text="Giao diện notch (Notch Interface)" _note="SidebarDestination.notchInterface"/>
+      <outline text="Khay thả (Drop Tray)" _note="SidebarDestination.dropTray"/>
+      <outline text="Đang phát (Now Playing)" _note="SidebarDestination.media"/>
+      <outline text="Agent AI (AI agents)" _note="SidebarDestination.aiAgents"/>
+      <outline text="Lịch &amp; lời nhắc (Calendar &amp; Reminders)" _note="SidebarDestination.calendar"/>
+      <outline text="Hoạt động trực tiếp (Live Activities)" _note="SidebarDestination.liveActivities"/>
+    </outline>
+    <outline text="CỬA SỔ">
+      <outline text="Xem trước cửa sổ (Window Preview)" _note="SidebarDestination.windowPreview"/>
+      <outline text="Vùng bắt dính (Snap Zones)" _note="SidebarDestination.snapZones"/>
+      <outline text="Thoát ứng dụng (Quitting Apps)" _note="SidebarDestination.appQuit"/>
+      <outline text="Chuột &amp; cử chỉ (Mouse &amp; Gestures)" _note="SidebarDestination.mouseGestures"/>
+      <outline text="Ẩn biểu tượng thanh menu (Hide Menu Bar Icons)" _note="SidebarDestination.menuIcons"/>
+    </outline>
+    <outline text="FINDER &amp; TÌM KIẾM">
+      <outline text="Trình duyệt tệp (File Browser)" _note="SidebarDestination.fileBrowser"/>
+      <outline text="Bàn phím Finder (Finder Keyboard)" _note="SidebarDestination.finderKeyboard"/>
+      <outline text="Thao tác Finder (Finder Actions)" _note="SidebarDestination.finderActions"/>
+      <outline text="Tìm kiếm (Search)" _note="SidebarDestination.finderSearch">
+        <outline text="Tab: Tìm kiếm AI (AI Search)" _note="SidebarDestination.aiSearch"/>
+      </outline>
+      <outline text="Đổi tên hàng loạt (Batch Rename)" _note="SidebarDestination.batchRename"/>
+      <outline text="Dọn rác thư mục (Folder Cleanup)" _note="SidebarDestination.junkCleanup"/>
+      <outline text="Lịch sử thao tác (Action History)" _note="SidebarDestination.actionHistory"/>
+    </outline>
+    <outline text="CÔNG CỤ">
+      <outline text="Nhập bằng giọng nói (Voice to Typing)" _note="SidebarDestination.voiceTyping"/>
+      <outline text="Chọn văn bản thông minh (Smart Selection)" _note="SidebarDestination.smartSelect"/>
+      <outline text="Chụp &amp; chú thích (Capture &amp; Annotate)" _note="SidebarDestination.capture"/>
+      <outline text="Thư viện Clipboard (Clipboard Library)" _note="SidebarDestination.clipboard"/>
+      <outline text="Cài đặt Clipboard (Clipboard Settings)" _note="SidebarDestination.settingsClipboard"/>
+      <outline text="Ghi chú (Notes)" _note="SidebarDestination.notes"/>
+      <outline text="Nén &amp; Giải nén (Compress &amp; Extract)" _note="SidebarDestination.compress"/>
+      <outline text="Công cụ PDF (PDF Tools)" _note="SidebarDestination.pdfTools"/>
+      <outline text="Khóa thư mục (Folder Lock)" _note="SidebarDestination.folderLock"/>
+      <outline text="Tìm tệp trùng (Duplicate Finder)" _note="SidebarDestination.duplicateFinder"/>
+    </outline>
+    <outline text="KẾT NỐI">
+      <outline text="Đồng bộ (Sync)" _note="SidebarDestination.sync"/>
+      <outline text="Kết nối từ xa (Remote Connect)" _note="SidebarDestination.remoteConnect"/>
+      <outline text="Chia sẻ nhanh (Quick Share)" _note="SidebarDestination.quickShare"/>
+      <outline text="Cổng đang mở (Open ports)" _note="SidebarDestination.ports"/>
+    </outline>
+    <outline text="TIỆN ÍCH">
+      <outline text="Tiện ích Finder (Finder Utilities)" _note="SidebarDestination.finderUtils"/>
+      <outline text="Quick Look" _note="SidebarDestination.quickLookPage">
+        <outline text="Tab: Tương thích media (Media Compatibility)" _note="SidebarDestination.mediaCompat"/>
+      </outline>
+      <outline text="Gỡ ứng dụng (Uninstall Apps)" _note="SidebarDestination.uninstaller"/>
+    </outline>
+    <outline text="Không nằm trong sidebar" _note="mở bằng liên kết hoặc footer">
+      <outline text="Chống ngủ (Anti-sleep)" _note="SidebarDestination.antiSleep"/>
+      <outline text="XFinder Pro" _note="SidebarDestination.pro"/>
+      <outline text="Giới thiệu (About)" _note="SidebarDestination.about"/>
+    </outline>
+  </outline>
+  <outline text="Tính năng &amp; Quyền (FeatureCatalog)" _note="Mỗi tính năng: khoá bật/tắt, mặc định, quyền macOS, chi phí khi nghỉ">
+    <outline text="Cửa sổ và Dock (Windows and Dock)">
+      <outline text="Xem trước Dock (Dock preview)" _note="Rê chuột lên icon trên Dock để xem các cửa sổ. (Hover a Dock icon to see its windows.)">
+        <outline text="khoá `windowPreview.hoverEnabled` · mặc định BẬT"/>
+        <outline text="quyền: Trợ năng, Ghi màn hình"/>
+        <outline text="khi nghỉ: Lắng nghe chuột"/>
+      </outline>
+      <outline text="Chuyển đổi ứng dụng (⌘-Tab) (App switcher (⌘-Tab))" _note="Thay trình chuyển ứng dụng của macOS bằng bản có ảnh thu nhỏ. (Replaces macOS's app switcher with one that has thumbnails.)">
+        <outline text="khoá `windowPreview.commandTabEnabled` · mặc định tắt"/>
+        <outline text="quyền: Trợ năng, Ghi màn hình"/>
+        <outline text="khi nghỉ: Lắng nghe bàn phím"/>
+      </outline>
+      <outline text="Vùng bắt dính (Snap Zones)" _note="Kéo cửa sổ tới mép màn hình để chia khung. (Drag a window to a screen edge to tile it.)">
+        <outline text="khoá `snapzones.enabled` · mặc định BẬT"/>
+        <outline text="quyền: Trợ năng"/>
+        <outline text="khi nghỉ: Lắng nghe chuột"/>
+      </outline>
+      <outline text="Cuộn chuột mượt (Smooth mouse scrolling)" _note="Bánh xe chuột trôi như trackpad; trackpad và Magic Mouse giữ nguyên. (The mouse wheel glides like a trackpad; the trackpad and the Magic Mouse stay as they are.)">
+        <outline text="khoá `smoothScroll.enabled` · mặc định tắt"/>
+        <outline text="quyền: Trợ năng"/>
+        <outline text="khi nghỉ: Lắng nghe chuột"/>
+      </outline>
+      <outline text="Nhớ bố cục cửa sổ (Remember window layouts)" _note="Đưa app về đúng chỗ đã bắt dính khi nó mở lại hoặc khi đổi bộ màn hình. (Puts an app back where you snapped it when it opens again or when the set of displays changes.)">
+        <outline text="khoá `snapzones.remember` · mặc định tắt"/>
+        <outline text="quyền: Trợ năng"/>
+        <outline text="khi nghỉ: Theo dõi cửa sổ app đã chọn"/>
+      </outline>
+      <outline text="Giữ ⌘Q để thoát ứng dụng (Hold ⌘Q to quit apps)" _note="Nhấn nhanh ⌘Q không thoát nhầm; phải giữ khoảng 1 giây. (A quick ⌘Q no longer quits by accident; hold it for about a second.)">
+        <outline text="khoá `quitProtection.enabled` · mặc định tắt"/>
+        <outline text="quyền: Trợ năng"/>
+        <outline text="khi nghỉ: Lắng nghe bàn phím"/>
+      </outline>
+      <outline text="Thoát app khi đóng cửa sổ cuối (Quit an app when its last window closes)" _note="Chỉ với những app bạn chọn; Finder không bao giờ. (Only the apps you choose; never Finder.)">
+        <outline text="khoá `quitOnClose.enabled` · mặc định tắt"/>
+        <outline text="quyền: Trợ năng"/>
+        <outline text="khi nghỉ: Theo dõi cửa sổ app đã chọn"/>
+      </outline>
+    </outline>
+    <outline text="Clipboard">
+      <outline text="Khay Clipboard ⌘⇧V (Clipboard shelf ⌘⇧V)" _note="Mở lịch sử clipboard ở mọi ứng dụng bằng phím tắt. (Open clipboard history in any app with a shortcut.)">
+        <outline text="khoá `clipboard.globalHotkey` · mặc định BẬT"/>
+        <outline text="quyền: Trợ năng"/>
+        <outline text="khi nghỉ: Lắng nghe bàn phím"/>
+      </outline>
+      <outline text="Xem trước liên kết (mạng) (Link previews (network))" _note="Tiêu đề và ảnh cho link đã copy, tải từ chính trang đó; mặc định tắt. (Title and image for copied links, fetched from the page itself; off by default.)">
+        <outline text="khoá `clipboard.linkPreviews` · mặc định tắt"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Không chạy nền"/>
+      </outline>
+      <outline text="Làm sạch liên kết khi sao chép (Clean links when copying)" _note="Xóa tham số theo dõi khỏi liên kết bạn sao chép. (Removes tracking parameters from links you copy.)">
+        <outline text="khoá `clipboard.cleanURLs` · mặc định tắt"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Không chạy nền"/>
+      </outline>
+      <outline text="Tab Gợi ý trong khay ⌘⇧V (Suggestions tab in the ⌘⇧V shelf)" _note="Xếp hạng lịch sử theo ứng dụng sắp dán vào. (Ranks history by the app you are about to paste into.)">
+        <outline text="khoá `clipboard.intelligentSuggestions` · mặc định BẬT"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Không chạy nền"/>
+      </outline>
+    </outline>
+    <outline text="Công cụ (Tools)">
+      <outline text="Trình duyệt tệp (File Browser)" _note="Finder nhiều ngăn: chép giữa các ngăn, tìm bằng một câu thường, hàng đợi chép an toàn. (Finder with split panes: copy between panes, search in plain words, a safe copy queue.)">
+        <outline text="khoá `fileBrowser.enabled` · mặc định BẬT"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Chỉ chạy khi cửa sổ đang mở"/>
+      </outline>
+      <outline text="Bảng lệnh ⌘K (Command bar ⌘K)" _note="Tìm ứng dụng, tệp và tính toán từ một ô nhập. (Search apps, files and calculate from one field.)">
+        <outline text="khoá `quickSearch.enabled` · mặc định BẬT"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Không chạy nền"/>
+      </outline>
+      <outline text="Ghi chú ở mép màn hình (Edge notes)" _note="Dải ghi chú ẩn ở mép màn hình, rê chuột để mở. (A note strip hidden at the screen edge; point at it to open.)">
+        <outline text="khoá `notes.edgeEnabled` · mặc định tắt"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Lắng nghe chuột"/>
+      </outline>
+      <outline text="Notch" _note="Khay, Clipboard, Đang phát, Agent AI và Lịch ở notch. Tắt là tắt cả notch. (Tray, Clipboard, Now Playing, AI agents and Calendar at the notch. Off turns the whole notch off.)">
+        <outline text="khoá `dropTray.notchEnabled` · mặc định BẬT"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Lắng nghe chuột"/>
+      </outline>
+      <outline text="Đang phát trên notch (Now Playing on the notch)" _note="Bài đang phát, ảnh bìa và nút điều khiển ở notch; đọc qua một tiến trình trợ giúp nhỏ. (The playing track, artwork and controls at the notch; read through a small helper process.)">
+        <outline text="khoá `notch.nowPlaying` · mặc định tắt"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Một tiến trình phụ"/>
+      </outline>
+      <outline text="Agent AI trên notch (AI agents on the notch)" _note="Phiên Claude Code và Codex đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ. (Claude Code and Codex sessions running in a terminal: status and approvals at the notch; reads a local hook log.)">
+        <outline text="khoá `agents.enabled` · mặc định tắt"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Có bộ hẹn giờ"/>
+      </outline>
+      <outline text="Lịch trên notch (Calendar on the notch)" _note="Hôm nay có gì, việc kế tiếp và link họp — đọc từ Lịch của macOS, không mạng. (What is on today, the next thing and a meeting link — read from the macOS Calendar, no network.)">
+        <outline text="khoá `notch.calendar` · mặc định tắt"/>
+        <outline text="quyền: Lịch, Lời nhắc"/>
+        <outline text="khi nghỉ: Có bộ hẹn giờ"/>
+      </outline>
+      <outline text="Đồng bộ thư mục tự động (Automatic folder sync)" _note="Sao chép một chiều theo lịch hoặc khi có thay đổi. (One-way copy on a schedule or when something changes.)">
+        <outline text="khoá `sync.autoEnabled` · mặc định tắt"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Có bộ hẹn giờ"/>
+      </outline>
+      <outline text="Cảnh báo hệ thống (System alerts)" _note="Thông báo khi CPU, bộ nhớ, ổ đĩa, nhiệt độ hay pin có vấn đề kéo dài. (Notifies you when CPU, memory, disk, temperature or battery stay in trouble.)">
+        <outline text="khoá `alerts.enabled` · mặc định tắt"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Có bộ hẹn giờ"/>
+      </outline>
+      <outline text="Chỉ dùng notch cho độ sáng và âm lượng (Use the notch only for brightness and volume)" _note="XFinder tự nhận phím độ sáng và âm lượng rồi đặt giá trị, nên macOS không hiện hộp vuông riêng nữa. (XFinder takes the brightness and volume keys over and sets the values itself, so macOS no longer draws its own square.)">
+        <outline text="khoá `notch.activity.hideSystemHUD` · mặc định BẬT"/>
+        <outline text="quyền: Trợ năng"/>
+        <outline text="khi nghỉ: Lắng nghe bàn phím"/>
+      </outline>
+      <outline text="Số liệu trên thanh menu (Menu bar readouts)" _note="CPU, bộ nhớ, nhiệt độ… hiện cạnh biểu tượng XFinder; chọn số liệu ở trang Tổng quan. (CPU, memory, temperature… beside the XFinder icon; pick the figures on the Overview page.)">
+        <outline text="khoá `menubar.readoutsEnabled` · mặc định tắt"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Có bộ hẹn giờ"/>
+      </outline>
+      <outline text="Dịch vùng chọn (⇧⌘G) (Translate selection (⇧⌘G))" _note="Bôi đen chữ ở app bất kỳ, bấm ⇧⌘G: bản dịch của Apple ngay trên máy, không mạng. (Select text in any app, press ⇧⌘G: Apple's translation, on this Mac, no network.)">
+        <outline text="khoá `translate.hotkeyEnabled` · mặc định tắt"/>
+        <outline text="quyền: Trợ năng"/>
+        <outline text="khi nghỉ: Lắng nghe bàn phím"/>
+      </outline>
+      <outline text="Chọn văn bản thông minh (Smart Selection)" _note="Bôi đen chữ ở app khác: nút nhỏ đổi đơn vị, đổi múi giờ, tính, thêm vào Lịch, dịch. (Select text in another app: a small button converts units and time zones, calculates, adds to Calendar, translates.)">
+        <outline text="khoá `smartSelect.enabled` · mặc định tắt"/>
+        <outline text="quyền: Trợ năng"/>
+        <outline text="khi nghỉ: Lắng nghe chuột"/>
+      </outline>
+      <outline text="Chụp &amp; chú thích (Capture &amp; Annotate)" _note="Phím tắt chụp, thẻ xem trước nổi và trình chú thích. (Capture shortcuts, a floating preview card and an annotation editor.)">
+        <outline text="khoá `capture.enabled` · mặc định BẬT"/>
+        <outline text="quyền: Ghi màn hình"/>
+        <outline text="khi nghỉ: Không chạy nền"/>
+      </outline>
+    </outline>
+    <outline text="Giọng nói (Voice)">
+      <outline text="Nhập bằng giọng nói (Voice to Typing)" _note="Giữ phím, nói, thả ra là chữ vào ô đang gõ. (Hold a key, speak, release, and the text lands where you are typing.)">
+        <outline text="khoá `voice.enabled` · mặc định tắt"/>
+        <outline text="quyền: Trợ năng, Micro, Nhận dạng giọng nói"/>
+        <outline text="khi nghỉ: Lắng nghe bàn phím"/>
+      </outline>
+    </outline>
+    <outline text="Kết nối (Connect)">
+      <outline text="Chia sẻ nhanh (Quick Share)" _note="Liên kết tải file cho thiết bị cùng mạng Wi-Fi. Tắt là thu hồi mọi liên kết và dừng máy chủ ngay. (Download links for devices on the same Wi-Fi. Turning it off revokes every link and stops the server at once.)">
+        <outline text="khoá `quickShare.enabled` · mặc định BẬT"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Có bộ hẹn giờ"/>
+      </outline>
+      <outline text="Kết nối từ xa (Remote Connect)" _note="Tải file lên máy chủ SSH bằng scp khi bạn bấm Tải lên. Tắt là không gửi gì ra mạng. (Uploads files to an SSH server with scp when you press Upload. Off means nothing is sent over the network.)">
+        <outline text="khoá `remoteConnect.enabled` · mặc định BẬT"/>
+        <outline text="quyền: không cần"/>
+        <outline text="khi nghỉ: Không chạy nền"/>
+      </outline>
+    </outline>
+    <outline text="Gói cài đặt nhanh (FeatureBundle)" _note="một chạm bật/tắt nhiều tính năng">
+      <outline text="Cửa sổ (Windows)" _note="Xem trước Dock, ⌘-Tab, vùng bắt dính và giữ ⌘Q để thoát.">
+        <outline text="bật: dockPreview, commandTab, snapZones, quitProtection"/>
+        <outline text="tắt: —"/>
+      </outline>
+      <outline text="Clipboard và tìm kiếm (Clipboard and search)" _note="Khay ⌘⇧V, làm sạch liên kết, gợi ý và bảng lệnh ⌘K.">
+        <outline text="bật: clipboardShelf, cleanURLs, suggestions, quickSearch"/>
+        <outline text="tắt: —"/>
+      </outline>
+    </outline>
+  </outline>
+  <outline text="Trình duyệt tệp (XF-T28…T39)" _note="cửa sổ nhiều ngăn, tab từng ngăn, theo Tilde về giao diện, FileOctopus về tính năng">
+    <outline text="Thanh menu khi trình duyệt ở trước (XF-T38)" _note="Tệp/Đi là menu riêng; khối trong Edit/View/Window qua SwiftUI">
+      <outline text="XFinder">
+        <outline text="Cài đặt trình duyệt… (Browser Settings…) — ⌘,"/>
+        <outline text="Xoá lịch sử thao tác (Clear File Operation History)"/>
+      </outline>
+      <outline text="Tệp (File)">
+        <outline text="Cửa sổ mới (New Window) — ⌘N"/>
+        <outline text="Thư mục mới (New Folder) — ⇧⌘N"/>
+        <outline text="Thư mục mới chứa mục chọn (New Folder with Selection) — ⌃⌘N"/>
+        <outline text="Tab cửa sổ mới (New Window Tab) — ⌘T"/>
+        <outline text="Mở (Open) — ⌘O"/>
+        <outline text="Mở bằng (Open With) ▸"/>
+        <outline text="Đóng ngăn (Close Pane) — ⌃⌥⌘W"/>
+        <outline text="Đóng cửa sổ (Close Window) — ⌘W"/>
+        <outline text="Lấy thông tin (Get Info) — ⌘I"/>
+        <outline text="Đổi tên (Rename) — ↩"/>
+        <outline text="Nén thành ZIP (Compress to ZIP)"/>
+        <outline text="Nhân bản (Duplicate) — ⌘D"/>
+        <outline text="Tạo bí danh (Make Alias) — ⌃⌘A"/>
+        <outline text="Sao chép sang ngăn kia (Copy to Other Pane) — ⌃⇧⌘C"/>
+        <outline text="Di chuyển sang ngăn kia (Move to Other Pane) — ⌃⇧⌘M"/>
+        <outline text="So sánh thư mục… (Compare Folders…) → trang XFinder"/>
+        <outline text="Tìm tệp trùng… (Find Duplicates…) → trang XFinder"/>
+        <outline text="Xem nhanh (Quick Look) — ⌘Y"/>
+        <outline text="Chia sẻ… (Share…)"/>
+        <outline text="Hiện bản gốc (Show Original) — ⌘R"/>
+        <outline text="Hiện trong Finder (Show in Finder)"/>
+        <outline text="Thêm vào sidebar (Add to Sidebar) — ⌃⌘T"/>
+        <outline text="Thêm vào Shelf (Add to Shelf) — ⌃⌘S"/>
+        <outline text="Chuyển vào Thùng rác (Move to Trash) — ⌘⌫"/>
+        <outline text="Đẩy ra (Eject) — ⌘E"/>
+        <outline text="Thẻ (Tag) ▸"/>
+        <outline text="Tìm kiếm (Search) — ⌘F"/>
+        <outline text="Lưu tìm kiếm… (Save Search…)"/>
+      </outline>
+      <outline text="Sửa (Edit)">
+        <outline text="Sao chép đường dẫn (Copy path) — ⌥⌘C"/>
+        <outline text="Dán và di chuyển (Move Item Here) — ⌥⌘V"/>
+        <outline text="Đổi tên hàng loạt (Batch Rename) — ⌃⌘R"/>
+      </outline>
+      <outline text="Xem (View)">
+        <outline text="Xem dạng biểu tượng (as Icons) — ⌘1"/>
+        <outline text="Xem dạng danh sách (as List) — ⌘2"/>
+        <outline text="Xem dạng cột (as Columns) — ⌘3"/>
+        <outline text="Xem dạng gallery (as Gallery) — ⌘4"/>
+        <outline text="Dùng nhóm (Use Groups) — ⌃⌘0"/>
+        <outline text="Nhóm theo (Group By) ▸"/>
+        <outline text="Sắp theo (Sort By) ▸"/>
+        <outline text="Hiện hoặc ẩn sidebar (Show or Hide Sidebar) — ⌥⌘S"/>
+        <outline text="Lọc thư mục hiện tại (Filter Current Folder)"/>
+        <outline text="Hiện hoặc ẩn xem trước (Show or Hide Preview) — ⇧⌘P"/>
+        <outline text="Shelf ▸">
+          <outline text="Hiện hoặc ẩn Shelf (Show or Hide Shelf) — ⌥⌘B"/>
+          <outline text="Thêm vào Shelf (Add to Shelf) — ⌃⌘S"/>
+        </outline>
+        <outline text="Hiện hoặc ẩn thanh công cụ (Show or Hide Toolbar) — ⌥⌘T"/>
+        <outline text="Hiện hoặc ẩn thanh đường dẫn (Show or Hide Path Bar) — ⌥⌘P"/>
+        <outline text="Hiện hoặc ẩn thanh trạng thái (Show or Hide Status Bar) — ⌘/"/>
+        <outline text="Hiện hoặc ẩn thanh vị trí (Show or Hide Location Bar)"/>
+        <outline text="Gõ đường dẫn (Edit Location) — ⌃⌘L"/>
+        <outline text="Làm mới (Refresh)"/>
+        <outline text="Hiện hoặc ẩn tệp ẩn (Show or Hide Hidden Files) — ⇧⌘."/>
+        <outline text="Bố cục ngăn (Pane Layout) ▸">
+          <outline text="Một ngăn (Single)"/>
+          <outline text="Cạnh nhau (Side by Side)"/>
+          <outline text="Chồng lên nhau (Stacked)"/>
+          <outline text="Lưới 2×2 (2×2 Grid)"/>
+        </outline>
+        <outline text="Ngăn (Panes) ▸">
+          <outline text="Chia ngăn sang phải (Split Right) — ⌃⌥⌘→"/>
+          <outline text="Chia ngăn sang trái (Split Left) — ⌃⌥⌘←"/>
+          <outline text="Chia ngăn xuống dưới (Split Down) — ⌃⌥⌘↓"/>
+          <outline text="Chia ngăn lên trên (Split Up) — ⌃⌥⌘↑"/>
+          <outline text="Ngăn kế tiếp (Next Pane) — ⌃⌘]"/>
+          <outline text="Ngăn trước đó (Previous Pane) — ⌃⌘["/>
+          <outline text="Đổi chỗ với ngăn kế (Swap with Next Pane)"/>
+          <outline text="Phóng to ngăn (Zoom Pane) — ⇧⌘↩"/>
+          <outline text="Chia đều các ngăn (Make Panes Equal Size) — ⌃⌥⌘="/>
+          <outline text="Làm ngăn rộng hơn (Make Pane Wider)"/>
+          <outline text="Làm ngăn hẹp hơn (Make Pane Narrower)"/>
+          <outline text="Làm ngăn cao hơn (Make Pane Taller)"/>
+          <outline text="Làm ngăn thấp hơn (Make Pane Shorter)"/>
+          <outline text="Đóng ngăn (Close Pane) — ⌃⌥⌘W"/>
+        </outline>
+        <outline text="Tuỳ biến thanh công cụ… (Customize Toolbar…)"/>
+        <outline text="Hiện tuỳ chọn xem (Show View Options) — ⌘J"/>
+        <outline text="Bảng lệnh (Command palette) — ⌃⇧⌘P"/>
+      </outline>
+      <outline text="Đi (Go)">
+        <outline text="Lùi lại (Back) — ⌘["/>
+        <outline text="Tiến tới (Forward) — ⌘]"/>
+        <outline text="Lên thư mục cha (Enclosing Folder) — ⌘↑"/>
+        <outline text="Mục gần đây (Recents) — ⇧⌘F"/>
+        <outline text="Tài liệu (Documents) — ⇧⌘O"/>
+        <outline text="Màn hình nền (Desktop) — ⇧⌘D"/>
+        <outline text="Thư mục Tải về (Downloads) — ⌥⌘L"/>
+        <outline text="Thư mục nhà (Home) — ⇧⌘H"/>
+        <outline text="Máy tính (Computer) — ⇧⌘C"/>
+        <outline text="AirDrop — ⇧⌘R"/>
+        <outline text="Mạng (Network) — ⇧⌘K"/>
+        <outline text="iCloud Drive — ⇧⌘I"/>
+        <outline text="Các ứng dụng (Applications) — ⇧⌘A"/>
+        <outline text="Tiện ích hệ thống (Utilities) — ⇧⌘U"/>
+        <outline text="Thư mục gần đây (Recent Folders) ▸"/>
+        <outline text="Đến thư mục (Go to Folder) — ⇧⌘G"/>
+        <outline text="Kết nối máy chủ… (Connect to Server…)"/>
+        <outline text="Kết nối máy chủ từ xa… (Connect to Remote Server…) → trang XFinder"/>
+        <outline text="Mở nhanh (Quick Open) — ⌘K"/>
+        <outline text="Tìm kiếm đã lưu (Saved Search) ▸"/>
+      </outline>
+      <outline text="Cửa sổ (Windows)">
+        <outline text="Hàng đợi thao tác (Operations) — ⌥⌘O"/>
+        <outline text="Tab ngăn trước (Previous Pane Tab) — ⌥⌘["/>
+        <outline text="Tab ngăn kế tiếp (Next Pane Tab) — ⌥⌘]"/>
+        <outline text="Chuyển tab ra cửa sổ mới (Move Tab to Window)"/>
+        <outline text="Lưu Workspace (Save Workspace)"/>
+        <outline text="Mở workspace (Open Workspace) ▸"/>
+        <outline text="Đổi tên workspace (Rename Workspace) ▸"/>
+        <outline text="Nhân bản workspace (Duplicate Workspace) ▸"/>
+        <outline text="Xoá workspace (Delete Workspace) ▸"/>
+        <outline text="Xem các workspace đã lưu… (Inspect Saved Workspaces…)"/>
+        <outline text="Xuất các workspace… (Export Saved Workspaces…)"/>
+      </outline>
+    </outline>
+    <outline text="Lệnh khác (bảng lệnh ⌘K › `&gt;`, chuột phải, phím)" _note="không nằm trong menu bar">
+      <outline text="Chuyển tab sang ngăn kế (Move Tab to Next Pane)"/>
+      <outline text="Chuyển tab sang ngăn mới bên dưới (Move Tab to New Pane Below) — ⌥⇧⌘↓"/>
+      <outline text="Chuyển tab sang ngăn mới bên phải (Move Tab to New Pane on Right) — ⌥⇧⌘→"/>
+      <outline text="Chọn tất cả (Select All) — ⌘A"/>
+      <outline text="Cắt tệp (Cut) — ⌘X"/>
+      <outline text="Dán (Paste) — ⌘V"/>
+      <outline text="Gỡ bản tải (Remove Download)"/>
+      <outline text="Hiện cửa sổ Chào… (Show Welcome Window…)"/>
+      <outline text="Hoàn tác (Undo) — ⌘Z"/>
+      <outline text="Làm lại (Redo) — ⇧⌘Z"/>
+      <outline text="Mở Workspace (Open Workspace)"/>
+      <outline text="Mở trong cửa sổ mới (Open in New Window)"/>
+      <outline text="Mở trong tab mới (Open in New Tab)"/>
+      <outline text="Ngăn bên phải (Pane on Right) — ⌃⇧⌘→"/>
+      <outline text="Ngăn bên trái (Pane on Left) — ⌃⇧⌘←"/>
+      <outline text="Ngăn phía dưới (Pane Below) — ⌃⇧⌘↓"/>
+      <outline text="Ngăn phía trên (Pane Above) — ⌃⇧⌘↑"/>
+      <outline text="Sao chép (Copy) — ⌘C"/>
+      <outline text="Tab ngăn mới (New Pane Tab) — ⌃⌥⌘T"/>
+      <outline text="Trình chiếu (Slideshow) — ⌥⌘Y"/>
+      <outline text="Tải về ngay (Download Now)"/>
+      <outline text="Xoá menu (Clear Menu)"/>
+      <outline text="Đóng tab ngăn (Close Pane Tab)"/>
+    </outline>
+    <outline text="Thanh công cụ (Navigation Bar)">
+      <outline text="Mặc định">
+        <outline text="Ẩn/hiện sidebar"/>
+        <outline text="Lùi / Tiến"/>
+        <outline text="Kiểu xem"/>
+        <outline text="Nhóm theo (Group By)"/>
+        <outline text="Bố cục ngăn (Pane Layout)"/>
+        <outline text="Khay Tải về (Downloads Tray)"/>
+        <outline text="Chia sẻ (Share)"/>
+        <outline text="Thẻ (Tag)"/>
+        <outline text="Tác vụ (…)"/>
+        <outline text="Tìm (Find)"/>
+      </outline>
+      <outline text="Thêm được qua Tuỳ biến thanh công cụ">
+        <outline text="Thư mục cha"/>
+        <outline text="Đến thư mục (Go to Folder)"/>
+        <outline text="Workspace"/>
+        <outline text="Shelf"/>
+        <outline text="Hàng đợi thao tác (Operations)"/>
+        <outline text="Thư mục mới (New Folder)"/>
+        <outline text="Xem nhanh (Quick Look)"/>
+      </outline>
+    </outline>
+    <outline text="Cài đặt trình duyệt (⌘, khi trình duyệt ở trước)">
+      <outline text="Cửa sổ mới hiện (New windows show)"/>
+      <outline text="Khi mở (When it opens)"/>
+      <outline text="Thói quen Windows (tuỳ chọn) (Windows habits (optional))"/>
+      <outline text="Khay Tải về (Downloads Tray)"/>
+      <outline text="Cập nhật phần mềm (Software update)"/>
+      <outline text="Hiện trong cửa sổ (Show in window)"/>
+      <outline text="Ngăn thông tin (Inspector)"/>
+      <outline text="Hiện trong sidebar (Show in sidebar)"/>
+      <outline text="Tuỳ chọn (Options)"/>
+      <outline text="Ổ đã ẩn (Hidden disks)"/>
+      <outline text="Đám mây trong sidebar (Cloud in sidebar)"/>
+      <outline text="Nhà cung cấp đám mây khác (Other Cloud Providers)"/>
+      <outline text="Hiển thị tệp (File display)"/>
+      <outline text="Khi tìm kiếm (When searching)"/>
+      <outline text="Hồ sơ phím tắt (Shortcut profile)"/>
+      <outline text="Bảng phím tắt (Shortcut table)"/>
+      <outline text="Chuột (Mouse)"/>
+      <outline text="Xuất / nhập (Export / Import)"/>
+      <outline text="Thư mục được đánh chỉ mục (Indexed folders)"/>
+      <outline text="Quyền thư mục (Folder access)"/>
+      <outline text="Truy cập toàn bộ ổ đĩa (Full Disk Access)"/>
+      <outline text="Khởi động (Startup)"/>
+    </outline>
+    <outline text="Tìm kiếm (ô tìm trên thanh công cụ)" _note="Spotlight + chỉ mục tên riêng + chỉ mục nội dung FTS5 (tuỳ chọn)">
+      <outline text="Phạm vi: Máy này (thư mục đã chỉ mục) · Thư mục hiện tại · Các ngăn đang mở"/>
+      <outline text='Câu tự nhiên VI/EN: "ảnh tuần trước", "pdfs from last week", "lớn hơn 10 MB", "tải từ github"'/>
+      <outline text="Bộ lọc `trường:giá trị` (thành chip)">
+        <outline text="kind: pdf · image · video · audio · document · spreadsheet · presentation · archive · folder · app · screenshot · code · text"/>
+        <outline text="ext:pdf · tag:/tags:work · from:gmail (hiểu cả miền tệp đính kèm) · content:từ · in:/trong:thư-mục"/>
+        <outline text="size: &gt;5MB · &lt;=200KB · =0 (không đơn vị = byte)"/>
+        <outline text="modified:/created: today · yesterday · thisweek · lastweek · thismonth · lastmonth · thisyear · lastyear · &lt;7d · &gt;2w · &lt;3m · &lt;1y · 2026-10-01 · 2026-10-01..2026-10-10"/>
+        <outline text='cụm "trong ngoặc" · loại trừ -từ / !từ'/>
+        <outline text="Cảnh báo hiện dưới ô: bộ lọc lạ, ngày/cỡ/loại/đuôi sai, thiếu giá trị, thiếu ngoặc kép, quá 256 ký tự / 16 từ"/>
+      </outline>
+      <outline text="Lưu tìm kiếm… → Tìm kiếm đã lưu (sidebar, menu Đi)"/>
+    </outline>
+    <outline text="Workspace &amp; phiên (XF-T39)">
+      <outline text="Lưu Workspace: mọi cửa sổ đang mở (tab, ngăn, thư mục, kiểu xem); trùng tên ⇒ hỏi Thay thế"/>
+      <outline text="Mở workspace: thêm cửa sổ, không thay cửa sổ đang mở (Window ▸ Mở workspace ▸, hoặc ⌘K gõ tên)"/>
+      <outline text="Đổi tên / Nhân bản / Xoá / Xem các workspace đã lưu… / Xuất các workspace… (tên, bố cục, thư mục)"/>
+      <outline text="Mở lại cửa sổ khi mở app (tab, ngăn, lịch sử Lùi/Tiến); giữ Shift khi mở để bỏ qua"/>
+      <outline text="Tệp lưu hỏng được chuyển sang bên, không bị ghi đè"/>
+    </outline>
+    <outline text="Thao tác tệp an toàn">
+      <outline text="Hàng đợi: tiến trình, tốc độ, Tạm dừng/Tiếp tục, Dừng, danh sách Sự cố + Thử lại"/>
+      <outline text="Hộp trùng tên: Thay thế (không áp cho thư mục/gói) · Giữ cả hai · Bỏ qua · Dừng · Gộp… (xem trước; Giữ bản mới hơn ≥ 1 s, ổ thô 2 s) · Áp dụng cho tất cả"/>
+      <outline text="Chép/chuyển cùng ổ = clone/rename; khác ổ = chép + kiểm hash + Thùng rác bản gốc"/>
+      <outline text="Hoàn tác bền ⌘Z / Làm lại ⇧⌘Z (20 bước, 24 h, kiểm lại trước khi chạy); nhật ký chống ngắt + Báo cáo khôi phục"/>
+      <outline text="Đổi tên: một luật tên (rỗng, ':' '/', '.', ký tự điều khiển, 255 đơn vị NFD); chỉ đổi hoa/thường được; renamex_np không bao giờ đè"/>
+      <outline text="Đổi tên hàng loạt ⌃⌘R: Thay chữ · Thêm chữ · Định dạng (Tên và chỉ số / bộ đếm / ngày); một lỗi chặn cả lô; hoán đổi tên được; một ⌘Z"/>
+      <outline text="Nén ZIP, Thêm vào Shelf, Chép/Chuyển sang ngăn kia, Cắt ⌘X kiểu Windows (tuỳ chọn), Thư mục mới chứa mục chọn, Tạo bí danh"/>
+    </outline>
+  </outline>
+  <outline text="Notch (SurfacePanel 650×188)" _note="một panel cố định, máy trạng thái thuần NotchSurfaceMachine">
+    <outline text="Trang (chấm) và công cụ (thanh)">
+      <outline text="Khay thả (tệp)"/>
+      <outline text="Clipboard"/>
+      <outline text="Đang phát"/>
+      <outline text="Agent AI"/>
+      <outline text="Lịch &amp; lời nhắc"/>
+      <outline text="Hẹn giờ"/>
+      <outline text="Hạn mức AI"/>
+    </outline>
+    <outline text="Peek / mở rộng; bấm huy hiệu mở trang theo `notch.clickOpens` (cố định · lần cuối · theo hoạt động)"/>
+    <outline text="HUD âm lượng / độ sáng chen hàng đợi"/>
+    <outline text="Ẩn trong ứng dụng toàn màn hình (`notch.fullscreenVisibility`)"/>
+    <outline text="Ghi chú mép (Edge notes): peek ở mép màn hình, ⌃⌥N, tự sao lưu hằng ngày"/>
+    <outline text="Hoạt động trực tiếp: Bluetooth, pin, SoC °C, GPU %, mạng…"/>
+  </outline>
+  <outline text="Liên kết sâu xfinder://" _note="dùng từ Shortcuts, Alfred, Raycast, agent…">
+    <outline text="xfinder://browser — mở trình duyệt tệp tại ?path="/>
+    <outline text="xfinder://droptray-add — thêm ?path= vào Khay thả và hiện notch"/>
+    <outline text="xfinder://settings — mở trang ?page=&lt;SidebarDestination&gt;"/>
+    <outline text="xfinder://translate — dịch ?text= hoặc vùng đang chọn"/>
+    <outline text="xfinder://clipboard — mở Thư viện Clipboard"/>
+    <outline text="xfinder://capture — chụp &amp; chú thích"/>
+    <outline text="xfinder://notch — mở notch ?page="/>
+  </outline>
+  <outline text="Tích hợp &amp; tiến trình phụ">
+    <outline text="`XFinder --mcp`: máy chủ MCP cho Clipboard (agent đọc/ghi clipboard)"/>
+    <outline text="`XFinder --vision &lt;ocr-fast|ocr-accurate|cutout|stitch&gt;`: Vision chạy ở tiến trình con (giữ bộ nhớ app chính 26 MB)"/>
+    <outline text="`XFinder --crew-guard`: hook quyền cho crew agent (ask/deny lệnh đổi trạng thái, chặn ghi ngoài worktree)"/>
+    <outline text="XFinderSync.appex: Finder Sync (menu Thao tác Finder trong Finder)"/>
+    <outline text="XFinderNowPlaying.dylib qua perl host: Đang phát (MediaRemote)"/>
+    <outline text="Agent AI: hook Claude Code / Codex, OpenCode qua CLI, Gemini; crew ký HMAC, handoff, thống kê hạn mức"/>
+    <outline text="Trợ năng + Ghi màn hình: ⌘-Tab, Xem trước Dock, Vùng bắt dính, Giữ ⌘Q, HUD"/>
+    <outline text="Thống kê ẩn danh tắt được (`analytics.optOut`); không tự cập nhật"/>
+  </outline>
+</outline>
+</body>
+</opml>

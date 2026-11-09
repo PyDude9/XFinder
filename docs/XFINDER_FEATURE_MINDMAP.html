@@ -1,0 +1,454 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>XFinder — mind map chức năng</title><style>body,html{margin:0;height:100%}svg.markmap{width:100%;height:100vh}</style></head><body><script src="https://cdn.jsdelivr.net/npm/markmap-autoloader@0.18"></script><div class="markmap"><script type="text/template">
+# XFinder 1.4.0 — mind map chức năng (2026-11-09)
+
+&gt; macOS 14+ · Swift 6 · arm64 · mọi tính năng mở trong bản Debug cài trên máy
+
+&gt; Sinh bằng `python3 scripts/export-feature-mindmap.py` từ mã nguồn — phần sinh sẽ bị ghi đè lần sau; phần
+&gt; **Ghi chú của chủ dự án** ở cuối tệp được giữ nguyên. Mở bằng Obsidian (plugin mindmap), Markmap, hoặc nhập
+&gt; `XFINDER_FEATURE_MINDMAP.opml` vào MindNode / XMind / iThoughts; `XFINDER_FEATURE_MINDMAP.html` xem ngay trong trình duyệt.
+
+## Trang trong cửa sổ chính (sidebar)
+*Mỗi trang một việc; nhóm theo ý định người dùng*
+
+- CHUNG
+    - Tổng quan (Overview) — SidebarDestination.dashboard
+    - Tính năng &amp; Quyền (Features &amp; Permissions) — SidebarDestination.features
+    - Phím tắt (Shortcuts) — SidebarDestination.shortcuts
+    - Theo dõi hệ thống (System Monitor) — SidebarDestination.system
+        - Tab: Mạng (Network) — SidebarDestination.network
+        - Tab: Ổ đĩa (Storage) — SidebarDestination.storage
+        - Tab: Pin (Battery) — SidebarDestination.pin
+    - Cảnh báo (Alerts) — SidebarDestination.alerts
+- NOTCH
+    - Giao diện notch (Notch Interface) — SidebarDestination.notchInterface
+    - Khay thả (Drop Tray) — SidebarDestination.dropTray
+    - Đang phát (Now Playing) — SidebarDestination.media
+    - Agent AI (AI agents) — SidebarDestination.aiAgents
+    - Lịch &amp; lời nhắc (Calendar &amp; Reminders) — SidebarDestination.calendar
+    - Hoạt động trực tiếp (Live Activities) — SidebarDestination.liveActivities
+- CỬA SỔ
+    - Xem trước cửa sổ (Window Preview) — SidebarDestination.windowPreview
+    - Vùng bắt dính (Snap Zones) — SidebarDestination.snapZones
+    - Thoát ứng dụng (Quitting Apps) — SidebarDestination.appQuit
+    - Chuột &amp; cử chỉ (Mouse &amp; Gestures) — SidebarDestination.mouseGestures
+    - Ẩn biểu tượng thanh menu (Hide Menu Bar Icons) — SidebarDestination.menuIcons
+- FINDER &amp; TÌM KIẾM
+    - Trình duyệt tệp (File Browser) — SidebarDestination.fileBrowser
+    - Bàn phím Finder (Finder Keyboard) — SidebarDestination.finderKeyboard
+    - Thao tác Finder (Finder Actions) — SidebarDestination.finderActions
+    - Tìm kiếm (Search) — SidebarDestination.finderSearch
+        - Tab: Tìm kiếm AI (AI Search) — SidebarDestination.aiSearch
+    - Đổi tên hàng loạt (Batch Rename) — SidebarDestination.batchRename
+    - Dọn rác thư mục (Folder Cleanup) — SidebarDestination.junkCleanup
+    - Lịch sử thao tác (Action History) — SidebarDestination.actionHistory
+- CÔNG CỤ
+    - Nhập bằng giọng nói (Voice to Typing) — SidebarDestination.voiceTyping
+    - Chọn văn bản thông minh (Smart Selection) — SidebarDestination.smartSelect
+    - Chụp &amp; chú thích (Capture &amp; Annotate) — SidebarDestination.capture
+    - Thư viện Clipboard (Clipboard Library) — SidebarDestination.clipboard
+    - Cài đặt Clipboard (Clipboard Settings) — SidebarDestination.settingsClipboard
+    - Ghi chú (Notes) — SidebarDestination.notes
+    - Nén &amp; Giải nén (Compress &amp; Extract) — SidebarDestination.compress
+    - Công cụ PDF (PDF Tools) — SidebarDestination.pdfTools
+    - Khóa thư mục (Folder Lock) — SidebarDestination.folderLock
+    - Tìm tệp trùng (Duplicate Finder) — SidebarDestination.duplicateFinder
+- KẾT NỐI
+    - Đồng bộ (Sync) — SidebarDestination.sync
+    - Kết nối từ xa (Remote Connect) — SidebarDestination.remoteConnect
+    - Chia sẻ nhanh (Quick Share) — SidebarDestination.quickShare
+    - Cổng đang mở (Open ports) — SidebarDestination.ports
+- TIỆN ÍCH
+    - Tiện ích Finder (Finder Utilities) — SidebarDestination.finderUtils
+    - Quick Look — SidebarDestination.quickLookPage
+        - Tab: Tương thích media (Media Compatibility) — SidebarDestination.mediaCompat
+    - Gỡ ứng dụng (Uninstall Apps) — SidebarDestination.uninstaller
+- Không nằm trong sidebar — mở bằng liên kết hoặc footer
+    - Chống ngủ (Anti-sleep) — SidebarDestination.antiSleep
+    - XFinder Pro — SidebarDestination.pro
+    - Giới thiệu (About) — SidebarDestination.about
+
+## Tính năng &amp; Quyền (FeatureCatalog)
+*Mỗi tính năng: khoá bật/tắt, mặc định, quyền macOS, chi phí khi nghỉ*
+
+- Cửa sổ và Dock (Windows and Dock)
+    - Xem trước Dock (Dock preview) — Rê chuột lên icon trên Dock để xem các cửa sổ. (Hover a Dock icon to see its windows.)
+        - khoá `windowPreview.hoverEnabled` · mặc định BẬT
+        - quyền: Trợ năng, Ghi màn hình
+        - khi nghỉ: Lắng nghe chuột
+    - Chuyển đổi ứng dụng (⌘-Tab) (App switcher (⌘-Tab)) — Thay trình chuyển ứng dụng của macOS bằng bản có ảnh thu nhỏ. (Replaces macOS's app switcher with one that has thumbnails.)
+        - khoá `windowPreview.commandTabEnabled` · mặc định tắt
+        - quyền: Trợ năng, Ghi màn hình
+        - khi nghỉ: Lắng nghe bàn phím
+    - Vùng bắt dính (Snap Zones) — Kéo cửa sổ tới mép màn hình để chia khung. (Drag a window to a screen edge to tile it.)
+        - khoá `snapzones.enabled` · mặc định BẬT
+        - quyền: Trợ năng
+        - khi nghỉ: Lắng nghe chuột
+    - Cuộn chuột mượt (Smooth mouse scrolling) — Bánh xe chuột trôi như trackpad; trackpad và Magic Mouse giữ nguyên. (The mouse wheel glides like a trackpad; the trackpad and the Magic Mouse stay as they are.)
+        - khoá `smoothScroll.enabled` · mặc định tắt
+        - quyền: Trợ năng
+        - khi nghỉ: Lắng nghe chuột
+    - Nhớ bố cục cửa sổ (Remember window layouts) — Đưa app về đúng chỗ đã bắt dính khi nó mở lại hoặc khi đổi bộ màn hình. (Puts an app back where you snapped it when it opens again or when the set of displays changes.)
+        - khoá `snapzones.remember` · mặc định tắt
+        - quyền: Trợ năng
+        - khi nghỉ: Theo dõi cửa sổ app đã chọn
+    - Giữ ⌘Q để thoát ứng dụng (Hold ⌘Q to quit apps) — Nhấn nhanh ⌘Q không thoát nhầm; phải giữ khoảng 1 giây. (A quick ⌘Q no longer quits by accident; hold it for about a second.)
+        - khoá `quitProtection.enabled` · mặc định tắt
+        - quyền: Trợ năng
+        - khi nghỉ: Lắng nghe bàn phím
+    - Thoát app khi đóng cửa sổ cuối (Quit an app when its last window closes) — Chỉ với những app bạn chọn; Finder không bao giờ. (Only the apps you choose; never Finder.)
+        - khoá `quitOnClose.enabled` · mặc định tắt
+        - quyền: Trợ năng
+        - khi nghỉ: Theo dõi cửa sổ app đã chọn
+- Clipboard
+    - Khay Clipboard ⌘⇧V (Clipboard shelf ⌘⇧V) — Mở lịch sử clipboard ở mọi ứng dụng bằng phím tắt. (Open clipboard history in any app with a shortcut.)
+        - khoá `clipboard.globalHotkey` · mặc định BẬT
+        - quyền: Trợ năng
+        - khi nghỉ: Lắng nghe bàn phím
+    - Xem trước liên kết (mạng) (Link previews (network)) — Tiêu đề và ảnh cho link đã copy, tải từ chính trang đó; mặc định tắt. (Title and image for copied links, fetched from the page itself; off by default.)
+        - khoá `clipboard.linkPreviews` · mặc định tắt
+        - quyền: không cần
+        - khi nghỉ: Không chạy nền
+    - Làm sạch liên kết khi sao chép (Clean links when copying) — Xóa tham số theo dõi khỏi liên kết bạn sao chép. (Removes tracking parameters from links you copy.)
+        - khoá `clipboard.cleanURLs` · mặc định tắt
+        - quyền: không cần
+        - khi nghỉ: Không chạy nền
+    - Tab Gợi ý trong khay ⌘⇧V (Suggestions tab in the ⌘⇧V shelf) — Xếp hạng lịch sử theo ứng dụng sắp dán vào. (Ranks history by the app you are about to paste into.)
+        - khoá `clipboard.intelligentSuggestions` · mặc định BẬT
+        - quyền: không cần
+        - khi nghỉ: Không chạy nền
+- Công cụ (Tools)
+    - Trình duyệt tệp (File Browser) — Finder nhiều ngăn: chép giữa các ngăn, tìm bằng một câu thường, hàng đợi chép an toàn. (Finder with split panes: copy between panes, search in plain words, a safe copy queue.)
+        - khoá `fileBrowser.enabled` · mặc định BẬT
+        - quyền: không cần
+        - khi nghỉ: Chỉ chạy khi cửa sổ đang mở
+    - Bảng lệnh ⌘K (Command bar ⌘K) — Tìm ứng dụng, tệp và tính toán từ một ô nhập. (Search apps, files and calculate from one field.)
+        - khoá `quickSearch.enabled` · mặc định BẬT
+        - quyền: không cần
+        - khi nghỉ: Không chạy nền
+    - Ghi chú ở mép màn hình (Edge notes) — Dải ghi chú ẩn ở mép màn hình, rê chuột để mở. (A note strip hidden at the screen edge; point at it to open.)
+        - khoá `notes.edgeEnabled` · mặc định tắt
+        - quyền: không cần
+        - khi nghỉ: Lắng nghe chuột
+    - Notch — Khay, Clipboard, Đang phát, Agent AI và Lịch ở notch. Tắt là tắt cả notch. (Tray, Clipboard, Now Playing, AI agents and Calendar at the notch. Off turns the whole notch off.)
+        - khoá `dropTray.notchEnabled` · mặc định BẬT
+        - quyền: không cần
+        - khi nghỉ: Lắng nghe chuột
+    - Đang phát trên notch (Now Playing on the notch) — Bài đang phát, ảnh bìa và nút điều khiển ở notch; đọc qua một tiến trình trợ giúp nhỏ. (The playing track, artwork and controls at the notch; read through a small helper process.)
+        - khoá `notch.nowPlaying` · mặc định tắt
+        - quyền: không cần
+        - khi nghỉ: Một tiến trình phụ
+    - Agent AI trên notch (AI agents on the notch) — Phiên Claude Code và Codex đang chạy trong terminal: trạng thái và duyệt quyền tại notch; đọc nhật ký hook cục bộ. (Claude Code and Codex sessions running in a terminal: status and approvals at the notch; reads a local hook log.)
+        - khoá `agents.enabled` · mặc định tắt
+        - quyền: không cần
+        - khi nghỉ: Có bộ hẹn giờ
+    - Lịch trên notch (Calendar on the notch) — Hôm nay có gì, việc kế tiếp và link họp — đọc từ Lịch của macOS, không mạng. (What is on today, the next thing and a meeting link — read from the macOS Calendar, no network.)
+        - khoá `notch.calendar` · mặc định tắt
+        - quyền: Lịch, Lời nhắc
+        - khi nghỉ: Có bộ hẹn giờ
+    - Đồng bộ thư mục tự động (Automatic folder sync) — Sao chép một chiều theo lịch hoặc khi có thay đổi. (One-way copy on a schedule or when something changes.)
+        - khoá `sync.autoEnabled` · mặc định tắt
+        - quyền: không cần
+        - khi nghỉ: Có bộ hẹn giờ
+    - Cảnh báo hệ thống (System alerts) — Thông báo khi CPU, bộ nhớ, ổ đĩa, nhiệt độ hay pin có vấn đề kéo dài. (Notifies you when CPU, memory, disk, temperature or battery stay in trouble.)
+        - khoá `alerts.enabled` · mặc định tắt
+        - quyền: không cần
+        - khi nghỉ: Có bộ hẹn giờ
+    - Chỉ dùng notch cho độ sáng và âm lượng (Use the notch only for brightness and volume) — XFinder tự nhận phím độ sáng và âm lượng rồi đặt giá trị, nên macOS không hiện hộp vuông riêng nữa. (XFinder takes the brightness and volume keys over and sets the values itself, so macOS no longer draws its own square.)
+        - khoá `notch.activity.hideSystemHUD` · mặc định BẬT
+        - quyền: Trợ năng
+        - khi nghỉ: Lắng nghe bàn phím
+    - Số liệu trên thanh menu (Menu bar readouts) — CPU, bộ nhớ, nhiệt độ… hiện cạnh biểu tượng XFinder; chọn số liệu ở trang Tổng quan. (CPU, memory, temperature… beside the XFinder icon; pick the figures on the Overview page.)
+        - khoá `menubar.readoutsEnabled` · mặc định tắt
+        - quyền: không cần
+        - khi nghỉ: Có bộ hẹn giờ
+    - Dịch vùng chọn (⇧⌘G) (Translate selection (⇧⌘G)) — Bôi đen chữ ở app bất kỳ, bấm ⇧⌘G: bản dịch của Apple ngay trên máy, không mạng. (Select text in any app, press ⇧⌘G: Apple's translation, on this Mac, no network.)
+        - khoá `translate.hotkeyEnabled` · mặc định tắt
+        - quyền: Trợ năng
+        - khi nghỉ: Lắng nghe bàn phím
+    - Chọn văn bản thông minh (Smart Selection) — Bôi đen chữ ở app khác: nút nhỏ đổi đơn vị, đổi múi giờ, tính, thêm vào Lịch, dịch. (Select text in another app: a small button converts units and time zones, calculates, adds to Calendar, translates.)
+        - khoá `smartSelect.enabled` · mặc định tắt
+        - quyền: Trợ năng
+        - khi nghỉ: Lắng nghe chuột
+    - Chụp &amp; chú thích (Capture &amp; Annotate) — Phím tắt chụp, thẻ xem trước nổi và trình chú thích. (Capture shortcuts, a floating preview card and an annotation editor.)
+        - khoá `capture.enabled` · mặc định BẬT
+        - quyền: Ghi màn hình
+        - khi nghỉ: Không chạy nền
+- Giọng nói (Voice)
+    - Nhập bằng giọng nói (Voice to Typing) — Giữ phím, nói, thả ra là chữ vào ô đang gõ. (Hold a key, speak, release, and the text lands where you are typing.)
+        - khoá `voice.enabled` · mặc định tắt
+        - quyền: Trợ năng, Micro, Nhận dạng giọng nói
+        - khi nghỉ: Lắng nghe bàn phím
+- Kết nối (Connect)
+    - Chia sẻ nhanh (Quick Share) — Liên kết tải file cho thiết bị cùng mạng Wi-Fi. Tắt là thu hồi mọi liên kết và dừng máy chủ ngay. (Download links for devices on the same Wi-Fi. Turning it off revokes every link and stops the server at once.)
+        - khoá `quickShare.enabled` · mặc định BẬT
+        - quyền: không cần
+        - khi nghỉ: Có bộ hẹn giờ
+    - Kết nối từ xa (Remote Connect) — Tải file lên máy chủ SSH bằng scp khi bạn bấm Tải lên. Tắt là không gửi gì ra mạng. (Uploads files to an SSH server with scp when you press Upload. Off means nothing is sent over the network.)
+        - khoá `remoteConnect.enabled` · mặc định BẬT
+        - quyền: không cần
+        - khi nghỉ: Không chạy nền
+- Gói cài đặt nhanh (FeatureBundle) — một chạm bật/tắt nhiều tính năng
+    - Cửa sổ (Windows) — Xem trước Dock, ⌘-Tab, vùng bắt dính và giữ ⌘Q để thoát.
+        - bật: dockPreview, commandTab, snapZones, quitProtection
+        - tắt: —
+    - Clipboard và tìm kiếm (Clipboard and search) — Khay ⌘⇧V, làm sạch liên kết, gợi ý và bảng lệnh ⌘K.
+        - bật: clipboardShelf, cleanURLs, suggestions, quickSearch
+        - tắt: —
+
+## Trình duyệt tệp (XF-T28…T39)
+*cửa sổ nhiều ngăn, tab từng ngăn, theo Tilde về giao diện, FileOctopus về tính năng*
+
+- Thanh menu khi trình duyệt ở trước (XF-T38) — Tệp/Đi là menu riêng; khối trong Edit/View/Window qua SwiftUI
+    - XFinder
+        - Cài đặt trình duyệt… (Browser Settings…) — ⌘,
+        - Xoá lịch sử thao tác (Clear File Operation History)
+    - Tệp (File)
+        - Cửa sổ mới (New Window) — ⌘N
+        - Thư mục mới (New Folder) — ⇧⌘N
+        - Thư mục mới chứa mục chọn (New Folder with Selection) — ⌃⌘N
+        - Tab cửa sổ mới (New Window Tab) — ⌘T
+        - Mở (Open) — ⌘O
+        - Mở bằng (Open With) ▸
+        - Đóng ngăn (Close Pane) — ⌃⌥⌘W
+        - Đóng cửa sổ (Close Window) — ⌘W
+        - Lấy thông tin (Get Info) — ⌘I
+        - Đổi tên (Rename) — ↩
+        - Nén thành ZIP (Compress to ZIP)
+        - Nhân bản (Duplicate) — ⌘D
+        - Tạo bí danh (Make Alias) — ⌃⌘A
+        - Sao chép sang ngăn kia (Copy to Other Pane) — ⌃⇧⌘C
+        - Di chuyển sang ngăn kia (Move to Other Pane) — ⌃⇧⌘M
+        - So sánh thư mục… (Compare Folders…) → trang XFinder
+        - Tìm tệp trùng… (Find Duplicates…) → trang XFinder
+        - Xem nhanh (Quick Look) — ⌘Y
+        - Chia sẻ… (Share…)
+        - Hiện bản gốc (Show Original) — ⌘R
+        - Hiện trong Finder (Show in Finder)
+        - Thêm vào sidebar (Add to Sidebar) — ⌃⌘T
+        - Thêm vào Shelf (Add to Shelf) — ⌃⌘S
+        - Chuyển vào Thùng rác (Move to Trash) — ⌘⌫
+        - Đẩy ra (Eject) — ⌘E
+        - Thẻ (Tag) ▸
+        - Tìm kiếm (Search) — ⌘F
+        - Lưu tìm kiếm… (Save Search…)
+    - Sửa (Edit)
+        - Sao chép đường dẫn (Copy path) — ⌥⌘C
+        - Dán và di chuyển (Move Item Here) — ⌥⌘V
+        - Đổi tên hàng loạt (Batch Rename) — ⌃⌘R
+    - Xem (View)
+        - Xem dạng biểu tượng (as Icons) — ⌘1
+        - Xem dạng danh sách (as List) — ⌘2
+        - Xem dạng cột (as Columns) — ⌘3
+        - Xem dạng gallery (as Gallery) — ⌘4
+        - Dùng nhóm (Use Groups) — ⌃⌘0
+        - Nhóm theo (Group By) ▸
+        - Sắp theo (Sort By) ▸
+        - Hiện hoặc ẩn sidebar (Show or Hide Sidebar) — ⌥⌘S
+        - Lọc thư mục hiện tại (Filter Current Folder)
+        - Hiện hoặc ẩn xem trước (Show or Hide Preview) — ⇧⌘P
+        - Shelf ▸
+            - Hiện hoặc ẩn Shelf (Show or Hide Shelf) — ⌥⌘B
+            - Thêm vào Shelf (Add to Shelf) — ⌃⌘S
+        - Hiện hoặc ẩn thanh công cụ (Show or Hide Toolbar) — ⌥⌘T
+        - Hiện hoặc ẩn thanh đường dẫn (Show or Hide Path Bar) — ⌥⌘P
+        - Hiện hoặc ẩn thanh trạng thái (Show or Hide Status Bar) — ⌘/
+        - Hiện hoặc ẩn thanh vị trí (Show or Hide Location Bar)
+        - Gõ đường dẫn (Edit Location) — ⌃⌘L
+        - Làm mới (Refresh)
+        - Hiện hoặc ẩn tệp ẩn (Show or Hide Hidden Files) — ⇧⌘.
+        - Bố cục ngăn (Pane Layout) ▸
+            - Một ngăn (Single)
+            - Cạnh nhau (Side by Side)
+            - Chồng lên nhau (Stacked)
+            - Lưới 2×2 (2×2 Grid)
+        - Ngăn (Panes) ▸
+            - Chia ngăn sang phải (Split Right) — ⌃⌥⌘→
+            - Chia ngăn sang trái (Split Left) — ⌃⌥⌘←
+            - Chia ngăn xuống dưới (Split Down) — ⌃⌥⌘↓
+            - Chia ngăn lên trên (Split Up) — ⌃⌥⌘↑
+            - Ngăn kế tiếp (Next Pane) — ⌃⌘]
+            - Ngăn trước đó (Previous Pane) — ⌃⌘[
+            - Đổi chỗ với ngăn kế (Swap with Next Pane)
+            - Phóng to ngăn (Zoom Pane) — ⇧⌘↩
+            - Chia đều các ngăn (Make Panes Equal Size) — ⌃⌥⌘=
+            - Làm ngăn rộng hơn (Make Pane Wider)
+            - Làm ngăn hẹp hơn (Make Pane Narrower)
+            - Làm ngăn cao hơn (Make Pane Taller)
+            - Làm ngăn thấp hơn (Make Pane Shorter)
+            - Đóng ngăn (Close Pane) — ⌃⌥⌘W
+        - Tuỳ biến thanh công cụ… (Customize Toolbar…)
+        - Hiện tuỳ chọn xem (Show View Options) — ⌘J
+        - Bảng lệnh (Command palette) — ⌃⇧⌘P
+    - Đi (Go)
+        - Lùi lại (Back) — ⌘[
+        - Tiến tới (Forward) — ⌘]
+        - Lên thư mục cha (Enclosing Folder) — ⌘↑
+        - Mục gần đây (Recents) — ⇧⌘F
+        - Tài liệu (Documents) — ⇧⌘O
+        - Màn hình nền (Desktop) — ⇧⌘D
+        - Thư mục Tải về (Downloads) — ⌥⌘L
+        - Thư mục nhà (Home) — ⇧⌘H
+        - Máy tính (Computer) — ⇧⌘C
+        - AirDrop — ⇧⌘R
+        - Mạng (Network) — ⇧⌘K
+        - iCloud Drive — ⇧⌘I
+        - Các ứng dụng (Applications) — ⇧⌘A
+        - Tiện ích hệ thống (Utilities) — ⇧⌘U
+        - Thư mục gần đây (Recent Folders) ▸
+        - Đến thư mục (Go to Folder) — ⇧⌘G
+        - Kết nối máy chủ… (Connect to Server…)
+        - Kết nối máy chủ từ xa… (Connect to Remote Server…) → trang XFinder
+        - Mở nhanh (Quick Open) — ⌘K
+        - Tìm kiếm đã lưu (Saved Search) ▸
+    - Cửa sổ (Windows)
+        - Hàng đợi thao tác (Operations) — ⌥⌘O
+        - Tab ngăn trước (Previous Pane Tab) — ⌥⌘[
+        - Tab ngăn kế tiếp (Next Pane Tab) — ⌥⌘]
+        - Chuyển tab ra cửa sổ mới (Move Tab to Window)
+        - Lưu Workspace (Save Workspace)
+        - Mở workspace (Open Workspace) ▸
+        - Đổi tên workspace (Rename Workspace) ▸
+        - Nhân bản workspace (Duplicate Workspace) ▸
+        - Xoá workspace (Delete Workspace) ▸
+        - Xem các workspace đã lưu… (Inspect Saved Workspaces…)
+        - Xuất các workspace… (Export Saved Workspaces…)
+- Lệnh khác (bảng lệnh ⌘K › `&gt;`, chuột phải, phím) — không nằm trong menu bar
+    - Chuyển tab sang ngăn kế (Move Tab to Next Pane)
+    - Chuyển tab sang ngăn mới bên dưới (Move Tab to New Pane Below) — ⌥⇧⌘↓
+    - Chuyển tab sang ngăn mới bên phải (Move Tab to New Pane on Right) — ⌥⇧⌘→
+    - Chọn tất cả (Select All) — ⌘A
+    - Cắt tệp (Cut) — ⌘X
+    - Dán (Paste) — ⌘V
+    - Gỡ bản tải (Remove Download)
+    - Hiện cửa sổ Chào… (Show Welcome Window…)
+    - Hoàn tác (Undo) — ⌘Z
+    - Làm lại (Redo) — ⇧⌘Z
+    - Mở Workspace (Open Workspace)
+    - Mở trong cửa sổ mới (Open in New Window)
+    - Mở trong tab mới (Open in New Tab)
+    - Ngăn bên phải (Pane on Right) — ⌃⇧⌘→
+    - Ngăn bên trái (Pane on Left) — ⌃⇧⌘←
+    - Ngăn phía dưới (Pane Below) — ⌃⇧⌘↓
+    - Ngăn phía trên (Pane Above) — ⌃⇧⌘↑
+    - Sao chép (Copy) — ⌘C
+    - Tab ngăn mới (New Pane Tab) — ⌃⌥⌘T
+    - Trình chiếu (Slideshow) — ⌥⌘Y
+    - Tải về ngay (Download Now)
+    - Xoá menu (Clear Menu)
+    - Đóng tab ngăn (Close Pane Tab)
+- Thanh công cụ (Navigation Bar)
+    - Mặc định
+        - Ẩn/hiện sidebar
+        - Lùi / Tiến
+        - Kiểu xem
+        - Nhóm theo (Group By)
+        - Bố cục ngăn (Pane Layout)
+        - Khay Tải về (Downloads Tray)
+        - Chia sẻ (Share)
+        - Thẻ (Tag)
+        - Tác vụ (…)
+        - Tìm (Find)
+    - Thêm được qua Tuỳ biến thanh công cụ
+        - Thư mục cha
+        - Đến thư mục (Go to Folder)
+        - Workspace
+        - Shelf
+        - Hàng đợi thao tác (Operations)
+        - Thư mục mới (New Folder)
+        - Xem nhanh (Quick Look)
+- Cài đặt trình duyệt (⌘, khi trình duyệt ở trước)
+    - Cửa sổ mới hiện (New windows show)
+    - Khi mở (When it opens)
+    - Thói quen Windows (tuỳ chọn) (Windows habits (optional))
+    - Khay Tải về (Downloads Tray)
+    - Cập nhật phần mềm (Software update)
+    - Hiện trong cửa sổ (Show in window)
+    - Ngăn thông tin (Inspector)
+    - Hiện trong sidebar (Show in sidebar)
+    - Tuỳ chọn (Options)
+    - Ổ đã ẩn (Hidden disks)
+    - Đám mây trong sidebar (Cloud in sidebar)
+    - Nhà cung cấp đám mây khác (Other Cloud Providers)
+    - Hiển thị tệp (File display)
+    - Khi tìm kiếm (When searching)
+    - Hồ sơ phím tắt (Shortcut profile)
+    - Bảng phím tắt (Shortcut table)
+    - Chuột (Mouse)
+    - Xuất / nhập (Export / Import)
+    - Thư mục được đánh chỉ mục (Indexed folders)
+    - Quyền thư mục (Folder access)
+    - Truy cập toàn bộ ổ đĩa (Full Disk Access)
+    - Khởi động (Startup)
+- Tìm kiếm (ô tìm trên thanh công cụ) — Spotlight + chỉ mục tên riêng + chỉ mục nội dung FTS5 (tuỳ chọn)
+    - Phạm vi: Máy này (thư mục đã chỉ mục) · Thư mục hiện tại · Các ngăn đang mở
+    - Câu tự nhiên VI/EN: "ảnh tuần trước", "pdfs from last week", "lớn hơn 10 MB", "tải từ github"
+    - Bộ lọc `trường:giá trị` (thành chip)
+        - kind: pdf · image · video · audio · document · spreadsheet · presentation · archive · folder · app · screenshot · code · text
+        - ext:pdf · tag:/tags:work · from:gmail (hiểu cả miền tệp đính kèm) · content:từ · in:/trong:thư-mục
+        - size: &gt;5MB · &lt;=200KB · =0 (không đơn vị = byte)
+        - modified:/created: today · yesterday · thisweek · lastweek · thismonth · lastmonth · thisyear · lastyear · &lt;7d · &gt;2w · &lt;3m · &lt;1y · 2026-10-01 · 2026-10-01..2026-10-10
+        - cụm "trong ngoặc" · loại trừ -từ / !từ
+        - Cảnh báo hiện dưới ô: bộ lọc lạ, ngày/cỡ/loại/đuôi sai, thiếu giá trị, thiếu ngoặc kép, quá 256 ký tự / 16 từ
+    - Lưu tìm kiếm… → Tìm kiếm đã lưu (sidebar, menu Đi)
+- Workspace &amp; phiên (XF-T39)
+    - Lưu Workspace: mọi cửa sổ đang mở (tab, ngăn, thư mục, kiểu xem); trùng tên ⇒ hỏi Thay thế
+    - Mở workspace: thêm cửa sổ, không thay cửa sổ đang mở (Window ▸ Mở workspace ▸, hoặc ⌘K gõ tên)
+    - Đổi tên / Nhân bản / Xoá / Xem các workspace đã lưu… / Xuất các workspace… (tên, bố cục, thư mục)
+    - Mở lại cửa sổ khi mở app (tab, ngăn, lịch sử Lùi/Tiến); giữ Shift khi mở để bỏ qua
+    - Tệp lưu hỏng được chuyển sang bên, không bị ghi đè
+- Thao tác tệp an toàn
+    - Hàng đợi: tiến trình, tốc độ, Tạm dừng/Tiếp tục, Dừng, danh sách Sự cố + Thử lại
+    - Hộp trùng tên: Thay thế (không áp cho thư mục/gói) · Giữ cả hai · Bỏ qua · Dừng · Gộp… (xem trước; Giữ bản mới hơn ≥ 1 s, ổ thô 2 s) · Áp dụng cho tất cả
+    - Chép/chuyển cùng ổ = clone/rename; khác ổ = chép + kiểm hash + Thùng rác bản gốc
+    - Hoàn tác bền ⌘Z / Làm lại ⇧⌘Z (20 bước, 24 h, kiểm lại trước khi chạy); nhật ký chống ngắt + Báo cáo khôi phục
+    - Đổi tên: một luật tên (rỗng, ':' '/', '.', ký tự điều khiển, 255 đơn vị NFD); chỉ đổi hoa/thường được; renamex_np không bao giờ đè
+    - Đổi tên hàng loạt ⌃⌘R: Thay chữ · Thêm chữ · Định dạng (Tên và chỉ số / bộ đếm / ngày); một lỗi chặn cả lô; hoán đổi tên được; một ⌘Z
+    - Nén ZIP, Thêm vào Shelf, Chép/Chuyển sang ngăn kia, Cắt ⌘X kiểu Windows (tuỳ chọn), Thư mục mới chứa mục chọn, Tạo bí danh
+
+## Notch (SurfacePanel 650×188)
+*một panel cố định, máy trạng thái thuần NotchSurfaceMachine*
+
+- Trang (chấm) và công cụ (thanh)
+    - Khay thả (tệp)
+    - Clipboard
+    - Đang phát
+    - Agent AI
+    - Lịch &amp; lời nhắc
+    - Hẹn giờ
+    - Hạn mức AI
+- Peek / mở rộng; bấm huy hiệu mở trang theo `notch.clickOpens` (cố định · lần cuối · theo hoạt động)
+- HUD âm lượng / độ sáng chen hàng đợi
+- Ẩn trong ứng dụng toàn màn hình (`notch.fullscreenVisibility`)
+- Ghi chú mép (Edge notes): peek ở mép màn hình, ⌃⌥N, tự sao lưu hằng ngày
+- Hoạt động trực tiếp: Bluetooth, pin, SoC °C, GPU %, mạng…
+
+## Liên kết sâu xfinder://
+*dùng từ Shortcuts, Alfred, Raycast, agent…*
+
+- xfinder://browser — mở trình duyệt tệp tại ?path=
+- xfinder://droptray-add — thêm ?path= vào Khay thả và hiện notch
+- xfinder://settings — mở trang ?page=&lt;SidebarDestination&gt;
+- xfinder://translate — dịch ?text= hoặc vùng đang chọn
+- xfinder://clipboard — mở Thư viện Clipboard
+- xfinder://capture — chụp &amp; chú thích
+- xfinder://notch — mở notch ?page=
+
+## Tích hợp &amp; tiến trình phụ
+
+- `XFinder --mcp`: máy chủ MCP cho Clipboard (agent đọc/ghi clipboard)
+- `XFinder --vision &lt;ocr-fast|ocr-accurate|cutout|stitch&gt;`: Vision chạy ở tiến trình con (giữ bộ nhớ app chính 26 MB)
+- `XFinder --crew-guard`: hook quyền cho crew agent (ask/deny lệnh đổi trạng thái, chặn ghi ngoài worktree)
+- XFinderSync.appex: Finder Sync (menu Thao tác Finder trong Finder)
+- XFinderNowPlaying.dylib qua perl host: Đang phát (MediaRemote)
+- Agent AI: hook Claude Code / Codex, OpenCode qua CLI, Gemini; crew ký HMAC, handoff, thống kê hạn mức
+- Trợ năng + Ghi màn hình: ⌘-Tab, Xem trước Dock, Vùng bắt dính, Giữ ⌘Q, HUD
+- Thống kê ẩn danh tắt được (`analytics.optOut`); không tự cập nhật
+
+&lt;!-- owner-notes: mọi thứ dưới dòng này được giữ nguyên khi sinh lại --&gt;
+
+## Ghi chú của chủ dự án
+
+- (viết ở đây: tính năng cần bỏ, gộp, đổi tên, ý tưởng mới…)
+- THỬ GIỮ GHI CHÚ
+
+</script></div></body></html>
