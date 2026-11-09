@@ -2,6 +2,16 @@ import XCTest
 import Foundation
 
 final class FileOperationRulesTests: XCTestCase {
+    // MARK: freshName (XF-T40 — New Folder / New File / alias names)
+
+    func testFreshNameIsThePlainNameUntilTaken() {
+        XCTAssertEqual(FileOperationRules.freshName(for: "untitled folder", existing: []), "untitled folder")
+        XCTAssertEqual(FileOperationRules.freshName(for: "untitled.txt", existing: ["a.txt"]), "untitled.txt")
+        XCTAssertEqual(FileOperationRules.freshName(for: "untitled.txt", existing: ["untitled.txt"]), "untitled 2.txt")
+        XCTAssertEqual(FileOperationRules.freshName(for: "untitled.txt", existing: ["untitled.txt", "untitled 2.txt"]), "untitled 3.txt")
+        XCTAssertEqual(FileOperationRules.newFolderWithSelectionName(existing: []), "Thư mục mới chứa mục")
+    }
+
     // MARK: keepBothName
 
     func testKeepBothNameFirstCollisionIsNumber2() {

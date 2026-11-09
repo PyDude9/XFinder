@@ -1089,7 +1089,7 @@ enum BrowserSheet: String, Identifiable {
     /// Move to Trash is one keystroke away.
     private func createNewFile() {
         let existing = Set(active.entries.map(\.name))
-        let name = FileOperationRules.keepBothName(for: "untitled.txt", existing: existing)
+        let name = FileOperationRules.freshName(for: "untitled.txt", existing: existing)
         let destination = (active.path as NSString).appendingPathComponent(name)
         guard FileManager.default.createFile(atPath: destination, contents: Data()) else {
             banner = "Không tạo được tệp mới"
@@ -1124,7 +1124,7 @@ enum BrowserSheet: String, Identifiable {
 
     private func createNewFolder() {
         let existing = Set(active.entries.map(\.name))
-        let name = FileOperationRules.keepBothName(for: "untitled folder", existing: existing)
+        let name = FileOperationRules.freshName(for: "untitled folder", existing: existing)   // was keepBothName: always "… 2"
         let destination = (active.path as NSString).appendingPathComponent(name)
         do {
             try FileManager.default.createDirectory(atPath: destination, withIntermediateDirectories: false)

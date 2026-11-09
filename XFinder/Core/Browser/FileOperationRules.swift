@@ -258,6 +258,14 @@ enum FileOperationRules {
         numberedName(for: name, existing: existing, suffix: nil)
     }
 
+    /// A name for something NEW ("untitled folder", "untitled.txt", "Report alias"): the name itself when nothing has it,
+    /// else Keep Both's numbering. `keepBothName` never returns the plain name — it is for a conflict, where the plain
+    /// name is taken by definition — so New Folder used to create "untitled folder 2" in an empty folder (measured in the
+    /// Atlas helper 2026-11-09 with New File: "untitled 2.txt" with no "untitled.txt" present).
+    static func freshName(for name: String, existing: Set<String>) -> String {
+        existing.contains(name) ? keepBothName(for: name, existing: existing) : name
+    }
+
     /// Finder's ⌘D: "Report.pdf" → "Report copy.pdf", "Report copy 2.pdf"… — duplicating an already-duplicated name
     /// keeps counting from the same base ("Report copy.pdf" → "Report copy 2.pdf", not "Report copy copy.pdf").
     static func duplicateName(for name: String, existing: Set<String>) -> String {
@@ -530,7 +538,6 @@ enum FileOperationRules {
     /// silent collision. `baseName` defaults to the Vietnamese source string (the view passes `L10n.t(...)` through
     /// in the live UI; the default lets pure tests exercise the counting logic without a localization dependency).
     static func newFolderWithSelectionName(existing: Set<String>, baseName: String = "Thư mục mới chứa mục") -> String {
-        guard existing.contains(baseName) else { return baseName }
-        return keepBothName(for: baseName, existing: existing)
+        freshName(for: baseName, existing: existing)
     }
 }

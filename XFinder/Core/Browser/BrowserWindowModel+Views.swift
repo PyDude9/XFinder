@@ -194,7 +194,7 @@ extension BrowserWindowModel {
     /// "jpg" in "photo.jpg alias") as the extension to preserve, producing nonsense like "photo 2.jpg alias".
     private func aliasFileName(for entry: DirectoryEntry, existing: Set<String>) -> String {
         guard !entry.isFolderLike, let dot = entry.name.lastIndex(of: "."), dot != entry.name.startIndex else {
-            return FileOperationRules.keepBothName(for: "\(entry.name) alias", existing: existing)
+            return FileOperationRules.freshName(for: "\(entry.name) alias", existing: existing)
         }
         let base = String(entry.name[entry.name.startIndex..<dot])
         let ext = String(entry.name[entry.name.index(after: dot)...])
@@ -203,7 +203,7 @@ extension BrowserWindowModel {
             // whole filename (mirrors how `keepBothName` itself compares bases when it owns the extension split).
             $0.hasSuffix(".\(ext)") ? String($0.dropLast(ext.count + 1)) : $0
         })
-        let aliasedBase = FileOperationRules.keepBothName(for: "\(base) alias", existing: strippedExisting)
+        let aliasedBase = FileOperationRules.freshName(for: "\(base) alias", existing: strippedExisting)
         return "\(aliasedBase).\(ext)"
     }
 

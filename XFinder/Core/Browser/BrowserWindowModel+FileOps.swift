@@ -90,7 +90,7 @@ extension BrowserWindowModel {
         let selected = active.selectedEntries
         guard !selected.isEmpty else { return }
         let existing = Set(active.entries.map(\.name))
-        let name = FileOperationRules.keepBothName(for: "New Folder With Items", existing: existing)
+        let name = FileOperationRules.freshName(for: "New Folder With Items", existing: existing)   // was keepBothName: always "… 2"
         let destination = (active.path as NSString).appendingPathComponent(name)
         do {
             try FileManager.default.createDirectory(atPath: destination, withIntermediateDirectories: false)
