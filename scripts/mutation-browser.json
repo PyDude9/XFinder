@@ -1951,5 +1951,12 @@
     "file": "XFinder/Core/Browser/BrowserWorkspace.swift",
     "anchor": "Summary.WindowSummary(paneCount: max(1, window.tree.panes.count),",
     "replacement": "Summary.WindowSummary(paneCount: 1,"
+  },
+  {
+    "id": "T39-07",
+    "name": "workspaces listed in command mode",
+    "file": "XFinder/Core/Browser/BrowserPaletteRules.swift",
+    "anchor": "            if mode.isCommand && (item.kind == .location || item.kind == .workspace) { return nil }",
+    "replacement": "            if mode.isCommand && item.kind == .location { return nil }"
   }
 ]
