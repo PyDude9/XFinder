@@ -38,7 +38,14 @@ enum BrowserContextMenu {
 
         add(menu, .open, model: model, pane: pane)
         addPlain(menu, title: L10n.t("Mở trong tab mới"), command: .openInNewTab, model: model, pane: pane)
+        // XF-T40 — FileOctopus §2.1: Open in New Tab / New Pane / Other Pane / New Window, and Show Package Contents.
+        addPlain(menu, title: L10n.t("Mở trong ngăn mới"), command: .openInNewPane, model: model, pane: pane)
+        addPlain(menu, title: L10n.t("Mở trong ngăn kia"), command: .openInOtherPane, model: model, pane: pane)
+        addPlain(menu, title: L10n.t("Mở trong cửa sổ mới"), command: .openInNewWindow, model: model, pane: pane)
         menu.addItem(openWithItem(model: model, pane: pane))
+        if single, pane.selectedEntries[0].isPackage {
+            addPlain(menu, title: L10n.t("Hiện nội dung gói"), command: .showPackageContents, model: model, pane: pane)
+        }
 
         menu.addItem(.separator())
         add(menu, .moveToTrash, model: model, pane: pane, forceDisabled: inTrash ? true : nil)
@@ -78,6 +85,7 @@ enum BrowserContextMenu {
 
     private static func buildBackgroundMenu(_ menu: NSMenu, model: BrowserWindowModel, pane: PaneState) {
         addPlain(menu, title: L10n.t("Thư mục mới"), command: .newFolder, model: model, pane: pane)
+        addPlain(menu, title: L10n.t("Tệp mới"), command: .newFile, model: model, pane: pane)   // XF-T40
         add(menu, .getInfo, model: model, pane: pane)
 
         menu.addItem(.separator())

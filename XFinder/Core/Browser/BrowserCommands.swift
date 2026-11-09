@@ -45,6 +45,7 @@ enum BrowserCommand: String, CaseIterable, Sendable {
     case newFolderWithSelection, cut, redo, clearOperationHistory
     case togglePreview, slideshow
     case refresh, saveSearch   // XF-T38 — View ▸ Refresh, File ▸ Save Search… (FileOctopus 1.0.10 menus)
+    case newFile, showPackageContents, openInNewPane, openInOtherPane   // XF-T40 — FileOctopus 1.0.10 §2.1/§2.2
 }
 
 /// XF-T28 — the file browser's ONE keyboard table (spec §2.3): every chord a browser window owns goes through here,
@@ -280,6 +281,10 @@ enum BrowserCommands {
         case .slideshow: return "Trình chiếu"
         case .refresh: return "Làm mới"
         case .saveSearch: return "Lưu tìm kiếm…"
+        case .newFile: return "Tệp mới"
+        case .showPackageContents: return "Hiện nội dung gói"
+        case .openInNewPane: return "Mở trong ngăn mới"
+        case .openInOtherPane: return "Mở trong ngăn kia"
         }
     }
 

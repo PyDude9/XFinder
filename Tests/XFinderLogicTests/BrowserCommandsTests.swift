@@ -108,6 +108,8 @@ final class BrowserCommandsTests: XCTestCase {
         .share, .clearRecentFolders, .showWelcome, .clearOperationHistory, .connectToServer,
         // XF-T38 — View ▸ Refresh and File ▸ Save Search… have no chord in FileOctopus 1.0.10's menus either
         .refresh, .saveSearch,
+        // XF-T40 — context-menu / palette commands, no chord in FileOctopus either
+        .newFile, .showPackageContents, .openInNewPane, .openInOtherPane,
     ]
 
     func testEveryRequiredChordRoundTrips() {

@@ -28,7 +28,7 @@ final class BrowserMenuLayoutTests: XCTestCase {
 
     func testFileMenuFollowsTheScreenshotOrder() {
         let commands = BrowserMenuLayout.commands(in: .file)
-        XCTAssertEqual(Array(commands.prefix(4)), [.newWindow, .newFolder, .newFolderWithSelection, .newWindowTab])
+        XCTAssertEqual(Array(commands.prefix(5)), [.newWindow, .newFolder, .newFolderWithSelection, .newFile, .newWindowTab])
         XCTAssertEqual(commands.last, .saveSearch)
         XCTAssertTrue(BrowserMenuLayout.entries(.file).contains(.link(.findDuplicates)))
         XCTAssertTrue(BrowserMenuLayout.entries(.file).contains(.submenu(.openWith)))

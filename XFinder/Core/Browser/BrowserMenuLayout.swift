@@ -93,7 +93,8 @@ enum BrowserMenuLayout {
             return [.command(.openBrowserSettings), .command(.clearOperationHistory)]
         case .file:
             return [
-                .command(.newWindow), .command(.newFolder), .command(.newFolderWithSelection), .command(.newWindowTab),
+                .command(.newWindow), .command(.newFolder), .command(.newFolderWithSelection), .command(.newFile),
+                .command(.newWindowTab),
                 .command(.open), .submenu(.openWith), .command(.closePane), .command(.closeWindow), .separator,
                 .command(.getInfo), .command(.rename), .command(.compress), .command(.duplicate), .command(.makeAlias),
                 .command(.copyToOtherPane), .command(.moveToOtherPane), .link(.compareFolders), .link(.findDuplicates),

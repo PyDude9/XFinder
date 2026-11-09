@@ -812,6 +812,15 @@ enum BrowserSheet: String, Identifiable {
             return performFileOpsCommand(command)
         case .togglePreview, .slideshow:
             return performPreviewCommand(command)
+        case .newFile:
+            createNewFile()
+        case .showPackageContents:
+            guard let entry = active.selectedEntries.first, active.selectedEntries.count == 1, entry.isPackage else { return false }
+            active.navigate(to: entry.path)
+        case .openInNewPane:
+            return openSelectionInNewPane()
+        case .openInOtherPane:
+            return openSelectionInOtherPane()
         case .refresh:
             active.reload()
             return true
@@ -834,7 +843,7 @@ enum BrowserSheet: String, Identifiable {
     func canPerform(_ command: BrowserCommand) -> Bool {
         if VirtualLocation.parse(active.path) == .learn {
             switch command {
-            case .newFolder, .paste, .pasteMove, .newFolderWithSelection, .getInfo, .filter, .find,
+            case .newFolder, .newFile, .paste, .pasteMove, .newFolderWithSelection, .getInfo, .filter, .find,
                  .viewIcons, .viewList, .viewColumns, .viewGallery, .showViewOptions, .togglePreview,
                  .useGroups, .toggleHidden, .selectAll, .openEnclosing:
                 return false
@@ -919,6 +928,16 @@ enum BrowserSheet: String, Identifiable {
             return canPerformFileOpsCommand(command)
         case .togglePreview, .slideshow:
             return canPerformPreviewCommand(command)
+        case .newFile:
+            return active.search == nil && VirtualLocation.parse(active.path) == nil
+        case .showPackageContents:
+            return active.selectedEntries.count == 1 && active.selectedEntries[0].isPackage
+        case .openInNewPane:
+            return active.selectedEntries.contains(where: \.isFolderLike) && canSplitUnderLicense
+        case .openInOtherPane:
+            guard tree.count >= 2, active.selectedEntries.contains(where: \.isFolderLike),
+                  let other: PaneID = tree.other(than: activePane), let target: PaneState = panes[other] else { return false }
+            return VirtualLocation.parse(target.path) == nil && target.search == nil
         case .refresh:
             return active.search == nil
         case .saveSearch:
@@ -1058,6 +1077,44 @@ enum BrowserSheet: String, Identifiable {
     }
 
     // MARK: - File operations
+
+    /// XF-T40 — FileOctopus §2.2 "New File (văn bản rỗng)": an empty "untitled.txt" (numbered like Keep Both when taken),
+    /// selected and in rename, exactly like New Folder. Like New Folder it records no undo step: the file is empty and
+    /// Move to Trash is one keystroke away.
+    private func createNewFile() {
+        let existing = Set(active.entries.map(\.name))
+        let name = FileOperationRules.keepBothName(for: "untitled.txt", existing: existing)
+        let destination = (active.path as NSString).appendingPathComponent(name)
+        guard FileManager.default.createFile(atPath: destination, contents: Data()) else {
+            banner = "Không tạo được tệp mới"
+            return
+        }
+        active.selection = [destination]
+        active.selectAfterLoad = name
+        renaming = activePane
+        active.reload()
+    }
+
+    /// XF-T40 — "Open in New Pane": split to the right and show the first selected folder there; further selected
+    /// folders become tabs of that pane.
+    private func openSelectionInNewPane() -> Bool {
+        let folders = active.selectedEntries.filter(\.isFolderLike).map(\.path)
+        guard let first = folders.first, canPerform(.splitRight), perform(.splitRight) else { return false }
+        active.navigate(to: first)
+        for folder in folders.dropFirst() { _ = newTab(in: activePane, path: folder) }
+        return true
+    }
+
+    /// XF-T40 — "Open in Other Pane" (Total Commander habit): the other pane shows the first selected folder (further
+    /// folders as its tabs); focus stays where it is.
+    private func openSelectionInOtherPane() -> Bool {
+        let folders = active.selectedEntries.filter(\.isFolderLike).map(\.path)
+        guard let first = folders.first, let other: PaneID = tree.other(than: activePane), let target: PaneState = panes[other]
+        else { return false }
+        target.navigate(to: first)
+        for folder in folders.dropFirst() { _ = newTab(in: other, path: folder) }
+        return true
+    }
 
     private func createNewFolder() {
         let existing = Set(active.entries.map(\.name))
