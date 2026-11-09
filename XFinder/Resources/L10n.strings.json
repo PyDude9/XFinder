@@ -16302,6 +16302,26 @@
     "Thư mục, tab và workspace — gõ > để xem lệnh": {
       "en": "Folders, tabs and workspaces — type > for commands",
       "scope": "sentence"
+    },
+    "Tệp mới": {
+      "en": "New File",
+      "scope": "sentence"
+    },
+    "Hiện nội dung gói": {
+      "en": "Show Package Contents",
+      "scope": "sentence"
+    },
+    "Mở trong ngăn mới": {
+      "en": "Open in New Pane",
+      "scope": "sentence"
+    },
+    "Mở trong ngăn kia": {
+      "en": "Open in Other Pane",
+      "scope": "sentence"
+    },
+    "Không tạo được tệp mới": {
+      "en": "Couldn’t create the file",
+      "scope": "sentence"
     }
   }
 }
