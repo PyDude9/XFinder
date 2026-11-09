@@ -15,6 +15,17 @@ final class BrowserPaletteRulesTests: XCTestCase {
         XCTAssertEqual(BrowserPaletteRules.rank(query: ">", items: items, usage: [:], destinationsOnly: false).map(\.id), ["cmd", "move"])
         XCTAssertEqual(BrowserPaletteRules.rank(query: "", items: items, usage: [:], destinationsOnly: true).map(\.id), ["folder"])
     }
+    /// XF-T39 (Q-T39-1): a saved workspace is found by its name or by "workspace", never offered as a move destination,
+    /// and never in command mode (FileOctopus: "Folders, tabs and workspaces — type > for commands").
+    func testWorkspacesAreQuickOpenItemsOnly() {
+        let items = [item("ws", "Dự án Q4", kind: .workspace, aliases: ["workspace", "Dự án Q4"]), item("folder", "Q4 reports"),
+                     item("cmd", "Rename", kind: .command)]
+        XCTAssertEqual(BrowserPaletteRules.rank(query: "du an", items: items, usage: [:], destinationsOnly: false).map(\.id), ["ws"])
+        XCTAssertEqual(BrowserPaletteRules.rank(query: "workspace", items: items, usage: [:], destinationsOnly: false).map(\.id), ["ws"])
+        XCTAssertEqual(BrowserPaletteRules.rank(query: "", items: items, usage: [:], destinationsOnly: true).map(\.id), ["folder"])
+        XCTAssertEqual(BrowserPaletteRules.rank(query: ">", items: items, usage: [:], destinationsOnly: false).map(\.id), ["cmd"])
+    }
+
     func testCorruptUsageAndBoundedHistory() throws {
         XCTAssertTrue(BrowserPaletteRules.usage(Data("bad".utf8)).isEmpty)
         let original = try JSONEncoder().encode(Dictionary(uniqueKeysWithValues: (0..<600).map { ("id\($0)", 1) }))

@@ -4,7 +4,9 @@ import Foundation
 enum BrowserPaletteRules {
     static let usageKey = "palette.usage"
     static let usageLimit = 512
-    enum Kind: String, Sendable { case location, command, move }
+    /// XF-T39 (Q-T39-1): `.workspace` — a saved workspace, opened by name from Quick Open (FileOctopus: "Folders, tabs
+    /// and workspaces — type > for commands"); never a move destination, never in command mode.
+    enum Kind: String, Sendable { case location, command, move, workspace }
     struct Item: Equatable, Identifiable, Sendable {
         let id: String
         let title: String
@@ -40,7 +42,7 @@ enum BrowserPaletteRules {
         let mode = BrowserCommands.commandMode(query)
         return items.enumerated().compactMap { index, item -> (Int, Item, Int, Int)? in
             if destinationsOnly && (item.kind != .location || item.isDirectory == false) { return nil }
-            if mode.isCommand && item.kind == .location { return nil }
+            if mode.isCommand && (item.kind == .location || item.kind == .workspace) { return nil }
             let search = mode.isCommand ? mode.rest : query
             let scores = ([item.title] + item.aliases).compactMap { BrowserCommands.score(query: search, candidate: $0) }
             guard let score = scores.max() else { return nil }

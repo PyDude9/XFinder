@@ -89,7 +89,7 @@ struct CommandPaletteView: View {
             }
             HStack {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField(L10n.t("Tìm thư mục, biệt danh hoặc lệnh…"), text: $query)
+                TextField(L10n.t("Thư mục, tab và workspace — gõ > để xem lệnh"), text: $query)
                     .textFieldStyle(.plain).font(XFinderTokens.Font.sectionTitle)
                     .focused($focused)
                     .task {
@@ -120,7 +120,7 @@ struct CommandPaletteView: View {
                         ForEach(Array(results.enumerated()), id: \.element.id) { index, item in
                             Button { selectedIndex = index; commit(modifiers: []) } label: {
                                 HStack(spacing: XFinderTokens.Space.row) {
-                                    Image(systemName: item.kind == .command ? "command" : (item.kind == .move ? "folder.badge.arrowshape.right" : "doc"))
+                                    Image(systemName: Self.symbol(for: item))
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(item.title).font(XFinderTokens.Font.row).lineLimit(1)
                                         if !item.subtitle.isEmpty {
@@ -189,6 +189,12 @@ struct CommandPaletteView: View {
         for item in metadata.paletteNicknames { add(item.path, title: item.nickname) }
         for entry in model.active.entries.prefix(1500) { add(entry.path, title: entry.name, directory: entry.isFolderLike) }
         if let typedPath { add(typedPath) }
+        // XF-T39 (Q-T39-1): saved workspaces by name — "2 cửa sổ · 08/11/2026"; "workspace" lists them all.
+        for workspace in model.workspaces {
+            let subtitle = "\(workspace.windows.count)\(L10n.t(" cửa sổ · "))\(workspace.savedAt.formatted(date: .numeric, time: .omitted))"
+            items.append(.init(id: "workspace:" + workspace.id.uuidString, title: workspace.name, subtitle: subtitle,
+                               target: workspace.id.uuidString, kind: .workspace, aliases: ["workspace", workspace.name]))
+        }
         if !model.active.selectedEntries.isEmpty, VirtualLocation.parse(model.active.path) == nil {
             items.append(.init(id: "action:move", title: L10n.t("Di chuyển đến…"), subtitle: L10n.t("Chọn thư mục đích"), target: "", kind: .move, aliases: ["move"]))
         }
@@ -219,6 +225,13 @@ struct CommandPaletteView: View {
         if item.kind == .command {
             guard let command = BrowserCommand(rawValue: item.target), model.canPerform(command) else { return }
             if model.perform(command) { record(item.id); model.palette = nil }
+            return
+        }
+        if item.kind == .workspace {
+            guard let id = UUID(uuidString: item.target) else { return }
+            model.openWorkspace(id)   // adds its windows (XF-T39); a missing one says so in the banner
+            record(item.id)
+            model.palette = nil
             return
         }
         let source = model.active
@@ -264,6 +277,15 @@ struct CommandPaletteView: View {
 }
 
 extension CommandPaletteView {
+    static func symbol(for item: BrowserPaletteRules.Item) -> String {
+        switch item.kind {
+        case .command: return "command"
+        case .move: return "folder.badge.arrowshape.right"
+        case .workspace: return "macwindow.on.rectangle"
+        case .location: return "doc"
+        }
+    }
+
     /// XF-T38: the menu a command lives in, under its title — "Tệp", "Xem", … — as FileOctopus's palette shows it.
     static func menuName(of command: BrowserCommand) -> String {
         guard let menu = BrowserMenuLayout.menu(containing: command) else { return L10n.t("Trình duyệt") }
