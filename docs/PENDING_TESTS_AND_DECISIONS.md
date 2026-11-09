@@ -11,6 +11,25 @@ Cập nhật: 2026-11-08.
 
 Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả lời thì giữ mặc định.
 
+### 2026-11-09 · XF-T40 Bốn lệnh tệp còn thiếu + Shelf/Khay thả + tên "untitled 2" (theo "tiếp đi")
+
+So đặc tả FileOctopus anh gửi (§2.1/§2.2) với bảng lệnh: thêm **Tệp mới**, **Hiện nội dung gói**, **Mở trong ngăn mới**,
+**Mở trong ngăn kia** (+ "Mở trong cửa sổ mới" vào chuột phải). Anh hỏi "Add to Shelf thì không thấy file ở Shelf nào":
+**Shelf** là thanh ở đáy cửa sổ trình duyệt (⌥⌘B, View ▸ Shelf), còn ảnh anh gửi là **Khay thả** của notch — hai thứ khác
+nhau; lỗi thật là Thêm vào Shelf không hiện thanh Shelf (đã sửa) và chuột phải không có "Thêm vào Khay thả" (đã thêm). Đo
+thêm: Thư mục mới / Tệp mới / Tạo bí danh luôn ra tên "… 2" dù tên gốc còn trống — đã sửa (`freshName`).
+
+| Mã | Câu hỏi | Lựa chọn | Mặc định đang làm |
+|:--|:--|:--|:--|
+| Q-T40-1 | Xoá ngay ⌥⌘⌫ (có hỏi) như FileOctopus/Finder | làm với hộp xác nhận (Huỷ mặc định) · không | **Không làm** — luật 9 "không bao giờ rm dữ liệu người dùng" |
+| Q-T40-2 | Đặt lại (Put Back) cho mục trong Thùng rác | làm · không | Không làm (vị trí cũ do Finder giữ riêng) |
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-T40-1 | Chuột phải nền ▸ Tệp mới; chuột phải một `.app` ▸ Hiện nội dung gói; chọn thư mục ▸ Mở trong ngăn mới / ngăn kia | `untitled.txt` (không phải "untitled 2.txt") đang chờ đổi tên; vào trong gói; ngăn mới/ngăn kia mở thư mục đó (đã chạy thật trong Atlas) |
+| T-T40-2 | Chuột phải tệp ▸ Thêm vào Shelf; rồi ▸ Thêm vào Khay thả | Thanh Shelf hiện ở đáy cửa sổ với tệp đó; notch mở Khay thả với tệp đó |
+| T-T40-3 | Thư mục trống ▸ ⇧⌘N | "untitled folder" (trước đây "untitled folder 2") |
+
 ### 2026-11-08 khuya · XF-T38 Menu bar + thanh điều hướng của trình duyệt (theo 7 ảnh FileOctopus anh gửi)
 
 Thanh menu khi cửa sổ trình duyệt ở trước: **Tệp · Edit · View · Đi · Window** theo đúng thứ tự trong ảnh (trước đây
