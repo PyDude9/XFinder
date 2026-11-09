@@ -32,6 +32,8 @@ ENTRIES: dict[str, tuple[str, str]] = {
     "Đã có workspace tên này. Chọn tên khác.": ("A workspace with this name already exists. Choose a different name.", S),
     "Không đọc được tệp workspace đã lưu nên không ghi đè.": ("The saved workspaces file couldn’t be read, so it isn’t changed.", S),
     "Một số thư mục của Workspace này không còn tồn tại": ("Some folders of this workspace no longer exist", S),
+    # Q-T39-1: Quick Open lists workspaces — its placeholder, worded as FileOctopus 1.0.10's
+    "Thư mục, tab và workspace — gõ > để xem lệnh": ("Folders, tabs and workspaces — type > for commands", S),
 }
 
 

@@ -16298,6 +16298,10 @@
     "Một số thư mục của Workspace này không còn tồn tại": {
       "en": "Some folders of this workspace no longer exist",
       "scope": "sentence"
+    },
+    "Thư mục, tab và workspace — gõ > để xem lệnh": {
+      "en": "Folders, tabs and workspaces — type > for commands",
+      "scope": "sentence"
     }
   }
 }
