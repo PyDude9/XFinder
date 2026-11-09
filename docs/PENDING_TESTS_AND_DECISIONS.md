@@ -25,7 +25,7 @@ nút **Sidebar** và **Thẻ** (+ Thư mục mới, Xem nhanh trong Tuỳ biến
 | Q-T38-2 | Phím khác FileOctopus: Mở nhanh ⌘K (FileOctopus ⌃⌘P), Đóng ngăn ⌃⌥⌘W (⌘W), Sidebar ⌥⌘S (⌃⌘S) | đổi theo FileOctopus · giữ | **Giữ phím XFinder** (⌘K theo Tilde); menu hiện phím thật |
 | Q-T38-3 | In ⌘P, Đổ Thùng rác ⇧⌘⌫ | làm · không | **Chưa làm**: in cần Apple Event tới app khác (quyền Automation); đổ Thùng rác là xoá vĩnh viễn |
 | Q-T38-4 | Khi "Hiện icon trên Dock" tắt, macOS không cho XFinder có thanh menu (app phụ). Trình duyệt có thanh menu riêng thì phải là app thường | icon Dock hiện trong lúc có cửa sổ trình duyệt · giữ ẩn và không có thanh menu | **Hiện trong lúc có cửa sổ trình duyệt** (đóng cửa sổ cuối ⇒ ẩn lại như anh cài; đã đo trong Atlas) |
-| Q-T39-1 | Mở nhanh (⌘K) có liệt kê workspace như FileOctopus ("Folders, tabs and workspaces")? | làm · không | Chưa làm |
+| Q-T39-1 | Mở nhanh (⌘K) có liệt kê workspace như FileOctopus ("Folders, tabs and workspaces")? | làm · không | **Đã làm** (`4857667`, theo "tiếp tục đi" 09/11): gõ tên workspace hoặc "workspace" ⇒ Return mở (thêm cửa sổ); không hiện ở chế độ ">" và không làm đích di chuyển. Chạy thật trong Atlas: 2 tab ⇒ 4 tab sau khi mở "Dự án Q4" |
 
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
@@ -35,6 +35,7 @@ nút **Sidebar** và **Thẻ** (+ Thư mục mới, Xem nhanh trong Tuỳ biến
 | T-T38-4 | (Icon Dock đang ẩn) mở trình duyệt; ⌘W đóng từng cửa sổ | Có thanh menu XFinder + icon Dock; ⌘W đóng được (trước đây không); đóng cửa sổ cuối ⇒ icon Dock ẩn lại |
 | T-T39-1 | Mở 2 cửa sổ trình duyệt ▸ Window ▸ Lưu Workspace ▸ tên "A"; lưu lần nữa cùng tên "a" | Lần hai hỏi "Thay thế workspace “a”?"; Huỷ không ghi gì |
 | T-T39-2 | Đóng bớt cửa sổ ▸ Window ▸ Mở workspace ▸ A | Cửa sổ đang mở còn nguyên, thêm đủ 2 cửa sổ của A (trước đây: thay bố cục cửa sổ hiện tại) |
+| T-T39-4 | ⌘K ▸ gõ tên một workspace đã lưu ▸ Return | Dòng workspace có phụ đề "N cửa sổ · ngày"; Return thêm các cửa sổ của nó (đã chạy thật trong Atlas) |
 | T-T39-3 | Window ▸ Xem các workspace đã lưu… ▸ Xuất các workspace… | Mỗi dòng ghi số cửa sổ, số tab, ngày lưu, các thư mục; tệp xuất có tên, bố cục, thư mục — không có lịch sử Lùi/Tiến |
 
 ### 2026-11-08 khuya · XF-T37 Luật logic trình duyệt theo FileOctopus 1.0.10 (bản đặc tả anh gửi)
