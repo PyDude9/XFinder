@@ -68,6 +68,7 @@ enum BrowserContextMenu {
         menu.addItem(.separator())
         addPlain(menu, title: L10n.t("Thêm vào sidebar"), command: .addToSidebar, model: model, pane: pane)
         addPlain(menu, title: L10n.t("Thêm vào Shelf"), command: .addToShelf, model: model, pane: pane)
+        addPlain(menu, title: L10n.t("Thêm vào Khay thả"), command: .addToDropTray, model: model, pane: pane)
 
         menu.addItem(.separator())
         addPlain(menu, title: showOriginalTitle(for: pane), command: .showOriginal, model: model, pane: pane)

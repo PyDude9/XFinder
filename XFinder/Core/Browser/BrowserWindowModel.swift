@@ -717,6 +717,12 @@ enum BrowserSheet: String, Identifiable {
             copyOrMoveToOtherPane(move: true)
         case .addToShelf:
             addSelectionToShelfGated()
+        case .addToDropTray:
+            // XF-T40 — the same thing the Finder Sync menu and xfinder://droptray-add do: the notch holds the files.
+            let urls = active.selectedEntries.map { URL(fileURLWithPath: $0.path) }
+            guard !urls.isEmpty else { return false }
+            DropTrayStore.shared.add(urls: urls)
+            NotchSurfaceController.shared.reveal(page: .files)
         case .toggleShelf:
             shelfVisible.toggle()
         case .operations:
@@ -872,7 +878,7 @@ enum BrowserSheet: String, Identifiable {
             guard tree.count >= 2, !active.selectedEntries.isEmpty, let other: PaneID = tree.other(than: activePane),
                   let target: PaneState = panes[other] else { return false }
             return VirtualLocation.parse(target.path) == nil && target.search == nil
-        case .addToShelf:
+        case .addToShelf, .addToDropTray:
             return !active.selectedEntries.isEmpty
         case .compress:
             return !active.selectedEntries.isEmpty
@@ -1525,6 +1531,9 @@ extension BrowserWindowModel {
             return
         }
         addSelectionToShelf()
+        // XF-T40 (owner, 2026-11-09: "chọn Add to Shelf thì tôi không thấy file ở Shelf nào"): the Shelf bar is hidden by
+        // default, and adding to it never showed it — the item vanished as far as the person could tell.
+        shelfVisible = true
     }
 
     /// Free: starting a copy/move while another file operation is already running shows a banner instead of

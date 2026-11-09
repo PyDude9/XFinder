@@ -46,6 +46,7 @@ enum BrowserCommand: String, CaseIterable, Sendable {
     case togglePreview, slideshow
     case refresh, saveSearch   // XF-T38 — View ▸ Refresh, File ▸ Save Search… (FileOctopus 1.0.10 menus)
     case newFile, showPackageContents, openInNewPane, openInOtherPane   // XF-T40 — FileOctopus 1.0.10 §2.1/§2.2
+    case addToDropTray   // XF-T40 — the notch's Drop Tray (owner confused it with the browser's Shelf, 2026-11-09)
 }
 
 /// XF-T28 — the file browser's ONE keyboard table (spec §2.3): every chord a browser window owns goes through here,
@@ -285,6 +286,7 @@ enum BrowserCommands {
         case .showPackageContents: return "Hiện nội dung gói"
         case .openInNewPane: return "Mở trong ngăn mới"
         case .openInOtherPane: return "Mở trong ngăn kia"
+        case .addToDropTray: return "Thêm vào Khay thả"
         }
     }
 
