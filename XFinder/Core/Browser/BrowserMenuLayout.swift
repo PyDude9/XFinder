@@ -13,7 +13,7 @@ enum BrowserMenuLayout {
 
     /// Built when opened (selection, state or a store decides their items) — except the three static ones, see `entries(_:)`.
     enum Submenu: String, CaseIterable, Sendable {
-        case openWith, tags, groupBy, sortBy, shelf, paneLayout, panes, recentFolders, savedSearches
+        case openWith, tags, groupBy, sortBy, paneLayout, panes, recentFolders, savedSearches
         case openWorkspace, renameWorkspace, duplicateWorkspace, deleteWorkspace
     }
 
@@ -58,7 +58,6 @@ enum BrowserMenuLayout {
         case .tags: return "Thẻ"
         case .groupBy: return "Nhóm theo"
         case .sortBy: return "Sắp theo"
-        case .shelf: return "Shelf"
         case .paneLayout: return "Bố cục ngăn"
         case .panes: return "Ngăn"
         case .recentFolders: return "Thư mục gần đây"
@@ -100,8 +99,7 @@ enum BrowserMenuLayout {
                 .command(.copyToOtherPane), .command(.moveToOtherPane), .link(.compareFolders), .link(.findDuplicates),
                 .command(.quickLook), .separator,
                 .command(.share), .separator,
-                .command(.showOriginal), .command(.showInFinder), .command(.addToSidebar), .command(.addToShelf),
-                .command(.addToDropTray), .separator,
+                .command(.showOriginal), .command(.showInFinder), .command(.addToSidebar), .command(.addToDropTray), .separator,
                 .command(.moveToTrash), .command(.eject), .separator,
                 .submenu(.tags), .separator,
                 .command(.find), .command(.saveSearch),
@@ -112,7 +110,7 @@ enum BrowserMenuLayout {
             return [
                 .command(.viewIcons), .command(.viewList), .command(.viewColumns), .command(.viewGallery), .separator,
                 .command(.useGroups), .submenu(.groupBy), .submenu(.sortBy), .separator,
-                .command(.toggleSidebar), .command(.filter), .command(.togglePreview), .submenu(.shelf), .separator,
+                .command(.toggleSidebar), .command(.filter), .command(.togglePreview), .separator,
                 .command(.toggleToolbar), .command(.togglePathBar), .command(.toggleStatusBar), .command(.toggleLocationBar),
                 .command(.editLocation), .command(.refresh), .command(.toggleHidden), .separator,
                 .submenu(.paneLayout), .submenu(.panes), .separator,
@@ -143,8 +141,6 @@ enum BrowserMenuLayout {
     /// The submenus whose items never change; nil for the ones built when they open.
     static func entries(_ submenu: Submenu) -> [Entry]? {
         switch submenu {
-        case .shelf:
-            return [.command(.toggleShelf), .command(.addToShelf)]
         case .paneLayout:
             return [.command(.presetSingle), .command(.presetSideBySide), .command(.presetStacked), .command(.presetGrid)]
         case .panes:

@@ -1131,7 +1131,7 @@ private struct SidebarVibrancyBackground: NSViewRepresentable {
 }
 
 /// Thread-safe fixed-slot collector for `BrowserSidebarView`'s drop handlers — each `NSItemProvider`'s completion
-/// handler may run on a different queue (same shape as `ShelfBarView`'s own collector, kept local since that one
+/// handler may run on a different queue (same shape as the old `ShelfBarView`'s own collector, kept local since that one
 /// is private).
 private final class SidebarDropCollector: Sendable {
     private let slots: OSAllocatedUnfairLock<[String?]>

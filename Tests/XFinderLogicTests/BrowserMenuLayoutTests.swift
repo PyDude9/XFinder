@@ -61,7 +61,7 @@ final class BrowserMenuLayoutTests: XCTestCase {
 
     func testStaticAndBuiltSubmenusArePartitioned() {
         let staticOnes = BrowserMenuLayout.Submenu.allCases.filter { BrowserMenuLayout.entries($0) != nil }
-        XCTAssertEqual(Set(staticOnes), [.shelf, .paneLayout, .panes])
+        XCTAssertEqual(Set(staticOnes), [.paneLayout, .panes])
     }
 
     func testLinksOpenExistingPages() {

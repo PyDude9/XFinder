@@ -26,18 +26,34 @@ private extension SidebarTile {
 /// the footer "Giới thiệu" row — one row view for the whole list, not two parallel implementations.
 private struct SidebarRow: View {
     let title: String
+    let subtitle: String?
     let icon: String
     let tile: SidebarTile
 
+    init(title: String, subtitle: String? = nil, icon: String, tile: SidebarTile) {
+        self.title = title
+        self.subtitle = subtitle
+        self.icon = icon
+        self.tile = tile
+    }
+
     var body: some View {
         Label {
-            Text(title)
-                .font(XFinderTokens.Settings.sidebarRow)
-                // Without these, a long row ("Đổi tên hàng loạt") grows the
-                // sidebar's ideal width and the whole window jumps when that
-                // page is selected.
-                .lineLimit(1)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(XFinderTokens.Settings.sidebarRow)
+                    // Without these, a long row ("Đổi tên hàng loạt") grows the
+                    // sidebar's ideal width and the whole window jumps when that
+                    // page is selected.
+                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.system(size: 10.5))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
         } icon: {
             RoundedRectangle(cornerRadius: XFinderTokens.Settings.tileRadius, style: .continuous)
                 .fill(tile.color)
@@ -56,27 +72,58 @@ private struct SidebarRow: View {
 
 struct SidebarView: View {
     @Binding var selection: SidebarDestination
-    @Environment(ClipboardManager.self) var clipboardManager
     @State private var query = ""
+    @AppStorage("sidebar.collapsedGroups") private var collapsedRaw = ""
+    @State private var cachedGroups: [(header: String, items: [SidebarDestination])] = SidebarDestination.groups
+    @State private var cachedShowsPro = true
+    @State private var cachedShowsAbout = true
     @FocusState private var searchFocused: Bool
+
+    private var collapsedHeaders: Set<String> {
+        MenubarPanelRules.parseCollapsedHeaders(collapsedRaw)
+    }
 
     private var selectionBinding: Binding<SidebarDestination?> {
         Binding(get: { selection }, set: { if let v = $0 { selection = v } })
     }
 
-    private var groups: [(header: String, items: [SidebarDestination])] {
-        SidebarSearch.filter(SidebarDestination.groups, query: query) { header, dest in
+    private var isSearching: Bool {
+        !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Recomputes sidebar filtering only when `query` changes (not on every selection click),
+    /// matching Vorssaint's `SettingsDirectoryCache` pattern for snappy navigation.
+    private func rebuildFilterCache() {
+        cachedGroups = SidebarSearch.filter(SidebarDestination.groups, query: query) { header, dest in
             [dest.titleKey, L10n.english(dest.titleKey), header, L10n.english(header), dest.rawValue]
                 + dest.searchAlsoKeys.flatMap { [$0, L10n.english($0)] }
+                + SettingsSearchIndex.keywords(for: dest)
         }
+        cachedShowsPro = SidebarSearch.matches(
+            query: query,
+            texts: [SidebarDestination.pro.titleKey, L10n.english(SidebarDestination.pro.titleKey), SidebarDestination.pro.rawValue]
+                + SettingsSearchIndex.keywords(for: .pro)
+        )
+        cachedShowsAbout = SidebarSearch.matches(
+            query: query,
+            texts: [SidebarDestination.about.titleKey, L10n.english(SidebarDestination.about.titleKey), SidebarDestination.about.rawValue]
+                + SettingsSearchIndex.keywords(for: .about)
+        )
     }
 
-    private var showsPro: Bool {
-        SidebarSearch.matches(query: query, texts: [SidebarDestination.pro.titleKey, L10n.english(SidebarDestination.pro.titleKey), SidebarDestination.pro.rawValue])
+    private func toggleSection(_ header: String) {
+        var next = collapsedHeaders
+        if next.contains(header) {
+            next.remove(header)
+        } else {
+            next.insert(header)
+        }
+        collapsedRaw = MenubarPanelRules.encodeCollapsedHeaders(next)
     }
 
-    private var showsAbout: Bool {
-        SidebarSearch.matches(query: query, texts: [SidebarDestination.about.titleKey, L10n.english(SidebarDestination.about.titleKey), SidebarDestination.about.rawValue])
+    private func matchHint(for dest: SidebarDestination) -> String? {
+        guard isSearching else { return nil }
+        return SettingsSearchIndex.firstMatchedKeyword(for: dest, query: query)
     }
 
     var body: some View {
@@ -84,6 +131,8 @@ struct SidebarView: View {
             searchField
             list
         }
+        .onAppear { rebuildFilterCache() }
+        .onChange(of: query) { rebuildFilterCache() }
     }
 
     private var searchField: some View {
@@ -94,13 +143,25 @@ struct SidebarView: View {
                 .font(.system(size: 12))
                 .focused($searchFocused)
                 // Return opens the first match; Esc clears (standard search-field behaviour).
-                .onSubmit { if let first = groups.first?.items.first { selection = first } else if showsAbout { selection = .about } }
+                .onSubmit { if let first = cachedGroups.first?.items.first { selection = first } else if cachedShowsAbout { selection = .about } }
                 .onExitCommand { query = "" }
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundColor(.secondary) }
                     .buttonStyle(.plain)
                     .help(L10n.t("Xoá tìm kiếm"))
                     .accessibilityLabel(L10n.t("Xoá tìm kiếm"))
+            } else {
+                Button { QuickSearchPanelController.shared.toggle() } label: {
+                    Text("⌘K")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(RoundedRectangle(cornerRadius: 4, style: .continuous).fill(Color.primary.opacity(0.08)))
+                }
+                .buttonStyle(.plain)
+                .help(L10n.t("Mở bảng lệnh (⌘K)"))
+                .accessibilityLabel(L10n.t("Mở bảng lệnh (⌘K)"))
             }
         }
         .padding(.horizontal, 8).padding(.vertical, 5)
@@ -110,12 +171,31 @@ struct SidebarView: View {
 
     private var list: some View {
         List(selection: selectionBinding) {
-            ForEach(groups, id: \.header) { group in
-                Section(header: Text(L10n.t(group.header)).font(XFinderTokens.Settings.sidebarHeader).foregroundColor(.secondary)) {
-                    ForEach(group.items, id: \.self) { dest in
-                        SidebarRow(title: dest.titleVI, icon: dest.icon, tile: dest.tile)
-                            .tag(dest)
+            ForEach(cachedGroups, id: \.header) { group in
+                let isCollapsed = !isSearching && collapsedHeaders.contains(group.header)
+                Section {
+                    if !isCollapsed {
+                        ForEach(group.items, id: \.self) { dest in
+                            SidebarRow(title: dest.titleVI, subtitle: matchHint(for: dest), icon: dest.icon, tile: dest.tile)
+                                .tag(dest)
+                        }
                     }
+                } header: {
+                    Button { toggleSection(group.header) } label: {
+                        HStack(spacing: 4) {
+                            Text(L10n.t(group.header))
+                                .font(XFinderTokens.Settings.sidebarHeader)
+                                .foregroundColor(.secondary)
+                            Spacer(minLength: 0)
+                            if !isSearching {
+                                Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                                    .font(.system(size: 9, weight: .semibold))
+                                    .foregroundColor(.secondary.opacity(0.7))
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 
@@ -123,20 +203,20 @@ struct SidebarView: View {
             // actually live — a board list here could only jump to a page that
             // no longer shows content.
 
-            if showsAbout || showsPro {
+            if cachedShowsAbout || cachedShowsPro {
                 Section {
-                    if showsPro {
-                        SidebarRow(title: SidebarDestination.pro.titleVI, icon: SidebarDestination.pro.icon, tile: SidebarDestination.pro.tile)
+                    if cachedShowsPro {
+                        SidebarRow(title: SidebarDestination.pro.titleVI, subtitle: matchHint(for: .pro), icon: SidebarDestination.pro.icon, tile: SidebarDestination.pro.tile)
                             .tag(SidebarDestination.pro)
                     }
-                    if showsAbout {
-                        SidebarRow(title: SidebarDestination.about.titleVI, icon: SidebarDestination.about.icon, tile: SidebarDestination.about.tile)
+                    if cachedShowsAbout {
+                        SidebarRow(title: SidebarDestination.about.titleVI, subtitle: matchHint(for: .about), icon: SidebarDestination.about.icon, tile: SidebarDestination.about.tile)
                             .tag(SidebarDestination.about)
                     }
                 }
             }
 
-            if groups.isEmpty && !showsAbout && !showsPro {
+            if cachedGroups.isEmpty && !cachedShowsAbout && !cachedShowsPro {
                 Text(L10n.t("Không có trang nào khớp."))
                     .font(.system(size: 12)).foregroundColor(.secondary)
                     .padding(.vertical, 6)

@@ -180,4 +180,29 @@ final class NotchClipboardRulesTests: XCTestCase {
         XCTAssertFalse(R.cardChanged(from: 9, to: 1, in: ids), "a filter replaced the list: the old card is gone")
         XCTAssertFalse(R.cardChanged(from: 1, to: 9, in: ids))
     }
+
+    func testSearchPlacementStaysInHeaderOnPlainScreensAndMovesToContentRowOnConstrainedNotches() {
+        XCTAssertEqual(
+            R.searchPlacement(onPhysicalNotch: false, isWide: true, bodyWidth: 612, notchWidth: 0),
+            .header(maxWidth: 280)
+        )
+        XCTAssertEqual(
+            R.searchPlacement(onPhysicalNotch: false, isWide: false, bodyWidth: 382, notchWidth: 0),
+            .header(maxWidth: 165)
+        )
+
+        for notchW in [185.0, 206.0, 240.0, 280.0] {
+            let placement = R.searchPlacement(onPhysicalNotch: true, isWide: true, bodyWidth: 612, notchWidth: notchW)
+            XCTAssertTrue(placement.isContentRow, "notch \(notchW) leaves < \(R.minHeaderSearchWidth)pt beside title and moves search to contentRow")
+            if case let .contentRow(_, activeMin, activeMax) = placement {
+                XCTAssertGreaterThanOrEqual(activeMin, 240)
+                XCTAssertGreaterThanOrEqual(activeMax, 380)
+            }
+        }
+
+        XCTAssertEqual(
+            R.searchPlacement(onPhysicalNotch: true, isWide: true, bodyWidth: 612, notchWidth: 120),
+            .header(maxWidth: 162)
+        )
+    }
 }

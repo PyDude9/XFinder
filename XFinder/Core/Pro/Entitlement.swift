@@ -19,7 +19,7 @@ enum ProTier: Equatable, Sendable {
 
 enum ProFeature: String, CaseIterable, Sendable {
     case unlimitedClipboard, unlimitedCaptures, lockedBoard, clipboardMCP, scrollingCapture
-    case browserPanes, browserShelf, browserWorkspaces, browserQueue, browserBatchCloud
+    case browserPanes, browserWorkspaces, browserQueue, browserBatchCloud
     case agentCrews, windowlessAgents, agentHandoff, folderLock, folderSync, remoteConnect, snapMemory
     case unlimitedQuickShare, voiceAIRefine
 
@@ -32,7 +32,6 @@ enum ProFeature: String, CaseIterable, Sendable {
         case .clipboardMCP: return "Máy chủ MCP Clipboard cho AI agent"
         case .scrollingCapture: return "Chụp cuộn"
         case .browserPanes: return "Trình duyệt tệp tới 16 ngăn"
-        case .browserShelf: return "Shelf trong trình duyệt tệp"
         case .browserWorkspaces: return "Workspace có tên"
         case .browserQueue: return "Hàng đợi nhiều thao tác chép"
         case .browserBatchCloud: return "Tải về và gỡ đám mây hàng loạt"

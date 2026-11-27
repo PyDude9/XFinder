@@ -24,7 +24,6 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
         static let enclosingFolder = NSToolbarItem.Identifier("com.xfinder.browser.enclosingFolder")
         static let goToFolder = NSToolbarItem.Identifier("com.xfinder.browser.goToFolder")
         static let workspaces = NSToolbarItem.Identifier("com.xfinder.browser.workspaces")
-        static let shelf = NSToolbarItem.Identifier("com.xfinder.browser.shelf")
         static let downloads = NSToolbarItem.Identifier("com.xfinder.browser.downloads")
         static let operations = NSToolbarItem.Identifier("com.xfinder.browser.operations")
         // XF-T38 — FileOctopus 1.0.10's toolbar has these (toggleSidebar, toolbar.editTags, toolbar.newFolder,
@@ -41,7 +40,6 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
 
     private var backForwardControl: NSSegmentedControl?
     private var paneLayoutItem: NSToolbarItem?
-    private var shelfItem: NSToolbarItem?
     private var operationsItem: NSToolbarItem?
     private var searchItem: NSSearchToolbarItem?
     private weak var operationsPopover: NSPopover?
@@ -121,7 +119,7 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
 
     func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
         toolbarDefaultItemIdentifiers(toolbar) + [
-            ID.enclosingFolder, ID.goToFolder, ID.workspaces, ID.shelf, ID.operations, ID.newFolder, ID.quickLook,
+            ID.enclosingFolder, ID.goToFolder, ID.workspaces, ID.operations, ID.newFolder, ID.quickLook,
             .flexibleSpace, .space,
         ]
     }
@@ -152,7 +150,6 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
         case ID.enclosingFolder: return makeButtonItem(ID.enclosingFolder, command: .openEnclosing, symbol: "arrow.up.square")
         case ID.goToFolder: return makeButtonItem(ID.goToFolder, command: .goToFolder, symbol: "arrow.right.doc.on.clipboard")
         case ID.workspaces: return makeWorkspacesItem()
-        case ID.shelf: return makeShelfItem()
         case ID.operations: return makeOperationsItem()
         default: return nil
         }
@@ -616,42 +613,6 @@ final class BrowserToolbarController: NSObject, NSToolbarDelegate, BrowserChrome
         model.openWorkspace(id)
     }
 
-    private func makeShelfItem() -> NSToolbarItem {
-        let title = L10n.t("Hiện hoặc ẩn Shelf")
-        let button = NSButton(image: NSImage(systemSymbolName: model.shelfVisible ? "tray.full.fill" : "tray", accessibilityDescription: title)!,
-                              target: self, action: #selector(shelfClicked))
-        button.bezelStyle = .texturedRounded
-        button.setButtonType(.pushOnPushOff)
-        button.state = model.shelfVisible ? .on : .off
-        let item = NSToolbarItem(itemIdentifier: ID.shelf)
-        item.view = button
-        item.label = title
-        item.paletteLabel = title
-        shelfItem = item
-        observeShelfVisible()
-        return item
-    }
-
-    @objc private func shelfClicked() {
-        _ = model.perform(.toggleShelf)
-    }
-
-    private func observeShelfVisible() {
-        withObservationTracking {
-            _ = model.shelfVisible
-        } onChange: { [weak self] in
-            Task { @MainActor in
-                guard let self, !self.tornDown else { return }
-                if let button = self.shelfItem?.view as? NSButton {
-                    button.state = self.model.shelfVisible ? .on : .off
-                    button.image = NSImage(systemSymbolName: self.model.shelfVisible ? "tray.full.fill" : "tray", accessibilityDescription: nil)
-                }
-                self.observeShelfVisible()
-            }
-        }
-    }
-
-    /// Operations button badge = active + queued job count, same source `BrowserRootView`'s own button used.
     /// XF-T38: a plain button that runs one browser command (Sidebar, New Folder, Quick Look).
     private func makeCommandButton(_ identifier: NSToolbarItem.Identifier, symbol: String, command: BrowserCommand) -> NSToolbarItem {
         let title = L10n.t(BrowserCommands.titleKey(command))

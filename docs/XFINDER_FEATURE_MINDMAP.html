@@ -206,6 +206,7 @@
         - Cửa sổ mới (New Window) — ⌘N
         - Thư mục mới (New Folder) — ⇧⌘N
         - Thư mục mới chứa mục chọn (New Folder with Selection) — ⌃⌘N
+        - Tệp mới (New File)
         - Tab cửa sổ mới (New Window Tab) — ⌘T
         - Mở (Open) — ⌘O
         - Mở bằng (Open With) ▸
@@ -225,7 +226,7 @@
         - Hiện bản gốc (Show Original) — ⌘R
         - Hiện trong Finder (Show in Finder)
         - Thêm vào sidebar (Add to Sidebar) — ⌃⌘T
-        - Thêm vào Shelf (Add to Shelf) — ⌃⌘S
+        - Thêm vào Khay thả (Add to Drop Tray)
         - Chuyển vào Thùng rác (Move to Trash) — ⌘⌫
         - Đẩy ra (Eject) — ⌘E
         - Thẻ (Tag) ▸
@@ -246,9 +247,6 @@
         - Hiện hoặc ẩn sidebar (Show or Hide Sidebar) — ⌥⌘S
         - Lọc thư mục hiện tại (Filter Current Folder)
         - Hiện hoặc ẩn xem trước (Show or Hide Preview) — ⇧⌘P
-        - Shelf ▸
-            - Hiện hoặc ẩn Shelf (Show or Hide Shelf) — ⌥⌘B
-            - Thêm vào Shelf (Add to Shelf) — ⌃⌘S
         - Hiện hoặc ẩn thanh công cụ (Show or Hide Toolbar) — ⌥⌘T
         - Hiện hoặc ẩn thanh đường dẫn (Show or Hide Path Bar) — ⌥⌘P
         - Hiện hoặc ẩn thanh trạng thái (Show or Hide Status Bar) — ⌘/
@@ -321,10 +319,13 @@
     - Dán (Paste) — ⌘V
     - Gỡ bản tải (Remove Download)
     - Hiện cửa sổ Chào… (Show Welcome Window…)
+    - Hiện nội dung gói (Show Package Contents)
     - Hoàn tác (Undo) — ⌘Z
     - Làm lại (Redo) — ⇧⌘Z
     - Mở Workspace (Open Workspace)
     - Mở trong cửa sổ mới (Open in New Window)
+    - Mở trong ngăn kia (Open in Other Pane)
+    - Mở trong ngăn mới (Open in New Pane)
     - Mở trong tab mới (Open in New Tab)
     - Ngăn bên phải (Pane on Right) — ⌃⇧⌘→
     - Ngăn bên trái (Pane on Left) — ⌃⇧⌘←
@@ -352,7 +353,6 @@
         - Thư mục cha
         - Đến thư mục (Go to Folder)
         - Workspace
-        - Shelf
         - Hàng đợi thao tác (Operations)
         - Thư mục mới (New Folder)
         - Xem nhanh (Quick Look)
@@ -403,7 +403,7 @@
     - Hoàn tác bền ⌘Z / Làm lại ⇧⌘Z (20 bước, 24 h, kiểm lại trước khi chạy); nhật ký chống ngắt + Báo cáo khôi phục
     - Đổi tên: một luật tên (rỗng, ':' '/', '.', ký tự điều khiển, 255 đơn vị NFD); chỉ đổi hoa/thường được; renamex_np không bao giờ đè
     - Đổi tên hàng loạt ⌃⌘R: Thay chữ · Thêm chữ · Định dạng (Tên và chỉ số / bộ đếm / ngày); một lỗi chặn cả lô; hoán đổi tên được; một ⌘Z
-    - Nén ZIP, Thêm vào Shelf, Chép/Chuyển sang ngăn kia, Cắt ⌘X kiểu Windows (tuỳ chọn), Thư mục mới chứa mục chọn, Tạo bí danh
+    - Nén ZIP, Thêm vào Khay thả (notch), Chép/Chuyển sang ngăn kia, Cắt ⌘X kiểu Windows (tuỳ chọn), Thư mục mới chứa mục chọn, Tạo bí danh
 
 ## Notch (SurfacePanel 650×188)
 *một panel cố định, máy trạng thái thuần NotchSurfaceMachine*
@@ -417,6 +417,7 @@
     - Hẹn giờ
     - Hạn mức AI
 - Peek / mở rộng; bấm huy hiệu mở trang theo `notch.clickOpens` (cố định · lần cuối · theo hoạt động)
+- Khay thả (thay Shelf của trình duyệt, XF-T41): giữ tệp, kéo ra, Chép/Chuyển vào ngăn trình duyệt đang chọn, Đổi tên hàng loạt, Sao chép…/Di chuyển…, Nén ZIP, Mở tất cả, Bỏ vào Rác, báo tệp không còn
 - HUD âm lượng / độ sáng chen hàng đợi
 - Ẩn trong ứng dụng toàn màn hình (`notch.fullscreenVisibility`)
 - Ghi chú mép (Edge notes): peek ở mép màn hình, ⌃⌥N, tự sao lưu hằng ngày
@@ -449,6 +450,5 @@
 ## Ghi chú của chủ dự án
 
 - (viết ở đây: tính năng cần bỏ, gộp, đổi tên, ý tưởng mới…)
-- THỬ GIỮ GHI CHÚ
 
 </script></div></body></html>

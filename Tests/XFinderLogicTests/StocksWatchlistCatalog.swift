@@ -1,0 +1,1 @@
+../../XFinder/Core/Stocks/StocksWatchlistCatalog.swift

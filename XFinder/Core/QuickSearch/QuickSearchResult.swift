@@ -16,6 +16,8 @@ struct QuickSearchResult: Identifiable, @unchecked Sendable {
     /// Thứ tự case = thứ tự ưu tiên hiển thị trong trang Tìm kiếm.
     enum ResultType: Int {
         case quicklink
+        case snippet
+        case settingsPage
         case app
         case calculator
         case file
@@ -24,6 +26,8 @@ struct QuickSearchResult: Identifiable, @unchecked Sendable {
         var titleVI: String {
             switch self {
             case .quicklink: return L10n.t("Liên kết nhanh")
+            case .snippet: return L10n.t("Đoạn văn bản nhanh")
+            case .settingsPage: return L10n.t("Cài đặt XFinder")
             case .app: return L10n.t("Ứng dụng")
             case .calculator: return L10n.t("Tính toán")
             case .file: return L10n.t("Tập tin")
@@ -34,6 +38,8 @@ struct QuickSearchResult: Identifiable, @unchecked Sendable {
         var symbolName: String {
             switch self {
             case .quicklink: return "link.circle.fill"
+            case .snippet: return "text.badge.plus"
+            case .settingsPage: return "gearshape.fill"
             case .app: return "app.fill"
             case .calculator: return "equal.circle.fill"
             case .file: return "doc.fill"

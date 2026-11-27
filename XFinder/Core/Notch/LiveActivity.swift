@@ -7,7 +7,7 @@ import Foundation
 enum LiveActivity {
 
     enum Kind: String, CaseIterable {
-        case power, network, capsLock, bluetooth, alert, volume, brightness, timer, meeting, agent
+        case power, network, capsLock, bluetooth, alert, volume, brightness, timer, meeting, agent, localMessage
         /// The answer to a key the person just pressed (the native square is swallowed for it). It cannot wait its turn
         /// behind a notice, and a stale one is worthless — see `Queue.push` and `NotchSurfaceMachine.Event.feedbackShown`.
         var isKeyFeedback: Bool { self == .volume || self == .brightness }
@@ -29,6 +29,7 @@ enum LiveActivity {
         /// §3b #33 — buttons on the notice (a meeting alert: Tham gia / Hoãn / Mở Lịch). Non-empty ⇒ hovering the
         /// notice must not turn it into a peek, or the buttons vanish under the pointer that came to press them.
         var buttons: [Button] = []
+        var localMessageID: UUID? = nil
     }
 
     enum Button: Equatable {
@@ -39,6 +40,9 @@ enum LiveActivity {
         case openAgents
         /// P12.4 — open the handoff preview for that session, pre-set to `target`. It never sends by itself.
         case handOff(listID: String, target: AgentKind)
+        /// XF-ISLAND 1B — optional hydration reminder actions.
+        case hydrateAck
+        case hydrateSnooze(minutes: Int)
     }
 
     // MARK: Power
@@ -243,7 +247,7 @@ enum LiveActivity {
     /// P2: running OR paused. Running = `endsAt` set; paused = `pausedRemaining` set and the clock frozen (a paused
     /// timer is not finished, whatever the wall clock says). `duration` is the whole planned length, so `progress`
     /// stays honest across pauses and extensions.
-    struct Countdown: Equatable {
+    struct Countdown: Equatable, Codable, Sendable {
         private(set) var duration: TimeInterval
         private(set) var endsAt: Date?
         private(set) var pausedRemaining: TimeInterval?
@@ -409,6 +413,14 @@ enum LiveActivity {
             guard current == nil, !pending.isEmpty else { return nil }
             current = pending.removeFirst()
             return current
+        }
+
+        var localMessageID: UUID? {
+            current?.localMessageID ?? pending.lazy.compactMap(\.localMessageID).first
+        }
+
+        mutating func removePendingLocalMessage(id: UUID) {
+            pending.removeAll { $0.localMessageID == id }
         }
 
         mutating func clear() { current = nil; pending = [] }

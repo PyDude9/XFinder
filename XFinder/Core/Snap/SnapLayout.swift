@@ -235,6 +235,8 @@ enum SnapLayout {
         return target
     }
 
+    static let hotkeyKeyCodes: [UInt32] = [123, 124, 126, 125, 36, 2, 3, 5]
+
     /// Native windows keep their minimum size; small zones may overlap rather than shrink unusably.
     static func constrainedFrame(_ target: CGRect, minimum: CGSize, visibleFrame: CGRect) -> CGRect {
         let size = CGSize(width: max(target.width, minimum.width), height: max(target.height, minimum.height))

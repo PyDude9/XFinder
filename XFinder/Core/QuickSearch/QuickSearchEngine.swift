@@ -37,6 +37,8 @@ final class QuickSearchEngine {
             guard !Task.isCancelled else { return }
 
             let links = Quicklinks.shared.search(query: q)
+            let snippets = TextSnippetStore.shared.quickSearchResults(query: q)
+            let settingsPages = Self.searchSettingsPages(query: q)
             let calc = Calculator.shared.evaluate(query: q).map { [$0] } ?? []
 
             async let apps = Task.detached(priority: .userInitiated) {
@@ -47,7 +49,7 @@ final class QuickSearchEngine {
             let (appResults, fileResults) = await (apps, files)
             guard !Task.isCancelled else { return }
 
-            self?.results = links + appResults + calc + fileResults
+            self?.results = links + snippets + settingsPages + appResults + calc + fileResults
             self?.isSearching = false
         }
     }
@@ -56,5 +58,29 @@ final class QuickSearchEngine {
         searchTask?.cancel()
         results = []
         isSearching = false
+    }
+
+    private static func searchSettingsPages(query: String) -> [QuickSearchResult] {
+        var matched: [QuickSearchResult] = []
+        for dest in SidebarDestination.allCases {
+            let texts = [dest.titleKey, L10n.english(dest.titleKey), dest.rawValue]
+                + dest.searchAlsoKeys.flatMap { [$0, L10n.english($0)] }
+                + SettingsSearchIndex.keywords(for: dest)
+            guard SidebarSearch.matches(query: query, texts: texts) else { continue }
+            let hint = SettingsSearchIndex.firstMatchedKeyword(for: dest, query: query)
+            matched.append(QuickSearchResult(
+                type: .settingsPage,
+                title: dest.titleVI,
+                subtitle: hint ?? L10n.t("Cài đặt XFinder"),
+                icon: nil,
+                action: {
+                    Task { @MainActor in
+                        AppState.shared.navigate(to: dest)
+                    }
+                }
+            ))
+            if matched.count >= 5 { break }
+        }
+        return matched
     }
 }

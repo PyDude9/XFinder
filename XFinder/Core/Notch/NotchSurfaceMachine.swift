@@ -44,6 +44,9 @@ enum NotchSurfaceMachine {
         var lastPage: Page? = nil
         /// The user's page order; a hover never opens a hidden page.
         var shownPages: [Page] = NotchPages.defaultOrder
+        /// XF-ISLAND-C: true when every Island destination is hidden or unavailable.
+        /// Hover must not open a dead hub, while file drag/drop intake remains active.
+        var allDestinationsHidden = false
         /// B6: a track is known (and the Now Playing switch is on). Hover may then peek it even with no
         /// files held — a playing track is never "empty" — and the peek survives the tray emptying.
         var nowPlayingActive = false
@@ -53,6 +56,12 @@ enum NotchSurfaceMachine {
         /// collapse on its own while this holds — a pointer drifting off the notch must not throw the half-typed text away.
         /// Esc, ✕ and sending end it. A fact (re-read on every event), not an event, so the exhaustive walk is unchanged.
         var composing = false
+        /// Active file drag-in, drop-hover, async drop import, or drag-out session: leaving the pointer
+        /// away mid-drag must never collapse the tray while a drag is in progress.
+        var dragging = false
+        /// Ref-29 Pin toggle: when pinned by the user, `pointerAway` never auto-collapses the hub;
+        /// explicit `dismiss` or `disabled` still closes it.
+        var pinned = false
         /// P10 — `notch.agentEdgeHover`: pointing at the agent wing opens the Agents page.
         var agentEdgeHover = false
         /// P10 — a fact, like `nowPlayingActive`: the pointer is over the agent item of the collapsed left wing.
@@ -60,18 +69,18 @@ enum NotchSurfaceMachine {
         var dragIntoNotchOpens = true
         var shakeOpens = true
         /// Pointer must rest in the notch zone this long before hover counts (accidental passes are shorter).
-        var hoverDwell: TimeInterval = 0.25
+        var hoverDwell: TimeInterval = 0.14
 
         /// B7: the "Độ nhạy rê chuột" picker. Unknown values read as medium, never as 0.
         static func hoverDwell(forSpeed speed: String) -> TimeInterval {
             switch speed {
-            case "fast": return 0.12
-            case "slow": return 0.5
-            default: return 0.25
+            case "fast": return 0.06
+            case "slow": return 0.35
+            default: return 0.14
             }
         }
         /// Pointer must be away this long before the surface collapses.
-        var leaveGrace: TimeInterval = 0.8
+        var leaveGrace: TimeInterval = 0.38
     }
 
     enum Event: Equatable {
@@ -93,6 +102,16 @@ enum NotchSurfaceMachine {
         /// transition: `activate` + `switchPage` rendered the 440-pt tray first and let the wider hub grow
         /// from the tray's origin — measured 2026-10-12 as a window at x 649 that jumped to x 488.
         case activateOn(Page)
+        /// XF-ISLAND-C: Open or switch to an inline extra module (including `.sections` gallery) under machine authority.
+        case openExtra(NotchExtraModule)
+        /// XF-ISLAND-C: Close the active extra module and return to the expanded page.
+        case closeExtra
+        /// XF-ISLAND-C: Deliberately open the all-hidden recovery surface so the user can always reach Settings.
+        case openAllHiddenRecovery
+        /// XF-ISLAND-C: Reconcile when the active page or extra module is hidden/unconfigured in Settings.
+        /// Preserves active file drag or running file tasks on `.files`; otherwise falls back to `fallback`
+        /// or enters all-hidden recovery when `fallback == nil`.
+        case reconcileVisibility(fallback: NotchGalleryDestination?, allowAllHiddenRecovery: Bool)
         /// Files were dropped onto the surface; `count` is the tray's new total.
         case dropped(count: Int)
         /// The tray's item count changed elsewhere (the Khay thả page, "Xóa hết", the extension).
@@ -119,6 +138,12 @@ enum NotchSurfaceMachine {
         var anchor: Anchor = .notch
         var itemCount = 0
         var taskRunning = false
+        /// XF-ISLAND-C: Active inline extra module (or `.sections` gallery) owned by the machine so lifecycle
+        /// transitions, fallback, and lazy-module cleanup have a single authority.
+        var activeExtra: NotchExtraModule? = nil
+        /// XF-ISLAND-C: True while the expanded surface is showing the always-accessible Settings recovery card
+        /// because all user destinations are hidden or unconfigured.
+        var showingAllHiddenRecovery = false
         /// Key feedback replaced a PEEK: when it ends the peek comes back, if it still has files or a track to show. It
         /// went to `collapsed` — the Now Playing strip the person was looking at vanished after one volume press, until the
         /// pointer moved again. Only meaningful while the state is `.activity`; cleared on every other state.
@@ -147,15 +172,72 @@ enum NotchSurfaceMachine {
                 if case .expanded = state { return }
                 open(at: .notch)
             case .activateOn(let page):
+                activeExtra = nil
+                showingAllHiddenRecovery = false
                 if case .expanded = state { state = .expanded(page); return }   // already open ⇒ just the page, keep the anchor
                 open(at: .notch, page: page)
             case .switchPage(let page):
-                if case .expanded = state { state = .expanded(page) }
+                if case .expanded = state {
+                    activeExtra = nil
+                    showingAllHiddenRecovery = false
+                    state = .expanded(page)
+                }
+            case .openExtra(let extra):
+                showingAllHiddenRecovery = false
+                if case .expanded = state {
+                    activeExtra = extra
+                } else {
+                    open(at: .notch, page: s.shownPages.first ?? .files)
+                    activeExtra = extra
+                }
+            case .closeExtra:
+                activeExtra = nil
+            case .openAllHiddenRecovery:
+                activeExtra = nil
+                showingAllHiddenRecovery = true
+                if case .expanded = state {
+                    state = .expanded(.files)
+                } else {
+                    open(at: .notch, page: .files)
+                    showingAllHiddenRecovery = true
+                }
+            case .reconcileVisibility(let fallback, let allowAllHiddenRecovery):
+                guard case .expanded(let currentPage) = state else {
+                    activeExtra = nil
+                    showingAllHiddenRecovery = false
+                    return
+                }
+                // Preserve automatic file drop intake and active drag / running file task on `.files`.
+                if currentPage == .files && activeExtra == nil && (s.dragging || taskRunning) {
+                    showingAllHiddenRecovery = false
+                    return
+                }
+                if let fallback {
+                    showingAllHiddenRecovery = false
+                    switch fallback {
+                    case .page(let p):
+                        activeExtra = nil
+                        state = .expanded(p)
+                    case .extra(let e):
+                        activeExtra = e
+                    }
+                } else if allowAllHiddenRecovery {
+                    activeExtra = nil
+                    showingAllHiddenRecovery = true
+                    state = .expanded(.files)
+                } else {
+                    collapse()
+                }
             case .fileDragInZone:
                 guard s.dragIntoNotchOpens else { return }
                 // A tray already open at the pointer stays put: moving it under a live drag would
                 // pull the target away from the hand.
-                if case .expanded = state, anchor == .pointer { return }
+                if case .expanded = state, anchor == .pointer {
+                    activeExtra = nil
+                    showingAllHiddenRecovery = false
+                    state = .expanded(.files)
+                    return
+                }
                 open(at: .notch)                     // also from .activity: the notice yields
             case .shake:
                 guard s.shakeOpens else { return }
@@ -163,6 +245,8 @@ enum NotchSurfaceMachine {
                 open(at: .pointer)
             case .dropped(let n):
                 itemCount = n
+                activeExtra = nil
+                showingAllHiddenRecovery = false
                 state = .expanded(.files)           // dropping is the START of the task — stay open
             case .itemsChanged(let n):
                 itemCount = n
@@ -171,6 +255,7 @@ enum NotchSurfaceMachine {
             case .hoverInZone(let since):
                 guard s.hoverToPeek, state.isIdle, now.timeIntervalSince(since) >= s.hoverDwell else { return }
                 if state == .activity && s.activityHoldsHover { return }   // the pointer came to press a button
+                if s.allDestinationsHidden { return }                      // all tabs hidden ⇒ hover never pops a dead hub
                 // P10: pointing at the agent's own wing opens the agents, whatever "hover opens" says elsewhere.
                 if s.agentEdgeHover, s.pointerOnAgentEdge, s.shownPages.contains(.agents) {
                     open(at: .notch, page: .agents)
@@ -180,7 +265,7 @@ enum NotchSurfaceMachine {
                                                        agentNeedsYou: s.agentNeedsYou, lastPage: s.lastPage)
                 if let page = s.hoverOpens.page(for: activity, shown: s.shownPages) {
                     open(at: .notch, page: page)         // N2: clips / agents / the player are never "empty"
-                } else if itemCount > 0 || s.nowPlayingActive {
+                } else if (itemCount > 0 && s.shownPages.contains(.files)) || (s.nowPlayingActive && s.shownPages.contains(.nowPlaying)) {
                     // Hover reveals files already held, or the track that is playing — never an empty
                     // tray (CLAUDE.md Part 3c).
                     state = .peek
@@ -190,7 +275,10 @@ enum NotchSurfaceMachine {
                 break                               // whatever is open stays open
             case .pointerAway(let since):
                 guard state.isOpen, state != .activity, now.timeIntervalSince(since) >= s.leaveGrace else { return }
+                guard activeExtra != .settings else { return }
                 if taskRunning || s.composing { return }
+                if s.dragging { return }
+                if s.pinned { return }
                 // The shaken-open tray holding files never auto-closes: the user dropped them to
                 // act on them next, and a tray that vanished mid-task was a reported bug. At the
                 // notch the files are not lost either — the collapsed badge keeps showing them.
@@ -202,11 +290,15 @@ enum NotchSurfaceMachine {
         private mutating func open(at a: Anchor, page: Page = .files) {
             state = .expanded(page)
             anchor = a
+            activeExtra = nil
+            showingAllHiddenRecovery = false
         }
 
         private mutating func collapse() {
             state = .collapsed
             anchor = .notch
+            activeExtra = nil
+            showingAllHiddenRecovery = false
         }
     }
 }

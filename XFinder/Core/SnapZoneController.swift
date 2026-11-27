@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import ApplicationServices
+import Carbon
 import os
 
 /// Vùng bắt dính — snapping the *focused* window, two ways:
@@ -23,7 +24,10 @@ final class SnapZoneController {
     private var dragMonitor: Any?
     private var localDragMonitor: Any?
     private var overlay: NSWindow?
+    private let overlayModel = SnapOverlayModel()
     private var activeZone: WindowManager.SnapTarget?
+    private var activeTiledDrop: TiledDropPlan?
+    private var activeTiledScreen: NSScreen?
     private var wasDragging = false
     /// Whether the in-flight drag started on a window's title bar. Evaluated
     /// once per drag so a mid-drag AX query cannot flip the verdict.
@@ -32,8 +36,11 @@ final class SnapZoneController {
     private var qualifier: SnapLayout.DragQualifier?
     private var pressedWindow: CGWindowID?
     private let snapLog = Logger(subsystem: "com.xfinder.app", category: "SnapDrag")
-    private var eventTap: CFMachPort?
-    private var runLoopSource: CFRunLoopSource?
+    private nonisolated static let hotKeySignature: OSType = 0x5846535A // 'XFSZ'
+    private var carbonHandler: EventHandlerRef?
+    private var hotKeyRefs: [UInt32: EventHotKeyRef] = [:]
+    private(set) var registeredHotkeyCount = 0
+    private(set) var failedHotkeyCount = 0
 
     private init() {}
 
@@ -76,12 +83,14 @@ final class SnapZoneController {
         }
         if dragEnabled { startDragWatch() } else { stopDragWatch() }
         if hotkeysEnabled { startHotkeys() } else { stopHotkeys() }
-        isRunning = dragMonitor != nil || eventTap != nil
+        HyprTilingController.shared.applySettings(masterEnabled: true)
+        isRunning = dragMonitor != nil || !hotKeyRefs.isEmpty || HyprTilingController.shared.isRunning
     }
 
     func stop() {
         stopDragWatch()
         stopHotkeys()
+        HyprTilingController.shared.stop()
         isRunning = false
     }
 
@@ -112,6 +121,8 @@ final class SnapZoneController {
         qualifier = nil
         pressedWindow = nil
         activeZone = nil
+        activeTiledDrop = nil
+        activeTiledScreen = nil
         hideOverlay()
         hideRow()
         wasDragging = false
@@ -146,6 +157,8 @@ final class SnapZoneController {
             let decision = SnapLayout.decide(point: mouse, screen: screen.frame, notch: notch, edgeMargin: edgeMargin,
                                              rowEnabled: notchRowEnabled, rowVisible: rowPanel?.isVisible ?? false)
             if case .row(let tile, let target) = decision {
+                activeTiledDrop = nil
+                activeTiledScreen = nil
                 showRow(highlight: tile, target: target, notch: notch, on: screen)
                 // Inside the four-corner tile, moving to another quadrant changes the target — and taps again.
                 if target != activeZone {
@@ -158,6 +171,27 @@ final class SnapZoneController {
                 return
             }
             hideRow()
+
+            if HyprTilingController.shared.isTilingMode,
+               let wid = pressedWindow,
+               let plan = HyprTilingController.shared.previewTiledDrag(pointerAppKit: mouse, draggedID: wid, on: screen) {
+                activeZone = nil
+                if plan != activeTiledDrop || activeTiledScreen != screen {
+                    activeTiledDrop = plan
+                    activeTiledScreen = screen
+                    if showPreview {
+                        let badge = plan.edge == .center ? "Hoán đổi vị trí" : "Chia ô tại đây"
+                        showOverlay(axRect: plan.previewRect, badgeKey: badge)
+                    }
+                    if hapticEnabled {
+                        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+                    }
+                }
+                return
+            }
+            activeTiledDrop = nil
+            activeTiledScreen = nil
+
             if case .edge(let edge) = decision, let zone = edge {
                 if zone != activeZone {
                     activeZone = zone
@@ -175,15 +209,33 @@ final class SnapZoneController {
             return
         }
 
-        // Button released — commit if a zone was highlighted.
+        // Button released — commit if a zone or tiled drop target was highlighted.
         if wasDragging {
             wasDragging = false
             let wasWindowMove = dragIsWindowMove
+            let releasedWindow = pressedWindow
             dragIsWindowMove = false
             qualifier = nil
             pressedWindow = nil
             hideRow()
-            guard wasWindowMove else { return }
+            guard wasWindowMove else {
+                activeTiledDrop = nil
+                activeTiledScreen = nil
+                hideOverlay()
+                return
+            }
+            if activeTiledDrop != nil, let wid = releasedWindow {
+                let targetScreen = activeTiledScreen ?? WindowManager.screenUnderPointer()
+                activeTiledDrop = nil
+                activeTiledScreen = nil
+                hideOverlay()
+                let ok = HyprTilingController.shared.commitTiledDrag(pointerAppKit: mouse, draggedID: wid, on: targetScreen)
+                if ok && hapticEnabled {
+                    NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .default)
+                }
+                lastOutcome = HyprTilingController.shared.lastOutcome
+                return
+            }
             if let zone = activeZone {
                 hideOverlay()
                 activeZone = nil
@@ -229,7 +281,8 @@ final class SnapZoneController {
                 guard let browser = NSApp.windows.first(where: { $0.windowNumber == num }) as? BrowserWindow,
                       !browser.styleMask.contains(.fullScreen) else { return nil }
             }
-            return (CGWindowID(num), rect.origin)
+            guard let wid = CGWindowID(exactly: num), wid != 0 else { continue }
+            return (wid, rect.origin)
         }
         return nil
     }
@@ -267,12 +320,13 @@ final class SnapZoneController {
     }
 
     private func showOverlay(zone: WindowManager.SnapTarget, on screen: NSScreen) {
-        // `SnapTarget.rect(in:)` is defined in TOP-LEFT origin space (it feeds
-        // AXPosition). An NSWindow frame is BOTTOM-LEFT, so feeding it
-        // visibleFrame directly drew "bottom-left" where "top-left" belongs —
-        // the reported wrong-corner bug. Compute in AX space, then flip.
         let axRect = zone.rect(in: WindowManager.axVisibleFrame(for: screen))
+        showOverlay(axRect: axRect, badgeKey: nil)
+    }
+
+    private func showOverlay(axRect: CGRect, badgeKey: String?) {
         let rect = WindowManager.axRectToAppKit(axRect)
+        overlayModel.badgeKey = badgeKey
         if overlay == nil {
             let w = NSWindow(contentRect: rect,
                              styleMask: [.borderless],
@@ -283,7 +337,7 @@ final class SnapZoneController {
             w.ignoresMouseEvents = true
             w.hasShadow = false
             w.collectionBehavior = [.canJoinAllSpaces, .stationary]
-            w.contentView = NSHostingView(rootView: SnapOverlayView())
+            w.contentView = NSHostingView(rootView: SnapOverlayView(model: overlayModel))
             overlay = w
         }
         overlay?.setFrame(rect, display: true)
@@ -294,43 +348,76 @@ final class SnapZoneController {
         overlay?.orderOut(nil)
     }
 
-    // MARK: Global hotkeys
+    // MARK: Global hotkeys (Carbon RegisterEventHotKey)
 
     private func startHotkeys() {
-        guard eventTap == nil else { return }
-        let mask = 1 << CGEventType.keyDown.rawValue
-        let callback: CGEventTapCallBack = { _, type, event, refcon in
-            guard let refcon else { return Unmanaged.passUnretained(event) }
-            let c = Unmanaged<SnapZoneController>.fromOpaque(refcon).takeUnretainedValue()
-            return c.handleKey(type: type, event: event)
+        installCarbonHandlerIfNeeded()
+        if hotKeyRefs.count == SnapLayout.hotkeyKeyCodes.count && failedHotkeyCount == 0 {
+            return
         }
-        guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap,
-                                          place: .headInsertEventTap,
-                                          options: .defaultTap,
-                                          eventsOfInterest: CGEventMask(mask),
-                                          callback: callback,
-                                          userInfo: Unmanaged.passUnretained(self).toOpaque())
-        else { return }
-        let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
-        CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
-        CGEvent.tapEnable(tap: tap, enable: true)
-        eventTap = tap
-        runLoopSource = source
+        stopHotkeys()
+        let modifiers = UInt32(controlKey | optionKey)
+        var registered = 0
+        var failed = 0
+        for (idx, keyCode) in SnapLayout.hotkeyKeyCodes.enumerated() {
+            let slotID = UInt32(idx + 1)
+            var ref: EventHotKeyRef?
+            let hkID = EventHotKeyID(signature: Self.hotKeySignature, id: slotID)
+            let status = RegisterEventHotKey(keyCode, modifiers, hkID, GetApplicationEventTarget(), 0, &ref)
+            if status == noErr, let ref {
+                hotKeyRefs[slotID] = ref
+                registered += 1
+            } else {
+                failed += 1
+                snapLog.notice("failed to register classic hotkey keyCode=\(keyCode) status=\(status)")
+            }
+        }
+        registeredHotkeyCount = registered
+        failedHotkeyCount = failed
+        snapLog.notice("registered \(registered)/\(SnapLayout.hotkeyKeyCodes.count) classic SnapZones Carbon hotkeys")
     }
 
     private func stopHotkeys() {
-        if let tap = eventTap {
-            CGEvent.tapEnable(tap: tap, enable: false)
-            CFMachPortInvalidate(tap)
+        for ref in hotKeyRefs.values {
+            UnregisterEventHotKey(ref)
         }
-        if let source = runLoopSource {
-            CFRunLoopRemoveSource(CFRunLoopGetCurrent(), source, .commonModes)
-        }
-        eventTap = nil
-        runLoopSource = nil
+        hotKeyRefs.removeAll()
+        registeredHotkeyCount = 0
+        failedHotkeyCount = 0
     }
 
-    /// Own Browser windows also handle their keys locally, independent of global tap delivery.
+    private func installCarbonHandlerIfNeeded() {
+        guard carbonHandler == nil else { return }
+        var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+        let callback: EventHandlerUPP = { _, event, userData in
+            guard let event, let userData else { return OSStatus(eventNotHandledErr) }
+            var hkID = EventHotKeyID()
+            GetEventParameter(event, UInt32(kEventParamDirectObject), UInt32(typeEventHotKeyID),
+                              nil, MemoryLayout<EventHotKeyID>.size, nil, &hkID)
+            guard hkID.signature == SnapZoneController.hotKeySignature else {
+                return OSStatus(eventNotHandledErr)
+            }
+            let controller = Unmanaged<SnapZoneController>.fromOpaque(userData).takeUnretainedValue()
+            let firedID = hkID.id
+            Task { @MainActor in
+                controller.handleCarbonHotKey(id: firedID)
+            }
+            return noErr
+        }
+        InstallEventHandler(GetApplicationEventTarget(), callback, 1, &spec,
+                            Unmanaged.passUnretained(self).toOpaque(), &carbonHandler)
+    }
+
+    private func handleCarbonHotKey(id: UInt32) {
+        let index = Int(id) - 1
+        guard SnapLayout.hotkeyKeyCodes.indices.contains(index) else { return }
+        let keyCode = Int64(SnapLayout.hotkeyKeyCodes[index])
+        guard let target = SnapLayout.hotkeyTarget(keyCode: keyCode) else { return }
+        snapLog.notice("classic hotkey fired: keyCode=\(keyCode) target=\(target.titleVI, privacy: .public)")
+        performSnap(to: target)
+    }
+
+    /// Own Browser windows also handle their keys locally, independent of global hotkey delivery.
     func performLocalShortcut(_ event: NSEvent) -> Bool {
         let flags = event.modifierFlags
         guard featureEnabled, hotkeysEnabled, WindowManager.isTrusted, event.window is BrowserWindow,
@@ -348,39 +435,35 @@ final class SnapZoneController {
             ? "\(L10n.t("Đã đưa cửa sổ vào “"))\(target.titleVI)”."
             : L10n.t("Không di chuyển được — ứng dụng không cho phép.")
     }
-
-    private nonisolated func handleKey(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-            if type == .tapDisabledByTimeout { DiagnosticsLog.record("eventTap", "timeout.snapKeys") }
-            Task { @MainActor in
-                if let tap = self.eventTap, CFMachPortIsValid(tap) {
-                    CGEvent.tapEnable(tap: tap, enable: true)
-                }
-            }
-            return Unmanaged.passUnretained(event)
-        }
-        let flags = event.flags
-        guard SnapLayout.acceptsHotkey(control: flags.contains(.maskControl), option: flags.contains(.maskAlternate),
-                                      command: flags.contains(.maskCommand), shift: flags.contains(.maskShift)) else {
-            return Unmanaged.passUnretained(event)
-        }
-        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-        let target = SnapLayout.hotkeyTarget(keyCode: keyCode)
-        guard let target else { return Unmanaged.passUnretained(event) }
-        Task { @MainActor in self.performSnap(to: target) }
-        return nil // consume
-    }
 }
 
-/// The translucent rectangle shown while a drag hovers a snap zone.
+@MainActor
+@Observable
+private final class SnapOverlayModel {
+    var badgeKey: String?
+}
+
+/// The translucent rectangle shown while a drag hovers a snap zone or tiled BSP target.
 private struct SnapOverlayView: View {
+    var model: SnapOverlayModel
+
     var body: some View {
-        RoundedRectangle(cornerRadius: 10)
-            .fill(Color.accentColor.opacity(0.22))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.accentColor.opacity(0.85), lineWidth: 2)
-            )
-            .padding(6)
+        ZStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.accentColor.opacity(0.22))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(Color.accentColor.opacity(0.85), lineWidth: 2)
+                )
+            if let key = model.badgeKey {
+                Text(L10n.t(key))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(Color.black.opacity(0.75)))
+            }
+        }
+        .padding(6)
     }
 }

@@ -110,6 +110,47 @@ enum GlanceRules {
     static func daysWithEvents(_ events: [GlanceEvent], strip: [Date], calendar: Calendar = .current) -> Set<Date> {
         Set(strip.filter { !dayEvents(events, on: $0, hideAllDay: false, calendar: calendar).isEmpty })
     }
+
+    /// One cell in a calendar month grid. `inMonth == false` marks leading/trailing padding days.
+    struct MonthCell: Equatable, Hashable, Sendable {
+        let date: Date
+        let inMonth: Bool
+    }
+
+    /// Builds a 7-column month grid (starting on `calendar.firstWeekday`) covering every day of `month`.
+    /// Pure Foundation so month/day agenda views and tests share identical grid geometry.
+    static func monthGrid(for month: Date, calendar: Calendar = .current) -> [MonthCell] {
+        let comps = calendar.dateComponents([.year, .month], from: month)
+        guard let firstOfMonth = calendar.date(from: comps),
+              let dayRange = calendar.range(of: .day, in: .month, for: firstOfMonth) else {
+            return []
+        }
+        let firstWeekday = calendar.component(.weekday, from: firstOfMonth)
+        let leading = (firstWeekday - calendar.firstWeekday + 7) % 7
+        var cells: [MonthCell] = []
+        if leading > 0 {
+            for offset in stride(from: -leading, to: 0, by: 1) {
+                if let d = calendar.date(byAdding: .day, value: offset, to: firstOfMonth) {
+                    cells.append(MonthCell(date: d, inMonth: false))
+                }
+            }
+        }
+        for dayOffset in 0..<dayRange.count {
+            if let d = calendar.date(byAdding: .day, value: dayOffset, to: firstOfMonth) {
+                cells.append(MonthCell(date: d, inMonth: true))
+            }
+        }
+        let remainder = cells.count % 7
+        if remainder != 0, let last = cells.last?.date {
+            let trailing = 7 - remainder
+            for offset in 1...trailing {
+                if let d = calendar.date(byAdding: .day, value: offset, to: last) {
+                    cells.append(MonthCell(date: d, inMonth: false))
+                }
+            }
+        }
+        return cells
+    }
 }
 
 /// Solar → Vietnamese lunar date, the astronomical method published by Hồ Ngọc Đức (new moons and the sun's

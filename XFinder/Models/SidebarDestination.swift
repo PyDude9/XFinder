@@ -19,6 +19,9 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     case media
     /// Claude Code sessions, the hook, the statusLine that feeds the AI usage tool.
     case aiAgents
+    case stocks
+    case websiteAnalytics
+    case revenue
     /// The Calendar notch page and meeting alerts.
     case calendar
     /// Short notices under the notch: power, network, Caps Lock, Bluetooth, alerts, volume.
@@ -170,6 +173,9 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .notchInterface: return "Giao diện notch"
         case .media: return "Đang phát"
         case .aiAgents: return "Agent AI"
+        case .stocks: return "Chứng khoán"
+        case .websiteAnalytics: return "Phân tích web"
+        case .revenue: return "Doanh thu"
         case .calendar: return "Lịch & lời nhắc"
         case .liveActivities: return "Hoạt động trực tiếp"
         }
@@ -227,6 +233,9 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .notchInterface: return "rectangle.topthird.inset.filled"
         case .media: return "music.note"
         case .aiAgents: return "sparkles"
+        case .stocks: return "chart.line.uptrend.xyaxis"
+        case .websiteAnalytics: return "chart.bar.xaxis"
+        case .revenue: return "dollarsign.circle"
         case .calendar: return "calendar"
         case .liveActivities: return "dot.radiowaves.left.and.right"
         }
@@ -238,17 +247,17 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .dashboard, .storage, .menuIcons, .finderKeyboard, .actionHistory, .folderLock, .finderUtils, .about: return .gray
         case .features, .snapZones, .duplicateFinder: return .indigo
-        case .shortcuts, .finderSearch, .quickShare, .quickLookPage, .fileBrowser: return .cyan
+        case .shortcuts, .finderSearch, .quickShare, .quickLookPage, .fileBrowser, .websiteAnalytics: return .cyan
         case .antiSleep, .aiSearch, .smartSelect, .aiAgents: return .purple
         case .system, .notchInterface, .windowPreview, .finderActions, .remoteConnect: return .blue
         case .network, .settingsClipboard, .ports: return .teal
-        case .pin, .junkCleanup, .clipboard: return .green
+        case .pin, .junkCleanup, .clipboard, .stocks: return .green
         case .alerts, .calendar, .appQuit, .pdfTools, .uninstaller: return .red
         case .dropTray, .sync: return .mint
         case .media, .voiceTyping, .mediaCompat: return .pink
         case .liveActivities, .batchRename, .notes: return .orange
         case .mouseGestures, .compress: return .brown
-        case .capture, .pro: return .yellow
+        case .capture, .pro, .revenue: return .yellow
         }
     }
 
@@ -264,7 +273,8 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         [
             ("CHUNG", [.dashboard, .features, .shortcuts, .system, .alerts]),
             // P3: everything the notch shows, by what the user comes to do — the old "Notch & Khay thả" page split six ways.
-            ("NOTCH", [.notchInterface, .dropTray, .media, .aiAgents, .calendar, .liveActivities]),
+            ("NOTCH", [.notchInterface, .dropTray, .media, .aiAgents, .calendar, .liveActivities,
+                       .stocks, .websiteAnalytics, .revenue]),
             ("CỬA SỔ", [.windowPreview, .snapZones, .appQuit, .mouseGestures, .menuIcons]),
             ("FINDER & TÌM KIẾM", [.fileBrowser, .finderKeyboard, .finderActions, .finderSearch,
                                    .batchRename, .junkCleanup, .actionHistory]),

@@ -244,6 +244,7 @@
         <outline text="Cửa sổ mới (New Window) — ⌘N"/>
         <outline text="Thư mục mới (New Folder) — ⇧⌘N"/>
         <outline text="Thư mục mới chứa mục chọn (New Folder with Selection) — ⌃⌘N"/>
+        <outline text="Tệp mới (New File)"/>
         <outline text="Tab cửa sổ mới (New Window Tab) — ⌘T"/>
         <outline text="Mở (Open) — ⌘O"/>
         <outline text="Mở bằng (Open With) ▸"/>
@@ -263,7 +264,7 @@
         <outline text="Hiện bản gốc (Show Original) — ⌘R"/>
         <outline text="Hiện trong Finder (Show in Finder)"/>
         <outline text="Thêm vào sidebar (Add to Sidebar) — ⌃⌘T"/>
-        <outline text="Thêm vào Shelf (Add to Shelf) — ⌃⌘S"/>
+        <outline text="Thêm vào Khay thả (Add to Drop Tray)"/>
         <outline text="Chuyển vào Thùng rác (Move to Trash) — ⌘⌫"/>
         <outline text="Đẩy ra (Eject) — ⌘E"/>
         <outline text="Thẻ (Tag) ▸"/>
@@ -286,10 +287,6 @@
         <outline text="Hiện hoặc ẩn sidebar (Show or Hide Sidebar) — ⌥⌘S"/>
         <outline text="Lọc thư mục hiện tại (Filter Current Folder)"/>
         <outline text="Hiện hoặc ẩn xem trước (Show or Hide Preview) — ⇧⌘P"/>
-        <outline text="Shelf ▸">
-          <outline text="Hiện hoặc ẩn Shelf (Show or Hide Shelf) — ⌥⌘B"/>
-          <outline text="Thêm vào Shelf (Add to Shelf) — ⌃⌘S"/>
-        </outline>
         <outline text="Hiện hoặc ẩn thanh công cụ (Show or Hide Toolbar) — ⌥⌘T"/>
         <outline text="Hiện hoặc ẩn thanh đường dẫn (Show or Hide Path Bar) — ⌥⌘P"/>
         <outline text="Hiện hoặc ẩn thanh trạng thái (Show or Hide Status Bar) — ⌘/"/>
@@ -368,10 +365,13 @@
       <outline text="Dán (Paste) — ⌘V"/>
       <outline text="Gỡ bản tải (Remove Download)"/>
       <outline text="Hiện cửa sổ Chào… (Show Welcome Window…)"/>
+      <outline text="Hiện nội dung gói (Show Package Contents)"/>
       <outline text="Hoàn tác (Undo) — ⌘Z"/>
       <outline text="Làm lại (Redo) — ⇧⌘Z"/>
       <outline text="Mở Workspace (Open Workspace)"/>
       <outline text="Mở trong cửa sổ mới (Open in New Window)"/>
+      <outline text="Mở trong ngăn kia (Open in Other Pane)"/>
+      <outline text="Mở trong ngăn mới (Open in New Pane)"/>
       <outline text="Mở trong tab mới (Open in New Tab)"/>
       <outline text="Ngăn bên phải (Pane on Right) — ⌃⇧⌘→"/>
       <outline text="Ngăn bên trái (Pane on Left) — ⌃⇧⌘←"/>
@@ -401,7 +401,6 @@
         <outline text="Thư mục cha"/>
         <outline text="Đến thư mục (Go to Folder)"/>
         <outline text="Workspace"/>
-        <outline text="Shelf"/>
         <outline text="Hàng đợi thao tác (Operations)"/>
         <outline text="Thư mục mới (New Folder)"/>
         <outline text="Xem nhanh (Quick Look)"/>
@@ -458,7 +457,7 @@
       <outline text="Hoàn tác bền ⌘Z / Làm lại ⇧⌘Z (20 bước, 24 h, kiểm lại trước khi chạy); nhật ký chống ngắt + Báo cáo khôi phục"/>
       <outline text="Đổi tên: một luật tên (rỗng, ':' '/', '.', ký tự điều khiển, 255 đơn vị NFD); chỉ đổi hoa/thường được; renamex_np không bao giờ đè"/>
       <outline text="Đổi tên hàng loạt ⌃⌘R: Thay chữ · Thêm chữ · Định dạng (Tên và chỉ số / bộ đếm / ngày); một lỗi chặn cả lô; hoán đổi tên được; một ⌘Z"/>
-      <outline text="Nén ZIP, Thêm vào Shelf, Chép/Chuyển sang ngăn kia, Cắt ⌘X kiểu Windows (tuỳ chọn), Thư mục mới chứa mục chọn, Tạo bí danh"/>
+      <outline text="Nén ZIP, Thêm vào Khay thả (notch), Chép/Chuyển sang ngăn kia, Cắt ⌘X kiểu Windows (tuỳ chọn), Thư mục mới chứa mục chọn, Tạo bí danh"/>
     </outline>
   </outline>
   <outline text="Notch (SurfacePanel 650×188)" _note="một panel cố định, máy trạng thái thuần NotchSurfaceMachine">
@@ -472,6 +471,7 @@
       <outline text="Hạn mức AI"/>
     </outline>
     <outline text="Peek / mở rộng; bấm huy hiệu mở trang theo `notch.clickOpens` (cố định · lần cuối · theo hoạt động)"/>
+    <outline text="Khay thả (thay Shelf của trình duyệt, XF-T41): giữ tệp, kéo ra, Chép/Chuyển vào ngăn trình duyệt đang chọn, Đổi tên hàng loạt, Sao chép…/Di chuyển…, Nén ZIP, Mở tất cả, Bỏ vào Rác, báo tệp không còn"/>
     <outline text="HUD âm lượng / độ sáng chen hàng đợi"/>
     <outline text="Ẩn trong ứng dụng toàn màn hình (`notch.fullscreenVisibility`)"/>
     <outline text="Ghi chú mép (Edge notes): peek ở mép màn hình, ⌃⌥N, tự sao lưu hằng ngày"/>

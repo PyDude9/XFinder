@@ -136,11 +136,12 @@ enum XFinderTokens {
         /// The Now Playing progress track (#818184 measured) and a card's hairline.
         static let progressTrack = Color(red: 0x81 / 255, green: 0x81 / 255, blue: 0x84 / 255).opacity(0.45)
         static let cardStroke = Color.white.opacity(0.10)
-        /// Opening overshoots a little (OneNotch measured 87 → 93 → 87 px, ~4 %), closing is quick and never bounces
-        /// (~130 ms measured), and a page change cross-fades its content (~200 ms measured) while the shape springs.
-        static let open = Animation.spring(response: 0.36, dampingFraction: 0.76)
-        static let close = Animation.spring(response: 0.22, dampingFraction: 1.0)
-        static let pageFade = Animation.easeInOut(duration: 0.18)
+        /// Opening and closing have distinct timing from switching pages within the shell.
+        static let open = Animation.spring(response: 0.24, dampingFraction: 0.82)
+        static let close = Animation.spring(response: 0.18, dampingFraction: 0.94)
+        static let pageFade = Animation.easeInOut(duration: 0.12)
+        static let tabTransition = Animation.easeInOut(duration: 0.19)
+        static let tabResize = Animation.smooth(duration: 0.21, extraBounce: 0)
         /// A live notice (volume, brightness, Caps Lock…) is feedback for a key the user JUST pressed: it must be
         /// readable at once, so it grows faster than the hub and does not overshoot. With `open` (0.36, overshoot) the
         /// strip was still growing a third of a second after the first press — the "khựng" the owner reported.

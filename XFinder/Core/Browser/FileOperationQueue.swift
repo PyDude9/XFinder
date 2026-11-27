@@ -61,7 +61,23 @@ final class FileOperationQueue {
     /// (spec R53) and replayed in `startNextIfNeeded`'s completion path once that job actually finishes.
     private var pendingUndoAfterJobs: [UUID: [Bool]] = [:]  // jobID -> queue of (true = undo, false = redo) requests
 
+    /// Per-job completion report so callers such as the Drop Tray (XF-T41) can reconcile only after
+    /// the queue actually finishes, keeping failed/skipped/cancelled items in the tray.
+    struct JobCompletion: Sendable, Equatable {
+        let jobID: UUID
+        let kind: FileOperationKind
+        let state: JobState
+        let succeededSources: [String]
+        let skippedSources: [String]
+        let failedReasons: [String: String]
+    }
+
     var hasActiveWork: Bool { queue.active != nil }
+    private var completionHandlers: [UUID: @MainActor (JobCompletion) -> Void] = [:]
+
+    func onJobComplete(_ id: UUID, handler: @escaping @MainActor (JobCompletion) -> Void) {
+        completionHandlers[id] = handler
+    }
 
     /// One application-support directory for both the journal and this launch's own bookkeeping.
     private static let supportDirectory: URL = {
@@ -85,6 +101,9 @@ final class FileOperationQueue {
         var movedPairs: [(from: String, to: String)] = []   // rename/move: for undo = move back
         var trashedPairs: [(trashedAt: String, original: String)] = []   // trash kind: for undo = move back from Trash
         var failedItems: [ProblemItem] = []      // W6: items that failed this job but let the batch keep going
+        var succeededSources: [String] = []      // XF-T41: sources that actually completed (for post-move reconciliation)
+        var skippedSources: [String] = []        // XF-T41: sources skipped in conflict prompt (stay in Drop Tray)
+        var failedReasons: [String: String] = [:]
         var currentItemIndex = 0                 // W6: index into the job's `sources`, for "is this the last item"
         var totalItemCount = 0
         /// W6: byte-sample ring buffer for the 5 s sliding-window speed, newest last. `(uptime seconds, bytesDone)`.
@@ -572,10 +591,12 @@ final class FileOperationQueue {
             case .done(let bytes, let itemsCreated):
                 itemsDone += 1
                 bytesDone += bytes
+                runtime.succeededSources.append(source)
                 runtime.createdForUndo.append(contentsOf: itemsCreated)
                 updateProgress(jobID, bytesDone: bytesDone, itemsDone: itemsDone, bytesTotal: bytesTotal, itemsTotal: originalJob.sources.count)
             case .skipped:
                 itemsDone += 1
+                runtime.skippedSources.append(source)
                 updateProgress(jobID, bytesDone: bytesDone, itemsDone: itemsDone, bytesTotal: bytesTotal, itemsTotal: originalJob.sources.count)
             case .stopped:
                 queue.cancel(jobID)
@@ -587,22 +608,35 @@ final class FileOperationQueue {
                 // ever got a chance to run at all (e.g. `enqueue`'s own up-front checks), not for per-item failures.
                 let reason = ProblemReason.from(posix: Self.posixCode(fromDetail: detail))
                 runtime.failedItems.append(ProblemItem(path: source, reason: reason, systemMessage: detail, beforeWrite: true))
+                runtime.failedReasons[source] = key
                 itemsDone += 1
                 updateProgress(jobID, bytesDone: bytesDone, itemsDone: itemsDone, bytesTotal: bytesTotal, itemsTotal: originalJob.sources.count)
-                _ = key // the per-item L10n key is folded into `reason`/`systemMessage` on the Problems row, not surfaced again here
             }
         }
 
         // `cancel(_:)` already set the job's state to `.cancelled` (either from the loop's own check or from the
         // `.stopped` branch above) — `finish()` only distinguishes `.done`/`.failed`, so calling it here would
         // overwrite a legitimate cancellation with a false "done".
+        let finalState: JobState
         if currentState(of: jobID) != .cancelled {
             recordHistory(job: originalJob, runtime: runtime)
             queue.finish(jobID, failedWith: nil, detail: nil)
             recordProblems(job: originalJob, runtime: runtime)
+            finalState = .done
+        } else {
+            finalState = .cancelled
         }
+        let completion = JobCompletion(
+            jobID: jobID,
+            kind: originalJob.kind,
+            state: finalState,
+            succeededSources: runtime.succeededSources,
+            skippedSources: runtime.skippedSources,
+            failedReasons: runtime.failedReasons
+        )
         runtimes.removeValue(forKey: jobID)
         updateEjectGuard()
+        completionHandlers.removeValue(forKey: jobID)?(completion)
         drainPendingUndo(for: jobID)
         startNextIfNeeded()
     }

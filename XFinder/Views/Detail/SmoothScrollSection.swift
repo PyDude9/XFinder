@@ -8,6 +8,8 @@ struct SmoothScrollSection: View {
     @AppStorage("smoothScroll.speed") private var speed = 100
     @AppStorage("smoothScroll.smoothness") private var smoothness = 220
     @AppStorage("smoothScroll.reverse") private var reverse = false
+    @AppStorage("smoothScroll.linear") private var linear = false
+    @AppStorage("mouse.disableAcceleration") private var disablePointerAccel = false
     @State private var controller = SmoothScrollController.shared
 
     var body: some View {
@@ -32,6 +34,19 @@ struct SmoothScrollSection: View {
                 .disabled(!enabled)
                 .settingsRow()
             SettingsDivider()
+            ToggleRow(title: L10n.t("Cuộn tuyến tính (không tăng tốc bánh xe)"),
+                      subtitle: L10n.t("Mỗi nấc bánh xe cuộn một khoảng cố định dù bạn quay nhanh hay chậm."),
+                      isOn: $linear)
+                .onChange(of: linear) { controller.applySettings() }
+                .disabled(!enabled)
+                .settingsRow()
+            SettingsDivider()
+            ToggleRow(title: L10n.t("Tắt tăng tốc con trỏ chuột"),
+                      subtitle: L10n.t("Giữ tốc độ con trỏ chuột ngoài ổn định (tắt sẽ khôi phục mức trước đó; có thể cần cắm lại chuột để áp dụng ngay)."),
+                      isOn: $disablePointerAccel)
+                .onChange(of: disablePointerAccel) { PointerAccelerationController.setDisableAcceleration(disablePointerAccel) }
+                .settingsRow()
+            SettingsDivider()
             HStack(spacing: XFinderTokens.Space.inline) {
                 Image(systemName: statusSymbol).foregroundColor(.secondary)
                 VStack(alignment: .leading, spacing: 2) {
@@ -45,10 +60,11 @@ struct SmoothScrollSection: View {
                     speed = SmoothScrollRules.defaultSpeed
                     smoothness = SmoothScrollRules.defaultSmoothness
                     reverse = false
+                    linear = false
                     controller.applySettings()
                 }
                 .buttonStyle(.bordered).controlSize(.small)
-                .disabled(speed == SmoothScrollRules.defaultSpeed && smoothness == SmoothScrollRules.defaultSmoothness && !reverse)
+                .disabled(speed == SmoothScrollRules.defaultSpeed && smoothness == SmoothScrollRules.defaultSmoothness && !reverse && !linear)
             }
             .settingsRow()
         }

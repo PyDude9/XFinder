@@ -481,7 +481,7 @@ final class BrowserMainMenu {
     /// Carries both the command and which window's model should receive it — `representedObject` only holds one
     /// value, and the active window can change between when a menu item was built and when it fires.
     /// XF-T38: a checkmark where the command shows a state, as FileOctopus's View menu does (the current view mode,
-    /// grouping, hidden files, each bar, the preview, the Shelf).
+    /// grouping, hidden files, each bar, the preview).
     private static func state(of command: BrowserCommand, model: BrowserWindowModel) -> NSControl.StateValue {
         (isChecked(command, model: model) ?? false) ? .on : .off
     }
@@ -502,7 +502,6 @@ final class BrowserMainMenu {
         case .toggleStatusBar: on = BrowserSettings.showStatusBar
         case .toggleLocationBar: on = BrowserSettings.showLocationBar
         case .togglePreview: on = BrowserSettings.showPreview
-        case .toggleShelf: on = model.shelfVisible
         default: return nil
         }
         return on

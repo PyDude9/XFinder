@@ -1,0 +1,1 @@
+../../XFinder/Core/WebsiteAnalytics/DataFastAdapter.swift

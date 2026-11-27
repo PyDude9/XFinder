@@ -113,4 +113,13 @@ final class SmoothScrollRulesTests: XCTestCase {
         XCTAssertEqual(R.conflict(running: ["com.apple.finder", "com.caldis.Mos"]), "Mos")
         XCTAssertNil(R.conflict(running: ["com.apple.finder"]))
     }
+
+    func testLinearScrollingIgnoresSpinAcceleration() {
+        let lin = R.Settings(enabled: true, speed: 100, smoothness: 220, reverse: false, linear: true)
+        XCTAssertEqual(R.decide(wheel(lines: 5), settings: lin), .smooth(dx: 0, dy: R.pixelsPerLine))
+        XCTAssertEqual(R.decide(wheel(continuous: true, pointY: -120), settings: lin), .smooth(dx: 0, dy: -R.pixelsPerLine))
+
+        let fastRev = R.Settings(enabled: true, speed: 150, smoothness: 220, reverse: true, linear: true)
+        XCTAssertEqual(R.decide(wheel(lines: 5), settings: fastRev), .smooth(dx: 0, dy: -R.pixelsPerLine * 1.5))
+    }
 }

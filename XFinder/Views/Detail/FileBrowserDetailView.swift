@@ -83,6 +83,6 @@ struct FileBrowserDetailView: View {
     /// The shortcuts a newcomer needs first; the palette and the Keyboard tab of Settings list the rest.
     static let highlighted: [BrowserCommand] = [
         .splitRight, .splitDown, .zoomPane, .copyToOtherPane, .moveToOtherPane, .filter, .find,
-        .quickOpen, .commandPalette, .toggleShelf, .operations, .batchRename,
+        .quickOpen, .commandPalette, .operations, .batchRename,
     ]
 }

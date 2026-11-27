@@ -11,6 +11,17 @@ Cập nhật: 2026-11-08.
 
 Mỗi câu ghi **mặc định tôi đang làm theo** — bạn không trả lời thì giữ mặc định.
 
+### 2026-11-09 · XF-T41 Gộp Shelf của trình duyệt vào Khay thả (anh duyệt danh sách)
+
+Gỡ thanh Shelf, ⌃⌘S/⌥⌘B, nút Shelf trên thanh công cụ, View ▸ Shelf, "Thêm vào Shelf", quyền Pro Shelf. Khay thả nhận:
+**Chép vào ngăn: X / Chuyển vào ngăn: X** (trang Khay thả cho cả khay; notch chuột phải từng tệp) đi qua hàng đợi của trình
+duyệt, và **Đổi tên hàng loạt**. Spec `docs/specs/XF-T41-shelf-into-droptray.md`.
+
+| Mã | Làm gì | Mong đợi |
+|:--|:--|:--|
+| T-T41-1 | Trình duyệt: chuột phải tệp ▸ Thêm vào Khay thả; mở notch ▸ chuột phải tệp đó ▸ "Chuyển vào ngăn: …" | Notch mở khay với tệp; tệp chuyển vào ngăn đang chọn qua hàng đợi (có ⌘Z), rời khay |
+| T-T41-2 | Trang Khay thả (sidebar ▸ NOTCH ▸ Khay thả) ▸ "Chép vào ngăn: …" rồi "Đổi tên hàng loạt" | Hai nút chỉ hiện khi có cửa sổ trình duyệt; đổi tên mở sheet của trình duyệt với các tệp trong khay |
+
 ### 2026-11-09 · XF-T40 Bốn lệnh tệp còn thiếu + Shelf/Khay thả + tên "untitled 2" (theo "tiếp đi")
 
 So đặc tả FileOctopus anh gửi (§2.1/§2.2) với bảng lệnh: thêm **Tệp mới**, **Hiện nội dung gói**, **Mở trong ngăn mới**,
@@ -27,7 +38,7 @@ thêm: Thư mục mới / Tệp mới / Tạo bí danh luôn ra tên "… 2" dù
 | Mã | Làm gì | Mong đợi |
 |:--|:--|:--|
 | T-T40-1 | Chuột phải nền ▸ Tệp mới; chuột phải một `.app` ▸ Hiện nội dung gói; chọn thư mục ▸ Mở trong ngăn mới / ngăn kia | `untitled.txt` (không phải "untitled 2.txt") đang chờ đổi tên; vào trong gói; ngăn mới/ngăn kia mở thư mục đó (đã chạy thật trong Atlas) |
-| T-T40-2 | Chuột phải tệp ▸ Thêm vào Shelf; rồi ▸ Thêm vào Khay thả | Thanh Shelf hiện ở đáy cửa sổ với tệp đó; notch mở Khay thả với tệp đó |
+| T-T40-2 | Chuột phải tệp ▸ Thêm vào Khay thả | Notch mở Khay thả với tệp đó (Shelf của trình duyệt đã gỡ — XF-T41) |
 | T-T40-3 | Thư mục trống ▸ ⇧⌘N | "untitled folder" (trước đây "untitled folder 2") |
 
 ### 2026-11-08 khuya · XF-T38 Menu bar + thanh điều hướng của trình duyệt (theo 7 ảnh FileOctopus anh gửi)

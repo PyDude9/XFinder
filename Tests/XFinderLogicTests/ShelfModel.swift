@@ -1,1 +1,0 @@
-../../XFinder/Core/Browser/ShelfModel.swift

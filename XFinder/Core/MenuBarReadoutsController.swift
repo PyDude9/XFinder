@@ -15,7 +15,7 @@ final class MenuBarReadoutsController {
 
     static let intervalKey = "menubar.readoutInterval"
 
-    private weak var button: NSStatusBarButton?
+    private weak var item: NSStatusItem?
     private var timer: Timer?
     /// The one-shot "seed, then first render" step; cancelled by stop() and by a re-start, so a quick
     /// on→off or two interval changes in a row cannot leave a stale sample firing after "off".
@@ -26,8 +26,9 @@ final class MenuBarReadoutsController {
     private init() {}
 
     /// Called once by `MenubarController.setup()`.
-    func attach(_ button: NSStatusBarButton) {
-        self.button = button
+    func attach(_ item: NSStatusItem) {
+        self.item = item
+        item.isVisible = false
         SystemMonitorManager.shared.onUpdate = { [weak self] in self?.render() }
         applySettings()
     }
@@ -78,8 +79,8 @@ final class MenuBarReadoutsController {
         timer?.invalidate(); timer = nil
         isRunning = false
         lastTitle = ""
-        button?.attributedTitle = NSAttributedString(string: "")
-        button?.imagePosition = .imageOnly
+        item?.isVisible = false
+        item?.button?.attributedTitle = NSAttributedString(string: "")
     }
 
     private func tick() {
@@ -91,7 +92,7 @@ final class MenuBarReadoutsController {
     }
 
     private func render() {
-        guard isRunning, let button else { return }
+        guard isRunning, let item, let button = item.button else { return }
         let x = SystemMonitorManager.shared.currentMetrics
         let snap = MenuBarReadouts.Snapshot(
             cpuPercent: x.cpuUsage, memoryUsedBytes: x.memoryTotal > 0 ? x.memoryUsed : nil,
@@ -102,6 +103,6 @@ final class MenuBarReadoutsController {
         lastTitle = title
         let font = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium)
         button.attributedTitle = NSAttributedString(string: title, attributes: [.font: font, .baselineOffset: 0.5])
-        button.imagePosition = title.isEmpty ? .imageOnly : .imageLeading
+        item.isVisible = !title.isEmpty
     }
 }

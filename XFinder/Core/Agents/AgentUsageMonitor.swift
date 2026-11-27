@@ -19,6 +19,14 @@ final class AgentUsageMonitor {
         var codex: AgentUsage.CodexLimits?
         var codexToday = AgentUsage.Totals()
         var codex7d = AgentUsage.Totals()
+        var geminiToday = AgentUsage.Totals()
+        var gemini7d = AgentUsage.Totals()
+        var antigravityToday = AgentUsage.Totals()
+        var antigravity7d = AgentUsage.Totals()
+        var antigravityQuota: [AgentUsage.AntigravityQuota] = []
+        var antigravityQuotaAt: Date?
+        var geminiLastEvent: Date?
+        var antigravityLastEvent: Date?
         var scannedAt: Date?
     }
 
@@ -63,7 +71,80 @@ actor UsageLogReader {
     private struct CodexFile { var tail = AgentUsage.LogTail(); var limits: AgentUsage.CodexLimits?; var points: [AgentUsage.CodexTokenPoint] = [] }
     private var claude: [URL: ClaudeFile] = [:]
     private var codex: [URL: CodexFile] = [:]
+    private struct GeminiFile {
+        let modified: Date
+        let bytes: Int
+        let lines: [AgentUsage.ClaudeLine]
+    }
+    private var gemini: [URL: GeminiFile] = [:]
+    private var antigravity: [URL: ClaudeFile] = [:]
     private static let chunk = 4 << 20
+    private static let maxGoogleLogBytes = 16 << 20
+
+    private static func logInfo(_ url: URL, since: Date) -> (Date, Int)? {
+        guard let info = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey, .isRegularFileKey, .isSymbolicLinkKey]),
+              info.isRegularFile == true, info.isSymbolicLink != true,
+              let date = info.contentModificationDate, date >= since,
+              let bytes = info.fileSize, (1...maxGoogleLogBytes).contains(bytes) else { return nil }
+        return (date, bytes)
+    }
+
+    private func googleLogs(home: URL, since: Date) -> (gemini: [AgentUsage.ClaudeLine], antigravity: [AgentUsage.ClaudeLine]) {
+        let fm = FileManager.default
+        let root = home.appendingPathComponent(".gemini")
+        let geminiRoot = ProcessInfo.processInfo.environment["GEMINI_CLI_HOME"]
+            .flatMap { $0.hasPrefix("/") ? URL(fileURLWithPath: $0).appendingPathComponent(".gemini") : nil } ?? root
+        func list(_ directory: URL) -> [URL] {
+            (try? fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles])) ?? []
+        }
+        let geminiFiles = list(geminiRoot.appendingPathComponent("tmp")).flatMap { project in
+            list(project.appendingPathComponent("chats")).filter {
+                $0.lastPathComponent.hasPrefix("session-") && $0.pathExtension == "json"
+            }
+        }.compactMap { url in Self.logInfo(url, since: since).map { (url, $0.0, $0.1) } }
+        var nextGemini: [URL: GeminiFile] = [:]
+        for (url, modified, bytes) in geminiFiles.sorted(by: { $0.1 > $1.1 }).prefix(100) {
+            if let entry = gemini[url], entry.modified == modified, entry.bytes == bytes {
+                nextGemini[url] = entry
+            } else if let handle = try? FileHandle(forReadingFrom: url) {
+                defer { try? handle.close() }
+                if let data = try? handle.read(upToCount: bytes + 1), data.count == bytes {
+                    let lines = AgentUsage.parseGeminiSession(data).filter { $0.time >= since }
+                    if !lines.isEmpty {
+                        nextGemini[url] = GeminiFile(modified: modified, bytes: bytes, lines: lines)
+                    }
+                }
+            }
+        }
+        gemini = nextGemini
+
+        let antigravityFiles = ["antigravity-cli", "antigravity"].flatMap { product in
+            list(root.appendingPathComponent("\(product)/brain")).compactMap { folder in
+                let id = folder.lastPathComponent
+                guard UUID(uuidString: id) != nil else { return nil as (URL, String, Date)? }
+                let url = folder.appendingPathComponent(".system_generated/logs/transcript_full.jsonl")
+                return Self.logInfo(url, since: since).map { (url, id.lowercased(), $0.0) }
+            }
+        }
+        var nextAntigravity: [URL: ClaudeFile] = [:]
+        for (url, conversation, _) in antigravityFiles.sorted(by: { $0.2 > $1.2 }).prefix(100) {
+            var entry = antigravity[url] ?? ClaudeFile()
+            var tail = entry.tail, fresh: [AgentUsage.ClaudeLine] = []
+            Self.forEachNewLine(url, tail: &tail) { line in
+                if AgentUsage.contains(line, "\"output_tokens\""),
+                   let point = AgentUsage.parseAntigravityStep(line, conversation: conversation),
+                   point.time >= since {
+                    fresh.append(point)
+                }
+            }
+            entry.tail = tail
+            entry.lines += fresh
+            entry.lines.removeAll { $0.time < since }
+            nextAntigravity[url] = entry
+        }
+        antigravity = nextAntigravity
+        return (gemini.values.flatMap(\.lines), antigravity.values.flatMap(\.lines))
+    }
 
     /// Hands every new complete line of `url` since `tail` to `body`, one chunk at a time. The read sits INSIDE the
     /// autoreleasepool and each line is handled before the next chunk is read: measured 2026-10-22 on 279 MB of this Mac's
@@ -154,6 +235,20 @@ actor UsageLogReader {
         snap.codex = AgentUsage.latest(limits)
         snap.codexToday = AgentUsage.codexWindowTotals(sessions, since: Calendar.current.startOfDay(for: now))
         snap.codex7d = AgentUsage.codexWindowTotals(sessions, since: weekAgo)
+        let google = googleLogs(home: home, since: weekAgo)
+        let today = Calendar.current.startOfDay(for: now)
+        snap.geminiToday = AgentUsage.totals(google.gemini, since: today)
+        snap.gemini7d = AgentUsage.totals(google.gemini, since: weekAgo)
+        snap.antigravityToday = AgentUsage.totals(google.antigravity, since: today)
+        snap.antigravity7d = AgentUsage.totals(google.antigravity, since: weekAgo)
+        snap.geminiLastEvent = google.gemini.map(\.time).max()
+        snap.antigravityLastEvent = google.antigravity.map(\.time).max()
+        let quotaURL = home.appendingPathComponent("Library/Application Support/XFinder/AI Usage/antigravity-quota.json")
+        if let (capturedAt, size) = Self.logInfo(quotaURL, since: now.addingTimeInterval(-900)),
+           size <= 32_768, let data = try? Data(contentsOf: quotaURL) {
+            snap.antigravityQuota = AgentUsage.parseAntigravityQuota(data, capturedAt: capturedAt, now: now)
+            if !snap.antigravityQuota.isEmpty { snap.antigravityQuotaAt = capturedAt }
+        }
 
         // Claude's statusLine cache: whatever the shell script last wrote, captured when the file was written.
         let cacheURL = ClaudeStatusLine.cacheURL(home: home)

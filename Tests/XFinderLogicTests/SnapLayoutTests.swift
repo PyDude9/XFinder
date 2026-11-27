@@ -15,6 +15,12 @@ final class SnapLayoutTests: XCTestCase {
         XCTAssertEqual(L.hotkeyTarget(keyCode: 126), .maximize)
         XCTAssertEqual(L.hotkeyTarget(keyCode: 3), .centerThird)
         XCTAssertNil(L.hotkeyTarget(keyCode: 40))
+
+        XCTAssertEqual(L.hotkeyKeyCodes.count, 8)
+        XCTAssertEqual(Set(L.hotkeyKeyCodes).count, 8, "Classic Snap hotkey keyCodes must be unique")
+        let resolvedTargets = L.hotkeyKeyCodes.compactMap { L.hotkeyTarget(keyCode: Int64($0)) }
+        XCTAssertEqual(resolvedTargets.count, 8, "Every hotkeyKeyCode must resolve to a non-nil SnapLayout.Target")
+        XCTAssertEqual(Set(resolvedTargets).count, 8, "Every hotkeyKeyCode must map to a unique SnapLayout.Target")
     }
 
     func testSnapModifierFamilyDoesNotStealBrowserOrShiftShortcuts() {

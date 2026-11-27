@@ -21,7 +21,7 @@ struct NotchAIUsagePage: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Self.m.usageHeaderGap) {
             header
-            columns
+            providerCards
         }
     }
 
@@ -35,6 +35,14 @@ struct NotchAIUsagePage: View {
                 Text("\(L10n.t("Cập nhật "))\(Self.timeLabel(at))")
                     .font(XFinderTokens.Font.caption).opacity(0.6).lineLimit(1)
             }
+            Button {
+                AgentUsageMonitor.shared.refresh()
+            } label: {
+                Image(systemName: "arrow.clockwise").frame(width: 24, height: 22)
+            }
+            .buttonStyle(.plain)
+            .help(L10n.t("Làm mới"))
+            .accessibilityLabel(L10n.t("Làm mới"))
         }
         .frame(height: Self.m.usageHeaderHeight)
     }
@@ -61,17 +69,37 @@ struct NotchAIUsagePage: View {
 
     // MARK: - Columns
 
-    private var columns: some View {
-        HStack(spacing: 0) {
-            column(provider: .claude)
-            Rectangle().fill(Color.white.opacity(0.12)).frame(width: 1)
-                .padding(.vertical, XFinderTokens.Space.tight)
-            column(provider: .codex)
+    private var providerCards: some View {
+        GeometryReader { geometry in
+            let spacing: CGFloat = 7
+            let cardsPerRow: CGFloat = geometry.size.width >= 510 ? 3 : 2
+            let nextCardPreview: CGFloat = 12
+            let cardWidth = max(158, (geometry.size.width - spacing * cardsPerRow - nextCardPreview) / cardsPerRow)
+            ScrollView(.horizontal) {
+                HStack(spacing: spacing) {
+                    ForEach(Provider.allCases, id: \.self) { provider in
+                        column(provider: provider)
+                            .frame(width: cardWidth, height: Self.m.usageColumnsHeight)
+                    }
+                }
+            }
+            .scrollIndicators(.hidden)
         }
         .frame(height: Self.m.usageColumnsHeight)
     }
 
-    private enum Provider { case claude, codex }
+    private enum Provider: CaseIterable {
+        case claude, codex, antigravity, gemini
+
+        var header: (name: String, symbol: String) {
+            switch self {
+            case .claude: ("Claude Code", "terminal")
+            case .codex: ("Codex", "cpu")
+            case .gemini: ("Gemini CLI", "sparkle")
+            case .antigravity: ("Antigravity", "paperplane")
+            }
+        }
+    }
 
     private func column(provider: Provider) -> some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
@@ -81,17 +109,57 @@ struct NotchAIUsagePage: View {
             case (.quota, .codex): codexQuotaBody
             case (.tokens, .claude): claudeTokensBody
             case (.tokens, .codex): codexTokensBody
+            case (.tokens, .gemini): googleTokens(today: snapshot.geminiToday, week: snapshot.gemini7d)
+            case (.tokens, .antigravity): googleTokens(today: snapshot.antigravityToday, week: snapshot.antigravity7d)
+            case (.quota, .gemini):
+                googleQuota(command: "/stats model", week: snapshot.gemini7d)
+            case (.quota, .antigravity):
+                if snapshot.antigravityQuota.isEmpty {
+                    googleQuota(command: "/usage", week: snapshot.antigravity7d)
+                } else {
+                    AntigravityQuotaRows(buckets: Array(snapshot.antigravityQuota.prefix(4)))
+                }
             }
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, XFinderTokens.Space.tight)
+        .padding(.vertical, 5)
+        .background {
+            RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.045))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 10).strokeBorder(.white.opacity(0.12), lineWidth: 1)
+                .allowsHitTesting(false)
+        }
     }
 
     private func columnHeader(_ provider: Provider) -> some View {
         HStack(spacing: XFinderTokens.Space.tight) {
-            Image(systemName: provider == .claude ? "terminal" : "cpu").font(.system(size: 12)).opacity(0.75)
-            Text(provider == .claude ? "Claude Code" : "Codex").font(XFinderTokens.Font.row)
+            Image(systemName: provider.header.symbol).font(.system(size: 12)).opacity(0.75)
+            Text(provider.header.name).font(XFinderTokens.Font.row)
+        }
+    }
+
+    private func googleQuota(command: String, week: AgentUsage.Totals) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(L10n.t("Xem hạn mức tài khoản trong CLI"))
+                .font(XFinderTokens.Font.caption)
+                .foregroundStyle(.secondary)
+            Text(command)
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .textSelection(.enabled)
+            if week.messages > 0 { tokenStat(title: L10n.t("7 ngày"), totals: week) }
+        }
+    }
+
+    @ViewBuilder private func googleTokens(today: AgentUsage.Totals, week: AgentUsage.Totals) -> some View {
+        if week.messages > 0 {
+            if today.messages > 0 { tokenStat(title: L10n.t("Hôm nay"), totals: today) }
+            tokenStat(title: L10n.t("7 ngày"), totals: week)
+        } else {
+            Text(L10n.t("Chưa có dữ liệu token cục bộ trong 7 ngày."))
+                .font(XFinderTokens.Font.caption).opacity(0.6)
         }
     }
 
@@ -136,14 +204,15 @@ struct NotchAIUsagePage: View {
             if let window, ClaudeStatusLine.isCurrent(window, now: Date()) {
                 usageRing(percent: window.usedPercent)
                 Text(Self.resetLine(window.resetsAt))
-                    .font(XFinderTokens.Font.caption).opacity(0.5).lineLimit(1)
-                    .frame(width: 60)
+                    .font(.system(size: 9)).opacity(0.65)
+                    .lineLimit(2).multilineTextAlignment(.center)
+                    .frame(width: 67)
             } else if window != nil {
                 Image(systemName: "clock.arrow.circlepath").font(.system(size: 16)).opacity(0.4)
                 Text(L10n.t("đã qua giờ reset")).font(XFinderTokens.Font.caption).opacity(0.5)
                     .multilineTextAlignment(.center).frame(width: 60)
             } else {
-                Color.clear.frame(width: 52, height: 52)
+                Color.clear.frame(width: 39, height: 39)
             }
             Text(label).font(XFinderTokens.Font.caption).opacity(0.65)
         }
@@ -179,16 +248,17 @@ struct NotchAIUsagePage: View {
             if let window, AgentUsage.isCurrent(window, now: Date()) {
                 usageRing(percent: window.usedPercent)
                 Text(Self.resetLine(window.resetsAt))
-                    .font(XFinderTokens.Font.caption).opacity(0.5).lineLimit(1)
-                    .frame(width: 60)
+                    .font(.system(size: 9)).opacity(0.65)
+                    .lineLimit(2).multilineTextAlignment(.center)
+                    .frame(width: 67)
             } else if window != nil {
                 Image(systemName: "clock.arrow.circlepath").font(.system(size: 16)).opacity(0.4)
-                Text(L10n.t("đã qua giờ reset — số mới có sau lần dùng Codex kế tiếp"))
+                Text(L10n.t("đã qua giờ reset"))
                     .font(XFinderTokens.Font.caption).opacity(0.5)
                     .multilineTextAlignment(.center).frame(width: 64)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                Color.clear.frame(width: 52, height: 52)
+                Color.clear.frame(width: 39, height: 39)
             }
             Text(label).font(XFinderTokens.Font.caption).opacity(0.65)
         }
@@ -207,7 +277,7 @@ struct NotchAIUsagePage: View {
             Text("\(Int(clamped.rounded()))%")
                 .font(.system(size: 11, weight: .semibold, design: .monospaced))
         }
-        .frame(width: 52, height: 52)
+        .frame(width: 39, height: 39)
     }
 
     // MARK: - Tokens tab
@@ -265,6 +335,38 @@ struct NotchAIUsagePage: View {
         } else {
             let days = Int((Double(hours) / 24).rounded(.up))
             return "\(L10n.t("Đặt lại sau "))\(days)\(L10n.t(" ngày nữa"))"
+        }
+    }
+}
+
+struct AntigravityQuotaRows: View {
+    let buckets: [AgentUsage.AntigravityQuota]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(buckets) { bucket in
+                HStack(spacing: 4) {
+                    Text(Self.title(bucket.id)).lineLimit(1)
+                    Spacer(minLength: 2)
+                    Text(bucket.remaining, format: .percent.precision(.fractionLength(0)))
+                        .monospacedDigit()
+                        .foregroundStyle(.primary)
+                        .accessibilityLabel("\(L10n.t("Còn lại")) \(bucket.remaining.formatted(.percent))")
+                }
+                .font(.caption)
+                .help(bucket.resetsAt.formatted(date: .abbreviated, time: .shortened))
+            }
+        }
+        .accessibilityLabel(L10n.t("Hạn mức còn lại"))
+    }
+
+    private static func title(_ id: String) -> String {
+        switch id {
+        case "gemini-5h": "Gemini · " + L10n.t("5 giờ")
+        case "gemini-weekly": "Gemini · " + L10n.t("7 ngày")
+        case "3p-5h": "Claude/GPT · " + L10n.t("5 giờ")
+        case "3p-weekly": "Claude/GPT · " + L10n.t("7 ngày")
+        default: id
         }
     }
 }

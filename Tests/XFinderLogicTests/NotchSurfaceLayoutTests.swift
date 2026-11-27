@@ -3,6 +3,19 @@ import Foundation
 import CoreGraphics
 
 final class NotchSurfaceLayoutTests: XCTestCase {
+    func testSettingsUsesTallerPanelWithTheSelectedDisplayWidth() throws {
+        let notch = CGRect(x: 400, y: 700, width: 180, height: 32)
+        let regular = NotchSurfaceLayout.Metrics.standard
+        let large = regular.resized(.large)
+        let normalSize = try XCTUnwrap(NotchSurfaceLayout.size(for: .expanded(.aiUsage), anchor: .notch,
+                                                              itemCount: 0, notch: notch, metrics: regular))
+        let settingsSize = try XCTUnwrap(NotchSurfaceLayout.size(for: .expanded(.aiUsage), anchor: .notch,
+                                                                itemCount: 0, notch: notch, settingsPresented: true, metrics: large))
+        XCTAssertEqual(settingsSize.height - normalSize.height, large.settingsExtraHeight)
+        XCTAssertEqual(settingsSize.width - normalSize.width, NotchDisplayScale.large.widthAdjustment)
+        XCTAssertEqual(NotchSurfaceLayout.panelSize(notch: notch, settingsPresented: true, metrics: large),
+                       settingsSize)
+    }
     typealias L = NotchSurfaceLayout
     typealias S = NotchSurfaceMachine.State
     // This MacBook Pro, measured: 1728×1117 screen, aux areas 771.5 wide × 32 tall ⇒ notch 185×32.
@@ -38,8 +51,9 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         }
     }
 
-    /// P1 (measured on the owner's OneNotch screenshots): two bodies only — NARROW 382 × 168 (tray, Now Playing) and
-    /// WIDE 612 × 182 (Clipboard, Agents), the calendar 188 tall — each plus a 19-pt flare per side at the notch.
+    /// Ref-29 uniform expanded shell height over the two measured widths:
+    /// - WIDE 612 (Khay, Clipboard, Agents, AIUsage): 650 × 228 notched / 650 × 222 notchless
+    /// - NARROW 382 (Now Playing, Calendar, Timer): 420 × 228 notched / 420 × 222 notchless
     func testPagesUseTheTwoMeasuredBodiesPlusTheFlares() {
         let fl = 2 * L.Metrics.standard.topFillet
         XCTAssertEqual(fl, 38, "650 top edge − 612 body, measured")
@@ -48,13 +62,22 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         let clip = L.size(for: .expanded(.clipboard), anchor: .notch, itemCount: 1, notch: notch)!
         let agents = L.size(for: .expanded(.agents), anchor: .notch, itemCount: 1, notch: notch)!
         let cal = L.size(for: .expanded(.calendar), anchor: .notch, itemCount: 1, notch: notch)!
-        XCTAssertEqual(player, CGSize(width: 382 + fl, height: 168), "Now Playing: 382 × 168 measured")
-        XCTAssertEqual(files, player, "the tray shares the narrow body")
-        XCTAssertEqual(clip, CGSize(width: 612 + fl, height: 182), "Clipboard: 612 × 182 measured")
-        XCTAssertEqual(agents, clip, "Agents shares the wide body")
-        XCTAssertEqual(cal, CGSize(width: 382 + fl, height: 188), "the calendar view is taller")
+        let timer = L.size(for: .expanded(.timer), anchor: .notch, itemCount: 1, notch: notch)!
+        let usage = L.size(for: .expanded(.aiUsage), anchor: .notch, itemCount: 1, notch: notch)!
+        XCTAssertEqual(player, CGSize(width: 382 + fl, height: 228), "Now Playing: 420 × 228 Ref-29 narrow shell")
+        XCTAssertEqual(cal, player, "Calendar shares the narrow 420 × 228 shell")
+        XCTAssertEqual(timer, player, "Timer shares the narrow 420 × 228 shell")
+        XCTAssertEqual(clip, CGSize(width: 612 + fl, height: 228), "Clipboard: 650 × 228 Ref-29 wide shell")
+        XCTAssertEqual(files, clip, "Ref-29 Khay uses the wide 650 × 228 shell")
+        XCTAssertEqual(agents, clip, "Agents shares the wide 650 × 228 shell")
+        XCTAssertEqual(usage, clip, "AI Usage shares the wide 650 × 228 shell")
+        let plain = L.notch(screen: external, auxLeft: nil, auxRight: nil)
+        XCTAssertEqual(L.size(for: .expanded(.files), anchor: .notch, itemCount: 1, notch: plain),
+                       CGSize(width: 650, height: 222), "notchless display uses 26pt plain top header + 196pt drop = 222pt")
+        XCTAssertEqual(L.size(for: .expanded(.nowPlaying), anchor: .notch, itemCount: 1, notch: plain),
+                       CGSize(width: 420, height: 222), "notchless narrow shell is 420 × 222")
         let pointerClip = L.size(for: .expanded(.clipboard), anchor: .pointer, itemCount: 1, notch: notch)!
-        XCTAssertEqual(pointerClip, CGSize(width: 612, height: 182), "a pointer tray has no top edge to flare into, but keeps the band")
+        XCTAssertEqual(pointerClip, CGSize(width: 612, height: 228), "a pointer tray has no top edge to flare into, but keeps the shell")
         let f = L.frame(for: .expanded(.clipboard), anchor: .notch, itemCount: 1, notch: notch, screen: screen, visible: visible, pointer: .zero)!
         XCTAssertEqual(f.midX, notch.midX, accuracy: 0.5)
         XCTAssertGreaterThanOrEqual(f.minX, 0); XCTAssertLessThanOrEqual(f.maxX, screen.width)
@@ -62,31 +85,37 @@ final class NotchSurfaceLayoutTests: XCTestCase {
 
     /// P1: the collapsed surface is exactly as tall as the notch (nothing hangs over the title bars below it) and
     /// widens sideways — a wing each side, the fuller side setting both so the camera stays centred.
-    /// The two pages that fill their body to the point: the sum lives in one place now, and a drift on either side (a
-    /// taller card, a new inset) shows up here instead of as a clipped deck nobody measured (P1 review, mutation M49).
+    /// Each page's internal content budget stays exact and fits inside Ref-29's `expandedBodyHeight` (`156pt`),
+    /// which together with `bottomNavHeight` (`36pt`) + `shellBodySlack` (`4pt`) fills `196pt`.
     func testPageBudgetsFillTheirBodiesExactly() {
         let m = L.Metrics.standard
         XCTAssertEqual(m.clipboardTopInset + m.chipRowHeight + m.chipToDeckGap + m.clipCardHeight + m.clipboardBottomInset,
-                       m.expandedDrop(for: .clipboard), accuracy: 0.001, "clipboard: chip row + card row fill the wide body")
+                       m.contentBudget(for: .clipboard), accuracy: 0.001, "clipboard: chip row + card row fill the content budget")
         XCTAssertEqual(m.pageTopInset + m.artworkSide + m.artworkToProgressGap + m.progressAreaHeight + m.pageBottomInset,
-                       m.expandedDrop(for: .nowPlaying), accuracy: 0.001, "now playing: artwork row + progress fill the narrow body")
+                       m.contentBudget(for: .nowPlaying), accuracy: 0.001, "now playing: artwork row + progress fill the content budget")
         // Three and a half cards show in the wide body — the half card is what says "this row scrolls".
         let visible = (m.wideWidth - 2 * 14 + m.clipCardGap) / (m.clipCardWidth + m.clipCardGap)
         XCTAssertGreaterThan(visible, 3.2); XCTAssertLessThan(visible, 3.8)
         // P2 pages: Agents (wide), and the three tools (one height).
         XCTAssertEqual(m.pageTopInset + m.agentsHeaderHeight + m.agentsHeaderGap + 2 * m.agentRowHeight + m.agentRowGap
-                       + m.pageBottomInset, m.expandedDrop(for: .agents), accuracy: 0.001, "agents: header + two rows")
+                       + m.pageBottomInset, m.contentBudget(for: .agents), accuracy: 0.001, "agents: header + two rows")
         XCTAssertEqual(m.pageTopInset + m.usageHeaderHeight + m.usageHeaderGap + m.usageColumnsHeight + m.pageBottomInset,
-                       m.expandedDrop(for: .aiUsage), accuracy: 0.001, "AI usage: header + columns")
+                       m.contentBudget(for: .aiUsage), accuracy: 0.001, "AI usage: header + columns")
         XCTAssertEqual(m.pageTopInset + m.calendarHeaderHeight + m.calendarHeaderGap + m.calendarStripHeight
                        + m.calendarStripGap + m.calendarListHeight + m.pageBottomInset,
-                       m.expandedDrop(for: .calendar), accuracy: 0.001, "calendar: header + strip + list")
+                       m.contentBudget(for: .calendar), accuracy: 0.001, "calendar: header + strip + list")
         XCTAssertEqual(m.pageTopInset + m.timerTitleHeight + m.timerTitleGap + m.timerTimeHeight + m.timerTimeGap
                        + m.timerRulerHeight + m.timerRulerGap + m.timerControlsHeight + m.pageBottomInset,
-                       m.expandedDrop(for: .timer), accuracy: 0.001, "timer: title + time + ruler + controls")
-        XCTAssertEqual(m.expandedDrop(for: .timer), m.expandedDrop(for: .calendar), "every tool has the same height")
-        XCTAssertEqual(m.expandedDrop(for: .aiUsage), m.expandedDrop(for: .calendar))
-        XCTAssertTrue(L.Metrics.isWide(.aiUsage)); XCTAssertFalse(L.Metrics.isWide(.timer)); XCTAssertFalse(L.Metrics.isWide(.calendar))
+                       m.contentBudget(for: .timer), accuracy: 0.001, "timer: title + time + ruler + controls")
+        XCTAssertEqual(m.expandedBodyHeight + m.bottomNavHeight + m.shellBodySlack, m.toolDrop, accuracy: 0.001)
+        for page in NotchSurfaceMachine.Page.allCases {
+            XCTAssertLessThanOrEqual(m.contentBudget(for: page), m.expandedBodyHeight, "\(page) fits inside middle body container")
+            XCTAssertEqual(m.expandedDrop(for: page), 196, accuracy: 0.001)
+        }
+        XCTAssertTrue(L.Metrics.isWide(.files))
+        XCTAssertTrue(L.Metrics.isWide(.aiUsage))
+        XCTAssertFalse(L.Metrics.isWide(.timer))
+        XCTAssertFalse(L.Metrics.isWide(.calendar))
     }
 
     /// P2 review: three tools + a separate ✕ needed 93 pt in a narrow page's 86.5-pt right wing. Every page, every tool and
@@ -293,7 +322,7 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         let size = L.panelSize(notch: notch)
         XCTAssertEqual(size.width, m.wideWidth + 2 * m.topFillet)
         XCTAssertEqual(size.height, notch.height + m.toolDrop)
-        XCTAssertEqual(size, CGSize(width: 650, height: 188), "650 × 188 — down from 776 × 254 before P1")
+        XCTAssertEqual(size, CGSize(width: 650, height: 228), "Ref-29 panel union: 650 × 228")
     }
 
     /// P8: the activity grid sits first on the RIGHT wing only while an agent is busy, and widens the notch evenly.

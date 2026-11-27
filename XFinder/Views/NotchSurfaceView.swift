@@ -19,11 +19,17 @@ final class NotchSurfaceModel {
     var ocrSummary: String?
     /// The live activity on screen (B4).
     var activity: LiveActivity.Item?
-    /// Remaining time of a running countdown ("12:34"), shown in the collapsed badge (B4b).
+    /// Remaining/elapsed time of the active clock ("12:34"), shown in the collapsed badge (B4b + XF-ISLAND 1B).
     var timerText: String?
-    /// P2: the countdown itself (running or paused) for the Hẹn giờ page, the tick that drives its progress, and the
-    /// idle stepper's minutes (`notch.timer.minutes`). The controller owns all three; the page only reads them.
+    var timerBadgeMode: NotchClockMode = .countdown
+    var timerBadgeSymbol = "timer"
+    var timerBadgePaused = false
+    /// P2 + XF-ISLAND 1B: clock suite state owned by the controller; `NotchTimerPage` only reads them.
+    var clockMode: NotchClockMode = .countdown
     var timer: LiveActivity.Countdown?
+    var stopwatch = NotchStopwatch()
+    var pomodoro = NotchPomodoro()
+    var hydration = NotchHydrationReminder()
     var timerNow = Date()
     var timerDraftMinutes = LiveActivity.timerDefaultMinutes
     /// The clipboard page's own state (B5).
@@ -40,6 +46,12 @@ final class NotchSurfaceModel {
     var pillOnPlainScreens = true
     /// D1 #44: the pages the hub shows, in order (`notch.pages`); #47: the accent, nil = the app's own.
     var pages: [NotchSurfaceMachine.Page] = NotchPages.defaultOrder
+    /// XF-ISLAND-C: unified ordered visibility catalog covering legacy pages + extra modules.
+    var tabCatalog: NotchTabCatalogState = NotchDestinationCatalog.defaultState
+    /// XF-ISLAND-C: live runtime readiness decoupled from user toggle preference.
+    var destinationAvailability: NotchDestinationAvailability = .builtInOnly
+    /// XF-ISLAND-C: true while showing the always-accessible Settings recovery card (all destinations hidden).
+    var showingAllHiddenRecovery = false
     var accent: Color?
     /// N4: the Glance page — events + timed reminders in a ±5-day window, the access state, the all-day switch.
     var calendarEvents: [GlanceEvent] = []
@@ -47,10 +59,10 @@ final class NotchSurfaceModel {
     var calendarAccess: CalendarGlanceMonitor.Access = .unknown
     var calendarHidesAllDay = false
     /// N3: Claude Code sessions (mirrored from `AgentSessionMonitor`), whether the feature is on, and whether the hook is installed.
-    var agents: [AgentSession] = []
+    var agents: [AgentSession] = [] { didSet { recomputeAgentCache() } }
     /// P5c — terminal sessions that are no longer live, newest first (filled while the Agents page is open).
     var recentAgents: [AgentRecent.Entry] = []
-    var agentsEnabled = false
+    var agentsEnabled = false { didSet { recomputeAgentCache() } }
     var agentHookInstalled = false
     var openCodeOn = false
     var openCodeMissing = false
@@ -79,19 +91,54 @@ final class NotchSurfaceModel {
     var windowlessStarting = false
     /// P7b — the crew whose board is open on the Agents page; nil = the list.
     var crewBoard: String?
-    /// Sessions that need an ANSWER (a permission, a question, a dialog) — a finished turn is "your turn", not this.
-    var agentsNeedingYou: Int { agents.filter { AgentSessionRules.activity(of: $0) == .waiting }.count }
-    /// P1: a Claude Code session is alive (running or waiting) — the left wing of the collapsed notch shows it.
-    var agentActive: Bool { agentsEnabled && agents.contains { $0.status != .ended } }
-    /// P8 — one summary of every live session for the collapsed wings (most urgent activity, agents most-urgent first).
-    var agentSummary: AgentSessionRules.WingSummary? { agentsEnabled ? AgentSessionRules.wingSummary(agents) : nil }
-    /// An agent is thinking, working or waiting: the activity grid runs on the right wing.
+    /// Cached O(1) summaries derived from `agents` + `agentsEnabled` so Notch animation/timer frames
+    /// never recompute `AgentSessionRules.wingSummary` multiple times per render pass.
+    private(set) var agentsNeedingYou: Int = 0
+    private(set) var agentActive: Bool = false
+    private(set) var agentSummary: AgentSessionRules.WingSummary?
     var agentBusy: Bool { agentSummary?.activity.isBusy ?? false }
-    /// Live sessions, for the number beside the lead tile (one tile per wing, never stacked).
     var agentCount: Int { agentSummary?.live ?? 0 }
+
+    private func recomputeAgentCache() {
+        agentsNeedingYou = agents.filter { AgentSessionRules.activity(of: $0) == .waiting }.count
+        agentActive = agentsEnabled && agents.contains { $0.status != .ended }
+        agentSummary = agentsEnabled ? AgentSessionRules.wingSummary(agents) : nil
+    }
     /// D0c: true for the first frame of a surface opening at the notch — the shape is drawn at the notch's
     /// own size and the controller flips this on the next run-loop turn, so the hub springs out of the notch.
     var appearFromNotch = false
+    /// Active Section Gallery or extra telemetry/audio deck shown inside the wide expanded hub.
+    var extraModule: NotchExtraModule? = nil
+    var mirrorController: MirrorCaptureController?
+    var isEditingTeleprompter = false
+    var isEditingUtility = false
+    let emoji = NotchEmojiModel()
+    let links = NotchLinksModel()
+    let imageConvert = NotchImageConvertModel()
+    let todos = NotchTodosModel()
+    let shortcuts = AppleShortcutsStore(runner: AppleShortcutsProcessRunner())
+    /// Phase 2 Weather: true only when an explicit WeatherProvider is registered on NotchSurfaceController.
+    var weatherAvailable = false
+    var weatherViewModel: WeatherViewModel? = nil
+    var isSearchingWeatherCity = false
+    /// Prototype Island modules: US Stocks & App Revenue (lazy-configured via NotchSurfaceController).
+    var stocksAvailable = false
+    var stocksViewModel: StocksViewModel? = nil
+    var isSearchingStock = false
+    var revenueAvailable = false
+    var revenueViewModel: RevenueViewModel? = nil
+    var websiteAnalyticsViewModel: WebsiteAnalyticsViewModel? = nil
+    /// EventKit Reminders module (lazy-initialized when opened; never prompts TCC on launch).
+    var remindersViewModel: RemindersViewModel? = nil
+    var isCreatingReminder = false
+    /// Layout toggle so Ref29 shell can exercise narrow (`382 pt`) vs wide (`612 pt`) responsive layouts cleanly.
+    var preferNarrowExtraModule = false
+    var displayScale: NotchDisplayScale = .regular
+    var inlineSettingsShowsStocks = false
+    /// Multi-selection state for the Drop Tray inside the expanded Island (shared with keyboard shortcuts).
+    var traySelection = DropTraySelection()
+    /// Ref-29 Pin toggle (wired to `NotchSurfaceMachine.Settings.pinned`).
+    var isPinned = false
 }
 
 /// D1 #47 — the notch's accent, read by every notch view instead of `Color.accentColor`.
@@ -114,22 +161,60 @@ extension EnvironmentValues {
 struct NotchSurfaceView: View {
     var model: NotchSurfaceModel
     @State private var store = DropTrayStore.shared
+    @State private var fileQueue = FileOperationQueue.shared
     @State private var isTargeted = false
+    @State private var isAirDropTargeted = false
+    @State private var pillHovered = false
+    @State private var tabStripContentFrame = CGRect.zero
     @Environment(\.notchAccent) private var accent
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private typealias Page = NotchSurfaceMachine.Page
     private typealias N = XFinderTokens.Notch
     private static let m = NotchSurfaceLayout.Metrics.standard
 
-    /// The state's own size — what the content is laid out at (once per state, not once per animation frame).
+    /// Single highest-priority signal shown on the collapsed Island / external pill.
+    private var collapsedSignal: NotchCollapsedSignal {
+        let visibleSet = Set(model.tabCatalog.visibleDestinations(availability: model.destinationAvailability))
+        return NotchCollapsedSignal.resolve(
+            itemCount: model.itemCount,
+            timerActive: model.timerText != nil,
+            timerPaused: model.timerBadgePaused,
+            nowPlayingActive: nowPlayingActive,
+            nowPlayingPlaying: model.nowPlaying?.playing == true,
+            agentActive: model.agentActive,
+            agentBusy: model.agentBusy,
+            agentsNeedingYou: model.agentsNeedingYou,
+            visibleDestinations: visibleSet
+        )
+    }
+
+    private var collapsedProjection: NotchCollapsedSignal.WingProjection {
+        collapsedSignal.projection(agentCount: model.agentCount)
+    }
+
+    /// The state's own size — shared directly with `NotchSurfaceLayout` (once per state, not once per animation frame).
     private var stateSize: CGSize {
         let notch = CGRect(origin: .zero, size: model.notchSize)
-        return NotchSurfaceLayout.size(for: model.state, anchor: model.anchor,
-                                       itemCount: model.itemCount, notch: notch,
-                                       timerActive: model.timerText != nil,
-                                       nowPlayingActive: nowPlayingActive,
-                                       agentActive: model.agentActive, agentBusy: model.agentBusy, agentCount: model.agentCount,
-                                       pillOnPlainScreens: model.pillOnPlainScreens, compactActivity: compactHUD) ?? .zero
+        let layoutState: NotchSurfaceMachine.State = {
+            if case .expanded = model.state, model.extraModule != nil {
+                return model.preferNarrowExtraModule && model.extraModule != .settings ? .expanded(.nowPlaying) : .expanded(.aiUsage)
+            }
+            return model.state
+        }()
+        let useCollapsed = (model.state == .collapsed)
+        let proj = collapsedProjection
+        return NotchSurfaceLayout.size(for: layoutState, anchor: model.anchor,
+                                       itemCount: useCollapsed ? proj.itemCount : model.itemCount,
+                                       notch: notch,
+                                       timerActive: useCollapsed ? proj.timerActive : (model.timerText != nil),
+                                       nowPlayingActive: useCollapsed ? proj.nowPlayingActive : nowPlayingActive,
+                                       agentActive: useCollapsed ? proj.agentActive : model.agentActive,
+                                       agentBusy: useCollapsed ? proj.agentBusy : model.agentBusy,
+                                       agentCount: useCollapsed ? proj.agentCount : model.agentCount,
+                                       pillOnPlainScreens: model.pillOnPlainScreens, compactActivity: compactHUD,
+                                       settingsPresented: model.extraModule == .settings,
+                                       metrics: Self.m.resized(model.displayScale)) ?? .zero
     }
 
     /// Volume / brightness feedback wears the collapsed wings' shape (glyph left, level right), not the notice strip.
@@ -187,6 +272,45 @@ struct NotchSurfaceView: View {
         NotchShape(bottomRadius: bottomRadius, topRadius: atNotch ? 0 : bottomRadius)
     }
 
+    @ViewBuilder private var surfaceBackdrop: some View {
+        ZStack {
+            shape.fill(Color.black)
+            if !(collapsed && atNotch && !plainScreen) {
+                nowPlayingAmbientWash
+            }
+        }
+    }
+
+    @ViewBuilder private var nowPlayingAmbientWash: some View {
+        if case .expanded(.nowPlaying) = model.state, model.extraModule == nil,
+           model.nowPlaying?.hasTrack == true, let artwork = model.nowPlayingArtwork {
+            Image(nsImage: artwork)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: size.width, height: size.height)
+                .blur(radius: 30)
+                .opacity(0.22)
+                .allowsHitTesting(false)
+        }
+    }
+
+    @ViewBuilder private var surfaceBorder: some View {
+        if isTargeted {
+            bodyShape.strokeBorder(accent, lineWidth: 2)
+        } else if wingShaped && atNotch && !plainScreen {
+            bodyShape.strokeBorder(Color.clear, lineWidth: 1)
+        } else {
+            bodyShape.strokeBorder(
+                LinearGradient(
+                    colors: [Color.white.opacity(0.20), Color.white.opacity(0.08), Color.white.opacity(0.02)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                ),
+                lineWidth: 1
+            )
+        }
+    }
+
     /// Measured 2026-10-12 with `sample` during an open: the hosting view animated the WINDOW's frame to follow
     /// this view's ideal size and AppKit's window animation blocked the main thread. The root is therefore a
     /// `GeometryReader` (fixed ideal size), so the window never moves; only the shape inside animates, and the
@@ -194,35 +318,36 @@ struct NotchSurfaceView: View {
     var body: some View {
         GeometryReader { _ in
             ZStack(alignment: .top) {
-                shape.fill(Color.black)
-                // No hairline on the collapsed wings: they sit in the menu bar beside the camera and must read as
-                // part of the hardware notch, which has no outline.
-                bodyShape.strokeBorder(isTargeted ? accent : Color.white.opacity(wingShaped ? 0 : 0.10),
-                                       lineWidth: isTargeted ? 2 : 1)
+                surfaceBackdrop
+                surfaceBorder
                     .padding(.horizontal, flare.width)
                 content
                     .frame(width: stateSize.width, height: stateSize.height, alignment: .top)
                     .opacity(model.appearFromNotch ? 0 : 1)                                     // fades in as the shape grows
                     // P8: and comes into focus — Notch Crew's hover opens blurred-to-sharp (owner's screenshot,
-                    // 2026-10-14), not as a hard cut. Only while opening; a plain state change never blurs.
-                    .blur(radius: model.appearFromNotch ? 8 : 0)
+                    // 2026-10-14), not as a hard cut. Disabled under Reduce Motion.
+                    .blur(radius: NotchMotionPolicy.appearBlurRadius(appearFromNotch: model.appearFromNotch, reduceMotion: reduceMotion))
             }
             .frame(width: size.width, height: size.height, alignment: .top)
             .clipShape(shape)
+            .shadow(color: (collapsed && atNotch && !plainScreen) ? .clear : Color.black.opacity(0.42), radius: 18, x: 0, y: 8)
             // N1: the window is larger than the shape (one fixed frame for every state), so the drop target is
             // the DRAWN shape only — a file released on the transparent remainder lands on the window below.
             .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
+                guard model.extraModule != .imageConvert, model.extraModule != .settings else { return false }
                 ClipboardSounds.playCopy()
-                // The URLs load asynchronously; report the drop only once they are in the store, so the
-                // machine sees the real count (a shaken tray with files must not think it is empty).
-                // Dropping keeps the surface open: it is the START of the task.
+                // Hold the tray open while async NSItemProvider URLs load, then notify the state machine with the real count.
+                NotchSurfaceController.shared.beginDropImport()
                 store.add(providers: providers) { NotchSurfaceController.shared.filesDropped() }
                 return true
             }
+            .onChange(of: isTargeted) { _, targeted in
+                NotchSurfaceController.shared.setDropTargeted(targeted)
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            // Opening overshoots a little; collapsing is quick and never bounces (P1, OneNotch measured).
-            .animation(model.state == .activity ? N.activity : (collapsed ? N.close : N.open), value: model.state)
-            .animation(N.open, value: model.appearFromNotch)
+            // Animate only size changes so page switches at the same width do not spring the shell.
+            .animation(reduceMotion ? nil : (model.state == .activity ? N.activity : (collapsed ? N.close : N.tabResize)), value: stateSize)
+            .animation(reduceMotion ? nil : N.open, value: model.appearFromNotch)
         }
         .environment(\.notchAccent, model.accent ?? .accentColor)
     }
@@ -243,8 +368,15 @@ struct NotchSurfaceView: View {
     // MARK: - Collapsed: the wings beside the camera
 
     private var wingItems: (left: [NotchSurfaceLayout.WingItem], right: [NotchSurfaceLayout.WingItem]) {
-        NotchSurfaceLayout.wingItems(itemCount: model.itemCount, timerActive: model.timerText != nil,
-                                     nowPlayingActive: nowPlayingActive, agentActive: model.agentActive, agentBusy: model.agentBusy, agentCount: model.agentCount)
+        let proj = collapsedProjection
+        return NotchSurfaceLayout.wingItems(
+            itemCount: proj.itemCount,
+            timerActive: proj.timerActive,
+            nowPlayingActive: proj.nowPlayingActive,
+            agentActive: proj.agentActive,
+            agentBusy: proj.agentBusy,
+            agentCount: proj.agentCount
+        )
     }
 
     /// Each side's items sit at the OUTER edge of their wing (OneNotch measured ~9 pt in), so nothing crowds the
@@ -256,7 +388,12 @@ struct NotchSurfaceView: View {
                 wingSide(items.left)
                 wingSide(items.right)
             }
+            .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Capsule().fill(Color.white.opacity(pillHovered ? 0.08 : 0)))
+            .scaleEffect(NotchMotionPolicy.pillHoverScale(hovered: pillHovered, reduceMotion: reduceMotion))
+            .animation(reduceMotion ? nil : N.pageFade, value: pillHovered)
+            .onHover { pillHovered = $0 }
         } else {
             let wing = NotchSurfaceLayout.wingWidth(left: items.left, right: items.right)
             HStack(spacing: 0) {
@@ -309,8 +446,8 @@ struct NotchSurfaceView: View {
             }
         case .files:
             HStack(spacing: 3) {
-                Image(systemName: "tray.fill").font(.system(size: 11))
-                Text("\(model.itemCount)").font(.system(size: 11, weight: .semibold)).monospacedDigit()
+                Image(systemName: "tray.fill").font(.system(size: 10, weight: .medium))
+                Text("\(model.itemCount)").font(.system(size: 11, weight: .semibold, design: .rounded)).monospacedDigit()
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             .frame(width: w, height: 22)
@@ -339,12 +476,29 @@ struct NotchSurfaceView: View {
             .accessibilityLabel("\(L10n.t("Đang phát")): \(model.nowPlaying?.headline ?? "")")
             .accessibilityAddTraits(.isButton)
         case .timer:
+            let badgeTitle: String = {
+                switch model.timerBadgeMode {
+                case .countdown: return L10n.t("Hẹn giờ")
+                case .stopwatch: return L10n.t("Bấm giờ")
+                case .pomodoro: return L10n.t("Pomodoro")
+                }
+            }()
             HStack(spacing: 3) {
-                Image(systemName: model.timer?.isPaused == true ? "pause.fill" : "timer").font(.system(size: 11))
-                Text(model.timerText ?? "").font(.system(size: 11, weight: .semibold)).monospacedDigit()
+                Image(systemName: model.timerBadgeSymbol)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(model.timerBadgePaused ? .white.opacity(0.6) : .orange)
+                Text(model.timerText ?? "")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .monospacedDigit()
                     .lineLimit(1).minimumScaleFactor(0.8)
             }
             .frame(width: w, height: 22)
+            .contentShape(Rectangle())
+            .onTapGesture { NotchSurfaceController.shared.reveal(page: .timer) }
+            .help("\(badgeTitle): \(model.timerText ?? "")")
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(badgeTitle): \(model.timerText ?? "")")
+            .accessibilityAddTraits(.isButton)
         }
     }
 
@@ -397,73 +551,530 @@ struct NotchSurfaceView: View {
         .frame(height: Self.m.peekDrop)
     }
 
-    // MARK: - Expanded: one band over the page
+    // MARK: - Expanded: Ref-29 top header, 156-pt page body, bottom navigation bar
 
-    /// Band + page. The page body cross-fades on a page change (P1: ~200 ms measured) while the shape springs
-    /// between the two widths; a ZStack, so the outgoing and incoming pages overlap instead of stacking.
+    /// Ref-29 expanded hub shell: top header (title + Clipboard search when active + ongoing work pill + Pin/Close),
+    /// fixed 156-pt middle page container, and scrollable bottom navigation.
     private func hub(_ page: Page) -> some View {
-        VStack(spacing: 0) {
-            band(page)
+        let isClipboard = (!model.showingAllHiddenRecovery && model.extraModule == nil && page == .clipboard)
+        let isNowPlaying = (!model.showingAllHiddenRecovery && model.extraModule == nil && page == .nowPlaying)
+        let isWide = model.showingAllHiddenRecovery || model.extraModule == .settings
+            ? true
+            : NotchNavLayout.usesWideCanvas(
+                page: page,
+                extraModule: model.extraModule,
+                preferNarrowExtra: model.preferNarrowExtraModule
+            )
+        let activeID = model.showingAllHiddenRecovery
+            ? "all-hidden-recovery-W"
+            : (model.extraModule?.rawValue ?? page.rawValue)
+
+        return VStack(spacing: 0) {
+            ref29TopHeader(page: page, isWide: isWide)
+
             ZStack(alignment: .top) {
-                // The budgets live in Metrics and a test proves they fill each body (the clipboard is the tightest).
-                pageBody(page)
-                    .padding(.horizontal, page == .nowPlaying ? 16 : 14)
-                    .padding(.top, page == .clipboard ? Self.m.clipboardTopInset : Self.m.pageTopInset)
-                    .padding(.bottom, page == .clipboard ? Self.m.clipboardBottomInset : Self.m.pageBottomInset)
+                // Existing page budgets fit inside the 156-pt middle container (NotchSurfaceLayoutTests).
+                pageBody(page, isWide: isWide)
+                    .padding(.horizontal, isNowPlaying ? 16 : 14)
+                    .padding(.top, isClipboard ? Self.m.clipboardTopInset : 4)
+                    .padding(.bottom, isClipboard ? Self.m.clipboardBottomInset : 4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .id(page)
-                    .transition(.opacity)
+                    .id(activeID)
+                    .transition(reduceMotion ? .opacity : .asymmetric(
+                        insertion: .opacity.combined(with: .offset(y: 4)),
+                        removal: .opacity
+                    ))
             }
-            .animation(N.pageFade, value: page)
+            .frame(height: model.extraModule == .settings ? Self.m.settingsBodyHeight : Self.m.expandedBodyHeight)
+            .clipped()
+            .animation(reduceMotion ? N.pageFade : N.tabTransition, value: activeID)
+
+            ref29BottomNavBar(page: page, isWide: isWide)
         }
         .foregroundColor(.white)
         .padding(.horizontal, flare.width)                 // the flares are outside the content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
-    @ViewBuilder private func pageBody(_ page: Page) -> some View {
+    @ViewBuilder private func pageBody(_ page: Page, isWide: Bool) -> some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
-            switch page {
-            case .files: filesPage
-            case .clipboard: NotchClipboardView(model: model.clipboard)
-            case .nowPlaying: nowPlayingPage
-            case .agents: NotchAgentsPage(model: model)
-            case .calendar: NotchCalendarPage(model: model)
-            case .timer: NotchTimerPage(model: model)
-            case .aiUsage: NotchAIUsagePage(model: model)
+            if model.showingAllHiddenRecovery {
+                allHiddenRecoveryBody
+            } else if let extra = model.extraModule {
+                switch extra {
+                case .sections: NotchSectionsView(model: model)
+                case .settings:
+                    NotchInterfaceDetailView(embeddedInNotch: true, showStocks: model.inlineSettingsShowsStocks)
+                case .home: NotchHomePage(model: model, excludedQuickDestinationID: .home)
+                case .system: NotchSystemPage()
+                case .audio: NotchAudioPage()
+                case .reminders:
+                    if let vm = model.remindersViewModel {
+                        NotchRemindersPage(viewModel: vm, embedsInIsland: true)
+                    }
+                case .mirror:
+                    if let controller = model.mirrorController {
+                        NotchMirrorPage(controller: controller)
+                    }
+                case .teleprompter:
+                    NotchTeleprompterPage(controller: .shared)
+                case .notes:
+                    NotchNotesPage(
+                        onSearchFocusChanged: NotchSurfaceController.shared.setUtilityEditing,
+                        onWillOpenEditor: NotchSurfaceController.shared.dismiss
+                    )
+                case .capture:
+                    NotchCapturePage(
+                        onPrepareForCapture: NotchSurfaceController.shared.hideForCapture,
+                        onOpenCaptureSettings: {
+                            NotchSurfaceController.shared.dismiss()
+                            AppState.shared.navigate(to: .capture)
+                        }
+                    )
+                case .units:
+                    NotchUnitsPage(onInputFocusChanged: NotchSurfaceController.shared.setUtilityEditing)
+                case .scratchpad:
+                    NotchScratchpadPage(onEditingChanged: NotchSurfaceController.shared.setUtilityEditing)
+                case .emoji:
+                    NotchEmojiPage(model: model.emoji, onSearchFocusChanged: NotchSurfaceController.shared.setUtilityEditing)
+                case .fileBrowser:
+                    NotchFileBrowserPage()
+                case .links:
+                    NotchLinksPage(
+                        model: model.links,
+                        onOpenSettings: {
+                            NotchSurfaceController.shared.dismiss()
+                            AppState.shared.navigate(to: .finderSearch)
+                        },
+                        onSearchFocusChanged: NotchSurfaceController.shared.setUtilityEditing
+                    )
+                case .imageConvert:
+                    NotchImageConvertPage(converter: model.imageConvert)
+                case .sounds:
+                    NotchSoundsPage()
+                case .todos:
+                    NotchTodosPage(model: model.todos)
+                case .shortcuts:
+                    NotchShortcutsPage(store: model.shortcuts)
+                case .appUsage:
+                    NotchAppUsagePage()
+                case .localChat:
+                    NotchLocalChatPage(onInputFocusChanged: { focused in
+                        if focused { NotchSurfaceController.shared.ensurePanelKeyForKeyboard() }
+                    })
+                case .message:
+                    NotchMessagePage(onInputFocusChanged: { focused in
+                        if focused { NotchSurfaceController.shared.ensurePanelKeyForKeyboard() }
+                    })
+                case .feedback:
+                    NotchFeedbackPage()
+                case .weather:
+                    if let vm = model.weatherViewModel {
+                        NotchWeatherPage(viewModel: vm, embedsInIsland: true)
+                    }
+                case .stocks:
+                    if let vm = model.stocksViewModel {
+                        NotchStocksPage(viewModel: vm, embedsInIsland: true)
+                    } else {
+                        NotchStocksSetupPage()
+                    }
+                case .revenue:
+                    if let vm = model.revenueViewModel {
+                        NotchRevenuePage(viewModel: vm, embedsInIsland: true)
+                    }
+                case .websiteAnalytics:
+                    if let vm = model.websiteAnalyticsViewModel {
+                        NotchWebsiteAnalyticsPage(
+                            viewModel: vm,
+                            onConfigurationOpened: NotchSurfaceController.shared.ensurePanelKeyForKeyboard
+                        )
+                    }
+                }
+            } else {
+                switch page {
+                case .files: ref29FilesPage(isWide: isWide)
+                case .clipboard: NotchClipboardView(model: model.clipboard, searchPlacement: clipboardSearchPlacement)
+                case .nowPlaying: nowPlayingPage
+                case .agents: NotchAgentsPage(model: model)
+                case .calendar: NotchCalendarPage(model: model)
+                case .timer: NotchTimerPage(model: model)
+                case .aiUsage: NotchAIUsagePage(model: model)
+                }
             }
         }
     }
 
-    /// The 32-pt band, symmetric about the camera: page dots (+ search on the clipboard page) in the left wing,
-    /// the toolbar in the right one; nothing is drawn under the notch. At the pointer or on a screen without a
-    /// notch the gap is 0 and the band is one row; at the pointer the empty part of the band is also a drag strip.
-    private func band(_ page: Page) -> some View {
-        let bandHeight = max(model.notchSize.height, Self.m.bandHeight)
-        let notchGap: CGFloat = (atNotch && !plainScreen) ? model.notchSize.width : 0
-        let inner = stateSize.width - 2 * flare.width
-        let wing = NotchSurfaceLayout.bandWingWidth(bodyWidth: inner, notchWidth: notchGap)
-        return HStack(spacing: 0) {
-            HStack(spacing: 8) {
-                dotsCapsule(current: page)
-                if page == .clipboard {
-                    NotchClipboardSearchField(model: model.clipboard).layoutPriority(1)
-                }
-                // The empty part of the band moves a pointer-anchored tray (B1b rule: never over controls — an
-                // NSView overlay wins AppKit hit-testing over every SwiftUI control under it).
-                Spacer(minLength: 0)
-                    .overlay { if !atNotch { WindowDragHandle().help(L10n.t("Kéo để dời khay")) } }
+    private var allHiddenRecoveryBody: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(accent)
+            Text(L10n.t("Tất cả mục Dynamic Island đang ẩn"))
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
+            Text(L10n.t("Bật lại ít nhất một mục trong Cài đặt để hiện trên Dynamic Island. Kéo thả tệp vào notch vẫn hoạt động bình thường."))
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.68))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: 420)
+            Button {
+                NotchSurfaceController.shared.openInlineNotchSettings()
+            } label: {
+                Label(L10n.t("Mở Cài đặt Dynamic Island"), systemImage: "gearshape.fill")
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(accent))
+                    .foregroundStyle(.white)
             }
-            .frame(width: wing, alignment: .leading)
-            Color.clear.frame(width: notchGap)
-            HStack(spacing: 0) {
-                Spacer(minLength: 0)
-                toolbarCapsule(current: page)
-            }
-            .frame(width: wing, alignment: .trailing)
+            .buttonStyle(.plain)
+            .accessibilityLabel(L10n.t("Mở Cài đặt Dynamic Island"))
         }
-        .padding(.horizontal, Self.m.bandInset)
-        .frame(height: bandHeight)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var clipboardSearchPlacement: NotchClipboardRules.SearchPlacement {
+        let isWide = NotchNavLayout.usesWideCanvas(page: .clipboard, extraModule: nil)
+        let bodyWidth = Double(isWide ? Self.m.wideWidth : Self.m.narrowWidth)
+        return NotchClipboardRules.searchPlacement(
+            onPhysicalNotch: atNotch && !plainScreen,
+            isWide: isWide,
+            bodyWidth: bodyWidth,
+            notchWidth: Double(model.notchSize.width)
+        )
+    }
+
+    @ViewBuilder private func ref29TopHeader(page: Page, isWide: Bool) -> some View {
+        let onNotchWing = atNotch && !plainScreen
+        let searchPlacement = clipboardSearchPlacement
+
+        if onNotchWing {
+            let notchGap = model.notchSize.width
+            let inner = stateSize.width - 2 * flare.width
+            let wing = max(56, (inner - notchGap - 28) / 2)
+            HStack(spacing: 0) {
+                ref29HeaderLeftWing(page: page, compact: !isWide, searchPlacement: searchPlacement)
+                    .frame(width: wing, alignment: .leading)
+
+                Color.clear.frame(width: notchGap)
+
+                ref29HeaderRightWing(page: page, compact: !isWide)
+                    .frame(width: wing, alignment: .trailing)
+            }
+            .padding(.horizontal, 14)
+            .frame(height: max(model.notchSize.height, Self.m.bandHeight) + 2)
+        } else {
+            HStack(spacing: 8) {
+                ref29HeaderLeftWing(page: page, compact: !isWide, searchPlacement: searchPlacement)
+                Spacer(minLength: 8)
+                    .overlay { if !atNotch { WindowDragHandle().help(L10n.t("Kéo để dời khay")) } }
+                ref29HeaderRightWing(page: page, compact: !isWide)
+            }
+            .padding(.horizontal, 14)
+            .frame(height: Self.m.plainHeaderHeight + 2)
+        }
+    }
+
+    private func ref29HeaderLeftWing(
+        page: Page,
+        compact: Bool,
+        searchPlacement: NotchClipboardRules.SearchPlacement
+    ) -> some View {
+        HStack(spacing: 6) {
+            if model.extraModule == .settings {
+                Button {
+                    NotchSurfaceController.shared.returnFromInlineNotchSettings()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(L10n.t("Quay lại"))
+                .accessibilityLabel(L10n.t("Quay lại"))
+            }
+            Text(currentDestinationTitle(page: page))
+                .font(.system(size: compact ? 12 : 13, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.96))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .truncationMode(.tail)
+                .fixedSize(horizontal: true, vertical: false)
+                .layoutPriority(3)
+
+            if model.extraModule == nil && page == .files && model.itemCount > 0 && !compact {
+                Text("\(model.itemCount)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded).monospacedDigit())
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    .background(Capsule().fill(Color.white.opacity(0.14)))
+                    .fixedSize()
+                    .layoutPriority(2)
+            } else if model.extraModule == nil && page == .clipboard {
+                switch searchPlacement {
+                case .header(let maxW):
+                    NotchClipboardSearchField(model: model.clipboard)
+                        .frame(maxWidth: CGFloat(maxW), alignment: .leading)
+                        .layoutPriority(0)
+                case .contentRow:
+                    ref29ClipboardHeaderSearchTrigger
+                        .fixedSize()
+                        .layoutPriority(1)
+                }
+            }
+        }
+    }
+
+    private var ref29ClipboardHeaderSearchTrigger: some View {
+        let locked = ClipboardShelfController.shared.touchIDLockEnabled && !model.clipboard.unlocked
+        let active = model.clipboard.searchFocused || !model.clipboard.query.isEmpty
+        return Button {
+            NotchSurfaceController.shared.focusClipboardSearch()
+        } label: {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(active ? accent : XFinderTokens.Notch.toolbarIcon)
+                .frame(width: XFinderTokens.Notch.searchDiameter, height: XFinderTokens.Notch.searchDiameter)
+                .background(
+                    Circle()
+                        .fill(active ? accent.opacity(0.16) : XFinderTokens.Notch.capsule)
+                        .overlay(
+                            Circle()
+                                .strokeBorder(active ? accent.opacity(0.75) : Color.white.opacity(0.10), lineWidth: 0.75)
+                        )
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(locked)
+        .opacity(locked ? 0.35 : 1)
+        .help(L10n.t("Tìm kiếm (⌘F)…"))
+        .accessibilityLabel(L10n.t("Tìm kiếm (⌘F)…"))
+        .accessibilityIdentifier("notch.clipboard.headerSearchButton")
+    }
+
+    private func ref29HeaderRightWing(page: Page, compact: Bool) -> some View {
+        HStack(spacing: 5) {
+            if hasOngoingFileWork && (page != .files || model.extraModule != nil) {
+                Button {
+                    NotchSurfaceController.shared.closeExtraModule()
+                    NotchSurfaceController.shared.switchPage(.files)
+                } label: {
+                    HStack(spacing: 3) {
+                        ProgressView().controlSize(.mini).scaleEffect(0.6)
+                        if !compact {
+                            Text(L10n.t("Đang xử lý"))
+                                .font(.system(size: 9.5, weight: .medium))
+                                .lineLimit(1)
+                        }
+                    }
+                    .foregroundStyle(.white.opacity(0.9))
+                    .padding(.horizontal, compact ? 5 : 6)
+                    .frame(height: 20)
+                    .background(Capsule().fill(accent.opacity(0.32)))
+                }
+                .buttonStyle(.plain)
+                .fixedSize()
+                .help(L10n.t("Mở Khay thả để xem thao tác đang chạy"))
+            }
+
+            ref29HeaderControlsView
+        }
+        .fixedSize()
+        .layoutPriority(3)
+    }
+
+    private var ref29HeaderControlsView: some View {
+        HStack(spacing: 5) {
+            Button {
+                NotchSurfaceController.shared.togglePin()
+            } label: {
+                Image(systemName: model.isPinned ? "pin.fill" : "pin")
+                    .font(.system(size: 10, weight: .semibold))
+                    .rotationEffect(.degrees(model.isPinned ? 0 : 35))
+                    .foregroundStyle(model.isPinned ? accent : .white.opacity(0.62))
+                    .frame(width: 24, height: 24)
+                    .background(
+                        Circle()
+                            .fill(model.isPinned ? accent.opacity(0.20) : Color.white.opacity(0.07))
+                            .overlay(
+                                Circle()
+                                    .strokeBorder(model.isPinned ? accent.opacity(0.55) : Color.white.opacity(0.10), lineWidth: 0.5)
+                            )
+                    )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(model.isPinned ? L10n.t("Bỏ ghim khay") : L10n.t("Ghim khay (không đóng khi bấm ra ngoài)"))
+            .accessibilityLabel(model.isPinned ? L10n.t("Bỏ ghim") : L10n.t("Ghim"))
+            .accessibilityAddTraits(model.isPinned ? .isSelected : [])
+
+            Button {
+                NotchSurfaceController.shared.dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9.5, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.62))
+                    .frame(width: 24, height: 24)
+                    .background(
+                        Circle()
+                            .fill(Color.white.opacity(0.07))
+                            .overlay(
+                                Circle().strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
+                            )
+                    )
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(L10n.t("Đóng"))
+            .accessibilityLabel(L10n.t("Đóng"))
+        }
+    }
+
+    private func ref29BottomNavBar(page: Page, isWide: Bool) -> some View {
+        let destinations = model.tabCatalog.visibleDestinations(availability: model.destinationAvailability)
+        let selected: NotchDestinationID? = if model.showingAllHiddenRecovery {
+            nil
+        } else if let extra = model.extraModule {
+            NotchDestinationID(extra: extra)
+        } else {
+            NotchDestinationID(page: page)
+        }
+
+        return VStack(spacing: 0) {
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 1)
+
+            HStack(spacing: 6) {
+                if destinations.isEmpty {
+                    Button(L10n.t("Mở Cài đặt…")) {
+                        NotchSurfaceController.shared.openInlineNotchSettings()
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityLabel(L10n.t("Mở Cài đặt Dynamic Island"))
+                } else {
+                    ScrollViewReader { proxy in
+                        ScrollView(.horizontal) {
+                            HStack(spacing: isWide ? 4 : 2) {
+                                ForEach(destinations) { destination in
+                                    ref29BottomDestinationButton(destination, isSelected: destination == selected)
+                                        .id(destination)
+                                }
+                            }
+                            .padding(.horizontal, 2)
+                            .onGeometryChange(for: CGRect.self) { geometry in
+                                geometry.frame(in: .named("notchTabStrip"))
+                            } action: { frame in
+                                tabStripContentFrame = frame
+                            }
+                        }
+                        .coordinateSpace(name: "notchTabStrip")
+                        .scrollIndicators(.hidden)
+                        .padding(.bottom, 3)
+                        .overlay(alignment: .bottom) {
+                            GeometryReader { geometry in
+                                let viewport = geometry.size.width
+                                let overflow = tabStripContentFrame.width - viewport
+                                if viewport > 0, overflow > 1 {
+                                    let thumb = min(viewport, max(18, viewport * viewport / tabStripContentFrame.width))
+                                    let progress = min(1, max(0, -tabStripContentFrame.minX / overflow))
+                                    Capsule()
+                                        .fill(.white.opacity(0.24))
+                                        .frame(width: thumb, height: 2)
+                                        .offset(x: (viewport - thumb) * progress)
+                                }
+                            }
+                            .frame(height: 2)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                        }
+                        .onChange(of: selected, initial: true) { previous, id in
+                            guard let id, destinations.contains(id) else { return }
+                            if reduceMotion || previous == id {
+                                proxy.scrollTo(id)
+                            } else {
+                                withAnimation(N.tabResize) { proxy.scrollTo(id) }
+                            }
+                        }
+                    }
+
+                    Button {
+                        if model.extraModule == .settings {
+                            NotchSurfaceController.shared.returnFromInlineNotchSettings()
+                        } else {
+                            NotchSurfaceController.shared.openInlineNotchSettings()
+                        }
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.72))
+                            .frame(width: 26, height: 26)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(L10n.t("Mở Cài đặt Dynamic Island"))
+                    .accessibilityLabel(L10n.t("Mở Cài đặt Dynamic Island"))
+                }
+            }
+            .frame(height: 31)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .frame(height: Self.m.bottomNavHeight)
+    }
+
+    private func ref29BottomDestinationButton(_ destination: NotchDestinationID, isSelected: Bool) -> some View {
+        Button {
+            NotchSurfaceController.shared.selectDestination(destination)
+        } label: {
+            Image(systemName: destination.symbol)
+                .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                .foregroundStyle(isSelected ? accent : .white.opacity(0.65))
+                .frame(width: 27, height: 26)
+                .background {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge)
+                            .fill(accent.opacity(0.18))
+                    }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if (destination == .files && model.itemCount > 0)
+                        || (destination == .agents && model.agentsNeedingYou > 0) {
+                        Circle()
+                            .fill(destination == .agents ? Color.orange : accent)
+                            .frame(width: 4, height: 4)
+                            .padding(3)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(L10n.t(destination.titleKey))
+        .accessibilityLabel(L10n.t(destination.titleKey))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .animation(reduceMotion ? nil : N.pageFade, value: isSelected)
+    }
+
+    private func shortTabTitle(_ p: Page) -> String {
+        switch p {
+        case .files: return L10n.t("Khay")
+        default: return pageTitle(p)
+        }
+    }
+
+    private func currentDestinationTitle(page: Page) -> String {
+        if model.showingAllHiddenRecovery { return L10n.t("Giao diện notch") }
+        if let extra = model.extraModule { return L10n.t(NotchGalleryRules.titleKey(for: extra)) }
+        return shortTabTitle(page)
+    }
+
+    private var hasOngoingFileWork: Bool {
+        model.task?.isRunning == true || model.task?.isAwaitingReview == true || fileQueue.hasActiveWork
     }
 
     /// A page the hub can show right now: Now Playing needs its switch (B6), Agents and the calendar theirs.
@@ -478,70 +1089,6 @@ struct NotchSurfaceView: View {
     }
 
     private func pageTitle(_ p: Page) -> String { L10n.t(NotchPages.titleKey(p)) }
-
-    /// One dot per swipeable page in the user's order (D1 #44); the lit dot is the current page (OneNotch measured:
-    /// dot 1 on Clipboard, dot 3 on Agents). Each dot is a button — the tooltip / VoiceOver label names the page
-    /// the dot alone cannot. An Agents dot turns orange while a session waits for you.
-    private func dotsCapsule(current: Page) -> some View {
-        let pages = NotchPages.dots(model.pages).filter(available)
-        return HStack(spacing: 0) {
-            ForEach(pages, id: \.self) { p in
-                Button { NotchSurfaceController.shared.switchPage(p) } label: {
-                    Circle().fill(dotColor(p, current: current))
-                        .frame(width: N.dotSize, height: N.dotSize)
-                        .frame(width: N.dotPitch, height: N.dotsCapsuleHeight)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help(pageTitle(p))
-                .accessibilityLabel(pageTitle(p))
-                .accessibilityAddTraits(p == current ? .isSelected : [])
-            }
-        }
-        .padding(.horizontal, Self.m.dotsCapsulePadding)   // NotchSurfaceLayout.dotsCapsuleWidth: 15 n + 9
-        .background(Capsule().fill(N.capsule))
-    }
-
-    private func dotColor(_ p: Page, current: Page) -> Color {
-        if p == current { return N.dotLit }
-        if p == .agents, model.agentsNeedingYou > 0 { return .orange }
-        return N.dotDim
-    }
-
-    /// The toolbar: fixed destinations (the calendar now; the timer and AI usage in P2), lit while current.
-    /// The tools, then the ✕ as the capsule's last slot. On every page and at the notch too: Esc closes only the
-    /// clipboard page (its key monitor), so elsewhere the ✕ is the one immediate way out besides leaving (P1 review).
-    /// Width = `NotchSurfaceLayout.toolbarCapsuleWidth(slots: tools + 1)` — tested to fit a narrow page's wing (P2 review).
-    private func toolbarCapsule(current: Page) -> some View {
-        let tools = NotchPages.toolbar(model.pages).filter(available)
-        return HStack(spacing: 0) {
-            ForEach(tools, id: \.self) { p in
-                Button { NotchSurfaceController.shared.switchPage(p) } label: {
-                    Image(systemName: toolIcon(p)).font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(p == current ? N.dotLit : N.toolbarIcon)
-                        .frame(width: Self.m.toolbarSlot, height: N.toolbarHeight)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help(pageTitle(p))
-                .accessibilityLabel(pageTitle(p))
-                .accessibilityAddTraits(p == current ? .isSelected : [])
-            }
-            Button { NotchSurfaceController.shared.dismiss() } label: {
-                Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
-                    .foregroundColor(N.toolbarIcon)
-                    .frame(width: Self.m.toolbarSlot, height: N.toolbarHeight)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help(L10n.t("Đóng"))
-            .accessibilityLabel(L10n.t("Đóng"))
-        }
-        .padding(.horizontal, Self.m.toolbarCapsulePadding)
-        .background(Capsule().fill(N.capsule))
-    }
-
-    private func toolIcon(_ p: Page) -> String { NotchPages.symbol(p) }
     // MARK: - Now Playing (B6; P1 layout after OneNotch)
 
     /// Artwork (with the player's icon on its corner — click it to open the player), title, artist, the live bars
@@ -558,6 +1105,15 @@ struct NotchSurfaceView: View {
                             .font(.system(size: 15, weight: .semibold)).lineLimit(1).truncationMode(.tail)
                         Spacer(minLength: 4)
                         waveformGlyph
+                        Button { NotchSurfaceController.shared.openExtraModule(.audio) } label: {
+                            Image(systemName: "speaker.wave.2")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.7))
+                                .frame(width: 20, height: 20)
+                                .background(Circle().fill(Color.white.opacity(0.10)))
+                        }
+                        .buttonStyle(.plain)
+                        .help(L10n.t("Âm thanh"))
                     }
                     if let np {
                         if !np.subline.isEmpty {
@@ -579,6 +1135,16 @@ struct NotchSurfaceView: View {
 
     @ViewBuilder private func nowPlayingArtwork(_ np: NowPlaying.Snapshot?) -> some View {
         ZStack(alignment: .bottomTrailing) {
+            // Ambient soft glow behind artwork when track is playing
+            if np != nil, let img = model.nowPlayingArtwork {
+                Image(nsImage: img)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: Self.m.artworkSide, height: Self.m.artworkSide)
+                    .blur(radius: 12)
+                    .opacity(0.4)
+                    .offset(y: 4)
+            }
             Group {
                 if np != nil, let img = model.nowPlayingArtwork {
                     Image(nsImage: img).resizable().aspectRatio(contentMode: .fill)
@@ -591,13 +1157,15 @@ struct NotchSurfaceView: View {
             }
             .frame(width: Self.m.artworkSide, height: Self.m.artworkSide)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.white.opacity(0.12), lineWidth: 0.5))
             if np != nil, let icon = model.nowPlayingAppIcon {
                 Button { NotchSurfaceController.shared.openPlayer() } label: {
-                    Image(nsImage: icon).resizable().frame(width: 24, height: 24)
-                        .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
+                    Image(nsImage: icon).resizable().frame(width: 22, height: 22)
+                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                        .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
                 }
                 .buttonStyle(.plain)
-                .offset(x: 6, y: 6)
+                .offset(x: 4, y: 4)
                 .help(model.nowPlayingAppName.map { "\(L10n.t("Mở "))\($0)" } ?? "")
             }
         }
@@ -629,16 +1197,27 @@ struct NotchSurfaceView: View {
             .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L10n.t("Xáo trộn"))
             Spacer(minLength: 0)
             Button { NotchSurfaceController.shared.nowPlayingCommand(.previousTrack) } label: {
-                Image(systemName: "backward.fill").font(.system(size: 15))
+                Image(systemName: "backward.fill").font(.system(size: 14))
+                    .frame(width: 26, height: 26)
+                    .contentShape(Rectangle())
             }.buttonStyle(.plain).help(L10n.t("Bài trước")).accessibilityLabel(L10n.t("Bài trước"))
             Spacer(minLength: 0)
             Button { NotchSurfaceController.shared.nowPlayingCommand(.togglePlayPause) } label: {
-                Image(systemName: model.nowPlaying?.playing == true ? "pause.fill" : "play.fill").font(.system(size: 22))
-                    .frame(width: 28)
+                ZStack {
+                    Circle()
+                        .fill(enabled ? Color.white : Color.white.opacity(0.18))
+                        .frame(width: 32, height: 32)
+                        .shadow(color: enabled ? Color.white.opacity(0.2) : .clear, radius: 4)
+                    Image(systemName: model.nowPlaying?.playing == true ? "pause.fill" : "play.fill")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(enabled ? .black : .white.opacity(0.4))
+                }
             }.buttonStyle(.plain).help(L10n.t("Phát hoặc tạm dừng")).accessibilityLabel(L10n.t("Phát hoặc tạm dừng"))
             Spacer(minLength: 0)
             Button { NotchSurfaceController.shared.nowPlayingCommand(.nextTrack) } label: {
-                Image(systemName: "forward.fill").font(.system(size: 15))
+                Image(systemName: "forward.fill").font(.system(size: 14))
+                    .frame(width: 26, height: 26)
+                    .contentShape(Rectangle())
             }.buttonStyle(.plain).help(L10n.t("Bài tiếp")).accessibilityLabel(L10n.t("Bài tiếp"))
             Spacer(minLength: 0)
             Menu {
@@ -648,7 +1227,7 @@ struct NotchSurfaceView: View {
             } label: { Image(systemName: "repeat").font(.system(size: 12)).accessibilityLabel(L10n.t("Lặp lại")) }
             .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().help(L10n.t("Lặp lại"))
         }
-        .frame(height: 28)
+        .frame(height: 32)
         .disabled(!enabled)
         .opacity(enabled ? 1 : 0.35)
     }
@@ -684,7 +1263,7 @@ struct NotchSurfaceView: View {
                 .font(XFinderTokens.Font.row)
                 .frame(width: 28, height: 28)
                 .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge).fill(Color.white.opacity(0.12)))
-                .overlay(MultiFileDragSource(paths: store.items.map(\.path)))
+                .overlay(MultiFileDragSource(paths: actionableTrayItems.map(\.path)))
                 .help(L10n.t("Kéo cả chồng ra để dùng một lần."))
             HStack(spacing: XFinderTokens.Space.tight) {
                 Text("\(model.itemCount)\(L10n.t(" tệp đang giữ"))").font(XFinderTokens.Font.row)
@@ -768,6 +1347,8 @@ struct NotchSurfaceView: View {
         case .openCalendar: Text(L10n.t("Mở Lịch"))
         case .openAgents: Text(L10n.t("Xem"))
         case .handOff(_, let target): Text("\(L10n.t("Chuyển sang "))\(target.displayName)…")
+        case .hydrateAck: Text(L10n.t("Đã uống"))
+        case .hydrateSnooze: Text(L10n.t("Hoãn 10 phút"))
         }
     }
 
@@ -780,65 +1361,807 @@ struct NotchSurfaceView: View {
         }
     }
 
-    @ViewBuilder private var filesPage: some View {
-        if store.items.isEmpty {
-            VStack(spacing: XFinderTokens.Space.tight) {
-                Image(systemName: "arrow.down.doc").font(XFinderTokens.Font.pageIcon).opacity(0.65)
-                Text(L10n.t("Thả file vào đây để giữ tạm"))
-                    .font(XFinderTokens.Font.caption).opacity(0.65)
+    private var selectedTrayItems: [DropTrayStore.Item] {
+        store.items.filter { model.traySelection.contains($0.id) }
+    }
+
+    private var actionableTrayItems: [DropTrayStore.Item] {
+        store.items.filter { $0.status.isActionable }
+    }
+
+    private func handleNotchTrayClick(_ item: DropTrayStore.Item) {
+        NotchSurfaceController.shared.ensurePanelKeyForKeyboard()
+        let flags = NSEvent.modifierFlags
+        model.traySelection.click(
+            item.id,
+            in: store.items.map(\.id),
+            command: flags.contains(.command),
+            shift: flags.contains(.shift)
+        )
+    }
+
+    private func dragPathsForNotchItem(_ item: DropTrayStore.Item) -> [String] {
+        if model.traySelection.contains(item.id) {
+            return selectedTrayItems.filter { $0.status.isActionable }.map(\.path)
+        }
+        return item.status.isActionable ? [item.path] : []
+    }
+
+    private func pickFilesIntoTray() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        if panel.runModal() == .OK {
+            store.add(urls: panel.urls)
+            NotchSurfaceController.shared.filesDropped()
+        }
+    }
+
+    private var resolvedTrayActionState: DropTrayActionResolution.Result<DropTrayStore.Item> {
+        DropTrayActionResolution.resolve(
+            items: store.items,
+            selection: model.traySelection,
+            id: \.id,
+            isActionable: \.status.isActionable
+        )
+    }
+
+    private func batchActions(for items: [DropTrayStore.Item]) -> [NotchActions.Action] {
+        NotchActions.available(
+            for: items.map { URL(fileURLWithPath: $0.path) },
+            encodable: ImageRunner.encodableTypes
+        ).filter { $0 != .airDrop }
+    }
+
+    /// Ref-29 Khay: AirDrop card (~28% left) + dashed drop & staging zone (~72% right), preserving
+    /// drag-all out, per-card drag, multi-selection, Quick Look, Share, Atlas pane copy/move,
+    /// batch `NotchActions`, `FileOperationQueue` progress, and the detail grid panel.
+    @ViewBuilder private func ref29FilesPage(isWide: Bool) -> some View {
+        let resolved = resolvedTrayActionState
+
+        HStack(spacing: isWide ? 10 : 8) {
+            ref29AirDropCard(isWide: isWide, resolved: resolved)
+
+            ZStack(alignment: .topLeading) {
+                if let t = model.task, t.isAwaitingReview {
+                    ref29ImageReviewView(task: t)
+                } else if store.items.isEmpty {
+                    ref29EmptyDropZone(isWide: isWide, dropHighlight: isTargeted, resolved: resolved)
+                } else {
+                    ref29PopulatedDropZone(isWide: isWide, resolved: resolved)
+                }
+
+                if model.task?.isAwaitingReview != true {
+                    if let n = model.notice {
+                        ref29NoticeBanner(n)
+                    } else if let t = model.task, !t.isRunning {
+                        ref29TaskResultBanner(task: t, ocrSummary: model.ocrSummary)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 146)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(isTargeted ? accent.opacity(0.14) : Color.white.opacity(0.025))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1.15, dash: [5, 4]))
+                    .foregroundStyle(isTargeted ? accent : Color.white.opacity(0.22))
+            )
+        }
+        .frame(height: 146)
+    }
+
+    private func ref29EmptyDropZone(
+        isWide: Bool,
+        dropHighlight: Bool,
+        resolved: DropTrayActionResolution.Result<DropTrayStore.Item>
+    ) -> some View {
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: 5) {
+                Image(systemName: dropHighlight ? "tray.and.arrow.down.fill" : "tray.and.arrow.down")
+                    .font(.system(size: 21, weight: .regular))
+                    .foregroundStyle(dropHighlight ? accent : Color.white.opacity(0.84))
+
+                Text(L10n.t("Thả tệp vào đây"))
+                    .font(.system(size: isWide ? 12.5 : 11.5, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.95))
+                    .lineLimit(1)
+
+                Text(isWide ? L10n.t("Giữ tạm · Kéo ra hoặc gửi sang ngăn") : L10n.t("Kéo ra hoặc gửi ngăn"))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.white.opacity(0.48))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .padding(.horizontal, 8)
+
+                Button {
+                    pickFilesIntoTray()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 9.5, weight: .bold))
+                        Text(L10n.t("Thêm tệp…"))
+                            .font(.system(size: 10.5, weight: .medium))
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(.white.opacity(0.88))
+                    .padding(.horizontal, 10)
+                    .frame(height: 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous)
+                            .fill(Color.white.opacity(0.09))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous)
+                                    .strokeBorder(Color.white.opacity(0.14), lineWidth: 0.5)
+                            )
+                    )
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(L10n.t("Thêm tệp…"))
+                .accessibilityLabel(L10n.t("Thêm tệp…"))
+                .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
-            stackedDeck
-            actionArea
+
+            ref29DashedOverflowMenu(resolved: resolved, batchActions: [])
+                .padding(.top, 6)
+                .padding(.trailing, 7)
         }
     }
 
-    /// Overlapping deck + a count; dragging the deck hands over EVERY held file at once, which is
-    /// the whole point of staging them together.
-    private var stackedDeck: some View {
-        HStack(spacing: XFinderTokens.Space.inline + 2) {
+    private func ref29PopulatedDropZone(
+        isWide: Bool,
+        resolved: DropTrayActionResolution.Result<DropTrayStore.Item>
+    ) -> some View {
+        let targetActionable = resolved.targets
+        let availableBatch = batchActions(for: targetActionable)
+
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .top, spacing: 6) {
+                ref29DragAllHandle(isWide: isWide, actionableItems: actionableTrayItems)
+                    .padding(.leading, isWide ? 8 : 6)
+                    .padding(.top, 6)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(store.items) { item in
+                            ref29FileCardView(for: item)
+                        }
+                    }
+                    .padding(.trailing, 4)
+                    .padding(.top, 6)
+                }
+
+                ref29DashedOverflowMenu(resolved: resolved, batchActions: availableBatch)
+                    .padding(.top, 6)
+                    .padding(.trailing, 7)
+            }
+            .frame(height: 98)
+
+            ref29BottomTrayRow(isWide: isWide, resolved: resolved, batchActions: availableBatch)
+                .padding(.horizontal, isWide ? 8 : 6)
+                .padding(.bottom, 6)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func ref29DragAllHandle(isWide: Bool, actionableItems: [DropTrayStore.Item]) -> some View {
+        let w: CGFloat = isWide ? 48 : 42
+        let dragPaths = actionableItems.map(\.path)
+        return VStack(spacing: 3) {
             ZStack {
-                ForEach(Array(store.items.prefix(4).enumerated().reversed()), id: \.element.id) { index, item in
-                    Image(nsImage: NSWorkspace.shared.icon(forFile: item.path))
-                        .resizable()
-                        .frame(width: 46, height: 46)
-                        .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(Color.white.opacity(0.08)))
-                        .rotationEffect(.degrees(Double(index) * -4))
-                        .offset(x: CGFloat(index) * 7, y: CGFloat(index) * -3)
-                        .shadow(color: .black.opacity(0.4), radius: 3, x: 0, y: 1)
-                }
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.white.opacity(0.09))
+                Image(systemName: "tray.full.fill")
+                    .font(.system(size: isWide ? 15 : 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(dragPaths.isEmpty ? 0.35 : 0.90))
             }
-            .frame(width: 78, height: 62)
-            // SwiftUI's `.onDrag` vends ONE provider and `.itemProviders` does not exist on
-            // macOS 14 — the whole stack needs an AppKit drag session.
-            .overlay(MultiFileDragSource(paths: store.items.map(\.path)))
+            .frame(width: 34, height: 36)
 
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                Text("\(store.items.count)\(L10n.t(" tệp đang giữ"))")
-                    .font(XFinderTokens.Font.row)
-                Text(L10n.t("Kéo cả chồng ra để dùng một lần."))
-                    .font(XFinderTokens.Font.caption).opacity(0.65)
-                HStack(spacing: XFinderTokens.Space.tight + 2) {
-                    Button(L10n.t("Xem chi tiết")) { NotchSurfaceController.shared.toggleDetail() }
-                        .buttonStyle(.bordered).controlSize(.mini)
-                    Button(L10n.t("Xóa hết")) { store.removePaths(store.items.map(\.path)) }
-                        .buttonStyle(.plain)
-                        .font(XFinderTokens.Font.caption)
-                        .opacity(0.65)
-                }
-            }
-            Spacer()
+            Text("\(store.items.count)\(L10n.t(" tệp"))")
+                .font(.system(size: 9.5, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.9))
+                .monospacedDigit()
+                .lineLimit(1)
+
+            Text(L10n.t("Kéo tất cả"))
+                .font(.system(size: 8))
+                .foregroundStyle(.white.opacity(0.55))
+                .lineLimit(1)
         }
-        .contentShape(Rectangle())
+        .frame(width: w, height: 84)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.white.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.10), lineWidth: 0.5)
+                )
+        )
+        .opacity(dragPaths.isEmpty ? 0.55 : 1)
+        .overlay {
+            if !dragPaths.isEmpty {
+                MultiFileDragSource(paths: dragPaths)
+            }
+        }
+        .help(L10n.t("Kéo cả chồng ra để dùng một lần."))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(L10n.t("Kéo tất cả")) — \(store.items.count)\(L10n.t(" tệp"))")
     }
 
-    // MARK: Action row (B2d)
-
-    private var actions: [NotchActions.Action] {
-        NotchActions.available(for: store.items.filter { !$0.isMissing }.map { URL(fileURLWithPath: $0.path) },
-                               encodable: ImageRunner.encodableTypes)
+    @ViewBuilder private func ref29BottomTrayRow(
+        isWide: Bool,
+        resolved: DropTrayActionResolution.Result<DropTrayStore.Item>,
+        batchActions: [NotchActions.Action]
+    ) -> some View {
+        if let t = model.task, t.isRunning {
+            HStack(spacing: XFinderTokens.Space.tight + 2) {
+                ProgressView(value: t.fraction).progressViewStyle(.linear).tint(.white)
+                Text("\(t.done + t.failed)/\(t.total)").font(XFinderTokens.Font.caption).monospacedDigit()
+                Button(L10n.t("Hủy")) { NotchSurfaceController.shared.cancelTask() }
+                    .buttonStyle(.bordered).controlSize(.mini)
+            }
+            .frame(height: 28)
+        } else if let job = fileQueue.queue.active {
+            let jobFraction: Double = job.bytesTotal > 0
+                ? min(1, max(0, Double(job.bytesDone) / Double(job.bytesTotal)))
+                : (job.itemsTotal > 0 ? min(1, max(0, Double(job.itemsDone) / Double(job.itemsTotal))) : 0)
+            HStack(spacing: XFinderTokens.Space.tight + 2) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(accent)
+                Text(L10n.t(fileQueue.stageLabelKey(for: job)))
+                    .font(XFinderTokens.Font.caption)
+                    .lineLimit(1)
+                ProgressView(value: jobFraction).progressViewStyle(.linear).tint(.white)
+                Text("\(job.itemsDone)/\(job.itemsTotal)").font(XFinderTokens.Font.caption).monospacedDigit()
+                Button(L10n.t("Hủy")) { fileQueue.cancel(job.id) }
+                    .buttonStyle(.bordered).controlSize(.mini)
+            }
+            .frame(height: 28)
+        } else {
+            ref29DashedZoneActionStrip(isWide: isWide, resolved: resolved, batchActions: batchActions)
+        }
     }
+
+    private func ref29ImageReviewView(task t: NotchTask) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Text(L10n.t("Xem trước xử lý ảnh"))
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Button(L10n.t("Tạo bản mới")) { NotchSurfaceController.shared.confirmImageReview() }
+                    .buttonStyle(.borderedProminent).controlSize(.mini)
+                    .disabled(t.imageReviewRows.isEmpty)
+                Button(L10n.t("Hủy")) { NotchSurfaceController.shared.cancelTask() }
+                    .buttonStyle(.bordered).controlSize(.mini)
+            }
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(Array(t.imageReviewRows.prefix(4).enumerated()), id: \.offset) { _, row in
+                        HStack(spacing: 6) {
+                            Text(row.url.lastPathComponent)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            if let p = row.preview?.plan {
+                                Text("\(p.uprightWidth)\(L10n.t(" × "))\(p.uprightHeight)\(L10n.t(" → "))\(p.outputWidth)\(L10n.t(" × "))\(p.outputHeight)\(L10n.t(" px"))")
+                                    .foregroundStyle(row.preview?.willSkip == true ? .orange : .white.opacity(0.68))
+                                    .lineLimit(1)
+                            } else if let failure = row.failure {
+                                Text("\(L10n.t(failure.messageKey))\(failure.detail)")
+                                    .foregroundStyle(.orange)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .font(XFinderTokens.Font.caption)
+                    }
+                }
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func ref29FileCardView(for item: DropTrayStore.Item) -> some View {
+        NotchTrayFileCard(
+            item: item,
+            selected: model.traySelection.contains(item.id),
+            accent: accent,
+            dragPaths: dragPathsForNotchItem(item),
+            onClick: { handleNotchTrayClick(item) },
+            onDoubleClick: { NotchSurfaceController.shared.quickLookTrayItems([item]) },
+            onQuickLook: { NotchSurfaceController.shared.quickLookTrayItems([item]) },
+            onShare: { NotchSurfaceController.shared.shareTrayItems([item]) },
+            onCopyToPane: { NotchSurfaceController.shared.sendTrayItemsToActivePane([item], copy: true) },
+            onMoveToPane: { NotchSurfaceController.shared.sendTrayItemsToActivePane([item], copy: false) },
+            onRemove: {
+                store.remove(item)
+                model.traySelection.prune(validIDs: Set(store.items.map(\.id)))
+            }
+        )
+    }
+
+    private func ref29NoticeBanner(_ noticeKey: String) -> some View {
+        HStack(spacing: 4) {
+            Text(L10n.t(noticeKey))
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(.orange)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Button { model.notice = nil } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(.orange.opacity(0.8))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(L10n.t("Đóng"))
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 2)
+        .background(
+            Capsule().fill(Color.black.opacity(0.90))
+                .overlay(Capsule().strokeBorder(Color.orange.opacity(0.45), lineWidth: 0.5))
+        )
+        .padding(.top, 6)
+        .padding(.trailing, 38)
+        .padding(.leading, 8)
+    }
+
+    private func ref29TaskResultBanner(task t: NotchTask, ocrSummary: String?) -> some View {
+        HStack(spacing: 6) {
+            resultLine(t)
+            if let ocrSummary {
+                Text(ocrSummary)
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            Button {
+                model.task = nil
+                model.ocrSummary = nil
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.65))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(L10n.t("Đóng"))
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 2)
+        .background(
+            Capsule().fill(Color.black.opacity(0.90))
+                .overlay(Capsule().strokeBorder(Color.white.opacity(0.20), lineWidth: 0.5))
+        )
+        .padding(.top, 6)
+        .padding(.trailing, 38)
+        .padding(.leading, 8)
+    }
+
+    private func ref29AirDropCard(
+        isWide: Bool,
+        resolved: DropTrayActionResolution.Result<DropTrayStore.Item>
+    ) -> some View {
+        let cardWidth: CGFloat = isWide ? 160 : 86
+        let actionableItems = resolved.targets
+        let selectionBlocked = resolved.hasSelectionWithZeroActionable
+        let unselectableTrayOnly = !resolved.hasSelection && !store.items.isEmpty && actionableItems.isEmpty
+        let cardDisabled = selectionBlocked || unselectableTrayOnly
+
+        let subtitle: String = {
+            if selectionBlocked {
+                return isWide ? L10n.t("Mục chọn không khả dụng") : L10n.t("Không khả dụng")
+            }
+            if unselectableTrayOnly {
+                return isWide ? L10n.t("Chưa có tệp khả dụng") : L10n.t("Không khả dụng")
+            }
+            if !actionableItems.isEmpty {
+                return isWide
+                    ? "\(actionableItems.count)\(L10n.t(" tệp")) · \(L10n.t("Gửi qua macOS"))"
+                    : "\(actionableItems.count)\(L10n.t(" tệp"))"
+            }
+            return isWide ? L10n.t("Gửi tới thiết bị gần") : L10n.t("Thiết bị gần")
+        }()
+
+        let helpText: String = {
+            if selectionBlocked || unselectableTrayOnly {
+                return L10n.t("Mục đang chọn đã di chuyển hoặc không thể đọc — bỏ chọn hoặc chọn tệp khả dụng.")
+            }
+            if !actionableItems.isEmpty {
+                return "AirDrop — \(subtitle)"
+            }
+            return L10n.t("Khay trống — bấm để chọn tệp gửi qua AirDrop")
+        }()
+
+        return Button {
+            guard !cardDisabled else { return }
+            if !actionableItems.isEmpty {
+                NotchSurfaceController.shared.airDropTrayItems(actionableItems)
+            } else if !resolved.hasSelection {
+                NotchSurfaceController.shared.pickAndAirDropFiles()
+            }
+        } label: {
+            VStack(spacing: 5) {
+                Spacer(minLength: 0)
+                Image(systemName: "dot.radiowaves.up.forward")
+                    .font(.system(size: isWide ? 22 : 18, weight: .regular))
+                    .foregroundStyle(cardDisabled ? .white.opacity(0.32) : (isAirDropTargeted ? accent : .white.opacity(0.90)))
+                Text("AirDrop")
+                    .font(.system(size: isWide ? 12 : 11, weight: .semibold))
+                    .foregroundStyle(.white.opacity(cardDisabled ? 0.44 : 0.96))
+                    .lineLimit(1)
+                Text(subtitle)
+                    .font(.system(size: isWide ? 10 : 9))
+                    .foregroundStyle(
+                        cardDisabled
+                            ? Color.orange.opacity(0.82)
+                            : (!actionableItems.isEmpty ? accent.opacity(0.95) : .white.opacity(0.46))
+                    )
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 5)
+                Spacer(minLength: 0)
+            }
+            .frame(width: cardWidth, height: 146)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(isAirDropTargeted && !cardDisabled ? accent.opacity(0.18) : Color.white.opacity(cardDisabled ? 0.025 : 0.055))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(
+                                isAirDropTargeted && !cardDisabled
+                                    ? accent
+                                    : (cardDisabled ? Color.orange.opacity(0.28) : Color.white.opacity(0.09)),
+                                lineWidth: isAirDropTargeted && !cardDisabled ? 1.2 : 0.6
+                            )
+                    )
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(cardDisabled)
+        .onDrop(of: [.fileURL], isTargeted: $isAirDropTargeted) { providers in
+            handleAirDropProviders(providers)
+        }
+        .help(helpText)
+        .accessibilityLabel("AirDrop, \(subtitle)")
+        .accessibilityHint(helpText)
+    }
+
+    private func handleAirDropProviders(_ providers: [NSItemProvider]) -> Bool {
+        guard !providers.isEmpty else { return false }
+        let box = LockedURLBox()
+        let group = DispatchGroup()
+        for provider in providers {
+            guard provider.hasItemConformingToTypeIdentifier("public.file-url") else { continue }
+            group.enter()
+            provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { item, _ in
+                defer { group.leave() }
+                if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
+                    box.append(url)
+                } else if let url = item as? URL {
+                    box.append(url)
+                }
+            }
+        }
+        group.notify(queue: .main) {
+            let urls = box.values()
+            if !urls.isEmpty {
+                NotchSurfaceController.shared.airDropFileURLs(urls)
+            }
+        }
+        return true
+    }
+
+    private func ref29DashedOverflowMenu(
+        resolved: DropTrayActionResolution.Result<DropTrayStore.Item>,
+        batchActions: [NotchActions.Action]
+    ) -> some View {
+        let targetActionable = resolved.targets
+        return Menu {
+            Button {
+                pickFilesIntoTray()
+            } label: {
+                Label(L10n.t("Thêm tệp…"), systemImage: "plus")
+            }
+            if !store.items.isEmpty {
+                Divider()
+                Button {
+                    model.traySelection.selectAll(store.items.map(\.id))
+                } label: {
+                    Label("\(L10n.t("Chọn tất cả")) (⌘A)", systemImage: "checkmark.circle")
+                }
+                if !model.traySelection.isEmpty {
+                    Button {
+                        model.traySelection.clear()
+                    } label: {
+                        Label(L10n.t("Bỏ chọn"), systemImage: "circle.slash")
+                    }
+                }
+                Divider()
+                Button {
+                    NotchSurfaceController.shared.quickLookTrayItems(targetActionable)
+                } label: {
+                    Label("\(L10n.t("Xem nhanh")) (Space)", systemImage: "eye")
+                }
+                .disabled(targetActionable.isEmpty)
+
+                Button {
+                    NotchSurfaceController.shared.shareTrayItems(targetActionable)
+                } label: {
+                    Label(L10n.t("Chia sẻ"), systemImage: "square.and.arrow.up")
+                }
+                .disabled(targetActionable.isEmpty)
+
+                if let paneName = DropTrayBrowserBridge.activePaneName {
+                    Divider()
+                    Button {
+                        NotchSurfaceController.shared.sendTrayItemsToActivePane(targetActionable, copy: true)
+                    } label: {
+                        Label("\(L10n.t("Chép vào ngăn: "))\(paneName)", systemImage: "doc.on.doc")
+                    }
+                    .disabled(targetActionable.isEmpty)
+
+                    Button {
+                        NotchSurfaceController.shared.sendTrayItemsToActivePane(targetActionable, copy: false)
+                    } label: {
+                        Label("\(L10n.t("Chuyển vào ngăn: "))\(paneName)", systemImage: "folder")
+                    }
+                    .disabled(targetActionable.isEmpty)
+                }
+
+                if !batchActions.isEmpty {
+                    Section(L10n.t("Xử lý hàng loạt")) {
+                        ref29BatchActionMenuItems(batchActions)
+                    }
+                }
+
+                Divider()
+                Button {
+                    NotchSurfaceController.shared.toggleDetail()
+                } label: {
+                    Label(L10n.t("Chi tiết"), systemImage: "square.grid.2x2")
+                }
+
+                Button(role: .destructive) {
+                    store.clear()
+                    model.traySelection.clear()
+                    model.notice = nil
+                    model.task = nil
+                    model.ocrSummary = nil
+                } label: {
+                    Label(L10n.t("Xóa hết"), systemImage: "trash")
+                }
+            }
+        } label: {
+            HStack(spacing: 2) {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 10, weight: .bold))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 7.5, weight: .bold))
+            }
+            .foregroundStyle(.white.opacity(0.65))
+            .padding(.horizontal, 6)
+            .frame(height: 22)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.black.opacity(0.60))
+            )
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help(L10n.t("Thao tác khay"))
+        .accessibilityLabel(L10n.t("Thao tác khay"))
+    }
+
+    @ViewBuilder private func ref29BatchActionMenuItems(_ batchActions: [NotchActions.Action]) -> some View {
+        ForEach(batchActions, id: \.self) { a in
+            if case .resize = a {
+                Menu {
+                    ForEach(ImageEngine.resizePresets, id: \.self) { px in
+                        Button("\(L10n.t("Thu nhỏ ảnh còn "))\(px) px") {
+                            NotchSurfaceController.shared.run(.resize(maxPixels: px))
+                        }
+                    }
+                } label: {
+                    Label(title(a), systemImage: symbol(a))
+                }
+            } else {
+                Button {
+                    NotchSurfaceController.shared.run(a)
+                } label: {
+                    Label(title(a), systemImage: symbol(a))
+                }
+            }
+        }
+    }
+
+    private func trayActionPill(
+        title: String?,
+        symbol: String,
+        prominent: Bool = false,
+        compact: Bool = false,
+        enabled: Bool = true,
+        helpText: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: compact ? 2.5 : 4) {
+                Image(systemName: symbol)
+                    .font(.system(size: compact ? 9 : 9.5, weight: .semibold))
+                if let title {
+                    Text(title)
+                        .font(.system(size: compact ? 9.5 : 10.5, weight: prominent ? .semibold : .medium))
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+            }
+            .foregroundStyle(prominent ? Color.white : Color.white.opacity(enabled ? 0.88 : 0.4))
+            .padding(.horizontal, compact ? 6 : (title == nil ? 7.5 : 8.5))
+            .frame(height: 24)
+            .background(
+                RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous)
+                    .fill(prominent ? accent : Color.white.opacity(0.09))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous)
+                            .strokeBorder(prominent ? Color.white.opacity(0.22) : Color.white.opacity(0.13), lineWidth: 0.5)
+                    )
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .help(helpText)
+        .accessibilityLabel(helpText)
+    }
+
+    @ViewBuilder private func ref29DashedZoneActionStrip(
+        isWide: Bool,
+        resolved: DropTrayActionResolution.Result<DropTrayStore.Item>,
+        batchActions: [NotchActions.Action]
+    ) -> some View {
+        let compact = !isWide
+        let targetActionable = resolved.targets
+        let actionEnabled = !targetActionable.isEmpty
+        let disabledReason = resolved.hasSelectionWithZeroActionable
+            ? " — \(L10n.t("Mục chọn không khả dụng"))"
+            : ""
+
+        HStack(spacing: compact ? 3 : 4) {
+            if !model.traySelection.isEmpty {
+                Button {
+                    model.traySelection.clear()
+                } label: {
+                    HStack(spacing: 3) {
+                        Text(isWide ? "\(L10n.t("Đã chọn "))\(model.traySelection.count)" : "✓\(model.traySelection.count)")
+                            .font(.system(size: compact ? 9.5 : 10, weight: .bold).monospacedDigit())
+                            .lineLimit(1)
+                            .fixedSize()
+                        Image(systemName: "xmark")
+                            .font(.system(size: 7.5, weight: .bold))
+                    }
+                    .foregroundStyle(resolved.hasSelectionWithZeroActionable ? .orange : accent)
+                    .padding(.horizontal, compact ? 5 : 7)
+                    .frame(height: 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous)
+                            .fill((resolved.hasSelectionWithZeroActionable ? Color.orange : accent).opacity(0.14))
+                    )
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .fixedSize()
+                .help(L10n.t("Bỏ chọn"))
+                .accessibilityLabel("\(L10n.t("Bỏ chọn")) (\(model.traySelection.count))")
+            }
+
+            trayActionPill(
+                title: L10n.t("Chia sẻ"),
+                symbol: "square.and.arrow.up",
+                prominent: actionEnabled,
+                compact: compact,
+                enabled: actionEnabled,
+                helpText: "\(L10n.t("Chia sẻ"))\(disabledReason)"
+            ) {
+                NotchSurfaceController.shared.shareTrayItems(targetActionable)
+            }
+
+            trayActionPill(
+                title: isWide ? L10n.t("Xem nhanh") : nil,
+                symbol: "eye",
+                compact: compact,
+                enabled: actionEnabled,
+                helpText: "\(L10n.t("Xem nhanh"))\(disabledReason)"
+            ) {
+                NotchSurfaceController.shared.quickLookTrayItems(targetActionable)
+            }
+
+            if let paneName = DropTrayBrowserBridge.activePaneName {
+                trayActionPill(
+                    title: L10n.t("Chép"),
+                    symbol: "doc.on.doc",
+                    compact: compact,
+                    enabled: actionEnabled,
+                    helpText: "\(L10n.t("Chép vào ngăn: "))\(paneName)\(disabledReason)"
+                ) {
+                    NotchSurfaceController.shared.sendTrayItemsToActivePane(targetActionable, copy: true)
+                }
+
+                trayActionPill(
+                    title: L10n.t("Chuyển"),
+                    symbol: "folder",
+                    compact: compact,
+                    enabled: actionEnabled,
+                    helpText: "\(L10n.t("Chuyển vào ngăn: "))\(paneName)\(disabledReason)"
+                ) {
+                    NotchSurfaceController.shared.sendTrayItemsToActivePane(targetActionable, copy: false)
+                }
+            } else if !batchActions.isEmpty {
+                Menu {
+                    ref29BatchActionMenuItems(batchActions)
+                } label: {
+                    HStack(spacing: compact ? 2.5 : 4) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.system(size: compact ? 9 : 9.5, weight: .semibold))
+                        Text(L10n.t("Xử lý"))
+                            .font(.system(size: compact ? 9.5 : 10.5, weight: .medium))
+                            .lineLimit(1)
+                            .fixedSize()
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 7.5, weight: .bold))
+                    }
+                    .foregroundStyle(.white.opacity(0.88))
+                    .padding(.horizontal, compact ? 6 : 8)
+                    .frame(height: 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous)
+                            .fill(Color.white.opacity(0.09))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge, style: .continuous)
+                                    .strokeBorder(Color.white.opacity(0.13), lineWidth: 0.5)
+                            )
+                    )
+                    .contentShape(Rectangle())
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help(L10n.t("Xử lý hàng loạt"))
+                .accessibilityLabel(L10n.t("Xử lý hàng loạt"))
+            }
+
+            Spacer(minLength: 0)
+
+            if isWide && model.traySelection.isEmpty {
+                Button {
+                    model.traySelection.selectAll(store.items.map(\.id))
+                } label: {
+                    Text(L10n.t("Chọn tất cả"))
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.72))
+                        .padding(.horizontal, 5)
+                        .frame(height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .fixedSize()
+                .help(L10n.t("Chọn tất cả"))
+            }
+        }
+        .frame(height: 28)
+    }
+
+    // MARK: Batch action titles / symbols / result line (B2d)
 
     private func title(_ a: NotchActions.Action) -> String {
         switch a {
@@ -863,74 +2186,6 @@ struct NotchSurfaceView: View {
         case .toPDF: return "doc.richtext"
         case .ocr: return "text.viewfinder"
         case .resize: return "arrow.down.right.and.arrow.up.left"
-        }
-    }
-
-    @ViewBuilder private var actionArea: some View {
-        if let t = model.task, t.isAwaitingReview {
-            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-                Text(L10n.t("Xem trước xử lý ảnh")).font(XFinderTokens.Font.caption)
-                ForEach(t.imageReviewRows, id: \.url) { row in
-                    HStack {
-                        Text(row.url.lastPathComponent).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
-                        if let p = row.preview?.plan {
-                            Text("\(p.uprightWidth)\(L10n.t(" × "))\(p.uprightHeight)\(L10n.t(" → "))\(p.outputWidth)\(L10n.t(" × "))\(p.outputHeight)\(L10n.t(" px"))")
-                                .foregroundStyle(row.preview?.willSkip == true ? .orange : .secondary)
-                        } else if let failure = row.failure {
-                            Text("\(L10n.t(failure.messageKey))\(failure.detail)").foregroundStyle(.orange).lineLimit(1)
-                        }
-                    }
-                    .font(XFinderTokens.Font.caption)
-                }
-                HStack {
-                    Button(L10n.t("Tạo bản mới")) { NotchSurfaceController.shared.confirmImageReview() }
-                        .buttonStyle(.borderedProminent).controlSize(.mini)
-                        .disabled(t.imageReviewRows.isEmpty)
-                    Button(L10n.t("Hủy")) { NotchSurfaceController.shared.cancelTask() }
-                        .buttonStyle(.bordered).controlSize(.mini)
-                }
-            }
-        } else if let t = model.task, t.isRunning {
-            HStack(spacing: XFinderTokens.Space.tight + 2) {
-                ProgressView(value: t.fraction).progressViewStyle(.linear).tint(.white)
-                Text("\(t.done + t.failed)/\(t.total)").font(XFinderTokens.Font.caption).monospacedDigit()
-                Button(L10n.t("Hủy")) { NotchSurfaceController.shared.cancelTask() }
-                    .buttonStyle(.bordered).controlSize(.mini)
-            }
-        } else {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: XFinderTokens.Space.tight) {
-                    ForEach(actions, id: \.self) { a in
-                        if case .resize = a {
-                            // N6 "Drop to apply · Hold for options" (OneNotch): a click runs the default preset,
-                            // press-and-hold lists the others. Menu(primaryAction:) is exactly that control.
-                            Menu {
-                                ForEach(ImageEngine.resizePresets, id: \.self) { px in
-                                    Button("\(L10n.t("Thu nhỏ ảnh còn "))\(px) px") { NotchSurfaceController.shared.run(.resize(maxPixels: px)) }
-                                }
-                            } label: {
-                                Label(title(a), systemImage: symbol(a)).labelStyle(.iconOnly)
-                            } primaryAction: {
-                                NotchSurfaceController.shared.run(a)
-                            }
-                            .menuStyle(.borderedButton).controlSize(.small).fixedSize()
-                            .help("\(title(a)) — \(L10n.t("Giữ để chọn cỡ hoặc định dạng."))")
-                        } else {
-                            Button { NotchSurfaceController.shared.run(a) } label: {
-                                Label(title(a), systemImage: symbol(a)).labelStyle(.iconOnly)
-                            }
-                            .buttonStyle(.bordered).controlSize(.small)
-                            .help(title(a))
-                        }
-                    }
-                }
-                if let t = model.task {
-                    resultLine(t)
-                    if let s = model.ocrSummary { Text(s).font(XFinderTokens.Font.caption).opacity(0.75).lineLimit(1) }
-                } else if let n = model.notice {
-                    Text(L10n.t(n)).font(XFinderTokens.Font.caption).opacity(0.65)
-                }
-            }
         }
     }
 
@@ -1027,31 +2282,219 @@ final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
 
 // MARK: - Shared tray pieces (also used by the detail grid window)
 
-/// Drags every staged file at once via `beginDraggingSession(with:)`.
+/// Compact thumbnail + name + status tile inside the expanded Dynamic Island Drop Tray.
+private struct NotchTrayFileCard: View {
+    let item: DropTrayStore.Item
+    let selected: Bool
+    let accent: Color
+    let dragPaths: [String]
+    let onClick: () -> Void
+    let onDoubleClick: () -> Void
+    let onQuickLook: () -> Void
+    let onShare: () -> Void
+    let onCopyToPane: () -> Void
+    let onMoveToPane: () -> Void
+    let onRemove: () -> Void
+
+    @State private var thumb: NSImage?
+
+    var body: some View {
+        let url: URL = URL(fileURLWithPath: item.path)
+        let traits: AccessibilityTraits = selected ? [.isButton, .isSelected] : .isButton
+        return cardTileCore
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onClick)
+            .contextMenu { cardContextMenu(url: url) }
+            .help(helpText)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(helpText)
+            .accessibilityAddTraits(traits)
+            .accessibilityAction { onClick() }
+            .task(id: item.path) {
+                await refreshThumbnail(url: url)
+            }
+    }
+
+    private var cardTileCore: some View {
+        let bgFill: Color = selected ? accent.opacity(0.28) : Color.white.opacity(0.07)
+        let borderColor: Color = selected ? accent : Color.white.opacity(0.11)
+        let borderWidth: CGFloat = selected ? 1.5 : 0.5
+        return VStack(spacing: 3) {
+            cardThumbnailBadge
+            cardNameAndStatus
+        }
+        .padding(.horizontal, 5)
+        .padding(.vertical, 4)
+        .frame(width: 82, height: 84)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(bgFill)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(borderColor, lineWidth: borderWidth)
+        )
+        .overlay {
+            if !dragPaths.isEmpty {
+                MultiFileDragSource(paths: dragPaths, onClick: onClick, onDoubleClick: onDoubleClick)
+            }
+        }
+    }
+
+    private var cardThumbnailBadge: some View {
+        let isUnavailable: Bool = item.status.isUnavailable
+        let badgeSymbol: String = isUnavailable ? "exclamationmark.triangle.fill" : "arrow.uturn.left.circle.fill"
+        let badgeColor: Color = isUnavailable ? .red : .orange
+        return ZStack(alignment: .bottomTrailing) {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(Color.white.opacity(0.08))
+            if let thumb {
+                Image(nsImage: thumb)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 44, height: 44)
+                    .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+            } else {
+                Image(nsImage: NSWorkspace.shared.icon(forFile: item.path))
+                    .resizable()
+                    .frame(width: 28, height: 28)
+            }
+            if item.status != .ready {
+                Image(systemName: badgeSymbol)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(badgeColor)
+                    .padding(2)
+                    .background(Circle().fill(Color.black.opacity(0.75)))
+                    .offset(x: 2, y: 2)
+            }
+        }
+        .frame(width: 44, height: 44)
+        .opacity(isUnavailable ? 0.45 : 1)
+    }
+
+    @ViewBuilder private var cardNameAndStatus: some View {
+        let isUnavailable: Bool = item.status.isUnavailable
+        Text(item.name)
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.white.opacity(isUnavailable ? 0.55 : 0.92))
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .frame(width: 72)
+
+        if let statusKey = item.status.statusKey {
+            Text(L10n.t(statusKey))
+                .font(.system(size: 8.5, weight: .semibold))
+                .foregroundStyle(isUnavailable ? .red : .orange)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(width: 72)
+        }
+    }
+
+    @ViewBuilder private func cardContextMenu(url: URL) -> some View {
+        if item.status.isActionable {
+            Button(L10n.t("Xem nhanh"), action: onQuickLook)
+            Button(L10n.t("Mở")) { NSWorkspace.shared.open(url) }
+            Button(L10n.t("Hiện trong Finder")) { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+            Button(L10n.t("Chia sẻ"), action: onShare)
+            if let paneName = DropTrayBrowserBridge.activePaneName {
+                Divider()
+                Button("\(L10n.t("Chép vào ngăn: "))\(paneName)", action: onCopyToPane)
+                Button("\(L10n.t("Chuyển vào ngăn: "))\(paneName)", action: onMoveToPane)
+            }
+            Divider()
+        }
+        Button(L10n.t("Bỏ khỏi khay"), action: onRemove)
+    }
+
+    @MainActor
+    private func refreshThumbnail(url: URL) async {
+        guard item.status.isActionable else {
+            thumb = nil
+            return
+        }
+        thumb = await FileThumbnailer.thumbnail(for: url)
+    }
+
+    private var helpText: String {
+        guard let key = item.status.statusKey else { return item.path }
+        if let detail = item.status.failureDetail {
+            return "\(item.name) — \(L10n.t(key)): \(detail)"
+        }
+        return "\(item.name) — \(L10n.t(key))"
+    }
+}
+
+/// Drags every staged/selected file at once via `beginDraggingSession(with:)`. Distinguishes click vs
+/// drag (4 pt threshold) when `onClick` is supplied, and notifies `NotchSurfaceController` so leaving
+/// the pointer during a drag-out session never closes the tray.
 struct MultiFileDragSource: NSViewRepresentable {
     let paths: [String]
+    var onClick: (() -> Void)? = nil
+    var onDoubleClick: (() -> Void)? = nil
 
     func makeNSView(context: Context) -> DragSourceView {
         let v = DragSourceView()
         v.paths = paths
+        v.onClick = onClick
+        v.onDoubleClick = onDoubleClick
         return v
     }
 
     func updateNSView(_ nsView: DragSourceView, context: Context) {
         nsView.paths = paths
+        nsView.onClick = onClick
+        nsView.onDoubleClick = onDoubleClick
     }
 
     final class DragSourceView: NSView {
         var paths: [String] = []
+        var onClick: (() -> Void)?
+        var onDoubleClick: (() -> Void)?
+
+        private var mouseDownEvent: NSEvent?
+        private var mouseDownPoint: NSPoint = .zero
+        private var startedDrag = false
 
         override func mouseDown(with event: NSEvent) {
-            guard !paths.isEmpty else { return super.mouseDown(with: event) }
-            let items: [NSDraggingItem] = paths.compactMap { path in
+            startedDrag = false
+            mouseDownEvent = event
+            mouseDownPoint = convert(event.locationInWindow, from: nil)
+            if onClick == nil {
+                startDragSession(with: event)
+            }
+        }
+
+        override func mouseDragged(with event: NSEvent) {
+            guard !startedDrag else { return }
+            let current = convert(event.locationInWindow, from: nil)
+            let dx = current.x - mouseDownPoint.x
+            let dy = current.y - mouseDownPoint.y
+            guard (dx * dx + dy * dy) >= 16 else { return }   // 4 pt threshold
+            startedDrag = true
+            startDragSession(with: mouseDownEvent ?? event)
+        }
+
+        override func mouseUp(with event: NSEvent) {
+            defer { mouseDownEvent = nil; startedDrag = false }
+            guard !startedDrag else { return }
+            if event.clickCount >= 2, let onDoubleClick {
+                onDoubleClick()
+            } else {
+                onClick?()
+            }
+        }
+
+        private func startDragSession(with event: NSEvent) {
+            let fm = FileManager.default
+            let validPaths = paths.filter { fm.fileExists(atPath: $0) && fm.isReadableFile(atPath: $0) }
+            guard !validPaths.isEmpty else { return }
+            let items: [NSDraggingItem] = validPaths.enumerated().map { idx, path in
                 let url = URL(fileURLWithPath: path) as NSURL
                 let item = NSDraggingItem(pasteboardWriter: url)
                 let icon = NSWorkspace.shared.icon(forFile: path)
-                // Every item needs a frame + image or the session shows nothing.
-                item.setDraggingFrame(NSRect(x: 0, y: 0, width: 48, height: 48), contents: icon)
+                let offset = CGFloat(min(idx, 4)) * 3
+                item.setDraggingFrame(NSRect(x: offset, y: offset, width: 44, height: 44), contents: icon)
                 return item
             }
             guard !items.isEmpty else { return }
@@ -1067,6 +2510,18 @@ extension MultiFileDragSource.DragSourceView: NSDraggingSource {
                          sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
         // `.copy` outside the app: the tray keeps its files — "Kéo ra sẽ sao chép file và giữ các mục trong khay".
         [.copy]
+    }
+
+    func draggingSession(_ session: NSDraggingSession, willBeginAt screenPoint: NSPoint) {
+        MainActor.assumeIsolated {
+            NotchSurfaceController.shared.beginDragOutSession()
+        }
+    }
+
+    func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
+        MainActor.assumeIsolated {
+            NotchSurfaceController.shared.endDragOutSession()
+        }
     }
 }
 
@@ -1094,26 +2549,50 @@ struct TrayFileTile: View {
                 }
             }
             .frame(width: 62, height: 62)
+            .opacity(item.status.isUnavailable ? 0.45 : 1)
 
             Text(item.name)
                 .font(XFinderTokens.Font.caption)
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .frame(width: 66)
+
+            if let statusKey = item.status.statusKey {
+                Text(L10n.t(statusKey))
+                    .font(.system(size: 9.5))
+                    .foregroundColor(item.status.isUnavailable ? .red : .orange)
+                    .lineLimit(1)
+                    .frame(width: 66)
+            }
         }
         .padding(5)
         .background(RoundedRectangle(cornerRadius: XFinderTokens.Radius.control).fill(XFinderTokens.Fill.inset))
-        .onDrag { NSItemProvider(contentsOf: url) ?? NSItemProvider() }
+        .onDrag {
+            guard item.status.isActionable else { return NSItemProvider() }
+            return NSItemProvider(contentsOf: url) ?? NSItemProvider()
+        }
         .contextMenu {
-            Button(L10n.t("Hiện trong Finder")) {
-                NSWorkspace.shared.activateFileViewerSelecting([url])
+            if item.status.isActionable {
+                Button(L10n.t("Xem nhanh")) { NotchSurfaceController.shared.quickLookTrayItems([item]) }
+                Button(L10n.t("Hiện trong Finder")) {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                }
+                Button(L10n.t("Mở")) { NSWorkspace.shared.open(url) }
+                Button(L10n.t("Chia sẻ")) { NotchSurfaceController.shared.shareTrayItems([item]) }
+                if let paneName = DropTrayBrowserBridge.activePaneName {   // XF-T41: what the browser Shelf used to do
+                    Divider()
+                    Button("\(L10n.t("Chép vào ngăn: "))\(paneName)") { NotchSurfaceController.shared.sendTrayItemsToActivePane([item], copy: true) }
+                    Button("\(L10n.t("Chuyển vào ngăn: "))\(paneName)") { NotchSurfaceController.shared.sendTrayItemsToActivePane([item], copy: false) }
+                }
+                Divider()
             }
-            Button(L10n.t("Mở")) { NSWorkspace.shared.open(url) }
-            Divider()
             Button(L10n.t("Bỏ khỏi khay"), action: onRemove)
         }
-        .help(item.path)
-        .task { thumb = await FileThumbnailer.thumbnail(for: url) }
+        .help(item.status.statusKey.map { "\(item.path)\n\(L10n.t($0))" } ?? item.path)
+        .task(id: item.path) {
+            guard item.status.isActionable else { thumb = nil; return }
+            thumb = await FileThumbnailer.thumbnail(for: url)
+        }
     }
 }
 
@@ -1177,9 +2656,9 @@ struct WaveformBars: View {
             let gap: CGFloat = 2
             let w = max(1, (size.width - gap * CGFloat(n - 1)) / CGFloat(n))
             for (i, l) in levels.enumerated() {
-                let h = max(2, CGFloat(l) * size.height)
+                let h = max(2.5, CGFloat(l) * size.height)
                 let r = CGRect(x: CGFloat(i) * (w + gap), y: (size.height - h) / 2, width: w, height: h)
-                ctx.fill(Path(roundedRect: r, cornerRadius: w / 2), with: .color(.white.opacity(0.85)))
+                ctx.fill(Path(roundedRect: r, cornerRadius: w / 2), with: .color(.white.opacity(0.92)))
             }
         }
         .accessibilityHidden(true)
@@ -1198,9 +2677,23 @@ struct NowPlayingSeekBar: View {
         GeometryReader { g in
             let shown = scrub ?? position
             let frac = duration > 0 ? max(0, min(1, shown / duration)) : 0
+            let playedWidth = max(4, g.size.width * frac)
             ZStack(alignment: .leading) {
-                Capsule().fill(XFinderTokens.Notch.progressTrack).frame(height: 4)
-                Capsule().fill(Color.white.opacity(0.9)).frame(width: max(4, g.size.width * frac), height: 4)
+                Capsule().fill(Color.white.opacity(0.12)).frame(height: 4)
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.85), Color.white],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: playedWidth, height: 4)
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 8, height: 8)
+                    .shadow(color: .black.opacity(0.4), radius: 2, y: 1)
+                    .offset(x: max(0, playedWidth - 4))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
@@ -1233,12 +2726,27 @@ private struct NotchLevelBar: View {
     var body: some View {
         let clamped = min(max(level, 0), 1)
         ZStack(alignment: .leading) {
-            Capsule().fill(Color.white.opacity(0.22))
-            Capsule().fill(Color.white).frame(width: width * clamped)
+            Capsule().fill(Color.white.opacity(0.18))
+            Capsule()
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white.opacity(0.9), Color.white],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(width: width * clamped)
         }
         .frame(width: width, height: height)
         .animation(XFinderTokens.Notch.level, value: clamped)
         .accessibilityElement()
         .accessibilityValue(Text("\(Int((clamped * 100).rounded()))%"))
     }
+}
+
+private final class LockedURLBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var urls: [URL] = []
+    func append(_ u: URL) { lock.lock(); urls.append(u); lock.unlock() }
+    func values() -> [URL] { lock.lock(); defer { lock.unlock() }; return urls }
 }

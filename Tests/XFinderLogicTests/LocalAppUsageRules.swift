@@ -1,0 +1,1 @@
+../../XFinder/Core/Notch/LocalAppUsageRules.swift

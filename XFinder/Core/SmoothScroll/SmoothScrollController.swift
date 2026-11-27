@@ -27,9 +27,10 @@ final class SmoothScrollController {
     var speed: Int { UserDefaults.standard.object(forKey: "smoothScroll.speed") as? Int ?? 100 }
     var smoothness: Int { UserDefaults.standard.object(forKey: "smoothScroll.smoothness") as? Int ?? 220 }
     var reverse: Bool { UserDefaults.standard.object(forKey: "smoothScroll.reverse") as? Bool ?? false }
+    var linear: Bool { UserDefaults.standard.object(forKey: "smoothScroll.linear") as? Bool ?? false }
 
     var settings: SmoothScrollRules.Settings {
-        SmoothScrollRules.Settings(enabled: enabled, speed: speed, smoothness: smoothness, reverse: reverse).clamped
+        SmoothScrollRules.Settings(enabled: enabled, speed: speed, smoothness: smoothness, reverse: reverse, linear: linear).clamped
     }
 
     @ObservationIgnored private var engine: SmoothScrollEngine?

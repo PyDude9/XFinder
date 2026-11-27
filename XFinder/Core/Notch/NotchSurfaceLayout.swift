@@ -1,4 +1,16 @@
 import Foundation
+
+enum NotchDisplayScale: String, CaseIterable, Sendable {
+    case small, regular, large
+
+    var widthAdjustment: CGFloat {
+        switch self {
+        case .small: -48
+        case .regular: 0
+        case .large: 72
+        }
+    }
+}
 import CoreGraphics
 
 /// Pure sizes, frames and trigger zones of the Notch surface, so the controller (window frame and
@@ -40,18 +52,29 @@ enum NotchSurfaceLayout {
         var nowPlayingPeekWing: CGFloat = 118
         /// Height of the peek strip below the notch.
         var peekDrop: CGFloat = 40
-        /// P1, measured on the owner's OneNotch screenshots (pt = px / 2 of the 700 × 745 window at 2×): every
-        /// expanded page has the same 32-pt top BAND (page dots in the left wing, the toolbar in the right one),
-        /// and one of two bodies — NARROW 382 × 168 (Now Playing; the tray and the calendar here) or WIDE
-        /// 612 × 182 (Clipboard, Agents). The calendar view is taller (188, estimated from a screenshot that is not
-        /// on disk). The width follows the page, never the content, so a page switch can only jump between two sizes.
+        /// Ref-29 shell geometry (650 × 228 wide / 420 × 228 narrow at a physical notch; 650 × 222 / 420 × 222
+        /// on notchless screens): top header (`32pt` notched / `26pt` plain, +`2pt` pad inside view),
+        /// `156pt` middle content container, and `36pt` bottom navigation bar (+`4pt` shell slack below header).
         var bandHeight: CGFloat = 32
+        var plainHeaderHeight: CGFloat = 26
         var narrowWidth: CGFloat = 382
         var wideWidth: CGFloat = 612
-        var narrowDrop: CGFloat = 136     // 168 − 32
-        var wideDrop: CGFloat = 150       // 182 − 32
-        /// The tools (calendar, timer, AI usage): 188 tall in OneNotch's views (estimated from screenshots), 188 − 32.
-        var toolDrop: CGFloat = 156
+        var narrowDrop: CGFloat = 196     // 228 − 32
+        var wideDrop: CGFloat = 196       // 228 − 32
+        var toolDrop: CGFloat = 196       // 228 − 32
+        var expandedBodyHeight: CGFloat = 156
+        var settingsBodyHeight: CGFloat = 322
+        var bottomNavHeight: CGFloat = 36
+        var shellBodySlack: CGFloat = 4
+
+        var settingsExtraHeight: CGFloat { settingsBodyHeight - expandedBodyHeight }
+
+        func resized(_ scale: NotchDisplayScale) -> Metrics {
+            var result = self
+            result.wideWidth += scale.widthAdjustment
+            result.narrowWidth += scale.widthAdjustment / 2
+            return result
+        }
         /// The expanded shape flares into the top edge: the top edge is 650 / 420 for a 612 / 382 body (measured),
         /// so 19 pt each side, settling within a few points of height. The flares sit OUTSIDE the content, so a hub
         /// at the notch is 2 × 19 pt wider than its body. A pointer tray has no top edge to flare into.
@@ -60,7 +83,19 @@ enum NotchSurfaceLayout {
         /// Measured per-row insets of the tall shapes fit a continuous corner of ≈ 30 (a circle needs r ≈ 35).
         var expandedBottomRadius: CGFloat = 30
 
-        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool { page == .clipboard || page == .agents || page == .aiUsage }
+        static func isWide(_ page: NotchSurfaceMachine.Page) -> Bool {
+            page == .files || page == .clipboard || page == .agents || page == .aiUsage
+        }
+
+        /// Internal page content budget inside `expandedBodyHeight` (`156pt`), verified per page by
+        /// `NotchSurfaceLayoutTests.testPageBudgetsFillTheirBodiesExactly`.
+        func contentBudget(for page: NotchSurfaceMachine.Page) -> CGFloat {
+            switch page {
+            case .nowPlaying: return 136
+            case .files, .clipboard, .agents: return 150
+            case .calendar, .timer, .aiUsage: return 156
+            }
+        }
 
         /// P1 page budgets. Two pages fill their body to the point, so the numbers live HERE, the views read them, and
         /// `testPageBudgetsFillTheirBodiesExactly` asserts they add up (P1 review: the two halves of each sum had lived in
@@ -119,9 +154,9 @@ enum NotchSurfaceLayout {
         /// Height of the body below the band.
         func expandedDrop(for page: NotchSurfaceMachine.Page) -> CGFloat {
             switch page {
-            case .clipboard, .agents: return wideDrop
+            case .files, .clipboard, .agents: return wideDrop
             case .calendar, .timer, .aiUsage: return toolDrop
-            case .files, .nowPlaying: return narrowDrop
+            case .nowPlaying: return narrowDrop
             }
         }
         /// Live activity strip (B4): extra width each side of the notch, and its depth below it.
@@ -212,7 +247,7 @@ enum NotchSurfaceLayout {
     static func size(for state: NotchSurfaceMachine.State, anchor: NotchSurfaceMachine.Anchor,
                      itemCount: Int, notch: CGRect, timerActive: Bool = false, nowPlayingActive: Bool = false,
                      agentActive: Bool = false, agentBusy: Bool = false, agentCount: Int = 1, pillOnPlainScreens: Bool = true,
-                     compactActivity: Bool = false, metrics m: Metrics = .standard) -> CGSize? {
+                     compactActivity: Bool = false, settingsPresented: Bool = false, metrics m: Metrics = .standard) -> CGSize? {
         switch state {
         case .activity where compactActivity:
             // Always drawn, also without the pill switch: the key was swallowed, so this is the only answer.
@@ -239,11 +274,12 @@ enum NotchSurfaceLayout {
         case .activity:
             return CGSize(width: notch.width + 2 * m.activityWing, height: notch.height + m.activityDrop)
         case .expanded(let page) where anchor == .pointer:
-            return CGSize(width: m.expandedWidth(for: page), height: m.bandHeight + m.expandedDrop(for: page))
+            return CGSize(width: m.expandedWidth(for: page), height: m.bandHeight + m.expandedDrop(for: page)
+                          + (settingsPresented ? m.settingsExtraHeight : 0))
         case .expanded(let page):
-            // The band is the notch's own strip — at least 32 pt, also on a screen without a notch.
+            let topClearance: CGFloat = (notch.height > 0) ? max(notch.height, m.bandHeight) : m.plainHeaderHeight
             return CGSize(width: max(m.expandedWidth(for: page), notch.width) + 2 * m.topFillet,
-                          height: max(notch.height, m.bandHeight) + m.expandedDrop(for: page))
+                          height: topClearance + m.expandedDrop(for: page) + (settingsPresented ? m.settingsExtraHeight : 0))
         }
     }
 
@@ -255,11 +291,12 @@ enum NotchSurfaceLayout {
                       itemCount: Int, notch: CGRect, screen: CGRect, visible: CGRect,
                       pointer: CGPoint, timerActive: Bool = false, nowPlayingActive: Bool = false,
                       agentActive: Bool = false, agentBusy: Bool = false, agentCount: Int = 1, pillOnPlainScreens: Bool = true,
-                      compactActivity: Bool = false, metrics m: Metrics = .standard) -> CGRect? {
+                      compactActivity: Bool = false, settingsPresented: Bool = false, metrics m: Metrics = .standard) -> CGRect? {
         guard let size = size(for: state, anchor: anchor, itemCount: itemCount, notch: notch,
                               timerActive: timerActive, nowPlayingActive: nowPlayingActive, agentActive: agentActive,
                               agentBusy: agentBusy, agentCount: agentCount,
-                              pillOnPlainScreens: pillOnPlainScreens, compactActivity: compactActivity, metrics: m) else { return nil }
+                              pillOnPlainScreens: pillOnPlainScreens, compactActivity: compactActivity,
+                              settingsPresented: settingsPresented, metrics: m) else { return nil }
         if case .expanded = state, anchor == .pointer {
             let centre = CGPoint(x: pointer.x, y: pointer.y - m.pointerGap - size.height / 2)
             return SurfaceGeometry.frame(size: size, anchor: .pointer(centre), screen: screen, visible: visible)
@@ -279,7 +316,7 @@ enum NotchSurfaceLayout {
     /// `setFrame` (the grow / shrink-after-0.32 s / union dance of D0c is gone with it). The transparent
     /// part of the window must let clicks through (measured with `NSWindow.windowNumber(at:)`), and the
     /// drop target / hit-tests use `frame(for:)` of the DRAWN state, never this frame.
-    static func panelSize(notch: CGRect, timerActive: Bool = false, metrics m: Metrics = .standard) -> CGSize {
+    static func panelSize(notch: CGRect, timerActive: Bool = false, settingsPresented: Bool = false, metrics m: Metrics = .standard) -> CGSize {
         let all: [WingItem] = [.agent, .files, .music, .timer]
         let fullWing = wingWidth(left: [.agent, .files], right: [.music, .timer], metrics: m)
         let widths: [CGFloat] = [
@@ -290,13 +327,14 @@ enum NotchSurfaceLayout {
         ]
         let drops: [CGFloat] = [m.narrowDrop, m.wideDrop, m.toolDrop, m.peekDrop, m.activityDrop]
         let band = max(notch.height, m.bandHeight)
-        return CGSize(width: widths.max() ?? 0, height: max(band + (drops.max() ?? 0), m.pillHeight))
+        let height = band + (drops.max() ?? 0) + (settingsPresented ? m.settingsExtraHeight : 0)
+        return CGSize(width: widths.max() ?? 0, height: max(height, m.pillHeight))
     }
 
     /// The fixed window frame at a notch (real or virtual): `panelSize`, centred on the notch, top glued to
     /// the screen's top edge, never wider than the screen.
-    static func panelFrame(notch: CGRect, screen: CGRect, metrics m: Metrics = .standard) -> CGRect {
-        let size = panelSize(notch: notch, metrics: m)
+    static func panelFrame(notch: CGRect, screen: CGRect, settingsPresented: Bool = false, metrics m: Metrics = .standard) -> CGRect {
+        let size = panelSize(notch: notch, settingsPresented: settingsPresented, metrics: m)
         let w = min(size.width, screen.width)
         return SurfaceGeometry.clamp(CGRect(x: notch.midX - w / 2, y: notch.maxY - size.height, width: w, height: size.height), into: screen)
     }

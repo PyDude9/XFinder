@@ -241,7 +241,7 @@ def browser() -> Node:
                  "Hoàn tác bền ⌘Z / Làm lại ⇧⌘Z (20 bước, 24 h, kiểm lại trước khi chạy); nhật ký chống ngắt + Báo cáo khôi phục",
                  "Đổi tên: một luật tên (rỗng, ':' '/', '.', ký tự điều khiển, 255 đơn vị NFD); chỉ đổi hoa/thường được; renamex_np không bao giờ đè",
                  "Đổi tên hàng loạt ⌃⌘R: Thay chữ · Thêm chữ · Định dạng (Tên và chỉ số / bộ đếm / ngày); một lỗi chặn cả lô; hoán đổi tên được; một ⌘Z",
-                 "Nén ZIP, Thêm vào Shelf, Chép/Chuyển sang ngăn kia, Cắt ⌘X kiểu Windows (tuỳ chọn), Thư mục mới chứa mục chọn, Tạo bí danh"]:
+                 "Nén ZIP, Thêm vào Khay thả (notch), Chép/Chuyển sang ngăn kia, Cắt ⌘X kiểu Windows (tuỳ chọn), Thư mục mới chứa mục chọn, Tạo bí danh"]:
         ops.add(line)
     return node
 
@@ -258,6 +258,7 @@ def notch() -> Node:
     for name in [n.strip() for n in pages[0].split(",")] if pages else []:
         p.add(names.get(name, name))
     for line in ["Peek / mở rộng; bấm huy hiệu mở trang theo `notch.clickOpens` (cố định · lần cuối · theo hoạt động)",
+                 "Khay thả (thay Shelf của trình duyệt, XF-T41): giữ tệp, kéo ra, Chép/Chuyển vào ngăn trình duyệt đang chọn, Đổi tên hàng loạt, Sao chép…/Di chuyển…, Nén ZIP, Mở tất cả, Bỏ vào Rác, báo tệp không còn",
                  "HUD âm lượng / độ sáng chen hàng đợi", "Ẩn trong ứng dụng toàn màn hình (`notch.fullscreenVisibility`)",
                  "Ghi chú mép (Edge notes): peek ở mép màn hình, ⌃⌥N, tự sao lưu hằng ngày",
                  "Hoạt động trực tiếp: Bluetooth, pin, SoC °C, GPU %, mạng…"]:

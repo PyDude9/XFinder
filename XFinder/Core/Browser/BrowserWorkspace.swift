@@ -69,6 +69,7 @@ struct WindowSnapshot: Codable, Equatable, Sendable {
     var tree: PaneTree
     var panes: [PaneSnapshot]
     var activePane: PaneID
+    /// Kept for the file format only: XF-T41 moved the browser Shelf into the notch's Drop Tray; always written false.
     var shelfVisible: Bool
     /// XF-T30 W1 — native window tabs: windows with the same `tabGroup` were one tab group, in `tabIndex` order;
     /// `selectedInGroup` marks the tab that was in front. nil for a window without tabs (and in v1 files).

@@ -27,7 +27,7 @@ enum BrowserCommand: String, CaseIterable, Sendable {
     case filter, find, editLocation, goToFolder, quickOpen, commandPalette
     case splitRight, splitLeft, splitDown, splitUp, closePane, equalizePanes, zoomPane, nextPane, previousPane
     case presetSingle, presetSideBySide, presetStacked, presetGrid
-    case copyToOtherPane, moveToOtherPane, addToShelf, toggleShelf, operations
+    case copyToOtherPane, moveToOtherPane, operations
     case batchRename, compress, saveWorkspace, openWorkspace, downloadNow, removeDownload, showInFinder, closeWindow
     case getInfo   // XF-T28 Wave 4: ⌘I, like Finder
     // XF-T30 W1 — pane tabs, window tabs, directional focus, keyboard resize, bars (contract XF-T30-w1-contract.md)
@@ -98,8 +98,6 @@ enum BrowserCommands {
         .previousPane: KeyChord("[", command: true, control: true),
         .copyToOtherPane: KeyChord("c", command: true, shift: true, control: true),
         .moveToOtherPane: KeyChord("m", command: true, shift: true, control: true),
-        .addToShelf: KeyChord("s", command: true, control: true),
-        .toggleShelf: KeyChord("b", command: true, option: true),
         .operations: KeyChord("o", command: true, option: true),
         .batchRename: KeyChord("r", command: true, control: true),
         .getInfo: KeyChord("i", command: true),
@@ -214,8 +212,6 @@ enum BrowserCommands {
         case .presetGrid: return "Lưới 2×2"
         case .copyToOtherPane: return "Sao chép sang ngăn kia"
         case .moveToOtherPane: return "Di chuyển sang ngăn kia"
-        case .addToShelf: return "Thêm vào Shelf"
-        case .toggleShelf: return "Hiện hoặc ẩn Shelf"
         case .operations: return "Hàng đợi thao tác"
         case .batchRename: return "Đổi tên hàng loạt"
         case .compress: return "Nén thành ZIP"

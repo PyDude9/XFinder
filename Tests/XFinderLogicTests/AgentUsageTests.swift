@@ -2,6 +2,41 @@ import XCTest
 
 /// §3b #37 — lines shaped exactly like the ones measured in ~/.claude/projects and ~/.codex/sessions (2026-10-13).
 final class AgentUsageTests: XCTestCase {
+    func testAntigravityQuotaAcceptsCurrentProviderFractionsAndRejectsExpiredWindows() throws {
+        let now = try Date("2026-11-27T00:00:00Z", strategy: .iso8601)
+        let data = Data("""
+            {"quota":{
+              "gemini-5h":{"remaining_fraction":0.42,"reset_time":"2026-11-27T01:00:00.000Z"},
+              "gemini-weekly":{"remaining_fraction":0.61,"reset_time":"2026-11-26T23:59:59Z"},
+              "credits":{"remaining_amount":24,"reset_time":"2026-11-27T01:00:00Z"},
+              "disabled":{"remaining_fraction":1,"disabled":true,"reset_time":"2026-11-27T01:00:00Z"}
+            }}
+            """.utf8)
+        let quota = AgentUsage.parseAntigravityQuota(data, capturedAt: now, now: now)
+        XCTAssertEqual(quota.map(\.id), ["gemini-5h"])
+        XCTAssertEqual(quota.first?.remaining, 0.42)
+        XCTAssertTrue(AgentUsage.parseAntigravityQuota(data, capturedAt: now.addingTimeInterval(-901), now: now).isEmpty)
+    }
+
+    func testGeminiSessionCountsOnlyRecordedModelTokens() throws {
+        let fixture = Data(#"{"sessionId":"abc","messages":[{"id":"a","type":"gemini","timestamp":"2026-11-27T00:00:00Z","tokens":{"input":120,"cached":20,"output":8}},{"id":"b","type":"user","timestamp":"2026-11-27T00:00:00Z","tokens":{"input":200,"output":10}}]}"#.utf8)
+        let lines = AgentUsage.parseGeminiSession(fixture)
+        let line = try XCTUnwrap(lines.first)
+        XCTAssertEqual(lines.count, 1)
+        XCTAssertEqual(line.input, 100)
+        XCTAssertEqual(AgentUsage.totals(lines + lines, since: .distantPast).output, 8)
+    }
+
+    func testAntigravityCountsFinalPlannerStepsAndDeduplicatesMirroredLogs() throws {
+        let fixture = #"{"type":"PLANNER_RESPONSE","status":"DONE","step_index":17,"created_at":"2026-11-27T00:00:00Z","input_tokens":420,"output_tokens":30,"cache_read_tokens":1200}"#
+        let line = try XCTUnwrap(AgentUsage.parseAntigravityStep(Data(fixture.utf8), conversation: "abc"))
+        let totals = AgentUsage.totals([line, line], since: .distantPast)
+        XCTAssertEqual(totals.messages, 1)
+        XCTAssertEqual(totals.input, 420)
+        XCTAssertEqual(totals.output, 30)
+        let checkpoint = fixture.replacingOccurrences(of: "PLANNER_RESPONSE", with: "CHECKPOINT")
+        XCTAssertNil(AgentUsage.parseAntigravityStep(Data(checkpoint.utf8), conversation: "abc"))
+    }
     typealias U = AgentUsage
 
     func claude(_ id: String, req: String = "r1", ts: String, out: Int, input: Int = 2, cr: Int = 100, cc: Int = 50) -> String {

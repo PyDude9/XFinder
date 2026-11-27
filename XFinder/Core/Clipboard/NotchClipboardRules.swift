@@ -198,4 +198,44 @@ enum NotchClipboardRules {
         guard let old, let new, old != new else { return false }
         return ids.contains(old) && ids.contains(new)
     }
+
+    // MARK: - Search placement across notch wing budgets (Ref-29)
+
+    enum SearchPlacement: Equatable, Sendable {
+        case header(maxWidth: Double)
+        case contentRow(idleMaxWidth: Double, activeMinWidth: Double, activeMaxWidth: Double)
+
+        var isContentRow: Bool {
+            if case .contentRow = self { return true }
+            return false
+        }
+    }
+
+    /// Minimum inline search pill width beside `"Clipboard"` in a notch wing (~56 pt pill chrome + ~96 pt text area
+    /// so localized placeholders like `"Tìm kiếm (⌘F)…"` and real queries are never starved to a few characters).
+    static let minHeaderSearchWidth: Double = 152
+
+    /// Chooses header placement on notch-less displays (full width available) or ultra-wide wings, and moves the
+    /// active search field down onto the full-width Clipboard content row whenever a hardware notch leaves too
+    /// little wing space for comfortable input.
+    static func searchPlacement(
+        onPhysicalNotch: Bool,
+        isWide: Bool,
+        bodyWidth: Double,
+        notchWidth: Double,
+        titleReservedWidth: Double = 70
+    ) -> SearchPlacement {
+        guard onPhysicalNotch else {
+            return .header(maxWidth: isWide ? 280 : 165)
+        }
+        let wingWidth = max(56, (bodyWidth - notchWidth - 28) / 2)
+        let available = max(0, wingWidth - titleReservedWidth)
+        if available >= minHeaderSearchWidth {
+            return .header(maxWidth: min(isWide ? 260 : 165, available))
+        }
+        if isWide {
+            return .contentRow(idleMaxWidth: 260, activeMinWidth: 240, activeMaxWidth: 400)
+        }
+        return .contentRow(idleMaxWidth: 165, activeMinWidth: 165, activeMaxWidth: 260)
+    }
 }

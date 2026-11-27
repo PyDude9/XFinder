@@ -49,8 +49,6 @@ final class BrowserCommandsTests: XCTestCase {
         .previousPane: KeyChord("[", command: true, control: true),
         .copyToOtherPane: KeyChord("c", command: true, shift: true, control: true),
         .moveToOtherPane: KeyChord("m", command: true, shift: true, control: true),
-        .addToShelf: KeyChord("s", command: true, control: true),
-        .toggleShelf: KeyChord("b", command: true, option: true),
         .operations: KeyChord("o", command: true, option: true),
         .batchRename: KeyChord("r", command: true, control: true),
         .getInfo: KeyChord("i", command: true),   // XF-T28 Wave 4

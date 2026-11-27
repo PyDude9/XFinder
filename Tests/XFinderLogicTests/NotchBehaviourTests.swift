@@ -7,11 +7,11 @@ final class NotchBehaviourTests: XCTestCase {
     typealias S = NotchSurfaceMachine.Settings
 
     func testHoverSpeedMapsToDwellAndUnknownReadsAsMedium() {
-        XCTAssertEqual(S.hoverDwell(forSpeed: "fast"), 0.12)
-        XCTAssertEqual(S.hoverDwell(forSpeed: "medium"), 0.25)
-        XCTAssertEqual(S.hoverDwell(forSpeed: "slow"), 0.5)
-        XCTAssertEqual(S.hoverDwell(forSpeed: "turbo"), 0.25, "a value from a future build must not read as 0 s")
-        XCTAssertEqual(S.hoverDwell(forSpeed: ""), 0.25)
+        XCTAssertEqual(S.hoverDwell(forSpeed: "fast"), 0.06)
+        XCTAssertEqual(S.hoverDwell(forSpeed: "medium"), 0.14)
+        XCTAssertEqual(S.hoverDwell(forSpeed: "slow"), 0.35)
+        XCTAssertEqual(S.hoverDwell(forSpeed: "turbo"), 0.14, "a value from a future build must not read as 0 s")
+        XCTAssertEqual(S.hoverDwell(forSpeed: ""), 0.14)
         XCTAssertEqual(S.hoverDwell(forSpeed: "medium"), S().hoverDwell, "the picker's default equals the machine's default")
         XCTAssertLessThan(S.hoverDwell(forSpeed: "fast"), S.hoverDwell(forSpeed: "slow"))
     }

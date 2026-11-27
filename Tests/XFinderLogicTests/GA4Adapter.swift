@@ -1,0 +1,1 @@
+../../XFinder/Core/WebsiteAnalytics/GA4Adapter.swift

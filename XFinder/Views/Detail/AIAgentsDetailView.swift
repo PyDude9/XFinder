@@ -33,6 +33,7 @@ struct AIAgentsDetailView: View {
     // P2 — Claude Code statusLine (5h/7d usage %), a settings-only opt-in.
     @State private var statusLineState: AgentSessionMonitor.StatusLineState = .notInstalled
     @State private var statusLineNotice: String?
+    @State private var antigravitySetupNotice: String?
     // P7a — windowless Claude Code sessions hosted by XFinder itself.
     @State private var windowlessFolder: URL?
     @State private var windowlessMessage = ""
@@ -67,6 +68,7 @@ struct AIAgentsDetailView: View {
                 }
 
                 notchSection
+                googleUsageSection
                 replySection
                 windowlessSection
                 crewSection
@@ -84,6 +86,7 @@ struct AIAgentsDetailView: View {
         }
         .background(XFinderTokens.Settings.contentBackground)
         .onAppear {
+            AgentUsageMonitor.shared.refresh()
             refreshHookStates()
             statusLineState = AgentSessionMonitor.shared.statusLineState()
             loadRecent()
@@ -809,6 +812,97 @@ struct AIAgentsDetailView: View {
         }
         refreshHookStates()
         NotchSurfaceController.shared.applySettings()
+    }
+
+    private var googleUsageSection: some View {
+        let snapshot = AgentUsageMonitor.shared.snapshot
+        return SettingsSection(
+            title: L10n.t("Sử dụng AI · Gemini CLI và Antigravity"),
+            footer: L10n.t("Token được đọc từ nhật ký phiên trên máy. Hạn mức tài khoản Antigravity đến từ statusLine của CLI.")
+        ) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                HStack {
+                    Text("Antigravity CLI").font(XFinderTokens.Font.row)
+                    Spacer()
+                    Button(L10n.t("Làm mới")) { AgentUsageMonitor.shared.refresh() }
+                }
+                googleTokenSummary(today: snapshot.antigravityToday, week: snapshot.antigravity7d, last: snapshot.antigravityLastEvent)
+                if !snapshot.antigravityQuota.isEmpty {
+                    AntigravityQuotaRows(buckets: snapshot.antigravityQuota)
+                    if let captured = snapshot.antigravityQuotaAt {
+                        Text(L10n.t("Cập nhật ") + captured.formatted(date: .omitted, time: .shortened))
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                } else {
+                    Text(L10n.t("Đang chờ hạn mức tài khoản từ Antigravity CLI."))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Button(L10n.t("Sao chép lệnh Antigravity")) { copyAntigravityUsageCommand() }
+                if let antigravitySetupNotice {
+                    Text(antigravitySetupNotice).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .settingsRow()
+            SettingsDivider()
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                Text("Gemini CLI").font(XFinderTokens.Font.row)
+                googleTokenSummary(today: snapshot.geminiToday, week: snapshot.gemini7d, last: snapshot.geminiLastEvent)
+                Text(L10n.t("Xem hạn mức tài khoản trong CLI") + " · /stats model")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .settingsRow()
+        }
+    }
+
+    private func googleTokenSummary(today: AgentUsage.Totals, week: AgentUsage.Totals, last: Date?) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            if let last {
+                googleTokenLine(L10n.t("Hôm nay"), totals: today)
+                googleTokenLine(L10n.t("7 ngày"), totals: week)
+                Text(L10n.t("Lần dùng gần nhất: ") + last.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                Text(L10n.t("Chưa có dữ liệu token cục bộ trong 7 ngày."))
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func googleTokenLine(_ period: String, totals: AgentUsage.Totals) -> some View {
+        let input = totals.input.formatted()
+        let output = totals.output.formatted()
+        return Text("\(period) · \(L10n.t("Token vào")) \(input) · \(L10n.t("Token ra")) \(output)")
+            .font(.caption.monospacedDigit())
+    }
+
+    private func copyAntigravityUsageCommand() {
+        do {
+            guard let resource = Bundle.main.url(forResource: "xfinder-antigravity-statusline", withExtension: "js") else {
+                throw CocoaError(.fileNoSuchFile)
+            }
+            let directory = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent("Library/Application Support/XFinder/AI Usage", isDirectory: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
+                                                    attributes: [.posixPermissions: 0o700])
+            let script = directory.appendingPathComponent(resource.lastPathComponent)
+            try Data(contentsOf: resource).write(to: script, options: .atomic)
+            let config = ["statusLine": [
+                "type": "command",
+                "command": "/usr/bin/osascript -l JavaScript " + Self.shellQuote(script.path),
+                "stack_with_default": true
+            ]]
+            let data = try JSONSerialization.data(withJSONObject: config)
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString("agy --settings " + Self.shellQuote(String(decoding: data, as: UTF8.self)), forType: .string)
+            antigravitySetupNotice = L10n.t("Đã sao chép. Chạy lệnh trong Terminal rồi mở /usage để cập nhật hạn mức.")
+        } catch {
+            antigravitySetupNotice = L10n.t("Không chuẩn bị được lệnh Antigravity.")
+        }
+    }
+
+    private static func shellQuote(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "'\"'\"'") + "'"
     }
 
     private var usageSection: some View {

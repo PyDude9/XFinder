@@ -2359,3 +2359,28 @@ Live verification: Installed `/Applications/XFinder.app` PID 30423 (arm64, signe
 - Atlas Debug arm64 build passed. Full logic suite ran 3,395 tests with one skip and zero failures. Seven gates reported `TOTAL 0` and the result was `GATE: green`. The UI token gate matched zero files.
 - Atlas screenshots showed the Notes empty state, Capture screen recording permission state and Units input over the three deep links. Accessibility could not inspect Settings. Toggle, editing, copy and actual capture remain unverified.
 
+# 2026-11-27 · Notch and Full Settings closure integration
+
+- Branch: `agent/antigravity-vorssaint-phase1`; branch note: `docs/branches/agent-antigravity-vorssaint-phase1.md`.
+- Integrated the current Notch, Full Settings, Stocks, Revenue, Website Analytics, AI Usage, timer, monitor, calendar, Drop Tray, browser and sidebar work with feature specs and regression tests. Provider configuration now remains reachable from the Notch after setup; inline Settings adds Revenue and Website Analytics; Audio settings routes to System.
+- `sh scripts/gate-all.sh`: build OK; 3,581 tests, 1 skipped, 0 failures; localization and UI audits all `TOTAL 0`; `GATE: green`.
+- `plutil -lint XFinder.xcodeproj/project.pbxproj`: OK. Clean staged-index checkout `build-and-check.sh`: `BUILD SUCCEEDED`, arm64, bundled resources and local signing checks passed. Output: `/tmp/xfinder-index-build.qEnAYe/out/XFinder.app`.
+- `git diff --check`: OK after trimming a trailing blank line in the Analytics spec.
+- Live behavior not verified: menu-bar icon placement, OAuth/provider credentials, live quotes, physical lid-close behavior, and in-app interactions. `XFinder/Info.plist` has existing camera/reminders edits that remain unstaged because that file is restricted by project procedure.
+- Orchestration check returned `No messages`. Prior weather worktree is still separate; its gate was green at 3,211 tests, but it is not merged here.
+
+Gate output:
+```text
+build (arm64, compile list)        OK
+tests                              Executed 3581 tests, with 1 test skipped and 0 failures (0 unexpected) in 48.286 (48.646) seconds
+check-l10n-coverage                TOTAL 0 problems across 4881 entries (4881 checked, 45 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 4881 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 2531 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 51 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             298
+GATE: green
+```
+

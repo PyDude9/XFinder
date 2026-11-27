@@ -44,6 +44,26 @@ final class LiveActivityTests: XCTestCase {
 
     func item(_ k: A.Kind, _ key: String) -> A.Item { A.Item(kind: k, symbol: "x", titleKey: key, detail: nil, tint: .neutral) }
 
+    func testCancelQueuedLocalMessagePreservesUnrelatedActivity() {
+        var queue = A.Queue()
+        let meeting = item(.meeting, "meeting")
+        let network = item(.network, "network")
+        let messageID = UUID()
+        var message = item(.localMessage, "message")
+        message.localMessageID = messageID
+        queue.push(meeting)
+        queue.push(message)
+        queue.push(network)
+
+        queue.removePendingLocalMessage(id: UUID())
+        XCTAssertEqual(queue.localMessageID, messageID)
+        queue.removePendingLocalMessage(id: messageID)
+
+        XCTAssertNil(queue.localMessageID)
+        XCTAssertEqual(queue.current, meeting)
+        XCTAssertEqual(queue.advance(), network)
+    }
+
     func testSameKindReplacesSoFlappingNeverStacks() {
         var q = A.Queue()
         q.push(item(.network, "lost"))

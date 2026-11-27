@@ -45,7 +45,7 @@ struct NotchInterfaceDetailView: View {
     private static let tabDragType = UTType(importedAs: "com.xfinder.app.island-tab")
 
     private enum InlineSection: String, CaseIterable {
-        case general, display, tabs, appearance, stocks, about
+        case general, display, tabs, appearance, stocks, revenue, websiteAnalytics, about
 
         var title: String {
             switch self {
@@ -54,6 +54,8 @@ struct NotchInterfaceDetailView: View {
             case .tabs: L10n.t("Các tab")
             case .appearance: L10n.t("Giao diện")
             case .stocks: L10n.t("Chứng khoán")
+            case .revenue: L10n.t("Doanh thu")
+            case .websiteAnalytics: L10n.t("Phân tích web")
             case .about: L10n.t("Giới thiệu")
             }
         }
@@ -65,6 +67,8 @@ struct NotchInterfaceDetailView: View {
             case .tabs: "rectangle.bottomthird.inset.filled"
             case .appearance: "paintbrush"
             case .stocks: "chart.line.uptrend.xyaxis"
+            case .revenue: "banknote.fill"
+            case .websiteAnalytics: "chart.bar.xaxis"
             case .about: "info.circle"
             }
         }
@@ -253,6 +257,9 @@ struct NotchInterfaceDetailView: View {
                     case .appearance: appearanceSection
                     case .stocks: stocksWatchlistSection
                         .onAppear { reloadStocksWatchlistForm() }
+                    case .revenue: revenueConnectionsSection
+                        .onAppear { reloadRevenueConnectionForms() }
+                    case .websiteAnalytics: WebsiteAnalyticsSettingsPage(inline: true)
                     case .about:
                         VStack(alignment: .leading, spacing: 8) {
                             Text("XFinder").font(.headline)
@@ -372,14 +379,18 @@ struct NotchInterfaceDetailView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(L10n.t(id.titleKey)).lineLimit(1)
                 if let subtitle = readinessSubtitle(for: readiness) {
-                    Text(subtitle).font(.caption2).foregroundStyle(.orange).lineLimit(1)
+                    Text(subtitle).font(XFinderTokens.Font.caption).foregroundStyle(.orange).lineLimit(1)
                 }
             }
             Spacer(minLength: 2)
             if let target = configureDestination(for: id, readiness: readiness) {
                 Button(L10n.t("Cấu hình…")) {
-                    NotchSurfaceController.shared.dismiss()
-                    AppState.shared.navigate(to: target)
+                    if embeddedInNotch, let section = inlineConfigurationSection(for: id) {
+                        inlineSection = section
+                    } else {
+                        NotchSurfaceController.shared.dismiss()
+                        AppState.shared.navigate(to: target)
+                    }
                 }
                 .buttonStyle(.link)
             }
@@ -395,7 +406,7 @@ struct NotchInterfaceDetailView: View {
         }
         .font(XFinderTokens.Font.caption)
         .padding(.horizontal, 6)
-        .frame(minHeight: 30)
+        .frame(minHeight: XFinderTokens.Settings.rowMinHeight)
         .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge))
         .onDrop(of: [Self.tabDragType], isTargeted: nil) { _ in
             guard let source = draggedTab else { return false }
@@ -1130,13 +1141,16 @@ struct NotchInterfaceDetailView: View {
     }
 
     private func configureDestination(for id: NotchDestinationID, readiness: NotchDestinationReadiness) -> SidebarDestination? {
-        switch readiness {
-        case .ready:
-            return nil
-        case .featureDisabled(let target):
-            return SidebarDestination(rawValue: target)
-        case .unconfigured:
-            return nil
+        guard let target = id.settingsTarget(for: readiness) else { return nil }
+        return SidebarDestination(rawValue: target)
+    }
+
+    private func inlineConfigurationSection(for id: NotchDestinationID) -> InlineSection? {
+        switch id {
+        case .stocks: return .stocks
+        case .revenue: return .revenue
+        case .websiteAnalytics: return .websiteAnalytics
+        default: return nil
         }
     }
 }

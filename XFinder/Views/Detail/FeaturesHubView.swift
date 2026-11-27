@@ -91,8 +91,9 @@ struct FeaturesHubView: View {
             }
 
             ForEach(FeatureGroup.allCases, id: \.self) { group in
-                SettingsSection(title: L10n.t(group.titleKey)) {
-                    let items = FeatureCatalog.features(in: group)
+                let items = FeatureCatalog.features(in: group)
+                let onCount = items.filter { hub.isOn($0) }.count
+                SettingsSection(title: "\(L10n.t(group.titleKey)) (\(onCount)/\(items.count))") {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, f in
                         featureRow(f)
                             .settingsRow()
@@ -178,9 +179,13 @@ struct FeaturesHubView: View {
             }
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
 
-            Button(on ? L10n.t("Tắt") : L10n.t("Bật")) { hub.set(f.id, on: !on) }
-                .controlSize(.small)
-                .frame(minWidth: 52)
+            Toggle("", isOn: Binding(
+                get: { hub.isOn(f) },
+                set: { hub.set(f.id, on: $0) }
+            ))
+            .toggleStyle(.switch)
+            .controlSize(.small)
+            .labelsHidden()
         }
         .padding(.vertical, XFinderTokens.Space.row)
     }

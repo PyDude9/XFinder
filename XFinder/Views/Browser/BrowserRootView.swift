@@ -37,9 +37,6 @@ struct BrowserRootView: View {
                 }
             }
 
-            if model.shelfVisible {
-                ShelfBarView(model: model)
-            }
         }
         .frame(minWidth: Self.minimumSize.width, minHeight: Self.minimumSize.height)
         .overlay(alignment: .bottomTrailing) {

@@ -4,6 +4,7 @@ import LocalAuthentication
 import NaturalLanguage
 import SwiftUI
 import ImageIO
+import os
 
 /// The Notch surface — one floating surface that lives at the notch (or the top centre of a screen
 /// without one). Phase B1 hosts the file shelf (Khay thả); later phases add pages to it.
@@ -27,6 +28,8 @@ import ImageIO
 @Observable
 final class NotchSurfaceController {
     static let shared = NotchSurfaceController()
+    private static let perfLog = Logger(subsystem: "com.xfinder.app", category: "perf")
+    private var loggedFirstIslandOpen = false
 
     /// SwiftUI-facing state; the view reads this, never the machine.
     let model = NotchSurfaceModel()
@@ -57,10 +60,15 @@ final class NotchSurfaceController {
     private var shakePoint: CGPoint = .zero
     /// The anchor the panel is currently drawn at; an anchor change jumps instead of animating.
     private var renderedAnchor: NotchSurfaceMachine.Anchor = .notch
+    private var renderedDisplayID: UInt32?
+    private var isSystemSleeping = false
 
     // Drag / shake tracking — only populated while the left button is down.
     private var dragSession = NotchDragSession(currentChangeCount: NSPasteboard(name: .drag).changeCount)
     private var samples: [(point: CGPoint, time: Date)] = []
+    private var isDragOutActive = false
+    private var isDropTargeted = false
+    private var isDropImporting = false
     // Hover / leave tracking.
     private var zoneEnteredAt: Date?
     private var leftAt: Date?
@@ -69,6 +77,25 @@ final class NotchSurfaceController {
 
     private init() {
         machine.itemCount = DropTrayStore.shared.items.count
+        NotchMessageModel.shared.onShowNotice = { [weak self] payload in
+            self?.showLocalMessage(payload)
+        }
+        NotchMessageModel.shared.onDismissNotice = { [weak self] id in
+            self?.dismissLocalMessage(id: id)
+        }
+        let feedback = NotchFeedbackModel.shared
+        feedback.onCopyText = { text in
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            return pasteboard.setString(text, forType: .string)
+        }
+        feedback.onOpenIssuesPage = { NSWorkspace.shared.open($0) }
+        feedback.onOpenDiagnostics = { [weak self] in
+            self?.dismiss()
+            AppState.shared.navigate(to: .about)
+            return true
+        }
+        model.todos.onRequestPanelKey = { [weak self] in self?.ensurePanelKeyForKeyboard() }
         DropTrayStore.shared.onItemsChanged = { [weak self] count in
             self?.dispatch(.itemsChanged(count: count))
         }
@@ -126,30 +153,146 @@ final class NotchSurfaceController {
         }
     }
     private var settings: NotchSurfaceMachine.Settings {
-        NotchSurfaceMachine.Settings(enabled: enabled, hoverToPeek: hoverEnabled, hoverOpens: NotchHoverOpen.parse(hoverOpensRaw),
-                                     agentNeedsYou: model.agentsNeedingYou > 0, lastPage: lastHubPage, shownPages: model.pages,
+        let visible = model.tabCatalog.visibleDestinations(availability: destinationAvailability)
+        return NotchSurfaceMachine.Settings(enabled: enabled, hoverToPeek: hoverEnabled, hoverOpens: NotchHoverOpen.parse(hoverOpensRaw),
+                                     agentNeedsYou: model.agentsNeedingYou > 0, lastPage: lastHubPage,
+                                     shownPages: model.tabCatalog.visibleLegacyPages(availability: destinationAvailability),
+                                     allDestinationsHidden: visible.isEmpty,
                                      nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
                                      activityHoldsHover: !(model.activity?.buttons.isEmpty ?? true),
-                                     composing: model.agentReplyTarget != nil || model.newWindowlessOpen,
+                                     composing: model.agentReplyTarget != nil || model.newWindowlessOpen || (model.extraModule == .weather && model.isSearchingWeatherCity) || (model.extraModule == .stocks && model.isSearchingStock) || (model.extraModule == .reminders && (model.isCreatingReminder || remindersViewModel?.isRequestingAccess == true)) || (model.extraModule == .teleprompter && model.isEditingTeleprompter) || ([.notes, .units, .scratchpad, .emoji, .links].contains(model.extraModule) && model.isEditingUtility) || (model.extraModule == .websiteAnalytics && websiteAnalyticsViewModel?.isShowingConfiguration == true) || (model.extraModule == .message && NotchMessageModel.shared.isComposing) || (model.extraModule == .feedback && NotchFeedbackModel.shared.isComposing) || (model.extraModule == .localChat && (NotchLocalChatModel.shared.isComposing || NotchLocalChatModel.shared.isGenerating)) || (model.extraModule == .todos && model.todos.isComposing) || (model.extraModule == .imageConvert && (model.imageConvert.state.isRunning || model.imageConvert.isPickingFiles)),
+                                     dragging: (NSEvent.pressedMouseButtons & 1 == 1) || isDragOutActive || isDropTargeted || isDropImporting,
+                                     pinned: model.isPinned,
                                      agentEdgeHover: agentEdgeHover, pointerOnAgentEdge: pointerOnAgentEdge,
                                      dragIntoNotchOpens: notchDropEnabled, shakeOpens: shakeEnabled,
                                      hoverDwell: NotchSurfaceMachine.Settings.hoverDwell(forSpeed: hoverSpeed))
     }
 
-    /// Something is on the collapsed surface (badge or pill): files, a countdown, a track.
-    private var badgeShown: Bool { machine.itemCount > 0 || countdown != nil || NowPlayingMonitor.shared.hasTrack || model.agentActive }
+    /// Single highest-priority signal rendered on the collapsed Dynamic Island / external pill.
+    private var collapsedProjection: NotchCollapsedSignal.WingProjection {
+        let visibleSet = Set(model.tabCatalog.visibleDestinations(availability: destinationAvailability))
+        let badge = clockSuite.collapsedBadge(at: Date())
+        let signal = NotchCollapsedSignal.resolve(
+            itemCount: machine.itemCount,
+            timerActive: badge != nil,
+            timerPaused: badge?.isPaused == true,
+            nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
+            nowPlayingPlaying: model.nowPlaying?.playing == true,
+            agentActive: model.agentActive,
+            agentBusy: model.agentBusy,
+            agentsNeedingYou: model.agentsNeedingYou,
+            visibleDestinations: visibleSet
+        )
+        return signal.projection(agentCount: model.agentCount)
+    }
+
+    /// Something is on the collapsed surface (badge or pill): the single highest-priority active signal.
+    private var badgeShown: Bool { collapsedProjection.isVisible }
 
     /// P10 — the ONE reader of `notch.agentEdgeHover` (OneNotch's "AI edge": point at the agent wing to open the agents).
     private var agentEdgeHover: Bool { UserDefaults.standard.object(forKey: "notch.agentEdgeHover") as? Bool ?? true }
     /// P10 — set on every pointer tick, read by the machine through `settings`.
     private var pointerOnAgentEdge = false
 
-    /// D1 #44 — the ONE reader of `notch.pages` (order + visibility, a comma list).
+    /// D1 #44 — the ONE reader of `notch.pages` (order + visibility, a comma list; kept as legacy migration input).
     private var pageOrderRaw: String { UserDefaults.standard.string(forKey: "notch.pages") ?? "files,clipboard,nowPlaying,agents,calendar,timer,aiUsage" }
+    /// XF-ISLAND-C — the ONE reader of `notch.tabCatalog.v1` (unified ordered visibility for legacy + extra modules).
+    private var tabCatalogRaw: String { UserDefaults.standard.string(forKey: "notch.tabCatalog.v1") ?? "" }
     /// D1 #47 — the ONE reader of `notch.accent`.
     private var accentName: String { UserDefaults.standard.string(forKey: "notch.accent") ?? "system" }
     /// For the ⌘⇧V router: a hidden clipboard tab means the hotkey falls back to the floating shelf.
-    var showsClipboardPage: Bool { model.pages.contains(.clipboard) }
+    var showsClipboardPage: Bool { model.tabCatalog.isEnabled(.clipboard) }
+
+    /// Live runtime readiness for every destination (decoupled from user enable/disable preference).
+    var destinationAvailability: NotchDestinationAvailability {
+        NotchDestinationAvailability(
+            nowPlayingReady: model.nowPlayingAvailability != .off,
+            agentsReady: model.agentsEnabled,
+            calendarReady: model.calendarEnabled,
+            weatherConfigured: isWeatherAvailable,
+            stocksConfigured: isStocksAvailable,
+            revenueConfigured: isRevenueAvailable
+        )
+    }
+
+    private func resolvedCatalog() -> NotchTabCatalogState {
+        let rawCatalog = tabCatalogRaw
+        let legacyRaw = UserDefaults.standard.string(forKey: NotchPages.key)
+        return NotchDestinationCatalog.parse(
+            catalogRaw: rawCatalog.isEmpty ? nil : rawCatalog,
+            legacyPagesRaw: legacyRaw
+        )
+    }
+
+    private func activeDestinationID() -> NotchDestinationID? {
+        if let extra = machine.activeExtra {
+            return NotchDestinationID(extra: extra)
+        }
+        if case .expanded(let page) = machine.state {
+            return NotchDestinationID(page: page)
+        }
+        return nil
+    }
+
+    private func reconcileActiveDestinationIfNeeded() {
+        let avail = destinationAvailability
+        model.destinationAvailability = avail
+        guard case .expanded = machine.state else { return }
+        if machine.activeExtra == .sections || machine.activeExtra == .settings { return }
+        let current = activeDestinationID() ?? .files
+        let stillOpenable = model.tabCatalog.isOpenable(current, availability: avail)
+        if !stillOpenable || (machine.showingAllHiddenRecovery && !model.tabCatalog.visibleDestinations(availability: avail).isEmpty) {
+            let fallbackID = model.tabCatalog.fallbackDestination(from: current, availability: avail)
+            dispatch(.reconcileVisibility(fallback: fallbackID?.destination, allowAllHiddenRecovery: true))
+        }
+    }
+
+    func openNotchSettings() {
+        dismiss()
+        AppState.shared.navigate(to: .notchInterface)
+    }
+
+    private var notchSettingsReturnDestination: NotchDestinationID?
+
+    func openInlineNotchSettings(showStocks: Bool = false) {
+        guard enabled else { openNotchSettings(); return }
+        guard machine.activeExtra != .settings else { return }
+        notchSettingsReturnDestination = machine.showingAllHiddenRecovery ? nil : activeDestinationID()
+        model.inlineSettingsShowsStocks = showStocks
+        dispatch(.openExtra(.settings))
+        ensurePanelKeyForKeyboard()
+    }
+
+    func returnFromInlineNotchSettings() {
+        guard machine.activeExtra == .settings else { return }
+        let available = destinationAvailability
+        let destination = notchSettingsReturnDestination.flatMap {
+            model.tabCatalog.fallbackDestination(from: $0, availability: available)
+        } ?? model.tabCatalog.visibleDestinations(availability: available).first
+        if let destination { openResolvedDestination(destination) }
+        else { dispatch(.openAllHiddenRecovery) }
+    }
+
+    func commitNotchCatalog(_ catalog: NotchTabCatalogState) {
+        let defaults = UserDefaults.standard
+        let legacy = catalog.enabledLegacyPages
+        if !legacy.isEmpty { defaults.set(NotchPages.serialize(legacy), forKey: NotchPages.key) }
+        defaults.set(NotchDestinationCatalog.serialize(catalog), forKey: "notch.tabCatalog.v1")
+        applySettings()
+    }
+
+    func displayScale(for id: UInt32) -> NotchDisplayScale {
+        let saved = UserDefaults.standard.dictionary(forKey: "notch.displayScale.v1")
+        return (saved?[String(id)] as? String).flatMap(NotchDisplayScale.init(rawValue:)) ?? .regular
+    }
+
+    func setDisplayScale(_ scale: NotchDisplayScale, for id: UInt32) {
+        let defaults = UserDefaults.standard
+        var saved = defaults.dictionary(forKey: "notch.displayScale.v1") ?? [:]
+        saved[String(id)] = scale.rawValue
+        defaults.set(saved, forKey: "notch.displayScale.v1")
+        render()
+    }
 
     func applySettings() {
         fullscreenInspections.removeAll()
@@ -162,13 +305,36 @@ final class NotchSurfaceController {
             start()
             panel?.sharingType = hideFromCapture ? .none : .readOnly   // B7, live
             model.pillOnPlainScreens = pillOnPlainScreens
-            model.pages = NotchPages.parse(pageOrderRaw)
+            let catalog = resolvedCatalog()
+            if model.tabCatalog.isEnabled(.teleprompter) != catalog.isEnabled(.teleprompter) {
+                if catalog.isEnabled(.teleprompter) {
+                    NotchTeleprompterController.shared.handleTabEnabled()
+                } else {
+                    NotchTeleprompterController.shared.handleTabDisabled()
+                }
+            }
+            if model.tabCatalog.isEnabled(.sounds) != catalog.isEnabled(.sounds) {
+                NotchSoundsEngine.shared.applyTabVisibility(isEnabled: catalog.isEnabled(.sounds))
+            }
+            if model.tabCatalog.isEnabled(.capture), !catalog.isEnabled(.capture) {
+                NotchCaptureHandoffCoordinator.shared.cancelInFlight()
+            }
+            if model.tabCatalog.isEnabled(.localChat), !catalog.isEnabled(.localChat) {
+                NotchLocalChatModel.shared.handleTabDisabled()
+            }
+            if model.tabCatalog.isEnabled(.message), !catalog.isEnabled(.message) {
+                NotchMessageModel.shared.handleTabDisabled()
+            }
+            if model.tabCatalog.isEnabled(.feedback), !catalog.isEnabled(.feedback) {
+                NotchFeedbackModel.shared.handleTabDisabled()
+            }
+            if model.tabCatalog.isEnabled(.websiteAnalytics) != catalog.isEnabled(.websiteAnalytics) {
+                websiteAnalyticsViewModel?.setDestinationEnabled(catalog.isEnabled(.websiteAnalytics))
+            }
+            model.tabCatalog = catalog
+            model.pages = catalog.enabledLegacyPages
             model.timerDraftMinutes = timerDraftMinutes          // P2: the Hẹn giờ page's idle minutes
             model.accent = NotchAccent.rgb(named: accentName).map { Color(red: $0.red, green: $0.green, blue: $0.blue) }
-            if case .expanded(let page) = machine.state, !model.pages.contains(page) {
-                dispatch(.switchPage(NotchPages.resolve(page, shown: model.pages)))   // the open page was just hidden
-            }
-            render()
             NowPlayingMonitor.shared.applySettings()      // B6: its own switch, under the master
             AgentSessionMonitor.shared.applySettings(underMaster: true)   // N3: its own switch, under the master
             CalendarGlanceMonitor.shared.applySettings(underMaster: true)  // N4: same
@@ -177,6 +343,10 @@ final class NotchSurfaceController {
             model.agentsEnabled = AgentSessionMonitor.shared.isEnabled
             model.agents = AgentSessionMonitor.shared.sessions
             refreshAgentHookStatus()
+            syncRevenueFromSavedAccounts()
+            model.destinationAvailability = destinationAvailability
+            reconcileActiveDestinationIfNeeded()
+            render()
         } else {
             stop()
             AgentSessionMonitor.shared.applySettings(underMaster: false)
@@ -210,6 +380,7 @@ final class NotchSurfaceController {
             dragSession = NotchDragSession(currentChangeCount: NSPasteboard(name: .drag).changeCount)
         }
         installFullscreenObserversIfNeeded()
+        restoreClockStateIfNeeded()
         render()   // a tray that already holds files shows its badge right away
     }
 
@@ -221,10 +392,40 @@ final class NotchSurfaceController {
                 runOnMainActor { self?.refreshFullscreenVisibility() }
             })
         }
+        workspaceObservers.append(workspaceCenter.addObserver(
+            forName: NSWorkspace.willSleepNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            runOnMainActor {
+                guard let self else { return }
+                self.isSystemSleeping = true
+                self.render()
+            }
+        })
+        workspaceObservers.append(workspaceCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            runOnMainActor {
+                guard let self else { return }
+                self.isSystemSleeping = false
+                self.handleSystemWake()
+                self.render()
+            }
+        })
         screenObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
         ) { [weak self] _ in
             runOnMainActor { self?.refreshFullscreenVisibility() }
+        }
+        if terminateObserver == nil {
+            terminateObserver = NotificationCenter.default.addObserver(
+                forName: NSApplication.willTerminateNotification, object: nil, queue: .main
+            ) { [weak self] _ in
+                runOnMainActor {
+                    self?.persistClockState()
+                    self?.closeMirror()
+                    self?.websiteAnalyticsViewModel?.prepareForTermination()
+                }
+            }
         }
     }
 
@@ -234,25 +435,45 @@ final class NotchSurfaceController {
     }
 
     func stop() {
+        NotchMessageModel.shared.handleTabDisabled()
+        NotchFeedbackModel.shared.handleTabDisabled()
+        NotchLocalChatModel.shared.handleTabDisabled()
+        model.todos.endTransientState()
+        model.shortcuts.onCloseOrTabSwitch()
+        NotchCaptureHandoffCoordinator.shared.cancelInFlight()
+        model.imageConvert.handleSurfaceClosed()
+        NotchSoundsEngine.shared.stopAll()
+        persistClockState()
+        if model.extraModule == .scratchpad { NotchScratchpadStore.shared.flush() }
         for m in monitors { NSEvent.removeMonitor(m) }
         monitors.removeAll()
         for observer in workspaceObservers { NSWorkspace.shared.notificationCenter.removeObserver(observer) }
         workspaceObservers.removeAll()
         if let screenObserver { NotificationCenter.default.removeObserver(screenObserver); self.screenObserver = nil }
+        if let terminateObserver { NotificationCenter.default.removeObserver(terminateObserver); self.terminateObserver = nil }
         fullscreenInspections.removeAll()
         cancelWork()
         if let m = clipboardKeyMonitor { NSEvent.removeMonitor(m); clipboardKeyMonitor = nil }
+        if let m = galleryKeyMonitor { NSEvent.removeMonitor(m); galleryKeyMonitor = nil }
+        if let m = hubKeyMonitor { NSEvent.removeMonitor(m); hubKeyMonitor = nil }
         if let m = swipeMonitor { NSEvent.removeMonitor(m); swipeMonitor = nil }
+        isDragOutActive = false
+        isDropTargeted = false
+        isDropImporting = false
         activityWork?.cancel(); activityWork = nil
         activityQueue.clear()
-        countdownTicker?.invalidate(); countdownTicker = nil; countdown = nil
-        model.timerText = nil; model.timer = nil
+        countdownTicker?.invalidate(); countdownTicker = nil
+        hydrationWork?.cancel(); hydrationWork = nil
+        clockSuite = NotchClockSuite()
+        didRestoreClockState = false
+        syncClockModel(at: Date())
         NowPlayingMonitor.shared.stop()
         nowPlayingTicker?.invalidate(); nowPlayingTicker = nil
         model.nowPlaying = nil; model.nowPlayingArtwork = nil; model.nowPlayingPosition = nil
         model.nowPlayingAvailability = .off
         samples.removeAll()
         machine.handle(.disabled, settings: settings, now: Date())
+        syncEscapeShortcut()
         state = machine.state
         // P6 review: stop() bypasses dispatch(), so a reply being composed when the notch is switched off must be
         // ended here, or its Esc monitor stays installed and the stale draft comes back with the notch.
@@ -261,6 +482,28 @@ final class NotchSurfaceController {
         model.newWindowlessOpen = false
         model.newWindowlessText = ""
         model.crewBoard = nil      // P7b review: like the other transient Agents-page states
+        model.isPinned = false
+        model.isSearchingWeatherCity = false
+        weatherViewModel?.close()
+        wasWeatherOpen = false
+        model.isSearchingStock = false
+        stocksViewModel?.close()
+        wasStocksOpen = false
+        revenueViewModel?.close()
+        wasRevenueOpen = false
+        websiteAnalyticsViewModel?.prepareForTermination()
+        wasWebsiteAnalyticsOpen = false
+        model.isCreatingReminder = false
+        remindersViewModel?.close()
+        wasRemindersOpen = false
+        closeMirror()
+        if wasTeleprompterOpen { NotchTeleprompterController.shared.handleIslandClosed() }
+        NotchTeleprompterController.shared.closeReaderWindow()
+        wasTeleprompterOpen = false
+        model.isEditingUtility = false
+        model.isEditingTeleprompter = false
+        isSystemSleeping = false
+        renderedDisplayID = nil
         syncAgentReplyKeyboard()
         panel?.hide()
         panel = nil
@@ -269,28 +512,913 @@ final class NotchSurfaceController {
 
     // MARK: Public intents
 
-    /// Deliberate open: an explicit destination wins; otherwise use the configured click rule.
+    /// Deliberate open: an explicit destination wins; otherwise active file work prioritizes `.files`;
+    /// otherwise use the configured click rule. Respects the unified tab catalog and opens Settings recovery
+    /// when every destination is hidden or unavailable.
     func reveal(page: NotchSurfaceMachine.Page? = nil) {
+        reveal(destination: page.map(NotchDestinationID.init(page:)))
+    }
+
+    func reveal(destination: NotchDestinationID?) {
         if !state.isOpen {
             let pointerScreen = WindowManager.screenUnderPointer()
             surfaceScreen = resolveSurfaceScreen(pointerScreen: pointerScreen, busy: false) ?? pointerScreen
         }
-        let activity = NotchHoverOpen.Activity(itemCount: machine.itemCount,
-                                              trackPlaying: NowPlayingMonitor.shared.hasTrack,
-                                              agentNeedsYou: model.agentsNeedingYou > 0,
-                                              lastPage: lastHubPage)
-        let target = NotchClickOpen.resolve(explicitPage: page, rule: NotchClickOpen.parse(clickOpensRaw),
-                                            activity: activity, shown: model.pages)
-        dispatch(.activateOn(target))   // ONE transition — see the machine's note on activateOn
+        let avail = destinationAvailability
+        model.destinationAvailability = avail
+        let visibleAll = model.tabCatalog.visibleDestinations(availability: avail)
+
+        guard !visibleAll.isEmpty else {
+            dispatch(.openAllHiddenRecovery)
+            if NSEvent.pressedMouseButtons == 0 {
+                panel?.makeKeyAndOrderFront(nil)
+            }
+            return
+        }
+
+        if let explicit = destination {
+            if let resolved = model.tabCatalog.fallbackDestination(from: explicit, availability: avail) {
+                openResolvedDestination(resolved)
+            } else {
+                dispatch(.openAllHiddenRecovery)
+            }
+            if NSEvent.pressedMouseButtons == 0 {
+                panel?.makeKeyAndOrderFront(nil)
+            }
+            return
+        }
+
+        let visibleLegacy = model.tabCatalog.visibleLegacyPages(availability: avail)
+        let activeFileOp = model.task?.isRunning == true
+            || model.task?.isAwaitingReview == true
+            || FileOperationQueue.shared.hasActiveWork
+        if activeFileOp, visibleLegacy.contains(.files) {
+            DropTrayStore.shared.refreshStatuses()
+            dispatch(.activateOn(.files))
+        } else if !visibleLegacy.isEmpty {
+            let activity = NotchHoverOpen.Activity(itemCount: machine.itemCount,
+                                                  trackPlaying: NowPlayingMonitor.shared.hasTrack,
+                                                  agentNeedsYou: model.agentsNeedingYou > 0,
+                                                  lastPage: lastHubPage)
+            let target = NotchExpandPriority.resolveOpenPage(
+                explicitPage: nil,
+                clickRule: NotchClickOpen.parse(clickOpensRaw),
+                activity: activity,
+                shown: visibleLegacy,
+                hasActiveFileOperation: false
+            )
+            if target == .files {
+                DropTrayStore.shared.refreshStatuses()
+            }
+            dispatch(.activateOn(target))
+        } else if let firstExtra = visibleAll.first {
+            openResolvedDestination(firstExtra)
+        }
+        if NSEvent.pressedMouseButtons == 0 {
+            panel?.makeKeyAndOrderFront(nil)
+        }
     }
 
-    /// A tab in the open hub (B5). A hidden page (D1 #44) resolves to the first shown one.
-    func switchPage(_ page: NotchSurfaceMachine.Page) { dispatch(.switchPage(NotchPages.resolve(page, shown: model.pages))) }
+    private func openResolvedDestination(_ id: NotchDestinationID) {
+        if let page = id.legacyPage {
+            if page == .files {
+                DropTrayStore.shared.refreshStatuses()
+            }
+            dispatch(.activateOn(page))
+        } else if let extra = id.extraModule {
+            dispatch(.openExtra(extra))
+        }
+    }
 
-    func dismiss() { dispatch(.dismiss) }
+    /// A tab in the open hub (B5). A hidden page resolves via the unified catalog (or recovery when all-hidden).
+    func switchPage(_ page: NotchSurfaceMachine.Page) {
+        let avail = destinationAvailability
+        if let resolved = model.tabCatalog.fallbackDestination(from: NotchDestinationID(page: page), availability: avail) {
+            if let p = resolved.legacyPage {
+                dispatch(.switchPage(p))
+            } else if let e = resolved.extraModule {
+                dispatch(.openExtra(e))
+            }
+        } else {
+            dispatch(.openAllHiddenRecovery)
+        }
+    }
+
+    func togglePin() {
+        model.isPinned.toggle()
+        render()
+    }
+
+    func focusClipboardSearch() {
+        guard case .expanded(.clipboard) = machine.state, model.extraModule == nil else { return }
+        panel?.makeKeyAndOrderFront(nil)
+        model.clipboard.focusSearchRequest += 1
+    }
+
+    func dismiss() {
+        model.isPinned = false
+        dispatch(.dismiss)
+    }
+
+    func setUtilityEditing(_ editing: Bool) {
+        model.isEditingUtility = editing
+        if editing { ensurePanelKeyForKeyboard() }
+    }
+
+    func hideForCapture(then completion: @escaping @MainActor () -> Void) {
+        dismiss()
+        panel?.hide()
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(50))
+            completion()
+        }
+    }
+
+    // MARK: - Section Gallery, Extra Modules & Phase 2 Weather Registration
+
+    private var galleryKeyMonitor: Any?
+    private var weatherCoordinator: WeatherCoordinator?
+    private(set) var weatherViewModel: WeatherViewModel?
+    private var wasWeatherOpen = false
+    var isWeatherAvailable: Bool { weatherViewModel != nil }
+
+    private var stocksCoordinator: StocksCoordinator?
+    private(set) var stocksViewModel: StocksViewModel?
+    private var wasStocksOpen = false
+    var isStocksAvailable: Bool { stocksViewModel != nil }
+
+    private var revenueCoordinator: RevenueCoordinator?
+    private(set) var revenueViewModel: RevenueViewModel?
+    private var isLiveRevenueAttached = false
+    private var wasRevenueOpen = false
+    var isRevenueAvailable: Bool { revenueViewModel != nil }
+    private(set) var websiteAnalyticsViewModel: WebsiteAnalyticsViewModel?
+    private var wasWebsiteAnalyticsOpen = false
+
+    /// Explicitly registers or removes a WeatherProvider.
+    /// Production starts unconfigured (`nil`), registering neither fixture nor Open-Meteo Free API by default,
+    /// and making zero network requests at launch.
+    func configureWeather(
+        provider: WeatherProvider?,
+        cache: WeatherCacheStore = WeatherCacheStore(),
+        locationStore: WeatherLocationStore? = UserDefaultsWeatherLocationStore(),
+        locationService: WeatherLocationService = DefaultWeatherLocationService(),
+        clock: @escaping @Sendable () -> Date = { Date() }
+    ) {
+        weatherViewModel?.close()
+        wasWeatherOpen = false
+        model.isSearchingWeatherCity = false
+
+        guard let provider else {
+            weatherCoordinator = nil
+            weatherViewModel = nil
+            model.weatherViewModel = nil
+            model.weatherAvailable = false
+            model.destinationAvailability = destinationAvailability
+            reconcileActiveDestinationIfNeeded()
+            render()
+            syncWeatherLifecycle()
+            return
+        }
+
+        let coordinator = WeatherCoordinator(
+            provider: provider,
+            cache: cache,
+            locationStore: locationStore,
+            locationService: locationService,
+            clock: clock
+        )
+        let vm = WeatherViewModel(coordinator: coordinator)
+        vm.onSearchVisibilityChanged = { [weak self] open in
+            guard let self else { return }
+            self.model.isSearchingWeatherCity = open
+            if open {
+                self.ensurePanelKeyForKeyboard()
+            }
+        }
+        weatherCoordinator = coordinator
+        weatherViewModel = vm
+        model.weatherViewModel = vm
+        model.weatherAvailable = true
+        model.destinationAvailability = destinationAvailability
+        render()
+        syncWeatherLifecycle()
+    }
+
+    func reloadStocksProvider() {
+        let choice = UserDefaults.standard.string(forKey: StocksAPIKey.Source.preferenceKey)
+            .flatMap(StocksAPIKey.Source.init(rawValue:)) ?? .twelveData
+        if choice == .massive {
+            configureStocks(provider: StocksAPIKey.read(for: .massive).map { MassiveStocksProvider(apiKey: $0) })
+            return
+        }
+        var key = StocksAPIKey.read()
+        #if DEBUG
+        if key == nil { key = "demo" }
+        #endif
+        configureStocks(provider: key.map { TwelveDataStocksProvider(apiKey: $0) })
+    }
+
+    /// Registers a source without requesting quotes until Stocks is opened.
+    func configureStocks(
+        provider: StocksProvider?,
+        watchlistStore: StocksWatchlistStore = UserDefaultsStocksWatchlistStore(),
+        cache: StocksCacheStore = StocksCacheStore(),
+        isConfigured: Bool = true,
+        clock: @escaping @Sendable () -> Date = { Date() }
+    ) {
+        stocksViewModel?.close()
+        wasStocksOpen = false
+        model.isSearchingStock = false
+
+        guard let provider else {
+            stocksCoordinator = nil
+            stocksViewModel = nil
+            model.stocksViewModel = nil
+            model.stocksAvailable = false
+            model.destinationAvailability = destinationAvailability
+            reconcileActiveDestinationIfNeeded()
+            render()
+            syncExtraModulesLifecycle()
+            return
+        }
+
+        let coordinator = StocksCoordinator(
+            provider: provider,
+            watchlistStore: watchlistStore,
+            cache: cache,
+            isConfigured: isConfigured,
+            clock: clock
+        )
+        let vm = StocksViewModel(coordinator: coordinator, clock: clock)
+        vm.onSearchVisibilityChanged = { [weak self] open in
+            guard let self else { return }
+            self.model.isSearchingStock = open
+            if open { self.ensurePanelKeyForKeyboard() }
+        }
+        vm.onOpenSettingsRequested = { [weak self] in
+            self?.openInlineNotchSettings(showStocks: true)
+        }
+        stocksCoordinator = coordinator
+        stocksViewModel = vm
+        model.stocksViewModel = vm
+        model.stocksAvailable = true
+        model.destinationAvailability = destinationAvailability
+        render()
+        syncExtraModulesLifecycle()
+    }
+
+    /// Propagates watchlist edits made in Settings into the active Dynamic Island Stocks coordinator/view model.
+    func reloadStocksWatchlist() {
+        guard let coordinator = stocksCoordinator else { return }
+        Task { [weak self] in
+            await coordinator.reloadWatchlistFromStore()
+            await MainActor.run {
+                guard let self else { return }
+                Task { await self.stocksViewModel?.syncState() }
+            }
+        }
+    }
+
+    /// Explicitly registers or removes a RevenueProvider (lazy nil by default in production).
+    func configureRevenue(
+        provider: RevenueProvider?,
+        accountStore: RevenueAccountStore = InMemoryRevenueAccountStore(),
+        cache: RevenueCacheStore = RevenueCacheStore(),
+        credentialStore: RevenueCredentialStore? = nil,
+        clock: @escaping @Sendable () -> Date = { Date() }
+    ) {
+        revenueViewModel?.close()
+        wasRevenueOpen = false
+
+        guard let provider else {
+            revenueCoordinator = nil
+            revenueViewModel = nil
+            isLiveRevenueAttached = false
+            model.revenueViewModel = nil
+            model.revenueAvailable = false
+            model.destinationAvailability = destinationAvailability
+            reconcileActiveDestinationIfNeeded()
+            render()
+            syncExtraModulesLifecycle()
+            return
+        }
+
+        let coordinator = RevenueCoordinator(
+            provider: provider,
+            accountStore: accountStore,
+            cache: cache,
+            credentialStore: credentialStore,
+            clock: clock
+        )
+        let vm = RevenueViewModel(coordinator: coordinator, clock: clock)
+        vm.onOpenSettingsRequested = { [weak self] in
+            self?.dismiss()
+            AppState.shared.navigate(to: .revenue)
+        }
+        revenueCoordinator = coordinator
+        revenueViewModel = vm
+        isLiveRevenueAttached = (provider is LiveRevenueProvider)
+        model.revenueViewModel = vm
+        model.revenueAvailable = true
+        model.destinationAvailability = destinationAvailability
+        render()
+        syncExtraModulesLifecycle()
+    }
+
+    /// Reconciles live Revenue adapter registration from saved non-secret account configs + account-scoped Keychain.
+    /// Starts disconnected (no network calls) when no account has both a saved config and a stored Keychain token.
+    func syncRevenueFromSavedAccounts(
+        accountStore: RevenueAccountStore = UserDefaultsRevenueAccountStore(),
+        credentialStore: RevenueCredentialStore = RevenueKeychainStore.shared
+    ) {
+        let saved = accountStore.loadConfigs()
+        let active = saved.filter { _, cfg in
+            credentialStore.hasToken(for: cfg.source, accountId: cfg.accountId)
+        }
+        if active.isEmpty {
+            if isLiveRevenueAttached {
+                configureRevenue(provider: nil)
+            }
+            return
+        }
+        if !isLiveRevenueAttached || revenueCoordinator == nil {
+            let liveProvider = LiveRevenueProvider(credentialStore: credentialStore)
+            configureRevenue(
+                provider: liveProvider,
+                accountStore: accountStore,
+                credentialStore: credentialStore
+            )
+        }
+    }
+
+    /// Explicit Settings action: saves account-scoped token to Keychain + metadata to UserDefaults and activates live adapter.
+    func connectRevenueAccount(
+        _ config: SourceAccountConfig,
+        token: String,
+        accountStore: RevenueAccountStore = UserDefaultsRevenueAccountStore(),
+        credentialStore: RevenueCredentialStore = RevenueKeychainStore.shared
+    ) -> Bool {
+        let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        let existingConfigs = accountStore.loadConfigs()
+        let previousAccountId = existingConfigs[config.source]?.accountId
+
+        if !trimmedToken.isEmpty {
+            guard credentialStore.setToken(trimmedToken, for: config.source, accountId: config.accountId) else {
+                return false
+            }
+        } else if !credentialStore.hasToken(for: config.source, accountId: config.accountId) {
+            return false
+        }
+
+        if let previousAccountId, previousAccountId != config.accountId {
+            credentialStore.deleteToken(for: config.source, accountId: previousAccountId)
+        }
+        accountStore.saveConfig(config)
+
+        if isLiveRevenueAttached, let coord = revenueCoordinator {
+            Task { await coord.configureSource(config) }
+        } else {
+            syncRevenueFromSavedAccounts(accountStore: accountStore, credentialStore: credentialStore)
+        }
+        return true
+    }
+
+    /// Explicit Settings action: cancels in-flight sync, deletes account-scoped Keychain token, clears cache and config.
+    func disconnectRevenueAccount(
+        _ source: RevenueSourceKind,
+        accountStore: RevenueAccountStore = UserDefaultsRevenueAccountStore(),
+        credentialStore: RevenueCredentialStore = RevenueKeychainStore.shared
+    ) {
+        let existing = accountStore.loadConfigs()
+        if let prevId = existing[source]?.accountId {
+            credentialStore.deleteToken(for: source, accountId: prevId)
+        }
+        accountStore.removeConfig(for: source)
+        let remaining = accountStore.loadConfigs().filter { _, cfg in
+            credentialStore.hasToken(for: cfg.source, accountId: cfg.accountId)
+        }
+        if let coord = revenueCoordinator, isLiveRevenueAttached {
+            Task {
+                await coord.disconnectSource(source)
+                await MainActor.run {
+                    if remaining.isEmpty {
+                        self.configureRevenue(provider: nil)
+                    }
+                }
+            }
+        } else if remaining.isEmpty && isLiveRevenueAttached {
+            configureRevenue(provider: nil)
+        }
+    }
+
+    private func syncWeatherLifecycle() {
+        syncExtraModulesLifecycle()
+    }
+
+    private func syncExtraModulesLifecycle() {
+        let isExpanded: Bool = {
+            if case .expanded = machine.state { return true }
+            return false
+        }()
+
+        let weatherOpen = isExpanded && isWeatherAvailable && model.extraModule == .weather
+        if weatherOpen && !wasWeatherOpen {
+            wasWeatherOpen = true
+            weatherViewModel?.onAppear()
+        } else if !weatherOpen && wasWeatherOpen {
+            wasWeatherOpen = false
+            model.isSearchingWeatherCity = false
+            weatherViewModel?.close()
+        }
+
+        let stocksOpen = isExpanded && isStocksAvailable && model.extraModule == .stocks
+        if stocksOpen && !wasStocksOpen {
+            wasStocksOpen = true
+            stocksViewModel?.onAppear()
+        } else if !stocksOpen && wasStocksOpen {
+            wasStocksOpen = false
+            model.isSearchingStock = false
+            stocksViewModel?.close()
+        }
+
+        let revenueOpen = isExpanded && isRevenueAvailable && model.extraModule == .revenue
+        if revenueOpen && !wasRevenueOpen {
+            wasRevenueOpen = true
+            revenueViewModel?.onAppear()
+        } else if !revenueOpen && wasRevenueOpen {
+            wasRevenueOpen = false
+            revenueViewModel?.close()
+        }
+
+        let analyticsOpen = isExpanded && model.extraModule == .websiteAnalytics
+        if analyticsOpen && !wasWebsiteAnalyticsOpen {
+            wasWebsiteAnalyticsOpen = true
+            ensureWebsiteAnalyticsViewModel().onAppear()
+        } else if !analyticsOpen && wasWebsiteAnalyticsOpen {
+            wasWebsiteAnalyticsOpen = false
+            websiteAnalyticsViewModel?.close()
+        }
+
+        let teleprompterOpen = isExpanded && model.extraModule == .teleprompter
+        if teleprompterOpen && !wasTeleprompterOpen {
+            NotchTeleprompterController.shared.onEditingStateChanged = { [weak self] editing in
+                guard let self else { return }
+                self.model.isEditingTeleprompter = editing
+                if editing { self.ensurePanelKeyForKeyboard() }
+            }
+        } else if !teleprompterOpen && wasTeleprompterOpen {
+            NotchTeleprompterController.shared.handleIslandClosed()
+        }
+        wasTeleprompterOpen = teleprompterOpen
+
+        let remindersOpen = isExpanded && model.extraModule == .reminders
+        if remindersOpen && !wasRemindersOpen {
+            wasRemindersOpen = true
+            ensureRemindersViewModel().onAppear()
+        } else if !remindersOpen && wasRemindersOpen {
+            wasRemindersOpen = false
+            model.isCreatingReminder = false
+            remindersViewModel?.close()
+        }
+    }
+
+    private var remindersViewModel: RemindersViewModel?
+    private var wasRemindersOpen = false
+    private var wasTeleprompterOpen = false
+
+    @discardableResult
+    func ensureWebsiteAnalyticsViewModel() -> WebsiteAnalyticsViewModel {
+        if let existing = websiteAnalyticsViewModel {
+            model.websiteAnalyticsViewModel = existing
+            return existing
+        }
+        let viewModel = WebsiteAnalyticsViewModel.makeDefault()
+        viewModel.onOpenSettingsRequested = { [weak self] in
+            self?.dismiss()
+            AppState.shared.navigate(to: .websiteAnalytics)
+        }
+        websiteAnalyticsViewModel = viewModel
+        model.websiteAnalyticsViewModel = viewModel
+        viewModel.setDestinationEnabled(model.tabCatalog.isEnabled(.websiteAnalytics))
+        return viewModel
+    }
+
+    @discardableResult
+    private func ensureRemindersViewModel() -> RemindersViewModel {
+        if let existing = remindersViewModel {
+            model.remindersViewModel = existing
+            return existing
+        }
+        let vm = RemindersViewModel(store: RemindersEventKitStore())
+        vm.onComposerStateChanged = { [weak self] open in
+            guard let self else { return }
+            self.model.isCreatingReminder = open
+            if open { self.ensurePanelKeyForKeyboard() }
+        }
+        remindersViewModel = vm
+        model.remindersViewModel = vm
+        return vm
+    }
+
+    func toggleSectionsGallery() {
+        if machine.activeExtra == .sections {
+            dispatch(.closeExtra)
+            reconcileActiveDestinationIfNeeded()
+        } else {
+            dispatch(.openExtra(.sections))
+        }
+    }
+
+    func openExtraModule(_ extra: NotchExtraModule) {
+        if extra == .sections {
+            dispatch(.openExtra(.sections))
+            return
+        }
+        guard let id = NotchDestinationID(extra: extra),
+              model.tabCatalog.isOpenable(id, availability: destinationAvailability) else { return }
+        dispatch(.openExtra(extra))
+    }
+
+    func closeExtraModule() {
+        if machine.activeExtra == .settings { returnFromInlineNotchSettings(); return }
+        guard machine.activeExtra != nil else { return }
+        dispatch(.closeExtra)
+        reconcileActiveDestinationIfNeeded()
+    }
+
+    func selectGalleryDestination(_ dest: NotchGalleryDestination) {
+        guard let id = NotchDestinationID(destination: dest) else { return }
+        selectDestination(id)
+    }
+
+    func selectDestination(_ id: NotchDestinationID) {
+        guard model.tabCatalog.isOpenable(id, availability: destinationAvailability) else { return }
+        openResolvedDestination(id)
+    }
+
+    private func syncGalleryKeyboard() {
+        let wantsKeys = model.extraModule == .sections && machine.state.isOpen
+        if wantsKeys {
+            panel?.makeKeyAndOrderFront(nil)
+            guard galleryKeyMonitor == nil else { return }
+            galleryKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
+                guard let self, self.panel?.isKeyWindow == true,
+                      self.model.extraModule == .sections, self.machine.state.isOpen else { return e }
+                if e.keyCode == 53 { // Esc
+                    self.closeExtraModule()
+                    return nil
+                }
+                let mods = e.modifierFlags.intersection([.command, .control, .option])
+                if mods.isEmpty, let chars = e.charactersIgnoringModifiers,
+                   let dest = NotchGalleryRules.destination(
+                       forKeyCharacter: chars,
+                       catalog: self.model.tabCatalog,
+                       availability: self.destinationAvailability
+                   ) {
+                    self.selectGalleryDestination(dest)
+                    return nil
+                }
+                return e
+            }
+        } else if let m = galleryKeyMonitor {
+            NSEvent.removeMonitor(m)
+            galleryKeyMonitor = nil
+        }
+    }
 
     /// The view calls this after files were dropped on the surface.
-    func filesDropped() { dispatch(.dropped(count: DropTrayStore.shared.items.count)) }
+    func filesDropped() {
+        isDropImporting = false
+        dispatch(.dropped(count: DropTrayStore.shared.items.count))
+    }
+
+    func setDropTargeted(_ targeted: Bool) {
+        guard isDropTargeted != targeted else { return }
+        isDropTargeted = targeted
+        if targeted {
+            leftAt = nil; graceWork?.cancel(); graceWork = nil
+        } else {
+            tick()
+        }
+    }
+
+    func beginDropImport() {
+        isDropImporting = true
+        leftAt = nil; graceWork?.cancel(); graceWork = nil
+    }
+
+    func endDropImport() {
+        isDropImporting = false
+    }
+
+    func beginDragOutSession() {
+        isDragOutActive = true
+        leftAt = nil; graceWork?.cancel(); graceWork = nil
+    }
+
+    func endDragOutSession() {
+        isDragOutActive = false
+        leftAt = nil; graceWork?.cancel(); graceWork = nil
+        tick()
+    }
+
+    func ensurePanelKeyForKeyboard() {
+        guard machine.state.isOpen, NSEvent.pressedMouseButtons == 0 else { return }
+        panel?.makeKeyAndOrderFront(nil)
+    }
+
+    // MARK: - Drop Tray actions (XF-T41: Quick Look, Share, Browser Pane Queue)
+
+    func quickLookTrayItems(_ items: [DropTrayStore.Item]) {
+        DropTrayStore.shared.refreshStatuses()
+        let liveIDs = Set(items.map(\.id))
+        let urls = DropTrayStore.shared.items
+            .filter { liveIDs.contains($0.id) && $0.status.isActionable }
+            .map { URL(fileURLWithPath: $0.path) }
+        guard !urls.isEmpty else {
+            model.notice = "Không thể xem nhanh — tệp đã di chuyển hoặc thiếu quyền."
+            return
+        }
+        model.notice = nil
+        quickLook.present(urls: urls)
+    }
+
+    func shareTrayItems(_ items: [DropTrayStore.Item], from anchorView: NSView? = nil) {
+        DropTrayStore.shared.refreshStatuses()
+        let liveIDs = Set(items.map(\.id))
+        let urls = DropTrayStore.shared.items
+            .filter { liveIDs.contains($0.id) && $0.status.isActionable }
+            .map { URL(fileURLWithPath: $0.path) }
+        guard !urls.isEmpty else {
+            model.notice = "Không có tệp hợp lệ để chia sẻ."
+            return
+        }
+        model.notice = nil
+        let picker = NSSharingServicePicker(items: urls)
+        if let view = anchorView ?? panel?.contentView {
+            let rect = NSRect(x: view.bounds.midX - 1, y: view.bounds.midY - 1, width: 2, height: 2)
+            picker.show(relativeTo: rect, of: view, preferredEdge: .minY)
+        } else {
+            airDropFileURLs(urls)
+        }
+    }
+
+    func airDropTrayItems(_ items: [DropTrayStore.Item]) {
+        DropTrayStore.shared.refreshStatuses()
+        let liveIDs = Set(items.map(\.id))
+        let urls = DropTrayStore.shared.items
+            .filter { liveIDs.contains($0.id) && $0.status.isActionable }
+            .map { URL(fileURLWithPath: $0.path) }
+        guard !urls.isEmpty else {
+            model.notice = "Không có tệp hợp lệ để chia sẻ."
+            return
+        }
+        airDropFileURLs(urls)
+    }
+
+    func airDropFileURLs(_ urls: [URL]) {
+        guard !urls.isEmpty else { return }
+        guard let service = NSSharingService(named: .sendViaAirDrop), service.canPerform(withItems: urls) else {
+            model.notice = "AirDrop không khả dụng cho các tệp này trên máy này."
+            return
+        }
+        model.notice = nil
+        service.perform(withItems: urls)
+    }
+
+    func pickAndAirDropFiles() {
+        let openPanel = NSOpenPanel()
+        openPanel.canChooseFiles = true
+        openPanel.canChooseDirectories = false
+        openPanel.allowsMultipleSelection = true
+        if openPanel.runModal() == .OK, !openPanel.urls.isEmpty {
+            airDropFileURLs(openPanel.urls)
+        }
+    }
+
+    func sendTrayItemsToActivePane(_ items: [DropTrayStore.Item], copy: Bool) {
+        DropTrayStore.shared.refreshStatuses()
+        let liveIDs = Set(items.map(\.id))
+        let paths = DropTrayStore.shared.items
+            .filter { liveIDs.contains($0.id) && $0.status.isActionable }
+            .map(\.path)
+        guard !paths.isEmpty else {
+            model.notice = "Không có tệp hợp lệ để thao tác."
+            return
+        }
+        model.notice = nil
+        let started = DropTrayBrowserBridge.send(paths, copy: copy) { [weak self] completion in
+            guard let self else { return }
+            let failedCount = completion.failedReasons.count + completion.skippedSources.count
+            if failedCount > 0 {
+                self.model.notice = copy
+                    ? "Một số tệp sao chép thất bại — các mục vẫn được giữ trong khay."
+                    : "Một số tệp chuyển thất bại — các mục chưa chuyển vẫn được giữ trong khay."
+            } else if completion.state == .cancelled {
+                self.model.notice = "Thao tác đã dừng — các mục chưa chuyển vẫn được giữ trong khay."
+            }
+        }
+        if !started {
+            model.notice = FileOperationQueue.shared.lastErrorKey
+                ?? "Không thể gửi sang ngăn trình duyệt hiện tại."
+        }
+    }
+
+    // MARK: - Expanded Hub Keyboard (Files selection, Quick Look, Tab Switch, Esc)
+
+    private var hubKeyMonitor: Any?
+    private var escapeKeyMonitors: [Any] = []
+
+    private func syncEscapeShortcut() {
+        guard case .expanded = machine.state else {
+            escapeKeyMonitors.forEach(NSEvent.removeMonitor)
+            escapeKeyMonitors.removeAll()
+            return
+        }
+        guard escapeKeyMonitors.isEmpty else { return }
+        if let local = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { [weak self] event in
+            guard Self.isPlainEscape(event), let self, case .expanded = self.machine.state else { return event }
+            let wasKey = self.panel?.isKeyWindow == true
+            self.dismiss()
+            return wasKey ? nil : event
+        }) {
+            escapeKeyMonitors.append(local)
+        }
+        if let global = NSEvent.addGlobalMonitorForEvents(matching: .keyDown, handler: { [weak self] event in
+            guard Self.isPlainEscape(event) else { return }
+            runOnMainActor {
+                guard let self, case .expanded = self.machine.state else { return }
+                self.dismiss()
+            }
+        }) {
+            escapeKeyMonitors.append(global)
+        }
+    }
+
+    private nonisolated static func isPlainEscape(_ event: NSEvent) -> Bool {
+        event.keyCode == 53 && !event.isARepeat &&
+            event.modifierFlags.intersection([.command, .shift, .option, .control]).isEmpty
+    }
+
+    private func syncHubKeyboard() {
+        let onClipboard = (machine.state == .expanded(.clipboard) && model.extraModule == nil)
+        let onGallery = (model.extraModule == .sections)
+        let composingAgent = (machine.state == .expanded(.agents) && (model.agentReplyTarget != nil || model.newWindowlessOpen))
+        let wantsKeys: Bool = {
+            guard case .expanded = machine.state else { return false }
+            return !onClipboard && !onGallery && !composingAgent
+        }()
+        if wantsKeys {
+            guard hubKeyMonitor == nil else { return }
+            hubKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
+                guard let self, self.panel?.isKeyWindow == true else { return e }
+                if e.keyCode == 53, self.model.extraModule == .weather, self.weatherViewModel?.isShowingSearch == true {
+                    self.weatherViewModel?.closeSearch()
+                    return nil
+                }
+                if e.keyCode == 53, self.model.extraModule == .stocks, self.stocksViewModel?.isShowingSearch == true {
+                    self.stocksViewModel?.closeSearch()
+                    return nil
+                }
+                if self.model.extraModule == .emoji {
+                    if e.keyCode == 53 {
+                        if self.model.emoji.query.isEmpty {
+                            self.closeExtraModule()
+                        } else {
+                            self.model.emoji.clearSearch()
+                        }
+                        return nil
+                    }
+                    if e.charactersIgnoringModifiers == "f", e.modifierFlags.intersection([.command, .option, .control, .shift]) == .command {
+                        self.model.emoji.focusSearchRequest += 1
+                        return nil
+                    }
+                }
+                if self.model.extraModule == .todos, e.window === self.panel,
+                   e.modifierFlags.intersection([.option, .control]).isEmpty {
+                    let outcome = self.model.todos.handleKeyEvent(NotchTodoKeyEvent(
+                        keyCode: e.keyCode,
+                        command: e.modifierFlags.contains(.command),
+                        shift: e.modifierFlags.contains(.shift)
+                    ))
+                    switch outcome {
+                    case .handled: return nil
+                    case .ignored: return e
+                    case .dismissSurface:
+                        self.closeExtraModule()
+                        return nil
+                    }
+                }
+                if self.model.extraModule == .links {
+                    if e.keyCode == 53 {
+                        if self.model.links.query.isEmpty {
+                            self.closeExtraModule()
+                        } else {
+                            self.model.links.clearSearch()
+                        }
+                        return nil
+                    }
+                    if e.charactersIgnoringModifiers == "f", e.modifierFlags.intersection([.command, .option, .control, .shift]) == .command {
+                        self.model.links.focusSearchRequest += 1
+                        return nil
+                    }
+                }
+                if e.keyCode == 53, self.model.extraModule == .scratchpad {
+                    if NotchScratchpadStore.shared.confirmingClear {
+                        NotchScratchpadStore.shared.cancelClear()
+                    } else {
+                        self.closeExtraModule()
+                    }
+                    return nil
+                }
+                // Never intercept keystrokes while a text editor / field editor has focus.
+                if self.panel?.firstResponder is NSTextView { return e }
+                return self.handleHubKey(e) ? nil : e
+            }
+        } else if let m = hubKeyMonitor {
+            NSEvent.removeMonitor(m)
+            hubKeyMonitor = nil
+        }
+    }
+
+    private func handleHubKey(_ e: NSEvent) -> Bool {
+        let mods = e.modifierFlags
+        let onFiles = (machine.state == .expanded(.files) && model.extraModule == nil)
+        guard let action = NotchHubKeyAction.decode(
+            keyCode: e.keyCode,
+            characters: e.charactersIgnoringModifiers,
+            command: mods.contains(.command),
+            shift: mods.contains(.shift),
+            option: mods.contains(.option),
+            control: mods.contains(.control),
+            onFilesPage: onFiles
+        ) else { return false }
+
+        switch action {
+        case .escape:
+            if model.extraModule == .weather, weatherViewModel?.isShowingSearch == true {
+                weatherViewModel?.closeSearch()
+            } else if model.extraModule == .stocks, stocksViewModel?.isShowingSearch == true {
+                stocksViewModel?.closeSearch()
+            } else if model.extraModule != nil {
+                closeExtraModule()
+            } else if onFiles && !model.traySelection.isEmpty {
+                model.traySelection.clear()
+            } else {
+                dismiss()
+            }
+            return true
+        case .toggleMoreGallery:
+            toggleSectionsGallery()
+            return true
+        case .switchToSlot(let slot):
+            let visible = model.tabCatalog.visibleDestinations(availability: destinationAvailability)
+            guard slot >= 1, slot <= visible.count else { return false }
+            openResolvedDestination(visible[slot - 1])
+            return true
+        case .selectAll:
+            model.traySelection.selectAll(DropTrayStore.shared.items.map(\.id))
+            return true
+        case .moveSelection(let delta, let extend):
+            model.traySelection.move(delta: delta, in: DropTrayStore.shared.items.map(\.id), extend: extend)
+            return true
+        case .quickLook:
+            let selected = selectedOrAllTrayItems(fallbackToFirst: true)
+            if !selected.isEmpty { quickLookTrayItems(selected) }
+            return true
+        case .openSelected:
+            let selected = selectedOrAllTrayItems(fallbackToFirst: true).filter { $0.status.isActionable }
+            guard !selected.isEmpty else { return false }
+            for item in selected.prefix(10) { NSWorkspace.shared.open(URL(fileURLWithPath: item.path)) }
+            return true
+        case .removeSelected:
+            let ids = model.traySelection.selectedIDs
+            guard !ids.isEmpty else { return false }
+            let paths = DropTrayStore.shared.items.filter { ids.contains($0.id) }.map(\.path)
+            DropTrayStore.shared.removePaths(paths)
+            model.traySelection.prune(validIDs: Set(DropTrayStore.shared.items.map(\.id)))
+            return true
+        }
+    }
+
+    private func selectedOrAllTrayItems(fallbackToFirst: Bool) -> [DropTrayStore.Item] {
+        let items = DropTrayStore.shared.items
+        if !model.traySelection.isEmpty {
+            return items.filter { model.traySelection.contains($0.id) }
+        }
+        if fallbackToFirst, let first = items.first { return [first] }
+        return []
+    }
+
+    private func isPageAvailable(_ p: NotchSurfaceMachine.Page) -> Bool {
+        switch p {
+        case .files, .clipboard, .timer: return true
+        case .nowPlaying: return model.nowPlayingAvailability != .off
+        case .agents, .aiUsage: return model.agentsEnabled
+        case .calendar: return model.calendarEnabled
+        }
+    }
 
     // MARK: Detection
 
@@ -315,10 +1443,12 @@ final class NotchSurfaceController {
         let onSurface = (panel?.isVisible ?? false)
             && drawnFrame.insetBy(dx: -12, dy: -12).contains(point)   // N1: the drawn shape, never the (larger) window
 
-        if NSEvent.pressedMouseButtons & 1 == 1 {
+        if NSEvent.pressedMouseButtons & 1 == 1 || isDragOutActive || isDropTargeted || isDropImporting {
             // Never collapse mid-drag — the drag may come back; the leave clock restarts after the release.
             leftAt = nil; graceWork?.cancel(); graceWork = nil
             zoneEnteredAt = nil; dwellWork?.cancel(); dwellWork = nil
+            guard NSEvent.pressedMouseButtons & 1 == 1, !isDragOutActive else { return }
+            guard model.extraModule != .imageConvert else { return }
             // Neither drag trigger on ⇒ nothing to decide, so never touch the drag pasteboard (a
             // pasteboard-server round trip) on the user's window and text drags.
             let s = settings
@@ -342,14 +1472,16 @@ final class NotchSurfaceController {
             return
         }
 
-        let zone = NotchSurfaceLayout.hoverZone(notch: notch, screen: screen.frame, itemCount: machine.itemCount,
-                                                nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
-                                                timerActive: countdown != nil, agentActive: model.agentActive, agentBusy: model.agentBusy, agentCount: model.agentCount,
+        let wingProj = collapsedProjection
+        let zone = NotchSurfaceLayout.hoverZone(notch: notch, screen: screen.frame, itemCount: wingProj.itemCount,
+                                                nowPlayingActive: wingProj.nowPlayingActive,
+                                                timerActive: wingProj.timerActive, agentActive: wingProj.agentActive,
+                                                agentBusy: wingProj.agentBusy, agentCount: wingProj.agentCount,
                                                 visible: screen.visibleFrame,
                                                 pillShown: pillOnPlainScreens && badgeShown && machine.state == .collapsed)
-        let wings = NotchSurfaceLayout.wingItems(itemCount: machine.itemCount, timerActive: countdown != nil,
-                                                 nowPlayingActive: NowPlayingMonitor.shared.hasTrack, agentActive: model.agentActive,
-                                                 agentBusy: model.agentBusy, agentCount: model.agentCount)
+        let wings = NotchSurfaceLayout.wingItems(itemCount: wingProj.itemCount, timerActive: wingProj.timerActive,
+                                                 nowPlayingActive: wingProj.nowPlayingActive, agentActive: wingProj.agentActive,
+                                                 agentBusy: wingProj.agentBusy, agentCount: wingProj.agentCount)
         pointerOnAgentEdge = NotchSurfaceLayout.agentEdgeRect(notch: notch, left: wings.left, right: wings.right)?.contains(point) ?? false
         if zone.contains(point), pointerScreenCanOpenSurface(screen) {
             leftAt = nil; graceWork?.cancel(); graceWork = nil
@@ -461,19 +1593,68 @@ final class NotchSurfaceController {
     // MARK: Machine → screen
 
     private func dispatch(_ event: NotchSurfaceMachine.Event) {
+        if case .openExtra(.websiteAnalytics) = event {
+            _ = ensureWebsiteAnalyticsViewModel()
+        }
+        let openStart = !loggedFirstIslandOpen ? ContinuousClock.now : nil
         let before = machine
         machine.handle(event, settings: settings, now: Date())
         guard machine != before else { return }
         state = machine.state
-        if case .expanded(let p) = machine.state { lastHubPage = p }   // N2: for "Trang mở lần cuối"
-        CalendarGlanceMonitor.shared.setPageOpen(machine.state == .expanded(.calendar))   // N4: the minute ticker only while shown
+        model.extraModule = machine.activeExtra
+        if before.activeExtra == .settings, machine.activeExtra != .settings {
+            notchSettingsReturnDestination = nil
+        }
+        if before.activeExtra == .message, machine.activeExtra != .message {
+            NotchMessageModel.shared.isInputFocused = false
+        }
+        if before.activeExtra == .localChat, machine.activeExtra != .localChat {
+            NotchLocalChatModel.shared.handleTabDisabled()
+        }
+        if before.activeExtra == .todos, machine.activeExtra != .todos {
+            model.todos.endTransientState()
+        }
+        if before.activeExtra == .shortcuts, machine.activeExtra != .shortcuts {
+            model.shortcuts.onCloseOrTabSwitch()
+        }
+        if before.activeExtra == .imageConvert, machine.activeExtra != .imageConvert {
+            model.imageConvert.handleSurfaceClosed()
+        }
+        model.showingAllHiddenRecovery = machine.showingAllHiddenRecovery
+        if case .expanded = machine.state {
+        } else {
+            model.traySelection.clear()
+            model.isPinned = false
+        }
+        if case .itemsChanged = event {
+            model.traySelection.prune(validIDs: Set(DropTrayStore.shared.items.map(\.id)))
+        }
+        if case .expanded(let p) = machine.state, machine.activeExtra == nil, !machine.showingAllHiddenRecovery {
+            lastHubPage = p   // N2: for "Trang mở lần cuối"
+            if p == .files { DropTrayStore.shared.refreshStatuses() }
+        }
+        let pageVisible = machine.activeExtra == nil && !machine.showingAllHiddenRecovery
+        CalendarGlanceMonitor.shared.setPageOpen(pageVisible && machine.state == .expanded(.calendar))   // N4: the minute ticker only while shown
         // §3b #37 / P2: the usage scan runs only while the Agents page or the AI usage tool is on screen.
-        AgentUsageMonitor.shared.setPageOpen(machine.state == .expanded(.agents) || machine.state == .expanded(.aiUsage))
-        AgentSessionMonitor.shared.setAgentsPageOpen(machine.state == .expanded(.agents))
-        if machine.state != .expanded(.agents), model.agentReplyTarget != nil { endAgentReply() }   // P6: leaving the page ends composing
-        if machine.state != .expanded(.agents), model.newWindowlessOpen { cancelNewWindowless() }   // P7a: same for the composer
+        AgentUsageMonitor.shared.setPageOpen(pageVisible && (machine.state == .expanded(.agents) || machine.state == .expanded(.aiUsage)))
+        AgentSessionMonitor.shared.setAgentsPageOpen(pageVisible && machine.state == .expanded(.agents))
+        if !(pageVisible && machine.state == .expanded(.agents)), model.agentReplyTarget != nil { endAgentReply() }   // P6: leaving the page ends composing
+        if !(pageVisible && machine.state == .expanded(.agents)), model.newWindowlessOpen { cancelNewWindowless() }   // P7a: same for the composer
         render()
+        if !loggedFirstIslandOpen, let start = openStart, case .expanded(let page) = machine.state {
+            loggedFirstIslandOpen = true
+            let elapsed = ContinuousClock.now - start
+            let ms = elapsed.components.seconds * 1_000 + elapsed.components.attoseconds / 1_000_000_000_000_000
+            Self.perfLog.info("island_first_open page=\(page.rawValue, privacy: .public) ms=\(ms)")
+        }
+        if machine.activeExtra == .todos, before.activeExtra != .todos {
+            ensurePanelKeyForKeyboard()
+        }
+        syncWeatherLifecycle()
+        syncEscapeShortcut()
         syncClipboardKeyboard()
+        syncGalleryKeyboard()
+        syncHubKeyboard()
         syncAgentReplyKeyboard()
         syncHubSwipe()
         syncNowPlayingTicker()
@@ -484,7 +1665,8 @@ final class NotchSurfaceController {
 
     /// §3b #21 — the tap runs only while a waveform is on screen (the Now Playing page, or the peek showing the track).
     func syncWaveform() {
-        let shown = machine.state == .expanded(.nowPlaying) || (machine.state == .peek && machine.itemCount == 0)
+        let onNowPlaying = machine.state == .expanded(.nowPlaying) && machine.activeExtra == nil && !machine.showingAllHiddenRecovery
+        let shown = onNowPlaying || (machine.state == .peek && machine.itemCount == 0 && model.tabCatalog.isEnabled(.nowPlaying))
         AudioTapMonitor.shared.update(waveformVisible: shown)
     }
 
@@ -495,8 +1677,8 @@ final class NotchSurfaceController {
 
     /// A LOCAL scroll-wheel monitor only while the hub is open. Scroll events reach the window under the
     /// pointer whether or not it is key, so the local monitor sees them without making the panel key.
-    /// Only the top band (tabs / search) is a swipe area — the clipboard deck and chip row scroll
-    /// sideways themselves and must keep their gesture.
+    /// Only the top band changes the active page on swipe. The bottom tab strip
+    /// and page scrollers need their own horizontal scroll events.
     private func syncHubSwipe() {
         if case .expanded = machine.state {
             guard swipeMonitor == nil else { return }
@@ -504,14 +1686,24 @@ final class NotchSurfaceController {
             swipeMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] e in
                 guard let self, let panel = self.panel, e.window === panel else { return e }
                 if e.phase == .ended || e.phase == .cancelled || e.momentumPhase == .ended { self.swipe.reset(); return e }
-                let bandTop = self.drawnFrame.maxY - panel.frame.minY          // N1: the drawn shape's top, in window space
-                // P1: every page's dots sit IN the 32-pt band now, so the band is the whole swipe area. (It used to
-                // reach 28 pt lower for the old tab row — on the clipboard hub that swallowed the chip row's scroll.)
-                let bandBottom = bandTop - max(self.model.notchSize.height, 32)
-                guard e.locationInWindow.y >= bandBottom, abs(e.scrollingDeltaX) > abs(e.scrollingDeltaY) else { return e }
+                let drawnTop = self.drawnFrame.maxY - panel.frame.minY          // N1: the drawn shape's top, in window space
+                let metrics = NotchSurfaceLayout.Metrics.standard
+                let headerHeight: CGFloat = self.model.notchSize.height > 0
+                    ? max(self.model.notchSize.height, metrics.bandHeight) + 2
+                    : metrics.plainHeaderHeight + 2
+                let inHeader = e.locationInWindow.y >= drawnTop - headerHeight
+                let inHorizontalBounds = e.locationInWindow.x >= (self.drawnFrame.minX - panel.frame.minX)
+                    && e.locationInWindow.x <= (self.drawnFrame.maxX - panel.frame.minX)
+                guard inHorizontalBounds, inHeader, abs(e.scrollingDeltaX) > abs(e.scrollingDeltaY) else { return e }
                 if let dir = self.swipe.feed(deltaX: e.scrollingDeltaX),
+                   self.machine.activeExtra == nil,
+                   !self.machine.showingAllHiddenRecovery,
                    case .expanded(let page) = self.machine.state,
-                   let next = NotchPages.swipeTarget(from: page, direction: dir, pages: self.model.pages) {   // P1: the dots are the sequence; a tool does not swipe
+                   let next = NotchPages.swipeTarget(
+                       from: page,
+                       direction: dir,
+                       pages: self.model.tabCatalog.visibleLegacyPages(availability: self.destinationAvailability)
+                   ) {   // P1: the dots are the sequence; a tool or hidden tab does not swipe
                     self.switchPage(next)
                 }
                 return nil
@@ -851,7 +2043,7 @@ final class NotchSurfaceController {
     /// key WITHOUT `NSApp.activate` (which would raise every XFinder window); `orderOut` on collapse
     /// gives the keyboard back. A LOCAL monitor is enough: the keys matter only while our panel is key.
     private func syncClipboardKeyboard() {
-        if case .expanded(.clipboard) = machine.state {
+        if case .expanded(.clipboard) = machine.state, model.extraModule == nil {
             guard clipboardKeyMonitor == nil else { return }
             model.clipboard.armLock(ClipboardShelfController.shared.touchIDLockEnabled)
             panel?.makeKeyAndOrderFront(nil)
@@ -1146,7 +2338,7 @@ final class NotchSurfaceController {
     /// in QuitProtection. `sizingOptions = []` so SwiftUI never resizes the window to its content:
     /// the frame is owned by `NotchSurfaceLayout`, and the drawn shape animates inside it.
     private func prepare() {
-        let p = SurfacePanel(kind: .notch, size: CGSize(width: 440, height: 222))
+        let p = SurfacePanel(kind: .notch, size: CGSize(width: 650, height: 228))
         p.sharingType = hideFromCapture ? .none : .readOnly          // B7; off by default since 2026-10-14 (owner could not screenshot it)
         // The surface is black in every state; system controls on it (menus, text-field placeholders,
         // selection colours) must think they are in Dark mode. Measured on the Light-appearance panel:
@@ -1166,6 +2358,33 @@ final class NotchSurfaceController {
     /// bigger than the shape, so hit-tests and the drop target must use this, never `panel.frame`.
     private var drawnSize: CGSize?
 
+    private func closeMirror() {
+        model.mirrorController?.close()
+        model.mirrorController = nil
+    }
+
+    private func synchronizeMirrorVisibility() {
+        guard case .expanded = machine.state, machine.activeExtra == .mirror,
+              panel?.isVisible == true, !isSystemSleeping else {
+            closeMirror()
+            return
+        }
+        if model.mirrorController == nil {
+            let controller = MirrorCaptureController()
+            controller.onAppear()
+            model.mirrorController = controller
+        }
+    }
+
+    private func hideSurface(_ panel: SurfacePanel) {
+        if model.extraModule == .localChat {
+            NotchLocalChatModel.shared.handleTabDisabled()
+        }
+        closeMirror()
+        panel.hide()
+        drawnSize = nil
+    }
+
     /// The drawn shape in screen space: the view lays it out top-centred in the window, so it follows the
     /// window even after a pointer tray has been dragged aside by its title strip.
     private var drawnFrame: CGRect {
@@ -1181,67 +2400,98 @@ final class NotchSurfaceController {
     /// window passes clicks through (measured with `NSWindow.windowNumber(at:)` before this shipped).
     private func render() {
         guard let panel else { return }
-        guard enabled else { panel.hide(); drawnSize = nil; return }
+        guard enabled, !isSystemSleeping else { hideSurface(panel); return }
         guard let screen = resolveSurfaceScreen(busy: surfaceIsBusy) else {
-            panel.hide()
-            drawnSize = nil
+            hideSurface(panel)
             return
         }
         // Keep a live NSScreen reference for the open session. If it disconnects, the resolver
         // returns a connected fallback and this reference is refreshed without discarding page/task state.
         surfaceScreen = screen
         if shouldHideForFullscreen(on: screen) {
-            panel.hide()
-            drawnSize = nil
+            hideSurface(panel)
             return
         }
         let notch = Self.notch(on: screen)
 
-        guard let target = NotchSurfaceLayout.frame(for: machine.state, anchor: machine.anchor,
-                                                    itemCount: machine.itemCount, notch: notch,
+        let settingsPresented = machine.activeExtra == .settings
+        let scale = Self.displayID(for: screen).map { displayScale(for: $0) } ?? .regular
+        let metrics = NotchSurfaceLayout.Metrics.standard.resized(scale)
+        model.displayScale = scale
+        let layoutState: NotchSurfaceMachine.State = {
+            if case .expanded = machine.state, model.extraModule != nil {
+                return model.preferNarrowExtraModule && !settingsPresented ? .expanded(.nowPlaying) : .expanded(.aiUsage)
+            }
+            return machine.state
+        }()
+        let wingProj = collapsedProjection
+        let useCollapsedProjection = (machine.state == .collapsed)
+        guard let target = NotchSurfaceLayout.frame(for: layoutState, anchor: machine.anchor,
+                                                    itemCount: useCollapsedProjection ? wingProj.itemCount : machine.itemCount,
+                                                    notch: notch,
                                                     screen: screen.frame, visible: screen.visibleFrame,
-                                                    pointer: shakePoint, timerActive: countdown != nil,
-                                                    nowPlayingActive: NowPlayingMonitor.shared.hasTrack,
-                                                    agentActive: model.agentActive, agentBusy: model.agentBusy, agentCount: model.agentCount,
+                                                    pointer: shakePoint,
+                                                    timerActive: useCollapsedProjection ? wingProj.timerActive : clockSuite.hasAnyActiveClock,
+                                                    nowPlayingActive: useCollapsedProjection ? wingProj.nowPlayingActive : NowPlayingMonitor.shared.hasTrack,
+                                                    agentActive: useCollapsedProjection ? wingProj.agentActive : model.agentActive,
+                                                    agentBusy: useCollapsedProjection ? wingProj.agentBusy : model.agentBusy,
+                                                    agentCount: useCollapsedProjection ? wingProj.agentCount : model.agentCount,
                                                     pillOnPlainScreens: pillOnPlainScreens,
-                                                    compactActivity: model.activity?.kind.isKeyFeedback == true) else {
+                                                    compactActivity: model.activity?.kind.isKeyFeedback == true,
+                                                    settingsPresented: settingsPresented, metrics: metrics) else {
             model.state = .collapsed
             model.itemCount = machine.itemCount
-            panel.hide()
-            drawnSize = nil
+            hideSurface(panel)
             renderedAnchor = .notch
             return
         }
         drawnSize = target.size
         let wasVisible = panel.isVisible
         let anchorChanged = machine.anchor != renderedAnchor
+        let displayID = Self.displayID(for: screen)
+        let displayChanged = renderedDisplayID != displayID
+        renderedDisplayID = displayID
         renderedAnchor = machine.anchor
         panel.hasShadow = machine.anchor == .pointer      // at the notch a shadow would reveal the rect
 
         let fixed: CGRect
         switch machine.anchor {
         case .notch:
-            fixed = NotchSurfaceLayout.panelFrame(notch: notch, screen: screen.frame)
+            fixed = NotchSurfaceLayout.panelFrame(notch: notch, screen: screen.frame, settingsPresented: settingsPresented, metrics: metrics)
         case .pointer:
             // A tray at the pointer may have been dragged aside by its title strip: while it stays visible at
             // the pointer, every update (a file added, a page change) keeps it where the user put it.
-            if wasVisible && !anchorChanged { applyModel(notch: notch); return }
-            let size = NotchSurfaceLayout.panelSize(notch: notch)
-            fixed = SurfaceGeometry.clamp(CGRect(x: target.midX - size.width / 2, y: target.maxY - size.height,
-                                                 width: size.width, height: size.height), into: screen.visibleFrame)
+            let size = NotchSurfaceLayout.panelSize(notch: notch, settingsPresented: settingsPresented, metrics: metrics)
+            if wasVisible && !anchorChanged {
+                if panel.frame.size != size || displayChanged || !screen.visibleFrame.intersects(panel.frame) {
+                    let resized = CGRect(x: panel.frame.midX - size.width / 2, y: panel.frame.maxY - size.height,
+                                         width: size.width, height: size.height)
+                    fixed = SurfaceGeometry.clamp(resized, into: screen.visibleFrame)
+                } else {
+                    fixed = panel.frame
+                }
+            } else {
+                fixed = SurfaceGeometry.clamp(CGRect(x: target.midX - size.width / 2, y: target.maxY - size.height,
+                                                     width: size.width, height: size.height), into: screen.visibleFrame)
+            }
         }
         if panel.frame != fixed { panel.setFrame(fixed, display: true) }   // first show, anchor change or screen change only
 
         if !wasVisible || anchorChanged {
             // D0c: at the notch the surface GROWS OUT OF THE NOTCH — the shape starts at the notch's own size and
             // springs to the state's size on the next run-loop turn. At the pointer (a shake) it appears at once.
-            let grow = !wasVisible && machine.anchor == .notch
+            let grow = NotchMotionPolicy.shouldGrowFromNotch(
+                wasVisible: wasVisible,
+                anchor: machine.anchor,
+                reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+            )
             var t = Transaction(); t.disablesAnimations = true
             withTransaction(t) {
                 model.appearFromNotch = grow
                 applyModel(notch: notch)
             }
             if !wasVisible { panel.orderFrontRegardless() }   // never key: the user's app keeps focus
+            synchronizeMirrorVisibility()
             if grow {
                 DispatchQueue.main.async { [weak self] in
                     MainActor.assumeIsolated { self?.model.appearFromNotch = false }
@@ -1250,6 +2500,7 @@ final class NotchSurfaceController {
             return
         }
         applyModel(notch: notch)
+        synchronizeMirrorVisibility()
     }
 
     private func shouldHideForFullscreen(on screen: NSScreen) -> Bool {
@@ -1359,7 +2610,39 @@ final class NotchSurfaceController {
         // A level that could not be drawn now would surface later as stale news (the CoreAudio path reports changes
         // made inside the hub, where the key went to macOS).
         if item.kind.isKeyFeedback, !canShowKeyFeedback { return }
-        if activityQueue.push(item) { showCurrentActivity() }
+        let previousMessage = activityQueue.localMessageID
+        let changed = activityQueue.push(item)
+        if let previousMessage, activityQueue.localMessageID != previousMessage {
+            NotchMessageModel.shared.notifyDismissed(id: previousMessage)
+        }
+        if changed { showCurrentActivity() }
+    }
+
+    private func showLocalMessage(_ payload: NotchMessageRules.NoticePayload) {
+        guard canPresentActivities else {
+            NotchMessageModel.shared.notifyDismissed(id: payload.id)
+            return
+        }
+        present(LiveActivity.Item(
+            kind: .localMessage,
+            symbol: "bubble.left",
+            titleKey: "Tin nhắn cục bộ",
+            detail: payload.text,
+            tint: .neutral,
+            duration: payload.duration,
+            localMessageID: payload.id
+        ))
+        // The notice waits behind the expanded editor until the Island is collapsed.
+        dismiss()
+    }
+
+    private func dismissLocalMessage(id: UUID) {
+        if activityQueue.current?.localMessageID == id {
+            activityWork?.cancel()
+            activityTimeUp()
+        } else {
+            activityQueue.removePendingLocalMessage(id: id)
+        }
     }
 
     private func showCurrentActivity() {
@@ -1393,11 +2676,18 @@ final class NotchSurfaceController {
             // Opens the same preview as the row's "Chuyển sang…" menu — the person still reads it and presses Send.
             if let s = AgentSessionMonitor.shared.sessions.first(where: { $0.listID == listID }) { beginHandoff(s, to: target) }
             else { reveal(page: .agents) }
+        case .hydrateAck:
+            acknowledgeHydration()
+        case .hydrateSnooze(let minutes):
+            snoozeHydration(minutes: minutes)
         }
     }
 
     private func activityTimeUp() {
         activityWork = nil
+        if let id = activityQueue.current?.localMessageID {
+            NotchMessageModel.shared.notifyDismissed(id: id)
+        }
         if activityQueue.advance() != nil {
             showCurrentActivity()
         } else {
@@ -1412,12 +2702,18 @@ final class NotchSurfaceController {
         }
     }
 
-    // MARK: - Countdown timer (B4b)
+    // MARK: - Countdown, Stopwatch, Pomodoro & Hydration (B4b + XF-ISLAND 1B)
+
+    private var clockSuite = NotchClockSuite()
+    private var countdownTicker: Timer?
+    private var hydrationWork: DispatchWorkItem?
+    private var terminateObserver: NSObjectProtocol?
+    private var didRestoreClockState = false
 
     private var countdown: LiveActivity.Countdown? {
-        didSet { model.timer = countdown }      // P2: the Hẹn giờ page reads the countdown itself (pause, progress)
+        get { clockSuite.countdown }
+        set { clockSuite.countdown = newValue }
     }
-    private var countdownTicker: Timer?
 
     var timerRunning: Bool { countdown != nil }
 
@@ -1433,75 +2729,299 @@ final class NotchSurfaceController {
         model.timerDraftMinutes = m
     }
 
-    /// A 1 s ticker exists ONLY while a countdown RUNS (it drives the badge's seconds); none while paused or idle.
+    func selectClockMode(_ mode: NotchClockMode) {
+        guard clockSuite.selectedMode != mode else { return }
+        clockSuite.selectedMode = mode
+        persistClockState()
+        let hadBadge = model.timerText != nil
+        syncClockModel(at: Date())
+        if hadBadge != (model.timerText != nil) || model.timerText != nil { render() }
+    }
+
+    /// A 1 s ticker exists ONLY while a clock RUNS (countdown, stopwatch, or pomodoro); none while paused or idle.
     func startTimer(minutes: Int) {
         guard enabled, panel != nil else { return }
-        countdown = LiveActivity.Countdown(minutes: minutes, now: Date())
-        armCountdownTicker()
-        tickCountdown()
+        let now = Date()
+        clockSuite.selectedMode = .countdown
+        clockSuite.countdown = LiveActivity.Countdown(minutes: minutes, now: now)
+        commitClockChange(at: now, forceRender: true)
     }
 
     /// P2: freeze / restart the clock. A paused countdown keeps its wing (the time left, with a pause glyph) and no ticker.
     func pauseTimer() {
         guard let c = countdown, !c.isPaused else { return }
-        countdown = c.paused(at: Date())
-        countdownTicker?.invalidate(); countdownTicker = nil
-        tickCountdown()
+        let now = Date()
+        clockSuite.countdown = c.paused(at: now)
+        commitClockChange(at: now, forceRender: true)
     }
 
     func resumeTimer() {
         guard let c = countdown, c.isPaused else { return }
-        countdown = c.resumed(at: Date())
-        armCountdownTicker()
-        tickCountdown()
+        let now = Date()
+        clockSuite.countdown = c.resumed(at: now)
+        commitClockChange(at: now, forceRender: true)
     }
 
     /// P2: "−5 / +5" on a running or paused countdown (what is left stays within 1 minute … the maximum).
     func extendTimer(byMinutes minutes: Int) {
         guard let c = countdown else { return }
-        countdown = c.extended(byMinutes: minutes, now: Date())
-        tickCountdown()
+        let now = Date()
+        clockSuite.countdown = c.extended(byMinutes: minutes, now: now)
+        commitClockChange(at: now, forceRender: false)
     }
 
     func cancelTimer() {
-        countdownTicker?.invalidate(); countdownTicker = nil
-        countdown = nil
-        model.timerText = nil
-        render()
+        let now = Date()
+        clockSuite.countdown = nil
+        commitClockChange(at: now, forceRender: true)
     }
 
-    private func armCountdownTicker() {
-        countdownTicker?.invalidate()
-        let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in MainActor.assumeIsolated { self?.tickCountdown() } }
-        RunLoop.main.add(t, forMode: .common)
-        countdownTicker = t
+    // MARK: - Stopwatch
+
+    func startStopwatch() {
+        guard enabled, panel != nil else { return }
+        let now = Date()
+        clockSuite.selectedMode = .stopwatch
+        clockSuite.stopwatch = clockSuite.stopwatch.started(at: now)
+        commitClockChange(at: now, forceRender: true)
+    }
+
+    func pauseStopwatch() {
+        guard clockSuite.stopwatch.isRunning else { return }
+        let now = Date()
+        clockSuite.stopwatch = clockSuite.stopwatch.paused(at: now)
+        commitClockChange(at: now, forceRender: true)
+    }
+
+    func resumeStopwatch() {
+        guard enabled, panel != nil, clockSuite.stopwatch.isPaused else { return }
+        let now = Date()
+        clockSuite.stopwatch = clockSuite.stopwatch.resumed(at: now)
+        commitClockChange(at: now, forceRender: true)
+    }
+
+    func lapStopwatch() {
+        guard clockSuite.stopwatch.isActive else { return }
+        let now = Date()
+        clockSuite.stopwatch = clockSuite.stopwatch.recordedLap(at: now)
+        commitClockChange(at: now, forceRender: false)
+    }
+
+    func resetStopwatch() {
+        let now = Date()
+        clockSuite.stopwatch = clockSuite.stopwatch.reset()
+        commitClockChange(at: now, forceRender: true)
+    }
+
+    // MARK: - Pomodoro
+
+    func startPomodoro() {
+        guard enabled, panel != nil else { return }
+        let now = Date()
+        clockSuite.selectedMode = .pomodoro
+        clockSuite.pomodoro = clockSuite.pomodoro.started(at: now)
+        commitClockChange(at: now, forceRender: true)
+    }
+
+    func pausePomodoro() {
+        guard clockSuite.pomodoro.isRunning else { return }
+        let now = Date()
+        clockSuite.pomodoro = clockSuite.pomodoro.paused(at: now)
+        commitClockChange(at: now, forceRender: true)
+    }
+
+    func resumePomodoro() {
+        guard enabled, panel != nil, clockSuite.pomodoro.isPaused else { return }
+        let now = Date()
+        clockSuite.pomodoro = clockSuite.pomodoro.resumed(at: now)
+        commitClockChange(at: now, forceRender: true)
+    }
+
+    func skipPomodoroPhase() {
+        let now = Date()
+        clockSuite.pomodoro = clockSuite.pomodoro.skipped()
+        commitClockChange(at: now, forceRender: true)
+    }
+
+    func resetPomodoro() {
+        let now = Date()
+        clockSuite.pomodoro = clockSuite.pomodoro.reset()
+        commitClockChange(at: now, forceRender: true)
+    }
+
+    // MARK: - Hydration reminder (optional, independent switch)
+
+    func setHydrationEnabled(_ isOn: Bool) {
+        let now = Date()
+        clockSuite.hydration.setEnabled(isOn, now: now)
+        commitClockChange(at: now, forceRender: false)
+    }
+
+    func setHydrationInterval(minutes: Int) {
+        let now = Date()
+        clockSuite.hydration.setInterval(minutes: minutes, now: now)
+        commitClockChange(at: now, forceRender: false)
+    }
+
+    func setHydrationDailyLimit(_ limit: Int) {
+        let now = Date()
+        clockSuite.hydration.setDailyLimit(limit, now: now)
+        commitClockChange(at: now, forceRender: false)
+    }
+
+    func acknowledgeHydration() {
+        let now = Date()
+        clockSuite.hydration.acknowledge(now: now)
+        commitClockChange(at: now, forceRender: false)
+    }
+
+    func snoozeHydration(minutes: Int = NotchHydrationReminder.snoozeMinutes) {
+        let now = Date()
+        clockSuite.hydration.snooze(minutes: minutes, now: now)
+        commitClockChange(at: now, forceRender: false)
+    }
+
+    // MARK: - Clock persistence, sleep/wake & single ticker
+
+    private func persistClockState() {
+        let defaults = UserDefaults.standard
+        if let data = clockSuite.encoded() {
+            defaults.set(data, forKey: NotchClockSuite.stateStorageKey)
+        }
+        defaults.set(clockSuite.hydration.enabled, forKey: NotchHydrationReminder.enabledKey)
+        defaults.set(clockSuite.hydration.intervalMinutes, forKey: NotchHydrationReminder.intervalKey)
+    }
+
+    private func restoreClockStateIfNeeded() {
+        guard !didRestoreClockState else { return }
+        didRestoreClockState = true
+        let defaults = UserDefaults.standard
+        let now = Date()
+        let savedData = defaults.data(forKey: NotchClockSuite.stateStorageKey)
+        let hydrationEnabled = defaults.object(forKey: NotchHydrationReminder.enabledKey) as? Bool
+        let hydrationInterval = defaults.object(forKey: NotchHydrationReminder.intervalKey) as? Int
+        clockSuite = NotchClockSuite.decoded(
+            from: savedData,
+            hydrationEnabledOverride: hydrationEnabled,
+            hydrationIntervalOverride: hydrationInterval,
+            now: now
+        )
+        reconcileClockSuite(at: now, forceRender: true)
+    }
+
+    private func handleSystemWake() {
+        guard enabled else { return }
+        reconcileClockSuite(at: Date(), forceRender: true)
+    }
+
+    private func commitClockChange(at now: Date, forceRender: Bool) {
+        persistClockState()
+        updateClockSchedulers(at: now)
+        let hadBadge = model.timerText != nil
+        let hadPaused = model.timerBadgePaused
+        syncClockModel(at: now)
+        if forceRender || hadBadge != (model.timerText != nil) || hadPaused != model.timerBadgePaused {
+            render()
+        }
+    }
+
+    private func updateClockSchedulers(at now: Date) {
+        if clockSuite.needsSecondTicker {
+            if countdownTicker == nil {
+                let t = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.tickCountdown() }
+                }
+                RunLoop.main.add(t, forMode: .common)
+                countdownTicker = t
+            }
+        } else {
+            countdownTicker?.invalidate()
+            countdownTicker = nil
+        }
+
+        hydrationWork?.cancel()
+        hydrationWork = nil
+        if enabled, let seconds = clockSuite.hydration.secondsUntilDue(at: now) {
+            let work = DispatchWorkItem { [weak self] in
+                MainActor.assumeIsolated { self?.reconcileClockSuite(at: Date(), forceRender: false) }
+            }
+            hydrationWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + max(0.5, seconds), execute: work)
+        }
+    }
+
+    private func syncClockModel(at now: Date) {
+        model.clockMode = clockSuite.selectedMode
+        model.timer = clockSuite.countdown
+        model.stopwatch = clockSuite.stopwatch
+        model.pomodoro = clockSuite.pomodoro
+        model.hydration = clockSuite.hydration
+        model.timerNow = now
+        if let badge = clockSuite.collapsedBadge(at: now) {
+            model.timerText = badge.text
+            model.timerBadgeMode = badge.mode
+            model.timerBadgeSymbol = badge.symbol
+            model.timerBadgePaused = badge.isPaused
+        } else {
+            model.timerText = nil
+            model.timerBadgeMode = .countdown
+            model.timerBadgeSymbol = "timer"
+            model.timerBadgePaused = false
+        }
+    }
+
+    private func reconcileClockSuite(at now: Date, forceRender: Bool) {
+        let events = clockSuite.reconcile(at: now)
+        if !events.isEmpty {
+            persistClockState()
+        }
+        updateClockSchedulers(at: now)
+        let hadBadge = model.timerText != nil
+        let hadPaused = model.timerBadgePaused
+        syncClockModel(at: now)
+        if forceRender || !events.isEmpty || hadBadge != (model.timerText != nil) || hadPaused != model.timerBadgePaused {
+            render()
+        }
+        for event in events {
+            switch event {
+            case .countdownFinished(let c):
+                NSSound(named: "Glass")?.play()
+                present(LiveActivity.timerFinishedItem(c))
+            case .pomodoroPhaseFinished(let completed, let next, _):
+                NSSound(named: "Glass")?.play()
+                present(NotchClockSuite.pomodoroFinishedItem(completed: completed, next: next))
+            case .hydrationDue(let intervalMinutes):
+                NSSound(named: "Pop")?.play()
+                present(NotchClockSuite.hydrationDueItem(intervalMinutes: intervalMinutes))
+            }
+        }
     }
 
     private func tickCountdown() {
-        guard let c = countdown else { return }
-        let now = Date()
-        if c.isFinished(at: now) {
-            cancelTimer()
-            NSSound(named: "Glass")?.play()
-            present(LiveActivity.timerFinishedItem(c))
-            return
-        }
-        let wasHidden = model.timerText == nil
-        model.timerText = c.label(at: now)
-        model.timerNow = now                  // the page's progress ring follows the same tick, never its own timer
-        if wasHidden { render() }        // the badge appears; afterwards only its text changes
+        reconcileClockSuite(at: Date(), forceRender: false)
     }
 
     // MARK: - Hub actions (B2d)
 
     private var job: Task<Void, Never>?
 
-    /// Runs one action on the held files. One job at a time; progress is counted in files done.
+    /// Runs one action on the held (or selected) files. One job at a time; progress is counted in files done.
     func run(_ action: NotchActions.Action) {
         guard model.task?.isRunning != true, model.task?.isAwaitingReview != true else { return }
-        let items = DropTrayStore.shared.items.filter { !$0.isMissing }.map { URL(fileURLWithPath: $0.path) }
+        DropTrayStore.shared.refreshStatuses()
+        let resolved = DropTrayActionResolution.resolve(
+            items: DropTrayStore.shared.items,
+            selection: model.traySelection,
+            id: \.id,
+            isActionable: \.status.isActionable
+        )
+        let items = resolved.targets.map { URL(fileURLWithPath: $0.path) }
+        guard !items.isEmpty else {
+            model.notice = "Không có tệp hợp lệ để thao tác."
+            return
+        }
         model.notice = nil
-        if action == .airDrop { shareViaAirDrop(items); return }
+        if action == .airDrop { airDropFileURLs(items); return }
         let inputs = NotchActions.inputs(for: action, from: items)
         guard !inputs.isEmpty else { return }
         if case .convert = action { prepareImageReview(action, inputs: inputs); return }
@@ -1667,17 +3187,6 @@ final class NotchSurfaceController {
         case .toPDF: return "pdf"
         case .ocr, .airDrop: return "other"
         }
-    }
-
-    /// AirDrop through the system sharing service. NOT verified live yet: whether the AirDrop picker
-    /// opens from a non-activating status-bar panel needs a human at the screen.
-    private func shareViaAirDrop(_ items: [URL]) {
-        guard !items.isEmpty, let service = NSSharingService(named: .sendViaAirDrop) else { return }
-        guard service.canPerform(withItems: items) else {
-            model.notice = "AirDrop không khả dụng cho các tệp này trên máy này."
-            return
-        }
-        service.perform(withItems: items)
     }
 
     // MARK: - Detail window (grid of every staged file)

@@ -249,11 +249,14 @@ struct PaneSearchState: Equatable {
     private func applyListing(_ result: Result<[DirectoryEntry], DirectoryReadError>, path: String, settled: Bool) {
         switch result {
         case .success(let listing):
+            let unchangedRefresh = loadState == .loaded && loadedPath == path && rawEntries == listing
             rawEntries = listing
             loadedPath = path
             loadState = .loaded
-            applyEntries()
-            BrowserMetadata.shared.load(folder: path)   // XF-T32 W3: pins, nicknames, chips for this folder
+            if !unchangedRefresh {
+                applyEntries()
+                BrowserMetadata.shared.load(folder: path)   // XF-T32 W3: pins, nicknames, chips for this folder
+            }
             var reselected: Bool = false
             if let wanted: String = selectAfterLoad, listing.contains(where: { $0.name == wanted }) {
                 // `appendingPathComponent`, not string concatenation — `path` can be "/" (a volume root),
@@ -511,8 +514,6 @@ enum BrowserSheet: String, Identifiable {
     /// `BrowserWindow.sendEvent` to activate the pane under a click that lands outside a file view (path bar,
     /// status bar, empty area). Not observed: a geometry write must never re-render the panes.
     @ObservationIgnored var paneFramesInWindow: [PaneID: CGRect] = [:]
-    var shelf = ShelfModel()
-    var shelfVisible = false
     var palette: PaletteMode?
     var editingLocation: PaneID?
     var renaming: PaneID?
@@ -541,7 +542,6 @@ enum BrowserSheet: String, Identifiable {
             for id in snapshot.tree.panes where tabLists[id] == nil {
                 installPane(id, tabs: [defaultTabSnapshot(home: home)], selectedIndex: 0)
             }
-            self.shelfVisible = snapshot.shelfVisible
             if !snapshot.tree.panes.contains(activePane), let first = snapshot.tree.panes.first {
                 self.activePane = first
             }
@@ -715,16 +715,12 @@ enum BrowserSheet: String, Identifiable {
             copyOrMoveToOtherPane(move: false)
         case .moveToOtherPane:
             copyOrMoveToOtherPane(move: true)
-        case .addToShelf:
-            addSelectionToShelfGated()
         case .addToDropTray:
             // XF-T40 — the same thing the Finder Sync menu and xfinder://droptray-add do: the notch holds the files.
             let urls = active.selectedEntries.map { URL(fileURLWithPath: $0.path) }
             guard !urls.isEmpty else { return false }
             DropTrayStore.shared.add(urls: urls)
             NotchSurfaceController.shared.reveal(page: .files)
-        case .toggleShelf:
-            shelfVisible.toggle()
         case .operations:
             break   // view-only: opens the OperationsPanelView popover.
         case .batchRename:
@@ -878,7 +874,7 @@ enum BrowserSheet: String, Identifiable {
             guard tree.count >= 2, !active.selectedEntries.isEmpty, let other: PaneID = tree.other(than: activePane),
                   let target: PaneState = panes[other] else { return false }
             return VirtualLocation.parse(target.path) == nil && target.search == nil
-        case .addToShelf, .addToDropTray:
+        case .addToDropTray:
             return !active.selectedEntries.isEmpty
         case .compress:
             return !active.selectedEntries.isEmpty
@@ -892,7 +888,7 @@ enum BrowserSheet: String, Identifiable {
             return true
         case .newWindow, .newFolder, .toggleHidden, .selectAll, .viewIcons, .viewList, .viewColumns, .viewGallery,
              .filter, .find, .editLocation, .goToFolder, .quickOpen, .commandPalette, .equalizePanes, .zoomPane,
-             .nextPane, .previousPane, .presetSingle, .presetSideBySide, .presetStacked, .presetGrid, .toggleShelf,
+             .nextPane, .previousPane, .presetSingle, .presetSideBySide, .presetStacked, .presetGrid,
              .operations, .saveWorkspace, .openWorkspace, .closeWindow:
             return true
         case .getInfo:
@@ -1207,12 +1203,13 @@ enum BrowserSheet: String, Identifiable {
     /// Drag-and-drop and ⌘V/⌥⌘V both land here. `copy`: `nil` ⇒ same volume moves, cross-volume copies (Finder's
     /// own default); `true` forces a copy (⌥ while dragging, plain ⌘V); `false` forces a move (⌘ while dragging,
     /// ⌥⌘V).
-    func drop(_ paths: [String], into folder: String, copy: Bool?) {
+    @discardableResult
+    func drop(_ paths: [String], into folder: String, copy: Bool?) -> UUID? {
         guard FileOperationRules.nestingViolation(sources: paths, destination: folder) == nil else {
             banner = "Không thể chép một thư mục vào chính nó"
-            return
+            return nil
         }
-        guard !blockCrossBoundaryCloudDrop(paths: paths, destination: folder) else { return }   // XF-T30 W8 hook
+        guard !blockCrossBoundaryCloudDrop(paths: paths, destination: folder) else { return nil }   // XF-T30 W8 hook
         let sameVolume = DirectoryReader.volumeID(of: folder) != nil
             && paths.allSatisfy { DirectoryReader.volumeID(of: $0) == DirectoryReader.volumeID(of: folder) }
         let shouldCopy: Bool
@@ -1221,7 +1218,7 @@ enum BrowserSheet: String, Identifiable {
         } else {
             shouldCopy = !sameVolume
         }
-        enqueueGated(shouldCopy ? .copy : .move, sources: paths, destination: folder)
+        return enqueueGated(shouldCopy ? .copy : .move, sources: paths, destination: folder)
     }
 
     private func copyOrMoveToOtherPane(move: Bool) {
@@ -1295,16 +1292,6 @@ enum BrowserSheet: String, Identifiable {
         return ids.contains { isSettling(names[$0]) || isSettling(contents[$0]) }
     }
 
-    // MARK: - Shelf
-
-    private func addSelectionToShelf() {
-        let selected = active.selectedEntries
-        guard !selected.isEmpty else { return }
-        var sizes: [String: Int64] = [:]
-        for entry in selected where entry.size >= 0 { sizes[entry.path] = entry.size }
-        shelf.add(selected.map(\.path), sizes: sizes)
-    }
-
     // MARK: - Compress / archive
 
     private func compressSelection() {
@@ -1365,7 +1352,7 @@ enum BrowserSheet: String, Identifiable {
             let selectedIndex = list.tabs.firstIndex(of: list.selectedTab) ?? 0
             return PaneSnapshot(id: id, tabs: tabs, selectedTab: selectedIndex)
         }
-        return WindowSnapshot(frame: frame, tree: tree, panes: paneSnapshots, activePane: activePane, shelfVisible: shelfVisible)
+        return WindowSnapshot(frame: frame, tree: tree, panes: paneSnapshots, activePane: activePane, shelfVisible: false)   // XF-T41: the browser Shelf moved to the Drop Tray; the field stays for the file format
     }
 
     /// Stops the watcher of EVERY tab of EVERY pane (contract §3/§7) — not just the selected one `panes.values`
@@ -1525,25 +1512,15 @@ extension BrowserWindowModel {
         split(direction)
     }
 
-    private func addSelectionToShelfGated() {
-        guard LicenseManager.shared.allows(.browserShelf) else {
-            banner = "Cần XFinder Pro để thêm vào Shelf"
-            return
-        }
-        addSelectionToShelf()
-        // XF-T40 (owner, 2026-11-09: "chọn Add to Shelf thì tôi không thấy file ở Shelf nào"): the Shelf bar is hidden by
-        // default, and adding to it never showed it — the item vanished as far as the person could tell.
-        shelfVisible = true
-    }
-
     /// Free: starting a copy/move while another file operation is already running shows a banner instead of
     /// queueing it — Pro (`.browserQueue`) queues normally, same as `FileOperationQueue` already does on its own.
-    private func enqueueGated(_ kind: FileOperationKind, sources: [String], destination: String?) {
+    @discardableResult
+    private func enqueueGated(_ kind: FileOperationKind, sources: [String], destination: String?) -> UUID? {
         if kind == .copy || kind == .move, !LicenseManager.shared.allows(.browserQueue), FileOperationQueue.shared.hasActiveWork {
             banner = "Bản Free chạy một thao tác chép một lúc — chờ việc đang chạy xong"
-            return
+            return nil
         }
-        _ = FileOperationQueue.shared.enqueue(kind, sources: sources, destination: destination)
+        return FileOperationQueue.shared.enqueue(kind, sources: sources, destination: destination)
     }
 
     /// `.downloadNow`/`.removeDownload` on more than one item need Pro (`.browserBatchCloud`); a single item is

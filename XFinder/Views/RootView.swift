@@ -132,6 +132,12 @@ struct DetailHostView: View {
                 MediaDetailView()
             case .aiAgents:
                 AIAgentsDetailView()
+            case .stocks:
+                NotchInterfaceDetailView(toolPage: .stocks)
+            case .websiteAnalytics:
+                WebsiteAnalyticsSettingsPage()
+            case .revenue:
+                NotchInterfaceDetailView(toolPage: .revenue)
             case .calendar:
                 CalendarSettingsDetailView()
             case .liveActivities:

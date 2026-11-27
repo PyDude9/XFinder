@@ -393,6 +393,8 @@ private struct ClipboardSettingsBody: View {
                     .settingsRow()
             }
 
+            TextSnippetsSettingsSection()
+
             SettingsSection(title: L10n.t("Đồng bộ iCloud"),
                             footer: L10n.t("Cho ứng dụng Clipboard trên iPhone sau này.")) {
                 ToggleRow(title: L10n.t("Đồng bộ clipboard qua iCloud"), isOn: $icloudSync)
@@ -599,5 +601,127 @@ private struct RenameBoardSheet: View {
         .padding(20)
         .frame(width: 320)
         .onAppear { name = board?.name ?? "" }
+    }
+}
+
+private struct TextSnippetsSettingsSection: View {
+    @AppStorage("clipboard.snippetsAutoExpand") private var autoExpand = false
+    @State private var store = TextSnippetStore.shared
+    @State private var expander = TextSnippetExpander.shared
+    @State private var trigger = ""
+    @State private var expansion = ""
+    @State private var errorMessage: String?
+
+    var body: some View {
+        SettingsSection(
+            title: L10n.t("Đoạn văn bản nhanh (Snippets)"),
+            footer: L10n.t("Hỗ trợ biến {date}, {time}, {datetime} và {clipboard}. Bấm Sao chép để mở rộng và đưa ngay vào clipboard.")
+        ) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.row) {
+                ToggleRow(
+                    title: L10n.t("Tự động mở rộng khi gõ"),
+                    subtitle: L10n.t("Gõ từ khóa ở bất kỳ ứng dụng nào để tự thay bằng nội dung mở rộng. Bỏ qua ô mật khẩu."),
+                    isOn: $autoExpand
+                )
+                .onChange(of: autoExpand) { expander.applySettings() }
+
+                if autoExpand {
+                    HStack(spacing: 6) {
+                        switch expander.state {
+                        case .running:
+                            Text(L10n.t("Đang lắng nghe gõ tắt."))
+                                .font(XFinderTokens.Font.caption)
+                                .foregroundColor(.secondary)
+                        case .needsAccessibility:
+                            Text(L10n.t("Cần quyền Trợ năng để tự động mở rộng khi gõ."))
+                                .font(XFinderTokens.Font.caption)
+                                .foregroundColor(.orange)
+                            Spacer()
+                            Button(L10n.t("Cấp quyền Trợ năng…")) {
+                                if !WindowManager.requestAccessibilityTrust() {
+                                    WindowManager.openAccessibilityPane()
+                                }
+                            }
+                            .controlSize(.small)
+                        case .noSnippets:
+                            Text(L10n.t("Thêm ít nhất một đoạn văn bản nhanh đang bật để kích hoạt."))
+                                .font(XFinderTokens.Font.caption)
+                                .foregroundColor(.secondary)
+                        case .off:
+                            EmptyView()
+                        }
+                    }
+                }
+
+                Divider()
+
+                HStack(spacing: XFinderTokens.Space.inline) {
+                    TextField(L10n.t("Từ khóa (ví dụ ;sig)"), text: $trigger)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 140)
+                    TextField(L10n.t("Nội dung mở rộng"), text: $expansion)
+                        .textFieldStyle(.roundedBorder)
+                    Button(L10n.t("Thêm")) {
+                        if let err = store.add(trigger: trigger, expansion: expansion) {
+                            switch err {
+                            case .emptyTrigger:
+                                errorMessage = L10n.t("Từ khóa không được để trống.")
+                            case .emptyExpansion:
+                                errorMessage = L10n.t("Nội dung mở rộng không được để trống.")
+                            case .duplicateTrigger:
+                                errorMessage = L10n.t("Từ khóa này đã tồn tại.")
+                            }
+                        } else {
+                            trigger = ""
+                            expansion = ""
+                            errorMessage = nil
+                        }
+                    }
+                    .controlSize(.small)
+                }
+
+                if let errorMessage {
+                    Text(errorMessage)
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.orange)
+                }
+
+                if store.snippets.isEmpty {
+                    Text(L10n.t("Chưa có đoạn văn bản nhanh nào."))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(store.snippets) { item in
+                        HStack(spacing: XFinderTokens.Space.inline) {
+                            Toggle("", isOn: Binding(
+                                get: { item.isEnabled },
+                                set: { next in
+                                    if next != item.isEnabled { store.toggle(id: item.id) }
+                                }
+                            ))
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                            .labelsHidden()
+                            Text(item.trigger)
+                                .font(XFinderTokens.Font.row)
+                                .monospaced()
+                                .opacity(item.isEnabled ? 1.0 : 0.5)
+                            Text(item.expansion)
+                                .font(XFinderTokens.Font.rowValue)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .opacity(item.isEnabled ? 1.0 : 0.5)
+                            Spacer()
+                            Button(L10n.t("Sao chép")) { store.copyExpanded(item) }
+                                .controlSize(.small)
+                            Button(L10n.t("Xoá")) { store.delete(id: item.id) }
+                                .controlSize(.small)
+                        }
+                    }
+                }
+            }
+            .settingsRow()
+            .onAppear { expander.applySettings() }
+        }
     }
 }

@@ -192,7 +192,7 @@ struct FinderSearchDetailView: View {
     private var quickResultsSection: some View {
         let grouped = Dictionary(grouping: quickSearch.results, by: \.type)
         return VStack(alignment: .leading, spacing: 8) {
-            ForEach([QuickSearchResult.ResultType.quicklink, .app, .calculator, .file], id: \.self) { type in
+            ForEach([QuickSearchResult.ResultType.quicklink, .snippet, .settingsPage, .app, .calculator, .file], id: \.self) { type in
                 if let items = grouped[type], !items.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(type.titleVI)

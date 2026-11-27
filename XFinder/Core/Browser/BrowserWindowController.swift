@@ -31,6 +31,11 @@ import os
 
     private override init() {
         super.init()
+        // Pre-warm FileProvider/Ubiquity lookup off the main thread once so the first outline cell
+        // render does not take a synchronous ~376 ms dlopen hitch on the main thread (measured 2026-11-25).
+        Task.detached(priority: .utility) {
+            _ = CloudFactsCache.isUbiquitousFolder("/tmp")
+        }
         #if DEBUG
         installClickTracer()
         #endif
@@ -280,6 +285,12 @@ import os
             MainThreadHitchProbe.shared.stop()
             indexLifecycleAllWindowsClosed()
         }
+    }
+
+    /// The key browser window's model, else the most recently opened window's; nil when no browser window is open.
+    var frontmostModel: BrowserWindowModel? {
+        if let window = NSApp.keyWindow as? BrowserWindow, let model = modelsByWindow[ObjectIdentifier(window)] { return model }
+        return windows.last.flatMap { modelsByWindow[ObjectIdentifier($0)] }
     }
 
     /// ⌘W / File ▸ Đóng cửa sổ / the palette: close this model's window (with native tabs: its tab), like the window's

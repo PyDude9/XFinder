@@ -95,6 +95,58 @@ enum AgentUsage {
         return t
     }
 
+    static func parseGeminiSession(_ data: Data) -> [ClaudeLine] {
+        guard let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let session = root["sessionId"] as? String, !session.isEmpty,
+              let messages = root["messages"] as? [[String: Any]] else { return [] }
+        return messages.compactMap { message in
+            guard message["type"] as? String == "gemini",
+                  let id = message["id"] as? String, !id.isEmpty,
+                  let stamp = message["timestamp"] as? String, let time = parseISO(stamp),
+                  let tokens = message["tokens"] as? [String: Any],
+                  let input = usageCount(tokens["input"]), let output = usageCount(tokens["output"])
+            else { return nil }
+            let cached = usageCount(tokens["cached"]) ?? 0
+            return ClaudeLine(key: "\(session)|\(id)", time: time, input: max(0, input - cached),
+                              output: output, cacheRead: cached, cacheCreate: 0)
+        }
+    }
+
+    static func parseAntigravityStep(_ data: Data, conversation: String) -> ClaudeLine? {
+        guard let step = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              step["type"] as? String == "PLANNER_RESPONSE", step["status"] as? String == "DONE",
+              let index = usageCount(step["step_index"]),
+              let stamp = step["created_at"] as? String, let time = parseISO(stamp),
+              let input = usageCount(step["input_tokens"]), let output = usageCount(step["output_tokens"])
+        else { return nil }
+        return ClaudeLine(key: "\(conversation)|\(index)", time: time, input: input, output: output,
+                          cacheRead: usageCount(step["cache_read_tokens"]) ?? 0, cacheCreate: 0)
+    }
+
+    struct AntigravityQuota: Equatable, Identifiable, Sendable {
+        let id: String
+        let remaining: Double
+        let resetsAt: Date
+    }
+
+    static func parseAntigravityQuota(_ data: Data, capturedAt: Date, now: Date) -> [AntigravityQuota] {
+        guard data.count <= 32_768, (-60...900).contains(now.timeIntervalSince(capturedAt)),
+              let root = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let quota = root["quota"] as? [String: [String: Any]] else { return [] }
+        return quota.keys.sorted().prefix(32).compactMap { id in
+            guard let bucket = quota[id],
+                  bucket["disabled"] as? Bool != true,
+                  let remaining = bucket["remaining_fraction"] as? Double, (0...1).contains(remaining),
+                  let raw = bucket["reset_time"] as? String, let reset = parseISO(raw), reset > now else { return nil }
+            return AntigravityQuota(id: id, remaining: remaining, resetsAt: reset)
+        }
+    }
+
+    private static func usageCount(_ value: Any?) -> Int? {
+        guard let count = value as? Int, (0...100_000_000).contains(count) else { return nil }
+        return count
+    }
+
     // MARK: Codex — its own rate limits
 
     struct CodexWindow: Equatable {

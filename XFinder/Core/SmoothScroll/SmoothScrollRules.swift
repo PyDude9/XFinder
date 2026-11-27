@@ -15,6 +15,7 @@ enum SmoothScrollRules {
         static let speed = "smoothScroll.speed"
         static let smoothness = "smoothScroll.smoothness"
         static let reverse = "smoothScroll.reverse"
+        static let linear = "smoothScroll.linear"
     }
 
     static let speedRange = 50...300           // percent
@@ -27,6 +28,7 @@ enum SmoothScrollRules {
         var speed = SmoothScrollRules.defaultSpeed
         var smoothness = SmoothScrollRules.defaultSmoothness
         var reverse = false
+        var linear = false
 
         /// Out-of-range values (an old build, `defaults write`) are pulled back in, never trusted.
         var clamped: Settings {
@@ -89,8 +91,10 @@ enum SmoothScrollRules {
         let s = settings.clamped
         let factor = Double(s.speed) / 100 * (s.reverse ? -1 : 1)
         // A line wheel says how many lines; a pixel wheel without phases (high-resolution wheels) says how many pixels.
-        let dy = e.isContinuous ? Double(e.pointY) : Double(e.lineY) * pixelsPerLine
-        let dx = e.isContinuous ? Double(e.pointX) : Double(e.lineX) * pixelsPerLine
+        let rawY = e.isContinuous ? Double(e.pointY) : Double(e.lineY) * pixelsPerLine
+        let rawX = e.isContinuous ? Double(e.pointX) : Double(e.lineX) * pixelsPerLine
+        let dy = s.linear ? (rawY == 0 ? 0 : (rawY > 0 ? pixelsPerLine : -pixelsPerLine)) : rawY
+        let dx = s.linear ? (rawX == 0 ? 0 : (rawX > 0 ? pixelsPerLine : -pixelsPerLine)) : rawX
         guard dx != 0 || dy != 0 else { return .pass }
         return .smooth(dx: dx * factor, dy: dy * factor)
     }

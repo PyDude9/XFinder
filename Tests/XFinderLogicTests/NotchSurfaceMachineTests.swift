@@ -9,6 +9,17 @@ final class NotchSurfaceMachineTests: XCTestCase {
 
     func holding(_ n: Int) -> M.Machine { var m = M.Machine(); m.itemCount = n; return m }
 
+    func testInlineSettingsSurvivesPointerLeaveAndAllowsFileDropsToOpenTray() {
+        var machine = holding(0)
+        machine.handle(.openExtra(.settings), settings: s, now: t0)
+        machine.handle(.pointerAway(since: t0), settings: s, now: at(2))
+        XCTAssertEqual(machine.activeExtra, .settings)
+        XCTAssertTrue(machine.state.isOpen)
+        machine.handle(.fileDragInZone, settings: s, now: at(3))
+        XCTAssertNil(machine.activeExtra)
+        XCTAssertEqual(machine.state, .expanded(.files))
+    }
+
     // MARK: Opening straight onto a page (D0c)
 
     func testActivateOnOpensStraightOnThePageAndOnlySwitchesWhenAlreadyOpen() {
@@ -28,6 +39,17 @@ final class NotchSurfaceMachineTests: XCTestCase {
     }
 
     // MARK: Hover
+
+    func testDirectAIUsageSelectionOpensEvenAfterPointerLeaveCollapsedTheIsland() {
+        var machine = holding(0)
+        machine.handle(.activateOn(.files), settings: s, now: t0)
+        machine.handle(.pointerAway(since: t0), settings: s, now: at(1))
+        XCTAssertEqual(machine.state, .collapsed)
+
+        machine.handle(.activateOn(.aiUsage), settings: s, now: at(1.1))
+        XCTAssertEqual(machine.state, .expanded(.aiUsage))
+        XCTAssertNil(machine.activeExtra)
+    }
 
     func testHoverNeedsDwellAndHeldFiles() {
         var m = holding(2)
@@ -113,8 +135,8 @@ final class NotchSurfaceMachineTests: XCTestCase {
 
     func testLeavingCollapsesAfterGraceNotBefore() {
         var m = M.Machine(); m.handle(.fileDragInZone, settings: s, now: t0)
-        m.handle(.pointerAway(since: at(1)), settings: s, now: at(1.5)); XCTAssertEqual(m.state, .expanded(.files), "500 ms is within grace")
-        m.handle(.pointerAway(since: at(1)), settings: s, now: at(1.9)); XCTAssertEqual(m.state, .collapsed)
+        m.handle(.pointerAway(since: at(1)), settings: s, now: at(1.25)); XCTAssertEqual(m.state, .expanded(.files), "250 ms is within grace")
+        m.handle(.pointerAway(since: at(1)), settings: s, now: at(1.5)); XCTAssertEqual(m.state, .collapsed)
     }
 
     /// The reported "khay đóng nhanh quá" bug, for the shaken-open tray: holding files, it stays.
@@ -370,6 +392,48 @@ final class NotchSurfaceMachineTests: XCTestCase {
             var m = M.Machine(); m.handle(e, settings: s, now: t0)
             XCTAssertEqual(m.state, .expanded(.files), "\(e)")
         }
+    }
+
+    /// Phase 1: leaving the pointer away during a drag-in, drop-hover, async import, or drag-out session
+    /// must NEVER close the tray; once the drag ends, normal leave grace applies and explicit dismiss still closes.
+    func testPointerAwayDuringActiveDragNeverClosesTheTray() {
+        var dragging = s; dragging.dragging = true
+        var m = holding(3)
+        m.handle(.activate, settings: dragging, now: t0)
+        XCTAssertEqual(m.state, .expanded(.files))
+
+        m.handle(.pointerAway(since: at(1)), settings: dragging, now: at(60))
+        XCTAssertEqual(m.state, .expanded(.files), "leaving the tray mid-drag must not collapse it")
+
+        // Once the drag ends, leaving past grace collapses normally.
+        m.handle(.pointerAway(since: at(61)), settings: s, now: at(63))
+        XCTAssertEqual(m.state, .collapsed, "after drag ends, normal leave grace closes the tray")
+
+        // Explicit dismiss still closes even if dragging is flagged.
+        var d = holding(2)
+        d.handle(.activate, settings: dragging, now: t0)
+        d.handle(.dismiss, settings: dragging, now: at(1))
+        XCTAssertEqual(d.state, .collapsed, "explicit dismiss always closes")
+    }
+
+    /// Ref-29 Pin toggle: leaving the pointer away while pinned keeps any expanded hub page open
+    /// (even with 0 held files), while unpinning restores normal leaveGrace and explicit dismiss/disabled still close.
+    func testPinnedHubStaysOpenWhenPointerLeavesButDismissStillCloses() {
+        var pinned = s; pinned.pinned = true
+        var m = M.Machine()
+        m.handle(.activateOn(.nowPlaying), settings: pinned, now: t0)
+        XCTAssertEqual(m.state, .expanded(.nowPlaying))
+
+        m.handle(.pointerAway(since: at(1)), settings: pinned, now: at(120))
+        XCTAssertEqual(m.state, .expanded(.nowPlaying), "pinned hub stays open on pointerAway")
+
+        m.handle(.pointerAway(since: at(121)), settings: s, now: at(123))
+        XCTAssertEqual(m.state, .collapsed, "unpinning restores normal leave grace")
+
+        var d = M.Machine()
+        d.handle(.activateOn(.files), settings: pinned, now: t0)
+        d.handle(.dismiss, settings: pinned, now: at(1))
+        XCTAssertEqual(d.state, .collapsed, "explicit dismiss always closes even when pinned")
     }
 }
 

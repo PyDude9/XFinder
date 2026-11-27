@@ -51,7 +51,7 @@ final class FeatureContractTests: XCTestCase {
         .fileBrowser: .pure(["Core/Browser/PaneTree.swift", "Core/Browser/PaneHistory.swift", "Core/Browser/BrowserPath.swift",
                              "Core/Browser/DirectoryEntry.swift", "Core/Browser/SearchQuery.swift",
                              "Core/Browser/FileOperationRules.swift", "Core/Browser/BrowserCommands.swift",
-                             "Core/Browser/CloudBadge.swift", "Core/Browser/ShelfModel.swift", "Core/Browser/BrowserWorkspace.swift",
+                             "Core/Browser/CloudBadge.swift", "Core/Browser/BrowserWorkspace.swift",
                              "Core/Browser/SidebarLayout.swift", "Core/Browser/FileInfoRules.swift",
                              "Core/Browser/PaneTabs.swift", "Core/Browser/GroupBy.swift", "Core/Browser/NameMatcher.swift",
                              "Core/Browser/SearchIndexRules.swift", "Core/Browser/SavedSearch.swift"]),

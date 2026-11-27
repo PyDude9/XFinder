@@ -54,7 +54,8 @@ final class SidebarDestinationTests: XCTestCase {
 
     func testTheNotchPagesAreOneGroupAndTheOldCombinedTitleIsGone() throws {
         let notch = try XCTUnwrap(SidebarDestination.groups.first { $0.header == "NOTCH" }, "the NOTCH group is missing")
-        XCTAssertEqual(notch.items, [.notchInterface, .dropTray, .media, .aiAgents, .calendar, .liveActivities])
+        XCTAssertEqual(notch.items, [.notchInterface, .dropTray, .media, .aiAgents, .calendar, .liveActivities,
+                                    .stocks, .websiteAnalytics, .revenue])
         XCTAssertEqual(SidebarDestination.dropTray.titleKey, "Khay thả",
                        "the tray page no longer holds the notch settings — its title must not promise them")
         let general = try XCTUnwrap(SidebarDestination.groups.first { $0.header == "CHUNG" })

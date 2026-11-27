@@ -15,6 +15,7 @@ struct WindowPreviewDetailView: View {
     // Phase C. Reader: WindowPreviewStore.currentScreenOnly (default must match — FeatureKeyDefaultsTests).
     @AppStorage("windowPreview.currentScreenOnly") private var currentScreenOnly = false
     @State private var dockAutohide = DockPrefs.autohide()
+    @AppStorage("spacesOrder.fixedEnabled") private var fixedSpaceOrder = false
     @State private var excludedApps: [String] = WindowPreviewStore.excludedApps
     @State private var newExcludedApp: String = ""
     @State private var controller = DockPreviewController.shared
@@ -110,6 +111,14 @@ struct WindowPreviewDetailView: View {
                               isOn: $dockAutohide)
                         .onChange(of: dockAutohide) {
                             DockPrefs.setAutohide(dockAutohide)
+                        }
+                        .settingsRow()
+                    SettingsDivider()
+                    ToggleRow(title: L10n.t("Cố định thứ tự không gian làm việc (Spaces)"),
+                              subtitle: L10n.t("Ngăn macOS tự đảo thứ tự Spaces theo lần dùng gần nhất. Tắt sẽ khôi phục cài đặt trước đó."),
+                              isOn: $fixedSpaceOrder)
+                        .onChange(of: fixedSpaceOrder) {
+                            SpacesOrderController.setFixedOrder(fixedSpaceOrder)
                         }
                         .settingsRow()
                 }
@@ -232,10 +241,20 @@ struct SnapZonesDetailView: View {
     @AppStorage("snapzones.reserveStage") private var reserveStage = true
     // B3: dragging a window to the notch shows a layout row. Reader: SnapZoneController (default must match).
     @AppStorage("snapzones.notchRow") private var notchRow = true
+    // HyprMac BSP tiling engine settings (readers: HyprTilingController — FeatureKeyDefaultsTests).
+    @AppStorage("snapzones.engineMode") private var engineMode = "tiling"
+    @AppStorage("snapzones.tilingGap") private var tilingGap = 8
+    @AppStorage("snapzones.tilingPadding") private var tilingPadding = 8
+    @AppStorage("snapzones.focusBorder") private var focusBorder = true
+    @AppStorage("snapzones.focusBorderWidth") private var focusBorderWidth = 3
+    @AppStorage("snapzones.autoTileNewWindows") private var autoTileNewWindows = true
+    @AppStorage("snapzones.tilingHotkeys") private var tilingHotkeys = true
     // SNAPMEM: defaults must be false — matches SnapMemoryController's readers (FeatureKeyDefaultsTests).
     @AppStorage("snapzones.remember") private var rememberLayouts = false
     @AppStorage("snapzones.rememberFrames") private var rememberFrames = false
     @State private var controller = SnapZoneController.shared
+    @State private var tiling = HyprTilingController.shared
+    @State private var newExcludedBundleID = ""
     @State private var trusted = WindowManager.isTrusted
     @State private var memory = SnapMemoryController.shared
     @State private var license = LicenseManager.shared
@@ -251,6 +270,9 @@ struct SnapZonesDetailView: View {
                 }
 
                 section1General
+                if snapEnabled && engineMode == "tiling" {
+                    sectionHyprTiling
+                }
                 section2DragBehavior
                 section3Shortcuts
                 section5Memory
@@ -278,6 +300,25 @@ struct SnapZonesDetailView: View {
 
             if snapEnabled {
                 SettingsDivider()
+                HStack(alignment: .center, spacing: XFinderTokens.Space.inline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.t("Chế độ sắp xếp cửa sổ")).font(XFinderTokens.Font.row)
+                        Text(L10n.t("Xếp lát tự động (HyprMac) tự chia màn hình thành lưới cân đối không chồng lấp; giữ nguyên toàn bộ vùng kéo cổ điển."))
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Picker("", selection: $engineMode) {
+                        Text(L10n.t("Xếp lát tự động (HyprMac)")).tag("tiling")
+                        Text(L10n.t("Vùng bắt dính cổ điển")).tag("classic")
+                    }
+                    // segmented-ok: 2 cases
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(width: 280)
+                    .onChange(of: engineMode) { controller.applySettings() }
+                }
+                .settingsRow()
+                SettingsDivider()
                 ToggleRow(title: L10n.t("Khôi phục kích thước cửa sổ khi gỡ bắt dính"), isOn: $restoreOnUnsnap)
                     .settingsRow()
                 SettingsDivider()
@@ -289,6 +330,175 @@ struct SnapZonesDetailView: View {
             }
         }
         .animation(.default, value: snapEnabled)
+        .animation(.default, value: engineMode)
+    }
+
+    // MARK: - HyprMac BSP Tiling Engine
+
+    private var sectionHyprTiling: some View {
+        SettingsSection(
+            title: L10n.t("Xếp lát tự động (HyprMac BSP)"),
+            footer: L10n.t("Thuật toán chia đôi không gian động (Dwindle BSP). Kéo cửa sổ lên giữa một ô đang xếp để hoán đổi vị trí, hoặc kéo về cạnh ô để chèn chia đôi.")
+        ) {
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    Button(L10n.t("Xếp lát ngay")) { tiling.perform(.retileAll) }
+                        .buttonStyle(.borderedProminent).controlSize(.small)
+                    Button(L10n.t("Đảo chia ô")) { tiling.perform(.toggleSplit) }
+                        .buttonStyle(.bordered).controlSize(.small)
+                    Button(L10n.t("Cân bằng")) { tiling.perform(.balanceSplits) }
+                        .buttonStyle(.bordered).controlSize(.small)
+                    Button(L10n.t("Nổi / Xếp")) { tiling.perform(.toggleFloat) }
+                        .buttonStyle(.bordered).controlSize(.small)
+                    Button(L10n.t("Phóng đại")) { tiling.perform(.toggleMaximize) }
+                        .buttonStyle(.bordered).controlSize(.small)
+                    Button(L10n.t("Khôi phục gốc")) { tiling.restoreAllOriginalFrames() }
+                        .buttonStyle(.bordered).controlSize(.small)
+                    Spacer()
+                }
+                .disabled(!trusted)
+
+                HStack(spacing: XFinderTokens.Space.inline) {
+                    Text("\(L10n.t("Đang quản lý: "))\(tiling.tiledWindowCount)\(L10n.t(" cửa sổ"))")
+                        .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                    if let note = tiling.lastOutcome {
+                        Text("· \(note)")
+                            .font(XFinderTokens.Font.caption).foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            .settingsRow()
+
+            SettingsDivider()
+
+            ToggleRow(
+                title: L10n.t("Tự động xếp lát cửa sổ mới"),
+                subtitle: L10n.t("Khi màn hình đã xếp lát, cửa sổ mới mở sẽ tự chia vào ô đang chọn."),
+                isOn: $autoTileNewWindows
+            )
+            .onChange(of: autoTileNewWindows) { controller.applySettings() }
+            .disabled(!trusted)
+            .settingsRow()
+
+            SettingsDivider()
+
+            ToggleRow(
+                title: L10n.t("Viền nổi bật cửa sổ đang chọn (Focus Border)"),
+                subtitle: L10n.t("Vẽ viền mảnh màu nhấn xung quanh cửa sổ đang hoạt động."),
+                isOn: $focusBorder
+            )
+            .onChange(of: focusBorder) { tiling.refreshFocusBorder() }
+            .disabled(!trusted)
+            .settingsRow()
+
+            SettingsDivider()
+
+            ToggleRow(
+                title: L10n.t("Phím tắt xếp lát HyprMac (⌃⌥⇧)"),
+                subtitle: L10n.t("Giữ ⌃⌥⇧ để điều hướng, hoán đổi, thu phóng và cân bằng lưới ngay từ bàn phím."),
+                isOn: $tilingHotkeys
+            )
+            .onChange(of: tilingHotkeys) { controller.applySettings() }
+            .disabled(!trusted)
+            .settingsRow()
+
+            SettingsDivider()
+
+            VStack(spacing: XFinderTokens.Space.tight) {
+                HStack(spacing: XFinderTokens.Space.inline) {
+                    Text(L10n.t("Khoảng cách giữa các ô")).font(XFinderTokens.Font.row)
+                        .frame(width: 170, alignment: .leading)
+                    Slider(value: Binding(get: { Double(tilingGap) }, set: { tilingGap = Int($0) }), in: 0...32, step: 2)
+                        .onChange(of: tilingGap) { tiling.reapplyCurrentTreesIfNeeded() }
+                    Text("\(tilingGap) pt").font(XFinderTokens.Font.mono).foregroundColor(.secondary)
+                        .frame(width: 45, alignment: .trailing)
+                }
+                HStack(spacing: XFinderTokens.Space.inline) {
+                    Text(L10n.t("Lề ngoài màn hình")).font(XFinderTokens.Font.row)
+                        .frame(width: 170, alignment: .leading)
+                    Slider(value: Binding(get: { Double(tilingPadding) }, set: { tilingPadding = Int($0) }), in: 0...32, step: 2)
+                        .onChange(of: tilingPadding) { tiling.reapplyCurrentTreesIfNeeded() }
+                    Text("\(tilingPadding) pt").font(XFinderTokens.Font.mono).foregroundColor(.secondary)
+                        .frame(width: 45, alignment: .trailing)
+                }
+                if focusBorder {
+                    HStack(spacing: XFinderTokens.Space.inline) {
+                        Text(L10n.t("Độ dày viền focus")).font(XFinderTokens.Font.row)
+                            .frame(width: 170, alignment: .leading)
+                        Slider(value: Binding(get: { Double(focusBorderWidth) }, set: { focusBorderWidth = Int($0) }), in: 2...6, step: 1)
+                            .onChange(of: focusBorderWidth) { tiling.refreshFocusBorder() }
+                        Text("\(focusBorderWidth) pt").font(XFinderTokens.Font.mono).foregroundColor(.secondary)
+                            .frame(width: 45, alignment: .trailing)
+                    }
+                }
+            }
+            .disabled(!trusted)
+            .settingsRow()
+
+            if tilingHotkeys {
+                SettingsDivider()
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.inline) {
+                    if tiling.failedHotkeyCount > 0 {
+                        InlineNote(kind: .warning,
+                                   text: L10n.t("Một số phím tắt xếp lát đang bị ứng dụng khác chiếm dụng nên không thể đăng ký."))
+                    }
+                    HStack(alignment: .top, spacing: XFinderTokens.Space.section) {
+                        VStack(spacing: XFinderTokens.Space.inline) {
+                            shortcutItem(label: L10n.t("Xếp lát toàn bộ"), keys: ["⌃", "⌥", "⇧", "P"])
+                            shortcutItem(label: L10n.t("Đảo chia ô"), keys: ["⌃", "⌥", "⇧", "S"])
+                            shortcutItem(label: L10n.t("Nổi / Xếp cửa sổ"), keys: ["⌃", "⌥", "⇧", "T"])
+                            shortcutItem(label: L10n.t("Phóng to ô"), keys: ["⌃", "⌥", "⇧", "="])
+                            shortcutItem(label: L10n.t("Thu nhỏ ô"), keys: ["⌃", "⌥", "⇧", "-"])
+                        }
+                        .frame(maxWidth: .infinity)
+
+                        VStack(spacing: XFinderTokens.Space.inline) {
+                            shortcutItem(label: L10n.t("Đổi tiêu điểm"), keys: ["⌃", "⌥", "⇧", "H/J/K/L"])
+                            shortcutItem(label: L10n.t("Hoán đổi ô"), keys: ["⌃", "⌥", "⇧", "←→↑↓"])
+                            shortcutItem(label: L10n.t("Phóng đại ô"), keys: ["⌃", "⌥", "⇧", "M"])
+                            shortcutItem(label: L10n.t("Cân bằng lưới"), keys: ["⌃", "⌥", "⇧", "0"])
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                .settingsRow()
+            }
+
+            SettingsDivider()
+
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                Text(L10n.t("Ứng dụng luôn nổi tự do (Bundle ID)"))
+                    .font(XFinderTokens.Font.row)
+                ForEach(tiling.excludedBundleIDs, id: \.self) { bid in
+                    HStack {
+                        Text(bid).font(XFinderTokens.Font.mono).foregroundColor(.secondary)
+                        Spacer()
+                        Button {
+                            var list = tiling.excludedBundleIDs
+                            list.removeAll { $0 == bid }
+                            tiling.setExcludedBundleIDs(list)
+                        } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                HStack {
+                    TextField("com.apple.calculator", text: $newExcludedBundleID)
+                        .textFieldStyle(.roundedBorder)
+                    Button(L10n.t("Thêm")) {
+                        let trimmed = newExcludedBundleID.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty, !tiling.excludedBundleIDs.contains(trimmed) else { return }
+                        tiling.setExcludedBundleIDs(tiling.excludedBundleIDs + [trimmed])
+                        newExcludedBundleID = ""
+                    }
+                    .buttonStyle(.borderedProminent).controlSize(.small)
+                    .disabled(newExcludedBundleID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .settingsRow()
+        }
     }
 
     // MARK: - Section 2: Drag Behavior
@@ -371,27 +581,34 @@ struct SnapZonesDetailView: View {
             if hotkeysEnabled && snapEnabled {
                 SettingsDivider()
 
-                HStack(alignment: .top, spacing: XFinderTokens.Space.section) {
-                    VStack(spacing: XFinderTokens.Space.inline) {
-                        shortcutItem(label: L10n.t("Nửa trái"), keys: ["⌃", "⌥", "←"])
-                        shortcutItem(label: L10n.t("Toàn màn hình"), keys: ["⌃", "⌥", "↑"])
-                        shortcutItem(label: L10n.t("Giữa màn hình"), keys: ["⌃", "⌥", "↩"])
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.inline) {
+                    if controller.failedHotkeyCount > 0 {
+                        InlineNote(kind: .warning,
+                                   text: L10n.t("Một số phím tắt bắt dính đang bị ứng dụng khác chiếm dụng nên không thể đăng ký."))
                     }
-                    .frame(maxWidth: .infinity)
 
-                    VStack(spacing: XFinderTokens.Space.inline) {
-                        shortcutItem(label: L10n.t("Nửa phải"), keys: ["⌃", "⌥", "→"])
-                        shortcutItem(label: L10n.t("Nửa dưới"), keys: ["⌃", "⌥", "↓"])
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity)
+                    HStack(alignment: .top, spacing: XFinderTokens.Space.section) {
+                        VStack(spacing: XFinderTokens.Space.inline) {
+                            shortcutItem(label: L10n.t("Nửa trái"), keys: ["⌃", "⌥", "←"])
+                            shortcutItem(label: L10n.t("Toàn màn hình"), keys: ["⌃", "⌥", "↑"])
+                            shortcutItem(label: L10n.t("Giữa màn hình"), keys: ["⌃", "⌥", "↩"])
+                        }
+                        .frame(maxWidth: .infinity)
 
-                    VStack(spacing: XFinderTokens.Space.inline) {
-                        shortcutItem(label: L10n.t("Một phần ba bên trái"), keys: ["⌃", "⌥", "D"])
-                        shortcutItem(label: L10n.t("Một phần ba ở giữa"), keys: ["⌃", "⌥", "F"])
-                        shortcutItem(label: L10n.t("Một phần ba bên phải"), keys: ["⌃", "⌥", "G"])
+                        VStack(spacing: XFinderTokens.Space.inline) {
+                            shortcutItem(label: L10n.t("Nửa phải"), keys: ["⌃", "⌥", "→"])
+                            shortcutItem(label: L10n.t("Nửa dưới"), keys: ["⌃", "⌥", "↓"])
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity)
+
+                        VStack(spacing: XFinderTokens.Space.inline) {
+                            shortcutItem(label: L10n.t("Một phần ba bên trái"), keys: ["⌃", "⌥", "D"])
+                            shortcutItem(label: L10n.t("Một phần ba ở giữa"), keys: ["⌃", "⌥", "F"])
+                            shortcutItem(label: L10n.t("Một phần ba bên phải"), keys: ["⌃", "⌥", "G"])
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
                 }
                 .settingsRow()
             }
