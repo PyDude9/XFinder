@@ -2388,3 +2388,10 @@ modified tracked files             298
 GATE: green
 ```
 
+## Stocks Settings + direct Caffeine page
+
+- **Failure cases before code:** an old `twelve-data` source preference must migrate to Massive without a dead provider; a missing Massive key must leave watchlist management available; invalid Keychain writes must show failure and retain the draft; successful save/delete must give immediate visible confirmation and refresh provider state; closed-lid control must remain discoverable, report when it is waiting for Caffeine/AC power, and remain disabled only on hardware without a battery; disabling either Caffeine option must release its corresponding system assertion.
+- **Scope:** make Massive the only selectable/configured quote source; give Caffeine a direct Full Settings sidebar destination and keep its controls in one Full Settings page; preserve existing Notch quick controls. No key values are exposed or logged.
+- **Verification:** `sh scripts/gate-all.sh` — arm64 build OK; 3,581 tests, 1 skipped, 0 failures; all localization/UI gates TOTAL 0; `GATE: green`.
+- **Live UI:** the helper launched `/tmp/xf-xfinder-caffeine-stocks/out/XFinder.app`, but opening the custom Settings URL routed to the separate installed `/Applications/XFinder.app`; after closing that app, Atlas could only see the helper's existing System Settings permission window, so the new Settings page screenshot could not be verified. No API credential was entered. Owner-profile live behavior is not verified.
+

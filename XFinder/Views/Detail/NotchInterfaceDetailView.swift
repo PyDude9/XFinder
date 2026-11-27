@@ -116,9 +116,10 @@ struct NotchInterfaceDetailView: View {
     // Explicit Stocks/Crypto watchlist management (persisted independently of quote provider configuration).
     @State private var stocksWatchlist: [StockAssetDescriptor] = []
     @State private var stocksKeyDraft = ""
-    @AppStorage(StocksAPIKey.Source.preferenceKey) private var selectedStockSource: StocksAPIKey.Source = .twelveData
+    @AppStorage(StocksAPIKey.Source.preferenceKey) private var selectedStockSource: StocksAPIKey.Source = .massive
     @State private var hasStocksKey = false
     @State private var stocksKeySaveFailed = false
+    @State private var stocksKeySaveSucceeded = false
     @State private var stocksSearchQuery = ""
 
     // Explicit read-only Revenue connector form state (starts disconnected; tokens live only in Keychain).
@@ -859,47 +860,44 @@ struct NotchInterfaceDetailView: View {
     }
 
     private func reloadStocksWatchlistForm() {
+        selectedStockSource = .massive
         stocksWatchlist = UserDefaultsStocksWatchlistStore().loadWatchlist()
-        hasStocksKey = StocksAPIKey.read(for: selectedStockSource) != nil
+        hasStocksKey = StocksAPIKey.read(for: .massive) != nil
     }
 
     private var stocksSourceControls: some View {
         VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
-            Picker(L10n.t("Nguồn giá chứng khoán"), selection: $selectedStockSource) {
-                ForEach(StocksAPIKey.Source.allCases) { source in
-                    Text(source.name).tag(source)
-                }
-            }
-            .onChange(of: selectedStockSource) {
-                stocksKeyDraft = ""
-                stocksKeySaveFailed = false
-                hasStocksKey = StocksAPIKey.read(for: selectedStockSource) != nil
-                NotchSurfaceController.shared.reloadStocksProvider()
+            HStack {
+                Text(L10n.t("Nguồn giá chứng khoán"))
+                Spacer()
+                Label(L10n.t("Massive · Basic miễn phí"), systemImage: "checkmark.seal.fill")
+                    .foregroundStyle(.secondary)
             }
             if hasStocksKey {
-                Text(L10n.t("Đã lưu khóa API trong Keychain")).foregroundStyle(.secondary)
-            } else if selectedStockSource == .massive {
-                InlineNote(text: L10n.t("Massive Basic miễn phí cho giá đóng cửa cá nhân. Quyền chỉ số và tiền số tùy gói đang bật."))
-                Link(L10n.t("Lấy khóa Massive Basic"), destination: URL(string: "https://massive.com/pricing?product=stocks")!)
+                Label(L10n.t("Đã lưu khóa API trong Keychain"), systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
             } else {
-                #if DEBUG
-                InlineNote(text: L10n.t("Demo chỉ tải giá đóng cửa AAPL và BTC/USD. Thêm khóa API để tải các mã tài khoản hỗ trợ."))
-                #else
-                InlineNote(text: L10n.t("Chưa cấu hình nguồn giá chứng khoán"))
-                #endif
-                Link(L10n.t("Lấy khóa Twelve Data Basic"), destination: URL(string: "https://twelvedata.com/pricing")!)
+                InlineNote(text: L10n.t("Massive Basic miễn phí: dữ liệu cuối ngày, tối đa 5 yêu cầu mỗi phút và tối đa 2 năm lịch sử. Quyền từng mã phụ thuộc loại tài sản."))
+                Link(L10n.t("Lấy khóa Massive Basic"), destination: URL(string: "https://massive.com/pricing?product=stocks")!)
             }
             HStack {
-                SecureField(selectedStockSource == .massive ? L10n.t("Khóa API Massive") : L10n.t("Khóa API Twelve Data"),
-                            text: $stocksKeyDraft)
-                Button(L10n.t("Lưu")) { saveStocksKey(stocksKeyDraft) }
+                SecureField(L10n.t("Khóa API Massive"), text: $stocksKeyDraft)
+                    .onChange(of: stocksKeyDraft) {
+                        stocksKeySaveSucceeded = false
+                        stocksKeySaveFailed = false
+                    }
+                Button(L10n.t("Lưu khóa")) { saveStocksKey(stocksKeyDraft) }
                     .disabled(stocksKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 if hasStocksKey {
-                    Button(L10n.t("Xóa"), role: .destructive) { saveStocksKey("") }
+                    Button(L10n.t("Xóa khóa"), role: .destructive) { saveStocksKey("") }
                 }
             }
             if stocksKeySaveFailed {
                 Text(L10n.t("Không lưu được khóa API")).foregroundStyle(.orange)
+            } else if stocksKeySaveSucceeded {
+                Label(L10n.t("Đã lưu khóa Massive vào Keychain. Mở Stocks hoặc làm mới để thử quyền truy cập."),
+                      systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
             }
         }
     }
@@ -907,10 +905,12 @@ struct NotchInterfaceDetailView: View {
     private func saveStocksKey(_ value: String) {
         guard StocksAPIKey.save(value, for: selectedStockSource) else {
             stocksKeySaveFailed = true
+            stocksKeySaveSucceeded = false
             return
         }
         stocksKeyDraft = ""
         stocksKeySaveFailed = false
+        stocksKeySaveSucceeded = !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         hasStocksKey = StocksAPIKey.read(for: selectedStockSource) != nil
         NotchSurfaceController.shared.reloadStocksProvider()
     }

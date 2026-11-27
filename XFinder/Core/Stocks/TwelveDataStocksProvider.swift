@@ -143,12 +143,11 @@ struct TwelveDataStocksProvider: StocksProvider {
 
 enum StocksAPIKey {
     enum Source: String, CaseIterable, Identifiable {
-        case twelveData = "twelve-data"
         case massive
 
         static let preferenceKey = "xfinder.stocks.source"
         var id: String { rawValue }
-        var name: String { self == .twelveData ? "Twelve Data" : "Massive" }
+        var name: String { "Massive" }
     }
 
     private static func query(for source: Source) -> [String: Any] {
@@ -157,7 +156,7 @@ enum StocksAPIKey {
          kSecAttrAccount as String: source.rawValue]
     }
 
-    static func read(for source: Source = .twelveData) -> String? {
+    static func read(for source: Source = .massive) -> String? {
         var item: CFTypeRef?
         var request = query(for: source)
         request[kSecReturnData as String] = true
@@ -167,7 +166,7 @@ enum StocksAPIKey {
         return String(data: data, encoding: .utf8)
     }
 
-    static func save(_ value: String, for source: Source = .twelveData) -> Bool {
+    static func save(_ value: String, for source: Source = .massive) -> Bool {
         let query = query(for: source)
         let key = value.trimmingCharacters(in: .whitespacesAndNewlines)
         if key.isEmpty {

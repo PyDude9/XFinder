@@ -19526,6 +19526,42 @@
     "Thêm khóa API trong Cài đặt": {
       "en": "Add API key in Settings",
       "scope": "sentence"
+    },
+    "Massive · Basic miễn phí": {
+      "en": "Massive · Free Basic",
+      "scope": "sentence"
+    },
+    "Massive Basic miễn phí: dữ liệu cuối ngày, tối đa 5 yêu cầu mỗi phút và tối đa 2 năm lịch sử. Quyền từng mã phụ thuộc loại tài sản.": {
+      "en": "Massive Basic is free: end-of-day data, up to 5 requests per minute and 2 years of history. Access varies by asset class.",
+      "scope": "sentence"
+    },
+    "Đã lưu khóa Massive vào Keychain. Mở Stocks hoặc làm mới để thử quyền truy cập.": {
+      "en": "Massive key saved to Keychain. Open Stocks or refresh to check access.",
+      "scope": "sentence"
+    },
+    "Lưu khóa": {
+      "en": "Save key",
+      "scope": "sentence"
+    },
+    "Xóa khóa": {
+      "en": "Delete key",
+      "scope": "sentence"
+    },
+    "Chọn thời lượng giữ máy thức và bật riêng chế độ giữ thức khi đóng nắp.": {
+      "en": "Choose how long to keep the Mac awake, and separately enable lid-closed wake.",
+      "scope": "sentence"
+    },
+    "Caffeine": {
+      "en": "Caffeine",
+      "scope": "sentence"
+    },
+    "Giữ máy thức": {
+      "en": "Keep Mac awake",
+      "scope": "sentence"
+    },
+    "Giữ thức khi đóng nắp chỉ dùng được trên máy Mac có pin và nắp.": {
+      "en": "Lid-closed wake is available on Macs with a battery and lid.",
+      "scope": "sentence"
     }
   }
 }

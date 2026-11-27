@@ -706,17 +706,11 @@ final class NotchSurfaceController {
     }
 
     func reloadStocksProvider() {
-        let choice = UserDefaults.standard.string(forKey: StocksAPIKey.Source.preferenceKey)
-            .flatMap(StocksAPIKey.Source.init(rawValue:)) ?? .twelveData
-        if choice == .massive {
-            configureStocks(provider: StocksAPIKey.read(for: .massive).map { MassiveStocksProvider(apiKey: $0) })
-            return
-        }
-        var key = StocksAPIKey.read()
-        #if DEBUG
-        if key == nil { key = "demo" }
-        #endif
-        configureStocks(provider: key.map { TwelveDataStocksProvider(apiKey: $0) })
+        // Stocks Basic on Massive is the only selectable source. Old Twelve Data
+        // preferences are ignored so a stale setting cannot silently use a paid API.
+        UserDefaults.standard.set(StocksAPIKey.Source.massive.rawValue,
+                                  forKey: StocksAPIKey.Source.preferenceKey)
+        configureStocks(provider: StocksAPIKey.read(for: .massive).map { MassiveStocksProvider(apiKey: $0) })
     }
 
     /// Registers a source without requesting quotes until Stocks is opened.

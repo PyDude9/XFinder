@@ -83,8 +83,8 @@ final class SidebarDestinationTests: XCTestCase {
                 XCTAssertNotNil(store.entries[sub], "\(sub) is not in the store")
             }
         }
-        XCTAssertEqual(SidebarDestination.antiSleep.hostRow, .features, "antiSleep is merged into features hub")
-        XCTAssertEqual(SidebarDestination.features.searchAlsoKeys, ["Chống ngủ"], "searching Chống ngủ finds features hub")
+        XCTAssertEqual(SidebarDestination.antiSleep.hostRow, .antiSleep, "Caffeine has a direct Settings destination")
+        XCTAssertTrue(SidebarDestination.groups.flatMap(\.items).contains(.antiSleep))
     }
 
     /// Hệ thống, Mạng, Ổ đĩa, Pin are one row ("Theo dõi hệ thống") — the first tab group.
