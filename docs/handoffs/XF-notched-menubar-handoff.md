@@ -1,29 +1,31 @@
 # XFinder IDE handoff
 
-## Starting point
+## Start here
 
-Use the default branch of `PyDude9/XFinder`. Confirm it contains `283ba1f` and create one topic branch for the next task. The signed app running on `wolong` is `/Applications/XFinder.app`, built from `283ba1f`. Subsequent documentation changes do not require reinstalling. The published `v1.4.0` tag points to the earlier commit `0071eb3`.
+Open `/Users/wolong/github/XFinder` in the new IDE. Continue from local branch `agent/codex-XF-UI-COHESION`, which includes the installed build and the handoff. The verified source baseline through the previous notes is `dd62bac`; latest app code is `03c9b88`. Confirm the worktree is clean before branching for the next task.
 
-## Work already integrated
+At handoff, `main` and `origin/main` point to `614cd4f`. The newer integration is local. Starting from `main` would omit Quit, the Settings cleanup, and Antigravity's performance work. The published `v1.4.0` tag points to `0071eb3`.
 
-| Commit | What shipped in source |
+## Completed work
+
+| Commits on the continuation branch | Result |
 |---|---|
-| `4c35b15`, `872559a` | Reconciled Notch and Full Settings routes, including Stocks, Website Analytics and Revenue. Added camera and reminders permission descriptions. |
-| `0071eb3` | Made Massive the selectable stock feed, added API key save feedback, and gave Caffeine a dedicated Full Settings page alongside its Notch controls. |
-| `283ba1f` | Replaced the tabbed left-click menu bar dropdown with File Browser (when enabled), Uninstall Apps and Settings. Added outside-click dismissal. The separate native right-click menu still exists. |
+| `55970cb`, `8ec611e`, `f8cdf5e` | Removed the standalone Anti-sleep page and duplicate Overview row. Notch System owns duration, stop and lid wake. The display-awake preference remains in Features & Permissions, and old links resolve there. Shared typography and row styling between dropdown and Settings, tightened the sidebar, aligned System Monitor tabs, and corrected the English Uptime suffix. |
+| `ecda9f4`, `725c462`, `f8f7eed` | Integrated Antigravity's work. Skipped Notch hover layout away from the top band, removed repeat calculations, reused the popover and cached the icon. Deleted three unreachable legacy dropdown views and their Xcode registrations. |
+| `03c9b88`, `dd62bac` | Added Quit. Left-click menu now contains File Browser when enabled, Uninstall Apps, Settings and Quit. The native right-click menu is a separate entry point. |
 
-[Changelog](../../CHANGELOG.md) · [Dropdown specification](../specs/XF-MB-GENERAL-01.md)
+The base already includes Notch and Full Settings parity for Stocks, Website Analytics and Revenue, plus Massive key save feedback. Full Settings owns provider setup; Notch displays data and provides quick access.
 
-## Where to look for the next dropdown change
+## Evidence and rollback
 
-- [MenubarPanelView.swift](../../XFinder/Views/MenubarPanelView.swift) owns the three actions.
-- [MenubarController.swift](../../XFinder/App/MenubarController.swift) owns the status item, popover lifecycle, click monitors, and separate right-click menu.
-- [MenubarPanelRules.swift](../../XFinder/Core/MenubarPanelRules.swift) owns dimensions and shared formatting and presets. Check references before removing legacy code.
+- **Installed on `wolong`** at `/Applications/XFinder.app`. The running executable path was verified and the installed debug dylib matched the signed build at `/tmp/xfinder-ui-perf-integrated/out/XFinder.app` byte for byte. SHA-256 `20f785e5b5e037edf95cadb4babaac7438e9efa9eae0b4bd6502de69f5d58621`.
+- **Integrated gate** passed on arm64 Debug with 3,582 tests, zero failures, one skipped, and all localization and UI audits green. Atlas verified the four dropdown rows, outside-click dismissal, reopen and Quit on the helper. An earlier build of the same Settings UI was checked in light appearance.
+- **Rollback** is documented per commit in the [UI and rollback notes](../specs/XF-UI-COHESION.md). The previous installed bundle is at `/tmp/xfinder-ui-perf-rollback.UzMWSP/XFinder.app` while that temporary directory exists.
 
-## Verification and open checks
+## Next work
 
-- The signed arm64 Debug build succeeded. Gate results on the implementation commit were 3,581 tests, zero failures, one skipped. Atlas showed all three actions and confirmed dismissal after a click outside the popover. The installed binary matched the tested build.
-- If the next task revisits the dropdown, exercise the three action destinations, a click in another XFinder window, repeated clicks on the status icon, and File Browser disabled. These cases were not covered by the latest live check.
-- If the next task revisits provider or power behavior, live stock entitlement, real provider connections, and physical lid-close behavior still need verification. Prior Weather work at `9b1f997` is outside the integrated history. Inspect it only if the next task needs it.
+- **Performance**. Antigravity profiled the old installed app. There is no controlled before/after result. If performance is the next ticket, measure idle CPU/wakeups, dropdown open time and Notch tab switching under matched conditions before claiming an improvement. The worker's spec and baseline are in [performance notes](../specs/XF-PERF-MENUBAR.md) and the first section of [AGENT_WORKLOG.md](../AGENT_WORKLOG.md). Finder frontmost-app lookups and synchronous LocalAppUsageTracker persistence were observed candidates, not completed fixes.
+- **Live checks**. Dark Settings appearance, Notch hover on different displays, and physical lid-close behavior remain unverified. Real provider accounts and live stock entitlement were not exercised. Open these only if the next ticket needs them.
+- **Source delivery**. The installed build is ahead of GitHub. Review the local branch against `origin/main` before publishing it, and verify the remote head after any authorized publication. Old worktrees are separate. Do not merge their contents based on their names or age.
 
-Read [the quickstart](../AGENT_QUICKSTART.md) and the spec for the next task. Use a unique `XF_OUT` for each build and install the reviewed bundle by exact path. Check the running executable path before drawing UI conclusions. Keep old worktrees separate until their commits have been reviewed against the current base.
+For dropdown changes, start at [MenubarPanelView.swift](../../XFinder/Views/MenubarPanelView.swift) and [MenubarController.swift](../../XFinder/App/MenubarController.swift). For Full Settings, start at [SidebarDestination.swift](../../XFinder/Models/SidebarDestination.swift) and the relevant view. Read [AGENT_QUICKSTART.md](../AGENT_QUICKSTART.md) and the next ticket's spec. Use a unique `XF_OUT` and one reviewed bundle path per install.
