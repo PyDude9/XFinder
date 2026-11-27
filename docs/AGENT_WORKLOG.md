@@ -2363,11 +2363,12 @@ Live verification: Installed `/Applications/XFinder.app` PID 30423 (arm64, signe
 
 - Branch: `agent/antigravity-vorssaint-phase1`; branch note: `docs/branches/agent-antigravity-vorssaint-phase1.md`.
 - Commit: `4c35b15` (`XF-CLOSURE: Integrate active Notch and Settings work`).
+- Follow-up: `872559a` bundles the Camera and Reminders permission descriptions from the reviewed workspace changes.
 - Integrated the current Notch, Full Settings, Stocks, Revenue, Website Analytics, AI Usage, timer, monitor, calendar, Drop Tray, browser and sidebar work with feature specs and regression tests. Provider configuration now remains reachable from the Notch after setup; inline Settings adds Revenue and Website Analytics; Audio settings routes to System.
 - `sh scripts/gate-all.sh`: build OK; 3,581 tests, 1 skipped, 0 failures; localization and UI audits all `TOTAL 0`; `GATE: green`.
 - `plutil -lint XFinder.xcodeproj/project.pbxproj`: OK. Clean staged-index checkout `build-and-check.sh`: `BUILD SUCCEEDED`, arm64, bundled resources and local signing checks passed. Output: `/tmp/xfinder-index-build.qEnAYe/out/XFinder.app`.
 - `git diff --check`: OK after trimming a trailing blank line in the Analytics spec.
-- Live behavior not verified: menu-bar icon placement, OAuth/provider credentials, live quotes, physical lid-close behavior, and in-app interactions. `XFinder/Info.plist` has existing camera/reminders edits that remain unstaged because that file is restricted by project procedure.
+- Live behavior not verified: menu-bar icon placement, OAuth/provider credentials, live quotes, physical lid-close behavior, and in-app interactions. Atlas reports a Device Control and Data Access prompt and two existing XFinder builds in the helper; I left those windows/processes untouched.
 - Orchestration check returned `No messages`. Prior weather worktree is still separate; its gate was green at 3,211 tests, but it is not merged here.
 
 Gate output:

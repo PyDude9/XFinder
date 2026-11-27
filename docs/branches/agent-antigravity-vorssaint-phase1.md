@@ -7,6 +7,7 @@ Website Analytics, AI Usage, timers, system monitor, and adjacent feature work.
 Keep the branch as the review boundary; do not push it.
 
 Integration commit: `4c35b15` (`XF-CLOSURE: Integrate active Notch and Settings work`).
+Permission-description follow-up: `872559a` (`XF-PERMISSIONS: Bundle camera and reminders usage descriptions`).
 
 ## Integration work
 
@@ -34,4 +35,5 @@ Integration commit: `4c35b15` (`XF-CLOSURE: Integrate active Notch and Settings 
 
 - Stage reviewed paths explicitly; never stage owner assets wholesale.
 - Keep `XFinder/Info.plist` changes outside this integration commit.
+- Permission descriptions are recorded in a separate follow-up commit.
 - Do not push, merge, or amend commits on this branch.
