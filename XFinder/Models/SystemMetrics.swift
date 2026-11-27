@@ -159,7 +159,7 @@ struct SystemMetrics: Codable, Sendable {
         let days = s / 86400
         let hours = (s % 86400) / 3600
         let mins = (s % 3600) / 60
-        if days > 0 { return "\(days)\(L10n.t(" ngày "))\(hours)\(L10n.t(" giờ"))" }
+        if days > 0 { return "\(days)\(L10n.t(" ngày "))\(hours) \(L10n.t("giờ"))" }
         if hours > 0 { return "\(hours)\(L10n.t(" giờ "))\(mins)\(L10n.t(" phút"))" }
         return "\(mins)\(L10n.t(" phút"))"
     }
