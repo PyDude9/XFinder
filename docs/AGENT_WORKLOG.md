@@ -2362,6 +2362,7 @@ Live verification: Installed `/Applications/XFinder.app` PID 30423 (arm64, signe
 # 2026-11-27 · Notch and Full Settings closure integration
 
 - Branch: `agent/antigravity-vorssaint-phase1`; branch note: `docs/branches/agent-antigravity-vorssaint-phase1.md`.
+- Commit: `4c35b15` (`XF-CLOSURE: Integrate active Notch and Settings work`).
 - Integrated the current Notch, Full Settings, Stocks, Revenue, Website Analytics, AI Usage, timer, monitor, calendar, Drop Tray, browser and sidebar work with feature specs and regression tests. Provider configuration now remains reachable from the Notch after setup; inline Settings adds Revenue and Website Analytics; Audio settings routes to System.
 - `sh scripts/gate-all.sh`: build OK; 3,581 tests, 1 skipped, 0 failures; localization and UI audits all `TOTAL 0`; `GATE: green`.
 - `plutil -lint XFinder.xcodeproj/project.pbxproj`: OK. Clean staged-index checkout `build-and-check.sh`: `BUILD SUCCEEDED`, arm64, bundled resources and local signing checks passed. Output: `/tmp/xfinder-index-build.qEnAYe/out/XFinder.app`.

@@ -6,6 +6,8 @@ Integration branch for the active Notch, Full Settings, Stocks, Revenue,
 Website Analytics, AI Usage, timers, system monitor, and adjacent feature work.
 Keep the branch as the review boundary; do not push it.
 
+Integration commit: `4c35b15` (`XF-CLOSURE: Integrate active Notch and Settings work`).
+
 ## Integration work
 
 - Reconcile Notch destinations with editable Settings destinations.
