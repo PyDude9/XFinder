@@ -29,10 +29,10 @@ struct TabbedPage<Content: View>: View {
             }
             .pickerStyle(.segmented)                 // segmented-ok: a tab group has at most four members (SidebarDestinationTests)
             .labelsHidden()
-            .frame(maxWidth: 420)
+            .frame(maxWidth: 420, alignment: .leading)
             .padding(.horizontal, XFinderTokens.Space.page)
-            .padding(.top, 14)
-            .padding(.bottom, 4)
+            .padding(.top, XFinderTokens.Space.inline)
+            .padding(.bottom, XFinderTokens.Space.row)
 
             content(shown)
                 .environment(\.pageHeaderHidden, true)

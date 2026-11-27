@@ -31,7 +31,7 @@ struct PageHeader: View {
             HStack(alignment: .center, spacing: XFinderTokens.Space.inline) {
                 Text(title)
                     .font(XFinderTokens.Settings.headerTitle)
-                    .foregroundColor(XFinderTokens.Settings.headerTitleColor)
+                    .foregroundStyle(.primary)
                     .lineLimit(1)
                     .accessibilityAddTraits(.isHeader)
 

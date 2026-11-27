@@ -43,8 +43,8 @@ enum MenubarPanelTab: String, CaseIterable, Identifiable, Sendable {
 }
 
 enum MenubarPanelRules {
-    static let panelWidth: Double = 332
-    static let panelHeight: Double = 230
+    static let panelWidth: Double = 300
+    static let panelHeight: Double = 180
 
     struct UnsleepPreset: Equatable, Identifiable, Sendable {
         /// `0` means indefinite; positive values are minutes.

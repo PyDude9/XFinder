@@ -167,8 +167,6 @@ enum XFinderTokens {
         /// Page header bar: 52 tall, title ≈ 20 pt at the page inset, a hairline under it.
         static let headerHeight: CGFloat = 52
         static let headerTitle = SwiftUI.Font.system(size: 20, weight: .semibold)
-        /// #4D4D4D on white = black at 70 %.
-        static let headerTitleColor = Color.primary.opacity(0.70)
         /// #E5E5E5 on white = black at 10 %.
         static let hairline = Color.primary.opacity(0.10)
         /// Section title above a card — ≈ 13 pt semibold.

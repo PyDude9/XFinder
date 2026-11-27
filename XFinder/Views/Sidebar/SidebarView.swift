@@ -165,7 +165,7 @@ struct SidebarView: View {
             }
         }
         .padding(.horizontal, 8).padding(.vertical, 5)
-        .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Color.primary.opacity(0.07)))
+        .background(XFinderTokens.Fill.inset, in: RoundedRectangle(cornerRadius: XFinderTokens.Radius.control))
         .padding(.horizontal, 10).padding(.top, 8).padding(.bottom, 4)
     }
 
@@ -223,8 +223,6 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        // OneNotch's sidebar rows read taller than the system default list row —
-        // this is the public SwiftUI knob for that, not a hand-rolled row height.
-        .environment(\.sidebarRowSize, .large)
+        .environment(\.sidebarRowSize, .medium)
     }
 }
