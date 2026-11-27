@@ -21,6 +21,8 @@ final class MenubarController: NSObject, NSMenuDelegate, NSPopoverDelegate {
     private var readoutItem: NSStatusItem?
     private let menu = NSMenu()
     private var popover: NSPopover?
+    private var popoverHostingController: NSHostingController<MenubarPanelView>?
+    private var cachedAppIcon: NSImage?
     private var outsideClickLocalMonitor: Any?
     private var outsideClickGlobalMonitor: Any?
     private nonisolated(unsafe) var screenObserver: (any NSObjectProtocol)?
@@ -150,17 +152,27 @@ final class MenubarController: NSObject, NSMenuDelegate, NSPopoverDelegate {
             closePopover()
             return
         }
-        let pop = NSPopover()
-        pop.behavior = .transient
-        pop.animates = true
-        pop.delegate = self
-        pop.contentSize = NSSize(width: MenubarPanelRules.panelWidth, height: MenubarPanelRules.panelHeight)
-        pop.contentViewController = NSHostingController(rootView: MenubarPanelView(
+        let panelView = MenubarPanelView(
             onClose: { [weak self] in
                 self?.closePopover()
             }
-        ))
-        popover = pop
+        )
+        let pop: NSPopover
+        if let existing = popover, let hosting = popoverHostingController {
+            hosting.rootView = panelView
+            pop = existing
+        } else {
+            let newPopover = NSPopover()
+            newPopover.behavior = .transient
+            newPopover.animates = true
+            newPopover.delegate = self
+            let hosting = NSHostingController(rootView: panelView)
+            newPopover.contentViewController = hosting
+            popover = newPopover
+            popoverHostingController = hosting
+            pop = newPopover
+        }
+        pop.contentSize = NSSize(width: MenubarPanelRules.panelWidth, height: MenubarPanelRules.panelHeight)
         pop.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         pop.contentViewController?.view.window?.makeKey()
         installOutsideClickMonitors()
@@ -173,8 +185,6 @@ final class MenubarController: NSObject, NSMenuDelegate, NSPopoverDelegate {
 
     func popoverDidClose(_ notification: Notification) {
         removeOutsideClickMonitors()
-        popover?.contentViewController = nil
-        popover = nil
     }
 
     private func installOutsideClickMonitors() {
@@ -260,12 +270,18 @@ final class MenubarController: NSObject, NSMenuDelegate, NSPopoverDelegate {
     func applyIcon() {
         statusItem?.isVisible = !hideOwnIcon
         let raw = UserDefaults.standard.string(forKey: "menubar.icon") ?? "xfinder"
-        if raw == "xfinder", let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
-           let image = NSImage(contentsOf: url) {
-            image.size = NSSize(width: 18, height: 18)
-            image.isTemplate = false
-            statusItem?.button?.image = image
-            return
+        if raw == "xfinder" {
+            if cachedAppIcon == nil,
+               let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+               let image = NSImage(contentsOf: url) {
+                image.size = NSSize(width: 18, height: 18)
+                image.isTemplate = false
+                cachedAppIcon = image
+            }
+            if let image = cachedAppIcon {
+                statusItem?.button?.image = image
+                return
+            }
         }
         let symbol = Self.iconChoices.first(where: { $0.id == raw })?.symbol ?? "magnifyingglass"
         guard let base = NSImage(systemSymbolName: symbol, accessibilityDescription: "XFinder") else { return }

@@ -186,9 +186,6 @@ final class NotchSurfaceController {
         return signal.projection(agentCount: model.agentCount)
     }
 
-    /// Something is on the collapsed surface (badge or pill): the single highest-priority active signal.
-    private var badgeShown: Bool { collapsedProjection.isVisible }
-
     /// P10 — the ONE reader of `notch.agentEdgeHover` (OneNotch's "AI edge": point at the agent wing to open the agents).
     private var agentEdgeHover: Bool { UserDefaults.standard.object(forKey: "notch.agentEdgeHover") as? Bool ?? true }
     /// P10 — set on every pointer tick, read by the machine through `settings`.
@@ -1466,13 +1463,19 @@ final class NotchSurfaceController {
             return
         }
 
+        if !state.isOpen, !onSurface, zoneEnteredAt == nil,
+           !NotchSurfaceLayout.mayHitCollapsedHover(point: point, screen: screen.frame, notch: notch) {
+            pointerOnAgentEdge = false
+            return
+        }
+
         let wingProj = collapsedProjection
         let zone = NotchSurfaceLayout.hoverZone(notch: notch, screen: screen.frame, itemCount: wingProj.itemCount,
                                                 nowPlayingActive: wingProj.nowPlayingActive,
                                                 timerActive: wingProj.timerActive, agentActive: wingProj.agentActive,
                                                 agentBusy: wingProj.agentBusy, agentCount: wingProj.agentCount,
                                                 visible: screen.visibleFrame,
-                                                pillShown: pillOnPlainScreens && badgeShown && machine.state == .collapsed)
+                                                pillShown: pillOnPlainScreens && wingProj.isVisible && machine.state == .collapsed)
         let wings = NotchSurfaceLayout.wingItems(itemCount: wingProj.itemCount, timerActive: wingProj.timerActive,
                                                  nowPlayingActive: wingProj.nowPlayingActive, agentActive: wingProj.agentActive,
                                                  agentBusy: wingProj.agentBusy, agentCount: wingProj.agentCount)
@@ -2418,18 +2421,18 @@ final class NotchSurfaceController {
             }
             return machine.state
         }()
-        let wingProj = collapsedProjection
         let useCollapsedProjection = (machine.state == .collapsed)
+        let wingProj: NotchCollapsedSignal.WingProjection? = useCollapsedProjection ? collapsedProjection : nil
         guard let target = NotchSurfaceLayout.frame(for: layoutState, anchor: machine.anchor,
-                                                    itemCount: useCollapsedProjection ? wingProj.itemCount : machine.itemCount,
+                                                    itemCount: wingProj?.itemCount ?? machine.itemCount,
                                                     notch: notch,
                                                     screen: screen.frame, visible: screen.visibleFrame,
                                                     pointer: shakePoint,
-                                                    timerActive: useCollapsedProjection ? wingProj.timerActive : clockSuite.hasAnyActiveClock,
-                                                    nowPlayingActive: useCollapsedProjection ? wingProj.nowPlayingActive : NowPlayingMonitor.shared.hasTrack,
-                                                    agentActive: useCollapsedProjection ? wingProj.agentActive : model.agentActive,
-                                                    agentBusy: useCollapsedProjection ? wingProj.agentBusy : model.agentBusy,
-                                                    agentCount: useCollapsedProjection ? wingProj.agentCount : model.agentCount,
+                                                    timerActive: wingProj?.timerActive ?? clockSuite.hasAnyActiveClock,
+                                                    nowPlayingActive: wingProj?.nowPlayingActive ?? NowPlayingMonitor.shared.hasTrack,
+                                                    agentActive: wingProj?.agentActive ?? model.agentActive,
+                                                    agentBusy: wingProj?.agentBusy ?? model.agentBusy,
+                                                    agentCount: wingProj?.agentCount ?? model.agentCount,
                                                     pillOnPlainScreens: pillOnPlainScreens,
                                                     compactActivity: model.activity?.kind.isKeyFeedback == true,
                                                     settingsPresented: settingsPresented, metrics: metrics) else {

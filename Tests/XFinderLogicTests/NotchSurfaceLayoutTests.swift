@@ -367,4 +367,20 @@ final class NotchSurfaceLayoutTests: XCTestCase {
         XCTAssertNil(L.agentEdgeRect(notch: CGRect(x: 800, y: 1117, width: 120, height: 0), left: w.left, right: w.right),
                      "a screen without a notch has no edge")
     }
+
+    func testMayHitCollapsedHoverCoversNotchAndPlainScreensAndRejectsLowerScreen() {
+        let screen = CGRect(x: 0, y: 0, width: 1728, height: 1117)
+        let notch = CGRect(x: 771.5, y: 1085, width: 185, height: 32)
+        XCTAssertTrue(L.mayHitCollapsedHover(point: CGPoint(x: 860, y: 1100), screen: screen, notch: notch))
+        XCTAssertTrue(L.mayHitCollapsedHover(point: CGPoint(x: 10, y: notch.minY), screen: screen, notch: notch))
+        XCTAssertFalse(L.mayHitCollapsedHover(point: CGPoint(x: 860, y: notch.minY - 1), screen: screen, notch: notch))
+        XCTAssertFalse(L.mayHitCollapsedHover(point: CGPoint(x: 860, y: 500), screen: screen, notch: notch))
+
+        let plainScreen = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        let virtualNotch = CGRect(x: 900, y: 1080, width: 120, height: 0)
+        let pillBottom = plainScreen.maxY - L.Metrics.standard.pillHeight
+        XCTAssertTrue(L.mayHitCollapsedHover(point: CGPoint(x: 960, y: 1076), screen: plainScreen, notch: virtualNotch))
+        XCTAssertTrue(L.mayHitCollapsedHover(point: CGPoint(x: 960, y: pillBottom), screen: plainScreen, notch: virtualNotch))
+        XCTAssertFalse(L.mayHitCollapsedHover(point: CGPoint(x: 960, y: pillBottom - 1), screen: plainScreen, notch: virtualNotch))
+    }
 }

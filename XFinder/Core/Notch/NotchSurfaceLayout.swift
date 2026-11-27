@@ -364,6 +364,21 @@ enum NotchSurfaceLayout {
         return CGRect(x: notch.midX - c.width / 2, y: notch.minY, width: c.width, height: notch.height)
     }
 
+    /// Cheap vertical pre-filter for `.mouseMoved` ticks when the surface is collapsed.
+    /// True whenever `point` is at or above the lowest Y edge any collapsed hover zone or
+    /// agent-edge wing can occupy on `screen`, allowing callers to skip projection and layout
+    /// work for pointer movement elsewhere on the display.
+    static func mayHitCollapsedHover(point: CGPoint, screen: CGRect, notch: CGRect,
+                                     metrics m: Metrics = .standard) -> Bool {
+        let minY: CGFloat
+        if notch.height > 0 {
+            minY = min(notch.minY, screen.maxY - max(notch.height, m.pillHeight))
+        } else {
+            minY = screen.maxY - max(m.pillHeight, 8)
+        }
+        return point.y >= minY
+    }
+
     /// Where a FILE drag opens the surface: the notch widened by `dragMargin` each side and reaching
     /// `dragDepth` below the top edge (at least the notch's own height).
     static func dragZone(notch: CGRect, screen: CGRect, metrics m: Metrics = .standard) -> CGRect {
