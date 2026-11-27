@@ -81,12 +81,16 @@
 	<string>XFinder uses local network to monitor system performance.</string>
 	<key>NSMainStoryboardFile</key>
 	<string></string>
+	<key>NSCameraUsageDescription</key>
+	<string>XFinder cần camera để xem trước hình ảnh trực tiếp trong Gương. XFinder không ghi hình.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>XFinder cần micro để nhập văn bản bằng giọng nói (Voice to Typing).</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>XFinder hiện lời nhắc đến hạn hôm nay trên notch. Dữ liệu không rời khỏi máy.</string>
+	<string>XFinder hiện, tạo và hoàn thành lời nhắc của bạn ngay trên notch. Dữ liệu không rời khỏi máy.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>XFinder hiện, tạo và hoàn thành lời nhắc của bạn ngay trên notch. Dữ liệu không rời khỏi máy.</string>
 	<key>NSScreenCaptureDescription</key>
 	<string>XFinder cần quyền Ghi màn hình để xem trước cửa sổ trên Dock.</string>
 	<key>NSServices</key>
