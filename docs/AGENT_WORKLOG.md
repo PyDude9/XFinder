@@ -1,3 +1,38 @@
+## XF-PERF-MENUBAR — Menu bar & Notch responsiveness + legacy tab cleanup
+
+- **TASK:** `XF-PERF-MENUBAR` · **BRANCH:** `agent/antigravity-XF-PERF-MENUBAR` · **BASE:** `614cd4f` (contains `283ba1f`) · **COMMITS:** `042d844` (spec + perf fixes), `6a6d2cd` (unreachable legacy tab cleanup)
+- **Spec:** `docs/specs/XF-PERF-MENUBAR.md` (written before code per direct-task procedure §3c with failure cases).
+- **Baseline measurements (read-only on running `/Applications/XFinder.app`, PID 98431):**
+  - Idle `top -l 5 -s 1 -pid 98431` (steady state, Notch & dropdown closed): `0.2%–1.0%` CPU, `136` idle wakeups (`IDLEW`), `~10–25` CSW/s, `7` threads, `236M` mem (initial burst observed at `12.7%–22.6%` CPU across 10–17 threads before settling).
+  - 3s `sample 98431 3` main-thread hotspots: `NotchSurfaceController.tick()` running `collapsedProjection` twice (via `collapsedProjection` + `badgeShown`) and `hoverZone`/`wingItems`/`agentEdgeRect` on every `.mouseMoved` event across the whole screen; `FinderKeyboardController.handle` calling `NSWorkspace.shared.frontmostApplication?.bundleIdentifier` (`_LSCopyApplicationInformation`, 6 samples in 3s — logged as follow-up); `LocalAppUsageTracker.persistStore()` writing synchronously on main thread every 15s when active (2 samples in 3s — logged as follow-up).
+- **Performance fixes (`042d844`):**
+  - Added pure `NotchSurfaceLayout.mayHitCollapsedHover(point:screen:notch:metrics:)` + unit tests (`NotchSurfaceLayoutTests`, 23/23 passed) so collapsed `.mouseMoved` ticks below the top hover band return early before `collapsedProjection` and layout math.
+  - Eliminated duplicate `collapsedProjection` evaluation in `NotchSurfaceController.tick()` (reuse `wingProj.isVisible`, removed now-unused `badgeShown`).
+  - Skipped `collapsedProjection` in `NotchSurfaceController.render()` when `machine.state != .collapsed` (expanded Notch renders / tab switches).
+  - Reused lazy `NSPopover` + `NSHostingController<MenubarPanelView>` in `MenubarController.togglePopover` (refreshing `rootView` on open so `BrowserSettings.isEnabled` and `L10n` stay current) and cached `AppIcon.icns` in `applyIcon()`.
+- **Provably unused legacy cleanup (`6a6d2cd`, 0 runtime perf claim):**
+  - Removed `XFinder/Views/Menubar/{MenubarUnsleepTab,MenubarMonitorTabs,MenubarToolsTabs}.swift` (958 lines, 0 callers after `283ba1f`), 12 `project.pbxproj` entries, `MenubarPanelTab` + `MenubarPanelRules.parseTab(_:)`, and `MenubarPanelCardModifier` / `View.menubarPanelCard(padding:)`; updated `MenubarPanelRulesTests` and `FeatureKeyDefaultsTests`.
+  - Preserved shared `MenubarPanelRules` dimensions/presets/formatters (`panelWidth`, `panelHeight`, `unsleepPresets`, `formatRemaining`, `parseCollapsedHeaders`, `encodeCollapsedHeaders`, `formatTemp`, `formatBatteryRemaining`, `formatRateKBs`, `formatBytes`), native right-click `NSMenu`, File Browser / Uninstall Apps / Settings, `L10n.strings.json` (add-only), Notch, and Full Settings.
+- **Gate output (`XF_ROOT=/Users/wolong/orca/workspaces/XFinder/XF-PERF-MENUBAR XF_OUT=/tmp/xf-XF-PERF-MENUBAR sh scripts/gate-all.sh`, terminal):**
+
+```text
+XFinder.xcodeproj/project.pbxproj: OK
+build (arm64, compile list)        OK
+tests                              Executed 3581 tests, with 1 test skipped and 0 failures (0 unexpected) in 45.650 (45.986) seconds
+check-l10n-coverage                TOTAL 0 problems across 4890 entries (4890 checked, 46 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 4890 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 2526 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 51 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             8
+GATE: green
+```
+
+- **LIVE: NOT VERIFIED** (Builder does not install, relaunch, or send UI clicks/keys): before/after idle CPU delta on rebuilt binary, dropdown first/repeated open latency, outside-click/status-icon toggle/right-click menu with reused `NSPopover`, File Browser toggle reflection across opens, Notch hover on notched + plain displays, Notch tab switch latency.
+- **CHỜ REVIEW (nhánh `agent/antigravity-XF-PERF-MENUBAR`)**
+
 ## Screenshot fixes: XF-T22 menu-bar placement, XF-T27 lid-wake UI, Stocks demo hint (`task_7650050f6c1d` / `task_6ed55c6a78ec`)
 
 - **TASK:** `task_7650050f6c1d` + follow-up `task_6ed55c6a78ec` (from `/tmp/xfinder-triage-task_9e6cb9aeb089.md`) · **BRANCH:** `agent/antigravity-vorssaint-phase1` · **COMMITS:** `ea5da96` (implementation + specs + tests + 6 UI-token fixes)
