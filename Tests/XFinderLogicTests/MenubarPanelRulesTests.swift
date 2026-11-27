@@ -1,15 +1,6 @@
 import XCTest
 
 final class MenubarPanelRulesTests: XCTestCase {
-    func testAllTabsHaveSymbolsAndTitles() {
-        XCTAssertEqual(MenubarPanelTab.allCases.count, 8)
-        XCTAssertEqual(MenubarPanelTab.allCases[1], .audio)
-        for tab in MenubarPanelTab.allCases {
-            XCTAssertFalse(tab.symbolName.isEmpty)
-            XCTAssertFalse(tab.titleKey.isEmpty)
-        }
-    }
-
     func testUnsleepPresetsIncludeIndefiniteAndPositiveDurations() {
         XCTAssertTrue(MenubarPanelRules.unsleepPresets.contains(where: { $0.minutes == 0 }))
         XCTAssertTrue(MenubarPanelRules.unsleepPresets.contains(where: { $0.minutes == 15 }))
@@ -44,7 +35,7 @@ final class MenubarPanelRulesTests: XCTestCase {
         XCTAssertEqual(MenubarPanelRules.formatBatteryRemaining(minutes: 125), "2h 05m")
     }
 
-    func testFormatRateKBsAndBytesAndParseTab() {
+    func testFormatRateKBsAndBytes() {
         XCTAssertEqual(MenubarPanelRules.formatRateKBs(-5), "0 KB/s")
         XCTAssertEqual(MenubarPanelRules.formatRateKBs(0), "0 KB/s")
         XCTAssertEqual(MenubarPanelRules.formatRateKBs(43), "43 KB/s")
@@ -55,8 +46,5 @@ final class MenubarPanelRulesTests: XCTestCase {
         XCTAssertEqual(MenubarPanelRules.formatBytes(454_000_000), "454 MB")
         XCTAssertEqual(MenubarPanelRules.formatBytes(11_430_000_000), "11.4 GB")
         XCTAssertEqual(MenubarPanelRules.formatBytes(1_500_000_000_000), "1.50 TB")
-
-        XCTAssertEqual(MenubarPanelRules.parseTab("network"), .network)
-        XCTAssertEqual(MenubarPanelRules.parseTab("unknown"), .unsleep)
     }
 }

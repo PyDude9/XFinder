@@ -257,9 +257,6 @@
 		7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */; };
 		7F1A00D7 /* QuickSearchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D6 /* QuickSearchPanel.swift */; };
 		7F1A0D33 /* MenubarPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D32 /* MenubarPanelView.swift */; };
-		7F1A0D3B /* Menubar/MenubarUnsleepTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D3A /* Menubar/MenubarUnsleepTab.swift */; };
-		7F1A0D3D /* Menubar/MenubarMonitorTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D3C /* Menubar/MenubarMonitorTabs.swift */; };
-		7F1A0D3F /* Menubar/MenubarToolsTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D3E /* Menubar/MenubarToolsTabs.swift */; };
 		7F1A00DC /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00DB /* L10n.swift */; };
 		4C1A2B01 /* L10nStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1A2B00 /* L10nStore.swift */; };
 		4C1A2B07 /* FinderExtensionStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1A2B06 /* FinderExtensionStatus.swift */; };
@@ -1117,9 +1114,6 @@
 		7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchPanelController.swift; sourceTree = "<group>"; };
 		7F1A00D6 /* QuickSearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearchPanel.swift; sourceTree = "<group>"; };
 		7F1A0D32 /* MenubarPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenubarPanelView.swift; sourceTree = "<group>"; };
-		7F1A0D3A /* Menubar/MenubarUnsleepTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Menubar/MenubarUnsleepTab.swift; sourceTree = "<group>"; };
-		7F1A0D3C /* Menubar/MenubarMonitorTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Menubar/MenubarMonitorTabs.swift; sourceTree = "<group>"; };
-		7F1A0D3E /* Menubar/MenubarToolsTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Menubar/MenubarToolsTabs.swift; sourceTree = "<group>"; };
 		7F1A00DB /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		4C1A2B00 /* L10nStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nStore.swift; sourceTree = "<group>"; };
 		4C1A2B06 /* FinderExtensionStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderExtensionStatus.swift; sourceTree = "<group>"; };
@@ -1693,9 +1687,6 @@
 			children = (
 				7F1A00D6 /* QuickSearchPanel.swift */,
 				7F1A0D32 /* MenubarPanelView.swift */,
-				7F1A0D3A /* Menubar/MenubarUnsleepTab.swift */,
-				7F1A0D3C /* Menubar/MenubarMonitorTabs.swift */,
-				7F1A0D3E /* Menubar/MenubarToolsTabs.swift */,
 				7F1A001B /* SideNotesPanel.swift */,
 				7F1A001C /* SettingsWindow.swift */,
 				7F1A0037 /* RootView.swift */,
@@ -2500,9 +2491,6 @@
 				7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */,
 				7F1A00D7 /* QuickSearchPanel.swift in Sources */,
 				7F1A0D33 /* MenubarPanelView.swift in Sources */,
-				7F1A0D3B /* Menubar/MenubarUnsleepTab.swift in Sources */,
-				7F1A0D3D /* Menubar/MenubarMonitorTabs.swift in Sources */,
-				7F1A0D3F /* Menubar/MenubarToolsTabs.swift in Sources */,
 				7F1A00DC /* L10n.swift in Sources */,
 				4C1A2B01 /* L10nStore.swift in Sources */,
 				4C1A2B07 /* FinderExtensionStatus.swift in Sources */,

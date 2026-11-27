@@ -148,7 +148,7 @@ final class FeatureKeyDefaultsTests: XCTestCase {
         Switch(key: "snapzones.tilingHotkeys",
                views: ["XFinder/Views/Detail/WindowDetailViews.swift"],
                reader: "XFinder/Core/Snap/HyprTilingController.swift"),
-        Switch(key: "caffeine.keepDisplayOn", views: ["XFinder/Views/Detail/SystemControlsPanel.swift", "XFinder/Views/Menubar/MenubarUnsleepTab.swift"],
+        Switch(key: "caffeine.keepDisplayOn", views: ["XFinder/Views/Detail/SystemControlsPanel.swift"],
                reader: "XFinder/Core/SystemMonitor/CaffeineController.swift"),
         // Notch System binds lid wake directly to CaffeineController, with no view default.
         Switch(key: "cleaning.minutes", views: ["XFinder/Views/Detail/SystemControlsPanel.swift"],

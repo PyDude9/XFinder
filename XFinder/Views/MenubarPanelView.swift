@@ -1,29 +1,5 @@
 import SwiftUI
 
-struct MenubarPanelCardModifier: ViewModifier {
-    var padding: CGFloat = 10
-
-    func body(content: Content) -> some View {
-        content
-            .padding(padding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.primary.opacity(0.055))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(Color.primary.opacity(0.07), lineWidth: 1)
-            )
-    }
-}
-
-extension View {
-    func menubarPanelCard(padding: CGFloat = 10) -> some View {
-        modifier(MenubarPanelCardModifier(padding: padding))
-    }
-}
-
 /// Compact menu-bar entry points for features that do not live in Notch tabs.
 struct MenubarPanelView: View {
     let onClose: () -> Void

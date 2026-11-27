@@ -1,47 +1,7 @@
 import Foundation
 
-/// Pure rules for XFinder's floating Menu Bar Popover (`MenubarPanelView`).
-/// Foundation-only so `Tests/XFinderLogicTests` can test tab definitions,
-/// Unsleep presets, and remaining-time formatting without AppKit.
-enum MenubarPanelTab: String, CaseIterable, Identifiable, Sendable {
-    case unsleep
-    case audio
-    case system
-    case network
-    case storage
-    case battery
-    case utilities
-    case controls
-
-    var id: String { rawValue }
-
-    var symbolName: String {
-        switch self {
-        case .unsleep: return "moon.zzz.fill"
-        case .audio: return "slider.horizontal.3"
-        case .system: return "cpu"
-        case .network: return "globe"
-        case .storage: return "internaldrive"
-        case .battery: return "bolt.fill"
-        case .utilities: return "wrench.and.screwdriver.fill"
-        case .controls: return "switch.2"
-        }
-    }
-
-    var titleKey: String {
-        switch self {
-        case .unsleep: return "Chống ngủ"
-        case .audio: return "Âm thanh & Độ sáng"
-        case .system: return "Hệ thống"
-        case .network: return "Mạng"
-        case .storage: return "Ổ đĩa"
-        case .battery: return "Pin"
-        case .utilities: return "Tiện ích"
-        case .controls: return "Điều khiển"
-        }
-    }
-}
-
+/// Pure rules for XFinder's Menu Bar Popover (`MenubarPanelView`) and shared
+/// Unsleep presets / compact metric formatters used by Notch and Sidebar views.
 enum MenubarPanelRules {
     static let panelWidth: Double = 300
     static let panelHeight: Double = 180
@@ -117,9 +77,5 @@ enum MenubarPanelRules {
         if safe >= 1_000_000 { return String(format: "%.0f MB", b / 1e6) }
         if safe >= 1_000 { return String(format: "%.0f KB", b / 1e3) }
         return "\(safe) B"
-    }
-
-    static func parseTab(_ raw: String) -> MenubarPanelTab {
-        MenubarPanelTab(rawValue: raw) ?? .unsleep
     }
 }
