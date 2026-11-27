@@ -2395,11 +2395,11 @@ GATE: green
 - **Verification:** `sh scripts/gate-all.sh` — arm64 build OK; 3,581 tests, 1 skipped, 0 failures; all localization/UI gates TOTAL 0; `GATE: green`.
 - **Live UI:** the helper launched `/tmp/xf-xfinder-caffeine-stocks/out/XFinder.app`, but opening the custom Settings URL routed to the separate installed `/Applications/XFinder.app`; after closing that app, Atlas could only see the helper's existing System Settings permission window, so the new Settings page screenshot could not be verified. No API credential was entered. Owner-profile live behavior is not verified.
 
-# XF-MB-GENERAL-01 — implementation complete
+# XF-MB-GENERAL-01 — 2026-11-27
 
-| Task | Files | Acceptance | Live |
-|---|---|---|---|
-| Minimal menu-bar popover; outside-click dismissal | `XFinder/Views/MenubarPanelView.swift`, `XFinder/App/MenubarController.swift`, `XFinder/Core/MenubarPanelRules.swift` | arm64 Debug build succeeded; `git diff --check` clean | Not verified: Atlas helper showed a Device Control and Data Access prompt, so I could not click the status item or exercise dismissal |
-
-Branch: `agent/codex-XF-MB-GENERAL-01`. Build output: `/tmp/xfinder-codex-XF-MB-GENERAL-01/out/XFinder.app`. No tests run. Notion MCP unavailable; using repository fallback.
+- Implementation `283ba1f` on `agent/codex-XF-MB-GENERAL-01`. Replaced the tabbed left-click popover with three general actions and scoped its outside-click monitors to the popover lifecycle.
+- Signed arm64 Debug build passed. The follow-up gate (`sh scripts/gate-all.sh --no-build` after the separate build) reported 3,581 tests, one skipped, zero failures, and `GATE: green`.
+- Atlas helper showed all three actions on the exact build and confirmed the popover disappeared after an outside click. Same-app clicks and the three individual action routes were not exercised in this run.
+- Installed and launched at `/Applications/XFinder.app` under `wolong`. The installed debug dylib SHA-256 matched the tested build: `30cd4f5587f59afa5051b9d6387b41c7b5ea29c2a4227eba60c8870f5c5e424e`.
+- Start the next IDE session with [the handoff](handoffs/XF-notched-menubar-handoff.md).
 

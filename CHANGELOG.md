@@ -4,6 +4,10 @@ Tất cả thay đổi đáng chú ý của XFinder được ghi ở đây, mớ
 
 ## [Chưa phát hành]
 
+### Menu bar
+- Bấm icon XFinder để mở nhanh **Trình duyệt tệp**, **Gỡ ứng dụng** và **Cài đặt**. Các tab điều khiển đã được gỡ khỏi dropdown để tránh lặp với Notch và Full Settings.
+- Dropdown tự đóng khi bấm ra ngoài.
+
 ### Hỗ trợ & báo lỗi
 - **Báo lỗi…** (menu ▸ Trợ giúp, hoặc trang Giới thiệu) dựng một báo cáo chẩn đoán: phiên bản, macOS, model máy, quyền đã cấp, tính năng đang bật, crash/treo gần đây của chính XFinder (crash report của macOS + MetricKit, chỉ các trường trong danh sách cho phép) và nhật ký mã lỗi kỹ thuật. Bạn đọc trọn văn bản rồi tự Sao chép / Lưu tệp / Mở GitHub Issues.
 - Báo cáo lỗi **không bao giờ tự gửi**: không có tên tệp, nội dung clipboard, tên cửa sổ, tài khoản; thư mục nhà thay bằng `~`. Nhật ký lỗi (chỉ mã, tối đa 300 dòng) lưu ở `~/Library/Application Support/XFinder/Diagnostics/`, tắt và xoá được.

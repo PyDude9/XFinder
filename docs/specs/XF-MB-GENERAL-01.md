@@ -8,7 +8,7 @@ Keep the menu bar popover for general entry points only: File Browser, Uninstall
 
 - `XFinder/Views/MenubarPanelView.swift`: replace tabbed feature dashboard with a compact general-actions panel.
 - `XFinder/App/MenubarController.swift`: reliably close the transient popover on outside clicks while preserving status-item toggle behavior.
-- `XFinder/Core/MenubarPanelRules.swift`: remove obsolete tab state and set compact panel dimensions.
+- `XFinder/Core/MenubarPanelRules.swift`: set compact panel dimensions. The popover no longer reads the previous tab preference.
 - Relevant tests under `Tests/XFinderLogicTests/` if pure rules change.
 - `XFinder/Resources/L10n.strings.json` only if existing strings do not cover labels.
 
@@ -23,7 +23,7 @@ Keep the menu bar popover for general entry points only: File Browser, Uninstall
 - Click within the popover: keep it open.
 - Click XFinder status icon while open: close once; do not immediately reopen.
 - Popover closes while monitor callbacks are queued: teardown monitors idempotently.
-- App exits with popover visible: remove both event monitors.
+- Popover closes: remove both event monitors. Process exit releases any remaining registrations.
 
 ## Acceptance
 
