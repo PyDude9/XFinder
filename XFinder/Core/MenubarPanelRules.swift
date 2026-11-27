@@ -4,7 +4,7 @@ import Foundation
 /// Unsleep presets / compact metric formatters used by Notch and Sidebar views.
 enum MenubarPanelRules {
     static let panelWidth: Double = 300
-    static let panelHeight: Double = 180
+    static let panelHeight: Double = 212
 
     struct UnsleepPreset: Equatable, Identifiable, Sendable {
         /// `0` means indefinite; positive values are minutes.

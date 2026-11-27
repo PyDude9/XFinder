@@ -34,6 +34,12 @@ struct MenubarPanelView: View {
                     onClose()
                     AppState.shared.navigate(to: .dashboard)
                 }
+                SettingsDivider()
+
+                actionRow("Thoát", symbol: "power", opensWindow: false) {
+                    onClose()
+                    NSApplication.shared.terminate(nil)
+                }
             }
             .padding(.horizontal, XFinderTokens.Settings.cardInset)
             .background(XFinderTokens.Settings.cardFill, in: RoundedRectangle(
@@ -44,7 +50,8 @@ struct MenubarPanelView: View {
         .background(XFinderTokens.Fill.window)
     }
 
-    private func actionRow(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+    private func actionRow(_ title: String, symbol: String, opensWindow: Bool = true,
+                           action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: XFinderTokens.Space.row) {
                 Image(systemName: symbol)
@@ -55,9 +62,11 @@ struct MenubarPanelView: View {
                     .font(XFinderTokens.Font.row)
                     .foregroundStyle(.primary)
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .font(XFinderTokens.Font.caption)
-                    .foregroundStyle(.tertiary)
+                if opensWindow {
+                    Image(systemName: "chevron.right")
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundStyle(.tertiary)
+                }
             }
             .settingsRow()
             .contentShape(Rectangle())
