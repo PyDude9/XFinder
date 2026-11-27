@@ -121,7 +121,7 @@ final class AppState {
         // Debug affordance: `-startPage <rawValue>` opens straight to a page,
         // so a specific screen can be inspected without clicking through.
         if let raw = UserDefaults.standard.string(forKey: "startPage"),
-           let dest = SidebarDestination(rawValue: raw) {
+           let dest = SidebarDestination.resolveSettingsPage(raw) {
             select(dest)
         }
     }

@@ -29,6 +29,7 @@ struct SystemControlsPanel: View {
     /// (onEditingChanged), sau đó poll đồng bộ lại từ phần cứng.
     @State private var brightnessSlider: Double = 0.5
     @State private var brightnessDragging = false
+    @AppStorage("caffeine.keepDisplayOn") private var keepDisplayOn = true
     @AppStorage("cleaning.minutes") private var cleaningMinutes = 2
     @State private var cleaning = CleaningModeController.shared
 
@@ -244,6 +245,9 @@ struct SystemControlsPanel: View {
                 }
                 .padding(.vertical, 2)
 
+                ToggleRow(title: L10n.t("Giữ cả màn hình sáng khi Chống ngủ"), isOn: $keepDisplayOn)
+                    .onChange(of: keepDisplayOn) { CaffeineController.shared.applyDisplaySetting() }
+
                 ToggleRow(title: L10n.t("Tự động ẩn Dock"), isOn: $dockAutohide)
                     .onChange(of: dockAutohide) { _, on in DockPrefs.setAutohide(on) }
 
@@ -283,98 +287,6 @@ struct SystemControlsPanel: View {
     }
 
 
-}
-
-/// Dedicated Full Settings destination for the Caffeine hold and lid-wake option.
-struct CaffeineDetailView: View {
-    @State private var caffeine = CaffeineController.shared
-    @State private var hasBattery = PowerManager.hasBattery()
-    @State private var durationMinutes: Int? = nil
-    @AppStorage("caffeine.keepDisplayOn") private var keepDisplayOn = true
-    @AppStorage("caffeine.requestLidWake") private var requestLidWake = false
-
-    private var durationText: String {
-        if let seconds = caffeine.remainingSeconds {
-            return String(format: L10n.t("Còn %02d:%02d"), seconds / 60, seconds % 60)
-        }
-        return caffeine.isActive ? L10n.t("∞ Vô hạn") : L10n.t("Đang tắt")
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                PageHeader(title: L10n.t("Chống ngủ"),
-                           subtitle: L10n.t("Chọn thời lượng giữ máy thức và bật riêng chế độ giữ thức khi đóng nắp."))
-                SettingsSection(title: L10n.t("Caffeine")) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(L10n.t("Giữ máy thức")).font(XFinderTokens.Font.row)
-                            Text(durationText).font(XFinderTokens.Font.caption)
-                                .foregroundStyle(caffeine.isActive ? .orange : .secondary)
-                                .monospacedDigit()
-                        }
-                        Spacer()
-                        Picker(L10n.t("Thời lượng"), selection: $durationMinutes) {
-                            ForEach(MenubarPanelRules.unsleepPresets) { preset in
-                                Text(L10n.t(preset.labelKey)).tag(preset.minutes == 0 ? Int?.none : Int?.some(preset.minutes))
-                            }
-                        }
-                        .pickerStyle(.menu).labelsHidden().frame(width: 112)
-                        .disabled(caffeine.isActive)
-                        Toggle(isOn: Binding(get: { caffeine.isActive }, set: { enabled in
-                            if enabled {
-                                caffeine.activate(duration: durationMinutes.map { .minutes($0) } ?? .indefinite)
-                            } else {
-                                caffeine.deactivate()
-                            }
-                        })) { EmptyView() }
-                            .labelsHidden().toggleStyle(.switch)
-                            .accessibilityLabel(L10n.t("Giữ máy thức"))
-                            .accessibilityValue(durationText)
-                    }
-                    .settingsRow()
-                    SettingsDivider()
-                    ToggleRow(title: L10n.t("Giữ cả màn hình sáng khi Chống ngủ"),
-                              subtitle: caffeine.endedForBattery ? L10n.t("Lần trước đã tự tắt vì pin yếu (≤ 10 %, đang chạy pin).")
-                                                                 : L10n.t("Chống ngủ tự tắt khi chạy pin và còn ≤ 10 %."),
-                              isOn: $keepDisplayOn)
-                        .onChange(of: keepDisplayOn) { caffeine.applyDisplaySetting() }
-                    SettingsDivider()
-                    if hasBattery {
-                        ToggleRow(title: L10n.t("Giữ thức khi đóng nắp"),
-                                  subtitle: lidWakeSubtitle,
-                                  isOn: $requestLidWake)
-                            .onChange(of: requestLidWake) { _, enabled in caffeine.setLidWakeRequested(enabled) }
-                    } else {
-                        InlineNote(text: L10n.t("Giữ thức khi đóng nắp chỉ dùng được trên máy Mac có pin và nắp."))
-                            .settingsRow()
-                    }
-                }
-            }
-            .padding(.bottom, XFinderTokens.Space.section)
-            .pageWidthSafe()
-        }
-        .background(XFinderTokens.Settings.contentBackground)
-        .onAppear {
-            hasBattery = PowerManager.hasBattery()
-            caffeine.refreshPowerState()
-        }
-    }
-
-    private var lidWakeSubtitle: String {
-        switch caffeine.lidWakeState {
-        case .active:
-            return L10n.t("Đang giữ thức khi đóng nắp (đang cắm nguồn). macOS vẫn có thể cho máy ngủ nếu không có màn hình ngoài.")
-        case .waitingForCaffeine:
-            return L10n.t("Đã bật yêu cầu đóng nắp — chưa hoạt động vì Chống ngủ đang tắt. Cần cắm nguồn.")
-        case .waitingForACPower:
-            return L10n.t("Đã bật yêu cầu đóng nắp — đang tạm dừng vì dùng pin (cần cắm nguồn).")
-        case .unavailable:
-            return L10n.t("Không tạo được yêu cầu giữ thức khi đóng nắp từ macOS.")
-        case .off:
-            return L10n.t("Cần bật Chống ngủ và cắm nguồn. macOS vẫn có thể cho máy ngủ khi đóng nắp.")
-        }
-    }
 }
 
 /// Dock preferences that macOS exposes publicly and readably.

@@ -12,8 +12,6 @@ enum SettingsSearchIndex {
             return ["tổng quan", "overview", "thanh menu", "menu bar", "số liệu", "readouts", "dock icon", "biểu tượng dock"]
         case .features:
             return ["tính năng", "quyền", "permissions", "trợ năng", "accessibility", "ghi màn hình", "screen recording", "sao lưu", "backup", "export", "import", "json", "dotfiles", "preset", "gói", "chống ngủ", "anti-sleep", "keep awake", "caffeine", "cleaning mode", "lau bàn phím", "khóa bàn phím"]
-        case .antiSleep:
-            return ["chống ngủ", "anti-sleep", "keep awake", "caffeine", "màn hình", "display sleep", "nắp máy", "clamshell"]
         case .system:
             return ["cpu", "gpu", "ram", "bộ nhớ", "memory", "nhiệt độ", "temperature", "hiệu năng", "performance", "tiến trình", "process"]
         case .network:

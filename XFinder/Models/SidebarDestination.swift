@@ -4,7 +4,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
     // CHUNG — built now, real data
     case dashboard
     case features
-    case antiSleep
     case system
     case network
     case storage
@@ -80,6 +79,10 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     var id: String { rawValue }
 
+    static func resolveSettingsPage(_ rawValue: String) -> Self? {
+        rawValue == "antiSleep" ? .features : Self(rawValue: rawValue)
+    }
+
     /// Pages shown as TABS of one sidebar row — the first member of each group is the row. The owner asked to group the
     /// system pages ("gộp các mục liên quan đến xem hệ thống lại cho gọn gàng", 2026-10-14) and then every page that
     /// repeats another one's job ("gộp cái nào duplicates"). Every member keeps its own case, so deep links
@@ -128,7 +131,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .dashboard: return "Tổng quan"
         case .features: return "Tính năng & Quyền"
-        case .antiSleep: return "Chống ngủ"
         case .system: return "Theo dõi hệ thống"
         case .network: return "Mạng"
         case .storage: return "Ổ đĩa"
@@ -186,7 +188,6 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .dashboard: return "chart.bar.fill"
         case .features: return "square.grid.2x2"
-        case .antiSleep: return "moon.zzz.fill"
         case .system: return "cpu"
         case .network: return "network"
         case .storage: return "internaldrive.fill"
@@ -247,7 +248,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
         case .dashboard, .storage, .menuIcons, .finderKeyboard, .actionHistory, .folderLock, .finderUtils, .about: return .gray
         case .features, .snapZones, .duplicateFinder: return .indigo
         case .shortcuts, .finderSearch, .quickShare, .quickLookPage, .fileBrowser, .websiteAnalytics: return .cyan
-        case .antiSleep, .aiSearch, .smartSelect, .aiAgents: return .purple
+        case .aiSearch, .smartSelect, .aiAgents: return .purple
         case .system, .notchInterface, .windowPreview, .finderActions, .remoteConnect: return .blue
         case .network, .settingsClipboard, .ports: return .teal
         case .pin, .junkCleanup, .clipboard, .stocks: return .green
@@ -270,7 +271,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable, Hashable {
 
     static var groups: [(header: String, items: [SidebarDestination])] {
         [
-            ("CHUNG", [.dashboard, .features, .antiSleep, .shortcuts, .system, .alerts]),
+            ("CHUNG", [.dashboard, .features, .shortcuts, .system, .alerts]),
             // P3: everything the notch shows, by what the user comes to do — the old "Notch & Khay thả" page split six ways.
             ("NOTCH", [.notchInterface, .dropTray, .media, .aiAgents, .calendar, .liveActivities,
                        .stocks, .websiteAnalytics, .revenue]),

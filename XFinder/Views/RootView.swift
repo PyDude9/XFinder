@@ -154,8 +154,6 @@ struct DetailHostView: View {
                 DashboardDetailView()
                     .environment(systemMonitorManager)
                     .environment(clipboardManager)
-            case .antiSleep:
-                CaffeineDetailView()
             case .system:
                 SystemDetailView()
                     .environment(systemMonitorManager)

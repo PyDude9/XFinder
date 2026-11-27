@@ -325,9 +325,12 @@ final class MenubarController: NSObject, NSMenuDelegate, NSPopoverDelegate {
         menu.addItem(.separator())
 
         // Quick actions & Unsleep
-        let antiSleep = antiSleepItem()
-        antiSleep.image = Self.menuSymbol("cup.and.saucer.fill")
-        menu.addItem(antiSleep)
+        let notch = NotchSurfaceController.shared
+        if !notch.isEnabled || !notch.model.tabCatalog.isEnabled(.system) {
+            let antiSleep = antiSleepItem()
+            antiSleep.image = Self.menuSymbol("cup.and.saucer.fill")
+            menu.addItem(antiSleep)
+        }
         menu.addItem(quickSettingsItem())
         let capture = captureItem()
         capture.image = Self.menuSymbol("camera.viewfinder")
@@ -527,7 +530,7 @@ final class MenubarController: NSObject, NSMenuDelegate, NSPopoverDelegate {
     }
 
     /// One switch (indefinite, like the old popover's); a timed hold shows how long is left, rounded UP so it never
-    /// reads 0 while the Mac is still being kept awake. Durations stay on the Chống ngủ page.
+    /// reads 0 while the Mac is still being kept awake. Duration controls live on Notch System.
     private func antiSleepItem() -> NSMenuItem {
         let caffeine = CaffeineController.shared
         var title = L10n.t("Chống ngủ")

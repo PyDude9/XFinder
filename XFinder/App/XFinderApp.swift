@@ -271,7 +271,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case "settings":
             Task { @MainActor in
                 let dest = comps.queryItems?.first(where: { $0.name == "page" })?.value
-                    .flatMap { SidebarDestination(rawValue: $0) } ?? .features
+                    .flatMap(SidebarDestination.resolveSettingsPage) ?? .features
                 AppState.shared.navigate(to: dest)
             }
         case "translate":

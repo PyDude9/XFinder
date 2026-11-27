@@ -83,8 +83,11 @@ final class SidebarDestinationTests: XCTestCase {
                 XCTAssertNotNil(store.entries[sub], "\(sub) is not in the store")
             }
         }
-        XCTAssertEqual(SidebarDestination.antiSleep.hostRow, .antiSleep, "Caffeine has a direct Settings destination")
-        XCTAssertTrue(SidebarDestination.groups.flatMap(\.items).contains(.antiSleep))
+    }
+
+    func testFormerAntiSleepPageRedirectsWithoutASidebarEntry() {
+        XCTAssertEqual(SidebarDestination.resolveSettingsPage("antiSleep"), .features)
+        XCTAssertFalse(grouped.contains { $0.rawValue == "antiSleep" })
     }
 
     /// Hệ thống, Mạng, Ổ đĩa, Pin are one row ("Theo dõi hệ thống") — the first tab group.
