@@ -55,14 +55,15 @@ DictationMode.swift VoiceTrigger.swift RefinePrompt.swift RefinerTypes.swift
 VoiceSettingsKeys.swift VoiceRefiner.swift VoiceTextDiff.swift VoiceKeychain.swift
 VoiceScreenContext.swift VoiceHUD.swift VoiceDiffPanel.swift VoiceAudioCue.swift
 AppleOnDeviceRefiner.swift HTTPRefiner.swift OllamaRefiner.swift
-MenuBarEngine.swift MenuBarEngineFactory.swift LegacyLengthEngine.swift
-NativeVisibilityEngine.swift NativeVisibilityBridge.swift AccessibilityMenuBarInventory.swift
 SettingsShell.swift NotchInterfaceDetailView.swift MediaDetailView.swift AIAgentsDetailView.swift
 CalendarSettingsDetailView.swift LiveActivitiesDetailView.swift ShortcutsDetailView.swift ShortcutCatalog.swift
 TabbedPage.swift MenubarController.swift DiagnosticsRules.swift DiagnosticsLog.swift DiagnosticsCenter.swift AnalyticsRules.swift AnalyticsCenter.swift
 DropTrayDetailView.swift SidebarDestination.swift
 AgentKind.swift AgentEvents.swift AgentHookInstaller.swift AgentSessionMonitor.swift NotchAgentsPage.swift
-OpenCodeRules.swift OpenCodeMonitor.swift AgentNotify.swift AgentRecent.swift AgentTalk.swift AgentTalkSender.swift WindowlessRules.swift WindowlessSessionManager.swift CrewRules.swift CrewManager.swift CrewGate.swift CrewGit.swift CrewGuardMain.swift"
+OpenCodeRules.swift OpenCodeMonitor.swift AgentNotify.swift AgentRecent.swift AgentTalk.swift AgentTalkSender.swift WindowlessRules.swift WindowlessSessionManager.swift CrewRules.swift CrewManager.swift CrewGate.swift CrewGit.swift CrewGuardMain.swift
+NotchGalleryRules.swift NotchIslandRules.swift WeatherModels.swift WeatherCache.swift WeatherLocationService.swift
+WeatherProvider.swift WeatherCoordinator.swift WeatherViewModel.swift OpenMeteoAdapter.swift NotchWeatherPage.swift
+StocksModels.swift StocksProvider.swift StocksViewModel.swift RevenueModels.swift RevenueAggregator.swift RevenueProvider.swift RevenueViewModel.swift NotchStocksPage.swift NotchRevenuePage.swift"
 MISSING=0
 for f in $GESTURE_FILES; do
   if grep -q "/$f" "$LIST"; then echo "  OK   $f"; else echo "  MISS $f"; MISSING=$((MISSING + 1)); fi
@@ -92,12 +93,16 @@ lipo -archs "$OUT/out/XFinder.app/Contents/MacOS/XFinder"
 # P3: a MISS used to be printed and the script still exited 0 — a gate that only prints reads as a pass.
 if [ "$MISSING" -ne 0 ]; then echo "FAIL: $MISSING file(s) missing from the compile list or the bundle"; exit 1; fi
 
-# This script BUILDS and CHECKS. It does not sign or install, on purpose (2026-10-10):
-# it used to `pkill -9 XFinder`, replace /Applications/XFinder.app and re-sign it with
-# `codesign --deep` — killing the user's running app on every build, and the deep re-sign
-# DROPPED the Finder Sync extension's sandbox entitlement, so pkd refused the extension
-# and XFinder's Finder menu vanished (measured: entitlement count 0, no pluginkit entry).
-# CLAUDE.md had already recorded that exact trap for the install script.
+# Reuse the local dev identity across builds so macOS can match existing permissions.
+# CI and other machines can build without access to the developer's signing key.
+if security find-identity -v -p codesigning | grep -Fq '"XFinder Dev"'; then
+  echo "--- local development signing ---"
+  sh scripts/sign-local-dev-build.sh "$OUT/out/XFinder.app"
+else
+  echo "--- ad-hoc signature (XFinder Dev identity unavailable) ---"
+fi
+
+# Installation is separate so a build never replaces a running app.
 echo "--- not installed ---"
 echo "build output: $OUT/out/XFinder.app"
 echo "to install and launch (signs the extension correctly): sh scripts/install-mouse-rebuild.sh"

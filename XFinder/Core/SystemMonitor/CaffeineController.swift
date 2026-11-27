@@ -17,7 +17,21 @@ final class CaffeineController {
 
     private var assertionID: IOPMAssertionID = 0
     private var displayAssertionID: IOPMAssertionID = 0
+    private var lidAssertionID: IOPMAssertionID = 0
+    /// ONE reader (XF-T27 §2.1b): default false.
+    private(set) var requestLidWake: Bool = UserDefaults.standard.object(forKey: "caffeine.requestLidWake") as? Bool ?? false
+    private(set) var lidAssertionActive = false
+    private(set) var isOnACPower: Bool = CaffeineController.currentACPower()
     private var timer: Timer?
+
+    var lidWakeState: CaffeineRules.LidWakeState {
+        CaffeineRules.lidWakeState(
+            requested: requestLidWake,
+            caffeineActive: isActive,
+            onACPower: isOnACPower,
+            assertionActive: lidAssertionActive
+        )
+    }
     private var powerSource: CFRunLoopSource?
     /// Why the last hold ended on its own (the page and the menu show it once).
     var endedForBattery = false
@@ -75,12 +89,13 @@ final class CaffeineController {
         assertionID = id
         isActive = true
         applyDisplaySetting()
+        applyLidSetting()
         UserDefaults.standard.set(CaffeineRules.storedUntil(start: Date(), minutes: duration.seconds.map { $0 / 60 }),
                                   forKey: CaffeineRules.Key.until)
         watchPower()
         if let s = duration.seconds {
             remainingSeconds = s
-            scheduleCountdown(total: s)
+            scheduleCountdown()
         } else {
             remainingSeconds = nil
         }
@@ -89,6 +104,7 @@ final class CaffeineController {
     func deactivate() {
         if assertionID != 0 { IOPMAssertionRelease(assertionID); assertionID = 0 }
         if displayAssertionID != 0 { IOPMAssertionRelease(displayAssertionID); displayAssertionID = 0 }
+        releaseLidAssertion()
         timer?.invalidate(); timer = nil
         if let powerSource { CFRunLoopRemoveSource(CFRunLoopGetMain(), powerSource, .defaultMode) }
         powerSource = nil
@@ -97,14 +113,15 @@ final class CaffeineController {
         remainingSeconds = nil
     }
 
-    private func scheduleCountdown(total: Int) {
+    private func scheduleCountdown() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
-                if let r = self.remainingSeconds {
-                    if r <= 1 { self.deactivate() }
-                    else { self.remainingSeconds = r - 1 }
+                if self.remainingSeconds != nil {
+                    let remaining = Int(ceil(self.storedUntil - Date().timeIntervalSince1970))
+                    if remaining <= 0 { self.deactivate() }
+                    else { self.remainingSeconds = remaining }
                 }
             }
         }
@@ -116,7 +133,10 @@ final class CaffeineController {
     private func watchPower() {
         guard powerSource == nil else { return }
         guard let src = IOPSNotificationCreateRunLoopSource({ _ in
-            MainActor.assumeIsolated { CaffeineController.shared.checkBattery() }
+            MainActor.assumeIsolated {
+                CaffeineController.shared.checkBattery()
+                CaffeineController.shared.applyLidSetting()
+            }
         }, nil)?.takeRetainedValue() else { return }
         powerSource = src
         CFRunLoopAddSource(CFRunLoopGetMain(), src, .defaultMode)
@@ -127,6 +147,47 @@ final class CaffeineController {
         deactivate()
         endedForBattery = true
         CaffeineController.toast.show(symbol: "battery.25", title: L10n.t("Đã tắt Chống ngủ vì pin yếu."), duration: 3.0)
+    }
+
+    func setLidWakeRequested(_ requested: Bool) {
+        requestLidWake = requested
+        UserDefaults.standard.set(requested, forKey: CaffeineRules.Key.requestLidWake)
+        applyLidSetting()
+    }
+
+    func refreshPowerState() {
+        isOnACPower = Self.currentACPower()
+        applyLidSetting()
+    }
+
+    private func applyLidSetting() {
+        isOnACPower = Self.currentACPower()
+        guard isActive, requestLidWake, isOnACPower else {
+            releaseLidAssertion()
+            return
+        }
+        guard lidAssertionID == 0 else { return }
+        var id: IOPMAssertionID = 0
+        let result = IOPMAssertionCreateWithName(kIOPMAssertionTypePreventSystemSleep as CFString,
+                                                IOPMAssertionLevel(kIOPMAssertionLevelOn),
+                                                "XFinder: Closed-display wake request" as CFString, &id)
+        if result == kIOReturnSuccess {
+            lidAssertionID = id
+            lidAssertionActive = true
+        }
+    }
+
+    private static func currentACPower() -> Bool {
+        guard let blob = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+              let source = IOPSGetProvidingPowerSourceType(blob)?.takeUnretainedValue() else {
+            return false
+        }
+        return (source as String) == kIOPSACPowerValue
+    }
+
+    private func releaseLidAssertion() {
+        if lidAssertionID != 0 { IOPMAssertionRelease(lidAssertionID); lidAssertionID = 0 }
+        lidAssertionActive = false
     }
 
     static let toast = ToastSurface(style: .toast)

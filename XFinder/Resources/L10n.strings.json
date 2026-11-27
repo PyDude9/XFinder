@@ -1,6 +1,1334 @@
 {
   "_comment": "Keyed by the Vietnamese literal, because that is what call sites read as. `scope` separates full sentences from interpolation fragments; a fragment keeps its surrounding spaces and is never used as a whole sentence. `key` is the stable dotted key when the string also has one. Generated from the Swift dictionaries by scripts/migrate-l10n-source-literals.py.",
   "entries": {
+    "Phản hồi": {
+      "en": "Feedback",
+      "scope": "sentence"
+    },
+    "Chẩn đoán": {
+      "en": "Diagnostics",
+      "scope": "sentence"
+    },
+    "Mở trang Chẩn đoán để tự xem báo cáo": {
+      "en": "Open Diagnostics to review reports yourself",
+      "scope": "sentence"
+    },
+    "Mở trang Chẩn đoán": {
+      "en": "Open Diagnostics page",
+      "scope": "sentence"
+    },
+    "Viết ý kiến hoặc mô tả lỗi…": {
+      "en": "Write feedback or describe an issue…",
+      "scope": "sentence"
+    },
+    "Ô nhập nội dung phản hồi": {
+      "en": "Feedback text input",
+      "scope": "sentence"
+    },
+    "Không tự đọc nhật ký hay thông tin máy.": {
+      "en": "Does not automatically read logs or device info.",
+      "scope": "sentence"
+    },
+    "Bản xem trước để sao chép sẽ hiện tại đây.": {
+      "en": "Your formatted preview for copying will appear here.",
+      "scope": "sentence"
+    },
+    "Xem trước nội dung phản hồi": {
+      "en": "Feedback content preview",
+      "scope": "sentence"
+    },
+    "Sao chép nội dung phản hồi": {
+      "en": "Copy feedback content",
+      "scope": "sentence"
+    },
+    "Mở trang issue": {
+      "en": "Open Issue Page",
+      "scope": "sentence"
+    },
+    "Mở trang tạo issue của XFinder trên GitHub (chỉ mở đích đến, không tự gửi)": {
+      "en": "Open XFinder's GitHub new-issue page (destination only, does not auto-submit)",
+      "scope": "sentence"
+    },
+    "Mở trang tạo issue XFinder": {
+      "en": "Open XFinder issue page",
+      "scope": "sentence"
+    },
+    "Báo lỗi": {
+      "en": "Bug",
+      "scope": "sentence"
+    },
+    "Đề xuất": {
+      "en": "Suggestion",
+      "scope": "sentence"
+    },
+    "Khác": {
+      "en": "Other",
+      "scope": "sentence"
+    },
+    "Đã sao chép phản hồi.": {
+      "en": "Feedback copied.",
+      "scope": "sentence"
+    },
+    "Không thể sao chép. Nội dung vẫn được giữ.": {
+      "en": "Could not copy. Your draft was preserved.",
+      "scope": "sentence"
+    },
+    "Đã mở trang tạo issue.": {
+      "en": "Opened issue page.",
+      "scope": "sentence"
+    },
+    "Không mở được trình duyệt. Nội dung vẫn được giữ để sao chép.": {
+      "en": "Could not open browser. Your draft was preserved for copying.",
+      "scope": "sentence"
+    },
+    "Đã mở Chẩn đoán.": {
+      "en": "Opened Diagnostics.",
+      "scope": "sentence"
+    },
+    "Không mở được trang Chẩn đoán.": {
+      "en": "Could not open Diagnostics.",
+      "scope": "sentence"
+    },
+    "Sao chép nội dung phản hồi đã định dạng": {
+      "en": "Copy formatted feedback",
+      "scope": "sentence"
+    },
+    "Nhập nội dung trước khi sao chép": {
+      "en": "Enter feedback before copying",
+      "scope": "sentence"
+    },
+    "Tin nhắn cục bộ": {
+      "en": "Local Message",
+      "scope": "sentence"
+    },
+    "Dừng hiển thị tin nhắn trên Island": {
+      "en": "Stop showing message in Island",
+      "scope": "sentence"
+    },
+    "Dừng tin nhắn trên Island": {
+      "en": "Stop Island message",
+      "scope": "sentence"
+    },
+    "Đang hiện": {
+      "en": "Showing",
+      "scope": "sentence"
+    },
+    "Tạm thời": {
+      "en": "Ephemeral",
+      "scope": "sentence"
+    },
+    "Nhập tin nhắn ngắn để hiện trên Island…": {
+      "en": "Type a short message for the Island…",
+      "scope": "sentence"
+    },
+    "Ô nhập tin nhắn cục bộ": {
+      "en": "Local message input",
+      "scope": "sentence"
+    },
+    "Hiển thị trong Island": {
+      "en": "Show in Island",
+      "scope": "sentence"
+    },
+    "Hiển thị tin nhắn trong Island": {
+      "en": "Show message in Island",
+      "scope": "sentence"
+    },
+    "Chỉ hiện trên máy, không lưu khi thoát XFinder.": {
+      "en": "Shown locally only; cleared when XFinder quits.",
+      "scope": "sentence"
+    },
+    "Xem trước tin nhắn trên Island": {
+      "en": "Island message preview",
+      "scope": "sentence"
+    },
+    "Nội dung xem trước sẽ hiện tại đây…": {
+      "en": "Preview text will appear here…",
+      "scope": "sentence"
+    },
+    "Thời gian hiển thị không hợp lệ.": {
+      "en": "Invalid display duration.",
+      "scope": "sentence"
+    },
+    "Hiển thị tin nhắn này trong Dynamic Island": {
+      "en": "Show this message in Dynamic Island",
+      "scope": "sentence"
+    },
+    "Nhập nội dung trước khi hiển thị": {
+      "en": "Enter a message before showing",
+      "scope": "sentence"
+    },
+    "Chat trên máy": {
+      "en": "Local Chat",
+      "scope": "sentence"
+    },
+    "Cuộc trò chuyện mới": {
+      "en": "New Chat",
+      "scope": "sentence"
+    },
+    "Xóa lịch sử và bắt đầu ngữ cảnh mới": {
+      "en": "Clear history and start a fresh context",
+      "scope": "sentence"
+    },
+    "Đang trả lời…": {
+      "en": "Replying…",
+      "scope": "sentence"
+    },
+    "Đầy ngữ cảnh": {
+      "en": "Context full",
+      "scope": "sentence"
+    },
+    "Kiểm tra lại khả dụng Chat trên máy": {
+      "en": "Re-check Local Chat availability",
+      "scope": "sentence"
+    },
+    "Chạy hoàn toàn trên máy, không dùng mạng.": {
+      "en": "Runs entirely on-device with no network access.",
+      "scope": "sentence"
+    },
+    "Hỏi nhanh bằng mô hình trên máy.": {
+      "en": "Ask the on-device model directly.",
+      "scope": "sentence"
+    },
+    "Không dùng mạng, không đọc Clipboard hay thiết lập Giọng nói. Lịch sử chỉ lưu trong bộ nhớ phiên chạy này.": {
+      "en": "No network, no Clipboard access, and no Voice settings. History stays in memory for this session only.",
+      "scope": "sentence"
+    },
+    "Đang tạo câu trả lời…": {
+      "en": "Generating reply…",
+      "scope": "sentence"
+    },
+    "Bạn": {
+      "en": "You",
+      "scope": "sentence"
+    },
+    "Nhập câu hỏi cho mô hình trên máy…": {
+      "en": "Ask the on-device model…",
+      "scope": "sentence"
+    },
+    "Ô nhập câu hỏi Chat trên máy": {
+      "en": "Local Chat prompt input",
+      "scope": "sentence"
+    },
+    "Dừng câu trả lời đang tạo": {
+      "en": "Stop generating reply",
+      "scope": "sentence"
+    },
+    "Dừng câu trả lời": {
+      "en": "Stop reply",
+      "scope": "sentence"
+    },
+    "Gửi câu hỏi": {
+      "en": "Send prompt",
+      "scope": "sentence"
+    },
+    "Cần macOS 26 trở lên": {
+      "en": "Requires macOS 26 or later",
+      "scope": "sentence"
+    },
+    "Thiết bị chưa hỗ trợ": {
+      "en": "Device not supported",
+      "scope": "sentence"
+    },
+    "Apple Intelligence đang tắt": {
+      "en": "Apple Intelligence is off",
+      "scope": "sentence"
+    },
+    "Mô hình chưa sẵn sàng": {
+      "en": "Model not ready",
+      "scope": "sentence"
+    },
+    "Không khả dụng trên máy này": {
+      "en": "Unavailable on this Mac",
+      "scope": "sentence"
+    },
+    "Mô hình đã từ chối yêu cầu này.": {
+      "en": "The model declined this request.",
+      "scope": "sentence"
+    },
+    "Yêu cầu không phù hợp với giới hạn an toàn của mô hình.": {
+      "en": "This request did not meet the model's safety guardrails.",
+      "scope": "sentence"
+    },
+    "Cửa sổ ngữ cảnh đã đầy. Hãy bắt đầu cuộc trò chuyện mới.": {
+      "en": "Context window is full. Start a new chat.",
+      "scope": "sentence"
+    },
+    "Đang xử lý câu hỏi trước đó. Hãy đợi hoàn tất hoặc bấm Dừng.": {
+      "en": "Still processing the previous prompt. Wait or press Stop.",
+      "scope": "sentence"
+    },
+    "Mô hình không trả về nội dung.": {
+      "en": "The model returned an empty response.",
+      "scope": "sentence"
+    },
+    "Không thể tạo câu trả lời trên máy. Hãy thử lại.": {
+      "en": "Could not generate an on-device reply. Please try again.",
+      "scope": "sentence"
+    },
+    "Vượt quá giới hạn ": {
+      "en": "Exceeds the ",
+      "scope": "fragment"
+    },
+    " ký tự.": {
+      "en": " character limit.",
+      "scope": "fragment"
+    },
+    "Đã đạt giới hạn ngữ cảnh. Hãy bắt đầu cuộc trò chuyện mới.": {
+      "en": "Context limit reached. Start a new chat.",
+      "scope": "sentence"
+    },
+    "Gửi câu hỏi cho mô hình trên máy": {
+      "en": "Send prompt to on-device model",
+      "scope": "sentence"
+    },
+    "Nhập câu hỏi trước khi gửi": {
+      "en": "Enter a prompt before sending",
+      "scope": "sentence"
+    },
+    "Đang chờ câu trả lời hiện tại": {
+      "en": "Waiting for current reply",
+      "scope": "sentence"
+    },
+    "Mô hình trên máy hiện không khả dụng": {
+      "en": "On-device model is currently unavailable",
+      "scope": "sentence"
+    },
+    "Thời lượng ứng dụng": {
+      "en": "App Usage",
+      "scope": "sentence"
+    },
+    "Không thể lưu dữ liệu thời lượng. Dữ liệu cũ trên máy vẫn được giữ.": {
+      "en": "Could not save usage data. Existing local data was preserved.",
+      "scope": "sentence"
+    },
+    "Lỗi lưu dữ liệu thời lượng": {
+      "en": "App usage save error",
+      "scope": "sentence"
+    },
+    "Lỗi đọc tệp": {
+      "en": "File read error",
+      "scope": "sentence"
+    },
+    "Tạm hoãn": {
+      "en": "Suspended",
+      "scope": "sentence"
+    },
+    "Đang nhàn rỗi": {
+      "en": "Idle",
+      "scope": "sentence"
+    },
+    "Đang ghi": {
+      "en": "Tracking",
+      "scope": "sentence"
+    },
+    "Thử đọc lại dữ liệu thời lượng": {
+      "en": "Retry loading usage data",
+      "scope": "sentence"
+    },
+    "Xác nhận xóa": {
+      "en": "Confirm Clear",
+      "scope": "sentence"
+    },
+    "Xác nhận xóa lịch sử thời lượng": {
+      "en": "Confirm clearing usage history",
+      "scope": "sentence"
+    },
+    "Hủy xóa lịch sử": {
+      "en": "Cancel clearing history",
+      "scope": "sentence"
+    },
+    "Tiếp tục ghi thời lượng ứng dụng": {
+      "en": "Resume app usage tracking",
+      "scope": "sentence"
+    },
+    "Tạm dừng ghi thời lượng ứng dụng": {
+      "en": "Pause app usage tracking",
+      "scope": "sentence"
+    },
+    "Tắt theo dõi thời lượng ngay lập tức": {
+      "en": "Stop tracking usage immediately",
+      "scope": "sentence"
+    },
+    "Tắt theo dõi thời lượng": {
+      "en": "Turn off usage tracking",
+      "scope": "sentence"
+    },
+    "Xóa toàn bộ lịch sử thời lượng trên máy": {
+      "en": "Clear all local usage history",
+      "scope": "sentence"
+    },
+    "Xóa lịch sử thời lượng": {
+      "en": "Clear usage history",
+      "scope": "sentence"
+    },
+    "Không thể đọc tệp dữ liệu thời lượng.": {
+      "en": "Could not read the usage data file.",
+      "scope": "sentence"
+    },
+    "Tệp hiện có trên máy được giữ nguyên để tránh mất dữ liệu. Hãy thử đọc lại sau khi khắc phục.": {
+      "en": "The existing local file was kept intact to avoid data loss. Retry after resolving the issue.",
+      "scope": "sentence"
+    },
+    "Chỉ tính thời gian ứng dụng ở trước khi XFinder đang chạy và bạn không nhàn rỗi.": {
+      "en": "Counts foreground app time only while XFinder is running and you are not idle.",
+      "scope": "sentence"
+    },
+    "Lưu riêng trên máy tối đa 30 ngày, chỉ gồm định danh, tên ứng dụng và số giây theo ngày. Không lưu tiêu đề cửa sổ, phím gõ, URL hay nội dung và không dùng lịch sử hệ thống.": {
+      "en": "Stored locally for up to 30 days with only app ID, display name, and daily seconds. Never records window titles, keystrokes, URLs, or content, and never reads system history.",
+      "scope": "sentence"
+    },
+    "Bật theo dõi": {
+      "en": "Enable Tracking",
+      "scope": "sentence"
+    },
+    "Bật theo dõi thời lượng ứng dụng": {
+      "en": "Enable app usage tracking",
+      "scope": "sentence"
+    },
+    "Hôm nay: ": {
+      "en": "Today: ",
+      "scope": "fragment"
+    },
+    "7 ngày: ": {
+      "en": "7 days: ",
+      "scope": "fragment"
+    },
+    "Ứng dụng ở trước khi XFinder chạy, trừ lúc nhàn rỗi.": {
+      "en": "Foreground apps while XFinder runs, excluding idle time.",
+      "scope": "sentence"
+    },
+    "Biểu đồ thời lượng 7 ngày": {
+      "en": "7-day usage chart",
+      "scope": "sentence"
+    },
+    " ứng dụng": {
+      "en": " apps",
+      "scope": "fragment"
+    },
+    "Chưa có dữ liệu hôm nay.": {
+      "en": "No usage recorded today.",
+      "scope": "sentence"
+    },
+    "Chuyển giữa các ứng dụng khi theo dõi đang bật để bắt đầu ghi nhận.": {
+      "en": "Switch between apps while tracking is enabled to start recording.",
+      "scope": "sentence"
+    },
+    "Ứng dụng không rõ": {
+      "en": "Unknown App",
+      "scope": "sentence"
+    },
+    "g ": {
+      "en": "h ",
+      "scope": "fragment"
+    },
+    "g": {
+      "en": "h",
+      "scope": "fragment"
+    },
+    "s": {
+      "en": "s",
+      "scope": "fragment"
+    },
+    "Việc cần làm": {
+      "en": "To-Do",
+      "scope": "sentence"
+    },
+    "Thêm việc mới…": {
+      "en": "Add a new task…",
+      "scope": "sentence"
+    },
+    "Chưa có việc đang làm.": {
+      "en": "No active tasks.",
+      "scope": "sentence"
+    },
+    "Chưa có việc đã xong.": {
+      "en": "No completed tasks.",
+      "scope": "sentence"
+    },
+    "Đánh dấu hoàn thành": {
+      "en": "Mark as done",
+      "scope": "sentence"
+    },
+    "Bỏ đánh dấu": {
+      "en": "Mark as active",
+      "scope": "sentence"
+    },
+    "Xóa việc này?": {
+      "en": "Delete this task?",
+      "scope": "sentence"
+    },
+    "Không đọc được danh sách việc. Dữ liệu cũ vẫn được giữ nguyên trên đĩa.": {
+      "en": "Could not read the to-do list. Existing data on disk was preserved.",
+      "scope": "sentence"
+    },
+    "Không lưu được danh sách việc.": {
+      "en": "Could not save the to-do list.",
+      "scope": "sentence"
+    },
+    " — tác vụ đã gửi có thể vẫn chạy nền.": {
+      "en": " — the dispatched shortcut may still finish in the background.",
+      "scope": "fragment"
+    },
+    "Chưa có phím tắt nào trong Phím tắt Apple.": {
+      "en": "No shortcuts found in Apple Shortcuts.",
+      "scope": "sentence"
+    },
+    "Chạy phím tắt ": {
+      "en": "Run shortcut ",
+      "scope": "fragment"
+    },
+    "Công cụ shortcuts báo lỗi (mã ": {
+      "en": "The shortcuts tool returned an error (code ",
+      "scope": "fragment"
+    },
+    "Danh sách quá dài — chỉ hiển thị phần đầu.": {
+      "en": "List was too large — showing the first portion only.",
+      "scope": "sentence"
+    },
+    "Không chạy được phím tắt: ": {
+      "en": "Could not run shortcut: ",
+      "scope": "fragment"
+    },
+    "Không khởi chạy được công cụ shortcuts.": {
+      "en": "Could not launch the shortcuts tool.",
+      "scope": "sentence"
+    },
+    "Không khởi chạy được shortcuts: ": {
+      "en": "Could not launch shortcuts: ",
+      "scope": "fragment"
+    },
+    "Không tìm thấy công cụ shortcuts của macOS.": {
+      "en": "macOS shortcuts tool was not found.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy phím tắt “": {
+      "en": "Shortcut “",
+      "scope": "fragment"
+    },
+    "Mở ứng dụng Phím tắt": {
+      "en": "Open Shortcuts app",
+      "scope": "sentence"
+    },
+    "Phím tắt phản hồi quá lâu và đã hết thời gian chờ.": {
+      "en": "The shortcut took too long and timed out.",
+      "scope": "sentence"
+    },
+    "Đang tải phím tắt…": {
+      "en": "Loading shortcuts…",
+      "scope": "sentence"
+    },
+    "Đã chạy ": {
+      "en": "Ran ",
+      "scope": "fragment"
+    },
+    "Đã hủy ": {
+      "en": "Cancelled ",
+      "scope": "fragment"
+    },
+    "” — có thể đã bị đổi tên hoặc xóa.": {
+      "en": "” was not found — it may have been renamed or deleted.",
+      "scope": "fragment"
+    },
+    "Phím tắt Apple": {
+      "en": "Apple Shortcuts",
+      "scope": "sentence"
+    },
+    "Không đọc được bản nháp — tệp trên đĩa vẫn được giữ nguyên.": {
+      "en": "Could not read scratchpad — the file on disk was preserved.",
+      "scope": "sentence"
+    },
+    " tệp không hỗ trợ": {
+      "en": " unsupported files",
+      "scope": "fragment"
+    },
+    " tệp trùng": {
+      "en": " duplicate files",
+      "scope": "fragment"
+    },
+    "Chuyển ảnh": {
+      "en": "Image Converter",
+      "scope": "sentence"
+    },
+    "Chất lượng ": {
+      "en": "Quality ",
+      "scope": "fragment"
+    },
+    "Chất lượng nén": {
+      "en": "Compression quality",
+      "scope": "sentence"
+    },
+    "Chọn ảnh": {
+      "en": "Choose Images",
+      "scope": "sentence"
+    },
+    "Chờ": {
+      "en": "Pending",
+      "scope": "sentence"
+    },
+    "Có quá nhiều tệp trùng tên trong thư mục: ": {
+      "en": "Too many colliding filenames in folder: ",
+      "scope": "fragment"
+    },
+    "Cạnh dài tối đa": {
+      "en": "Max longest edge",
+      "scope": "sentence"
+    },
+    "Giữ nguyên tệp nguồn": {
+      "en": "Source files are kept unchanged",
+      "scope": "sentence"
+    },
+    "Hoàn tất ": {
+      "en": "Done ",
+      "scope": "fragment"
+    },
+    "Không có quyền đọc hoặc ghi tệp: ": {
+      "en": "No permission to read or write file: ",
+      "scope": "fragment"
+    },
+    "Không đủ dung lượng trống để lưu: ": {
+      "en": "Not enough free disk space to save: ",
+      "scope": "fragment"
+    },
+    "Kéo thả hoặc chọn tối đa 50 ảnh để chuyển định dạng": {
+      "en": "Drop or choose up to 50 images to convert",
+      "scope": "sentence"
+    },
+    "Máy này không có trình mã hóa ảnh khả dụng.": {
+      "en": "No image encoders are available on this Mac.",
+      "scope": "sentence"
+    },
+    "Mở trong Finder": {
+      "en": "Reveal in Finder",
+      "scope": "sentence"
+    },
+    "Vượt giới hạn 50 ảnh, bỏ qua ": {
+      "en": "Over 50-image limit, skipped ",
+      "scope": "fragment"
+    },
+    "Xóa khỏi danh sách": {
+      "en": "Remove from list",
+      "scope": "sentence"
+    },
+    "Đang chuyển": {
+      "en": "Converting",
+      "scope": "sentence"
+    },
+    "Đã hủy · ": {
+      "en": "Cancelled · ",
+      "scope": "fragment"
+    },
+    "Định dạng đầu ra": {
+      "en": "Output format",
+      "scope": "sentence"
+    },
+    "Định dạng ảnh không được hỗ trợ: ": {
+      "en": "Unsupported image format: ",
+      "scope": "fragment"
+    },
+    "Ảnh vượt giới hạn kích thước xử lý: ": {
+      "en": "Image exceeds maximum processing size: ",
+      "scope": "fragment"
+    },
+    "Ảnh đã thay đổi trước khi chuyển đổi: ": {
+      "en": "Image changed before conversion: ",
+      "scope": "fragment"
+    },
+    "Âm nền": {
+      "en": "Ambient Sounds",
+      "scope": "sentence"
+    },
+    "Tiếng ồn trắng": {
+      "en": "White Noise",
+      "scope": "sentence"
+    },
+    "Tiếng ồn hồng": {
+      "en": "Pink Noise",
+      "scope": "sentence"
+    },
+    "Tiếng ồn nâu": {
+      "en": "Brown Noise",
+      "scope": "sentence"
+    },
+    "Dừng tất cả": {
+      "en": "Stop All",
+      "scope": "sentence"
+    },
+    "Dừng tất cả âm nền": {
+      "en": "Stop all ambient sounds",
+      "scope": "sentence"
+    },
+    "Đang tắt dần ": {
+      "en": "Fading out ",
+      "scope": "fragment"
+    },
+    " âm đang phát": {
+      "en": " playing",
+      "scope": "fragment"
+    },
+    "Âm lượng ": {
+      "en": "Volume ",
+      "scope": "fragment"
+    },
+    "Tắt dần": {
+      "en": "Fade out",
+      "scope": "sentence"
+    },
+    "15p": {
+      "en": "15m",
+      "scope": "sentence"
+    },
+    "30p": {
+      "en": "30m",
+      "scope": "sentence"
+    },
+    "60p": {
+      "en": "60m",
+      "scope": "sentence"
+    },
+    "Tắt hẹn giờ tắt dần": {
+      "en": "Turn off fade-out timer",
+      "scope": "sentence"
+    },
+    "Tắt dần sau 15 phút": {
+      "en": "Fade out after 15 minutes",
+      "scope": "sentence"
+    },
+    "Tắt dần sau 30 phút": {
+      "en": "Fade out after 30 minutes",
+      "scope": "sentence"
+    },
+    "Tắt dần sau 60 phút": {
+      "en": "Fade out after 60 minutes",
+      "scope": "sentence"
+    },
+    "Không có thiết bị phát âm thanh.": {
+      "en": "No audio output device.",
+      "scope": "sentence"
+    },
+    "Không khởi động được bộ phát âm thanh.": {
+      "en": "Could not start audio engine.",
+      "scope": "sentence"
+    },
+    "Thư mục quen dùng": {
+      "en": "Frequent folders",
+      "scope": "sentence"
+    },
+    "Workspace đã lưu": {
+      "en": "Saved workspaces",
+      "scope": "sentence"
+    },
+    "Chưa có thư mục quen dùng.": {
+      "en": "No frequent folders yet.",
+      "scope": "sentence"
+    },
+    "Chưa có workspace nào.": {
+      "en": "No saved workspaces yet.",
+      "scope": "sentence"
+    },
+    "Không tồn tại": {
+      "en": "Missing",
+      "scope": "sentence"
+    },
+    " thiếu": {
+      "en": " missing",
+      "scope": "fragment"
+    },
+    "Trình duyệt tệp đang tắt": {
+      "en": "File Browser is off",
+      "scope": "sentence"
+    },
+    "Bật Trình duyệt tệp trong Cài đặt để mở thư mục và workspace từ đây.": {
+      "en": "Turn on File Browser in Settings to open folders and workspaces from here.",
+      "scope": "sentence"
+    },
+    "Tìm kiếm liên kết": {
+      "en": "Search links",
+      "scope": "sentence"
+    },
+    "Tìm liên kết, từ khóa hoặc URL…": {
+      "en": "Search links, keywords, or URL…",
+      "scope": "sentence"
+    },
+    "Quản lý Quicklinks": {
+      "en": "Manage Quicklinks",
+      "scope": "sentence"
+    },
+    "Mở cài đặt Quicklinks": {
+      "en": "Open Quicklinks settings",
+      "scope": "sentence"
+    },
+    "Chưa có liên kết nhanh nào": {
+      "en": "No Quicklinks yet",
+      "scope": "sentence"
+    },
+    "Không tìm thấy liên kết phù hợp": {
+      "en": "No matching links found",
+      "scope": "sentence"
+    },
+    "Mở liên kết": {
+      "en": "Open link",
+      "scope": "sentence"
+    },
+    "Sao chép địa chỉ": {
+      "en": "Copy address",
+      "scope": "sentence"
+    },
+    "Đã sao chép địa chỉ": {
+      "en": "Address copied",
+      "scope": "sentence"
+    },
+    "URL không hợp lệ": {
+      "en": "Invalid URL",
+      "scope": "sentence"
+    },
+    "URL không hợp lệ (chỉ hỗ trợ HTTP/HTTPS)": {
+      "en": "Invalid URL (HTTP/HTTPS only)",
+      "scope": "sentence"
+    },
+    "Không thể mở liên kết trong ứng dụng mặc định": {
+      "en": "Could not open link in default app",
+      "scope": "sentence"
+    },
+    "Bản nháp": {
+      "en": "Scratchpad",
+      "scope": "sentence"
+    },
+    "Xóa bản nháp": {
+      "en": "Clear scratchpad",
+      "scope": "sentence"
+    },
+    "Ghi nhanh tại đây…": {
+      "en": "Jot something down…",
+      "scope": "sentence"
+    },
+    "Vượt giới hạn ": {
+      "en": "Exceeds limit of ",
+      "scope": "fragment"
+    },
+    " ký tự — chưa lưu bản mới, bản đã lưu trước đó vẫn được giữ.": {
+      "en": " characters — new changes not saved, previous saved draft is kept.",
+      "scope": "fragment"
+    },
+    "Không thể lưu bản nháp — bản đã lưu trước đó vẫn được giữ.": {
+      "en": "Could not save scratchpad — previous saved draft is kept.",
+      "scope": "sentence"
+    },
+    "Ô nhập bản nháp": {
+      "en": "Scratchpad editor",
+      "scope": "sentence"
+    },
+    "Emoji": {
+      "en": "Emoji",
+      "scope": "sentence"
+    },
+    "Tìm kiếm emoji": {
+      "en": "Search emoji",
+      "scope": "sentence"
+    },
+    "Tìm emoji (VI/EN)…": {
+      "en": "Search emoji (VI/EN)…",
+      "scope": "sentence"
+    },
+    "Cảm xúc": {
+      "en": "Smileys",
+      "scope": "sentence"
+    },
+    "Cử chỉ": {
+      "en": "Gestures",
+      "scope": "sentence"
+    },
+    "Trái tim": {
+      "en": "Hearts",
+      "scope": "sentence"
+    },
+    "Thiên nhiên": {
+      "en": "Nature",
+      "scope": "sentence"
+    },
+    "Đồ ăn": {
+      "en": "Food",
+      "scope": "sentence"
+    },
+    "Hoạt động": {
+      "en": "Activities",
+      "scope": "sentence"
+    },
+    "Du lịch": {
+      "en": "Travel",
+      "scope": "sentence"
+    },
+    "Đồ vật": {
+      "en": "Objects",
+      "scope": "sentence"
+    },
+    "Ký hiệu": {
+      "en": "Symbols",
+      "scope": "sentence"
+    },
+    "Cờ": {
+      "en": "Flags",
+      "scope": "sentence"
+    },
+    "Không tìm thấy emoji phù hợp": {
+      "en": "No matching emoji found",
+      "scope": "sentence"
+    },
+    "Chưa có emoji dùng gần đây": {
+      "en": "No recent emoji yet",
+      "scope": "sentence"
+    },
+    "Chọn emoji để sao chép và lưu vào mục gần đây": {
+      "en": "Select an emoji to copy and save to recents",
+      "scope": "sentence"
+    },
+    "Nhấn để sao chép emoji": {
+      "en": "Click to copy emoji",
+      "scope": "sentence"
+    },
+    "Không tìm thấy ghi chú phù hợp": {
+      "en": "No matching notes",
+      "scope": "sentence"
+    },
+    "Ghi chú không tiêu đề": {
+      "en": "Untitled Note",
+      "scope": "sentence"
+    },
+    "Mở trong trình chỉnh sửa": {
+      "en": "Open in editor",
+      "scope": "sentence"
+    },
+    "Tạo ghi chú mới để xem nhanh tại đây.": {
+      "en": "Create a new note to access it quickly here.",
+      "scope": "sentence"
+    },
+    "Thử từ khóa khác hoặc xóa tìm kiếm.": {
+      "en": "Try another keyword or clear the search.",
+      "scope": "sentence"
+    },
+    "Dùng ↑↓ để chọn, Enter để mở": {
+      "en": "Use ↑↓ to select, Return to open",
+      "scope": "sentence"
+    },
+    "Tính năng chụp đang tắt.": {
+      "en": "Capture is turned off.",
+      "scope": "sentence"
+    },
+    "Bật trong Cài đặt để chụp từ Dynamic Island.": {
+      "en": "Enable it in Settings to capture from Dynamic Island.",
+      "scope": "sentence"
+    },
+    "Mở Cài đặt Chụp": {
+      "en": "Open Capture Settings",
+      "scope": "sentence"
+    },
+    "Đang chuẩn bị chụp…": {
+      "en": "Preparing capture…",
+      "scope": "sentence"
+    },
+    "Ảnh chụp gần đây": {
+      "en": "Recent captures",
+      "scope": "sentence"
+    },
+    "Sao chép ảnh chụp": {
+      "en": "Copy capture",
+      "scope": "sentence"
+    },
+    "Chiều dài": {
+      "en": "Length",
+      "scope": "sentence"
+    },
+    "Chỉnh lại số để tiếp tục đổi.": {
+      "en": "Adjust the number to continue converting.",
+      "scope": "sentence"
+    },
+    "Dấu thập phân: ": {
+      "en": "Decimal separator: ",
+      "scope": "fragment"
+    },
+    "Dặm": {
+      "en": "Mile",
+      "scope": "sentence"
+    },
+    "Foot": {
+      "en": "Foot",
+      "scope": "sentence"
+    },
+    "Gam": {
+      "en": "Gram",
+      "scope": "sentence"
+    },
+    "Giá trị cần đổi": {
+      "en": "Value to convert",
+      "scope": "sentence"
+    },
+    "Hoán đổi đơn vị": {
+      "en": "Swap units",
+      "scope": "sentence"
+    },
+    "Inch": {
+      "en": "Inch",
+      "scope": "sentence"
+    },
+    "Kelvin": {
+      "en": "Kelvin",
+      "scope": "sentence"
+    },
+    "Khối lượng": {
+      "en": "Mass",
+      "scope": "sentence"
+    },
+    "Kilogam": {
+      "en": "Kilogram",
+      "scope": "sentence"
+    },
+    "Kilômét": {
+      "en": "Kilometer",
+      "scope": "sentence"
+    },
+    "Miligam": {
+      "en": "Milligram",
+      "scope": "sentence"
+    },
+    "Milimét": {
+      "en": "Millimeter",
+      "scope": "sentence"
+    },
+    "Mét": {
+      "en": "Meter",
+      "scope": "sentence"
+    },
+    "Nhiệt độ": {
+      "en": "Temperature",
+      "scope": "sentence"
+    },
+    "Nhập số…": {
+      "en": "Enter number…",
+      "scope": "sentence"
+    },
+    "Ounce": {
+      "en": "Ounce",
+      "scope": "sentence"
+    },
+    "Pound": {
+      "en": "Pound",
+      "scope": "sentence"
+    },
+    "Sao chép kết quả": {
+      "en": "Copy result",
+      "scope": "sentence"
+    },
+    "Số không hợp lệ": {
+      "en": "Invalid number",
+      "scope": "sentence"
+    },
+    "Số vượt giới hạn hỗ trợ": {
+      "en": "Number out of supported range",
+      "scope": "sentence"
+    },
+    "Tấn": {
+      "en": "Metric ton",
+      "scope": "sentence"
+    },
+    "Xentimét": {
+      "en": "Centimeter",
+      "scope": "sentence"
+    },
+    "Xóa giá trị": {
+      "en": "Clear value",
+      "scope": "sentence"
+    },
+    "Yard": {
+      "en": "Yard",
+      "scope": "sentence"
+    },
+    "Đang nhập…": {
+      "en": "Typing…",
+      "scope": "sentence"
+    },
+    "Đơn vị không thuộc cùng nhóm": {
+      "en": "Units do not belong to the same category",
+      "scope": "sentence"
+    },
+    "Đơn vị nguồn": {
+      "en": "Source unit",
+      "scope": "sentence"
+    },
+    "Đơn vị đích": {
+      "en": "Target unit",
+      "scope": "sentence"
+    },
+    "Độ C": {
+      "en": "Celsius",
+      "scope": "sentence"
+    },
+    "Độ F": {
+      "en": "Fahrenheit",
+      "scope": "sentence"
+    },
+    "Gương": {
+      "en": "Mirror",
+      "scope": "sentence"
+    },
+    "Bật camera": {
+      "en": "Start camera",
+      "scope": "sentence"
+    },
+    "Tắt camera": {
+      "en": "Stop camera",
+      "scope": "sentence"
+    },
+    "Trực tiếp": {
+      "en": "Live",
+      "scope": "sentence"
+    },
+    "Tạm gián đoạn": {
+      "en": "Interrupted",
+      "scope": "sentence"
+    },
+    "Xem trước camera trực tiếp": {
+      "en": "Live camera preview",
+      "scope": "sentence"
+    },
+    "Chỉ xem trực tiếp trên máy, không ghi hình.": {
+      "en": "On-device live preview only, never recorded.",
+      "scope": "sentence"
+    },
+    "Xem nhanh hình ảnh được lật gương trước cuộc gọi. Camera chỉ bật khi bạn nhấn Bật camera.": {
+      "en": "Quick mirrored preview before a call. The camera only turns on when you click Start camera.",
+      "scope": "sentence"
+    },
+    "Đang xin quyền truy cập camera…": {
+      "en": "Requesting camera access…",
+      "scope": "sentence"
+    },
+    "Đang khởi động camera…": {
+      "en": "Starting camera…",
+      "scope": "sentence"
+    },
+    "Camera đang bị tạm gián đoạn bởi hệ thống hoặc ứng dụng khác.": {
+      "en": "Camera was interrupted by the system or another app.",
+      "scope": "sentence"
+    },
+    "Quyền camera bị từ chối — mở Cài đặt hệ thống ▸ Quyền riêng tư ▸ Camera để bật lại.": {
+      "en": "Camera access denied — open System Settings ▸ Privacy & Security ▸ Camera to enable it.",
+      "scope": "sentence"
+    },
+    "Quyền truy cập camera bị hạn chế trên máy này.": {
+      "en": "Camera access is restricted on this Mac.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy camera khả dụng. Kết nối camera rồi thử lại.": {
+      "en": "No available camera found. Connect a camera and try again.",
+      "scope": "sentence"
+    },
+    "Camera đang dùng đã bị ngắt kết nối. Kết nối lại rồi thử lại.": {
+      "en": "The active camera was disconnected. Reconnect it and try again.",
+      "scope": "sentence"
+    },
+    "Không mở được camera. Đóng ứng dụng khác đang dùng camera rồi thử lại.": {
+      "en": "Could not open the camera. Close other apps using the camera and try again.",
+      "scope": "sentence"
+    },
+    "Bản dựng chưa khai báo mô tả quyền camera.": {
+      "en": "This build is missing the camera usage description.",
+      "scope": "sentence"
+    },
+    "Máy nhắc chữ": {
+      "en": "Teleprompter",
+      "scope": "sentence"
+    },
+    "Phát": {
+      "en": "Play",
+      "scope": "sentence"
+    },
+    "Bắt đầu lại": {
+      "en": "Restart",
+      "scope": "sentence"
+    },
+    "Cửa sổ đọc": {
+      "en": "Reader Window",
+      "scope": "sentence"
+    },
+    "Mở cửa sổ đọc": {
+      "en": "Open Reader Window",
+      "scope": "sentence"
+    },
+    "Đóng cửa sổ đọc": {
+      "en": "Close Reader Window",
+      "scope": "sentence"
+    },
+    "Nhấn Esc để đóng": {
+      "en": "Press Esc to close",
+      "scope": "sentence"
+    },
+    "Chưa có kịch bản": {
+      "en": "No script yet",
+      "scope": "sentence"
+    },
+    "Nhập kịch bản để bắt đầu đọc.": {
+      "en": "Enter a script to start reading.",
+      "scope": "sentence"
+    },
+    "Kịch bản chỉ lưu cục bộ trên máy này.": {
+      "en": "Script is stored locally on this Mac only.",
+      "scope": "sentence"
+    },
+    "Đã đọc hết kịch bản": {
+      "en": "Reached end of script",
+      "scope": "sentence"
+    },
+    "Chế độ bước": {
+      "en": "Stepped mode",
+      "scope": "sentence"
+    },
+    "Chỉnh sửa": {
+      "en": "Edit",
+      "scope": "sentence"
+    },
+    "Dán hoặc nhập kịch bản tại đây…": {
+      "en": "Paste or type your script here…",
+      "scope": "sentence"
+    },
+    "Giảm tốc độ": {
+      "en": "Decrease speed",
+      "scope": "sentence"
+    },
+    "Tăng tốc độ": {
+      "en": "Increase speed",
+      "scope": "sentence"
+    },
+    "Giảm cỡ chữ": {
+      "en": "Decrease font size",
+      "scope": "sentence"
+    },
+    "Tăng cỡ chữ": {
+      "en": "Increase font size",
+      "scope": "sentence"
+    },
+    "Vị trí đọc": {
+      "en": "Reading position",
+      "scope": "sentence"
+    },
+    "Kịch bản quá dài, đã rút gọn còn ": {
+      "en": "Script too long, trimmed to ",
+      "scope": "fragment"
+    },
+    " pt": {
+      "en": " pt",
+      "scope": "fragment"
+    },
+    "Bấm giờ": {
+      "en": "Stopwatch",
+      "scope": "sentence"
+    },
+    "Pomodoro": {
+      "en": "Pomodoro",
+      "scope": "sentence"
+    },
+    "Tập trung": {
+      "en": "Focus",
+      "scope": "sentence"
+    },
+    "Nghỉ ngắn": {
+      "en": "Short break",
+      "scope": "sentence"
+    },
+    "Nghỉ dài": {
+      "en": "Long break",
+      "scope": "sentence"
+    },
+    "Nhắc uống nước": {
+      "en": "Hydration reminder",
+      "scope": "sentence"
+    },
+    "Bật nhắc uống nước": {
+      "en": "Enable hydration reminder",
+      "scope": "sentence"
+    },
+    "Tắt nhắc uống nước": {
+      "en": "Disable hydration reminder",
+      "scope": "sentence"
+    },
+    "Đổi chu kỳ nhắc uống nước": {
+      "en": "Change hydration reminder interval",
+      "scope": "sentence"
+    },
+    "p": {
+      "en": "m",
+      "scope": "fragment"
+    },
+    "Lượt ": {
+      "en": "Lap ",
+      "scope": "fragment"
+    },
+    "Chưa ghi lượt": {
+      "en": "No laps yet",
+      "scope": "sentence"
+    },
+    "Lượt bấm giờ": {
+      "en": "Stopwatch laps",
+      "scope": "sentence"
+    },
+    "Tiến độ Pomodoro": {
+      "en": "Pomodoro progress",
+      "scope": "sentence"
+    },
+    "Ghi lượt": {
+      "en": "Record lap",
+      "scope": "sentence"
+    },
+    "Bắt đầu bấm giờ": {
+      "en": "Start stopwatch",
+      "scope": "sentence"
+    },
+    "Đặt lại bấm giờ": {
+      "en": "Reset stopwatch",
+      "scope": "sentence"
+    },
+    "Đặt lại Pomodoro": {
+      "en": "Reset Pomodoro",
+      "scope": "sentence"
+    },
+    "Bắt đầu Pomodoro": {
+      "en": "Start Pomodoro",
+      "scope": "sentence"
+    },
+    "Bỏ qua giai đoạn": {
+      "en": "Skip phase",
+      "scope": "sentence"
+    },
+    "Đã uống": {
+      "en": "Done",
+      "scope": "sentence"
+    },
+    "Hoãn 10 phút": {
+      "en": "Snooze 10 min",
+      "scope": "sentence"
+    },
+    "Xong phiên tập trung": {
+      "en": "Focus session done",
+      "scope": "sentence"
+    },
+    "Xong phiên tập trung — nghỉ dài": {
+      "en": "Focus done — long break",
+      "scope": "sentence"
+    },
+    "Hết giờ nghỉ ngắn": {
+      "en": "Short break finished",
+      "scope": "sentence"
+    },
+    "Hết giờ nghỉ dài": {
+      "en": "Long break finished",
+      "scope": "sentence"
+    },
+    "Đến giờ uống nước": {
+      "en": "Time to drink water",
+      "scope": "sentence"
+    },
+    "Không có kết nối mạng": {
+      "en": "No network connection",
+      "scope": "sentence"
+    },
     " (bạn đang dùng ": {
       "en": " (you're on ",
       "scope": "fragment"
@@ -3123,10 +4451,6 @@
     },
     "Mở khay cả khi không kéo file — tiện để lấy lại file đã giữ.": {
       "en": "Open the tray even when you are not dragging a file — handy for getting back files it is holding.",
-      "scope": "sentence"
-    },
-    "Mở khóa": {
-      "en": "Unlock",
       "scope": "sentence"
     },
     "Mở khóa Clipboard": {
@@ -15459,6 +16783,226 @@
       "en": "Pages and colour",
       "scope": "sentence"
     },
+    "Cài đặt đầy đủ": {
+      "en": "Open full settings",
+      "scope": "sentence"
+    },
+    "Cỡ notch theo màn hình": {
+      "en": "Island size by display",
+      "scope": "sentence"
+    },
+    "Nhỏ": {
+      "en": "Small",
+      "scope": "sentence"
+    },
+    "Chuẩn": {
+      "en": "Regular",
+      "scope": "sentence"
+    },
+    "Lớn": {
+      "en": "Large",
+      "scope": "sentence"
+    },
+    "Tab đang bật": {
+      "en": "Enabled tabs",
+      "scope": "sentence"
+    },
+    "Công cụ đang tắt": {
+      "en": "Hidden tools",
+      "scope": "sentence"
+    },
+    "Hạn mức còn lại": {
+      "en": "Remaining quota",
+      "scope": "sentence"
+    },
+    "Cài nguồn giá và danh sách theo dõi trên Dynamic Island.": {
+      "en": "Set the quote source and watchlist for Dynamic Island.",
+      "scope": "sentence"
+    },
+    "Quản lý kết nối Stripe và Shopify trên Dynamic Island.": {
+      "en": "Manage the Stripe and Shopify connections for Dynamic Island.",
+      "scope": "sentence"
+    },
+    "Quản lý nguồn số liệu truy cập trên Dynamic Island.": {
+      "en": "Manage the website analytics sources for Dynamic Island.",
+      "scope": "sentence"
+    },
+    "Sử dụng AI · Gemini CLI và Antigravity": {
+      "en": "AI usage · Gemini CLI and Antigravity",
+      "scope": "sentence"
+    },
+    "Token được đọc từ nhật ký phiên trên máy. Hạn mức tài khoản Antigravity đến từ statusLine của CLI.": {
+      "en": "Token counts come from session logs on this Mac. Antigravity account quota comes from the CLI status line.",
+      "scope": "sentence"
+    },
+    "Đang chờ hạn mức tài khoản từ Antigravity CLI.": {
+      "en": "Waiting for account quota from Antigravity CLI.",
+      "scope": "sentence"
+    },
+    "Sao chép lệnh Antigravity": {
+      "en": "Copy Antigravity command",
+      "scope": "sentence"
+    },
+    "Lần dùng gần nhất: ": {
+      "en": "Last activity: ",
+      "scope": "fragment"
+    },
+    "Token vào": {
+      "en": "Input tokens",
+      "scope": "sentence"
+    },
+    "Token ra": {
+      "en": "Output tokens",
+      "scope": "sentence"
+    },
+    "Đã sao chép. Chạy lệnh trong Terminal rồi mở /usage để cập nhật hạn mức.": {
+      "en": "Copied. Run it in Terminal and open /usage to refresh quota.",
+      "scope": "sentence"
+    },
+    "Không chuẩn bị được lệnh Antigravity.": {
+      "en": "Could not prepare the Antigravity command.",
+      "scope": "sentence"
+    },
+    "Yêu cầu giữ máy thức khi đóng nắp": {
+      "en": "Request wake with lid closed",
+      "scope": "sentence"
+    },
+    "Cần cắm nguồn. macOS vẫn có thể cho máy ngủ khi đóng nắp.": {
+      "en": "Requires AC power. macOS may still sleep when the lid closes.",
+      "scope": "sentence"
+    },
+    "10 phút": {
+      "en": "10 min",
+      "scope": "sentence"
+    },
+    "4 giờ": {
+      "en": "4 hr",
+      "scope": "sentence"
+    },
+    "8 giờ": {
+      "en": "8 hr",
+      "scope": "sentence"
+    },
+    "%d lần mỗi ngày": {
+      "en": "%d reminders per day",
+      "scope": "sentence"
+    },
+    "Giờ nhắc: 08:00–20:00": {
+      "en": "Reminder hours: 08:00–20:00",
+      "scope": "sentence"
+    },
+    "Giới hạn nhắc uống nước mỗi ngày": {
+      "en": "Daily water reminder limit",
+      "scope": "sentence"
+    },
+    "Nguồn giá chứng khoán": {
+      "en": "Stock quote source",
+      "scope": "sentence"
+    },
+    "Massive Basic miễn phí cho giá đóng cửa cá nhân. Quyền chỉ số và tiền số tùy gói đang bật.": {
+      "en": "Massive Basic offers free daily closing prices for personal use. Index and crypto coverage depends on the enabled plans.",
+      "scope": "sentence"
+    },
+    "Lấy khóa Massive Basic": {
+      "en": "Get a Massive Basic key",
+      "scope": "sentence"
+    },
+    "Khóa API Massive": {
+      "en": "Massive API key",
+      "scope": "sentence"
+    },
+    "Hiện lại biểu tượng": {
+      "en": "Show icon again",
+      "scope": "sentence"
+    },
+    "Số liệu XFinder": {
+      "en": "XFinder readouts",
+      "scope": "sentence"
+    },
+    "Giữ thức khi đóng nắp": {
+      "en": "Stay awake with lid closed",
+      "scope": "sentence"
+    },
+    "Xem trên Yahoo Finance": {
+      "en": "View on Yahoo Finance",
+      "scope": "sentence"
+    },
+    "Lấy khóa Twelve Data Basic": {
+      "en": "Get a Twelve Data Basic key",
+      "scope": "sentence"
+    },
+    "Cần quyền truy cập nguồn giá": {
+      "en": "Quote access required",
+      "scope": "sentence"
+    },
+    "Giá đóng cửa · Quyền truy cập demo": {
+      "en": "Daily closes · Demo access",
+      "scope": "sentence"
+    },
+    "Giá đóng cửa theo ngày": {
+      "en": "Daily closing prices",
+      "scope": "sentence"
+    },
+    "Nguồn giá Twelve Data": {
+      "en": "Twelve Data quotes",
+      "scope": "sentence"
+    },
+    "Đã lưu khóa API trong Keychain": {
+      "en": "API key saved in Keychain",
+      "scope": "sentence"
+    },
+    "Demo chỉ tải giá đóng cửa AAPL và BTC/USD. Thêm khóa API để tải các mã tài khoản hỗ trợ.": {
+      "en": "The demo shows closing prices for AAPL and BTC/USD. Add an API key for the symbols your account supports.",
+      "scope": "sentence"
+    },
+    "Khóa API Twelve Data": {
+      "en": "Twelve Data API key",
+      "scope": "sentence"
+    },
+    "Không lưu được khóa API": {
+      "en": "Could not save the API key",
+      "scope": "sentence"
+    },
+    "Cài đặt nguồn giá": {
+      "en": "Quote source settings",
+      "scope": "sentence"
+    },
+    "Tìm mã (AAPL, NVDA, BTC/USD)": {
+      "en": "Find a symbol (AAPL, NVDA, BTC/USD)",
+      "scope": "sentence"
+    },
+    "Giá đã lưu": {
+      "en": "Cached price",
+      "scope": "sentence"
+    },
+    "Chưa cấu hình nguồn giá chứng khoán": {
+      "en": "Stock quote source not configured",
+      "scope": "sentence"
+    },
+    "Quản lý danh sách theo dõi": {
+      "en": "Manage watchlist",
+      "scope": "sentence"
+    },
+    "Mở Apple Stocks": {
+      "en": "Open Apple Stocks",
+      "scope": "sentence"
+    },
+    "Các tab Dynamic Island": {
+      "en": "Dynamic Island tabs",
+      "scope": "sentence"
+    },
+    "Các tab": {
+      "en": "Tabs",
+      "scope": "sentence"
+    },
+    "Xem hạn mức tài khoản trong CLI": {
+      "en": "Check account limits in the CLI",
+      "scope": "sentence"
+    },
+    "Chưa có dữ liệu token cục bộ trong 7 ngày.": {
+      "en": "No local token data for the last 7 days.",
+      "scope": "sentence"
+    },
     "AI LLM (OpenAI / DeepSeek / Tùy chỉnh)": {
       "en": "AI LLM (OpenAI / DeepSeek / Custom)",
       "scope": "sentence"
@@ -16321,6 +17865,1666 @@
     },
     "Không tạo được tệp mới": {
       "en": "Couldn’t create the file",
+      "scope": "sentence"
+    },
+    "Chép vào ngăn: ": {
+      "en": "Copy to pane: ",
+      "scope": "fragment"
+    },
+    "Chuyển vào ngăn: ": {
+      "en": "Move to pane: ",
+      "scope": "fragment"
+    },
+    "Cố định thứ tự không gian làm việc (Spaces)": {
+      "en": "Fixed Space order",
+      "scope": "sentence"
+    },
+    "Ngăn macOS tự đảo thứ tự Spaces theo lần dùng gần nhất. Tắt sẽ khôi phục cài đặt trước đó.": {
+      "en": "Keep Spaces in the order you set instead of rearranging them by recent use. Turning it off restores your previous setting.",
+      "scope": "sentence"
+    },
+    "Đoạn văn bản nhanh (Snippets)": {
+      "en": "Text Snippets",
+      "scope": "sentence"
+    },
+    "Hỗ trợ biến {date}, {time}, {datetime} và {clipboard}. Bấm Sao chép để mở rộng và đưa ngay vào clipboard.": {
+      "en": "Supports {date}, {time}, {datetime}, and {clipboard} variables. Click Copy to expand directly to your clipboard.",
+      "scope": "sentence"
+    },
+    "Từ khóa (ví dụ ;sig)": {
+      "en": "Trigger (e.g. ;sig)",
+      "scope": "sentence"
+    },
+    "Nội dung mở rộng": {
+      "en": "Expansion text",
+      "scope": "sentence"
+    },
+    "Từ khóa không được để trống.": {
+      "en": "Trigger cannot be empty.",
+      "scope": "sentence"
+    },
+    "Nội dung mở rộng không được để trống.": {
+      "en": "Expansion text cannot be empty.",
+      "scope": "sentence"
+    },
+    "Từ khóa này đã tồn tại.": {
+      "en": "This trigger already exists.",
+      "scope": "sentence"
+    },
+    "Chưa có đoạn văn bản nhanh nào.": {
+      "en": "No text snippets yet.",
+      "scope": "sentence"
+    },
+    "Mở khóa": {
+      "en": "Unlock",
+      "scope": "sentence"
+    },
+    "Đoạn văn bản nhanh": {
+      "en": "Text snippets",
+      "scope": "sentence"
+    },
+    "Mở bảng lệnh (⌘K)": {
+      "en": "Open Command Bar (⌘K)",
+      "scope": "sentence"
+    },
+    "Cài đặt nhanh": {
+      "en": "Quick Settings",
+      "scope": "sentence"
+    },
+    "Chế độ tối (Dark Mode)": {
+      "en": "Dark Mode",
+      "scope": "sentence"
+    },
+    "Tắt màn hình ngay": {
+      "en": "Sleep Display Now",
+      "scope": "sentence"
+    },
+    "Tiện ích": {
+      "en": "Utilities",
+      "scope": "sentence"
+    },
+    "Đang giữ máy thức": {
+      "en": "Keeping Mac awake",
+      "scope": "sentence"
+    },
+    "Chống ngủ đang tắt": {
+      "en": "Keep Awake is off",
+      "scope": "sentence"
+    },
+    "Còn lại: ": {
+      "en": "Remaining: ",
+      "scope": "fragment"
+    },
+    "Không giới hạn thời gian": {
+      "en": "No time limit",
+      "scope": "sentence"
+    },
+    "Ngăn máy Mac tự ngủ khi đang chạy tác vụ.": {
+      "en": "Prevent your Mac from sleeping during active tasks.",
+      "scope": "sentence"
+    },
+    "Chọn nhanh thời gian": {
+      "en": "Quick duration",
+      "scope": "sentence"
+    },
+    "Tìm ứng dụng, tệp, cài đặt, snippet và tính toán.": {
+      "en": "Search apps, files, settings, snippets, and calculate.",
+      "scope": "sentence"
+    },
+    "Mở trình duyệt tệp nhiều ngăn của XFinder.": {
+      "en": "Open XFinder's multi-pane file browser.",
+      "scope": "sentence"
+    },
+    "Xem, tìm kiếm và dán lại lịch sử đã sao chép.": {
+      "en": "Browse, search, and paste your clipboard history.",
+      "scope": "sentence"
+    },
+    "Tạm khóa bàn phím để lau chùi an toàn.": {
+      "en": "Lock the keyboard so you can clean safely.",
+      "scope": "sentence"
+    },
+    "Tạo nhanh một ghi chú nổi ở mép màn hình.": {
+      "en": "Create a quick floating note at the screen edge.",
+      "scope": "sentence"
+    },
+    "Tìm và dọn bộ nhớ đệm, tệp tạm cục bộ.": {
+      "en": "Find and clean local caches and temporary files.",
+      "scope": "sentence"
+    },
+    "Gỡ ứng dụng kèm toàn bộ tệp thừa liên quan.": {
+      "en": "Remove an app together with its related leftovers.",
+      "scope": "sentence"
+    },
+    "Âm thanh & Độ sáng": {
+      "en": "Sound & Display",
+      "scope": "sentence"
+    },
+    "Đặt nhanh": {
+      "en": "Quick toggles",
+      "scope": "sentence"
+    },
+    "Ẩn icon Desktop": {
+      "en": "Hide Desktop icons",
+      "scope": "sentence"
+    },
+    "Cố định Spaces": {
+      "en": "Fixed Spaces",
+      "scope": "sentence"
+    },
+    "Chụp vùng màn hình": {
+      "en": "Capture area",
+      "scope": "sentence"
+    },
+    "Chụp một vùng màn hình để chú thích hoặc lưu nhanh.": {
+      "en": "Capture a screen area to annotate or save quickly.",
+      "scope": "sentence"
+    },
+    "Sao chép chữ từ màn hình": {
+      "en": "Copy text from screen",
+      "scope": "sentence"
+    },
+    "Nhận dạng chữ (OCR) ngay trên máy từ vùng bạn chọn.": {
+      "en": "Recognize text (OCR) locally from any selected area.",
+      "scope": "sentence"
+    },
+    "Lấy màu màn hình": {
+      "en": "Pick screen color",
+      "scope": "sentence"
+    },
+    "Chấm màu bất kỳ trên màn hình và chép mã HEX.": {
+      "en": "Sample any color on screen and copy its HEX code.",
+      "scope": "sentence"
+    },
+    "Danh sách": {
+      "en": "List",
+      "scope": "sentence"
+    },
+    "Cuộn tuyến tính (không tăng tốc bánh xe)": {
+      "en": "Linear scrolling (no wheel acceleration)",
+      "scope": "sentence"
+    },
+    "Mỗi nấc bánh xe cuộn một khoảng cố định dù bạn quay nhanh hay chậm.": {
+      "en": "Every wheel notch scrolls a fixed distance regardless of spin speed.",
+      "scope": "sentence"
+    },
+    "Tắt tăng tốc con trỏ chuột": {
+      "en": "Disable pointer acceleration",
+      "scope": "sentence"
+    },
+    "Giữ tốc độ con trỏ chuột ngoài ổn định (tắt sẽ khôi phục mức trước đó; có thể cần cắm lại chuột để áp dụng ngay).": {
+      "en": "Keep external mouse speed constant (turning off restores your previous setting; reconnecting the mouse may be needed to apply immediately).",
+      "scope": "sentence"
+    },
+    "Tự động mở rộng khi gõ": {
+      "en": "Auto-expand while typing",
+      "scope": "sentence"
+    },
+    "Gõ từ khóa ở bất kỳ ứng dụng nào để tự thay bằng nội dung mở rộng. Bỏ qua ô mật khẩu.": {
+      "en": "Type a trigger in any app to expand it automatically. Skips password fields.",
+      "scope": "sentence"
+    },
+    "Đang lắng nghe gõ tắt.": {
+      "en": "Listening for snippet triggers.",
+      "scope": "sentence"
+    },
+    "Cần quyền Trợ năng để tự động mở rộng khi gõ.": {
+      "en": "Accessibility permission is required for auto-expansion.",
+      "scope": "sentence"
+    },
+    "Thêm ít nhất một đoạn văn bản nhanh đang bật để kích hoạt.": {
+      "en": "Add at least one enabled snippet to activate.",
+      "scope": "sentence"
+    },
+    "Sắp xếp cửa sổ vào nửa, phần ba hoặc góc màn hình.": {
+      "en": "Snap windows into halves, thirds, or screen corners.",
+      "scope": "sentence"
+    },
+    "Quản lý gõ tắt và tự động mở rộng nội dung.": {
+      "en": "Manage text snippets and automatic expansion.",
+      "scope": "sentence"
+    },
+    "Xem tiến trình đang lắng nghe cổng mạng và dừng nhanh.": {
+      "en": "Inspect processes listening on network ports and stop them.",
+      "scope": "sentence"
+    },
+    "Tất cả mục": {
+      "en": "All sections",
+      "scope": "sentence"
+    },
+    "Cần bật trong Cài đặt": {
+      "en": "Enable in Settings",
+      "scope": "sentence"
+    },
+    " đang chờ": {
+      "en": " waiting",
+      "scope": "fragment"
+    },
+    "Mở bảng Hệ thống": {
+      "en": "Open System Monitor",
+      "scope": "sentence"
+    },
+    "Chọn đầu ra âm thanh": {
+      "en": "Select audio output",
+      "scope": "sentence"
+    },
+    "Không ngủ": {
+      "en": "Keep awake",
+      "scope": "sentence"
+    },
+    "Cài đặt": {
+      "en": "Settings",
+      "scope": "sentence"
+    },
+    "Mở Cài đặt Âm thanh": {
+      "en": "Open Sound & Display Settings",
+      "scope": "sentence"
+    },
+    "Hoán đổi vị trí": {
+      "en": "Swap position",
+      "scope": "sentence"
+    },
+    "Chia ô tại đây": {
+      "en": "Split tile here",
+      "scope": "sentence"
+    },
+    "Đã khôi phục vị trí gốc cho ": {
+      "en": "Restored original frames for ",
+      "scope": "fragment"
+    },
+    " cửa sổ.": {
+      "en": " windows.",
+      "scope": "fragment"
+    },
+    "Chưa có bố cục gốc nào được lưu.": {
+      "en": "No original window layout saved yet.",
+      "scope": "sentence"
+    },
+    "Đã xếp lát ": {
+      "en": "Tiled ",
+      "scope": "fragment"
+    },
+    " cửa sổ trên màn hình này.": {
+      "en": " windows on this display.",
+      "scope": "fragment"
+    },
+    "Không tìm thấy cửa sổ đủ điều kiện để xếp lát.": {
+      "en": "No eligible windows found to tile on this display.",
+      "scope": "sentence"
+    },
+    "Đã hoán đổi hai cửa sổ.": {
+      "en": "Swapped the two windows.",
+      "scope": "sentence"
+    },
+    "Đã đảo chiều chia ô.": {
+      "en": "Toggled split orientation.",
+      "scope": "sentence"
+    },
+    "Đã chuyển cửa sổ sang chế độ nổi.": {
+      "en": "Switched focused window to floating mode.",
+      "scope": "sentence"
+    },
+    "Đã đưa cửa sổ vào lưới xếp lát.": {
+      "en": "Inserted focused window into tiling grid.",
+      "scope": "sentence"
+    },
+    "Đã thu về bố cục xếp lát.": {
+      "en": "Restored tiled grid layout.",
+      "scope": "sentence"
+    },
+    "Đã phóng đại cửa sổ trên không gian hiện tại.": {
+      "en": "Maximized window in current workspace.",
+      "scope": "sentence"
+    },
+    "Đã cân bằng tỷ lệ các ô.": {
+      "en": "Balanced all split ratios.",
+      "scope": "sentence"
+    },
+    "Đã chèn cửa sổ vào lưới xếp lát.": {
+      "en": "Inserted window into tiling grid.",
+      "scope": "sentence"
+    },
+    "Chế độ sắp xếp cửa sổ": {
+      "en": "Window layout mode",
+      "scope": "sentence"
+    },
+    "Xếp lát tự động (HyprMac) tự chia màn hình thành lưới cân đối không chồng lấp; giữ nguyên toàn bộ vùng kéo cổ điển.": {
+      "en": "Auto tiling (HyprMac) splits windows into a balanced non-overlapping grid while keeping all classic snap zones.",
+      "scope": "sentence"
+    },
+    "Xếp lát tự động (HyprMac)": {
+      "en": "Auto tiling (HyprMac)",
+      "scope": "sentence"
+    },
+    "Vùng bắt dính cổ điển": {
+      "en": "Classic Snap Zones",
+      "scope": "sentence"
+    },
+    "Xếp lát tự động (HyprMac BSP)": {
+      "en": "Auto Tiling (HyprMac BSP)",
+      "scope": "sentence"
+    },
+    "Thuật toán chia đôi không gian động (Dwindle BSP). Kéo cửa sổ lên giữa một ô đang xếp để hoán đổi vị trí, hoặc kéo về cạnh ô để chèn chia đôi.": {
+      "en": "Dynamic Binary Space Partitioning (Dwindle BSP). Drag a window to the center of a tile to swap, or near an edge to split.",
+      "scope": "sentence"
+    },
+    "Xếp lát ngay": {
+      "en": "Tile now",
+      "scope": "sentence"
+    },
+    "Đảo chia ô": {
+      "en": "Toggle split",
+      "scope": "sentence"
+    },
+    "Cân bằng": {
+      "en": "Balance",
+      "scope": "sentence"
+    },
+    "Nổi / Xếp": {
+      "en": "Float / Tile",
+      "scope": "sentence"
+    },
+    "Phóng đại": {
+      "en": "Maximize",
+      "scope": "sentence"
+    },
+    "Khôi phục gốc": {
+      "en": "Restore layout",
+      "scope": "sentence"
+    },
+    "Đang quản lý: ": {
+      "en": "Managing: ",
+      "scope": "fragment"
+    },
+    "Tự động xếp lát cửa sổ mới": {
+      "en": "Auto-tile new windows",
+      "scope": "sentence"
+    },
+    "Khi màn hình đã xếp lát, cửa sổ mới mở sẽ tự chia vào ô đang chọn.": {
+      "en": "When a screen is tiled, newly created windows automatically split into the focused slot.",
+      "scope": "sentence"
+    },
+    "Viền nổi bật cửa sổ đang chọn (Focus Border)": {
+      "en": "Highlight focused window (Focus Border)",
+      "scope": "sentence"
+    },
+    "Vẽ viền mảnh màu nhấn xung quanh cửa sổ đang hoạt động.": {
+      "en": "Draws a crisp accent border around the currently active window.",
+      "scope": "sentence"
+    },
+    "Phím tắt xếp lát HyprMac (⌃⌥⇧)": {
+      "en": "HyprMac tiling shortcuts (⌃⌥⇧)",
+      "scope": "sentence"
+    },
+    "Giữ ⌃⌥⇧ để điều hướng, hoán đổi, thu phóng và cân bằng lưới ngay từ bàn phím.": {
+      "en": "Hold ⌃⌥⇧ to move focus, swap, resize, and balance tiles directly from the keyboard.",
+      "scope": "sentence"
+    },
+    "Khoảng cách giữa các ô": {
+      "en": "Inner tile gap",
+      "scope": "sentence"
+    },
+    "Lề ngoài màn hình": {
+      "en": "Outer screen padding",
+      "scope": "sentence"
+    },
+    "Độ dày viền focus": {
+      "en": "Focus border thickness",
+      "scope": "sentence"
+    },
+    "Xếp lát toàn bộ": {
+      "en": "Tile all windows",
+      "scope": "sentence"
+    },
+    "Nổi / Xếp cửa sổ": {
+      "en": "Toggle float/tile",
+      "scope": "sentence"
+    },
+    "Đổi tiêu điểm": {
+      "en": "Move focus",
+      "scope": "sentence"
+    },
+    "Hoán đổi ô": {
+      "en": "Swap tiles",
+      "scope": "sentence"
+    },
+    "Phóng đại ô": {
+      "en": "Maximize tile",
+      "scope": "sentence"
+    },
+    "Ứng dụng luôn nổi tự do (Bundle ID)": {
+      "en": "Always-floating apps (Bundle ID)",
+      "scope": "sentence"
+    },
+    "Cần ít nhất 2 cửa sổ đang mở để thao tác lưới xếp lát.": {
+      "en": "At least 2 open windows are needed for tiling grid actions.",
+      "scope": "sentence"
+    },
+    "Phóng to ô": {
+      "en": "Grow tile",
+      "scope": "sentence"
+    },
+    "Thu nhỏ ô": {
+      "en": "Shrink tile",
+      "scope": "sentence"
+    },
+    "Cân bằng lưới": {
+      "en": "Balance grid",
+      "scope": "sentence"
+    },
+    "Một số phím tắt xếp lát đang bị ứng dụng khác chiếm dụng nên không thể đăng ký.": {
+      "en": "Some tiling shortcuts are claimed by another app and could not be registered.",
+      "scope": "sentence"
+    },
+    "Một số phím tắt bắt dính đang bị ứng dụng khác chiếm dụng nên không thể đăng ký.": {
+      "en": "Some snap shortcuts are claimed by another app and could not be registered.",
+      "scope": "sentence"
+    },
+    "Kéo thả nhiều tập tin vào đây để giữ tạm": {
+      "en": "Drop multiple files here to stage them",
+      "scope": "sentence"
+    },
+    "Có thể kéo ra bất kỳ lúc nào, hoặc chép/chuyển thẳng vào ngăn trình duyệt.": {
+      "en": "Drag them out anytime, or copy/move straight into the active browser pane.",
+      "scope": "sentence"
+    },
+    "Thả thêm tệp vào đây, hoặc bấm chọn nhiều mục bên dưới để thao tác.": {
+      "en": "Drop more files here, or select multiple items below to act on them.",
+      "scope": "sentence"
+    },
+    "Giữ ⌘ hoặc ⇧ khi bấm để chọn nhiều tệp. Tệp đã di chuyển, mất quyền hoặc chuyển thất bại vẫn được giữ lại kèm lý do.": {
+      "en": "Hold ⌘ or ⇧ while clicking to select multiple files. Moved, unreadable, or failed items remain in the tray with their reason.",
+      "scope": "sentence"
+    },
+    "Kiểm tra trạng thái": {
+      "en": "Check status",
+      "scope": "sentence"
+    },
+    "Hàng đợi thao tác tệp": {
+      "en": "File operation queue",
+      "scope": "sentence"
+    },
+    "Không có tệp hợp lệ để thao tác.": {
+      "en": "No valid files available for this action.",
+      "scope": "sentence"
+    },
+    "Đang xử lý": {
+      "en": "Working",
+      "scope": "sentence"
+    },
+    "Mở Khay thả để xem thao tác đang chạy": {
+      "en": "Open Drop Tray to view ongoing file operations",
+      "scope": "sentence"
+    },
+    "Kéo ra bất kỳ lúc nào hoặc gửi thẳng vào ngăn trình duyệt.": {
+      "en": "Drag out anytime or send straight to the browser pane.",
+      "scope": "sentence"
+    },
+    "Thêm tệp…": {
+      "en": "Add files…",
+      "scope": "sentence"
+    },
+    "Kéo tất cả": {
+      "en": "Drag all",
+      "scope": "sentence"
+    },
+    "Chép vào ngăn": {
+      "en": "Copy to pane",
+      "scope": "sentence"
+    },
+    "Chuyển vào ngăn": {
+      "en": "Move to pane",
+      "scope": "sentence"
+    },
+    "Chi tiết": {
+      "en": "Details",
+      "scope": "sentence"
+    },
+    " mục — các mục thất bại vẫn được giữ trong khay.": {
+      "en": " items — failed items remain in the tray.",
+      "scope": "fragment"
+    },
+    " thất bại (giữ lại trong khay).": {
+      "en": " failed (kept in tray).",
+      "scope": "fragment"
+    },
+    "Đã di chuyển hoặc bị xoá": {
+      "en": "Moved or deleted",
+      "scope": "sentence"
+    },
+    "Không có quyền đọc tệp": {
+      "en": "No read permission",
+      "scope": "sentence"
+    },
+    "Chuyển thất bại": {
+      "en": "Transfer failed",
+      "scope": "sentence"
+    },
+    "Đã bỏ qua khi trùng tên": {
+      "en": "Skipped due to name conflict",
+      "scope": "sentence"
+    },
+    "Đã dừng trước khi chuyển": {
+      "en": "Stopped before transfer",
+      "scope": "sentence"
+    },
+    "Không thể chuyển tệp": {
+      "en": "Could not move file",
+      "scope": "sentence"
+    },
+    "Không thể xem nhanh — tệp đã di chuyển hoặc thiếu quyền.": {
+      "en": "Cannot Quick Look — file was moved or lacks permission.",
+      "scope": "sentence"
+    },
+    "Không có tệp hợp lệ để chia sẻ.": {
+      "en": "No valid files available to share.",
+      "scope": "sentence"
+    },
+    "Một số tệp sao chép thất bại — các mục vẫn được giữ trong khay.": {
+      "en": "Some files failed to copy — items remain in the tray.",
+      "scope": "sentence"
+    },
+    "Một số tệp chuyển thất bại — các mục chưa chuyển vẫn được giữ trong khay.": {
+      "en": "Some files failed to move — unmoved items remain in the tray.",
+      "scope": "sentence"
+    },
+    "Thao tác đã dừng — các mục chưa chuyển vẫn được giữ trong khay.": {
+      "en": "Operation stopped — unmoved items remain in the tray.",
+      "scope": "sentence"
+    },
+    "Không thể gửi sang ngăn trình duyệt hiện tại.": {
+      "en": "Could not send to the current browser pane.",
+      "scope": "sentence"
+    },
+    "Thêm mục": {
+      "en": "More",
+      "scope": "sentence"
+    },
+    "Trang chính": {
+      "en": "Primary pages",
+      "scope": "sentence"
+    },
+    "Tiện ích mở rộng": {
+      "en": "Utilities",
+      "scope": "sentence"
+    },
+    "Chép": {
+      "en": "Copy",
+      "scope": "sentence"
+    },
+    "Chuyển": {
+      "en": "Move",
+      "scope": "sentence"
+    },
+    "Gửi tới thiết bị gần": {
+      "en": "Send to nearby devices",
+      "scope": "sentence"
+    },
+    "Thiết bị gần": {
+      "en": "Nearby devices",
+      "scope": "sentence"
+    },
+    "Gửi qua macOS": {
+      "en": "Send via macOS",
+      "scope": "sentence"
+    },
+    "Thả tệp vào đây": {
+      "en": "Drop files here",
+      "scope": "sentence"
+    },
+    "Giữ tạm · Kéo ra hoặc gửi sang ngăn": {
+      "en": "Keep staged · Drag out or send to pane",
+      "scope": "sentence"
+    },
+    "Kéo ra hoặc gửi ngăn": {
+      "en": "Drag out or send to pane",
+      "scope": "sentence"
+    },
+    "Thao tác khay": {
+      "en": "Tray actions",
+      "scope": "sentence"
+    },
+    "Mục chọn không khả dụng": {
+      "en": "Selection unavailable",
+      "scope": "sentence"
+    },
+    "Mục đang chọn đã di chuyển hoặc không thể đọc — bỏ chọn hoặc chọn tệp khả dụng.": {
+      "en": "Selected item was moved or is unreadable — clear selection or choose an available file.",
+      "scope": "sentence"
+    },
+    "Chưa có tệp khả dụng": {
+      "en": "No available files",
+      "scope": "sentence"
+    },
+    "Khay trống — bấm để chọn tệp gửi qua AirDrop": {
+      "en": "Shelf empty — click to pick files for AirDrop",
+      "scope": "sentence"
+    },
+    "Xử lý hàng loạt": {
+      "en": "Batch actions",
+      "scope": "sentence"
+    },
+    "Xử lý": {
+      "en": "Actions",
+      "scope": "sentence"
+    },
+    "Thời tiết": {
+      "en": "Weather",
+      "scope": "sentence"
+    },
+    "Chọn thành phố": {
+      "en": "Select city",
+      "scope": "sentence"
+    },
+    "Đổi thành phố": {
+      "en": "Change city",
+      "scope": "sentence"
+    },
+    "Đang tải dự báo thời tiết...": {
+      "en": "Loading weather forecast...",
+      "scope": "sentence"
+    },
+    "Dự báo 12 giờ tới": {
+      "en": "12-hour forecast",
+      "scope": "sentence"
+    },
+    "Không có dữ liệu thời tiết": {
+      "en": "No weather data",
+      "scope": "sentence"
+    },
+    "Định vị bị từ chối hoặc không khả dụng": {
+      "en": "Location denied or unavailable",
+      "scope": "sentence"
+    },
+    "Nhập tên thành phố...": {
+      "en": "Enter city name...",
+      "scope": "sentence"
+    },
+    "Không tìm thấy thành phố": {
+      "en": "No cities found",
+      "scope": "sentence"
+    },
+    "Dữ liệu thời tiết bởi ": {
+      "en": "Weather data by ",
+      "scope": "fragment"
+    },
+    "Mưa: ": {
+      "en": "Rain: ",
+      "scope": "fragment"
+    },
+    "Dùng vị trí": {
+      "en": "Use location",
+      "scope": "sentence"
+    },
+    "Dùng vị trí hiện tại": {
+      "en": "Use current location",
+      "scope": "sentence"
+    },
+    "Dùng vị trí hiện tại của máy để xem thời tiết mà không lưu toạ độ.": {
+      "en": "Use current device location to view weather without saving coordinates.",
+      "scope": "sentence"
+    },
+    "Hết thời gian chờ": {
+      "en": "Timed out",
+      "scope": "sentence"
+    },
+    "Kết nối quá lâu nên đã dừng.": {
+      "en": "The connection took too long, so it stopped.",
+      "scope": "sentence"
+    },
+    "Tạm hết lượt tải thời tiết": {
+      "en": "Weather request limit reached for now",
+      "scope": "sentence"
+    },
+    "Thử lại sau ít phút.": {
+      "en": "Try again in a few minutes.",
+      "scope": "sentence"
+    },
+    "Dịch vụ thời tiết đang lỗi": {
+      "en": "The weather service is not responding",
+      "scope": "sentence"
+    },
+    "Dữ liệu thời tiết không đọc được": {
+      "en": "Weather data could not be read",
+      "scope": "sentence"
+    },
+    "Thử lại bằng nút Làm mới.": {
+      "en": "Try again with the Refresh button.",
+      "scope": "sentence"
+    },
+    "Đã dừng tải thời tiết": {
+      "en": "Weather loading stopped",
+      "scope": "sentence"
+    },
+    "Không tải được thời tiết": {
+      "en": "Couldn’t load the weather",
+      "scope": "sentence"
+    },
+    "Chọn thành phố để xem thời tiết.": {
+      "en": "Select a city to see the weather.",
+      "scope": "sentence"
+    },
+    "Kiểm tra Wi-Fi hoặc mạng rồi thử lại.": {
+      "en": "Check Wi-Fi or the network, then try again.",
+      "scope": "sentence"
+    },
+    "Trời quang": {
+      "en": "Clear sky",
+      "scope": "sentence"
+    },
+    "Ít mây": {
+      "en": "Partly cloudy",
+      "scope": "sentence"
+    },
+    "Nhiều mây": {
+      "en": "Cloudy",
+      "scope": "sentence"
+    },
+    "Mưa phùn": {
+      "en": "Drizzle",
+      "scope": "sentence"
+    },
+    "Có mưa": {
+      "en": "Rain",
+      "scope": "sentence"
+    },
+    "Mưa to": {
+      "en": "Heavy rain",
+      "scope": "sentence"
+    },
+    "Dông sét": {
+      "en": "Thunderstorm",
+      "scope": "sentence"
+    },
+    "Tuyết rơi": {
+      "en": "Snow",
+      "scope": "sentence"
+    },
+    "Sương mù": {
+      "en": "Fog",
+      "scope": "sentence"
+    },
+    "Thời tiết không xác định": {
+      "en": "Unknown weather",
+      "scope": "sentence"
+    },
+    "Chỉ số": {
+      "en": "Index",
+      "scope": "sentence"
+    },
+    "Cổ phiếu": {
+      "en": "Stock",
+      "scope": "sentence"
+    },
+    "Quỹ ETF": {
+      "en": "ETF",
+      "scope": "sentence"
+    },
+    "Chứng khoán": {
+      "en": "Stocks",
+      "scope": "sentence"
+    },
+    "Chứng khoán Mỹ": {
+      "en": "US Stocks",
+      "scope": "sentence"
+    },
+    "Doanh thu": {
+      "en": "Revenue",
+      "scope": "sentence"
+    },
+    "Thiếu giá": {
+      "en": "No price",
+      "scope": "sentence"
+    },
+    "Dữ liệu mẫu QA — không phải giá thật": {
+      "en": "QA sample data — not live quotes",
+      "scope": "sentence"
+    },
+    "Dữ liệu mẫu QA — chỉ đọc": {
+      "en": "QA sample data — read-only",
+      "scope": "sentence"
+    },
+    "Hiển thị giá đã lưu gần nhất nếu có.": {
+      "en": "Showing latest cached quote when available.",
+      "scope": "sentence"
+    },
+    "Tạm hết lượt tải giá chứng khoán": {
+      "en": "Stock quote rate limit reached for now",
+      "scope": "sentence"
+    },
+    "Hết thời gian chờ nguồn giá": {
+      "en": "Stock quote source timed out",
+      "scope": "sentence"
+    },
+    "Thử tìm lại mã.": {
+      "en": "Try searching the ticker again.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy mã chứng khoán": {
+      "en": "Ticker not found",
+      "scope": "sentence"
+    },
+    "Kỳ biểu đồ không được nguồn hỗ trợ": {
+      "en": "Chart range not supported by provider",
+      "scope": "sentence"
+    },
+    "Dữ liệu giá chứng khoán không đọc được": {
+      "en": "Stock quote data could not be read",
+      "scope": "sentence"
+    },
+    "Dữ liệu cũ": {
+      "en": "Stale data",
+      "scope": "sentence"
+    },
+    "Hết hạn cache": {
+      "en": "Cache expired",
+      "scope": "sentence"
+    },
+    "Đang mở": {
+      "en": "Market open",
+      "scope": "sentence"
+    },
+    "Đóng cửa": {
+      "en": "Closed",
+      "scope": "sentence"
+    },
+    "Trước phiên": {
+      "en": "Pre-market",
+      "scope": "sentence"
+    },
+    "Sau phiên": {
+      "en": "After-hours",
+      "scope": "sentence"
+    },
+    "Chưa rõ phiên": {
+      "en": "Session unknown",
+      "scope": "sentence"
+    },
+    "Thêm mã chứng khoán": {
+      "en": "Add ticker",
+      "scope": "sentence"
+    },
+    "Đóng tìm mã": {
+      "en": "Close ticker search",
+      "scope": "sentence"
+    },
+    "Chưa chọn nguồn giá hoặc mã theo dõi": {
+      "en": "No quote source or watchlist selected",
+      "scope": "sentence"
+    },
+    "Thêm mã": {
+      "en": "Add symbol",
+      "scope": "sentence"
+    },
+    "Danh sách theo dõi chưa có mã nào": {
+      "en": "Watchlist has no symbols yet",
+      "scope": "sentence"
+    },
+    "Đang tải...": {
+      "en": "Loading...",
+      "scope": "sentence"
+    },
+    "Đưa lên": {
+      "en": "Move up",
+      "scope": "sentence"
+    },
+    "Xóa mã": {
+      "en": "Remove symbol",
+      "scope": "sentence"
+    },
+    "Chưa có dữ liệu biểu đồ cho kỳ này": {
+      "en": "No chart data for this range",
+      "scope": "sentence"
+    },
+    "Tìm mã Mỹ (S&P 500, AAPL, NVDA, ETF)...": {
+      "en": "Search US symbols (S&P 500, AAPL, NVDA, ETF)...",
+      "scope": "sentence"
+    },
+    "Nhập mã cổ phiếu hoặc chỉ số để thêm": {
+      "en": "Enter a stock ticker or index to add",
+      "scope": "sentence"
+    },
+    "Không tìm thấy mã phù hợp": {
+      "en": "No matching ticker found",
+      "scope": "sentence"
+    },
+    "Chưa có biến động": {
+      "en": "No change available",
+      "scope": "sentence"
+    },
+    "Kiểm tra kết nối rồi thử tìm lại.": {
+      "en": "Check your connection and search again.",
+      "scope": "sentence"
+    },
+    "Đang giữ số liệu đã đồng bộ gần nhất nếu có.": {
+      "en": "Keeping latest synced figures when available.",
+      "scope": "sentence"
+    },
+    "Tạm hết lượt đồng bộ doanh thu": {
+      "en": "Revenue sync rate limit reached for now",
+      "scope": "sentence"
+    },
+    "Hết thời gian chờ cổng thanh toán": {
+      "en": "Payment portal timed out",
+      "scope": "sentence"
+    },
+    "Phiên kết nối đã hết hạn": {
+      "en": "Portal connection expired",
+      "scope": "sentence"
+    },
+    "Mở Cài đặt để kết nối lại tài khoản chỉ đọc.": {
+      "en": "Open Settings to reconnect read-only account.",
+      "scope": "sentence"
+    },
+    "Quyền đọc hiện tại chỉ xem được một phần dữ liệu": {
+      "en": "Current read scope limits historical coverage",
+      "scope": "sentence"
+    },
+    "Kiểm tra phạm vi quyền trong Cài đặt.": {
+      "en": "Check permission scopes in Settings.",
+      "scope": "sentence"
+    },
+    "Đồng bộ trang dữ liệu bị ngắt giữa chừng": {
+      "en": "Paginated sync interrupted",
+      "scope": "sentence"
+    },
+    "Dữ liệu cũ được giữ nguyên cho tới khi đồng bộ đủ.": {
+      "en": "Keeping prior cached totals until full sync finishes.",
+      "scope": "sentence"
+    },
+    "Không đọc được dữ liệu doanh thu": {
+      "en": "Revenue data could not be read",
+      "scope": "sentence"
+    },
+    "Chưa kết nối tài khoản Stripe hoặc Shopify": {
+      "en": "No Stripe or Shopify account connected",
+      "scope": "sentence"
+    },
+    "Mỗi nguồn dùng quyền chỉ đọc riêng và đối soát độc lập.": {
+      "en": "Each source uses read-only scope and reconciles separately.",
+      "scope": "sentence"
+    },
+    "Kết nối trong Cài đặt": {
+      "en": "Connect in Settings",
+      "scope": "sentence"
+    },
+    "Hiển thị riêng từng nguồn — chưa rõ trùng giao dịch": {
+      "en": "Shown per source — possible cross-source overlap unresolved",
+      "scope": "sentence"
+    },
+    "Đã đối soát chéo": {
+      "en": "Cross-reconciled",
+      "scope": "sentence"
+    },
+    "Chưa kết nối": {
+      "en": "Not connected",
+      "scope": "sentence"
+    },
+    "Đang đồng bộ số liệu...": {
+      "en": "Syncing revenue figures...",
+      "scope": "sentence"
+    },
+    "0 giao dịch trong kỳ đã chọn": {
+      "en": "0 transactions in selected period",
+      "scope": "sentence"
+    },
+    "Chưa có dữ liệu": {
+      "en": "No data",
+      "scope": "sentence"
+    },
+    "Chưa có biểu đồ doanh thu": {
+      "en": "No revenue chart data",
+      "scope": "sentence"
+    },
+    "Lịch sử bị giới hạn bởi quyền hiện tại": {
+      "en": "History range limited by current permission scope",
+      "scope": "sentence"
+    },
+    "Thiếu quyền payout Shopify Payments — phí/thực nhận chưa có dữ liệu": {
+      "en": "Missing Shopify Payments payout scope — fees/net unavailable",
+      "scope": "sentence"
+    },
+    "Múi giờ theo tài khoản": {
+      "en": "Account reporting timezone",
+      "scope": "sentence"
+    },
+    "Trễ ": {
+      "en": "Delayed ",
+      "scope": "fragment"
+    },
+    " đơn": {
+      "en": " tx",
+      "scope": "fragment"
+    },
+    "Thực nhận: ": {
+      "en": "Net: ",
+      "scope": "fragment"
+    },
+    "Hoàn: ": {
+      "en": "Refunds: ",
+      "scope": "fragment"
+    },
+    "Payout riêng: ": {
+      "en": "Payout (separate): ",
+      "scope": "fragment"
+    },
+    "Kỳ theo tài khoản: ": {
+      "en": "Account window: ",
+      "scope": "fragment"
+    },
+    "Bật lại ít nhất một mục trong Cài đặt để hiện trên Dynamic Island. Kéo thả tệp vào notch vẫn hoạt động bình thường.": {
+      "en": "Turn on at least one destination in Settings to show it on the Dynamic Island. Dragging files into the notch still works.",
+      "scope": "sentence"
+    },
+    "Bật, tắt và sắp xếp toàn bộ mục Dynamic Island (kể cả tiện ích mở rộng). Thứ tự các mục đang ẩn vẫn được giữ nguyên. Tắt hết mọi mục vẫn giữ lối mở Cài đặt và thả tệp vào notch.": {
+      "en": "Show, hide, and reorder every Dynamic Island destination (including extra modules). Hidden tabs keep their order. Hiding every tab still keeps Settings recovery and file-drop intake.",
+      "scope": "sentence"
+    },
+    "Chưa có nguồn dữ liệu cho bản dựng này": {
+      "en": "No data source configured for this build",
+      "scope": "sentence"
+    },
+    "Chưa cấu hình nguồn": {
+      "en": "Source not configured",
+      "scope": "sentence"
+    },
+    "Chứng khoán (thị trường Mỹ)": {
+      "en": "Stocks (US market)",
+      "scope": "sentence"
+    },
+    "Cài đặt Dynamic Island…": {
+      "en": "Dynamic Island Settings…",
+      "scope": "sentence"
+    },
+    "Cấu hình…": {
+      "en": "Configure…",
+      "scope": "sentence"
+    },
+    "Doanh thu bán app (Stripe & Shopify)": {
+      "en": "App Revenue (Stripe & Shopify)",
+      "scope": "sentence"
+    },
+    "Mở Cài đặt Dynamic Island": {
+      "en": "Open Dynamic Island Settings",
+      "scope": "sentence"
+    },
+    "Mở Cài đặt…": {
+      "en": "Open Settings…",
+      "scope": "sentence"
+    },
+    "Mục đã bật nhưng chưa cấu hình nguồn (Thời tiết, Chứng khoán, Doanh thu) hoặc đang tắt ở trang tính năng sẽ không hiển thị như đang hoạt động trên Dynamic Island; lựa chọn bật của bạn vẫn được giữ cho tới khi nguồn sẵn sàng.": {
+      "en": "Enabled tabs whose source is unconfigured (Weather, Stocks, Revenue) or whose feature switch is off are not shown as working on the Dynamic Island; your toggle choice is preserved until the source is ready.",
+      "scope": "sentence"
+    },
+    "Nguồn dữ liệu tách biệt: Chứng khoán và Doanh thu dùng cấu hình kết nối độc lập.": {
+      "en": "Separate data sources: Stocks and Revenue use independent connection settings.",
+      "scope": "sentence"
+    },
+    "Tất cả mục Dynamic Island đang ẩn": {
+      "en": "All Dynamic Island tabs are hidden",
+      "scope": "sentence"
+    },
+    "Tất cả mục Dynamic Island đang ẩn. Kéo thả tệp vào notch vẫn hoạt động và bạn luôn có thể bật lại hoặc khôi phục mặc định tại đây.": {
+      "en": "All Dynamic Island destinations are hidden. Dragging files into the notch still works, and you can re-enable tabs or restore defaults here.",
+      "scope": "sentence"
+    },
+    "Đang tắt ở trang tính năng": {
+      "en": "Off on its feature page",
+      "scope": "sentence"
+    },
+    "Đã cấu hình nguồn": {
+      "en": "Source configured",
+      "scope": "sentence"
+    },
+    "Kết nối Doanh thu bán app (chỉ đọc)": {
+      "en": "App Revenue connections (read-only)",
+      "scope": "sentence"
+    },
+    "Khóa chỉ đọc được lưu riêng theo tài khoản trong Keychain và chỉ gửi tới máy chủ chính thức api.stripe.com hoặc *.myshopify.com. Ứng dụng mặc định ở trạng thái ngắt kết nối.": {
+      "en": "Read-only keys are stored per account in Keychain and sent only to official api.stripe.com or *.myshopify.com hosts. The app starts disconnected by default.",
+      "scope": "sentence"
+    },
+    "Stripe (Balance Transactions — chỉ đọc)": {
+      "en": "Stripe (Balance Transactions — read-only)",
+      "scope": "sentence"
+    },
+    "Mã tài khoản Stripe (vd: acct_main)": {
+      "en": "Stripe account ID (e.g. acct_main)",
+      "scope": "sentence"
+    },
+    "Nhãn hiển thị": {
+      "en": "Display label",
+      "scope": "sentence"
+    },
+    "Khóa chỉ đọc Stripe (rk_...)": {
+      "en": "Stripe restricted read-only key (rk_...)",
+      "scope": "sentence"
+    },
+    "Lưu kết nối Stripe": {
+      "en": "Save Stripe connection",
+      "scope": "sentence"
+    },
+    "Ngắt kết nối Stripe": {
+      "en": "Disconnect Stripe",
+      "scope": "sentence"
+    },
+    "Shopify (Admin GraphQL — chỉ đọc)": {
+      "en": "Shopify (Admin GraphQL — read-only)",
+      "scope": "sentence"
+    },
+    "Tên miền cửa hàng (*.myshopify.com)": {
+      "en": "Store domain (*.myshopify.com)",
+      "scope": "sentence"
+    },
+    "Token Admin API chỉ đọc": {
+      "en": "Read-only Admin API token",
+      "scope": "sentence"
+    },
+    "Bật quyền payout Shopify Payments (read_shopify_payments_payouts)": {
+      "en": "Enable Shopify Payments payout scope (read_shopify_payments_payouts)",
+      "scope": "sentence"
+    },
+    "Lưu kết nối Shopify": {
+      "en": "Save Shopify connection",
+      "scope": "sentence"
+    },
+    "Ngắt kết nối Shopify": {
+      "en": "Disconnect Shopify",
+      "scope": "sentence"
+    },
+    "Nhập mã tài khoản Stripe hợp lệ.": {
+      "en": "Enter a valid Stripe account ID.",
+      "scope": "sentence"
+    },
+    "Cần nhập khóa chỉ đọc Stripe để lưu kết nối.": {
+      "en": "A Stripe read-only key is required to save the connection.",
+      "scope": "sentence"
+    },
+    "Tên miền Shopify phải có dạng ten-cua-hang.myshopify.com.": {
+      "en": "Shopify domain must use the form your-store.myshopify.com.",
+      "scope": "sentence"
+    },
+    "Cần nhập token Admin API chỉ đọc để lưu kết nối.": {
+      "en": "A read-only Admin API token is required to save the connection.",
+      "scope": "sentence"
+    },
+    "Tiền số 24/7": {
+      "en": "Crypto 24/7",
+      "scope": "sentence"
+    },
+    "So với đóng phiên trước": {
+      "en": "vs. previous close",
+      "scope": "sentence"
+    },
+    "So với 24 giờ trước": {
+      "en": "vs. 24h ago",
+      "scope": "sentence"
+    },
+    "So với 00:00 UTC": {
+      "en": "vs. 00:00 UTC",
+      "scope": "sentence"
+    },
+    "Chưa rõ mốc so sánh": {
+      "en": "Comparison basis unknown",
+      "scope": "sentence"
+    },
+    "Danh sách theo dõi Chứng khoán & BTC/USD": {
+      "en": "Stocks & BTC/USD Watchlist",
+      "scope": "sentence"
+    },
+    "Quản lý mã theo dõi ngay cả khi chưa cấu hình nguồn giá. Danh sách bạn lưu (kể cả danh sách trống) được giữ nguyên; Bitcoin (BTC/USD) dùng phiên 24/7 và mốc so sánh riêng.": {
+      "en": "Manage watched symbols even before a quote source is configured. Your saved list (including an empty list) is preserved; Bitcoin (BTC/USD) uses a 24/7 session and its own change basis.",
+      "scope": "sentence"
+    },
+    "Tìm mã để thêm (S&P 500, AAPL, NVDA, CROX, BTC/USD...)": {
+      "en": "Search symbols to add (S&P 500, AAPL, NVDA, CROX, BTC/USD...)",
+      "scope": "sentence"
+    },
+    "Đã có": {
+      "en": "Added",
+      "scope": "sentence"
+    },
+    "Danh sách theo dõi đang trống — lựa chọn trống này được giữ lại.": {
+      "en": "Watchlist is empty — this empty choice is preserved.",
+      "scope": "sentence"
+    },
+    "Khôi phục danh sách mặc định": {
+      "en": "Restore default watchlist",
+      "scope": "sentence"
+    },
+    "Đang diễn ra": {
+      "en": "In progress",
+      "scope": "sentence"
+    },
+    "Cuộc họp": {
+      "en": "Meeting",
+      "scope": "sentence"
+    },
+    "Tác vụ đang chạy": {
+      "en": "Active work",
+      "scope": "sentence"
+    },
+    "Lịch sắp tới": {
+      "en": "Up next",
+      "scope": "sentence"
+    },
+    "Chưa có hoạt động nào từ các tab đang bật": {
+      "en": "No active items from enabled tabs",
+      "scope": "sentence"
+    },
+    "Bật nhạc, lịch hoặc bắt đầu tác vụ để xem nhanh tại đây.": {
+      "en": "Play music, enable calendar, or start a task to see a live overview here.",
+      "scope": "sentence"
+    },
+    " chờ phản hồi": {
+      "en": " waiting",
+      "scope": "fragment"
+    },
+    "Đang xử lý tệp": {
+      "en": "Processing files",
+      "scope": "sentence"
+    },
+    "Đang bận": {
+      "en": "Busy",
+      "scope": "sentence"
+    },
+    "Nhắc việc": {
+      "en": "Reminders",
+      "scope": "sentence"
+    },
+    "Sắp tới": {
+      "en": "Upcoming",
+      "scope": "sentence"
+    },
+    "Đã xong": {
+      "en": "Completed",
+      "scope": "sentence"
+    },
+    "Không hạn": {
+      "en": "No due date",
+      "scope": "sentence"
+    },
+    "Ngày mai": {
+      "en": "Tomorrow",
+      "scope": "sentence"
+    },
+    "Quyền Nhắc việc bị từ chối.": {
+      "en": "Reminders access was denied.",
+      "scope": "sentence"
+    },
+    "Quyền Nhắc việc bị giới hạn trên máy này.": {
+      "en": "Reminders access is restricted on this Mac.",
+      "scope": "sentence"
+    },
+    "Nhắc việc cần macOS 14 trở lên.": {
+      "en": "Reminders requires macOS 14 or later.",
+      "scope": "sentence"
+    },
+    "Nhập nội dung nhắc việc trước khi lưu.": {
+      "en": "Enter a reminder title before saving.",
+      "scope": "sentence"
+    },
+    "Chưa có danh sách Nhắc việc mặc định trên máy.": {
+      "en": "No default Reminders list is configured on this Mac.",
+      "scope": "sentence"
+    },
+    "Không tìm thấy lời nhắc này.": {
+      "en": "This reminder could not be found.",
+      "scope": "sentence"
+    },
+    "Không thể đồng bộ với Nhắc việc.": {
+      "en": "Could not sync with Reminders.",
+      "scope": "sentence"
+    },
+    "Đóng tạo nhắc việc": {
+      "en": "Close reminder composer",
+      "scope": "sentence"
+    },
+    "Thêm nhắc việc": {
+      "en": "Add reminder",
+      "scope": "sentence"
+    },
+    "Chưa có quyền Nhắc việc. Cấp quyền để xem, tạo và hoàn thành lời nhắc ngay trên notch.": {
+      "en": "Reminders permission not granted yet. Allow access to view, create, and complete reminders from the notch.",
+      "scope": "sentence"
+    },
+    "Cấp quyền Nhắc việc": {
+      "en": "Allow Reminders Access",
+      "scope": "sentence"
+    },
+    "Quyền Nhắc việc bị từ chối — mở Cài đặt hệ thống ▸ Quyền riêng tư ▸ Nhắc việc để bật lại.": {
+      "en": "Reminders access was denied — open System Settings ▸ Privacy & Security ▸ Reminders to re-enable.",
+      "scope": "sentence"
+    },
+    "Đang tải lời nhắc…": {
+      "en": "Loading reminders…",
+      "scope": "sentence"
+    },
+    "Không có lời nhắc nào trong mục này.": {
+      "en": "No reminders in this view.",
+      "scope": "sentence"
+    },
+    "Nội dung nhắc việc…": {
+      "en": "Reminder title…",
+      "scope": "sentence"
+    },
+    "Lưu nhắc việc": {
+      "en": "Save reminder",
+      "scope": "sentence"
+    },
+    "Đánh dấu chưa xong": {
+      "en": "Mark incomplete",
+      "scope": "sentence"
+    },
+    "Hoàn thành nhắc việc": {
+      "en": "Complete reminder",
+      "scope": "sentence"
+    },
+    "Tháng sau": {
+      "en": "Next month",
+      "scope": "sentence"
+    },
+    "Xem lịch ngày": {
+      "en": "Show day agenda",
+      "scope": "sentence"
+    },
+    "Xem lịch tháng": {
+      "en": "Show month grid",
+      "scope": "sentence"
+    },
+    "Không có sự kiện trong ngày này.": {
+      "en": "No events on this day.",
+      "scope": "sentence"
+    },
+    "Phân tích web": {
+      "en": "Website Analytics",
+      "scope": "sentence"
+    },
+    "Cấu hình nguồn phân tích": {
+      "en": "Configure analytics source",
+      "scope": "sentence"
+    },
+    "trực tuyến": {
+      "en": "online",
+      "scope": "fragment"
+    },
+    "Đang tải số liệu phân tích trang web...": {
+      "en": "Loading website analytics...",
+      "scope": "sentence"
+    },
+    "Không có dữ liệu trong kỳ đã chọn": {
+      "en": "No data in the selected range",
+      "scope": "sentence"
+    },
+    "Trang hàng đầu": {
+      "en": "Top pages",
+      "scope": "sentence"
+    },
+    "Nguồn giới thiệu": {
+      "en": "Referrers",
+      "scope": "sentence"
+    },
+    "Khách truy cập": {
+      "en": "Visitors",
+      "scope": "sentence"
+    },
+    "Lượt xem": {
+      "en": "Pageviews",
+      "scope": "sentence"
+    },
+    "Tỷ lệ thoát": {
+      "en": "Bounce rate",
+      "scope": "sentence"
+    },
+    "Thời lượng TB": {
+      "en": "Avg. duration",
+      "scope": "sentence"
+    },
+    "Chưa có dữ liệu biểu đồ": {
+      "en": "No chart data yet",
+      "scope": "sentence"
+    },
+    "Kết nối lại": {
+      "en": "Reconnect",
+      "scope": "sentence"
+    },
+    "Kết nối DataFast (chỉ đọc)": {
+      "en": "Connect DataFast (read-only)",
+      "scope": "sentence"
+    },
+    "Tên trang web": {
+      "en": "Website name",
+      "scope": "sentence"
+    },
+    "Khóa API trang web DataFast (df_...)": {
+      "en": "DataFast website API key (df_...)",
+      "scope": "sentence"
+    },
+    "Lưu kết nối": {
+      "en": "Save connection",
+      "scope": "sentence"
+    },
+    "Ngắt kết nối": {
+      "en": "Disconnect",
+      "scope": "sentence"
+    },
+    "Kết nối Google Analytics 4 (chỉ đọc)": {
+      "en": "Connect Google Analytics 4 (read-only)",
+      "scope": "sentence"
+    },
+    "Mã thuộc tính GA4 (chỉ gồm số)": {
+      "en": "GA4 Property ID (digits only)",
+      "scope": "sentence"
+    },
+    "Redirect URI OAuth": {
+      "en": "OAuth Redirect URI",
+      "scope": "sentence"
+    },
+    "Lưu cấu hình": {
+      "en": "Save configuration",
+      "scope": "sentence"
+    },
+    "Hủy đăng nhập": {
+      "en": "Cancel sign-in",
+      "scope": "sentence"
+    },
+    "Đăng nhập Google": {
+      "en": "Sign in with Google",
+      "scope": "sentence"
+    },
+    "Chưa nhập khóa API hoặc xác thực": {
+      "en": "Missing API key or authorization",
+      "scope": "sentence"
+    },
+    "Nhập thông tin chỉ đọc để xem thống kê trang web.": {
+      "en": "Enter read-only credentials to view website traffic.",
+      "scope": "sentence"
+    },
+    "Chưa nhập mã thuộc tính GA4": {
+      "en": "Missing GA4 property ID",
+      "scope": "sentence"
+    },
+    "Nhập Property ID số để tải báo cáo Google Analytics.": {
+      "en": "Enter a numeric Property ID to load Google Analytics reports.",
+      "scope": "sentence"
+    },
+    "Chưa cấu hình OAuth cho Google Analytics": {
+      "en": "Google Analytics OAuth not configured",
+      "scope": "sentence"
+    },
+    "Cần OAuth Client ID và redirect URI đã đăng ký để đăng nhập GA4.": {
+      "en": "A registered OAuth Client ID and redirect URI are required to sign in to GA4.",
+      "scope": "sentence"
+    },
+    "Đã hủy đăng nhập Google Analytics": {
+      "en": "Google Analytics sign-in cancelled",
+      "scope": "sentence"
+    },
+    "Trạng thái vẫn ngắt kết nối. Thử lại khi sẵn sàng.": {
+      "en": "Still disconnected. Try again when ready.",
+      "scope": "sentence"
+    },
+    "Khóa truy cập không hợp lệ hoặc đã hết hạn": {
+      "en": "Invalid or expired credentials",
+      "scope": "sentence"
+    },
+    "Kết nối lại nguồn dữ liệu để tiếp tục cập nhật.": {
+      "en": "Reconnect this source to resume updates.",
+      "scope": "sentence"
+    },
+    "Quyền truy cập đã bị thu hồi hoặc bị từ chối": {
+      "en": "Access revoked or forbidden",
+      "scope": "sentence"
+    },
+    "Kiểm tra quyền chỉ đọc và kết nối lại tài khoản.": {
+      "en": "Check read-only permissions and reconnect your account.",
+      "scope": "sentence"
+    },
+    "Đã chạm giới hạn lượt gọi API": {
+      "en": "API rate limit or quota reached",
+      "scope": "sentence"
+    },
+    "Dữ liệu gần nhất được giữ nguyên. Thử lại sau ít phút.": {
+      "en": "Last valid data is preserved. Try again shortly.",
+      "scope": "sentence"
+    },
+    "Máy chủ phân tích tạm thời không khả dụng": {
+      "en": "Analytics server temporarily unavailable",
+      "scope": "sentence"
+    },
+    "Dữ liệu cũ được giữ nguyên. Thử làm mới lại sau.": {
+      "en": "Cached data is preserved. Try refreshing later.",
+      "scope": "sentence"
+    },
+    "Đang giữ dữ liệu đã tải gần nhất nếu có.": {
+      "en": "Preserving last loaded data if available.",
+      "scope": "sentence"
+    },
+    "Hết thời gian chờ phản hồi": {
+      "en": "Request timed out",
+      "scope": "sentence"
+    },
+    "Đã hủy yêu cầu cập nhật": {
+      "en": "Refresh request cancelled",
+      "scope": "sentence"
+    },
+    "Chọn Làm mới để tải lại dữ liệu.": {
+      "en": "Choose Refresh to load data again.",
+      "scope": "sentence"
+    },
+    "Phản hồi dữ liệu không đúng định dạng": {
+      "en": "Malformed analytics response",
+      "scope": "sentence"
+    },
+    "Đã từ chối bản ghi lỗi và giữ dữ liệu hợp lệ gần nhất.": {
+      "en": "Rejected malformed payload and preserved last valid data.",
+      "scope": "sentence"
+    },
+    "Phản hồi vượt quá giới hạn an toàn": {
+      "en": "Response exceeded safety limit",
+      "scope": "sentence"
+    },
+    "Đã chặn dữ liệu quá lớn để bảo vệ ứng dụng.": {
+      "en": "Blocked oversized payload to protect the app.",
+      "scope": "sentence"
+    },
+    "Cấu hình nguồn phân tích không hợp lệ": {
+      "en": "Invalid analytics source configuration",
+      "scope": "sentence"
+    },
+    "Kiểm tra khóa df_ hoặc mã thuộc tính GA4.": {
+      "en": "Check your df_ key or numeric GA4 property ID.",
+      "scope": "sentence"
+    },
+    "Mã OAuth 2.0 Client ID": {
+      "en": "OAuth 2.0 Client ID",
+      "scope": "sentence"
+    },
+    "Ẩn biểu tượng của XFinder khi muốn thanh menu gọn hơn, và mở nhanh cài đặt thanh menu của macOS.": {
+      "en": "Hide XFinder's own menu bar icon for a cleaner bar, or open macOS Menu Bar settings.",
+      "scope": "sentence"
+    },
+    "Biểu tượng XFinder": {
+      "en": "XFinder icon",
+      "scope": "sentence"
+    },
+    "Khi ẩn biểu tượng trên thanh menu, bạn vẫn mở được XFinder từ trang Tổng quan, Dock hoặc phím tắt ⌘,.": {
+      "en": "When the menu bar icon is hidden, you can still open XFinder from Overview, the Dock, or ⌘,.",
+      "scope": "sentence"
+    },
+    "Ẩn biểu tượng XFinder trên thanh menu": {
+      "en": "Hide XFinder icon in menu bar",
+      "scope": "sentence"
+    },
+    "Giấu biểu tượng chính của XFinder; tắt lại để hiện ngay ở vùng bên phải notch.": {
+      "en": "Hides XFinder's main menu bar icon; switch off to show it again to the right of the notch.",
+      "scope": "sentence"
+    },
+    "Vì sao không ẩn được biểu tượng ứng dụng khác": {
+      "en": "Why third-party menu bar icons cannot be hidden",
+      "scope": "sentence"
+    },
+    "Để sắp xếp hoặc tắt biểu tượng hệ thống, dùng Trung tâm điều khiển ▸ Thanh menu hoặc giữ phím ⌘ rồi kéo biểu tượng.": {
+      "en": "To arrange or disable system icons, use Control Centre ▸ Menu Bar or hold ⌘ and drag icons.",
+      "scope": "sentence"
+    },
+    "Đo thực tế ngày 2026-10-18 trên macOS 27.0.1 (2 màn hình): 12/12 biểu tượng vẫn hiện trên màn hình dù bật ẩn mặc định.": {
+      "en": "Measured on 2026-10-18 on macOS 27.0.1 (2 displays): 12/12 menu bar items stayed onscreen even with hiding enabled.",
+      "scope": "sentence"
+    },
+    "API đánh giá của macOS chỉ tác động mô-đun hệ thống, không ẩn được biểu tượng thanh menu của ứng dụng bên thứ ba.": {
+      "en": "macOS Assessment Mode APIs only affect system modules and cannot hide third-party app status items.",
+      "scope": "sentence"
+    },
+    "macOS 27 gộp thanh menu thành một cửa sổ chung nên mẹo chèn khoảng trắng phân cách cũ không còn tác dụng.": {
+      "en": "macOS 27 merges the menu bar into a single window, so the legacy spacer-separator trick no longer works.",
+      "scope": "sentence"
+    },
+    "Đóng nắp": {
+      "en": "Lid closed",
+      "scope": "sentence"
+    },
+    "Đang giữ thức khi đóng nắp (đang cắm nguồn). macOS vẫn có thể cho máy ngủ nếu không có màn hình ngoài.": {
+      "en": "Closed-display wake request is active (on AC power). macOS may still sleep without an external display.",
+      "scope": "sentence"
+    },
+    "Đã bật yêu cầu đóng nắp — chưa hoạt động vì Chống ngủ đang tắt. Cần cắm nguồn.": {
+      "en": "Closed-display wake is enabled — inactive while Keep Awake is off. Requires AC power.",
+      "scope": "sentence"
+    },
+    "Đã bật yêu cầu đóng nắp — đang tạm dừng vì dùng pin (cần cắm nguồn).": {
+      "en": "Closed-display wake is enabled — paused on battery power (AC power required).",
+      "scope": "sentence"
+    },
+    "Không tạo được yêu cầu giữ thức khi đóng nắp từ macOS.": {
+      "en": "Could not acquire the closed-display wake assertion from macOS.",
+      "scope": "sentence"
+    },
+    "Cần bật Chống ngủ và cắm nguồn. macOS vẫn có thể cho máy ngủ khi đóng nắp.": {
+      "en": "Requires Keep Awake active and AC power. macOS may still sleep when the lid is closed.",
+      "scope": "sentence"
+    },
+    "Đang chờ bật Chống ngủ": {
+      "en": "Waiting for Keep Awake",
+      "scope": "sentence"
+    },
+    "Đang chờ cắm nguồn": {
+      "en": "Waiting for AC power",
+      "scope": "sentence"
+    },
+    "Cần khóa API (chế độ demo)": {
+      "en": "API key needed (demo)",
+      "scope": "sentence"
+    },
+    "Chế độ demo chỉ hỗ trợ AAPL & BTC/USD — thêm khóa API miễn phí trong Cài đặt.": {
+      "en": "Demo mode only supports AAPL & BTC/USD — add a free API key in Settings.",
+      "scope": "sentence"
+    },
+    "Kiểm tra khóa API hoặc gói tài khoản trong Cài đặt nguồn giá.": {
+      "en": "Check your API key or plan entitlement in Quote Source Settings.",
+      "scope": "sentence"
+    },
+    "Thêm khóa API trong Cài đặt": {
+      "en": "Add API key in Settings",
       "scope": "sentence"
     }
   }

@@ -1,3 +1,573 @@
+## Screenshot fixes: XF-T22 menu-bar placement, XF-T27 lid-wake UI, Stocks demo hint (`task_7650050f6c1d` / `task_6ed55c6a78ec`)
+
+- **TASK:** `task_7650050f6c1d` + follow-up `task_6ed55c6a78ec` (from `/tmp/xfinder-triage-task_9e6cb9aeb089.md`) · **BRANCH:** `agent/antigravity-vorssaint-phase1` · **COMMITS:** pending SHA (recorded in follow-up worklog line)
+- **Specs updated before code:** `docs/specs/XF-T22-menubar-explainer.md`, `docs/specs/XF-T27-keep-awake-cleaning-mode.md` (§2.1b + failure cases), `docs/specs/XF-ISLAND-STOCKS-REVENUE-plan.md` (Massive + demo/Keychain failure cases; untracked file preserved).
+- **(1) XF-T22 status-item placement & hider removal:** `MenubarController.setup()` now creates the main branded `statusItem` (`xfinder.menubar.main`, `squareLength`) **before** variable-width `readoutItem` (`xfinder.menubar.readouts`), preserves left-click popover / right-click `NSMenu`, adds one canonical reader `menubar.hideOwnIcon` (default `false`) with one-time `menubar.hiderEnabled == true` migration, observes `didChangeScreenParametersNotification`, and checks `screen.auxiliaryTopRightArea` for notch-overflow recovery (`MenuBarReadouts.shouldMigrateLegacyHider` / `needsNotchRecovery`). Removed nonworking `MenuBarHiderController.swift`, `XFinder/Core/MenuBar/*`, `XFinder_NATIVE_VISIBILITY` flags, bridging header import, `build-and-check.sh` entries, and obsolete `MenuBarEngine*` test files; updated `MenuIconsDetailView.swift` to the honest explainer + single toggle and `DashboardDetailView.swift` recovery button. `grep -rn "MBAssessment\|NativeVisibility\|LegacyLength" XFinder` = 0.
+- **(2) XF-T27 lid-wake UI:** Added `CaffeineRules.Key.requestLidWake` and pure `CaffeineRules.LidWakeState` (`off`, `active`, `waitingForCaffeine`, `waitingForACPower`, `unavailable`); kept `caffeine.requestLidWake` default `false` (no UserDefaults default changed). Fitted `NotchSystemPage.caffeineControls` inside the `354 pt` narrow notch row (retained Caffeine duration dropdown, timer, Stop, compact `"Đóng nắp"` / `"Lid closed"` switch with honest requested-vs-active tint/icon/tooltip/VoiceOver, and Settings button); mirrored the lid-wake toggle in `SystemControlsPanel.swift` when `hasBattery == true`. Added `FeatureKeyDefaultsTests` rows for `menubar.hideOwnIcon` and `caffeine.requestLidWake` plus pure tests in `CaffeineRulesTests` and `MenuBarReadoutsTests`.
+- **(3) Stocks demo hint & Settings path:** Kept truthful `TwelveDataStocksProvider` / `MassiveStocksProvider` behavior (no fabricated values, no scraping, real `quotedAt`/`fetchedAt` + Keychain unchanged). Added `StocksProvider.isDemoAccess` / `StocksCoordinator.isDemoAccess` and updated `StocksErrorPresentation(for:context:isDemoAccess:)` to distinguish demo-only limits (`AAPL` & `BTC/USD`) from account/key errors; added direct Settings key button on `.accessRequired` rows, hint text in detail/error panels, and unit tests in `StocksRulesTests`. Added 22 L10n entries (add-only) to `XFinder/Resources/L10n.strings.json`.
+- **(4) UI-token gate follow-up (`task_6ed55c6a78ec`):** Replaced the 6 literal font/radius values in `XFinder/Views/Detail/NotchInterfaceDetailView.swift` (lines 223, 227, 314, 344, 395, 398) with existing `XFinderTokens.Font.caption`, `XFinderTokens.Radius.control`, and `XFinderTokens.Radius.badge` while preserving layout and behavior.
+- **Overview vs Calendar (no code change):** `NotchHomePage` and `NotchCalendarPage` intentionally share one `CalendarGlanceMonitor` snapshot (`model.calendarEvents` + `model.calendarAccess`) with no duplicate EventKit fetch or secondary timer.
+- **Observed running XFinder processes (none killed — controlled one-instance QA required):** `pid 84818` (`/Users/atlas/tmp/xf-weather/clean-build/out/XFinder.app/Contents/MacOS/XFinder`), `pid 84819` (`/private/tmp/xf-feedback-build.cK3HH9/out/XFinder.app/Contents/MacOS/XFinder`), `pid 91399` (`/Applications/XFinder.app/Contents/PlugIns/XFinderSync.appex/Contents/MacOS/XFinderSync`).
+- **Final build & gate output (`XF_ROOT=/Users/wolong/github/XFinder XF_OUT=/tmp/xf-task-6ed55c6a78ec sh scripts/gate-all.sh`, terminal):**
+
+```text
+XFinder.xcodeproj/project.pbxproj: OK
+build (arm64, compile list)        OK
+tests                              Executed 3580 tests, with 1 test skipped and 0 failures (0 unexpected) in 47.724 (48.218) seconds
+check-l10n-coverage                TOTAL 0 problems across 4881 entries (4881 checked, 45 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 4881 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 2531 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 51 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             101
+GATE: green
+```
+
+- **LIVE: NOT VERIFIED** (Builder does not install/relaunch on owner's desktop or run Atlas permission-gated ops): menu-bar icon `auxiliaryTopRightArea` position on notched + multi-display setup with single XFinder instance, left/right click popover & menu, `menubar.hideOwnIcon` hide/show & legacy migration in live app, `NotchSystemPage` `354 pt` VI/EN visual layout, live AC/battery `pmset -g assertions` for `PreventSystemSleep` & physical lid closure, and live Stocks Keychain API key fetch for NVDA/CROX.
+- **FILES CHANGED:** `docs/specs/XF-T22-menubar-explainer.md`, `docs/specs/XF-T27-keep-awake-cleaning-mode.md`, `docs/specs/XF-ISLAND-STOCKS-REVENUE-plan.md`, `XFinder/Core/MenuBarReadouts.swift`, `XFinder/App/MenubarController.swift`, `XFinder/App/XFinderApp.swift`, `XFinder/Views/Detail/DashboardDetailView.swift`, `XFinder/Views/Detail/MenuIconsDetailView.swift`, `XFinder/Views/Detail/NotchInterfaceDetailView.swift`, `XFinder/XFinder-Bridging-Header.h`, `XFinder.xcodeproj/project.pbxproj`, `scripts/build-and-check.sh`, removed `XFinder/Core/MenuBarHiderController.swift` + `XFinder/Core/MenuBar/*` + `Tests/XFinderLogicTests/MenuBarEngine*`, `XFinder/Core/SystemMonitor/CaffeineRules.swift`, `XFinder/Core/SystemMonitor/CaffeineController.swift`, `XFinder/Views/NotchSystemPage.swift`, `XFinder/Views/Detail/SystemControlsPanel.swift`, `XFinder/Core/Stocks/StocksProvider.swift`, `XFinder/Core/Stocks/TwelveDataStocksProvider.swift`, `XFinder/Views/NotchStocksPage.swift`, `XFinder/Resources/L10n.strings.json`, `Tests/XFinderLogicTests/FeatureKeyDefaultsTests.swift`, `Tests/XFinderLogicTests/CaffeineRulesTests.swift`, `Tests/XFinderLogicTests/MenuBarReadoutsTests.swift`, `Tests/XFinderLogicTests/StocksRulesTests.swift`, `docs/AGENT_WORKLOG.md`.
+
+## Compact menu-bar icon and Dynamic Island refinements
+
+- A read-only AX probe against the running user build showed the combined XFinder item was 183 pt wide with CPU/RAM enabled. The new build gives the branded button its own fixed-width item and makes readouts a separate optional item. Atlas reported 24 pt and 163 pt respectively with readouts enabled.
+- Moved the lid wake switch beside Caffeine duration and tested both switch states in Atlas. Tab-to-tab transitions use a short fade and four-point movement while Reduce Motion suppresses movement. Atlas exercised the route transitions. Display refresh frame timing was not measured.
+- Confirmed the two Nasdaq symbols and their Nov 25 regular closes from the referenced quote publisher. Added per-symbol public quote links when a configured feed returns an error, an API signup shortcut, and an exchange-local quote date. Atlas confirmed both symbol links and the date behavior. Quote data inside the app still requires an entitled key for NVDA and CROX.
+- Signed arm64 Debug build, 82 targeted tests, and localization checks passed.
+
+## System, Caffeine, water reminders, and menu-bar recovery
+
+- Reworked System into aligned live metric rows. Moved Caffeine from Audio into System and shared duration presets with the menu bar and Full Settings. The lid preference requests an AC-only PreventSystemSleep assertion for the active session.
+- Removed the embedded File Browser from the current and saved tab catalog. Kept the separate File Browser window. Escape dismisses the expanded notch, including after opening a utility tab.
+- Added a persisted daily water reminder cap and a local 08:00–20:00 schedule. The default is six while enabled. Exhausted limits survive relaunch and disable/re-enable cycles on the same day.
+- Added Massive Basic as a selectable daily-bars source with Keychain storage. Requests use the distinct I:SPX ticker for the index. A real Massive account and its SPX entitlement remain unverified.
+- Restored the branded menu-bar option, added a Show icon again action to Overview, and protected the main item from the legacy separator collapse. Atlas verified registration through AX and exercised the recovery action. Atlas screenshots omitted third-party status items, so visibility on the user's desktop remains unverified.
+- Verified the signed arm64 bundle, localization, and 3,580 tests with zero failures and one skipped memory probe. Atlas showed the System layout, tested Esc and the hydration options, and registered/released Caffeine assertions including PreventSystemSleep on AC. Physical lid closure remains unverified.
+
+## Google AI usage and dedicated connection settings
+
+- Added local daily and seven-day token totals and last activity for Antigravity and Gemini CLI to AI Agents. Antigravity quota comes from its official status-line JSON and is projected to fraction and reset-time fields only. The copy command uses a session-scoped CLI override. A real CLI probe emitted four quota buckets without sending a model prompt. Gemini CLI had no recent local sessions in the default profile.
+- Added searchable Full Settings pages for Stocks, Website Analytics, and Revenue. Stocks and Revenue reuse the existing forms. Website Analytics shares the DataFast and GA4 form and its coordinator with the notch.
+- Signed Debug arm64 build and 62 focused tests passed. L10n coverage and duplicates passed. Atlas rendered the Google token and quota paths with test data, and confirmed all three settings routes. Real provider credentials and the Google OAuth flow in Atlas were not exercised.
+
+## Stock price charts in Dynamic Island
+
+- Registered a Twelve Data daily-bar adapter. Debug defaults to demo access for AAPL and BTC/USD. Settings accepts a personal provider key in Keychain. Missing access is isolated per symbol, and SPX requires response metadata for an index.
+- Stocks now shows a sparkline, closing price, and previous-close change per row, plus expandable weekly and monthly detail. Current-day bars are excluded.
+- Signed arm64 Debug build passed verification. The 27 focused tests and localization checks passed.
+- Atlas showed the real AAPL chart and price, reported a BTC/USD price in accessibility, and showed the API key field in Full Settings. Atlas blocked scrolling the floating panel. Personal API keys, other symbol entitlements and intraday prices were not verified.
+
+## Stocks setup, shared notch controls, and AI Usage cards
+
+- Enabled the Stocks setup destination without a price provider. It shows the saved watchlist and links to its editor. Full Settings and notch Settings share tab controls, display sizing and the watchlist editor. Full Settings includes shortcuts to Tabs and Stocks.
+- Put Claude Code, Codex, Antigravity and Gemini CLI in one scrolling card strip and added Refresh. Account quotas for Gemini CLI and Antigravity are shown through their CLI commands.
+- Built and signed the arm64 Debug bundle with the existing dev identity. The full suite ran 3,574 tests with zero failures and one skipped image memory probe. L10n coverage reported zero problems.
+- Atlas showed the five-symbol setup screen and all four AI Usage cards in accessibility. Pressing Stocks in Full Settings moved directly to the watchlist. The floating panel refused the inline button press. Live quotes and macOS permission reuse remain unverified.
+
+## Settings inside the Dynamic Island
+
+- Added a shell presentation outside the tab catalog, an inline Settings route, Back with destination fallback, and a separate full Settings route. Both surfaces write the same catalog. Inline drag and move buttons reorder within the same enabled group and keep the other group's saved slots.
+- Added a connected-display diagram and three saved widths per display. Geometry and hit-testing share the selected width with the rendered panel. Added focused regression cases for grouped ordering, Settings lifecycle, and sizing. 76 focused tests passed.
+- Atlas showed the inline Tabs page, including the Back button and switches, through the app's deep link. Atlas refused clicks on the floating panel. Live click, drag reorder, toggle, and external monitor interaction remain unverified.
+
+## Thin Island scrollbar, Settings review, and Google AI usage
+
+- Replaced the macOS scrollbar over the Island icons with a two-point progress indicator below them. Split tab controls from the accent setting and recorded the remaining Settings differences in the Island master plan.
+- Added Gemini CLI and Antigravity token totals from their local session files. Antigravity uses completed planner steps and deduplicates conversation and step identifiers. Account percentages are unavailable from these logs; the app shows the provider's CLI command.
+- Debug arm64 build and stable dev signing passed. 52 focused tests passed, and L10n coverage/duplicates reported zero issues. Atlas showed the thin indicator and AI Usage provider selector, and accessibility inspection found the new Settings section. Atlas could not click the floating panel, so the provider switch and live token display were not exercised there.
+
+## Stable signatures for local test builds
+
+- `build-and-check.sh` now signs the built app with the existing XFinder Dev identity when available. It signs Finder Sync and the Now Playing helper first. The signing step leaves installation separate and keeps the Finder Sync entitlements.
+- Verified the signed horizontal-tab bundle with `codesign`. Its designated requirement matches the installed XFinder. Live reuse of individual macOS permissions was not checked.
+
+## Dynamic Island horizontal navigation
+
+- Acceptance cases: all enabled and ready tabs stay reachable at narrow and wide widths, horizontal scrolling reaches late tabs, and selecting a tab opens it directly. Disabling the active tab preserves fallback and the all-hidden Settings route. Reminders must show a permission, empty, or content state on first open. To-dos must expose its editor and report storage failure.
+- Replaced the overflow menu with a horizontally scrolling row ordered by the destination catalog. Buttons select their destination in one transition, including AI Usage. The row receives its own scroll events. Reminders keeps the panel open while requesting access and skips loading if the user has closed it.
+- Debug arm64 build succeeded. Atlas screenshots of this build confirmed the horizontal row, Reminders permission state and To-Do editor. Atlas could not target the floating window for clicks, and Agent AI is disabled in the helper, so click, text entry, live EventKit and AI Usage rendering were not verified there.
+
+## 2026-11-27 · Website Analytics integration
+
+- Fixed cancellation of the underlying GA4 authorization task when the page closes, the tab is hidden, or the provider changes. Fenced superseded authorization results. Opening the configuration form requests keyboard focus and keeps the Island open while editing. Removed the redundant Analytics title inside the expanded Island. Focused catalog, Analytics and OAuth suite: 34 passed, including a new regression test for cancellation inside the OAuth driver.
+- Added Website Analytics as a catalog destination and gallery tile. Connected its page model to the Dynamic Island lifecycle, Settings visibility toggle, tab-switch cancellation, master-off cleanup and app-termination cleanup. Added an independent-toggle regression test.
+- `XF_OUT=/tmp/xf-analytics-integration-build sh scripts/build-and-check.sh` passed for arm64 Debug; `XFinder.SwiftFileList` contains all eight Analytics sources and the page. Catalog tests: 13 passed. Analytics and GA4 loopback OAuth tests: 20 passed. `plutil -lint`, L10n coverage/duplicates and `git diff --check` passed.
+- Atlas launched the exact Analytics build in the helper. Opening the deep link with `open -a` and the explicit build path showed the unconfigured DataFast view with the Google Analytics selector and configuration button. Atlas identified the button on that process, but could not target the floating panel for input while a Device Control dialog was present. Form interaction, the Settings toggle and live sign-in remain unverified.
+
+## 2026-11-26 · Feedback tab
+
+- Integrated Gemini's Feedback rules and page into the unified Island destination catalog. Settings can enable or disable Feedback independently. Copy writes only the user-approved preview; GitHub opens a destination-only issue URL. The Diagnostics button opens XFinder's existing About/support page without automatically generating a log report. Draft remains in memory and clears on quit.
+- `build-and-check.sh` passed an arm64 Debug build. Both Feedback Swift files appeared in `XFinder.SwiftFileList`. Focused package run: 65 tests, 0 failures. L10n coverage and duplicate checks returned `TOTAL 0`; `git diff --check` passed.
+- Opened the exact build in Atlas profile `atlas`. Screenshot showed XFinder running, but its deep link did not switch to Feedback; only Drop Tray was visible. Atlas's helper permission window is present, so Feedback's visible layout and button interactions remain unverified. Build and package tests ran outside Atlas because the existing Atlas staging folder rejected writes.
+
+## 2026-11-26 · Local Message
+
+- Integrated the local Message composer with the tab catalog and LiveActivity. Posting collapses the composer. Expiry and eviction clear the matching message, and a targeted stop leaves other notices queued. Added regression coverage for canceling a queued message.
+- Atlas arm64 build passed. 484 selected tests ran, one skipped, zero failed. Static gates returned TOTAL 0 (the UI token audit matched zero files).
+- Atlas showed the Message editor, duration presets and empty preview. Atlas rejected the panel click, so typing, displaying and stopping a real notice remain unverified. Gemini started Feedback in the existing worktree.
+
+## 2026-11-26 · Local Chat
+
+- Integrated Gemini's on-device chat, catalog and Settings. Focus keeps the editor available, and leaving or hiding the page cancels the current request without clearing the in-memory conversation. Quit resets the model session.
+- Atlas arm64 build passed. The Debug dylib lists FoundationModels under LC_LOAD_WEAK_DYLIB. 453 selected tests ran, one skipped, zero failed. Seven static checks returned TOTAL 0 (UI token audit matched zero files).
+- Atlas screenshot showed Local Chat in the available state. No prompt was sent. Live generation, older macOS and the full suite remain unverified. Reused the Gemini worker for the local Message composer.
+
+## 2026-11-26 · Foreground app usage
+
+- Integrated Gemini's application usage tracker and settings route. Tracking defaults off, survives page switches once explicitly enabled, and shuts down on quit without changing the stored opt-in. Added a test for the retention count after westward timezone changes.
+- Atlas arm64 build passed and 444 selected tests ran with one skip and zero failures. Seven static gates on the preceding snapshot returned TOTAL 0 (UI token audit matched zero files). Atlas screenshot showed tracking off, and no tracking preference or history file existed after viewing the page.
+- Real opt-in collection, sleep/lock accounting, clearing history through GUI and the full suite remain unverified. Reused the same Gemini session for local chat.
+
+## 2026-11-26 · Local To-Dos and Apple Shortcuts
+
+- Integrated the two Gemini handoffs into the tab catalog and Settings. To-Dos use local storage and a window-scoped keyboard route. Apple Shortcuts lists on open and cancels its in-flight CLI work on close. Shortcuts has no dedicated letter because only one unassigned letter remained.
+- Atlas arm64 build passed. 418 selected tests ran, one skipped, zero failed. Seven static checks returned TOTAL 0 (UI-token audit matched zero files).
+- Atlas screenshots showed the To-Dos empty state and Apple Shortcuts empty list. Wider noise controls now show all Vietnamese labels. Shortcut execution, To-Do editing via GUI, live sound and the full suite remain unverified.
+- Released the finished Shortcuts review session, cleaned the stopped OpenCode dispatch, and started one Gemini App Usage worker.
+
+## 2026-11-26 · Image conversion, ambient sound and review fixes
+
+- Integrated Gemini's Image Convert and Sounds pages, both catalog toggles and their validation suites. Isolated image drops from Drop Tray and kept the batch immutable while a canceled worker finishes the current image. Disabling Sounds stops playback.
+- Applied Gemini's Scratchpad read-blocked protection and Capture handoff coordinator. Disabling Capture or the Island cancels a pending handoff.
+- Atlas arm64 build succeeded. 379 selected tests ran, one skipped, zero failed. Seven static checks returned TOTAL 0 (UI token audit matched zero files). Full suite was not rerun.
+- Atlas screenshots confirmed Image Convert empty state and Sounds idle state. Two long Vietnamese noise labels are ellipsized. Live audio, actual file drag/conversion, screen capture and Settings toggles remain unverified.
+
+## 2026-11-26 · Island review fixes
+
+- Gemini reported camera, reader, scratchpad, capture, focus and display lifecycle risks. Confirmed quit already flushes Scratchpad via XFinderApp. Added flush on Island stop and reset stale editor flags there.
+- Moved Mirror lifetime to actual panel visibility, close on sleep/fullscreen hide and quit, close the floating reader on Island stop, scope its Escape monitor to its own window, and re-clamp a pointer panel after display changes.
+- Atlas arm64 build passed and 287 focused Notch/Reminders tests passed. Deep-link screenshots confirmed Mirror standby and Teleprompter editor. Atlas rejected click input on the reader control. Physical camera, screen disconnect, reader keyboard behavior and the full gate remain unverified.
+- Gemini is preparing focused Scratchpad read-error and Capture handoff fixes. Review report: /tmp/xf-Island-Gemini-TODOS/island-review-report.md.
+
+## 2026-11-26 · Island utilities and PeakPad evidence review
+
+- Integrated Scratchpad and Emoji. Atlas arm64 gate passed with 3,412 tests, one skip and zero failures. Added a regression test so flushing an unreadable draft without an edit preserves the original file. Atlas screenshots confirmed both pages open.
+- Integrated File Browser and Links while preserving the Drop Tray route. Atlas arm64 build passed and screenshots confirmed both new pages open. The full gate timed out after 600 seconds around WeatherRulesTests, before the test summary and audits. Atlas input and Settings checks remain open.
+- Updated the master plan using PeakPad build 8's bundle, type metadata, configuration references and the app usage disassembly. Dispatched two Gemini reviews of integrated behavior and remaining native modules. Todos and Apple Shortcuts feature handoffs await integration.
+
+## 2026-11-26 — OpenCode — XF-WEATHER-01: Failure Copy Grouped & Localized, Failed Refresh Keeps Cached Forecast, Search Error ≠ No Result
+
+TASK: XF-WEATHER-01 (spec `docs/specs/XF-WEATHER-01-contract.md` §6.2; failure-case table §3)   BRANCH: agent/opencode2-XF-WEATHER-01
+SPEC REVISION: `668ae8b` (`git hash-object docs/specs/XF-WEATHER-01-contract.md | cut -c1-7`)   BASE: `9b1f997`
+RUN: R-XF-WEATHER-01-20261126-1116   NOTION: **không nối được** — phiên này không có Notion MCP server (tìm cả catalog: 0 tool notion). Ghi theo `docs/AGENT_NOTION.md` §7 (đường dự phòng); Claude chép mục này thành Run trong Notion.
+BUILD: `build (arm64, compile list) OK` — chạy dưới user `atlas` tại `/Users/atlas/xf-weather-deepseek`, `XF_OUT=/Users/atlas/tmp/xf-weather/clean-build`.
+TESTS: WeatherRulesTests **36 / 0**, WeatherViewModelTests **22 / 0**, full suite **3240 / 0** (1 skipped) — tất cả dưới `atlas`.
+GATE: green — dán nguyên văn ở dưới.
+MUTATION: 19 đột biến, 15 RED, 4 có ghi chú (M7/M8/M10 redundancy thật; M18 chưa chứng minh được) (M7/M8/M10 chỉ bỏ guard `searchGeneration`; `Task.isCancelled` đã chặn trước nên generation là lớp thứ hai — đã ghi rõ, không giả vờ là lớp duy nhất).
+LIVE: Preview app dựng & chạy dưới user `atlas` (`/Users/atlas/XFinderWeatherPreview.app`), **không** dùng build của Gemini. Đo bằng `NSHostingView.fittingSize` — tức "probe từ terminal", **không phải** trong app XFinder đã cài.
+
+VÒNG 2 — REVIEW BẮT: xoá query xuống dưới 2 ký tự chỉ hủy `searchTask` của ViewModel, không hủy request của coordinator. **Tái hiện trước khi sửa**, bằng `StubbornSearchProvider` (provider không hợp tác cancellation, đúng như transport thật):
+- `provider.cancelledAtReturn == []` ⇒ request **không hề** bị hủy, chạy tới hết.
+- `coordinator.isSearching` **vẫn `true`** ⇒ coordinator còn báo "đang tìm" cho query người dùng đã xoá.
+- Chú ý phương pháp: reply muộn **không** vẽ ra hàng (guard `searchGeneration` + `Task.isCancelled` đã chặn), nên test chỉ nhìn `searchResults` **xanh trên code lỗi** — test phải đo *request*, không đo *hàng*. Đây là lý do lần viết test đầu của tôi pass sai.
+
+SỬA: `WeatherViewModel.onSearchTextChanged` nhánh query ngắn gọi `coordinator.cancelSearch(intent:)`; thêm `searchIntentCounter` (monotonic mỗi keystroke/retry) truyền qua `search(query:intent:)` và `cancelSearch(intent:)`. `close()`/`reset()` đặt `latestSearchIntent = .max` để chặn cả search còn xếp hàng sau khi trang đóng. Fence nằm ở cả hai phía nên cancel cũ không giết được query mới, và search cũ không chen được vào sau close.
+MUTATION vòng 2 (mỗi fence phải tự đứng được): M13 bỏ `cancelSearch` ở ViewModel → RED · M14 bỏ fence trong `cancelSearch` → RED · M15 fence nuốt mọi cancel thật → RED · M16 bỏ fence trong `search()` → RED. (M14 ban đầu **sống** với test dựa vào timing — đã thay bằng test intent tường minh `search(intent:5)` + `cancelSearch(intent:4)`.)
+
+LỖI GỐC (probe `/tmp/xf-weather-errprobe.swift`, không đoán): `WeatherError` không có `LocalizedError` ⇒ UI in `The operation couldn’t be completed. (main.WeatherError error 2.)`. Kèm hai lỗi hành vi: (a) lỗi tìm kiếm rơi chung nhánh với "không có kết quả" nên hiện "Không tìm thấy thành phố"; (b) refresh lỗi mà cache còn hạn bị gán `offlineWithStale` ⇒ nhãn "Ngoại tuyến" khi mạng vẫn lên.
+
+| Việc | File đã sửa | Nghiệm thu riêng của việc | Chưa kiểm live |
+|:--|:--|:--|:--|
+| XF-WEATHER-01 | `XFinder/Core/Weather/WeatherProvider.swift` (`WeatherErrorPresentation`, 9 case → 8 headline, `Context.forecast/.search`) · `WeatherCoordinator.swift` (`case failedWithStale`, `searchError`, `searchGeneration` latest-wins, `close()` giữ lỗi) · `WeatherViewModel.swift` (`searchError`, `retrySearch()`) · `NotchWeatherPage.swift` (`failureView`, `staleFailureStrip`, `searchFailureRow`; bỏ `localizedDescription`) · `L10n.strings.json` (+11 key VI/EN, add-only, 4105 entry) · `Tests/…/WeatherRulesTests.swift` (+14) · `Tests/…/WeatherViewModelTests.swift` (+7) | 36+22 test / 0 · gate green 3240 / 0 · 15/16 mutation RED · cao 134 pt trên ngân sách body hẹp 136 pt, 0 text bị cắt (VI & EN) | Panel thật trong Island (Weather **chưa** nối vào `NotchSurfaceController`) · VoiceOver · build Xcode app đầy đủ (để Gemini) |
+
+KHÔNG ĐỤNG: `Info.plist`, entitlements, `project.pbxproj`, provider selection, root checkout. 7 file `M`, **0 stage, 0 commit** (`git diff --cached` rỗng).
+
+LIVE ĐÃ QUAN SÁT (preview, user `atlas`): 429 + còn cache → ribbon giữ, header "Cập nhật 2 phút trước" (không còn "Ngoại tuyến"), dải "Tạm hết lượt tải thời tiết" + Thử lại · 429 khi tìm "Ha" → "Tạm hết lượt tải thời tiết", **không** phải "Không tìm thấy thành phố" · trực tuyến + `zzz` → "Không tìm thấy thành phố", **không** nút Thử lại (đối chứng dương) · EN: "Weather request limit reached for now" · EN offline + Retry → key reviewer bắt thiếu hiện đúng: "Check Wi-Fi or the network, then try again."
+
+GATE STDOUT NGUYÊN VĂN (`sh scripts/gate-all.sh`, user `atlas`, `TMPDIR=/Users/atlas/tmp/xf-weather`, `XF_OUT=/Users/atlas/tmp/xf-weather/clean-build`):
+
+```
+build (arm64, compile list)        OK
+tests                              Executed 3240 tests, with 1 test skipped and 0 failures (0 unexpected) in 45.677 (45.832) seconds
+check-l10n-coverage                TOTAL 0 problems across 4105 entries (4105 checked, 35 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 4105 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1578 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             8
+GATE: green
+```
+
+CẢNH BÁO MÔI TRƯỜNG (ảnh hưởng mọi agent chạy gate bằng `atlas`): `gate-all.sh` mặc định `XF_OUT=/tmp/xfinder-clean-build`, thư mục này do `wolong` tạo từ 25/11 nên `atlas` không `rm` được ⇒ lần chạy đầu in `build … FAILED` **giả**. Thêm nữa `git status` trong bản copy của `atlas` bị từ chối `dubious ownership` ⇒ dòng `modified tracked files` **luôn in 0** dù có file sửa (tức một cổng chỉ in ra, đọc như pass). Đã xử lý bằng `XF_OUT` riêng + `GIT_CONFIG_COUNT/KEY_0/VALUE_0=safe.directory`; số thật là 8 (7 file Weather + worklog này). Nên vá `gate-all.sh` để hai lỗi này không im lặng.
+
+VÒNG 3 — REVIEW CHẶN: `latestSearchIntent = .max` ở `close()`/`reset()` và default của `cancelSearch()` là **công tắc giết vĩnh viễn**. Counter của ViewModel là số hữu hạn, `intent >= .max` **không bao giờ** đúng lại ⇒ sau lần đóng trang đầu tiên, **mọi lần tìm sau đều bị bỏ im lặng** (gõ không ra gì, không cả spinner).
+TÁI HIỆN TRƯỚC KHI SỬA (3 test, đỏ 3/3 trên code cũ): `testSearchStillWorksAfterThePageIsClosedAndReopened` (mở → đóng → mở lại → tìm) · `testCoordinatorSearchSurvivesCloseResetAndReopen` (close + reopen + `reset()`) · `testCancelFromBeforeCloseDoesNotKillSearchAfterReopen`.
+SỬA — đổi ngữ nghĩa fence, không chỉ đổi số:
+- `intent` thành `Int?`, default **`nil`** = "không có claim thứ tự": luôn được thực hiện, **không** đụng state thứ tự. Bỏ hẳn sentinel `.max` khỏi vai trò giá trị.
+- Thêm `searchIntentFence` riêng: `close(searchIntent:)`/`reset(searchIntent:)` đặt `searchIntentFence = max(fence, searchIntent)` — chỉ giết **quá khứ**, không giết tương lai.
+- `search`/`cancelSearch` guard `intent > searchIntentFence && intent >= latestSearchIntent`.
+- `WeatherViewModel.close()` truyền `searchIntent: searchIntentCounter` (high-water mark của chính nó).
+MUTATION vòng 3: M17 dựng lại `.max` → RED (3 blocker) · M19 bỏ guard fence trong `search()` → RED. **M18 (ViewModel close không truyền intent) sống** — có redundancy thật: `close()` vẫn `cancelSearch` nội bộ + `searchGeneration += 1`, nên khi không có search nào đang xếp hàng thì hành vi y hệt. Ghi rõ là **chưa chứng minh được** chứ không nhận là đã phủ.
+
+CHỜ REVIEW (nhánh agent/opencode2-XF-WEATHER-01)
+
+## 2026-11-26 — Antigravity — XF-WEATHER-01: Reopen TTL Re-evaluation, Late GPS Cancellation, Search Focus & Single Island Lifecycle Owner
+
+TASK: XF-WEATHER-01 (spec `docs/specs/XF-WEATHER-01-contract.md` §4.4, §6.2, §6.3)   BRANCH: agent/antigravity-weather
+BUILD: `build (arm64, compile list) OK` (preview bundle rebuilt at `/tmp/xf-weather-preview/XFinderWeatherPreview.app`; isolated integrated QA v2 bundle built at `/tmp/xf-weather-qa-v2/build/out/XFinderWeatherQAv2.app` arm64 without `.appex`; `plutil -lint` & `codesign --verify --strict` OK)
+TESTS: WeatherRulesTests **19 / 0**, WeatherViewModelTests **10 / 0**, OpenMeteoAdapterTests **4 / 0**, full suite **3211 / 0** (1 skipped)
+GATE: green — 3211 tests / 0 failures, all 7 string/UI gates TOTAL 0 across 4094 entries, `modified tracked files 0`
+MUTATION: not run (spec did not name a mutation harness for pure weather rules)
+LIVE: Rebuilt isolated QA v2 bundle at `/tmp/xf-weather-qa-v2/build/out/XFinderWeatherQAv2.app` (not launched by builder; ready for coordinator side-by-side verification against v1 `/tmp/xf-weather-qa-integrated/build/out/XFinderWeatherQA.app`).
+FILES CHANGED: XFinder/Core/Weather/WeatherCoordinator.swift (`reopen()` TTL re-evaluation keeping old forecast in `.refreshing` when stale and dropping `>6h` expired cache; `activeGeneration += 1` in `close()` blocking late GPS hidden fetches; `cancelSearch()`), XFinder/Core/Weather/WeatherViewModel.swift (`onAppear()` delegates to `coordinator.reopen()`, `closeSearch()` invokes `coordinator.cancelSearch()`, task cancellation hygiene), XFinder/Views/NotchWeatherPage.swift (single lifecycle owner `if !embedsInIsland` on `.onAppear`/`.onDisappear` + `@FocusState` auto-focus on city `TextField`), Tests/XFinderLogicTests/WeatherRulesTests.swift (+2 tests: reopen TTL + late GPS after close), Tests/XFinderLogicTests/WeatherViewModelTests.swift (+2 tests: ViewModel stale reopen preserving forecast + search close inner cancellation), docs/specs/XF-WEATHER-01-contract.md (§6.3 updated); this worklog. Updated `/tmp/xf-weather-island-patch/XF-WEATHER-01-phase1-notch-integration.patch` & `XF-WEATHER-01-full-bundle.patch`.
+NOT VERIFIED: GUI click-through on `/tmp/xf-weather-qa-v2/build/out/XFinderWeatherQAv2.app` (delegated to coordinator per no-launch rule); live WeatherKit entitlement signing.
+QUESTIONS (Q-*): none
+
+CHỜ REVIEW (nhánh agent/antigravity-weather)
+
+## 2026-11-26 — Antigravity — XF-WEATHER-01: Dynamic Island Phase 1 Integration Patch & Selective Verification
+
+TASK: XF-WEATHER-01 (spec `docs/specs/XF-WEATHER-01-contract.md` §6.3)   BRANCH: agent/antigravity-weather
+BUILD: `build (arm64, compile list) OK` (preview bundle rebuilt at `/tmp/xf-weather-preview/XFinderWeatherPreview.app`; selective Phase 1 + Weather Swift 6 arm64 compile & smoke test `SMOKE_OK`; `plutil -lint` OK)
+TESTS: WeatherRulesTests **17 / 0**, WeatherViewModelTests **8 / 0**, OpenMeteoAdapterTests **4 / 0**, full suite **3207 / 0** (1 skipped)
+GATE: green — 3207 tests / 0 failures, all 7 string/UI gates TOTAL 0 across 4094 entries, `modified tracked files 0`
+MUTATION: not run (spec did not name a mutation harness for pure weather rules)
+LIVE: GUI `e0969be` previously verified by coordinator (TP.HCM offline keeps 12 hours, age & attribution; Đà Nẵng cache miss shows Retry). Full Phase 1 + Weather app NOT built/installed on `/Users/wolong/github/XFinder` (kept strictly read-only at 97 changed paths).
+FILES CHANGED: XFinder/Core/Weather/WeatherViewModel.swift (`openSearch()`, `closeSearch()`, `onSearchVisibilityChanged` host focus hook), XFinder/Views/NotchWeatherPage.swift (`embedsInIsland` 584×140pt Island budget mode & `.onExitCommand` search close), Tests/XFinderLogicTests/WeatherViewModelTests.swift (+1 focus callback test), docs/specs/XF-WEATHER-01-contract.md (§6.3 rewritten with exact Phase 1 patch contract, conflict map & apply checklist); this worklog. Scratch artifacts in `/tmp/xf-weather-island-patch/`: `XF-WEATHER-01-phase1-notch-integration.patch` (28.7 KB, 10 Phase 1 files) & `XF-WEATHER-01-full-bundle.patch` (157 KB, 28 files).
+NOT VERIFIED: Full Xcode app build against uncommitted `/Users/wolong/github/XFinder` (prohibited until Phase 1 baseline lands cleanly on `main`); live WeatherKit entitlement signing.
+QUESTIONS (Q-*):
+- Q-WEATHER-10: Bàn giao Patch Tích Hợp Phase 1 (`/tmp/xf-weather-island-patch/`):
+  1. Tích hợp qua `NotchExtraModule.weather` (cùng cơ chế `.system` và `.audio` trong menu Thêm của Phase 1), giữ nguyên 100% `NotchSurfaceMachine` (hover/drag/close) và `NotchCollapsedSignal`.
+  2. Production mặc định `isWeatherAvailable == false` (không đăng ký Weather vào menu Thêm/Gallery, không gọi fixture hay Open-Meteo Free mặc định); chỉ kích hoạt khi gọi tường minh `NotchSurfaceController.shared.configureWeather(provider:)`.
+  3. Đã kiểm chứng trên bản sao chọn lọc tại `/tmp/xf-weather-island-patch/apply-check/`: `git apply --check` & `git apply` 0 xung đột, `plutil -lint` OK (đủ 32 dòng PBX ID `7F1A0E00`..`7F1A0E0F`), `L10n.strings.json` hợp nhất 4.235 khóa 0 trùng lặp, và biên dịch + chạy smoke test Swift 6 arm64 đạt `SMOKE_OK`.
+
+CHỜ REVIEW (nhánh agent/antigravity-weather)
+
+## 2026-11-26 — Antigravity — XF-WEATHER-01: One-Click Offline QA Buttons in Standalone Weather Preview Harness
+
+TASK: XF-WEATHER-01 (spec `docs/specs/XF-WEATHER-01-contract.md` §6.4)   BRANCH: agent/antigravity-weather
+BUILD: `build (arm64, compile list) OK` (preview bundle rebuilt at `/tmp/xf-weather-preview/XFinderWeatherPreview.app`, 1.3M arm64)
+TESTS: WeatherRulesTests **17 / 0**, WeatherViewModelTests **7 / 0**, OpenMeteoAdapterTests **4 / 0**, selected Weather suite **25 / 0** (full 3206-test suite unchanged from `80f3159`)
+GATE: green — all 7 string/UI gates TOTAL 0 across 4094 entries, `modified tracked files 0`
+MUTATION: not run (harness-only change)
+LIVE: Standalone preview rebuilt at `/tmp/xf-weather-preview/XFinderWeatherPreview.app` with plain `AXButton` QA controls for background Orca GUI verification; host `/Applications/XFinder.app` untouched.
+FILES CHANGED: scripts/preview-weather/WeatherPreviewApp.swift (added plain `AXButton` QA bar: `Nạp TP.HCM mẫu`, `Ngoại tuyến + Làm mới`, `Trực tuyến + Làm mới`, `Chọn Đà Nẵng` wired to real `selectLocation` / `refresh()` flows with synchronous `didSet` transport switching), docs/specs/XF-WEATHER-01-contract.md (§6.4 updated); this worklog
+NOT VERIFIED: Visual GUI clicks inside `/tmp/xf-weather-preview/XFinderWeatherPreview.app` (coordinator to verify via Orca GUI); live `/Applications/XFinder.app` untouched.
+QUESTIONS (Q-*):
+- Q-WEATHER-9: Cụm nút QA 1-click trong harness preview (`WeatherPreviewApp.swift` chỉ thuộc preview, không đụng target phát hành):
+  - `Nạp TP.HCM mẫu` (`qa.loadSampleHCMC`): mở trang Thời tiết trên nguồn Fixture, đặt mạng trực tuyến và gọi đúng `fixtureViewModel.selectLocation(PreviewFixtures.hcmc)`.
+  - `Ngoại tuyến + Làm mới` (`qa.offlineAndRefresh`): chuyển đồng bộ transport sang `.offline` rồi gọi đúng `activeViewModel.refresh()`.
+  - `Trực tuyến + Làm mới` (`qa.onlineAndRefresh`): chuyển đồng bộ transport về `.online` rồi gọi `activeViewModel.refresh()`.
+  - `Chọn Đà Nẵng` (`qa.selectDanang`): gọi `activeViewModel.selectLocation(...)` theo trạng thái mạng hiện hành (tiện kiểm tra `.offlineNoData` khi đang ngoại tuyến và chưa có cache).
+
+CHỜ REVIEW (nhánh agent/antigravity-weather)
+
+## 2026-11-26 — Antigravity — XF-WEATHER-01: Fix Offline Cache Namespace Mismatch, Refresh Cache Recovery & Provider Isolation
+
+TASK: XF-WEATHER-01 (spec `docs/specs/XF-WEATHER-01-contract.md` §6.4)   BRANCH: agent/antigravity-weather
+BUILD: `build (arm64, compile list) OK` (preview bundle rebuilt at `/tmp/xf-weather-preview/XFinderWeatherPreview.app`, 1.3M arm64)
+TESTS: WeatherRulesTests **17 / 0**, WeatherViewModelTests **7 / 0**, OpenMeteoAdapterTests **4 / 0**, full suite **3206 / 0** (1 skipped)
+GATE: green — 3206 tests / 0 failures, all 7 string/UI gates TOTAL 0 across 4094 entries, `modified tracked files 0`
+MUTATION: not run (spec did not name a mutation harness for pure weather rules)
+LIVE: Standalone preview rebuilt at `/tmp/xf-weather-preview/XFinderWeatherPreview.app` (`open /tmp/xf-weather-preview/XFinderWeatherPreview.app`). GUI visual rendering not inspected from headless shell; host `/Applications/XFinder.app` untouched.
+FILES CHANGED: XFinder/Core/Weather/WeatherCache.swift (`set(snapshot:providerId:)` namespace alignment while preserving true attribution), XFinder/Core/Weather/WeatherCoordinator.swift (cache namespace write, `validFallbackSnapshot` recovery on refresh/fetch error, expiry eviction on offline refresh, `close()` state restoration, `reset()`), XFinder/Core/Weather/OpenMeteoAdapter.swift (injectable `clock` for deterministic `fetchedAt`), XFinder/Views/NotchWeatherPage.swift (continuous attribution during `.refreshing`, empty-upcoming-hours fallback, preview `providerId`), scripts/preview-weather/PreviewFixtures.swift (`FixtureWeatherProvider` + `SimulatableHTTPTransport` separated from network condition), scripts/preview-weather/WeatherPreviewApp.swift (dual isolated coordinators `fixture` vs `open-meteo` sharing `WeatherCacheStore`), Tests/XFinderLogicTests/WeatherRulesTests.swift (+2 regression tests), Tests/XFinderLogicTests/WeatherViewModelTests.swift (+2 regression tests), docs/specs/XF-WEATHER-01-contract.md (§6.4 updated); this worklog
+NOT VERIFIED: Visual GUI clicks inside `/tmp/xf-weather-preview/XFinderWeatherPreview.app` (verified via ViewModel + Coordinator + fake-transport OpenMeteoAdapter regression tests; Boss/Coordinator to verify GUI); live `/Applications/XFinder.app` untouched.
+QUESTIONS (Q-*):
+- Q-WEATHER-8: Nguyên nhân & sửa lỗi mất cache khi chuyển Offline trong Preview (`db36f03`):
+  1. `WeatherCacheStore.set(snapshot:)` trước đó luôn ghi khóa theo `snapshot.attribution.providerId` (`"open-meteo"` / `"fixture"`), trong khi `WeatherCoordinator` đọc theo `provider.id` (`"interactive-mock"`), gây cache miss 100% và trộn chung `SimulatedNetworkMode` (gộp cả nguồn dữ liệu lẫn lỗi mạng).
+  2. Đã sửa `WeatherCacheStore.set(snapshot:providerId:)` và `WeatherCoordinator` để đọc/ghi đồng nhất theo `provider.id`, giữ nguyên `snapshot.attribution` thật (`Open-Meteo` hoặc `XFinder Fixture`), không bao giờ trộn cache giữa hai provider (`fixture` vs `open-meteo`), tự khôi phục từ cache hợp lệ khi `refresh()` thất bại offline, và loại bỏ cache đã quá hạn (>6h hoặc hết giờ tương lai).
+  3. Harness preview tách rõ 2 chọn lựa: **Nguồn dữ liệu** (`Fixture` vs `Open-Meteo`) và **Mô phỏng mạng** (`Trực tuyến`, `Mạng chậm 1.5s`, `Ngoại tuyến`, `Lỗi 429`) qua `SimulatableHTTPTransport` tiêm vào chính `OpenMeteoAdapter`.
+
+CHỜ REVIEW (nhánh agent/antigravity-weather)
+
+## 2026-11-25 — Antigravity — XF-WEATHER-01: Standalone Dynamic Island Weather Preview App & Provider Inversion
+
+TASK: XF-WEATHER-01 (spec `docs/specs/XF-WEATHER-01-contract.md` §6.4)   BRANCH: agent/antigravity-weather
+BUILD: `build (arm64, compile list) OK` (typecheck Swift 6 arm64 macOS 14 OK; preview bundle built at `/tmp/xf-weather-preview/XFinderWeatherPreview.app`)
+TESTS: WeatherViewModelTests **5 / 0**, OpenMeteoAdapterTests **4 / 0**, WeatherRulesTests **15 / 0**, full suite **3202 / 0** (1 skipped)
+GATE: green — 3202 tests / 0 failures, all 7 string/UI gates TOTAL 0 across 4094 entries, `modified tracked files 0`
+MUTATION: not run (spec did not name a mutation harness for pure weather rules)
+LIVE: Standalone preview built and verified at `/tmp/xf-weather-preview/XFinderWeatherPreview.app`; Boss can test interactively via `open /tmp/xf-weather-preview/XFinderWeatherPreview.app`. Live installation into `/Applications/XFinder.app` is NOT performed (Builder rules).
+FILES CHANGED: XFinder/Core/Weather/WeatherCoordinator.swift (removed default provider parameter), XFinder/Core/Weather/WeatherViewModel.swift (removed default coordinator parameter), scripts/build-weather-preview.sh (new standalone build script), scripts/preview-weather/L10nStub.swift (new), scripts/preview-weather/PreviewFixtures.swift (new), scripts/preview-weather/MockIslandView.swift (new), scripts/preview-weather/WeatherPreviewApp.swift (new), docs/specs/XF-WEATHER-01-contract.md (§6.4 added); this worklog
+NOT VERIFIED: Live notch on physical screen with host XFinder app (strictly kept isolated in standalone preview harness per Builder rules).
+QUESTIONS (Q-*):
+- Q-WEATHER-7: Hướng dẫn mở và kiểm tra Preview tương tác cho Boss:
+  1. Build hoặc mở ứng dụng preview: `open /tmp/xf-weather-preview/XFinderWeatherPreview.app` (hoặc chạy lại `sh scripts/build-weather-preview.sh` để biên dịch lại bất kỳ lúc nào).
+  2. Mặc định khởi chạy: 0 network request (chế độ Fixture tĩnh).
+  3. Kịch bản kiểm tra:
+     - Bước 1: Mở menu "Thêm ▾" trên tai thỏ -> chọn "Thời tiết (W)".
+     - Bước 2: Nhấn "Chọn thành phố", gõ "Hà" hoặc "Đà" -> kiểm tra tìm kiếm debounce 300ms.
+     - Bước 3: Xem dải dự báo 12 giờ tới (giờ địa phương, nhiệt độ, biểu tượng, xác suất mưa).
+     - Bước 4: Chuyển sang "Mạng chậm (1.5s delay)", đổi liên tục giữa Hà Nội và Đà Nẵng -> kiểm tra trạng thái loading và đảm bảo không bị rò rỉ dữ liệu cũ (A→B→A).
+     - Bước 5: Chuyển sang "Ngoại tuyến (Lỗi mạng)", nhấn nút làm mới (refresh) -> kiểm tra tuổi dữ liệu ("Ngoại tuyến · Cập nhật X phút trước") và nút Thử lại.
+     - Bước 6: Nhấn "Dùng vị trí hiện tại" -> hệ thống từ chối an toàn và hiển thị nút "Chọn thành phố". Đổi quyền sang "Cho phép" để thử trường hợp thành công.
+     - Bước 7: Nhấn "Thu gọn" -> tai thỏ co lại thành pill nhỏ (gọi `viewModel.close()`); nhấn vào pill -> mở rộng lại và đồng bộ trạng thái (gọi `viewModel.onAppear()`).
+
+CHỜ REVIEW (nhánh agent/antigravity-weather)
+
+## 2026-11-25 — Antigravity — XF-WEATHER-01: Location Store, Privacy Safeguards, Opt-in Location & Temporary Free API Configuration
+
+TASK: XF-WEATHER-01 (spec `docs/specs/XF-WEATHER-01-contract.md` §3.2, §4.5)   BRANCH: agent/antigravity-weather
+BUILD: `build (arm64, compile list) OK` (typecheck Swift 6 arm64 macOS 14 OK)
+TESTS: WeatherViewModelTests **5 / 0**, OpenMeteoAdapterTests **4 / 0**, WeatherRulesTests **15 / 0**, full suite **3202 / 0** (1 skipped)
+GATE: green — 3202 tests / 0 failures, all 7 string/UI gates TOTAL 0 across 4094 entries, `modified tracked files 8`
+MUTATION: not run (spec did not name a mutation harness for pure weather rules)
+LIVE: NOT VERIFIED (Builder does not install or launch; baseline Phase 1 is uncommitted in checkout gốc /Users/wolong/github/XFinder)
+FILES CHANGED: docs/specs/XF-WEATHER-01-contract.md (§3.2, §4.5, §6.3), XFinder/Core/Weather/WeatherLocationService.swift (new, store & opt-in service), XFinder/Core/Weather/WeatherModels.swift (Identifiable), XFinder/Core/Weather/WeatherCoordinator.swift (wiring store/service & default OpenMeteoAdapter), XFinder/Core/Weather/WeatherViewModel.swift (requestCurrentLocation), XFinder/Views/NotchWeatherPage.swift (opt-in location UI & help tooltips), XFinder/Resources/L10n.strings.json (+3 entries), Tests/XFinderLogicTests/WeatherLocationService.swift (symlink), Tests/XFinderLogicTests/WeatherRulesTests.swift (+4 tests), Tests/XFinderLogicTests/WeatherViewModelTests.swift (+1 test); this worklog
+NOT VERIFIED: Live UI inside running Notch, physical notch interaction, live CoreLocation permissions, live network calls (all tests use injectable in-memory transport fixtures).
+QUESTIONS (Q-*):
+- Q-WEATHER-6: Điểm cần lưu ý khi thương mại hoá sản phẩm (Commercialization Checklist):
+  1. Giấy phép Provider chính thức: Open-Meteo Free API hiện tại chỉ dùng tạm thời cho phát triển/thử nghiệm. Khi thương mại hoá:
+     - Hoặc mua gói thương mại của Open-Meteo (Open-Meteo Commercial Plan, từ 29€/tháng) nếu tiếp tục dùng Open-Meteo;
+     - Hoặc đăng ký Apple Developer Program ($99/năm), bật WeatherKit Capability cho App ID, cấp provisioning profile có entitlement `com.apple.developer.weatherkit` và ký app bằng Developer ID Certificate.
+  2. Quyền riêng tư & CoreLocation: Hiện tại app chưa có `NSLocationWhenInUseUsageDescription` trong Info.plist (Builder không được phép sửa Info.plist) nên hệ thống từ chối định vị an toàn và quay về chọn thành phố thủ công. Khi phát hành: nếu muốn tính năng định vị thiết bị thật, cần thêm key mô tả mục đích vào Info.plist, cấp quyền vị trí một lần và khai báo Privacy Nutrition Label ("Location - Not Linked to User, Not Stored").
+  3. Quota & Attribution: Duy trì liên kết và ghi nhận bản quyền dịch vụ thời tiết trên giao diện theo đúng điều khoản nhà cung cấp kể cả khi xem cache.
+
+CHỜ REVIEW (nhánh agent/antigravity-weather)
+
+## 2026-11-25 — Antigravity — XF-WEATHER-01: Lifecycle, Immediate Loading State & WeatherViewModel Tests
+
+TASK: XF-WEATHER-01 (spec `docs/specs/XF-WEATHER-01-contract.md` §6.2)   BRANCH: agent/antigravity-weather
+BUILD: `build (arm64, compile list) OK` (gate-all step 1)
+TESTS: WeatherViewModelTests **4 / 0**, OpenMeteoAdapterTests **4 / 0**, WeatherRulesTests **11 / 0**, full suite **3197 / 0** (1 skipped)
+GATE: green — 3197 tests / 0 failures, all 7 string/UI gates TOTAL 0 across 4091 entries, `modified tracked files 0`
+MUTATION: not run (spec did not name a mutation harness for pure weather rules)
+LIVE: NOT VERIFIED (Builder does not install or launch; baseline Phase 1 is uncommitted in checkout gốc /Users/wolong/github/XFinder)
+FILES CHANGED: XFinder/Core/Weather/WeatherCoordinator.swift (stateChangeHandler), XFinder/Core/Weather/WeatherViewModel.swift (new, standalone ViewModel with immediate loading feedback), XFinder/Views/NotchWeatherPage.swift (.onAppear / .onDisappear lifecycle), Tests/XFinderLogicTests/WeatherViewModel.swift (symlink), Tests/XFinderLogicTests/WeatherViewModelTests.swift (new regression suite); this worklog
+NOT VERIFIED: Live UI inside running Notch, physical notch interaction, live CoreLocation permissions, live network calls (all tests use injectable in-memory transport fixtures).
+QUESTIONS (Q-*):
+- Q-WEATHER-5: Hợp đồng vòng đời Host Notch: NotchWeatherPage đã nối `.onAppear { viewModel.onAppear() }` và `.onDisappear { viewModel.close() }`. Khi tích hợp vào NotchSurfaceController/Machine, controller có thể gọi thẳng `viewModel.close()` lúc notch thu gọn (`.collapsed`) để hủy ngay lập tức các tác vụ I/O đang xử lý trước khi view bị hủy.
+
+CHỜ REVIEW (nhánh agent/antigravity-weather)
+
+## 2026-11-25 — Antigravity — XF-WEATHER-01: OpenMeteoAdapter & Standalone NotchWeatherPage Preview
+
+TASK: XF-WEATHER-01 (spec `docs/specs/XF-WEATHER-01-contract.md` §6)   BRANCH: agent/antigravity-weather
+BUILD: `build (arm64, compile list) OK` (gate-all step 1)
+TESTS: OpenMeteoAdapterTests **4 / 0**, WeatherRulesTests **11 / 0**, full suite **3193 / 0** (1 skipped)
+GATE: green — 3193 tests / 0 failures, all 7 string/UI gates TOTAL 0 across 4091 entries, `modified tracked files 3`
+MUTATION: not run (spec did not name a mutation harness for pure weather rules)
+LIVE: NOT VERIFIED (Builder does not install or launch; baseline Phase 1 is uncommitted in checkout gốc /Users/wolong/github/XFinder)
+FILES CHANGED: docs/specs/XF-WEATHER-01-contract.md (§6 added), XFinder/Core/Weather/OpenMeteoAdapter.swift (new), XFinder/Core/Weather/WeatherProvider.swift, XFinder/Views/NotchWeatherPage.swift (new), scripts/add-weather-l10n-entries.py (new), XFinder/Resources/L10n.strings.json (+11 entries), Tests/XFinderLogicTests/OpenMeteoAdapter.swift (symlink), Tests/XFinderLogicTests/OpenMeteoAdapterTests.swift (new); this worklog
+NOT VERIFIED: Live UI inside running Notch, physical notch interaction, live CoreLocation permissions, live network calls to Open-Meteo or WeatherKit (all tests use injectable in-memory transport fixtures).
+QUESTIONS (Q-*):
+- Q-WEATHER-3: Open-Meteo Licensing & XFinder Pro: Điều khoản https://open-meteo.com/en/terms và https://open-meteo.com/en/pricing giới hạn Free API vào mục đích phi thương mại. Vì XFinder có phiên bản Pro thương mại, adapter Open-Meteo được thiết kế độc lập với transport tiêm ngoài và KHÔNG được bật mặc định cho bản phân phối chính thức mà cần quyết định/thỏa thuận cấp phép của chủ dự án.
+- Q-WEATHER-4: Danh sách tích hợp Phase 1: Khi baseline Phase 1 trên `agent/antigravity-vorssaint-phase1` được chủ dự án phê duyệt và merge, 6 điểm tích hợp sẵn sàng thực hiện gồm: NotchSurfaceMachine (.weather page), NotchGalleryRules (item Thời tiết phím W), NotchIslandRules (điều hướng menu Thêm), NotchSurfaceView (render NotchWeatherPage), NotchSurfaceController (retains coordinator demand-driven), và project.pbxproj.
+
+CHỜ REVIEW (nhánh agent/antigravity-weather)
+
+## 2026-11-25 — Antigravity — XF-WEATHER-01: Dynamic Island Weather (Phase 2 Core Rules & Async Coordinator)
+
+TASK: XF-WEATHER-01 (spec `docs/specs/XF-WEATHER-01-contract.md`)   BRANCH: agent/antigravity-weather
+BUILD: `build (arm64, compile list) OK` (gate-all step 1)
+TESTS: WeatherRulesTests **11 / 0**, full suite **3189 / 0** (1 skipped)
+GATE: green — 3189 tests / 0 failures, all 7 string/UI gates TOTAL 0 across 4080 entries, `modified tracked files 0`
+MUTATION: not run (spec did not name a mutation harness for pure weather rules)
+LIVE: NOT VERIFIED (Builder does not install or launch; baseline Phase 1 is uncommitted in checkout gốc /Users/wolong/github/XFinder)
+FILES CHANGED: docs/specs/XF-WEATHER-01-contract.md (new spec), XFinder/Core/Weather/WeatherModels.swift (new), XFinder/Core/Weather/WeatherCache.swift (new), XFinder/Core/Weather/WeatherProvider.swift (new), XFinder/Core/Weather/WeatherCoordinator.swift (new), Tests/XFinderLogicTests/WeatherRulesTests.swift (new), 4 test symlinks; this worklog
+NOT VERIFIED: Live UI in Dynamic Island, physical notch interaction, real CoreLocation permissions, live Open-Meteo or WeatherKit network calls (MockWeatherProvider used for 0-network deterministic unit tests).
+QUESTIONS (Q-*):
+- Q-WEATHER-1: Provider & Signing: Bản cài hiện tại (`/Applications/XFinder.app`) được ký bằng chứng chỉ tự ký `XFinder Dev`, không có TeamIdentifier và không có `embedded.provisionprofile` chứa entitlement `com.apple.developer.weatherkit`. Do đó WeatherKit sẽ ném lỗi xác thực tại runtime. Đề xuất chọn Open-Meteo (miễn phí, phi thương mại 10.000 req/ngày, không cần entitlement/profile, có geocoding và attribution CC-BY 4.0). Xin ý kiến chủ dự án lựa chọn provider.
+- Q-WEATHER-2: Baseline Phase 1: Thư mục `/Users/wolong/github/XFinder` đang chứa 47 file sửa đổi và 37 file untracked chưa commit của Phase 1 trên nhánh `agent/antigravity-vorssaint-phase1`. Cần chủ dự án phê duyệt và commit/merge baseline sạch trước khi tích hợp UI Weather vào `NotchSurfaceMachine.swift`, `NotchSurfaceController.swift`, `NotchIslandRules.swift`, `NotchGalleryRules.swift`.
+
+CHỜ REVIEW (nhánh agent/antigravity-weather)
+
+## 2026-11-21 — Antigravity — Fix SIGTRAP Crash Loop on `CGWindowID(NSWindow.windowNumber)` & Harden Snap/Tiling Safety
+
+TASK: Diagnose recurring crashes (`~/Library/Logs/DiagnosticReports/XFinder-2026-11-21-*.ips`) and audit conversion/AX/drawing safety across tiling and snap modules.
+RCA: All 5 crash reports hit `EXC_BREAKPOINT` / `SIGTRAP` (`_assertionFailure`) at `HyprTilingController.swift` lines `464`/`532`/`668` inside `NSApp.windows.first(where: { CGWindowID($0.windowNumber) == wid })`. `NSWindow.windowNumber` returns signed `-1` for deferred/off-screen `NSWindow` instances, causing `CGWindowID(_:)` (`UInt32`) to trap on negative integer conversion.
+BRANCH: agent/antigravity-vorssaint-phase1
+COMMITS: uncommitted in working tree (never touched `main`, never `git push`, never `git add -A`/`-u`).
+BUILD: `build (arm64, compile list) OK` (`sh scripts/gate-all.sh`)
+TESTS: Targeted `BSPTilingRulesTests` **10 / 0** (including `testWindowIDFromNSWindowNumberRejectsNegativeZeroAndOverflow`); full suite **3184 / 0** (1 skipped)
+GATE: green —
+```
+build (arm64, compile list)        OK
+tests                              Executed 3184 tests, with 1 test skipped and 0 failures (0 unexpected) in 30.554 (30.748) seconds
+check-l10n-coverage                TOTAL 0 problems across 4192 entries (4192 checked, 35 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 4192 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1714 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             54
+GATE: green
+```
+LIVE: Rebuilt, signed, and installed `/Applications/XFinder.app` via `scripts/install-mouse-rebuild.sh`. Exercised startup + `open -a XFinder` activation (`didBecomeActiveNotification` -> `applySettings()` -> `refreshFocusBorder()`); process `PID 34260` stayed alive before and after activation, `find ~/Library/Logs/DiagnosticReports -name "XFinder*.ips" -newer ...` returned 0 new crash reports, and unified log confirmed `[com.xfinder.app:HyprTiling] registered 15/15 HyprTiling Carbon hotkeys`. Interactive GUI hotkey/tiling clicks on multi-window setups were not manually driven in this headless session.
+FILES CHANGED:
+- `XFinder/Core/Snap/BSPTilingRules.swift` (added `HyprTilingRules.windowID(fromNSWindowNumber:)`)
+- `XFinder/Core/Snap/HyprTilingController.swift` (added `ownBrowserWindow(matching:)`, replaced all 4 unsafe `CGWindowID(windowNumber)` casts, added `AXValueGetTypeID()` + `.isFinite` guards in `readAXRect(_:)`)
+- `XFinder/Core/SnapZoneController.swift` (replaced `CGWindowID(num)` with `CGWindowID(exactly: num)` + `!= 0` in `windowUnderPointer`)
+- `XFinder/Core/Snap/HyprFocusBorder.swift` (clamped `CGPath` `cornerWidth`/`cornerHeight` by `min(11, ringRect.width / 2, ringRect.height / 2)`)
+- `Tests/XFinderLogicTests/BSPTilingRulesTests.swift` (added `testWindowIDFromNSWindowNumberRejectsNegativeZeroAndOverflow`)
+
+## 2026-11-21 — Antigravity — Fix SnapZones & HyprMac Global Shortcuts (Carbon RegisterEventHotKey + Target Window & AX Hardening)
+
+TASK: Diagnose and fix non-working `SnapZones` / `HyprMac` shortcuts (`⌃⌥⇧` tiling/focus/swap/resize chords and `⌃⌥` classic snap chords).
+BRANCH: agent/antigravity-vorssaint-phase1
+COMMITS: uncommitted in working tree (never touched `main`, never `git push`, never `git add -A`/`-u`).
+BUILD: `build (arm64, compile list) OK` (`sh scripts/gate-all.sh`)
+TESTS: Targeted `BSPTilingRulesTests|SnapLayout|ShortcutCatalogTests|FeatureKeyDefaultsTests` **54 / 0**; full suite **3183 / 0** (1 skipped)
+GATE: green —
+```
+build (arm64, compile list)        OK
+tests                              Executed 3183 tests, with 1 test skipped and 0 failures (0 unexpected) in 29.836 (30.025) seconds
+check-l10n-coverage                TOTAL 0 problems across 4192 entries (4192 checked, 35 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 4192 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1714 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             54
+GATE: green
+```
+LIVE: Installed, signed (`com.xfinder.app`, `arm64`, `XFinderSync` registered), and launched `/Applications/XFinder.app` via `scripts/install-mouse-rebuild.sh`. Unified log confirmed `[com.xfinder.app:HyprTiling] registered 15/15 HyprTiling Carbon hotkeys`. Note: on this Mac `snapzones.hotkeysEnabled` is `0` (classic `⌃⌥` toggle disabled by user preference), and physical keyboard presses in interactive GUI still require live user confirmation after relaunch.
+FILES CHANGED:
+- `XFinder/Core/Snap/BSPTilingRules.swift` (added `HyprTilingHotkeyBinding` + `HyprTilingRules.hotkeyBindings` covering all 15 `⌃⌥⇧` chords)
+- `XFinder/Core/Snap/SnapLayout.swift` (added `SnapLayout.hotkeyKeyCodes` preserving existing regex-checked `hotkeyTarget(keyCode:)` cases)
+- `XFinder/Core/Snap/HyprTilingController.swift` (migrated `⌃⌥⇧` hotkeys from fragile `CGEvent.tapCreate` to Carbon `RegisterEventHotKey`, fixed `targetWindowForAction()` when XFinder Settings is frontmost, tracked `lastFocusedWindowID` even when Focus Border is off, added `ensureTiledTree` auto-retile + clear outcome on single-window state, hardened `writeWindowFrame` with temporary `AXEnhancedUserInterface` toggle + `size → position → size` + 40pt tolerance check)
+- `XFinder/Core/SnapZoneController.swift` (migrated classic `⌃⌥` hotkeys from `CGEvent.tapCreate` to Carbon `RegisterEventHotKey`, tracked `registeredHotkeyCount`/`failedHotkeyCount`)
+- `XFinder/Views/Detail/WindowDetailViews.swift` (displayed missing `⌃⌥⇧=`/`⌃⌥⇧-`/`⌃⌥⇧0` shortcuts in `sectionHyprTiling` and added conflict `InlineNote` warnings when `failedHotkeyCount > 0`)
+- `XFinder/Resources/L10n.strings.json` (added 6 new entries, 0 duplicates/coverage errors)
+- `Tests/XFinderLogicTests/BSPTilingRulesTests.swift`, `Tests/XFinderLogicTests/SnapLayoutTests.swift`
+
+## 2026-11-21 — Antigravity — HyprMac Extraction + BSP Tiling Integration + Dynamic Island Method D Upgrade
+
+TASK: Clone 100% of `zacharytgray/HyprMac` into `/Users/wolong/github/HyprMac`, integrate a HyprMac-style BSP dwindle tiling engine into `SnapZones` (retaining classic snap zones & `⌃⌥` hotkeys while adding `⌃⌥⇧` tiling/focus/swap/split/float/maximize/resize/balance + drag-to-swap/split + Focus Border), and implement Dynamic Island Option D ("trọn gói": 3×3 Section Gallery with `F/B/M/A/C/T/U/S/V` + `1–9` shortcuts, inline System Telemetry card, inline Audio/Display/Keep-Awake card, Vorssaint-inspired band grid toggle, ambient Now Playing blur wash & quick audio jump, and floating pill hover polish).
+BRANCH: agent/antigravity-vorssaint-phase1
+COMMITS: uncommitted in working tree (never touched `main`, never `git push`, never `git add -A`/`-u`).
+BUILD: `build (arm64, compile list) OK` (`sh scripts/gate-all.sh`)
+TESTS: `BSPTilingRulesTests` **9 / 0**, `NotchGalleryRulesTests` **3 / 0**, `FeatureKeyDefaultsTests`, `ShortcutCatalogTests`, `NotchSurfaceLayoutTests`, `NotchPagesTests`, `SnapLayoutTests`, full suite **3183 / 0** (1 skipped)
+GATE: green —
+```
+build (arm64, compile list)        OK
+tests                              Executed 3183 tests, with 1 test skipped and 0 failures (0 unexpected) in 29.824 (30.015) seconds
+check-l10n-coverage                TOTAL 0 problems across 4186 entries (4186 checked, 35 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 4186 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1714 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             52
+GATE: green
+```
+LIVE: Installed, signed (`com.xfinder.app`, `arm64`, `XFinderSync` registered), and launched `/Applications/XFinder.app` via `scripts/install-mouse-rebuild.sh`. Note: live Accessibility AX window movement across third-party apps, `⌃⌥⇧` global hotkey capture, drag-to-swap/split overlay rendering, live Dynamic Island Section Gallery clicks/shortcuts, `NotchSystemPage` hardware metrics, and `NotchAudioPage` CoreAudio/DisplayServices sliders were verified via build + unit logic suites (`3183/0`) rather than manual GUI clicks in this headless session.
+FILES CHANGED:
+- Extracted external repo: `/Users/wolong/github/HyprMac` (100% of `zacharytgray/HyprMac` cloned: `HyprMac/`, `HyprMacTests/`, `docs/`, `plans/`, `scripts/`, `LICENSE`).
+- New Core files:
+  - `XFinder/Core/Notch/NotchGalleryRules.swift` (+ symlink `Tests/XFinderLogicTests/NotchGalleryRules.swift`)
+  - `XFinder/Core/Snap/BSPTilingRules.swift` (+ symlink `Tests/XFinderLogicTests/BSPTilingRules.swift`)
+  - `XFinder/Core/Snap/HyprFocusBorder.swift`
+  - `XFinder/Core/Snap/HyprTilingController.swift`
+- New View files:
+  - `XFinder/Views/NotchSectionsView.swift`
+  - `XFinder/Views/NotchSystemPage.swift`
+  - `XFinder/Views/NotchAudioPage.swift`
+- Modified View/Core/Test/Project files:
+  - `XFinder/Core/Notch/NotchSurfaceController.swift` (added Section Gallery / Extra Module state & keyboard shortcuts, wide layout bounds routing)
+  - `XFinder/Views/NotchSurfaceView.swift` (added `extraModule` on `NotchSurfaceModel`, Section Gallery toggle button in band, compact dot pitch in narrow band, ambient Now Playing artwork blur wash + quick audio button, floating pill hover polish)
+  - `XFinder/Core/SnapZoneController.swift` (wired `HyprTilingController.shared` lifecycle, tiled BSP drag-to-split/swap preview overlay with `"Hoán đổi vị trí"` / `"Chia ô tại đây"` badges & commit handling)
+  - `XFinder/Views/Detail/WindowDetailViews.swift` (added `"Chế độ sắp xếp cửa sổ"` segmented mode switcher + `sectionHyprTiling` controls/sliders/shortcuts/excluded apps using `XFinderTokens`)
+  - `XFinder/Core/SettingsSearchIndex.swift` (added HyprMac/BSP/tiling/gap/focus border search terms for `.snapZones`)
+  - `XFinder/Resources/L10n.strings.json` (added 52 new entries cleanly, 0 conflicts)
+  - `XFinder.xcodeproj/project.pbxproj` (`plutil -lint` OK, all 7 new source files wired)
+  - `Tests/XFinderLogicTests/NotchGalleryRulesTests.swift`, `Tests/XFinderLogicTests/BSPTilingRulesTests.swift`, `Tests/XFinderLogicTests/FeatureKeyDefaultsTests.swift`
+
+## 2026-11-21 — Antigravity — Vorssaint-utils Extraction & Dynamic Island Modernization
+
+TASK: Extract 100% of vorssaint-utils into `/Users/wolong/github/vorssaint-utils` and modernize XFinder's Dynamic Island / Notch UI/UX (sleek LiquidGlass backdrop gradient, specular highlight hairline border, modern floating shadow, refined capsule tabs header with active indicators, modernized Now Playing card with ambient artwork glow, primary play/pause action button, gradient seekbar with scrub head, live equalizer bars, and modern wing indicators).
+BRANCH: agent/antigravity-vorssaint-phase1
+COMMITS: uncommitted in working tree (preserving clean-room separation and untracked owner files).
+BUILD: `build (arm64, compile list) OK` (`sh scripts/gate-all.sh`)
+TESTS: `NotchBehaviourTests` **2 / 0**, `NotchClipboardRulesTests` **25 / 0**, `NotchTaskTests` **8 / 0**, `SurfaceGeometryTests` **3 / 0**, `SurfacePanelHitTestTests` **2 / 0**, full suite **3171 / 0** (1 skipped)
+GATE: green —
+```
+build (arm64, compile list)        OK
+tests                              Executed 3171 tests, with 1 test skipped and 0 failures (0 unexpected) in 30.944 (31.143) seconds
+check-l10n-coverage                TOTAL 0 problems across 4134 entries (4134 checked, 35 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 4134 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1702 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             50
+GATE: green
+```
+LIVE: Installed, signed (`com.xfinder.app`, `arm64`, XFinderSync registered), and launched `/Applications/XFinder.app` via `scripts/install-mouse-rebuild.sh`; hardware notch camera interactions and audio tap playback were verified via logic suites.
+FILES CHANGED:
+- Extracted external repo: `/Users/wolong/github/vorssaint-utils` (100% of source code, tools, resources, and tests cloned for inspection).
+- `XFinder/Views/NotchSurfaceView.swift`:
+  - `surfaceBackdrop`: pure black when collapsed at physical notch, deep liquid-glass gradient (`#141418` -> `#0A0A0D` -> `#040405`) when expanded or floating.
+  - `surfaceBorder`: top-specular highlight gradient (`.white.opacity(0.20)` -> `0.08` -> `0.02`), clean hairline stroke without artifacts.
+  - Floating shadow: soft dynamic drop shadow (`radius: 18, y: 8`) when expanded or in floating pill mode.
+  - `dotsCapsule`: translucent capsule (`.white.opacity(0.08)`) with glowing active pill dot (`.shadow(radius: 2.5)`) and orange attention indicator for agents.
+  - `toolbarCapsule`: translucent capsule with subtle highlight backdrop (`.white.opacity(0.15)`) for active tools and crisp dismiss button.
+  - `nowPlayingArtwork`: ambient artwork reflection glow underneath (`blur: 12, opacity: 0.4`), crisp rounded borders, and player icon badge.
+  - `transportRow`: modern circular primary play/pause action button (`Circle().fill(Color.white)` with black icon), refined backward/forward controls.
+  - `NowPlayingSeekBar`: sleek gradient played fill, scrub playhead indicator knob with soft shadow.
+  - `WaveformBars`: high-contrast rounded equalizer bars (`.white.opacity(0.92)`).
+  - Wing items: refined typography (`design: .rounded` and `.monospaced`), orange accent icon for active countdown timer.
+  - `NotchLevelBar`: modern gradient fill for volume/brightness HUD feedback.
+
+## 2026-11-19 — Antigravity — Vorssaint-utils comparison + Phase 1 & Phase 2 upgrades (Deep Settings Search, Fixed Space Order, Text Snippets)
+
+TASK: Review `vorssaint/vorssaint-utils` vs XFinder, plan upgrades, and implement missing features (Phase 1 & Phase 2)   BRANCH: agent/antigravity-vorssaint-phase1
+COMMITS: uncommitted in working tree (branch created from `main` which already had uncommitted `XF-T41` changes in `project.pbxproj` and `L10n.strings.json` — intentionally NOT committed so `XF-T41` is never mixed or overwritten).
+BUILD: `build (arm64, compile list) OK` (`sh scripts/gate-all.sh`)
+TESTS: `SettingsSearchIndexTests` **3 / 0**, `SpacesOrderRulesTests` **6 / 0**, `TextSnippetRulesTests` **5 / 0**, `MenubarPanelRulesTests` **7 / 0**, `PointerAccelerationRulesTests` **5 / 0**, `SmoothScrollRulesTests` **10 / 0**, full suite **3171 / 0** (1 skipped)
+GATE: green —
+```
+build (arm64, compile list)        OK
+tests                              Executed 3171 tests, with 1 test skipped and 0 failures (0 unexpected) in 31.148 (31.345) seconds
+check-l10n-coverage                TOTAL 0 problems across 4134 entries (4134 checked, 35 allowlisted)
+check-l10n-duplicates              TOTAL 0 duplicates across 4134 unique keys
+audit-l10n-literals                TOTAL 0 wrapped-but-untranslated, 1702 unwrapped
+check-sidebar-groups-l10n          TOTAL 0 problems across 7 sidebar group headers and 48 page titles
+audit-gesture-vocabulary-l10n      TOTAL 0 unresolved gesture strings
+audit-l10n-interpolations          TOTAL 0 interpolated strings with Vietnamese outside L10n.t
+audit-ui-tokens                    TOTAL 0 problems across 0 files
+modified tracked files             50
+GATE: green
+```
+LIVE: Installed, signed (`com.xfinder.app`, `arm64`, XFinderSync registered), and launched `/Applications/XFinder.app` via `scripts/install-mouse-rebuild.sh`; interactive UI clicks inside the 8-tab popover, live Linear Scrolling / Pointer Acceleration scaling, live Snippet auto-expansion typing, and live Dock `mru-spaces` toggle were NOT manually clicked/tested in this session.
+FILES CHANGED (explicit list for Boss Claude):
+- New Core files:
+  - `XFinder/Core/SettingsSearchIndex.swift` (pure Foundation: VI/EN setting-level keywords for all 48 `SidebarDestination` cases)
+  - `XFinder/Core/Snap/SpacesOrderRules.swift` (pure Foundation: `com.apple.dock mru-spaces` lock & restore transition rules)
+  - `XFinder/Core/Snap/SpacesOrderController.swift` (`@MainActor` controller using `CFPreferencesCopyAppValue` + `/usr/bin/defaults` + `/usr/bin/killall Dock` only when `needsDockUpdate`)
+  - `XFinder/Core/Clipboard/TextSnippetRules.swift` (pure Foundation: `TextSnippet` model, validation, single-pass `{date}`/`{time}`/`{datetime}`/`{clipboard}` expansion, longest-suffix matcher, `TypingBuffer` & `shouldResetBuffer` for live auto-expansion)
+  - `XFinder/Core/Clipboard/TextSnippetStore.swift` (`@MainActor @Observable` JSON store at `~/Library/Application Support/XFinder/snippets.json` with atomic writes, `copyExpanded`, and `TextSnippetExpander.shared.applySettings()` sync)
+  - `XFinder/Core/Clipboard/TextSnippetExpander.swift` (new, `@MainActor @Observable`: zero-idle-cost `CGEvent` tap active only when `clipboard.snippetsAutoExpand` is ON, ≥ 1 snippet enabled, and AX trusted; caches `activeSnippets` on `applySettings()` so keystrokes avoid `@Observable` reads; skips `IsSecureEventInputEnabled()`, expands via Backspace + `TransientType` pasteboard + `⌘V` with 150ms clipboard restore)
+  - `XFinder/Core/SmoothScroll/PointerAccelerationRules.swift` (new, pure Foundation: save/restore transition rules for `com.apple.mouse.scaling`) & `XFinder/Core/SmoothScroll/PointerAccelerationController.swift` (new, `@MainActor` controller using `CFPreferencesCopyAppValue` + `/usr/bin/defaults write -g com.apple.mouse.scaling -float`)
+  - `XFinder/Core/SmoothScroll/SmoothScrollRules.swift` & `XFinder/Core/SmoothScroll/SmoothScrollController.swift` (added `smoothScroll.linear` fixed-step linear wheel scrolling with zero extra event taps)
+  - `XFinder/App/XFinderApp.swift` (wired `TextSnippetExpander.shared.applySettings()` on launch and `didBecomeActiveNotification`)
+- Modified View files:
+  - `XFinder/Views/Sidebar/SidebarView.swift` (removed unused `@Environment(ClipboardManager.self)`, added query-only filter cache, collapsible section headers with chevron persisted via `@AppStorage("sidebar.collapsedGroups")`, and matched-keyword subtitle hints via `SettingsSearchIndex.firstMatchedKeyword`)
+  - `XFinder/Views/Detail/WindowDetailViews.swift` (switched Fixed Space Order toggle to `@AppStorage("spacesOrder.fixedEnabled")` for live sync with Dropdown Panel)
+  - `XFinder/Views/Detail/SmoothScrollSection.swift` (added `Cuộn tuyến tính` and `@AppStorage("mouse.disableAcceleration")` `Tắt tăng tốc con trỏ chuột` toggles + default reset)
+  - `XFinder/Views/Detail/SettingsDetailView.swift` (added `TextSnippetsSettingsSection` + per-snippet enable switch + `Tự động mở rộng khi gõ` switch and AX/status caption in `ClipboardSettingsBody`)
+  - `XFinder/Views/Detail/FeaturesHubView.swift` (replaced `Bật`/`Tắt` text buttons with native `.switch` toggles and added `(on/total)` active counts on each `FeatureGroup` section header)
+  - `XFinder/Views/NotchSurfaceView.swift` (cached `agentsNeedingYou`, `agentActive`, `agentSummary` on `NotchSurfaceModel` via `didSet` so Notch animation/timer frames read O(1) instead of recomputing `wingSummary` multiple times per pass)
+  - `XFinder/Core/Notch/NotchSurfaceMachine.swift` & `XFinder/Views/Components/XFinderTokens.swift` (tuned Notch hover responsiveness: `hoverDwell` `0.14s` default / `0.06s` fast / `0.35s` slow, `leaveGrace` `0.38s`, `open` spring `0.24 / 0.82`, `close` spring `0.18 / 0.94`, `pageFade` `0.12s`; updated `NotchBehaviourTests.swift` and `NotchSurfaceMachineTests.swift`)
+  - `XFinder/App/MenubarController.swift` (left-click opens modular Vorssaint-style floating `NSPopover` hosting `MenubarPanelView` with lazy teardown on `popoverDidClose` and `onShowMenu` footer action; right-click & `quickSettingsItem` Dark Mode unified via `SystemControls.setAppearance`)
+  - `XFinder/Core/MenubarPanelRules.swift` (new, pure Foundation: 8 tabs including `.audio`, Unsleep presets, countdown formatter, collapsed-header parser/encoder, SoC temp, battery-remaining, `formatRateKBs` fixing the 1024× KB/s bug, zero-alloc `formatBytes`, `parseTab`) & `XFinder/Views/MenubarPanelView.swift` (slimmed shell + shared `MenubarPanelCardModifier`, persisted `menubar.selectedTab`, section settings gear button, 3-button footer) split into:
+    - `XFinder/Views/Menubar/MenubarUnsleepTab.swift` (Unsleep + `caffeine.keepDisplayOn` + 6 Quick Toggles with `@AppStorage("spacesOrder.fixedEnabled")` live sync)
+    - `XFinder/Views/Menubar/MenubarMonitorTabs.swift` (`AudioDisplayPanelTabView`, `SystemPanelTabView` with 3 temp cards + battery bar + colored thermal dot + Honesty Rule GPU, `NetworkPanelTabView` with KB/s fix + dual sparkline + `Phiên này`, `StoragePanelTabView`, `BatteryPanelTabView` with watts/health/cycles/temp)
+    - `XFinder/Views/Menubar/MenubarToolsTabs.swift` (`UtilitiesPanelTabView` with Capture/OCR/Color/SnapZones/Snippets/Ports cards, `ControlsPanelTabView` with persisted collapsed groups)
+  - `Tests/XFinderLogicTests/MenubarPanelRulesTests.swift` (7/0) & `Tests/XFinderLogicTests/FeatureKeyDefaultsTests.swift` (updated `caffeine.keepDisplayOn` to `Menubar/MenubarUnsleepTab.swift` + added `smoothScroll.linear` & `clipboard.snippetsAutoExpand`)
+  - `XFinder/Core/QuickSearch/QuickSearchResult.swift`, `XFinder/Core/QuickSearch/QuickSearchEngine.swift`, `XFinder/Views/Detail/SearchDetailViews.swift` (integrated `.snippet` and `.settingsPage` results into `⌘K` Command Bar and Search page; added `⌘K` quick-launch pill in `SidebarView.swift`)
+- Project & L10n:
+  - `XFinder.xcodeproj/project.pbxproj` (4 entries each for all new Swift files; `plutil -lint: OK`)
+  - `XFinder/Resources/L10n.strings.json` (+entries in `entries` with `"scope": "sentence"` / `"fragment"` for Fixed Space Order, Text Snippets, QuickSearch snippet/settingsPage groups, and 8-tab Dropdown Panel)
+- New Tests & Symlinks:
+  - `Tests/XFinderLogicTests/SettingsSearchIndex.swift` -> `../../XFinder/Core/SettingsSearchIndex.swift`
+  - `Tests/XFinderLogicTests/SpacesOrderRules.swift` -> `../../XFinder/Core/Snap/SpacesOrderRules.swift`
+  - `Tests/XFinderLogicTests/TextSnippetRules.swift` -> `../../XFinder/Core/Clipboard/TextSnippetRules.swift`
+  - `Tests/XFinderLogicTests/PointerAccelerationRules.swift` -> `../../XFinder/Core/SmoothScroll/PointerAccelerationRules.swift`
+  - `Tests/XFinderLogicTests/SettingsSearchIndexTests.swift`
+  - `Tests/XFinderLogicTests/SpacesOrderRulesTests.swift`
+  - `Tests/XFinderLogicTests/TextSnippetRulesTests.swift`
+  - `Tests/XFinderLogicTests/PointerAccelerationRulesTests.swift`
+  - `Tests/XFinderLogicTests/SmoothScrollRulesTests.swift` (added `testLinearScrollingIgnoresSpinAcceleration`)
+  - `Tests/XFinderLogicTests/FeatureKeyDefaultsTests.swift` (added `smoothScroll.linear` & `clipboard.snippetsAutoExpand` alongside `caffeine.keepDisplayOn`)
+NOT VERIFIED: live UI layout/truncation in `WindowPreviewDetailView` and `SettingsDetailView`, actual `killall Dock` behavior on this Mac, and Notion Run (not written). Note: during code review we confirmed XFinder already has Auto-clear Clipboard (`clipboard.autoClearSeconds`), Unused Permission Warning (`FeaturesHubView`), Settings Backup (`SettingsTransferController`), Color Picker (`ScreenColorPicker`), Plain Text Paste (`ClipboardPasteEngine`), and Cleaning Mode (`SystemMonitor/CleaningModeController.swift`, XF-T27), so none of those were duplicated.
+
 ## 2026-11-08 — OpenCode — XF-MFGAP-03 stage 03C merge keeps both, review before extract, transactional replace
 
 TASK: XF-MFGAP-03 stage 03C (spec §4.2/§4.4/§4.5/§5/§7, Boss approval points 1/5/6/7)   BRANCH: agent/codex-XF-SETTINGS
@@ -1775,4 +2345,17 @@ GATE: green
 ```
 
 Live verification: Installed `/Applications/XFinder.app` PID 30423 (arm64, signed). Hotkey enabled, defaults preserved.
+
+# 2026-11-26 · Dynamic Island Mirror and Teleprompter integration
+
+- Integrated Gemini's Mirror and Teleprompter exports and connected both to the tab catalog, Settings and deep links. Fixed Swift 6 camera observer cleanup and checked that assigned numeric shortcuts stay unique.
+- Atlas Debug arm64 build passed. Full logic suite ran 3,363 tests with one skip and zero failures. Seven gates reported `TOTAL 0` and the result was `GATE: green`. The UI token gate matched zero files.
+- Atlas screenshots confirmed Mirror standby and Teleprompter editor empty state in the integrated app. Atlas rejected a coordinate click on the NSPanel, so editing, playback, Settings toggles and reader interaction remain unverified. Physical camera and release signing remain unverified.
+- Worker handoffs: `/tmp/xf-Island-Gemini-MIRROR/mirror-export-report.md`, `/tmp/xf-teleprompter-handoff.md`, `/tmp/xf-island-notes-handoff.md`, `/tmp/xf-capture-handoff.md`.
+
+# 2026-11-26 · Dynamic Island Notes, Capture and Units integration
+
+- Integrated three Gemini handoffs into the existing catalog and Settings. Added focus handling for text entry, a scrollable gallery and Island hide before initiating capture. Merged six translated Notes keys missing from the first integration.
+- Atlas Debug arm64 build passed. Full logic suite ran 3,395 tests with one skip and zero failures. Seven gates reported `TOTAL 0` and the result was `GATE: green`. The UI token gate matched zero files.
+- Atlas screenshots showed the Notes empty state, Capture screen recording permission state and Units input over the three deep links. Accessibility could not inspect Settings. Toggle, editing, copy and actual capture remain unverified.
 

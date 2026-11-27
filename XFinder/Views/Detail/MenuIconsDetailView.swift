@@ -1,132 +1,31 @@
 import SwiftUI
+import AppKit
 
-/// Biểu tượng thanh menu — nút MŨI TÊN ẩn/hiện biểu tượng qua Native Visibility Engine (macOS 27+)
-/// và Legacy Length Engine (macOS <= 26).
+/// XF-T22 — Biểu tượng thanh menu: explainer trung thực + một công tắc ẩn icon của chính XFinder.
 struct MenuIconsDetailView: View {
-    @State private var hider = MenuBarHiderController.shared
-    @AppStorage("menubar.hiderEnabled") private var enabled = true
-    @AppStorage("menubar.defaultCollapsed") private var defaultCollapsed = true
-    @AppStorage("menubar.autoHideEnabled") private var autoHideEnabled = false
-    @AppStorage("menubar.autoHideSeconds") private var autoHideSeconds = 5.0
+    @AppStorage("menubar.hideOwnIcon") private var hideOwnIcon = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                PageHeader(title: L10n.t("Ẩn biểu tượng thanh menu"),
-                    subtitle: L10n.t("Ẩn bớt biểu tượng trên thanh menu để gọn gàng hơn.")
+                PageHeader(
+                    title: L10n.t("Biểu tượng thanh menu"),
+                    subtitle: L10n.t("Ẩn biểu tượng của XFinder khi muốn thanh menu gọn hơn, và mở nhanh cài đặt thanh menu của macOS.")
                 )
 
                 SettingsSection(
-                    title: L10n.t("Nút mũi tên ẩn biểu tượng"),
-                    footer: L10n.t("Ẩn các biểu tượng ứng dụng nằm bên trái mũi tên.")
+                    title: L10n.t("Biểu tượng XFinder"),
+                    footer: L10n.t("Khi ẩn biểu tượng trên thanh menu, bạn vẫn mở được XFinder từ trang Tổng quan, Dock hoặc phím tắt ⌘,.")
                 ) {
                     ToggleRow(
-                        title: L10n.t("Bật ẩn biểu tượng thanh menu"),
-                        subtitle: L10n.t("Hiện nút mũi tên trên thanh menu để thu gọn hoặc mở rộng."),
-                        isOn: Binding(
-                            get: { enabled },
-                            set: {
-                                enabled = $0
-                                hider.isEnabled = $0
-                            }
-                        )
+                        title: L10n.t("Ẩn biểu tượng XFinder trên thanh menu"),
+                        subtitle: L10n.t("Giấu biểu tượng chính của XFinder; tắt lại để hiện ngay ở vùng bên phải notch."),
+                        isOn: $hideOwnIcon
                     )
-                    .settingsRow()
-
-                    if enabled {
-                        SettingsDivider()
-
-                        ToggleRow(
-                            title: L10n.t("Mặc định thu gọn khi mở app"),
-                            subtitle: L10n.t("Tự động ẩn các biểu tượng ngay khi XFinder khởi động."),
-                            isOn: Binding(
-                                get: { defaultCollapsed },
-                                set: {
-                                    defaultCollapsed = $0
-                                    hider.defaultCollapsed = $0
-                                }
-                            )
-                        )
-                        .settingsRow()
-
-                        SettingsDivider()
-
-                        ToggleRow(
-                            title: L10n.t("Tự động ẩn sau thời gian chờ"),
-                            subtitle: L10n.t("Tự động thu gọn các biểu tượng sau khi mở rộng."),
-                            isOn: Binding(
-                                get: { autoHideEnabled },
-                                set: {
-                                    autoHideEnabled = $0
-                                    hider.isAutoHideEnabled = $0
-                                }
-                            )
-                        )
-                        .settingsRow()
-
-                        if autoHideEnabled {
-                            SettingsDivider()
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(L10n.t("Thời gian tự động ẩn"))
-                                        .font(XFinderTokens.Font.row)
-                                    Text("\(L10n.t("Thu gọn sau "))\(Int(autoHideSeconds))\(L10n.t(" giây không thao tác"))")
-                                        .font(XFinderTokens.Font.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                Spacer()
-                                Slider(
-                                    value: Binding(
-                                        get: { autoHideSeconds },
-                                        set: {
-                                            autoHideSeconds = $0
-                                            hider.autoHideSeconds = $0
-                                        }
-                                    ),
-                                    in: 1...30,
-                                    step: 1
-                                )
-                                .frame(width: 140)
-                                Text("\(Int(autoHideSeconds))s")
-                                    .font(XFinderTokens.Font.mono)
-                                    .frame(width: 32, alignment: .trailing)
-                            }
-                            .settingsRow()
+                    .onChange(of: hideOwnIcon) { _, _ in
+                        if let delegate = NSApplication.shared.delegate as? AppDelegate {
+                            delegate.menubarController?.applyIconVisibility()
                         }
-                    }
-
-                    SettingsDivider()
-
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(L10n.t("Động cơ ẩn biểu tượng"))
-                                .font(XFinderTokens.Font.row)
-                            Text(ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27
-                                 ? L10n.t("Native Visibility Engine (Assessment Mode)")
-                                 : L10n.t("Legacy Length Engine"))
-                                .font(XFinderTokens.Font.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        Spacer()
-                        Text(ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27 ? "macOS 27+ Native" : "Legacy")
-                            .font(XFinderTokens.Font.mono)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(XFinderTokens.Fill.inset)
-                            .clipShape(RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge))
-                    }
-                    .settingsRow()
-                }
-
-                SettingsSection(
-                    title: L10n.t("Cách sử dụng"),
-                    footer: L10n.t("Sắp xếp biểu tượng linh hoạt bằng phím ⌘.")
-                ) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        bullet(L10n.t("Nhấp vào nút mũi tên trên thanh menu để thu gọn hoặc mở rộng các biểu tượng."))
-                        bullet(L10n.t("Giữ phím Command (⌘) và kéo thả bất kỳ biểu tượng nào sang bên phải mũi tên để luôn hiển thị."))
-                        bullet(L10n.t("Các biểu tượng nằm bên trái mũi tên sẽ tự động được ẩn khi thu gọn."))
-                        bullet(L10n.t("Các biểu tượng hệ thống (Đồng hồ, Wi-Fi, Pin, Trung tâm điều khiển) luôn luôn được giữ lại."))
                     }
                     .settingsRow()
 
@@ -134,11 +33,23 @@ struct MenuIconsDetailView: View {
 
                     HStack {
                         Button(L10n.t("Mở Cài đặt thanh menu của macOS")) {
-                            hider.openSystemMenuBarSettings()
+                            MenubarController.openSystemMenuBarSettings()
                         }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
                         Spacer()
+                    }
+                    .settingsRow()
+                }
+
+                SettingsSection(
+                    title: L10n.t("Vì sao không ẩn được biểu tượng ứng dụng khác"),
+                    footer: L10n.t("Để sắp xếp hoặc tắt biểu tượng hệ thống, dùng Trung tâm điều khiển ▸ Thanh menu hoặc giữ phím ⌘ rồi kéo biểu tượng.")
+                ) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        bullet(L10n.t("Đo thực tế ngày 2026-10-18 trên macOS 27.0.1 (2 màn hình): 12/12 biểu tượng vẫn hiện trên màn hình dù bật ẩn mặc định."))
+                        bullet(L10n.t("API đánh giá của macOS chỉ tác động mô-đun hệ thống, không ẩn được biểu tượng thanh menu của ứng dụng bên thứ ba."))
+                        bullet(L10n.t("macOS 27 gộp thanh menu thành một cửa sổ chung nên mẹo chèn khoảng trắng phân cách cũ không còn tác dụng."))
                     }
                     .settingsRow()
                 }

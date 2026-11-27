@@ -30,6 +30,7 @@ tại **hứa một việc không xảy ra** (Part 0 §6).
 1. **Trang `menuIcons`** thành explainer + một công tắc: "Ẩn biểu tượng XFinder trên thanh menu" (`menubar.hideOwnIcon`,
    mặc định `false`, ONE reader trong `MenubarController` → `statusItem.isVisible`), link Control Centre ▸ Menu Bar, và
    bảng ngắn "vì sao không ẩn được icon app khác" lấy nguyên văn từ phép đo trên (ngày, số đo).
+1b. **Thứ tự tạo và giữ vị trí bên phải notch (`MenubarController`):** tạo `statusItem` chính (`xfinder.menubar.main`, `squareLength`, icon thương hiệu XFinder) **trước** `readoutItem` (`xfinder.menubar.readouts`, `variableLength`) để icon chính luôn nằm bên phải số liệu (xa notch hơn). Khi khởi động, đổi cấu hình màn hình (`didChangeScreenParametersNotification`), hoặc bấm "Hiện lại biểu tượng", kiểm tra vị trí trên màn hình có notch (`screen.auxiliaryTopRightArea`): nếu `statusItem` bị đẩy tràn sang trái notch (`frame.minX < rightArea.minX`) thì xóa `NSStatusItem Preferred Position` cũ và đặt lại hiển thị (không thêm timer nền). Giữ nguyên click trái mở `MenubarPanelView` popover và click phải mở `NSMenu`.
 2. **Xoá** `MenuBarHiderController`, `Core/MenuBar/{MenuBarEngine, MenuBarEngineFactory, NativeVisibilityEngine,
    LegacyLengthEngine}.swift`, `Core/MenuBar/Native/*` (shim ObjC + bridge), `Core/MenuBar/Layout/*` — mỗi file đủ **4
    dòng pbxproj** (shim `.m` có thêm bridging header/`-fobjc-arc`? kiểm `project.pbxproj` và `XFinder-Bridging-Header.h`
@@ -48,12 +49,15 @@ tại **hứa một việc không xảy ra** (Part 0 §6).
 
 | Ca | Trả lời |
 |:--|:--|
-| Người dùng đang ẩn icon XFinder bằng engine cũ | migration mục 4 — icon vẫn ẩn sau khi cập nhật |
-| Icon XFinder ẩn ⇒ không còn cửa vào menu | trang Tổng quan + ⌘, vẫn mở app; trang này ghi câu đó cạnh công tắc |
-| `statusItem.isVisible = false` còn giữ `NSStatusItem` | đúng ý: bật lại là hiện ngay, không tạo lại item |
+| Người dùng đang ẩn icon XFinder bằng engine cũ | migration mục 4 — đặt `menubar.hideOwnIcon = true` một lần duy nhất khi `menubar.hideOwnIcon` chưa từng lưu và `menubar.hiderEnabled == true`; khi người dùng bật hiện lại sau đó không migration lại |
+| Icon XFinder ẩn ⇒ không còn cửa vào menu | trang Tổng quan ("Hiện lại biểu tượng") + ⌘, vẫn mở app; trang này ghi câu đó cạnh công tắc |
+| `statusItem.isVisible = false` còn giữ `NSStatusItem` | đúng ý: bật lại là hiện ngay, không tạo lại item; khi đang ẩn thì `applyIcon()` không tự ép `isVisible = true` |
+| Thanh menu chật (nhiều app thứ ba) hoặc bật `menubar.readoutsEnabled` chuỗi dài | tạo `statusItem` trước `readoutItem` để icon chính đứng bên phải số liệu; nếu vẫn tràn vào vùng notch thì xóa `Preferred Position` cũ và khôi phục vị trí (nếu hệ thống vẫn quá chật, không hứa ép ẩn app thứ ba) |
+| Nhiều màn hình / chuyển giữa màn hình có notch và màn hình ngoài | lắng nghe `didChangeScreenParametersNotification` để kiểm tra lại `auxiliaryTopRightArea` của màn hình chứa `statusItem`, không dùng polling timer |
+| Nhiều tiến trình XFinder chạy song song trong quá trình QA | nhân đôi `NSStatusItem` gây tràn notch — nghiệm thu live yêu cầu đúng 1 tiến trình `XFinder.app` |
 
 ## 4. Nghiệm thu
 
 `gate-all.sh` xanh; `grep -rn "MBAssessment\|NativeVisibility\|LegacyLength" XFinder` = 0; trang menuIcons render (AX)
 hai ngôn ngữ không chuỗi Việt lọt; bật công tắc ⇒ icon XFinder biến mất (`AXExtrasMenuBar` của XFinder không còn item
-đó), tắt ⇒ hiện lại.
+đó), tắt ⇒ hiện lại; trên màn hình có notch với 1 tiến trình XFinder, `xfinder.menubar.main` có `isVisible == true`, `frame.width > 0`, `frame.minX >= screen.auxiliaryTopRightArea.minX`.

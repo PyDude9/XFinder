@@ -132,4 +132,22 @@ enum MenuBarReadouts {
             return l + value(k, in: snapshot)
         }.joined(separator: "  ")
     }
+
+    // MARK: XF-T22 — Main status item migration & notch-safe placement
+
+    static let hideOwnIconKey = "menubar.hideOwnIcon"
+    static let legacyHiderKey = "menubar.hiderEnabled"
+
+    /// One-time migration: only when the new key has never been stored and the retired hider was on.
+    static func shouldMigrateLegacyHider(hideOwnIconStored: Bool?, legacyHiderEnabled: Bool?) -> Bool {
+        hideOwnIconStored == nil && legacyHiderEnabled == true
+    }
+
+    /// True when a visible status item on a notched screen is pushed into or past the notch
+    /// (left of `screen.auxiliaryTopRightArea.minX`, or collapsed to zero width).
+    static func needsNotchRecovery(itemMinX: Double, itemWidth: Double,
+                                   auxiliaryTopRightMinX: Double, auxiliaryTopRightWidth: Double) -> Bool {
+        guard auxiliaryTopRightWidth > 0 else { return false }
+        return itemWidth <= 0 || itemMinX < auxiliaryTopRightMinX
+    }
 }

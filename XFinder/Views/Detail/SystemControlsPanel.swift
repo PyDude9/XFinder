@@ -34,8 +34,10 @@ struct SystemControlsPanel: View {
     /// that was folded into this row: a running hold keeps the duration it started with.
     @State private var antiSleepMinutes: Int? = nil
     @AppStorage("caffeine.keepDisplayOn") private var keepDisplayOn = true
+    @AppStorage("caffeine.requestLidWake") private var requestLidWake = false
     @AppStorage("cleaning.minutes") private var cleaningMinutes = 2
     @State private var cleaning = CleaningModeController.shared
+    @State private var hasBattery = PowerManager.hasBattery()
 
     /// Dock auto-hide is a real, readable/writable public preference, so it is
     /// a genuine two-way toggle rather than a fire-and-forget button.
@@ -49,6 +51,8 @@ struct SystemControlsPanel: View {
             dockAutohide = DockPrefs.autohide()
             desktopIconsHidden = !DesktopIconsPrefs.showIcons()
             brightDenied = !WindowManager.isTrusted
+            hasBattery = PowerManager.hasBattery()
+            caffeine.refreshPowerState()
             brightnessSlider = brightness.level ?? 0.5
             volumeObserver.retain()
             audioOutputs.retain()
@@ -242,6 +246,13 @@ struct SystemControlsPanel: View {
                           isOn: $keepDisplayOn)
                     .onChange(of: keepDisplayOn) { caffeine.applyDisplaySetting() }
 
+                if hasBattery {
+                    ToggleRow(title: L10n.t("Giữ thức khi đóng nắp"),
+                              subtitle: lidWakeSubtitle,
+                              isOn: $requestLidWake)
+                        .onChange(of: requestLidWake) { _, on in caffeine.setLidWakeRequested(on) }
+                }
+
                 HStack(spacing: XFinderTokens.Space.inline) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(L10n.t("Lau bàn phím")).font(XFinderTokens.Font.row)
@@ -304,6 +315,21 @@ struct SystemControlsPanel: View {
         return caffeine.isActive ? L10n.t("∞ Vô hạn") : L10n.t("Đang tắt")
     }
 
+    private var lidWakeSubtitle: String {
+        switch caffeine.lidWakeState {
+        case .active:
+            return L10n.t("Đang giữ thức khi đóng nắp (đang cắm nguồn). macOS vẫn có thể cho máy ngủ nếu không có màn hình ngoài.")
+        case .waitingForCaffeine:
+            return L10n.t("Đã bật yêu cầu đóng nắp — chưa hoạt động vì Chống ngủ đang tắt. Cần cắm nguồn.")
+        case .waitingForACPower:
+            return L10n.t("Đã bật yêu cầu đóng nắp — đang tạm dừng vì dùng pin (cần cắm nguồn).")
+        case .unavailable:
+            return L10n.t("Không tạo được yêu cầu giữ thức khi đóng nắp từ macOS.")
+        case .off:
+            return L10n.t("Cần bật Chống ngủ và cắm nguồn. macOS vẫn có thể cho máy ngủ khi đóng nắp.")
+        }
+    }
+
     private var antiSleepRow: some View {
         HStack(spacing: XFinderTokens.Space.inline) {
             VStack(alignment: .leading, spacing: 2) {
@@ -317,10 +343,9 @@ struct SystemControlsPanel: View {
             }
             Spacer()
             Picker(L10n.t("Thời lượng"), selection: $antiSleepMinutes) {
-                Text(L10n.t("Vô hạn")).tag(Int?.none)
-                Text(L10n.t("15 phút")).tag(Int?.some(15))
-                Text(L10n.t("1 giờ")).tag(Int?.some(60))
-                Text(L10n.t("2 giờ")).tag(Int?.some(120))
+                ForEach(MenubarPanelRules.unsleepPresets) { preset in
+                    Text(L10n.t(preset.labelKey)).tag(preset.minutes == 0 ? Int?.none : Int?.some(preset.minutes))
+                }
             }
             .pickerStyle(.menu)
             .labelsHidden()

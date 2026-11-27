@@ -19,6 +19,8 @@ lưu ở `caffeine.until` (Double, giây từ 1970; 0 = tắt; −1 = vô hạn)
 bằng pin và pin ≤ 10 % ⇒ tắt + thông báo "Đã tắt Chống ngủ vì pin yếu" (kiểm mỗi lần đếm ngược, không timer mới). Luật thuần
 `CaffeineRules` (thời điểm hết hạn, còn hạn hay không, có phải tắt vì pin không).
 
+**2.1b Giữ thức khi đóng nắp (phụ lục).** `caffeine.requestLidWake` (Bool, mặc định **`false`** — giữ nguyên mặc định hiện có, khai báo trong `CaffeineRules.Key.requestLidWake` và kiểm trong `FeatureKeyDefaultsTests`). Chỉ dùng API công khai `IOPMAssertionCreateWithName(kIOPMAssertionTypePreventSystemSleep, ...)` và chỉ tạo assertion `"XFinder: Closed-display wake request"` khi đủ cả ba điều kiện: `isActive == true && requestLidWake == true && onACPower`. Trên trang Hệ thống trong Notch (`354 pt` hữu dụng ở khổ hẹp), hàng `caffeineControls` phải vừa đủ menu thời lượng Caffeine, bộ đếm / nút Dừng, công tắc đóng nắp (nhãn gọn, ví dụ "Đóng nắp" / "Lid closed") và nút mở Settings mà không bị `.clipped()` ở cả VI và EN. UI phải trung thực giữa trạng thái **đã yêu cầu** (`requestLidWake`) và **đang có hiệu lực** (`lidAssertionActive`): khi công tắc BẬT nhưng Caffeine đang TẮT hoặc đang chạy pin, hiển thị trạng thái chờ / lý do chưa có hiệu lực thay vì giả vờ đang hoạt động; tooltip nêu rõ yêu cầu cắm nguồn và giới hạn macOS (đóng nắp không có màn hình ngoài vẫn có thể ngủ). Đồng bộ cùng tùy chọn trong `SystemControlsPanel` khi máy có pin (`hasBattery == true`).
+
 **2.2 Lau bàn phím.** `CleaningMode` (luật thuần + controller): một event tap nuốt `keyDown/keyUp/flagsChanged` và phím hệ thống
 (âm lượng/độ sáng, `NX_SYSDEFINED`); chuột vẫn chạy. Một lớp phủ mờ trên mọi màn hình: "Đang lau bàn phím — bấm Esc 5 lần
 hoặc Mở khoá", đồng hồ đếm ngược. Esc 5 lần trong 3 s ⇒ mở. Tự mở sau `cleaning.minutes` (Int, **2**, 1…5). Vào: menu bar
@@ -38,6 +40,12 @@ hoặc Mở khoá", đồng hồ đếm ngược. Esc 5 lần trong 3 s ⇒ mở
 | Esc lẫn phím khác | đếm lại từ đầu khi gặp phím không phải Esc hoặc quá 3 s |
 | App treo / crash khi đang lau | tap chết theo process ⇒ bàn phím tự về |
 | Màn hình khoá trong lúc lau | không đổi gì, tự mở theo hẹn |
+| Máy không có pin (`hasBattery == false`, Mac để bàn) | ẩn hẳn công tắc giữ thức khi đóng nắp |
+| Bật công tắc đóng nắp khi Caffeine đang TẮT | lưu `requestLidWake = true`, KHÔNG tạo assertion (`lidAssertionActive == false`), UI báo trạng thái chờ bật Caffeine |
+| Đang chạy pin (rút sạc giữa chừng hoặc bật khi chưa cắm sạc) | KHÔNG tạo / tự nhả assertion `PreventSystemSleep` ngay khi rút sạc; cắm lại khi Caffeine đang chạy thì tự tạo lại; UI báo cần cắm nguồn |
+| Pin tụt ≤ 10 % khi đang chạy pin | tắt Chống ngủ và nhả toàn bộ assertion kể cả lid-wake |
+| Đóng nắp khi không có màn hình ngoài (Apple Silicon) | macOS vẫn có thể cho máy ngủ dù có assertion — tooltip/mô tả nói thật, không hứa vượt giới hạn OS |
+| Chuỗi VI/EN dài trong hàng Notch khổ hẹp `354 pt` | nhãn gọn + giữ ưu tiên bố cục để dropdown thời lượng, timer, nút Dừng, công tắc đóng nắp và nút Settings đều hiện đủ không bị cắt |
 
 ## 4. Nghiệm thu
 

@@ -73,4 +73,24 @@ final class MenuBarReadoutsTests: XCTestCase {
             }
         }
     }
+
+    func testLegacyHiderMigrationRunsOnceOnlyWhenNewKeyIsUnset() {
+        XCTAssertTrue(R.shouldMigrateLegacyHider(hideOwnIconStored: nil, legacyHiderEnabled: true))
+        XCTAssertFalse(R.shouldMigrateLegacyHider(hideOwnIconStored: nil, legacyHiderEnabled: false))
+        XCTAssertFalse(R.shouldMigrateLegacyHider(hideOwnIconStored: nil, legacyHiderEnabled: nil))
+        XCTAssertFalse(R.shouldMigrateLegacyHider(hideOwnIconStored: false, legacyHiderEnabled: true),
+                       "explicit user choice to show icon must not be overwritten")
+        XCTAssertFalse(R.shouldMigrateLegacyHider(hideOwnIconStored: true, legacyHiderEnabled: true))
+    }
+
+    func testNotchRecoveryTriggersOnlyWhenItemOverflowsNotchedRightArea() {
+        // Non-notched display (auxiliaryTopRightArea width == 0): never triggers recovery
+        XCTAssertFalse(R.needsNotchRecovery(itemMinX: 100, itemWidth: 24, auxiliaryTopRightMinX: 0, auxiliaryTopRightWidth: 0))
+        // Notched display, item safely right of notch
+        XCTAssertFalse(R.needsNotchRecovery(itemMinX: 1120, itemWidth: 24, auxiliaryTopRightMinX: 1000, auxiliaryTopRightWidth: 728))
+        // Notched display, item pushed left into notch
+        XCTAssertTrue(R.needsNotchRecovery(itemMinX: 980, itemWidth: 24, auxiliaryTopRightMinX: 1000, auxiliaryTopRightWidth: 728))
+        // Notched display, item collapsed to zero width
+        XCTAssertTrue(R.needsNotchRecovery(itemMinX: 1120, itemWidth: 0, auxiliaryTopRightMinX: 1000, auxiliaryTopRightWidth: 728))
+    }
 }

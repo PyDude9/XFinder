@@ -7,8 +7,26 @@ enum CaffeineRules {
 
     enum Key {
         static let keepDisplayOn = "caffeine.keepDisplayOn"
+        static let requestLidWake = "caffeine.requestLidWake"
         static let until = "caffeine.until"
         static let cleaningMinutes = "cleaning.minutes"
+    }
+
+    /// Honest state of the closed-display (lid-wake) request: distinguishes user intent from an
+    /// active `PreventSystemSleep` assertion (which requires Caffeine active AND AC power).
+    enum LidWakeState: Equatable {
+        case off
+        case active
+        case waitingForCaffeine
+        case waitingForACPower
+        case unavailable
+    }
+
+    static func lidWakeState(requested: Bool, caffeineActive: Bool, onACPower: Bool, assertionActive: Bool) -> LidWakeState {
+        guard requested else { return .off }
+        guard caffeineActive else { return .waitingForCaffeine }
+        guard onACPower else { return .waitingForACPower }
+        return assertionActive ? .active : .unavailable
     }
 
     /// Stored end of a hold: seconds since 1970, `indefinite` for "until turned off", `off` for none.

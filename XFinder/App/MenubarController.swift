@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 /// The status item and its menu.
 ///
@@ -12,24 +13,172 @@ import AppKit
 /// Job sentence: "I click XFinder's icon to reach a quick action (clipboard, capture, timer, anti-sleep, a new note)
 /// or a page, without opening the window first."
 @MainActor
-final class MenubarController: NSObject, NSMenuDelegate {
+final class MenubarController: NSObject, NSMenuDelegate, NSPopoverDelegate {
+    static let mainAutosaveName = "xfinder.menubar.main"
+    static let readoutsAutosaveName = "xfinder.menubar.readouts"
+
     var statusItem: NSStatusItem?
+    private var readoutItem: NSStatusItem?
     private let menu = NSMenu()
+    private var popover: NSPopover?
+    private nonisolated(unsafe) var screenObserver: (any NSObjectProtocol)?
+
+    /// ONE reader (XF-T22): hide XFinder's own status item, default false.
+    var hideOwnIcon: Bool {
+        UserDefaults.standard.object(forKey: "menubar.hideOwnIcon") as? Bool ?? false
+    }
 
     func setup() {
-        let statusBar = NSStatusBar.system
-        statusItem = statusBar.statusItem(withLength: NSStatusItem.variableLength)
+        migrateLegacyHiderIfNeeded()
 
-        if let button = statusItem?.button {
-            MenuBarReadoutsController.shared.attach(button)
-        }
+        let statusBar = NSStatusBar.system
+        // Create the branded main item FIRST so macOS places it to the right of variable-width
+        // readouts (farther from the notch).
+        statusItem = statusBar.statusItem(withLength: NSStatusItem.squareLength)
+        statusItem?.autosaveName = Self.mainAutosaveName
+        configureButton(statusItem?.button, label: "XFinder")
         menu.delegate = self
         menu.autoenablesItems = false
-        statusItem?.menu = menu
         applyIcon()
+
+        let readout = statusBar.statusItem(withLength: NSStatusItem.variableLength)
+        readout.autosaveName = Self.readoutsAutosaveName
+        readoutItem = readout
+        configureButton(readout.button, label: L10n.t("Số liệu XFinder"))
+        MenuBarReadoutsController.shared.attach(readout)
+
+        screenObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.ensureMainItemRightOfNotch()
+            }
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.ensureMainItemRightOfNotch()
+        }
+
         VoiceManager.shared.onStateChange = { [weak self] state in
             self?.updateVoiceState(state)
         }
+    }
+
+    private func migrateLegacyHiderIfNeeded() {
+        let defaults = UserDefaults.standard
+        let storedHide = defaults.object(forKey: MenuBarReadouts.hideOwnIconKey) as? Bool
+        let legacyEnabled = defaults.object(forKey: MenuBarReadouts.legacyHiderKey) as? Bool
+        if MenuBarReadouts.shouldMigrateLegacyHider(hideOwnIconStored: storedHide, legacyHiderEnabled: legacyEnabled) {
+            defaults.set(true, forKey: MenuBarReadouts.hideOwnIconKey)
+        }
+    }
+
+    func applyIconVisibility() {
+        let visible = !hideOwnIcon
+        statusItem?.isVisible = visible
+        if !visible {
+            closePopover()
+            return
+        }
+        ensureMainItemRightOfNotch()
+    }
+
+    func showIconAgain() {
+        let defaults = UserDefaults.standard
+        defaults.set(false, forKey: MenuBarReadouts.hideOwnIconKey)
+        defaults.removeObject(forKey: "NSStatusItem Preferred Position \(Self.mainAutosaveName)")
+        applyIcon()
+        ensureMainItemRightOfNotch(forceReposition: true)
+    }
+
+    func ensureMainItemRightOfNotch(forceReposition: Bool = false) {
+        guard let item = statusItem, !hideOwnIcon else { return }
+        if !item.isVisible { item.isVisible = true }
+        let window = item.button?.window
+        let frame = window?.frame ?? .zero
+        let screen = window?.screen ?? NSScreen.main
+        let rightArea = screen?.auxiliaryTopRightArea ?? .zero
+        let needsRecovery = MenuBarReadouts.needsNotchRecovery(
+            itemMinX: frame.minX,
+            itemWidth: frame.width,
+            auxiliaryTopRightMinX: rightArea.minX,
+            auxiliaryTopRightWidth: rightArea.width
+        )
+        guard forceReposition || needsRecovery else { return }
+        UserDefaults.standard.removeObject(forKey: "NSStatusItem Preferred Position \(Self.mainAutosaveName)")
+        item.isVisible = false
+        item.isVisible = true
+    }
+
+    static func openSystemMenuBarSettings() {
+        let candidates = [
+            "x-apple.systempreferences:com.apple.ControlCenter-Settings.extension",
+            "x-apple.systempreferences:com.apple.preference.dock",
+        ]
+        for raw in candidates {
+            if let url = URL(string: raw), NSWorkspace.shared.open(url) { return }
+        }
+        NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/System Settings.app"))
+    }
+
+    private func configureButton(_ button: NSStatusBarButton?, label: String) {
+        guard let button else { return }
+        button.toolTip = label
+        button.setAccessibilityLabel(label)
+        button.target = self
+        button.action = #selector(statusItemClicked(_:))
+        button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+    }
+
+    @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
+        let event = NSApp.currentEvent
+        if event?.type == .rightMouseUp {
+            closePopover()
+            let clickedItem = sender === readoutItem?.button ? readoutItem : statusItem
+            clickedItem?.menu = menu
+            clickedItem?.button?.performClick(nil)
+            clickedItem?.menu = nil
+            return
+        }
+        togglePopover(relativeTo: sender)
+    }
+
+    private func togglePopover(relativeTo button: NSStatusBarButton) {
+        if let popover, popover.isShown {
+            closePopover()
+            return
+        }
+        let pop = NSPopover()
+        pop.behavior = .transient
+        pop.animates = true
+        pop.delegate = self
+        pop.contentSize = NSSize(width: MenubarPanelRules.panelWidth, height: MenubarPanelRules.panelHeight)
+        pop.contentViewController = NSHostingController(rootView: MenubarPanelView(
+            onClose: { [weak self] in
+                self?.closePopover()
+            },
+            onShowMenu: { [weak self] in
+                self?.closePopover()
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    self.statusItem?.menu = self.menu
+                    self.statusItem?.button?.performClick(nil)
+                    self.statusItem?.menu = nil
+                }
+            }
+        ))
+        popover = pop
+        pop.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        pop.contentViewController?.view.window?.makeKey()
+    }
+
+    private func closePopover() {
+        popover?.performClose(nil)
+    }
+
+    func popoverDidClose(_ notification: Notification) {
+        popover?.contentViewController = nil
+        popover = nil
     }
 
 
@@ -72,13 +221,22 @@ final class MenubarController: NSObject, NSMenuDelegate {
 
     /// Các lựa chọn biểu tượng menubar (monochrome, SF Symbols kiểu macOS).
     static let iconChoices: [(id: String, symbol: String, title: String)] = [
+        ("xfinder", "magnifyingglass.circle.fill", "XFinder"),
         ("magnifier", "magnifyingglass", L10n.t("Kính lúp")),
         ("folder", "folder.fill", L10n.t("Thư mục")),
         ("stack", "rectangle.stack.fill", L10n.t("Chồng lớp")),
     ]
 
     func applyIcon() {
-        let raw = UserDefaults.standard.string(forKey: "menubar.icon") ?? "magnifier"
+        statusItem?.isVisible = !hideOwnIcon
+        let raw = UserDefaults.standard.string(forKey: "menubar.icon") ?? "xfinder"
+        if raw == "xfinder", let url = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+           let image = NSImage(contentsOf: url) {
+            image.size = NSSize(width: 18, height: 18)
+            image.isTemplate = false
+            statusItem?.button?.image = image
+            return
+        }
         let symbol = Self.iconChoices.first(where: { $0.id == raw })?.symbol ?? "magnifyingglass"
         guard let base = NSImage(systemSymbolName: symbol, accessibilityDescription: "XFinder") else { return }
         // Màu (xanh accent) thay vì trắng đơn sắc — để thấy rõ "logo", không còn
@@ -104,50 +262,86 @@ final class MenubarController: NSObject, NSMenuDelegate {
             menu.addItem(.separator())
         }
 
-        // Clipboard
+        // Command Bar & File Browser
+        let cmdBar = ActionItem(L10n.t("Bảng lệnh")) { QuickSearchPanelController.shared.toggle() }
+        cmdBar.setShortcut("k", [.command])
+        cmdBar.image = Self.menuSymbol("command")
+        menu.addItem(cmdBar)
         if BrowserSettings.isEnabled {
-            menu.addItem(ActionItem(L10n.t("Trình duyệt tệp")) { BrowserWindowController.shared.openWindow(path: nil) })
+            let browser = ActionItem(L10n.t("Trình duyệt tệp")) { BrowserWindowController.shared.openWindow(path: nil) }
+            browser.image = Self.menuSymbol("square.split.2x2")
+            menu.addItem(browser)
         }
-        menu.addItem(ActionItem(L10n.t("Thư viện Clipboard")) { AppState.shared.navigate(to: .clipboard) })
-        menu.addItem(clipboardOpenItem())
+        menu.addItem(.separator())
+
+        // Clipboard & Snippets
+        let clipLib = ActionItem(L10n.t("Thư viện Clipboard")) { AppState.shared.navigate(to: .clipboard) }
+        clipLib.image = Self.menuSymbol("doc.on.clipboard")
+        menu.addItem(clipLib)
+        let clipOpen = clipboardOpenItem()
+        clipOpen.image = Self.menuSymbol("clipboard")
+        menu.addItem(clipOpen)
+        if !TextSnippetStore.shared.snippets.isEmpty {
+            menu.addItem(snippetsItem())
+        }
         let paused = ClipboardManager.shared.isPaused
         let pause = ActionItem(L10n.t("Tạm dừng ghi clipboard")) {
             // `ClipboardManager.isPaused` is the one reader; the Cài đặt Clipboard switch binds the same key.
             UserDefaults.standard.set(!ClipboardManager.shared.isPaused, forKey: "clipboard.paused")
         }
         pause.state = paused ? .on : .off
+        pause.image = Self.menuSymbol(paused ? "play.circle" : "pause.circle")
         menu.addItem(pause)
         menu.addItem(.separator())
 
-        // Quick actions
-        menu.addItem(captureItem())
+        // Quick actions & Unsleep
+        let antiSleep = antiSleepItem()
+        antiSleep.image = Self.menuSymbol("cup.and.saucer.fill")
+        menu.addItem(antiSleep)
+        menu.addItem(quickSettingsItem())
+        let capture = captureItem()
+        capture.image = Self.menuSymbol("camera.viewfinder")
+        menu.addItem(capture)
         if TranslateSelectionController.shared.isEnabled {
             let translate = ActionItem(L10n.t("Dịch vùng chọn")) {
                 TranslateSelectionController.shared.translateSelection()
             }
             translate.setShortcut("g", [.command, .shift])
+            translate.image = Self.menuSymbol("character.book.closed")
             menu.addItem(translate)
         }
         // The timer lives on the notch; with the notch off `startTimer` does nothing, so the row is not offered.
         if NotchSurfaceController.shared.isEnabled {
-            menu.addItem(timerItem())
+            let timer = timerItem()
+            timer.image = Self.menuSymbol("timer")
+            menu.addItem(timer)
         }
-        menu.addItem(antiSleepItem())
-        menu.addItem(ActionItem(L10n.t("Lau bàn phím…")) { CleaningModeController.shared.start() })
+        let cleaning = ActionItem(L10n.t("Lau bàn phím…")) { CleaningModeController.shared.start() }
+        cleaning.image = Self.menuSymbol("keyboard.badge.eye")
+        menu.addItem(cleaning)
         // `createNote()` turns the screen-edge notes on itself when they are off — this row is how a note is made.
-        menu.addItem(ActionItem(L10n.t("Ghi chú mới")) { EdgeNotesController.shared.createNote() })
+        let note = ActionItem(L10n.t("Ghi chú mới")) { EdgeNotesController.shared.createNote() }
+        note.image = Self.menuSymbol("note.text.badge.plus")
+        menu.addItem(note)
         menu.addItem(.separator())
 
         // Pages
-        menu.addItem(ActionItem(L10n.t("Theo dõi hệ thống")) { AppState.shared.navigate(to: .system) })
+        let sys = ActionItem(L10n.t("Theo dõi hệ thống")) { AppState.shared.navigate(to: .system) }
+        sys.image = Self.menuSymbol("cpu")
+        menu.addItem(sys)
         let settings = ActionItem(L10n.t("Cài đặt…")) { AppState.shared.navigate(to: .features) }
         settings.setShortcut(",", [.command])
+        settings.image = Self.menuSymbol("gearshape")
         menu.addItem(settings)
-        menu.addItem(ActionItem(L10n.t("Kiểm tra cập nhật…")) {
+        let update = ActionItem(L10n.t("Kiểm tra cập nhật…")) {
             AppState.shared.navigate(to: .about)   // the result is shown on that page
             UpdateChecker.shared.check()
-        })
-        menu.addItem(helpItem())
+        }
+        update.image = Self.menuSymbol("arrow.triangle.2.circlepath")
+        menu.addItem(update)
+        let help = helpItem()
+        help.image = Self.menuSymbol("questionmark.circle")
+        menu.addItem(help)
         menu.addItem(.separator())
 
         // App
@@ -172,6 +366,78 @@ final class MenubarController: NSObject, NSMenuDelegate {
         let item = ActionItem(title) { ClipboardShelfController.shared.hotkeyPressed() }
         if shelf.tapIsLive { item.setShortcut("v", [.command, .shift]) }
         return item
+    }
+
+    private static func menuSymbol(_ name: String) -> NSImage? {
+        let img = NSImage(systemSymbolName: name, accessibilityDescription: nil)
+        img?.isTemplate = true
+        return img
+    }
+
+    private func snippetsItem() -> NSMenuItem {
+        let parent = NSMenuItem(title: L10n.t("Đoạn văn bản nhanh"), action: nil, keyEquivalent: "")
+        parent.image = Self.menuSymbol("text.badge.plus")
+        let sub = NSMenu()
+        sub.autoenablesItems = false
+        for snippet in TextSnippetStore.shared.snippets where snippet.isEnabled {
+            let item = ActionItem("\(snippet.trigger) — \(snippet.expansion.prefix(36))") {
+                TextSnippetStore.shared.copyExpanded(snippet)
+            }
+            sub.addItem(item)
+        }
+        if sub.items.isEmpty {
+            let empty = NSMenuItem(title: L10n.t("Chưa có đoạn văn bản nhanh nào."), action: nil, keyEquivalent: "")
+            empty.isEnabled = false
+            sub.addItem(empty)
+        }
+        parent.submenu = sub
+        return parent
+    }
+
+    private func quickSettingsItem() -> NSMenuItem {
+        let parent = NSMenuItem(title: L10n.t("Cài đặt nhanh"), action: nil, keyEquivalent: "")
+        parent.image = Self.menuSymbol("slider.horizontal.3")
+        let sub = NSMenu()
+        sub.autoenablesItems = false
+
+        let isDark = SystemControls.isDarkMode()
+        let darkItem = ActionItem(L10n.t("Chế độ tối (Dark Mode)")) {
+            Task { @MainActor in
+                _ = await SystemControls.setAppearance(isDark ? .light : .dark)
+            }
+        }
+        darkItem.state = isDark ? .on : .off
+        darkItem.image = Self.menuSymbol("moon.fill")
+        sub.addItem(darkItem)
+
+        let dockAuto = DockPrefs.autohide()
+        let dockItem = ActionItem(L10n.t("Tự động ẩn Dock của macOS")) {
+            DockPrefs.setAutohide(!dockAuto)
+        }
+        dockItem.state = dockAuto ? .on : .off
+        dockItem.image = Self.menuSymbol("dock.rectangle")
+        sub.addItem(dockItem)
+
+        let fixedSpaces = SpacesOrderController.isFixedEnabled
+        let spacesItem = ActionItem(L10n.t("Cố định thứ tự không gian làm việc (Spaces)")) {
+            SpacesOrderController.setFixedOrder(!fixedSpaces)
+        }
+        spacesItem.state = fixedSpaces ? .on : .off
+        spacesItem.image = Self.menuSymbol("rectangle.3.group")
+        sub.addItem(spacesItem)
+
+        sub.addItem(.separator())
+        let sleepDisplay = ActionItem(L10n.t("Tắt màn hình ngay")) {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
+            p.arguments = ["displaysleepnow"]
+            try? p.run()
+        }
+        sleepDisplay.image = Self.menuSymbol("lock.fill")
+        sub.addItem(sleepDisplay)
+
+        parent.submenu = sub
+        return parent
     }
 
     private func captureItem() -> NSMenuItem {

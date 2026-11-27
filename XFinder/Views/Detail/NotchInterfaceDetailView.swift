@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import AppKit
 
 /// One connected display, as the Settings page shows it. Identity is the numeric CGDirectDisplayID —
@@ -8,6 +9,7 @@ private struct NotchDisplayChoice: Identifiable, Equatable {
     let name: String
     let isMain: Bool
     let hasPhysicalNotch: Bool
+    let frame: CGRect
 }
 
 /// Read at render time so a screen plugged in after the page opened is never the stale list.
@@ -20,7 +22,8 @@ private func notchConnectedDisplays() -> [NotchDisplayChoice] {
         return NotchDisplayChoice(id: id,
                                   name: screen.localizedName,
                                   isMain: screen == NSScreen.screens.first,
-                                  hasPhysicalNotch: screen.auxiliaryTopLeftArea != nil && screen.auxiliaryTopRightArea != nil)
+                                  hasPhysicalNotch: screen.auxiliaryTopLeftArea != nil && screen.auxiliaryTopRightArea != nil,
+                                  frame: screen.frame)
     }
 }
 
@@ -32,6 +35,46 @@ private func notchConnectedDisplays() -> [NotchDisplayChoice] {
 /// its existing key, default and live effect. The display target is only WRITTEN here; which screen wins is
 /// decided by `NotchDisplayTargetRules` (XF-NOTCH-01) and applied by `NotchSurfaceController`.
 struct NotchInterfaceDetailView: View {
+    enum ToolPage { case stocks, revenue }
+
+    var embeddedInNotch = false
+    private let toolPage: ToolPage?
+    @State private var inlineSection: InlineSection = .tabs
+    @State private var draggedTab: NotchDestinationID?
+    @State private var scaleRevision = 0
+    private static let tabDragType = UTType(importedAs: "com.xfinder.app.island-tab")
+
+    private enum InlineSection: String, CaseIterable {
+        case general, display, tabs, appearance, stocks, about
+
+        var title: String {
+            switch self {
+            case .general: L10n.t("Chung")
+            case .display: L10n.t("Màn hình đích")
+            case .tabs: L10n.t("Các tab")
+            case .appearance: L10n.t("Giao diện")
+            case .stocks: L10n.t("Chứng khoán")
+            case .about: L10n.t("Giới thiệu")
+            }
+        }
+
+        var symbol: String {
+            switch self {
+            case .general: "gearshape"
+            case .display: "display"
+            case .tabs: "rectangle.bottomthird.inset.filled"
+            case .appearance: "paintbrush"
+            case .stocks: "chart.line.uptrend.xyaxis"
+            case .about: "info.circle"
+            }
+        }
+    }
+
+    init(embeddedInNotch: Bool = false, showStocks: Bool = false, toolPage: ToolPage? = nil) {
+        self.embeddedInNotch = embeddedInNotch
+        self.toolPage = toolPage
+        _inlineSection = State(initialValue: showStocks ? .stocks : .tabs)
+    }
     // Master switch of the whole notch surface (NotchSurfaceController.swift:63-64) — turning it off
     // disables the tray, clipboard, now playing, agents and calendar surfaces all at once.
     @AppStorage("dropTray.notchEnabled") private var notchEnabled = true
@@ -54,8 +97,10 @@ struct NotchInterfaceDetailView: View {
     @AppStorage("notch.hideFromCapture") private var hideFromCapture = false
     @AppStorage("notch.fullscreenVisibility") private var fullscreenVisibility = "show"
 
-    /// D1 #44 — page order + visibility; one reader: `NotchSurfaceController.pageOrderRaw`.
+    /// D1 #44 — legacy page order + visibility; kept for migration compatibility (`NotchPagesTests`, `FeatureKeyDefaultsTests`).
     @AppStorage("notch.pages") private var pagesRaw = "files,clipboard,nowPlaying,agents,calendar,timer,aiUsage"
+    /// XF-ISLAND-C — unified ordered visibility catalog for legacy pages + extra modules (`NotchDestinationCatalog`).
+    @AppStorage("notch.tabCatalog.v1") private var catalogRaw = ""
     /// D1 #47 — accent of the notch surfaces; one reader: `NotchSurfaceController.accentName`.
     @AppStorage("notch.accent") private var accent = "system"
 
@@ -64,31 +109,319 @@ struct NotchInterfaceDetailView: View {
     /// counter only tells SwiftUI to redraw (event-driven — no timer polls the display list).
     @State private var screenRevision = 0
 
+    // Explicit Stocks/Crypto watchlist management (persisted independently of quote provider configuration).
+    @State private var stocksWatchlist: [StockAssetDescriptor] = []
+    @State private var stocksKeyDraft = ""
+    @AppStorage(StocksAPIKey.Source.preferenceKey) private var selectedStockSource: StocksAPIKey.Source = .twelveData
+    @State private var hasStocksKey = false
+    @State private var stocksKeySaveFailed = false
+    @State private var stocksSearchQuery = ""
+
+    // Explicit read-only Revenue connector form state (starts disconnected; tokens live only in Keychain).
+    @State private var stripeAccountId = ""
+    @State private var stripeLabel = ""
+    @State private var stripeTimeZone = "America/New_York"
+    @State private var stripeTokenInput = ""
+    @State private var stripeStoredMask: String?
+    @State private var stripeFeedback: String?
+
+    @State private var shopifyShopDomain = ""
+    @State private var shopifyLabel = ""
+    @State private var shopifyTimeZone = "America/New_York"
+    @State private var shopifyHasPayoutScope = false
+    @State private var shopifyTokenInput = ""
+    @State private var shopifyStoredMask: String?
+    @State private var shopifyFeedback: String?
+
+    private static let revenueTimeZoneChoices = [
+        "America/New_York",
+        "America/Los_Angeles",
+        "UTC",
+        "Europe/London",
+        "Asia/Ho_Chi_Minh",
+        "Asia/Tokyo",
+    ]
+
     var body: some View {
+        Group {
+            if embeddedInNotch { inlineBody }
+            else if let toolPage { toolPageBody(toolPage) }
+            else { windowBody }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)) { _ in
+            screenRevision &+= 1
+        }
+    }
+
+    private func toolPageBody(_ page: ToolPage) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
-                PageHeader(title: L10n.t("Giao diện notch"),
-                    subtitle: L10n.t("Bật tắt notch, chọn cách nó mở, màn hình đích, hình dạng và quyền riêng tư, cùng các trang nó hiện."))
-
-                enabledSection
-                openingSection
-                    .disabled(!notchEnabled)
-                displayTargetSection
-                    .disabled(!notchEnabled)
-                appearanceSection
-                    .disabled(!notchEnabled)
-                pagesSection
-                    .disabled(!notchEnabled)
+                switch page {
+                case .stocks:
+                    PageHeader(title: L10n.t("Chứng khoán"), subtitle: L10n.t("Cài nguồn giá và danh sách theo dõi trên Dynamic Island."))
+                    stocksWatchlistSection
+                case .revenue:
+                    PageHeader(title: L10n.t("Doanh thu"), subtitle: L10n.t("Quản lý kết nối Stripe và Shopify trên Dynamic Island."))
+                    revenueConnectionsSection
+                }
             }
             .padding(.bottom, XFinderTokens.Space.section)
             .pageWidthSafe()
         }
         .background(XFinderTokens.Settings.contentBackground)
+        .onAppear {
+            switch page {
+            case .stocks: reloadStocksWatchlistForm()
+            case .revenue: reloadRevenueConnectionForms()
+            }
+        }
+    }
+
+    private var windowBody: some View {
+        ScrollViewReader { scroll in
+            ScrollView {
+                VStack(alignment: .leading, spacing: XFinderTokens.Settings.sectionGap) {
+                    PageHeader(title: L10n.t("Giao diện notch"),
+                        subtitle: L10n.t("Bật tắt notch, chọn cách nó mở, màn hình đích, hình dạng và quyền riêng tư, cùng các trang nó hiện."))
+
+                    HStack {
+                        Button(L10n.t("Các tab")) { scroll.scrollTo(InlineSection.tabs, anchor: .top) }
+                        Button(L10n.t("Chứng khoán")) { AppState.shared.navigate(to: .stocks) }
+                    }
+                    .buttonStyle(.bordered)
+
+                    enabledSection
+                    openingSection
+                        .disabled(!notchEnabled)
+                    displayTargetSection
+                        .disabled(!notchEnabled)
+                    inlineScaleSection
+                        .disabled(!notchEnabled)
+                    appearanceSection
+                        .disabled(!notchEnabled)
+                    pagesSection
+                        .disabled(!notchEnabled)
+                        .id(InlineSection.tabs)
+                }
+                .padding(.bottom, XFinderTokens.Space.section)
+                .pageWidthSafe()
+            }
+        }
+        .background(XFinderTokens.Settings.contentBackground)
         // macOS reports a plug/unplug/rearrange here; redrawing re-reads the list so a new screen is
         // selectable and a departed one shows as disconnected instead of vanishing from the rows.
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)) { _ in
-            screenRevision &+= 1
+    }
+
+    private var inlineBody: some View {
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
+                ForEach(InlineSection.allCases, id: \.self) { section in
+                    Button {
+                        inlineSection = section
+                    } label: {
+                        Label(section.title, systemImage: section.symbol)
+                            .font(XFinderTokens.Font.caption)
+                            .fontWeight(inlineSection == section ? .semibold : .regular)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(6)
+                            .background(.white.opacity(inlineSection == section ? 0.13 : 0), in: RoundedRectangle(cornerRadius: XFinderTokens.Radius.control))
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(section.title)
+                    .accessibilityAddTraits(inlineSection == section ? .isSelected : [])
+                }
+            }
+            .frame(width: 139)
+            Divider()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    switch inlineSection {
+                    case .general:
+                        enabledSection
+                        openingSection
+                        Button(L10n.t("Phím tắt")) {
+                            NotchSurfaceController.shared.dismiss()
+                            AppState.shared.navigate(to: .shortcuts)
+                        }
+                        .buttonStyle(NotchPillButtonStyle(primary: false))
+                    case .display:
+                        inlineScaleSection
+                        displayTargetSection
+                    case .tabs: inlineTabs
+                    case .appearance: appearanceSection
+                    case .stocks: stocksWatchlistSection
+                        .onAppear { reloadStocksWatchlistForm() }
+                    case .about:
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("XFinder").font(.headline)
+                            if let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String {
+                                Text(version).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Button(L10n.t("Cài đặt đầy đủ")) {
+                                NotchSurfaceController.shared.openNotchSettings()
+                            }
+                            .buttonStyle(NotchPillButtonStyle(primary: false))
+                        }
+                        .padding(.leading, 8)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .id(inlineSection)
         }
+        .environment(\.colorScheme, .dark)
+        .onDisappear { draggedTab = nil }
+    }
+
+    private var inlineScaleSection: some View {
+        let _ = scaleRevision
+        let controller = NotchSurfaceController.shared
+        let displays = connectedDisplays
+        return SettingsSection(title: L10n.t("Cỡ notch theo màn hình")) {
+            if !displays.isEmpty { inlineDisplayMap(displays).padding(.vertical, 8) }
+            ForEach(displays) { display in
+                HStack {
+                    Label(display.name, systemImage: display.hasPhysicalNotch ? "laptopcomputer" : "display")
+                        .lineLimit(1)
+                    Spacer()
+                    Picker("", selection: Binding(
+                        get: { controller.displayScale(for: display.id) },
+                        set: { scale in
+                            controller.setDisplayScale(scale, for: display.id)
+                            scaleRevision &+= 1
+                        })) {
+                        Text(L10n.t("Nhỏ")).tag(NotchDisplayScale.small)
+                        Text(L10n.t("Chuẩn")).tag(NotchDisplayScale.regular)
+                        Text(L10n.t("Lớn")).tag(NotchDisplayScale.large)
+                    }
+                    .labelsHidden()
+                    .accessibilityLabel(display.name)
+                }
+                .settingsRow()
+            }
+        }
+    }
+
+    private func inlineDisplayMap(_ displays: [NotchDisplayChoice]) -> some View {
+        let bounds = displays.reduce(CGRect.null) { $0.union($1.frame) }
+        return GeometryReader { geometry in
+            let scale = min(geometry.size.width / max(1, bounds.width), geometry.size.height / max(1, bounds.height))
+            ForEach(displays) { display in
+                let frame = display.frame
+                let width = max(2, frame.width * scale - 3)
+                let height = max(2, frame.height * scale - 3)
+                RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge)
+                    .fill(Color.primary.opacity(display.isMain ? 0.22 : 0.10))
+                    .overlay {
+                        if width > 30 && height > 16 {
+                            Image(systemName: display.hasPhysicalNotch ? "laptopcomputer" : "display")
+                                .font(.caption)
+                        }
+                    }
+                    .frame(width: width, height: height)
+                    .position(x: geometry.size.width / 2 + (frame.midX - bounds.midX) * scale,
+                              y: geometry.size.height / 2 - (frame.midY - bounds.midY) * scale)
+                    .help(display.name)
+            }
+        }
+        .frame(height: 54)
+        .accessibilityHidden(true)
+    }
+
+    private var inlineTabs: some View {
+        let catalog = currentCatalog
+        return VStack(alignment: .leading, spacing: 8) {
+            inlineTabGroup(catalog.entries.filter(\.enabled), title: L10n.t("Tab đang bật"))
+            inlineTabGroup(catalog.entries.filter { !$0.enabled }, title: L10n.t("Công cụ đang tắt"))
+            Button(L10n.t("Khôi phục mặc định"), action: resetCatalogToDefaults)
+                .buttonStyle(NotchPillButtonStyle(primary: false))
+        }
+    }
+
+    private func inlineTabGroup(_ entries: [NotchTabEntry], title: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title).font(XFinderTokens.Font.caption).fontWeight(.semibold).foregroundStyle(.secondary)
+            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                inlineTabRow(entry, previous: index > 0 ? entries[index - 1].id : nil,
+                             next: index + 1 < entries.count ? entries[index + 1].id : nil)
+            }
+        }
+    }
+
+    private func inlineTabRow(_ entry: NotchTabEntry, previous: NotchDestinationID?, next: NotchDestinationID?) -> some View {
+        let id = entry.id
+        let readiness = NotchSurfaceController.shared.destinationAvailability.readiness(for: id)
+        return HStack(spacing: 8) {
+            Image(systemName: "line.3.horizontal")
+                .foregroundStyle(.secondary)
+                .frame(width: 22, height: 24)
+                .contentShape(Rectangle())
+                .onDrag {
+                    draggedTab = id
+                    let provider = NSItemProvider()
+                    provider.registerDataRepresentation(forTypeIdentifier: Self.tabDragType.identifier, visibility: .ownProcess) { completion in
+                        completion(Data(), nil)
+                        return nil
+                    }
+                    return provider
+                }
+                .accessibilityHidden(true)
+            Image(systemName: id.symbol).frame(width: 17)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L10n.t(id.titleKey)).lineLimit(1)
+                if let subtitle = readinessSubtitle(for: readiness) {
+                    Text(subtitle).font(.caption2).foregroundStyle(.orange).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 2)
+            if let target = configureDestination(for: id, readiness: readiness) {
+                Button(L10n.t("Cấu hình…")) {
+                    NotchSurfaceController.shared.dismiss()
+                    AppState.shared.navigate(to: target)
+                }
+                .buttonStyle(.link)
+            }
+            inlineMoveButton(id, to: previous, symbol: "chevron.up", title: L10n.t("Lên"))
+            inlineMoveButton(id, to: next, symbol: "chevron.down", title: L10n.t("Xuống"))
+            Toggle(L10n.t(id.titleKey), isOn: Binding(
+                get: { entry.enabled },
+                set: { commitCatalog(currentCatalog.setting(id, enabled: $0)) }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+        }
+        .font(XFinderTokens.Font.caption)
+        .padding(.horizontal, 6)
+        .frame(minHeight: 30)
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: XFinderTokens.Radius.badge))
+        .onDrop(of: [Self.tabDragType], isTargeted: nil) { _ in
+            guard let source = draggedTab else { return false }
+            draggedTab = nil
+            return moveInlineTab(source, to: id)
+        }
+    }
+
+    private func inlineMoveButton(_ id: NotchDestinationID, to target: NotchDestinationID?, symbol: String, title: String) -> some View {
+        Button {
+            if let target { _ = moveInlineTab(id, to: target) }
+        } label: {
+            Image(systemName: symbol).frame(width: 16, height: 22).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(target == nil)
+        .help(title)
+        .accessibilityLabel(title)
+    }
+
+    private func moveInlineTab(_ id: NotchDestinationID, to target: NotchDestinationID) -> Bool {
+        let current = currentCatalog
+        let moved = current.movedWithinVisibilityGroup(id, to: target)
+        guard current != moved else { return false }
+        commitCatalog(moved)
+        return true
     }
 
     // MARK: - 1. Bật/tắt
@@ -359,51 +692,6 @@ struct NotchInterfaceDetailView: View {
             InlineNote(kind: .warning,
                        text: L10n.t("Đây là trạng thái chia sẻ của riêng cửa sổ notch, không phải bảo đảm cho mọi cách chụp: công cụ chụp khác, bản macOS khác hoặc cách chia sẻ khác có thể vẫn thấy notch."))
                 .padding(.bottom, 2)
-        }
-    }
-
-    // MARK: - 5. Trang và màu
-
-    /// D1 #44 / #47: which tabs the hub shows and in what order, and the surfaces' accent.
-    private var pagesSection: some View {
-        let shown = NotchPages.parse(pagesRaw)
-        return SettingsSection(
-            title: L10n.t("Trang và màu"),
-            footer: L10n.t("Bật, tắt và sắp xếp thứ tự các tab trong hub. Tắt Clipboard thì ⌘⇧V mở khay nổi cũ. Vuốt hai ngón ngang trên dải tab để đổi trang.")
-        ) {
-            ForEach(Array(NotchPages.allInOrder(shown: shown).enumerated()), id: \.element) { entry in
-                let page = entry.element
-                let isShown = shown.contains(page)
-                let index = shown.firstIndex(of: page)
-                if entry.offset > 0 { SettingsDivider() }
-                HStack(spacing: XFinderTokens.Space.inline) {
-                    Image(systemName: pageIcon(page)).font(XFinderTokens.Font.sectionIcon).foregroundColor(.secondary).frame(width: 18)
-                    Text(pageTitle(page)).font(XFinderTokens.Font.row)
-                    Spacer()
-                    Button { pagesRaw = NotchPages.serialize(NotchPages.moved(page, by: -1, in: shown)) } label: { Image(systemName: "chevron.up") }
-                        .buttonStyle(.bordered).controlSize(.small)
-                        .disabled(!isShown || index == 0)
-                        .help(L10n.t("Lên"))
-                        .accessibilityLabel(L10n.t("Lên"))
-                    Button { pagesRaw = NotchPages.serialize(NotchPages.moved(page, by: 1, in: shown)) } label: { Image(systemName: "chevron.down") }
-                        .buttonStyle(.bordered).controlSize(.small)
-                        .disabled(!isShown || index == shown.count - 1)
-                        .help(L10n.t("Xuống"))
-                        .accessibilityLabel(L10n.t("Xuống"))
-                    Toggle("", isOn: Binding(get: { isShown },
-                                             set: { _ in pagesRaw = NotchPages.serialize(NotchPages.toggled(page, in: shown)) }))
-                        .toggleStyle(.switch).labelsHidden().controlSize(.small)
-                        .disabled(isShown && shown.count == 1)
-                }
-                .settingsRow()
-            }
-            SettingsDivider()
-            HStack {
-                Spacer()
-                Button(L10n.t("Khôi phục mặc định")) { pagesRaw = NotchPages.defaultRaw }
-                    .buttonStyle(.bordered).controlSize(.small)
-            }
-            .settingsRow()
             SettingsDivider()
             PickerRow(title: L10n.t("Màu nhấn"),
                       subtitle: L10n.t("Màu của viền chọn, thẻ đang chọn và các điểm nhấn trên notch."),
@@ -419,10 +707,436 @@ struct NotchInterfaceDetailView: View {
             .onChange(of: accent) { NotchSurfaceController.shared.applySettings() }
             .settingsRow()
         }
+    }
+
+    // MARK: - 5. Dynamic Island tabs
+
+    private var currentCatalog: NotchTabCatalogState {
+        let legacy = UserDefaults.standard.string(forKey: NotchPages.key)
+        return NotchDestinationCatalog.parse(
+            catalogRaw: catalogRaw.isEmpty ? nil : catalogRaw,
+            legacyPagesRaw: legacy
+        )
+    }
+
+    private func commitCatalog(_ next: NotchTabCatalogState) {
+        NotchSurfaceController.shared.commitNotchCatalog(next)
+    }
+
+    private func resetCatalogToDefaults() {
+        commitCatalog(NotchDestinationCatalog.defaultState)
+    }
+
+    /// XF-ISLAND-C / D1 #44 / #47: unified ordered visibility for every Dynamic Island destination
+    /// (legacy pages + extra modules), preserving hidden-tab order, separating enablement from readiness,
+    /// and allowing intentional all-hidden with always-accessible recovery.
+    private var pagesSection: some View {
+        SettingsSection(title: L10n.t("Các tab Dynamic Island")) {
+            inlineTabs.settingsRow()
+        }
+        .onChange(of: catalogRaw) { NotchSurfaceController.shared.applySettings() }
         .onChange(of: pagesRaw) { NotchSurfaceController.shared.applySettings() }
     }
 
-    /// One title and one symbol per page, shared with the hub (`NotchPages`).
-    private func pageTitle(_ p: NotchSurfaceMachine.Page) -> String { L10n.t(NotchPages.titleKey(p)) }
-    private func pageIcon(_ p: NotchSurfaceMachine.Page) -> String { NotchPages.symbol(p) }
+    private var stocksWatchlistSection: some View {
+        let searchHits = StocksWatchlistCatalog.search(stocksSearchQuery)
+        let savedIds = Set(stocksWatchlist.map(\.id))
+
+        return SettingsSection(title: L10n.t("Danh sách theo dõi Chứng khoán & BTC/USD")) {
+            stocksSourceControls.settingsRow()
+            SettingsDivider()
+            InlineNote(
+                text: L10n.t("Quản lý mã theo dõi ngay cả khi chưa cấu hình nguồn giá. Danh sách bạn lưu (kể cả danh sách trống) được giữ nguyên; Bitcoin (BTC/USD) dùng phiên 24/7 và mốc so sánh riêng.")
+            )
+            .settingsRow()
+
+            SettingsDivider()
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                TextField(L10n.t("Tìm mã để thêm (S&P 500, AAPL, NVDA, CROX, BTC/USD...)"), text: $stocksSearchQuery)
+                    .textFieldStyle(.roundedBorder)
+
+                let trimmedQuery = stocksSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedQuery.isEmpty {
+                    if searchHits.isEmpty {
+                        Text(L10n.t("Không tìm thấy mã phù hợp"))
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(searchHits.prefix(6)) { hit in
+                            HStack(spacing: XFinderTokens.Space.tight) {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(hit.displayName)
+                                        .font(XFinderTokens.Font.row)
+                                        .lineLimit(1)
+                                    Text("\(hit.shortTicker) · \(hit.exchange) · \(L10n.t(hit.kind.badgeKey))")
+                                        .font(XFinderTokens.Font.caption)
+                                        .foregroundColor(.secondary)
+                                        .lineLimit(1)
+                                }
+                                Spacer(minLength: XFinderTokens.Space.tight)
+                                if savedIds.contains(hit.id) {
+                                    Text(L10n.t("Đã có"))
+                                        .font(XFinderTokens.Font.caption)
+                                        .foregroundColor(.secondary)
+                                } else {
+                                    Button(L10n.t("Thêm")) { addStocksAsset(hit) }
+                                        .buttonStyle(.bordered)
+                                        .controlSize(.small)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .settingsRow()
+
+            SettingsDivider()
+            if stocksWatchlist.isEmpty {
+                VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                    Text(L10n.t("Danh sách theo dõi đang trống — lựa chọn trống này được giữ lại."))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(.secondary)
+                }
+                .settingsRow()
+            } else {
+                ForEach(Array(stocksWatchlist.enumerated()), id: \.element.id) { idx, asset in
+                    if idx > 0 { SettingsDivider() }
+                    HStack(spacing: XFinderTokens.Space.tight) {
+                        Image(systemName: asset.kind.sfSymbol)
+                            .font(XFinderTokens.Font.sectionIcon)
+                            .foregroundColor(.secondary)
+                            .frame(width: 18)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(asset.displayName)
+                                .font(XFinderTokens.Font.row)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            Text("\(asset.shortTicker) · \(asset.exchange) · \(L10n.t(asset.kind.badgeKey))")
+                                .font(XFinderTokens.Font.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                        Spacer(minLength: XFinderTokens.Space.tight)
+                        Button { moveStocksAsset(from: idx, by: -1) } label: { Image(systemName: "chevron.up") }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .disabled(idx == 0)
+                            .help(L10n.t("Lên"))
+                            .accessibilityLabel(L10n.t("Lên"))
+                        Button { moveStocksAsset(from: idx, by: 1) } label: { Image(systemName: "chevron.down") }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .disabled(idx == stocksWatchlist.count - 1)
+                            .help(L10n.t("Xuống"))
+                            .accessibilityLabel(L10n.t("Xuống"))
+                        Button { removeStocksAsset(id: asset.id) } label: { Image(systemName: "trash") }
+                            .buttonStyle(.bordered).controlSize(.small)
+                            .help(L10n.t("Xóa mã"))
+                            .accessibilityLabel(L10n.t("Xóa mã"))
+                    }
+                    .settingsRow()
+                }
+            }
+
+            SettingsDivider()
+            HStack {
+                Spacer()
+                Button(L10n.t("Khôi phục danh sách mặc định")) { resetStocksWatchlistToDefaults() }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+            }
+            .settingsRow()
+        }
+    }
+
+    private func reloadStocksWatchlistForm() {
+        stocksWatchlist = UserDefaultsStocksWatchlistStore().loadWatchlist()
+        hasStocksKey = StocksAPIKey.read(for: selectedStockSource) != nil
+    }
+
+    private var stocksSourceControls: some View {
+        VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+            Picker(L10n.t("Nguồn giá chứng khoán"), selection: $selectedStockSource) {
+                ForEach(StocksAPIKey.Source.allCases) { source in
+                    Text(source.name).tag(source)
+                }
+            }
+            .onChange(of: selectedStockSource) {
+                stocksKeyDraft = ""
+                stocksKeySaveFailed = false
+                hasStocksKey = StocksAPIKey.read(for: selectedStockSource) != nil
+                NotchSurfaceController.shared.reloadStocksProvider()
+            }
+            if hasStocksKey {
+                Text(L10n.t("Đã lưu khóa API trong Keychain")).foregroundStyle(.secondary)
+            } else if selectedStockSource == .massive {
+                InlineNote(text: L10n.t("Massive Basic miễn phí cho giá đóng cửa cá nhân. Quyền chỉ số và tiền số tùy gói đang bật."))
+                Link(L10n.t("Lấy khóa Massive Basic"), destination: URL(string: "https://massive.com/pricing?product=stocks")!)
+            } else {
+                #if DEBUG
+                InlineNote(text: L10n.t("Demo chỉ tải giá đóng cửa AAPL và BTC/USD. Thêm khóa API để tải các mã tài khoản hỗ trợ."))
+                #else
+                InlineNote(text: L10n.t("Chưa cấu hình nguồn giá chứng khoán"))
+                #endif
+                Link(L10n.t("Lấy khóa Twelve Data Basic"), destination: URL(string: "https://twelvedata.com/pricing")!)
+            }
+            HStack {
+                SecureField(selectedStockSource == .massive ? L10n.t("Khóa API Massive") : L10n.t("Khóa API Twelve Data"),
+                            text: $stocksKeyDraft)
+                Button(L10n.t("Lưu")) { saveStocksKey(stocksKeyDraft) }
+                    .disabled(stocksKeyDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                if hasStocksKey {
+                    Button(L10n.t("Xóa"), role: .destructive) { saveStocksKey("") }
+                }
+            }
+            if stocksKeySaveFailed {
+                Text(L10n.t("Không lưu được khóa API")).foregroundStyle(.orange)
+            }
+        }
+    }
+
+    private func saveStocksKey(_ value: String) {
+        guard StocksAPIKey.save(value, for: selectedStockSource) else {
+            stocksKeySaveFailed = true
+            return
+        }
+        stocksKeyDraft = ""
+        stocksKeySaveFailed = false
+        hasStocksKey = StocksAPIKey.read(for: selectedStockSource) != nil
+        NotchSurfaceController.shared.reloadStocksProvider()
+    }
+
+    private func commitStocksWatchlist(_ next: [StockAssetDescriptor]) {
+        stocksWatchlist = next
+        UserDefaultsStocksWatchlistStore().saveWatchlist(next)
+        NotchSurfaceController.shared.reloadStocksWatchlist()
+    }
+
+    private func addStocksAsset(_ asset: StockAssetDescriptor) {
+        guard !stocksWatchlist.contains(where: { $0.id == asset.id }) else { return }
+        commitStocksWatchlist(stocksWatchlist + [asset])
+    }
+
+    private func removeStocksAsset(id: String) {
+        commitStocksWatchlist(stocksWatchlist.filter { $0.id != id })
+    }
+
+    private func moveStocksAsset(from index: Int, by delta: Int) {
+        let target = index + delta
+        guard stocksWatchlist.indices.contains(index), stocksWatchlist.indices.contains(target) else { return }
+        var copy = stocksWatchlist
+        let item = copy.remove(at: index)
+        copy.insert(item, at: target)
+        commitStocksWatchlist(copy)
+    }
+
+    private func resetStocksWatchlistToDefaults() {
+        let store = UserDefaultsStocksWatchlistStore()
+        store.resetToDefaults()
+        stocksWatchlist = store.loadWatchlist()
+        NotchSurfaceController.shared.reloadStocksWatchlist()
+    }
+
+    private var revenueConnectionsSection: some View {
+        SettingsSection(title: L10n.t("Kết nối Doanh thu bán app (chỉ đọc)")) {
+            InlineNote(
+                text: L10n.t("Khóa chỉ đọc được lưu riêng theo tài khoản trong Keychain và chỉ gửi tới máy chủ chính thức api.stripe.com hoặc *.myshopify.com. Ứng dụng mặc định ở trạng thái ngắt kết nối.")
+            )
+            .settingsRow()
+
+            SettingsDivider()
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                HStack {
+                    Text(L10n.t("Stripe (Balance Transactions — chỉ đọc)"))
+                        .font(XFinderTokens.Font.row)
+                    Spacer()
+                    Text(stripeStoredMask != nil ? L10n.t("Đã kết nối") : L10n.t("Chưa kết nối"))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(stripeStoredMask != nil ? .green : .secondary)
+                }
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    TextField(L10n.t("Mã tài khoản Stripe (vd: acct_main)"), text: $stripeAccountId)
+                        .textFieldStyle(.roundedBorder)
+                    TextField(L10n.t("Nhãn hiển thị"), text: $stripeLabel)
+                        .textFieldStyle(.roundedBorder)
+                }
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    SecureField(stripeStoredMask ?? L10n.t("Khóa chỉ đọc Stripe (rk_...)"), text: $stripeTokenInput)
+                        .textFieldStyle(.roundedBorder)
+                    Picker("", selection: $stripeTimeZone) {
+                        ForEach(Self.revenueTimeZoneChoices, id: \.self) { tz in
+                            Text(tz).tag(tz)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 150)
+                }
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    Button(L10n.t("Lưu kết nối Stripe")) { saveStripeConnection() }
+                        .buttonStyle(.borderedProminent).controlSize(.small)
+                    if stripeStoredMask != nil {
+                        Button(L10n.t("Ngắt kết nối Stripe")) { disconnectStripeConnection() }
+                            .buttonStyle(.bordered).controlSize(.small)
+                    }
+                    if let fb = stripeFeedback {
+                        Text(fb)
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.orange)
+                    }
+                }
+            }
+            .settingsRow()
+
+            SettingsDivider()
+            VStack(alignment: .leading, spacing: XFinderTokens.Space.tight) {
+                HStack {
+                    Text(L10n.t("Shopify (Admin GraphQL — chỉ đọc)"))
+                        .font(XFinderTokens.Font.row)
+                    Spacer()
+                    Text(shopifyStoredMask != nil ? L10n.t("Đã kết nối") : L10n.t("Chưa kết nối"))
+                        .font(XFinderTokens.Font.caption)
+                        .foregroundColor(shopifyStoredMask != nil ? .green : .secondary)
+                }
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    TextField(L10n.t("Tên miền cửa hàng (*.myshopify.com)"), text: $shopifyShopDomain)
+                        .textFieldStyle(.roundedBorder)
+                    TextField(L10n.t("Nhãn hiển thị"), text: $shopifyLabel)
+                        .textFieldStyle(.roundedBorder)
+                }
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    SecureField(shopifyStoredMask ?? L10n.t("Token Admin API chỉ đọc"), text: $shopifyTokenInput)
+                        .textFieldStyle(.roundedBorder)
+                    Picker("", selection: $shopifyTimeZone) {
+                        ForEach(Self.revenueTimeZoneChoices, id: \.self) { tz in
+                            Text(tz).tag(tz)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 150)
+                }
+                Toggle(L10n.t("Bật quyền payout Shopify Payments (read_shopify_payments_payouts)"), isOn: $shopifyHasPayoutScope)
+                    .toggleStyle(.checkbox)
+                    .controlSize(.small)
+                HStack(spacing: XFinderTokens.Space.tight) {
+                    Button(L10n.t("Lưu kết nối Shopify")) { saveShopifyConnection() }
+                        .buttonStyle(.borderedProminent).controlSize(.small)
+                    if shopifyStoredMask != nil {
+                        Button(L10n.t("Ngắt kết nối Shopify")) { disconnectShopifyConnection() }
+                            .buttonStyle(.bordered).controlSize(.small)
+                    }
+                    if let fb = shopifyFeedback {
+                        Text(fb)
+                            .font(XFinderTokens.Font.caption)
+                            .foregroundColor(.orange)
+                    }
+                }
+            }
+            .settingsRow()
+        }
+    }
+
+    private func reloadRevenueConnectionForms() {
+        let saved = UserDefaultsRevenueAccountStore().loadConfigs()
+        if let s = saved[.stripe] {
+            stripeAccountId = s.accountId
+            stripeLabel = s.accountLabel
+            stripeTimeZone = s.timeZoneIdentifier
+            stripeStoredMask = RevenueKeychainStore.shared.maskedToken(for: .stripe, accountId: s.accountId)
+        } else {
+            stripeStoredMask = nil
+        }
+        if let sh = saved[.shopify] {
+            shopifyShopDomain = sh.accountId
+            shopifyLabel = sh.accountLabel
+            shopifyTimeZone = sh.timeZoneIdentifier
+            shopifyHasPayoutScope = sh.hasPayoutScope
+            shopifyStoredMask = RevenueKeychainStore.shared.maskedToken(for: .shopify, accountId: sh.accountId)
+        } else {
+            shopifyStoredMask = nil
+        }
+    }
+
+    private func saveStripeConnection() {
+        let acct = stripeAccountId.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !acct.isEmpty, !acct.contains(where: \.isWhitespace) else {
+            stripeFeedback = L10n.t("Nhập mã tài khoản Stripe hợp lệ.")
+            return
+        }
+        let label = stripeLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let config = SourceAccountConfig(
+            source: .stripe,
+            accountId: acct,
+            accountLabel: label.isEmpty ? acct : label,
+            timeZoneIdentifier: stripeTimeZone,
+            hasPayoutScope: true,
+            historyLimitedDays: nil,
+            reconciliationProvenDisjoint: false
+        )
+        if NotchSurfaceController.shared.connectRevenueAccount(config, token: stripeTokenInput) {
+            stripeTokenInput = ""
+            stripeFeedback = nil
+            reloadRevenueConnectionForms()
+        } else {
+            stripeFeedback = L10n.t("Cần nhập khóa chỉ đọc Stripe để lưu kết nối.")
+        }
+    }
+
+    private func disconnectStripeConnection() {
+        NotchSurfaceController.shared.disconnectRevenueAccount(.stripe)
+        stripeTokenInput = ""
+        stripeStoredMask = nil
+        stripeFeedback = nil
+    }
+
+    private func saveShopifyConnection() {
+        guard let host = RevenueHostPolicy.normalizedShopifyHost(from: shopifyShopDomain) else {
+            shopifyFeedback = L10n.t("Tên miền Shopify phải có dạng ten-cua-hang.myshopify.com.")
+            return
+        }
+        let label = shopifyLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        let config = SourceAccountConfig(
+            source: .shopify,
+            accountId: host,
+            accountLabel: label.isEmpty ? host : label,
+            timeZoneIdentifier: shopifyTimeZone,
+            hasPayoutScope: shopifyHasPayoutScope,
+            historyLimitedDays: 60,
+            reconciliationProvenDisjoint: false
+        )
+        if NotchSurfaceController.shared.connectRevenueAccount(config, token: shopifyTokenInput) {
+            shopifyShopDomain = host
+            shopifyTokenInput = ""
+            shopifyFeedback = nil
+            reloadRevenueConnectionForms()
+        } else {
+            shopifyFeedback = L10n.t("Cần nhập token Admin API chỉ đọc để lưu kết nối.")
+        }
+    }
+
+    private func disconnectShopifyConnection() {
+        NotchSurfaceController.shared.disconnectRevenueAccount(.shopify)
+        shopifyTokenInput = ""
+        shopifyStoredMask = nil
+        shopifyFeedback = nil
+    }
+
+    private func readinessSubtitle(for readiness: NotchDestinationReadiness) -> String? {
+        switch readiness {
+        case .ready:
+            return nil
+        case .featureDisabled:
+            return L10n.t("Đang tắt ở trang tính năng")
+        case .unconfigured:
+            return L10n.t("Chưa cấu hình nguồn")
+        }
+    }
+
+    private func configureDestination(for id: NotchDestinationID, readiness: NotchDestinationReadiness) -> SidebarDestination? {
+        switch readiness {
+        case .ready:
+            return nil
+        case .featureDisabled(let target):
+            return SidebarDestination(rawValue: target)
+        case .unconfigured:
+            return nil
+        }
+    }
 }

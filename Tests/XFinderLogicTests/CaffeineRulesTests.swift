@@ -49,4 +49,13 @@ final class CaffeineRulesTests: XCTestCase {
         XCTAssertEqual(C.clampCleaning(0), 1); XCTAssertEqual(C.clampCleaning(9), 5); XCTAssertEqual(C.clampCleaning(3), 3)
         XCTAssertEqual(C.defaultCleaningMinutes, 2)
     }
+
+    func testLidWakeKeyAndStateDistinguishRequestFromActiveAssertion() {
+        XCTAssertEqual(C.Key.requestLidWake, "caffeine.requestLidWake")
+        XCTAssertEqual(C.lidWakeState(requested: false, caffeineActive: true, onACPower: true, assertionActive: false), .off)
+        XCTAssertEqual(C.lidWakeState(requested: true, caffeineActive: false, onACPower: true, assertionActive: false), .waitingForCaffeine)
+        XCTAssertEqual(C.lidWakeState(requested: true, caffeineActive: true, onACPower: false, assertionActive: false), .waitingForACPower)
+        XCTAssertEqual(C.lidWakeState(requested: true, caffeineActive: true, onACPower: true, assertionActive: true), .active)
+        XCTAssertEqual(C.lidWakeState(requested: true, caffeineActive: true, onACPower: true, assertionActive: false), .unavailable)
+    }
 }

@@ -16,7 +16,7 @@ struct DashboardDetailView: View {
     @AppStorage("notes.edgeEnabled") private var edgeNotesEnabled = false
     @AppStorage("windowPreview.hoverEnabled") private var hoverEnabled = true
     @State private var l10n = L10n.shared
-    @AppStorage("menubar.icon") private var menubarIcon = "magnifier"
+    @AppStorage("menubar.icon") private var menubarIcon = "xfinder"
     @State private var hub = FeatureHub.shared
     @State private var readouts = MenuBarReadoutsController.shared
 
@@ -129,12 +129,22 @@ struct DashboardDetailView: View {
 
             SettingsDivider()
 
-            PickerRow(title: L10n.t("Biểu tượng XFinder trên thanh menu"),
-                      selection: Binding(get: { menubarIcon }, set: { setMenubarIcon($0) }),
-                      width: 80) {
-                ForEach(MenubarController.iconChoices, id: \.id) { c in
-                    Image(systemName: c.symbol).tag(c.id)
+            HStack {
+                PickerRow(title: L10n.t("Biểu tượng XFinder trên thanh menu"),
+                          selection: Binding(get: { menubarIcon }, set: { setMenubarIcon($0) }),
+                          width: 80) {
+                    ForEach(MenubarController.iconChoices, id: \.id) { c in
+                        Image(systemName: c.symbol).tag(c.id)
+                            .accessibilityLabel(c.title)
+                    }
                 }
+                Button(L10n.t("Hiện lại biểu tượng")) {
+                    if let delegate = NSApplication.shared.delegate as? AppDelegate {
+                        delegate.menubarController?.showIconAgain()
+                    }
+                    setMenubarIcon(menubarIcon)
+                }
+                .controlSize(.small)
             }
             .settingsRow()
 

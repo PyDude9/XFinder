@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import os
 
 @main
 struct XFinderApp: App {
@@ -54,10 +55,16 @@ struct XFinderApp: App {
 
 @MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
+    private static let perfLog = Logger(subsystem: "com.xfinder.app", category: "perf")
     var menubarController: MenubarController?
     var aboutWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let launchStart = ContinuousClock.now
+        func elapsedMs(since start: ContinuousClock.Instant) -> Int64 {
+            let d = ContinuousClock.now - start
+            return d.components.seconds * 1_000 + d.components.attoseconds / 1_000_000_000_000_000
+        }
         // Touch the singleton so its `init` installs the pasteboard monitor.
         // Without this nothing is captured until some view happens to render,
         // and ⌘⇧V opened an empty shelf.
@@ -97,22 +104,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         SnapMemoryController.shared.applySettings()            // SNAPMEM: observers only for remembered apps
         SmoothScrollController.shared.applySettings()          // XF-T25: a scroll tap only while on
         CaffeineController.shared.restoreIfNeeded()            // XF-T27: a hold running at quit / update carries on
-        MenuBarHiderController.shared.autoHideTimer?.invalidate()
-        MenuBarHiderController.shared.applySettings()
         ClipboardShelfController.shared.applySettings()
+        TextSnippetExpander.shared.applySettings()
         FinderKeyboardController.shared.applySettings()
         QuitProtectionController.shared.applySettings()
         QuitOnCloseController.shared.applySettings()           // F3: AX observers only for listed apps
         CaptureController.shared.applySettings()               // F4: Carbon hotkeys for the assigned capture shortcuts
         Task.detached(priority: .utility) { ScrollCaptureController.sweepLeftovers() }   // XF-T26: strips of a crashed session
+        let coreMs = elapsedMs(since: launchStart)
+        let browserStart = ContinuousClock.now
         // XF-T28: the optional global hotkey, an interrupted-operation report, and the browser windows of the last session.
         LicenseManager.shared.refresh()                // XF-T29: starts the 14-day trial on first launch; DEBUG builds stay full
         BrowserSettings.shared.applySettings()
         FileOperationQueue.shared.loadRecovery()
         if BrowserSettings.isEnabled { BrowserWindowController.shared.restoreSessionAtLaunch() }
+        let browserMs = elapsedMs(since: browserStart)
+        let notchStart = ContinuousClock.now
         AlertMonitor.shared.applySettings()
         NotchSurfaceController.shared.applySettings()
+        LocalAppUsageTracker.shared.startIfEnabled()
+        #if DEBUG
+        // The current personal build uses Open-Meteo. Release registers its own signed provider.
+        if !CommandLine.arguments.contains("--disable-weather") {
+            NotchSurfaceController.shared.configureWeather(provider: OpenMeteoAdapter())
+        }
+        #endif
+        NotchSurfaceController.shared.reloadStocksProvider()
         SystemKeyInterceptor.shared.applySettings()   // owner's HUD request: after the surface exists
+        let notchMs = elapsedMs(since: notchStart)
         TranslateSelectionController.shared.applySettings()   // N5a: ⇧⌘G, AX-gated at press time
         SelectionWatcher.shared.applySettings()               // E4: AX observer only when on and trusted
         LinkPreviewFetcher.shared.applySettings()             // D4b: backfills only when the opt-in is on
@@ -135,6 +154,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if UserDefaults.standard.string(forKey: "startPage") != nil {
             MainWindowController.shared.showWindow()
         }
+        let totalMs = elapsedMs(since: launchStart)
+        Self.perfLog.info("launch core_ms=\(coreMs) browser_ms=\(browserMs) notch_ms=\(notchMs) total_ms=\(totalMs)")
 
         // Re-arm AX-gated controllers khi quay lại XFinder (user vừa cấp Trợ
         // năng trong System Settings). Trước đây phải bật/tắt toggle thủ công
@@ -155,6 +176,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 QuitProtectionController.shared.applySettings()
                 QuitOnCloseController.shared.applySettings()
                 ClipboardShelfController.shared.applySettings()
+                TextSnippetExpander.shared.applySettings()
                 QuickSearchPanelController.shared.applySettings()
                 VoiceManager.shared.applySettings()
                 TranslateSelectionController.shared.applySettings()
@@ -193,6 +215,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// D4: a Quick Look temp copy of an unlocked clip must not survive the process.
     func applicationWillTerminate(_ notification: Notification) {
+        NotchMessageModel.shared.shutdown()
+        NotchFeedbackModel.shared.shutdown()
+        NotchLocalChatModel.shared.shutdown()
+        LocalAppUsageTracker.shared.shutdown()
+        NotchScratchpadStore.shared.flush()
         DiagnosticsCenter.shared.markQuit()
         BrowserWindowController.shared.saveSessionForQuit()   // XF-T28: windows, panes, folders, Back history
         ClipboardLibraryStore.shared.relockAll()
@@ -269,11 +296,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 CaptureController.shared.capture(mode)
             }
         case "notch":
-            // `xfinder://notch?page=nowPlaying` opens the hub on a page (Shortcuts, scripts, probes). An unknown or
-            // hidden page resolves the same way a click would; no page = the tray.
-            let page = comps.queryItems?.first(where: { $0.name == "page" })?.value
-                .flatMap { NotchSurfaceMachine.Page(rawValue: $0) } ?? .files
-            Task { @MainActor in NotchSurfaceController.shared.reveal(page: page) }
+            // `xfinder://notch?page=nowPlaying` (or `weather`, `stocks`, `revenue`, `system`, `audio`) opens
+            // the hub via the unified tab catalog. Hidden/unconfigured destinations fall back cleanly.
+            let rawParam = comps.queryItems?.first(where: { $0.name == "page" })?.value
+            if rawParam == "settings" {
+                Task { @MainActor in NotchSurfaceController.shared.openInlineNotchSettings() }
+                return
+            }
+            let destination = rawParam.flatMap { NotchDestinationID(rawValue: $0) }
+            Task { @MainActor in NotchSurfaceController.shared.reveal(destination: destination) }
         default:
             break
         }

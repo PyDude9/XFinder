@@ -143,6 +143,8 @@
 		7F1A0276 /* Translate/TranslateSelectionRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0277 /* Translate/TranslateSelectionRules.swift */; };
 		7F1A0272 /* Onboarding/WhatsNewRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0273 /* Onboarding/WhatsNewRules.swift */; };
 		7F1A0270 /* Calendar/CalendarGlanceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0271 /* Calendar/CalendarGlanceMonitor.swift */; };
+		7F1A0F19 /* Calendar/RemindersDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F18 /* Calendar/RemindersDomain.swift */; };
+		7F1A0F1B /* Calendar/RemindersEventKitStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F1A /* Calendar/RemindersEventKitStore.swift */; };
 		7F1A026E /* Calendar/GlanceRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A026F /* Calendar/GlanceRules.swift */; };
 		7F1A0260 /* Agents/AgentEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0261 /* Agents/AgentEvents.swift */; };
 		7F1A0252 /* Clipboard/BoardLockKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0253 /* Clipboard/BoardLockKeys.swift */; };
@@ -194,7 +196,6 @@
 		7F1A0134 /* Detail/ProDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0133 /* Detail/ProDetailView.swift */; };
 		7F1A0132 /* Components/ProBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A012F /* Components/ProBadge.swift */; };
 		7F1A011A /* Detail/FileBrowserDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0119 /* Detail/FileBrowserDetailView.swift */; };
-		7F1A0118 /* Browser/ShelfBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0117 /* Browser/ShelfBarView.swift */; };
 		7F1A0551 /* Browser/VolumeInfoWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0550 /* Browser/VolumeInfoWindow.swift */; };
 		7F1A054F /* Browser/PreviewPaneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A054E /* Browser/PreviewPaneView.swift */; };
 		7F1A054D /* Browser/MergePreviewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A054C /* Browser/MergePreviewSheet.swift */; };
@@ -234,7 +235,6 @@
 		7F1A00A5 /* SnapZoneController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A4 /* SnapZoneController.swift */; };
 		7F1A00A7 /* Detail/MenuIconsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A6 /* Detail/MenuIconsDetailView.swift */; };
 		7F1A00A9 /* Detail/FinderActionsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00A8 /* Detail/FinderActionsDetailView.swift */; };
-		7F1A00AB /* MenuBarHiderController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00AA /* MenuBarHiderController.swift */; };
 		7F1A00AD /* ClipboardShelfController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00AC /* ClipboardShelfController.swift */; };
 		7F1A00AF /* FinderKeyboardController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00AE /* FinderKeyboardController.swift */; };
 		7F1A00B1 /* Detail/FinderKeyboardDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00B0 /* Detail/FinderKeyboardDetailView.swift */; };
@@ -256,6 +256,10 @@
 		7F1A00D3 /* QuickSearch/QuickSearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */; };
 		7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */; };
 		7F1A00D7 /* QuickSearchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00D6 /* QuickSearchPanel.swift */; };
+		7F1A0D33 /* MenubarPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D32 /* MenubarPanelView.swift */; };
+		7F1A0D3B /* Menubar/MenubarUnsleepTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D3A /* Menubar/MenubarUnsleepTab.swift */; };
+		7F1A0D3D /* Menubar/MenubarMonitorTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D3C /* Menubar/MenubarMonitorTabs.swift */; };
+		7F1A0D3F /* Menubar/MenubarToolsTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D3E /* Menubar/MenubarToolsTabs.swift */; };
 		7F1A00DC /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00DB /* L10n.swift */; };
 		4C1A2B01 /* L10nStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1A2B00 /* L10nStore.swift */; };
 		4C1A2B07 /* FinderExtensionStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C1A2B06 /* FinderExtensionStatus.swift */; };
@@ -264,6 +268,7 @@
 		7F1A0264 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A0265 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh */; };
 		7F1A0378 /* XFinder/Resources/Agents/xfinder-crew.zsh in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A0379 /* XFinder/Resources/Agents/xfinder-crew.zsh */; };
 		7F1A035F /* XFinder/Resources/Agents/xfinder-claude-statusline.sh in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */; };
+		7F1A0F23 /* XFinder/Resources/Agents/xfinder-antigravity-statusline.js in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A0F22 /* XFinder/Resources/Agents/xfinder-antigravity-statusline.js */; };
 		7F1A00E5 /* MouseGestures/GestureModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E4 /* MouseGestures/GestureModel.swift */; };
 		7F1A00E7 /* MouseGestures/GestureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E6 /* MouseGestures/GestureEngine.swift */; };
 		7F1A00E9 /* MouseGestures/GestureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A00E8 /* MouseGestures/GestureController.swift */; };
@@ -324,13 +329,6 @@
 		7F1A01AD /* Voice/Providers/AppleOnDeviceRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01AE /* Voice/Providers/AppleOnDeviceRefiner.swift */; };
 		7F1A01AF /* Voice/Providers/HTTPRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01B0 /* Voice/Providers/HTTPRefiner.swift */; };
 		7F1A01B1 /* Voice/Providers/OllamaRefiner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01B2 /* Voice/Providers/OllamaRefiner.swift */; };
-		7F1A0181 /* MenuBar/MenuBarEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0180 /* MenuBar/MenuBarEngine.swift */; };
-		7F1A0183 /* MenuBar/MenuBarEngineFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0182 /* MenuBar/MenuBarEngineFactory.swift */; };
-		7F1A0185 /* MenuBar/LegacyLengthEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0184 /* MenuBar/LegacyLengthEngine.swift */; };
-		7F1A0187 /* MenuBar/NativeVisibilityEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0186 /* MenuBar/NativeVisibilityEngine.swift */; };
-		7F1A018B /* MenuBar/Native/HBNativeVisibilityShim.m in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A018A /* MenuBar/Native/HBNativeVisibilityShim.m */; };
-		7F1A018D /* MenuBar/Native/NativeVisibilityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A018C /* MenuBar/Native/NativeVisibilityBridge.swift */; };
-		7F1A018F /* MenuBar/Layout/AccessibilityMenuBarInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A018E /* MenuBar/Layout/AccessibilityMenuBarInventory.swift */; };
 		7F1A00DE /* XFinder/Resources/AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 7F1A00DD /* XFinder/Resources/AppIcon.icns */; };
 		7F1A7F1A008D /* ClipboardPasteEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0073 /* ClipboardPasteEngine.swift */; };
 		7F1A0204 /* Surface/ToastSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0203 /* Surface/ToastSurface.swift */; };
@@ -374,7 +372,6 @@
 		7F1A008D /* Browser/FileIconCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007F /* Browser/FileIconCache.swift */; };
 		7F1A007E /* Browser/DirectoryReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007D /* Browser/DirectoryReader.swift */; };
 		7F1A007C /* Browser/BrowserWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A007B /* Browser/BrowserWorkspace.swift */; };
-		7F1A007A /* Browser/ShelfModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0079 /* Browser/ShelfModel.swift */; };
 		7F1A0555 /* Browser/BrowserWindowModel+Cloud.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0554 /* Browser/BrowserWindowModel+Cloud.swift */; };
 		7F1A0553 /* Browser/VirtualLocations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0552 /* Browser/VirtualLocations.swift */; };
 		7F1A0541 /* Browser/FolderMergeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0540 /* Browser/FolderMergeController.swift */; };
@@ -436,6 +433,7 @@
 		7F1A0076 /* Browser/BrowserCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A005F /* Browser/BrowserCommands.swift */; };
 		7F1A0058 /* Browser/FileOperationRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A003F /* Browser/FileOperationRules.swift */; };
 		7F1A002D /* Browser/SearchQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A002C /* Browser/SearchQuery.swift */; };
+		7F1A0179 /* Browser/DropTrayBrowserBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0178 /* Browser/DropTrayBrowserBridge.swift */; };
 		7F1A0177 /* Browser/BrowserMenuLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0176 /* Browser/BrowserMenuLayout.swift */; };
 		7F1A016B /* Browser/RenameRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016A /* Browser/RenameRules.swift */; };
 		7F1A016F /* Browser/BatchRenameRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A016E /* Browser/BatchRenameRules.swift */; };
@@ -473,6 +471,100 @@
 		7F1A01DC /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01DB /* OnboardingView.swift */; };
 		7F1A01DA /* Onboarding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01D9 /* Onboarding.swift */; };
 		7F1A01D8 /* SidebarSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01D7 /* SidebarSearch.swift */; };
+		7F1A0D35 /* SmoothScroll/PointerAccelerationRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D34 /* SmoothScroll/PointerAccelerationRules.swift */; };
+		7F1A0D37 /* SmoothScroll/PointerAccelerationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D36 /* SmoothScroll/PointerAccelerationController.swift */; };
+		7F1A0D39 /* Clipboard/TextSnippetExpander.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D38 /* Clipboard/TextSnippetExpander.swift */; };
+		7F1A0D31 /* MenubarPanelRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D30 /* MenubarPanelRules.swift */; };
+		7F1A0D2D /* Clipboard/TextSnippetRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D2C /* Clipboard/TextSnippetRules.swift */; };
+		7F1A0D2F /* Clipboard/TextSnippetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D2E /* Clipboard/TextSnippetStore.swift */; };
+		7F1A0D25 /* SettingsSearchIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D24 /* SettingsSearchIndex.swift */; };
+		7F1A0D27 /* Snap/SpacesOrderRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D26 /* Snap/SpacesOrderRules.swift */; };
+		7F1A0D29 /* Snap/SpacesOrderController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D28 /* Snap/SpacesOrderController.swift */; };
+		7F1A0D41 /* Notch/NotchGalleryRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D40 /* Notch/NotchGalleryRules.swift */; };
+		7F1A0D4F /* Notch/NotchIslandRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D4E /* Notch/NotchIslandRules.swift */; };
+		7F1A1F17 /* Notch/NotchClockEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A1F16 /* Notch/NotchClockEngine.swift */; };
+		7F1A2F11 /* Notch/NotchHomeRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2F10 /* Notch/NotchHomeRules.swift */; };
+		7F1A0D61 /* Notch/NotchDestinationCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D60 /* Notch/NotchDestinationCatalog.swift */; };
+		7F1A2A01 /* Notch/NotchMessageRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2A00 /* Notch/NotchMessageRules.swift */; };
+		7F1A2B01 /* Notch/NotchFeedbackRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B00 /* Notch/NotchFeedbackRules.swift */; };
+		7F1A2903 /* Notch/FoundationModelsChatAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2902 /* Notch/FoundationModelsChatAdapter.swift */; };
+		7F1A2901 /* Notch/NotchLocalChatDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2900 /* Notch/NotchLocalChatDomain.swift */; };
+		7F1A2803 /* Notch/LocalAppUsageTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2802 /* Notch/LocalAppUsageTracker.swift */; };
+		7F1A2801 /* Notch/LocalAppUsageRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2800 /* Notch/LocalAppUsageRules.swift */; };
+		7F1A2705 /* Notch/AppleShortcutsProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2704 /* Notch/AppleShortcutsProcessRunner.swift */; };
+		7F1A2703 /* Notch/AppleShortcutsDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2702 /* Notch/AppleShortcutsDomain.swift */; };
+		7F1A2701 /* Notch/NotchTodoDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2700 /* Notch/NotchTodoDomain.swift */; };
+		7F1A2605 /* Notch/NotchSoundsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2604 /* Notch/NotchSoundsEngine.swift */; };
+		7F1A2603 /* Notch/NotchSoundsRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2602 /* Notch/NotchSoundsRules.swift */; };
+		7F1A2601 /* Notch/NotchImageConvertRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2600 /* Notch/NotchImageConvertRules.swift */; };
+		7F1A2503 /* Notch/NotchLinksRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2502 /* Notch/NotchLinksRules.swift */; };
+		7F1A2501 /* Notch/NotchFileBrowserRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2500 /* Notch/NotchFileBrowserRules.swift */; };
+		7F1A2403 /* Notch/NotchEmojiCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2402 /* Notch/NotchEmojiCatalog.swift */; };
+		7F1A2401 /* Notch/NotchScratchpadStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2400 /* Notch/NotchScratchpadStore.swift */; };
+		7F1A2305 /* Notch/NotchUnitRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2304 /* Notch/NotchUnitRules.swift */; };
+		7F1A2303 /* Notch/NotchCaptureRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2302 /* Notch/NotchCaptureRules.swift */; };
+		7F1A2301 /* Notch/NotchNotesRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2300 /* Notch/NotchNotesRules.swift */; };
+		7F1A2207 /* Notch/NotchTeleprompterController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2206 /* Notch/NotchTeleprompterController.swift */; };
+		7F1A2205 /* Notch/NotchTeleprompterRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2204 /* Notch/NotchTeleprompterRules.swift */; };
+		7F1A2203 /* Notch/MirrorCaptureController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2202 /* Notch/MirrorCaptureController.swift */; };
+		7F1A2201 /* Notch/NotchMirrorRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2200 /* Notch/NotchMirrorRules.swift */; };
+		7F1A0D51 /* Notch/DropTrayRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D50 /* Notch/DropTrayRules.swift */; };
+		7F1A0D43 /* NotchSectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D42 /* NotchSectionsView.swift */; };
+		7F1A0D45 /* NotchSystemPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D44 /* NotchSystemPage.swift */; };
+		7F1A2F13 /* NotchHomePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2F12 /* NotchHomePage.swift */; };
+		7F1A0D47 /* NotchAudioPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D46 /* NotchAudioPage.swift */; };
+		7F1A0E01 /* Weather/WeatherModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0E00 /* Weather/WeatherModels.swift */; };
+		7F1A0E03 /* Weather/WeatherCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0E02 /* Weather/WeatherCache.swift */; };
+		7F1A0E05 /* Weather/WeatherLocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0E04 /* Weather/WeatherLocationService.swift */; };
+		7F1A0E07 /* Weather/WeatherProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0E06 /* Weather/WeatherProvider.swift */; };
+		7F1A0E09 /* Weather/WeatherCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0E08 /* Weather/WeatherCoordinator.swift */; };
+		7F1A0E0B /* Weather/WeatherViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0E0A /* Weather/WeatherViewModel.swift */; };
+		7F1A0E0D /* Weather/OpenMeteoAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0E0C /* Weather/OpenMeteoAdapter.swift */; };
+		7F1A0E0F /* NotchWeatherPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0E0E /* NotchWeatherPage.swift */; };
+		7F1A0F01 /* Stocks/StocksModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F00 /* Stocks/StocksModels.swift */; };
+		7F1A0F03 /* Stocks/StocksProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F02 /* Stocks/StocksProvider.swift */; };
+		7F1A0F21 /* Stocks/TwelveDataStocksProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F20 /* Stocks/TwelveDataStocksProvider.swift */; };
+		7F1A0F25 /* Stocks/MassiveStocksProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F24 /* Stocks/MassiveStocksProvider.swift */; };
+		7F1A0F05 /* Stocks/StocksViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F04 /* Stocks/StocksViewModel.swift */; };
+		7F1A0F17 /* Stocks/StocksWatchlistCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F16 /* Stocks/StocksWatchlistCatalog.swift */; };
+		7F1A0F07 /* Revenue/RevenueModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F06 /* Revenue/RevenueModels.swift */; };
+		7F1A0F09 /* Revenue/RevenueAggregator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F08 /* Revenue/RevenueAggregator.swift */; };
+		7F1A0F0B /* Revenue/RevenueProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F0A /* Revenue/RevenueProvider.swift */; };
+		7F1A0F0D /* Revenue/RevenueViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F0C /* Revenue/RevenueViewModel.swift */; };
+		7F1A0F13 /* Revenue/RevenueKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F12 /* Revenue/RevenueKeychain.swift */; };
+		7F1A0F15 /* Revenue/RevenueLiveAdapters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F14 /* Revenue/RevenueLiveAdapters.swift */; };
+		7F1A0F51 /* WebsiteAnalytics/WebsiteAnalyticsModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F50 /* WebsiteAnalytics/WebsiteAnalyticsModels.swift */; };
+		7F1A0F53 /* WebsiteAnalytics/WebsiteAnalyticsKeychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F52 /* WebsiteAnalytics/WebsiteAnalyticsKeychain.swift */; };
+		7F1A0F55 /* WebsiteAnalytics/WebsiteAnalyticsTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F54 /* WebsiteAnalytics/WebsiteAnalyticsTransport.swift */; };
+		7F1A0F57 /* WebsiteAnalytics/DataFastAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F56 /* WebsiteAnalytics/DataFastAdapter.swift */; };
+		7F1A0F59 /* WebsiteAnalytics/GA4Adapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F58 /* WebsiteAnalytics/GA4Adapter.swift */; };
+		7F1A0F61 /* WebsiteAnalytics/GA4LoopbackOAuthDriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F60 /* WebsiteAnalytics/GA4LoopbackOAuthDriver.swift */; };
+		7F1A0F5B /* WebsiteAnalytics/WebsiteAnalyticsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F5A /* WebsiteAnalytics/WebsiteAnalyticsCoordinator.swift */; };
+		7F1A0F5D /* WebsiteAnalytics/WebsiteAnalyticsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F5C /* WebsiteAnalytics/WebsiteAnalyticsViewModel.swift */; };
+		7F1A0F5F /* NotchWebsiteAnalyticsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F5E /* NotchWebsiteAnalyticsPage.swift */; };
+		7F1A0F0F /* NotchStocksPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F0E /* NotchStocksPage.swift */; };
+		7F1A0F1D /* NotchRemindersPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F1C /* NotchRemindersPage.swift */; };
+		7F1A2A03 /* NotchMessagePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2A02 /* NotchMessagePage.swift */; };
+		7F1A2B03 /* NotchFeedbackPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2B02 /* NotchFeedbackPage.swift */; };
+		7F1A2905 /* NotchLocalChatPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2904 /* NotchLocalChatPage.swift */; };
+		7F1A2805 /* NotchAppUsagePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2804 /* NotchAppUsagePage.swift */; };
+		7F1A2709 /* NotchShortcutsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2708 /* NotchShortcutsPage.swift */; };
+		7F1A2707 /* NotchTodosPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2706 /* NotchTodosPage.swift */; };
+		7F1A2609 /* NotchSoundsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2608 /* NotchSoundsPage.swift */; };
+		7F1A2607 /* NotchImageConvertPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2606 /* NotchImageConvertPage.swift */; };
+		7F1A2507 /* NotchLinksPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2506 /* NotchLinksPage.swift */; };
+		7F1A2505 /* NotchFileBrowserPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2504 /* NotchFileBrowserPage.swift */; };
+		7F1A2407 /* NotchEmojiPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2406 /* NotchEmojiPage.swift */; };
+		7F1A2405 /* NotchScratchpadPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2404 /* NotchScratchpadPage.swift */; };
+		7F1A230B /* NotchUnitsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A230A /* NotchUnitsPage.swift */; };
+		7F1A2309 /* NotchCapturePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2308 /* NotchCapturePage.swift */; };
+		7F1A2307 /* NotchNotesPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2306 /* NotchNotesPage.swift */; };
+		7F1A220B /* NotchTeleprompterPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A220A /* NotchTeleprompterPage.swift */; };
+		7F1A2209 /* NotchMirrorPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A2208 /* NotchMirrorPage.swift */; };
+		7F1A0F11 /* NotchRevenuePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0F10 /* NotchRevenuePage.swift */; };
+		7F1A0D49 /* Snap/BSPTilingRules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D48 /* Snap/BSPTilingRules.swift */; };
+		7F1A0D4B /* Snap/HyprFocusBorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D4A /* Snap/HyprFocusBorder.swift */; };
+		7F1A0D4D /* Snap/HyprTilingController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A0D4C /* Snap/HyprTilingController.swift */; };
 		7F1A01D6 /* PortScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01D5 /* PortScanner.swift */; };
 		7F1A01D4 /* Detail/PortsDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01D3 /* Detail/PortsDetailView.swift */; };
 		7F1A01D2 /* PortManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F1A01D1 /* PortManager.swift */; };
@@ -661,6 +753,8 @@
 		7F1A0277 /* Translate/TranslateSelectionRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/TranslateSelectionRules.swift; sourceTree = "<group>"; };
 		7F1A0273 /* Onboarding/WhatsNewRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding/WhatsNewRules.swift; sourceTree = "<group>"; };
 		7F1A0271 /* Calendar/CalendarGlanceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calendar/CalendarGlanceMonitor.swift; sourceTree = "<group>"; };
+		7F1A0F18 /* Calendar/RemindersDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calendar/RemindersDomain.swift; sourceTree = "<group>"; };
+		7F1A0F1A /* Calendar/RemindersEventKitStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calendar/RemindersEventKitStore.swift; sourceTree = "<group>"; };
 		7F1A026F /* Calendar/GlanceRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calendar/GlanceRules.swift; sourceTree = "<group>"; };
 		7F1A0261 /* Agents/AgentEvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agents/AgentEvents.swift; sourceTree = "<group>"; };
 		7F1A0253 /* Clipboard/BoardLockKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/BoardLockKeys.swift; sourceTree = "<group>"; };
@@ -712,7 +806,6 @@
 		7F1A0133 /* Detail/ProDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/ProDetailView.swift; sourceTree = "<group>"; };
 		7F1A012F /* Components/ProBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components/ProBadge.swift; sourceTree = "<group>"; };
 		7F1A0119 /* Detail/FileBrowserDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FileBrowserDetailView.swift; sourceTree = "<group>"; };
-		7F1A0117 /* Browser/ShelfBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ShelfBarView.swift; sourceTree = "<group>"; };
 		7F1A0550 /* Browser/VolumeInfoWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/VolumeInfoWindow.swift; sourceTree = "<group>"; };
 		7F1A054E /* Browser/PreviewPaneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/PreviewPaneView.swift; sourceTree = "<group>"; };
 		7F1A054C /* Browser/MergePreviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/MergePreviewSheet.swift; sourceTree = "<group>"; };
@@ -783,7 +876,6 @@
 		7F1A007F /* Browser/FileIconCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileIconCache.swift; sourceTree = "<group>"; };
 		7F1A007D /* Browser/DirectoryReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/DirectoryReader.swift; sourceTree = "<group>"; };
 		7F1A007B /* Browser/BrowserWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserWorkspace.swift; sourceTree = "<group>"; };
-		7F1A0079 /* Browser/ShelfModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/ShelfModel.swift; sourceTree = "<group>"; };
 		7F1A0554 /* Browser/BrowserWindowModel+Cloud.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Browser/BrowserWindowModel+Cloud.swift"; sourceTree = "<group>"; };
 		7F1A0552 /* Browser/VirtualLocations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/VirtualLocations.swift; sourceTree = "<group>"; };
 		7F1A0540 /* Browser/FolderMergeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FolderMergeController.swift; sourceTree = "<group>"; };
@@ -845,6 +937,7 @@
 		7F1A005F /* Browser/BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserCommands.swift; sourceTree = "<group>"; };
 		7F1A003F /* Browser/FileOperationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/FileOperationRules.swift; sourceTree = "<group>"; };
 		7F1A002C /* Browser/SearchQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/SearchQuery.swift; sourceTree = "<group>"; };
+		7F1A0178 /* Browser/DropTrayBrowserBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/DropTrayBrowserBridge.swift; sourceTree = "<group>"; };
 		7F1A0176 /* Browser/BrowserMenuLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BrowserMenuLayout.swift; sourceTree = "<group>"; };
 		7F1A016A /* Browser/RenameRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/RenameRules.swift; sourceTree = "<group>"; };
 		7F1A016E /* Browser/BatchRenameRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Browser/BatchRenameRules.swift; sourceTree = "<group>"; };
@@ -882,6 +975,100 @@
 		7F1A01DB /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		7F1A01D9 /* Onboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Onboarding.swift; sourceTree = "<group>"; };
 		7F1A01D7 /* SidebarSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarSearch.swift; sourceTree = "<group>"; };
+		7F1A0D34 /* SmoothScroll/PointerAccelerationRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothScroll/PointerAccelerationRules.swift; sourceTree = "<group>"; };
+		7F1A0D36 /* SmoothScroll/PointerAccelerationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmoothScroll/PointerAccelerationController.swift; sourceTree = "<group>"; };
+		7F1A0D38 /* Clipboard/TextSnippetExpander.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/TextSnippetExpander.swift; sourceTree = "<group>"; };
+		7F1A0D30 /* MenubarPanelRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenubarPanelRules.swift; sourceTree = "<group>"; };
+		7F1A0D2C /* Clipboard/TextSnippetRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/TextSnippetRules.swift; sourceTree = "<group>"; };
+		7F1A0D2E /* Clipboard/TextSnippetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clipboard/TextSnippetStore.swift; sourceTree = "<group>"; };
+		7F1A0D24 /* SettingsSearchIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSearchIndex.swift; sourceTree = "<group>"; };
+		7F1A0D26 /* Snap/SpacesOrderRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snap/SpacesOrderRules.swift; sourceTree = "<group>"; };
+		7F1A0D28 /* Snap/SpacesOrderController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snap/SpacesOrderController.swift; sourceTree = "<group>"; };
+		7F1A0D40 /* Notch/NotchGalleryRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchGalleryRules.swift; sourceTree = "<group>"; };
+		7F1A0D4E /* Notch/NotchIslandRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchIslandRules.swift; sourceTree = "<group>"; };
+		7F1A1F16 /* Notch/NotchClockEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchClockEngine.swift; sourceTree = "<group>"; };
+		7F1A2F10 /* Notch/NotchHomeRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchHomeRules.swift; sourceTree = "<group>"; };
+		7F1A0D60 /* Notch/NotchDestinationCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchDestinationCatalog.swift; sourceTree = "<group>"; };
+		7F1A2A00 /* Notch/NotchMessageRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchMessageRules.swift; sourceTree = "<group>"; };
+		7F1A2B00 /* Notch/NotchFeedbackRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchFeedbackRules.swift; sourceTree = "<group>"; };
+		7F1A2902 /* Notch/FoundationModelsChatAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/FoundationModelsChatAdapter.swift; sourceTree = "<group>"; };
+		7F1A2900 /* Notch/NotchLocalChatDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchLocalChatDomain.swift; sourceTree = "<group>"; };
+		7F1A2802 /* Notch/LocalAppUsageTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/LocalAppUsageTracker.swift; sourceTree = "<group>"; };
+		7F1A2800 /* Notch/LocalAppUsageRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/LocalAppUsageRules.swift; sourceTree = "<group>"; };
+		7F1A2704 /* Notch/AppleShortcutsProcessRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/AppleShortcutsProcessRunner.swift; sourceTree = "<group>"; };
+		7F1A2702 /* Notch/AppleShortcutsDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/AppleShortcutsDomain.swift; sourceTree = "<group>"; };
+		7F1A2700 /* Notch/NotchTodoDomain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchTodoDomain.swift; sourceTree = "<group>"; };
+		7F1A2604 /* Notch/NotchSoundsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchSoundsEngine.swift; sourceTree = "<group>"; };
+		7F1A2602 /* Notch/NotchSoundsRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchSoundsRules.swift; sourceTree = "<group>"; };
+		7F1A2600 /* Notch/NotchImageConvertRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchImageConvertRules.swift; sourceTree = "<group>"; };
+		7F1A2502 /* Notch/NotchLinksRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchLinksRules.swift; sourceTree = "<group>"; };
+		7F1A2500 /* Notch/NotchFileBrowserRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchFileBrowserRules.swift; sourceTree = "<group>"; };
+		7F1A2402 /* Notch/NotchEmojiCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchEmojiCatalog.swift; sourceTree = "<group>"; };
+		7F1A2400 /* Notch/NotchScratchpadStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchScratchpadStore.swift; sourceTree = "<group>"; };
+		7F1A2304 /* Notch/NotchUnitRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchUnitRules.swift; sourceTree = "<group>"; };
+		7F1A2302 /* Notch/NotchCaptureRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchCaptureRules.swift; sourceTree = "<group>"; };
+		7F1A2300 /* Notch/NotchNotesRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchNotesRules.swift; sourceTree = "<group>"; };
+		7F1A2206 /* Notch/NotchTeleprompterController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchTeleprompterController.swift; sourceTree = "<group>"; };
+		7F1A2204 /* Notch/NotchTeleprompterRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchTeleprompterRules.swift; sourceTree = "<group>"; };
+		7F1A2202 /* Notch/MirrorCaptureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/MirrorCaptureController.swift; sourceTree = "<group>"; };
+		7F1A2200 /* Notch/NotchMirrorRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/NotchMirrorRules.swift; sourceTree = "<group>"; };
+		7F1A0D50 /* Notch/DropTrayRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notch/DropTrayRules.swift; sourceTree = "<group>"; };
+		7F1A0D42 /* NotchSectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSectionsView.swift; sourceTree = "<group>"; };
+		7F1A0D44 /* NotchSystemPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSystemPage.swift; sourceTree = "<group>"; };
+		7F1A2F12 /* NotchHomePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchHomePage.swift; sourceTree = "<group>"; };
+		7F1A0D46 /* NotchAudioPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchAudioPage.swift; sourceTree = "<group>"; };
+		7F1A0E00 /* Weather/WeatherModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weather/WeatherModels.swift; sourceTree = "<group>"; };
+		7F1A0E02 /* Weather/WeatherCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weather/WeatherCache.swift; sourceTree = "<group>"; };
+		7F1A0E04 /* Weather/WeatherLocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weather/WeatherLocationService.swift; sourceTree = "<group>"; };
+		7F1A0E06 /* Weather/WeatherProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weather/WeatherProvider.swift; sourceTree = "<group>"; };
+		7F1A0E08 /* Weather/WeatherCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weather/WeatherCoordinator.swift; sourceTree = "<group>"; };
+		7F1A0E0A /* Weather/WeatherViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weather/WeatherViewModel.swift; sourceTree = "<group>"; };
+		7F1A0E0C /* Weather/OpenMeteoAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weather/OpenMeteoAdapter.swift; sourceTree = "<group>"; };
+		7F1A0E0E /* NotchWeatherPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchWeatherPage.swift; sourceTree = "<group>"; };
+		7F1A0F00 /* Stocks/StocksModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stocks/StocksModels.swift; sourceTree = "<group>"; };
+		7F1A0F02 /* Stocks/StocksProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stocks/StocksProvider.swift; sourceTree = "<group>"; };
+		7F1A0F20 /* Stocks/TwelveDataStocksProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stocks/TwelveDataStocksProvider.swift; sourceTree = "<group>"; };
+		7F1A0F24 /* Stocks/MassiveStocksProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stocks/MassiveStocksProvider.swift; sourceTree = "<group>"; };
+		7F1A0F04 /* Stocks/StocksViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stocks/StocksViewModel.swift; sourceTree = "<group>"; };
+		7F1A0F16 /* Stocks/StocksWatchlistCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stocks/StocksWatchlistCatalog.swift; sourceTree = "<group>"; };
+		7F1A0F06 /* Revenue/RevenueModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Revenue/RevenueModels.swift; sourceTree = "<group>"; };
+		7F1A0F08 /* Revenue/RevenueAggregator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Revenue/RevenueAggregator.swift; sourceTree = "<group>"; };
+		7F1A0F0A /* Revenue/RevenueProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Revenue/RevenueProvider.swift; sourceTree = "<group>"; };
+		7F1A0F0C /* Revenue/RevenueViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Revenue/RevenueViewModel.swift; sourceTree = "<group>"; };
+		7F1A0F12 /* Revenue/RevenueKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Revenue/RevenueKeychain.swift; sourceTree = "<group>"; };
+		7F1A0F14 /* Revenue/RevenueLiveAdapters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Revenue/RevenueLiveAdapters.swift; sourceTree = "<group>"; };
+		7F1A0F50 /* WebsiteAnalytics/WebsiteAnalyticsModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteAnalytics/WebsiteAnalyticsModels.swift; sourceTree = "<group>"; };
+		7F1A0F52 /* WebsiteAnalytics/WebsiteAnalyticsKeychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteAnalytics/WebsiteAnalyticsKeychain.swift; sourceTree = "<group>"; };
+		7F1A0F54 /* WebsiteAnalytics/WebsiteAnalyticsTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteAnalytics/WebsiteAnalyticsTransport.swift; sourceTree = "<group>"; };
+		7F1A0F56 /* WebsiteAnalytics/DataFastAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteAnalytics/DataFastAdapter.swift; sourceTree = "<group>"; };
+		7F1A0F58 /* WebsiteAnalytics/GA4Adapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteAnalytics/GA4Adapter.swift; sourceTree = "<group>"; };
+		7F1A0F60 /* WebsiteAnalytics/GA4LoopbackOAuthDriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteAnalytics/GA4LoopbackOAuthDriver.swift; sourceTree = "<group>"; };
+		7F1A0F5A /* WebsiteAnalytics/WebsiteAnalyticsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteAnalytics/WebsiteAnalyticsCoordinator.swift; sourceTree = "<group>"; };
+		7F1A0F5C /* WebsiteAnalytics/WebsiteAnalyticsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebsiteAnalytics/WebsiteAnalyticsViewModel.swift; sourceTree = "<group>"; };
+		7F1A0F5E /* NotchWebsiteAnalyticsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchWebsiteAnalyticsPage.swift; sourceTree = "<group>"; };
+		7F1A0F0E /* NotchStocksPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchStocksPage.swift; sourceTree = "<group>"; };
+		7F1A0F1C /* NotchRemindersPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchRemindersPage.swift; sourceTree = "<group>"; };
+		7F1A2A02 /* NotchMessagePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchMessagePage.swift; sourceTree = "<group>"; };
+		7F1A2B02 /* NotchFeedbackPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchFeedbackPage.swift; sourceTree = "<group>"; };
+		7F1A2904 /* NotchLocalChatPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchLocalChatPage.swift; sourceTree = "<group>"; };
+		7F1A2804 /* NotchAppUsagePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchAppUsagePage.swift; sourceTree = "<group>"; };
+		7F1A2708 /* NotchShortcutsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchShortcutsPage.swift; sourceTree = "<group>"; };
+		7F1A2706 /* NotchTodosPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchTodosPage.swift; sourceTree = "<group>"; };
+		7F1A2608 /* NotchSoundsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchSoundsPage.swift; sourceTree = "<group>"; };
+		7F1A2606 /* NotchImageConvertPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchImageConvertPage.swift; sourceTree = "<group>"; };
+		7F1A2506 /* NotchLinksPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchLinksPage.swift; sourceTree = "<group>"; };
+		7F1A2504 /* NotchFileBrowserPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchFileBrowserPage.swift; sourceTree = "<group>"; };
+		7F1A2406 /* NotchEmojiPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchEmojiPage.swift; sourceTree = "<group>"; };
+		7F1A2404 /* NotchScratchpadPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchScratchpadPage.swift; sourceTree = "<group>"; };
+		7F1A230A /* NotchUnitsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchUnitsPage.swift; sourceTree = "<group>"; };
+		7F1A2308 /* NotchCapturePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchCapturePage.swift; sourceTree = "<group>"; };
+		7F1A2306 /* NotchNotesPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchNotesPage.swift; sourceTree = "<group>"; };
+		7F1A220A /* NotchTeleprompterPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchTeleprompterPage.swift; sourceTree = "<group>"; };
+		7F1A2208 /* NotchMirrorPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchMirrorPage.swift; sourceTree = "<group>"; };
+		7F1A0F10 /* NotchRevenuePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchRevenuePage.swift; sourceTree = "<group>"; };
+		7F1A0D48 /* Snap/BSPTilingRules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snap/BSPTilingRules.swift; sourceTree = "<group>"; };
+		7F1A0D4A /* Snap/HyprFocusBorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snap/HyprFocusBorder.swift; sourceTree = "<group>"; };
+		7F1A0D4C /* Snap/HyprTilingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snap/HyprTilingController.swift; sourceTree = "<group>"; };
 		7F1A01D5 /* PortScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortScanner.swift; sourceTree = "<group>"; };
 		7F1A01D3 /* Detail/PortsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/PortsDetailView.swift; sourceTree = "<group>"; };
 		7F1A01D1 /* PortManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortManager.swift; sourceTree = "<group>"; };
@@ -908,7 +1095,6 @@
 		7F1A00A4 /* SnapZoneController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapZoneController.swift; sourceTree = "<group>"; };
 		7F1A00A6 /* Detail/MenuIconsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/MenuIconsDetailView.swift; sourceTree = "<group>"; };
 		7F1A00A8 /* Detail/FinderActionsDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FinderActionsDetailView.swift; sourceTree = "<group>"; };
-		7F1A00AA /* MenuBarHiderController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarHiderController.swift; sourceTree = "<group>"; };
 		7F1A00AC /* ClipboardShelfController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardShelfController.swift; sourceTree = "<group>"; };
 		7F1A00AE /* FinderKeyboardController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderKeyboardController.swift; sourceTree = "<group>"; };
 		7F1A00B0 /* Detail/FinderKeyboardDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detail/FinderKeyboardDetailView.swift; sourceTree = "<group>"; };
@@ -930,6 +1116,10 @@
 		7F1A00D2 /* QuickSearch/QuickSearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchEngine.swift; sourceTree = "<group>"; };
 		7F1A00D4 /* QuickSearch/QuickSearchPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchPanelController.swift; sourceTree = "<group>"; };
 		7F1A00D6 /* QuickSearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearchPanel.swift; sourceTree = "<group>"; };
+		7F1A0D32 /* MenubarPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenubarPanelView.swift; sourceTree = "<group>"; };
+		7F1A0D3A /* Menubar/MenubarUnsleepTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Menubar/MenubarUnsleepTab.swift; sourceTree = "<group>"; };
+		7F1A0D3C /* Menubar/MenubarMonitorTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Menubar/MenubarMonitorTabs.swift; sourceTree = "<group>"; };
+		7F1A0D3E /* Menubar/MenubarToolsTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Menubar/MenubarToolsTabs.swift; sourceTree = "<group>"; };
 		7F1A00DB /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		4C1A2B00 /* L10nStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nStore.swift; sourceTree = "<group>"; };
 		4C1A2B06 /* FinderExtensionStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinderExtensionStatus.swift; sourceTree = "<group>"; };
@@ -938,6 +1128,7 @@
 		7F1A0265 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = XFinder/Resources/Agents/xfinder-agent-hook.zsh; sourceTree = SOURCE_ROOT; };
 		7F1A0379 /* XFinder/Resources/Agents/xfinder-crew.zsh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = XFinder/Resources/Agents/xfinder-crew.zsh; sourceTree = SOURCE_ROOT; };
 		7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = XFinder/Resources/Agents/xfinder-claude-statusline.sh; sourceTree = SOURCE_ROOT; };
+		7F1A0F22 /* XFinder/Resources/Agents/xfinder-antigravity-statusline.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = XFinder/Resources/Agents/xfinder-antigravity-statusline.js; sourceTree = SOURCE_ROOT; };
 		7F1A00E4 /* MouseGestures/GestureModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureModel.swift; sourceTree = "<group>"; };
 		7F1A00E6 /* MouseGestures/GestureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureEngine.swift; sourceTree = "<group>"; };
 		7F1A00E8 /* MouseGestures/GestureController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MouseGestures/GestureController.swift; sourceTree = "<group>"; };
@@ -1002,14 +1193,6 @@
 		88AD9932 /* QuickSearch/QuickSearchResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/QuickSearchResult.swift; sourceTree = "<group>"; };
 		95421592 /* QuickSearch/AppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/AppLauncher.swift; sourceTree = "<group>"; };
 		E38D74CB /* QuickSearch/Quicklinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearch/Quicklinks.swift; sourceTree = "<group>"; };
-		7F1A0180 /* MenuBar/MenuBarEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/MenuBarEngine.swift; sourceTree = "<group>"; };
-		7F1A0182 /* MenuBar/MenuBarEngineFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/MenuBarEngineFactory.swift; sourceTree = "<group>"; };
-		7F1A0184 /* MenuBar/LegacyLengthEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/LegacyLengthEngine.swift; sourceTree = "<group>"; };
-		7F1A0186 /* MenuBar/NativeVisibilityEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/NativeVisibilityEngine.swift; sourceTree = "<group>"; };
-		7F1A0188 /* MenuBar/Native/HBNativeVisibilityShim.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MenuBar/Native/HBNativeVisibilityShim.h; sourceTree = "<group>"; };
-		7F1A018A /* MenuBar/Native/HBNativeVisibilityShim.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MenuBar/Native/HBNativeVisibilityShim.m; sourceTree = "<group>"; };
-		7F1A018C /* MenuBar/Native/NativeVisibilityBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/Native/NativeVisibilityBridge.swift; sourceTree = "<group>"; };
-		7F1A018E /* MenuBar/Layout/AccessibilityMenuBarInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBar/Layout/AccessibilityMenuBarInventory.swift; sourceTree = "<group>"; };
 		7F1A0190 /* XFinder/XFinder-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "XFinder/XFinder-Bridging-Header.h"; sourceTree = SOURCE_ROOT; };
 		AA41D03C76DC4D949DE5ADF7 /* Translate/VocabularyLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/VocabularyLibrary.swift; sourceTree = "<group>"; };
 		7CF83672C0BD4C118E343546 /* Translate/VocabularyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translate/VocabularyStore.swift; sourceTree = "<group>"; };
@@ -1165,6 +1348,8 @@
 				AA41D03C76DC4D949DE5ADF7 /* Translate/VocabularyLibrary.swift */,
 				7F1A0273 /* Onboarding/WhatsNewRules.swift */,
 				7F1A0271 /* Calendar/CalendarGlanceMonitor.swift */,
+				7F1A0F18 /* Calendar/RemindersDomain.swift */,
+				7F1A0F1A /* Calendar/RemindersEventKitStore.swift */,
 				7F1A026F /* Calendar/GlanceRules.swift */,
 				7F1A0261 /* Agents/AgentEvents.swift */,
 				7F1A0253 /* Clipboard/BoardLockKeys.swift */,
@@ -1204,7 +1389,6 @@
 				7F1A007F /* Browser/FileIconCache.swift */,
 				7F1A007D /* Browser/DirectoryReader.swift */,
 				7F1A007B /* Browser/BrowserWorkspace.swift */,
-				7F1A0079 /* Browser/ShelfModel.swift */,
 				7F1A0554 /* Browser/BrowserWindowModel+Cloud.swift */,
 				7F1A0552 /* Browser/VirtualLocations.swift */,
 				7F1A0540 /* Browser/FolderMergeController.swift */,
@@ -1266,6 +1450,7 @@
 				7F1A005F /* Browser/BrowserCommands.swift */,
 				7F1A003F /* Browser/FileOperationRules.swift */,
 				7F1A002C /* Browser/SearchQuery.swift */,
+				7F1A0178 /* Browser/DropTrayBrowserBridge.swift */,
 				7F1A0176 /* Browser/BrowserMenuLayout.swift */,
 				7F1A016A /* Browser/RenameRules.swift */,
 				7F1A016E /* Browser/BatchRenameRules.swift */,
@@ -1301,6 +1486,74 @@
 				7F1A01DD /* SettingsTransfer.swift */,
 				7F1A01D9 /* Onboarding.swift */,
 				7F1A01D7 /* SidebarSearch.swift */,
+				7F1A0D34 /* SmoothScroll/PointerAccelerationRules.swift */,
+				7F1A0D36 /* SmoothScroll/PointerAccelerationController.swift */,
+				7F1A0D38 /* Clipboard/TextSnippetExpander.swift */,
+				7F1A0D30 /* MenubarPanelRules.swift */,
+				7F1A0D2C /* Clipboard/TextSnippetRules.swift */,
+				7F1A0D2E /* Clipboard/TextSnippetStore.swift */,
+				7F1A0D24 /* SettingsSearchIndex.swift */,
+				7F1A0D26 /* Snap/SpacesOrderRules.swift */,
+				7F1A0D28 /* Snap/SpacesOrderController.swift */,
+				7F1A0D40 /* Notch/NotchGalleryRules.swift */,
+				7F1A0D4E /* Notch/NotchIslandRules.swift */,
+				7F1A1F16 /* Notch/NotchClockEngine.swift */,
+				7F1A2F10 /* Notch/NotchHomeRules.swift */,
+				7F1A0D60 /* Notch/NotchDestinationCatalog.swift */,
+				7F1A2A00 /* Notch/NotchMessageRules.swift */,
+				7F1A2B00 /* Notch/NotchFeedbackRules.swift */,
+				7F1A2902 /* Notch/FoundationModelsChatAdapter.swift */,
+				7F1A2900 /* Notch/NotchLocalChatDomain.swift */,
+				7F1A2802 /* Notch/LocalAppUsageTracker.swift */,
+				7F1A2800 /* Notch/LocalAppUsageRules.swift */,
+				7F1A2704 /* Notch/AppleShortcutsProcessRunner.swift */,
+				7F1A2702 /* Notch/AppleShortcutsDomain.swift */,
+				7F1A2700 /* Notch/NotchTodoDomain.swift */,
+				7F1A2604 /* Notch/NotchSoundsEngine.swift */,
+				7F1A2602 /* Notch/NotchSoundsRules.swift */,
+				7F1A2600 /* Notch/NotchImageConvertRules.swift */,
+				7F1A2502 /* Notch/NotchLinksRules.swift */,
+				7F1A2500 /* Notch/NotchFileBrowserRules.swift */,
+				7F1A2402 /* Notch/NotchEmojiCatalog.swift */,
+				7F1A2400 /* Notch/NotchScratchpadStore.swift */,
+				7F1A2304 /* Notch/NotchUnitRules.swift */,
+				7F1A2302 /* Notch/NotchCaptureRules.swift */,
+				7F1A2300 /* Notch/NotchNotesRules.swift */,
+				7F1A2206 /* Notch/NotchTeleprompterController.swift */,
+				7F1A2204 /* Notch/NotchTeleprompterRules.swift */,
+				7F1A2202 /* Notch/MirrorCaptureController.swift */,
+				7F1A2200 /* Notch/NotchMirrorRules.swift */,
+				7F1A0D50 /* Notch/DropTrayRules.swift */,
+				7F1A0E00 /* Weather/WeatherModels.swift */,
+				7F1A0E02 /* Weather/WeatherCache.swift */,
+				7F1A0E04 /* Weather/WeatherLocationService.swift */,
+				7F1A0E06 /* Weather/WeatherProvider.swift */,
+				7F1A0E08 /* Weather/WeatherCoordinator.swift */,
+				7F1A0E0A /* Weather/WeatherViewModel.swift */,
+				7F1A0E0C /* Weather/OpenMeteoAdapter.swift */,
+				7F1A0F00 /* Stocks/StocksModels.swift */,
+				7F1A0F02 /* Stocks/StocksProvider.swift */,
+				7F1A0F20 /* Stocks/TwelveDataStocksProvider.swift */,
+				7F1A0F24 /* Stocks/MassiveStocksProvider.swift */,
+				7F1A0F04 /* Stocks/StocksViewModel.swift */,
+				7F1A0F16 /* Stocks/StocksWatchlistCatalog.swift */,
+				7F1A0F06 /* Revenue/RevenueModels.swift */,
+				7F1A0F08 /* Revenue/RevenueAggregator.swift */,
+				7F1A0F0A /* Revenue/RevenueProvider.swift */,
+				7F1A0F0C /* Revenue/RevenueViewModel.swift */,
+				7F1A0F12 /* Revenue/RevenueKeychain.swift */,
+				7F1A0F14 /* Revenue/RevenueLiveAdapters.swift */,
+				7F1A0F50 /* WebsiteAnalytics/WebsiteAnalyticsModels.swift */,
+				7F1A0F52 /* WebsiteAnalytics/WebsiteAnalyticsKeychain.swift */,
+				7F1A0F54 /* WebsiteAnalytics/WebsiteAnalyticsTransport.swift */,
+				7F1A0F56 /* WebsiteAnalytics/DataFastAdapter.swift */,
+				7F1A0F58 /* WebsiteAnalytics/GA4Adapter.swift */,
+				7F1A0F60 /* WebsiteAnalytics/GA4LoopbackOAuthDriver.swift */,
+				7F1A0F5A /* WebsiteAnalytics/WebsiteAnalyticsCoordinator.swift */,
+				7F1A0F5C /* WebsiteAnalytics/WebsiteAnalyticsViewModel.swift */,
+				7F1A0D48 /* Snap/BSPTilingRules.swift */,
+				7F1A0D4A /* Snap/HyprFocusBorder.swift */,
+				7F1A0D4C /* Snap/HyprTilingController.swift */,
 				7F1A01D5 /* PortScanner.swift */,
 				7F1A01D1 /* PortManager.swift */,
 				7F1A01CB /* FeatureHub.swift */,
@@ -1319,7 +1572,6 @@
 				7F1A0090 /* DockPreviewController.swift */,
 				7F1A00A2 /* CommandTabController.swift */,
 				7F1A00A4 /* SnapZoneController.swift */,
-				7F1A00AA /* MenuBarHiderController.swift */,
 				7F1A00C6 /* CloudSyncController.swift */,
 				7F1A00BE /* QuickShareController.swift */,
 				7F1A00BC /* RemoteConnectController.swift */,
@@ -1371,6 +1623,7 @@
 				7F1A0265 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh */,
 				7F1A0379 /* XFinder/Resources/Agents/xfinder-crew.zsh */,
 				7F1A035E /* XFinder/Resources/Agents/xfinder-claude-statusline.sh */,
+				7F1A0F22 /* XFinder/Resources/Agents/xfinder-antigravity-statusline.js */,
 				7F1A00E4 /* MouseGestures/GestureModel.swift */,
 				7F1A00E6 /* MouseGestures/GestureEngine.swift */,
 				7F1A00E8 /* MouseGestures/GestureController.swift */,
@@ -1418,14 +1671,6 @@
 				7F1A01AE /* Voice/Providers/AppleOnDeviceRefiner.swift */,
 				7F1A01B0 /* Voice/Providers/HTTPRefiner.swift */,
 				7F1A01B2 /* Voice/Providers/OllamaRefiner.swift */,
-				7F1A0180 /* MenuBar/MenuBarEngine.swift */,
-				7F1A0182 /* MenuBar/MenuBarEngineFactory.swift */,
-				7F1A0184 /* MenuBar/LegacyLengthEngine.swift */,
-				7F1A0186 /* MenuBar/NativeVisibilityEngine.swift */,
-				7F1A0188 /* MenuBar/Native/HBNativeVisibilityShim.h */,
-				7F1A018A /* MenuBar/Native/HBNativeVisibilityShim.m */,
-				7F1A018C /* MenuBar/Native/NativeVisibilityBridge.swift */,
-				7F1A018E /* MenuBar/Layout/AccessibilityMenuBarInventory.swift */,
 			);
 			path = XFinder/Core;
 			sourceTree = SOURCE_ROOT;
@@ -1447,6 +1692,10 @@
 			isa = PBXGroup;
 			children = (
 				7F1A00D6 /* QuickSearchPanel.swift */,
+				7F1A0D32 /* MenubarPanelView.swift */,
+				7F1A0D3A /* Menubar/MenubarUnsleepTab.swift */,
+				7F1A0D3C /* Menubar/MenubarMonitorTabs.swift */,
+				7F1A0D3E /* Menubar/MenubarToolsTabs.swift */,
 				7F1A001B /* SideNotesPanel.swift */,
 				7F1A001C /* SettingsWindow.swift */,
 				7F1A0037 /* RootView.swift */,
@@ -1489,6 +1738,32 @@
 				7F1A022B /* NotchClipboardView.swift */,
 				7F1A035A /* NotchAIUsagePage.swift */,
 				7F1A0358 /* NotchTimerPage.swift */,
+				7F1A0D42 /* NotchSectionsView.swift */,
+				7F1A0D44 /* NotchSystemPage.swift */,
+				7F1A2F12 /* NotchHomePage.swift */,
+				7F1A0D46 /* NotchAudioPage.swift */,
+				7F1A0E0E /* NotchWeatherPage.swift */,
+				7F1A0F0E /* NotchStocksPage.swift */,
+				7F1A0F1C /* NotchRemindersPage.swift */,
+				7F1A2A02 /* NotchMessagePage.swift */,
+				7F1A2B02 /* NotchFeedbackPage.swift */,
+				7F1A2904 /* NotchLocalChatPage.swift */,
+				7F1A2804 /* NotchAppUsagePage.swift */,
+				7F1A2708 /* NotchShortcutsPage.swift */,
+				7F1A2706 /* NotchTodosPage.swift */,
+				7F1A2608 /* NotchSoundsPage.swift */,
+				7F1A2606 /* NotchImageConvertPage.swift */,
+				7F1A2506 /* NotchLinksPage.swift */,
+				7F1A2504 /* NotchFileBrowserPage.swift */,
+				7F1A2406 /* NotchEmojiPage.swift */,
+				7F1A2404 /* NotchScratchpadPage.swift */,
+				7F1A230A /* NotchUnitsPage.swift */,
+				7F1A2308 /* NotchCapturePage.swift */,
+				7F1A2306 /* NotchNotesPage.swift */,
+				7F1A220A /* NotchTeleprompterPage.swift */,
+				7F1A2208 /* NotchMirrorPage.swift */,
+				7F1A0F10 /* NotchRevenuePage.swift */,
+				7F1A0F5E /* NotchWebsiteAnalyticsPage.swift */,
 				7F1A0356 /* NotchCalendarPage.swift */,
 				7F1A0354 /* NotchAgentsPage.swift */,
 				7F1A037F /* AgentHandoffView.swift */,
@@ -1539,7 +1814,6 @@
 				7F1A0133 /* Detail/ProDetailView.swift */,
 				7F1A012F /* Components/ProBadge.swift */,
 				7F1A0119 /* Detail/FileBrowserDetailView.swift */,
-				7F1A0117 /* Browser/ShelfBarView.swift */,
 				7F1A0550 /* Browser/VolumeInfoWindow.swift */,
 				7F1A054E /* Browser/PreviewPaneView.swift */,
 				7F1A054C /* Browser/MergePreviewSheet.swift */,
@@ -1678,6 +1952,7 @@
 				7F1A0264 /* XFinder/Resources/Agents/xfinder-agent-hook.zsh in Resources */,
 				7F1A0378 /* XFinder/Resources/Agents/xfinder-crew.zsh in Resources */,
 				7F1A035F /* XFinder/Resources/Agents/xfinder-claude-statusline.sh in Resources */,
+				7F1A0F23 /* XFinder/Resources/Agents/xfinder-antigravity-statusline.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1836,6 +2111,8 @@
 				34CC6C9FE536442E822AB626 /* Translate/VocabularyLibrary.swift in Sources */,
 				7F1A0272 /* Onboarding/WhatsNewRules.swift in Sources */,
 				7F1A0270 /* Calendar/CalendarGlanceMonitor.swift in Sources */,
+				7F1A0F19 /* Calendar/RemindersDomain.swift in Sources */,
+				7F1A0F1B /* Calendar/RemindersEventKitStore.swift in Sources */,
 				7F1A026E /* Calendar/GlanceRules.swift in Sources */,
 				7F1A0260 /* Agents/AgentEvents.swift in Sources */,
 				7F1A0252 /* Clipboard/BoardLockKeys.swift in Sources */,
@@ -1888,7 +2165,6 @@
 				7F1A0134 /* Detail/ProDetailView.swift in Sources */,
 				7F1A0132 /* Components/ProBadge.swift in Sources */,
 				7F1A011A /* Detail/FileBrowserDetailView.swift in Sources */,
-				7F1A0118 /* Browser/ShelfBarView.swift in Sources */,
 				7F1A0551 /* Browser/VolumeInfoWindow.swift in Sources */,
 				7F1A054F /* Browser/PreviewPaneView.swift in Sources */,
 				7F1A054D /* Browser/MergePreviewSheet.swift in Sources */,
@@ -1958,7 +2234,6 @@
 				7F1A008D /* Browser/FileIconCache.swift in Sources */,
 				7F1A007E /* Browser/DirectoryReader.swift in Sources */,
 				7F1A007C /* Browser/BrowserWorkspace.swift in Sources */,
-				7F1A007A /* Browser/ShelfModel.swift in Sources */,
 				7F1A0555 /* Browser/BrowserWindowModel+Cloud.swift in Sources */,
 				7F1A0553 /* Browser/VirtualLocations.swift in Sources */,
 				7F1A0541 /* Browser/FolderMergeController.swift in Sources */,
@@ -2020,6 +2295,7 @@
 				7F1A0076 /* Browser/BrowserCommands.swift in Sources */,
 				7F1A0058 /* Browser/FileOperationRules.swift in Sources */,
 				7F1A002D /* Browser/SearchQuery.swift in Sources */,
+				7F1A0179 /* Browser/DropTrayBrowserBridge.swift in Sources */,
 				7F1A0177 /* Browser/BrowserMenuLayout.swift in Sources */,
 				7F1A016B /* Browser/RenameRules.swift in Sources */,
 				7F1A016F /* Browser/BatchRenameRules.swift in Sources */,
@@ -2057,6 +2333,100 @@
 				7F1A01DC /* OnboardingView.swift in Sources */,
 				7F1A01DA /* Onboarding.swift in Sources */,
 				7F1A01D8 /* SidebarSearch.swift in Sources */,
+				7F1A0D35 /* SmoothScroll/PointerAccelerationRules.swift in Sources */,
+				7F1A0D37 /* SmoothScroll/PointerAccelerationController.swift in Sources */,
+				7F1A0D39 /* Clipboard/TextSnippetExpander.swift in Sources */,
+				7F1A0D31 /* MenubarPanelRules.swift in Sources */,
+				7F1A0D2D /* Clipboard/TextSnippetRules.swift in Sources */,
+				7F1A0D2F /* Clipboard/TextSnippetStore.swift in Sources */,
+				7F1A0D25 /* SettingsSearchIndex.swift in Sources */,
+				7F1A0D27 /* Snap/SpacesOrderRules.swift in Sources */,
+				7F1A0D29 /* Snap/SpacesOrderController.swift in Sources */,
+				7F1A0D41 /* Notch/NotchGalleryRules.swift in Sources */,
+				7F1A0D4F /* Notch/NotchIslandRules.swift in Sources */,
+				7F1A1F17 /* Notch/NotchClockEngine.swift in Sources */,
+				7F1A2F11 /* Notch/NotchHomeRules.swift in Sources */,
+				7F1A0D61 /* Notch/NotchDestinationCatalog.swift in Sources */,
+				7F1A2A01 /* Notch/NotchMessageRules.swift in Sources */,
+				7F1A2B01 /* Notch/NotchFeedbackRules.swift in Sources */,
+				7F1A2903 /* Notch/FoundationModelsChatAdapter.swift in Sources */,
+				7F1A2901 /* Notch/NotchLocalChatDomain.swift in Sources */,
+				7F1A2803 /* Notch/LocalAppUsageTracker.swift in Sources */,
+				7F1A2801 /* Notch/LocalAppUsageRules.swift in Sources */,
+				7F1A2705 /* Notch/AppleShortcutsProcessRunner.swift in Sources */,
+				7F1A2703 /* Notch/AppleShortcutsDomain.swift in Sources */,
+				7F1A2701 /* Notch/NotchTodoDomain.swift in Sources */,
+				7F1A2605 /* Notch/NotchSoundsEngine.swift in Sources */,
+				7F1A2603 /* Notch/NotchSoundsRules.swift in Sources */,
+				7F1A2601 /* Notch/NotchImageConvertRules.swift in Sources */,
+				7F1A2503 /* Notch/NotchLinksRules.swift in Sources */,
+				7F1A2501 /* Notch/NotchFileBrowserRules.swift in Sources */,
+				7F1A2403 /* Notch/NotchEmojiCatalog.swift in Sources */,
+				7F1A2401 /* Notch/NotchScratchpadStore.swift in Sources */,
+				7F1A2305 /* Notch/NotchUnitRules.swift in Sources */,
+				7F1A2303 /* Notch/NotchCaptureRules.swift in Sources */,
+				7F1A2301 /* Notch/NotchNotesRules.swift in Sources */,
+				7F1A2207 /* Notch/NotchTeleprompterController.swift in Sources */,
+				7F1A2205 /* Notch/NotchTeleprompterRules.swift in Sources */,
+				7F1A2203 /* Notch/MirrorCaptureController.swift in Sources */,
+				7F1A2201 /* Notch/NotchMirrorRules.swift in Sources */,
+				7F1A0D51 /* Notch/DropTrayRules.swift in Sources */,
+				7F1A0D43 /* NotchSectionsView.swift in Sources */,
+				7F1A0D45 /* NotchSystemPage.swift in Sources */,
+				7F1A2F13 /* NotchHomePage.swift in Sources */,
+				7F1A0D47 /* NotchAudioPage.swift in Sources */,
+				7F1A0E01 /* Weather/WeatherModels.swift in Sources */,
+				7F1A0E03 /* Weather/WeatherCache.swift in Sources */,
+				7F1A0E05 /* Weather/WeatherLocationService.swift in Sources */,
+				7F1A0E07 /* Weather/WeatherProvider.swift in Sources */,
+				7F1A0E09 /* Weather/WeatherCoordinator.swift in Sources */,
+				7F1A0E0B /* Weather/WeatherViewModel.swift in Sources */,
+				7F1A0E0D /* Weather/OpenMeteoAdapter.swift in Sources */,
+				7F1A0E0F /* NotchWeatherPage.swift in Sources */,
+				7F1A0F01 /* Stocks/StocksModels.swift in Sources */,
+				7F1A0F03 /* Stocks/StocksProvider.swift in Sources */,
+				7F1A0F21 /* Stocks/TwelveDataStocksProvider.swift in Sources */,
+				7F1A0F25 /* Stocks/MassiveStocksProvider.swift in Sources */,
+				7F1A0F05 /* Stocks/StocksViewModel.swift in Sources */,
+				7F1A0F17 /* Stocks/StocksWatchlistCatalog.swift in Sources */,
+				7F1A0F07 /* Revenue/RevenueModels.swift in Sources */,
+				7F1A0F09 /* Revenue/RevenueAggregator.swift in Sources */,
+				7F1A0F0B /* Revenue/RevenueProvider.swift in Sources */,
+				7F1A0F0D /* Revenue/RevenueViewModel.swift in Sources */,
+				7F1A0F13 /* Revenue/RevenueKeychain.swift in Sources */,
+				7F1A0F15 /* Revenue/RevenueLiveAdapters.swift in Sources */,
+				7F1A0F51 /* WebsiteAnalytics/WebsiteAnalyticsModels.swift in Sources */,
+				7F1A0F53 /* WebsiteAnalytics/WebsiteAnalyticsKeychain.swift in Sources */,
+				7F1A0F55 /* WebsiteAnalytics/WebsiteAnalyticsTransport.swift in Sources */,
+				7F1A0F57 /* WebsiteAnalytics/DataFastAdapter.swift in Sources */,
+				7F1A0F59 /* WebsiteAnalytics/GA4Adapter.swift in Sources */,
+				7F1A0F61 /* WebsiteAnalytics/GA4LoopbackOAuthDriver.swift in Sources */,
+				7F1A0F5B /* WebsiteAnalytics/WebsiteAnalyticsCoordinator.swift in Sources */,
+				7F1A0F5D /* WebsiteAnalytics/WebsiteAnalyticsViewModel.swift in Sources */,
+				7F1A0F5F /* NotchWebsiteAnalyticsPage.swift in Sources */,
+				7F1A0F0F /* NotchStocksPage.swift in Sources */,
+				7F1A0F1D /* NotchRemindersPage.swift in Sources */,
+				7F1A2A03 /* NotchMessagePage.swift in Sources */,
+				7F1A2B03 /* NotchFeedbackPage.swift in Sources */,
+				7F1A2905 /* NotchLocalChatPage.swift in Sources */,
+				7F1A2805 /* NotchAppUsagePage.swift in Sources */,
+				7F1A2709 /* NotchShortcutsPage.swift in Sources */,
+				7F1A2707 /* NotchTodosPage.swift in Sources */,
+				7F1A2609 /* NotchSoundsPage.swift in Sources */,
+				7F1A2607 /* NotchImageConvertPage.swift in Sources */,
+				7F1A2507 /* NotchLinksPage.swift in Sources */,
+				7F1A2505 /* NotchFileBrowserPage.swift in Sources */,
+				7F1A2407 /* NotchEmojiPage.swift in Sources */,
+				7F1A2405 /* NotchScratchpadPage.swift in Sources */,
+				7F1A230B /* NotchUnitsPage.swift in Sources */,
+				7F1A2309 /* NotchCapturePage.swift in Sources */,
+				7F1A2307 /* NotchNotesPage.swift in Sources */,
+				7F1A220B /* NotchTeleprompterPage.swift in Sources */,
+				7F1A2209 /* NotchMirrorPage.swift in Sources */,
+				7F1A0F11 /* NotchRevenuePage.swift in Sources */,
+				7F1A0D49 /* Snap/BSPTilingRules.swift in Sources */,
+				7F1A0D4B /* Snap/HyprFocusBorder.swift in Sources */,
+				7F1A0D4D /* Snap/HyprTilingController.swift in Sources */,
 				7F1A01D6 /* PortScanner.swift in Sources */,
 				7F1A01D4 /* Detail/PortsDetailView.swift in Sources */,
 				7F1A01D2 /* PortManager.swift in Sources */,
@@ -2077,7 +2447,6 @@
 				7F1A0091 /* DockPreviewController.swift in Sources */,
 				7F1A00A3 /* CommandTabController.swift in Sources */,
 				7F1A00A5 /* SnapZoneController.swift in Sources */,
-				7F1A00AB /* MenuBarHiderController.swift in Sources */,
 				7F1A00C7 /* CloudSyncController.swift in Sources */,
 				7F1A00BF /* QuickShareController.swift in Sources */,
 				7F1A00BD /* RemoteConnectController.swift in Sources */,
@@ -2130,6 +2499,10 @@
 				7F1A00D3 /* QuickSearch/QuickSearchEngine.swift in Sources */,
 				7F1A00D5 /* QuickSearch/QuickSearchPanelController.swift in Sources */,
 				7F1A00D7 /* QuickSearchPanel.swift in Sources */,
+				7F1A0D33 /* MenubarPanelView.swift in Sources */,
+				7F1A0D3B /* Menubar/MenubarUnsleepTab.swift in Sources */,
+				7F1A0D3D /* Menubar/MenubarMonitorTabs.swift in Sources */,
+				7F1A0D3F /* Menubar/MenubarToolsTabs.swift in Sources */,
 				7F1A00DC /* L10n.swift in Sources */,
 				4C1A2B01 /* L10nStore.swift in Sources */,
 				4C1A2B07 /* FinderExtensionStatus.swift in Sources */,
@@ -2193,13 +2566,6 @@
 				7F1A01AD /* Voice/Providers/AppleOnDeviceRefiner.swift in Sources */,
 				7F1A01AF /* Voice/Providers/HTTPRefiner.swift in Sources */,
 				7F1A01B1 /* Voice/Providers/OllamaRefiner.swift in Sources */,
-				7F1A0181 /* MenuBar/MenuBarEngine.swift in Sources */,
-				7F1A0183 /* MenuBar/MenuBarEngineFactory.swift in Sources */,
-				7F1A0185 /* MenuBar/LegacyLengthEngine.swift in Sources */,
-				7F1A0187 /* MenuBar/NativeVisibilityEngine.swift in Sources */,
-				7F1A018B /* MenuBar/Native/HBNativeVisibilityShim.m in Sources */,
-				7F1A018D /* MenuBar/Native/NativeVisibilityBridge.swift in Sources */,
-				7F1A018F /* MenuBar/Layout/AccessibilityMenuBarInventory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2433,10 +2799,9 @@
 				PRODUCT_NAME = XFinder;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
-					"XFinder_NATIVE_VISIBILITY=1",
 					"$(inherited)",
 				);
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG XFinder_NATIVE_VISIBILITY $(inherited)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OBJC_BRIDGING_HEADER = "XFinder/XFinder-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
@@ -2462,10 +2827,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.xfinder.app;
 				PRODUCT_NAME = XFinder;
 				GCC_PREPROCESSOR_DEFINITIONS = (
-					"XFinder_NATIVE_VISIBILITY=1",
 					"$(inherited)",
 				);
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "XFinder_NATIVE_VISIBILITY $(inherited)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited)";
 				SWIFT_OBJC_BRIDGING_HEADER = "XFinder/XFinder-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
