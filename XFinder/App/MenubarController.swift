@@ -21,6 +21,8 @@ final class MenubarController: NSObject, NSMenuDelegate, NSPopoverDelegate {
     private var readoutItem: NSStatusItem?
     private let menu = NSMenu()
     private var popover: NSPopover?
+    private var outsideClickLocalMonitor: Any?
+    private var outsideClickGlobalMonitor: Any?
     private nonisolated(unsafe) var screenObserver: (any NSObjectProtocol)?
 
     /// ONE reader (XF-T22): hide XFinder's own status item, default false.
@@ -156,29 +158,57 @@ final class MenubarController: NSObject, NSMenuDelegate, NSPopoverDelegate {
         pop.contentViewController = NSHostingController(rootView: MenubarPanelView(
             onClose: { [weak self] in
                 self?.closePopover()
-            },
-            onShowMenu: { [weak self] in
-                self?.closePopover()
-                DispatchQueue.main.async {
-                    guard let self else { return }
-                    self.statusItem?.menu = self.menu
-                    self.statusItem?.button?.performClick(nil)
-                    self.statusItem?.menu = nil
-                }
             }
         ))
         popover = pop
         pop.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         pop.contentViewController?.view.window?.makeKey()
+        installOutsideClickMonitors()
     }
 
     private func closePopover() {
+        removeOutsideClickMonitors()
         popover?.performClose(nil)
     }
 
     func popoverDidClose(_ notification: Notification) {
+        removeOutsideClickMonitors()
         popover?.contentViewController = nil
         popover = nil
+    }
+
+    private func installOutsideClickMonitors() {
+        removeOutsideClickMonitors()
+
+        outsideClickLocalMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            guard let self,
+                  let popover = self.popover,
+                  popover.isShown,
+                  event.window !== popover.contentViewController?.view.window,
+                  event.window !== self.statusItem?.button?.window,
+                  event.window !== self.readoutItem?.button?.window else {
+                return event
+            }
+            self.closePopover()
+            return event
+        }
+
+        outsideClickGlobalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.closePopover()
+            }
+        }
+    }
+
+    private func removeOutsideClickMonitors() {
+        if let outsideClickLocalMonitor {
+            NSEvent.removeMonitor(outsideClickLocalMonitor)
+            self.outsideClickLocalMonitor = nil
+        }
+        if let outsideClickGlobalMonitor {
+            NSEvent.removeMonitor(outsideClickGlobalMonitor)
+            self.outsideClickGlobalMonitor = nil
+        }
     }
 
 

@@ -2395,3 +2395,11 @@ GATE: green
 - **Verification:** `sh scripts/gate-all.sh` — arm64 build OK; 3,581 tests, 1 skipped, 0 failures; all localization/UI gates TOTAL 0; `GATE: green`.
 - **Live UI:** the helper launched `/tmp/xf-xfinder-caffeine-stocks/out/XFinder.app`, but opening the custom Settings URL routed to the separate installed `/Applications/XFinder.app`; after closing that app, Atlas could only see the helper's existing System Settings permission window, so the new Settings page screenshot could not be verified. No API credential was entered. Owner-profile live behavior is not verified.
 
+# XF-MB-GENERAL-01 — implementation complete
+
+| Task | Files | Acceptance | Live |
+|---|---|---|---|
+| Minimal menu-bar popover; outside-click dismissal | `XFinder/Views/MenubarPanelView.swift`, `XFinder/App/MenubarController.swift`, `XFinder/Core/MenubarPanelRules.swift` | arm64 Debug build succeeded; `git diff --check` clean | Not verified: Atlas helper showed a Device Control and Data Access prompt, so I could not click the status item or exercise dismissal |
+
+Branch: `agent/codex-XF-MB-GENERAL-01`. Build output: `/tmp/xfinder-codex-XF-MB-GENERAL-01/out/XFinder.app`. No tests run. Notion MCP unavailable; using repository fallback.
+
