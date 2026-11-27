@@ -2370,6 +2370,8 @@ Live verification: Installed `/Applications/XFinder.app` PID 30423 (arm64, signe
 - `git diff --check`: OK after trimming a trailing blank line in the Analytics spec.
 - Live behavior not verified: menu-bar icon placement, OAuth/provider credentials, live quotes, physical lid-close behavior, and in-app interactions. Atlas reports a Device Control and Data Access prompt and two existing XFinder builds in the helper; I left those windows/processes untouched.
 - Orchestration check returned `No messages`. Prior weather worktree is still separate; its gate was green at 3,211 tests, but it is not merged here.
+- Live QA in Atlas helper: installed build launched from `/Users/atlas/Applications/XFinder.app` (PID 45968). Full Settings Stocks and Revenue pages rendered; provider forms showed no connected accounts, so no live quote or revenue values were claimed. `atlas elements --pid 45968` showed Notch Settings entries for Stocks, Revenue, and Website Analytics. Full-screen capture showed the XFinder menu-bar icon. Evidence: `/Users/wolong/Library/Application Support/Atlas/runs/1795754862836946000-capture.png` (menu bar + Stocks), `/Users/wolong/Library/Application Support/Atlas/runs/1795754883929123000-capture.png` (Revenue).
+- Atlas app-name launch first selected the older Weather build; I closed it and opened the exact installed build path. GUI interaction stopped when `atlas key … cmd+w` returned `focus-changed` because the system `Device Control and Data Access` dialog covered the target. I did not answer the dialog. The test build was closed and Atlas cleanup completed; pre-existing helper preferences and caches were kept.
 
 Gate output:
 ```text

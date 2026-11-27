@@ -31,6 +31,13 @@ Permission-description follow-up: `872559a` (`XF-PERMISSIONS: Bundle camera and 
 - Physical lid-close wake behavior and live stock quote access.
 - Settings and Notch interaction in a running signed build.
 
+Atlas helper QA verified the menu-bar icon and rendered Full Settings Stocks
+and Revenue pages. Provider accounts were disconnected. The AX tree exposed
+Notch Settings destinations for Stocks, Revenue, and Website Analytics. The
+system `Device Control and Data Access` dialog blocked further input; do not
+answer it through Atlas. The old app-name registration selected the Weather
+build, so launch the exact installed bundle path for future checks.
+
 ## Guardrails
 
 - Stage reviewed paths explicitly; never stage owner assets wholesale.
