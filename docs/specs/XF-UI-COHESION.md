@@ -25,3 +25,14 @@ Full Settings continues to own setup pages such as Stocks, Analytics and Revenue
 Signed arm64 Debug build and full gate passed with 3,582 tests, one skipped and zero failures. Localization and UI checks passed.
 
 Atlas exercised the signed build in the helper account at 900 pt window width, in Vietnamese and light appearance. The compact popover showed three rows, its Settings row opened Overview, the accessibility tree returned no Anti-sleep item on that screen, and System Monitor showed its tabs aligned to the metrics below. Dark appearance, physical lid behavior and the installed owner profile were not exercised in this pass.
+
+## Integrated dropdown and performance follow-up
+
+- `ecda9f4` integrates Antigravity’s Notch pointer and render changes, popover reuse and icon cache.
+- `725c462` removes the unreachable legacy tab views and their Xcode references. Shared presets, formatting and the native right-click menu remain available.
+- `f8f7eed` records Antigravity’s baseline and verification in the worklog. The original audit did not measure a comparable after-build runtime.
+- `03c9b88` adds Quit below the three existing actions. Quit closes the popover and uses the app’s normal termination path.
+
+Revert `03c9b88` for the Quit change alone. To undo the performance follow-up while retaining the compact UI, revert `725c462` and `ecda9f4` from newest to oldest. The worklog can stay as historical evidence.
+
+The integrated signed arm64 Debug build passed the full gate with 3,582 tests, one skipped, and zero failures. Atlas showed all four dropdown rows, verified outside-click dismissal, reopened the reused popover, and confirmed Quit exited the helper process. The signed build was then installed at `/Applications/XFinder.app` and confirmed running under `wolong`. Its debug dylib matched the tested build byte for byte (SHA-256 `20f785e5b5e037edf95cadb4babaac7438e9efa9eae0b4bd6502de69f5d58621`). The prior installed bundle is backed up locally at `/tmp/xfinder-ui-perf-rollback.UzMWSP/XFinder.app`.
